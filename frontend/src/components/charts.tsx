@@ -346,6 +346,7 @@ export function StreamChart({
             connectNulls
             dot={false}
             activeDot={{ r: 4 }}
+            isAnimationActive={false}
           />
         </AreaChart>
       </ResponsiveContainer>

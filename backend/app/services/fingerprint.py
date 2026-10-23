@@ -169,14 +169,37 @@ def _derive(activity: Activity, reference: float) -> dict[str, Any]:
 
 def _store(db: Session, activity: Activity, reference: float) -> dict[str, Any]:
     payload = _derive(activity, reference)
-    row = db.get(RunFingerprint, activity.id)
-    if row is None:
-        row = RunFingerprint(activity_id=activity.id)
-        db.add(row)
-    for key, value in payload.items():
-        setattr(row, key, value)
-    row.computed_at = utcnow()
+    _upsert(db, activity.id, payload)
     return {'activity_id': activity.id, **payload, 'activity_name': activity.name, 'local_date': activity.local_date, 'distance_m': activity.distance_m, 'pace_s_per_km': activity.moving_time_s * 1000 / activity.distance_m if number(activity.distance_m, True) and number(activity.moving_time_s, True) else None, 'source': activity.source, 'is_demo': activity.source == 'demo'}
+
+
+def _upsert(db: Session, activity_id: int, payload: dict[str, Any]) -> None:
+    """Write the fingerprint for one activity, idempotently.
+
+    Two requests can ask for the same activity at the same moment — the
+    fitness page fires several queries at once, and each recomputes from the
+    laps. A plain "get, then insert" loses that race and violates the unique
+    constraint on ``activity_id``, so the row is written with an upsert.
+    """
+    values = dict(payload)
+    values['computed_at'] = utcnow()
+    row = db.get(RunFingerprint, activity_id)
+    if row is not None:
+        for key, value in values.items():
+            setattr(row, key, value)
+        return
+    try:
+        from sqlalchemy.dialects.sqlite import insert as sqlite_insert
+
+        statement = sqlite_insert(RunFingerprint).values(activity_id=activity_id, **values)
+        statement = statement.on_conflict_do_update(
+            index_elements=['activity_id'], set_=values
+        )
+        db.execute(statement)
+    except Exception:
+        # Fall back to the portable path if the dialect is not SQLite.
+        db.add(RunFingerprint(activity_id=activity_id, **values))
+        db.flush()
 
 
 def compute_fingerprint(db: Session, activity_id: int) -> dict[str, Any]:

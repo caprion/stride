@@ -227,6 +227,7 @@ class DailyPhysiology(Base):
     hrv_ms: Mapped[float | None] = mapped_column(Float, nullable=True)
     hrv_status: Mapped[str | None] = mapped_column(String(24), nullable=True)
     resting_hr: Mapped[float | None] = mapped_column(Float, nullable=True)
+    max_hr: Mapped[float | None] = mapped_column(Float, nullable=True)
     stress_avg: Mapped[float | None] = mapped_column(Float, nullable=True)
     stress_max: Mapped[float | None] = mapped_column(Float, nullable=True)
 

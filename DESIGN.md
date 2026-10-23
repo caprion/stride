@@ -369,3 +369,86 @@ parallel work began so no two agents touched the same file.
    was present.
 4. A workout step's *distance* target was read as a *pace* target.
 5. The workout client had no non-probing `sources()` status method.
+
+
+---
+
+## 10. The Personal API — the path that actually works
+
+The Phase-2 design assumed a Garmin developer key would be enough. It is not.
+The **Garmin Connect Personal API** is, and the key was in Azure Key Vault the
+whole time (`claw-agent` → `garmin-api`).
+
+### What it is
+
+A first-party API for your own account. Generate a key at
+`connect.garmin.com/app/settings/personalApiToken`; no developer-program
+registration, no consumer secret, no OAuth browser dance. It is a single
+credential that exchanges for a 24-hour bearer token.
+
+The key is 133 characters in four dot-separated segments, prefixed `GCDC_`:
+a consumer key, a UUID, a secret and a checksum. It is *not* an OAuth1 consumer
+key — every pairing tried against `/oauth-service/oauth/request_token` returns
+`401`. The giveaway is the token endpoint, which takes the whole string:
+
+```
+POST https://personal.connectapi.garmin.com/personalapitoken-service/personal-api/personal-api-key/token
+Authorization: ApiKey GCDC_…
+```
+
+It returns a JWT whose scopes are the whole point:
+
+| Scope | Unlocks |
+|---|---|
+| `CONNECT_READ` | activities, workouts, calendar |
+| `PERSONAL_API_FITNESS_READ` | activity summaries and measurements |
+| `PERSONAL_API_WELLNESS_READ` | **sleep, resting HR, stress, body battery, HRV** |
+| `PERSONAL_API_USER_READ` | profile, settings, HR zones |
+| `PERSONAL_API_NUTRITION_READ` | calories and nutrition |
+
+The wellness scope is what makes the physiology and plan-cause engines possible
+without a password.
+
+### Endpoints verified live
+
+| Endpoint | Query | Returns |
+|---|---|---|
+| `/activitylist-service/activities/search/activities` | `start`, `limit`, `startDate`, `endDate` | activity summaries |
+| `/activity-service/activity/{id}` | — | `summaryDTO` (cadence, stride, training effect, HR) + `splitSummaries` |
+| `/activity-service/activity/{id}/workouts` | — | associated workouts |
+| `/download-service/files/activity/{id}` | — | the original **FIT** as a zip |
+| `/sleep-service/sleep/dailySleep` | `date` | duration + deep/REM/light/awake split |
+| `/wellness-service/wellness/dailyHeartRate` | `date` | resting HR and the day's curve |
+| `/wellness-service/wellness/bodyBattery/reports/daily` | `startDate`, `endDate` | body battery series |
+| `/usersummary-service/usersummary/daily` | `calendarDate` | steps, RHR, stress, body battery, intensity minutes — one call per day |
+| `/usersummary-service/stats/stress/daily/{from}/{to}` | — | stress series |
+| `/usersummary-service/stats/steps/daily/{from}/{to}` | — | steps series |
+| `/biometric-service/heartRateZones/v2` | — | the athlete's HR zone model |
+| `/hrv-service/hrv/{date}`, `/hrv-service/hrv/daily/{from}/{to}` | — | HRV |
+
+Two quirks worth recording: the parameter is `date`, not `calendarDate`, and the
+stats endpoints return `400` for a window that reaches outside the retained
+history — so the window is clamped.
+
+### What the FIT taught us
+
+Downloading the original file and decoding it against the API's own summary
+exposed three Garmin behaviours that would have silently corrupted the data:
+
+1. **Positions are semicircles.** `position_lat` of 156,225,859 is 13.09° —
+   the file stores `2**31` semicircles per 180°.
+2. **Running cadence is stored halved.** The watch displays 154.8 spm; the file
+   says 77.4. Some devices record *stride cycles* (two footfalls), so the file
+   value is doubled to get steps per minute. A real running cadence is never
+   below 100, so the correction cannot fire on genuine data.
+3. **Lap speed is not always present.** When the device omits it, pace follows
+   from distance and duration.
+
+The API's `summaryDTO` wins for distance, pace, heart rate and cadence; the FIT
+wins for the GPS track, per-second streams and kilometre splits.
+
+### The end state
+
+The app now connects itself from the Key Vault at startup, syncs real runs with
+full fidelity, and builds the physiological picture from the same credentials —
+no password anywhere in the system.

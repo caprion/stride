@@ -185,14 +185,35 @@ def _run_sync_blocking(days: int | None = None) -> None:
 
         try:
             method = state.garmin_method
+            if method == "personal":
+                # The Personal API pulls activities and wellness together.
+                from .personal_sync import run as personal_run
+
+                result = personal_run(days=days)
+                run.activities_found = result["activities_found"]
+                run.activities_new = result["activities_new"]
+                run.activities_updated = result["activities_updated"]
+                run.status = "ok"
+                run.message = (
+                    f"Synced {result['activities_new']} new and "
+                    f"{result['activities_updated']} updated activities, plus "
+                    f"{result['wellness_days']} days of health data."
+                )
+                state.update(last_sync_at=datetime.now(timezone.utc).isoformat())
+                if result["activities_new"] and state.demo_visible:
+                    state.update(demo_visible=False)
+                    run.message += " Demo activities hidden."
+                _sync_state.update({"running": False, "message": run.message})
+                log.info(run.message)
+                return
             if method == "developer_key":
                 fetcher = _fetch_with_oauth
             elif method == "account":
                 fetcher = _fetch_with_account
             else:
                 raise GarminAuthError(
-                    "No Garmin connection is configured. Add a developer key or an "
-                    "account in Settings, or import FIT files directly."
+                    "No Garmin connection is configured. Add a Personal API key, a "
+                    "developer key or an account in Settings, or import FIT files directly."
                 )
 
             try:

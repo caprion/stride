@@ -24,7 +24,7 @@ const ROUTES = [
   ['fitness', '/fitness'],
   ['stats', '/stats'],
   ['settings', '/settings'],
-  ['activity', '/activities/161'],
+  ['activity', '/activities/162'],
 ]
 
 const VIEWPORT = { width: 1440, height: 1000 }

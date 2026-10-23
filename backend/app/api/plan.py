@@ -24,12 +24,13 @@ from pydantic import BaseModel
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
+from ..config import state
 from ..db import get_db
 from ..models import Activity
 from ..models_phase2 import PlanBlock, PlanPhase, PlanResult, PlanSession, PlanWeek
 from ..ingest.plan_importer import import_plan
 from ..services import plan_engine
-from ..services.analytics import _duration_label, _pace_s_per_km
+from ..services.analytics import _duration_label, _pace_s_per_km, demo_filter
 
 log = logging.getLogger(__name__)
 
@@ -516,7 +517,11 @@ def _anchor_to_history(
     is supposed to govern, and every session reads as "missed". Shifting the
     whole block by whole weeks keeps every internal relationship intact.
     """
-    latest = db.execute(select(func.max(Activity.local_date))).scalar()
+    stmt = select(func.max(Activity.local_date))
+    if not state.demo_visible:
+        # Anchor to the athlete's real runs, not the synthetic demo set.
+        stmt = stmt.where(Activity.source != "demo")
+    latest = db.execute(stmt).scalar()
     if not latest:
         return
     try:

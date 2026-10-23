@@ -92,7 +92,31 @@ cd frontend && npm run typecheck                # zero errors
 
 There are three ways in. All three are supported; none is required to run the app.
 
-### 1. Developer API key (recommended)
+### 1. Personal API key (recommended — easiest, and the only one that covers wellness)
+
+Garmin's own first-party API for your own account. You generate a key at
+`https://connect.garmin.com/app/settings/personalApiToken` while signed in to
+Garmin Connect Web. **No developer-program registration, no consumer secret, no
+browser authorisation dance** — and it covers *activities and wellness*:
+sleep, resting heart rate, stress, body battery, HRV and scheduled workouts.
+
+Stride reads it from **Azure Key Vault** (`claw-agent` → `garmin-api`) on this
+VM, so it connects itself at startup; you can also paste one in Settings.
+
+Two steps happen behind the scenes:
+
+1. `POST /personalapitoken-service/personal-api/personal-api-key/token` with
+   `Authorization: ApiKey <key>` returns a JWT valid for 24 hours (scopes:
+   `CONNECT_READ`, `PERSONAL_API_FITNESS_READ`, `PERSONAL_API_WELLNESS_READ`,
+   `PERSONAL_API_USER_READ`, `PERSONAL_API_NUTRITION_READ`). Stride refreshes it
+   automatically.
+2. Every other endpoint is a plain bearer-authenticated GET against
+   `personal.connectapi.garmin.com`.
+
+The original `.FIT` file is downloaded per activity, so each run keeps its full
+GPS track, per-second heart rate and kilometre splits — not just a summary.
+
+### 2. Developer API key (for people who already have one)
 
 Garmin's official OAuth1 Activity API. Requires a **Consumer Key** and
 **Consumer Secret** from [developer.garmin.com](https://developer.garmin.com).
@@ -106,19 +130,18 @@ Garmin's official OAuth1 Activity API. Requires a **Consumer Key** and
 > you may not be able to register a new app. If you already have a key, this is
 > the best path — it never touches your password.
 
-### 2. Your Garmin account (needed for physiology)
+### 3. Your Garmin account (the fallback)
 
 Email and password, with an inline MFA step when Garmin demands a 6-digit code.
 Uses the `garminconnect` library under the hood and stores a refreshable session
 token so you only do this once.
 
-This path unlocks **sleep, HRV, resting heart rate, stress, body battery,
-training status, endurance score, running tolerance, gear and scheduled
-workouts** — everything the readiness and plan-cause engines need. It is also
-the only way to pull Garmin's *scheduled workouts*, which Stride reads as a
-plan source.
+Use this when a Personal API key is not available. It unlocks the same wellness
+data (sleep, resting heart rate, stress, body battery, HRV) plus Garmin's
+*scheduled workouts*, which Stride reads as a plan source — at the cost of
+handing Garmin your password.
 
-### 3. FIT files (no credentials at all)
+### 4. FIT files (no credentials at all)
 
 Export `.FIT` files from Garmin Connect (an activity → **⋯** → **Download FIT**)
 and drop them into the app. The importer decodes the full file: GPS track,

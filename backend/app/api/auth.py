@@ -61,6 +61,70 @@ class MfaBody(BaseModel):
     code: str = Field(min_length=4)
 
 
+class PersonalKeyBody(BaseModel):
+    api_key: str = Field(min_length=20)
+
+
+# ---------------------------------------------------------------- personal
+
+
+@router.post("/garmin/personal-key")
+def connect_personal_key(body: PersonalKeyBody) -> dict[str, Any]:
+    """Connect with a Garmin Connect Personal API Key.
+
+    This is the recommended path: no developer registration, no consumer
+    secret, and it covers activities *and* wellness (sleep, HRV, body
+    battery, resting heart rate).
+    """
+    from ..ingest.garmin_personal import GarminPersonalClient, PersonalApiError
+
+    client = GarminPersonalClient(body.api_key.strip())
+    try:
+        result = client.validate()
+    except PersonalApiError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except Exception as exc:  # pragma: no cover - network
+        raise HTTPException(status_code=502, detail=f"Could not reach Garmin: {exc}") from exc
+
+    state.update(
+        personal_api_key=body.api_key.strip(),
+        garmin_connected=True,
+        garmin_method="personal",
+    )
+    profile = result.get("profile") or {}
+    return {
+        "ok": True,
+        "garmin_method": "personal",
+        "athlete": _athlete_from_personal(profile),
+        "sources": result.get("sources") or {},
+    }
+
+
+def _athlete_from_personal(profile: dict[str, Any]) -> dict[str, Any]:
+    """Pull a display name out of Garmin's profile payload, whatever it is called."""
+    for key in ("displayName", "fullName", "userName", "name"):
+        value = profile.get(key)
+        if value:
+            return {"name": str(value)}
+    return {}
+
+
+@router.post("/garmin/personal-key/test")
+def test_personal_key(body: PersonalKeyBody) -> dict[str, Any]:
+    """Validate a key without storing it."""
+    from ..ingest.garmin_personal import GarminPersonalClient, PersonalApiError
+
+    client = GarminPersonalClient(body.api_key.strip())
+    try:
+        result = client.validate()
+    except PersonalApiError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    return {
+        "ok": True,
+        "athlete": _athlete_from_personal(result.get("profile") or {}),
+    }
+
+
 # ------------------------------------------------------------------ status
 
 
@@ -274,6 +338,9 @@ def logout() -> dict[str, Any]:
         oauth_token_secret=None,
         pending_oauth_token=None,
         pending_oauth_token_secret=None,
+        # The Personal API key is a long-lived credential; drop it on
+        # disconnect rather than leaving it lying in the state file.
+        personal_api_key=None,
     )
     return {"ok": True}
 

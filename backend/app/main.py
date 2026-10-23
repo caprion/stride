@@ -110,6 +110,36 @@ def _bootstrap() -> None:
         log.warning("Demo bootstrap failed: %s", exc)
     finally:
         db.close()
+    _bootstrap_garmin()
+
+
+def _bootstrap_garmin() -> None:
+    """Connect Garmin from the environment or Key Vault if one is available.
+
+    A Personal API Key is preferred over the other methods because it needs no
+    developer registration and covers wellness as well as activities.
+    """
+    if state.garmin_connected and state.personal_api_key:
+        return
+    from .secrets import resolve_garmin_personal_key
+
+    key, source = resolve_garmin_personal_key()
+    if not key:
+        return
+    try:
+        from .ingest.garmin_personal import GarminPersonalClient
+
+        client = GarminPersonalClient(key)
+        client.validate()
+    except Exception as exc:
+        log.warning("Garmin key from %s did not validate: %s", source, exc)
+        return
+    state.update(
+        personal_api_key=key,
+        garmin_connected=True,
+        garmin_method="personal",
+    )
+    log.info("Connected Garmin via the Personal API (key from %s).", source)
 
 
 def _start_scheduler() -> None:

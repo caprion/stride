@@ -63,7 +63,10 @@ function athleteName(athlete: Record<string, unknown> | undefined | null): strin
   return null
 }
 
-function methodLabel(method: 'developer_key' | 'account' | null | undefined): string {
+function methodLabel(
+  method: 'developer_key' | 'account' | 'personal' | null | undefined,
+): string {
+  if (method === 'personal') return 'Personal API key'
   if (method === 'developer_key') return 'Developer API key'
   if (method === 'account') return 'Garmin account'
   return 'Not connected'
@@ -400,15 +403,17 @@ function GarminConnectionCard({
       <div className="px-5 pb-5">
         <div className="mb-4">
           <Alert tone="info" title="Not connected yet">
-            Stride is ready. Connect your watch in one of the three ways below and your runs
-            start appearing on their own.
+            Stride is ready. Connect your watch in one of the ways below and your runs start
+            appearing on their own.
           </Alert>
         </div>
         <Toast notice={notice} />
         <div className="mt-4 space-y-6">
-          <DeveloperKeySection onRefresh={onRefresh} />
+          <PersonalKeySection onRefresh={onRefresh} />
           <Divider />
           <AccountSection onRefresh={onRefresh} />
+          <Divider />
+          <DeveloperKeySection onRefresh={onRefresh} />
           <Divider />
           <FitImportSection />
         </div>
@@ -466,11 +471,7 @@ function DeveloperKeySection({ onRefresh }: { onRefresh: () => Promise<void> }) 
 
   return (
     <section>
-      <SectionIntro
-        title="Developer API key — recommended"
-        badge="Best for most people"
-        badgeTone="brand"
-      >
+      <SectionIntro title="Developer API key" badge="Advanced" badgeTone="neutral">
         Stride talks to Garmin with your own developer key. Your Garmin password is never typed
         here, and Stride only reads your activities.
       </SectionIntro>
@@ -607,6 +608,102 @@ function DeveloperKeySection({ onRefresh }: { onRefresh: () => Promise<void> }) 
           </div>
         </div>
       )}
+
+      {notice ? (
+        <div className="mt-3">
+          <Toast notice={notice} />
+        </div>
+      ) : null}
+    </section>
+  )
+}
+
+/* ------------------------------------------- 1a. personal API key */
+
+function PersonalKeySection({ onRefresh }: { onRefresh: () => Promise<void> }) {
+  const [apiKey, setApiKey] = useState('')
+  const [notice, setNotice] = useState<Notice | null>(null)
+
+  const connect = useMutation({
+    mutationFn: () => api.connectPersonalKey(apiKey.trim()),
+    onSuccess: async (data) => {
+      setApiKey('')
+      setNotice({
+        tone: 'positive',
+        text: `Garmin is connected.${data.athlete?.name ? ` Welcome, ${data.athlete.name}.` : ''} Your first sync starts now.`,
+      })
+      await onRefresh()
+    },
+    onError: (error) => setNotice({ tone: 'negative', text: messageOf(error) }),
+  })
+
+  const test = useMutation({
+    mutationFn: () => api.testPersonalKey(apiKey.trim()),
+    onSuccess: (data) =>
+      setNotice({
+        tone: 'positive',
+        text: `That key works${data.athlete?.name ? ` — it belongs to ${data.athlete.name}` : ''}.`,
+      }),
+    onError: (error) => setNotice({ tone: 'negative', text: messageOf(error) }),
+  })
+
+  const busy = connect.isPending || test.isPending
+
+  return (
+    <section>
+      <SectionIntro title="Personal API key — recommended" badge="Easiest" badgeTone="brand">
+        Your own key from Garmin. No developer account and no consumer secret — and it covers
+        sleep, resting heart rate and body battery as well as your activities.
+      </SectionIntro>
+
+      <HowItWorks>
+        Open{' '}
+        <span className="font-semibold text-ink-soft">
+          connect.garmin.com/app/settings/personalApiToken
+        </span>{' '}
+        while signed in to Garmin Connect, choose{' '}
+        <span className="font-semibold text-ink-soft">Create Key</span>, accept the terms and
+        pick an expiration period. Garmin shows the key{' '}
+        <span className="font-semibold text-ink-soft">only once</span> — copy it and paste it
+        below.
+      </HowItWorks>
+
+      <Field
+        label="Personal API key"
+        hint="Stored on this machine only, and used for nothing except talking to Garmin."
+      >
+        <input
+          type="password"
+          autoComplete="off"
+          spellCheck={false}
+          placeholder="GCDC_..."
+          className={inputClass}
+          value={apiKey}
+          onChange={(e) => setApiKey(e.target.value)}
+        />
+      </Field>
+
+      <div className="mt-3 flex flex-wrap items-center gap-2">
+        <Button size="md" disabled={busy || !apiKey.trim()} onClick={() => connect.mutate()}>
+          {connect.isPending ? (
+            <Loader2 size={14} strokeWidth={2} className="animate-spin" />
+          ) : (
+            <Plug size={14} strokeWidth={2} />
+          )}
+          Connect with key
+        </Button>
+        <Button
+          variant="secondary"
+          size="md"
+          disabled={busy || !apiKey.trim()}
+          onClick={() => test.mutate()}
+        >
+          {test.isPending ? (
+            <Loader2 size={14} strokeWidth={2} className="animate-spin" />
+          ) : null}
+          Test key
+        </Button>
+      </div>
 
       {notice ? (
         <div className="mt-3">

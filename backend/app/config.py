@@ -57,6 +57,11 @@ class AppState:
     garmin_password: str | None = None
     garmin_tokenstore: str | None = None
 
+    # Garmin Connect Personal API key — the recommended path. A single
+    # long-lived key from connect.garmin.com/app/settings/personalApiToken;
+    # it needs no developer registration and covers activities *and* wellness.
+    personal_api_key: str | None = None
+
     # Networking — Garmin blocks datacenter IPs, so we may need the home exit node.
     network_route: str = "auto"  # "auto" | "direct" | "exit_node"
     exit_node: str | None = os.getenv("STRIDE_EXIT_NODE")
@@ -124,6 +129,7 @@ class AppState:
             "athlete": self.garmin_athlete,
             "has_developer_key": self.has_developer_key,
             "has_account_credentials": bool(self.garmin_email and self.garmin_password),
+            "has_personal_api_key": bool(self.personal_api_key),
             "pending_authorization": bool(self.pending_oauth_token),
             "network_route": self.network_route,
             "exit_node": self.exit_node,

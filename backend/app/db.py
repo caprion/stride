@@ -49,3 +49,28 @@ def init_db() -> None:
     from . import models_phase2  # noqa: F401  (phase-2 tables)
 
     Base.metadata.create_all(engine)
+    _migrate(engine)
+
+
+def _migrate(engine) -> None:
+    """Additive column migrations for databases created by an earlier build.
+
+    ``create_all`` never alters an existing table, so a column added to a
+    model later has to be applied by hand. Every step is idempotent.
+    """
+    from sqlalchemy import inspect, text
+
+    inspector = inspect(engine)
+    existing = set(inspector.get_table_names())
+    additions = {
+        "daily_physiology": [("max_hr", "REAL")],
+    }
+    with engine.begin() as connection:
+        for table, columns in additions.items():
+            if table not in existing:
+                continue
+            present = {col["name"] for col in inspector.get_columns(table)}
+            for column, kind in columns:
+                if column in present:
+                    continue
+                connection.execute(text(f"ALTER TABLE {table} ADD COLUMN {column} {kind}"))
