@@ -46,7 +46,6 @@ _ACTIVITY_FIELDS = (
     "gear",
     "is_trail",
     "is_commute",
-    "visibility",
     "polyline",
     "geo_points",
     "raw",

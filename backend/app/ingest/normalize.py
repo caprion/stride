@@ -224,7 +224,6 @@ def blank_activity() -> dict[str, Any]:
         "gear": None,
         "is_trail": False,
         "is_commute": False,
-        "visibility": "followers_only",
         "geo_points": None,
         "laps": [],
         "streams": {},

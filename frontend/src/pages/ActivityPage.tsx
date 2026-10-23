@@ -15,6 +15,7 @@ import { CircleMarker, MapContainer, Polyline, TileLayer } from 'react-leaflet'
 import { latLngBounds, type LatLngBounds } from 'leaflet'
 import { Link, useParams } from 'react-router-dom'
 import {
+  ExternalLink,
   Activity as ActivityIcon,
   CalendarDays,
   ChevronLeft,
@@ -925,13 +926,27 @@ export function ActivityPage() {
                   {formatNumber(activity.geo_points.length)}
                 </span>
               </div>
-              <Divider />
-              <div className="flex items-baseline justify-between gap-3">
-                <span className="text-[13px] text-ink-muted">Visibility</span>
-                <span className="text-[15px] font-semibold capitalize text-ink">
-                  {activity.visibility ? activity.visibility.replace(/_/g, ' ') : '—'}
-                </span>
-              </div>
+              {activity.garmin_url ? (
+                <>
+                  <Divider />
+                  <div>
+                    <span className="text-[13px] text-ink-muted">Share</span>
+                    <a
+                      href={activity.garmin_url}
+                      target="_blank"
+                      rel="noreferrer noopener"
+                      className="mt-1 flex items-center gap-1 text-[13px] font-semibold text-brand-600 hover:underline"
+                    >
+                      Open in Garmin Connect
+                      <ExternalLink size={13} strokeWidth={2.2} />
+                    </a>
+                    <p className="mt-1 text-[11px] leading-snug text-ink-muted">
+                      Sharing points at Garmin. Who can open it is Garmin&rsquo;s call, not
+                      ours.
+                    </p>
+                  </div>
+                </>
+              ) : null}
             </div>
           </Card>
         </aside>

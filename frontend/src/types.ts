@@ -41,7 +41,8 @@ export interface ActivitySummary {
   gear: string | null
   is_trail: boolean
   is_commute: boolean
-  visibility: string
+  /** The original activity in Garmin Connect — sharing is Garmin's business. */
+  garmin_url: string | null
   has_geo: boolean
   route_preview: [number, number][] | null
   lap_count: number

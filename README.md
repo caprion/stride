@@ -39,9 +39,17 @@ A one-page collage of every surface: **[`showcase/stride-collage.png`](file:///h
 | [`docs/harness-integration.md`](file:///home/sumit/stride/docs/harness-integration.md) | MCP sidecar so your own Claude Code / Codex can query your data |
 | [`docs/working-agreement.md`](file:///home/sumit/stride/docs/working-agreement.md) | how we run big changes with parallel agents |
 
+## No social layer, on purpose
+
+There is no feed, no followers, no comments and no sharing to a network — and
+there is not going to be one. A social layer would mean the data stopped being
+yours alone. **Sharing is Garmin's business**: every activity links back to its
+original in Garmin Connect, and Garmin decides who may open it. Stride never
+publishes, never mirrors and never asks for an account.
+
 ## The differentiator
 
-| | Strava | Stride |
+| | A social running app | Stride |
 |---|---|---|
 | **Plan** | none — "Training Log" is a calendar of the past | block → phase → week → session, with distance and pace targets |
 | **Completion** | n/a | every session gets a verdict: `hit` · `missed_pace` · `short` · `missed` · `substituted` · `bonus` |

@@ -1610,8 +1610,15 @@ function AboutCard() {
           Stride is a private running log that mirrors your Garmin watch into a clean, local
           dashboard. Everything you see is stored on your own machine in a SQLite database under{' '}
           <span className="font-mono text-[12px] text-ink">backend/data/</span> — nothing is
-          sent to a third-party service and there is no account to sign up for. Start it again
-          after a restart with{' '}
+          sent to a third-party service and there is no account to sign up for.
+        </p>
+        <p className="mt-3 text-[13px] leading-relaxed text-ink-soft">
+          There is no feed, no followers and no comments here, and there is not going to be one:
+          a social layer would mean the data stopped being yours alone. If you want to share a
+          run, share the Garmin link — Garmin decides who may open it.
+        </p>
+        <p className="mt-3 text-[13px] leading-relaxed text-ink-soft">
+          Start it again after a restart with{' '}
           <span className="font-mono text-[12px] text-ink">./scripts/run.sh</span> from the
           project folder; it brings up the API and the web app together.
         </p>

@@ -23,6 +23,20 @@ from ..services.analytics import (
 router = APIRouter(prefix="/activities", tags=["activities"])
 
 
+def _garmin_url(activity: Activity) -> str | None:
+    """The original activity in Garmin Connect.
+
+    Garmin owns access and authentication for it, so sharing this link shares
+    the activity on Garmin's terms — not a copy of the athlete's data on some
+    other network.
+    """
+    if activity.source not in ("garmin_personal", "garmin", "garmin_fit"):
+        return None
+    if not activity.external_id:
+        return None
+    return f"https://connect.garmin.com/modern/activity/{activity.external_id}"
+
+
 def _summary(activity: Activity) -> dict[str, Any]:
     pace = _pace_s_per_km(activity.distance_m, activity.moving_time_s)
     return {
@@ -54,7 +68,9 @@ def _summary(activity: Activity) -> dict[str, Any]:
         "gear": activity.gear,
         "is_trail": activity.is_trail,
         "is_commute": activity.is_commute,
-        "visibility": activity.visibility,
+        # Sharing is Garmin's business: the athlete shares the Garmin link, and
+        # Garmin decides who may open it. Nothing here is published anywhere.
+        "garmin_url": _garmin_url(activity),
         "has_geo": bool(activity.geo_points),
         "route_preview": _route_preview(activity.geo_points),
         "lap_count": len(activity.laps or []),
@@ -228,7 +244,6 @@ class ActivityPatch(BaseModel):
     name: str | None = None
     description: str | None = None
     perceived_exertion: int | None = None
-    visibility: str | None = None
     is_trail: bool | None = None
     is_commute: bool | None = None
 

@@ -68,7 +68,10 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     title="Stride",
-    description="A Strava-class running webapp with native Garmin ingest.",
+    description=(
+        "A private, local-first running log with native Garmin ingest. "
+        "Your data stays on your machine; sharing is Garmin's business, not ours."
+    ),
     version="1.0.0",
     lifespan=lifespan,
 )

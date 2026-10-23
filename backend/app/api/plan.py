@@ -95,7 +95,6 @@ def _activity(activity: Activity | None) -> dict[str, Any] | None:
         "gear": activity.gear,
         "is_trail": activity.is_trail,
         "is_commute": activity.is_commute,
-        "visibility": activity.visibility,
         "has_geo": bool(activity.geo_points),
         "route_preview": None,
         "lap_count": len(activity.laps or []),

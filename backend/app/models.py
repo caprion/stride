@@ -106,7 +106,6 @@ class Activity(Base):
 
     is_trail: Mapped[bool] = mapped_column(Boolean, default=False)
     is_commute: Mapped[bool] = mapped_column(Boolean, default=False)
-    visibility: Mapped[str] = mapped_column(String(16), default="followers_only")
 
     # Encoded Google polyline + decoded points. Stored as JSON list of [lat, lon].
     polyline: Mapped[list | None] = mapped_column(JSON, nullable=True)
