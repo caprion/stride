@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8" />
+<title>Stride — the training intelligence layer for Garmin</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: Inter, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  background: #0d0d0f;
+  color: #f2f2f3;
+  -webkit-font-smoothing: antialiased;
+}
+.sheet { width: 1760px; padding: 56px 56px 44px; }
+
+/* ---- header ---- */
+.head { display: flex; align-items: flex-end; justify-content: space-between; gap: 40px; }
+.brand { display: flex; align-items: center; gap: 14px; }
+.mark {
+  width: 52px; height: 52px; border-radius: 14px; background: #fc5200;
+  display: grid; place-items: center;
+}
+.mark svg { width: 28px; height: 28px; }
+.wordmark { font-size: 30px; font-weight: 800; letter-spacing: -.02em; }
+.wordmark span { color: #fc5200; }
+.tagline {
+  font-size: 16px; color: #9aa0a6; margin-top: 10px; max-width: 760px;
+  line-height: 1.55;
+}
+.tagline b { color: #e8e8ea; font-weight: 600; }
+.pitch {
+  font-size: 34px; font-weight: 800; line-height: 1.18; letter-spacing: -.025em;
+  margin-top: 26px; max-width: 1180px;
+}
+.pitch em { font-style: normal; color: #fc5200; }
+
+/* ---- chips ---- */
+.chips { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; width: 340px; flex: none; }
+.chip {
+  background: #17171a; border: 1px solid #26262b; border-radius: 10px;
+  padding: 11px 15px;
+}
+.chip b { display: block; font-size: 19px; font-weight: 700; color: #fff; letter-spacing: -.01em; }
+.chip span { font-size: 11px; color: #8a8f95; letter-spacing: .02em; }
+
+/* ---- grid ---- */
+.grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 26px; margin-top: 44px; }
+.panel { background: #141416; border: 1px solid #24242a; border-radius: 14px; overflow: hidden; display: flex; flex-direction: column; }
+.panel.wide { grid-column: span 3; }
+.shot { width: 100%; display: block; background: #fff; }
+.panel:not(.wide) .shot { height: 430px; object-fit: cover; object-position: top center; }
+.panel.wide .shot { max-height: 545px; object-fit: cover; object-position: top center; }
+.cap { padding: 16px 18px 18px; }
+.cap h3 { font-size: 15px; font-weight: 700; letter-spacing: -.01em; }
+.cap p { font-size: 12.5px; color: #8a8f95; margin-top: 5px; line-height: 1.5; }
+
+/* ---- footer ---- */
+.foot {
+  margin-top: 34px; padding-top: 22px; border-top: 1px solid #24242a;
+  display: flex; align-items: center; justify-content: space-between; gap: 30px;
+}
+.stack { font-size: 12px; color: #6f757c; line-height: 1.7; }
+.stack b { color: #b9bec4; font-weight: 600; }
+.note { font-size: 12px; color: #6f757c; text-align: right; line-height: 1.7; }
+</style></head>
+<body>
+  <div class="sheet">
+    <header class="head">
+      <div class="brand">
+        <div class="mark">
+          <svg viewBox="0 0 32 32" fill="none" stroke="#fff" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round">
+            <path d="M5 24l7-12 5 7 4-6 6 11" />
+          </svg>
+        </div>
+        <div class="wordmark">STRIDE</div>
+      </div>
+      <div class="chips">
+      <div class="chip"><b>103</b><span>real activities synced</span></div>
+      <div class="chip"><b>15</b><span>parameters per run</span></div>
+      <div class="chip"><b>0</b><span>bytes to a cloud you don't own</span></div>
+      <div class="chip"><b>24 h</b><span>access token, auto-refreshed</span></div>
+      </div>
+    </header>
+
+    <p class="tagline">
+      A private training log for runners who want to know <b>what to do next</b> — not
+      just what they did. Your Garmin watch writes to your own database. Nothing else.
+    </p>
+
+    <h1 class="pitch">
+      Strava shows you what you did.<br />
+      Stride tells you <em>whether that was right</em> — and what to do tomorrow.
+    </h1>
+
+    <div class="grid">
+      <figure class="panel wide">
+        <img class="shot" src="shots/01-dashboard.png" alt="Today" />
+        <figcaption class="cap">
+          <h3>Today</h3>
+          <p>The plan, the readiness and one recommendation — before you lace up.</p>
+        </figcaption>
+      </figure>
+      <figure class="panel wide">
+        <img class="shot" src="shots/03-activity.png" alt="Every run, in full" />
+        <figcaption class="cap">
+          <h3>Every run, in full</h3>
+          <p>Real GPS track, per-second heart rate, and splits rebuilt over the running only.</p>
+        </figcaption>
+      </figure>
+      <figure class="panel ">
+        <img class="shot" src="shots/02-plan.png" alt="Plan vs actual" />
+        <figcaption class="cap">
+          <h3>Plan vs actual</h3>
+          <p>Your 20-week plan against your real runs — every session scored, with a reason for every miss.</p>
+        </figcaption>
+      </figure>
+      <figure class="panel ">
+        <img class="shot" src="shots/04-physiology.png" alt="The physiological picture" />
+        <figcaption class="cap">
+          <h3>The physiological picture</h3>
+          <p>Sleep, resting heart rate, stress and body battery, rolled into a readiness score you can see the drivers of.</p>
+        </figcaption>
+      </figure>
+      <figure class="panel ">
+        <img class="shot" src="shots/05-fingerprint.png" alt="Your running fingerprint" />
+        <figcaption class="cap">
+          <h3>Your running fingerprint</h3>
+          <p>Cadence stability, heart-rate drift, aerobic decoupling and form — across every run you have done.</p>
+        </figcaption>
+      </figure>
+      <figure class="panel ">
+        <img class="shot" src="shots/08-compare.png" alt="Compare any two runs" />
+        <figcaption class="cap">
+          <h3>Compare any two runs</h3>
+          <p>Both resampled onto one distance axis, so you can see whether you actually got fitter.</p>
+        </figcaption>
+      </figure>
+      <figure class="panel ">
+        <img class="shot" src="shots/06-training.png" alt="Training log" />
+        <figcaption class="cap">
+          <h3>Training log</h3>
+          <p>Volume, streaks and the plan, week by week.</p>
+        </figcaption>
+      </figure>
+      <figure class="panel ">
+        <img class="shot" src="shots/07-feed.png" alt="Your history" />
+        <figcaption class="cap">
+          <h3>Your history</h3>
+          <p>Every run, with its route.</p>
+        </figcaption>
+      </figure>
+    </div>
+
+    <footer class="foot">
+      <div class="stack">
+        <b>Stack</b> — React + TypeScript + Tailwind + Recharts + Leaflet · FastAPI +
+        SQLAlchemy + SQLite · Garmin Connect <b>Personal API</b> (OAuth-free, one key)
+        · Azure Key Vault for secrets
+      </div>
+      <div class="note">
+        Plan → Execute → Understand → Adapt<br />
+        Self-hosted · local-first · your data stays yours
+      </div>
+    </footer>
+  </div>
+</body></html>

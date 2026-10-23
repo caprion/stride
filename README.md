@@ -24,6 +24,10 @@ and no causality. That is the gap this fills.
 
 ---
 
+## Showcase
+
+A one-page collage of every surface: **[`showcase/stride-collage.png`](file:///home/sumit/stride/showcase/stride-collage.png)**.
+
 ## The differentiator
 
 | | Strava | Stride |
