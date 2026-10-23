@@ -85,16 +85,32 @@ def status() -> dict[str, Any]:
     return info
 
 
-def public_identity() -> dict[str, str | None]:
-    """Best-effort public IP + network operator, for the diagnostics panel."""
+_IDENTITY_CACHE: dict[str, Any] = {"value": None, "at": 0.0}
+_IDENTITY_TTL = 600.0
+
+
+def public_identity(force: bool = False) -> dict[str, str | None]:
+    """Best-effort public IP + network operator, for the diagnostics panel.
+
+    The answer changes slowly, so it is cached for ten minutes — the network
+    panel is a diagnostic, not a health check, and it must not make an
+    external call on every page view.
+    """
+    import time
     import urllib.request
 
+    now = time.time()
+    if not force and _IDENTITY_CACHE["value"] and now - _IDENTITY_CACHE["at"] < _IDENTITY_TTL:
+        return _IDENTITY_CACHE["value"]
     try:
         with urllib.request.urlopen("https://ipinfo.io/json", timeout=12) as response:
             data = json.loads(response.read())
-            return {"ip": data.get("ip"), "org": data.get("org")}
+            value = {"ip": data.get("ip"), "org": data.get("org")}
     except Exception:
-        return {"ip": None, "org": None}
+        value = _IDENTITY_CACHE["value"] or {"ip": None, "org": None}
+    _IDENTITY_CACHE["value"] = value
+    _IDENTITY_CACHE["at"] = now
+    return value
 
 
 def set_exit_node(node: str | None) -> tuple[bool, str]:

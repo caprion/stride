@@ -22,6 +22,7 @@ const ROUTES = [
   ['training', '/training'],
   ['physiology', '/physiology'],
   ['fitness', '/fitness'],
+  ['compare', '/compare'],
   ['stats', '/stats'],
   ['settings', '/settings'],
   ['activity', '/activities/162'],

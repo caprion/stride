@@ -544,3 +544,64 @@ If the FIT file is already downloaded and parsed, the record stream cannot have
 changed, so the sync skips the download **and** the activity-summary call, and
 reuses what is stored. A re-sync of 103 activities went from **133 API calls
 and 127 seconds** to **1 call and 4 seconds**.
+
+
+---
+
+## 12. Comparing runs — and making the extraction general
+
+### The comparison feature
+
+Strava lets you see two activities side by side, but it compares them as
+*activities*. The question an athlete actually asks is different: **was that
+run really better, or was it just shorter and flatter?**
+
+`/compare` answers it by putting two or more runs on the same axis. The
+backend resamples every run onto a **shared distance axis** — 120 points from
+the start of the run to the end — so a 5 km and a 21 km run can be laid over
+each other and their heart-rate, cadence, pace and elevation curves read
+directly against one another.
+
+The matrix underneath compares 15 parameters, and the "best" cell in each row
+is marked using the parameter's own direction (`lower`, `higher`, `neutral`):
+
+| | |
+|---|---|
+| Distance · moving time · pace | the shape of the run |
+| Elevation gain | the terrain |
+| Average heart rate · HR drift · pace drift | the physiology |
+| Aerobic decoupling · efficiency factor | the aerobic durability |
+| Average cadence · cadence stability | the mechanics |
+| Form score | the composite |
+| Running / walking / standing time | what was excluded, and why |
+
+The summary underneath reads the numbers back in plain language — derived from
+the data, never hard-coded. Two runs that share a name ("Bengaluru Running")
+are told apart by their date, and a percentage is only quoted when the
+baseline is large enough for the ratio to mean something.
+
+### Making the extraction general
+
+The segmentation was developed against one real run, so the general case is
+protected explicitly:
+
+| Case | Behaviour |
+|---|---|
+| A walk-only activity | no running samples; the streams are empty, not zero-filled |
+| No GPS (treadmill) | no track, everything else intact |
+| No cadence sensor | the cadence stream is absent; heart rate is unaffected |
+| No speed field | pace is derived from the distance stream, or absent |
+| A very short effort | parses without error; the totals are sane |
+| A non-running sport | cadence is **not** halved — a cyclist's 90 rpm is 90 rpm |
+| An empty record stream | empty segments, empty running set, no exception |
+
+The regression guard is `test_every_activity_in_the_live_history_extracts_without_error`,
+which puts **every activity in the athlete's real history** through the
+segmenter and asserts that the run / walk / stand split accounts for the whole
+activity.
+
+### Tests
+
+119 tests pass. A shared `tests/conftest.py` gives every test a fresh database
+and blocks network access by default; the handful of tests that genuinely need
+the network opt out with `@pytest.mark.network`.

@@ -308,3 +308,65 @@ export interface GearItem {
   retire_at_m: number
   retired: boolean
 }
+
+/* ------------------------------------------------------------ comparison */
+
+export type CompareFormat = 'distance' | 'duration' | 'pace' | 'elevation' | 'hr' | 'number'
+
+export interface CompareParameter {
+  key: string
+  label: string
+  unit: string
+  better: 'lower' | 'higher' | 'neutral'
+  format: CompareFormat
+}
+
+export interface CompareCandidate {
+  id: number
+  name: string
+  local_date: string
+  distance_m: number
+  pace_s_per_km: number | null
+  avg_hr: number | null
+  elevation_gain_m: number
+  has_fingerprint: boolean
+  has_profile: boolean
+  source: string
+}
+
+/** One point of a run, resampled onto the shared distance axis. */
+export interface CompareProfilePoint {
+  distance_m: number
+  /** 0-100, the percentage of the run's distance. */
+  pct: number
+  hr: number | null
+  cadence: number | null
+  pace_s_per_km: number | null
+  elevation: number | null
+}
+
+export interface CompareRun {
+  id: number
+  name: string
+  local_date: string
+  day_of_week: string | null
+  sport_type: string
+  source: string
+  distance_m: number
+  moving_time_s: number
+  moving_time_label: string | null
+  elevation_gain_m: number
+  avg_hr: number | null
+  max_hr: number | null
+  calories: number | null
+  pace_s_per_km: number | null
+  has_geo: boolean
+  values: Record<string, number | null>
+  profile: CompareProfilePoint[]
+}
+
+export interface CompareResponse {
+  runs: CompareRun[]
+  parameters: CompareParameter[]
+  missing: number[]
+}

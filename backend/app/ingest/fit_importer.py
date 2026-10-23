@@ -120,7 +120,19 @@ def _semicircles_to_degrees(value: float) -> float:
     return round(value * 180.0 / (2**31), 7)
 
 
-def _running_cadence(value: float) -> float:
+# Sports whose cadence field counts stride cycles (two footfalls) rather than
+# steps. Only running is halved — a cyclist's 90 rpm is 90 rpm.
+_HALVED_CADENCE_SPORTS = {
+    "running",
+    "trail_running",
+    "treadmill_running",
+    "street_running",
+    "track_running",
+    "virtualrun",
+}
+
+
+def _running_cadence(value: float, sport: str | None = None) -> float:
     """Normalise a FIT cadence to steps per minute.
 
     Some Garmin devices record running cadence in *stride cycles* rather than
@@ -128,7 +140,12 @@ def _running_cadence(value: float) -> float:
     file says 77. A running cadence below 100 is therefore halved, and the
     true value is twice what is stored. (A real running cadence is never
     below 100, so the correction cannot fire on genuine data.)
+
+    Cycling cadence is revolutions per minute and is **not** halved, so the
+    correction is only applied to running sports.
     """
+    if sport is not None and sport not in _HALVED_CADENCE_SPORTS:
+        return value
     return value * 2 if 0 < value < 100 else value
 
 
@@ -162,7 +179,8 @@ def parse_fit(data: bytes, filename: str = "activity.fit") -> dict[str, Any]:
     cadence_samples: list[tuple[float, float]] = []
     elevation_samples: list[tuple[float, float]] = []
     distance_samples: list[tuple[float, float]] = []
-    records: list[tuple[float, float | None, float | None, float | None, float | None]] = []
+    # (epoch, distance, speed m/s, stored cadence, heart rate, altitude)
+    records: list[tuple] = []
     geo: list[list[float]] = []
     laps: list[dict] = []
     session: dict[str, Any] = {}
@@ -221,7 +239,9 @@ def parse_fit(data: bytes, filename: str = "activity.fit") -> dict[str, Any]:
         if safe_float(value_of(message, "distance")) is not None:
             distance_samples.append((ts or 0.0, safe_float(value_of(message, "distance")) or 0.0))
 
-        # One row per record: elapsed, distance, speed (m/s), stored cadence, HR.
+        # One row per record: epoch, distance, speed (m/s), stored cadence,
+        # heart rate, altitude. Everything the analysis needs, so every stream
+        # can be built from the same axis.
         records.append(
             (
                 (ts or 0.0),
@@ -229,6 +249,7 @@ def parse_fit(data: bytes, filename: str = "activity.fit") -> dict[str, Any]:
                 speed,  # already metres per second
                 cad,
                 hr,
+                alt,
             )
         )
 
@@ -317,8 +338,8 @@ def parse_fit(data: bytes, filename: str = "activity.fit") -> dict[str, Any]:
                     "max_speed_ms": safe_float(lap.get("max_speed")),
                     "avg_hr": safe_int(lap.get("avg_heart_rate")),
                     "max_hr": safe_int(lap.get("max_heart_rate")),
-                    "avg_cadence": _running_cadence(cadence) if cadence else None,
-                    "max_cadence": _running_cadence(max_cadence) if max_cadence else None,
+                    "avg_cadence": _running_cadence(cadence, sport) if cadence else None,
+                    "max_cadence": _running_cadence(max_cadence, sport) if max_cadence else None,
                     "stride_length_m": None,
                     "elevation_gain_m": safe_float(lap.get("total_ascent")),
                     "elevation_loss_m": safe_float(lap.get("total_descent")),
@@ -361,7 +382,7 @@ def parse_fit(data: bytes, filename: str = "activity.fit") -> dict[str, Any]:
                 [(r[0], r[4]) for r in running if r[4] is not None], start_ts, "bpm"
             )
             activity["streams"]["cadence"] = _series(
-                [(r[0], _running_cadence(r[3])) for r in running if r[3] is not None],
+                [(r[0], _running_cadence(r[3], sport)) for r in running if r[3] is not None],
                 start_ts,
                 "spm",
             )
@@ -373,14 +394,18 @@ def parse_fit(data: bytes, filename: str = "activity.fit") -> dict[str, Any]:
             activity["streams"]["distance"] = _series(
                 [(r[0], r[1]) for r in running if r[1] is not None], start_ts, "m"
             )
-        if elevation_samples:
-            activity["streams"]["elevation"] = _series(elevation_samples, start_ts, "m")
+        if running:
+            # Elevation rides along with the running samples so every stream
+            # shares one axis — the comparison view relies on that.
+            running_elevation = [(r[0], r[5]) for r in running if r[5] is not None]
+            if running_elevation:
+                activity["streams"]["elevation"] = _series(running_elevation, start_ts, "m")
 
     # Laps recomputed over the running parts only. Garmin's kilometre laps
     # include the walking stretches, which is why a "1 km" lap can be 9:14
     # when the athlete was running at 7:00.
     if classified_records and activity.get("laps"):
-        activity["laps"] = _running_laps(activity["laps"], classified_records)
+        activity["laps"] = _running_laps(activity["laps"], classified_records, sport)
 
     # Lap boundaries, so the caller can recompute laps over the running parts.
     if start_ts and laps:
@@ -433,7 +458,7 @@ def _segment_records(
             if previous is not None and current is not None and current > previous:
                 metres[kind] = metres.get(kind, 0.0) + (current - previous)
 
-        classified.append((elapsed,) + tuple(record[1:]) + (kind,))
+        classified.append((elapsed, record[1], record[2], record[3], record[4], kind))
         if kind == "run":
             running.append((elapsed,) + tuple(record[1:]))
 
@@ -455,6 +480,7 @@ def _segment_records(
 def _running_laps(
     laps: list[dict[str, Any]],
     classified: list[tuple],
+    sport: str | None = None,
 ) -> list[dict[str, Any]]:
     """Rebuild each lap from the running samples that fall inside it.
 
@@ -489,7 +515,7 @@ def _running_laps(
             if record[4] is not None:
                 heart_rates.append(record[4])
             if record[3] is not None:
-                cadences.append(_running_cadence(record[3]))
+                cadences.append(_running_cadence(record[3], sport))
 
         pace = (running_time / (distance / 1000.0)) if distance > 1 and running_time else None
         out.append(

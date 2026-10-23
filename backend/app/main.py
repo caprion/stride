@@ -95,6 +95,7 @@ def _mount_optional(module_name: str, attr: str = "router") -> None:
 _mount_optional("app.api.plan")
 _mount_optional("app.api.physiology")
 _mount_optional("app.api.fitness")
+_mount_optional("app.api.compare")
 
 
 def _bootstrap() -> None:
@@ -120,6 +121,9 @@ def _bootstrap_garmin() -> None:
     developer registration and covers wellness as well as activities.
     """
     if state.garmin_connected and state.personal_api_key:
+        return
+    if os.getenv("STRIDE_KEYVAULT_ENABLED", "true").lower() in ("false", "0", "no"):
+        # Tests and offline runs must never reach out to Azure.
         return
     from .secrets import resolve_garmin_personal_key
 

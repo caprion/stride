@@ -159,6 +159,7 @@ def test_developer_key_rejects_short_input(client):
     assert response.status_code == 422
 
 
+@pytest.mark.network
 def test_developer_key_reports_invalid_key(client):
     """A bogus key must produce a clear 400, not a stack trace."""
     response = client.post(
@@ -234,6 +235,7 @@ def test_calendar_shape(client):
     assert len(payload["days"]) in (28, 29, 30, 31)
 
 
+@pytest.mark.network
 def test_network_status_shape(client):
     response = client.get("/api/v1/network/status")
     assert response.status_code == 200

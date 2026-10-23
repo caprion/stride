@@ -10,6 +10,7 @@ import { SettingsPage } from './pages/SettingsPage'
 import PlanPage from './pages/PlanPage'
 import PhysiologyPage from './pages/PhysiologyPage'
 import FitnessPage from './pages/FitnessPage'
+import ComparePage from './pages/ComparePage'
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -34,6 +35,7 @@ export default function App() {
             <Route path="/training" element={<TrainingPage />} />
             <Route path="/physiology" element={<PhysiologyPage />} />
             <Route path="/fitness" element={<FitnessPage />} />
+            <Route path="/compare" element={<ComparePage />} />
             <Route path="/stats" element={<StatsPage />} />
             <Route path="/settings" element={<SettingsPage />} />
             <Route path="*" element={<Navigate to="/" replace />} />

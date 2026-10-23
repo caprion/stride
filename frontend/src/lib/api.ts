@@ -24,6 +24,8 @@ import type {
 } from '../types'
 import type {
   AdherenceSummary,
+  CompareCandidate,
+  CompareResponse,
   DailyPhysiology,
   FitnessTrend,
   Fingerprint,
@@ -255,4 +257,10 @@ export const api = {
   fitnessZones: (from?: string, to?: string) =>
     request<{ zones: ZoneShare[]; total_time_s: number }>(`/fitness/zones${qs({ from, to })}`),
   gearList: () => request<{ items: GearItem[] }>('/gear'),
+
+  // ------------------------------------------------------------- compare
+  compareCandidates: (limit = 300) =>
+    request<{ items: CompareCandidate[] }>(`/compare/candidates${qs({ limit })}`),
+  compareRuns: (ids: number[]) =>
+    request<CompareResponse>(`/compare${qs({ ids: ids.join(',') })}`),
 }
