@@ -1,0 +1,53 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    @apply bg-surface-soft font-sans text-ink;
+  }
+
+  /* Strava-style thin scrollbars in the dense areas. */
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-thumb {
+    @apply rounded-full bg-edge;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-ink-faint;
+  }
+  ::-webkit-scrollbar-track {
+    @apply bg-transparent;
+  }
+}
+
+@layer components {
+  /* The dense stat strip used on activity cards and detail headers. */
+  .stat-strip {
+    @apply flex flex-wrap items-center gap-x-6 gap-y-2 text-[13px];
+  }
+
+  .link-underline {
+    @apply underline decoration-edge underline-offset-2 hover:decoration-brand-400;
+  }
+}
+
+/* Leaflet overrides so the map matches the app chrome. */
+.leaflet-container {
+  font: inherit;
+  background: #f4f1ec;
+}
+.leaflet-control-attribution {
+  font-size: 10px;
+  background: rgba(255, 255, 255, 0.8) !important;
+}
+.leaflet-bar a {
+  color: #121212 !important;
+}

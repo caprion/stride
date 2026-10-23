@@ -1,0 +1,11 @@
+fastapi>=0.115
+uvicorn[standard]>=0.30
+sqlalchemy>=2.0
+pydantic>=2.7
+requests>=2.31
+garminconnect>=0.3.17
+fitparse>=1.2.0
+apscheduler>=3.10
+python-dotenv>=1.0
+python-multipart>=0.0.9
+requests-oauthlib>=1.3

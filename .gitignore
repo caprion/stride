@@ -1,0 +1,29 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+
+# Runtime data — contains the SQLite database and the Garmin credentials
+backend/data/
+.run/
+
+# Node
+node_modules/
+frontend/dist/
+*.tsbuildinfo
+
+# Environment / secrets
+.env
+.env.*
+!.env.example
+
+# Editors & OS
+.DS_Store
+.idea/
+.vscode/
+*.swp
+
+# Agent scratch
+.agent-prompts/
