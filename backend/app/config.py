@@ -72,6 +72,11 @@ class AppState:
     sync_interval_minutes: int = 180
     last_sync_at: str | None = None
 
+    # History windows. ``None`` for activities means "everything the Garmin
+    # account holds"; the Activity API has no short retention window.
+    history_months: int | None = 12
+    health_history_days: int | None = 90
+
     # Demo activities are synthetic. They are seeded on first boot so the app
     # is never empty, and switched off automatically the moment real Garmin
     # data arrives — mixing synthetic runs with real ones would be misleading.
@@ -134,6 +139,8 @@ class AppState:
             "network_route": self.network_route,
             "exit_node": self.exit_node,
             "sync_days": self.sync_days,
+            "history_months": self.history_months,
+            "health_history_days": self.health_history_days,
             "auto_sync": self.auto_sync,
             "sync_interval_minutes": self.sync_interval_minutes,
             "last_sync_at": self.last_sync_at,

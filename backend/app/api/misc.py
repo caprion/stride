@@ -72,6 +72,59 @@ class SettingsBody(BaseModel):
     demo_visible: bool | None = None
 
 
+class HistoryBody(BaseModel):
+    """How much history to load.
+
+    ``activities`` is a number of months, or ``None`` for everything the
+    Garmin account holds. ``health_days`` is how far back to pull sleep,
+    resting heart rate, stress and body battery — Garmin keeps roughly a year
+    of those, and its stats range endpoints refuse a window longer than about
+    four weeks, so the pull is chunked.
+    """
+
+    activities: int | None = 12
+    health_days: int | None = 90
+    background: bool = True
+
+
+@sync_router.post("/history")
+def load_history(body: HistoryBody) -> dict[str, Any]:
+    """Load a chosen span of history from Garmin.
+
+    The Activity API serves the account's whole history, so "everything" is a
+    real option; the per-activity FIT download is what makes it slow, so this
+    runs in the background and reports progress.
+    """
+    history: dict[str, Any] = {
+        "activities": body.activities,
+        "health_days": body.health_days,
+    }
+    state.update(
+        history_months=body.activities,
+        health_history_days=body.health_days,
+    )
+    result = sync.run_sync(days=None, background=body.background, history=history)
+    return {
+        **result,
+        "activities_months": body.activities,
+        "health_days": body.health_days,
+    }
+
+
+@sync_router.get("/history")
+def history_settings() -> dict[str, Any]:
+    """The history windows currently configured."""
+    return {
+        "history_months": state.history_months,
+        "health_history_days": state.health_history_days,
+        "sync_days": state.sync_days,
+        "limits": {
+            "activities": "Everything the Garmin account holds — the Activity API has no short retention window.",
+            "health": "Garmin keeps roughly a year of sleep, heart rate, stress and body battery.",
+        },
+    }
+
+
 @sync_router.patch("/settings")
 def patch_settings(body: SettingsBody) -> dict[str, Any]:
     updates: dict[str, Any] = {}

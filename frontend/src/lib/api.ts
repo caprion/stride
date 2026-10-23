@@ -26,6 +26,8 @@ import type {
   AdherenceSummary,
   CompareCandidate,
   CompareResponse,
+  HistoryLoadResult,
+  HistorySettings,
   DailyPhysiology,
   FitnessTrend,
   Fingerprint,
@@ -259,6 +261,13 @@ export const api = {
   gearList: () => request<{ items: GearItem[] }>('/gear'),
 
   // ------------------------------------------------------------- compare
+  historySettings: () => request<HistorySettings>('/sync/history'),
+  loadHistory: (activities: number | null, health_days: number | null) =>
+    request<HistoryLoadResult>('/sync/history', {
+      method: 'POST',
+      body: JSON.stringify({ activities, health_days, background: true }),
+    }),
+
   compareCandidates: (limit = 300) =>
     request<{ items: CompareCandidate[] }>(`/compare/candidates${qs({ limit })}`),
   compareRuns: (ids: number[]) =>

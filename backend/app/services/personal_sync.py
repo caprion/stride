@@ -137,18 +137,39 @@ def _parse_dt(value: Any) -> datetime | None:
         return None
 
 
-def sync_activities(days: int = 90, download_fit: bool = True) -> list[dict[str, Any]]:
-    """Fetch activities, enriched with the original FIT where available."""
+def sync_activities(
+    days: int | None = 90,
+    download_fit: bool = True,
+    progress: Any = None,
+) -> list[dict[str, Any]]:
+    """Fetch activities, enriched with the original FIT where available.
+
+    ``days=None`` pulls everything the account holds. The Activity API serves
+    the account's whole history — there is no short retention window on it, so
+    "load all" is a real option rather than a formality.
+    """
     client = _client()
     end = date.today()
-    start = end - timedelta(days=days)
+    start = end - timedelta(days=days) if days else None
 
-    raw_activities = client.activities(
-        start=0,
-        limit=200,
-        start_date=start.isoformat(),
-        end_date=end.isoformat(),
-    )
+    raw_activities: list[dict[str, Any]] = []
+    page_size = 100
+    offset = 0
+    while True:
+        page = client.activities(
+            start=offset,
+            limit=page_size,
+            start_date=start.isoformat() if start else None,
+            end_date=end.isoformat(),
+        )
+        if not page:
+            break
+        raw_activities.extend(page)
+        if len(page) < page_size:
+            break
+        offset += page_size
+        if offset >= 2000:  # a hard ceiling; nobody has this many runs
+            break
 
     db = SessionLocal()
     out: list[dict[str, Any]] = []
@@ -216,6 +237,8 @@ def sync_activities(days: int = 90, download_fit: bool = True) -> list[dict[str,
                         activity = _merge_fit(activity, parsed)
 
             out.append(activity)
+            if progress is not None:
+                progress(len(out), len(raw_activities))
     finally:
         db.close()
 
@@ -494,9 +517,21 @@ def _by_day(rows: list[dict[str, Any]]) -> dict[str, dict[str, Any]]:
 # ------------------------------------------------------------------ entry
 
 
-def run(days: int = 90) -> dict[str, Any]:
-    """Full Personal API sync: activities, then wellness."""
-    activities = sync_activities(days=days)
+def run(days: int = 90, history: dict[str, Any] | None = None, progress: Any = None) -> dict[str, Any]:
+    """Full Personal API sync: activities, then wellness.
+
+    ``history`` overrides the windows: ``activities`` is a number of months or
+    ``None`` for everything the account holds, ``health_days`` is how much
+    wellness history to pull.
+    """
+    activity_days: int | None = days
+    health_days = min(days, 30)
+    if history:
+        if "activities" in history:
+            activity_days = history["activities"]
+        if history.get("health_days"):
+            health_days = int(history["health_days"])
+    activities = sync_activities(days=activity_days, progress=progress)
     db = SessionLocal()
     created = updated = 0
     try:
@@ -512,7 +547,7 @@ def run(days: int = 90) -> dict[str, Any]:
 
     wellness: dict[str, Any]
     try:
-        wellness = sync_wellness(days=min(days, 30))
+        wellness = sync_wellness(days=health_days)
     except Exception as exc:
         # Health data is a bonus: losing it must not lose the activities.
         log.warning("Wellness pull failed: %s", exc)

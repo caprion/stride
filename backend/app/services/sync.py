@@ -162,19 +162,29 @@ def _persist(activities: list[dict], db: Session) -> tuple[int, int]:
     return created, updated
 
 
-def run_sync(days: int | None = None, background: bool = True) -> dict[str, Any]:
-    """Kick off a sync. Returns immediately with a status dict."""
+def run_sync(
+    days: int | None = None,
+    background: bool = True,
+    history: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Kick off a sync. Returns immediately with a status dict.
+
+    ``history`` loads a chosen span of history rather than the default
+    window — see :func:`app.api.misc.load_history`.
+    """
     if _sync_lock.locked():
         return {"started": False, "reason": "A sync is already running."}
     if background:
-        thread = threading.Thread(target=_run_sync_blocking, args=(days,), daemon=True)
+        thread = threading.Thread(
+            target=_run_sync_blocking, args=(days, history), daemon=True
+        )
         thread.start()
         return {"started": True}
-    _run_sync_blocking(days)
+    _run_sync_blocking(days, history)
     return {"started": True, **status()}
 
 
-def _run_sync_blocking(days: int | None = None) -> None:
+def _run_sync_blocking(days: int | None = None, history: dict[str, Any] | None = None) -> None:
     days = days or state.sync_days
     with _sync_lock:
         _sync_state.update({"running": True, "started_at": datetime.now(timezone.utc).isoformat(), "message": None})
@@ -189,7 +199,10 @@ def _run_sync_blocking(days: int | None = None) -> None:
                 # The Personal API pulls activities and wellness together.
                 from .personal_sync import run as personal_run
 
-                result = personal_run(days=days)
+                def progress(done: int, total: int) -> None:
+                    _sync_state["message"] = f"Pulled {done} of {total} activities…"
+
+                result = personal_run(days=days, history=history, progress=progress)
                 run.activities_found = result["activities_found"]
                 run.activities_new = result["activities_new"]
                 run.activities_updated = result["activities_updated"]

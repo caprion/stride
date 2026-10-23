@@ -11,6 +11,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   CheckCircle2,
   CircleAlert,
+  Download,
   ExternalLink,
   FileUp,
   KeyRound,
@@ -33,6 +34,7 @@ import {
   Button,
   Card,
   CardHeader,
+  SegmentedControl,
   Divider,
   Field,
   Skeleton,
@@ -227,6 +229,8 @@ export function SettingsPage() {
           syncMessage={syncStatusQuery.data?.message ?? null}
           syncError={syncStatusQuery.data?.error ?? null}
         />
+
+        <HistoryCard syncing={syncStatusQuery.data?.running ?? false} />
 
         <SyncHistoryCard
           loading={syncRunsQuery.isLoading}
@@ -1486,6 +1490,116 @@ function SyncHistoryCard({
 }
 
 /* ------------------------------------------------------------ 5. about */
+
+/** Choose how much history to pull from Garmin. */
+function HistoryCard({ syncing }: { syncing: boolean }) {
+  // 0 means "everything the account holds".
+  const [months, setMonths] = useState(12)
+  const [healthDays, setHealthDays] = useState<number>(90)
+  const [notice, setNotice] = useState<Notice | null>(null)
+
+  const history = useQuery({ queryKey: ['history-settings'], queryFn: api.historySettings })
+  const status = useQuery({
+    queryKey: ['sync-status'],
+    queryFn: api.syncStatus,
+    refetchInterval: 5000,
+  })
+
+  const load = useMutation({
+    mutationFn: () => api.loadHistory(months === 0 ? null : months, healthDays),
+    onSuccess: async () => {
+      setNotice({
+        tone: 'positive',
+        text: 'Loading history in the background. This can take a few minutes.',
+      })
+      await Promise.all([history.refetch(), status.refetch()])
+    },
+    onError: (error) => setNotice({ tone: 'negative', text: messageOf(error) }),
+  })
+
+  const activityOptions: { label: string; value: number }[] = [
+    { label: '3 months', value: 3 },
+    { label: '6 months', value: 6 },
+    { label: '12 months', value: 12 },
+    { label: 'Everything', value: 0 },
+  ]
+  const healthOptions: { label: string; value: number }[] = [
+    { label: '30 days', value: 30 },
+    { label: '90 days', value: 90 },
+    { label: '12 months', value: 365 },
+  ]
+
+  return (
+    <Card>
+      <CardHeader
+        title="History"
+        subtitle="How much of your Garmin past to pull in."
+        action={
+          status.data?.running ? (
+            <Badge tone="info">
+              <Loader2 size={11} className="animate-spin" />
+              Loading
+            </Badge>
+          ) : null
+        }
+      />
+      <div className="px-5 pb-5">
+        <p className="mb-4 text-[13px] leading-relaxed text-ink-muted">
+          Garmin's activity service serves everything your account holds — there is no short
+          retention window on runs. Health data (sleep, resting heart rate, stress, body
+          battery) goes back about a year. Loading more takes longer: each run is fetched with
+          its original file so the route and per-second streams stay intact.
+        </p>
+
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div>
+            <p className="mb-1.5 text-[13px] font-semibold text-ink-soft">Run history</p>
+            <SegmentedControl
+              options={activityOptions}
+              value={months}
+              onChange={(value) => setMonths(value as number)}
+            />
+          </div>
+          <div>
+            <p className="mb-1.5 text-[13px] font-semibold text-ink-soft">Health history</p>
+            <SegmentedControl
+              options={healthOptions}
+              value={healthDays}
+              onChange={(value) => setHealthDays(value as number)}
+            />
+          </div>
+        </div>
+
+        <div className="mt-4 flex flex-wrap items-center gap-3">
+          <Button size="md" disabled={load.isPending || syncing} onClick={() => load.mutate()}>
+            {load.isPending || syncing ? (
+              <Loader2 size={14} strokeWidth={2} className="animate-spin" />
+            ) : (
+              <Download size={14} strokeWidth={2} />
+            )}
+            Load history
+          </Button>
+          {status.data?.message ? (
+            <span className="text-[12px] text-ink-muted">{status.data.message}</span>
+          ) : null}
+        </div>
+
+        {history.data ? (
+          <p className="mt-3 text-[12px] text-ink-muted">
+            Currently loading {history.data.history_months ?? 'all'} of runs and{' '}
+            {history.data.health_history_days ?? 0} days of health data.
+          </p>
+        ) : null}
+
+        {notice ? (
+          <div className="mt-3">
+            <Toast notice={notice} />
+          </div>
+        ) : null}
+      </div>
+    </Card>
+  )
+}
 
 function AboutCard() {
   return (

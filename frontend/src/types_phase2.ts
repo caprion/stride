@@ -370,3 +370,22 @@ export interface CompareResponse {
   parameters: CompareParameter[]
   missing: number[]
 }
+
+
+/* --------------------------------------------------------------- history */
+
+export interface HistorySettings {
+  /** Months of activity history to pull; null means everything. */
+  history_months: number | null
+  /** Days of wellness history to pull. */
+  health_history_days: number | null
+  sync_days: number
+  limits: { activities: string; health: string }
+}
+
+export interface HistoryLoadResult {
+  started: boolean
+  activities_months: number | null
+  health_days: number | null
+  reason?: string
+}
