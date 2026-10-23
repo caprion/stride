@@ -131,6 +131,7 @@ def activities_from_cache(cache: dict[str, Any], rebase: bool = True) -> list[di
         activity["streams"] = _streams_from_laps(
             activity["laps"], _synthesize_elevation(activity)
         )
+        _apply_lap_elevation(activity)
         activity["geo_points"] = _synthesize_route(activity)
         activity["raw"] = {"demo": True}
         out.append(activity)
@@ -169,9 +170,13 @@ def _synthesize_route(activity: dict[str, Any]) -> list[list[float]] | None:
     """Deterministic pseudo-GPS track for a demo activity.
 
     Demo activities carry no real route, and a Strava-style activity page with
-    an empty map looks broken. We synthesise a plausible loop whose length
+    an empty map looks broken. We synthesise a plausible track whose length
     matches the activity distance, seeded deterministically from the activity
     id so the same activity always draws the same route.
+
+    Two shapes are produced: an organic closed loop (the common case) and an
+    out-and-back. The loop radius is modulated by two harmonics rather than one,
+    which avoids the spiky "star" that a single sine produces.
     """
     import math
     import random
@@ -189,28 +194,95 @@ def _synthesize_route(activity: dict[str, Any]) -> list[list[float]] | None:
     if distance_m <= 0:
         return None
 
-    # Pick a loop radius that yields roughly the right circumference.
-    points = max(60, min(320, int(distance_m / 120)))
-    radius_m = max(180.0, distance_m / (2 * math.pi) / 1.15)
+    out_and_back = rng.random() < 0.35
+    points = max(70, min(360, int(distance_m / 90)))
+    metres_per_degree_lat = 111_320.0
+    metres_per_degree_lon = 111_320.0 * max(0.2, math.cos(math.radians(centre_lat)))
 
-    # Wobble the radius so the loop is not a perfect circle.
-    lobes = rng.choice([2, 3, 3, 4, 5])
-    phase = rng.uniform(0, math.tau)
-    wobble = rng.uniform(0.10, 0.28)
+    def to_latlon(x_m: float, y_m: float) -> list[float]:
+        lat = centre_lat + y_m / metres_per_degree_lat
+        lon = centre_lon + x_m / metres_per_degree_lon
+        return [round(lat, 6), round(lon, 6)]
 
     track: list[list[float]] = []
-    for index in range(points + 1):
-        angle = math.tau * index / points
-        r = radius_m * (1 + wobble * math.sin(lobes * angle + phase))
-        lat = centre_lat + (r * math.cos(angle)) / 111_320.0
-        lon = centre_lon + (r * math.sin(angle)) / (
-            111_320.0 * max(0.2, math.cos(math.radians(centre_lat)))
-        )
-        # A little jitter so the track does not look mathematically clean.
-        lat += rng.uniform(-0.00012, 0.00012)
-        lon += rng.uniform(-0.00012, 0.00012)
-        track.append([round(lat, 6), round(lon, 6)])
+    if out_and_back:
+        # An out leg and a mirrored return leg, so the two halves meet
+        # smoothly at both ends instead of kinking.
+        reach = distance_m / 2.0
+        heading = rng.uniform(0, math.tau)
+        bend = rng.uniform(-0.7, 0.7)
+        sway = rng.uniform(0.04, 0.13) * reach
+        half = points // 2
+
+        def leg_point(t: float, mirror: float) -> list[float]:
+            along = reach * t
+            side = mirror * sway * math.sin(math.pi * t)
+            angle = heading + bend * t
+            x = along * math.cos(angle) - side * math.sin(angle)
+            y = along * math.sin(angle) + side * math.cos(angle)
+            return to_latlon(x, y)
+
+        for index in range(half + 1):
+            track.append(leg_point(index / half, 1.0))
+        for index in range(half + 1):
+            track.append(leg_point(1 - index / half, -1.0))
+    else:
+        # Closed loop with two harmonic modulations.
+        radius_m = max(180.0, distance_m / (2 * math.pi) / 1.1)
+        k1, k2 = rng.choice([1, 2, 3]), rng.choice([2, 3, 5, 7])
+        a1, a2 = rng.uniform(0.06, 0.24), rng.uniform(0.02, 0.10)
+        p1, p2 = rng.uniform(0, math.tau), rng.uniform(0, math.tau)
+        for index in range(points + 1):
+            angle = math.tau * index / points
+            r = radius_m * (
+                1
+                + a1 * math.sin(k1 * angle + p1)
+                + a2 * math.sin(k2 * angle + p2)
+            )
+            x = r * math.cos(angle)
+            y = r * math.sin(angle)
+            # A little jitter so the track does not look mathematically clean.
+            x += rng.uniform(-0.9, 0.9)
+            y += rng.uniform(-0.9, 0.9)
+            track.append(to_latlon(x, y))
+
     return track
+
+
+def _apply_lap_elevation(activity: dict[str, Any]) -> None:
+    """Spread a synthesised elevation profile across the laps.
+
+    The bundled dataset has no per-lap elevation, which leaves the splits
+    table's elevation column empty. Distributing a profile that matches the
+    activity's recorded climb fills it in consistently.
+    """
+    laps = activity.get("laps") or []
+    if not laps:
+        return
+    if any(lap.get("end_elevation_m") is not None for lap in laps):
+        return  # real data already present
+
+    profile = _synthesize_elevation(activity)
+    if not profile:
+        return
+
+    total_distance = sum(lap.get("distance_m") or 0.0 for lap in laps) or 1.0
+    cursor = 0.0
+    previous = profile[0]
+    for lap in laps:
+        distance = lap.get("distance_m") or 0.0
+        cursor += distance / total_distance
+        # Interpolate between profile points rather than snapping to the
+        # nearest one, so a short lap still shows a sensible change.
+        position = cursor * (len(profile) - 1)
+        low = min(int(position), len(profile) - 1)
+        high = min(low + 1, len(profile) - 1)
+        current = profile[low] + (profile[high] - profile[low]) * (position - low)
+        lap["start_elevation_m"] = round(previous, 1)
+        lap["end_elevation_m"] = round(current, 1)
+        lap["elevation_gain_m"] = round(max(0.0, current - previous), 1)
+        lap["elevation_loss_m"] = round(max(0.0, previous - current), 1)
+        previous = current
 
 
 def _synthesize_elevation(activity: dict[str, Any]) -> list[float]:

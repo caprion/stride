@@ -101,8 +101,14 @@ def patch_settings(body: SettingsBody) -> dict[str, Any]:
 def network_status() -> dict[str, Any]:
     payload = network.status()
     payload["public_identity"] = network.public_identity()
+    # `route` is the configured preference; `effective_route` is what the
+    # machine is actually using right now.
+    payload["effective_route"] = payload.get("route")
     payload["route"] = state.network_route
     payload["nodes"] = network.available_exit_nodes()
+    # Surface the node that would be used if none is pinned, so the UI can
+    # enable the "route via home connection" control out of the box.
+    payload["resolved_exit_node"] = state.exit_node or network.resolve_exit_node()
     return payload
 
 
@@ -117,12 +123,15 @@ def set_route(body: RouteBody) -> dict[str, Any]:
         if ok:
             state.update(network_route="direct")
     elif body.route == "exit_node":
-        node = state.exit_node
+        node = state.exit_node or network.resolve_exit_node()
         if not node:
-            raise HTTPException(status_code=400, detail="No exit node is configured.")
+            raise HTTPException(
+                status_code=400,
+                detail="No exit node is available on this tailnet.",
+            )
         ok, message = network.set_exit_node(node)
         if ok:
-            state.update(network_route="exit_node")
+            state.update(network_route="exit_node", exit_node=node)
     else:
         raise HTTPException(status_code=400, detail="Route must be 'direct' or 'exit_node'.")
     return {"ok": ok, "message": message, "status": network.status()}

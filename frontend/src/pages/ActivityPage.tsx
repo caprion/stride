@@ -761,12 +761,19 @@ export function ActivityPage() {
   }
 
   if (activityQuery.isError || !activity) {
+    const status = (activityQuery.error as { status?: number } | null)?.status
+    const missing = status === 404
+
     return (
       <Card>
         <EmptyState
           icon={<ActivityIcon size={22} strokeWidth={1.8} />}
-          title="Couldn't load this activity"
-          description="The activity may have been deleted, or the service did not respond."
+          title={missing ? 'Activity not found' : "Couldn't load this activity"}
+          description={
+            missing
+              ? 'This activity is no longer in your history — it may have been removed by the sync.'
+              : 'The activity service did not respond. Give it another go.'
+          }
           action={
             <div className="flex items-center gap-2">
               <Button variant="secondary" onClick={() => activityQuery.refetch()}>
@@ -812,20 +819,13 @@ export function ActivityPage() {
         <aside className="space-y-4">
           <Card className="px-5 py-5">
             <p className="text-[11px] font-semibold uppercase tracking-[0.07em] text-ink-muted">
-              Effort
+              Details
             </p>
             <div className="mt-3 space-y-3">
               <div className="flex items-baseline justify-between gap-3">
                 <span className="text-[13px] text-ink-muted">Avg speed</span>
                 <span className="text-[15px] font-semibold text-ink">
                   {formatNumber(activity.avg_speed_ms ? activity.avg_speed_ms * 3.6 : null, 1)} km/h
-                </span>
-              </div>
-              <Divider />
-              <div className="flex items-baseline justify-between gap-3">
-                <span className="text-[13px] text-ink-muted">Avg pace</span>
-                <span className="text-[15px] font-semibold text-ink">
-                  {formatPaceWithUnit(activity.pace_s_per_km)}
                 </span>
               </div>
               <Divider />
@@ -837,16 +837,30 @@ export function ActivityPage() {
               </div>
               <Divider />
               <div className="flex items-baseline justify-between gap-3">
-                <span className="text-[13px] text-ink-muted">Calories</span>
+                <span className="text-[13px] text-ink-muted">Elapsed</span>
                 <span className="text-[15px] font-semibold text-ink">
-                  {formatNumber(activity.calories)} kcal
+                  {formatDuration(activity.elapsed_time_s)}
                 </span>
               </div>
               <Divider />
               <div className="flex items-baseline justify-between gap-3">
-                <span className="text-[13px] text-ink-muted">Elapsed</span>
+                <span className="text-[13px] text-ink-muted">Laps</span>
                 <span className="text-[15px] font-semibold text-ink">
-                  {formatDuration(activity.elapsed_time_s)}
+                  {formatNumber(activity.laps.length)}
+                </span>
+              </div>
+              <Divider />
+              <div className="flex items-baseline justify-between gap-3">
+                <span className="text-[13px] text-ink-muted">GPS points</span>
+                <span className="text-[15px] font-semibold text-ink">
+                  {formatNumber(activity.geo_points.length)}
+                </span>
+              </div>
+              <Divider />
+              <div className="flex items-baseline justify-between gap-3">
+                <span className="text-[13px] text-ink-muted">Visibility</span>
+                <span className="text-[15px] font-semibold capitalize text-ink">
+                  {activity.visibility ? activity.visibility.replace(/_/g, ' ') : '—'}
                 </span>
               </div>
             </div>
@@ -892,9 +906,11 @@ export function ActivityPage() {
               title="Pace"
               subtitle={
                 avgPaceSeconds !== null
-                  ? `Average ${formatPace(avgPaceSeconds)} /km — lower is faster`
+                  ? `Average ${formatPaceWithUnit(avgPaceSeconds)} — lower is faster`
                   : 'Lower is faster'
               }
+              tickFormatter={(v) => formatPace(v * 60)}
+              valueFormatter={(v) => formatPaceWithUnit(v * 60)}
             />
           ) : (
             <Card>
@@ -915,9 +931,6 @@ export function ActivityPage() {
             />
           ) : null}
         </div>
-        {/* TODO(shared): StreamChart has no `tickFormatter`/`valueFormatter` prop, so the
-            pace Y axis can only show rounded minutes ("6 min/km") instead of "6:20".
-            Adding a formatter prop to StreamChart would let it read like Strava. */}
       </section>
 
       {/* ------------------------------------------------------ 5. splits */}

@@ -50,6 +50,15 @@ export function RouteThumb({
 
     const projected = points.map(([lat, lon]) => project(lat, lon))
 
+    // On a closed loop the finish sits on the start; drawing both markers
+    // would just stack them, so only show the finish when it is distinct.
+    const start = projected[0]
+    const end = projected[projected.length - 1]
+    const spread = Math.max(W - pad * 2, 1)
+    const endFarEnough =
+      Math.abs(end[0] - start[0]) > spread * 0.04 ||
+      Math.abs(end[1] - start[1]) > spread * 0.04
+
     // Simplify: keep every point but drop collinear runs so the path stays light.
     let path = ''
     let drawn = 0
@@ -61,8 +70,9 @@ export function RouteThumb({
 
     return {
       path,
-      start: projected[0],
-      end: projected[projected.length - 1],
+      start,
+      end,
+      endFarEnough,
       W,
       H,
     }
@@ -107,7 +117,9 @@ export function RouteThumb({
       {showMarkers ? (
         <>
           <circle cx={geometry.start[0]} cy={geometry.start[1]} r={strokeWidth * 0.9} fill="#ffffff" stroke="#1a9c5a" strokeWidth={strokeWidth * 0.6} />
-          <circle cx={geometry.end[0]} cy={geometry.end[1]} r={strokeWidth * 0.9} fill="#ffffff" stroke="#d93a2b" strokeWidth={strokeWidth * 0.6} />
+          {geometry.endFarEnough ? (
+            <circle cx={geometry.end[0]} cy={geometry.end[1]} r={strokeWidth * 0.9} fill="#ffffff" stroke="#d93a2b" strokeWidth={strokeWidth * 0.6} />
+          ) : null}
         </>
       ) : null}
     </svg>

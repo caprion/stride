@@ -53,7 +53,7 @@ for (const [name, route] of ROUTES) {
     problems.push(`[nav] ${route}: ${err.message.split('\n')[0]}`)
     continue
   }
-  await page.waitForTimeout(1200)
+  await page.waitForTimeout(3500)
   const file = path.join(OUT, `${name}.png`)
   await page.screenshot({ path: file, fullPage: true })
   const title = await page.title()
@@ -67,7 +67,7 @@ const mpage = await mobile.newPage()
 for (const [name, route] of [['dashboard-mobile', '/'], ['feed-mobile', '/feed']]) {
   try {
     await mpage.goto(`${BASE}${route}`, { waitUntil: 'networkidle', timeout: 45_000 })
-    await mpage.waitForTimeout(900)
+    await mpage.waitForTimeout(3500)
     await mpage.screenshot({ path: path.join(OUT, `${name}.png`), fullPage: true })
     console.log(`✓ ${name.padEnd(10)} ${route}`)
   } catch (err) {

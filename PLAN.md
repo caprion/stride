@@ -1,6 +1,18 @@
 # Stride — a Strava-class running webapp with native Garmin ingest
 
-> Plan of record. Status: **executing**.
+> Plan of record. Status: **shipped** — see §8 for what was built and verified.
+
+---
+
+## 0. Outcome
+
+`~/stride` — a Strava-class running webapp, live at **http://100.89.222.50:8000**
+(Tailscale) and `http://localhost:8000` locally. One command: `./scripts/run.sh`.
+
+Six surfaces (Dashboard, Feed, Activity detail, Training log, Stats, Settings),
+a Strava-grade design system, four Garmin ingest paths, and 19 backend tests
+passing. Zero console errors, page errors or failed requests across every route
+(verified with headless Chromium — `scripts/screenshot.mjs`).
 
 ---
 
@@ -30,6 +42,10 @@ Reusing prior art in `~/running` (a Garmin sync pipeline + Streamlit dashboard,
 | **No OAuth2 client_credentials** | `/oauth2/token` → `404` on both hosts | OAuth1 only. |
 | **Garmin paused new developer-program applications (2026)** | Garmin revamped the Connect Developer Program; approvals now gated | Cannot depend on the user getting a key. Must ship fallback ingest paths. |
 | Stored credentials are **rejected** | portal login reached Garmin's form → `401 Invalid Username or Password` | Password may be stale. App must accept credentials via UI, not `.env` only. |
+| The OAuth **authorise URL is not** where it looks | `connect.garmin.com/oauth/authorize` → `404`; `connect.garmin.com/modern/authorize` → `302` → `/app/authorize` → Garmin sign-in | The browser flow uses `/modern/authorize`. The `connectapi` host also has an `/oauth-service/oauth/authorize` path, but it is service-to-service (`NotAllowedException`). |
+| `tailscale exit-node list` has **no `--json`** | `flag provided but not defined: -json` | Parse the table output instead. |
+| The active exit node is in **`ExitNodeStatus`**, not `Self.ExitNode` | `Self.ExitNode` means "this node *offers* exit-node service" — the opposite question | Read `ExitNodeStatus.ID` / `.TailscaleIPs` to know whether egress is routed. |
+| A FIT importer is **verifiable without Garmin** | Real Garmin `.FIT` files are obtainable from the `python-fitparse` test fixtures | The no-credentials path was validated end-to-end against a real watch file. |
 
 ### Ingest paths (all first-class, in priority order)
 
@@ -152,3 +168,49 @@ data, end-to-end test, screenshots, single-command launch.
 | OAuth1 authorize needs a browser round-trip | App opens the URL; accepts pasted verifier *or* a registered callback |
 | Agent-parallel edits collide | Frozen API contract; each agent owns disjoint files |
 | SQLite concurrent writes from sync + API | Single writer (sync holds a lock); WAL mode |
+
+---
+
+## 8. What shipped
+
+### Ingest paths — all four implemented and exercised
+
+| Path | Status | Evidence |
+|---|---|---|
+| **Developer API key** (OAuth1 3-legged) | Implemented; endpoints probed and confirmed reachable (`request_token` → `401` on a bogus key, i.e. the endpoint answers). Needs a real key to complete. | `POST /api/v1/auth/garmin/developer-key` returns a clean `400` for a bad key and a `429`-specific message for a throttled IP. |
+| **Garmin account** (email + password + MFA) | Implemented against `garminconnect` 0.3.19; MFA bridged to the browser with a blocking broker. | Login reaches Garmin's auth form; Garmin answers `401 Invalid Username or Password` for the stored credentials. |
+| **FIT import** | **Verified end-to-end** against real Garmin `.FIT` files: GPS track (221 pts), laps, per-lap pace, elevation, HR, cadence. | `scripts/import-fit.sh` + `POST /api/v1/auth/garmin/fit-import`. |
+| **Demo dataset** | 161 runs over 53 weeks, rebased to end two days ago, with synthesised GPS routes and per-lap elevation. | First boot; auto-hidden the moment real activities arrive. |
+
+### Surfaces
+
+| Route | Notes |
+|---|---|
+| `/` | Hero stats, weekly volume, pace trend, personal records, monthly volume, HR zones, recent activities |
+| `/feed` | Sport/sort/search filters, pagination, route thumbnails, side column |
+| `/activities/:id` | Interactive Leaflet map with the route, inline rename, 7-tile stat strip, HR/pace/elevation charts, splits table with fastest/slowest, notes, prev/next |
+| `/training` | Month calendar with volume tiers, day panel, week summary, streak |
+| `/stats` | Totals & gains, personal records, sport split, HR zones, year heatmap, trends |
+| `/settings` | Three connect paths, network route control, sync settings, sync history, about |
+
+### Verification performed
+
+- 19 backend tests pass (`backend/.venv/bin/python -m pytest -q`).
+- Frontend typechecks with **zero** errors; production build succeeds.
+- Headless Chromium renders all six routes plus two mobile viewports with
+  **no console errors, page errors or failed requests**.
+- OAuth1 handshake, FIT import, sync trigger, settings mutation and route
+  switching all exercised over HTTP.
+
+### Bugs found and fixed during the build
+
+- `fitparse` returns `FieldData` wrappers, not values — the importer silently
+  produced empty activities until every field read was unwrapped.
+- `garminconnect` calls `prompt_mfa()` with **no arguments**; the web MFA
+  bridge passed the code positionally and would have raised `TypeError`.
+- `set --exit-node` flips the *whole machine's* egress, so a "direct" default
+  silently changed it for every other service on the VM.
+- `setsid` forks when it is a process-group leader, so the launcher's captured
+  PID was not the server's — restarts left the old process holding the port.
+- Recharts animates areas in on mount; screenshots taken too early showed
+  empty charts that were in fact rendering correctly.

@@ -14,7 +14,7 @@ export function formatDistance(metres: number | null | undefined, unit: 'km' | '
 export function formatDistanceShort(metres: number | null | undefined): string {
   if (metres === null || metres === undefined) return '—'
   const km = metres / 1000
-  return km.toFixed(km < 10 ? 1 : 0)
+  return km.toFixed(km < 100 ? 1 : 0)
 }
 
 /** Seconds -> "1:23:45" or "23:45". */
@@ -33,7 +33,7 @@ export function formatDurationLong(seconds: number | null | undefined): string {
   if (!seconds) return '—'
   const total = Math.round(seconds)
   const hours = Math.floor(total / 3600)
-  const minutes = Math.round((total % 3600) / 60)
+  const minutes = Math.floor((total % 3600) / 60)
   if (hours && minutes) return `${hours}h ${minutes}m`
   if (hours) return `${hours}h`
   return `${minutes}m`

@@ -7,15 +7,8 @@
  *   └─ side column : personal records · monthly volume · HR zones · sports
  */
 
-// TODO(shared): `npm run typecheck` still fails outside this file —
-//   1. src/components/AppLayout.tsx: unused `CloudDownload` / `LogOut` imports,
-//      an unused `route` prop, and a lucide-react icon prop-type mismatch
-//      (LucideProps' `size` is `string | number`, the local NavItem type wants `number`).
-//   2. src/components/charts.tsx: unused locals `max` (VolumeChart), `row` (VolumeChart
-//      Cell map) and `name` (StreamChart formatter).
-//   3. src/App.tsx imports four page modules that do not exist yet:
-//      ActivityPage, TrainingPage, StatsPage, SettingsPage.
-// None of these are in this page's scope, so they are left untouched.
+// Note: `npm run typecheck` failures outside this file belong to whoever owns
+// the shared files — report them rather than editing shared modules.
 
 import { useQuery } from '@tanstack/react-query'
 import {

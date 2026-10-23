@@ -15,10 +15,23 @@ mkdir -p "$PID_DIR"
 
 log() { printf '\033[38;5;208m▸\033[0m %s\n' "$*"; }
 
+# Find the real PID of a Stride server.
+#
+# `setsid` forks when it is already a process group leader, so the PID we
+# capture with `$!` is not always the server's. Matching on the command line
+# (which includes the port) is the reliable way, and it cannot match this
+# script itself because the pattern only appears in the file, not in argv.
+server_pid() {
+  local port="$1"
+  pgrep -f "uvicorn app.main:app --host 0.0.0.0 --port $port" 2>/dev/null | head -1
+}
+
 stop_one() {
-  local name="$1" pidfile="$PID_DIR/$name.pid"
+  local name="$1"
+  local pidfile="$PID_DIR/$name.pid"
   if [[ -f "$pidfile" ]]; then
-    local pid; pid="$(cat "$pidfile")"
+    local pid
+    pid="$(cat "$pidfile")"
     if kill -0 "$pid" 2>/dev/null; then
       kill "$pid" 2>/dev/null || true
       sleep 0.6
@@ -29,7 +42,20 @@ stop_one() {
   fi
 }
 
+stop_server() {
+  local port="$1" label="$2"
+  local pid
+  pid="$(server_pid "$port")"
+  if [[ -n "$pid" ]]; then
+    kill "$pid" 2>/dev/null || true
+    sleep 0.8
+    kill -9 "$pid" 2>/dev/null || true
+    log "stopped $label (pid $pid)"
+  fi
+}
+
 stop_all() {
+  stop_server "$PORT" api
   stop_one api
   stop_one web
   log "Stride stopped."
@@ -49,17 +75,22 @@ case "${1:-start}" in
         echo "$name: stopped"
       fi
     done
+    pid="$(server_pid "$PORT")"
+    if [[ -n "$pid" ]]; then
+      echo "api listener on :$PORT -> pid $pid"
+    fi
     ;;
 
   dev)
     stop_all
     log "starting API with reload on :$PORT"
-    (cd "$ROOT/backend" && nohup "$VENV/bin/uvicorn" app.main:app --host 0.0.0.0 --port "$PORT" --reload \
-      > "$PID_DIR/api.log" 2>&1 & echo $! > "$PID_DIR/api.pid")
+    (cd "$ROOT/backend" && setsid "$VENV/bin/uvicorn" app.main:app --host 0.0.0.0 --port "$PORT" --reload \
+      < /dev/null > "$PID_DIR/api.log" 2>&1 &)
     sleep 4
+    server_pid "$PORT" > "$PID_DIR/api.pid" 2>/dev/null || true
     log "starting Vite dev server on :5173"
-    (cd "$ROOT/frontend" && nohup npm run dev -- --host 0.0.0.0 --port 5173 \
-      > "$PID_DIR/web.log" 2>&1 & echo $! > "$PID_DIR/web.pid")
+    (cd "$ROOT/frontend" && setsid npm run dev -- --host 0.0.0.0 --port 5173 \
+      < /dev/null > "$PID_DIR/web.log" 2>&1 &)
     sleep 3
     log "API  → http://localhost:$PORT/api/v1/docs"
     log "App  → http://localhost:5173"
@@ -72,9 +103,10 @@ case "${1:-start}" in
       (cd "$ROOT/frontend" && npm install --silent && npm run build)
     fi
     log "starting Stride on :$PORT"
-    (cd "$ROOT/backend" && nohup "$VENV/bin/uvicorn" app.main:app --host 0.0.0.0 --port "$PORT" \
-      > "$PID_DIR/api.log" 2>&1 & echo $! > "$PID_DIR/api.pid")
+    (cd "$ROOT/backend" && setsid "$VENV/bin/uvicorn" app.main:app --host 0.0.0.0 --port "$PORT" \
+      < /dev/null > "$PID_DIR/api.log" 2>&1 &)
     sleep 4
+    server_pid "$PORT" > "$PID_DIR/api.pid" 2>/dev/null || true
     if curl -fsS -m 5 "http://127.0.0.1:$PORT/api/v1/health" > /dev/null 2>&1; then
       log "Stride is live → http://localhost:$PORT"
       log "logs: $PID_DIR/api.log"

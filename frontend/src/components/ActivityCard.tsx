@@ -20,7 +20,7 @@ import { RouteThumb } from './RouteThumb'
 import { Badge, cn } from './ui'
 import {
   formatDateTime,
-  formatDistance,
+  formatDistanceShort,
   formatDuration,
   formatElevation,
   formatPace,
@@ -93,7 +93,7 @@ export function ActivityCard({
             <Stat
               icon={<RouteIcon size={14} />}
               label="km"
-              value={formatDistance(activity.distance_m)}
+              value={formatDistanceShort(activity.distance_m)}
             />
             <Stat
               icon={<Timer size={14} />}
@@ -157,7 +157,7 @@ export function ActivityRow({
         {activity.name}
       </span>
       <span className="shrink-0 text-[12px] text-ink-muted">
-        {formatDistance(activity.distance_m, 'mi').replace(' mi', '')} km
+        {formatDistanceShort(activity.distance_m)} km
       </span>
     </Link>
   )

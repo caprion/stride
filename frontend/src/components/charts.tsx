@@ -116,7 +116,7 @@ export function VolumeChart({
   return (
     <ChartFrame title={title} subtitle={subtitle} height={height}>
       <ResponsiveContainer width="100%" height="100%">
-        <BarChart data={rows} margin={{ top: 8, right: 8, left: -18, bottom: 0 }}>
+        <BarChart data={rows} margin={{ top: 8, right: 12, left: 0, bottom: 0 }}>
           <CartesianGrid stroke={GRID} vertical={false} />
           <XAxis
             dataKey="name"
@@ -126,7 +126,7 @@ export function VolumeChart({
             interval="preserveStartEnd"
             minTickGap={18}
           />
-          <YAxis tick={AXIS} tickLine={false} axisLine={false} width={44} unit=" km" />
+          <YAxis tick={AXIS} tickLine={false} axisLine={false} width={56} unit=" km" />
           <Tooltip
             cursor={{ fill: 'rgba(252,82,0,0.06)' }}
             content={
@@ -140,7 +140,7 @@ export function VolumeChart({
               strokeDasharray="4 4"
               label={{
                 value: `avg ${average.toFixed(0)} km`,
-                position: 'right',
+                position: 'insideTopRight',
                 fontSize: 10,
                 fill: '#6d7176',
               }}
@@ -196,17 +196,20 @@ export function PaceTrendChart({
       height={height}
     >
       <ResponsiveContainer width="100%" height="100%">
-        <LineChart data={rows} margin={{ top: 8, right: 8, left: -14, bottom: 0 }}>
+        <LineChart data={rows} margin={{ top: 8, right: 12, left: 0, bottom: 0 }}>
           <CartesianGrid stroke={GRID} vertical={false} />
           <XAxis dataKey="name" tick={AXIS} tickLine={false} axisLine={{ stroke: GRID }} interval="preserveStartEnd" minTickGap={18} />
           <YAxis
             tick={AXIS}
             tickLine={false}
             axisLine={false}
-            width={48}
+            width={56}
             domain={[Math.max(0, min - pad), max + pad]}
             reversed
-            tickFormatter={(v) => `${v}:00`}
+            tickFormatter={(v) => {
+              const total = Math.round(v * 60)
+              return `${Math.floor(total / 60)}:${String(total % 60).padStart(2, '0')}`
+            }}
           />
           <Tooltip
             content={
@@ -264,6 +267,8 @@ export function StreamChart({
   strokeWidth = 2,
   fillOpacity = 0.12,
   referenceLines,
+  tickFormatter,
+  valueFormatter,
 }: {
   data: { x: number; value: number | null }[]
   dataKey?: string
@@ -275,6 +280,10 @@ export function StreamChart({
   strokeWidth?: number
   fillOpacity?: number
   referenceLines?: { value: number; label: string; color?: string }[]
+  /** Formats the Y-axis tick values, e.g. 6.32 -> "6:19". */
+  tickFormatter?: (value: number) => string
+  /** Formats values inside the tooltip. */
+  valueFormatter?: (value: number) => string
 }) {
   const values = data.map((d) => d.value).filter((v): v is number => v != null)
   const min = values.length ? Math.min(...values) : 0
@@ -283,7 +292,7 @@ export function StreamChart({
   return (
     <ChartFrame title={title} subtitle={subtitle} height={height}>
       <ResponsiveContainer width="100%" height="100%">
-        <AreaChart data={data} margin={{ top: 8, right: 8, left: -18, bottom: 0 }}>
+        <AreaChart data={data} margin={{ top: 8, right: 12, left: 0, bottom: 0 }}>
           <defs>
             <linearGradient id={`grad-${color.replace('#', '')}`} x1="0" y1="0" x2="0" y2="1">
               <stop offset="0%" stopColor={color} stopOpacity={fillOpacity * 3} />
@@ -303,14 +312,19 @@ export function StreamChart({
             tick={AXIS}
             tickLine={false}
             axisLine={false}
-            width={48}
+            width={56}
             domain={[min - (max - min) * 0.1 - 1, max + (max - min) * 0.1 + 1]}
-            tickFormatter={(v) => `${Math.round(v)}${unit}`}
+            tickFormatter={
+              tickFormatter ?? ((v) => `${Math.round(v)}${unit}`)
+            }
           />
           <Tooltip
             content={
               <TooltipBox
-                formatter={(value) => `${Number(value).toFixed(unit === ' m' ? 0 : 1)}${unit}`}
+                formatter={
+                  valueFormatter ??
+                  ((value) => `${Number(value).toFixed(unit === ' m' ? 0 : 1)}${unit}`)
+                }
               />
             }
           />
@@ -359,8 +373,8 @@ export function ZoneBarChart({
       <ResponsiveContainer width="100%" height="100%">
         <BarChart data={rows} layout="vertical" margin={{ top: 4, right: 16, left: 4, bottom: 0 }}>
           <CartesianGrid stroke={GRID} horizontal={false} />
-          <XAxis type="number" tick={AXIS} tickLine={false} axisLine={false} unit="%" width={44} />
-          <YAxis type="category" dataKey="label" tick={AXIS} tickLine={false} axisLine={false} width={92} />
+          <XAxis type="number" tick={AXIS} tickLine={false} axisLine={false} unit="%" width={52} />
+          <YAxis type="category" dataKey="label" tick={AXIS} tickLine={false} axisLine={false} width={116} />
           <Tooltip content={<TooltipBox formatter={(v) => `${Number(v).toFixed(1)}%`} />} />
           <Bar dataKey="percent" name="Time" radius={[0, 4, 4, 0]} maxBarSize={22}>
             {rows.map((row, index) => (
@@ -389,10 +403,10 @@ export function MonthlyBars({
   return (
     <ChartFrame title="Monthly volume" height={height}>
       <ResponsiveContainer width="100%" height="100%">
-        <BarChart data={rows} margin={{ top: 8, right: 8, left: -18, bottom: 0 }}>
+        <BarChart data={rows} margin={{ top: 8, right: 12, left: 0, bottom: 0 }}>
           <CartesianGrid stroke={GRID} vertical={false} />
           <XAxis dataKey="label" tick={AXIS} tickLine={false} axisLine={{ stroke: GRID }} />
-          <YAxis tick={AXIS} tickLine={false} axisLine={false} width={44} unit=" km" />
+          <YAxis tick={AXIS} tickLine={false} axisLine={false} width={56} unit=" km" />
           <Tooltip content={<TooltipBox formatter={(v) => `${Number(v).toFixed(1)} km`} />} />
           <Bar dataKey="km" name="Distance" fill="#fc5200" radius={[3, 3, 0, 0]} maxBarSize={38} />
         </BarChart>

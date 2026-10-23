@@ -50,7 +50,13 @@ def _run(args: list[str], timeout: int = 20) -> tuple[int, str]:
 
 
 def status() -> dict[str, Any]:
-    """Current exit-node configuration of this machine."""
+    """Current exit-node configuration of this machine.
+
+    Note on the JSON shape: in this Tailscale version the authoritative
+    "am I using an exit node?" signal is the top-level ``ExitNodeStatus``
+    object. ``Self.ExitNode`` means "this node *offers* exit-node service",
+    which is a different question.
+    """
     info: dict[str, Any] = {
         "tailscale_available": tailscale_available(),
         "exit_node": None,
@@ -62,11 +68,20 @@ def status() -> dict[str, Any]:
     if code == 0:
         try:
             data = json.loads(out)
-            self_state = data.get("Self") or {}
-            info["exit_node"] = self_state.get("ExitNodeIP") or None
-            info["exit_node_active"] = bool(self_state.get("ExitNodeIP"))
+            status = data.get("ExitNodeStatus") or {}
+            addresses = status.get("TailscaleIPs") or []
+            if addresses:
+                info["exit_node"] = addresses[0].split("/")[0]
+            info["exit_node_active"] = bool(status.get("ID"))
+            if not info["exit_node"]:
+                # Older shape: the selected node is reported on Self.
+                self_state = data.get("Self") or {}
+                info["exit_node"] = self_state.get("ExitNodeIP") or None
+                info["exit_node_active"] = bool(self_state.get("ExitNodeIP"))
         except json.JSONDecodeError:
             pass
+    # The *actual* route, as opposed to the configured preference.
+    info["route"] = "exit_node" if info["exit_node_active"] else "direct"
     return info
 
 
@@ -97,24 +112,48 @@ def clear_exit_node() -> tuple[bool, str]:
 
 
 def available_exit_nodes() -> list[dict[str, Any]]:
-    """Exit nodes advertised on the tailnet."""
-    code, out = _run(["exit-node", "list", "--json"])
+    """Exit nodes advertised on the tailnet.
+
+    ``tailscale exit-node list`` has no ``--json`` flag in this version, so the
+    table output is parsed instead.
+    """
+    code, out = _run(["exit-node", "list"])
     if code != 0:
         return []
-    try:
-        data = json.loads(out)
-    except json.JSONDecodeError:
-        return []
     nodes: list[dict[str, Any]] = []
-    for entry in data if isinstance(data, list) else []:
-        if not isinstance(entry, dict):
+    for line in out.splitlines():
+        if not line.strip() or line.lstrip().startswith("IP "):
+            continue
+        if not line.startswith(" "):
+            continue
+        parts = [p.strip() for p in line.strip().split(None, 1)]
+        if len(parts) < 2:
+            continue
+        ip = parts[0]
+        rest = parts[1]
+        hostname = rest.split()[0] if rest.split() else ""
+        status = rest.split()[-1].lower() if rest.split() else ""
+        if not ip or ip.lower() == "ip":
             continue
         nodes.append(
             {
-                "id": entry.get("ID") or entry.get("id"),
-                "ip": entry.get("IPAddresses", [None])[0] if entry.get("IPAddresses") else entry.get("IP"),
-                "hostname": entry.get("Hostname") or entry.get("hostname"),
-                "online": entry.get("Online", entry.get("online")),
+                "id": hostname,
+                "ip": ip,
+                "hostname": hostname,
+                "online": status not in ("offline", "unavailable"),
+                "selected": status == "selected",
             }
         )
     return nodes
+
+
+def resolve_exit_node() -> str | None:
+    """Pick an exit node when none is configured.
+
+    The fleet's residential node (the raspberrypi at home) is the one that
+    makes Garmin reachable, so prefer the first online node advertised.
+    """
+    for node in available_exit_nodes():
+        if node.get("online") and node.get("ip"):
+            return node["ip"]
+    return None

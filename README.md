@@ -25,6 +25,10 @@ cd ~/stride
 
 Then open **http://localhost:8000**.
 
+On this VM it is already running as a managed bb terminal (`Stride API`), so it
+is reachable over Tailscale at **http://100.89.222.50:8000** from any device on
+the tailnet.
+
 The app seeds itself with a full year of demo data (161 runs with splits, heart
 rate, elevation and synthesised GPS routes) so it is never a blank slate. Connect
 Garmin in **Settings → Garmin connection** and the real data takes over.
@@ -35,8 +39,25 @@ Garmin in **Settings → Garmin connection** and the real data takes over.
 | `./scripts/run.sh dev` | API on `:8000` with reload + Vite HMR on `:5173` |
 | `./scripts/run.sh stop` | Stop everything |
 | `./scripts/run.sh status` | Show what is running |
+| `./scripts/import-fit.sh *.fit` | Import FIT files from the shell |
+| `node scripts/screenshot.mjs` | Render every route in headless Chromium and report errors |
 
 API docs live at **http://localhost:8000/api/v1/docs**.
+
+### Running it as a managed service
+
+```bash
+bb terminal create --machine host_8ej6yymhhj --cwd /home/sumit/stride \
+  --title "Stride API" \
+  --command "cd /home/sumit/stride/backend && exec /home/sumit/stride/backend/.venv/bin/uvicorn app.main:app --host 0.0.0.0 --port 8000"
+```
+
+### Tests
+
+```bash
+cd backend && .venv/bin/python -m pytest -q     # 19 tests
+cd frontend && npm run typecheck                # zero errors
+```
 
 ---
 

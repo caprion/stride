@@ -230,6 +230,8 @@ export interface NetworkStatus {
   public_ip: string | null
   public_org: string | null
   route?: string
+  effective_route?: string
+  resolved_exit_node?: string | null
   nodes?: { id: string; ip: string; hostname: string; online: boolean }[]
   public_identity?: { ip: string | null; org: string | null }
 }
