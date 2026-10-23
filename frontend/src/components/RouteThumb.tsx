@@ -89,23 +89,23 @@ export function RouteThumb({ points, className, strokeWidth = 3, showMarkers = t
     <svg
       viewBox={`0 0 ${geometry.W} ${geometry.H}`}
       preserveAspectRatio="xMidYMid slice"
-      className={cn('bg-[#f4f1ec]', className)}
+      className={cn('bg-[#EDF2F6]', className)}
       role="img"
       aria-label="Route map"
     >
       <defs>
         <pattern id="grid" width="12" height="12" patternUnits="userSpaceOnUse">
-          <path d="M12 0 L0 0 0 12" fill="none" stroke="#e6e1d8" strokeWidth="0.5" />
+          <path d="M12 0 L0 0 0 12" fill="none" stroke="#E1E8EE" strokeWidth="0.5" />
         </pattern>
         <linearGradient id="route-grad" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0%" stopColor="#ff7a33" />
-          <stop offset="100%" stopColor="#fc5200" />
+          <stop offset="0%" stopColor="#F8C55C" />
+          <stop offset="100%" stopColor="#F2B01E" />
         </linearGradient>
       </defs>
       <rect width={geometry.W} height={geometry.H} fill="url(#grid)" />
       {/* Park / water blobs for a map-like texture. */}
-      <ellipse cx="18" cy="80" rx="22" ry="16" fill="#e3ecdf" opacity="0.9" />
-      <ellipse cx="84" cy="22" rx="18" ry="13" fill="#dfeaf2" opacity="0.9" />
+      <ellipse cx="18" cy="80" rx="22" ry="16" fill="#E3EDE6" opacity="0.9" />
+      <ellipse cx="84" cy="22" rx="18" ry="13" fill="#DFE9F2" opacity="0.9" />
       <path
         d={geometry.path}
         fill="none"
@@ -130,7 +130,7 @@ export function RouteThumb({ points, className, strokeWidth = 3, showMarkers = t
             cy={geometry.start[1]}
             r={strokeWidth * 0.9}
             fill="#ffffff"
-            stroke="#1a9c5a"
+            stroke="#2E8B7A"
             strokeWidth={strokeWidth * 0.6}
           />
           {geometry.endFarEnough ? (
@@ -139,7 +139,7 @@ export function RouteThumb({ points, className, strokeWidth = 3, showMarkers = t
               cy={geometry.end[1]}
               r={strokeWidth * 0.9}
               fill="#ffffff"
-              stroke="#d93a2b"
+              stroke="#C0392B"
               strokeWidth={strokeWidth * 0.6}
             />
           ) : null}

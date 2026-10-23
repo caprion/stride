@@ -169,8 +169,8 @@ _DEMO_CENTRES = [
 def _synthesize_route(activity: dict[str, Any]) -> list[list[float]] | None:
     """Deterministic pseudo-GPS track for a demo activity.
 
-    Demo activities carry no real route, and a Strava-style activity page with
-    an empty map looks broken. We synthesise a plausible track whose length
+    Demo activities carry no real route, and an activity page with an empty
+    map looks broken. We synthesise a plausible track whose length
     matches the activity distance, seeded deterministically from the activity
     id so the same activity always draws the same route.
 

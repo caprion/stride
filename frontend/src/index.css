@@ -12,7 +12,7 @@
     @apply bg-surface-soft font-sans text-ink;
   }
 
-  /* Strava-style thin scrollbars in the dense areas. */
+  /* Thin scrollbars for the dense areas. */
   ::-webkit-scrollbar {
     width: 10px;
     height: 10px;
@@ -42,12 +42,12 @@
 /* Leaflet overrides so the map matches the app chrome. */
 .leaflet-container {
   font: inherit;
-  background: #f4f1ec;
+  background: #edf2f6;
 }
 .leaflet-control-attribution {
   font-size: 10px;
   background: rgba(255, 255, 255, 0.8) !important;
 }
 .leaflet-bar a {
-  color: #121212 !important;
+  color: #0b1b27 !important;
 }

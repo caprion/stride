@@ -72,7 +72,7 @@ CSS = """
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body {
   font-family: Inter, -apple-system, 'Segoe UI', Roboto, sans-serif;
-  background: #0d0d0f;
+  background: #081420;
   color: #f2f2f3;
   -webkit-font-smoothing: antialiased;
 }
@@ -97,36 +97,36 @@ body {
   font-size: 34px; font-weight: 800; line-height: 1.18; letter-spacing: -.025em;
   margin-top: 26px; max-width: 1180px;
 }
-.pitch em { font-style: normal; color: #fc5200; }
+.pitch em { font-style: normal; color: #F2B01E; }
 
 /* ---- chips ---- */
 .chips { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; width: 340px; flex: none; }
 .chip {
-  background: #17171a; border: 1px solid #26262b; border-radius: 10px;
+  background: #142638; border: 1px solid #1D3145; border-radius: 10px;
   padding: 11px 15px;
 }
 .chip b { display: block; font-size: 19px; font-weight: 700; color: #fff; letter-spacing: -.01em; }
-.chip span { font-size: 11px; color: #8a8f95; letter-spacing: .02em; }
+.chip span { font-size: 11px; color: #8FA3B6; letter-spacing: .02em; }
 
 /* ---- grid ---- */
 .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 26px; margin-top: 44px; }
-.panel { background: #141416; border: 1px solid #24242a; border-radius: 14px; overflow: hidden; display: flex; flex-direction: column; }
+.panel { background: #0F1E2C; border: 1px solid #1D3145; border-radius: 14px; overflow: hidden; display: flex; flex-direction: column; }
 .panel.wide { grid-column: span 3; }
 .shot { width: 100%; display: block; background: #fff; }
 .panel:not(.wide) .shot { height: 430px; object-fit: cover; object-position: top center; }
 .panel.wide .shot { max-height: 545px; object-fit: cover; object-position: top center; }
 .cap { padding: 16px 18px 18px; }
 .cap h3 { font-size: 15px; font-weight: 700; letter-spacing: -.01em; }
-.cap p { font-size: 12.5px; color: #8a8f95; margin-top: 5px; line-height: 1.5; }
+.cap p { font-size: 12.5px; color: #8FA3B6; margin-top: 5px; line-height: 1.5; }
 
 /* ---- footer ---- */
 .foot {
-  margin-top: 34px; padding-top: 22px; border-top: 1px solid #24242a;
+  margin-top: 34px; padding-top: 22px; border-top: 1px solid #1D3145;
   display: flex; align-items: center; justify-content: space-between; gap: 30px;
 }
-.stack { font-size: 12px; color: #6f757c; line-height: 1.7; }
+.stack { font-size: 12px; color: #74889C; line-height: 1.7; }
 .stack b { color: #b9bec4; font-weight: 600; }
-.note { font-size: 12px; color: #6f757c; text-align: right; line-height: 1.7; }
+.note { font-size: 12px; color: #74889C; text-align: right; line-height: 1.7; }
 """
 
 
@@ -177,7 +177,7 @@ def main() -> None:
     </p>
 
     <h1 class="pitch">
-      Strava shows you what you did.<br />
+      Most running apps tell you what you did.<br />
       Stride tells you <em>whether that was right</em> — and what to do tomorrow.
     </h1>
 

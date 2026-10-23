@@ -615,7 +615,7 @@ export function DashboardPage() {
                           <span
                             className="h-2 w-2 rounded-full"
                             style={{
-                              background: SPORT_COLOR[row.sport_type] ?? '#fc5200',
+                              background: SPORT_COLOR[row.sport_type] ?? '#F2B01E',
                             }}
                           />
                           {sportLabel(row.sport_type)}
@@ -629,7 +629,7 @@ export function DashboardPage() {
                           className="h-full rounded-full"
                           style={{
                             width: `${Math.max(2, Math.min(100, pct))}%`,
-                            background: SPORT_COLOR[row.sport_type] ?? '#fc5200',
+                            background: SPORT_COLOR[row.sport_type] ?? '#F2B01E',
                           }}
                         />
                       </div>

@@ -40,7 +40,7 @@ the emulator and is never published.** Nearly every device in use is arm64.
 ## 2. What v1 includes, and what it does not
 
 The differentiator is **plan vs actual, with causes** — that is what Garmin
-Connect, Strava, Runna and TrainingPeaks each fail to do. Everything in v1
+Connect, the big social apps and the plan-first apps each fail to do. Everything in v1
 serves it; everything that does not serve it is cut.
 
 | Feature | v1 | Why |
@@ -158,7 +158,7 @@ the whole store behind the WebView and undo the point.
 
 Garmin Connect is the vendor app: it shows your activities and the watch's own
 coaching, but it does not compare the session against *your plan*, does not
-explain a miss, and does not connect the day before to the run. Strava is a
+explain a miss, and does not connect the day before to the run. A social app is a
 social log with no plan and no physiology. TrainingPeaks has plans but no
 device data behind them.
 

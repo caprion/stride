@@ -45,14 +45,14 @@ const metricOptions: { value: ProfileMetric; label: string }[] = [
   { value: 'elevation', label: 'Elevation' },
 ]
 const colors = [
-  '#fc5200',
-  '#2d9cdb',
-  '#1a9c5a',
-  '#c14fb0',
-  '#e6a700',
-  '#6d7176',
-  '#8a4bff',
-  '#d93a2b',
+  '#F2B01E',
+  '#3F8FB8',
+  '#2E8B7A',
+  '#1E5E96',
+  '#D99A0B',
+  '#61788D',
+  '#6E6BA8',
+  '#C0392B',
 ]
 
 function formatValue(value: number | null | undefined, format: CompareFormat) {
@@ -351,18 +351,18 @@ export default function ComparePage() {
                         data={chartRows}
                         margin={{ top: 8, right: 16, left: 0, bottom: 4 }}
                       >
-                        <CartesianGrid stroke="#ececec" vertical={false} />
+                        <CartesianGrid stroke="#E4EBF0" vertical={false} />
                         <XAxis
                           dataKey="distancePct"
                           type="number"
                           domain={[0, 100]}
                           tickFormatter={(value) => `${value}%`}
-                          tick={{ fontSize: 11, fill: '#6d7176' }}
+                          tick={{ fontSize: 11, fill: '#61788D' }}
                           tickLine={false}
-                          axisLine={{ stroke: '#ececec' }}
+                          axisLine={{ stroke: '#E4EBF0' }}
                         />
                         <YAxis
-                          tick={{ fontSize: 11, fill: '#6d7176' }}
+                          tick={{ fontSize: 11, fill: '#61788D' }}
                           tickLine={false}
                           axisLine={false}
                           width={52}

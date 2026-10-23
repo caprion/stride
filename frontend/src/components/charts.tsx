@@ -24,10 +24,10 @@ import {
 } from 'recharts'
 import { Card, CardHeader, cn } from './ui'
 import { formatDistanceShort, formatDuration, formatPace, formatWeekKey } from '../lib/format'
+import { RAMP, SERIES, ZONE_COLORS } from '../lib/palette'
 
-const AXIS = { fontSize: 11, fill: '#6d7176' }
-const GRID = '#ececec'
-const RAMP = ['#fc5200', '#fd6f31', '#f58a58', '#e9a08a', '#d977a6', '#c14fb0']
+const AXIS = { fontSize: 11, fill: '#61788D' }
+const GRID = '#E4EBF0'
 
 export function ChartFrame({
   title,
@@ -129,13 +129,13 @@ export function VolumeChart({
           {average > 0 ? (
             <ReferenceLine
               y={average}
-              stroke="#9aa0a6"
+              stroke={ZONE_COLORS[0]}
               strokeDasharray="4 4"
               label={{
                 value: `avg ${average.toFixed(0)} km`,
                 position: 'insideTopRight',
                 fontSize: 10,
-                fill: '#6d7176',
+                fill: '#61788D',
               }}
             />
           ) : null}
@@ -143,7 +143,7 @@ export function VolumeChart({
             {rows.map((_row, index) => (
               <Cell
                 key={index}
-                fill={index === rows.length - 1 ? '#fc5200' : '#fcb596'}
+                fill={index === rows.length - 1 ? SERIES.actual : '#F6D49A'}
                 fillOpacity={index === rows.length - 1 ? 1 : 0.85}
               />
             ))}
@@ -223,7 +223,7 @@ export function PaceTrendChart({
             type="monotone"
             dataKey="median"
             name="Median"
-            stroke="#fc5200"
+            stroke={SERIES.pace}
             strokeWidth={2.5}
             dot={false}
             activeDot={{ r: 4 }}
@@ -233,7 +233,7 @@ export function PaceTrendChart({
             type="monotone"
             dataKey="best"
             name="Best"
-            stroke="#c14fb0"
+            stroke={SERIES.heartRate}
             strokeWidth={1.5}
             dot={false}
             activeDot={{ r: 4 }}
@@ -243,7 +243,7 @@ export function PaceTrendChart({
             type="monotone"
             dataKey="longRun"
             name="Long run"
-            stroke="#2d9cdb"
+            stroke={SERIES.cadence}
             strokeWidth={1.5}
             strokeDasharray="4 3"
             dot={false}
@@ -261,7 +261,7 @@ export function PaceTrendChart({
 export function StreamChart({
   data,
   dataKey = 'value',
-  color = '#fc5200',
+  color = SERIES.heartRate,
   unit = '',
   height = 220,
   title,
@@ -332,9 +332,9 @@ export function StreamChart({
             <ReferenceLine
               key={index}
               y={line.value}
-              stroke={line.color ?? '#9aa0a6'}
+              stroke={line.color ?? '#93A6B7'}
               strokeDasharray="4 4"
-              label={{ value: line.label, position: 'right', fontSize: 10, fill: '#6d7176' }}
+              label={{ value: line.label, position: 'right', fontSize: 10, fill: '#61788D' }}
             />
           ))}
           <Area
@@ -369,7 +369,7 @@ export function ZoneBarChart({
   }[]
   height?: number
 }) {
-  const colors = ['#9aa0a6', '#2d9cdb', '#1a9c5a', '#e6a700', '#d93a2b']
+  const colors = [...ZONE_COLORS]
   const rows = zones.map((z, index) => ({
     ...z,
     label: `Z${z.zone_no} ${z.name}`,
@@ -436,7 +436,7 @@ export function MonthlyBars({
           <Bar
             dataKey="km"
             name="Distance"
-            fill="#fc5200"
+            fill={SERIES.actual}
             radius={[3, 3, 0, 0]}
             maxBarSize={38}
           />

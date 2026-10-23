@@ -4,38 +4,51 @@ export default {
   theme: {
     extend: {
       colors: {
-        // Strava-grade palette.
+        // Brand — deep azure. Structure, gravity, primary actions, the frame.
         brand: {
-          DEFAULT: '#fc5200',
-          50: '#fff4ef',
-          100: '#ffe3d6',
-          200: '#ffc7ab',
-          300: '#ffa077',
-          400: '#ff7943',
-          500: '#fc5200',
-          600: '#e04700',
-          700: '#b83a00',
-          800: '#8f2e00',
-          900: '#6b2300',
+          50: '#EEF5FB',
+          100: '#D6E6F3',
+          200: '#A9C9E2',
+          300: '#7BA8CD',
+          400: '#4A82B4',
+          500: '#1E5E96',
+          600: '#124A7C',
+          700: '#0D3A63',
+          800: '#082B49',
+          900: '#051D33',
         },
+        // Accent — warm amber. Excitement, energy, the athlete's own data.
+        accent: {
+          50: '#FEF8EA',
+          100: '#FDEDC7',
+          200: '#FBDB93',
+          300: '#F8C55C',
+          400: '#F2B01E',
+          500: '#D99A0B',
+          600: '#B57C06',
+          700: '#8A5E05',
+          800: '#5F4103',
+          900: '#3D2A02',
+        },
+        // Ink — a blue-black, so text sits in the same world as the chrome.
         ink: {
-          DEFAULT: '#121212',
-          soft: '#3c4043',
-          muted: '#6d7176',
-          faint: '#9aa0a6',
+          DEFAULT: '#0B1B27',
+          soft: '#31465A',
+          muted: '#61788D',
+          faint: '#93A6B7',
         },
         surface: {
-          DEFAULT: '#ffffff',
-          soft: '#f7f7f7',
-          raised: '#fbfbfb',
-          sunken: '#f0f0f0',
+          DEFAULT: '#FFFFFF',
+          soft: '#F4F7FA',
+          raised: '#FAFCFD',
+          sunken: '#E9EFF4',
         },
-        edge: '#e6e6e6',
-        positive: '#1a9c5a',
-        negative: '#d93a2b',
-        warn: '#e6a700',
-        // Chart ramp: orange -> magenta, as Strava uses for activity plots.
-        ramp: ['#fc5200', '#fd6f31', '#f58a58', '#e9a08a', '#d977a6', '#c14fb0'],
+        edge: '#DEE7EE',
+        positive: '#2E8B7A',
+        negative: '#C0392B',
+        warn: '#D99A0B',
+        // Chart ramp: sun through earth to deep water.
+        ramp: ['#F2B01E', '#E08A3C', '#B4557F', '#6E6BA8', '#3F6E9E', '#1E5E96'],
       },
       fontFamily: {
         sans: [
@@ -51,9 +64,9 @@ export default {
         mono: ['"SF Mono"', 'ui-monospace', 'Menlo', 'Consolas', 'monospace'],
       },
       boxShadow: {
-        card: '0 1px 2px rgba(0,0,0,0.04), 0 1px 3px rgba(0,0,0,0.06)',
-        lift: '0 4px 16px rgba(0,0,0,0.10)',
-        nav: '0 1px 0 rgba(0,0,0,0.08)',
+        card: '0 1px 2px rgba(11,27,39,0.04), 0 1px 3px rgba(11,27,39,0.06)',
+        lift: '0 4px 16px rgba(11,27,39,0.10)',
+        nav: '0 1px 0 rgba(11,27,39,0.08)',
       },
       borderRadius: {
         card: '10px',

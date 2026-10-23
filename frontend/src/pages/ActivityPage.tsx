@@ -1,7 +1,7 @@
 /**
  * Activity detail — the flagship page.
  *
- * Layout mirrors Strava: a full-width interactive route map, the title block,
+ * A full-width interactive route map, the title block,
  * a tight stat strip, stream charts, a splits table, heart-rate zones and
  * previous/next navigation between neighbouring activities.
  *
@@ -67,10 +67,10 @@ import {
 
 /* ------------------------------------------------------------------ consts */
 
-const BRAND = '#fc5200'
-const HR_COLOR = '#fc5200'
-const PACE_COLOR = '#c14fb0'
-const ELEVATION_COLOR = '#2d9cdb'
+const BRAND = '#F2B01E'
+const HR_COLOR = '#F2B01E'
+const PACE_COLOR = '#1E5E96'
+const ELEVATION_COLOR = '#3F8FB8'
 
 const TILE_URL = '/api/v1/tiles/{z}/{x}/{y}.png'
 const TILE_ATTRIBUTION =
@@ -195,7 +195,7 @@ function RouteHero({
           pathOptions={{
             color: '#ffffff',
             weight: 2,
-            fillColor: '#1a9c5a',
+            fillColor: '#2E8B7A',
             fillOpacity: 1,
           }}
         />
@@ -205,7 +205,7 @@ function RouteHero({
           pathOptions={{
             color: '#ffffff',
             weight: 2,
-            fillColor: '#d93a2b',
+            fillColor: '#C0392B',
             fillOpacity: 1,
           }}
         />
@@ -303,8 +303,8 @@ function TitleBlock({
             <span
               className="inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide"
               style={{
-                background: `${SPORT_COLOR[activity.sport_type] ?? '#fc5200'}18`,
-                color: SPORT_COLOR[activity.sport_type] ?? '#fc5200',
+                background: `${SPORT_COLOR[activity.sport_type] ?? '#F2B01E'}18`,
+                color: SPORT_COLOR[activity.sport_type] ?? '#F2B01E',
               }}
             >
               <ActivityIcon size={11} strokeWidth={2.4} />
@@ -965,7 +965,7 @@ export function ActivityPage() {
               subtitle={`${hrDrift == null ? 'Heart rate drift unavailable' : `Heart rate ${hrDrift > 0 ? 'rose' : hrDrift < 0 ? 'fell' : 'held steady'} ${Math.round(Math.abs(hrDrift))} bpm across the run`} · avg ${avgHr === null ? '—' : formatHr(avgHr)}, peak ${formatHr(activity.max_hr)} · running only`}
               referenceLines={
                 avgHr !== null
-                  ? [{ value: avgHr, label: `avg ${formatHr(avgHr)}`, color: '#9aa0a6' }]
+                  ? [{ value: avgHr, label: `avg ${formatHr(avgHr)}`, color: '#93A6B7' }]
                   : undefined
               }
             />

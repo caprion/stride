@@ -1,6 +1,8 @@
+import { SPORT_COLORS } from './palette'
+
 /** Formatting helpers shared across every surface. */
 
-/** 18330 -> "18.3 km" (Strava shows one decimal below 100 km). */
+/** 18330 -> "18.3 km" — one decimal below 100 km, none above. */
 export function formatDistance(
   metres: number | null | undefined,
   unit: 'km' | 'mi' = 'km',
@@ -166,14 +168,4 @@ export function sportLabel(sport: string): string {
   return map[sport] ?? sport.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
 }
 
-export const SPORT_COLOR: Record<string, string> = {
-  running: '#fc5200',
-  trail_running: '#e05700',
-  treadmill_running: '#8a4bff',
-  virtualrun: '#2d9cdb',
-  walking: '#1a9c5a',
-  hiking: '#8b6f47',
-  cycling: '#0f9bd7',
-  swimming: '#00a3c4',
-  strength_training: '#6d7176',
-}
+export const SPORT_COLOR: Record<string, string> = SPORT_COLORS

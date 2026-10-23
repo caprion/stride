@@ -1,23 +1,23 @@
 # Stride — Phase 2 design: plan intelligence, physiology, athlete fingerprint
 
-> The design of record for the second pass. Phase 1 (the Strava-grade log) is
-> live; this document defines what makes Stride *not* Strava.
+> The design of record for the second pass. Phase 1 (the log itself) is live;
+> this document defines what makes Stride *more than a log*.
 
 ---
 
 ## 1. The gap
 
-Strava is a **social activity log**. Its core loop is: post a run, see friends,
+A social running app is a **social activity log**. Its core loop is: post a run, see friends,
 compare segments. It has three properties that matter to a serious runner:
 
-1. **No plan.** "Training Log" is a calendar of what you *did*. Strava has no
+1. **No plan.** "Training Log" is a calendar of what you *did*. A social app has no
    concept of intent — there is no "what you were supposed to do today".
 2. **No physiology.** Sleep, HRV, resting heart rate, body battery, training
    status — the state of the athlete on the day — are absent.
-3. **No causality.** A pace is a number. Strava cannot tell you *why* it was
+3. **No causality.** A pace is a number. A social log cannot tell you *why* it was
    that number, whether it is getting better, or what to do tomorrow.
 
-So Strava answers **"What did I do?"** and stops.
+So a social app answers **"What did I do?"** and stops.
 
 **Stride answers "Was that the right thing to do — and what should I do tomorrow?"**
 
@@ -37,7 +37,7 @@ That is the whole thesis. Everything below is in service of it.
         └──────────────────────────────────────────────────────────┘
 ```
 
-Strava has only the middle box. The differentiator is the loop closing.
+A social log has only the middle box. The differentiator is the loop closing.
 
 ### Pillar 1 — The plan exists as a first-class object
 
@@ -84,7 +84,7 @@ And a cause, attached automatically:
 > → **Fatigue-driven fade, not a fitness regression.** Reduce next quality
 > session by one rep.
 
-That sentence is the product. Nothing in Strava can produce it.
+That sentence is the product. Nothing in a social log can produce it.
 
 ### Pillar 3 — The physiological picture
 
@@ -136,7 +136,7 @@ The output of the loop. For today:
   fade."
 
 This is the feature that makes the app worth opening *before* a run, which
-Strava is not.
+A social log is not.
 
 ---
 
@@ -552,7 +552,7 @@ and 127 seconds** to **1 call and 4 seconds**.
 
 ### The comparison feature
 
-Strava lets you see two activities side by side, but it compares them as
+Most apps let you see two activities side by side, but they compare them as
 *activities*. The question an athlete actually asks is different: **was that
 run really better, or was it just shorter and flatter?**
 

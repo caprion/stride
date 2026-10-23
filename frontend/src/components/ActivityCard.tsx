@@ -1,5 +1,5 @@
 /**
- * Activity card — the Strava feed row.
+ * Activity card — the feed row.
  *
  * Layout: athlete + title header, optional route thumbnail, then the stat
  * strip (distance / pace / elevation / time) and the sport icon.
@@ -47,7 +47,7 @@ export function ActivityCard({
   showRoute?: boolean
   className?: string
 }) {
-  const color = SPORT_COLOR[activity.sport_type] ?? '#fc5200'
+  const color = SPORT_COLOR[activity.sport_type] ?? '#F2B01E'
 
   return (
     <article
@@ -146,7 +146,7 @@ export function ActivityRow({
     >
       <span
         className="h-2 w-2 shrink-0 rounded-full"
-        style={{ background: SPORT_COLOR[activity.sport_type] ?? '#fc5200' }}
+        style={{ background: SPORT_COLOR[activity.sport_type] ?? '#F2B01E' }}
       />
       <span className="min-w-0 flex-1 truncate text-[13px] font-medium text-ink">
         {activity.name}

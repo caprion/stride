@@ -127,20 +127,20 @@ export default function FitnessPage() {
                     label: formatDate(p.date).slice(0, 6),
                   }))}
                 >
-                  <CartesianGrid stroke="#ececec" vertical={false} />
-                  <XAxis dataKey="label" tick={{ fontSize: 10, fill: '#6d7176' }} />
-                  <YAxis tick={{ fontSize: 10, fill: '#6d7176' }} />
+                  <CartesianGrid stroke="#E4EBF0" vertical={false} />
+                  <XAxis dataKey="label" tick={{ fontSize: 10, fill: '#61788D' }} />
+                  <YAxis tick={{ fontSize: 10, fill: '#61788D' }} />
                   <Tooltip />
                   <ReferenceLine
                     y={baseline ?? undefined}
-                    stroke="#9aa0a6"
+                    stroke="#93A6B7"
                     strokeDasharray="4 3"
-                    label={{ value: 'Baseline', fontSize: 10, fill: '#6d7176' }}
+                    label={{ value: 'Baseline', fontSize: 10, fill: '#61788D' }}
                   />
                   <Line
                     dataKey="value"
                     name={data.label}
-                    stroke="#fc5200"
+                    stroke="#F2B01E"
                     strokeWidth={2.5}
                     dot={{ r: 3 }}
                     connectNulls

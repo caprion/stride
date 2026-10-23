@@ -1,9 +1,8 @@
 /**
  * App shell — top navigation, left rail and the routed content area.
  *
- * Mirrors Strava's layout: a slim white top bar with the primary destinations,
- * a secondary left rail with the athlete's own sections, and a dense content
- * column in the middle.
+ * A slim white top bar with the primary destinations, a secondary left rail
+ * with the athlete's own sections, and a dense content column in the middle.
  */
 
 import { useMutation, useQuery } from '@tanstack/react-query'
@@ -112,7 +111,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
       <header className="sticky top-0 z-40 border-b border-edge bg-surface shadow-nav">
         <div className="mx-auto flex h-14 max-w-[1400px] items-center gap-4 px-4">
           <Link to="/" className="flex items-center gap-2">
-            <span className="flex h-7 w-7 items-center justify-center rounded-md bg-brand-500 text-white">
+            <span className="flex h-7 w-7 items-center justify-center rounded-md bg-brand-700 text-accent-400">
               <Activity size={16} strokeWidth={2.6} />
             </span>
             <span className="text-[19px] font-extrabold uppercase tracking-tight text-brand-500">

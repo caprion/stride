@@ -1,4 +1,4 @@
-"""Statistics endpoints — the numbers behind the Strava stats pages."""
+"""Statistics endpoints — the numbers behind the statistics pages."""
 
 from __future__ import annotations
 

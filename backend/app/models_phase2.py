@@ -331,7 +331,7 @@ class Readiness(Base):
 
 
 class Gear(Base):
-    """Shoes. Rotation mileage and retirement — runners care, Strava barely does."""
+    """Shoes. Rotation mileage and retirement — runners care; most apps ignore it."""
 
     __tablename__ = "gear"
 

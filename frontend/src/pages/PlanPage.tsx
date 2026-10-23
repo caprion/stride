@@ -44,12 +44,12 @@ const verdictNames: Record<Verdict, string> = {
   bonus: 'Bonus',
 }
 const verdictColors: Record<Verdict, string> = {
-  hit: '#1a9c5a',
-  missed_pace: '#e6a700',
-  short: '#e6a700',
-  missed: '#d93a2b',
-  substituted: '#2d9cdb',
-  bonus: '#fc5200',
+  hit: '#2E8B7A',
+  missed_pace: '#D99A0B',
+  short: '#D99A0B',
+  missed: '#C0392B',
+  substituted: '#3F8FB8',
+  bonus: '#F2B01E',
 }
 const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
 const todayKey = () => new Date().toISOString().slice(0, 10)
@@ -376,13 +376,13 @@ export default function PlanPage() {
                 <BarChart
                   data={summary.rows.map((r) => ({ ...r, label: formatWeekKey(r.week_key) }))}
                 >
-                  <CartesianGrid stroke="#ececec" vertical={false} />
-                  <XAxis dataKey="label" tick={{ fontSize: 10, fill: '#6d7176' }} />
-                  <YAxis tick={{ fontSize: 10, fill: '#6d7176' }} unit=" km" />
+                  <CartesianGrid stroke="#E4EBF0" vertical={false} />
+                  <XAxis dataKey="label" tick={{ fontSize: 10, fill: '#61788D' }} />
+                  <YAxis tick={{ fontSize: 10, fill: '#61788D' }} unit=" km" />
                   <Tooltip />
                   <Legend />
-                  <Bar dataKey="planned_km" name="Planned" fill="#b8bdc2" />
-                  <Bar dataKey="actual_km" name="Actual" fill="#fc5200" />
+                  <Bar dataKey="planned_km" name="Planned" fill="#B4C6D4" />
+                  <Bar dataKey="actual_km" name="Actual" fill="#F2B01E" />
                 </BarChart>
               </ResponsiveContainer>
             </ChartFrame>

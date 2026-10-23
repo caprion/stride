@@ -64,7 +64,7 @@ You can `curl` it to check a response shape.
 
 Exact TypeScript interfaces for every response are in `src/types.ts`. Read it first.
 
-## Design language — Strava-grade
+## Design language
 
 | Token | Value | Use |
 |---|---|---|
@@ -82,7 +82,7 @@ Rules:
 - Numbers are big and confident (`text-[26px] font-semibold`); labels are tiny,
   uppercase and letter-spaced (`text-[11px] font-semibold uppercase tracking-[0.07em] text-ink-muted`).
 - One accent colour per view. Orange is reserved for the single most important thing.
-- Dense, not airy. Strava packs information.
+- Dense, not airy. The best running apps pack information.
 - Icons from `lucide-react`, 14–18px, `strokeWidth={2}`.
 
 ## Component kit (already built — use it, do not rebuild it)
@@ -102,7 +102,7 @@ From `../components/charts`:
 From `../components/RouteThumb`: `<RouteThumb points={[[lat,lon],...]} className="..." />`
 — an SVG route thumbnail. Use it wherever a route preview belongs.
 
-From `../components/ActivityCard`: `<ActivityCard activity={a} />` — the Strava feed
+From `../components/ActivityCard`: `<ActivityCard activity={a} />` — the feed
 card, already styled. Use it for feed rows rather than rebuilding one.
 
 ## Formatting helpers (`../lib/format`)

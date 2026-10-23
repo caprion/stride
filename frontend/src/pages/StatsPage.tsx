@@ -49,7 +49,7 @@ import {
 /* ------------------------------------------------------------------ heatmap */
 
 /** Ordered shades, lightest to darkest. */
-const HEAT_STEPS = ['#fff4ef', '#ffd9c4', '#ffa077', '#ff7943', '#fc5200']
+const HEAT_STEPS = ['#FEF8EA', '#FDEDC7', '#F8C55C', '#F2B01E', '#F2B01E']
 
 const WEEKDAY_LABELS = ['Mon', '', 'Wed', '', 'Fri', '', 'Sun']
 
@@ -97,7 +97,7 @@ function buildHeatCells(year: number, byDate: Map<string, HeatmapDay>): HeatCell
 
 function heatColor(distanceM: number, maxM: number, inYear: boolean): string {
   if (!inYear) return 'transparent'
-  if (!distanceM) return '#f0f0f0'
+  if (!distanceM) return '#E9EFF4'
   if (maxM <= 0) return HEAT_STEPS[0]
   const ratio = distanceM / maxM
   if (ratio <= 0.25) return HEAT_STEPS[0]
@@ -253,7 +253,7 @@ function Heatmap({
           {/* legend */}
           <div className="mt-3 flex items-center justify-end gap-2 text-[11px] text-ink-muted">
             <span>Less</span>
-            {['#f0f0f0', ...HEAT_STEPS].map((color) => (
+            {['#E9EFF4', ...HEAT_STEPS].map((color) => (
               <span
                 key={color}
                 className="h-[10px] w-[10px] rounded-[2px]"
@@ -551,7 +551,7 @@ export function StatsPage() {
                         <span className="inline-flex items-center gap-2 text-[13px] font-medium text-ink">
                           <span
                             className="h-2.5 w-2.5 rounded-full"
-                            style={{ background: SPORT_COLOR[row.sport_type] ?? '#fc5200' }}
+                            style={{ background: SPORT_COLOR[row.sport_type] ?? '#F2B01E' }}
                           />
                           {sportLabel(row.sport_type)}
                         </span>

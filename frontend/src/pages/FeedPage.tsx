@@ -329,7 +329,7 @@ export function FeedPage() {
                     <span className="inline-flex min-w-0 items-center gap-2 text-[13px] font-medium text-ink">
                       <span
                         className="h-2 w-2 shrink-0 rounded-full"
-                        style={{ background: SPORT_COLOR[row.sport_type] ?? '#fc5200' }}
+                        style={{ background: SPORT_COLOR[row.sport_type] ?? '#F2B01E' }}
                       />
                       <span className="truncate">{sportLabel(row.sport_type)}</span>
                     </span>

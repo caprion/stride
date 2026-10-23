@@ -127,7 +127,7 @@ def pace_seconds_per_km(distance_m: float, duration_s: float) -> float | None:
 
 
 def format_pace(seconds_per_km: float | None) -> str | None:
-    """``372.5`` -> ``"6:13"`` (Strava-style pace, min:sec per km)."""
+    """``372.5`` -> ``"6:13"`` — pace as min:sec per km."""
     if seconds_per_km is None or seconds_per_km <= 0:
         return None
     total = int(round(seconds_per_km))

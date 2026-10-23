@@ -1,9 +1,9 @@
 # Stride
 
-> **Strava tells you what you did. Stride tells you whether that was the right
-> thing to do — and what to do tomorrow.**
+> **Most running apps tell you what you did. Stride tells you whether that was
+> the right thing to do — and what to do tomorrow.**
 
-A Strava-class running webapp with native Garmin ingest, built around one loop:
+A private, local-first running log with native Garmin ingest, built around one loop:
 
 **Plan → Execute → Understand → Adapt.**
 
@@ -11,7 +11,7 @@ The plan exists as a first-class object. Every session gets a verdict *and* a
 cause. The athlete's physiology and running mechanics are modelled. The app
 tells you what to do today.
 
-Strava is a **social activity log**: it has no concept of intent, no physiology
+A social running app is a **social activity log**: it has no concept of intent, no physiology
 and no causality. That is the gap this fills.
 
 ```

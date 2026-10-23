@@ -1,4 +1,4 @@
-# Stride — a Strava-class running webapp with native Garmin ingest
+# Stride — a private, local-first running log with native Garmin ingest
 
 > Plan of record. Status: **shipped** — see §8 for what was built and verified.
 
@@ -6,11 +6,11 @@
 
 ## 0. Outcome
 
-`~/stride` — a Strava-class running webapp, live at **http://100.89.222.50:8000**
+`~/stride` — a private, local-first running log, live at **http://100.89.222.50:8000**
 (Tailscale) and `http://localhost:8000` locally. One command: `./scripts/run.sh`.
 
 Six surfaces (Dashboard, Feed, Activity detail, Training log, Stats, Settings),
-a Strava-grade design system, four Garmin ingest paths, and 19 backend tests
+a production-grade design system, four Garmin ingest paths, and 19 backend tests
 passing. Zero console errors, page errors or failed requests across every route
 (verified with headless Chromium — `scripts/screenshot.mjs`).
 
@@ -18,12 +18,12 @@ passing. Zero console errors, page errors or failed requests across every route
 
 ## 1. Goal
 
-A high-fidelity, self-hosted Strava clone for running. The user plugs in a Garmin
+A high-fidelity, self-hosted running log. The user plugs in a Garmin
 credential and everything works: activities flow in automatically, splits/HR/GPS are
-preserved, and the app presents them in a Strava-grade UI.
+preserved, and the app presents them in a polished, fast UI.
 
 Success criterion: **the app runs on one command, is populated with real data, and
-looks like Strava.**
+looks and feels like a real product.**
 
 ---
 
@@ -35,7 +35,7 @@ Reusing prior art in `~/running` (a Garmin sync pipeline + Streamlit dashboard,
 | Finding | Evidence | Consequence |
 |---|---|---|
 | `~/running` has **never synced real Garmin data** | `tracking/unified-cache.json` is byte-identical to `sample-data/unified-cache.json` (891532 B); no `.garth` session dir | The old pipeline is unproven against Garmin. Cannot assume it works. |
-| Prior work is **Streamlit**, not a webapp | `dashboard/` = 10 Streamlit pages | Strava fidelity needs a real SPA. Streamlit cannot deliver it. |
+| Prior work is **Streamlit**, not a webapp | `dashboard/` = 10 Streamlit pages | A real SPA is needed. Streamlit cannot deliver it. |
 | **Garmin blocks datacenter IPs** | `garminconnect` login: all 5 strategies fail — `429 Too Many Requests` (mobile), `403 Cloudflare bot challenge` (portal) | Sync must not run from the Azure IP (AS8075, Pune). |
 | **Residential egress fixes it** | After `tailscale set --exit-node=100.90.192.46` (raspberrypi @ home, AS24309 Atria Broadband): `429` → `401`, and the portal strategy reached Garmin's real login form | The app needs a **network-route** concept, and the fleet's exit node is the escape hatch. |
 | **Official OAuth1 developer API is reachable** | `connectapi.garmin.com/oauth-service/oauth/request_token` → `401` (not `404`/`429`); `.../access_token` → `400`; `/activity-service/activity/{id}` → `403` | A real Consumer Key/Secret gives a clean 3-legged flow. This is the "plug in a key" path. |
@@ -65,7 +65,7 @@ Reusing prior art in `~/running` (a Garmin sync pipeline + Streamlit dashboard,
 |---|---|---|
 | Backend | Python 3.12 · FastAPI · SQLAlchemy 2.0 · SQLite | Entire Garmin ecosystem here is Python (`garminconnect`, `garth`, `fitparse`). Reuse beats reimplementation. SQLite = zero-ops, single file, personal scale. |
 | Sync | APScheduler worker + manual trigger | Auto-sync on a schedule; "Sync now" button. |
-| Frontend | React 18 · TypeScript · Vite · Tailwind · Recharts · react-leaflet · Zustand · TanStack Query | Strava-grade SPA. Recharts + Leaflet cover the whole chart/map surface. |
+| Frontend | React 18 · TypeScript · Vite · Tailwind · Recharts · react-leaflet · Zustand · TanStack Query | A real SPA. Recharts + Leaflet cover the whole chart/map surface. |
 | Serving | FastAPI serves the built SPA + `/api/v1` | One port, one command, "just works". |
 | Auth | OAuth1 3-legged (dev key) + session cookie for the app itself | Personal app; no OAuth server needed beyond the app's own session. |
 
@@ -128,9 +128,9 @@ GET    /health/daily                   ?from&to
 
 ---
 
-## 5. Frontend surfaces (Strava parity)
+## 5. Frontend surfaces
 
-| Route | Surface | Strava analogue |
+| Route | Surface | What it answers |
 |---|---|---|
 | `/` | Dashboard: hero tiles, weekly volume, recent activity feed | Dashboard |
 | `/feed` | Activity feed with route thumbnails | Feed |
@@ -139,7 +139,8 @@ GET    /health/daily                   ?from&to
 | `/stats` | Totals & gains, personal bests, pace/HR trends | Stats |
 | `/settings` | Connect Garmin, sync config, ingest, data | Settings |
 
-Design language: Strava orange `#fc5200`, white cards, left icon sidebar, dense
+Design language: deep azure for structure, warm amber for the athlete's data,
+white cards, left icon sidebar, dense
 stat tiles, dark-on-white typography, sticky top nav.
 
 ---

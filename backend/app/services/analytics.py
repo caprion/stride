@@ -1,4 +1,4 @@
-"""Analytics: the numbers behind the Strava-style stats pages.
+"""Analytics: the numbers behind the statistics pages.
 
 Everything is computed on read from the ``activity`` table — no materialised
 aggregates to keep in sync, no stale numbers after a re-import. At personal scale
