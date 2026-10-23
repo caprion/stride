@@ -319,3 +319,53 @@ The app must never invent physiology it does not have.
 5. `GET /plan/today` returns one actionable sentence for today.
 6. Every new endpoint has a test; the existing 19 still pass; the frontend
    typechecks; all routes render without console errors.
+
+---
+
+## 9. What shipped
+
+All four workstreams landed, with the schema and API contract frozen before any
+parallel work began so no two agents touched the same file.
+
+| Workstream | Result |
+|---|---|
+| **A** — Garmin health & workout ingest | `garmin_health.py`, `garmin_workouts.py`, `health_sync.py` (635 lines). Sleep, HRV, body battery, stress, resting HR, training status, HR-zone model, endurance score, running tolerance, gear, scheduled workouts, workout→session profiles. Every method degrades to `{}` without an account session. |
+| **B** — Plan model, importer, engine | The real 20-week plan imports as **8 phases, 20 weeks, 83 sessions**, pace bands on 67. Verdicts: `hit` · `missed_pace` · `short` · `missed` · `substituted` · `bonus`, scored 50 % distance / 40 % pace / 10 % type, with causes drawn from sleep, HRV, resting HR and cadence stability. |
+| **C** — Fingerprint & readiness | Cadence CV and drift, HR drift, aerobic decoupling, Minetti efficiency, pace CV, stride length, form score. Readiness is a 0–100 composite with named, renormalised drivers. |
+| **D** — New surfaces | `/plan`, `/physiology`, `/fitness`; the dashboard now leads with **Today** (plan → readiness → one recommendation). |
+
+### Integration decisions taken by the orchestrator
+
+- **The plan API was rewritten** to own the wire format. The engine produces
+  plain dicts; the API shapes them into the contract the frontend is written
+  against. Neither layer has to know about the other.
+- **Plans are anchored to the activity history.** A plan written for a past
+  season never overlaps the runs it governs, and every session then reads as
+  "missed". Importing shifts the block so its final week ends with the most
+  recent activity.
+- **`has_plan` and `has_session` are separate.** A plan that schedules nothing
+  for today is a rest day, not a missing plan.
+- **A clean verdict carries no cause.** "Short sleep" attached to a session that
+  was hit exactly is noise.
+- **The efficiency factor was corrected** to Minetti's `speed / HR`. The
+  pace:HR ratio is its reciprocal, and using it would have made a *slower* run
+  look more efficient — inverting every downstream reading.
+
+### Verification
+
+- **74 backend tests pass** (19 from Phase 1, 55 new).
+- Frontend typechecks with zero errors; production build succeeds.
+- All nine routes render in headless Chromium with no console errors, page
+  errors or failed requests.
+- All 35 API endpoints return 200.
+
+### Bugs the new test suite caught
+
+1. `Long 14km easy` classified as `easy` — the easy check ran before the
+   distance check.
+2. The plan importer raised `IndexError` / `TypeError` on a malformed table
+   instead of warning and continuing.
+3. Garmin's aggregate sleep-stage fields were ignored when no per-stage array
+   was present.
+4. A workout step's *distance* target was read as a *pace* target.
+5. The workout client had no non-probing `sources()` status method.
