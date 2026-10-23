@@ -34,6 +34,27 @@ from .persistence import store_activity
 
 log = logging.getLogger(__name__)
 
+MAX_ACTIVITY_DAYS = 365
+MAX_ACTIVITIES_PER_SYNC = 300
+MAX_WELLNESS_DAYS = 90
+MAX_HISTORY_MONTHS = 12
+
+
+def _bounded_days(value: Any, default: int, maximum: int) -> int:
+    try:
+        parsed = int(value)
+    except (TypeError, ValueError, OverflowError):
+        parsed = default
+    return max(1, min(parsed, maximum))
+
+
+def _history_activity_days(value: Any, fallback_days: int) -> int:
+    """Convert the history API's month count to a maximum one-year day window."""
+    if value is None:
+        return MAX_ACTIVITY_DAYS
+    months = _bounded_days(value, max(1, (fallback_days + 29) // 30), MAX_HISTORY_MONTHS)
+    return min(MAX_ACTIVITY_DAYS, months * 31)
+
 
 def _client() -> GarminPersonalClient:
     return GarminPersonalClient(state.personal_api_key or "")
@@ -149,27 +170,27 @@ def sync_activities(
     "load all" is a real option rather than a formality.
     """
     client = _client()
+    days = _bounded_days(days, 90, MAX_ACTIVITY_DAYS)
     end = date.today()
-    start = end - timedelta(days=days) if days else None
+    start = end - timedelta(days=days - 1)
 
     raw_activities: list[dict[str, Any]] = []
     page_size = 100
     offset = 0
-    while True:
+    while offset < MAX_ACTIVITIES_PER_SYNC:
         page = client.activities(
             start=offset,
-            limit=page_size,
-            start_date=start.isoformat() if start else None,
+            limit=min(page_size, MAX_ACTIVITIES_PER_SYNC - offset),
+            start_date=start.isoformat(),
             end_date=end.isoformat(),
         )
         if not page:
             break
+        page = page[: MAX_ACTIVITIES_PER_SYNC - offset]
         raw_activities.extend(page)
         if len(page) < page_size:
             break
-        offset += page_size
-        if offset >= 2000:  # a hard ceiling; nobody has this many runs
-            break
+        offset += len(page)
 
     db = SessionLocal()
     out: list[dict[str, Any]] = []
@@ -338,8 +359,9 @@ def _merge_fit(activity: dict[str, Any], parsed: dict[str, Any]) -> dict[str, An
 def sync_wellness(days: int = 30) -> dict[str, Any]:
     """Pull sleep, HRV, resting HR, stress, body battery and steps per day."""
     client = _client()
+    days = _bounded_days(days, 30, MAX_WELLNESS_DAYS)
     end = date.today()
-    start = end - timedelta(days=days)
+    start = end - timedelta(days=days - 1)
 
     db = SessionLocal()
     written = 0
@@ -357,6 +379,7 @@ def sync_wellness(days: int = 30) -> dict[str, Any]:
                 row = DailyPhysiology(date=key, source="garmin_personal")
                 db.add(row)
 
+            savepoint = db.begin_nested()
             try:
                 _apply_daily_summary(client, row, key)
                 _apply_sleep(client, row, key)
@@ -364,7 +387,9 @@ def sync_wellness(days: int = 30) -> dict[str, Any]:
                 _apply_heart_rate(client, row, key)
                 _mirror_daily_metric(db, row)
                 written += 1
+                savepoint.commit()
             except Exception as exc:
+                savepoint.rollback()
                 errors.append(f"{key}: {exc}")
             day += timedelta(days=1)
 
@@ -521,16 +546,18 @@ def run(days: int = 90, history: dict[str, Any] | None = None, progress: Any = N
     """Full Personal API sync: activities, then wellness.
 
     ``history`` overrides the windows: ``activities`` is a number of months or
-    ``None`` for everything the account holds, ``health_days`` is how much
+    ``None`` for the capped one-year history, ``health_days`` is how much
     wellness history to pull.
     """
     activity_days: int | None = days
     health_days = min(days, 30)
     if history:
         if "activities" in history:
-            activity_days = history["activities"]
+            activity_days = _history_activity_days(history["activities"], days)
         if history.get("health_days"):
-            health_days = int(history["health_days"])
+            health_days = _bounded_days(history["health_days"], 30, MAX_WELLNESS_DAYS)
+    activity_days = _bounded_days(activity_days, 90, MAX_ACTIVITY_DAYS)
+    health_days = _bounded_days(health_days, 30, MAX_WELLNESS_DAYS)
     activities = sync_activities(days=activity_days, progress=progress)
     db = SessionLocal()
     created = updated = 0
@@ -542,6 +569,9 @@ def run(days: int = 90, history: dict[str, Any] | None = None, progress: Any = N
             else:
                 updated += 1
         db.commit()
+    except Exception:
+        db.rollback()
+        raise
     finally:
         db.close()
 

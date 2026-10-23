@@ -9,11 +9,9 @@ from __future__ import annotations
 import logging
 import os
 from contextlib import asynccontextmanager
-from pathlib import Path
-
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi.responses import FileResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 
 from .api import auth as auth_api
@@ -22,6 +20,19 @@ from .api import misc as misc_api
 from .api import stats as stats_api
 from .config import FRONTEND_DIST, state
 from .db import SessionLocal, init_db
+from .security import (
+    BOOTSTRAP_PATH,
+    SecurityMiddleware,
+    auth_enabled,
+    bootstrap_permitted,
+    cors_origins,
+    ensure_safe_bind_configuration,
+    harden_storage,
+    install_log_redaction,
+    redacted_http_exception_handler,
+    redact_text,
+    set_capability_cookie,
+)
 
 logging.basicConfig(
     level=logging.INFO,
@@ -30,14 +41,28 @@ logging.basicConfig(
 log = logging.getLogger("stride")
 
 API_PREFIX = "/api/v1"
+_cors_origins = cors_origins()
+install_log_redaction()
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    ensure_safe_bind_configuration()
     init_db()
+    # init_db may create the database and SQLite's WAL/SHM sidecars.
+    harden_storage()
     _bootstrap()
     _start_scheduler()
-    log.info("Stride is ready. Open http://localhost:%s", os.getenv("STRIDE_PORT", "8000"))
+    if not auth_enabled():
+        log.warning(
+            "STRIDE API AUTHENTICATION IS DISABLED. This is suitable only for local development/tests; "
+            "never expose this process to a network."
+        )
+    log.info(
+        "Stride is ready. Open http://%s:%s",
+        os.getenv("STRIDE_BIND", "127.0.0.1"),
+        os.getenv("STRIDE_PORT", "8000"),
+    )
     yield
 
 
@@ -50,16 +75,15 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:5173",
-        "http://127.0.0.1:5173",
-        "http://localhost:8000",
-        "http://127.0.0.1:8000",
-    ],
-    allow_credentials=True,
+    allow_origins=_cors_origins,
+    # The production SPA is same-origin. A configured development origin gets
+    # credentialed CORS only while the capability gate is enabled.
+    allow_credentials=auth_enabled(),
     allow_methods=["*"],
     allow_headers=["*"],
 )
+app.add_middleware(SecurityMiddleware, allowed_origins=_cors_origins)
+app.add_exception_handler(HTTPException, redacted_http_exception_handler)
 
 app.include_router(auth_api.router, prefix=API_PREFIX)
 app.include_router(activities_api.router, prefix=API_PREFIX)
@@ -68,6 +92,22 @@ app.include_router(misc_api.calendar_router, prefix=API_PREFIX)
 app.include_router(misc_api.sync_router, prefix=API_PREFIX)
 app.include_router(misc_api.network_router, prefix=API_PREFIX)
 app.include_router(misc_api.health_router, prefix=API_PREFIX)
+
+
+@app.get(BOOTSTRAP_PATH, status_code=204, include_in_schema=False)
+def bootstrap_capability(request: Request) -> Response:
+    """Set the HttpOnly browser capability without ever returning it.
+
+    The middleware permits this endpoint without prior API authentication, but
+    only a loopback browser at Stride's own origin can use it. Tailnet clients
+    must already possess and send the explicit bearer capability.
+    """
+    if auth_enabled() and not bootstrap_permitted(request, _cors_origins):
+        raise HTTPException(status_code=403, detail="Local same-origin bootstrap required.")
+    response = Response(status_code=204)
+    if auth_enabled():
+        set_capability_cookie(response, request)
+    return response
 
 
 def _mount_optional(module_name: str, attr: str = "router") -> None:
@@ -96,6 +136,7 @@ _mount_optional("app.api.plan")
 _mount_optional("app.api.physiology")
 _mount_optional("app.api.fitness")
 _mount_optional("app.api.compare")
+_mount_optional("app.api.tiles")
 
 
 def _bootstrap() -> None:
@@ -108,7 +149,7 @@ def _bootstrap() -> None:
         if seeded:
             log.info("Seeded %d demo activities — the app is ready to explore.", seeded)
     except Exception as exc:  # pragma: no cover
-        log.warning("Demo bootstrap failed: %s", exc)
+        log.warning("Demo bootstrap failed: %s", redact_text(exc))
     finally:
         db.close()
     _bootstrap_garmin()
@@ -136,7 +177,7 @@ def _bootstrap_garmin() -> None:
         client = GarminPersonalClient(key)
         client.validate()
     except Exception as exc:
-        log.warning("Garmin key from %s did not validate: %s", source, exc)
+        log.warning("Garmin key from %s did not validate: %s", source, redact_text(exc))
         return
     state.update(
         personal_api_key=key,
@@ -166,7 +207,7 @@ def _start_scheduler() -> None:
         scheduler.start()
         log.info("Auto-sync scheduled every %d minutes.", state.sync_interval_minutes)
     except Exception as exc:  # pragma: no cover
-        log.warning("Could not start the scheduler: %s", exc)
+        log.warning("Could not start the scheduler: %s", redact_text(exc))
 
 
 @app.get(f"{API_PREFIX}/health")
@@ -201,3 +242,13 @@ else:
             "dev": "cd frontend && npm run dev",
             "api": f"{API_PREFIX}/docs",
         }
+
+
+if __name__ == "__main__":  # pragma: no cover - convenience entrypoint
+    import uvicorn
+
+    uvicorn.run(
+        "app.main:app",
+        host=os.getenv("STRIDE_BIND", "127.0.0.1"),
+        port=int(os.getenv("STRIDE_PORT", "8000")),
+    )

@@ -371,7 +371,6 @@ export interface CompareResponse {
   missing: number[]
 }
 
-
 /* --------------------------------------------------------------- history */
 
 export interface HistorySettings {

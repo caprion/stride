@@ -38,7 +38,12 @@ def from_environment() -> str | None:
 def from_key_vault(
     vault: str = KEYVAULT_NAME, secret: str = KEYVAULT_SECRET, timeout: int = 20
 ) -> str | None:
-    """Read a secret from Azure Key Vault using the Azure CLI."""
+    """Read a secret from Azure Key Vault using the Azure CLI.
+
+    The CLI is invoked with an argument list and no shell, so a vault or secret
+    name cannot be interpolated into a command. The value is returned, never
+    logged, and a multi-line result is rejected rather than stored.
+    """
     if not shutil.which("az"):
         return None
     try:
@@ -61,15 +66,18 @@ def from_key_vault(
             text=True,
             timeout=timeout,
             check=False,
+            env={**os.environ, "AZ_CORE_COLLECT_TELEMETRY": "false"},
         )
     except (subprocess.TimeoutExpired, OSError) as exc:
-        log.debug("Key Vault lookup failed: %s", exc)
+        log.debug("Key Vault lookup failed: %s", type(exc).__name__)
         return None
     if result.returncode != 0:
-        log.debug("Key Vault lookup returned %s: %s", result.returncode, result.stderr[:200])
+        log.debug("Key Vault lookup returned %s", result.returncode)
         return None
     value = (result.stdout or "").strip()
-    return value or None
+    if not value or "\n" in value:
+        return None
+    return value
 
 
 def resolve_garmin_personal_key() -> tuple[str | None, str | None]:

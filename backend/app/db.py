@@ -50,6 +50,32 @@ def init_db() -> None:
 
     Base.metadata.create_all(engine)
     _migrate(engine)
+    _secure_database()
+
+
+def _secure_database() -> None:
+    """Make the database and its WAL sidecars owner-only.
+
+    The database holds a year of sleep, heart rate, stress and GPS routes, so
+    it must not be readable by another user on the machine — whatever the
+    process umask happens to be.
+    """
+    import os
+    import stat
+    from pathlib import Path
+
+    for suffix in ("", "-wal", "-shm"):
+        path = Path(str(DB_PATH) + suffix)
+        if not path.exists():
+            continue
+        try:
+            os.chmod(path, 0o600)
+        except OSError:  # pragma: no cover - unusual filesystems
+            pass
+    try:
+        os.chmod(Path(DB_PATH).parent, 0o700)
+    except OSError:  # pragma: no cover
+        pass
 
 
 def _migrate(engine) -> None:

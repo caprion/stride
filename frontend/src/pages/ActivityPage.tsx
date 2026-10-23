@@ -71,7 +71,7 @@ const HR_COLOR = '#fc5200'
 const PACE_COLOR = '#c14fb0'
 const ELEVATION_COLOR = '#2d9cdb'
 
-const TILE_URL = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'
+const TILE_URL = '/api/v1/tiles/{z}/{x}/{y}.png'
 const TILE_ATTRIBUTION =
   '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
 

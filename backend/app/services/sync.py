@@ -32,6 +32,17 @@ from .persistence import store_activity
 
 log = logging.getLogger(__name__)
 
+MAX_SYNC_DAYS = 365
+MAX_HISTORY_MONTHS = 12
+
+
+def _bounded_sync_days(value: Any, default: int) -> int:
+    try:
+        days = int(value)
+    except (TypeError, ValueError, OverflowError):
+        days = default
+    return max(1, min(days, MAX_SYNC_DAYS))
+
 _sync_lock = threading.Lock()
 _sync_state: dict[str, Any] = {"running": False, "started_at": None, "message": None}
 
@@ -185,7 +196,17 @@ def run_sync(
 
 
 def _run_sync_blocking(days: int | None = None, history: dict[str, Any] | None = None) -> None:
-    days = days or state.sync_days
+    days = _bounded_sync_days(days, _bounded_sync_days(state.sync_days, 90))
+    if history:
+        history = dict(history)
+        if "activities" in history:
+            if history["activities"] is not None:
+                try:
+                    history["activities"] = max(1, min(int(history["activities"]), MAX_HISTORY_MONTHS))
+                except (TypeError, ValueError, OverflowError):
+                    history["activities"] = 12
+        if "health_days" in history:
+            history["health_days"] = _bounded_sync_days(history["health_days"], 30)
     with _sync_lock:
         _sync_state.update({"running": True, "started_at": datetime.now(timezone.utc).isoformat(), "message": None})
         db = SessionLocal()
@@ -260,6 +281,7 @@ def _run_sync_blocking(days: int | None = None, history: dict[str, Any] | None =
             # the Health API endpoints, and it must never fail the activity sync.
             _sync_health_in_background()
         except Exception as exc:
+            db.rollback()
             run.status = "error"
             run.error = str(exc)[:2000]
             _sync_state.update({"running": False, "message": None, "error": str(exc)})

@@ -14,6 +14,7 @@ the user connects Garmin once from the Settings screen and we never ask again.
 from __future__ import annotations
 
 import json
+import logging
 import os
 import secrets
 import threading
@@ -27,6 +28,31 @@ DATA_DIR.mkdir(parents=True, exist_ok=True)
 
 DB_PATH = DATA_DIR / "stride.db"
 STATE_PATH = DATA_DIR / "state.json"
+
+# Bumped when the shape of the state file changes incompatibly.
+STATE_VERSION = 1
+
+# Owner-only. The state file holds a live Garmin API key.
+SECURE_FILE_MODE = 0o600
+SECURE_DIR_MODE = 0o700
+
+
+def _secure_file(path: Path) -> None:
+    """Make a file owner-only, ignoring a filesystem that disagrees."""
+    try:
+        os.chmod(path, SECURE_FILE_MODE)
+    except OSError as exc:  # pragma: no cover - unusual filesystems
+        log.warning("Could not set permissions on %s: %s", path, exc)
+
+
+def _secure_dir(path: Path) -> None:
+    try:
+        os.chmod(path, SECURE_DIR_MODE)
+    except OSError as exc:  # pragma: no cover
+        log.warning("Could not set permissions on %s: %s", path, exc)
+
+
+log = logging.getLogger(__name__)
 
 FRONTEND_DIST = BASE_DIR / "frontend" / "dist"
 
@@ -91,6 +117,8 @@ class AppState:
 
     @classmethod
     def load(cls) -> "AppState":
+        STATE_PATH.parent.mkdir(parents=True, exist_ok=True)
+        _secure_dir(STATE_PATH.parent)
         if not STATE_PATH.exists():
             state = cls()
             state.save()
@@ -99,20 +127,46 @@ class AppState:
             raw = json.loads(STATE_PATH.read_text())
         except (json.JSONDecodeError, OSError):
             raw = {}
+        version = raw.get("schema_version")
+        if version is not None and int(version) > STATE_VERSION:
+            raise RuntimeError(
+                f"state.json was written by a newer Stride (schema v{version}); "
+                f"this build understands v{STATE_VERSION}. Refusing to guess."
+            )
         known = {f for f in cls.__dataclass_fields__ if not f.startswith("_")}
-        return cls(**{k: v for k, v in raw.items() if k in known})
+        # Repair permissions on an existing file, which may predate this
+        # hardening and have been world-readable.
+        _secure_file(STATE_PATH)
+        return cls(**{k: v for k, v in raw.items() if k in known and k != "schema_version"})
 
     def save(self) -> None:
+        """Write the state file with owner-only permissions.
+
+        It holds the Garmin Personal API key, the account password and the OAuth
+        secrets, so it must never be readable by another user on the machine —
+        regardless of the process umask.
+        """
         with self._lock:
             data = {
                 k: v
                 for k, v in self.__dict__.items()
-                if not k.startswith("_") and k != "session_secret"
+                if not k.startswith("_") and k != "session_secret" and v is not None
             }
             data["session_secret"] = self.session_secret
+            data["schema_version"] = STATE_VERSION
             tmp = STATE_PATH.with_suffix(".tmp")
-            tmp.write_text(json.dumps(data, indent=2))
-            tmp.replace(STATE_PATH)
+            # Create with the final mode, so the credential is never briefly
+            # world-readable between creation and chmod.
+            fd = os.open(tmp, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+            try:
+                with os.fdopen(fd, "w") as handle:
+                    handle.write(json.dumps(data, indent=2))
+            except Exception:
+                tmp.unlink(missing_ok=True)
+                raise
+            os.replace(tmp, STATE_PATH)
+            _secure_file(STATE_PATH)
+            _secure_dir(STATE_PATH.parent)
 
     def update(self, **kwargs: Any) -> None:
         with self._lock:

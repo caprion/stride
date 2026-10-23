@@ -50,8 +50,11 @@ from __future__ import annotations
 
 import io
 import logging
+import re
 import time
 import zipfile
+import zlib
+from urllib.parse import urljoin, urlparse
 from typing import Any
 
 import requests
@@ -60,6 +63,11 @@ log = logging.getLogger(__name__)
 
 BASE = "https://personal.connectapi.garmin.com"
 TOKEN_PATH = "/personalapitoken-service/personal-api/personal-api-key/token"
+GARMIN_HOSTS = {"personal.connectapi.garmin.com", "connectapi.garmin.com", "connect.garmin.com"}
+MAX_RESPONSE_BYTES = 5 * 1024 * 1024
+MAX_FIT_BYTES = 5 * 1024 * 1024
+MAX_FIT_MEMBER_BYTES = 20 * 1024 * 1024
+MAX_ZIP_ENTRIES = 8
 
 
 class PersonalApiError(RuntimeError):
@@ -80,6 +88,59 @@ class GarminPersonalClient:
         self._token_expires_at: float = 0.0
         self._seen: set[str] = set()
 
+    @staticmethod
+    def _request(method: str, url: str, headers: dict[str, str], params: Any = None) -> requests.Response:
+        """Request Garmin with verified TLS, bounded redirects and response bytes."""
+        if urlparse(url).scheme != "https" or urlparse(url).hostname not in GARMIN_HOSTS:
+            raise PersonalApiError("Refusing to send Garmin credentials to a non-Garmin host.")
+        current = url
+        current_headers = dict(headers)
+        rate_attempt = 0
+        for _ in range(6):
+            response = requests.request(
+                method, current, headers=current_headers, params=params,
+                timeout=(10, 30), verify=True, allow_redirects=False, stream=True,
+            )
+            if response.is_redirect:
+                location = response.headers.get("Location")
+                response.close()
+                if not location:
+                    raise PersonalApiError("Garmin returned a redirect without a location.")
+                destination = urljoin(current, location)
+                parsed = urlparse(destination)
+                if parsed.scheme != "https" or parsed.hostname not in GARMIN_HOSTS:
+                    current_headers.pop("Authorization", None)
+                    raise PersonalApiError("Refusing redirect outside Garmin hosts.")
+                if parsed.hostname != urlparse(current).hostname:
+                    current_headers.pop("Authorization", None)
+                current, params = destination, None
+                continue
+            if response.status_code == 429 and rate_attempt < 3:
+                response.close()
+                time.sleep(2 ** rate_attempt)
+                rate_attempt += 1
+                continue
+            content_length = response.headers.get("Content-Length")
+            if content_length is not None:
+                try:
+                    if int(content_length) > MAX_RESPONSE_BYTES:
+                        response.close()
+                        raise PersonalApiError("Garmin response exceeds 5 MB limit.")
+                except ValueError:
+                    response.close()
+                    raise PersonalApiError("Garmin returned an invalid Content-Length.")
+            chunks = bytearray()
+            for chunk in response.iter_content(64 * 1024):
+                if chunk:
+                    chunks.extend(chunk)
+                    if len(chunks) > MAX_RESPONSE_BYTES:
+                        response.close()
+                        raise PersonalApiError("Garmin response exceeds 5 MB limit.")
+            response._content = bytes(chunks)
+            response._content_consumed = True
+            return response
+        raise PersonalApiError("Too many Garmin redirects.")
+
     # ------------------------------------------------------------- plumbing
 
     def access_token(self, force: bool = False) -> str | None:
@@ -87,11 +148,7 @@ class GarminPersonalClient:
         if not force and self._token and time.time() < self._token_expires_at - 60:
             return self._token
         try:
-            response = requests.post(
-                f"{BASE}{TOKEN_PATH}",
-                headers={"Authorization": f"ApiKey {self.api_key}"},
-                timeout=self.timeout,
-            )
+            response = self._request("POST", f"{BASE}{TOKEN_PATH}", {"Authorization": f"ApiKey {self.api_key}"})
         except requests.RequestException as exc:
             raise PersonalApiError(f"Could not reach Garmin: {exc}") from exc
         if response.status_code in (401, 403):
@@ -119,12 +176,7 @@ class GarminPersonalClient:
             raise PersonalApiError("No access token.")
         url = f"{BASE}{path}"
         try:
-            response = requests.get(
-                url,
-                headers={"Authorization": f"Bearer {token}"},
-                params=params,
-                timeout=self.timeout,
-            )
+            response = self._request("GET", url, {"Authorization": f"Bearer {token}"}, params=params)
         except requests.RequestException as exc:
             raise PersonalApiError(f"Request to {path} failed: {exc}") from exc
 
@@ -150,11 +202,7 @@ class GarminPersonalClient:
         token = self.access_token()
         if not token:
             return None
-        response = requests.get(
-            f"{BASE}{path}",
-            headers={"Authorization": f"Bearer {token}"},
-            timeout=self.timeout,
-        )
+        response = self._request("GET", f"{BASE}{path}", {"Authorization": f"Bearer {token}"})
         if response.status_code >= 400:
             return None
         self._seen.add(path.split("/")[1] if "/" in path else path)
@@ -180,20 +228,29 @@ class GarminPersonalClient:
         end_date: str | None = None,
     ) -> list[dict[str, Any]]:
         """Search activities, newest first."""
+        try:
+            start = max(0, min(int(start), 299))
+        except (TypeError, ValueError, OverflowError):
+            start = 0
+        try:
+            limit = max(1, min(int(limit), 100, 300 - start))
+        except (TypeError, ValueError, OverflowError):
+            limit = 100
+        start_date, end_date = _bounded_date_range(start_date, end_date)
         params: dict[str, Any] = {"start": start, "limit": limit}
         if start_date:
             params["startDate"] = start_date
         if end_date:
             params["endDate"] = end_date
         payload = self._get("/activitylist-service/activities/search/activities", params)
-        return _as_list(payload, ("activityList", "activities", "activitySummaries"))
+        return _as_list(payload, ("activityList", "activities", "activitySummaries"))[:limit]
 
     def activity_detail(self, activity_id: str | int) -> dict[str, Any]:
-        payload = self._get(f"/activity-service/activity/{activity_id}")
+        payload = self._get(f"/activity-service/activity/{_activity_id(activity_id)}")
         return payload if isinstance(payload, dict) else {}
 
     def activity_workouts(self, activity_id: str | int) -> list[dict[str, Any]]:
-        payload = self._get(f"/activity-service/activity/{activity_id}/workouts")
+        payload = self._get(f"/activity-service/activity/{_activity_id(activity_id)}/workouts")
         return _as_list(payload, ("workouts", "activityWorkouts", "workoutSummaries"))
 
     def activity_fit(self, activity_id: str | int) -> bytes | None:
@@ -202,20 +259,33 @@ class GarminPersonalClient:
         This is the full-fidelity route: per-second heart rate, cadence and
         GPS, which the summary endpoints do not carry.
         """
-        blob = self._get_bytes(f"/download-service/files/activity/{activity_id}")
+        blob = self._get_bytes(f"/download-service/files/activity/{_activity_id(activity_id)}")
         if not blob:
             return None
         if blob[:2] == b"PK":
             try:
                 with zipfile.ZipFile(io.BytesIO(blob)) as archive:
-                    for name in archive.namelist():
+                    entries = archive.infolist()
+                    if len(entries) > MAX_ZIP_ENTRIES:
+                        return None
+                    for entry in entries:
+                        name = entry.filename
+                        parts = name.replace("\\", "/").split("/")
+                        if name.startswith(("/", "\\")) or ".." in parts or (len(name) > 1 and name[1] == ":"):
+                            return None
+                        if entry.file_size > MAX_FIT_MEMBER_BYTES:
+                            return None
                         if name.lower().endswith(".fit"):
-                            return archive.read(name)
-            except zipfile.BadZipFile:
+                            if entry.compress_size > MAX_FIT_BYTES:
+                                return None
+                            with archive.open(entry) as member:
+                                result = member.read(MAX_FIT_MEMBER_BYTES + 1)
+                            return result if len(result) <= MAX_FIT_MEMBER_BYTES else None
+            except (zipfile.BadZipFile, OSError, RuntimeError, EOFError, ValueError, zlib.error):
                 return None
             return None
         # Some activities come back as a bare FIT file.
-        return blob if blob[:1] == b"\x0e" else None
+        return blob if len(blob) <= MAX_FIT_MEMBER_BYTES and blob[:1] == b"\x0e" else None
 
     # ------------------------------------------------------------ wellness
 
@@ -232,6 +302,7 @@ class GarminPersonalClient:
         return payload if isinstance(payload, dict) else {}
 
     def hrv_range(self, start: str, end: str) -> list[dict[str, Any]]:
+        start, end = _bounded_date_range(start, end)
         payload = self._get(f"/hrv-service/hrv/daily/{start}/{end}")
         return _as_list(payload, ("hrvDailySummaries", "hrvSummaries", "hrvList"))
 
@@ -240,6 +311,7 @@ class GarminPersonalClient:
         return payload if isinstance(payload, dict) else {}
 
     def body_battery(self, start: str, end: str) -> list[dict[str, Any]]:
+        start, end = _bounded_date_range(start, end)
         payload = self._get(
             "/wellness-service/wellness/bodyBattery/reports/daily",
             {"startDate": start, "endDate": end},
@@ -251,14 +323,17 @@ class GarminPersonalClient:
         return payload if isinstance(payload, dict) else {}
 
     def stress(self, start: str, end: str) -> list[dict[str, Any]]:
+        start, end = _bounded_date_range(start, end)
         payload = self._get(f"/usersummary-service/stats/stress/daily/{start}/{end}")
         return _as_list(payload, ("stressValuesArray", "stressDailyList", "stressList"))
 
     def steps(self, start: str, end: str) -> list[dict[str, Any]]:
+        start, end = _bounded_date_range(start, end)
         payload = self._get(f"/usersummary-service/stats/steps/daily/{start}/{end}")
         return _as_list(payload, ("stepsDailyList", "stepsList", "stepsValuesArray"))
 
     def weight(self, start: str, end: str) -> list[dict[str, Any]]:
+        start, end = _bounded_date_range(start, end)
         payload = self._get(f"/weight-service/weight/all/{start}/{end}")
         return _as_list(payload, ("dateWeightList", "weightList", "weights"))
 
@@ -311,3 +386,30 @@ def _as_list(payload: Any, keys: tuple[str, ...]) -> list[dict[str, Any]]:
         if isinstance(value, list):
             return [item for item in value if isinstance(item, dict)]
     return []
+
+
+def _activity_id(value: str | int) -> str:
+    text = str(value)
+    if not re.fullmatch(r"[0-9]{1,20}", text):
+        raise ValueError("Invalid Garmin activity ID")
+    return text
+
+
+def _bounded_date_range(start: str | None, end: str | None) -> tuple[str | None, str | None]:
+    """Normalize date inputs to a valid, non-negative range of at most a year."""
+    from datetime import date, timedelta
+
+    today = date.today()
+    try:
+        end_day = date.fromisoformat(end) if end else today
+    except (TypeError, ValueError):
+        end_day = today
+    try:
+        start_day = date.fromisoformat(start) if start else end_day - timedelta(days=365)
+    except (TypeError, ValueError):
+        start_day = end_day - timedelta(days=365)
+    if start_day > end_day:
+        start_day = end_day
+    if (end_day - start_day).days > 365:
+        start_day = end_day - timedelta(days=365)
+    return start_day.isoformat(), end_day.isoformat()

@@ -24,6 +24,9 @@ from .normalize import blank_activity, normalise_sport, safe_float, safe_int
 
 log = logging.getLogger(__name__)
 
+MAX_FIT_INPUT_BYTES = 20 * 1024 * 1024
+MAX_FIT_RECORDS = 250_000
+
 
 def value_of(message: Any, name: str) -> Any:
     """Read one field from a fitparse message, unwrapping ``FieldData``."""
@@ -47,6 +50,13 @@ def enum_name(value: Any) -> str | None:
     if ":" in text:
         text = text.split(":", 1)[1]
     return text or None
+
+
+def _bounded_number(value: Any, maximum: float, default: float | None = None) -> float | None:
+    number = safe_float(value)
+    if number is None or number < 0 or number > maximum:
+        return default
+    return number
 
 
 # FIT message fields we care about.
@@ -150,6 +160,20 @@ def _running_cadence(value: float, sport: str | None = None) -> float:
 
 
 def parse_fit(data: bytes, filename: str = "activity.fit") -> dict[str, Any]:
+    """Parse an untrusted FIT file with bounded input and clean errors."""
+    if not isinstance(data, (bytes, bytearray, memoryview)):
+        raise ValueError(f"{filename} is not a readable FIT file: expected bytes")
+    if len(data) > MAX_FIT_INPUT_BYTES:
+        raise ValueError(f"{filename} exceeds the 20 MB FIT input limit")
+    try:
+        return _parse_fit_bounded(bytes(data), filename)
+    except ValueError:
+        raise
+    except Exception as exc:
+        raise ValueError(f"{filename} is not a readable FIT file: {exc}") from exc
+
+
+def _parse_fit_bounded(data: bytes, filename: str) -> dict[str, Any]:
     """Parse a FIT byte string into a canonical activity dict."""
     try:
         from fitparse import FitFile
@@ -187,7 +211,7 @@ def parse_fit(data: bytes, filename: str = "activity.fit") -> dict[str, Any]:
     device_name: str | None = None
     sport: str | None = None
 
-    for message in fit.get_messages("file_id"):
+    for message in _limited_messages(fit, "file_id", 100, filename):
         serial = value_of(message, "serial_number")
         if serial:
             file_ids.append(str(serial))
@@ -201,43 +225,54 @@ def parse_fit(data: bytes, filename: str = "activity.fit") -> dict[str, Any]:
         except (AttributeError, OSError, OverflowError, ValueError):
             return None
 
-    for message in fit.get_messages("record"):
+    for message in _limited_messages(fit, "record", MAX_FIT_RECORDS, filename):
         ts = timestamp_of(message)
         if ts is not None:
             start_ts = start_ts if start_ts is not None else ts
             end_ts = ts
 
         raw_distance = safe_float(value_of(message, "distance"))
-        if raw_distance is not None:
+        if raw_distance is not None and 0 <= raw_distance <= 10_000_000:
             distance = raw_distance  # metres, cumulative
 
         lat = safe_float(value_of(message, "position_lat"))
         lon = safe_float(value_of(message, "position_long"))
-        if lat is not None and lon is not None:
+        if lat is not None and lon is not None and -2**31 <= lat <= 2**31 and -2**31 <= lon <= 2**31:
             geo.append([_semicircles_to_degrees(lat), _semicircles_to_degrees(lon)])
 
         hr = safe_float(value_of(message, "heart_rate"))
+        if hr is not None and not 0 <= hr <= 300:
+            hr = None
         if hr is not None:
             hr_samples.append((ts or 0.0, hr))
 
         cad = safe_float(value_of(message, "cadence"))
+        if cad is not None and not 0 <= cad <= 300:
+            cad = None
         if cad is not None:
             cadence_samples.append((ts or 0.0, cad))
 
         speed = safe_float(value_of(message, "speed"))
         if speed is None:
             speed = safe_float(value_of(message, "enhanced_speed"))
-        if speed is not None:
+        if speed is not None and 0 <= speed <= 150:
             speed_samples.append((ts or 0.0, speed * 3.6))
+        else:
+            speed = None
 
         alt = safe_float(value_of(message, "altitude"))
         if alt is None:
             alt = safe_float(value_of(message, "enhanced_altitude"))
-        if alt is not None:
+        if alt is not None and -1000 <= alt <= 10000:
             elevation_samples.append((ts or 0.0, alt))
+        else:
+            alt = None
 
-        if safe_float(value_of(message, "distance")) is not None:
-            distance_samples.append((ts or 0.0, safe_float(value_of(message, "distance")) or 0.0))
+        record_distance = safe_float(value_of(message, "distance"))
+        if record_distance is not None and 0 <= record_distance <= 10_000_000:
+            distance_samples.append((ts or 0.0, record_distance))
+        else:
+            record_distance = None
 
         # One row per record: epoch, distance, speed (m/s), stored cadence,
         # heart rate, altitude. Everything the analysis needs, so every stream
@@ -245,7 +280,7 @@ def parse_fit(data: bytes, filename: str = "activity.fit") -> dict[str, Any]:
         records.append(
             (
                 (ts or 0.0),
-                safe_float(value_of(message, "distance")),
+                record_distance,
                 speed,  # already metres per second
                 cad,
                 hr,
@@ -253,7 +288,7 @@ def parse_fit(data: bytes, filename: str = "activity.fit") -> dict[str, Any]:
             )
         )
 
-    for message in fit.get_messages("lap"):
+    for message in _limited_messages(fit, "lap", 10_000, filename):
         lap: dict[str, Any] = {}
         for key in _LAP_FIELDS:
             value = value_of(message, key)
@@ -262,7 +297,7 @@ def parse_fit(data: bytes, filename: str = "activity.fit") -> dict[str, Any]:
         if lap:
             laps.append(lap)
 
-    for message in fit.get_messages("session"):
+    for message in _limited_messages(fit, "session", 100, filename):
         for key in _SESSION_FIELDS:
             value = value_of(message, key)
             if value is not None:
@@ -271,7 +306,7 @@ def parse_fit(data: bytes, filename: str = "activity.fit") -> dict[str, Any]:
             sport = enum_name(session["sport"])
         break
 
-    for message in fit.get_messages("device_info"):
+    for message in _limited_messages(fit, "device_info", 100, filename):
         name = value_of(message, "product_name") or value_of(message, "manufacturer")
         if name:
             device_name = enum_name(name) or str(name)
@@ -279,24 +314,24 @@ def parse_fit(data: bytes, filename: str = "activity.fit") -> dict[str, Any]:
 
     # ------------------------------------------------------------ assemble
 
-    elapsed = safe_float(session.get("total_elapsed_time"))
-    timer = safe_float(session.get("total_timer_time"))
+    elapsed = _bounded_number(session.get("total_elapsed_time"), 604800)
+    timer = _bounded_number(session.get("total_timer_time"), 604800)
     moving = timer if timer else elapsed
     if not moving and start_ts and end_ts:
         moving = end_ts - start_ts
 
     activity["external_id"] = file_ids[0] if file_ids else filename
-    activity["distance_m"] = safe_float(session.get("total_distance"), distance) or distance
+    activity["distance_m"] = _bounded_number(session.get("total_distance"), 10_000_000, distance) or distance
     activity["moving_time_s"] = moving or 0.0
     activity["elapsed_time_s"] = elapsed or moving or 0.0
-    activity["elevation_gain_m"] = safe_float(session.get("total_ascent"), 0.0) or 0.0
-    activity["avg_hr"] = safe_int(session.get("avg_heart_rate"))
-    activity["max_hr"] = safe_int(session.get("max_heart_rate"))
-    activity["calories"] = safe_float(session.get("total_calories"))
-    activity["avg_cadence"] = safe_float(session.get("avg_cadence"))
-    activity["max_cadence"] = safe_float(session.get("max_cadence"))
-    activity["avg_speed_ms"] = safe_float(session.get("avg_speed"))
-    activity["max_speed_ms"] = safe_float(session.get("max_speed"))
+    activity["elevation_gain_m"] = _bounded_number(session.get("total_ascent"), 100_000, 0.0) or 0.0
+    activity["avg_hr"] = safe_int(_bounded_number(session.get("avg_heart_rate"), 300))
+    activity["max_hr"] = safe_int(_bounded_number(session.get("max_heart_rate"), 300))
+    activity["calories"] = _bounded_number(session.get("total_calories"), 1_000_000)
+    activity["avg_cadence"] = _bounded_number(session.get("avg_cadence"), 300)
+    activity["max_cadence"] = _bounded_number(session.get("max_cadence"), 300)
+    activity["avg_speed_ms"] = _bounded_number(session.get("avg_speed"), 150)
+    activity["max_speed_ms"] = _bounded_number(session.get("max_speed"), 150)
     activity["device"] = device_name
     if sport:
         activity["sport_type"] = normalise_sport(sport)
@@ -313,17 +348,19 @@ def parse_fit(data: bytes, filename: str = "activity.fit") -> dict[str, Any]:
         out_laps = []
         cumulative_elapsed = 0.0
         for index, lap in enumerate(laps):
-            lap_distance = safe_float(lap.get("total_distance"), 0.0) or 0.0
-            lap_duration = safe_float(lap.get("total_timer_time")) or safe_float(
-                lap.get("total_elapsed_time"), 0.0
+            lap_distance = _bounded_number(lap.get("total_distance"), 10_000_000, 0.0) or 0.0
+            lap_duration = _bounded_number(lap.get("total_timer_time"), 604800) or _bounded_number(
+                lap.get("total_elapsed_time"), 604800, 0.0
             ) or 0.0
-            lap_speed = safe_float(lap.get("avg_speed"))
+            lap_speed = _bounded_number(lap.get("avg_speed"), 150)
             if not lap_speed and lap_distance and lap_duration:
                 # Not every device records lap speed; it follows from distance
                 # and time.
                 lap_speed = lap_distance / lap_duration
-            cadence = safe_float(lap.get("avg_cadence"))
-            max_cadence = safe_float(lap.get("max_cadence"))
+                if lap_speed > 150:
+                    lap_speed = None
+            cadence = _bounded_number(lap.get("avg_cadence"), 300)
+            max_cadence = _bounded_number(lap.get("max_cadence"), 300)
             cumulative_elapsed += (
                 safe_float(lap.get("total_elapsed_time"))
                 or safe_float(lap.get("total_timer_time"))
@@ -331,18 +368,18 @@ def parse_fit(data: bytes, filename: str = "activity.fit") -> dict[str, Any]:
             )
             out_laps.append(
                 {
-                    "lap_index": safe_int(lap.get("record_number"), index + 1) or index + 1,
+                    "lap_index": safe_int(_bounded_number(lap.get("record_number"), 100_000), index + 1) or index + 1,
                     "distance_m": lap_distance,
                     "duration_s": lap_duration,
                     "avg_speed_ms": lap_speed,
-                    "max_speed_ms": safe_float(lap.get("max_speed")),
-                    "avg_hr": safe_int(lap.get("avg_heart_rate")),
-                    "max_hr": safe_int(lap.get("max_heart_rate")),
+                    "max_speed_ms": _bounded_number(lap.get("max_speed"), 150),
+                    "avg_hr": safe_int(_bounded_number(lap.get("avg_heart_rate"), 300)),
+                    "max_hr": safe_int(_bounded_number(lap.get("max_heart_rate"), 300)),
                     "avg_cadence": _running_cadence(cadence, sport) if cadence else None,
                     "max_cadence": _running_cadence(max_cadence, sport) if max_cadence else None,
                     "stride_length_m": None,
-                    "elevation_gain_m": safe_float(lap.get("total_ascent")),
-                    "elevation_loss_m": safe_float(lap.get("total_descent")),
+                    "elevation_gain_m": _bounded_number(lap.get("total_ascent"), 100_000),
+                    "elevation_loss_m": _bounded_number(lap.get("total_descent"), 100_000),
                     "start_elevation_m": None,
                     "end_elevation_m": None,
                     "elapsed_s": round(cumulative_elapsed, 3),
@@ -421,6 +458,14 @@ def parse_fit(data: bytes, filename: str = "activity.fit") -> dict[str, Any]:
         activity["lap_bounds"] = bounds
 
     return activity
+
+
+def _limited_messages(fit: Any, name: str, limit: int, filename: str):
+    """Yield at most ``limit`` messages; raise before processing excess input."""
+    for count, message in enumerate(fit.get_messages(name), 1):
+        if count > limit:
+            raise ValueError(f"{filename} exceeds the {limit} {name} message limit")
+        yield message
 
 
 def _segment_records(
@@ -558,4 +603,5 @@ def _series(samples: list[tuple[float, float]], start_ts: float, unit: str) -> d
 
 def parse_fit_file(path: str) -> dict[str, Any]:
     with open(path, "rb") as handle:
-        return parse_fit(handle.read(), filename=path.rsplit("/", 1)[-1])
+        data = handle.read(MAX_FIT_INPUT_BYTES + 1)
+    return parse_fit(data, filename=path.rsplit("/", 1)[-1])

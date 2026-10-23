@@ -107,15 +107,33 @@ box.
                  - how to verify your own work
                  - what to report back
 
-4. INTEGRATE     orchestrator: typecheck, tests, render, review the diff
+4. SECURITY PASS a gate, not a feeling (see below)
+
+5. INTEGRATE     orchestrator: typecheck, tests, render, review the diff
                  fix the drift, re-run, re-review
 
-5. COMMIT        one commit per coherent phase
+6. COMMIT        one commit per coherent phase
 ```
 
-Step 5 is not optional. Every phase in this repo is one commit with the
-reasoning in the message, because the reasoning is what makes the next phase
-possible.
+Steps 4 and 5 are where the value is protected. Step 5 is not optional: every
+phase in this repo is one commit with the reasoning in the message, because the
+reasoning is what makes the next phase possible.
+
+### Step 4 — the security gate
+
+**Every phase ends with a green `./scripts/security_check.sh`.** It is an
+automated check of the things that can be checked mechanically: no credentials
+in the tree or the history, correct file permissions on the state file and the
+database, TLS verification on, no wildcard CORS, no `eval`, no third-party
+fonts, no plain-http origins, dependencies audited, tests green.
+
+The automated gate is backed by a human checklist — `docs/security/CHECKLIST.md` —
+covering the judgement calls: what the threat model actually is, whether a
+credential can leak, whether untrusted input is bounded, and whether the privacy
+claims are true.
+
+**A phase that cannot pass the gate is not finished.** If a change genuinely
+cannot be made safe, that is a finding to report, not a box to tick.
 
 ---
 
@@ -127,3 +145,8 @@ possible.
 - **Anything the user will judge as one thing.** The collage, the dashboard,
   the "Today" card — these are single-piece judgements.
 - **The final integration.** Always the orchestrator's.
+- **The security gate.** The automated script can be run by anyone, but
+  *deciding* that a finding is acceptable, or that a risk is real, is the
+  orchestrator's call. Audits can be parallelised — that is how four auditors
+  covered the API, the secrets, the browser and the data pipeline at once —
+  but the *verdict* is not delegated.
