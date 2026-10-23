@@ -64,6 +64,27 @@ def _migrate(engine) -> None:
     existing = set(inspector.get_table_names())
     additions = {
         "daily_physiology": [("max_hr", "REAL")],
+        "activity": [
+            ("running_time_s", "REAL"),
+            ("walking_time_s", "REAL"),
+            ("stopped_time_s", "REAL"),
+            ("running_distance_m", "REAL"),
+        ],
+        "activity_lap": [
+            ("running_distance_m", "REAL"),
+            ("elapsed_s", "REAL"),
+        ],
+        "run_fingerprint": [
+            ("running_time_s", "REAL"),
+            ("walking_time_s", "REAL"),
+            ("stopped_time_s", "REAL"),
+            ("hr_drift_bpm", "REAL"),
+            ("pace_drift_pct", "REAL"),
+            ("first_half_hr", "REAL"),
+            ("second_half_hr", "REAL"),
+            ("first_half_pace_s_km", "REAL"),
+            ("second_half_pace_s_km", "REAL"),
+        ],
     }
     with engine.begin() as connection:
         for table, columns in additions.items():

@@ -115,16 +115,21 @@ export const api = {
     }),
 
   connectPersonalKey: (api_key: string) =>
-    request<{ ok: boolean; garmin_method: string; athlete: Record<string, unknown>; sources: Record<string, boolean> }>(
-      '/auth/garmin/personal-key',
-      { method: 'POST', body: JSON.stringify({ api_key }) },
-    ),
+    request<{
+      ok: boolean
+      garmin_method: string
+      athlete: Record<string, unknown>
+      sources: Record<string, boolean>
+    }>('/auth/garmin/personal-key', { method: 'POST', body: JSON.stringify({ api_key }) }),
 
   testPersonalKey: (api_key: string) =>
-    request<{ ok: boolean; athlete: Record<string, unknown> }>('/auth/garmin/personal-key/test', {
-      method: 'POST',
-      body: JSON.stringify({ api_key }),
-    }),
+    request<{ ok: boolean; athlete: Record<string, unknown> }>(
+      '/auth/garmin/personal-key/test',
+      {
+        method: 'POST',
+        body: JSON.stringify({ api_key }),
+      },
+    ),
 
   logout: () => request<{ ok: boolean }>('/auth/garmin/logout', { method: 'POST' }),
 

@@ -150,39 +150,124 @@ def sync_activities(days: int = 90, download_fit: bool = True) -> list[dict[str,
         end_date=end.isoformat(),
     )
 
+    db = SessionLocal()
     out: list[dict[str, Any]] = []
-    for raw in raw_activities:
-        raw_id = raw.get("activityId")
-        if raw_id is None:
-            continue
-        try:
-            detail = client.activity_detail(raw_id)
-        except Exception as exc:
-            log.debug("Detail fetch failed for %s: %s", raw_id, exc)
-            detail = {}
+    calls = {"detail": 0, "fit": 0}
+    try:
+        for raw in raw_activities:
+            raw_id = raw.get("activityId")
+            if raw_id is None:
+                continue
 
-        activity = _canonical_from_detail(detail, raw)
-        if not activity.get("external_id"):
-            continue
+            existing = db.execute(
+                select(Activity).where(
+                    Activity.source == "garmin_personal",
+                    Activity.external_id == str(raw_id),
+                )
+            ).scalar_one_or_none()
+            stored = (existing.raw or {}) if existing else {}
 
-        # Splits and per-second streams come from the original FIT.
-        if download_fit:
-            try:
-                fit_bytes = client.activity_fit(raw_id)
-            except Exception as exc:
-                log.debug("FIT download failed for %s: %s", raw_id, exc)
-                fit_bytes = None
-            if fit_bytes:
+            # The FIT file is the source of truth. If this activity has already
+            # been imported, its track and streams cannot have changed, so the
+            # download is skipped and nothing is fetched for it at all.
+            already_imported = bool(
+                existing is not None and existing.geo_points and existing.streams
+            )
+
+            if already_imported and stored.get("summary"):
+                detail = {"summaryDTO": stored["summary"]}
+            else:
                 try:
-                    parsed = parse_fit(fit_bytes, filename=f"{raw_id}.fit")
+                    detail = client.activity_detail(raw_id)
+                    calls["detail"] += 1
                 except Exception as exc:
-                    log.debug("FIT parse failed for %s: %s", raw_id, exc)
-                    parsed = {}
-                if parsed:
-                    activity = _merge_fit(activity, parsed)
+                    log.debug("Detail fetch failed for %s: %s", raw_id, exc)
+                    detail = {}
 
-        out.append(activity)
+            activity = _canonical_from_detail(detail, raw)
+            if not activity.get("external_id"):
+                continue
+            if detail.get("summaryDTO"):
+                activity.setdefault("raw", {})
+                if isinstance(activity["raw"], dict):
+                    activity["raw"]["summary"] = detail["summaryDTO"]
+
+            if already_imported:
+                # Nothing about the file can have changed, so reuse what we
+                # already hold. Without this the canonical `None` would
+                # overwrite the stored track and the streams.
+                _reuse_stored(existing, activity)
+
+            # Splits and per-second streams come from the original FIT.
+            if download_fit and not already_imported:
+                try:
+                    fit_bytes = client.activity_fit(raw_id)
+                    calls["fit"] += 1
+                except Exception as exc:
+                    log.debug("FIT download failed for %s: %s", raw_id, exc)
+                    fit_bytes = None
+                if fit_bytes:
+                    try:
+                        parsed = parse_fit(fit_bytes, filename=f"{raw_id}.fit")
+                    except Exception as exc:
+                        log.debug("FIT parse failed for %s: %s", raw_id, exc)
+                        parsed = {}
+                    if parsed:
+                        activity = _merge_fit(activity, parsed)
+
+            out.append(activity)
+    finally:
+        db.close()
+
+    log.info(
+        "Personal API pull: %d activities, %d detail calls, %d FIT downloads",
+        len(out),
+        calls["detail"],
+        calls["fit"],
+    )
     return out
+
+
+def _reuse_stored(existing: Activity, activity: dict[str, Any]) -> None:
+    """Carry the stored track, streams, laps and segment split forward."""
+    if existing.geo_points:
+        activity["geo_points"] = existing.geo_points
+    if existing.streams:
+        activity["streams"] = {
+            stream.kind: {
+                "seconds": list(stream.seconds or []),
+                "values": list(stream.values or []),
+                "unit": stream.unit,
+            }
+            for stream in existing.streams
+        }
+    if existing.laps:
+        activity["laps"] = [
+            {
+                "lap_index": lap.lap_index,
+                "distance_m": lap.distance_m,
+                "duration_s": lap.duration_s,
+                "avg_speed_ms": lap.avg_speed_ms,
+                "avg_hr": lap.avg_hr,
+                "max_hr": lap.max_hr,
+                "avg_cadence": lap.avg_cadence,
+                "max_cadence": lap.max_cadence,
+                "elevation_gain_m": lap.elevation_gain_m,
+                "elevation_loss_m": lap.elevation_loss_m,
+                "running_distance_m": lap.running_distance_m,
+                "elapsed_s": lap.elapsed_s,
+            }
+            for lap in existing.laps
+        ]
+    for key in (
+        "running_time_s",
+        "walking_time_s",
+        "stopped_time_s",
+        "running_distance_m",
+    ):
+        value = getattr(existing, key, None)
+        if value is not None:
+            activity[key] = value
 
 
 def _merge_fit(activity: dict[str, Any], parsed: dict[str, Any]) -> dict[str, Any]:
@@ -198,6 +283,12 @@ def _merge_fit(activity: dict[str, Any], parsed: dict[str, Any]) -> dict[str, An
 
     if parsed.get("laps"):
         merged["laps"] = parsed["laps"]
+    # The run / walk / stand split comes from the FIT record stream.
+    for key in ("running_time_s", "walking_time_s", "stopped_time_s", "running_distance_m"):
+        if parsed.get(key) is not None:
+            merged[key] = parsed[key]
+    if parsed.get("segments"):
+        merged["segments"] = parsed["segments"]
     if parsed.get("streams"):
         merged["streams"] = parsed["streams"]
     if parsed.get("geo_points"):

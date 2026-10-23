@@ -45,6 +45,11 @@ export interface ActivitySummary {
   has_geo: boolean
   route_preview: [number, number][] | null
   lap_count: number
+  /** Time spent actually running (walking and standing are excluded). */
+  running_time_s: number | null
+  walking_time_s: number | null
+  stopped_time_s: number | null
+  running_distance_m: number | null
 }
 
 export interface Lap {

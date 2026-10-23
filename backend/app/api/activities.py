@@ -58,6 +58,10 @@ def _summary(activity: Activity) -> dict[str, Any]:
         "has_geo": bool(activity.geo_points),
         "route_preview": _route_preview(activity.geo_points),
         "lap_count": len(activity.laps or []),
+        "running_time_s": activity.running_time_s,
+        "walking_time_s": activity.walking_time_s,
+        "stopped_time_s": activity.stopped_time_s,
+        "running_distance_m": activity.running_distance_m,
     }
 
 
@@ -161,6 +165,8 @@ def get_activity(activity_id: int, db: Session = Depends(get_db)) -> dict[str, A
             "elevation_loss_m": lap.elevation_loss_m,
             "start_elevation_m": lap.start_elevation_m,
             "end_elevation_m": lap.end_elevation_m,
+            "running_distance_m": lap.running_distance_m,
+            "elapsed_s": lap.elapsed_s,
         }
         for lap in activity.laps
     ]

@@ -284,6 +284,10 @@ class RunFingerprint(Base):
         ForeignKey("activity.id", ondelete="CASCADE"), primary_key=True
     )
 
+    running_time_s: Mapped[float | None] = mapped_column(Float, nullable=True)
+    walking_time_s: Mapped[float | None] = mapped_column(Float, nullable=True)
+    stopped_time_s: Mapped[float | None] = mapped_column(Float, nullable=True)
+
     cadence_avg: Mapped[float | None] = mapped_column(Float, nullable=True)
     cadence_cv: Mapped[float | None] = mapped_column(Float, nullable=True)
     cadence_drift_pct: Mapped[float | None] = mapped_column(Float, nullable=True)
@@ -291,6 +295,12 @@ class RunFingerprint(Base):
     hr_avg: Mapped[float | None] = mapped_column(Float, nullable=True)
     hr_max: Mapped[float | None] = mapped_column(Float, nullable=True)
     hr_drift_pct: Mapped[float | None] = mapped_column(Float, nullable=True)
+    hr_drift_bpm: Mapped[float | None] = mapped_column(Float, nullable=True)
+    pace_drift_pct: Mapped[float | None] = mapped_column(Float, nullable=True)
+    first_half_hr: Mapped[float | None] = mapped_column(Float, nullable=True)
+    second_half_hr: Mapped[float | None] = mapped_column(Float, nullable=True)
+    first_half_pace_s_km: Mapped[float | None] = mapped_column(Float, nullable=True)
+    second_half_pace_s_km: Mapped[float | None] = mapped_column(Float, nullable=True)
 
     efficiency_first: Mapped[float | None] = mapped_column(Float, nullable=True)
     efficiency_last: Mapped[float | None] = mapped_column(Float, nullable=True)

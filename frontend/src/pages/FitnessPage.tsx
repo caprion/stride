@@ -34,10 +34,11 @@ type Metric =
   | 'pace_cv'
   | 'form_score'
 const metrics: { value: Metric; label: string; simple: string }[] = [
-  { value: 'cadence_avg', label: 'Cadence', simple: 'cadence' },
-  { value: 'cadence_cv', label: 'Cadence stability', simple: 'cadence stability' },
   { value: 'hr_drift_pct', label: 'HR drift', simple: 'HR drift' },
   { value: 'decoupling_pct', label: 'Aerobic decoupling', simple: 'decoupling' },
+  { value: 'cadence_avg', label: 'Cadence', simple: 'cadence' },
+  { value: 'cadence_cv', label: 'Cadence stability', simple: 'cadence stability' },
+  // TODO(shared): Add pace_drift_pct to the fitness/trends metric contract and backend.
   { value: 'efficiency_first', label: 'Efficiency factor', simple: 'efficiency' },
   { value: 'pace_cv', label: 'Pace consistency', simple: 'pace consistency' },
   { value: 'form_score', label: 'Form score', simple: 'form score' },
@@ -55,7 +56,7 @@ const favorable = (
       ? 'text-positive'
       : 'text-negative'
 export default function FitnessPage() {
-  const [metric, setMetric] = useState<Metric>('decoupling_pct')
+  const [metric, setMetric] = useState<Metric>('hr_drift_pct')
   const trend = useQuery({
     queryKey: ['fitness-trend', metric],
     queryFn: () => api.fitnessTrends(metric),
@@ -88,6 +89,8 @@ export default function FitnessPage() {
   const rows = fingerprints.data?.items ?? []
   const decoupleBaseline = getBaseline('decoupling_pct', rows)
   const cvBaseline = getBaseline('cadence_cv', rows)
+  const excludedWalking = rows.reduce((sum, item) => sum + (item.walking_time_s ?? 0), 0)
+  const excludedStanding = rows.reduce((sum, item) => sum + (item.stopped_time_s ?? 0), 0)
   return (
     <div className="mx-auto max-w-7xl p-5">
       <PageHeader
@@ -185,38 +188,48 @@ export default function FitnessPage() {
                 ))}
               </div>
             ) : rows.length ? (
-              <div className="overflow-x-auto">
-                <table className="w-full min-w-[900px] text-left text-xs">
-                  <thead className="bg-surface-soft text-[10px] uppercase tracking-wide text-ink-muted">
-                    <tr>
-                      {[
-                        'Date',
-                        'Run',
-                        'Distance',
-                        'Cadence',
-                        'Cadence CV',
-                        'HR drift',
-                        'Decoupling',
-                        'Form',
-                      ].map((h) => (
-                        <th key={h} className="px-3 py-2.5">
-                          {h}
-                        </th>
+              <>
+                <p className="px-5 pb-3 text-[12px] text-ink-muted">
+                  Running only — walking and standing are excluded from every number on this
+                  page.
+                  {excludedWalking + excludedStanding > 0
+                    ? ` Across these runs: ${Math.round(excludedWalking / 60)}m walking and ${Math.round(excludedStanding / 60)}m standing excluded.`
+                    : ''}
+                </p>
+                <div className="overflow-x-auto">
+                  <table className="w-full min-w-[900px] text-left text-xs">
+                    <thead className="bg-surface-soft text-[10px] uppercase tracking-wide text-ink-muted">
+                      <tr>
+                        {[
+                          'Date',
+                          'Run',
+                          'Distance',
+                          'Cadence',
+                          'Cadence CV',
+                          'HR drift',
+                          'Decoupling',
+                          'Pace drift',
+                          'Form',
+                        ].map((h) => (
+                          <th key={h} className="px-3 py-2.5">
+                            {h}
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-edge">
+                      {rows.map((r) => (
+                        <FingerprintRow
+                          key={r.activity_id}
+                          item={r}
+                          cvBaseline={cvBaseline}
+                          decoupleBaseline={decoupleBaseline}
+                        />
                       ))}
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-edge">
-                    {rows.map((r) => (
-                      <FingerprintRow
-                        key={r.activity_id}
-                        item={r}
-                        cvBaseline={cvBaseline}
-                        decoupleBaseline={decoupleBaseline}
-                      />
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                    </tbody>
+                  </table>
+                </div>
+              </>
             ) : (
               <EmptyState
                 title="No fingerprints yet"
@@ -341,6 +354,9 @@ function FingerprintRow({
         className={`px-3 py-2.5 ${favorable(item.decoupling_pct, decoupleBaseline, 'lower')}`}
       >
         {display(item.decoupling_pct, '%')}
+      </td>
+      <td className={`px-3 py-2.5 ${favorable(item.pace_drift_pct, null, 'lower')}`}>
+        {display(item.pace_drift_pct, '%')}
       </td>
       <td className="px-3 py-2.5">{display(item.form_score)}</td>
     </tr>

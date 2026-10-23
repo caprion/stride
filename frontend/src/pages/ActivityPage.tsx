@@ -34,6 +34,7 @@ import {
 } from 'lucide-react'
 import { api } from '../lib/api'
 import type { ActivityDetail, ActivitySummary, Lap, Stream } from '../types'
+import type { Fingerprint } from '../types_phase2'
 import {
   formatDateLong,
   formatDateTime,
@@ -331,10 +332,19 @@ function TitleBlock({
 
 /* ---------------------------------------------------------------- stat strip */
 
-function StatStrip({ activity }: { activity: ActivityDetail }) {
+function StatStrip({
+  activity,
+  fingerprint,
+}: {
+  activity: ActivityDetail
+  fingerprint?: Fingerprint
+}) {
+  const hrDrift = fingerprint?.hr_drift_bpm
+  const paceDrift = fingerprint?.pace_drift_pct
+  const signed = (value: number) => `${value > 0 ? '+' : ''}${formatNumber(value, 0)}`
   return (
     <Card className="px-5 py-4">
-      <div className="grid grid-cols-2 gap-x-5 gap-y-5 sm:grid-cols-3 lg:grid-cols-7">
+      <div className="grid grid-cols-2 gap-x-5 gap-y-5 sm:grid-cols-4 lg:grid-cols-8">
         <StatTile
           label="Distance"
           value={formatDistanceShort(activity.distance_m)}
@@ -363,11 +373,27 @@ function StatStrip({ activity }: { activity: ActivityDetail }) {
           hint={`elapsed ${formatDuration(activity.elapsed_time_s)}`}
         />
         <StatTile
-          label="Avg HR"
-          value={formatHr(activity.avg_hr)}
-          unit="bpm"
+          label="HR drift"
+          value={hrDrift == null ? '—' : signed(hrDrift)}
+          unit={hrDrift == null ? undefined : 'bpm'}
           icon={<Flame size={12} strokeWidth={2} className="text-ink-faint" />}
-          hint={activity.max_hr ? `max ${formatHr(activity.max_hr)} bpm` : 'no HR data'}
+          hint={
+            `${hrDrift == null ? '' : hrDrift > 0 ? 'Heart rate rose across the run' : hrDrift < 0 ? 'Heart rate fell across the run' : 'Heart rate held steady across the run'}${activity.avg_hr != null ? `${hrDrift == null ? '' : ' · '}avg ${formatHr(activity.avg_hr)}${activity.max_hr != null ? ` · peak ${formatHr(activity.max_hr)}` : ''} bpm` : ''}` ||
+            'No running HR data'
+          }
+        />
+        <StatTile
+          label="Pace drift"
+          value={
+            paceDrift == null ? '—' : `${paceDrift > 0 ? '+' : ''}${formatNumber(paceDrift, 1)}`
+          }
+          unit={paceDrift == null ? undefined : '%'}
+          icon={<Gauge size={12} strokeWidth={2} className="text-ink-faint" />}
+          hint={
+            paceDrift == null
+              ? 'No running pace data'
+              : `${Math.abs(paceDrift).toFixed(0)}% ${paceDrift > 0 ? 'slower' : 'faster'} in the second half`
+          }
         />
         <StatTile
           label="Calories"
@@ -396,7 +422,9 @@ function StatStrip({ activity }: { activity: ActivityDetail }) {
 
 /* ------------------------------------------------------------------- splits */
 
-function SplitsTable({ laps }: { laps: Lap[] }) {
+type RunningLap = Lap & { elapsed_s?: number | null; running_distance_m?: number | null }
+
+function SplitsTable({ laps }: { laps: RunningLap[] }) {
   const paces = laps
     .map((lap) => lap.pace_s_per_km)
     .filter((p): p is number => p !== null && p !== undefined && p > 0)
@@ -463,13 +491,20 @@ function SplitsTable({ laps }: { laps: Lap[] }) {
                     </span>
                   </td>
                   <td className="px-3 py-2.5">
-                    {lap.distance_label ?? formatDistance(lap.distance_m)}
+                    {lap.running_distance_m != null && lap.running_distance_m < 980
+                      ? `${(lap.running_distance_m / 1000).toFixed(2)} km run`
+                      : (lap.distance_label ?? formatDistance(lap.distance_m))}
                   </td>
                   <td className="px-3 py-2.5 font-semibold text-ink">
                     {lap.pace_label ?? formatPace(lap.pace_s_per_km)}
                   </td>
                   <td className="px-3 py-2.5 text-ink-soft">
-                    {lap.duration_label ?? formatDuration(lap.duration_s)}
+                    <div>{lap.duration_label ?? formatDuration(lap.duration_s)}</div>
+                    {lap.elapsed_s != null && lap.elapsed_s - lap.duration_s > 2 ? (
+                      <div className="text-[11px] text-ink-faint">
+                        +{formatDuration(lap.elapsed_s - lap.duration_s)} elapsed
+                      </div>
+                    ) : null}
                   </td>
                   <td className="px-3 py-2.5 text-ink-soft">
                     {elevation === null ? (
@@ -717,6 +752,13 @@ export function ActivityPage() {
     },
   })
 
+  const fingerprintsQuery = useQuery({
+    queryKey: ['fitness-fingerprint'],
+    queryFn: () => api.fitnessFingerprint(),
+    enabled: validId,
+    retry: false,
+  })
+
   const neighboursQuery = useQuery({
     queryKey: ['activities', 'neighbours', 200],
     queryFn: () => api.activities({ per_page: 200 }),
@@ -806,6 +848,16 @@ export function ActivityPage() {
 
   const avgHr = average(activity.streams.hr?.values ?? [])
   const avgPaceSeconds = average(activity.streams.pace?.values ?? [])
+  const fingerprint = fingerprintsQuery.data?.items.find(
+    (item) => item.activity_id === activityId,
+  )
+  const hrDrift = fingerprint?.hr_drift_bpm
+  const paceDrift = fingerprint?.pace_drift_pct
+  const hasExclusions = (activity.walking_time_s ?? 0) > 0 || (activity.stopped_time_s ?? 0) > 0
+  const excludedParts = [
+    activity.walking_time_s ? `${formatDuration(activity.walking_time_s)} walking` : null,
+    activity.stopped_time_s ? `${formatDuration(activity.stopped_time_s)} standing` : null,
+  ].filter((part): part is string => part !== null)
 
   const hasElevation = elevationPoints.some((point) => point.value !== null)
 
@@ -822,7 +874,14 @@ export function ActivityPage() {
             saving={patchMutation.isPending}
             onSaveName={(name) => patchMutation.mutate({ name })}
           />
-          <StatStrip activity={activity} />
+          <StatStrip activity={activity} fingerprint={fingerprint} />
+          {hasExclusions ? (
+            <p className="px-1 text-[12px] text-ink-muted">
+              <span className="font-semibold">Running only</span> ·{' '}
+              {formatDistance(activity.running_distance_m)} of{' '}
+              {formatDistance(activity.distance_m)} · {excludedParts.join(', ')} excluded
+            </p>
+          ) : null}
         </div>
 
         <aside className="space-y-4">
@@ -888,11 +947,7 @@ export function ActivityPage() {
               color={HR_COLOR}
               unit=" bpm"
               title="Heart rate"
-              subtitle={
-                avgHr !== null
-                  ? `Average ${formatHr(avgHr)} bpm · peak ${formatHr(activity.max_hr)} bpm`
-                  : 'Recorded heart rate over the activity'
-              }
+              subtitle={`${hrDrift == null ? 'Heart rate drift unavailable' : `Heart rate ${hrDrift > 0 ? 'rose' : hrDrift < 0 ? 'fell' : 'held steady'} ${Math.round(Math.abs(hrDrift))} bpm across the run`} · avg ${avgHr === null ? '—' : formatHr(avgHr)}, peak ${formatHr(activity.max_hr)} · running only`}
               referenceLines={
                 avgHr !== null
                   ? [{ value: avgHr, label: `avg ${formatHr(avgHr)}`, color: '#9aa0a6' }]
@@ -916,8 +971,8 @@ export function ActivityPage() {
               title="Pace"
               subtitle={
                 avgPaceSeconds !== null
-                  ? `Average ${formatPaceWithUnit(avgPaceSeconds)} — lower is faster`
-                  : 'Lower is faster'
+                  ? `${paceDrift == null ? 'Pace drift unavailable' : `${Math.abs(paceDrift).toFixed(0)}% ${paceDrift > 0 ? 'slower' : 'faster'} in the second half`} · avg ${formatPaceWithUnit(avgPaceSeconds)} · running only`
+                  : 'Running only · lower is faster'
               }
               tickFormatter={(v) => formatPace(v * 60)}
               valueFormatter={(v) => formatPaceWithUnit(v * 60)}
@@ -947,7 +1002,7 @@ export function ActivityPage() {
       <section>
         <h2 className="mb-2 text-[15px] font-semibold text-ink">Splits</h2>
         {activity.laps.length ? (
-          <SplitsTable laps={activity.laps} />
+          <SplitsTable laps={activity.laps as RunningLap[]} />
         ) : (
           <Card>
             <EmptyState

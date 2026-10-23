@@ -92,6 +92,14 @@ class Activity(Base):
     avg_speed_ms: Mapped[float | None] = mapped_column(Float, nullable=True)
     max_speed_ms: Mapped[float | None] = mapped_column(Float, nullable=True)
 
+    # A recorded run contains walking warm-ups, walking cool-downs and stands.
+    # These hold how much of the activity was actually running, so the analysis
+    # and the UI can exclude the rest.
+    running_time_s: Mapped[float | None] = mapped_column(Float, nullable=True)
+    walking_time_s: Mapped[float | None] = mapped_column(Float, nullable=True)
+    stopped_time_s: Mapped[float | None] = mapped_column(Float, nullable=True)
+    running_distance_m: Mapped[float | None] = mapped_column(Float, nullable=True)
+
     perceived_exertion: Mapped[int | None] = mapped_column(Integer, nullable=True)
     device: Mapped[str | None] = mapped_column(String(120), nullable=True)
     gear: Mapped[str | None] = mapped_column(String(120), nullable=True)
@@ -144,6 +152,11 @@ class ActivityLap(Base):
     elevation_loss_m: Mapped[float | None] = mapped_column(Float, nullable=True)
     start_elevation_m: Mapped[float | None] = mapped_column(Float, nullable=True)
     end_elevation_m: Mapped[float | None] = mapped_column(Float, nullable=True)
+
+    # Running-only figures: the distance and time covered while actually
+    # running, and the elapsed span of the lap.
+    running_distance_m: Mapped[float | None] = mapped_column(Float, nullable=True)
+    elapsed_s: Mapped[float | None] = mapped_column(Float, nullable=True)
 
     activity: Mapped[Activity] = relationship(back_populates="laps")
 

@@ -452,3 +452,95 @@ wins for the GPS track, per-second streams and kilometre splits.
 The app now connects itself from the Key Vault at startup, syncs real runs with
 full fidelity, and builds the physiological picture from the same credentials —
 no password anywhere in the system.
+
+
+---
+
+## 11. Segmenting a "run" — and the case against average heart rate
+
+### The problem
+
+A recorded activity is not a run. It contains a walking warm-up, a stand at a
+crossing, a walk break, and a walking cool-down. Two things follow:
+
+1. **Average heart rate is a misleading headline.** Averaging heart rate over a
+   session that includes walking and standing produces a number that describes
+   nobody — it is pulled toward the warm-up and the rest stops rather than
+   describing the running.
+2. **Cadence, pace and the splits are contaminated the same way.** A
+   kilometre lap that includes a minute of walking reads as 9:14/km, when the
+   athlete was running at 7:00/km for the part of it they were running.
+
+### The segmentation
+
+Every FIT file is a per-second (or per-record) stream, and each record can be
+classified from its own speed and cadence:
+
+| Class | Rule |
+|---|---|
+| `stand` | speed < 0.30 m/s, or no cadence at all |
+| `walk` | cadence < 60 (stored) *and* speed < 2.2 m/s, or speed < 1.55 m/s |
+| `run` | everything else |
+
+The cadence threshold is deliberately conservative. Running cadence is stored
+**halved** on many devices (a displayed 160 spm is stored as 80), so the
+threshold is applied to the stored value. A run at 2.3 m/s with a stored
+cadence of 55 is a genuine short-strided runner, not a walker, and both
+conditions must hold before a sample is called walking.
+
+### Garmin's own splits are not the answer
+
+Garmin's activity API returns auto-detected splits with a type
+(`RWD_WALK`, `RWD_RUN`, `RWD_STAND`). For one real activity they said:
+
+| Split | Type | Distance | Elapsed |
+|---|---|---|---|
+| 1 | `RWD_WALK` | 95.7 m | 90.9 s |
+| 2 | `RWD_RUN` | 9331.8 m | 4242 s |
+| 3 | `RWD_STAND` | 26.8 m | 76 s |
+
+But the record stream disagrees with them. The same activity, read from the
+records, is:
+
+```
+run 0-2116 s · stand 2116-2212 s · run 2212-4302 s · walk 4302-4337 s · walk 4337-4343 s
+```
+
+The record stream finds a **72-second stand and a 35-second walk break in the
+middle of the run** that Garmin's splits lumped into a single `RWD_RUN`, and it
+finds the cool-down to be a walk where Garmin said stand. The records are the
+truth; Garmin's split types are a coarse convenience.
+
+### What is recomputed over the running parts only
+
+- **Streams** — heart rate, cadence, pace and distance contain only running
+  samples.
+- **Laps** — each kilometre lap is rebuilt from the running samples inside it.
+  An interval between two running samples counts as running time; a gap that
+  spans a rest stop does not. Lap 5 of the reference activity went from
+  `9:14` to `7:42` for 897 m of running.
+- **The fingerprint** — cadence variability, drift, decoupling and the form
+  score all describe the running only.
+
+### Drift leads
+
+Average heart rate is demoted to a hint. The headline numbers are:
+
+| Metric | Meaning |
+|---|---|
+| `hr_drift_bpm` | heart-rate rise between the first and second half of the running |
+| `pace_drift_pct` | how much the pace faded (positive = slower) |
+| `decoupling_pct` | aerobic decoupling — the efficiency lost across the run |
+| `cadence_cv` | cadence stability |
+| `form_score` | a composite of the three above |
+
+The UI states the exclusion explicitly — *"Running only · 9.30 km of 9.45 km ·
+1:03 walking, 2:01 standing excluded"* — so the athlete can see what was left
+out and agree with the call.
+
+### Fewer API calls
+
+If the FIT file is already downloaded and parsed, the record stream cannot have
+changed, so the sync skips the download **and** the activity-summary call, and
+reuses what is stored. A re-sync of 103 activities went from **133 API calls
+and 127 seconds** to **1 call and 4 seconds**.

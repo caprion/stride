@@ -234,6 +234,18 @@ export interface HrvPoint {
 
 export interface Fingerprint {
   activity_id: number
+  /** Time actually spent running — walking and standing are excluded. */
+  running_time_s: number | null
+  walking_time_s: number | null
+  stopped_time_s: number | null
+  /** Heart-rate rise between the first and second half of the running. */
+  hr_drift_bpm: number | null
+  /** Pace fade between the first and second half of the running (positive = slower). */
+  pace_drift_pct: number | null
+  first_half_hr: number | null
+  second_half_hr: number | null
+  first_half_pace_s_km: number | null
+  second_half_pace_s_km: number | null
   activity_name: string | null
   local_date: string | null
   distance_m: number

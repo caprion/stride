@@ -29,6 +29,8 @@ METRICS = {
     'cadence_cv': ('Cadence variability', '%', 'lower'),
     'cadence_drift_pct': ('Cadence drift', '%', 'lower'),
     'hr_drift_pct': ('Heart rate drift', '%', 'lower'),
+    'hr_drift_bpm': ('Heart rate drift', 'bpm', 'lower'),
+    'pace_drift_pct': ('Pace drift', '%', 'lower'),
     'decoupling_pct': ('Aerobic decoupling', '%', 'lower'),
     'efficiency_first': ('Efficiency factor', 'm/s per HR fraction', 'higher'),
     'pace_cv': ('Pace variability', '%', 'lower'),
@@ -96,8 +98,41 @@ def athlete_zones(reference: float) -> list[dict[str, Any]]:
     return zone_model(reference, state.garmin_athlete.get('heartRateZones'))
 
 
+# A lap is walked rather than run when the step frequency is well below
+# running and the pace is slow. Running cadence sits around 150-170 spm;
+# walking sits near 110-120. Both conditions must hold, so a short-strided
+# runner is not mistaken for a walker.
+WALKING_CADENCE = 125
+WALKING_SPEED_MPS = 2.2
+
+
+def _running_only(laps: list[ActivityLap]) -> list[ActivityLap]:
+    """Drop the laps that were walked rather than run.
+
+    Laps rebuilt from a FIT are already running-only, but an activity imported
+    without one (or imported before segmentation existed) still carries its
+    walking stretches, and averaging cadence across them describes nobody.
+    """
+    if not laps:
+        return laps
+    running = []
+    for lap in laps:
+        cadence = lap.avg_cadence
+        speed = lap.avg_speed_ms
+        if (
+            number(cadence, True)
+            and cadence < WALKING_CADENCE
+            and (not number(speed, True) or speed < WALKING_SPEED_MPS)
+        ):
+            continue
+        running.append(lap)
+    # If everything looked like walking, the classification is not trustworthy;
+    # fall back to the original laps rather than analysing nothing.
+    return running or laps
+
+
 def _derive(activity: Activity, reference: float) -> dict[str, Any]:
-    laps = sorted(activity.laps, key=lambda lap: lap.lap_index)
+    laps = _running_only(sorted(activity.laps, key=lambda lap: lap.lap_index))
     third = len(laps) // 3
     first, last = (laps[:third], laps[-third:]) if third else ([], [])
 
@@ -145,6 +180,19 @@ def _derive(activity: Activity, reference: float) -> dict[str, Any]:
                     key = str(zone['zone_no'])
                     zones[key] = zones.get(key, 0.0) + lap.duration_s
                     break
+    # Half-split drift, on the running laps only. An average heart rate across
+    # a run that included walking and standing describes nobody; the drift
+    # between the two halves is the number that says something.
+    half = len(laps) // 2
+    first_half, second_half = (laps[:half], laps[half:]) if half else ([], [])
+    hr_first, hr_second = _mean(values(first_half, 'avg_hr')), _mean(values(second_half, 'avg_hr'))
+    pace_first_half, pace_second_half = _mean(paces(first_half)), _mean(paces(second_half))
+    hr_drift_bpm = (hr_second - hr_first) if (hr_first is not None and hr_second is not None) else None
+    pace_drift_pct = (
+        (pace_second_half - pace_first_half) / pace_first_half * 100
+        if (pace_first_half and pace_second_half)
+        else None
+    )
     hr_avg = activity.avg_hr if number(activity.avg_hr, True) else _mean(values(laps, 'avg_hr'))
     maxima = values(laps, 'max_hr')
     if activity.max_hr is not None and number(activity.max_hr, True):
@@ -163,6 +211,13 @@ def _derive(activity: Activity, reference: float) -> dict[str, Any]:
         'pace_cv': pace_cv, 'negative_split_pct': float(100 if pace_last < pace_first else 0) if pace_first is not None and pace_last is not None else None,
         'stride_length_cm': statistics.mean(strides) * 100 if (strides := [value for value in values(laps, 'stride_length_m') if value <= 3]) else None,
         'form_score': form, 'zone_distribution': zones or None,
+        'running_time_s': activity.running_time_s,
+        'walking_time_s': activity.walking_time_s,
+        'stopped_time_s': activity.stopped_time_s,
+        'hr_drift_bpm': hr_drift_bpm,
+        'pace_drift_pct': pace_drift_pct,
+        'first_half_hr': hr_first, 'second_half_hr': hr_second,
+        'first_half_pace_s_km': pace_first_half, 'second_half_pace_s_km': pace_second_half,
         'notes': 'Synthetic demo activity.' if activity.source == 'demo' else None,
     }
 

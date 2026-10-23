@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import io
 import logging
+import statistics
 from datetime import datetime, timezone
 from typing import Any
 
@@ -80,6 +81,36 @@ _SESSION_FIELDS = (
 )
 
 
+# Segment classification thresholds.
+#
+# A record is classified from its own speed and cadence:
+#   stand — the athlete is not moving at all
+#   walk  — moving, but at a step frequency (or speed) below running
+#   run   — everything else
+#
+# The thresholds are deliberately conservative. Running cadence is stored
+# *halved* on many devices (see `_running_cadence`), so a stored value of 80
+# is a displayed 160 spm; a stored value below 60 is walking or shuffling.
+# Garmin's own activity splits are coarser than the record stream and
+# sometimes disagree with it, so the records are the source of truth here.
+STAND_SPEED_MPS = 0.30
+WALK_SPEED_MPS = 1.55
+WALK_STORED_CADENCE = 60
+
+
+def classify_sample(speed_mps: float | None, stored_cadence: float | None) -> str:
+    """Classify one record as 'run', 'walk' or 'stand'."""
+    if speed_mps is not None and speed_mps < STAND_SPEED_MPS:
+        return "stand"
+    if stored_cadence is not None and stored_cadence == 0:
+        return "stand"
+    if stored_cadence is not None and stored_cadence < WALK_STORED_CADENCE:
+        if speed_mps is None or speed_mps < 2.2:
+            return "walk"
+    if speed_mps is not None and speed_mps < WALK_SPEED_MPS:
+        return "walk"
+    return "run"
+
 def _semicircles_to_degrees(value: float) -> float:
     """FIT stores positions in semicircles; 2**31 semicircles is 180 degrees.
 
@@ -131,6 +162,7 @@ def parse_fit(data: bytes, filename: str = "activity.fit") -> dict[str, Any]:
     cadence_samples: list[tuple[float, float]] = []
     elevation_samples: list[tuple[float, float]] = []
     distance_samples: list[tuple[float, float]] = []
+    records: list[tuple[float, float | None, float | None, float | None, float | None]] = []
     geo: list[list[float]] = []
     laps: list[dict] = []
     session: dict[str, Any] = {}
@@ -188,6 +220,17 @@ def parse_fit(data: bytes, filename: str = "activity.fit") -> dict[str, Any]:
 
         if safe_float(value_of(message, "distance")) is not None:
             distance_samples.append((ts or 0.0, safe_float(value_of(message, "distance")) or 0.0))
+
+        # One row per record: elapsed, distance, speed (m/s), stored cadence, HR.
+        records.append(
+            (
+                (ts or 0.0),
+                safe_float(value_of(message, "distance")),
+                speed,  # already metres per second
+                cad,
+                hr,
+            )
+        )
 
     for message in fit.get_messages("lap"):
         lap: dict[str, Any] = {}
@@ -247,6 +290,7 @@ def parse_fit(data: bytes, filename: str = "activity.fit") -> dict[str, Any]:
 
     if laps:
         out_laps = []
+        cumulative_elapsed = 0.0
         for index, lap in enumerate(laps):
             lap_distance = safe_float(lap.get("total_distance"), 0.0) or 0.0
             lap_duration = safe_float(lap.get("total_timer_time")) or safe_float(
@@ -259,6 +303,11 @@ def parse_fit(data: bytes, filename: str = "activity.fit") -> dict[str, Any]:
                 lap_speed = lap_distance / lap_duration
             cadence = safe_float(lap.get("avg_cadence"))
             max_cadence = safe_float(lap.get("max_cadence"))
+            cumulative_elapsed += (
+                safe_float(lap.get("total_elapsed_time"))
+                or safe_float(lap.get("total_timer_time"))
+                or 0.0
+            )
             out_laps.append(
                 {
                     "lap_index": safe_int(lap.get("record_number"), index + 1) or index + 1,
@@ -275,36 +324,189 @@ def parse_fit(data: bytes, filename: str = "activity.fit") -> dict[str, Any]:
                     "elevation_loss_m": safe_float(lap.get("total_descent")),
                     "start_elevation_m": None,
                     "end_elevation_m": None,
+                    "elapsed_s": round(cumulative_elapsed, 3),
                 }
             )
         activity["laps"] = out_laps
 
-    # Streams, re-based to the activity start so the charts line up.
+    # ------------------------------------------------------------ segments
+    #
+    # A run is not a run: it contains walking warm-ups, walking cool-downs and
+    # stands at the water fountain. Those parts are not running, and averaging
+    # heart rate or cadence across them produces a number that describes
+    # nobody. The record stream is segmented, and everything downstream — the
+    # charts, the laps, the fingerprint — uses only the running parts.
+    (
+        segments,
+        running_records,
+        seg_totals,
+        seg_distance,
+        classified_records,
+    ) = _segment_records(records, start_ts)
+
+    activity["segments"] = segments
+    activity["running_time_s"] = round(seg_totals.get("run", 0.0), 1)
+    activity["walking_time_s"] = round(seg_totals.get("walk", 0.0), 1)
+    activity["stopped_time_s"] = round(seg_totals.get("stand", 0.0), 1)
+    activity["running_distance_m"] = round(seg_distance.get("run", 0.0), 1)
+
+    # Streams, re-based to the activity start so the charts line up, and
+    # restricted to the running samples.
     if start_ts:
-        if hr_samples:
-            activity["streams"]["hr"] = _series(hr_samples, start_ts, "bpm")
-        if speed_samples:
-            # A zero-speed sample is the athlete standing still, not a pace;
-            # keeping it would flatten the chart's Y axis.
-            moving = [(t, v) for t, v in speed_samples if v > 0.1]
-            if moving:
-                activity["streams"]["pace"] = _series(
-                    [(t, 1000.0 / v) for t, v in moving], start_ts, "s/km"
-                )
-        elif distance_samples:
-            # No speed field: derive it from the cumulative distance.
-            activity["streams"]["pace"] = _series(
-                _speed_from_distance(distance_samples), start_ts, "s/km"
+        # The stream builder re-bases timestamps against the activity start, so
+        # it needs the epoch, not the elapsed offset the segment helper uses.
+        running = [r for r in records if classify_sample(r[2], r[3]) == "run"]
+        if running:
+            activity["streams"]["hr"] = _series(
+                [(r[0], r[4]) for r in running if r[4] is not None], start_ts, "bpm"
+            )
+            activity["streams"]["cadence"] = _series(
+                [(r[0], _running_cadence(r[3])) for r in running if r[3] is not None],
+                start_ts,
+                "spm",
+            )
+            pace_rows = [
+                (r[0], 1000.0 / r[2]) for r in running if r[2] is not None and r[2] > 0.1
+            ]
+            if pace_rows:
+                activity["streams"]["pace"] = _series(pace_rows, start_ts, "s/km")
+            activity["streams"]["distance"] = _series(
+                [(r[0], r[1]) for r in running if r[1] is not None], start_ts, "m"
             )
         if elevation_samples:
             activity["streams"]["elevation"] = _series(elevation_samples, start_ts, "m")
-        if cadence_samples:
-            activity["streams"]["cadence"] = _series(
-                [(t, _running_cadence(v)) for t, v in cadence_samples], start_ts, "spm"
+
+    # Laps recomputed over the running parts only. Garmin's kilometre laps
+    # include the walking stretches, which is why a "1 km" lap can be 9:14
+    # when the athlete was running at 7:00.
+    if classified_records and activity.get("laps"):
+        activity["laps"] = _running_laps(activity["laps"], classified_records)
+
+    # Lap boundaries, so the caller can recompute laps over the running parts.
+    if start_ts and laps:
+        bounds: list[float] = []
+        cursor = 0.0
+        for lap in laps:
+            cursor += (
+                safe_float(lap.get("total_elapsed_time"))
+                or safe_float(lap.get("total_timer_time"))
+                or 0.0
             )
+            bounds.append(round(cursor, 3))
+        activity["lap_bounds"] = bounds
 
     return activity
 
+
+def _segment_records(
+    records: list[tuple[float, float | None, float | None, float | None, float | None]],
+    start_ts: float | None,
+) -> tuple[list[dict], list[tuple], dict[str, float], dict[str, float]]:
+    """Split the record stream into run / walk / stand segments.
+
+    Returns ``(segments, running_records, seconds_by_kind, metres_by_kind)``.
+    """
+    segments: list[dict] = []
+    running: list[tuple] = []
+    classified: list[tuple] = []
+    seconds: dict[str, float] = {"run": 0.0, "walk": 0.0, "stand": 0.0}
+    metres: dict[str, float] = {"run": 0.0, "walk": 0.0, "stand": 0.0}
+    if not records:
+        return segments, running, seconds, metres, classified
+
+    base = start_ts if start_ts is not None else records[0][0]
+    kinds = [classify_sample(r[2], r[3]) for r in records]
+
+    # A sample represents the interval that follows it, up to the next sample.
+    for index, record in enumerate(records):
+        elapsed = record[0] - base
+        kind = kinds[index]
+        next_elapsed = (
+            records[index + 1][0] - base if index + 1 < len(records) else elapsed
+        )
+        span = max(0.0, next_elapsed - elapsed)
+        seconds[kind] = seconds.get(kind, 0.0) + span
+
+        if index + 1 < len(records):
+            previous = records[index][1]
+            current = records[index + 1][1]
+            if previous is not None and current is not None and current > previous:
+                metres[kind] = metres.get(kind, 0.0) + (current - previous)
+
+        classified.append((elapsed,) + tuple(record[1:]) + (kind,))
+        if kind == "run":
+            running.append((elapsed,) + tuple(record[1:]))
+
+        if segments and segments[-1]["kind"] == kind:
+            segments[-1]["end_s"] = round(elapsed, 3)
+            segments[-1]["samples"] += 1
+        else:
+            segments.append(
+                {"kind": kind, "start_s": round(elapsed, 3), "end_s": round(elapsed, 3), "samples": 1}
+            )
+
+    for segment in segments:
+        segment["duration_s"] = round(segment["end_s"] - segment["start_s"], 3)
+
+    return segments, running, seconds, metres, classified
+
+
+
+def _running_laps(
+    laps: list[dict[str, Any]],
+    classified: list[tuple],
+) -> list[dict[str, Any]]:
+    """Rebuild each lap from the running samples that fall inside it.
+
+    A lap keeps its index and its distance target, but its time, pace, heart
+    rate and cadence describe only the running. A lap that was mostly walking
+    comes back with very little running in it — which is the truth.
+    """
+    out: list[dict[str, Any]] = []
+    cursor = 0.0
+    for lap in laps:
+        end = safe_float(lap.get("elapsed_s")) or cursor
+        start = cursor
+        cursor = end
+        duration = max(0.0, end - start)
+        window = [r for r in classified if start <= r[0] <= end]
+        running = [r for r in window if r[5] == "run"]
+
+        running_time = 0.0
+        distance = 0.0
+        heart_rates: list[float] = []
+        cadences: list[float] = []
+        for index in range(1, len(window)):
+            previous, current = window[index - 1], window[index]
+            # Only an interval between two running samples counts as running;
+            # a gap that spans a rest stop is not running time.
+            if previous[5] != "run" or current[5] != "run":
+                continue
+            running_time += max(0.0, current[0] - previous[0])
+            if previous[1] is not None and current[1] is not None:
+                distance += max(0.0, current[1] - previous[1])
+        for record in running:
+            if record[4] is not None:
+                heart_rates.append(record[4])
+            if record[3] is not None:
+                cadences.append(_running_cadence(record[3]))
+
+        pace = (running_time / (distance / 1000.0)) if distance > 1 and running_time else None
+        out.append(
+            {
+                **lap,
+                "duration_s": round(running_time, 3),
+                "running_distance_m": round(distance, 2),
+                "avg_speed_ms": (distance / running_time) if running_time > 0 and distance > 0 else None,
+                "avg_hr": safe_int(statistics.mean(heart_rates)) if heart_rates else None,
+                "max_hr": safe_int(max(heart_rates)) if heart_rates else None,
+                "avg_cadence": round(statistics.mean(cadences), 1) if cadences else None,
+                "max_cadence": round(max(cadences), 1) if cadences else None,
+                "pace_s_per_km": round(pace, 2) if pace else None,
+                "elapsed_s": round(duration, 3),
+            }
+        )
+    return out
 
 def _speed_from_distance(samples: list[tuple[float, float]]) -> list[tuple[float, float]]:
     """Speed in km/h between consecutive cumulative-distance samples."""

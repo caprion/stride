@@ -37,6 +37,10 @@ _ACTIVITY_FIELDS = (
     "max_cadence",
     "avg_speed_ms",
     "max_speed_ms",
+    "running_time_s",
+    "walking_time_s",
+    "stopped_time_s",
+    "running_distance_m",
     "perceived_exertion",
     "device",
     "gear",
@@ -114,6 +118,8 @@ def replace_laps(db: Session, activity: Activity, laps: list[dict[str, Any]]) ->
                 elevation_loss_m=lap.get("elevation_loss_m"),
                 start_elevation_m=lap.get("start_elevation_m"),
                 end_elevation_m=lap.get("end_elevation_m"),
+                running_distance_m=lap.get("running_distance_m"),
+                elapsed_s=lap.get("elapsed_s"),
             )
         )
 

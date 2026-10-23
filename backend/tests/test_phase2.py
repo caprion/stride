@@ -377,6 +377,49 @@ def test_fingerprint_pace_cv_trailing_lap(db, trailing_distance, excluded):
     assert result["pace_cv"] == pytest.approx(expected)
 
 
+def test_fingerprint_drift_and_form_on_running_laps(db):
+    """Protect positive HR drift and decoupling for a genuinely fading run."""
+    def make(name, hrs, paces):
+        activity = _activity(name=name)
+        activity.distance_m = 6000
+        activity.laps = [ActivityLap(lap_index=i + 1, distance_m=1000, duration_s=pace, avg_hr=hr, max_hr=hr + 5, avg_cadence=170) for i, (hr, pace) in enumerate(zip(hrs, paces))]
+        db.add(activity)
+        db.flush()
+        return fingerprint.compute_fingerprint(db, activity.id)
+
+    drifting = make("Drifting", [140, 140, 140, 165, 165, 165], [330, 330, 330, 390, 390, 390])
+    stable = make("Stable front to back", [150] * 6, [360] * 6)
+    assert drifting["hr_drift_pct"] > 0
+    assert drifting["decoupling_pct"] > 0
+    assert stable["hr_drift_pct"] == pytest.approx(0)
+    assert stable["decoupling_pct"] == pytest.approx(0)
+    assert stable["form_score"] > drifting["form_score"]
+
+
+@pytest.mark.xfail(reason="Fingerprint currently consumes every persisted lap; it has no segment/kind signal to exclude walking laps. Persist running-only laps before fingerprint computation.")
+def test_fingerprint_excludes_slow_walking_lap(db):
+    """Protect cadence averages from a walking lap included in the activity."""
+    activity = _activity(name="Run with cooldown walk")
+    activity.distance_m = 5000
+    activity.laps = [
+        ActivityLap(lap_index=1, distance_m=2000, duration_s=700, avg_hr=150, max_hr=160, avg_cadence=170),
+        ActivityLap(lap_index=2, distance_m=1000, duration_s=900, avg_hr=110, max_hr=120, avg_cadence=90),
+        ActivityLap(lap_index=3, distance_m=2000, duration_s=700, avg_hr=155, max_hr=165, avg_cadence=180),
+    ]
+    db.add(activity)
+    db.flush()
+    result = fingerprint.compute_fingerprint(db, activity.id)
+    assert result["cadence_avg"] == pytest.approx(175)
+
+
+@pytest.mark.xfail(reason="The fingerprint API does not currently expose hr_drift_bpm or pace_drift_pct; only hr_drift_pct and decoupling_pct are available.")
+def test_fingerprint_exposes_absolute_and_pace_drift_fields(db):
+    """Protect the proposed absolute HR and pace drift outputs."""
+    result = _fingerprint(db, [330, 330, 330, 390, 390, 390])
+    assert result["hr_drift_bpm"] > 0
+    assert result["pace_drift_pct"] > 0
+
+
 # ---------------------------------------------------------------- readiness
 
 
