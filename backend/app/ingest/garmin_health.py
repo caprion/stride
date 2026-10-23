@@ -16,9 +16,10 @@ __all__ = ["GarminHealthClient"]
 
 def _walk(obj: Any, names: set[str]) -> Any:
     """Find the first non-empty matching key anywhere in a Garmin payload."""
+    wanted = {name.lower() for name in names}
     if isinstance(obj, dict):
         for key, value in obj.items():
-            if key.lower() in names and value is not None:
+            if key.lower() in wanted and value is not None:
                 return value
         for value in obj.values():
             found = _walk(value, names)

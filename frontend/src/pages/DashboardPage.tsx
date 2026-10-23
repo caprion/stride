@@ -12,6 +12,8 @@
 
 import { useQuery } from '@tanstack/react-query'
 import {
+  ArrowRight,
+  CalendarCheck,
   Activity,
   CalendarDays,
   Flame,
@@ -23,6 +25,7 @@ import {
 } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { api } from '../lib/api'
+import type { PlanSessionWithResult, PlanToday, Readiness } from '../types_phase2'
 import {
   formatDistance,
   formatDistanceShort,
@@ -37,6 +40,7 @@ import {
 import { ActivityCard } from '../components/ActivityCard'
 import { MonthlyBars, PaceTrendChart, VolumeChart, ZoneBarChart } from '../components/charts'
 import {
+  Badge,
   Button,
   Card,
   CardHeader,
@@ -54,6 +58,159 @@ function greeting(): string {
   if (hour < 12) return 'Good morning'
   if (hour < 18) return 'Good afternoon'
   return 'Good evening'
+}
+
+/**
+ * Today — the plan for today, the readiness that adjusts it, and one
+ * sentence of advice. This is the reason to open the app before a run, so it
+ * leads the dashboard.
+ */
+function TodayCard({
+  data,
+  loading,
+  session,
+  readiness,
+}: {
+  data: PlanToday | undefined
+  loading: boolean
+  session: PlanSessionWithResult | null
+  readiness: Readiness | null
+}) {
+  if (loading) {
+    return (
+      <Card className="mb-5 p-5">
+        <div className="flex flex-wrap items-center gap-6">
+          <div className="space-y-2">
+            <Skeleton className="h-3 w-16" />
+            <Skeleton className="h-7 w-56" />
+          </div>
+          <div className="flex-1 space-y-2">
+            <Skeleton className="h-4 w-full max-w-xl" />
+            <Skeleton className="h-3 w-72" />
+          </div>
+        </div>
+      </Card>
+    )
+  }
+
+  if (!data?.has_plan) {
+    return (
+      <Card className="mb-5">
+        <div className="flex flex-wrap items-center justify-between gap-4 p-5">
+          <div className="flex items-center gap-3">
+            <span className="flex h-10 w-10 items-center justify-center rounded-full bg-brand-50 text-brand-600">
+              <CalendarCheck size={19} strokeWidth={2} />
+            </span>
+            <div>
+              <p className="text-[15px] font-semibold text-ink">No training plan yet</p>
+              <p className="mt-0.5 text-[13px] text-ink-muted">
+                Import your plan to get daily guidance and plan-vs-actual tracking.
+              </p>
+            </div>
+          </div>
+          <Link to="/plan">
+            <Button size="md">
+              Set up a plan
+              <ArrowRight size={15} strokeWidth={2.2} />
+            </Button>
+          </Link>
+        </div>
+      </Card>
+    )
+  }
+
+  const result = session?.result
+  const label = session?.title || session?.session_type || 'Rest day'
+
+  return (
+    <Card className="mb-5 overflow-hidden">
+      <div className="flex flex-col gap-5 p-5 lg:flex-row lg:items-center">
+        <div className="min-w-0 flex-1">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.07em] text-ink-muted">
+            Today
+          </p>
+          <p className="mt-1 flex flex-wrap items-center gap-2 text-[22px] font-bold leading-tight tracking-tight text-ink">
+            <span className="capitalize">{label}</span>
+            {result ? (
+              <Badge
+                tone={
+                  result.verdict === 'hit'
+                    ? 'positive'
+                    : result.verdict === 'missed'
+                      ? 'negative'
+                      : 'warn'
+                }
+              >
+                {result.verdict.replace('_', ' ')}
+              </Badge>
+            ) : null}
+          </p>
+          {session ? (
+            <p className="mt-1 text-[13px] text-ink-muted">
+              {session.target_distance_m != null
+                ? `${formatDistance(session.target_distance_m)} planned`
+                : 'No distance target'}
+              {session.pace_low_s_km != null && session.pace_high_s_km != null
+                ? ` · ${formatPace(session.pace_low_s_km)}–${formatPace(
+                    session.pace_high_s_km,
+                  )}/km`
+                : ''}
+              {session.activity
+                ? ` · ran ${formatDistance(session.activity.distance_m)} at ${formatPace(
+                    session.activity.pace_s_per_km,
+                  )}/km`
+                : ''}
+            </p>
+          ) : (
+            <p className="mt-1 text-[13px] text-ink-muted">
+              Nothing scheduled — a planned rest day.
+            </p>
+          )}
+        </div>
+
+        {readiness && readiness.score != null ? (
+          <div className="flex shrink-0 items-center gap-3 rounded-lg bg-surface-soft px-4 py-3">
+            <div className="text-center">
+              <p className="text-[28px] font-bold leading-none text-ink">
+                {Math.round(readiness.score)}
+              </p>
+              <p className="mt-1 text-[10px] font-semibold uppercase tracking-wide text-ink-muted">
+                Readiness
+              </p>
+            </div>
+            <div className="w-px self-stretch bg-edge" />
+            <div>
+              <p className="text-[13px] font-semibold capitalize text-ink">{readiness.grade}</p>
+              {readiness.drivers?.slice(0, 2).map((driver) => (
+                <p key={driver.key} className="mt-0.5 text-[12px] text-ink-muted">
+                  {driver.label} {driver.detail ?? ''}
+                </p>
+              ))}
+            </div>
+          </div>
+        ) : null}
+
+        <div className="min-w-0 shrink-0 border-t border-edge pt-4 lg:w-[340px] lg:border-l lg:border-t-0 lg:pl-5 lg:pt-0">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.07em] text-ink-muted">
+            Recommendation
+          </p>
+          <p className="mt-1 text-[14px] font-medium leading-snug text-ink">
+            {data.recommendation}
+          </p>
+          {data.rationale ? (
+            <p className="mt-1 text-[12px] leading-snug text-ink-muted">{data.rationale}</p>
+          ) : null}
+          <Link
+            to="/plan"
+            className="mt-2 inline-flex items-center gap-1 text-[13px] font-semibold text-brand-600 hover:underline"
+          >
+            See the full plan
+            <ArrowRight size={13} strokeWidth={2.2} />
+          </Link>
+        </div>
+      </div>
+    </Card>
+  )
 }
 
 function HeroSkeleton() {
@@ -158,6 +315,14 @@ export function DashboardPage() {
     queryFn: () => api.hrZones(4),
   })
 
+  // The plan for today, and the readiness that adjusts it. This is the one
+  // thing worth knowing before opening the app, so it sits above everything.
+  const planTodayQuery = useQuery({
+    queryKey: ['plan-today'],
+    queryFn: api.planToday,
+    retry: false,
+  })
+
   const summary = summaryQuery.data
   const week = summary?.this_week
   const month = summary?.this_month
@@ -170,6 +335,10 @@ export function DashboardPage() {
   const records = recordsQuery.data?.items ?? []
   const zones = zonesQuery.data?.zones ?? []
   const recent = summary?.recent ?? []
+
+  const planToday = planTodayQuery.data
+  const todaySession = planToday?.session ?? null
+  const readiness = planToday?.readiness ?? null
 
   const weekDistance = week?.distance_m ?? 0
   const weekPct = WEEK_TARGET_M > 0 ? (weekDistance / WEEK_TARGET_M) * 100 : 0
@@ -194,6 +363,14 @@ export function DashboardPage() {
             </Link>
           </>
         }
+      />
+
+      {/* -------------------------------------------------- today (plan) */}
+      <TodayCard
+        data={planToday}
+        loading={planTodayQuery.isLoading}
+        session={todaySession}
+        readiness={readiness}
       />
 
       {/* ------------------------------------------------------ hero stats */}
@@ -310,7 +487,9 @@ export function DashboardPage() {
               className="px-0 pt-0"
               title="Recent activities"
               subtitle={
-                recent.length > 0 ? `Your last ${Math.min(recent.length, 8)} activities` : undefined
+                recent.length > 0
+                  ? `Your last ${Math.min(recent.length, 8)} activities`
+                  : undefined
               }
               action={
                 <Link
@@ -382,7 +561,9 @@ export function DashboardPage() {
                     <p className="mt-1.5 truncate text-[12px] text-ink-muted">
                       {record.activity_name}
                     </p>
-                    <p className="text-[11px] text-ink-faint">{formatDate(record.activity_date)}</p>
+                    <p className="text-[11px] text-ink-faint">
+                      {formatDate(record.activity_date)}
+                    </p>
                   </Link>
                 ))}
               </div>
@@ -453,7 +634,8 @@ export function DashboardPage() {
                         />
                       </div>
                       <p className="mt-1 text-[11px] text-ink-faint">
-                        {row.activity_count} activities · {formatElevation(row.elevation_gain_m)} climbed
+                        {row.activity_count} activities ·{' '}
+                        {formatElevation(row.elevation_gain_m)} climbed
                       </p>
                     </div>
                   )

@@ -17,8 +17,11 @@ const OUT = process.argv[3] || '/home/sumit/stride/.run/screenshots'
 
 const ROUTES = [
   ['dashboard', '/'],
+  ['plan', '/plan'],
   ['feed', '/feed'],
   ['training', '/training'],
+  ['physiology', '/physiology'],
+  ['fitness', '/fitness'],
   ['stats', '/stats'],
   ['settings', '/settings'],
   ['activity', '/activities/161'],

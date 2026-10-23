@@ -33,12 +33,7 @@ import {
   sportLabel,
   SPORT_COLOR,
 } from '../lib/format'
-import {
-  MonthlyBars,
-  PaceTrendChart,
-  VolumeChart,
-  ZoneBarChart,
-} from '../components/charts'
+import { MonthlyBars, PaceTrendChart, VolumeChart, ZoneBarChart } from '../components/charts'
 import {
   Card,
   CardHeader,
@@ -133,12 +128,16 @@ function Heatmap({
   const cells = useMemo(() => buildHeatCells(year, byDate), [year, byDate])
 
   const maxDistance = useMemo(
-    () => (heatmapQuery.data?.days ?? []).reduce((max, day) => Math.max(max, day.distance_m), 0),
+    () =>
+      (heatmapQuery.data?.days ?? []).reduce((max, day) => Math.max(max, day.distance_m), 0),
     [heatmapQuery.data],
   )
 
   const activeDays = (heatmapQuery.data?.days ?? []).filter((day) => day.distance_m > 0).length
-  const totalDistance = (heatmapQuery.data?.days ?? []).reduce((sum, day) => sum + day.distance_m, 0)
+  const totalDistance = (heatmapQuery.data?.days ?? []).reduce(
+    (sum, day) => sum + day.distance_m,
+    0,
+  )
 
   const currentYear = new Date().getFullYear()
   const yearOptions = [currentYear, currentYear - 1, currentYear - 2].map((value) => ({
@@ -170,9 +169,7 @@ function Heatmap({
     <Card className="overflow-hidden">
       <div className="flex flex-wrap items-start justify-between gap-3 px-5 pt-4 pb-3">
         <div>
-          <h3 className="text-[15px] font-semibold leading-tight text-ink">
-            Year in runs
-          </h3>
+          <h3 className="text-[15px] font-semibold leading-tight text-ink">Year in runs</h3>
           <p className="mt-0.5 text-[13px] text-ink-muted">
             {heatmapQuery.isLoading
               ? 'Loading…'
@@ -399,9 +396,7 @@ export function StatsPage() {
           <Card className="px-6 py-6">
             <div className="flex items-baseline justify-between gap-3">
               <h2 className="text-[15px] font-semibold text-ink">Totals &amp; gains</h2>
-              <span className="text-[12px] text-ink-muted">
-                {totals?.label ?? 'All time'}
-              </span>
+              <span className="text-[12px] text-ink-muted">{totals?.label ?? 'All time'}</span>
             </div>
 
             {summaryQuery.isLoading ? (

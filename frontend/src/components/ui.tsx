@@ -10,17 +10,10 @@ export function cn(...inputs: ClassValue[]) {
 
 /* ------------------------------------------------------------------ card */
 
-export function Card({
-  className,
-  children,
-  ...props
-}: React.HTMLAttributes<HTMLDivElement>) {
+export function Card({ className, children, ...props }: React.HTMLAttributes<HTMLDivElement>) {
   return (
     <div
-      className={cn(
-        'rounded-card border border-edge bg-surface shadow-card',
-        className,
-      )}
+      className={cn('rounded-card border border-edge bg-surface shadow-card', className)}
       {...props}
     >
       {children}
@@ -85,7 +78,9 @@ export function StatTile({
         )}
       >
         {value}
-        {unit ? <span className="ml-1 text-[14px] font-medium text-ink-muted">{unit}</span> : null}
+        {unit ? (
+          <span className="ml-1 text-[14px] font-medium text-ink-muted">{unit}</span>
+        ) : null}
       </span>
       {hint ? <span className="text-[12px] text-ink-muted">{hint}</span> : null}
     </div>
@@ -115,7 +110,8 @@ export function Button({
         size === 'sm' && 'h-8 px-3 text-[13px]',
         size === 'md' && 'h-9 px-4 text-[14px]',
         size === 'lg' && 'h-11 px-6 text-[15px]',
-        variant === 'primary' && 'bg-brand-500 text-white hover:bg-brand-600 active:bg-brand-700',
+        variant === 'primary' &&
+          'bg-brand-500 text-white hover:bg-brand-600 active:bg-brand-700',
         variant === 'secondary' &&
           'border border-edge bg-surface text-ink hover:bg-surface-soft active:bg-surface-sunken',
         variant === 'ghost' && 'text-ink-soft hover:bg-surface-soft',
@@ -185,7 +181,9 @@ export function EmptyState({
     <div className="flex flex-col items-center justify-center gap-2 px-6 py-14 text-center">
       {icon ? <div className="mb-1 text-ink-faint">{icon}</div> : null}
       <p className="text-[15px] font-semibold text-ink">{title}</p>
-      {description ? <p className="max-w-sm text-[13px] text-ink-muted">{description}</p> : null}
+      {description ? (
+        <p className="max-w-sm text-[13px] text-ink-muted">{description}</p>
+      ) : null}
       {action ? <div className="mt-3">{action}</div> : null}
     </div>
   )
@@ -208,9 +206,7 @@ export function PageHeader({
     <div className={cn('mb-5 flex flex-wrap items-end justify-between gap-3', className)}>
       <div className="min-w-0">
         <h1 className="text-[26px] font-bold leading-tight tracking-tight text-ink">{title}</h1>
-        {description ? (
-          <p className="mt-1 text-[14px] text-ink-muted">{description}</p>
-        ) : null}
+        {description ? <p className="mt-1 text-[14px] text-ink-muted">{description}</p> : null}
       </div>
       {actions ? <div className="flex shrink-0 items-center gap-2">{actions}</div> : null}
     </div>
@@ -220,9 +216,7 @@ export function PageHeader({
 /* --------------------------------------------------------------- toolbar */
 
 export function Toolbar({ children, className }: { children: ReactNode; className?: string }) {
-  return (
-    <div className={cn('flex flex-wrap items-center gap-2', className)}>{children}</div>
-  )
+  return <div className={cn('flex flex-wrap items-center gap-2', className)}>{children}</div>
 }
 
 export function SegmentedControl<T extends string | number>({
@@ -237,7 +231,9 @@ export function SegmentedControl<T extends string | number>({
   className?: string
 }) {
   return (
-    <div className={cn('inline-flex rounded-md border border-edge bg-surface p-0.5', className)}>
+    <div
+      className={cn('inline-flex rounded-md border border-edge bg-surface p-0.5', className)}
+    >
       {options.map((option) => (
         <button
           key={String(option.value)}
@@ -271,7 +267,9 @@ export function Toggle({
     <label className="flex cursor-pointer items-start justify-between gap-4">
       <span>
         <span className="block text-[14px] font-medium text-ink">{label}</span>
-        {description ? <span className="mt-0.5 block text-[13px] text-ink-muted">{description}</span> : null}
+        {description ? (
+          <span className="mt-0.5 block text-[13px] text-ink-muted">{description}</span>
+        ) : null}
       </span>
       <button
         type="button"

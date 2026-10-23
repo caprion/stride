@@ -3,23 +3,12 @@
  * These mirror the frozen API contract in `frontend/CONTRACT.md` §Phase 2.
  */
 
-export type SessionType =
-  | 'easy'
-  | 'long'
-  | 'tempo'
-  | 'interval'
-  | 'race'
-  | 'recovery'
-  | 'strength'
-  | 'rest'
+import type { ActivitySummary } from './types'
 
-export type Verdict =
-  | 'hit'
-  | 'missed_pace'
-  | 'short'
-  | 'missed'
-  | 'substituted'
-  | 'bonus'
+export type SessionType =
+  'easy' | 'long' | 'tempo' | 'interval' | 'race' | 'recovery' | 'strength' | 'rest'
+
+export type Verdict = 'hit' | 'missed_pace' | 'short' | 'missed' | 'substituted' | 'bonus'
 
 export interface PlanBlock {
   id: number
@@ -153,7 +142,10 @@ export interface PlanToday {
   readiness: Readiness | null
   recommendation: string
   rationale: string | null
+  /** True when a training block exists — not the same as "a session today". */
   has_plan: boolean
+  /** True when the plan schedules something for today. */
+  has_session: boolean
 }
 
 export interface ImportPlanResult {

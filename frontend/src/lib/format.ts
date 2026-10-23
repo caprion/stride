@@ -1,7 +1,10 @@
 /** Formatting helpers shared across every surface. */
 
 /** 18330 -> "18.3 km" (Strava shows one decimal below 100 km). */
-export function formatDistance(metres: number | null | undefined, unit: 'km' | 'mi' = 'km'): string {
+export function formatDistance(
+  metres: number | null | undefined,
+  unit: 'km' | 'mi' = 'km',
+): string {
   if (metres === null || metres === undefined) return '—'
   if (unit === 'mi') {
     const miles = metres / 1609.344
@@ -24,7 +27,8 @@ export function formatDuration(seconds: number | null | undefined): string {
   const hours = Math.floor(total / 3600)
   const minutes = Math.floor((total % 3600) / 60)
   const secs = total % 60
-  if (hours > 0) return `${hours}:${String(minutes).padStart(2, '0')}:${String(secs).padStart(2, '0')}`
+  if (hours > 0)
+    return `${hours}:${String(minutes).padStart(2, '0')}:${String(secs).padStart(2, '0')}`
   return `${minutes}:${String(secs).padStart(2, '0')}`
 }
 
@@ -40,7 +44,10 @@ export function formatDurationLong(seconds: number | null | undefined): string {
 }
 
 /** Pace seconds-per-km -> "6:19 /km". */
-export function formatPace(secondsPerKm: number | null | undefined, unit: 'km' | 'mi' = 'km'): string {
+export function formatPace(
+  secondsPerKm: number | null | undefined,
+  unit: 'km' | 'mi' = 'km',
+): string {
   if (secondsPerKm === null || secondsPerKm === undefined || secondsPerKm <= 0) return '—'
   const value = unit === 'mi' ? secondsPerKm * 1.609344 : secondsPerKm
   const total = Math.round(value)

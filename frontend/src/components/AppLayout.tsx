@@ -11,8 +11,10 @@ import {
   Activity,
   BarChart3,
   CalendarDays,
-  Compass,
+  ClipboardCheck,
   FlaskConical,
+  Gauge,
+  HeartPulse,
   LayoutDashboard,
   RefreshCw,
   Settings as SettingsIcon,
@@ -29,16 +31,21 @@ import { Badge, Button, cn } from './ui'
 
 const PRIMARY_NAV = [
   { to: '/', label: 'Dashboard', icon: LayoutDashboard, end: true },
-  { to: '/feed', label: 'Feed', icon: Compass, end: false },
+  { to: '/plan', label: 'Plan', icon: ClipboardCheck, end: false },
   { to: '/training', label: 'Training', icon: CalendarDays, end: false },
   { to: '/stats', label: 'Stats', icon: BarChart3, end: false },
 ]
 
 const SECONDARY_NAV = [
+  { to: '/plan', label: 'Plan vs actual', icon: ClipboardCheck },
   { to: '/feed', label: 'Activity feed', icon: Activity },
   { to: '/training', label: 'Training log', icon: CalendarDays },
   { to: '/stats', label: 'Statistics', icon: TrendingUp },
-  { to: '/settings', label: 'Settings', icon: SettingsIcon },
+]
+
+const ATHLETE_NAV = [
+  { to: '/physiology', label: 'Physiology', icon: HeartPulse },
+  { to: '/fitness', label: 'Running form', icon: Gauge },
 ]
 
 function NavItem({
@@ -160,6 +167,22 @@ export function AppLayout({ children }: { children: ReactNode }) {
               ))}
             </nav>
 
+            <nav className="space-y-0.5">
+              <p className="px-3 pb-1 text-[11px] font-semibold uppercase tracking-[0.07em] text-ink-faint">
+                Your athlete
+              </p>
+              {ATHLETE_NAV.map((item) => (
+                <NavItem key={item.to + item.label} {...item} />
+              ))}
+            </nav>
+
+            <nav className="space-y-0.5">
+              <p className="px-3 pb-1 text-[11px] font-semibold uppercase tracking-[0.07em] text-ink-faint">
+                Account
+              </p>
+              <NavItem to="/settings" label="Settings" icon={SettingsIcon} />
+            </nav>
+
             {summary ? (
               <div className="rounded-card border border-edge bg-surface p-4 shadow-card">
                 <p className="text-[11px] font-semibold uppercase tracking-[0.07em] text-ink-muted">
@@ -268,8 +291,8 @@ function DemoNotice() {
       <div className="mx-auto flex max-w-[1400px] items-center gap-3 px-4 py-2">
         <FlaskConical size={15} className="shrink-0 text-warn" />
         <p className="min-w-0 flex-1 text-[13px] text-amber-900">
-          You are browsing <strong>demo data</strong>. Connect your Garmin to sync your
-          real runs.
+          You are browsing <strong>demo data</strong>. Connect your Garmin to sync your real
+          runs.
         </p>
         <Link
           to="/settings"

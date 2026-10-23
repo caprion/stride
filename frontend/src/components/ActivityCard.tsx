@@ -28,15 +28,7 @@ import {
   SPORT_COLOR,
 } from '../lib/format'
 
-function Stat({
-  icon,
-  label,
-  value,
-}: {
-  icon: React.ReactNode
-  label: string
-  value: string
-}) {
+function Stat({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
   return (
     <span className="inline-flex items-center gap-1.5 whitespace-nowrap">
       <span className="text-ink-faint">{icon}</span>
@@ -125,7 +117,10 @@ export function ActivityCard({
             className="block shrink-0 border-t border-edge sm:w-[190px] sm:border-l sm:border-t-0"
             aria-label={`View ${activity.name} route`}
           >
-            <RouteThumb points={activity.route_preview} className="h-28 w-full sm:h-full sm:min-h-[132px]" />
+            <RouteThumb
+              points={activity.route_preview}
+              className="h-28 w-full sm:h-full sm:min-h-[132px]"
+            />
           </Link>
         ) : null}
       </div>

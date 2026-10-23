@@ -155,8 +155,8 @@ function RouteHero({
           <MapPin size={26} strokeWidth={1.6} className="mx-auto text-ink-faint" />
           <p className="mt-3 text-[15px] font-semibold text-ink">No GPS route</p>
           <p className="mt-1 text-[13px] text-ink-muted">
-            This activity was recorded without a GPS track — a treadmill session, a
-            manual entry, or a watch that did not capture position data.
+            This activity was recorded without a GPS track — a treadmill session, a manual
+            entry, or a watch that did not capture position data.
           </p>
         </div>
       </Card>
@@ -374,14 +374,20 @@ function StatStrip({ activity }: { activity: ActivityDetail }) {
           value={formatNumber(activity.calories)}
           unit="kcal"
           icon={<Zap size={12} strokeWidth={2} className="text-ink-faint" />}
-          hint={activity.perceived_exertion ? `RPE ${formatNumber(activity.perceived_exertion)}` : undefined}
+          hint={
+            activity.perceived_exertion
+              ? `RPE ${formatNumber(activity.perceived_exertion)}`
+              : undefined
+          }
         />
         <StatTile
           label="Avg cadence"
           value={activity.avg_cadence === null ? '—' : formatNumber(activity.avg_cadence)}
           unit="spm"
           icon={<Footprints size={12} strokeWidth={2} className="text-ink-faint" />}
-          hint={activity.max_cadence ? `max ${formatNumber(activity.max_cadence)} spm` : undefined}
+          hint={
+            activity.max_cadence ? `max ${formatNumber(activity.max_cadence)} spm` : undefined
+          }
         />
       </div>
     </Card>
@@ -456,7 +462,9 @@ function SplitsTable({ laps }: { laps: Lap[] }) {
                       ) : null}
                     </span>
                   </td>
-                  <td className="px-3 py-2.5">{lap.distance_label ?? formatDistance(lap.distance_m)}</td>
+                  <td className="px-3 py-2.5">
+                    {lap.distance_label ?? formatDistance(lap.distance_m)}
+                  </td>
                   <td className="px-3 py-2.5 font-semibold text-ink">
                     {lap.pace_label ?? formatPace(lap.pace_s_per_km)}
                   </td>
@@ -514,7 +522,10 @@ function HrZonesTable({ activity }: { activity: ActivityDetail }) {
           {activity.hr_zones.map((zone) => {
             const share = total > 0 ? ((zone.time_s || 0) / total) * 100 : 0
             return (
-              <tr key={zone.zone_no} className="border-b border-edge text-[13px] last:border-b-0">
+              <tr
+                key={zone.zone_no}
+                className="border-b border-edge text-[13px] last:border-b-0"
+              >
                 <td className="px-5 py-2.5 font-semibold text-ink">
                   Z{zone.zone_no} {zone.name}
                 </td>
@@ -528,9 +539,7 @@ function HrZonesTable({ activity }: { activity: ActivityDetail }) {
                 <td className="px-3 py-2.5 text-ink-soft">
                   {zone.time_label ?? formatDuration(zone.time_s)}
                 </td>
-                <td className="px-5 py-2.5 text-right text-ink-soft">
-                  {share.toFixed(1)}%
-                </td>
+                <td className="px-5 py-2.5 text-right text-ink-soft">{share.toFixed(1)}%</td>
               </tr>
             )
           })}
@@ -825,7 +834,8 @@ export function ActivityPage() {
               <div className="flex items-baseline justify-between gap-3">
                 <span className="text-[13px] text-ink-muted">Avg speed</span>
                 <span className="text-[15px] font-semibold text-ink">
-                  {formatNumber(activity.avg_speed_ms ? activity.avg_speed_ms * 3.6 : null, 1)} km/h
+                  {formatNumber(activity.avg_speed_ms ? activity.avg_speed_ms * 3.6 : null, 1)}{' '}
+                  km/h
                 </span>
               </div>
               <Divider />

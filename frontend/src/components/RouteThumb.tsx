@@ -17,12 +17,7 @@ interface Props {
   showMarkers?: boolean
 }
 
-export function RouteThumb({
-  points,
-  className,
-  strokeWidth = 3,
-  showMarkers = true,
-}: Props) {
+export function RouteThumb({ points, className, strokeWidth = 3, showMarkers = true }: Props) {
   const geometry = useMemo(() => {
     if (!points || points.length < 2) return null
 
@@ -56,8 +51,7 @@ export function RouteThumb({
     const end = projected[projected.length - 1]
     const spread = Math.max(W - pad * 2, 1)
     const endFarEnough =
-      Math.abs(end[0] - start[0]) > spread * 0.04 ||
-      Math.abs(end[1] - start[1]) > spread * 0.04
+      Math.abs(end[0] - start[0]) > spread * 0.04 || Math.abs(end[1] - start[1]) > spread * 0.04
 
     // Simplify: keep every point but drop collinear runs so the path stays light.
     let path = ''
@@ -112,13 +106,42 @@ export function RouteThumb({
       {/* Park / water blobs for a map-like texture. */}
       <ellipse cx="18" cy="80" rx="22" ry="16" fill="#e3ecdf" opacity="0.9" />
       <ellipse cx="84" cy="22" rx="18" ry="13" fill="#dfeaf2" opacity="0.9" />
-      <path d={geometry.path} fill="none" stroke="#ffffff" strokeWidth={strokeWidth + 2.4} strokeLinecap="round" strokeLinejoin="round" opacity="0.95" />
-      <path d={geometry.path} fill="none" stroke="url(#route-grad)" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" />
+      <path
+        d={geometry.path}
+        fill="none"
+        stroke="#ffffff"
+        strokeWidth={strokeWidth + 2.4}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        opacity="0.95"
+      />
+      <path
+        d={geometry.path}
+        fill="none"
+        stroke="url(#route-grad)"
+        strokeWidth={strokeWidth}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
       {showMarkers ? (
         <>
-          <circle cx={geometry.start[0]} cy={geometry.start[1]} r={strokeWidth * 0.9} fill="#ffffff" stroke="#1a9c5a" strokeWidth={strokeWidth * 0.6} />
+          <circle
+            cx={geometry.start[0]}
+            cy={geometry.start[1]}
+            r={strokeWidth * 0.9}
+            fill="#ffffff"
+            stroke="#1a9c5a"
+            strokeWidth={strokeWidth * 0.6}
+          />
           {geometry.endFarEnough ? (
-            <circle cx={geometry.end[0]} cy={geometry.end[1]} r={strokeWidth * 0.9} fill="#ffffff" stroke="#d93a2b" strokeWidth={strokeWidth * 0.6} />
+            <circle
+              cx={geometry.end[0]}
+              cy={geometry.end[1]}
+              r={strokeWidth * 0.9}
+              fill="#ffffff"
+              stroke="#d93a2b"
+              strokeWidth={strokeWidth * 0.6}
+            />
           ) : null}
         </>
       ) : null}

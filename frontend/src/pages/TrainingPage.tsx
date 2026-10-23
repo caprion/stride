@@ -21,11 +21,7 @@ import {
 } from 'lucide-react'
 import { api } from '../lib/api'
 import type { CalendarDay } from '../types'
-import {
-  formatDistance,
-  formatDistanceShort,
-  formatNumber,
-} from '../lib/format'
+import { formatDistance, formatDistanceShort, formatNumber } from '../lib/format'
 import { ActivityCard } from '../components/ActivityCard'
 import { VolumeChart } from '../components/charts'
 import {
@@ -184,7 +180,9 @@ function DayCell({
       disabled={!clickable}
       aria-pressed={selected}
       aria-label={`${cell.date}${
-        cell.activityCount ? `, ${formatDistance(cell.distanceM)}, ${cell.activityCount} activities` : ''
+        cell.activityCount
+          ? `, ${formatDistance(cell.distanceM)}, ${cell.activityCount} activities`
+          : ''
       }`}
       className={cn(
         'relative flex h-[86px] flex-col items-stretch rounded-md border p-1.5 text-left transition-colors',
@@ -279,10 +277,7 @@ export function TrainingPage() {
     return map
   }, [calendar])
 
-  const cells = useMemo(
-    () => buildCells(year, month, daysByDate),
-    [year, month, daysByDate],
-  )
+  const cells = useMemo(() => buildCells(year, month, daysByDate), [year, month, daysByDate])
 
   const maxDistance = useMemo(
     () => (calendar?.days ?? []).reduce((max, day) => Math.max(max, day.distance_m), 0),
@@ -295,7 +290,7 @@ export function TrainingPage() {
   )
 
   // The selected day may live in the month we are not looking at any more.
-  const selectedDay = selectedDate ? daysByDate.get(selectedDate) ?? null : null
+  const selectedDay = selectedDate ? (daysByDate.get(selectedDate) ?? null) : null
 
   const goToMonth = (delta: number) => {
     const next = new Date(year, month - 1 + delta, 1)
@@ -584,7 +579,9 @@ export function TrainingPage() {
               <span
                 className={cn(
                   'flex h-10 w-10 items-center justify-center rounded-full',
-                  (streaks?.current_weeks ?? 0) > 0 ? 'bg-brand-50 text-brand-600' : 'bg-surface-sunken text-ink-faint',
+                  (streaks?.current_weeks ?? 0) > 0
+                    ? 'bg-brand-50 text-brand-600'
+                    : 'bg-surface-sunken text-ink-faint',
                 )}
               >
                 <Flame size={20} strokeWidth={2} />
@@ -597,7 +594,9 @@ export function TrainingPage() {
                   style={{
                     width: `${Math.min(
                       100,
-                      ((streaks?.current_weeks ?? 0) / Math.max(1, streaks?.longest_weeks ?? 1)) * 100,
+                      ((streaks?.current_weeks ?? 0) /
+                        Math.max(1, streaks?.longest_weeks ?? 1)) *
+                        100,
                     )}%`,
                   }}
                 />

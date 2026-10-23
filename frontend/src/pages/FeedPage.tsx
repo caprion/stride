@@ -302,9 +302,7 @@ export function FeedPage() {
                   />
                   <StatTile
                     label="Avg HR"
-                    value={
-                      week?.avg_hr ? String(Math.round(week.avg_hr)) : '—'
-                    }
+                    value={week?.avg_hr ? String(Math.round(week.avg_hr)) : '—'}
                     unit="bpm"
                     icon={<Flame size={12} strokeWidth={2} className="text-ink-faint" />}
                   />

@@ -23,12 +23,7 @@ import {
   YAxis,
 } from 'recharts'
 import { Card, CardHeader, cn } from './ui'
-import {
-  formatDistanceShort,
-  formatDuration,
-  formatPace,
-  formatWeekKey,
-} from '../lib/format'
+import { formatDistanceShort, formatDuration, formatPace, formatWeekKey } from '../lib/format'
 
 const AXIS = { fontSize: 11, fill: '#6d7176' }
 const GRID = '#ececec'
@@ -129,9 +124,7 @@ export function VolumeChart({
           <YAxis tick={AXIS} tickLine={false} axisLine={false} width={56} unit=" km" />
           <Tooltip
             cursor={{ fill: 'rgba(252,82,0,0.06)' }}
-            content={
-              <TooltipBox formatter={(value) => `${Number(value).toFixed(1)} km`} />
-            }
+            content={<TooltipBox formatter={(value) => `${Number(value).toFixed(1)} km`} />}
           />
           {average > 0 ? (
             <ReferenceLine
@@ -184,7 +177,9 @@ export function PaceTrendChart({
       : null,
   }))
   // Y axis is inverted: lower minutes/km (faster) must sit at the top.
-  const values = rows.flatMap((r) => [r.median, r.best, r.longRun]).filter((v): v is number => v != null)
+  const values = rows
+    .flatMap((r) => [r.median, r.best, r.longRun])
+    .filter((v): v is number => v != null)
   const min = values.length ? Math.min(...values) : 4
   const max = values.length ? Math.max(...values) : 8
   const pad = Math.max(0.4, (max - min) * 0.25)
@@ -198,7 +193,14 @@ export function PaceTrendChart({
       <ResponsiveContainer width="100%" height="100%">
         <LineChart data={rows} margin={{ top: 8, right: 12, left: 0, bottom: 0 }}>
           <CartesianGrid stroke={GRID} vertical={false} />
-          <XAxis dataKey="name" tick={AXIS} tickLine={false} axisLine={{ stroke: GRID }} interval="preserveStartEnd" minTickGap={18} />
+          <XAxis
+            dataKey="name"
+            tick={AXIS}
+            tickLine={false}
+            axisLine={{ stroke: GRID }}
+            interval="preserveStartEnd"
+            minTickGap={18}
+          />
           <YAxis
             tick={AXIS}
             tickLine={false}
@@ -314,9 +316,7 @@ export function StreamChart({
             axisLine={false}
             width={56}
             domain={[min - (max - min) * 0.1 - 1, max + (max - min) * 0.1 + 1]}
-            tickFormatter={
-              tickFormatter ?? ((v) => `${Math.round(v)}${unit}`)
-            }
+            tickFormatter={tickFormatter ?? ((v) => `${Math.round(v)}${unit}`)}
           />
           <Tooltip
             content={
@@ -359,7 +359,13 @@ export function ZoneBarChart({
   zones,
   height = 220,
 }: {
-  zones: { zone_no: number; name: string; percent: number; low_bpm?: number | null; high_bpm?: number | null }[]
+  zones: {
+    zone_no: number
+    name: string
+    percent: number
+    low_bpm?: number | null
+    high_bpm?: number | null
+  }[]
   height?: number
 }) {
   const colors = ['#9aa0a6', '#2d9cdb', '#1a9c5a', '#e6a700', '#d93a2b']
@@ -371,10 +377,28 @@ export function ZoneBarChart({
   return (
     <ChartFrame title="Heart-rate zones" subtitle="Time in each zone" height={height}>
       <ResponsiveContainer width="100%" height="100%">
-        <BarChart data={rows} layout="vertical" margin={{ top: 4, right: 16, left: 4, bottom: 0 }}>
+        <BarChart
+          data={rows}
+          layout="vertical"
+          margin={{ top: 4, right: 16, left: 4, bottom: 0 }}
+        >
           <CartesianGrid stroke={GRID} horizontal={false} />
-          <XAxis type="number" tick={AXIS} tickLine={false} axisLine={false} unit="%" width={52} />
-          <YAxis type="category" dataKey="label" tick={AXIS} tickLine={false} axisLine={false} width={116} />
+          <XAxis
+            type="number"
+            tick={AXIS}
+            tickLine={false}
+            axisLine={false}
+            unit="%"
+            width={52}
+          />
+          <YAxis
+            type="category"
+            dataKey="label"
+            tick={AXIS}
+            tickLine={false}
+            axisLine={false}
+            width={116}
+          />
           <Tooltip content={<TooltipBox formatter={(v) => `${Number(v).toFixed(1)}%`} />} />
           <Bar dataKey="percent" name="Time" radius={[0, 4, 4, 0]} maxBarSize={22}>
             {rows.map((row, index) => (
@@ -408,7 +432,13 @@ export function MonthlyBars({
           <XAxis dataKey="label" tick={AXIS} tickLine={false} axisLine={{ stroke: GRID }} />
           <YAxis tick={AXIS} tickLine={false} axisLine={false} width={56} unit=" km" />
           <Tooltip content={<TooltipBox formatter={(v) => `${Number(v).toFixed(1)} km`} />} />
-          <Bar dataKey="km" name="Distance" fill="#fc5200" radius={[3, 3, 0, 0]} maxBarSize={38} />
+          <Bar
+            dataKey="km"
+            name="Distance"
+            fill="#fc5200"
+            radius={[3, 3, 0, 0]}
+            maxBarSize={38}
+          />
         </BarChart>
       </ResponsiveContainer>
     </ChartFrame>

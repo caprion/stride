@@ -65,7 +65,8 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     try {
       const body = await response.json()
       if (typeof body?.detail === 'string') detail = body.detail
-      else if (Array.isArray(body?.detail)) detail = body.detail.map((d: any) => d?.msg).join(', ')
+      else if (Array.isArray(body?.detail))
+        detail = body.detail.map((d: any) => d?.msg).join(', ')
     } catch {
       /* keep the generic message */
     }
@@ -125,26 +126,32 @@ export const api = {
   },
 
   // ------------------------------------------------------------ activities
-  activities: (params: {
-    page?: number
-    per_page?: number
-    sport?: string
-    from?: string
-    to?: string
-    q?: string
-    sort?: string
-  } = {}) => request<ActivityListResponse>(`/activities${qs(params)}`),
+  activities: (
+    params: {
+      page?: number
+      per_page?: number
+      sport?: string
+      from?: string
+      to?: string
+      q?: string
+      sort?: string
+    } = {},
+  ) => request<ActivityListResponse>(`/activities${qs(params)}`),
 
   activity: (id: number) => request<ActivityDetail>(`/activities/${id}`),
 
   patchActivity: (id: number, patch: Record<string, unknown>) =>
-    request<ActivitySummary>(`/activities/${id}`, { method: 'PATCH', body: JSON.stringify(patch) }),
+    request<ActivitySummary>(`/activities/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(patch),
+    }),
 
   // ---------------------------------------------------------------- stats
   summary: () => request<SummaryResponse>('/stats/summary'),
   weekly: (weeks = 26) => request<{ items: Bucket[] }>(`/stats/weekly${qs({ weeks })}`),
   monthly: (months = 12) => request<{ items: Bucket[] }>(`/stats/monthly${qs({ months })}`),
-  paceTrends: (weeks = 26) => request<{ items: PaceTrend[] }>(`/stats/pace-trends${qs({ weeks })}`),
+  paceTrends: (weeks = 26) =>
+    request<{ items: PaceTrend[] }>(`/stats/pace-trends${qs({ weeks })}`),
   hrZones: (weeks = 12) => request<HrZonesResponse>(`/stats/hr-zones${qs({ weeks })}`),
   personalRecords: () => request<{ items: PersonalRecord[] }>('/stats/personal-records'),
   heatmap: (year?: number) => request<HeatmapResponse>(`/stats/heatmap${qs({ year })}`),
@@ -197,9 +204,8 @@ export const api = {
       method: 'POST',
       body: JSON.stringify(payload),
     }),
-  planCurrent: () => request<{ block: PlanBlockDetail | null; week: PlanWeekDetail | null }>(
-    '/plan/current',
-  ),
+  planCurrent: () =>
+    request<{ block: PlanBlockDetail | null; week: PlanWeekDetail | null }>('/plan/current'),
   planWeek: (date: string) => request<PlanWeekDetail>(`/plan/week?date=${date}`),
   planResults: (from?: string, to?: string) =>
     request<{ items: PlanResult[] }>(`/plan/results${qs({ from, to })}`),
@@ -215,7 +221,9 @@ export const api = {
   physiologySleep: (from?: string, to?: string) =>
     request<{ items: SleepPoint[] }>(`/physiology/sleep${qs({ from, to })}`),
   physiologyHrv: (from?: string, to?: string) =>
-    request<{ items: HrvPoint[]; baseline: number | null }>(`/physiology/hrv${qs({ from, to })}`),
+    request<{ items: HrvPoint[]; baseline: number | null }>(
+      `/physiology/hrv${qs({ from, to })}`,
+    ),
   physiologyReadiness: (from?: string, to?: string) =>
     request<{ items: Readiness[] }>(`/physiology/readiness${qs({ from, to })}`),
   physiologySources: () => request<PhysiologySources>('/physiology/sources'),

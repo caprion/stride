@@ -44,7 +44,10 @@ import {
 
 type Notice = { tone: 'positive' | 'negative' | 'info'; text: string }
 
-function messageOf(error: unknown, fallback = 'Something went wrong. Please try again.'): string {
+function messageOf(
+  error: unknown,
+  fallback = 'Something went wrong. Please try again.',
+): string {
   if (error instanceof Error && error.message.trim()) return error.message
   return fallback
 }
@@ -143,7 +146,9 @@ function SectionIntro({
         <p className="text-[14px] font-semibold text-ink">{title}</p>
         {badge ? <Badge tone={badgeTone}>{badge}</Badge> : null}
       </div>
-      {children ? <div className="mt-1 text-[13px] leading-snug text-ink-muted">{children}</div> : null}
+      {children ? (
+        <div className="mt-1 text-[13px] leading-snug text-ink-muted">{children}</div>
+      ) : null}
     </div>
   )
 }
@@ -186,10 +191,12 @@ export function SettingsPage() {
   return (
     <div className="mx-auto max-w-[860px]">
       <div className="mb-5">
-        <h1 className="text-[26px] font-bold leading-tight tracking-tight text-ink">Settings</h1>
+        <h1 className="text-[26px] font-bold leading-tight tracking-tight text-ink">
+          Settings
+        </h1>
         <p className="mt-1 text-[14px] text-ink-muted">
-          Connect your Garmin watch, choose how Stride reaches the internet, and decide how often
-          your runs are imported.
+          Connect your Garmin watch, choose how Stride reaches the internet, and decide how
+          often your runs are imported.
         </p>
       </div>
 
@@ -252,7 +259,8 @@ function GarminConnectionCard({
       setConfirmDisconnect(false)
       await onRefresh()
     },
-    onError: (err) => setNotice({ tone: 'negative', text: messageOf(err, 'Could not disconnect.') }),
+    onError: (err) =>
+      setNotice({ tone: 'negative', text: messageOf(err, 'Could not disconnect.') }),
   })
 
   if (loading) {
@@ -354,7 +362,9 @@ function GarminConnectionCard({
             </div>
             <dl className="mt-2 grid grid-cols-1 gap-x-6 gap-y-1 sm:grid-cols-2">
               <div className="flex items-baseline gap-2">
-                <dt className="text-[12px] uppercase tracking-wide text-emerald-800/70">Athlete</dt>
+                <dt className="text-[12px] uppercase tracking-wide text-emerald-800/70">
+                  Athlete
+                </dt>
                 <dd className="text-[13px] font-medium text-emerald-900">
                   {name ?? 'Not reported by Garmin'}
                 </dd>
@@ -389,8 +399,8 @@ function GarminConnectionCard({
       <div className="px-5 pb-5">
         <div className="mb-4">
           <Alert tone="info" title="Not connected yet">
-            Stride is ready. Connect your watch in one of the three ways below and your runs start
-            appearing on their own.
+            Stride is ready. Connect your watch in one of the three ways below and your runs
+            start appearing on their own.
           </Alert>
         </div>
         <Toast notice={notice} />
@@ -465,8 +475,8 @@ function DeveloperKeySection({ onRefresh }: { onRefresh: () => Promise<void> }) 
       </SectionIntro>
 
       <HowItWorks>
-        Get a key from <span className="font-semibold text-ink-soft">developer.garmin.com</span> →
-        <span className="font-semibold text-ink-soft"> My Applications</span> → create an app →
+        Get a key from <span className="font-semibold text-ink-soft">developer.garmin.com</span>{' '}
+        →<span className="font-semibold text-ink-soft"> My Applications</span> → create an app →
         copy the <span className="font-semibold text-ink-soft">OAuth Consumer Key</span> and
         <span className="font-semibold text-ink-soft"> OAuth Consumer Secret</span> below.
       </HowItWorks>
@@ -524,7 +534,9 @@ function DeveloperKeySection({ onRefresh }: { onRefresh: () => Promise<void> }) 
       ) : (
         <div className="mt-3 rounded-md border border-edge bg-surface-soft px-4 py-4">
           <p className="text-[13px] font-semibold text-ink">Step 2 — approve in Garmin</p>
-          <p className="mt-1 text-[13px] leading-snug text-ink-muted">{authorize.instructions}</p>
+          <p className="mt-1 text-[13px] leading-snug text-ink-muted">
+            {authorize.instructions}
+          </p>
 
           <a
             href={authorize.authorize_url}
@@ -683,7 +695,9 @@ function AccountSection({ onRefresh }: { onRefresh: () => Promise<void> }) {
               {login.isPending ? 'Signing in…' : 'Connect account'}
             </Button>
             {!email.trim() || !password ? (
-              <span className="text-[12px] text-ink-muted">Fill in both fields to continue.</span>
+              <span className="text-[12px] text-ink-muted">
+                Fill in both fields to continue.
+              </span>
             ) : null}
           </div>
         </>
@@ -792,13 +806,14 @@ function FitImportSection() {
   return (
     <section>
       <SectionIntro title="Import FIT files" badge="No account needed" badgeTone="info">
-        Already have files from Garmin Connect? Drop them in and they show up immediately — nothing
-        is connected and no password is involved.
+        Already have files from Garmin Connect? Drop them in and they show up immediately —
+        nothing is connected and no password is involved.
       </SectionIntro>
 
       <HowItWorks>
-        Export <span className="font-semibold text-ink-soft">.FIT</span> files from Garmin Connect
-        (Activities → ⋯ → Download FIT) and choose them below. You can select several at once.
+        Export <span className="font-semibold text-ink-soft">.FIT</span> files from Garmin
+        Connect (Activities → ⋯ → Download FIT) and choose them below. You can select several at
+        once.
       </HowItWorks>
 
       <div className="mt-3">
@@ -882,7 +897,9 @@ function FitImportSection() {
 
           {result.errors.length > 0 ? (
             <div className="rounded-md border border-red-200 bg-red-50 px-3 py-2.5">
-              <p className="text-[13px] font-semibold text-red-800">Some files could not be read</p>
+              <p className="text-[13px] font-semibold text-red-800">
+                Some files could not be read
+              </p>
               <ul className="mt-1 space-y-1">
                 {result.errors.map((item, index) => (
                   <li key={index} className="text-[12px] leading-snug text-red-700">
@@ -933,7 +950,11 @@ function NetworkRouteCard({
     onSuccess: async (result, value) => {
       setNotice({
         tone: 'positive',
-        text: result.message || (value === 'direct' ? 'Now using a direct connection.' : 'Now routing through your home connection.'),
+        text:
+          result.message ||
+          (value === 'direct'
+            ? 'Now using a direct connection.'
+            : 'Now routing through your home connection.'),
       })
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ['network-status'] }),
@@ -956,9 +977,9 @@ function NetworkRouteCard({
             <div className="text-[13px] leading-snug text-sky-900">
               <p className="font-semibold">Why this matters</p>
               <p className="mt-1">
-                Garmin limits how much data a single internet address may pull. When Stride runs on
-                a datacentre server it can get blocked. Routing through your home connection (a
-                Tailscale exit node) makes Garmin see your normal home IP address instead, so
+                Garmin limits how much data a single internet address may pull. When Stride runs
+                on a datacentre server it can get blocked. Routing through your home connection
+                (a Tailscale exit node) makes Garmin see your normal home IP address instead, so
                 downloads keep working.
               </p>
             </div>
@@ -1041,8 +1062,8 @@ function NetworkRouteCard({
 
             {!canUseExitNode ? (
               <p className="mt-2 text-[12px] text-ink-muted">
-                No home exit node is configured yet, so “route via home connection” is unavailable.
-                Start Tailscale on your home machine and make it an exit node.
+                No home exit node is configured yet, so “route via home connection” is
+                unavailable. Start Tailscale on your home machine and make it an exit node.
               </p>
             ) : null}
 
@@ -1215,8 +1236,8 @@ function SyncSettingsCard({
                 {runSync.isPending ? 'Starting…' : syncing ? 'Sync running…' : 'Sync now'}
               </Button>
               <p className="text-[12px] text-ink-muted">
-                A full sync of {formatNumber(daysNumber || 90)} days can take about a minute. You can
-                keep using Stride while it works.
+                A full sync of {formatNumber(daysNumber || 90)} days can take about a minute.
+                You can keep using Stride while it works.
               </p>
             </div>
 
@@ -1257,10 +1278,7 @@ function SyncHistoryCard({
 }) {
   return (
     <Card>
-      <CardHeader
-        title="Sync history"
-        subtitle="The last few times Stride talked to Garmin."
-      />
+      <CardHeader title="Sync history" subtitle="The last few times Stride talked to Garmin." />
       <div className="px-5 pb-5">
         {loading ? (
           <div className="space-y-2">
@@ -1344,7 +1362,10 @@ function SyncHistoryCard({
                 {runs
                   .filter((run) => run.error)
                   .map((run) => (
-                    <li key={`error-${run.id}`} className="text-[12px] leading-snug text-negative">
+                    <li
+                      key={`error-${run.id}`}
+                      className="text-[12px] leading-snug text-negative"
+                    >
                       {formatDateTime(run.started_at)} — {run.error}
                     </li>
                   ))}
@@ -1367,10 +1388,11 @@ function AboutCard() {
         <p className="text-[13px] leading-relaxed text-ink-soft">
           Stride is a private running log that mirrors your Garmin watch into a clean, local
           dashboard. Everything you see is stored on your own machine in a SQLite database under{' '}
-          <span className="font-mono text-[12px] text-ink">backend/data/</span> — nothing is sent to
-          a third-party service and there is no account to sign up for. Start it again after a
-          restart with <span className="font-mono text-[12px] text-ink">./scripts/run.sh</span> from
-          the project folder; it brings up the API and the web app together.
+          <span className="font-mono text-[12px] text-ink">backend/data/</span> — nothing is
+          sent to a third-party service and there is no account to sign up for. Start it again
+          after a restart with{' '}
+          <span className="font-mono text-[12px] text-ink">./scripts/run.sh</span> from the
+          project folder; it brings up the API and the web app together.
         </p>
       </div>
     </Card>
