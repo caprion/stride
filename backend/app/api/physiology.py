@@ -20,9 +20,14 @@ def date_range(
     start: date | None = Query(None, alias='from'),
     end: date | None = Query(None, alias='to'),
 ) -> tuple[str, str]:
-    """Validate calendar dates before querying lexicographically stored ISO dates."""
+    """Validate calendar dates before querying lexicographically stored ISO dates.
+
+    The default window is a year: Garmin keeps roughly a year of wellness
+    history, and the readiness baseline needs a trailing 30 days plus room to
+    see the trend.
+    """
     last = end or date.today()
-    first = start or last - timedelta(days=89)
+    first = start or last - timedelta(days=364)
     if first > last:
         raise HTTPException(status_code=422, detail='from must not be after to')
     return first.isoformat(), last.isoformat()
