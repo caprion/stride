@@ -28,6 +28,17 @@ and no causality. That is the gap this fills.
 
 A one-page collage of every surface: **[`showcase/stride-collage.png`](file:///home/sumit/stride/showcase/stride-collage.png)**.
 
+## Design documents
+
+| Document | What it decides |
+|---|---|
+| [`DESIGN.md`](file:///home/sumit/stride/DESIGN.md) | the product: plan-vs-actual, physiology, fingerprint, comparison |
+| [`docs/android-v1.md`](file:///home/sumit/stride/docs/android-v1.md) | **the small, secure, Garmin-only Android app (target < 10 MB)** |
+| [`docs/android-app.md`](file:///home/sumit/stride/docs/android-app.md) | the full Android architecture and threat model |
+| [`docs/garmin-on-device.md`](file:///home/sumit/stride/docs/garmin-on-device.md) | key entry, Keystore storage, pull cadence, error copy |
+| [`docs/harness-integration.md`](file:///home/sumit/stride/docs/harness-integration.md) | MCP sidecar so your own Claude Code / Codex can query your data |
+| [`docs/working-agreement.md`](file:///home/sumit/stride/docs/working-agreement.md) | how we run big changes with parallel agents |
+
 ## The differentiator
 
 | | Strava | Stride |
