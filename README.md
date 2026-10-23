@@ -47,6 +47,41 @@ yours alone. **Sharing is Garmin's business**: every activity links back to its
 original in Garmin Connect, and Garmin decides who may open it. Stride never
 publishes, never mirrors and never asks for an account.
 
+## Protecting the athlete's data
+
+The history in `backend/data/` is the only copy of a year of training. Two
+mechanisms guard it.
+
+**Snapshots.**
+
+```bash
+./scripts/snapshot.sh              # take one (verified, checksummed)
+./scripts/snapshot.sh --list
+./scripts/snapshot.sh --restore <name>
+```
+
+A snapshot is the database (WAL-checkpointed first, so it is a consistent
+set), the state file with the Garmin credential, and a manifest with SHA-256
+checksums. The snapshot is written `0600` and its database is integrity-checked
+after the copy — a snapshot that cannot be restored is worse than none. A
+restore takes a safety snapshot of the current state first.
+
+**Parallel instances, on their own port and their own database.**
+
+```bash
+./scripts/instance.sh next 8010 --clone   # a copy of the current data
+./scripts/instance.sh --list
+./scripts/instance.sh --stop next
+```
+
+Each instance gets `backend/instances/<name>/data` as its own `STRIDE_DATA_DIR`,
+so a new iteration **cannot** touch the live history. The Vite proxy target is
+configurable (`VITE_API_TARGET`), so the two versions can run side by side —
+`localhost:8010` for the API, `localhost:8011` for its frontend — and the
+instance can be deleted afterwards without a trace.
+
+The live instance is the one on **:8000**. Leave it alone.
+
 ## The differentiator
 
 | | A social running app | Stride |

@@ -7,8 +7,10 @@ export default defineConfig({
     host: '0.0.0.0',
     port: 5173,
     proxy: {
+      // A parallel instance points this at its own API, so two versions can
+      // run side by side on different ports.
       '/api': {
-        target: 'http://127.0.0.1:8000',
+        target: process.env.VITE_API_TARGET || 'http://127.0.0.1:8000',
         changeOrigin: true,
       },
     },

@@ -27,3 +27,5 @@ frontend/dist/
 
 # Agent scratch
 .agent-prompts/
+backend/instances/
+backend/data-snapshots/
