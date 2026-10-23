@@ -46,5 +46,6 @@ def get_db() -> Iterator[Session]:
 
 def init_db() -> None:
     from . import models  # noqa: F401  (register mappers)
+    from . import models_phase2  # noqa: F401  (phase-2 tables)
 
     Base.metadata.create_all(engine)

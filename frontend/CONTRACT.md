@@ -128,3 +128,95 @@ card, already styled. Use it for feed rows rather than rebuilding one.
 - No `any` in exported signatures. No `console.log` left behind.
 - Real numbers, real labels — no lorem ipsum, no "Stat 1".
 - If a chart has no data for the selected range, say so rather than rendering empty axes.
+
+---
+
+# Phase 2 contract — plan intelligence, physiology, fingerprint
+
+Frozen. Same rules as above: **only create the page files named in your task**.
+Everything shared (`src/types.ts`, `src/types_phase2.ts`, `src/lib/*`,
+`src/components/*`) is owned by the orchestrator and is already written.
+
+## New TypeScript types
+
+All in **`src/types_phase2.ts`** — read it first. Key shapes:
+
+| Type | Purpose |
+|---|---|
+| `PlanBlock`, `PlanPhase`, `PlanWeek`, `PlanSession` | The plan hierarchy |
+| `PlanResult` | One planned session vs what happened (`verdict`, deltas, `cause`) |
+| `PlanSessionWithResult` | A session plus its result plus the matched `activity` |
+| `PlanWeekDetail` | A week: `sessions[]`, `planned_km`, `actual_km`, `adherence_pct` |
+| `PlanBlockDetail` | A block: `phases[]` each with `weeks[]` |
+| `PlanAdherenceRow`, `AdherenceSummary` | Weekly roll-up + `by_verdict` histogram |
+| `PlanToday` | `{session, week, readiness, recommendation, rationale, has_plan}` |
+| `DailyPhysiology`, `Readiness`, `ReadinessDriver` | The day's physiological state |
+| `SleepPoint`, `HrvPoint` | Series with baseline bands |
+| `PhysiologySources` | What data is actually available, and why not |
+| `Fingerprint`, `FitnessTrend`, `ZoneShare`, `GearItem` | Mechanics + trends + shoes |
+
+## New API calls (already added to `src/lib/api.ts`)
+
+```ts
+api.planBlocks()                  // {items: PlanBlock[]}
+api.planBlock(id)                 // PlanBlockDetail
+api.planCurrent()                 // {block, week}
+api.planWeek(date)                // PlanWeekDetail
+api.planResults(from?, to?)       // {items: PlanResult[]}
+api.planAdherence(from?, to?)     // AdherenceSummary
+api.planToday()                   // PlanToday
+api.importPlan({format, content, name?})  // ImportPlanResult
+
+api.physiologyDaily(from?, to?)   // {items: DailyPhysiology[]}
+api.physiologyLatest()            // {day, readiness}
+api.physiologySleep(from?, to?)   // {items: SleepPoint[]}
+api.physiologyHrv(from?, to?)     // {items: HrvPoint[], baseline}
+api.physiologyReadiness(from?,to?)// {items: Readiness[]}
+api.physiologySources()           // PhysiologySources
+
+api.fitnessFingerprint(from?, to?)// {items: Fingerprint[]}
+api.fitnessActivity(id)           // Fingerprint & {zones}
+api.fitnessTrends(metric?, from?, to?) // FitnessTrend
+api.fitnessZones(from?, to?)      // {zones, total_time_s}
+api.gearList()                    // {items: GearItem[]}
+```
+
+## Semantic rules the UI must respect
+
+1. **`has_plan: false` is not 0 % adherence.** A missing plan is "no plan
+   defined" — never render it as total failure.
+2. **Verdict colours** — use these consistently across every surface:
+   `hit` → positive/green · `missed_pace` → warn/amber · `short` → warn/amber ·
+   `missed` → negative/red · `substituted` → info/blue · `bonus` → brand/orange.
+3. **`cause_confidence`** is 0–1. Render a high-confidence cause as a plain
+   sentence; render a low-confidence one as a question ("might be fatigue?").
+4. **`PhysiologySources.available === false`** means the health endpoints are
+   unreachable. Show the explanation and the remedy — do not render empty charts
+   that look broken.
+5. **Baseline vs current.** `HrvPoint.baseline` is the trailing 30-day mean;
+   show it as a band, not a line.
+6. **`decoupling_pct`** is "lower is better" — invert the colour scale.
+   `cadence_cv`, `pace_cv`, `cadence_drift_pct`, `hr_drift_pct` are also
+   lower-is-better. `efficiency_first`, `cadence_avg`, `form_score` are
+   higher-is-better. `FitnessTrend.better` already tells you which.
+7. Never render `null` metrics as `0`. Use an em dash.
+
+## Existing kit you should reuse
+
+`Card`, `CardHeader`, `StatTile`, `Button`, `Badge`, `Skeleton`, `EmptyState`,
+`PageHeader`, `Toolbar`, `SegmentedControl`, `Toggle`, `Field`, `Divider`,
+`inputClass`, `cn` from `../components/ui`.
+
+`ChartFrame`, `VolumeChart`, `PaceTrendChart`, `StreamChart`, `ZoneBarChart`,
+`MonthlyBars` from `../components/charts`.
+
+`RouteThumb`, `ActivityCard` from `../components/RouteThumb` / `../components/ActivityCard`.
+
+New helpers you may want (already in `../lib/format`): `formatDistanceShort`,
+`formatDurationLong`, `formatPace`, `formatDate`, `formatDateLong`,
+`formatRelative`, `formatWeekKey`, `sportLabel`, `SPORT_COLOR`.
+
+## Quality bar
+
+Same as Phase 1: zero type errors, no `any` in exported signatures, no
+`console.log`, loading + empty states everywhere, real copy.

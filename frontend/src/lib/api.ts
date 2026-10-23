@@ -22,6 +22,27 @@ import type {
   SyncStatus,
   Bucket,
 } from '../types'
+import type {
+  AdherenceSummary,
+  DailyPhysiology,
+  FitnessTrend,
+  Fingerprint,
+  GearItem,
+  HrvPoint,
+  ImportPlanResult,
+  PlanBlock,
+  PlanBlockDetail,
+  PlanPhase,
+  PlanResult,
+  PlanSession,
+  PlanToday,
+  PlanWeek,
+  PlanWeekDetail,
+  PhysiologySources,
+  Readiness,
+  SleepPoint,
+  ZoneShare,
+} from '../types_phase2'
 
 const BASE = '/api/v1'
 
@@ -150,4 +171,63 @@ export const api = {
       method: 'POST',
       body: JSON.stringify({ route }),
     }),
+
+  // ------------------------------------------------------------------ plan
+  planBlocks: () => request<{ items: PlanBlock[] }>('/plan/blocks'),
+  planBlock: (id: number) => request<PlanBlockDetail>(`/plan/blocks/${id}`),
+  createPlanBlock: (payload: Partial<PlanBlock>) =>
+    request<PlanBlock>('/plan/blocks', { method: 'POST', body: JSON.stringify(payload) }),
+  createPlanPhase: (blockId: number, payload: Partial<PlanPhase>) =>
+    request<PlanPhase>(`/plan/blocks/${blockId}/phases`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
+  createPlanWeek: (phaseId: number, payload: Partial<PlanWeek>) =>
+    request<PlanWeek>(`/plan/phases/${phaseId}/weeks`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
+  createPlanSession: (weekId: number, payload: Partial<PlanSession>) =>
+    request<PlanSession>(`/plan/weeks/${weekId}/sessions`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
+  importPlan: (payload: { format: string; content: string; name?: string }) =>
+    request<ImportPlanResult>('/plan/import', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
+  planCurrent: () => request<{ block: PlanBlockDetail | null; week: PlanWeekDetail | null }>(
+    '/plan/current',
+  ),
+  planWeek: (date: string) => request<PlanWeekDetail>(`/plan/week?date=${date}`),
+  planResults: (from?: string, to?: string) =>
+    request<{ items: PlanResult[] }>(`/plan/results${qs({ from, to })}`),
+  planAdherence: (from?: string, to?: string) =>
+    request<AdherenceSummary>(`/plan/adherence${qs({ from, to })}`),
+  planToday: () => request<PlanToday>('/plan/today'),
+
+  // ------------------------------------------------------------ physiology
+  physiologyDaily: (from?: string, to?: string) =>
+    request<{ items: DailyPhysiology[] }>(`/physiology/daily${qs({ from, to })}`),
+  physiologyLatest: () =>
+    request<{ day: DailyPhysiology | null; readiness: Readiness | null }>('/physiology/latest'),
+  physiologySleep: (from?: string, to?: string) =>
+    request<{ items: SleepPoint[] }>(`/physiology/sleep${qs({ from, to })}`),
+  physiologyHrv: (from?: string, to?: string) =>
+    request<{ items: HrvPoint[]; baseline: number | null }>(`/physiology/hrv${qs({ from, to })}`),
+  physiologyReadiness: (from?: string, to?: string) =>
+    request<{ items: Readiness[] }>(`/physiology/readiness${qs({ from, to })}`),
+  physiologySources: () => request<PhysiologySources>('/physiology/sources'),
+
+  // --------------------------------------------------------------- fitness
+  fitnessFingerprint: (from?: string, to?: string) =>
+    request<{ items: Fingerprint[] }>(`/fitness/fingerprint${qs({ from, to })}`),
+  fitnessActivity: (activityId: number) =>
+    request<Fingerprint & { zones: ZoneShare[] }>(`/fitness/activity/${activityId}`),
+  fitnessTrends: (metric?: string, from?: string, to?: string) =>
+    request<FitnessTrend>(`/fitness/trends${qs({ metric, from, to })}`),
+  fitnessZones: (from?: string, to?: string) =>
+    request<{ zones: ZoneShare[]; total_time_s: number }>(`/fitness/zones${qs({ from, to })}`),
+  gearList: () => request<{ items: GearItem[] }>('/gear'),
 }

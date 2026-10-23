@@ -70,6 +70,33 @@ app.include_router(misc_api.network_router, prefix=API_PREFIX)
 app.include_router(misc_api.health_router, prefix=API_PREFIX)
 
 
+def _mount_optional(module_name: str, attr: str = "router") -> None:
+    """Register a router if the module is present.
+
+    The Phase-2 routers are built by parallel workstreams, so the API must
+    start even while some of them are still being written. A missing module is
+    logged, not fatal.
+    """
+    import importlib
+
+    try:
+        module = importlib.import_module(module_name)
+    except ModuleNotFoundError as exc:
+        logging.getLogger("stride").warning(
+            "Optional router %s is not available yet (%s)", module_name, exc
+        )
+        return
+    router = getattr(module, attr, None)
+    if router is None:
+        return
+    app.include_router(router, prefix=API_PREFIX)
+
+
+_mount_optional("app.api.plan")
+_mount_optional("app.api.physiology")
+_mount_optional("app.api.fitness")
+
+
 def _bootstrap() -> None:
     """Seed the demo dataset on first run so the app is never empty."""
     from .services.persistence import bootstrap_demo

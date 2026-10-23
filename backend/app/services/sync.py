@@ -221,6 +221,10 @@ def _run_sync_blocking(days: int | None = None) -> None:
                 run.message += " Demo activities hidden."
             _sync_state.update({"running": False, "message": run.message})
             log.info(run.message)
+
+            # Physiology is a separate pull: it needs the account session and
+            # the Health API endpoints, and it must never fail the activity sync.
+            _sync_health_in_background()
         except Exception as exc:
             run.status = "error"
             run.error = str(exc)[:2000]
@@ -231,6 +235,27 @@ def _run_sync_blocking(days: int | None = None) -> None:
             db.commit()
             db.close()
             _sync_state["running"] = False
+
+
+def _sync_health_in_background() -> None:
+    """Pull sleep/HRV/body-battery data without blocking the activity sync.
+
+    Physiology failures must never fail the sync that produced the activities,
+    so this runs on its own thread and swallows its own errors.
+    """
+    if state.garmin_method != "account":
+        return
+
+    def worker() -> None:
+        try:
+            from .health_sync import sync_health
+
+            result = sync_health(days=30)
+            log.info("Health sync: %s", result)
+        except Exception as exc:
+            log.warning("Health sync failed: %s", exc)
+
+    threading.Thread(target=worker, daemon=True).start()
 
 
 def recent_runs(db: Session, limit: int = 20) -> list[dict[str, Any]]:
