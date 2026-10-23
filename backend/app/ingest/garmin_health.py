@@ -81,9 +81,40 @@ class GarminHealthClient:
                     break
         for key in found:
             stages[key] = totals[key]
+        if not found:
+            # No per-stage array: fall back to Garmin's aggregate fields.
+            aggregates = self._sleep_stage_totals(payload)
+            if aggregates:
+                totals = aggregates
+                found = set(aggregates)
+                for key in found:
+                    stages[key] = totals[key]
         if duration is None and score is None and not found:
             return {}
         return {"duration_s": duration, "score": score, **stages}
+
+    def _sleep_stage_totals(self, payload: dict[str, Any]) -> dict[str, float]:
+        """Stage split from Garmin's aggregate fields, when there is no array.
+
+        ``dailySleepDTO`` reports the split directly as
+        ``deepSleepSeconds`` / ``remSleepSeconds`` / ``lightSleepSeconds`` /
+        ``awakeSleepSeconds`` as well as a per-stage array. The aggregates are
+        used when the array is absent.
+        """
+        totals = {"deep_s": 0.0, "rem_s": 0.0, "light_s": 0.0, "awake_s": 0.0}
+        keys = {
+            "deep_s": ("deepSleepSeconds", "deepSleepDurationInSeconds"),
+            "rem_s": ("remSleepSeconds", "remSleepDurationInSeconds"),
+            "light_s": ("lightSleepSeconds", "lightSleepDurationInSeconds"),
+            "awake_s": ("awakeSleepSeconds", "awakeSleepDurationInSeconds"),
+        }
+        found = False
+        for key, names in keys.items():
+            value = safe_float(_walk(payload, set(names)))
+            if value is not None:
+                totals[key] = value
+                found = True
+        return totals if found else {}
 
     def sleep_range(self, start: str, end: str) -> list[dict[str, Any]]:
         """Fetch daily sleep summaries for a range using Garmin's range endpoint."""

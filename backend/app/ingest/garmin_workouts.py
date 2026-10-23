@@ -33,14 +33,18 @@ class GarminWorkoutClient:
 
     def __init__(self, client: Any = None) -> None:
         self.client = client
+        self._seen: set[str] = set()
 
     def _call(self, method: str, *args: Any) -> Any:
         """Call an account endpoint without surfacing auth or network errors."""
         try:
             getter = getattr(self.client, method, None)
-            return getter(*args) if callable(getter) else None
+            payload = getter(*args) if callable(getter) else None
         except Exception:
             return None
+        if payload:
+            self._seen.add(method)
+        return payload
 
     @staticmethod
     def _list(payload: Any, *keys: str) -> list[Any]:
@@ -94,17 +98,27 @@ class GarminWorkoutClient:
 
     @staticmethod
     def _pace(value: Any) -> float | None:
-        """Convert a Garmin pace value (s/m or m:ss) into seconds per kilometre."""
+        """Convert a Garmin pace value into seconds per kilometre.
+
+        Garmin sends a pace target either as seconds per metre (0.3) or as a
+        ``m:ss`` string ("5:00"). Both must land in the same unit, and the
+        result must be physically possible for running — a value outside
+        150–600 s/km is a distance that was mislabelled, not a pace.
+        """
         if isinstance(value, str) and ":" in value:
             try:
                 minutes, seconds = value.split(":", 1)
-                return (float(minutes) * 60 + float(seconds))
+                candidate = float(minutes) * 60 + float(seconds)
             except (TypeError, ValueError):
                 return None
+            return candidate if 150 <= candidate <= 600 else None
         number = safe_float(value)
         if number is None:
             return None
-        return number * 1000 if 0 < number < 20 else number
+        # Values below 20 are seconds per metre; anything larger is already
+        # seconds per kilometre.
+        candidate = number * 1000 if 0 < number < 20 else number
+        return candidate if 150 <= candidate <= 600 else None
 
     def workout_detail(self, workout_id: int) -> dict[str, Any]:
         """Fetch template steps and derive session type, distance and pace targets."""
@@ -144,8 +158,20 @@ class GarminWorkoutClient:
                 long_duration = True
             target_type = str(step.get("targetType") or step.get("targetValueType") or "").lower()
             if "pace" in target_type or target_type in {"speed", "pace_zone"}:
-                for key in ("targetValueLow", "targetValue", "targetValueHigh"):
-                    pace = self._pace(step.get(key))
+                # A band comes from targetValueLow/High. targetValue alone is a
+                # single point target — and on a distance step it is a distance,
+                # so it must never be read as a pace.
+                low = self._pace(step.get("targetValueLow"))
+                high = self._pace(step.get("targetValueHigh"))
+                if low is None and high is None:
+                    single = self._pace(step.get("targetValue"))
+                    if single is not None:
+                        low = high = single
+                if low is None:
+                    low = high
+                if high is None:
+                    high = low
+                for pace in (low, high):
                     if pace is not None:
                         paces.append(pace)
             zone = safe_float(step.get("targetValue") if duration_type.startswith("hr_") else step.get("targetZone"))
@@ -164,6 +190,19 @@ class GarminWorkoutClient:
             "hr_zone_target": min(zones) if zones else None,
             "title": title or (raw_titles[0] if raw_titles else None),
             "details": details,
+        }
+
+    def sources(self) -> dict[str, bool]:
+        """Which workout endpoint families have answered at least once.
+
+        Reports from what has already been fetched. It never calls Garmin,
+        because a status check must not be able to rate-limit the sync.
+        """
+        return {
+            "scheduled_workouts": "get_scheduled_workouts" in self._seen,
+            "workout_library": "get_workouts" in self._seen,
+            "workout_detail": "get_workout_by_id" in self._seen,
+            "gear": "get_gear" in self._seen,
         }
 
     def gear(self) -> list[dict[str, Any]]:

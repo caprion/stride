@@ -34,6 +34,13 @@ def parse_distance(value: str | None) -> float | None:
 
 
 def _clean(s: str) -> str:
+    """Strip markdown emphasis and emoji from a table cell.
+
+    Cells can be empty or missing entirely in a malformed document, so every
+    input is tolerated.
+    """
+    if not s:
+        return ""
     s = re.sub(r"\*\*|__|[*_]", "", s)
     s = re.sub(r"[⭐⚠🏁✅🔴🟡🟢]", "", s)
     return s.replace("→", " to ").replace("—", "-").strip()
@@ -54,7 +61,7 @@ def _tables(text: str) -> list[list[list[str]]]:
 
 
 def _phase_key(s: str) -> str:
-    s = re.sub(r"\([^)]*\)", "", _clean(s))
+    s = re.sub(r"\([^)]*\)", "", _clean(s or ""))
     return re.sub(r"\s+", " ", s).strip().lower()
 
 
@@ -78,14 +85,24 @@ def _classify(title: str, details: str) -> str:
         if re.search(r"\b(or|walk|run|jog|shakeout)\b", t):
             return "recovery"
         return "rest"
-    if "strength" in s or "session a" in s or "session b" in s: return "strength"
-    if "easy" in t or "recovery" in t: return "easy"
-    if re.search(r"\d+\s*[×x]\s*\d", s) or any(x in s for x in ("interval", "fartlek", "sharpener")): return "interval"
-    if "race" in t: return "race"
-    if "long" in s or (parse_distance(title) or 0) > 14000: return "long"
-    if "easy" in t or "recovery" in t: return "easy"
-    if any(x in s for x in ("tempo", "threshold", "steady")): return "tempo"
-    if "recovery" in s: return "recovery"
+    if "strength" in s or "session a" in s or "session b" in s:
+        return "strength"
+    if "race" in t:
+        return "race"
+    # Distance and the word "long" decide a long run before anything else.
+    # "Long 14km easy" contains the word "easy" but it is still a long run.
+    if "long" in s or (parse_distance(title) or 0) > 14000:
+        return "long"
+    if re.search(r"\d+\s*[×x]\s*\d", s) or any(
+        x in s for x in ("interval", "fartlek", "sharpener")
+    ):
+        return "interval"
+    if "easy" in t or "recovery" in t:
+        return "easy"
+    if any(x in s for x in ("tempo", "threshold", "steady")):
+        return "tempo"
+    if "recovery" in s:
+        return "recovery"
     return "easy"
 
 
@@ -140,9 +157,23 @@ def import_plan(content: str, format: str = "markdown", name: str | None = None)
     for t in tables:
         if t[0] and _phase_key(t[0][0]) == "week" and any("running" in h.lower() for h in t[0]):
             for row in t[1:]:
-                try: n = int(re.match(r"\d+", row[0]).group())
-                except (ValueError, AttributeError): continue
-                progression[n] = {"phase": row[1], "target_km": parse_distance(row[2]) / 1000 if parse_distance(row[2]) else float(re.search(r"\d+(?:\.\d+)?", row[2]).group()), "key_workout": row[4] if len(row)>4 else None}
+                try:
+                    n = int(re.match(r"\d+", row[0]).group())
+                except (ValueError, AttributeError):
+                    continue
+                # A malformed row must not abort the whole import. Every cell
+                # is optional; whatever cannot be read becomes a warning.
+                phase = row[1] if len(row) > 1 else None
+                km = parse_distance(row[2]) if len(row) > 2 else None
+                key_workout = row[4] if len(row) > 4 else None
+                if km is None and len(row) > 2:
+                    digits = re.search(r"\d+(?:\.\d+)?", str(row[2]))
+                    km = float(digits.group()) if digits else None
+                progression[n] = {
+                    "phase": phase,
+                    "target_km": (km / 1000) if km else None,
+                    "key_workout": key_workout,
+                }
     phases, weeks, sessions, warnings = [], [], [], []
     for i, p in enumerate(phase_rows.values()):
         dates = re.search(r"([A-Z][a-z]{2})\s+(\d+)\s*-\s*(?:([A-Z][a-z]{2})\s+)?(\d+)", p.get("duration", ""))

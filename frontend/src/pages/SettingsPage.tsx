@@ -24,6 +24,7 @@ import {
   ShieldCheck,
   Upload,
 } from 'lucide-react'
+import { Link } from 'react-router-dom'
 import { api } from '../lib/api'
 import type { AuthStatus, NetworkStatus, SyncRun } from '../types'
 import { formatDateTime, formatNumber, formatRelative } from '../lib/format'
@@ -473,6 +474,15 @@ function DeveloperKeySection({ onRefresh }: { onRefresh: () => Promise<void> }) 
         Stride talks to Garmin with your own developer key. Your Garmin password is never typed
         here, and Stride only reads your activities.
       </SectionIntro>
+
+      <p className="mb-3 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-[13px] text-amber-900">
+        A developer key covers <strong>activities only</strong>. Sleep, HRV, body battery and
+        readiness live on Garmin&rsquo;s separate Health API, so the{' '}
+        <Link to="/physiology" className="font-semibold underline">
+          physiology page
+        </Link>{' '}
+        needs the account connection below.
+      </p>
 
       <HowItWorks>
         Get a key from <span className="font-semibold text-ink-soft">developer.garmin.com</span>{' '}

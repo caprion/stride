@@ -1,10 +1,18 @@
 # Stride
 
-A Strava-class running webapp that pulls your data straight off a Garmin watch.
+> **Strava tells you what you did. Stride tells you whether that was the right
+> thing to do — and what to do tomorrow.**
 
-Plug in a Garmin credential and everything works: activities sync automatically
-with full splits, heart rate, GPS tracks and elevation. No cloud account, no
-subscription, your data stays on your machine.
+A Strava-class running webapp with native Garmin ingest, built around one loop:
+
+**Plan → Execute → Understand → Adapt.**
+
+The plan exists as a first-class object. Every session gets a verdict *and* a
+cause. The athlete's physiology and running mechanics are modelled. The app
+tells you what to do today.
+
+Strava is a **social activity log**: it has no concept of intent, no physiology
+and no causality. That is the gap this fills.
 
 ```
 ┌────────────┐        ┌──────────────────┐        ┌──────────────────┐
@@ -13,6 +21,25 @@ subscription, your data stays on your machine.
 │ (watch)    │  FIT   │  ingest + stats  │        │  (port 8000)     │
 └────────────┘  file  └──────────────────┘        └──────────────────┘
 ```
+
+---
+
+## The differentiator
+
+| | Strava | Stride |
+|---|---|---|
+| **Plan** | none — "Training Log" is a calendar of the past | block → phase → week → session, with distance and pace targets |
+| **Completion** | n/a | every session gets a verdict: `hit` · `missed_pace` · `short` · `missed` · `substituted` · `bonus` |
+| **Why** | n/a | causes from sleep, HRV, resting HR, cadence stability and load — with a confidence |
+| **The athlete** | one run at a time | readiness score with visible drivers; a running fingerprint (cadence stability, aerobic decoupling, efficiency, stride length) |
+| **Tomorrow** | n/a | one actionable recommendation for today |
+
+> "Thu tempo: planned 9 km @ 5:40–5:45, ran 9.0 km @ 6:02 (−17 s/km). Night
+> before: sleep 5 h 40 m (baseline 7 h 32 m), HRV 34 ms (baseline 48 ms,
+> −29 %), RHR 63 bpm (baseline 59 bpm). → **Fatigue-driven fade, not a fitness
+> regression.**"
+
+See [`DESIGN.md`](file:///home/sumit/stride/DESIGN.md) for the full design.
 
 ---
 
@@ -55,7 +82,7 @@ bb terminal create --machine host_8ej6yymhhj --cwd /home/sumit/stride \
 ### Tests
 
 ```bash
-cd backend && .venv/bin/python -m pytest -q     # 19 tests
+cd backend && .venv/bin/python -m pytest -q     # 74 tests
 cd frontend && npm run typecheck                # zero errors
 ```
 
@@ -79,11 +106,17 @@ Garmin's official OAuth1 Activity API. Requires a **Consumer Key** and
 > you may not be able to register a new app. If you already have a key, this is
 > the best path — it never touches your password.
 
-### 2. Your Garmin account
+### 2. Your Garmin account (needed for physiology)
 
 Email and password, with an inline MFA step when Garmin demands a 6-digit code.
 Uses the `garminconnect` library under the hood and stores a refreshable session
 token so you only do this once.
+
+This path unlocks **sleep, HRV, resting heart rate, stress, body battery,
+training status, endurance score, running tolerance, gear and scheduled
+workouts** — everything the readiness and plan-cause engines need. It is also
+the only way to pull Garmin's *scheduled workouts*, which Stride reads as a
+plan source.
 
 ### 3. FIT files (no credentials at all)
 
@@ -95,7 +128,20 @@ per-second heart rate, cadence, elevation and laps.
 # or from the command line
 curl -X POST http://localhost:8000/api/v1/auth/garmin/fit-import \
      -F "files=@activity.fit"
+
+./scripts/import-fit.sh ~/Downloads/*.fit
 ```
+
+### Importing your training plan
+
+**Plan → Import a plan**, then paste a markdown (or CSV, or JSON) plan document.
+Stride parses the weekly volume table, the phase pace bands and the day-level
+session tables, and builds the plan hierarchy from it.
+
+The importer is tested against a real 20-week plan and yields **8 phases, 20
+weeks and 83 day-level sessions**, with pace bands on 67 of them. Imported plans
+are **anchored to your activity history**, so the plan and your runs sit on the
+same timeline instead of the plan reading as "every session missed".
 
 ---
 
@@ -132,20 +178,44 @@ stride/
 │   │   ├── main.py              app entrypoint, SPA hosting, scheduler
 │   │   ├── config.py            env config + persisted runtime state
 │   │   ├── db.py                engine, session, WAL pragmas
-│   │   ├── models.py            ORM schema
+│   │   ├── models.py            ORM schema (activities, laps, streams, zones)
+│   │   ├── models_phase2.py     plan hierarchy · results · physiology · fingerprint · gear
 │   │   ├── network.py           Tailscale exit-node management
-│   │   ├── api/                 auth · activities · stats · calendar · sync
-│   │   ├── ingest/              garmin_oauth · garmin_account · fit_importer · demo
-│   │   └── services/            persistence · analytics · sync
+│   │   ├── api/                 auth · activities · stats · calendar · sync · plan · physiology · fitness
+│   │   ├── ingest/              garmin_oauth · garmin_account · garmin_health ·
+│   │   │                        garmin_workouts · fit_importer · plan_importer · demo
+│   │   └── services/            persistence · analytics · sync · plan_engine · fingerprint · readiness
+│   ├── tests/                   74 tests (Phase 1 + Phase 2)
 │   └── data/                    stride.db + state.json (gitignored)
 ├── frontend/                    React 18 + TS + Vite + Tailwind + Recharts + Leaflet
 │   ├── src/components/          design system: ui · charts · ActivityCard · RouteThumb
 │   ├── src/lib/                 api client + formatters
-│   ├── src/pages/               Dashboard · Feed · Activity · Training · Stats · Settings
-│   └── CONTRACT.md              the frozen API/design contract
+│   ├── src/pages/               Dashboard · Plan · Feed · Activity · Training ·
+│   │                            Physiology · Fitness · Stats · Settings
+│   ├── CONTRACT.md              the frozen API/design contract
+│   └── types_phase2.ts          the frozen Phase-2 types
 ├── scripts/run.sh               one-command launcher
+├── scripts/import-fit.sh        FIT import from the shell
+├── scripts/screenshot.mjs       headless render + error check for every route
+├── DESIGN.md                    the Phase-2 design of record
 └── PLAN.md                      scope, discovery findings, risks
 ```
+
+### Surfaces
+
+| Route | What it is |
+|---|---|
+| `/` | **Today** — the plan for today, readiness, one recommendation; then volume, pace, records, recent runs |
+| `/plan` | **Plan vs actual** — the week strip (planned beside done), per-session verdicts with causes, weekly adherence, import |
+| `/physiology` | Readiness score with its drivers, sleep stages, HRV against a 30-day baseline |
+| `/fitness` | **Running fingerprint** — cadence stability, HR drift, aerobic decoupling, efficiency, zone split, shoe rotation |
+| `/feed` | Activity feed with route thumbnails, filters, pagination |
+| `/activities/:id` | Interactive map, stat strip, HR/pace/elevation charts, splits table, notes |
+| `/training` | Month calendar with volume tiers, day detail, streaks |
+| `/stats` | Totals & gains, personal records, sport split, year heatmap, trends |
+| `/settings` | Connect Garmin, network route, sync settings, sync history |
+
+---
 
 ### Data model
 
