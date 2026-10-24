@@ -9,6 +9,7 @@
 
 import { useMemo } from 'react'
 import { cn } from './ui'
+import { ACCENT, ACCENT_DATA, BRAND, GRID, ZONE_COLORS } from '../lib/palette'
 
 interface Props {
   points: [number, number][] | null | undefined
@@ -95,17 +96,17 @@ export function RouteThumb({ points, className, strokeWidth = 3, showMarkers = t
     >
       <defs>
         <pattern id="grid" width="12" height="12" patternUnits="userSpaceOnUse">
-          <path d="M12 0 L0 0 0 12" fill="none" stroke="#E1E8EE" strokeWidth="0.5" />
+          <path d="M12 0 L0 0 0 12" fill="none" stroke={GRID} strokeWidth="0.5" />
         </pattern>
         <linearGradient id="route-grad" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0%" stopColor="#F8C55C" />
-          <stop offset="100%" stopColor="#F2B01E" />
+          <stop offset="0%" stopColor={ACCENT[300]} />
+          <stop offset="100%" stopColor={ACCENT_DATA} />
         </linearGradient>
       </defs>
       <rect width={geometry.W} height={geometry.H} fill="url(#grid)" />
       {/* Park / water blobs for a map-like texture. */}
-      <ellipse cx="18" cy="80" rx="22" ry="16" fill="#E3EDE6" opacity="0.9" />
-      <ellipse cx="84" cy="22" rx="18" ry="13" fill="#DFE9F2" opacity="0.9" />
+      <ellipse cx="18" cy="80" rx="22" ry="16" fill={BRAND[50]} opacity="0.9" />
+      <ellipse cx="84" cy="22" rx="18" ry="13" fill={BRAND[100]} opacity="0.9" />
       <path
         d={geometry.path}
         fill="none"
@@ -130,7 +131,7 @@ export function RouteThumb({ points, className, strokeWidth = 3, showMarkers = t
             cy={geometry.start[1]}
             r={strokeWidth * 0.9}
             fill="#ffffff"
-            stroke="#2E8B7A"
+            stroke={ZONE_COLORS[1]}
             strokeWidth={strokeWidth * 0.6}
           />
           {geometry.endFarEnough ? (
@@ -139,7 +140,7 @@ export function RouteThumb({ points, className, strokeWidth = 3, showMarkers = t
               cy={geometry.end[1]}
               r={strokeWidth * 0.9}
               fill="#ffffff"
-              stroke="#C0392B"
+              stroke={ZONE_COLORS[4]}
               strokeWidth={strokeWidth * 0.6}
             />
           ) : null}

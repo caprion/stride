@@ -15,16 +15,25 @@ import {
 } from 'recharts'
 import { Link } from 'react-router-dom'
 import { api } from '../lib/api'
+import {
+  ACCENT_DATA,
+  BRAND,
+  GRID,
+  INK_FAINT,
+  INK_MUTED,
+  RAMP,
+  ZONE_COLORS,
+} from '../lib/palette'
 import { formatDate } from '../lib/format'
 import { Card, CardHeader, EmptyState, PageHeader, Skeleton, Badge } from '../components/ui'
 import { ChartFrame } from '../components/charts'
 
 const gradeColor: Record<string, string> = {
-  peak: '#2E8B7A',
-  good: '#3F8FB8',
-  fair: '#D99A0B',
-  low: '#C0392B',
-  unknown: '#93A6B7',
+  peak: ZONE_COLORS[1],
+  good: RAMP[1],
+  fair: ZONE_COLORS[3],
+  low: ZONE_COLORS[4],
+  unknown: INK_FAINT,
 }
 const num = (v: number | null | undefined, suffix = '') =>
   v == null ? '—' : `${Math.round(v * 10) / 10}${suffix}`
@@ -261,14 +270,14 @@ export default function PhysiologyPage() {
                       awake: (p.awake_s ?? 0) / 3600,
                     }))}
                   >
-                    <CartesianGrid stroke="#E4EBF0" vertical={false} />
-                    <XAxis dataKey="label" tick={{ fontSize: 10, fill: '#61788D' }} />
-                    <YAxis yAxisId="sleep" tick={{ fontSize: 10, fill: '#61788D' }} unit=" h" />
+                    <CartesianGrid stroke={GRID} vertical={false} />
+                    <XAxis dataKey="label" tick={{ fontSize: 10, fill: INK_MUTED }} />
+                    <YAxis yAxisId="sleep" tick={{ fontSize: 10, fill: INK_MUTED }} unit=" h" />
                     <YAxis
                       yAxisId="score"
                       orientation="right"
                       domain={[0, 100]}
-                      tick={{ fontSize: 10, fill: '#61788D' }}
+                      tick={{ fontSize: 10, fill: INK_MUTED }}
                     />
                     <Tooltip />
                     <Bar
@@ -276,34 +285,34 @@ export default function PhysiologyPage() {
                       stackId="sleep"
                       dataKey="deep"
                       name="Deep"
-                      fill="#3F6E9E"
+                      fill={RAMP[4]}
                     />
                     <Bar
                       yAxisId="sleep"
                       stackId="sleep"
                       dataKey="rem"
                       name="REM"
-                      fill="#6E6BA8"
+                      fill={RAMP[3]}
                     />
                     <Bar
                       yAxisId="sleep"
                       stackId="sleep"
                       dataKey="light"
                       name="Light"
-                      fill="#7BA8CD"
+                      fill={BRAND[300]}
                     />
                     <Bar
                       yAxisId="sleep"
                       stackId="sleep"
                       dataKey="awake"
                       name="Awake"
-                      fill="#C9D6E0"
+                      fill={BRAND[100]}
                     />
                     <Line
                       yAxisId="score"
                       dataKey="sleep_score"
                       name="Sleep score"
-                      stroke="#F2B01E"
+                      stroke={ACCENT_DATA}
                       dot={false}
                     />
                   </ComposedChart>
@@ -329,13 +338,13 @@ export default function PhysiologyPage() {
                       label: formatDate(p.date).slice(0, 6),
                     }))}
                   >
-                    <CartesianGrid stroke="#E4EBF0" vertical={false} />
-                    <XAxis dataKey="label" tick={{ fontSize: 10, fill: '#61788D' }} />
-                    <YAxis yAxisId="hrv" tick={{ fontSize: 10, fill: '#61788D' }} unit=" ms" />
+                    <CartesianGrid stroke={GRID} vertical={false} />
+                    <XAxis dataKey="label" tick={{ fontSize: 10, fill: INK_MUTED }} />
+                    <YAxis yAxisId="hrv" tick={{ fontSize: 10, fill: INK_MUTED }} unit=" ms" />
                     <YAxis
                       yAxisId="rhr"
                       orientation="right"
-                      tick={{ fontSize: 10, fill: '#61788D' }}
+                      tick={{ fontSize: 10, fill: INK_MUTED }}
                       unit=" bpm"
                     />
                     <Tooltip />
@@ -344,16 +353,16 @@ export default function PhysiologyPage() {
                         yAxisId="hrv"
                         y1={hrv.data.baseline * 0.95}
                         y2={hrv.data.baseline * 1.05}
-                        fill="#93A6B7"
+                        fill={INK_FAINT}
                         fillOpacity={0.14}
-                        label={{ value: '30-day baseline band', fontSize: 9, fill: '#61788D' }}
+                        label={{ value: '30-day baseline band', fontSize: 9, fill: INK_MUTED }}
                       />
                     )}
                     <Line
                       yAxisId="hrv"
                       dataKey="baseline"
                       name="HRV 30-day baseline"
-                      stroke="#93A6B7"
+                      stroke={INK_FAINT}
                       strokeDasharray="4 3"
                       dot={false}
                     />
@@ -361,7 +370,7 @@ export default function PhysiologyPage() {
                       yAxisId="hrv"
                       dataKey="hrv_ms"
                       name="HRV"
-                      stroke="#F2B01E"
+                      stroke={ACCENT_DATA}
                       strokeWidth={2}
                       dot={false}
                     />
@@ -369,7 +378,7 @@ export default function PhysiologyPage() {
                       yAxisId="rhr"
                       dataKey="rhr_baseline"
                       name="RHR baseline"
-                      stroke="#6E6BA8"
+                      stroke={RAMP[3]}
                       strokeDasharray="4 3"
                       dot={false}
                     />
@@ -377,7 +386,7 @@ export default function PhysiologyPage() {
                       yAxisId="rhr"
                       dataKey="resting_hr"
                       name="Resting HR"
-                      stroke="#3F8FB8"
+                      stroke={RAMP[1]}
                       dot={false}
                     />
                   </LineChart>
@@ -403,15 +412,15 @@ export default function PhysiologyPage() {
                       label: formatDate(p.date).slice(0, 6),
                     }))}
                   >
-                    <CartesianGrid stroke="#E4EBF0" vertical={false} />
-                    <XAxis dataKey="label" tick={{ fontSize: 10, fill: '#61788D' }} />
-                    <YAxis domain={[0, 100]} tick={{ fontSize: 10, fill: '#61788D' }} />
+                    <CartesianGrid stroke={GRID} vertical={false} />
+                    <XAxis dataKey="label" tick={{ fontSize: 10, fill: INK_MUTED }} />
+                    <YAxis domain={[0, 100]} tick={{ fontSize: 10, fill: INK_MUTED }} />
                     <Tooltip />
                     <Area
                       dataKey="score"
                       name="Readiness"
-                      stroke="#F2B01E"
-                      fill="#F2B01E"
+                      stroke={ACCENT_DATA}
+                      fill={ACCENT_DATA}
                       fillOpacity={0.12}
                       dot={(props: {
                         cx?: number

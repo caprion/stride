@@ -38,6 +38,18 @@ export const ACCENT = {
 } as const
 
 /** Chart ramp: sun through earth to deep water. */
+/** Chart furniture: grid lines and the two muted text tones. */
+export const GRID = '#E4EBF0'
+export const INK_MUTED = '#61788D'
+export const INK_FAINT = '#93A6B7'
+export const SURFACE_SUNKEN = '#E9EFF4'
+
+/** The data colours, named rather than indexed. */
+export const ACCENT_DATA = ACCENT[400]
+export const ACCENT_WARM = ACCENT[500]
+export const ACCENT_DEEP = ACCENT[600]
+export const ACCENT_SOFT = ACCENT[50]
+
 export const RAMP = ['#F2B01E', '#E08A3C', '#B4557F', '#6E6BA8', '#3F6E9E', '#1E5E96'] as const
 
 /** Semantic series: heart rate zones, recovery through anaerobic. */
@@ -45,6 +57,10 @@ export const ZONE_COLORS = ['#A8BCCB', '#2E8B7A', '#6E9E3C', '#D99A0B', '#C0392B
 
 /** Data series that need to hold their own on a white card. */
 export const SERIES = {
+  /** The paler tint behind the most recent bar. */
+  actualSoft: ACCENT[200],
+  /** A cool grey for planned volume and de-emphasised furniture. */
+  plannedSoft: '#C7D6E3',
   heartRate: '#1E5E96',
   pace: '#B57C06',
   cadence: '#2E8B7A',

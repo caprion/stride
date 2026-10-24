@@ -11,6 +11,7 @@ import {
 } from 'recharts'
 import { Search, X } from 'lucide-react'
 import { api } from '../lib/api'
+import { ACCENT_DATA, GRID, INK_MUTED, RAMP, ZONE_COLORS } from '../lib/palette'
 import type {
   CompareCandidate,
   CompareFormat,
@@ -45,14 +46,14 @@ const metricOptions: { value: ProfileMetric; label: string }[] = [
   { value: 'elevation', label: 'Elevation' },
 ]
 const colors = [
-  '#F2B01E',
-  '#3F8FB8',
-  '#2E8B7A',
-  '#1E5E96',
-  '#D99A0B',
-  '#61788D',
-  '#6E6BA8',
-  '#C0392B',
+  ACCENT_DATA,
+  RAMP[1],
+  ZONE_COLORS[1],
+  RAMP[5],
+  ZONE_COLORS[3],
+  INK_MUTED,
+  RAMP[3],
+  ZONE_COLORS[4],
 ]
 
 function formatValue(value: number | null | undefined, format: CompareFormat) {
@@ -351,18 +352,18 @@ export default function ComparePage() {
                         data={chartRows}
                         margin={{ top: 8, right: 16, left: 0, bottom: 4 }}
                       >
-                        <CartesianGrid stroke="#E4EBF0" vertical={false} />
+                        <CartesianGrid stroke={GRID} vertical={false} />
                         <XAxis
                           dataKey="distancePct"
                           type="number"
                           domain={[0, 100]}
                           tickFormatter={(value) => `${value}%`}
-                          tick={{ fontSize: 11, fill: '#61788D' }}
+                          tick={{ fontSize: 11, fill: INK_MUTED }}
                           tickLine={false}
-                          axisLine={{ stroke: '#E4EBF0' }}
+                          axisLine={{ stroke: GRID }}
                         />
                         <YAxis
-                          tick={{ fontSize: 11, fill: '#61788D' }}
+                          tick={{ fontSize: 11, fill: INK_MUTED }}
                           tickLine={false}
                           axisLine={false}
                           width={52}

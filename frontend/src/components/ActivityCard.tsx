@@ -17,6 +17,7 @@ import {
 } from 'lucide-react'
 import type { ActivitySummary } from '../types'
 import { RouteThumb } from './RouteThumb'
+import { ACCENT_DATA } from '../lib/palette'
 import { Badge, cn } from './ui'
 import {
   formatDateTime,
@@ -47,7 +48,7 @@ export function ActivityCard({
   showRoute?: boolean
   className?: string
 }) {
-  const color = SPORT_COLOR[activity.sport_type] ?? '#F2B01E'
+  const color = SPORT_COLOR[activity.sport_type] ?? ACCENT_DATA
 
   return (
     <article
@@ -146,7 +147,7 @@ export function ActivityRow({
     >
       <span
         className="h-2 w-2 shrink-0 rounded-full"
-        style={{ background: SPORT_COLOR[activity.sport_type] ?? '#F2B01E' }}
+        style={{ background: SPORT_COLOR[activity.sport_type] ?? ACCENT_DATA }}
       />
       <span className="min-w-0 flex-1 truncate text-[13px] font-medium text-ink">
         {activity.name}

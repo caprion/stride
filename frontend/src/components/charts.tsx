@@ -24,10 +24,9 @@ import {
 } from 'recharts'
 import { Card, CardHeader, cn } from './ui'
 import { formatDistanceShort, formatDuration, formatPace, formatWeekKey } from '../lib/format'
-import { RAMP, SERIES, ZONE_COLORS } from '../lib/palette'
+import { GRID, INK_FAINT, INK_MUTED, RAMP, SERIES, ZONE_COLORS } from '../lib/palette'
 
-const AXIS = { fontSize: 11, fill: '#61788D' }
-const GRID = '#E4EBF0'
+const AXIS = { fontSize: 11, fill: INK_MUTED }
 
 export function ChartFrame({
   title,
@@ -135,7 +134,7 @@ export function VolumeChart({
                 value: `avg ${average.toFixed(0)} km`,
                 position: 'insideTopRight',
                 fontSize: 10,
-                fill: '#61788D',
+                fill: INK_MUTED,
               }}
             />
           ) : null}
@@ -143,7 +142,7 @@ export function VolumeChart({
             {rows.map((_row, index) => (
               <Cell
                 key={index}
-                fill={index === rows.length - 1 ? SERIES.actual : '#F6D49A'}
+                fill={index === rows.length - 1 ? SERIES.actual : SERIES.actualSoft}
                 fillOpacity={index === rows.length - 1 ? 1 : 0.85}
               />
             ))}
@@ -332,7 +331,7 @@ export function StreamChart({
             <ReferenceLine
               key={index}
               y={line.value}
-              stroke={line.color ?? '#93A6B7'}
+              stroke={line.color ?? INK_FAINT}
               strokeDasharray="4 4"
               label={{ value: line.label, position: 'right', fontSize: 10, fill: '#61788D' }}
             />

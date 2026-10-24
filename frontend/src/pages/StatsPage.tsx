@@ -21,6 +21,7 @@ import {
 } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { api } from '../lib/api'
+import { ACCENT_DATA, ACCENT_DEEP, SURFACE_SUNKEN } from '../lib/palette'
 import type { Bucket, HeatmapDay } from '../types'
 import {
   formatDate,
@@ -49,7 +50,7 @@ import {
 /* ------------------------------------------------------------------ heatmap */
 
 /** Ordered shades, lightest to darkest. */
-const HEAT_STEPS = ['#FEF8EA', '#FDEDC7', '#F8C55C', '#F2B01E', '#F2B01E']
+const HEAT_STEPS = [ACCENT_DATA, ACCENT_DATA, ACCENT_DEEP, ACCENT_DATA, ACCENT_DATA]
 
 const WEEKDAY_LABELS = ['Mon', '', 'Wed', '', 'Fri', '', 'Sun']
 
@@ -97,7 +98,7 @@ function buildHeatCells(year: number, byDate: Map<string, HeatmapDay>): HeatCell
 
 function heatColor(distanceM: number, maxM: number, inYear: boolean): string {
   if (!inYear) return 'transparent'
-  if (!distanceM) return '#E9EFF4'
+  if (!distanceM) return SURFACE_SUNKEN
   if (maxM <= 0) return HEAT_STEPS[0]
   const ratio = distanceM / maxM
   if (ratio <= 0.25) return HEAT_STEPS[0]
@@ -253,7 +254,7 @@ function Heatmap({
           {/* legend */}
           <div className="mt-3 flex items-center justify-end gap-2 text-[11px] text-ink-muted">
             <span>Less</span>
-            {['#E9EFF4', ...HEAT_STEPS].map((color) => (
+            {[SURFACE_SUNKEN, ...HEAT_STEPS].map((color) => (
               <span
                 key={color}
                 className="h-[10px] w-[10px] rounded-[2px]"
@@ -551,7 +552,7 @@ export function StatsPage() {
                         <span className="inline-flex items-center gap-2 text-[13px] font-medium text-ink">
                           <span
                             className="h-2.5 w-2.5 rounded-full"
-                            style={{ background: SPORT_COLOR[row.sport_type] ?? '#F2B01E' }}
+                            style={{ background: SPORT_COLOR[row.sport_type] ?? ACCENT_DATA }}
                           />
                           {sportLabel(row.sport_type)}
                         </span>

@@ -34,6 +34,7 @@ import {
   Zap,
 } from 'lucide-react'
 import { api } from '../lib/api'
+import { ACCENT_DATA, INK_FAINT, RAMP, ZONE_COLORS } from '../lib/palette'
 import type { ActivityDetail, ActivitySummary, Lap, Stream } from '../types'
 import type { Fingerprint } from '../types_phase2'
 import {
@@ -67,10 +68,10 @@ import {
 
 /* ------------------------------------------------------------------ consts */
 
-const BRAND = '#F2B01E'
-const HR_COLOR = '#F2B01E'
-const PACE_COLOR = '#1E5E96'
-const ELEVATION_COLOR = '#3F8FB8'
+const BRAND = ACCENT_DATA
+const HR_COLOR = ACCENT_DATA
+const PACE_COLOR = RAMP[5]
+const ELEVATION_COLOR = RAMP[1]
 
 const TILE_URL = '/api/v1/tiles/{z}/{x}/{y}.png'
 const TILE_ATTRIBUTION =
@@ -195,7 +196,7 @@ function RouteHero({
           pathOptions={{
             color: '#ffffff',
             weight: 2,
-            fillColor: '#2E8B7A',
+            fillColor: ZONE_COLORS[1],
             fillOpacity: 1,
           }}
         />
@@ -205,7 +206,7 @@ function RouteHero({
           pathOptions={{
             color: '#ffffff',
             weight: 2,
-            fillColor: '#C0392B',
+            fillColor: ZONE_COLORS[4],
             fillOpacity: 1,
           }}
         />
@@ -303,8 +304,8 @@ function TitleBlock({
             <span
               className="inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide"
               style={{
-                background: `${SPORT_COLOR[activity.sport_type] ?? '#F2B01E'}18`,
-                color: SPORT_COLOR[activity.sport_type] ?? '#F2B01E',
+                background: `${SPORT_COLOR[activity.sport_type] ?? ACCENT_DATA}18`,
+                color: SPORT_COLOR[activity.sport_type] ?? ACCENT_DATA,
               }}
             >
               <ActivityIcon size={11} strokeWidth={2.4} />
@@ -965,7 +966,7 @@ export function ActivityPage() {
               subtitle={`${hrDrift == null ? 'Heart rate drift unavailable' : `Heart rate ${hrDrift > 0 ? 'rose' : hrDrift < 0 ? 'fell' : 'held steady'} ${Math.round(Math.abs(hrDrift))} bpm across the run`} · avg ${avgHr === null ? '—' : formatHr(avgHr)}, peak ${formatHr(activity.max_hr)} · running only`}
               referenceLines={
                 avgHr !== null
-                  ? [{ value: avgHr, label: `avg ${formatHr(avgHr)}`, color: '#93A6B7' }]
+                  ? [{ value: avgHr, label: `avg ${formatHr(avgHr)}`, color: INK_FAINT }]
                   : undefined
               }
             />

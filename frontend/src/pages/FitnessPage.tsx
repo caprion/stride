@@ -12,6 +12,7 @@ import {
   YAxis,
 } from 'recharts'
 import { api } from '../lib/api'
+import { ACCENT_DATA, GRID, INK_FAINT, INK_MUTED } from '../lib/palette'
 import type { Fingerprint } from '../types_phase2'
 import { formatDate, formatDistance } from '../lib/format'
 import { ZoneBarChart } from '../components/charts'
@@ -127,20 +128,20 @@ export default function FitnessPage() {
                     label: formatDate(p.date).slice(0, 6),
                   }))}
                 >
-                  <CartesianGrid stroke="#E4EBF0" vertical={false} />
-                  <XAxis dataKey="label" tick={{ fontSize: 10, fill: '#61788D' }} />
-                  <YAxis tick={{ fontSize: 10, fill: '#61788D' }} />
+                  <CartesianGrid stroke={GRID} vertical={false} />
+                  <XAxis dataKey="label" tick={{ fontSize: 10, fill: INK_MUTED }} />
+                  <YAxis tick={{ fontSize: 10, fill: INK_MUTED }} />
                   <Tooltip />
                   <ReferenceLine
                     y={baseline ?? undefined}
-                    stroke="#93A6B7"
+                    stroke={INK_FAINT}
                     strokeDasharray="4 3"
-                    label={{ value: 'Baseline', fontSize: 10, fill: '#61788D' }}
+                    label={{ value: 'Baseline', fontSize: 10, fill: INK_MUTED }}
                   />
                   <Line
                     dataKey="value"
                     name={data.label}
-                    stroke="#F2B01E"
+                    stroke={ACCENT_DATA}
                     strokeWidth={2.5}
                     dot={{ r: 3 }}
                     connectNulls

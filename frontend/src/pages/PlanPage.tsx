@@ -12,6 +12,7 @@ import {
   YAxis,
 } from 'recharts'
 import { api } from '../lib/api'
+import { ACCENT_DATA, GRID, INK_MUTED, RAMP, SERIES, ZONE_COLORS } from '../lib/palette'
 import type { PlanSessionWithResult, Verdict } from '../types_phase2'
 import { formatDate, formatDistance, formatPace, formatWeekKey } from '../lib/format'
 import {
@@ -44,12 +45,12 @@ const verdictNames: Record<Verdict, string> = {
   bonus: 'Bonus',
 }
 const verdictColors: Record<Verdict, string> = {
-  hit: '#2E8B7A',
-  missed_pace: '#D99A0B',
-  short: '#D99A0B',
-  missed: '#C0392B',
-  substituted: '#3F8FB8',
-  bonus: '#F2B01E',
+  hit: ZONE_COLORS[1],
+  missed_pace: ZONE_COLORS[3],
+  short: ZONE_COLORS[3],
+  missed: ZONE_COLORS[4],
+  substituted: RAMP[1],
+  bonus: ACCENT_DATA,
 }
 const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
 const todayKey = () => new Date().toISOString().slice(0, 10)
@@ -376,13 +377,13 @@ export default function PlanPage() {
                 <BarChart
                   data={summary.rows.map((r) => ({ ...r, label: formatWeekKey(r.week_key) }))}
                 >
-                  <CartesianGrid stroke="#E4EBF0" vertical={false} />
-                  <XAxis dataKey="label" tick={{ fontSize: 10, fill: '#61788D' }} />
-                  <YAxis tick={{ fontSize: 10, fill: '#61788D' }} unit=" km" />
+                  <CartesianGrid stroke={GRID} vertical={false} />
+                  <XAxis dataKey="label" tick={{ fontSize: 10, fill: INK_MUTED }} />
+                  <YAxis tick={{ fontSize: 10, fill: INK_MUTED }} unit=" km" />
                   <Tooltip />
                   <Legend />
-                  <Bar dataKey="planned_km" name="Planned" fill="#B4C6D4" />
-                  <Bar dataKey="actual_km" name="Actual" fill="#F2B01E" />
+                  <Bar dataKey="planned_km" name="Planned" fill={SERIES.planned} />
+                  <Bar dataKey="actual_km" name="Actual" fill={ACCENT_DATA} />
                 </BarChart>
               </ResponsiveContainer>
             </ChartFrame>

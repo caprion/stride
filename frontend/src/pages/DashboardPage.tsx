@@ -25,6 +25,7 @@ import {
 } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { api } from '../lib/api'
+import { ACCENT_DATA } from '../lib/palette'
 import type { PlanSessionWithResult, PlanToday, Readiness } from '../types_phase2'
 import {
   formatDistance,
@@ -615,7 +616,7 @@ export function DashboardPage() {
                           <span
                             className="h-2 w-2 rounded-full"
                             style={{
-                              background: SPORT_COLOR[row.sport_type] ?? '#F2B01E',
+                              background: SPORT_COLOR[row.sport_type] ?? ACCENT_DATA,
                             }}
                           />
                           {sportLabel(row.sport_type)}
@@ -629,7 +630,7 @@ export function DashboardPage() {
                           className="h-full rounded-full"
                           style={{
                             width: `${Math.max(2, Math.min(100, pct))}%`,
-                            background: SPORT_COLOR[row.sport_type] ?? '#F2B01E',
+                            background: SPORT_COLOR[row.sport_type] ?? ACCENT_DATA,
                           }}
                         />
                       </div>
