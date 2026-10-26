@@ -38,6 +38,7 @@ A one-page collage of every surface: **[`showcase/stride-collage.png`](file:///h
 | [`docs/garmin-on-device.md`](file:///home/sumit/stride/docs/garmin-on-device.md) | key entry, Keystore storage, pull cadence, error copy |
 | [`docs/harness-integration.md`](file:///home/sumit/stride/docs/harness-integration.md) | MCP sidecar so your own Claude Code / Codex can query your data |
 | [`docs/working-agreement.md`](file:///home/sumit/stride/docs/working-agreement.md) | how we run big changes with parallel agents |
+| [`docs/ai-sign-in-discussion.md`](file:///home/sumit/stride/docs/ai-sign-in-discussion.md) | whether the Android app should offer "Sign in with ChatGPT" — and why the answer dissolves |
 
 ## No social layer, on purpose
 
