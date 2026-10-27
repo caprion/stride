@@ -40,6 +40,7 @@ A one-page collage of every surface: **[`showcase/stride-collage.png`](file:///h
 | [`docs/working-agreement.md`](file:///home/sumit/stride/docs/working-agreement.md) | how we run big changes with parallel agents |
 | [`docs/ai-sign-in-discussion.md`](file:///home/sumit/stride/docs/ai-sign-in-discussion.md) | whether the Android app should offer "Sign in with ChatGPT" — and why the answer dissolves |
 | [`docs/piping-to-chatgpt.md`](file:///home/sumit/stride/docs/piping-to-chatgpt.md) | how to pipe the data through ChatGPT — MCP, and the four ways it can run |
+| [`docs/android-packaging.md`](file:///home/sumit/stride/docs/android-packaging.md) | **how the Android app is packaged, signed, built in CI and deployed** |
 
 ## No social layer, on purpose
 
