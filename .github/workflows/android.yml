@@ -81,7 +81,8 @@ jobs:
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: '17'
+          # Capacitor 8 compiles against Java 21.
+          java-version: '21'
       - uses: gradle/actions/setup-gradle@v4
 
       # The GitHub runner image already carries the Android SDK. It is only
