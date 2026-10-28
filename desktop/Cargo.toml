@@ -25,10 +25,10 @@ thiserror = { workspace = true }
 # The plaintext-to-SQLCipher conversion reads the legacy database with a plain
 # SQLite connection. `rusqlite` is in the approved dependency set and is
 # already in the workspace, so this adds no new crate to the graph.
-# The `backup` feature is SQLite's own online backup: it is what makes a
-# consistent copy of a database that is being written to, which a copy of the
-# files is not.
-rusqlite = { workspace = true, features = ["backup"] }
+# The plain SQLite connection is what reads the reference app's database
+# while it is being converted. `VACUUM INTO` does the snapshot and needs no
+# extra feature.
+rusqlite = { workspace = true }
 stride-api = { path = "../crates/stride-api" }
 stride-store = { path = "../crates/stride-store" }
 
