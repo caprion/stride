@@ -39,6 +39,13 @@ const queryClient = new QueryClient({
       retry: 1,
       refetchOnWindowFocus: false,
       staleTime: 30_000,
+      // How long an abandoned query keeps its data alive. The default is
+      // five minutes, which on a phone means every screen the athlete
+      // opened in the last five minutes is still sitting in the renderer.
+      // Two minutes is long enough that a glance at another screen and
+      // back still shows the old data while it refetches, and short
+      // enough that a browsing session does not accumulate.
+      gcTime: 120_000,
     },
   },
 })

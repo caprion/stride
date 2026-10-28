@@ -85,7 +85,7 @@ export default function PlanPage() {
   const client = useQueryClient()
   const current = useQuery({
     queryKey: ['plan-current'],
-    queryFn: api.planCurrent,
+    queryFn: api.planCurrentSummary,
     retry: false,
   })
   const today = useQuery({ queryKey: ['plan-today'], queryFn: api.planToday, retry: false })

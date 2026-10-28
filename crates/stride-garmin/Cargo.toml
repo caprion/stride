@@ -11,3 +11,13 @@ serde_json = { workspace = true }
 chrono = { workspace = true }
 thiserror = { workspace = true }
 reqwest = { workspace = true }
+# Garmin serves the original FIT inside a zip archive; there is no way to
+# extract it without a deflate decoder. `zip` is pure Rust (no system
+# libraries), so the NDK build stays self-sufficient.
+zip = { version = "2", default-features = false, features = ["deflate"] }
+
+[dev-dependencies]
+chrono = { workspace = true }
+serde_json = { workspace = true }
+# The tests build the zip container Garmin serves the FIT file in.
+zip = { version = "2", default-features = false, features = ["deflate"] }

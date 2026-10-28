@@ -1,0 +1,35 @@
+// The UniFFI surface of the phone's Rust core.
+//
+// One namespace, four functions, and every one of them answers with a JSON
+// string. The JSON is the same envelope `stride-api`'s C ABI produces, so the
+// Kotlin side reads one shape whichever way it asks:
+//
+//   {"ok": true,  "status": 200, "body": { ... }}
+//   {"ok": false, "status": 404, "error": {"detail": "..."}}
+//
+// There is no `stride_free` in this surface: UniFFI owns the memory and
+// frees it. The C ABI in `crates/stride-api/src/ffi.rs` keeps `stride_free`
+// for callers that are not UniFFI.
+
+namespace stride {
+  // Open the phone's own database and install the backend behind the routes.
+  //
+  // `db_key_hex` is the 32-byte SQLCipher key, hex-encoded. It comes from
+  // the Android Keystore and is never written anywhere but the encrypted
+  // file the Keystore key protects.
+  string stride_open(string db_path, string db_key_hex);
+
+  // Call a route. `method` and `path` are the HTTP method and the path; the
+  // query string may be part of `path`. `body` is the request body, if the
+  // route takes one.
+  string stride_call(string method, string path, string? body);
+
+  // Pull from Garmin into the local database.
+  //
+  // `api_key` is the athlete's Garmin Personal API key. It is used for the
+  // token exchange and then forgotten: the bearer token lives in memory only.
+  string stride_garmin_sync(string api_key, i64 days);
+
+  // What the core is and whether it is open. For the phone's own diagnostics.
+  string stride_status();
+};

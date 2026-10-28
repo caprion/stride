@@ -5,8 +5,12 @@ edition.workspace = true
 rust-version.workspace = true
 license.workspace = true
 
+# docs/rust-core-spec.md §1: "stride-core depends on nothing but serde.
+# It is pure functions over plain data."
 [dependencies]
 serde = { workspace = true }
+
+# The golden tests read backend/tests/golden/*.json, so they need a JSON
+# parser. A dev-dependency keeps it out of the library's dependency graph.
+[dev-dependencies]
 serde_json = { workspace = true }
-chrono = { workspace = true }
-thiserror = { workspace = true }

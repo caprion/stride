@@ -669,7 +669,7 @@ function NeighbourLink({
   activity,
   direction,
 }: {
-  activity: ActivitySummary
+  activity: Pick<ActivitySummary, 'id' | 'name' | 'local_date' | 'distance_m'>
   direction: 'previous' | 'next'
 }) {
   const isPrevious = direction === 'previous'
@@ -757,15 +757,19 @@ export function ActivityPage() {
   })
 
   const fingerprintsQuery = useQuery({
-    queryKey: ['fitness-fingerprint'],
-    queryFn: () => api.fitnessFingerprint(),
+    queryKey: ['fitness-activity', activityId],
+    queryFn: () => api.fitnessActivity(activityId),
     enabled: validId,
     retry: false,
   })
 
   const neighboursQuery = useQuery({
-    queryKey: ['activities', 'neighbours', 200],
-    queryFn: () => api.activities({ per_page: 200 }),
+    queryKey: ['activities', 'neighbours', activityId],
+    // The client projects the list down to the four fields the links draw,
+    // and fetches a window around the run rather than the whole history.
+    // Both keep the half-megabyte of route previews out of the renderer.
+    queryFn: () => api.activityNeighbours(activityId, activityQuery.data?.local_date),
+    enabled: validId && Boolean(activityQuery.data?.local_date),
     staleTime: 60_000,
   })
 
@@ -779,7 +783,7 @@ export function ActivityPage() {
   const activity = activityQuery.data
 
   const neighbours = useMemo(() => {
-    const items = neighboursQuery.data?.items ?? []
+    const items = neighboursQuery.data ?? []
     const sorted = [...items].sort((a, b) => {
       if (a.local_date === b.local_date) return a.id - b.id
       return a.local_date < b.local_date ? -1 : 1
@@ -852,9 +856,7 @@ export function ActivityPage() {
 
   const avgHr = average(activity.streams.hr?.values ?? [])
   const avgPaceSeconds = average(activity.streams.pace?.values ?? [])
-  const fingerprint = fingerprintsQuery.data?.items.find(
-    (item) => item.activity_id === activityId,
-  )
+  const fingerprint = fingerprintsQuery.data
   const hrDrift = fingerprint?.hr_drift_bpm
   const paceDrift = fingerprint?.pace_drift_pct
   const hasExclusions = (activity.walking_time_s ?? 0) > 0 || (activity.stopped_time_s ?? 0) > 0

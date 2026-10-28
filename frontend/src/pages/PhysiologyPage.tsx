@@ -39,6 +39,14 @@ const gradeColor: Record<string, string> = {
 }
 const num = (v: number | null | undefined, suffix = '') =>
   v == null ? '—' : `${Math.round(v * 10) / 10}${suffix}`
+
+// The fields these three charts actually draw. A year of full daily rows is
+// 180 KB of JSON, and a year of readiness rows with their drivers is 210 KB
+// — none of it drawn. The drivers are still shown for today, which comes
+// from the latest endpoint.
+const DAILY_FIELDS = 'date,body_battery_avg,stress_avg,acute_load,chronic_load,steps'
+const READINESS_FIELDS = 'date,score,grade'
+const HRV_FIELDS = 'date,hrv_ms,baseline,resting_hr,rhr_baseline'
 const NoRows = ({ loading, title }: { loading: boolean; title: string }) =>
   loading ? (
     <div className="p-4">
@@ -133,19 +141,19 @@ export default function PhysiologyPage() {
   })
   const hrv = useQuery({
     queryKey: ['physiology-hrv'],
-    queryFn: () => api.physiologyHrv(),
+    queryFn: () => api.physiologyHrv(HRV_FIELDS),
     enabled,
     retry: false,
   })
   const readiness = useQuery({
     queryKey: ['physiology-readiness'],
-    queryFn: () => api.physiologyReadiness(),
+    queryFn: () => api.physiologyReadiness(READINESS_FIELDS),
     enabled,
     retry: false,
   })
   const daily = useQuery({
     queryKey: ['physiology-daily'],
-    queryFn: () => api.physiologyDaily(),
+    queryFn: () => api.physiologyDaily(DAILY_FIELDS),
     enabled,
     retry: false,
   })

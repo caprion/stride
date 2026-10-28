@@ -15,7 +15,7 @@ import { api } from '../lib/api'
 import { useMediaQuery } from '../lib/useMediaQuery'
 import { RangeSelector, sinceDate } from '../components/RangeSelector'
 import { GRID, INK_FAINT, INK_MUTED, METRIC } from '../lib/palette'
-import type { Fingerprint } from '../types_phase2'
+import type { FingerprintSummary } from '../types_phase2'
 import { formatDate, formatDistance, formatPaceWithUnit } from '../lib/format'
 import { ZoneBarChart } from '../components/charts'
 import {
@@ -74,7 +74,7 @@ export default function FitnessPage() {
   })
   const fingerprints = useQuery({
     queryKey: ['fitness-fingerprint'],
-    queryFn: () => api.fitnessFingerprint(),
+    queryFn: () => api.fitnessFingerprintSummary(),
     retry: false,
   })
   const zones = useQuery({
@@ -94,7 +94,7 @@ export default function FitnessPage() {
       : (trendPct ?? 0) > 0
     : false
   const baseline = data?.baseline ?? null
-  const getBaseline = (key: 'decoupling_pct' | 'cadence_cv', items: Fingerprint[]) => {
+  const getBaseline = (key: 'decoupling_pct' | 'cadence_cv', items: FingerprintSummary[]) => {
     const vals = items.map((i) => i[key]).filter((v): v is number => v != null)
     return vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : null
   }
@@ -371,7 +371,7 @@ function FingerprintCards({
   decoupleBaseline,
   onShowAll,
 }: {
-  rows: Fingerprint[]
+  rows: FingerprintSummary[]
   total: number
   cvBaseline: number | null
   decoupleBaseline: number | null
@@ -466,7 +466,7 @@ function FingerprintRow({
   cvBaseline,
   decoupleBaseline,
 }: {
-  item: Fingerprint
+  item: FingerprintSummary
   cvBaseline: number | null
   decoupleBaseline: number | null
 }) {

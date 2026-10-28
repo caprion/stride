@@ -1,0 +1,702 @@
+{
+ "paths": {
+  "/api/v1/activities": {
+   "get": {
+    "operationId": "list_activities_api_v1_activities_get",
+    "parameters": [
+     {
+      "in": "query",
+      "name": "page",
+      "required": false
+     },
+     {
+      "in": "query",
+      "name": "per_page",
+      "required": false
+     },
+     {
+      "in": "query",
+      "name": "sport",
+      "required": false
+     },
+     {
+      "in": "query",
+      "name": "from",
+      "required": false
+     },
+     {
+      "in": "query",
+      "name": "to",
+      "required": false
+     },
+     {
+      "in": "query",
+      "name": "q",
+      "required": false
+     },
+     {
+      "in": "query",
+      "name": "sort",
+      "required": false
+     }
+    ]
+   }
+  },
+  "/api/v1/activities/{activity_id}": {
+   "get": {
+    "operationId": "get_activity_api_v1_activities__activity_id__get",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "activity_id",
+      "required": true
+     }
+    ]
+   },
+   "patch": {
+    "operationId": "patch_activity_api_v1_activities__activity_id__patch",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "activity_id",
+      "required": true
+     }
+    ]
+   }
+  },
+  "/api/v1/activities/{activity_id}/geo": {
+   "get": {
+    "operationId": "activity_geo_api_v1_activities__activity_id__geo_get",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "activity_id",
+      "required": true
+     }
+    ]
+   }
+  },
+  "/api/v1/activities/{activity_id}/streams/{kind}": {
+   "get": {
+    "operationId": "activity_stream_api_v1_activities__activity_id__streams__kind__get",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "activity_id",
+      "required": true
+     },
+     {
+      "in": "path",
+      "name": "kind",
+      "required": true
+     }
+    ]
+   }
+  },
+  "/api/v1/auth/devices": {
+   "get": {
+    "operationId": "list_devices_api_v1_auth_devices_get",
+    "parameters": []
+   }
+  },
+  "/api/v1/auth/devices/{device_id}": {
+   "delete": {
+    "operationId": "revoke_device_api_v1_auth_devices__device_id__delete",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "device_id",
+      "required": true
+     }
+    ]
+   }
+  },
+  "/api/v1/auth/garmin/callback": {
+   "get": {
+    "operationId": "garmin_callback_api_v1_auth_garmin_callback_get",
+    "parameters": [
+     {
+      "in": "query",
+      "name": "oauth_token",
+      "required": false
+     },
+     {
+      "in": "query",
+      "name": "oauth_verifier",
+      "required": false
+     }
+    ]
+   }
+  },
+  "/api/v1/auth/garmin/developer-key": {
+   "post": {
+    "operationId": "start_developer_key_api_v1_auth_garmin_developer_key_post",
+    "parameters": []
+   }
+  },
+  "/api/v1/auth/garmin/exchange": {
+   "post": {
+    "operationId": "exchange_api_v1_auth_garmin_exchange_post",
+    "parameters": []
+   }
+  },
+  "/api/v1/auth/garmin/fit-import": {
+   "post": {
+    "operationId": "fit_import_api_v1_auth_garmin_fit_import_post",
+    "parameters": []
+   }
+  },
+  "/api/v1/auth/garmin/login": {
+   "post": {
+    "operationId": "login_api_v1_auth_garmin_login_post",
+    "parameters": []
+   }
+  },
+  "/api/v1/auth/garmin/logout": {
+   "post": {
+    "operationId": "logout_api_v1_auth_garmin_logout_post",
+    "parameters": []
+   }
+  },
+  "/api/v1/auth/garmin/mfa": {
+   "post": {
+    "operationId": "submit_mfa_api_v1_auth_garmin_mfa_post",
+    "parameters": []
+   }
+  },
+  "/api/v1/auth/garmin/personal-key": {
+   "post": {
+    "operationId": "connect_personal_key_api_v1_auth_garmin_personal_key_post",
+    "parameters": []
+   }
+  },
+  "/api/v1/auth/garmin/personal-key/test": {
+   "post": {
+    "operationId": "test_personal_key_api_v1_auth_garmin_personal_key_test_post",
+    "parameters": []
+   }
+  },
+  "/api/v1/auth/pair": {
+   "post": {
+    "operationId": "pair_api_v1_auth_pair_post",
+    "parameters": []
+   }
+  },
+  "/api/v1/auth/pair-code": {
+   "get": {
+    "operationId": "pair_code_api_v1_auth_pair_code_get",
+    "parameters": []
+   }
+  },
+  "/api/v1/auth/status": {
+   "get": {
+    "operationId": "auth_status_api_v1_auth_status_get",
+    "parameters": []
+   }
+  },
+  "/api/v1/calendar": {
+   "get": {
+    "operationId": "calendar_api_v1_calendar_get",
+    "parameters": [
+     {
+      "in": "query",
+      "name": "year",
+      "required": false
+     },
+     {
+      "in": "query",
+      "name": "month",
+      "required": false
+     }
+    ]
+   }
+  },
+  "/api/v1/compare": {
+   "get": {
+    "operationId": "compare_runs_api_v1_compare_get",
+    "parameters": [
+     {
+      "in": "query",
+      "name": "ids",
+      "required": true
+     }
+    ]
+   }
+  },
+  "/api/v1/compare/candidates": {
+   "get": {
+    "operationId": "list_candidates_api_v1_compare_candidates_get",
+    "parameters": [
+     {
+      "in": "query",
+      "name": "limit",
+      "required": false
+     }
+    ]
+   }
+  },
+  "/api/v1/fitness/activity/{id}": {
+   "get": {
+    "operationId": "activity_fingerprint_api_v1_fitness_activity__id__get",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "id",
+      "required": true
+     }
+    ]
+   }
+  },
+  "/api/v1/fitness/fingerprint": {
+   "get": {
+    "operationId": "fingerprints_api_v1_fitness_fingerprint_get",
+    "parameters": [
+     {
+      "in": "query",
+      "name": "from",
+      "required": false
+     },
+     {
+      "in": "query",
+      "name": "to",
+      "required": false
+     }
+    ]
+   }
+  },
+  "/api/v1/fitness/trends": {
+   "get": {
+    "operationId": "trends_api_v1_fitness_trends_get",
+    "parameters": [
+     {
+      "in": "query",
+      "name": "metric",
+      "required": false
+     },
+     {
+      "in": "query",
+      "name": "from",
+      "required": false
+     },
+     {
+      "in": "query",
+      "name": "to",
+      "required": false
+     }
+    ]
+   }
+  },
+  "/api/v1/fitness/zones": {
+   "get": {
+    "operationId": "zones_api_v1_fitness_zones_get",
+    "parameters": [
+     {
+      "in": "query",
+      "name": "from",
+      "required": false
+     },
+     {
+      "in": "query",
+      "name": "to",
+      "required": false
+     }
+    ]
+   }
+  },
+  "/api/v1/gear": {
+   "get": {
+    "operationId": "gear_api_v1_gear_get",
+    "parameters": []
+   }
+  },
+  "/api/v1/health": {
+   "get": {
+    "operationId": "health_api_v1_health_get",
+    "parameters": []
+   }
+  },
+  "/api/v1/health/daily": {
+   "get": {
+    "operationId": "daily_api_v1_health_daily_get",
+    "parameters": [
+     {
+      "in": "query",
+      "name": "from",
+      "required": false
+     },
+     {
+      "in": "query",
+      "name": "to",
+      "required": false
+     }
+    ]
+   }
+  },
+  "/api/v1/network/route": {
+   "post": {
+    "operationId": "set_route_api_v1_network_route_post",
+    "parameters": []
+   }
+  },
+  "/api/v1/network/status": {
+   "get": {
+    "operationId": "network_status_api_v1_network_status_get",
+    "parameters": []
+   }
+  },
+  "/api/v1/physiology/daily": {
+   "get": {
+    "operationId": "daily_api_v1_physiology_daily_get",
+    "parameters": [
+     {
+      "in": "query",
+      "name": "from",
+      "required": false
+     },
+     {
+      "in": "query",
+      "name": "to",
+      "required": false
+     }
+    ]
+   }
+  },
+  "/api/v1/physiology/hrv": {
+   "get": {
+    "operationId": "hrv_api_v1_physiology_hrv_get",
+    "parameters": [
+     {
+      "in": "query",
+      "name": "from",
+      "required": false
+     },
+     {
+      "in": "query",
+      "name": "to",
+      "required": false
+     }
+    ]
+   }
+  },
+  "/api/v1/physiology/latest": {
+   "get": {
+    "operationId": "latest_api_v1_physiology_latest_get",
+    "parameters": []
+   }
+  },
+  "/api/v1/physiology/readiness": {
+   "get": {
+    "operationId": "readiness_api_v1_physiology_readiness_get",
+    "parameters": [
+     {
+      "in": "query",
+      "name": "from",
+      "required": false
+     },
+     {
+      "in": "query",
+      "name": "to",
+      "required": false
+     }
+    ]
+   }
+  },
+  "/api/v1/physiology/sleep": {
+   "get": {
+    "operationId": "sleep_api_v1_physiology_sleep_get",
+    "parameters": [
+     {
+      "in": "query",
+      "name": "from",
+      "required": false
+     },
+     {
+      "in": "query",
+      "name": "to",
+      "required": false
+     }
+    ]
+   }
+  },
+  "/api/v1/physiology/sources": {
+   "get": {
+    "operationId": "sources_api_v1_physiology_sources_get",
+    "parameters": []
+   }
+  },
+  "/api/v1/plan/adherence": {
+   "get": {
+    "operationId": "get_adherence_api_v1_plan_adherence_get",
+    "parameters": [
+     {
+      "in": "query",
+      "name": "from",
+      "required": false
+     },
+     {
+      "in": "query",
+      "name": "to",
+      "required": false
+     }
+    ]
+   }
+  },
+  "/api/v1/plan/blocks": {
+   "get": {
+    "operationId": "list_blocks_api_v1_plan_blocks_get",
+    "parameters": []
+   },
+   "post": {
+    "operationId": "create_block_api_v1_plan_blocks_post",
+    "parameters": []
+   }
+  },
+  "/api/v1/plan/blocks/{block_id}": {
+   "get": {
+    "operationId": "get_block_api_v1_plan_blocks__block_id__get",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "block_id",
+      "required": true
+     }
+    ]
+   }
+  },
+  "/api/v1/plan/blocks/{block_id}/phases": {
+   "post": {
+    "operationId": "add_phase_api_v1_plan_blocks__block_id__phases_post",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "block_id",
+      "required": true
+     }
+    ]
+   }
+  },
+  "/api/v1/plan/current": {
+   "get": {
+    "operationId": "current_api_v1_plan_current_get",
+    "parameters": []
+   }
+  },
+  "/api/v1/plan/import": {
+   "post": {
+    "operationId": "import_document_api_v1_plan_import_post",
+    "parameters": []
+   }
+  },
+  "/api/v1/plan/phases/{phase_id}/weeks": {
+   "post": {
+    "operationId": "add_week_api_v1_plan_phases__phase_id__weeks_post",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "phase_id",
+      "required": true
+     }
+    ]
+   }
+  },
+  "/api/v1/plan/results": {
+   "get": {
+    "operationId": "results_api_v1_plan_results_get",
+    "parameters": [
+     {
+      "in": "query",
+      "name": "from",
+      "required": false
+     },
+     {
+      "in": "query",
+      "name": "to",
+      "required": false
+     }
+    ]
+   }
+  },
+  "/api/v1/plan/today": {
+   "get": {
+    "operationId": "get_today_api_v1_plan_today_get",
+    "parameters": []
+   }
+  },
+  "/api/v1/plan/week": {
+   "get": {
+    "operationId": "get_week_api_v1_plan_week_get",
+    "parameters": [
+     {
+      "in": "query",
+      "name": "date",
+      "required": true
+     }
+    ]
+   }
+  },
+  "/api/v1/plan/weeks/{week_id}/sessions": {
+   "post": {
+    "operationId": "add_session_api_v1_plan_weeks__week_id__sessions_post",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "week_id",
+      "required": true
+     }
+    ]
+   }
+  },
+  "/api/v1/stats/elevation": {
+   "get": {
+    "operationId": "elevation_api_v1_stats_elevation_get",
+    "parameters": [
+     {
+      "in": "query",
+      "name": "weeks",
+      "required": false
+     }
+    ]
+   }
+  },
+  "/api/v1/stats/heatmap": {
+   "get": {
+    "operationId": "heatmap_api_v1_stats_heatmap_get",
+    "parameters": [
+     {
+      "in": "query",
+      "name": "year",
+      "required": false
+     }
+    ]
+   }
+  },
+  "/api/v1/stats/hr-zones": {
+   "get": {
+    "operationId": "hr_zones_api_v1_stats_hr_zones_get",
+    "parameters": [
+     {
+      "in": "query",
+      "name": "weeks",
+      "required": false
+     }
+    ]
+   }
+  },
+  "/api/v1/stats/monthly": {
+   "get": {
+    "operationId": "monthly_api_v1_stats_monthly_get",
+    "parameters": [
+     {
+      "in": "query",
+      "name": "months",
+      "required": false
+     }
+    ]
+   }
+  },
+  "/api/v1/stats/pace-trends": {
+   "get": {
+    "operationId": "pace_trends_api_v1_stats_pace_trends_get",
+    "parameters": [
+     {
+      "in": "query",
+      "name": "weeks",
+      "required": false
+     }
+    ]
+   }
+  },
+  "/api/v1/stats/personal-records": {
+   "get": {
+    "operationId": "personal_records_api_v1_stats_personal_records_get",
+    "parameters": []
+   }
+  },
+  "/api/v1/stats/summary": {
+   "get": {
+    "operationId": "summary_api_v1_stats_summary_get",
+    "parameters": []
+   }
+  },
+  "/api/v1/stats/weekly": {
+   "get": {
+    "operationId": "weekly_api_v1_stats_weekly_get",
+    "parameters": [
+     {
+      "in": "query",
+      "name": "weeks",
+      "required": false
+     }
+    ]
+   }
+  },
+  "/api/v1/sync/history": {
+   "get": {
+    "operationId": "history_settings_api_v1_sync_history_get",
+    "parameters": []
+   },
+   "post": {
+    "operationId": "load_history_api_v1_sync_history_post",
+    "parameters": []
+   }
+  },
+  "/api/v1/sync/run": {
+   "post": {
+    "operationId": "run_sync_api_v1_sync_run_post",
+    "parameters": []
+   }
+  },
+  "/api/v1/sync/runs": {
+   "get": {
+    "operationId": "sync_runs_api_v1_sync_runs_get",
+    "parameters": [
+     {
+      "in": "query",
+      "name": "limit",
+      "required": false
+     }
+    ]
+   }
+  },
+  "/api/v1/sync/settings": {
+   "patch": {
+    "operationId": "patch_settings_api_v1_sync_settings_patch",
+    "parameters": []
+   }
+  },
+  "/api/v1/sync/status": {
+   "get": {
+    "operationId": "sync_status_api_v1_sync_status_get",
+    "parameters": []
+   }
+  },
+  "/api/v1/tiles/policy": {
+   "get": {
+    "operationId": "tile_policy_api_v1_tiles_policy_get",
+    "parameters": []
+   }
+  },
+  "/api/v1/tiles/{z}/{x}/{y}.png": {
+   "get": {
+    "operationId": "get_tile_api_v1_tiles__z___x___y__png_get",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "z",
+      "required": true
+     },
+     {
+      "in": "path",
+      "name": "x",
+      "required": true
+     },
+     {
+      "in": "path",
+      "name": "y",
+      "required": true
+     }
+    ]
+   }
+  }
+ }
+}

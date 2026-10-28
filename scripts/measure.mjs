@@ -32,6 +32,13 @@ const args = process.argv.slice(2)
 const MODE = args.includes('--session') ? 'session' : 'routes'
 const JSON_OUT = args.includes('--json') ? args[args.indexOf('--json') + 1] : null
 const BASE = args.find((a) => a.startsWith('http')) || 'http://127.0.0.1:8000'
+// How long to let a screen settle before it is read. The slow endpoints
+// (the fingerprint list recomputes every run) land well after the load
+// event, and a screen read mid-flight is not a finished screen.
+const SETTLE = Number((args.find((a) => a.startsWith('--settle=')) || '--settle=2500').split('=')[1])
+// A phone's pixel ratio. The default of 1 is a desktop; 3 is a real phone,
+// and it is the ratio that would inflate a tile request.
+const SCALE = Number((args.find((a) => a.startsWith('--scale=')) || '--scale=1').split('=')[1])
 
 const ROUTES = [
   ['dashboard', '/'],
@@ -161,6 +168,11 @@ async function readPageState(page) {
     // --- long tasks ------------------------------------------------------
     const longTasks = window.__longTasks || []
 
+    // A screen that is still fetching is not a finished screen: its heap
+    // and its DOM are a snapshot mid-flight. The harness waits for the
+    // network to go quiet, and this counts what is still pending.
+    const pending = document.querySelectorAll('.animate-pulse').length
+
     return {
       dom: { nodes: all.length, byType },
       images: {
@@ -179,6 +191,14 @@ async function readPageState(page) {
           .filter((r) => r.name.includes('/api/'))
           .reduce((sum, r) => sum + (r.transferSize || r.encodedBodySize || 0), 0),
         totalBytes: resources.reduce((sum, r) => sum + (r.transferSize || r.encodedBodySize || 0), 0),
+        top: resources
+          .map((r) => ({
+            name: r.name.replace(location.origin, ''),
+            size: r.transferSize || r.encodedBodySize || 0,
+            decoded: r.decodedBodySize || 0,
+          }))
+          .sort((a, b) => b.size - a.size)
+          .slice(0, 8),
       },
       queries: {
         count: queries.length,
@@ -186,6 +206,7 @@ async function readPageState(page) {
         detail: queries.sort((a, b) => b.size - a.size),
       },
       sw,
+      pending,
       longTasks: {
         count: longTasks.length,
         total: longTasks.reduce((sum, t) => sum + t.duration, 0),
@@ -193,6 +214,35 @@ async function readPageState(page) {
       },
     }
   })
+}
+
+/**
+ * Track the requests in flight.
+ *
+ * A screen that is still fetching is not a finished screen: its heap and
+ * its DOM are a snapshot mid-flight. Waiting for the network to go quiet
+ * — and then to stay quiet — is what makes the reading mean something.
+ */
+function trackRequests(page) {
+  const state = { pending: 0, last: Date.now() }
+  const bump = (delta) => {
+    state.pending += delta
+    state.last = Date.now()
+  }
+  page.on('request', () => bump(1))
+  page.on('requestfinished', () => bump(-1))
+  page.on('requestfailed', () => bump(-1))
+  return state
+}
+
+/** Wait until nothing has been in flight for `quiet` milliseconds. */
+async function waitQuiet(page, state, quiet = 1200, timeout = 30_000) {
+  const start = Date.now()
+  while (Date.now() - start < timeout) {
+    await page.waitForTimeout(200)
+    if (state.pending <= 0 && Date.now() - state.last > quiet) return true
+  }
+  return false
 }
 
 /** The renderer's own accounting: heap, DOM counters and scripting time. */
@@ -221,10 +271,20 @@ async function readRendererState(cdp) {
 async function measureRoute(browser, name, route) {
   // A fresh context per route: the heap then reflects the cost of opening
   // that screen, not everything that was opened before it.
-  const context = await browser.newContext({ viewport: { width: 390, height: 844 } })
+  const context = await browser.newContext({
+    viewport: { width: 390, height: 844 },
+    deviceScaleFactor: SCALE,
+  })
   await context.addInitScript(INIT_SCRIPT)
   const page = await context.newPage()
 
+  // The performance domain has to be on before the first byte, or the
+  // scripting time is not counted at all.
+  const cdp = await context.newCDPSession(page)
+  await cdp.send('Performance.enable')
+  await cdp.send('HeapProfiler.enable')
+
+  const requests = trackRequests(page)
   const bytes = { total: 0, js: 0, css: 0, other: 0 }
   page.on('response', async (res) => {
     try {
@@ -244,13 +304,14 @@ async function measureRoute(browser, name, route) {
   await page.goto(BASE + route, { waitUntil: 'networkidle', timeout: 45_000 })
   const loaded = Date.now() - started
 
-  // Let the charts settle — the heap grows as they mount.
-  await page.waitForTimeout(1500)
+  // Let the charts settle — the heap grows as they mount, and the slow
+  // endpoints (the fingerprint list recomputes every run) land late.
+  await waitQuiet(page, requests)
+  await page.waitForTimeout(SETTLE)
 
-  const cdp = await context.newCDPSession(page)
   const renderer = await readRendererState(cdp)
-  await cdp.detach()
   const pageState = await readPageState(page)
+  await cdp.detach()
 
   const result = {
     name,
@@ -263,6 +324,7 @@ async function measureRoute(browser, name, route) {
     queries: pageState.queries,
     sw: pageState.sw,
     longTasks: pageState.longTasks,
+    pending: pageState.pending,
     bytes,
   }
   await context.close()
@@ -279,10 +341,18 @@ async function measureRoute(browser, name, route) {
  * accumulation we are measuring.
  */
 async function measureSession(browser) {
-  const context = await browser.newContext({ viewport: { width: 390, height: 844 } })
+  const context = await browser.newContext({
+    viewport: { width: 390, height: 844 },
+    deviceScaleFactor: SCALE,
+  })
   await context.addInitScript(INIT_SCRIPT)
   const page = await context.newPage()
 
+  const cdp = await context.newCDPSession(page)
+  await cdp.send('Performance.enable')
+  await cdp.send('HeapProfiler.enable')
+
+  const requests = trackRequests(page)
   const bytes = { total: 0, js: 0, css: 0, other: 0 }
   page.on('response', async (res) => {
     try {
@@ -299,7 +369,8 @@ async function measureSession(browser) {
   })
 
   await page.goto(BASE + '/', { waitUntil: 'networkidle', timeout: 45_000 })
-  await page.waitForTimeout(1200)
+  await waitQuiet(page, requests)
+  await page.waitForTimeout(SETTLE)
 
   const steps = []
   for (const [name, route] of ROUTES.slice(1)) {
@@ -312,13 +383,10 @@ async function measureSession(browser) {
       window.history.pushState({}, '', href)
       window.dispatchEvent(new PopStateEvent('popstate'))
     }, route)
-    await page.waitForTimeout(1500)
-    await page.waitForLoadState('networkidle', { timeout: 20_000 }).catch(() => {})
-    await page.waitForTimeout(600)
+    await waitQuiet(page, requests)
+    await page.waitForTimeout(SETTLE)
 
-    const cdp = await context.newCDPSession(page)
     const renderer = await readRendererState(cdp)
-    await cdp.detach()
     const state = await readPageState(page)
     steps.push({
       name,
@@ -334,12 +402,11 @@ async function measureSession(browser) {
       queryBytes: state.queries.bytes,
       swBytes: state.sw ? state.sw.total : 0,
       longTasks: state.longTasks.count,
+      pending: state.pending,
     })
   }
 
-  const finalCdp = await context.newCDPSession(page)
-  const finalRenderer = await readRendererState(finalCdp)
-  await finalCdp.detach()
+  const finalRenderer = await readRendererState(cdp)
   const finalState = await readPageState(page)
 
   const result = {
@@ -371,9 +438,9 @@ if (MODE === 'session') {
 
   console.log('')
   console.log('  session — every screen, one renderer')
-  console.log('  ' + '-'.repeat(88))
+  console.log('  ' + '-'.repeat(100))
   console.log(
-    '  step         heap    DOM  nodes  listeners   query cache   decoded   long tasks',
+    '  step         heap    DOM  nodes  listeners   query cache   decoded   scripting  long tasks',
   )
   for (const step of session.steps) {
     console.log(
@@ -381,7 +448,9 @@ if (MODE === 'session') {
         `${String(step.dom).padStart(5)} ${String(step.nodes).padStart(6)} ` +
         `${String(step.listeners).padStart(9)}   ` +
         `${String(step.queryCount).padStart(3)}q ${kb(step.queryBytes).padStart(6)}KB ` +
-        `${kb(step.decoded).padStart(7)}KB ${String(step.longTasks).padStart(9)}`,
+        `${kb(step.decoded).padStart(7)}KB ${ms(step.scriptDuration).padStart(9)} ` +
+        `${String(step.longTasks).padStart(9)}` +
+        `${step.pending ? `  (${step.pending} still loading)` : ''}`,
     )
   }
   const f = session.final
@@ -407,14 +476,16 @@ if (MODE === 'session') {
   await browser.close()
 
   console.log('')
-  console.log('  route        heap    DOM   nodes   decoded   queries      API   long tasks')
-  console.log('  ' + '-'.repeat(84))
+  console.log('  route        heap    DOM   nodes   decoded   queries      API   scripting  long tasks')
+  console.log('  ' + '-'.repeat(94))
   for (const r of rows) {
     console.log(
       `  ${r.name.padEnd(12)} ${mb(r.heap).padStart(5)}MB ${String(r.dom.nodes).padStart(5)} ` +
         `${String(r.nodes).padStart(6)} ${kb(r.images.decodedBytes).padStart(7)}KB ` +
         `${String(r.queries.count).padStart(3)}q ${kb(r.queries.bytes).padStart(6)}KB ` +
-        `${kb(r.network.apiBytes).padStart(6)}KB ${String(r.longTasks.count).padStart(5)}`,
+        `${kb(r.network.apiBytes).padStart(6)}KB ${ms(r.scriptDuration).padStart(8)} ` +
+        `${String(r.longTasks.count).padStart(5)}` +
+        `${r.pending ? `  (${r.pending} still loading)` : ''}`,
     )
   }
   const worst = rows.reduce((a, b) => (a.heap > b.heap ? a : b))

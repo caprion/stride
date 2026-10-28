@@ -31,7 +31,6 @@ chrono = { version = "0.4", features = ["serde"] }
 thiserror = "1"
 anyhow = "1"
 uuid = { version = "1", features = ["v4", "serde"] }
-fitparse = "0.1"
 rusqlite = { version = "0.31", features = ["bundled-sqlcipher-vendored-openssl"] }
 reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "blocking", "json", "gzip"] }
 
@@ -39,5 +38,7 @@ reqwest = { version = "0.12", default-features = false, features = ["rustls-tls"
 opt-level = "z"
 lto = true
 codegen-units = 1
-panic = "abort"
+# Deliberately NOT panic = "abort": the FFI boundary catches panics with
+# catch_unwind and turns them into an error the app can show. Aborting would
+# make a panic a process kill.
 strip = true

@@ -29,10 +29,11 @@ import type {
   HistoryLoadResult,
   HistorySettings,
   DailyPhysiology,
+  DailyPhysiologySummary,
   FitnessTrend,
   Fingerprint,
   GearItem,
-  HrvPoint,
+  HrvSummary,
   ImportPlanResult,
   PlanBlock,
   PlanBlockDetail,
@@ -44,19 +45,26 @@ import type {
   PlanWeekDetail,
   PhysiologySources,
   Readiness,
+  ReadinessSummary,
   SleepPoint,
   ZoneShare,
 } from '../types_phase2'
 
 const BASE = '/api/v1'
 
-export class ApiError extends Error {
-  status: number
+export class ApiError extends Error {  status: number
   constructor(message: string, status: number) {
     super(message)
     this.name = 'ApiError'
     this.status = status
   }
+}
+
+/** The ISO date `days` away from `iso`, in UTC. */
+function shiftDate(iso: string, days: number): string {
+  const date = new Date(`${iso}T00:00:00Z`)
+  date.setUTCDate(date.getUTCDate() + days)
+  return date.toISOString().slice(0, 10)
 }
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
@@ -80,8 +88,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   return (await response.json()) as T
 }
 
-function qs(params: Record<string, string | number | boolean | undefined | null>): string {
-  const search = new URLSearchParams()
+function qs(params: Record<string, string | number | boolean | undefined | null>): string {  const search = new URLSearchParams()
   for (const [key, value] of Object.entries(params)) {
     if (value === undefined || value === null || value === '') continue
     search.set(key, String(value))
@@ -182,6 +189,47 @@ export const api = {
 
   activity: (id: number) => request<ActivityDetail>(`/activities/${id}`),
 
+  /**
+   * The runs either side of one activity, and nothing else.
+   *
+   * The neighbour links need four numbers per run, but the list endpoint
+   * answers with the whole summary — the route preview included — which is
+   * two kilobytes a run and half a megabyte for a year of history. So a
+   * window around the activity is fetched first, and the whole list is only
+   * asked for when the window cannot answer the question: when the run is
+   * not in it, when a neighbour may be just outside it, or when there are
+   * more runs than one page. The two links are the same either way.
+   */
+  activityNeighbours: async (activityId: number, localDate?: string | null) => {
+    const slim = (items: ActivitySummary[]) =>
+      items.map((item) => ({
+        id: item.id,
+        name: item.name,
+        local_date: item.local_date,
+        distance_m: item.distance_m,
+      }))
+    const wholeList = async () => slim((await api.activities({ per_page: 200 })).items)
+    if (!localDate) return wholeList()
+
+    const response = await api.activities({
+      per_page: 200,
+      from: shiftDate(localDate, -30),
+      to: shiftDate(localDate, 30),
+    })
+    // More runs than a single page: the list the app has always used is
+    // the most recent 200, so the window cannot stand in for it.
+    if (response.total > 200) return wholeList()
+
+    const sorted = [...response.items].sort((a, b) =>
+      a.local_date === b.local_date ? a.id - b.id : a.local_date < b.local_date ? -1 : 1,
+    )
+    const index = sorted.findIndex((item) => item.id === activityId)
+    // The run is not in the window, or it sits at its edge: a neighbour may
+    // be just outside, so ask for the whole list as the app always has.
+    if (index === -1 || index === 0 || index === sorted.length - 1) return wholeList()
+    return slim(sorted)
+  },
+
   patchActivity: (id: number, patch: Record<string, unknown>) =>
     request<ActivitySummary>(`/activities/${id}`, {
       method: 'PATCH',
@@ -248,6 +296,25 @@ export const api = {
     }),
   planCurrent: () =>
     request<{ block: PlanBlockDetail | null; week: PlanWeekDetail | null }>('/plan/current'),
+
+  /**
+   * The current block and week, without the phases.
+   *
+   * The block arrives with every phase of the plan attached — a hundred
+   * kilobytes of weeks and sessions, none of which the plan screen draws.
+   * Dropping them here keeps them out of the query cache, which is what the
+   * renderer holds while the athlete browses.
+   */
+  planCurrentSummary: async () => {
+    const data = await request<{
+      block: PlanBlockDetail | null
+      week: PlanWeekDetail | null
+    }>('/plan/current')
+    return {
+      block: data.block ? { ...data.block, phases: [] } : null,
+      week: data.week,
+    }
+  },
   planWeek: (date: string) => request<PlanWeekDetail>(`/plan/week?date=${date}`),
   planResults: (from?: string, to?: string) =>
     request<{ items: PlanResult[] }>(`/plan/results${qs({ from, to })}`),
@@ -256,23 +323,59 @@ export const api = {
   planToday: () => request<PlanToday>('/plan/today'),
 
   // ------------------------------------------------------------ physiology
-  physiologyDaily: (from?: string, to?: string) =>
-    request<{ items: DailyPhysiology[] }>(`/physiology/daily${qs({ from, to })}`),
+  // The physiology endpoints answer for a year of days. The full rows carry
+  // every Garmin field, and the readiness row carries seven drivers with
+  // their baselines and prose — hundreds of kilobytes a phone has to parse
+  // and hold. Each of these asks for the fields the screen actually draws;
+  // the field list is a required argument so the trim is visible at the
+  // call site rather than hidden in the client.
+  physiologyDaily: (fields: string, from?: string, to?: string) =>
+    request<{ items: DailyPhysiologySummary[] }>(`/physiology/daily${qs({ from, to, fields })}`),
   physiologyLatest: () =>
     request<{ day: DailyPhysiology | null; readiness: Readiness | null }>('/physiology/latest'),
-  physiologySleep: (from?: string, to?: string) =>
-    request<{ items: SleepPoint[] }>(`/physiology/sleep${qs({ from, to })}`),
-  physiologyHrv: (from?: string, to?: string) =>
-    request<{ items: HrvPoint[]; baseline: number | null }>(
-      `/physiology/hrv${qs({ from, to })}`,
+  physiologySleep: (from?: string, to?: string, fields?: string) =>
+    request<{ items: SleepPoint[] }>(`/physiology/sleep${qs({ from, to, fields })}`),
+  physiologyHrv: (fields: string, from?: string, to?: string) =>
+    request<{ items: HrvSummary[]; baseline: number | null }>(
+      `/physiology/hrv${qs({ from, to, fields })}`,
     ),
-  physiologyReadiness: (from?: string, to?: string) =>
-    request<{ items: Readiness[] }>(`/physiology/readiness${qs({ from, to })}`),
+  physiologyReadiness: (fields: string, from?: string, to?: string) =>
+    request<{ items: ReadinessSummary[] }>(`/physiology/readiness${qs({ from, to, fields })}`),
   physiologySources: () => request<PhysiologySources>('/physiology/sources'),
 
   // --------------------------------------------------------------- fitness
   fitnessFingerprint: (from?: string, to?: string) =>
     request<{ items: Fingerprint[] }>(`/fitness/fingerprint${qs({ from, to })}`),
+
+  /**
+   * The fingerprint list, projected to the fields the screen draws.
+   *
+   * The full row carries twenty-nine fields per run; the running-form
+   * screen draws thirteen of them. The projection happens here so the
+   * unused half never reaches the query cache.
+   */
+  fitnessFingerprintSummary: async (from?: string, to?: string) => {
+    const data = await request<{ items: Fingerprint[] }>(
+      `/fitness/fingerprint${qs({ from, to })}`,
+    )
+    return {
+      items: data.items.map((item) => ({
+        activity_id: item.activity_id,
+        activity_name: item.activity_name,
+        local_date: item.local_date,
+        distance_m: item.distance_m,
+        pace_s_per_km: item.pace_s_per_km,
+        cadence_avg: item.cadence_avg,
+        cadence_cv: item.cadence_cv,
+        hr_drift_pct: item.hr_drift_pct,
+        decoupling_pct: item.decoupling_pct,
+        pace_drift_pct: item.pace_drift_pct,
+        form_score: item.form_score,
+        walking_time_s: item.walking_time_s,
+        stopped_time_s: item.stopped_time_s,
+      })),
+    }
+  },
   fitnessActivity: (activityId: number) =>
     request<Fingerprint & { zones: ZoneShare[] }>(`/fitness/activity/${activityId}`),
   fitnessTrends: (metric?: string, from?: string, to?: string) =>

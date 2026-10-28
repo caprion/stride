@@ -1,0 +1,58 @@
+# The phone's Rust core, behind UniFFI.
+#
+# This crate is deliberately **not** a member of the root workspace: the root
+# `Cargo.toml` belongs to the orchestrator, and the Android build needs a
+# `cdylib` with its own lock file and its own release profile (see below).
+# It is a standalone workspace that path-depends on the shared crates.
+#
+# The orchestrator's request: add `android/app/src/main/rust/stride-ffi` to the
+# root `members` and delete the `[workspace]` table below, if the phone's
+# crate should be built by the same `cargo test --workspace` as everything
+# else. Until then, build and test it with:
+#
+#     cargo test --manifest-path android/app/src/main/rust/stride-ffi/Cargo.toml
+#
+# The dependencies are the ones the contract approves (`serde_json`, `chrono`,
+# `uniffi`) plus the shared crates. No new third-party dependency is
+# introduced here.
+
+[workspace]
+
+[package]
+name = "stride-ffi"
+version = "0.2.0"
+edition = "2021"
+rust-version = "1.75"
+license = "MIT"
+description = "The UniFFI surface the Android shell calls: one entry point, plus the setup the phone has to do once."
+
+[lib]
+# `cdylib` is what the APK packages; `rlib` is what the tests link.
+crate-type = ["cdylib", "staticlib", "rlib"]
+
+[dependencies]
+serde_json = "1"
+chrono = { version = "0.4", features = ["serde"] }
+uniffi = "0.29"
+
+# The shared crates. The paths are relative to this file.
+stride-api = { path = "../../../../../../crates/stride-api" }
+stride-core = { path = "../../../../../../crates/stride-core" }
+stride-fit = { path = "../../../../../../crates/stride-fit" }
+stride-garmin = { path = "../../../../../../crates/stride-garmin" }
+stride-store = { path = "../../../../../../crates/stride-store" }
+
+[profile.release]
+opt-level = "z"
+lto = true
+codegen-units = 1
+strip = true
+# **Not** `panic = "abort"`.
+#
+# The root workspace aborts on a panic, which is right for a command-line
+# binary and wrong for a library that lives inside a phone app: an abort
+# kills the process, and the app dies with the athlete's data still on it.
+# The FFI catches unwinds and turns them into an error envelope, so the phone
+# can answer "something went wrong" instead of vanishing. The orchestrator
+# owns the root profile; this crate opts out and says so in its report.
+panic = "unwind"

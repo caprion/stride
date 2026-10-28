@@ -44,9 +44,39 @@ def _daily(row: DailyPhysiology) -> dict[str, Any]:
     return {column.name: getattr(row, column.name) for column in DailyPhysiology.__table__.columns}
 
 
+def _wanted(fields: str | None) -> list[str] | None:
+    """The item fields a caller asked for, or None for all of them.
+
+    A year of daily rows is a lot of JSON for a phone to parse and hold: the
+    full row carries every Garmin field, most of which no screen draws. The
+    caller names the fields it needs and the rest is never sent.
+    """
+    if not fields:
+        return None
+    names = [name.strip() for name in fields.split(',') if name.strip()]
+    return names or None
+
+
+def _pick(item: dict[str, Any], wanted: list[str] | None) -> dict[str, Any]:
+    """Keep only the requested fields of an item.
+
+    Unknown names are ignored rather than rejected, so a client asking for a
+    field this version does not have gets the rest of the row instead of an
+    error.
+    """
+    if wanted is None:
+        return item
+    return {key: value for key, value in item.items() if key in wanted}
+
+
 @router.get('/daily')
-def daily(bounds: tuple[str, str] = Depends(date_range), db: Session = Depends(get_db)) -> dict[str, Any]:
-    return {'items': [_daily(row) for row in _rows(db, bounds)]}
+def daily(
+    fields: str | None = Query(None, description='Comma-separated item fields to return'),
+    bounds: tuple[str, str] = Depends(date_range),
+    db: Session = Depends(get_db),
+) -> dict[str, Any]:
+    wanted = _wanted(fields)
+    return {'items': [_pick(_daily(row), wanted) for row in _rows(db, bounds)]}
 
 
 @router.get('/latest')
@@ -66,22 +96,38 @@ def sleep(bounds: tuple[str, str] = Depends(date_range), db: Session = Depends(g
 
 
 @router.get('/hrv')
-def hrv(bounds: tuple[str, str] = Depends(date_range), db: Session = Depends(get_db)) -> dict[str, Any]:
+def hrv(
+    fields: str | None = Query(None, description='Comma-separated item fields to return'),
+    bounds: tuple[str, str] = Depends(date_range),
+    db: Session = Depends(get_db),
+) -> dict[str, Any]:
+    wanted = _wanted(fields)
     rows = _rows(db, bounds, history=True)
     items = []
+    latest_baseline = None
     for row in rows:
         if row.date < bounds[0]:
             continue
         baseline = baselines(rows, row.date)
-        items.append({'date': row.date, 'hrv_ms': row.hrv_ms, 'status': row.hrv_status, 'baseline': baseline['hrv_ms'], 'resting_hr': row.resting_hr, 'rhr_baseline': baseline['resting_hr']})
-    return {'items': items, 'baseline': items[-1]['baseline'] if items else None}
+        latest_baseline = baseline['hrv_ms']
+        items.append(_pick({'date': row.date, 'hrv_ms': row.hrv_ms, 'status': row.hrv_status, 'baseline': baseline['hrv_ms'], 'resting_hr': row.resting_hr, 'rhr_baseline': baseline['resting_hr']}, wanted))
+    return {'items': items, 'baseline': latest_baseline}
 
 
 @router.get('/readiness')
-def readiness(bounds: tuple[str, str] = Depends(date_range), db: Session = Depends(get_db)) -> dict[str, Any]:
+def readiness(
+    fields: str | None = Query(None, description='Comma-separated item fields to return'),
+    bounds: tuple[str, str] = Depends(date_range),
+    db: Session = Depends(get_db),
+) -> dict[str, Any]:
+    wanted = _wanted(fields)
     items = compute_readiness_range(db, *bounds)
     db.commit()
-    return {'items': items}
+    # The per-day drivers are what make this endpoint expensive: seven
+    # drivers, each with a baseline, a delta and a sentence of prose, for
+    # every day of the range. A trend chart needs the score and the grade;
+    # only the latest day needs the drivers, and that comes from /latest.
+    return {'items': [_pick(item, wanted) for item in items]}
 
 
 @router.get('/sources')

@@ -1,0 +1,2028 @@
+{
+  "tables": {
+    "activity": {
+      "columns": [
+        {
+          "name": "id",
+          "type": "INTEGER",
+          "notnull": true,
+          "default": null,
+          "primary_key": true
+        },
+        {
+          "name": "athlete_id",
+          "type": "INTEGER",
+          "notnull": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "source",
+          "type": "VARCHAR(32)",
+          "notnull": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "external_id",
+          "type": "VARCHAR(64)",
+          "notnull": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "name",
+          "type": "VARCHAR(255)",
+          "notnull": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "sport_type",
+          "type": "VARCHAR(40)",
+          "notnull": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "description",
+          "type": "TEXT",
+          "notnull": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "start_time",
+          "type": "DATETIME",
+          "notnull": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "local_date",
+          "type": "VARCHAR(10)",
+          "notnull": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "day_of_week",
+          "type": "VARCHAR(16)",
+          "notnull": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "distance_m",
+          "type": "FLOAT",
+          "notnull": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "moving_time_s",
+          "type": "FLOAT",
+          "notnull": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "elapsed_time_s",
+          "type": "FLOAT",
+          "notnull": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "elevation_gain_m",
+          "type": "FLOAT",
+          "notnull": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "avg_hr",
+          "type": "FLOAT",
+          "notnull": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "max_hr",
+          "type": "FLOAT",
+          "notnull": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "calories",
+          "type": "FLOAT",
+          "notnull": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "avg_cadence",
+          "type": "FLOAT",
+          "notnull": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "max_cadence",
+          "type": "FLOAT",
+          "notnull": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "avg_speed_ms",
+          "type": "FLOAT",
+          "notnull": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "max_speed_ms",
+          "type": "FLOAT",
+          "notnull": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "running_time_s",
+          "type": "FLOAT",
+          "notnull": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "walking_time_s",
+          "type": "FLOAT",
+          "notnull": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "stopped_time_s",
+          "type": "FLOAT",
+          "notnull": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "running_distance_m",
+          "type": "FLOAT",
+          "notnull": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "perceived_exertion",
+          "type": "INTEGER",
+          "notnull": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "device",
+          "type": "VARCHAR(120)",
+          "notnull": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "gear",
+          "type": "VARCHAR(120)",
+          "notnull": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "is_trail",
+          "type": "BOOLEAN",
+          "notnull": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "is_commute",
+          "type": "BOOLEAN",
+          "notnull": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "polyline",
+          "type": "JSON",
+          "notnull": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "geo_points",
+          "type": "JSON",
+          "notnull": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "raw",
+          "type": "JSON",
+          "notnull": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "created_at",
+          "type": "DATETIME",
+          "notnull": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "updated_at",
+          "type": "DATETIME",
+          "notnull": true,
+          "default": null,
+          "primary_key": false
+        }
+      ],
+      "unique_constraints": [
+        [
+          "external_id",
+          "source"
+        ]
+      ],
+      "indexes": [
+        {
+          "name": "ix_activity_local_date",
+          "unique": false,
+          "columns": [
+            "local_date"
+          ]
+        },
+        {
+          "name": "ix_activity_sport",
+          "unique": false,
+          "columns": [
+            "sport_type"
+          ]
+        },
+        {
+          "name": "ix_activity_start",
+          "unique": false,
+          "columns": [
+            "start_time"
+          ]
+        }
+      ],
+      "foreign_keys": [
+        {
+          "column": "athlete_id",
+          "references_table": "athlete",
+          "references_column": "id",
+          "on_delete": "NO ACTION"
+        }
+      ]
+    },
+    "activity_fact": {
+      "columns": [
+        {
+          "name": "activity_id",
+          "type": "INTEGER",
+          "notnull": true,
+          "default": null,
+          "primary_key": true
+        },
+        {
+          "name": "aerobic_te",
+          "type": "FLOAT",
+          "notnull": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "anaerobic_te",
+          "type": "FLOAT",
+          "notnull": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "training_effect_label",
+          "type": "VARCHAR(64)",
+          "notnull": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "vo2max",
+          "type": "FLOAT",
+          "notnull": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "recovery_time_min",
+          "type": "FLOAT",
+          "notnull": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "avg_gct_ms",
+          "type": "FLOAT",
+          "notnull": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "avg_stride_ratio",
+          "type": "FLOAT",
+          "notnull": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "vertical_ratio",
+          "type": "FLOAT",
+          "notnull": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "avg_power",
+          "type": "FLOAT",
+          "notnull": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "normalized_power",
+          "type": "FLOAT",
+          "notnull": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "avg_grade_adjusted_pace",
+          "type": "FLOAT",
+          "notnull": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "temperature_c",
+          "type": "FLOAT",
+          "notnull": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "impact_estimate",
+          "type": "FLOAT",
+          "notnull": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "gear_uuid",
+          "type": "VARCHAR(64)",
+          "notnull": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "device_name",
+          "type": "VARCHAR(120)",
+          "notnull": false,
+          "default": null,
+          "primary_key": false
+        }
+      ],
+      "unique_constraints": [],
+      "indexes": [],
+      "foreign_keys": [
+        {
+          "column": "activity_id",
+          "references_table": "activity",
+          "references_column": "id",
+          "on_delete": "CASCADE"
+        }
+      ]
+    },
+    "activity_lap": {
+      "columns": [
+        {
+          "name": "id",
+          "type": "INTEGER",
+          "notnull": true,
+          "default": null,
+          "primary_key": true
+        },
+        {
+          "name": "activity_id",
+          "type": "INTEGER",
+          "notnull": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "lap_index",
+          "type": "INTEGER",
+          "notnull": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "distance_m",
+          "type": "FLOAT",
+          "notnull": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "duration_s",
+          "type": "FLOAT",
+          "notnull": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "avg_speed_ms",
+          "type": "FLOAT",
+          "notnull": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "max_speed_ms",
+          "type": "FLOAT",
+          "notnull": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "avg_hr",
+          "type": "FLOAT",
+          "notnull": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "max_hr",
+          "type": "FLOAT",
+          "notnull": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "avg_cadence",
+          "type": "FLOAT",
+          "notnull": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "max_cadence",
+          "type": "FLOAT",
+          "notnull": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "stride_length_m",
+          "type": "FLOAT",
+          "notnull": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "elevation_gain_m",
+          "type": "FLOAT",
+          "notnull": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "elevation_loss_m",
+          "type": "FLOAT",
+          "notnull": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "start_elevation_m",
+          "type": "FLOAT",
+          "notnull": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "end_elevation_m",
+          "type": "FLOAT",
+          "notnull": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "running_distance_m",
+          "type": "FLOAT",
+          "notnull": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "elapsed_s",
+          "type": "FLOAT",
+          "notnull": false,
+          "default": null,
+          "primary_key": false
+        }
+      ],
+      "unique_constraints": [
+        [
+          "activity_id",
+          "lap_index"
+        ]
+      ],
+      "indexes": [
+        {
+          "name": "ix_activity_lap_activity_id",
+          "unique": false,
+          "columns": [
+            "activity_id"
+          ]
+        }
+      ],
+      "foreign_keys": [
+        {
+          "column": "activity_id",
+          "references_table": "activity",
+          "references_column": "id",
+          "on_delete": "CASCADE"
+        }
+      ]
+    },
+    "activity_stream": {
+      "columns": [
+        {
+          "name": "id",
+          "type": "INTEGER",
+          "notnull": true,
+          "default": null,
+          "primary_key": true
+        },
+        {
+          "name": "activity_id",
+          "type": "INTEGER",
+          "notnull": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "kind",
+          "type": "VARCHAR(24)",
+          "notnull": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "seconds",
+          "type": "JSON",
+          "notnull": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "values",
+          "type": "JSON",
+          "notnull": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "label",
+          "type": "VARCHAR(64)",
+          "notnull": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "unit",
+          "type": "VARCHAR(16)",
+          "notnull": false,
+          "default": null,
+          "primary_key": false
+        }
+      ],
+      "unique_constraints": [
+        [
+          "activity_id",
+          "kind"
+        ]
+      ],
+      "indexes": [
+        {
+          "name": "ix_activity_stream_activity_id",
+          "unique": false,
+          "columns": [
+            "activity_id"
+          ]
+        }
+      ],
+      "foreign_keys": [
+        {
+          "column": "activity_id",
+          "references_table": "activity",
+          "references_column": "id",
+          "on_delete": "CASCADE"
+        }
+      ]
+    },
+    "athlete": {
+      "columns": [
+        {
+          "name": "id",
+          "type": "INTEGER",
+          "notnull": true,
+          "default": null,
+          "primary_key": true
+        },
+        {
+          "name": "name",
+          "type": "VARCHAR(120)",
+          "notnull": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "email",
+          "type": "VARCHAR(255)",
+          "notnull": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "timezone",
+          "type": "VARCHAR(64)",
+          "notnull": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "created_at",
+          "type": "DATETIME",
+          "notnull": true,
+          "default": null,
+          "primary_key": false
+        }
+      ],
+      "unique_constraints": [],
+      "indexes": [],
+      "foreign_keys": []
+    },
+    "daily_metric": {
+      "columns": [
+        {
+          "name": "date",
+          "type": "VARCHAR(10)",
+          "notnull": true,
+          "default": null,
+          "primary_key": true
+        },
+        {
+          "name": "resting_hr",
+          "type": "FLOAT",
+          "notnull": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "max_hr",
+          "type": "FLOAT",
+          "notnull": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "sleep_s",
+          "type": "FLOAT",
+          "notnull": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "deep_sleep_s",
+          "type": "FLOAT",
+          "notnull": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "hrv_ms",
+          "type": "FLOAT",
+          "notnull": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "stress",
+          "type": "FLOAT",
+          "notnull": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "steps",
+          "type": "FLOAT",
+          "notnull": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "body_battery",
+          "type": "FLOAT",
+          "notnull": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "readiness",
+          "type": "FLOAT",
+          "notnull": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "distance_m",
+          "type": "FLOAT",
+          "notnull": true,
+          "default": null,
+          "primary_key": false
+        }
+      ],
+      "unique_constraints": [],
+      "indexes": [],
+      "foreign_keys": []
+    },
+    "daily_physiology": {
+      "columns": [
+        {
+          "name": "date",
+          "type": "VARCHAR(10)",
+          "notnull": true,
+          "default": null,
+          "primary_key": true
+        },
+        {
+          "name": "sleep_s",
+          "type": "FLOAT",
+          "notnull": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "sleep_score",
+          "type": "FLOAT",
+          "notnull": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "deep_sleep_s",
+          "type": "FLOAT",
+          "notnull": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "rem_s",
+          "type": "FLOAT",
+          "notnull": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "light_sleep_s",
+          "type": "FLOAT",
+          "notnull": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "awake_s",
+          "type": "FLOAT",
+          "notnull": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "hrv_ms",
+          "type": "FLOAT",
+          "notnull": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "hrv_status",
+          "type": "VARCHAR(24)",
+          "notnull": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "resting_hr",
+          "type": "FLOAT",
+          "notnull": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "max_hr",
+          "type": "FLOAT",
+          "notnull": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "stress_avg",
+          "type": "FLOAT",
+          "notnull": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "stress_max",
+          "type": "FLOAT",
+          "notnull": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "body_battery_min",
+          "type": "FLOAT",
+          "notnull": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "body_battery_avg",
+          "type": "FLOAT",
+          "notnull": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "body_battery_max",
+          "type": "FLOAT",
+          "notnull": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "steps",
+          "type": "FLOAT",
+          "notnull": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "training_readiness",
+          "type": "FLOAT",
+          "notnull": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "acute_load",
+          "type": "FLOAT",
+          "notnull": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "chronic_load",
+          "type": "FLOAT",
+          "notnull": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "vo2max",
+          "type": "FLOAT",
+          "notnull": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "endurance_score",
+          "type": "FLOAT",
+          "notnull": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "running_tolerance",
+          "type": "FLOAT",
+          "notnull": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "source",
+          "type": "VARCHAR(24)",
+          "notnull": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "updated_at",
+          "type": "DATETIME",
+          "notnull": true,
+          "default": null,
+          "primary_key": false
+        }
+      ],
+      "unique_constraints": [],
+      "indexes": [],
+      "foreign_keys": []
+    },
+    "gear": {
+      "columns": [
+        {
+          "name": "id",
+          "type": "INTEGER",
+          "notnull": true,
+          "default": null,
+          "primary_key": true
+        },
+        {
+          "name": "uuid",
+          "type": "VARCHAR(64)",
+          "notnull": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "name",
+          "type": "VARCHAR(160)",
+          "notnull": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "brand",
+          "type": "VARCHAR(80)",
+          "notnull": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "model",
+          "type": "VARCHAR(80)",
+          "notnull": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "status",
+          "type": "VARCHAR(24)",
+          "notnull": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "distance_m",
+          "type": "FLOAT",
+          "notnull": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "activity_count",
+          "type": "INTEGER",
+          "notnull": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "first_used",
+          "type": "VARCHAR(10)",
+          "notnull": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "last_used",
+          "type": "VARCHAR(10)",
+          "notnull": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "retire_at_m",
+          "type": "FLOAT",
+          "notnull": true,
+          "default": null,
+          "primary_key": false
+        }
+      ],
+      "unique_constraints": [],
+      "indexes": [
+        {
+          "name": "ix_gear_uuid",
+          "unique": true,
+          "columns": [
+            "uuid"
+          ]
+        }
+      ],
+      "foreign_keys": []
+    },
+    "hr_zone": {
+      "columns": [
+        {
+          "name": "id",
+          "type": "INTEGER",
+          "notnull": true,
+          "default": null,
+          "primary_key": true
+        },
+        {
+          "name": "activity_id",
+          "type": "INTEGER",
+          "notnull": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "zone_no",
+          "type": "INTEGER",
+          "notnull": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "name",
+          "type": "VARCHAR(64)",
+          "notnull": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "low_bpm",
+          "type": "FLOAT",
+          "notnull": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "high_bpm",
+          "type": "FLOAT",
+          "notnull": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "time_s",
+          "type": "FLOAT",
+          "notnull": true,
+          "default": null,
+          "primary_key": false
+        }
+      ],
+      "unique_constraints": [
+        [
+          "activity_id",
+          "zone_no"
+        ]
+      ],
+      "indexes": [
+        {
+          "name": "ix_hr_zone_activity_id",
+          "unique": false,
+          "columns": [
+            "activity_id"
+          ]
+        }
+      ],
+      "foreign_keys": [
+        {
+          "column": "activity_id",
+          "references_table": "activity",
+          "references_column": "id",
+          "on_delete": "CASCADE"
+        }
+      ]
+    },
+    "plan_block": {
+      "columns": [
+        {
+          "name": "id",
+          "type": "INTEGER",
+          "notnull": true,
+          "default": null,
+          "primary_key": true
+        },
+        {
+          "name": "name",
+          "type": "VARCHAR(160)",
+          "notnull": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "start_date",
+          "type": "VARCHAR(10)",
+          "notnull": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "end_date",
+          "type": "VARCHAR(10)",
+          "notnull": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "goal",
+          "type": "VARCHAR(255)",
+          "notnull": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "status",
+          "type": "VARCHAR(24)",
+          "notnull": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "source",
+          "type": "VARCHAR(24)",
+          "notnull": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "notes",
+          "type": "TEXT",
+          "notnull": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "created_at",
+          "type": "DATETIME",
+          "notnull": true,
+          "default": null,
+          "primary_key": false
+        }
+      ],
+      "unique_constraints": [],
+      "indexes": [
+        {
+          "name": "ix_plan_block_start_date",
+          "unique": false,
+          "columns": [
+            "start_date"
+          ]
+        }
+      ],
+      "foreign_keys": []
+    },
+    "plan_phase": {
+      "columns": [
+        {
+          "name": "id",
+          "type": "INTEGER",
+          "notnull": true,
+          "default": null,
+          "primary_key": true
+        },
+        {
+          "name": "block_id",
+          "type": "INTEGER",
+          "notnull": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "name",
+          "type": "VARCHAR(80)",
+          "notnull": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "start_date",
+          "type": "VARCHAR(10)",
+          "notnull": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "end_date",
+          "type": "VARCHAR(10)",
+          "notnull": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "target_weekly_km_min",
+          "type": "FLOAT",
+          "notnull": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "target_weekly_km_max",
+          "type": "FLOAT",
+          "notnull": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "target_sessions",
+          "type": "INTEGER",
+          "notnull": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "pace_easy_low",
+          "type": "FLOAT",
+          "notnull": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "pace_easy_high",
+          "type": "FLOAT",
+          "notnull": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "pace_tempo_low",
+          "type": "FLOAT",
+          "notnull": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "pace_tempo_high",
+          "type": "FLOAT",
+          "notnull": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "pace_interval_low",
+          "type": "FLOAT",
+          "notnull": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "pace_interval_high",
+          "type": "FLOAT",
+          "notnull": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "pace_long_low",
+          "type": "FLOAT",
+          "notnull": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "pace_long_high",
+          "type": "FLOAT",
+          "notnull": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "hr_zone_target",
+          "type": "INTEGER",
+          "notnull": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "notes",
+          "type": "TEXT",
+          "notnull": false,
+          "default": null,
+          "primary_key": false
+        }
+      ],
+      "unique_constraints": [],
+      "indexes": [
+        {
+          "name": "ix_plan_phase_block_id",
+          "unique": false,
+          "columns": [
+            "block_id"
+          ]
+        }
+      ],
+      "foreign_keys": [
+        {
+          "column": "block_id",
+          "references_table": "plan_block",
+          "references_column": "id",
+          "on_delete": "CASCADE"
+        }
+      ]
+    },
+    "plan_result": {
+      "columns": [
+        {
+          "name": "id",
+          "type": "INTEGER",
+          "notnull": true,
+          "default": null,
+          "primary_key": true
+        },
+        {
+          "name": "plan_session_id",
+          "type": "INTEGER",
+          "notnull": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "activity_id",
+          "type": "INTEGER",
+          "notnull": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "verdict",
+          "type": "VARCHAR(24)",
+          "notnull": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "distance_delta_m",
+          "type": "FLOAT",
+          "notnull": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "pace_delta_s_km",
+          "type": "FLOAT",
+          "notnull": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "pace_band_hit",
+          "type": "BOOLEAN",
+          "notnull": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "distance_hit",
+          "type": "BOOLEAN",
+          "notnull": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "adherence_score",
+          "type": "FLOAT",
+          "notnull": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "cause",
+          "type": "TEXT",
+          "notnull": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "cause_confidence",
+          "type": "FLOAT",
+          "notnull": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "note",
+          "type": "TEXT",
+          "notnull": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "computed_at",
+          "type": "DATETIME",
+          "notnull": true,
+          "default": null,
+          "primary_key": false
+        }
+      ],
+      "unique_constraints": [],
+      "indexes": [
+        {
+          "name": "ix_plan_result_activity_id",
+          "unique": false,
+          "columns": [
+            "activity_id"
+          ]
+        },
+        {
+          "name": "ix_plan_result_plan_session_id",
+          "unique": false,
+          "columns": [
+            "plan_session_id"
+          ]
+        }
+      ],
+      "foreign_keys": [
+        {
+          "column": "activity_id",
+          "references_table": "activity",
+          "references_column": "id",
+          "on_delete": "SET NULL"
+        },
+        {
+          "column": "plan_session_id",
+          "references_table": "plan_session",
+          "references_column": "id",
+          "on_delete": "CASCADE"
+        }
+      ]
+    },
+    "plan_session": {
+      "columns": [
+        {
+          "name": "id",
+          "type": "INTEGER",
+          "notnull": true,
+          "default": null,
+          "primary_key": true
+        },
+        {
+          "name": "week_id",
+          "type": "INTEGER",
+          "notnull": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "block_id",
+          "type": "INTEGER",
+          "notnull": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "date",
+          "type": "VARCHAR(10)",
+          "notnull": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "session_type",
+          "type": "VARCHAR(24)",
+          "notnull": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "title",
+          "type": "VARCHAR(160)",
+          "notnull": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "details",
+          "type": "TEXT",
+          "notnull": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "target_distance_m",
+          "type": "FLOAT",
+          "notnull": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "pace_low_s_km",
+          "type": "FLOAT",
+          "notnull": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "pace_high_s_km",
+          "type": "FLOAT",
+          "notnull": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "hr_zone_target",
+          "type": "INTEGER",
+          "notnull": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "status",
+          "type": "VARCHAR(24)",
+          "notnull": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "source",
+          "type": "VARCHAR(24)",
+          "notnull": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "notes",
+          "type": "TEXT",
+          "notnull": false,
+          "default": null,
+          "primary_key": false
+        }
+      ],
+      "unique_constraints": [],
+      "indexes": [
+        {
+          "name": "ix_plan_session_block_date",
+          "unique": false,
+          "columns": [
+            "block_id",
+            "date"
+          ]
+        },
+        {
+          "name": "ix_plan_session_date",
+          "unique": false,
+          "columns": [
+            "date"
+          ]
+        },
+        {
+          "name": "ix_plan_session_week_id",
+          "unique": false,
+          "columns": [
+            "week_id"
+          ]
+        }
+      ],
+      "foreign_keys": [
+        {
+          "column": "block_id",
+          "references_table": "plan_block",
+          "references_column": "id",
+          "on_delete": "CASCADE"
+        },
+        {
+          "column": "week_id",
+          "references_table": "plan_week",
+          "references_column": "id",
+          "on_delete": "CASCADE"
+        }
+      ]
+    },
+    "plan_week": {
+      "columns": [
+        {
+          "name": "id",
+          "type": "INTEGER",
+          "notnull": true,
+          "default": null,
+          "primary_key": true
+        },
+        {
+          "name": "phase_id",
+          "type": "INTEGER",
+          "notnull": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "week_number",
+          "type": "INTEGER",
+          "notnull": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "start_date",
+          "type": "VARCHAR(10)",
+          "notnull": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "end_date",
+          "type": "VARCHAR(10)",
+          "notnull": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "target_km",
+          "type": "FLOAT",
+          "notnull": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "key_workout",
+          "type": "VARCHAR(255)",
+          "notnull": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "notes",
+          "type": "TEXT",
+          "notnull": false,
+          "default": null,
+          "primary_key": false
+        }
+      ],
+      "unique_constraints": [],
+      "indexes": [
+        {
+          "name": "ix_plan_week_phase_id",
+          "unique": false,
+          "columns": [
+            "phase_id"
+          ]
+        }
+      ],
+      "foreign_keys": [
+        {
+          "column": "phase_id",
+          "references_table": "plan_phase",
+          "references_column": "id",
+          "on_delete": "CASCADE"
+        }
+      ]
+    },
+    "readiness": {
+      "columns": [
+        {
+          "name": "date",
+          "type": "VARCHAR(10)",
+          "notnull": true,
+          "default": null,
+          "primary_key": true
+        },
+        {
+          "name": "score",
+          "type": "FLOAT",
+          "notnull": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "grade",
+          "type": "VARCHAR(16)",
+          "notnull": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "drivers",
+          "type": "JSON",
+          "notnull": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "recommendation",
+          "type": "TEXT",
+          "notnull": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "rationale",
+          "type": "TEXT",
+          "notnull": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "computed_at",
+          "type": "DATETIME",
+          "notnull": true,
+          "default": null,
+          "primary_key": false
+        }
+      ],
+      "unique_constraints": [],
+      "indexes": [],
+      "foreign_keys": []
+    },
+    "run_fingerprint": {
+      "columns": [
+        {
+          "name": "activity_id",
+          "type": "INTEGER",
+          "notnull": true,
+          "default": null,
+          "primary_key": true
+        },
+        {
+          "name": "running_time_s",
+          "type": "FLOAT",
+          "notnull": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "walking_time_s",
+          "type": "FLOAT",
+          "notnull": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "stopped_time_s",
+          "type": "FLOAT",
+          "notnull": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "cadence_avg",
+          "type": "FLOAT",
+          "notnull": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "cadence_cv",
+          "type": "FLOAT",
+          "notnull": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "cadence_drift_pct",
+          "type": "FLOAT",
+          "notnull": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "hr_avg",
+          "type": "FLOAT",
+          "notnull": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "hr_max",
+          "type": "FLOAT",
+          "notnull": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "hr_drift_pct",
+          "type": "FLOAT",
+          "notnull": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "hr_drift_bpm",
+          "type": "FLOAT",
+          "notnull": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "pace_drift_pct",
+          "type": "FLOAT",
+          "notnull": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "first_half_hr",
+          "type": "FLOAT",
+          "notnull": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "second_half_hr",
+          "type": "FLOAT",
+          "notnull": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "first_half_pace_s_km",
+          "type": "FLOAT",
+          "notnull": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "second_half_pace_s_km",
+          "type": "FLOAT",
+          "notnull": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "efficiency_first",
+          "type": "FLOAT",
+          "notnull": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "efficiency_last",
+          "type": "FLOAT",
+          "notnull": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "decoupling_pct",
+          "type": "FLOAT",
+          "notnull": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "pace_cv",
+          "type": "FLOAT",
+          "notnull": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "negative_split_pct",
+          "type": "FLOAT",
+          "notnull": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "stride_length_cm",
+          "type": "FLOAT",
+          "notnull": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "form_score",
+          "type": "FLOAT",
+          "notnull": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "zone_distribution",
+          "type": "JSON",
+          "notnull": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "notes",
+          "type": "TEXT",
+          "notnull": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "computed_at",
+          "type": "DATETIME",
+          "notnull": true,
+          "default": null,
+          "primary_key": false
+        }
+      ],
+      "unique_constraints": [],
+      "indexes": [],
+      "foreign_keys": [
+        {
+          "column": "activity_id",
+          "references_table": "activity",
+          "references_column": "id",
+          "on_delete": "CASCADE"
+        }
+      ]
+    },
+    "sync_run": {
+      "columns": [
+        {
+          "name": "id",
+          "type": "INTEGER",
+          "notnull": true,
+          "default": null,
+          "primary_key": true
+        },
+        {
+          "name": "source",
+          "type": "VARCHAR(32)",
+          "notnull": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "started_at",
+          "type": "DATETIME",
+          "notnull": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "finished_at",
+          "type": "DATETIME",
+          "notnull": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "status",
+          "type": "VARCHAR(24)",
+          "notnull": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "days",
+          "type": "INTEGER",
+          "notnull": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "activities_found",
+          "type": "INTEGER",
+          "notnull": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "activities_new",
+          "type": "INTEGER",
+          "notnull": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "activities_updated",
+          "type": "INTEGER",
+          "notnull": true,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "message",
+          "type": "TEXT",
+          "notnull": false,
+          "default": null,
+          "primary_key": false
+        },
+        {
+          "name": "error",
+          "type": "TEXT",
+          "notnull": false,
+          "default": null,
+          "primary_key": false
+        }
+      ],
+      "unique_constraints": [],
+      "indexes": [],
+      "foreign_keys": []
+    }
+  }
+}

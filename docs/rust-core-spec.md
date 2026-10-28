@@ -41,7 +41,7 @@ stride-garmin ───┼──> stride-store ──> stride-api ──> stride
 - **`stride-core` depends on nothing but `serde`.** It is pure functions over
   plain data. That is what makes it testable against the golden files
   without a database.
-- **`stride-fit` depends on nothing but `fitparse` and `serde`.**
+- **`stride-fit` depends on nothing but `serde`, `chrono` and `thiserror`.** The FIT decoder is written in-crate.
 - **`stride-store` depends on `rusqlite` and `stride-core`'s types.**
 - **`stride-api` depends on everything else** and is the only crate that
   knows about HTTP.
@@ -122,6 +122,12 @@ pub struct ParsedActivity {
 
 pub fn parse_fit(bytes: &[u8], filename: &str) -> Result<ParsedActivity, FitError>;
 ```
+
+**The FIT record header**, since there is no longer a library to read it for
+you: bit 6 (`0x40`) is the **definition** flag and bit 5 (`0x20`) is the
+**developer data** flag. A local message with bit 6 set *defines* the message;
+bit 7 is the compressed-timestamp header, bits 0-4 are the compressed
+timestamp offset, and bits 5-6 are the local message type.
 
 **The three Garmin quirks — get these right, they are the whole risk:**
 
@@ -296,7 +302,7 @@ The approved dependency set, and nothing else without asking:
 | crate | why |
 |---|---|
 | `serde`, `serde_json` | every boundary |
-| `fitparse` (`0.1`) | the FIT parser — the same library the Python reference uses |
+| *(none)* | **The FIT decoder is written in-crate.** The Rust crate called `fitparse` is a *different project* from the Python `fitparse` the reference uses — same name, different field semantics — and it panics on the fixtures. |
 | `rusqlite` (feature `bundled-sqlcipher-vendored-openssl`) | the encrypted database — OpenSSL is **vendored**, so the NDK build has no system dependency and the APK is self-sufficient |
 | `reqwest` (feature `rustls-tls`, blocking) | the Garmin API |
 | `chrono` | dates and times |

@@ -5,9 +5,14 @@ edition.workspace = true
 rust-version.workspace = true
 license.workspace = true
 
+# The FIT decoder is written in this crate rather than taken from a library:
+# the `fitparse` crate on crates.io is a 2016 snapshot of the FIT profile
+# whose message parsing panics on the golden fixtures, and the release build
+# uses `panic = "abort"`. See the workstream report.
 [dependencies]
 serde = { workspace = true }
-serde_json = { workspace = true }
 chrono = { workspace = true }
 thiserror = { workspace = true }
-fitparse = { workspace = true }
+
+[dev-dependencies]
+serde_json = { workspace = true }

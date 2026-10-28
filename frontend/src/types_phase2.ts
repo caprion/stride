@@ -206,6 +206,39 @@ export interface Readiness {
   rationale: string | null
 }
 
+/**
+ * The readiness fields a chart draws: the score and the grade.
+ *
+ * The full readiness row also carries every driver with its baseline, its
+ * delta and a sentence of prose — about 600 bytes a day, which is 200 KB
+ * for a year of trend data that the trend never looks at. The drivers are
+ * still available for the latest day, through the latest endpoint.
+ */
+export interface ReadinessSummary {
+  date: string
+  score: number | null
+  grade: 'peak' | 'good' | 'fair' | 'low' | 'unknown'
+}
+
+/** The daily fields the physiology table draws, out of thirty-odd. */
+export interface DailyPhysiologySummary {
+  date: string
+  body_battery_avg: number | null
+  stress_avg: number | null
+  acute_load: number | null
+  chronic_load: number | null
+  steps: number | null
+}
+
+/** The HRV fields the chart draws, without the unused status label. */
+export interface HrvSummary {
+  date: string
+  hrv_ms: number | null
+  baseline: number | null
+  resting_hr: number | null
+  rhr_baseline: number | null
+}
+
 export interface PhysiologySources {
   available: boolean
   reason: string | null
@@ -266,6 +299,30 @@ export interface Fingerprint {
   stride_length_cm: number | null
   form_score: number | null
   zone_distribution: Record<string, number> | null
+}
+
+/**
+ * The fingerprint fields the running-form screen draws.
+ *
+ * A fingerprint row carries twenty-nine fields — the first-half and
+ * second-half splits, the efficiency pair, the zone distribution — and the
+ * screen shows thirteen of them. Over a year of runs the unused half is
+ * most of the JSON.
+ */
+export interface FingerprintSummary {
+  activity_id: number
+  activity_name: string | null
+  local_date: string | null
+  distance_m: number
+  pace_s_per_km: number | null
+  cadence_avg: number | null
+  cadence_cv: number | null
+  hr_drift_pct: number | null
+  decoupling_pct: number | null
+  pace_drift_pct: number | null
+  form_score: number | null
+  walking_time_s: number | null
+  stopped_time_s: number | null
 }
 
 export interface FitnessTrend {
