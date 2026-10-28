@@ -2,10 +2,10 @@
 //!
 //! Garmin serves the original FIT inside a zip archive. The reference
 //! implementation (`backend/app/ingest/garmin_personal.py`) opens it, refuses
-//! archives with more than eight entries, refuses any entry with an unsafe
-//! name or an implausible size, and returns the first `.fit` member. A few
-//! activities come back as a bare FIT file instead, and those are taken as
-//! they are.
+//! archives with more than eight entries, refuses any entry whose name tries
+//! to escape the archive or whose size is implausible, and returns the first
+//! `.fit` member. A few activities come back as a bare FIT file instead, and
+//! those are taken as they are.
 
 use std::io::{Cursor, Read};
 
