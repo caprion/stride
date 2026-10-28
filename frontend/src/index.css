@@ -5,7 +5,6 @@
 @layer base {
   html {
     -webkit-font-smoothing: antialiased;
-    letter-spacing: 0.014em;
     -moz-osx-font-smoothing: grayscale;
   }
 

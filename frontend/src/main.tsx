@@ -56,7 +56,6 @@ async function reconcileBuildCache(): Promise<void> {
   try {
     for (const name of await caches.keys()) {
       const cache = await caches.open(name)
-      await cache.delete(BUILD_MARKER)
       const marker = await cache.match(BUILD_MARKER)
       const current = buildAssets()
 
