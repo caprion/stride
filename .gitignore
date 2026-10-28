@@ -35,3 +35,6 @@ android/keystore.properties
 android/app/*.jks
 android/app/*.keystore
 .secrets/
+
+# Rust
+/target/
