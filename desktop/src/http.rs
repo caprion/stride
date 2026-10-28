@@ -251,6 +251,7 @@ pub fn serve(listener: TcpListener, handler: Handler) -> std::io::Result<()> {
                     "application/json",
                     br#"{"detail":"Too many connections; retry shortly."}"#.to_vec(),
                 ),
+                false,
             );
             continue;
         }
@@ -290,13 +291,15 @@ fn handle_connection(stream: TcpStream, handler: Handler) {
         Ok(Some(request)) => request,
         Ok(None) => return,
         Err(response) => {
-            let _ = write_response(&mut writer, &response);
+            let _ = write_response(&mut writer, &response, false);
             return;
         }
     };
 
     let response = handler(&request);
-    let _ = write_response(&mut writer, &response);
+    // A `HEAD` answer carries the headers of the `GET` answer and no body.
+    let head_only = request.method == "HEAD";
+    let _ = write_response(&mut writer, &response, head_only);
 }
 
 /// Read one request. `Ok(None)` means the connection ended cleanly.
@@ -440,7 +443,11 @@ fn bad_request(detail: &str) -> Response {
 }
 
 /// Write an answer.
-fn write_response(stream: &mut TcpStream, response: &Response) -> std::io::Result<()> {
+fn write_response(
+    stream: &mut TcpStream,
+    response: &Response,
+    head_only: bool,
+) -> std::io::Result<()> {
     let mut head = String::with_capacity(256);
     head.push_str(&format!(
         "HTTP/1.1 {} {}\r\n",
@@ -455,7 +462,7 @@ fn write_response(stream: &mut TcpStream, response: &Response) -> std::io::Resul
     }
     head.push_str("Connection: close\r\n\r\n");
     stream.write_all(head.as_bytes())?;
-    if response.status != 204 && !response.body.is_empty() {
+    if response.status != 204 && !head_only && !response.body.is_empty() {
         stream.write_all(&response.body)?;
     }
     stream.flush()

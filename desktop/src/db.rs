@@ -158,20 +158,43 @@ pub fn open_database(
     match detect_format(path)? {
         Format::Missing => {
             let store = Store::open_and_migrate(path, key)?;
+            harden(path);
             Ok((store, None))
         }
         Format::Encrypted => {
             let store = Store::open(path, key)?;
             store.migrate()?;
+            harden(path);
             Ok((store, None))
         }
         Format::Plaintext => {
             let report = convert_plaintext_to_encrypted(path, key)?;
             let store = Store::open(path, key)?;
             store.migrate()?;
+            harden(path);
             Ok((store, Some(report)))
         }
     }
+}
+
+/// Make the database and its sidecars owner-only.
+///
+/// The reference does the same thing in `harden_storage`: a year of heart
+/// rate, sleep and GPS routes is not a file other processes on this machine
+/// should be able to read.
+fn harden(path: &Path) {
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        for suffix in ["", "-wal", "-shm"] {
+            let sidecar = sidecar(path, suffix);
+            if sidecar.exists() {
+                let _ = std::fs::set_permissions(&sidecar, std::fs::Permissions::from_mode(0o600));
+            }
+        }
+    }
+    #[cfg(not(unix))]
+    let _ = path;
 }
 
 /// Convert the plain database at `path` into an encrypted one, in place.

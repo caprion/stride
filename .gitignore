@@ -36,8 +36,9 @@ android/app/*.jks
 android/app/*.keystore
 .secrets/
 
-# Rust
-/target/
+# Rust — build output, wherever it lands
+target/
+**/target/
 
 # Rust build output inside the Android project
 android/app/src/main/rust/**/target/

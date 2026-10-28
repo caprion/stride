@@ -149,9 +149,10 @@ fn an_unknown_api_path_is_a_json_404() {
     assert_eq!(response.status, 401);
 
     let mut authorised = request("GET", "/api/v1/nothing-here");
-    authorised
-        .headers
-        .push("Cookie", "stride_capability=a-capability-token-that-is-long-enough");
+    authorised.headers.push(
+        "Cookie",
+        "stride_capability=a-capability-token-that-is-long-enough",
+    );
     let response = app.handle(&authorised);
     assert_eq!(response.status, 404);
     assert_eq!(response.get("Content-Type"), Some("application/json"));

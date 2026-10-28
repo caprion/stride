@@ -157,8 +157,10 @@ fn the_real_files_match_the_reference() {
     }
     let repo = repo_root();
 
+    let started = std::time::Instant::now();
     let reference = reference_imports(&python, &repo, &files)
         .unwrap_or_else(|error| panic!("the reference importer failed: {error}"));
+    eprintln!("the reference importer took {:?}", started.elapsed());
 
     for file in &files {
         let name = file
@@ -172,9 +174,17 @@ fn the_real_files_match_the_reference() {
 
         let bytes = std::fs::read(file)
             .unwrap_or_else(|error| panic!("{name}: cannot read the file: {error}"));
+        let clock = std::time::Instant::now();
         let activity = parse_fit(&bytes, &name)
             .unwrap_or_else(|error| panic!("{name}: the Rust importer failed: {error}"));
+        let rust_elapsed = clock.elapsed();
 
         compare(&format!("{name}.import"), expected, &import_section(&activity));
+        eprintln!(
+            "{name}: {} records, {} samples, rust {:?}",
+            activity.samples.len(),
+            activity.samples.len(),
+            rust_elapsed
+        );
     }
 }

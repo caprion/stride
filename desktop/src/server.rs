@@ -192,6 +192,11 @@ impl App {
 
     /// The SPA and the static files.
     fn spa(&self, request: &Request, path: &str) -> Response {
+        // The reference's catch-all is a `GET` route, so a `POST` to an
+        // unknown path is a 405 there and it is a 405 here.
+        if request.method != "GET" && request.method != "HEAD" {
+            return json_response(405, &serde_json::json!({ "detail": "Method Not Allowed" }));
+        }
         let relative = path.trim_start_matches('/');
         if relative.starts_with("api/") {
             return json_response(404, &serde_json::json!({ "detail": "Not found" }));

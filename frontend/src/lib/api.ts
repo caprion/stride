@@ -187,10 +187,12 @@ async function bridgeBody(body: BodyInit | null | undefined): Promise<string | u
   if (typeof body === 'string') return body
   if (body instanceof FormData) {
     const files: { filename: string; content_base64: string }[] = []
-    body.forEach((value, name) => {
-      if (!(value instanceof File)) return
+    const entries: [string, FormDataEntryValue][] = []
+    body.forEach((value, name) => entries.push([name, value]))
+    for (const [, value] of entries) {
+      if (!(value instanceof File)) continue
       files.push({ filename: value.name, content_base64: await fileToBase64(value) })
-    })
+    }
     return JSON.stringify({ files })
   }
   return undefined

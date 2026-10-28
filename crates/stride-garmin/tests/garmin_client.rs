@@ -1,5 +1,10 @@
 //! The client against a local stub. No test touches the network.
 
+// An integration test is its own crate, not a `#[cfg(test)]` module, so the
+// workspace's `allow-*-in-tests` configuration does not reach it. The stub
+// asserts its own invariants with `expect`.
+#![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
+
 mod common;
 
 use chrono::{Duration, Utc};
