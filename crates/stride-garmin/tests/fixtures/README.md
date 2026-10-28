@@ -18,6 +18,7 @@ calls its functions:
 | `lists.*` | `app.ingest.garmin_personal._as_list` |
 | `dates.*` | `app.ingest.garmin_personal._bounded_date_range` |
 | `activities_params.*` | `app.ingest.garmin_personal.GarminPersonalClient.activities` — the client is called with its HTTP call replaced by a capture, so the expectation is the query the reference itself computes |
+| `zones` | `app.services.fingerprint.zone_model` — the zone model the reference builds from the biometric payload |
 
 `activities_params` pins the clamps the reference applies to an activity
 search: `start` is capped at 299, `limit` at 100 and at `300 - start`, and the
@@ -45,6 +46,15 @@ Two things the reference does that the port has to copy:
   time — so `activity_detail_fallback.json` deliberately has neither a name
   nor a start time, and both come from the list item;
 * the reference renders a UTC start time as `+00:00`, never `Z`.
+
+And two things the reference does that the port had wrong:
+
+* the zone rows are read as `zoneLowBoundary`/`zoneHighBoundary` and
+  `zoneNumber`, and a zone's name is `name` — Garmin's own `zoneName` is not
+  read, so the names are `Zone 1` to `Zone 5`;
+* the zone model's field names are the reference's own (`zone_no`, `name`,
+  `low_bpm`, `high_bpm`), because that is the shape the reference reads back
+  out of the athlete's stored zones.
 
 ## Why these are not in `backend/tests/golden/`
 

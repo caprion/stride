@@ -21,7 +21,7 @@ use std::fs;
 use std::path::PathBuf;
 
 use common::{Reply, StubServer};
-use serde_json::{Map, Value};
+use serde_json::{json, Map, Value};
 use stride_garmin::{ActivityDetail, GarminClient};
 
 const PROFILE_PATH: &str = "/userprofile-service/userprofile/settings";
@@ -601,5 +601,39 @@ fn the_golden_canonical_activity_falls_back_to_the_list_item_the_way_the_phone_d
         &canonical_value(&canonical),
         &expected["activity_detail_fallback"],
         "activity_detail_fallback",
+    );
+}
+
+#[test]
+fn the_golden_zone_model_matches_the_reference() {
+    // The reference reads the athlete's zones out of the biometric payload
+    // and falls back to zones derived from the maximum heart rate when the
+    // payload does not yield five. The port reads the same rows; the
+    // derivation belongs to `stride-core`.
+    let stub = stub_with(&[("GET", ZONES_PATH, "heart_rate_zones.json")]);
+    let client = client_for(&stub);
+
+    let model = client.heart_rate_zones().expect("the zone model succeeds");
+    let zones = model.zone_model().expect("the payload yields five zones");
+    let expected = expected();
+
+    let actual: Vec<Value> = zones
+        .iter()
+        .map(|zone| {
+            json!({
+                "zone_no": zone.zone_no,
+                "name": zone.name,
+                "low_bpm": zone.low_bpm,
+                "high_bpm": zone.high_bpm,
+            })
+        })
+        .collect();
+    assert_close(&Value::Array(actual), &expected["zones"], "zones");
+
+    // The payload itself is untouched.
+    assert_close(
+        &Value::Object(model.raw.clone()),
+        &expected["payloads"]["zones"],
+        "payloads.zones",
     );
 }

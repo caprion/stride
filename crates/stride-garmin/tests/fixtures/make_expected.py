@@ -42,6 +42,7 @@ from app.ingest.garmin_personal import (  # noqa: E402
     _as_list,
     _bounded_date_range,
 )
+from app.services.fingerprint import zone_model  # noqa: E402
 from app.services.personal_sync import _canonical_from_detail  # noqa: E402
 
 CANONICAL_KEYS = [
@@ -207,6 +208,11 @@ def main() -> None:
             load("activity_list_unknown.json"),
             ("activityList", "activities", "activitySummaries"),
         ),
+        # The zone model the reference builds from the biometric payload. The
+        # reference falls back to zones derived from the maximum heart rate
+        # when the payload does not yield five, so the reference value is the
+        # one that fallback would use.
+        "zones": zone_model(190.0, zones),
         # The raw wellness payloads: the reference returns them untouched.
         "payloads": {
             "sleep": sleep,

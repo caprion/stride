@@ -341,46 +341,41 @@
       }
     },
     "zones": {
-      "zoneBounds": [
+      "zones": [
         {
-          "lowerBound": 0,
           "secsIntoZone": 0,
-          "upperBound": 120,
+          "zoneHighBoundary": 120,
+          "zoneLowBoundary": 0,
           "zoneName": "Zone 1",
-          "zoneNumber": 1,
-          "zoneOrder": 1
+          "zoneNumber": 1
         },
         {
-          "lowerBound": 120,
           "secsIntoZone": 0,
-          "upperBound": 140,
+          "zoneHighBoundary": 140,
+          "zoneLowBoundary": 120,
           "zoneName": "Zone 2",
-          "zoneNumber": 2,
-          "zoneOrder": 2
+          "zoneNumber": 2
         },
         {
-          "lowerBound": 140,
           "secsIntoZone": 0,
-          "upperBound": 160,
+          "zoneHighBoundary": 160,
+          "zoneLowBoundary": 140,
           "zoneName": "Zone 3",
-          "zoneNumber": 3,
-          "zoneOrder": 3
+          "zoneNumber": 3
         },
         {
-          "lowerBound": 160,
           "secsIntoZone": 0,
-          "upperBound": 175,
+          "zoneHighBoundary": 175,
+          "zoneLowBoundary": 160,
           "zoneName": "Zone 4",
-          "zoneNumber": 4,
-          "zoneOrder": 4
+          "zoneNumber": 4
         },
         {
-          "lowerBound": 175,
           "secsIntoZone": 0,
-          "upperBound": 190,
+          "zoneHighBoundary": 190,
+          "zoneLowBoundary": 175,
           "zoneName": "Zone 5",
-          "zoneNumber": 5,
-          "zoneOrder": 5
+          "zoneNumber": 5
         }
       ]
     }
@@ -396,5 +391,37 @@
       "userName": "aarav.sharma",
       "userProfileId": 48915637
     }
-  }
+  },
+  "zones": [
+    {
+      "high_bpm": 120,
+      "low_bpm": 0,
+      "name": "Zone 1",
+      "zone_no": 1
+    },
+    {
+      "high_bpm": 140,
+      "low_bpm": 120,
+      "name": "Zone 2",
+      "zone_no": 2
+    },
+    {
+      "high_bpm": 160,
+      "low_bpm": 140,
+      "name": "Zone 3",
+      "zone_no": 3
+    },
+    {
+      "high_bpm": 175,
+      "low_bpm": 160,
+      "name": "Zone 4",
+      "zone_no": 4
+    },
+    {
+      "high_bpm": 190,
+      "low_bpm": 175,
+      "name": "Zone 5",
+      "zone_no": 5
+    }
+  ]
 }

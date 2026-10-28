@@ -76,21 +76,22 @@ impl Profile {
 }
 
 /// One heart-rate zone.
-#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+///
+/// The field names are the ones `fingerprint.zone_model` builds, so a zone
+/// model read here is a zone model the reference reads back.
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Zone {
     /// The zone number, 1-based.
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub zone_number: Option<i64>,
-    /// The zone's name, when Garmin sent one.
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub name: Option<String>,
+    pub zone_no: i64,
+    /// The zone's name. Garmin's own name is not read by the reference; a zone
+    /// without a name is `Zone {n}`.
+    pub name: String,
     /// The lower bound, in beats per minute.
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub low_bpm: Option<f64>,
-    /// The upper bound, in beats per minute.
+    pub low_bpm: f64,
+    /// The upper bound, in beats per minute. The top zone has none.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub high_bpm: Option<f64>,
-    /// The rest of the zone payload, untouched.
+    /// The zone's payload, minus the four fields above.
     #[serde(flatten)]
     pub raw: Map<String, Value>,
 }
@@ -98,32 +99,74 @@ pub struct Zone {
 /// The athlete's heart-rate zone model.
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct ZoneModel {
-    /// The zones, in the order Garmin listed them.
+    /// The zones the reference would build from the payload.
     pub zones: Vec<Zone>,
-    /// The rest of the payload, untouched.
-    #[serde(flatten)]
+    /// The payload, untouched.
+    #[serde(default)]
     pub raw: Map<String, Value>,
 }
 
 impl ZoneModel {
     /// Builds a zone model from Garmin's raw payload.
     ///
-    /// Garmin has shipped several shapes of this endpoint, so the parser looks
-    /// for the first array it recognises and reads each zone's fields under any
-    /// of the names it has used. The reference implementation returns this
-    /// payload untouched — it has no zone parser — so only the raw map is
-    /// reference-checked.
+    /// The reference reads the zones out of `zones` or `heartRateZones`, and
+    /// out of a payload that is itself a list. Each row's bounds are
+    /// `low_bpm`/`zoneLowBoundary` and `high_bpm`/`zoneHighBoundary`, its
+    /// number is `zone_no`/`zoneNumber`, and its name is `name`. A row
+    /// without a usable lower bound is dropped, and so is a row whose upper
+    /// bound is not positive.
+    ///
+    /// The reference derives five zones from the athlete's maximum heart rate
+    /// when the payload does not yield exactly five; that derivation belongs
+    /// to `stride-core`, not here.
     pub fn from_value(payload: &Value) -> Self {
         let raw = match payload {
             Value::Object(map) => map.clone(),
             _ => Map::new(),
         };
-        let zones = ["zones", "zoneBounds", "heartRateZones", "zoneBoundsList"]
+        let rows = match payload {
+            Value::Array(items) => Some(items.clone()),
+            Value::Object(map) => {
+                let zones = map.get("zones").filter(|value| !is_empty(value));
+                let heart_rate = map.get("heartRateZones").filter(|value| !is_empty(value));
+                zones.or(heart_rate).and_then(Value::as_array).cloned()
+            }
+            _ => None,
+        };
+        let zones = rows
+            .unwrap_or_default()
             .iter()
-            .find_map(|key| raw.get(*key).and_then(Value::as_array))
-            .map(|items| items.iter().map(zone_from_value).collect())
-            .unwrap_or_default();
+            .enumerate()
+            .filter_map(|(index, row)| zone_from_value(row, index))
+            .collect();
         Self { zones, raw }
+    }
+
+    /// The five zones the reference would use, sorted by their lower bound.
+    ///
+    /// `None` means the payload did not yield five zones, and the caller has
+    /// to derive them from the athlete's maximum heart rate.
+    pub fn zone_model(&self) -> Option<Vec<&Zone>> {
+        if self.zones.len() != 5 {
+            return None;
+        }
+        let mut zones: Vec<&Zone> = self.zones.iter().collect();
+        zones.sort_by(|left, right| {
+            left.low_bpm
+                .partial_cmp(&right.low_bpm)
+                .unwrap_or(std::cmp::Ordering::Equal)
+        });
+        Some(zones)
+    }
+}
+
+/// True for an empty array, an empty object or a null.
+fn is_empty(value: &Value) -> bool {
+    match value {
+        Value::Array(items) => items.is_empty(),
+        Value::Object(map) => map.is_empty(),
+        Value::Null => true,
+        _ => false,
     }
 }
 
@@ -437,41 +480,81 @@ fn parse_local_datetime(text: &str) -> Option<DateTime<Utc>> {
     }
 }
 
-fn zone_from_value(payload: &Value) -> Zone {
+/// One zone, the way the reference reads it.
+fn zone_from_value(payload: &Value, index: usize) -> Option<Zone> {
     let mut raw = match payload {
         Value::Object(map) => map.clone(),
-        _ => Map::new(),
+        _ => return None,
     };
-    let zone_number = [
-        "zoneNumber",
-        "zoneNumberOrdered",
-        "zoneOrder",
-        "order",
-        "number",
-    ]
-    .iter()
-    .find_map(|key| raw.get(*key).and_then(Value::as_i64));
-    let name = take_string(&mut raw, "zoneName").or_else(|| take_string(&mut raw, "name"));
-    let low_bpm = ["lowerBound", "low", "min", "lowerBoundInclusive"]
-        .iter()
-        .find_map(|key| raw.get(*key).and_then(Value::as_f64));
-    let high_bpm = ["upperBound", "high", "max", "upperBoundExclusive"]
-        .iter()
-        .find_map(|key| raw.get(*key).and_then(Value::as_f64));
-    Zone {
-        zone_number,
+    // `dict.get(key, default)` only falls back when the key is absent, so a
+    // key that is present and null is a null.
+    let low = if raw.contains_key("low_bpm") {
+        raw.get("low_bpm")
+    } else {
+        raw.get("zoneLowBoundary")
+    };
+    let high = if raw.contains_key("high_bpm") {
+        raw.get("high_bpm")
+    } else {
+        raw.get("zoneHighBoundary")
+    };
+    let low_bpm = number(low, false)?;
+    let high_bpm = match high {
+        None | Some(Value::Null) => None,
+        other => Some(number(other, true)?),
+    };
+    let zone_no = if raw.contains_key("zone_no") {
+        raw.get("zone_no")
+    } else if raw.contains_key("zoneNumber") {
+        raw.get("zoneNumber")
+    } else {
+        None
+    }
+    .and_then(Value::as_i64)
+    .unwrap_or(index as i64 + 1);
+    let name = raw
+        .get("name")
+        .filter(|value| match value {
+            Value::Null => false,
+            Value::String(text) => !text.is_empty(),
+            _ => true,
+        })
+        .and_then(Value::as_str)
+        .map(str::to_owned)
+        .unwrap_or_else(|| format!("Zone {}", index + 1));
+
+    raw.remove("zone_no");
+    raw.remove("name");
+    raw.remove("low_bpm");
+    raw.remove("high_bpm");
+
+    Some(Zone {
+        zone_no,
         name,
         low_bpm,
         high_bpm,
         raw,
-    }
+    })
 }
 
-/// Removes a string field from the raw map and returns it.
-fn take_string(raw: &mut Map<String, Value>, key: &str) -> Option<String> {
-    let value = raw.remove(key)?;
-    match value {
-        Value::String(text) => Some(text),
-        other => Some(other.to_string()),
+/// The reference's `number`: a real number, finite, and not below zero.
+fn number(value: Option<&Value>, positive: bool) -> Option<f64> {
+    let number = match value? {
+        Value::Number(number) => number.as_f64()?,
+        _ => return None,
+    };
+    if !number.is_finite() {
+        return None;
+    }
+    if positive {
+        if number > 0.0 {
+            Some(number)
+        } else {
+            None
+        }
+    } else if number >= 0.0 {
+        Some(number)
+    } else {
+        None
     }
 }
