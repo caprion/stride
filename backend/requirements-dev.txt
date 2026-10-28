@@ -1,0 +1,7 @@
+# Test-only dependencies.
+#
+# httpx2 is required by the current Starlette test client. It is not a
+# runtime dependency — the app itself talks to Garmin over requests.
+httpx2>=2.0
+pytest>=8.0
+pip-audit>=2.7
