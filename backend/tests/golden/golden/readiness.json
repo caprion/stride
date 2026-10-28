@@ -1,0 +1,259 @@
+{
+  "scenarios": [
+    {
+      "id": "full_recovery",
+      "description": "A good night's sleep, HRV above baseline, low stress: every driver is present and the score is high.",
+      "day": "2026-03-02",
+      "baselines": {
+        "sleep_s": 27000.0,
+        "hrv_ms": 55.05,
+        "resting_hr": 48.15
+      },
+      "readiness": {
+        "date": "2026-03-02",
+        "score": 94.1,
+        "grade": "peak",
+        "drivers": [
+          {
+            "key": "sleep",
+            "label": "Sleep",
+            "value": 7.75,
+            "unit": "h",
+            "baseline": 7.5,
+            "delta": 0.25,
+            "contribution": 25.0,
+            "detail": "7h45m vs 7h30m baseline"
+          },
+          {
+            "key": "sleep_score",
+            "label": "Sleep score",
+            "value": 85.0,
+            "unit": "",
+            "baseline": null,
+            "delta": null,
+            "contribution": 8.5,
+            "detail": "Garmin sleep score out of 100"
+          },
+          {
+            "key": "hrv",
+            "label": "HRV",
+            "value": 58.0,
+            "unit": "ms",
+            "baseline": 55.05,
+            "delta": 2.95,
+            "contribution": 25.0,
+            "detail": "58.0 ms vs 55.0 ms baseline"
+          },
+          {
+            "key": "resting_hr",
+            "label": "Resting HR",
+            "value": 47.0,
+            "unit": "bpm",
+            "baseline": 48.15,
+            "delta": -1.15,
+            "contribution": 15.0,
+            "detail": "47.0 bpm vs 48.1 bpm baseline"
+          },
+          {
+            "key": "stress",
+            "label": "Stress",
+            "value": 22.0,
+            "unit": "",
+            "baseline": null,
+            "delta": null,
+            "contribution": 7.8,
+            "detail": "Average daily stress; lower is better"
+          },
+          {
+            "key": "body_battery",
+            "label": "Body battery",
+            "value": 78.0,
+            "unit": "",
+            "baseline": null,
+            "delta": null,
+            "contribution": 7.8,
+            "detail": "Average daily body battery out of 100"
+          },
+          {
+            "key": "load",
+            "label": "Load",
+            "value": 1.0666666667,
+            "unit": "",
+            "baseline": null,
+            "delta": null,
+            "contribution": 5.0,
+            "detail": "Acute/chronic load; ratios above 1.3 reduce readiness"
+          }
+        ],
+        "recommendation": "Full session as planned — you're primed.",
+        "rationale": "Stress and Body battery account for the largest readiness deductions."
+      }
+    },
+    {
+      "id": "poor_recovery",
+      "description": "Short sleep, low HRV, high resting heart rate, high stress, an acute load spike: the score collapses.",
+      "day": "2026-03-03",
+      "baselines": {
+        "sleep_s": 27000.0,
+        "hrv_ms": 55.1904761905,
+        "resting_hr": 48.0952380952
+      },
+      "readiness": {
+        "date": "2026-03-03",
+        "score": 46.14,
+        "grade": "low",
+        "drivers": [
+          {
+            "key": "sleep",
+            "label": "Sleep",
+            "value": 5.5,
+            "unit": "h",
+            "baseline": 7.5,
+            "delta": -2.0,
+            "contribution": 18.33,
+            "detail": "5h30m vs 7h30m baseline"
+          },
+          {
+            "key": "sleep_score",
+            "label": "Sleep score",
+            "value": 42.0,
+            "unit": "",
+            "baseline": null,
+            "delta": null,
+            "contribution": 4.2,
+            "detail": "Garmin sleep score out of 100"
+          },
+          {
+            "key": "hrv",
+            "label": "HRV",
+            "value": 36.0,
+            "unit": "ms",
+            "baseline": 55.1904761905,
+            "delta": -19.1904761905,
+            "contribution": 16.31,
+            "detail": "36.0 ms vs 55.2 ms baseline"
+          },
+          {
+            "key": "resting_hr",
+            "label": "Resting HR",
+            "value": 58.0,
+            "unit": "bpm",
+            "baseline": 48.0952380952,
+            "delta": 9.9047619048,
+            "contribution": 0.0,
+            "detail": "58.0 bpm vs 48.1 bpm baseline"
+          },
+          {
+            "key": "stress",
+            "label": "Stress",
+            "value": 74.0,
+            "unit": "",
+            "baseline": null,
+            "delta": null,
+            "contribution": 2.6,
+            "detail": "Average daily stress; lower is better"
+          },
+          {
+            "key": "body_battery",
+            "label": "Body battery",
+            "value": 29.0,
+            "unit": "",
+            "baseline": null,
+            "delta": null,
+            "contribution": 2.9,
+            "detail": "Average daily body battery out of 100"
+          },
+          {
+            "key": "load",
+            "label": "Load",
+            "value": 2.1333333333,
+            "unit": "",
+            "baseline": null,
+            "delta": null,
+            "contribution": 1.79,
+            "detail": "Acute/chronic load; ratios above 1.3 reduce readiness"
+          }
+        ],
+        "recommendation": "Downgrade today's session — swap quality work for easy running, or rest.",
+        "rationale": "Resting HR and HRV account for the largest readiness deductions."
+      }
+    },
+    {
+      "id": "no_personal_baselines",
+      "description": "The day has measurements but no history: the three personal drivers cannot be scored, so only the scale-based drivers count.",
+      "day": "2026-03-04",
+      "baselines": {
+        "sleep_s": null,
+        "hrv_ms": null,
+        "resting_hr": null
+      },
+      "readiness": {
+        "date": "2026-03-04",
+        "score": 68.57,
+        "grade": "fair",
+        "drivers": [
+          {
+            "key": "sleep_score",
+            "label": "Sleep score",
+            "value": 70.0,
+            "unit": "",
+            "baseline": null,
+            "delta": null,
+            "contribution": 20.0,
+            "detail": "Garmin sleep score out of 100"
+          },
+          {
+            "key": "stress",
+            "label": "Stress",
+            "value": 40.0,
+            "unit": "",
+            "baseline": null,
+            "delta": null,
+            "contribution": 17.14,
+            "detail": "Average daily stress; lower is better"
+          },
+          {
+            "key": "body_battery",
+            "label": "Body battery",
+            "value": 60.0,
+            "unit": "",
+            "baseline": null,
+            "delta": null,
+            "contribution": 17.14,
+            "detail": "Average daily body battery out of 100"
+          },
+          {
+            "key": "load",
+            "label": "Load",
+            "value": 1.0,
+            "unit": "",
+            "baseline": null,
+            "delta": null,
+            "contribution": 14.29,
+            "detail": "Acute/chronic load; ratios above 1.3 reduce readiness"
+          }
+        ],
+        "recommendation": "Consider trimming volume by ~20 %; keep the session easy.",
+        "rationale": "Stress and Body battery account for the largest readiness deductions."
+      }
+    },
+    {
+      "id": "no_data",
+      "description": "Nothing at all for this day: the score is null and the grade is unknown.",
+      "day": "2026-03-05",
+      "baselines": {
+        "sleep_s": null,
+        "hrv_ms": null,
+        "resting_hr": null
+      },
+      "readiness": {
+        "date": "2026-03-05",
+        "score": null,
+        "grade": "unknown",
+        "drivers": [],
+        "recommendation": "Readiness unavailable; use perceived recovery to guide training.",
+        "rationale": "No usable physiology data or personal baselines are available for this day."
+      }
+    }
+  ]
+}

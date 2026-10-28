@@ -1,0 +1,114 @@
+{
+  "cases": {
+    "cycling": {
+      "bytes": 7241,
+      "case_id": "cycling",
+      "date": "2026-03-07",
+      "device": "Edge 1040",
+      "file": "backend/tests/golden/fixtures/cycling.fit",
+      "notes": "Cycling cadence is 90 rpm and must stay 90: the halving correction applies to running sports only.",
+      "sha256": "3ea247a8230fc34ce567f65b1c438da5096641b1f0e495cf5c39bbf2c5e8ba4e",
+      "sport": "cycling",
+      "start": "2026-03-07T17:30:00Z",
+      "watch": "records every second"
+    },
+    "gaps": {
+      "bytes": 3935,
+      "case_id": "gaps",
+      "date": "2026-03-10",
+      "device": "Forerunner 965",
+      "file": "backend/tests/golden/fixtures/gaps.fit",
+      "notes": "Two 100 second holes. The interval after a sample belongs to that sample, so a hole that follows a running sample is charged to running time.",
+      "sha256": "0c886055f9151f67130d1394aaa6d2573f0fa5b7a922c081f1082f35c08027e2",
+      "sport": "running",
+      "start": "2026-03-10T19:10:00Z",
+      "watch": "records every second, but the watch was paused twice"
+    },
+    "hilly": {
+      "bytes": 7241,
+      "case_id": "hilly",
+      "date": "2026-03-09",
+      "device": "Forerunner 965",
+      "file": "backend/tests/golden/fixtures/hilly.fit",
+      "notes": "Climbs 60 m then descends 60 m; the elevation stream follows the running samples.",
+      "sha256": "a20e5befa827c16df37bfd2213ebdd47a1e5751dc17f4737f012a60876c2d63b",
+      "sport": "running",
+      "start": "2026-03-09T05:55:00Z",
+      "watch": "records every second"
+    },
+    "hr_gps_run": {
+      "bytes": 14228,
+      "case_id": "hr_gps_run",
+      "date": "2026-03-03",
+      "device": "Forerunner 265",
+      "file": "backend/tests/golden/fixtures/hr_gps_run.fit",
+      "notes": "GPS present, heart rate present, cadence stored halved (80 -> 160 spm).",
+      "sha256": "833e5d3858854efb6c45c4ad7bf053dfccf9e64ae408800c63ae38cc154f7e24",
+      "sport": "running",
+      "start": "2026-03-03T06:15:00Z",
+      "watch": "records every second"
+    },
+    "low_resolution": {
+      "bytes": 2106,
+      "case_id": "low_resolution",
+      "date": "2026-03-08",
+      "device": "Venu 3",
+      "file": "backend/tests/golden/fixtures/low_resolution.fit",
+      "notes": "Five-second sampling: intervals are five seconds wide, not one.",
+      "sha256": "4e4aa8c8ca2bfb67607529fbb9c111c205c758ae09b1e21e688ef7998927ec55",
+      "sport": "running",
+      "start": "2026-03-08T06:40:00Z",
+      "watch": "records every five seconds"
+    },
+    "mixed_run": {
+      "bytes": 2856,
+      "case_id": "mixed_run",
+      "date": "2026-03-02",
+      "device": "Forerunner 265",
+      "file": "backend/tests/golden/fixtures/mixed_run.fit",
+      "notes": "Walk warm-up, run, 20 s stand, run. Stored cadence is halved.",
+      "sha256": "93c8e4fbb02c88ec945887206e374b38450cd026133de310495eb0861edcdc0e",
+      "sport": "running",
+      "start": "2026-03-02T05:30:00Z",
+      "watch": "records every second"
+    },
+    "no_cadence": {
+      "bytes": 6918,
+      "case_id": "no_cadence",
+      "date": "2026-03-05",
+      "device": "Edge 1040",
+      "file": "backend/tests/golden/fixtures/no_cadence.fit",
+      "notes": "No cadence field anywhere: every cadence metric must be null, never zero.",
+      "sha256": "5b9a33f8f1593b56108c49a11c5e4d2ef83e90437b1c3667bcca37f0cdc0e9fb",
+      "sport": "running",
+      "start": "2026-03-05T07:05:00Z",
+      "watch": "records every second, no cadence sensor"
+    },
+    "short_effort": {
+      "bytes": 1177,
+      "case_id": "short_effort",
+      "date": "2026-03-06",
+      "device": "Forerunner 265",
+      "file": "backend/tests/golden/fixtures/short_effort.fit",
+      "notes": "One lap only: thirds are empty, so drift and CV metrics are null.",
+      "sha256": "1b6d6b5d5e0ac6e3f5aa6ea58b71035309aff1b3d4bb9ff03630d13e796502cc",
+      "sport": "running",
+      "start": "2026-03-06T12:20:00Z",
+      "watch": "records every second"
+    },
+    "treadmill": {
+      "bytes": 4835,
+      "case_id": "treadmill",
+      "date": "2026-03-04",
+      "device": "Forerunner 265",
+      "file": "backend/tests/golden/fixtures/treadmill.fit",
+      "notes": "Treadmill: no position fields at all. The FIT session sport is 'running'; the reference importer ignores sub_sport, so a treadmill run is 'running'.",
+      "sha256": "6881b6bd714503bba4db97f6d408e1ab6ac6cba9cff40afa0907b8bd9d6a5d95",
+      "sport": "running",
+      "start": "2026-03-04T18:45:00Z",
+      "watch": "records every second"
+    }
+  },
+  "command": "python3 scripts/golden.py --fixtures",
+  "generator": "backend/tests/golden/make_fixtures.py"
+}

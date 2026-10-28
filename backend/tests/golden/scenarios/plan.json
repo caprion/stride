@@ -1,0 +1,108 @@
+{
+  "id": "week_of_2026_03_02",
+  "description": "One plan block, one week of sessions, and the activities that were actually logged. The sessions are written to land on every verdict the plan engine can produce: hit, short, missed, missed_pace, substituted, a rest day, a strength session and one unplanned bonus run.",
+  "range": ["2026-03-02", "2026-03-20"],
+  "block": {
+    "name": "Golden block",
+    "start_date": "2026-03-02",
+    "end_date": "2026-03-20",
+    "status": "active"
+  },
+  "phase": {
+    "name": "Base",
+    "start_date": "2026-03-02",
+    "end_date": "2026-03-20"
+  },
+  "week": {
+    "week_number": 1,
+    "start_date": "2026-03-02",
+    "end_date": "2026-03-08",
+    "target_km": 25.0
+  },
+  "sessions": [
+    {"date": "2026-03-02", "session_type": "easy", "title": "Easy 400", "target_distance_m": 400, "pace_low_s_km": 330, "pace_high_s_km": 420},
+    {"date": "2026-03-03", "session_type": "tempo", "title": "Tempo 1900", "target_distance_m": 1900, "pace_low_s_km": 290, "pace_high_s_km": 320},
+    {"date": "2026-03-04", "session_type": "easy", "title": "Treadmill 900", "target_distance_m": 900, "pace_low_s_km": 320, "pace_high_s_km": 360},
+    {"date": "2026-03-05", "session_type": "long", "title": "Long 1000", "target_distance_m": 1000, "pace_low_s_km": 280, "pace_high_s_km": 310},
+    {"date": "2026-03-06", "session_type": "interval", "title": "Intervals 300", "target_distance_m": 300, "pace_low_s_km": 200, "pace_high_s_km": 240},
+    {"date": "2026-03-07", "session_type": "strength", "title": "Strength", "target_distance_m": null, "pace_low_s_km": null, "pace_high_s_km": null},
+    {"date": "2026-03-08", "session_type": "recovery", "title": "Recovery 200", "target_distance_m": 200, "pace_low_s_km": 330, "pace_high_s_km": 400},
+    {"date": "2026-03-09", "session_type": "long", "title": "Hills 900", "target_distance_m": 900, "pace_low_s_km": 300, "pace_high_s_km": 340},
+    {"date": "2026-03-10", "session_type": "tempo", "title": "Threshold fartlek", "target_distance_m": 700, "pace_low_s_km": 300, "pace_high_s_km": 400},
+    {"date": "2026-03-11", "session_type": "easy", "title": "Easy 5000", "target_distance_m": 5000, "pace_low_s_km": 300, "pace_high_s_km": 400},
+    {"date": "2026-03-12", "session_type": "rest", "title": "Rest day", "target_distance_m": null, "pace_low_s_km": null, "pace_high_s_km": null}
+  ],
+  "activities": [
+    {"case_id": "mixed_run", "name": "Morning easy"},
+    {"case_id": "hr_gps_run", "name": "Tempo run"},
+    {"case_id": "treadmill", "name": "Treadmill easy"},
+    {"case_id": "no_cadence", "name": "Long run"},
+    {"case_id": "short_effort", "name": "Short effort"},
+    {"case_id": "low_resolution", "name": "Recovery jog"},
+    {"case_id": "hilly", "name": "Hill repeats"},
+    {"case_id": "gaps", "name": "Fartlek repeats"},
+    {"case_id": "cycling", "name": "Evening ride"},
+    {
+      "activity": {
+        "external_id": "synthetic-strength-2026-03-07",
+        "source": "garmin",
+        "name": "Strength session",
+        "sport_type": "strength_training",
+        "start_time": "2026-03-07T06:00:00+00:00",
+        "local_date": "2026-03-07",
+        "day_of_week": "Saturday",
+        "distance_m": 0.0,
+        "moving_time_s": 1800.0,
+        "elapsed_time_s": 1800.0,
+        "elevation_gain_m": 0.0
+      }
+    },
+    {
+      "activity": {
+        "external_id": "synthetic-bonus-2026-03-18",
+        "source": "garmin",
+        "name": "Unplanned 5k",
+        "sport_type": "running",
+        "start_time": "2026-03-18T05:30:00+00:00",
+        "local_date": "2026-03-18",
+        "day_of_week": "Wednesday",
+        "distance_m": 5000.0,
+        "moving_time_s": 1500.0,
+        "elapsed_time_s": 1500.0,
+        "elevation_gain_m": 0.0,
+        "avg_hr": 148,
+        "max_hr": 162
+      }
+    }
+  ],
+  "physiology": [
+    {"date": "2026-02-10", "sleep_s": 27000, "hrv_ms": 55, "resting_hr": 48},
+    {"date": "2026-02-11", "sleep_s": 27000, "hrv_ms": 55, "resting_hr": 48},
+    {"date": "2026-02-12", "sleep_s": 27000, "hrv_ms": 55, "resting_hr": 48},
+    {"date": "2026-02-13", "sleep_s": 27000, "hrv_ms": 55, "resting_hr": 48},
+    {"date": "2026-02-14", "sleep_s": 27000, "hrv_ms": 55, "resting_hr": 48},
+    {"date": "2026-02-15", "sleep_s": 27000, "hrv_ms": 55, "resting_hr": 48},
+    {"date": "2026-02-16", "sleep_s": 27000, "hrv_ms": 55, "resting_hr": 48},
+    {"date": "2026-02-17", "sleep_s": 27000, "hrv_ms": 55, "resting_hr": 48},
+    {"date": "2026-02-18", "sleep_s": 27000, "hrv_ms": 55, "resting_hr": 48},
+    {"date": "2026-02-19", "sleep_s": 27000, "hrv_ms": 55, "resting_hr": 48},
+    {"date": "2026-02-20", "sleep_s": 27000, "hrv_ms": 55, "resting_hr": 48},
+    {"date": "2026-02-21", "sleep_s": 27000, "hrv_ms": 55, "resting_hr": 48},
+    {"date": "2026-02-22", "sleep_s": 27000, "hrv_ms": 55, "resting_hr": 48},
+    {"date": "2026-02-23", "sleep_s": 27000, "hrv_ms": 55, "resting_hr": 48},
+    {"date": "2026-02-24", "sleep_s": 27000, "hrv_ms": 55, "resting_hr": 48},
+    {"date": "2026-02-25", "sleep_s": 27000, "hrv_ms": 55, "resting_hr": 48},
+    {"date": "2026-02-26", "sleep_s": 27000, "hrv_ms": 55, "resting_hr": 48},
+    {"date": "2026-02-27", "sleep_s": 27000, "hrv_ms": 55, "resting_hr": 48},
+    {"date": "2026-02-28", "sleep_s": 27000, "hrv_ms": 55, "resting_hr": 48},
+    {"date": "2026-03-01", "sleep_s": 27000, "hrv_ms": 55, "resting_hr": 48},
+    {"date": "2026-03-02", "sleep_s": 27000, "hrv_ms": 55, "resting_hr": 48},
+    {"date": "2026-03-03", "sleep_s": 27000, "hrv_ms": 55, "resting_hr": 48},
+    {"date": "2026-03-04", "sleep_s": 27000, "hrv_ms": 55, "resting_hr": 48},
+    {"date": "2026-03-05", "sleep_s": 27000, "hrv_ms": 55, "resting_hr": 48},
+    {"date": "2026-03-06", "sleep_s": 18000, "sleep_score": 40, "hrv_ms": 36, "resting_hr": 56, "stress_avg": 60, "body_battery_avg": 40, "acute_load": 300, "chronic_load": 300},
+    {"date": "2026-03-08", "sleep_s": 27000, "hrv_ms": 55, "resting_hr": 48},
+    {"date": "2026-03-10", "sleep_s": 27000, "hrv_ms": 55, "resting_hr": 48},
+    {"date": "2026-03-11", "sleep_s": 27000, "hrv_ms": 55, "resting_hr": 48}
+  ]
+}
