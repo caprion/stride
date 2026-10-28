@@ -1,0 +1,43 @@
+# The Stride workspace.
+#
+# The root manifest is owned by the orchestrator. Workstreams own their crate
+# directory and must not edit this file — say what you need and it will be
+# added. Six agents editing one manifest is how merge conflicts are made.
+#
+# The contract these crates implement is docs/rust-core-spec.md.
+
+[workspace]
+resolver = "2"
+members = [
+    "crates/stride-core",
+    "crates/stride-fit",
+    "crates/stride-garmin",
+    "crates/stride-store",
+    "crates/stride-api",
+    "crates/stride-mcp",
+    "desktop",
+]
+
+[workspace.package]
+version = "0.2.0"
+edition = "2021"
+rust-version = "1.75"
+license = "MIT"
+
+[workspace.dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+chrono = { version = "0.4", features = ["serde"] }
+thiserror = "1"
+anyhow = "1"
+uuid = { version = "1", features = ["v4", "serde"] }
+fitparse = "0.1"
+rusqlite = { version = "0.31", features = ["bundled-sqlcipher-vendored-openssl"] }
+reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "blocking", "json", "gzip"] }
+
+[profile.release]
+opt-level = "z"
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true

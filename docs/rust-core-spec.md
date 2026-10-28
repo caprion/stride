@@ -1,0 +1,367 @@
+# The Rust core — frozen contracts
+
+**This is the contract.** Every workstream codes against it. It is frozen:
+changing it means changing every workstream, so it does not change except by
+decision of the orchestrator.
+
+Read this before writing a line. If something here is wrong or ambiguous,
+**say so in your report** — do not silently work around it, because six
+people working against a wrong contract produce six wrong answers that agree
+with each other, which is worse than one wrong answer.
+
+---
+
+## 1. The shape
+
+```
+stride/
+├── Cargo.toml               the workspace — owned by the orchestrator
+├── rust-toolchain.toml      pinned toolchain — owned by the orchestrator
+├── crates/
+│   ├── stride-core/         the domain
+│   ├── stride-fit/          the FIT parser and the segmentation
+│   ├── stride-garmin/       the Garmin Personal API client
+│   ├── stride-store/        the schema, the migrations, the repositories
+│   ├── stride-api/          the request router + the FFI surface
+│   └── stride-mcp/          the harness tools
+├── android/                 the Kotlin shell and the bridge
+└── desktop/                 the binary that serves the SPA
+```
+
+### The dependency graph — it is a DAG, and it must stay one
+
+```
+stride-fit ──────┐
+stride-core ─────┤
+stride-garmin ───┼──> stride-store ──> stride-api ──> stride-mcp
+                  │                                      ▲
+                  └──────────────────────────────────────┘
+```
+
+- **`stride-core` depends on nothing but `serde`.** It is pure functions over
+  plain data. That is what makes it testable against the golden files
+  without a database.
+- **`stride-fit` depends on nothing but `fitparse` and `serde`.**
+- **`stride-store` depends on `rusqlite` and `stride-core`'s types.**
+- **`stride-api` depends on everything else** and is the only crate that
+  knows about HTTP.
+- **`stride-mcp` depends on `stride-api`** and nothing else.
+
+**No cycles. No crate depends on `stride-api` except `stride-mcp`.** If you
+need one, you need a different design — say so.
+
+---
+
+## 2. The data model
+
+It is the schema the Python app already has. **It does not change.** The
+phone must open a snapshot the desktop exported.
+
+The authoritative definition is `backend/app/models.py` and
+`backend/app/models_phase2.py`. The tables:
+
+| table | what |
+|---|---|
+| `activity` | one run: the summary, the route, the raw payload |
+| `activity_lap` | the splits |
+| `activity_stream` | per-second series: `hr`, `cadence`, `pace`, `distance`, `elevation` |
+| `hr_zone` | the time in each heart-rate zone |
+| `run_fingerprint` | the derived mechanics, one row per activity |
+| `daily_physiology` | one day of sleep, HRV, resting HR, stress, body battery |
+| `readiness` | the derived readiness, one row per day |
+| `plan_block` / `plan_phase` / `plan_week` / `plan_session` | the training plan |
+| `plan_result` | the verdict for a session |
+| `sync_run` | the sync log |
+| `garmin_profile` / `garmin_athlete` | the athlete and the zones |
+
+The SQLite DDL, the indexes and the migration order are in
+`backend/app/db.py`. **Port them exactly.** The desktop's snapshot has to open
+on the phone.
+
+---
+
+## 3. The crate APIs
+
+These are the seams. Signatures are indicative; the *names and the shapes* are
+not.
+
+### `stride-fit`
+
+```rust
+pub struct ParsedActivity {
+    pub external_id: String,
+    pub source: String,           // "garmin_fit"
+    pub name: String,
+    pub sport_type: String,
+    pub start_time: DateTime<Utc>,
+    pub local_date: String,        // YYYY-MM-DD
+    pub day_of_week: String,
+    pub distance_m: f64,
+    pub moving_time_s: f64,
+    pub elapsed_time_s: f64,
+    pub elevation_gain_m: f64,
+    pub avg_hr: Option<f64>,
+    pub max_hr: Option<f64>,
+    pub calories: Option<f64>,
+    pub avg_cadence: Option<f64>,
+    pub max_cadence: Option<f64>,
+    pub avg_speed_ms: Option<f64>,
+    pub max_speed_ms: Option<f64>,
+    pub device: Option<String>,
+    pub is_trail: bool,
+    pub is_commute: bool,
+    pub running_time_s: Option<f64>,
+    pub walking_time_s: Option<f64>,
+    pub stopped_time_s: Option<f64>,
+    pub running_distance_m: Option<f64>,
+    pub geo_points: Option<Vec<[f64; 2]>>,
+    pub laps: Vec<Lap>,
+    pub streams: BTreeMap<String, Stream>,   // hr, cadence, pace, distance, elevation
+    pub segments: Vec<Segment>,
+}
+
+pub fn parse_fit(bytes: &[u8], filename: &str) -> Result<ParsedActivity, FitError>;
+```
+
+**The three Garmin quirks — get these right, they are the whole risk:**
+
+1. **Running cadence is stored halved.** A watch recording 170 spm writes 85.
+   The correction applies to *running sports only* — a cycling cadence of 90 rpm
+   must stay 90. The golden fixture `cycling` exists to catch exactly this.
+2. **Positions are semicircles**, not degrees: `value = semicircles * (180/2^31)`.
+3. **Lap speed is sometimes absent.** Do not invent it.
+
+The segmentation classifies every sample as `run`, `walk` or `stand` and
+produces the running / walking / stopped totals and the running-only laps and
+streams. The reference is `backend/app/ingest/fit_importer.py`:
+`classify_sample`, `_segment_records`, `_running_laps`.
+
+### `stride-core`
+
+Pure functions. No database, no I/O.
+
+```rust
+pub fn fingerprint(activity: &FingerprintInput) -> Fingerprint;
+pub fn readiness(day: &str, row: Option<&DailyPhysiology>,
+                 baseline: &Baselines) -> Readiness;
+pub fn baselines(rows: &[DailyPhysiology], day: &str) -> Baselines;
+pub fn verdict_for(session: &PlanSession, activity: Option<&Activity>) -> Verdict;
+pub fn compare(a: &Activity, b: &Activity) -> Comparison;
+```
+
+The reference implementations are `backend/app/services/fingerprint.py`,
+`readiness.py`, `plan_engine.py` and `comparison.py`.
+
+**Rounding is part of the contract.** The golden files record the exact
+values; where Python rounds, Rust must round the same way, at the same
+place. Read `docs/core-contract.md` when it lands — it is the authority on
+units, rounding and the representation of `None`.
+
+### `stride-garmin`
+
+```rust
+pub struct GarminClient { key: String, /* token cache */ }
+impl GarminClient {
+    pub fn new(key: impl Into<String>) -> Self;
+    pub fn validate(&self) -> Result<Profile, GarminError>;
+    pub fn activities(&self, from: DateTime<Utc>, to: DateTime<Utc>)
+        -> Result<Vec<ActivitySummary>, GarminError>;
+    pub fn activity_detail(&self, id: &str) -> Result<Value, GarminError>;
+    pub fn activity_fit(&self, id: &str) -> Result<Vec<u8>, GarminError>;
+    pub fn sleep(&self, day: &str) -> Result<Value, GarminError>;
+    pub fn hrv(&self, day: &str) -> Result<Value, GarminError>;
+    pub fn daily_summary(&self, day: &str) -> Result<Value, GarminError>;
+    pub fn body_battery(&self, from: &str, to: &str) -> Result<Value, GarminError>;
+    pub fn stress(&self, from: &str, to: &str) -> Result<Value, GarminError>;
+    pub fn steps(&self, from: &str, to: &str) -> Result<Value, GarminError>;
+    pub fn heart_rate_zones(&self) -> Result<ZoneModel, GarminError>;
+    pub fn profile(&self) -> Result<Profile, GarminError>;
+}
+```
+
+**The token is a 24-hour JWT and there are no refresh tokens.** Refreshing
+means exchanging the Personal API Key again. Cache the token with its expiry;
+on a 401, exchange once and retry once; on a second 401, report
+`needs_reconnect`. Never loop.
+
+The reference is `backend/app/ingest/garmin_personal.py`.
+
+### `stride-store`
+
+```rust
+pub struct Store { /* the connection */ }
+impl Store {
+    pub fn open(path: &Path, key: &[u8]) -> Result<Store, StoreError>;
+    pub fn migrate(&self) -> Result<(), StoreError>;
+    pub fn activities(&self, from: &str, to: &str) -> Result<Vec<Activity>, StoreError>;
+    pub fn activity(&self, id: i64) -> Result<Option<Activity>, StoreError>;
+    pub fn upsert_activity(&self, a: &Activity) -> Result<i64, StoreError>;
+    pub fn physiology(&self, from: &str, to: &str) -> Result<Vec<DailyPhysiology>, StoreError>;
+    pub fn plan_blocks(&self) -> Result<Vec<PlanBlock>, StoreError>;
+    /* ... one method per table the API reads */
+}
+```
+
+SQLCipher through `rusqlite` with the `bundled-sqlcipher` feature. The key
+comes from the caller (the Keystore on the phone, Key Vault on the desktop).
+
+### `stride-api`
+
+**The one router. Everything the app exposes goes through it.**
+
+```rust
+pub fn call(&self, method: &str, path: &str, body: Option<&str>)
+    -> Result<serde_json::Value, ApiError>;
+```
+
+`method` and `path` are the HTTP method and the path. The router matches the
+**62 paths** of the table below, parses the query string and the body, calls
+the store and the core, and returns JSON.
+
+**The response shapes do not change.** The React app is a consumer of them
+and it is not being rewritten. If a shape has to change, the frontend changes
+in the same commit.
+
+| method | path | method | path |
+|---|---|---|---|
+| GET | `/api/v1/health` | GET | `/api/v1/health/daily` |
+| GET | `/api/v1/auth/status` | POST | `/api/v1/auth/pair` |
+| GET | `/api/v1/auth/pair-code` | POST | `/api/v1/auth/garmin/personal-key` |
+| POST | `/api/v1/auth/garmin/personal-key/test` | GET | `/api/v1/activities` |
+| GET | `/api/v1/activities/{id}` | PATCH | `/api/v1/activities/{id}` |
+| GET | `/api/v1/physiology/daily` | GET | `/api/v1/physiology/hrv` |
+| GET | `/api/v1/physiology/latest` | GET | `/api/v1/physiology/readiness` |
+| GET | `/api/v1/physiology/sleep` | GET | `/api/v1/physiology/sources` |
+| GET | `/api/v1/fitness/fingerprint` | GET | `/api/v1/fitness/activity/{id}` |
+| GET | `/api/v1/fitness/trends` | GET | `/api/v1/fitness/zones` |
+| GET | `/api/v1/compare` | GET | `/api/v1/compare/candidates` |
+| GET | `/api/v1/stats/summary` | GET | `/api/v1/stats/monthly` |
+| GET | `/api/v1/stats/weekly` | GET | `/api/v1/stats/pace-trends` |
+| GET | `/api/v1/stats/personal-records` | GET | `/api/v1/stats/heatmap` |
+| GET | `/api/v1/stats/elevation` | GET | `/api/v1/stats/hr-zones` |
+| GET | `/api/v1/calendar` | GET | `/api/v1/gear` |
+| GET | `/api/v1/plan/current` | GET | `/api/v1/plan/today` |
+| GET | `/api/v1/plan/week` | GET | `/api/v1/plan/results` |
+| GET | `/api/v1/plan/adherence` | GET | `/api/v1/plan/blocks` |
+| POST | `/api/v1/plan/blocks` | POST | `/api/v1/plan/import` |
+| GET | `/api/v1/plan/blocks/{id}` | POST | `/api/v1/plan/blocks/{id}/phases` |
+| POST | `/api/v1/plan/phases/{id}/weeks` | POST | `/api/v1/plan/weeks/{id}/sessions` |
+| GET | `/api/v1/sync/status` | POST | `/api/v1/sync/run` |
+| GET | `/api/v1/sync/runs` | GET/POST | `/api/v1/sync/history` |
+| PATCH | `/api/v1/sync/settings` | GET | `/api/v1/network/status` |
+| POST | `/api/v1/network/route` | GET | `/api/v1/tiles/policy` |
+| GET | `/api/v1/tiles/{z}/{x}/{y}.png` | | |
+
+The authoritative list, with every parameter and response schema, is the
+OpenAPI document the Python app generates: `app.openapi()`. **Read it, do not
+guess.**
+
+### The FFI surface
+
+`stride-api` also exposes a C ABI for the phone:
+
+```rust
+#[no_mangle] pub extern "C" fn stride_call(
+    method: *const c_char, path: *const c_char, body: *const c_char,
+) -> *mut c_char;      // a JSON string; free with stride_free
+#[no_mangle] pub extern "C" fn stride_free(ptr: *mut c_char);
+```
+
+The Kotlin side calls it through **UniFFI** — a UDL describes the surface and
+the Kotlin bindings are generated. **No hand-written JNI.**
+
+The surface is deliberately one entry point, so the Kotlin side never changes
+when a route is added.
+
+---
+
+## 4. The build conventions
+
+- **Rust 2021 edition**, toolchain pinned in `rust-toolchain.toml`.
+- **No `unwrap()` or `expect()` in library code.** Every fallible path
+  returns a `Result` with a typed error. `unwrap` is allowed in `#[cfg(test)]`
+  and in `main`.
+- **No `panic!` in library code.** A bad FIT file is a `Result`, not a crash.
+  A phone app that panics on a malformed file is a phone app that dies.
+- **Serde for every boundary.** JSON in, JSON out. `serde_json::Value` at the
+  router's edge; typed structs inside.
+- **Errors carry context.** `FitError::UnsupportedVersion { version: u16 }`,
+  not `FitError("bad file")`.
+- **`cargo clippy -- -D warnings` must be clean.**
+- **No new dependency without saying so explicitly** and justifying it. The
+  bundle and the binary size are constraints.
+
+The approved dependency set, and nothing else without asking:
+
+| crate | why |
+|---|---|
+| `serde`, `serde_json` | every boundary |
+| `fitparse` (`0.1`) | the FIT parser — the same library the Python reference uses |
+| `rusqlite` (feature `bundled-sqlcipher-vendored-openssl`) | the encrypted database — OpenSSL is **vendored**, so the NDK build has no system dependency and the APK is self-sufficient |
+| `reqwest` (feature `rustls-tls`, blocking) | the Garmin API |
+| `chrono` | dates and times |
+| `uuid` | ids |
+| `anyhow` / `thiserror` | errors |
+| `uniffi` | the Kotlin bindings |
+
+---
+
+## 5. The gate
+
+**The golden fixtures are the definition of correct.**
+
+`backend/tests/golden/` holds the fixtures and the expected outputs, produced
+from the Python implementation by `thr_hbwgvkrmnh`. `docs/core-contract.md`
+is the specification of the output format.
+
+Every crate's work is accepted only when:
+
+```bash
+cargo test --workspace
+```
+
+passes, **and** the crate's golden tests match
+`backend/tests/golden/golden/*.json` exactly.
+
+A crate with no golden test is not finished. If a crate cannot be checked
+against a golden file, say so in your report and say why — that is a gap in
+the fixtures, and it should be fixed rather than papered over.
+
+---
+
+## 6. Who owns what
+
+| workstream | owns | must not touch |
+|---|---|---|
+| **W1 fit** | `crates/stride-fit/` | anything else |
+| **W2 core** | `crates/stride-core/` | anything else |
+| **W3 garmin** | `crates/stride-garmin/` | anything else |
+| **W4 store** | `crates/stride-store/` | anything else |
+| **W5 api** | `crates/stride-api/` | anything else |
+| **W6 mcp** | `crates/stride-mcp/` | anything else |
+| **W7 android** | `android/app/src/main/java/**`, `android/app/src/main/rust/**` | `crates/**` |
+| **W8 desktop** | `desktop/` | anything else |
+| **W9 golden** | `crates/*/tests/golden/**`, `scripts/golden.rs` | crate sources |
+| **orchestrator** | `Cargo.toml`, `rust-toolchain.toml`, `docs/**`, `frontend/**`, `backend/**` | — |
+
+**The workspace `Cargo.toml` is the orchestrator's.** If you need a member
+added, say so; do not edit it. Editing it in six workstreams at once is how
+merge conflicts are made.
+
+---
+
+## 7. The rules
+
+1. **The golden fixtures decide.** Not your judgement of what the right
+   answer is. If they and your reading of the Python disagree, the Python is
+   the reference and the fixture is right — unless the fixture is wrong, in
+   which case say so loudly and do not "fix" your code to match.
+2. **Do not change the API shapes.** The React app consumes them.
+3. **Do not change the schema.** The desktop's snapshot has to open on the
+   phone.
+4. **Report, do not assume.** If something in this document is wrong, say so
+   in your report. A wrong contract that six people follow is the worst
+   possible outcome.
+5. **Numbers, not adjectives.** "The parser is correct" is worth nothing.
+   "the golden test for `mixed_run` passes and the segmentation totals are
+   499 s running, 39 s walking, 2 s stopped" is worth everything.

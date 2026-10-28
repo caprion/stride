@@ -1,0 +1,18 @@
+[package]
+name = "stride-desktop"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+
+[[bin]]
+name = "stride"
+path = "src/main.rs"
+
+[dependencies]
+serde = { workspace = true }
+serde_json = { workspace = true }
+chrono = { workspace = true }
+anyhow = { workspace = true }
+stride-api = { path = "../crates/stride-api" }
+stride-store = { path = "../crates/stride-store" }
