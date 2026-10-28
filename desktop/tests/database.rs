@@ -208,7 +208,26 @@ fn the_conversion_keeps_the_plain_file() {
         "{}.plaintext-backup",
         copy.file_name().unwrap_or_default().to_string_lossy()
     ));
-    assert!(backup.is_file(), "the plain file was not kept");
+    let listing: Vec<String> = std::fs::read_dir(directory)
+        .map(|entries| {
+            entries
+                .flatten()
+                .map(|entry| {
+                    let name = entry.file_name().to_string_lossy().into_owned();
+                    let size = entry.metadata().map(|m| m.len()).unwrap_or(0);
+                    format!("{name} ({size})")
+                })
+                .collect()
+        })
+        .unwrap_or_default();
+    assert!(
+        backup.is_file(),
+        "the plain file was not kept; the directory holds {listing:?}; the trace holds {:?}",
+        stride_desktop::db::TRACE
+            .lock()
+            .map(|t| t.clone())
+            .unwrap_or_default()
+    );
     assert_eq!(count(&backup, "activity"), before, "the backup lost rows");
 }
 

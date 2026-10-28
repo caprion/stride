@@ -57,12 +57,18 @@ desktop **converts** it, once, on the first run:
   "copy this database while somebody is writing to it" — and the snapshot is
   read and written into a new, encrypted file, with the same schema and the
   same rows;
+* the snapshot is **checked against the database** — the row count of every
+  table — and taken again if they do not agree, up to three times;
 * the columns are matched **by name**, not by position: three tables
   (`activity`, `daily_physiology`, `run_fingerprint`) have the same columns
   in a different order, and a copy by position would put a timestamp in a
   distance column;
 * the rows that were read and the rows that were written are counted, and the
   original is **not** replaced if the two counts disagree;
+* the converted file is **read back** with the same key and its rows are
+  counted again; if it does not answer, the plain file goes back where it
+  was, because a desktop that cannot open the database is a nuisance and an
+  empty database is a disaster;
 * the plain file is kept as `<name>.plaintext-backup`, owner-only, because it
   holds a year of health data in the clear;
 * the conversion reports the tables it copied and any drift between the two
@@ -118,6 +124,17 @@ request: a `GET` for a file, a `GET` or `POST` for the API, and nothing
 else. `src/http.rs` is a few hundred lines and it bounds everything it reads:
 the request head (64 KiB), the request body (64 MiB), the number of live
 connections (64) and the time a connection may stay silent (30 s).
+
+## The dependencies
+
+`serde`, `serde_json`, `chrono`, `anyhow`, `thiserror`, `stride-api` and
+`stride-store` are the workspace's. The one addition is **`rusqlite`**,
+which is already in the approved set and already in the workspace: it is the
+plain SQLite connection that reads the reference app's database while it is
+being converted — `VACUUM INTO` for the snapshot, `PRAGMA quick_check` for
+the soundness check. It is the same crate `stride-store` is built on, with
+the same vendored SQLCipher, so the binary carries one SQLite library and
+not two.
 
 ## The traversal hole
 

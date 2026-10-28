@@ -141,6 +141,21 @@ impl ConversionReport {
     }
 }
 
+/// A trace of the conversion, for the tests.
+///
+/// The conversion replaces a file, and a race in it is the difference
+/// between a year of history and an empty app. The trace is kept in memory
+/// and read when a test fails, so that the failure says what happened rather
+/// than only what did not.
+pub static TRACE: std::sync::Mutex<Vec<String>> = std::sync::Mutex::new(Vec::new());
+
+/// Write a line to the trace.
+pub fn trace(line: String) {
+    if let Ok(mut trace) = TRACE.lock() {
+        trace.push(line);
+    }
+}
+
 /// What is the file?
 ///
 /// A SQLCipher file has a random header, so the only way to tell the two
@@ -309,6 +324,12 @@ pub fn convert_plaintext_to_encrypted(
     // not, which is a database that is half of two states. The snapshot is
     // the answer to that.
     take_snapshot(path, &snapshot)?;
+    trace(format!(
+        "snapshot {} -> {} ({} bytes)",
+        path.display(),
+        snapshot.display(),
+        std::fs::metadata(&snapshot).map(|m| m.len()).unwrap_or(0)
+    ));
 
     let outcome = convert_snapshot(&snapshot, path, &staged, &backup, key);
     // The snapshot is a temporary file either way.
@@ -366,7 +387,46 @@ fn convert_snapshot(
         source,
     })?;
 
+    // Read it back. The file that is now in place is opened with the same
+    // key and its rows are counted; if it does not answer, the plain file
+    // goes back where it was, because a desktop that cannot open the
+    // database is a nuisance and an empty database is a disaster.
+    if let Err(error) = verify_converted(original, key, &report) {
+        trace(format!("the converted file did not answer: {error}"));
+        let _ = std::fs::remove_file(original);
+        let _ = copy_file(backup, original);
+        return Err(DbError::Conversion(format!(
+            "the converted database did not answer, and the plain file was put back: {error}"
+        )));
+    }
+
     Ok(report)
+}
+
+/// Open the converted database and count its rows.
+///
+/// The counts are the ones the copy reported, so this proves that what is
+/// on the disk is what was copied.
+fn verify_converted(path: &Path, key: &[u8], report: &ConversionReport) -> Result<(), DbError> {
+    let store = Store::open(path, key)?;
+    let counts = store
+        .with_connection(|conn| {
+            let mut counts = Vec::new();
+            for (table, rows) in &report.tables {
+                let count = count_rows(conn, table)?;
+                counts.push((table.clone(), count, *rows));
+            }
+            Ok(counts)
+        })
+        .map_err(|error| DbError::Conversion(error.to_string()))?;
+    for (table, count, expected) in counts {
+        if count != expected {
+            return Err(DbError::Conversion(format!(
+                "the table {table} has {count} rows and {expected} were copied"
+            )));
+        }
+    }
+    Ok(())
 }
 
 /// Take a snapshot of a database that may be being written to.
@@ -382,32 +442,106 @@ fn convert_snapshot(
 /// header says "write-ahead log" but which has no log is a file that other
 /// tools read differently.
 pub fn take_snapshot(source: &Path, target: &Path) -> Result<(), DbError> {
-    let _ = std::fs::remove_file(target);
-    let origin = Connection::open(source).map_err(|error| DbError::Legacy {
-        path: source.to_path_buf(),
-        source: error,
-    })?;
-    let quoted = target.to_string_lossy().replace('\'', "''");
-    origin
-        .execute_batch(&format!("VACUUM INTO '{quoted}'"))
-        .map_err(|error| DbError::Legacy {
-            path: target.to_path_buf(),
+    // The database may be written to while it is snapshotted, so the
+    // snapshot is checked against the source and taken again if they do not
+    // agree. Three tries, and then it is an error rather than a snapshot
+    // that is half of two states.
+    let mut last = String::new();
+    for attempt in 1..=3 {
+        let _ = std::fs::remove_file(target);
+        let origin = Connection::open(source).map_err(|error| DbError::Legacy {
+            path: source.to_path_buf(),
             source: error,
         })?;
-    if !target.is_file() {
-        return Err(DbError::Conversion(format!(
-            "the snapshot at {} was not written",
-            target.display()
-        )));
+        let quoted = target.to_string_lossy().replace('\'', "''");
+        origin
+            .execute_batch(&format!("VACUUM INTO '{quoted}'"))
+            .map_err(|error| DbError::Legacy {
+                path: target.to_path_buf(),
+                source: error,
+            })?;
+        if !target.is_file() {
+            return Err(DbError::Conversion(format!(
+                "the snapshot at {} was not written",
+                target.display()
+            )));
+        }
+        match snapshot_matches(source, target) {
+            Ok(true) => {
+                trace(format!(
+                    "the snapshot of {} matches the database (attempt {attempt})",
+                    source.display()
+                ));
+                return Ok(());
+            }
+            Ok(false) => {
+                last = format!("the snapshot of {} does not match it", source.display());
+                trace(format!("{last} (attempt {attempt})"));
+            }
+            Err(error) => return Err(error),
+        }
     }
-    Ok(())
+    Err(DbError::Conversion(last))
+}
+
+/// Do the snapshot and the database hold the same rows?
+///
+/// The snapshot is a copy of a database that may have been written to while
+/// it was taken. The check is the row count of every table, which is what a
+/// torn copy changes first.
+fn snapshot_matches(source: &Path, snapshot: &Path) -> Result<bool, DbError> {
+    let origin = table_counts(source)?;
+    let copy = table_counts(snapshot)?;
+    Ok(origin == copy)
+}
+
+/// The row count of every table of a database.
+fn table_counts(path: &Path) -> Result<Vec<(String, i64)>, DbError> {
+    let connection = Connection::open(path).map_err(|error| DbError::Legacy {
+        path: path.to_path_buf(),
+        source: error,
+    })?;
+    let mut statement = connection
+        .prepare(
+            "SELECT name FROM main.sqlite_master WHERE type='table' \
+             AND name NOT LIKE 'sqlite_%' ORDER BY name",
+        )
+        .map_err(|error| DbError::Legacy {
+            path: path.to_path_buf(),
+            source: error,
+        })?;
+    let tables = statement
+        .query_map([], |row| row.get::<_, String>(0))
+        .map_err(|error| DbError::Legacy {
+            path: path.to_path_buf(),
+            source: error,
+        })?
+        .filter_map(|row| row.ok())
+        .collect::<Vec<String>>();
+    let mut counts = Vec::with_capacity(tables.len());
+    for table in tables {
+        let count: i64 = connection
+            .query_row(
+                &format!("SELECT count(*) FROM main.\"{table}\""),
+                [],
+                |row| row.get(0),
+            )
+            .map_err(|error| DbError::Legacy {
+                path: path.to_path_buf(),
+                source: error,
+            })?;
+        counts.push((table, count));
+    }
+    Ok(counts)
 }
 
 /// Copy a file, if it is there.
 fn copy_file(from: &Path, to: &Path) -> Result<(), DbError> {
     if !from.exists() {
+        trace(format!("copy_file: {} does not exist", from.display()));
         return Ok(());
     }
+    trace(format!("copy_file: {} -> {}", from.display(), to.display()));
     std::fs::copy(from, to)
         .map(|_| ())
         .map_err(|source| DbError::Io {
