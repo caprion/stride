@@ -20,7 +20,10 @@ use stride_mcp::{StrideApi, Tools, MAX_OUTPUT_BYTES};
 fn calls() -> Vec<(&'static str, Value)> {
     vec![
         ("training_digest", json!({ "period": "28d" })),
-        ("search_activities", json!({ "from": "2026-10-01", "to": "2026-10-28" })),
+        (
+            "search_activities",
+            json!({ "from": "2026-10-01", "to": "2026-10-28" }),
+        ),
         (
             "get_activity",
             json!({ "activity_id": 1, "include": ["laps", "streams", "zones", "route"] }),
@@ -171,7 +174,9 @@ fn big_store() -> MemBackend {
             activity_id: id,
             kind: "hr".into(),
             seconds: (0..count).map(|index| index as f64).collect(),
-            values: (0..count).map(|index| Some(140.0 + (index % 30) as f64)).collect(),
+            values: (0..count)
+                .map(|index| Some(140.0 + (index % 30) as f64))
+                .collect(),
             unit: Some("bpm".into()),
             ..Default::default()
         });
@@ -201,7 +206,10 @@ fn a_large_history_still_answers_inside_the_bound() {
             &json!({ "from": "2026-10-01", "to": "2026-10-28", "limit": 100 }),
         )
         .expect("the search");
-    assert_eq!(answer["data"]["items"].as_array().expect("items").len(), 100);
+    assert_eq!(
+        answer["data"]["items"].as_array().expect("items").len(),
+        100
+    );
     assert!(serde_json::to_string(&answer).expect("json").len() <= MAX_OUTPUT_BYTES);
 
     // The detail of a run with five hundred splits and five thousand samples

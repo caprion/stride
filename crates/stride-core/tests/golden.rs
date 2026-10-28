@@ -82,13 +82,19 @@ fn activity_from_import(import: &Value, id: i64, name: Option<&str>) -> Activity
         name: name
             .map(str::to_string)
             .unwrap_or_else(|| scalars["name"].as_str().unwrap_or_default().to_string()),
-        local_date: scalars["local_date"].as_str().unwrap_or_default().to_string(),
+        local_date: scalars["local_date"]
+            .as_str()
+            .unwrap_or_default()
+            .to_string(),
         start_date: scalars["start_time"]
             .as_str()
             .map(|value| value.get(..10).unwrap_or(value).to_string())
             .unwrap_or_default(),
         day_of_week: scalars["day_of_week"].as_str().map(str::to_string),
-        sport_type: scalars["sport_type"].as_str().unwrap_or_default().to_string(),
+        sport_type: scalars["sport_type"]
+            .as_str()
+            .unwrap_or_default()
+            .to_string(),
         source: scalars["source"].as_str().unwrap_or_default().to_string(),
         distance_m: scalars["distance_m"].as_f64().unwrap_or(0.0),
         moving_time_s: scalars["moving_time_s"].as_f64(),
@@ -282,7 +288,11 @@ fn readiness_matches_the_golden_file() {
 /// The plan scenario's activities, in insertion order.
 fn plan_activities(scenario: &Value, imports: &BTreeMap<String, Value>) -> Vec<Activity> {
     let mut activities = Vec::new();
-    for (index, spec) in scenario["activities"].as_array().expect("the activities").iter().enumerate()
+    for (index, spec) in scenario["activities"]
+        .as_array()
+        .expect("the activities")
+        .iter()
+        .enumerate()
     {
         let id = index as i64 + 1;
         let mut activity = match spec.get("case_id").and_then(|value| value.as_str()) {
@@ -297,13 +307,19 @@ fn plan_activities(scenario: &Value, imports: &BTreeMap<String, Value>) -> Vec<A
                 Activity {
                     id,
                     name: scalars["name"].as_str().unwrap_or_default().to_string(),
-                    local_date: scalars["local_date"].as_str().unwrap_or_default().to_string(),
+                    local_date: scalars["local_date"]
+                        .as_str()
+                        .unwrap_or_default()
+                        .to_string(),
                     start_date: scalars["start_time"]
                         .as_str()
                         .map(|value| value.get(..10).unwrap_or(value).to_string())
                         .unwrap_or_default(),
                     day_of_week: scalars["day_of_week"].as_str().map(str::to_string),
-                    sport_type: scalars["sport_type"].as_str().unwrap_or_default().to_string(),
+                    sport_type: scalars["sport_type"]
+                        .as_str()
+                        .unwrap_or_default()
+                        .to_string(),
                     source: scalars["source"].as_str().unwrap_or_default().to_string(),
                     distance_m: scalars["distance_m"].as_f64().unwrap_or_default(),
                     moving_time_s: scalars["moving_time_s"].as_f64(),
@@ -513,16 +529,8 @@ fn the_comparison_has_fifteen_parameters_and_a_shared_axis() {
         .iter()
         .find(|entry| entry.parameter.key == "pace_s_per_km")
         .expect("the pace parameter");
-    assert_same(
-        &json!(pace.a),
-        &json!(338.6004514673),
-        "compare.pace.a",
-    );
-    assert_same(
-        &json!(pace.b),
-        &json!(303.0303030303),
-        "compare.pace.b",
-    );
+    assert_same(&json!(pace.a), &json!(338.6004514673), "compare.pace.a");
+    assert_same(&json!(pace.b), &json!(303.0303030303), "compare.pace.b");
     assert_eq!(
         pace.winner,
         Some(stride_core::comparison::Winner::B),

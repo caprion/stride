@@ -1,3 +1,6 @@
+// The test code unwraps and expects: it is the test, and the workspace
+// denies those lints in library code only.
+#![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 //! The store and the core, end to end.
 //!
 //! The router is only useful if it can read a real database and answer with

@@ -35,7 +35,7 @@ pub fn schema() -> Value {
             "include": schema::enumeration_array(
                 INCLUDES,
                 "What to include: \"laps\", \"streams\", \"zones\", \"route\". Defaults to the \
-laps and the zones.",
+        laps and the zones.",
             ),
         }),
         &["activity_id"],
@@ -198,10 +198,7 @@ shown and are not counted as zero."
             .map(|point| {
                 let lat = point.get(0).and_then(Value::as_f64).unwrap_or(0.0);
                 let lon = point.get(1).and_then(Value::as_f64).unwrap_or(0.0);
-                json!([
-                    common::round_to(lat, 5),
-                    common::round_to(lon, 5)
-                ])
+                json!([common::round_to(lat, 5), common::round_to(lon, 5)])
             })
             .collect();
         data["route"] = json!({

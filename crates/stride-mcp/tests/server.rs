@@ -19,7 +19,10 @@ fn the_handshake_says_what_the_server_speaks() {
     let tools = common::tools();
     let response = handle(&tools, &request(1, "initialize", json!({}))).expect("a response");
     assert_eq!(response["jsonrpc"], json!("2.0"));
-    assert_eq!(response["result"]["protocolVersion"], json!(server::PROTOCOL_VERSION));
+    assert_eq!(
+        response["result"]["protocolVersion"],
+        json!(server::PROTOCOL_VERSION)
+    );
     assert_eq!(response["result"]["serverInfo"]["name"], json!("stride"));
     assert!(response["result"]["capabilities"]["tools"].is_object());
 }
@@ -76,7 +79,10 @@ fn a_call_answers_with_the_structured_content() {
     .expect("a response");
     let result = &response["result"];
     assert_eq!(result["isError"], json!(false));
-    assert_eq!(result["structuredContent"]["tool"], json!("search_activities"));
+    assert_eq!(
+        result["structuredContent"]["tool"],
+        json!("search_activities")
+    );
     assert_eq!(result["content"][0]["type"], json!("text"));
     // The text is the same answer, rendered.
     let text = result["content"][0]["text"].as_str().expect("text");

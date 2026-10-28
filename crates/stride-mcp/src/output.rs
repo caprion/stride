@@ -122,7 +122,9 @@ pub fn take(items: Vec<Value>, max: usize) -> Vec<Value> {
 
 /// The size of a value, in bytes, as it would be serialized.
 pub fn size(value: &Value) -> usize {
-    serde_json::to_string(value).map(|text| text.len()).unwrap_or(usize::MAX)
+    serde_json::to_string(value)
+        .map(|text| text.len())
+        .unwrap_or(usize::MAX)
 }
 
 /// Bring a value inside a size bound.
@@ -242,7 +244,9 @@ mod tests {
 
     #[test]
     fn bound_trims_the_longest_list() {
-        let items: Vec<Value> = (0..500).map(|index| json!({ "index": index, "pad": "xxxx" })).collect();
+        let items: Vec<Value> = (0..500)
+            .map(|index| json!({ "index": index, "pad": "xxxx" }))
+            .collect();
         let value = json!({ "items": items });
         let (bounded, trimmed) = bound(value, 4096);
         assert!(trimmed);

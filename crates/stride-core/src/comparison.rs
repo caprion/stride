@@ -422,7 +422,11 @@ mod tests {
     use crate::model::Stream;
 
     fn stream(seconds: Vec<f64>, values: Vec<Option<f64>>) -> Stream {
-        Stream { seconds, values, unit: None }
+        Stream {
+            seconds,
+            values,
+            unit: None,
+        }
     }
 
     #[test]
@@ -437,9 +441,15 @@ mod tests {
         );
         streams.insert(
             "hr".to_string(),
-            stream(vec![0.0, 1.0, 2.0], vec![Some(100.0), Some(200.0), Some(300.0)]),
+            stream(
+                vec![0.0, 1.0, 2.0],
+                vec![Some(100.0), Some(200.0), Some(300.0)],
+            ),
         );
-        let activity = Activity { streams, ..Activity::default() };
+        let activity = Activity {
+            streams,
+            ..Activity::default()
+        };
         let profile = profile_for(&activity, 3);
         assert_eq!(profile.len(), 3);
         assert_eq!(profile[0].distance_m, 0.0);
@@ -463,7 +473,10 @@ mod tests {
             "hr".to_string(),
             stream(vec![0.0, 1.0, 2.0], vec![None, Some(200.0), Some(300.0)]),
         );
-        let activity = Activity { streams, ..Activity::default() };
+        let activity = Activity {
+            streams,
+            ..Activity::default()
+        };
         let profile = profile_for(&activity, 3);
         // The absent sample is dropped, so 200 pairs with 0 m and 300 with
         // 10 m; beyond 10 m the profile holds the last value.

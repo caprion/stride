@@ -54,7 +54,7 @@ pub fn schema() -> Value {
             "to": schema::date("The last day of the range, inclusive."),
             "sport": schema::string(
                 "The sport to match exactly, or \"all\" for every sport. Defaults to the run \
-sports (running, trail running, treadmill, virtual, street and track).",
+        sports (running, trail running, treadmill, virtual, street and track).",
             ),
             "min_distance_m": schema::number(
                 "Only runs at least this long, in metres.",
@@ -78,7 +78,7 @@ sports (running, trail running, treadmill, virtual, street and track).",
             ),
             "cursor": schema::string(
                 "The cursor of the page to return, as returned by a previous call. Defaults to the \
-first page.",
+        first page.",
             ),
         }),
         &[],
@@ -268,7 +268,10 @@ counts the runs that match the other filters only."
         .coverage("total_estimate", total)
         .coverage("returned", returned)
         .coverage("page", page)
-        .coverage("attributed_to", "the activity list of the athlete's own Stride database");
+        .coverage(
+            "attributed_to",
+            "the activity list of the athlete's own Stride database",
+        );
     for limitation in limitations {
         envelope = envelope.limitation(limitation);
     }
@@ -281,17 +284,22 @@ fn sort_items(items: &mut [Value], sort: &str) {
         "distance" => items.sort_by(|left, right| {
             let left = common::f64_of(left, "distance_m").unwrap_or(0.0);
             let right = common::f64_of(right, "distance_m").unwrap_or(0.0);
-            right.partial_cmp(&left).unwrap_or(std::cmp::Ordering::Equal)
+            right
+                .partial_cmp(&left)
+                .unwrap_or(std::cmp::Ordering::Equal)
         }),
         "elevation" => items.sort_by(|left, right| {
             let left = common::f64_of(left, "elevation_gain_m").unwrap_or(0.0);
             let right = common::f64_of(right, "elevation_gain_m").unwrap_or(0.0);
-            right.partial_cmp(&left).unwrap_or(std::cmp::Ordering::Equal)
+            right
+                .partial_cmp(&left)
+                .unwrap_or(std::cmp::Ordering::Equal)
         }),
         "pace" => items.sort_by(|left, right| {
             let left = common::pace_of(left).unwrap_or(f64::MAX);
             let right = common::pace_of(right).unwrap_or(f64::MAX);
-            left.partial_cmp(&right).unwrap_or(std::cmp::Ordering::Equal)
+            left.partial_cmp(&right)
+                .unwrap_or(std::cmp::Ordering::Equal)
         }),
         _ => items.sort_by(|left, right| {
             let left = common::str_of(left, "start_time")
@@ -315,7 +323,11 @@ fn cursor_page(cursor: Option<&str>) -> Result<i64, McpError> {
         .parse::<i64>()
         .map_err(|_| McpError::invalid(NAME, "cursor", "is not a cursor this tool issued"))?;
     if page < 1 {
-        return Err(McpError::invalid(NAME, "cursor", "must be a page of at least 1"));
+        return Err(McpError::invalid(
+            NAME,
+            "cursor",
+            "must be a page of at least 1",
+        ));
     }
     Ok(page)
 }

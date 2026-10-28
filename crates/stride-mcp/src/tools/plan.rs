@@ -42,7 +42,7 @@ pub fn schema() -> Value {
             "view": schema::enumeration(
                 VIEWS,
                 "Which part of the plan to answer with: \"current\", \"week\", \"block\" or \
-\"results\". Defaults to \"current\".",
+        \"results\". Defaults to \"current\".",
             ),
             "date": schema::date(
                 "The day the week is about, for the \"week\" view. Defaults to today.",
@@ -50,7 +50,7 @@ pub fn schema() -> Value {
             "block_id": schema::integer("The block to show, for the \"block\" view.", None, None),
             "from": schema::date(
                 "The first day of the range, for the \"results\" view. Defaults to the start of \
-the current block.",
+        the current block.",
             ),
             "to": schema::date(
                 "The last day of the range, for the \"results\" view. Defaults to today.",
@@ -80,10 +80,7 @@ pub fn run(api: &dyn StrideApi, ctx: &Context, args: &Value) -> Result<Value, Mc
             let current = common::get(api, NAME, "/api/v1/plan/current")?;
             // The route sends the block's detail, which holds the block
             // itself one level down.
-            let block = current
-                .get("block")
-                .map(block_of)
-                .unwrap_or(Value::Null);
+            let block = current.get("block").map(block_of).unwrap_or(Value::Null);
             let week = current.get("week").cloned().unwrap_or(Value::Null);
             let has_plan = !block.is_null();
             let today = common::get(api, NAME, "/api/v1/plan/today")?;
@@ -210,7 +207,10 @@ pub fn run(api: &dyn StrideApi, ctx: &Context, args: &Value) -> Result<Value, Mc
     let mut envelope = Envelope::new(data)
         .coverage("view", view)
         .coverage("date", common::date_text(date))
-        .coverage("attributed_to", "the plan tables of the athlete's own database");
+        .coverage(
+            "attributed_to",
+            "the plan tables of the athlete's own database",
+        );
     for limitation in limitations {
         envelope = envelope.limitation(limitation);
     }
@@ -219,7 +219,10 @@ pub fn run(api: &dyn StrideApi, ctx: &Context, args: &Value) -> Result<Value, Mc
 
 /// The block inside a block's detail.
 fn block_of(detail: &Value) -> Value {
-    detail.get("block").cloned().unwrap_or_else(|| detail.clone())
+    detail
+        .get("block")
+        .cloned()
+        .unwrap_or_else(|| detail.clone())
 }
 
 /// The block, without the notes.

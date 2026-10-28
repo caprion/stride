@@ -41,9 +41,8 @@ mod tests {
 
     #[test]
     fn an_arc_of_the_router_is_a_source() {
-        let api: Arc<dyn StrideApi> = Arc::new(Api::new(Arc::new(
-            stride_api::mem::MemBackend::new(),
-        )));
+        let api: Arc<dyn StrideApi> =
+            Arc::new(Api::new(Arc::new(stride_api::mem::MemBackend::new())));
         let health = api.call("GET", "/api/v1/health", None);
         assert!(health.is_ok());
     }

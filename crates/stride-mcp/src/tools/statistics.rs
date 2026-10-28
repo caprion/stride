@@ -42,7 +42,7 @@ pub fn schema() -> Value {
             "metrics": schema::enumeration_array(
                 METRICS,
                 "What to include: \"volume\", \"pace\", \"zones\", \"records\", \"elevation\". \
-Defaults to all of them.",
+        Defaults to all of them.",
             ),
         }),
         &[],
@@ -107,10 +107,9 @@ series."
             }));
         }
     } else {
-        let months = ((to.year() - from.year()) as i64 * 12
-            + (to.month() as i64 - from.month() as i64)
-            + 2)
-            .clamp(1, 60);
+        let months =
+            ((to.year() - from.year()) as i64 * 12 + (to.month() as i64 - from.month() as i64) + 2)
+                .clamp(1, 60);
         let path = format!("/api/v1/stats/monthly?months={months}");
         for item in items(&common::get(api, NAME, &path)?) {
             let key = common::str_of(&item, "month_key").unwrap_or_default();
@@ -236,7 +235,10 @@ Garmin's own zone model."
         .coverage("group_by", group_by.clone())
         .coverage("periods", series.len())
         .coverage("runs", runs)
-        .coverage("attributed_to", "the activity and split tables of the athlete's own database");
+        .coverage(
+            "attributed_to",
+            "the activity and split tables of the athlete's own database",
+        );
     for limitation in limitations {
         envelope = envelope.limitation(limitation);
     }

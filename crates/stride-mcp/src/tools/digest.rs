@@ -46,7 +46,7 @@ pub fn schema() -> Value {
             "period": schema::enumeration(
                 PERIODS,
                 "The period to report: \"7d\", \"28d\", \"block\" for the current plan block, or \
-\"custom\". Defaults to \"28d\".",
+        \"custom\". Defaults to \"28d\".",
             ),
             "from": schema::date("The first day of a custom period, inclusive."),
             "to": schema::date("The last day of a custom period, inclusive."),
@@ -68,14 +68,8 @@ pub fn run(api: &dyn StrideApi, ctx: &Context, args: &Value) -> Result<Value, Mc
     let mut limitations: Vec<String> = Vec::new();
 
     let (from, to) = match period.as_str() {
-        "7d" => (
-            ctx.today - chrono::Duration::days(6),
-            ctx.today,
-        ),
-        "28d" => (
-            ctx.today - chrono::Duration::days(27),
-            ctx.today,
-        ),
+        "7d" => (ctx.today - chrono::Duration::days(6), ctx.today),
+        "28d" => (ctx.today - chrono::Duration::days(27), ctx.today),
         "block" => {
             let current = common::get(api, NAME, "/api/v1/plan/current")?;
             let block = current.get("block").cloned().unwrap_or(Value::Null);
@@ -99,10 +93,7 @@ pub fn run(api: &dyn StrideApi, ctx: &Context, args: &Value) -> Result<Value, Mc
 twenty-eight days"
                             .to_string(),
                     );
-                    (
-                        ctx.today - chrono::Duration::days(27),
-                        ctx.today,
-                    )
+                    (ctx.today - chrono::Duration::days(27), ctx.today)
                 }
             }
         }
@@ -255,7 +246,10 @@ from the weekly aggregation, which is rounded to the week"
         .coverage("previous_to", common::date_text(previous_to))
         .coverage("runs", load.runs)
         .coverage("weeks", weeks.len())
-        .coverage("attributed_to", "the athlete's own activities, plan and physiology tables");
+        .coverage(
+            "attributed_to",
+            "the athlete's own activities, plan and physiology tables",
+        );
     for limitation in limitations {
         envelope = envelope.limitation(limitation);
     }

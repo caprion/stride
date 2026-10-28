@@ -64,14 +64,14 @@ pub fn schema() -> Value {
             "metrics": schema::array(
                 schema::string("A metric name."),
                 "Which metrics to report: \"cadence\", \"cadence_stability\", \"cadence_drift\", \
-\"decoupling\", \"efficiency\", \"pace_variability\", \"negative_split\", \"stride_length\", \
-\"hr_drift\", \"form\", \"zones\". Defaults to cadence stability, decoupling, efficiency and pace \
-variability.",
+        \"decoupling\", \"efficiency\", \"pace_variability\", \"negative_split\", \"stride_length\", \
+        \"hr_drift\", \"form\", \"zones\". Defaults to cadence stability, decoupling, efficiency and pace \
+        variability.",
             ),
             "group_by": schema::enumeration(
                 GROUPS,
                 "Whether the series is per run, per week, or over the long runs only. Defaults to \
-\"week\".",
+        \"week\".",
             ),
         }),
         &[],
@@ -95,7 +95,10 @@ pub fn run(api: &dyn StrideApi, ctx: &Context, args: &Value) -> Result<Value, Mc
     let wanted = {
         let named = args.str_list("metrics")?;
         if named.is_empty() {
-            DEFAULT_METRICS.iter().map(|name| (*name).to_string()).collect()
+            DEFAULT_METRICS
+                .iter()
+                .map(|name| (*name).to_string())
+                .collect()
         } else {
             named
         }
@@ -142,9 +145,8 @@ pub fn run(api: &dyn StrideApi, ctx: &Context, args: &Value) -> Result<Value, Mc
             .map(|item| common::f64_of(item, "distance_m").unwrap_or(0.0))
             .filter(|distance| *distance > 0.0)
             .collect();
-        distances.sort_by(|left, right| {
-            left.partial_cmp(right).unwrap_or(std::cmp::Ordering::Equal)
-        });
+        distances
+            .sort_by(|left, right| left.partial_cmp(right).unwrap_or(std::cmp::Ordering::Equal));
         if let Some(position) = distances.len().checked_sub(4) {
             let candidate = distances[position];
             let floor = 10_000.0;
@@ -153,9 +155,7 @@ pub fn run(api: &dyn StrideApi, ctx: &Context, args: &Value) -> Result<Value, Mc
         if let Some(threshold) = threshold {
             long_ids = activities
                 .iter()
-                .filter(|item| {
-                    common::f64_of(item, "distance_m").unwrap_or(0.0) >= threshold
-                })
+                .filter(|item| common::f64_of(item, "distance_m").unwrap_or(0.0) >= threshold)
                 .filter_map(|item| common::i64_of(item, "id"))
                 .collect();
         }
@@ -282,9 +282,7 @@ pub fn run(api: &dyn StrideApi, ctx: &Context, args: &Value) -> Result<Value, Mc
         }
     }
     if groups.len() == 1 {
-        limitations.push(
-            "the range holds one group, so no trend can be read from it".to_string(),
-        );
+        limitations.push("the range holds one group, so no trend can be read from it".to_string());
     }
 
     let data = json!({
@@ -300,7 +298,10 @@ pub fn run(api: &dyn StrideApi, ctx: &Context, args: &Value) -> Result<Value, Mc
         .coverage("groups", groups.len())
         .coverage("fingerprints", fingerprints.len())
         .coverage("metrics", columns.join(","))
-        .coverage("attributed_to", "the fingerprints of the athlete's own runs");
+        .coverage(
+            "attributed_to",
+            "the fingerprints of the athlete's own runs",
+        );
     for limitation in limitations {
         envelope = envelope.limitation(limitation);
     }

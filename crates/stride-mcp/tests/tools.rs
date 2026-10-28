@@ -13,7 +13,10 @@ use serde_json::{json, Value};
 fn assert_envelope(answer: &Value, tool: &str) {
     assert_eq!(answer["tool"], json!(tool));
     assert!(answer["data"].is_object(), "{tool}: data must be an object");
-    assert!(answer["coverage"].is_object(), "{tool}: coverage must be an object");
+    assert!(
+        answer["coverage"].is_object(),
+        "{tool}: coverage must be an object"
+    );
     assert!(
         answer["limitations"].is_array(),
         "{tool}: limitations must be an array"
@@ -212,7 +215,9 @@ fn the_analysis_compares_with_a_similar_run() {
             &json!({ "activity_id": 1, "compare_with": "similar_recent" }),
         )
         .expect("the analysis");
-    let comparison = answer["data"]["comparison"].as_object().expect("comparison");
+    let comparison = answer["data"]["comparison"]
+        .as_object()
+        .expect("comparison");
     assert_eq!(comparison["basis"], json!("similar_recent"));
     let candidates = comparison["candidates"].as_array().expect("candidates");
     assert_eq!(candidates.len(), 1);
@@ -248,14 +253,20 @@ fn the_statistics_cover_the_range() {
     assert_eq!(zones["zones"].as_array().expect("zones").len(), 5);
 
     // The records are the best of the whole history.
-    assert!(!answer["data"]["records"].as_array().expect("records").is_empty());
+    assert!(!answer["data"]["records"]
+        .as_array()
+        .expect("records")
+        .is_empty());
 }
 
 #[test]
 fn the_plan_context_holds_the_week_and_the_verdicts() {
     let tools = common::tools();
     let answer = tools
-        .call("plan_context", &json!({ "view": "week", "date": "2026-10-28" }))
+        .call(
+            "plan_context",
+            &json!({ "view": "week", "date": "2026-10-28" }),
+        )
         .expect("the plan");
     assert_envelope(&answer, "plan_context");
 
@@ -322,10 +333,7 @@ fn the_physiology_context_reads_the_days() {
     assert_eq!(drivers[0]["key"], json!("sleep"));
 
     // The days are in order.
-    let dates: Vec<&str> = days
-        .iter()
-        .filter_map(|day| day["date"].as_str())
-        .collect();
+    let dates: Vec<&str> = days.iter().filter_map(|day| day["date"].as_str()).collect();
     let mut sorted = dates.clone();
     sorted.sort_unstable();
     assert_eq!(dates, sorted);

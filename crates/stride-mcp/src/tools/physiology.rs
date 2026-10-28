@@ -40,7 +40,7 @@ pub fn schema() -> Value {
             "focus": schema::enumeration(
                 FOCUSES,
                 "Which measurement to lead with: \"readiness\", \"sleep\", \"hrv\", \
-\"resting_hr\" or \"all\". Defaults to \"all\".",
+        \"resting_hr\" or \"all\". Defaults to \"all\".",
             ),
         }),
         &[],
@@ -212,7 +212,10 @@ readiness drivers can be read against them."
         .coverage("days", days.len())
         .coverage("days_with_readiness", measured)
         .coverage("missing_sources", missing_sources.join(","))
-        .coverage("attributed_to", "the daily physiology table of the athlete's own database");
+        .coverage(
+            "attributed_to",
+            "the daily physiology table of the athlete's own database",
+        );
     for limitation in limitations {
         envelope = envelope.limitation(limitation);
     }
@@ -255,7 +258,9 @@ fn drivers(readiness: &Value) -> Vec<Value> {
     list.sort_by(|left, right| {
         let left = common::f64_of(left, "contribution").unwrap_or(0.0);
         let right = common::f64_of(right, "contribution").unwrap_or(0.0);
-        right.partial_cmp(&left).unwrap_or(std::cmp::Ordering::Equal)
+        right
+            .partial_cmp(&left)
+            .unwrap_or(std::cmp::Ordering::Equal)
     });
     list.truncate(3);
     list.iter()

@@ -46,10 +46,10 @@ pub fn schema() -> Value {
             "metrics": schema::array(
                 schema::string("A parameter name."),
                 "Which comparison parameters to report, by the name the API uses: \"distance_m\", \
-\"moving_time_s\", \"pace_s_per_km\", \"elevation_gain_m\", \"avg_hr\", \"hr_drift_bpm\", \
-\"pace_drift_pct\", \"decoupling_pct\", \"cadence_avg\", \"cadence_cv\", \"efficiency_first\", \
-\"form_score\", \"running_time_s\", \"walking_time_s\", \"stopped_time_s\", \"avg_speed_ms\". \
-Defaults to all of them.",
+        \"moving_time_s\", \"pace_s_per_km\", \"elevation_gain_m\", \"avg_hr\", \"hr_drift_bpm\", \
+        \"pace_drift_pct\", \"decoupling_pct\", \"cadence_avg\", \"cadence_cv\", \"efficiency_first\", \
+        \"form_score\", \"running_time_s\", \"walking_time_s\", \"stopped_time_s\", \"avg_speed_ms\". \
+        Defaults to all of them.",
             ),
         }),
         &["activity_ids"],
@@ -60,7 +60,11 @@ Defaults to all of them.",
 pub fn run(api: &dyn StrideApi, _ctx: &Context, args: &Value) -> Result<Value, McpError> {
     let args = Args::new(NAME, args)?;
     args.reject_unknown(&["activity_ids", "points", "metrics"])?;
-    let raw = args.value().get("activity_ids").cloned().unwrap_or(Value::Null);
+    let raw = args
+        .value()
+        .get("activity_ids")
+        .cloned()
+        .unwrap_or(Value::Null);
     let ids = match raw {
         Value::Array(items) => items
             .iter()
@@ -167,18 +171,24 @@ pub fn run(api: &dyn StrideApi, _ctx: &Context, args: &Value) -> Result<Value, M
         .filter_map(|run| common::f64_of(run, "distance_m"))
         .collect();
     let spread = match (
-        distances.iter().copied().fold(None, |low: Option<f64>, value| {
-            Some(match low {
-                Some(low) => low.min(value),
-                None => value,
-            })
-        }),
-        distances.iter().copied().fold(None, |high: Option<f64>, value| {
-            Some(match high {
-                Some(high) => high.max(value),
-                None => value,
-            })
-        }),
+        distances
+            .iter()
+            .copied()
+            .fold(None, |low: Option<f64>, value| {
+                Some(match low {
+                    Some(low) => low.min(value),
+                    None => value,
+                })
+            }),
+        distances
+            .iter()
+            .copied()
+            .fold(None, |high: Option<f64>, value| {
+                Some(match high {
+                    Some(high) => high.max(value),
+                    None => value,
+                })
+            }),
     ) {
         (Some(low), Some(high)) => Some(common::round_to(high - low, 1)),
         _ => None,
@@ -273,7 +283,10 @@ fn resample(profile: Vec<Value>, points: usize) -> Vec<Value> {
             let high_value = profile[high].get(key).and_then(Value::as_f64);
             match (low_value, high_value) {
                 (Some(low_value), Some(high_value)) => {
-                    json!(common::round_to(low_value + (high_value - low_value) * weight, 2))
+                    json!(common::round_to(
+                        low_value + (high_value - low_value) * weight,
+                        2
+                    ))
                 }
                 _ => Value::Null,
             }

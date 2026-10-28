@@ -18,8 +18,8 @@
 
 pub mod activity;
 pub mod analysis;
-pub mod compare;
 pub mod common;
+pub mod compare;
 pub mod digest;
 pub mod fingerprint;
 pub mod physiology;

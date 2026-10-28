@@ -173,7 +173,11 @@ pub fn store() -> MemBackend {
         (5, vec![2_500.0, 2_500.0, 2_500.0, 2_500.0]),
     ] {
         for (index, distance) in laps.iter().enumerate() {
-            let grade = if activity == 1 && index == 1 { 60.0 } else { 10.0 };
+            let grade = if activity == 1 && index == 1 {
+                60.0
+            } else {
+                10.0
+            };
             store.add_lap(LapRow {
                 activity_id: activity,
                 lap_index: index as i64 + 1,
@@ -387,14 +391,8 @@ pub fn store() -> MemBackend {
             "zone_distribution": { "1": 600.0, "2": 1_200.0, "3": 900.0, "4": 300.0, "5": 60.0 },
         })
     };
-    store.set_derived(
-        "fingerprint:1",
-        fingerprint(1, "2026-10-27", 85.0, 4.1),
-    );
-    store.set_derived(
-        "fingerprint:5",
-        fingerprint(5, "2026-09-27", 87.0, 2.2),
-    );
+    store.set_derived("fingerprint:1", fingerprint(1, "2026-10-27", 85.0, 4.1));
+    store.set_derived("fingerprint:5", fingerprint(5, "2026-09-27", 87.0, 2.2));
     let fingerprints = json!([
         fingerprint(1, "2026-10-27", 85.0, 4.1),
         fingerprint(2, "2026-10-24", 83.0, 2.9),
@@ -446,7 +444,10 @@ pub fn store() -> MemBackend {
     ] {
         store.set_derived(key, readiness_range.clone());
     }
-    store.set_derived("readiness:2026-10-28", readiness("2026-10-28", 82.0, "peak"));
+    store.set_derived(
+        "readiness:2026-10-28",
+        readiness("2026-10-28", 82.0, "peak"),
+    );
     store.set_derived(
         "baselines:2026-10-28",
         json!({ "sleep_s": 26_000.0, "hrv_ms": 58.0, "resting_hr": 48.0 }),

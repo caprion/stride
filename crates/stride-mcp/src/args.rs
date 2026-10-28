@@ -76,11 +76,7 @@ impl<'a> Args<'a> {
         match self.value.get(key) {
             None | Some(Value::Null) => Ok(None),
             Some(Value::String(text)) => Ok(Some(text.as_str())),
-            Some(_) => Err(McpError::invalid(
-                self.tool,
-                key,
-                "must be a string",
-            )),
+            Some(_) => Err(McpError::invalid(self.tool, key, "must be a string")),
         }
     }
 
@@ -107,14 +103,11 @@ impl<'a> Args<'a> {
     pub fn opt_i64(&self, key: &str) -> Result<Option<i64>, McpError> {
         match self.value.get(key) {
             None | Some(Value::Null) => Ok(None),
-            Some(Value::Number(number)) => number.as_i64().map(Some).ok_or_else(|| {
-                McpError::invalid(self.tool, key, "must be an integer")
-            }),
-            Some(_) => Err(McpError::invalid(
-                self.tool,
-                key,
-                "must be an integer",
-            )),
+            Some(Value::Number(number)) => number
+                .as_i64()
+                .map(Some)
+                .ok_or_else(|| McpError::invalid(self.tool, key, "must be an integer")),
+            Some(_) => Err(McpError::invalid(self.tool, key, "must be an integer")),
         }
     }
 
@@ -147,9 +140,10 @@ impl<'a> Args<'a> {
     pub fn opt_f64(&self, key: &str) -> Result<Option<f64>, McpError> {
         match self.value.get(key) {
             None | Some(Value::Null) => Ok(None),
-            Some(Value::Number(number)) => number.as_f64().map(Some).ok_or_else(|| {
-                McpError::invalid(self.tool, key, "must be a number")
-            }),
+            Some(Value::Number(number)) => number
+                .as_f64()
+                .map(Some)
+                .ok_or_else(|| McpError::invalid(self.tool, key, "must be a number")),
             Some(_) => Err(McpError::invalid(self.tool, key, "must be a number")),
         }
     }

@@ -1,6 +1,6 @@
+use serde_json::Value;
 use std::collections::BTreeMap;
 use std::path::Path;
-use serde_json::Value;
 use stride_core::fingerprint::{default_zone_model, FingerprintInput};
 
 #[test]
@@ -55,13 +55,20 @@ fn fuzz() {
         }
         for stream in spec["streams"].as_array().unwrap() {
             let kind = stream["kind"].as_str().unwrap().to_string();
-            let values = stream["values"].as_array().unwrap().iter()
-                .map(|v| v.as_f64()).collect();
-            activity.streams.insert(kind, stride_core::model::Stream {
-                seconds: Vec::new(),
-                values,
-                unit: None,
-            });
+            let values = stream["values"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .map(|v| v.as_f64())
+                .collect();
+            activity.streams.insert(
+                kind,
+                stride_core::model::Stream {
+                    seconds: Vec::new(),
+                    values,
+                    unit: None,
+                },
+            );
         }
         let reference = case["reference"].as_f64().unwrap();
         let zones = default_zone_model(reference);
@@ -69,7 +76,8 @@ fn fuzz() {
             max_hr_reference: reference,
             zone_model: &zones,
             activity: &activity,
-        })).unwrap();
+        }))
+        .unwrap();
         let expected = &case["expected"];
         let mut diffs = Vec::new();
         for (key, want) in expected.as_object().unwrap() {
@@ -85,7 +93,9 @@ fn fuzz() {
                         match a.get(k) {
                             Some(Value::Number(av)) => {
                                 let (av, bv) = (av.as_f64().unwrap(), bv.as_f64().unwrap());
-                                if (av - bv).abs() > 1e-9 * f64::max(1.0, bv.abs()) { ok = false; }
+                                if (av - bv).abs() > 1e-9 * f64::max(1.0, bv.abs()) {
+                                    ok = false;
+                                }
                             }
                             _ => ok = false,
                         }
@@ -102,7 +112,10 @@ fn fuzz() {
             failures += 1;
             if failures < 6 {
                 println!("case {index}: {}", diffs.join(" | "));
-                println!("  input: {}", serde_json::to_string(&case["activity"]).unwrap());
+                println!(
+                    "  input: {}",
+                    serde_json::to_string(&case["activity"]).unwrap()
+                );
             }
         }
     }

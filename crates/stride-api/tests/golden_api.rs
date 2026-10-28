@@ -1,3 +1,6 @@
+// The test code unwraps and expects: it is the test, and the workspace
+// denies those lints in library code only.
+#![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 //! The API golden test.
 //!
 //! The fixtures in `fixtures/api_golden.json` were recorded from the Python

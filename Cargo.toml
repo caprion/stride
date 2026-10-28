@@ -32,12 +32,14 @@ expect_used = "deny"
 panic = "deny"
 todo = "deny"
 unimplemented = "deny"
-missing_debug_implementations = "allow"
 
 [workspace.lints.rust]
 # Warn rather than deny: the FFI boundary must be `unsafe`, and it is the one
 # place it is allowed. The gate checks that `unsafe` appears nowhere else.
 unsafe_code = "warn"
+# A rustc lint, not a clippy one — it belongs here or every crate prints an
+# unknown-lint warning.
+missing_debug_implementations = "allow"
 
 [workspace.dependencies]
 serde = { version = "1", features = ["derive"] }

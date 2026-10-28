@@ -1,6 +1,6 @@
+use serde_json::Value;
 use std::collections::BTreeMap;
 use std::path::Path;
-use serde_json::Value;
 use stride_core::comparison::profile_for;
 
 #[test]
@@ -13,14 +13,30 @@ fn fuzz() {
         let mut streams = BTreeMap::new();
         for stream in case["streams"].as_array().unwrap() {
             let kind = stream["kind"].as_str().unwrap().to_string();
-            let seconds = stream["seconds"].as_array().unwrap().iter()
-                .map(|v| v.as_f64().unwrap()).collect();
-            let values = stream["values"].as_array().unwrap().iter()
-                .map(|v| v.as_f64()).collect();
-            streams.insert(kind, stride_core::model::Stream { seconds, values, unit: None });
+            let seconds = stream["seconds"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .map(|v| v.as_f64().unwrap())
+                .collect();
+            let values = stream["values"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .map(|v| v.as_f64())
+                .collect();
+            streams.insert(
+                kind,
+                stride_core::model::Stream {
+                    seconds,
+                    values,
+                    unit: None,
+                },
+            );
         }
-        let fingerprint = serde_json::from_value::<stride_core::model::Fingerprint>(
-            case["fingerprint"].clone()).unwrap();
+        let fingerprint =
+            serde_json::from_value::<stride_core::model::Fingerprint>(case["fingerprint"].clone())
+                .unwrap();
         let activity = stride_core::model::Activity {
             streams,
             distance_m: case["distance_m"].as_f64().unwrap(),
@@ -31,12 +47,17 @@ fn fuzz() {
             ..Default::default()
         };
         for parameter in stride_core::comparison::PARAMETERS.iter() {
-            let got = serde_json::to_value(stride_core::comparison::value_for(parameter, &activity)).unwrap();
+            let got =
+                serde_json::to_value(stride_core::comparison::value_for(parameter, &activity))
+                    .unwrap();
             let want = &case["expected_values"][parameter.key];
             if !same(&got, want) {
                 failures += 1;
                 if failures < 4 {
-                    println!("case {index} parameter {}: got {got} want {want}", parameter.key);
+                    println!(
+                        "case {index} parameter {}: got {got} want {want}",
+                        parameter.key
+                    );
                 }
             }
         }
@@ -46,8 +67,13 @@ fn fuzz() {
             failures += 1;
             if failures < 4 {
                 println!("case {index}");
-                for (i, (got, want)) in computed.as_array().unwrap().iter()
-                    .zip(expected.as_array().unwrap().iter()).enumerate() {
+                for (i, (got, want)) in computed
+                    .as_array()
+                    .unwrap()
+                    .iter()
+                    .zip(expected.as_array().unwrap().iter())
+                    .enumerate()
+                {
                     if !same(got, want) {
                         println!("  point {i}: got {got} want {want}");
                         break;
@@ -70,7 +96,9 @@ fn same(a: &Value, b: &Value) -> bool {
             x.len() == y.len() && x.iter().zip(y.iter()).all(|(x, y)| same(x, y))
         }
         (Value::Object(x), Value::Object(y)) => {
-            x.len() == y.len() && x.iter().all(|(k, v)| y.get(k).map_or(false, |w| same(v, w)))
+            x.len() == y.len()
+                && x.iter()
+                    .all(|(k, v)| y.get(k).map_or(false, |w| same(v, w)))
         }
         _ => a == b,
     }

@@ -64,7 +64,12 @@ impl Date {
         let weekday = (days + 3).rem_euclid(7);
         let thursday = days - weekday + 3;
         let year = Self::from_days(thursday).year;
-        let january_first = Self { year, month: 1, day: 1 }.to_days();
+        let january_first = Self {
+            year,
+            month: 1,
+            day: 1,
+        }
+        .to_days();
         let week = (thursday - january_first) / 7 + 1;
         (year, week as u32)
     }
@@ -85,7 +90,11 @@ impl Date {
 
 impl std::fmt::Display for Date {
     fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(formatter, "{:04}-{:02}-{:02}", self.year, self.month, self.day)
+        write!(
+            formatter,
+            "{:04}-{:02}-{:02}",
+            self.year, self.month, self.day
+        )
     }
 }
 
@@ -96,8 +105,7 @@ fn days_from_civil(year: i32, month: u32, day: u32) -> i64 {
     let year_of_era = year - era * 400;
     let month_position = (month as i64 + 9) % 12;
     let day_of_year = (153 * month_position + 2) / 5 + day as i64 - 1;
-    let day_of_era =
-        year_of_era * 365 + year_of_era / 4 - year_of_era / 100 + day_of_year;
+    let day_of_era = year_of_era * 365 + year_of_era / 4 - year_of_era / 100 + day_of_year;
     era * 146_097 + day_of_era - 719_468
 }
 

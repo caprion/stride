@@ -29,7 +29,10 @@ pub const SERVER_VERSION: &str = env!("CARGO_PKG_VERSION");
 ///
 /// `None` means the message was a notification: there is nothing to answer.
 pub fn handle(tools: &Tools, request: &Value) -> Option<Value> {
-    let method = request.get("method").and_then(Value::as_str).unwrap_or_default();
+    let method = request
+        .get("method")
+        .and_then(Value::as_str)
+        .unwrap_or_default();
     let id = request.get("id").cloned();
     let params = request.get("params").cloned().unwrap_or(Value::Null);
 
@@ -44,8 +47,8 @@ pub fn handle(tools: &Tools, request: &Value) -> Option<Value> {
             "capabilities": { "tools": { "listChanged": false } },
             "serverInfo": { "name": SERVER_NAME, "version": SERVER_VERSION },
             "instructions": "Stride answers questions about the athlete's own runs, plan and \
-physiology. Every tool is read-only. A tool's answer is a disclosure: it says which activity or \
-date range it came from, and what it cannot be used for.",
+        physiology. Every tool is read-only. A tool's answer is a disclosure: it says which activity or \
+        date range it came from, and what it cannot be used for.",
         })),
         "ping" => Ok(json!({})),
         "tools/list" => Ok(json!({
@@ -120,11 +123,7 @@ fn code_for(error: &McpError) -> i64 {
 }
 
 /// Serve MCP over stdio until the input ends.
-pub fn serve(
-    tools: Tools,
-    input: impl BufRead,
-    output: &mut impl Write,
-) -> std::io::Result<()> {
+pub fn serve(tools: Tools, input: impl BufRead, output: &mut impl Write) -> std::io::Result<()> {
     for line in input.lines() {
         let line = line?;
         if line.trim().is_empty() {
@@ -170,7 +169,10 @@ mod tests {
     fn initialize_answers_with_the_protocol() {
         let request = json!({ "jsonrpc": "2.0", "id": 1, "method": "initialize" });
         let response = handle(&tools(), &request).expect("a response");
-        assert_eq!(response["result"]["protocolVersion"], json!(PROTOCOL_VERSION));
+        assert_eq!(
+            response["result"]["protocolVersion"],
+            json!(PROTOCOL_VERSION)
+        );
         assert_eq!(response["id"], json!(1));
     }
 

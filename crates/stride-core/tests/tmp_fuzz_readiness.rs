@@ -1,5 +1,5 @@
-use std::path::Path;
 use serde_json::Value;
+use std::path::Path;
 use stride_core::readiness::{baselines, readiness};
 
 #[test]
@@ -9,8 +9,12 @@ fn fuzz() {
     let cases: Value = serde_json::from_str(&text).unwrap();
     let mut failures = 0;
     for (index, case) in cases.as_array().unwrap().iter().enumerate() {
-        let rows: Vec<stride_core::model::DailyPhysiology> = case["rows"].as_array().unwrap().iter()
-            .map(|r| serde_json::from_value(r.clone()).unwrap()).collect();
+        let rows: Vec<stride_core::model::DailyPhysiology> = case["rows"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|r| serde_json::from_value(r.clone()).unwrap())
+            .collect();
         let day = case["day"].as_str().unwrap();
         let computed_baselines = baselines(&rows, day);
         let row = rows.iter().find(|r| r.date == day);
@@ -22,11 +26,16 @@ fn fuzz() {
         for (key, want) in case["expected_baselines"].as_object().unwrap() {
             let got = computed_baselines_field(&computed_baselines, key);
             let ok = match (got, want) {
-                (Some(a), Value::Number(b)) => (a - b.as_f64().unwrap()).abs() <= 1e-9 * f64::max(1.0, b.as_f64().unwrap().abs()),
+                (Some(a), Value::Number(b)) => {
+                    (a - b.as_f64().unwrap()).abs()
+                        <= 1e-9 * f64::max(1.0, b.as_f64().unwrap().abs())
+                }
                 (None, Value::Null) => true,
                 _ => false,
             };
-            if !ok { diffs.push(format!("baseline.{key}: got {got:?}, want {want}")); }
+            if !ok {
+                diffs.push(format!("baseline.{key}: got {got:?}, want {want}"));
+            }
         }
         // readiness
         for (key, want) in expected.as_object().unwrap() {

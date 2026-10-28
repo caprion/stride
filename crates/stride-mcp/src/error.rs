@@ -7,8 +7,8 @@
 //! rules apply to errors as much as to data.
 
 use serde_json::Value;
-use thiserror::Error;
 use stride_api::error::ApiError;
+use thiserror::Error;
 
 /// Something a tool could not do.
 #[derive(Debug, Error)]

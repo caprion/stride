@@ -1,6 +1,10 @@
 //! The migrations: they run twice, they run on an old database, and the
 //! datetimes are stored the way Python stores them.
 
+// An integration test is its own crate, so clippy's allow-in-tests
+// configuration does not cover it: the test code opts out here.
+#![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
+
 mod common;
 
 use chrono::SubsecRound;

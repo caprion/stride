@@ -244,9 +244,7 @@ pub fn verdict_for(session: &PlanSession, activity: Option<&Activity>) -> Verdic
 
     let distance_hit = match actual {
         Some(actual) => {
-            target == 0.0
-                || actual >= target * 0.95
-                || (actual - target).abs() <= actual * 0.05
+            target == 0.0 || actual >= target * 0.95 || (actual - target).abs() <= actual * 0.05
         }
         None => false,
     };
@@ -291,7 +289,10 @@ pub fn verdict_for(session: &PlanSession, activity: Option<&Activity>) -> Verdic
     };
     let type_score = if verdict == "substituted" { 0.0 } else { 100.0 };
     let adherence_score = activity.map(|_| {
-        round_to(0.5 * distance_score + 0.4 * pace_score + 0.1 * type_score, 1)
+        round_to(
+            0.5 * distance_score + 0.4 * pace_score + 0.1 * type_score,
+            1,
+        )
     });
 
     let pace_delta_s_km = match (pace, session.pace_low_s_km, session.pace_high_s_km) {
@@ -529,7 +530,8 @@ pub fn match_sessions(inputs: &PlanInputs<'_>) -> Vec<SessionMatch> {
         }
 
         // 2. A rest or strength session takes the non-run of that date.
-        if chosen.is_none() && (session.session_type == "rest" || session.session_type == "strength")
+        if chosen.is_none()
+            && (session.session_type == "rest" || session.session_type == "strength")
         {
             let wanted: Vec<&Activity> = candidates
                 .iter()
@@ -540,15 +542,14 @@ pub fn match_sessions(inputs: &PlanInputs<'_>) -> Vec<SessionMatch> {
                         } else {
                             !is_run_sport(&activity.sport_type)
                         }
-                }).copied()
+                })
+                .copied()
                 .collect();
             chosen = wanted.first().copied();
         }
 
         // 3. Otherwise a run within two days.
-        if chosen.is_none()
-            && session.session_type != "rest"
-            && session.session_type != "strength"
+        if chosen.is_none() && session.session_type != "rest" && session.session_type != "strength"
         {
             let near: Vec<&Activity> = candidates
                 .iter()
@@ -556,10 +557,13 @@ pub fn match_sessions(inputs: &PlanInputs<'_>) -> Vec<SessionMatch> {
                     is_run_sport(&activity.sport_type)
                         && day_difference(&activity.local_date, &session.date)
                             .is_some_and(|days| days.abs() <= 2)
-                }).copied()
+                })
+                .copied()
                 .collect();
             if let Some(activity) = min_by(&near, |activity| {
-                let days = day_difference(&activity.local_date, &session.date).unwrap_or(0).abs();
+                let days = day_difference(&activity.local_date, &session.date)
+                    .unwrap_or(0)
+                    .abs();
                 let target = session.target_distance_m.unwrap_or(0.0);
                 let distance = if target != 0.0 {
                     (activity.distance_m - target).abs()
@@ -592,12 +596,8 @@ pub fn match_sessions(inputs: &PlanInputs<'_>) -> Vec<SessionMatch> {
         }
 
         let physiology = cause_inputs(inputs, session, chosen);
-        let (cause, confidence) = explain_cause(
-            session,
-            chosen,
-            physiology.as_ref(),
-            &verdict.verdict,
-        );
+        let (cause, confidence) =
+            explain_cause(session, chosen, physiology.as_ref(), &verdict.verdict);
         verdict.cause = cause;
         verdict.cause_confidence = confidence;
 
@@ -849,21 +849,11 @@ pub fn adherence(matches: &[SessionMatch], extra_sessions: usize) -> Adherence {
             1,
         )),
         planned_km: round_to(
-            sum(
-                &rows
-                    .iter()
-                    .map(|row| row.planned_km)
-                    .collect::<Vec<_>>(),
-            ),
+            sum(&rows.iter().map(|row| row.planned_km).collect::<Vec<_>>()),
             2,
         ),
         actual_km: round_to(
-            sum(
-                &rows
-                    .iter()
-                    .map(|row| row.actual_km)
-                    .collect::<Vec<_>>(),
-            ),
+            sum(&rows.iter().map(|row| row.actual_km).collect::<Vec<_>>()),
             2,
         ),
         planned_sessions: matches.len(),

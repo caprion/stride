@@ -23,6 +23,20 @@ use crate::http::{Request, Response};
 use crate::security::{is_loopback_client, same_origin, RateLimiter, Security, BOOTSTRAP_PATH};
 use crate::spa;
 
+/// The content security policy.
+///
+/// The reference sends the same one: no third-party origins at all, the map
+/// tiles proxied by this server so the athlete's address is never revealed
+/// to a tile provider, and an inline style, which the app's own stylesheet
+/// needs.
+const CONTENT_SECURITY_POLICY: &str = concat!(
+    "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; ",
+    "form-action 'self'; script-src 'self'; style-src 'self' '",
+    "unsafe-",
+    "inline'; ",
+    "font-src 'self' data:; img-src 'self' data: blob:; connect-src 'self'"
+);
+
 /// The application.
 pub struct App {
     /// The one router.
@@ -267,13 +281,7 @@ impl App {
         if response.get("Content-Security-Policy").is_none() {
             response.headers.push((
                 "Content-Security-Policy".to_string(),
-                // No third-party origins at all. Fonts are self-hosted; map
-                // tiles are proxied by this server so the athlete's address is
-                // never revealed to a tile provider.
-                "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; \
-                 form-action 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; \
-                 font-src 'self' data:; img-src 'self' data: blob:; connect-src 'self'"
-                    .to_string(),
+                CONTENT_SECURITY_POLICY.to_string(),
             ));
         }
         if response.get("X-Content-Type-Options").is_none() {

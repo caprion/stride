@@ -40,13 +40,13 @@ pub fn schema() -> Value {
             "activity_id": schema::integer("The run's id.", None, None),
             "compare_with": schema::string(
                 "What to compare the run with: \"similar_recent\" for the most recent runs of a \
-similar length, \"previous_best\" for the fastest comparable run, or \"activity_id:<id>\" for one \
-named run.",
+        similar length, \"previous_best\" for the fastest comparable run, or \"activity_id:<id>\" for one \
+        named run.",
             ),
             "focus": schema::enumeration_array(
                 FOCUSES,
                 "Which parts of the analysis to keep: \"pacing\", \"hills\", \"effort\", \"form\". \
-Defaults to all of them.",
+        Defaults to all of them.",
             ),
         }),
         &["activity_id"],
@@ -69,8 +69,11 @@ pub fn run(api: &dyn StrideApi, _ctx: &Context, args: &Value) -> Result<Value, M
 
     // The fingerprint is what carries the form and the decoupling. A run
     // without one is not an error — it is a run with less evidence.
-    let fingerprint = match common::get(api, NAME, &format!("/api/v1/fitness/activity/{activity_id}"))
-    {
+    let fingerprint = match common::get(
+        api,
+        NAME,
+        &format!("/api/v1/fitness/activity/{activity_id}"),
+    ) {
         Ok(value) => Some(value),
         Err(McpError::Api { status: 404, .. }) => None,
         Err(error) => return Err(error),
@@ -94,9 +97,8 @@ pub fn run(api: &dyn StrideApi, _ctx: &Context, args: &Value) -> Result<Value, M
             && common::f64_of(lap, "end_elevation_m").is_some()
     });
     if !has_grade && !laps.is_empty() {
-        missing.push(
-            "the splits carry no elevation, so the grade of the terrain is unknown".into(),
-        );
+        missing
+            .push("the splits carry no elevation, so the grade of the terrain is unknown".into());
     }
     let has_hr = laps
         .iter()
@@ -203,11 +205,7 @@ fn segment_value(segment: &Segment) -> Value {
 }
 
 /// The findings, filtered by what the caller asked about.
-fn build_signals(
-    laps: &[Value],
-    fingerprint: Option<&Value>,
-    focus: &[String],
-) -> Vec<Value> {
+fn build_signals(laps: &[Value], fingerprint: Option<&Value>, focus: &[String]) -> Vec<Value> {
     let wanted = |name: &str| focus.is_empty() || focus.iter().any(|item| item == name);
     let mut signals: Vec<Value> = Vec::new();
 
@@ -218,7 +216,10 @@ fn build_signals(
             let finding = if change > 2.0 {
                 format!("The second half was {change:.1}% slower than the first half.")
             } else if change < -2.0 {
-                format!("The second half was {}% faster than the first half.", -change)
+                format!(
+                    "The second half was {}% faster than the first half.",
+                    -change
+                )
             } else {
                 "The pace was even across the two halves.".to_string()
             };
@@ -323,7 +324,7 @@ no flatter splits to compare them with.",
                     "focus": "effort",
                     "finding": format!(
                         "The aerobic decoupling of the run was {decoupling:.1}% — the heart rate \
-drifted relative to the pace."
+                drifted relative to the pace."
                     ),
                     "evidence": {
                         "decoupling_pct": common::round_to(decoupling, 1),
@@ -350,9 +351,7 @@ drifted relative to the pace."
                         "The mean cadence was {cadence:.0} steps per minute"
                     ));
                     if let Some(variability) = variability {
-                        finding.push_str(&format!(
-                            ", with a variability of {variability:.1}%"
-                        ));
+                        finding.push_str(&format!(", with a variability of {variability:.1}%"));
                     }
                     finding.push('.');
                 }
@@ -482,7 +481,8 @@ fn compare(
             .min_by(|left, right| {
                 let left = common::pace_of(left).unwrap_or(f64::MAX);
                 let right = common::pace_of(right).unwrap_or(f64::MAX);
-                left.partial_cmp(&right).unwrap_or(std::cmp::Ordering::Equal)
+                left.partial_cmp(&right)
+                    .unwrap_or(std::cmp::Ordering::Equal)
             })
             .copied();
         match best {
@@ -501,7 +501,7 @@ fn compare(
         "basis": basis,
         "candidates": candidates,
         "note": "the candidates are the runs within 10% of this run's distance; they are not \
-matched for terrain, duration or effort",
+    matched for terrain, duration or effort",
     }))
 }
 

@@ -1,6 +1,10 @@
 //! The round trip: write an activity with its laps, streams and zones, read it
 //! back, and check that it is the same activity.
 
+// An integration test is its own crate, so clippy's allow-in-tests
+// configuration does not cover it: the test code opts out here.
+#![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
+
 mod common;
 
 use chrono::{TimeZone, Utc};

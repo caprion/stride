@@ -10,7 +10,7 @@
 //! directory and finds nothing.
 
 use std::net::IpAddr;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
 use stride_api::{Api, CoreBackend, MemBackend};
@@ -37,11 +37,11 @@ fn dist(name: &str) -> PathBuf {
 }
 
 /// The application over the directory.
-fn app(dist: &PathBuf) -> App {
+fn app(dist: &Path) -> App {
     let backend = Arc::new(CoreBackend::new(Arc::new(MemBackend::new())));
     let api = Api::new(backend);
     let security = Security::new("a-capability-token-that-is-long-enough", true, false);
-    App::new(api, security, dist.clone(), Vec::new())
+    App::new(api, security, dist.to_path_buf(), Vec::new())
 }
 
 /// A request from the loopback browser.
@@ -157,6 +157,16 @@ fn an_unknown_api_path_is_a_json_404() {
     assert_eq!(response.status, 404);
     assert_eq!(response.get("Content-Type"), Some("application/json"));
     assert_eq!(body(&response), "{\"detail\":\"Not found\"}");
+}
+
+#[test]
+fn a_post_to_an_unknown_path_is_a_405() {
+    let dist = dist("a_post_to_an_unknown_path_is_a_405");
+    let app = app(&dist);
+    // The reference's catch-all is a `GET` route.
+    let response = app.handle(&request("POST", "/somewhere"));
+    assert_eq!(response.status, 405);
+    assert_eq!(body(&response), "{\"detail\":\"Method Not Allowed\"}");
 }
 
 #[test]

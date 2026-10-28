@@ -4,6 +4,10 @@
 //! this project: a year of sleep, heart rate, stress and GPS routes, in the
 //! clear, on a laptop.
 
+// An integration test is its own crate, so clippy's allow-in-tests
+// configuration does not cover it: the test code opts out here.
+#![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
+
 mod common;
 
 use stride_store::{Activity, Store, StoreError};

@@ -177,7 +177,10 @@ fn derive(day: &str, row: Option<&DailyPhysiology>, baseline: &Baselines) -> Rea
     }
 
     if let Some(row) = row {
-        let sleep = row.sleep_s.filter(|value| is_number(*value)).map(|v| v / 3600.0);
+        let sleep = row
+            .sleep_s
+            .filter(|value| is_number(*value))
+            .map(|v| v / 3600.0);
         let sleep_base = baseline
             .sleep_s
             .filter(|value| *value != 0.0)
@@ -227,8 +230,12 @@ fn derive(day: &str, row: Option<&DailyPhysiology>, baseline: &Baselines) -> Rea
         };
         let hrv_detail = format!(
             "{} ms vs {} ms baseline",
-            one_decimal(row.hrv_ms).map(crate::numeric::format_float).unwrap_or_default(),
-            one_decimal(hrv_base).map(crate::numeric::format_float).unwrap_or_default()
+            one_decimal(row.hrv_ms)
+                .map(crate::numeric::format_float)
+                .unwrap_or_default(),
+            one_decimal(hrv_base)
+                .map(crate::numeric::format_float)
+                .unwrap_or_default()
         );
         add(
             &mut drivers,
@@ -245,9 +252,7 @@ fn derive(day: &str, row: Option<&DailyPhysiology>, baseline: &Baselines) -> Rea
 
         let rhr_base = baseline.resting_hr;
         let rhr_quality = match (row.resting_hr, rhr_base) {
-            (Some(rhr), Some(base)) if base != 0.0 => {
-                Some(1.0 - (rhr - base) / (0.2 * base))
-            }
+            (Some(rhr), Some(base)) if base != 0.0 => Some(1.0 - (rhr - base) / (0.2 * base)),
             _ => None,
         };
         let rhr_detail = format!(
@@ -301,9 +306,7 @@ fn derive(day: &str, row: Option<&DailyPhysiology>, baseline: &Baselines) -> Rea
         );
 
         let ratio = match (row.acute_load, row.chronic_load) {
-            (Some(acute), Some(chronic))
-                if is_number(acute) && is_positive(chronic) =>
-            {
+            (Some(acute), Some(chronic)) if is_number(acute) && is_positive(chronic) => {
                 Some(acute / chronic)
             }
             _ => None,
@@ -328,12 +331,11 @@ fn derive(day: &str, row: Option<&DailyPhysiology>, baseline: &Baselines) -> Rea
         None
     } else {
         Some(
-            sum(
-                &drivers
-                    .iter()
-                    .map(|(driver, _)| driver.contribution)
-                    .collect::<Vec<_>>(),
-            ) / total_weight
+            sum(&drivers
+                .iter()
+                .map(|(driver, _)| driver.contribution)
+                .collect::<Vec<_>>())
+                / total_weight
                 * 100.0,
         )
     };
@@ -476,4 +478,3 @@ mod tests {
         assert_eq!(baseline.sleep_s, Some(25200.0));
     }
 }
-

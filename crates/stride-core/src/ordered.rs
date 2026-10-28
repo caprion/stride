@@ -20,7 +20,9 @@ pub struct OrderedMap<V> {
 impl<V> OrderedMap<V> {
     /// An empty map.
     pub fn new() -> Self {
-        Self { entries: Vec::new() }
+        Self {
+            entries: Vec::new(),
+        }
     }
 
     /// Append an entry. An existing key is *not* replaced — use
@@ -35,11 +37,7 @@ impl<V> OrderedMap<V> {
     /// does.
     pub fn insert(&mut self, key: impl Into<String>, value: V) {
         let key = key.into();
-        match self
-            .entries
-            .iter_mut()
-            .find(|(name, _)| name == &key)
-        {
+        match self.entries.iter_mut().find(|(name, _)| name == &key) {
             Some(entry) => entry.1 = value,
             None => self.entries.push((key, value)),
         }

@@ -12,6 +12,7 @@ import os
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import FileResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 
@@ -88,6 +89,18 @@ app.add_middleware(
     allow_headers=["*"],
 )
 app.add_middleware(SecurityMiddleware, allowed_origins=_cors_origins)
+
+# Compression.
+#
+# The API answers with JSON that is mostly numbers, and JSON compresses about
+# eight times better than that. The measurement that prompted this: the
+# activity list alone was 484 KB uncompressed, and /activities?per_page=200
+# was still 484 KB with Accept-Encoding: gzip, because nothing was
+# compressing it. A browsing session was pulling about 1.1 MB of JSON.
+#
+# The minimum size keeps the small responses - health, a status - uncompressed,
+# because a compressed 40-byte body is larger than the body.
+app.add_middleware(GZipMiddleware, minimum_size=1024)
 app.add_exception_handler(HTTPException, redacted_http_exception_handler)
 
 app.include_router(auth_api.router, prefix=API_PREFIX)

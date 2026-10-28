@@ -26,13 +26,7 @@ pub const DEFAULT_MAX_HR_REFERENCE: f64 = 190.0;
 /// The fraction of the maximum heart rate that opens each zone.
 const ZONE_BOUNDS: [f64; 5] = [0.0, 0.6, 0.7, 0.8, 0.9];
 /// The names of the five heart-rate zones.
-pub const ZONE_NAMES: [&str; 5] = [
-    "Recovery",
-    "Aerobic",
-    "Tempo",
-    "Threshold",
-    "Anaerobic",
-];
+pub const ZONE_NAMES: [&str; 5] = ["Recovery", "Aerobic", "Tempo", "Threshold", "Anaerobic"];
 
 /// A zone as the athlete's Garmin profile stores it.
 ///
@@ -97,8 +91,7 @@ pub fn zone_model(reference: f64, stored: Option<&[StoredZone]>) -> Vec<Zone> {
         for (index, row) in stored.iter().enumerate() {
             let low = row.low_bpm;
             let high = row.high_bpm;
-            let usable = low.is_some_and(is_number)
-                && high.map_or(true, is_positive);
+            let usable = low.is_some_and(is_number) && high.map_or(true, is_positive);
             if !usable {
                 continue;
             }
@@ -227,12 +220,14 @@ fn efficiency(group: &[Lap], reference: f64) -> Option<f64> {
     }
     let paired: Vec<&Lap> = group
         .iter()
-        .filter(|lap| {
-            lap_pace(lap).is_some()
-                && lap.avg_hr.is_some_and(is_positive)
-        })
+        .filter(|lap| lap_pace(lap).is_some() && lap.avg_hr.is_some_and(is_positive))
         .collect();
-    let pace = mean(&paired.iter().filter_map(|lap| lap_pace(lap)).collect::<Vec<_>>())?;
+    let pace = mean(
+        &paired
+            .iter()
+            .filter_map(|lap| lap_pace(lap))
+            .collect::<Vec<_>>(),
+    )?;
     let heart_rate = mean(
         &paired
             .iter()
@@ -270,9 +265,7 @@ fn derive(input: &FingerprintInput<'_>) -> Fingerprint {
 
     let pace_laps: &[Lap] = if !laps.is_empty()
         && is_positive(activity.distance_m)
-        && laps[laps.len() - 1]
-            .distance_m
-            .is_some_and(is_number)
+        && laps[laps.len() - 1].distance_m.is_some_and(is_number)
         && laps[laps.len() - 1].distance_m.unwrap_or(0.0) < activity.distance_m * 0.15
     {
         &laps[..laps.len() - 1]
@@ -287,11 +280,7 @@ fn derive(input: &FingerprintInput<'_>) -> Fingerprint {
 
     let components: [(f64, Option<f64>, f64); 3] = [
         (30.0, cadence_cv, 15.0),
-        (
-            45.0,
-            decoupling.map(|value| value.max(0.0)),
-            25.0,
-        ),
+        (45.0, decoupling.map(|value| value.max(0.0)), 25.0),
         (25.0, pace_cv, 25.0),
     ];
     let present: Vec<(f64, f64)> = components
@@ -304,7 +293,10 @@ fn derive(input: &FingerprintInput<'_>) -> Fingerprint {
         None
     } else {
         let total_weight: f64 = present.iter().map(|(weight, _)| weight).sum();
-        let weighted: f64 = present.iter().map(|(weight, quality)| weight * quality).sum();
+        let weighted: f64 = present
+            .iter()
+            .map(|(weight, quality)| weight * quality)
+            .sum();
         Some(weighted / total_weight * 100.0)
     };
 
@@ -388,12 +380,15 @@ fn derive(input: &FingerprintInput<'_>) -> Fingerprint {
             maxima.push(value);
         }
     }
-    let hr_max = maxima.iter().copied().fold(None, |current: Option<f64>, value| {
-        Some(match current {
-            Some(existing) if existing >= value => existing,
-            _ => value,
-        })
-    });
+    let hr_max = maxima
+        .iter()
+        .copied()
+        .fold(None, |current: Option<f64>, value| {
+            Some(match current {
+                Some(existing) if existing >= value => existing,
+                _ => value,
+            })
+        });
 
     let strides: Vec<f64> = positive_values(&laps, |lap| lap.stride_length_m)
         .into_iter()
@@ -447,7 +442,13 @@ mod tests {
     use super::*;
     use crate::model::Lap;
 
-    fn lap(index: i64, distance: f64, duration: f64, cadence: Option<f64>, speed: Option<f64>) -> Lap {
+    fn lap(
+        index: i64,
+        distance: f64,
+        duration: f64,
+        cadence: Option<f64>,
+        speed: Option<f64>,
+    ) -> Lap {
         Lap {
             lap_index: index,
             distance_m: Some(distance),
