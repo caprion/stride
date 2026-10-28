@@ -64,12 +64,23 @@ pub struct FingerprintInput<'a> {
 
 /// The athlete's observed maximum heart rate.
 ///
-/// The reference reads it from the athlete's activities, ignoring demo rows
-/// once real data exists. It falls back to 190 when there is nothing to read.
-pub fn max_hr_reference(activities: &[Activity]) -> f64 {
+/// The reference reads it from the athlete's activities, and hides the demo
+/// ones only when the demo is not visible. It falls back to 190 when there is
+/// nothing to read.
+///
+/// The rows are filtered by `athlete_id` exactly as the reference's query
+/// filters them — `athlete_id IS NULL` matches the athlete-less rows.
+pub fn max_hr_reference(
+    activities: &[Activity],
+    athlete_id: Option<i64>,
+    demo_visible: bool,
+) -> f64 {
     let mut maximum: Option<f64> = None;
     for activity in activities {
-        if activity.source == "demo" {
+        if activity.athlete_id != athlete_id {
+            continue;
+        }
+        if !demo_visible && activity.source == "demo" {
             continue;
         }
         if let Some(value) = activity.max_hr {
@@ -495,6 +506,26 @@ mod tests {
         let fast_ef = efficiency(&fast, 190.0).expect("an efficiency");
         let slow_ef = efficiency(&slow, 190.0).expect("an efficiency");
         assert!(fast_ef > slow_ef);
+    }
+
+    #[test]
+    fn the_maximum_heart_rate_hides_the_demo_only_when_the_demo_is_hidden() {
+        let demo = Activity {
+            max_hr: Some(199.0),
+            source: "demo".to_string(),
+            ..Activity::default()
+        };
+        let real = Activity {
+            max_hr: Some(171.0),
+            source: "garmin_fit".to_string(),
+            ..Activity::default()
+        };
+        assert_eq!(
+            max_hr_reference(&[demo.clone(), real.clone()], None, true),
+            199.0
+        );
+        assert_eq!(max_hr_reference(&[demo, real], None, false), 171.0);
+        assert_eq!(max_hr_reference(&[], None, true), DEFAULT_MAX_HR_REFERENCE);
     }
 
     #[test]

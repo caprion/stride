@@ -62,6 +62,7 @@ fn geo_points(value: Option<&Value>) -> Option<Vec<[f64; 2]>> {
 fn activity_row(activity: &stride_store::Activity) -> ActivityRow {
     ActivityRow {
         id: activity.id.unwrap_or_default(),
+        athlete_id: activity.athlete_id,
         source: activity.source.clone(),
         external_id: activity.external_id.clone(),
         name: activity.name.clone(),

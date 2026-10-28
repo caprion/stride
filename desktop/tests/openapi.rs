@@ -1,9 +1,10 @@
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
-//! The router and the OpenAPI document.
+//! The router and the OpenAPI document — the desktop's golden fixture.
 //!
-//! The document is the one the Python app generates — `app.openapi()` — and
-//! it is the contract the React app was written against. The router in
-//! `stride-api` is the port of it, and this test is what says the two are the
+//! `fixtures/openapi_golden.json` is the document the Python app generates —
+//! `app.openapi()` — recorded on the reference implementation. It is the
+//! contract the React app was written against, and the router in
+//! `stride-api` is the port of it. This test is what says the two are the
 //! same thing: the same paths, the same methods, the same path parameters,
 //! and the same request bodies.
 //!
@@ -15,7 +16,7 @@ use serde_json::{Map, Value};
 use stride_api::{Api, CoreBackend, MemBackend};
 
 /// The document the reference generates.
-const DOCUMENT: &str = include_str!("fixtures/openapi.json");
+const DOCUMENT: &str = include_str!("fixtures/openapi_golden.json");
 
 /// The document, parsed.
 fn document() -> Value {
@@ -47,7 +48,7 @@ fn document_operations() -> Vec<(String, String)> {
 
 /// Every path and method in the document is a route.
 #[test]
-fn the_router_covers_the_openapi_document() {
+fn the_router_covers_the_openapi_golden_document() {
     let document = document();
     let paths = document["paths"]
         .as_object()
@@ -72,7 +73,7 @@ fn the_router_covers_the_openapi_document() {
 
 /// Every route in the router is in the document.
 #[test]
-fn the_openapi_document_covers_the_router() {
+fn the_openapi_golden_document_covers_the_router() {
     let operations = document_operations();
     for route in stride_api::router::ROUTES {
         let key = (route.method.to_string(), route.pattern.to_string());
@@ -87,7 +88,7 @@ fn the_openapi_document_covers_the_router() {
 
 /// The path parameters are the ones the document declares.
 #[test]
-fn the_path_parameters_match_the_document() {
+fn the_path_parameters_match_the_golden_document() {
     let document = document();
     let paths = document["paths"].as_object().expect("the paths");
     for (path, methods) in paths {
@@ -122,7 +123,7 @@ fn the_path_parameters_match_the_document() {
 /// validation error: a shape the document promises is a shape the router
 /// accepts.
 #[test]
-fn the_request_bodies_match_the_document() {
+fn the_request_bodies_match_the_golden_document() {
     let document = document();
     let api = api();
     let schemas = document["components"]["schemas"]

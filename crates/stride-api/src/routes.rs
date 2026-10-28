@@ -503,7 +503,15 @@ pub fn list_activities(ctx: &Ctx<'_>, query: &Query) -> Result<Value, ApiError> 
     };
     let rows = ctx.backend.activities(&filter)?;
     let total = ctx.backend.activity_count(&filter)?;
-    let items: Vec<Value> = rows.iter().map(shapes::activity_summary).collect();
+    // `?fields=` trims what nobody draws — the route preview of two hundred
+    // runs is 450 KB of points the feed never shows. It is opt-in: a client
+    // that asks for nothing gets the whole summary.
+    let wanted = query.field_list("fields");
+    let items: Vec<Value> = rows
+        .iter()
+        .map(shapes::activity_summary)
+        .map(|item| shapes::pick(&item, wanted.as_ref()))
+        .collect();
     Ok(json!({
         "items": items,
         "total": total,
@@ -516,12 +524,14 @@ pub fn list_activities(ctx: &Ctx<'_>, query: &Query) -> Result<Value, ApiError> 
 /// `GET /api/v1/activities/{activity_id}` — one run, in full.
 ///
 /// The reference: `api/activities.get_activity`.
-pub fn get_activity(ctx: &Ctx<'_>, activity_id: i64) -> Result<Value, ApiError> {
+pub fn get_activity(ctx: &Ctx<'_>, activity_id: i64, query: &Query) -> Result<Value, ApiError> {
     let row = ctx
         .backend
         .activity(activity_id)?
         .ok_or_else(|| ApiError::not_found("Activity not found."))?;
     let mut payload = shapes::activity_summary(&row);
+    // `?fields=` keeps only the named keys of the answer.
+    let wanted = query.field_list("fields");
     let laps = ctx.backend.activity_laps(activity_id)?;
     let streams = ctx.backend.activity_streams(activity_id)?;
     let zones = ctx.backend.activity_zones(activity_id)?;
@@ -564,7 +574,7 @@ pub fn get_activity(ctx: &Ctx<'_>, activity_id: i64) -> Result<Value, ApiError> 
             ),
         );
     }
-    Ok(payload)
+    Ok(shapes::pick(&payload, wanted.as_ref()))
 }
 
 /// `PATCH /api/v1/activities/{activity_id}` — change the editable fields.
@@ -714,8 +724,13 @@ pub fn stats_weekly(ctx: &Ctx<'_>, query: &Query) -> Result<Value, ApiError> {
         all_sports: true,
         ..ActivityFilter::default()
     })?;
+    // `?fields=` keeps the named fields of each bucket.
+    let wanted = query.field_list("fields");
     Ok(json!({
-        "items": analytics::weekly_volume(&rows, demo_visible, weeks as usize),
+        "items": trim_items(
+            analytics::weekly_volume(&rows, demo_visible, weeks as usize),
+            wanted.as_ref(),
+        ),
     }))
 }
 
@@ -730,8 +745,12 @@ pub fn stats_monthly(ctx: &Ctx<'_>, query: &Query) -> Result<Value, ApiError> {
         all_sports: true,
         ..ActivityFilter::default()
     })?;
+    let wanted = query.field_list("fields");
     Ok(json!({
-        "items": analytics::monthly_volume(&rows, demo_visible, months as usize),
+        "items": trim_items(
+            analytics::monthly_volume(&rows, demo_visible, months as usize),
+            wanted.as_ref(),
+        ),
     }))
 }
 
@@ -746,8 +765,12 @@ pub fn stats_pace_trends(ctx: &Ctx<'_>, query: &Query) -> Result<Value, ApiError
         all_sports: true,
         ..ActivityFilter::default()
     })?;
+    let wanted = query.field_list("fields");
     Ok(json!({
-        "items": analytics::pace_trends(&rows, demo_visible, weeks as usize),
+        "items": trim_items(
+            analytics::pace_trends(&rows, demo_visible, weeks as usize),
+            wanted.as_ref(),
+        ),
     }))
 }
 
@@ -778,7 +801,7 @@ pub fn stats_hr_zones(ctx: &Ctx<'_>, query: &Query) -> Result<Value, ApiError> {
 /// `GET /api/v1/stats/personal-records` — the best performances.
 ///
 /// The reference: `api/stats.personal_records`.
-pub fn stats_personal_records(ctx: &Ctx<'_>) -> Result<Value, ApiError> {
+pub fn stats_personal_records(ctx: &Ctx<'_>, query: &Query) -> Result<Value, ApiError> {
     let demo_visible = ctx.backend.public_status()?.demo_visible;
     let rows = ctx.backend.activities(&ActivityFilter {
         demo_visible,
@@ -786,7 +809,10 @@ pub fn stats_personal_records(ctx: &Ctx<'_>) -> Result<Value, ApiError> {
         ..ActivityFilter::default()
     })?;
     let activities = analytics::runs(&rows, demo_visible);
-    Ok(json!({ "items": analytics::personal_records(&activities) }))
+    let wanted = query.field_list("fields");
+    Ok(json!({
+        "items": trim_items(analytics::personal_records(&activities), wanted.as_ref()),
+    }))
 }
 
 /// `GET /api/v1/stats/heatmap` — the daily distance of a year.
@@ -863,7 +889,22 @@ pub fn calendar(ctx: &Ctx<'_>, query: &Query) -> Result<Value, ApiError> {
         all_sports: true,
         ..ActivityFilter::default()
     })?;
-    Ok(analytics::calendar(&rows, demo_visible, year, month))
+    // `?fields=` keeps the named fields of each run card.
+    let wanted = query.field_list("fields");
+    let mut calendar = analytics::calendar(&rows, demo_visible, year, month);
+    if let Some(days) = calendar.get_mut("days").and_then(Value::as_array_mut) {
+        for day in days {
+            let Some(object) = day.as_object_mut() else {
+                continue;
+            };
+            let cards = object
+                .get("activities")
+                .cloned()
+                .unwrap_or(Value::Array(Vec::new()));
+            object.insert("activities".into(), trim_items(cards, wanted.as_ref()));
+        }
+    }
+    Ok(calendar)
 }
 
 // ------------------------------------------------------------------- sync
@@ -1039,12 +1080,16 @@ pub fn set_route(ctx: &Ctx<'_>, body: Option<&str>) -> Result<Value, ApiError> {
 /// `GET /api/v1/plan/blocks` — every block.
 ///
 /// The reference: `api/plan.list_blocks`.
-pub fn plan_blocks(ctx: &Ctx<'_>) -> Result<Value, ApiError> {
+pub fn plan_blocks(ctx: &Ctx<'_>, query: &Query) -> Result<Value, ApiError> {
     let blocks = ctx.backend.plan_blocks()?;
+    let wanted = query.field_list("fields");
     let mut items = Vec::new();
     for block in &blocks {
         let (phases, weeks, sessions) = block_counts(ctx, block.id)?;
-        items.push(shapes::plan_block_payload(block, phases, weeks, sessions));
+        items.push(shapes::pick(
+            &shapes::plan_block_payload(block, phases, weeks, sessions),
+            wanted.as_ref(),
+        ));
     }
     Ok(json!({ "items": items }))
 }
@@ -1371,13 +1416,19 @@ pub fn import_plan(ctx: &Ctx<'_>, body: Option<&str>) -> Result<Value, ApiError>
 /// `GET /api/v1/plan/current` — the active block and the week we are in.
 ///
 /// The reference: `api/plan.current`.
-pub fn plan_current(ctx: &Ctx<'_>) -> Result<Value, ApiError> {
+pub fn plan_current(ctx: &Ctx<'_>, query: &Query) -> Result<Value, ApiError> {
+    // The block carries every phase, every week and every session: 107 KB
+    // that no screen draws. `?fields=week` asks for the week alone.
+    let wanted = query.field_list("fields");
     let Some(block) = active_block(ctx)? else {
         return Ok(json!({ "block": Value::Null, "week": Value::Null }));
     };
     let detail = plan_block_detail(ctx, &block)?;
     let week = current_week(ctx, &block)?;
-    Ok(json!({ "block": detail, "week": week }))
+    Ok(shapes::pick(
+        &json!({ "block": detail, "week": week }),
+        wanted.as_ref(),
+    ))
 }
 
 /// The block in force: the active one, or the most recent if none is active.
@@ -1446,6 +1497,8 @@ fn current_week(ctx: &Ctx<'_>, block: &crate::backend::PlanBlockRow) -> Result<V
 ///
 /// The reference: `api/plan.get_week`.
 pub fn plan_week(ctx: &Ctx<'_>, query: &Query) -> Result<Value, ApiError> {
+    // `?fields=` keeps the named fields of each planned session.
+    let wanted = query.field_list("fields");
     let day = query.required("date")?;
     let target = chrono::NaiveDate::parse_from_str(day, "%Y-%m-%d")
         .map_err(|_| ApiError::bad_request("date must be YYYY-MM-DD."))?;
@@ -1485,7 +1538,7 @@ pub fn plan_week(ctx: &Ctx<'_>, query: &Query) -> Result<Value, ApiError> {
         return Ok(json!({
             "week": Value::Null,
             "phase": Value::Null,
-            "sessions": sessions,
+            "sessions": trim_sessions(Value::Array(sessions), wanted.as_ref()),
             "planned_km": 0.0,
             "actual_km": 0.0,
             "planned_count": 0,
@@ -1493,7 +1546,39 @@ pub fn plan_week(ctx: &Ctx<'_>, query: &Query) -> Result<Value, ApiError> {
             "adherence_pct": Value::Null,
         }));
     };
-    week_detail(ctx, week, Some(phase))
+    let mut detail = week_detail(ctx, week, Some(phase))?;
+    if let Some(object) = detail.as_object_mut() {
+        if let Some(sessions) = object.get("sessions").cloned() {
+            object.insert("sessions".into(), trim_sessions(sessions, wanted.as_ref()));
+        }
+    }
+    Ok(detail)
+}
+
+/// The items of a list, with only the named fields.
+fn trim_items(items: Value, wanted: Option<&Vec<String>>) -> Value {
+    let Some(items) = items.as_array() else {
+        return items;
+    };
+    Value::Array(
+        items
+            .iter()
+            .map(|item| shapes::pick(item, wanted))
+            .collect(),
+    )
+}
+
+/// The planned sessions, with only the named fields.
+fn trim_sessions(sessions: Value, wanted: Option<&Vec<String>>) -> Value {
+    let Some(items) = sessions.as_array() else {
+        return sessions;
+    };
+    Value::Array(
+        items
+            .iter()
+            .map(|session| shapes::pick(session, wanted))
+            .collect(),
+    )
 }
 
 /// The sessions of a date range, each with its result and activity.
@@ -1565,7 +1650,10 @@ pub fn plan_adherence(ctx: &Ctx<'_>, query: &Query) -> Result<Value, ApiError> {
 /// `GET /api/v1/plan/today` — today's plan, today's readiness, one advice.
 ///
 /// The reference: `api/plan.get_today`.
-pub fn plan_today(ctx: &Ctx<'_>) -> Result<Value, ApiError> {
+pub fn plan_today(ctx: &Ctx<'_>, query: &Query) -> Result<Value, ApiError> {
+    // `?fields=` keeps the named keys of the answer: the week and the
+    // readiness drivers are the heavy parts.
+    let wanted = query.field_list("fields");
     let today = ctx.today.format("%Y-%m-%d").to_string();
     let block = active_block(ctx)?;
     let rows = ctx.backend.plan_sessions_with_results(&today, &today)?;
@@ -1626,30 +1714,36 @@ pub fn plan_today(ctx: &Ctx<'_>) -> Result<Value, ApiError> {
                 "Your plan does not schedule a session for today.",
             )
         };
-        return Ok(json!({
-            "date": today,
-            "session": Value::Null,
-            "week": week_detail,
-            "readiness": readiness,
-            "recommendation": recommendation,
-            "rationale": rationale,
-            "has_plan": block.is_some(),
-            "has_session": false,
-        }));
+        return Ok(shapes::pick(
+            &json!({
+                "date": today,
+                "session": Value::Null,
+                "week": week_detail,
+                "readiness": readiness,
+                "recommendation": recommendation,
+                "rationale": rationale,
+                "has_plan": block.is_some(),
+                "has_session": false,
+            }),
+            wanted.as_ref(),
+        ));
     }
 
     let session = sessions[0].clone();
     let (recommendation, rationale) = recommend(ctx, &session, week.as_ref(), &today, &readiness)?;
-    Ok(json!({
-        "date": today,
-        "session": session,
-        "week": week_detail,
-        "readiness": readiness,
-        "recommendation": recommendation,
-        "rationale": rationale,
-        "has_plan": true,
-        "has_session": true,
-    }))
+    Ok(shapes::pick(
+        &json!({
+            "date": today,
+            "session": session,
+            "week": week_detail,
+            "readiness": readiness,
+            "recommendation": recommendation,
+            "rationale": rationale,
+            "has_plan": true,
+            "has_session": true,
+        }),
+        wanted.as_ref(),
+    ))
 }
 
 /// One sentence of advice, with the reason behind it.
@@ -1947,13 +2041,22 @@ pub fn physiology_sources(ctx: &Ctx<'_>) -> Result<Value, ApiError> {
 /// The reference: `api/fitness.fingerprints`.
 pub fn fitness_fingerprint(ctx: &Ctx<'_>, query: &Query) -> Result<Value, ApiError> {
     let (from, to) = date_range(ctx, query)?;
-    Ok(json!({ "items": ctx.backend.fingerprints(&from, &to)? }))
+    // A fingerprint row carries 29 fields and the list screen draws 13.
+    // `?fields=` keeps the ones a client names.
+    let wanted = query.field_list("fields");
+    let items: Vec<Value> = ctx
+        .backend
+        .fingerprints(&from, &to)?
+        .iter()
+        .map(|item| shapes::pick(item, wanted.as_ref()))
+        .collect();
+    Ok(json!({ "items": items }))
 }
 
 /// `GET /api/v1/fitness/activity/{id}` — the fingerprint of one run.
 ///
 /// The reference: `api/fitness.activity_fingerprint`.
-pub fn fitness_activity(ctx: &Ctx<'_>, id: i64) -> Result<Value, ApiError> {
+pub fn fitness_activity(ctx: &Ctx<'_>, id: i64, query: &Query) -> Result<Value, ApiError> {
     let item = ctx.backend.fingerprint(id)?;
     if item.is_null() || item.get("activity_id").is_none() {
         return Err(ApiError::not_found("Activity not found"));
@@ -1963,7 +2066,7 @@ pub fn fitness_activity(ctx: &Ctx<'_>, id: i64) -> Result<Value, ApiError> {
     if let Some(object) = payload.as_object_mut() {
         object.insert("zones".into(), Value::Array(zones));
     }
-    Ok(payload)
+    Ok(shapes::pick(&payload, query.field_list("fields").as_ref()))
 }
 
 /// The share of the run spent in each heart-rate zone.
@@ -2211,6 +2314,16 @@ pub fn compare(ctx: &Ctx<'_>, query: &Query) -> Result<Value, ApiError> {
         object
             .entry("missing".to_string())
             .or_insert(Value::Array(Vec::new()));
+    }
+    // `?fields=` keeps the named fields of each run: the 120-point profile
+    // is the heaviest part of a comparison.
+    let fields = query.field_list("fields");
+    if let Some(object) = payload.as_object_mut() {
+        let runs = object
+            .get("runs")
+            .cloned()
+            .unwrap_or(Value::Array(Vec::new()));
+        object.insert("runs".into(), trim_items(runs, fields.as_ref()));
     }
     Ok(payload)
 }

@@ -266,11 +266,18 @@ fn values_of(run: &Value, allowed: &[String], wanted: &[String]) -> Value {
 /// The profile the API returns is already evenly spaced over the run's
 /// distance, so the resampling is a linear interpolation on the percentage
 /// of the distance. A value that is missing at either end stays missing.
+///
+/// When the caller asks for the number of points the API already sent, the
+/// profile is handed back untouched: the router's numbers are not rounded
+/// on the way through.
 fn resample(profile: Vec<Value>, points: usize) -> Vec<Value> {
     if profile.is_empty() || points < 2 {
         return Vec::new();
     }
     let length = profile.len();
+    if length == points {
+        return profile;
+    }
     let mut out = Vec::with_capacity(points);
     for index in 0..points {
         let fraction = index as f64 / (points - 1) as f64;

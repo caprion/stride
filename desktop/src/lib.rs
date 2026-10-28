@@ -42,7 +42,6 @@ pub mod server;
 pub mod spa;
 pub mod state;
 
-use std::path::PathBuf;
 use std::sync::Arc;
 
 use anyhow::Context;
@@ -120,9 +119,4 @@ pub fn describe(config: &Config) -> String {
         .map(|part| part.as_str())
         .collect::<Vec<_>>()
         .join(" ")
-}
-
-/// The path of the built app, for the log.
-pub fn dist_path(config: &Config) -> PathBuf {
-    config.dist.clone()
 }

@@ -91,6 +91,7 @@ impl CoreBackend {
         }
         stride_core::Activity {
             id: row.id,
+            athlete_id: row.athlete_id,
             name: row.name.clone(),
             local_date: row.local_date.clone(),
             start_date: row.start_time.clone().unwrap_or_default(),
@@ -186,9 +187,17 @@ impl CoreBackend {
     }
 
     /// The maximum heart rate the athlete's history establishes.
-    fn reference(&self) -> Result<f64, BackendError> {
+    ///
+    /// It is the athlete's own maximum: never another athlete's, and never
+    /// a demo run's once the demo data is out of the way.
+    fn reference(&self, athlete_id: Option<i64>) -> Result<f64, BackendError> {
         let activities = self.core_activities()?;
-        Ok(stride_core::max_hr_reference(&activities))
+        let demo_visible = self.inner.public_status()?.demo_visible;
+        Ok(stride_core::max_hr_reference(
+            &activities,
+            athlete_id,
+            demo_visible,
+        ))
     }
 
     /// The fingerprint of one run, as the API renders it.
@@ -197,7 +206,7 @@ impl CoreBackend {
         let streams = self.inner.activity_streams(row.id)?;
         let zones = self.inner.activity_zones(row.id)?;
         let activity = Self::core_activity(row, &laps, &streams, &zones);
-        let reference = self.reference()?;
+        let reference = self.reference(row.athlete_id)?;
         let model = stride_core::fingerprint::default_zone_model(reference);
         let fingerprint = stride_core::fingerprint(&FingerprintInput {
             max_hr_reference: reference,
@@ -448,8 +457,12 @@ impl Backend for CoreBackend {
         Ok(out)
     }
 
-    fn athlete_zone_model(&self, _activity_id: i64) -> Result<Vec<Value>, BackendError> {
-        let reference = self.reference()?;
+    fn athlete_zone_model(&self, activity_id: i64) -> Result<Vec<Value>, BackendError> {
+        let athlete_id = self
+            .inner
+            .activity(activity_id)?
+            .and_then(|row| row.athlete_id);
+        let reference = self.reference(athlete_id)?;
         Ok(stride_core::fingerprint::default_zone_model(reference)
             .into_iter()
             .map(|zone| {
@@ -463,8 +476,12 @@ impl Backend for CoreBackend {
             .collect())
     }
 
-    fn max_hr_reference(&self, _activity_id: i64) -> Result<f64, BackendError> {
-        self.reference()
+    fn max_hr_reference(&self, activity_id: i64) -> Result<f64, BackendError> {
+        let athlete_id = self
+            .inner
+            .activity(activity_id)?
+            .and_then(|row| row.athlete_id);
+        self.reference(athlete_id)
     }
 
     fn activities(

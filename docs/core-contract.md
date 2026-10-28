@@ -96,6 +96,25 @@ FIT decoding rules that matter:
   value is out of range as absent: heart rate outside 0–300, cadence outside
   0–300, speed outside 0–150 m/s, altitude outside −1000–10000 m, distance
   outside 0–10 000 000 m.
+* **The FIT invalid sentinel is absent, and this is not the same thing as
+  "out of range".** Every FIT base type has a reserved value that means
+  *no value*:
+
+  | type | the invalid value |
+  |---|---|
+  | `uint8` / `uint16` / `uint32` | all bits set — `0xFF`, `0xFFFF`, `0xFFFFFFFF` |
+  | `sint8` / `sint16` / `sint32` | the most positive value — `0x7F`, `0x7FFF`, `0x7FFFFFFF` |
+  | `string` / `byte` | a zero byte |
+  | `float32` / `float64` | `NaN` |
+
+  A decoder that reads `0xFFFF` as a number turns a **missing session
+  average speed of 65,535** into **65.535 m/s** — a plausible number that is
+  not the athlete's, and one that no range check would catch, because
+  65.535 is inside the range. The nine synthetic fixtures never exposed it;
+  the real watch files did, on the first run.
+
+  The rule: **a sentinel value is an absent field, and it is absent before
+  any range check is applied.**
 * Timestamps are seconds since 1989-12-31T00:00:00Z. **They are UTC.** The
   reference implementation converts them through the *host* timezone (a bug,
   see §10.1), so the harness pins `TZ=UTC`; a port must treat FIT timestamps as

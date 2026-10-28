@@ -157,10 +157,26 @@ impl PhoneBackend {
         Ok(out)
     }
 
+    /// The athlete the phone's history belongs to.
+    ///
+    /// The phone has one athlete: the local one. The reference filters the
+    /// rows by it, so the filter has to be the same one.
+    fn athlete_id(&self) -> Result<Option<i64>, BackendError> {
+        let athletes = Self::map(self.store.athletes())?;
+        Ok(athletes.first().and_then(|athlete| athlete.id))
+    }
+
     /// The athlete's maximum heart rate.
     fn reference_max_hr(&self) -> Result<f64, BackendError> {
         let activities = self.every_core_activity()?;
-        Ok(core::max_hr_reference(&activities))
+        // The rows are filtered by the athlete they belong to. The rows that
+        // carry one win; otherwise the local athlete, if there is one.
+        let athlete = activities
+            .iter()
+            .filter_map(|activity| activity.athlete_id)
+            .next()
+            .or(self.athlete_id()?);
+        Ok(core::max_hr_reference(&activities, athlete, false))
     }
 
     /// The fingerprint of one run, with the fields the API adds.

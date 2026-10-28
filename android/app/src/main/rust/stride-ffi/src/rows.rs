@@ -27,6 +27,7 @@ use stride_core::model as core_model;
 pub fn activity_row(activity: &stride_store::model::Activity) -> ActivityRow {
     ActivityRow {
         id: activity.id.unwrap_or_default(),
+        athlete_id: activity.athlete_id,
         source: activity.source.clone(),
         external_id: activity.external_id.clone(),
         name: activity.name.clone(),
@@ -295,6 +296,7 @@ pub fn core_activity(
 
     core_model::Activity {
         id: activity.id.unwrap_or_default(),
+        athlete_id: activity.athlete_id,
         name: activity.name.clone(),
         local_date: activity.local_date.clone(),
         start_date: activity.start_time.format("%Y-%m-%d").to_string(),

@@ -27,6 +27,9 @@ use crate::error::BackendError;
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct ActivityRow {
     pub id: i64,
+    /// The athlete the run belongs to. `None` is the athlete-less row.
+    #[serde(default)]
+    pub athlete_id: Option<i64>,
     #[serde(default)]
     pub source: String,
     #[serde(default)]

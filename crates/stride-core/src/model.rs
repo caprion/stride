@@ -155,6 +155,10 @@ pub struct Activity {
     /// The activity's row id.
     #[serde(default)]
     pub id: i64,
+    /// The athlete the run belongs to. `None` is the athlete-less row the
+    /// importer writes.
+    #[serde(default)]
+    pub athlete_id: Option<i64>,
     /// The athlete's name for the run.
     #[serde(default)]
     pub name: String,

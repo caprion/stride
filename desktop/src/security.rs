@@ -265,6 +265,33 @@ pub fn same_origin(origin: Option<&str>, host: &str) -> bool {
     !origin_host.is_empty() && origin_host.eq_ignore_ascii_case(host.trim())
 }
 
+/// Remove a credential from a string that is about to be shown.
+///
+/// The reference redacts every answer that can carry an exception detail
+/// (`redacted_http_exception_handler`), because an upstream error can quote
+/// the key it was given. The one credential the desktop can see is the
+/// Garmin Personal API key, and its shape is known.
+pub fn redact(text: &str) -> String {
+    let mut out = String::with_capacity(text.len());
+    let mut rest = text;
+    while let Some(start) = rest.find("GCDC_") {
+        out.push_str(&rest[..start]);
+        out.push_str("<redacted>");
+        let after = &rest[start + 5..];
+        let end = after
+            .find(|character: char| {
+                !(character.is_ascii_alphanumeric()
+                    || character == '.'
+                    || character == '_'
+                    || character == '-')
+            })
+            .unwrap_or(after.len());
+        rest = &after[end..];
+    }
+    out.push_str(rest);
+    out
+}
+
 /// A fixed-window rate limiter, per client and per bucket.
 ///
 /// The reference limits the paths that cost money — a Garmin sync, a pairing

@@ -9,6 +9,11 @@ license.workspace = true
 crate-type = ["cdylib", "staticlib", "rlib"]
 
 [dependencies]
+# gzip. `flate2` with the pure-Rust backend: no C library, so the Android
+# NDK build has nothing extra to link. It is already in the workspace's
+# lock file (reqwest's gzip feature pulls it in), so this adds no new crate
+# to the graph.
+flate2 = { version = "1", default-features = false, features = ["rust_backend"] }
 serde = { workspace = true }
 serde_json = { workspace = true }
 chrono = { workspace = true }

@@ -9,6 +9,11 @@
 //! The fixtures live outside the crate, so the tests read them from the
 //! repository at run time.
 
+// An integration test is its own crate, so the workspace's
+// `allow-*-in-tests` configuration does not reach it: a test that cannot
+// unwrap a fixture it just read is a worse test.
+#![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
+
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 
@@ -79,6 +84,7 @@ fn activity_from_import(import: &Value, id: i64, name: Option<&str>) -> Activity
     let scalars = &import["activity"];
     let mut activity = Activity {
         id,
+        athlete_id: None,
         name: name
             .map(str::to_string)
             .unwrap_or_else(|| scalars["name"].as_str().unwrap_or_default().to_string()),

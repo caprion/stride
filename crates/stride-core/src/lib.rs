@@ -42,7 +42,10 @@ pub use comparison::{
     PROFILE_POINTS,
 };
 pub use date::Date;
-pub use fingerprint::{athlete_zones, fingerprint, max_hr_reference, zone_model, FingerprintInput};
+pub use fingerprint::{
+    athlete_zones, default_zone_model, fingerprint, max_hr_reference, zone_model, FingerprintInput,
+    StoredZone,
+};
 pub use model::{
     Activity, DailyPhysiology, Fingerprint, Lap, MatchedActivity, PlanSession, Stream, Zone,
     ZoneTime,

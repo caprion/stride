@@ -1,3 +1,8 @@
+// Integration tests are their own crate, so clippy's allow-in-tests
+// configuration does not cover them: the expectations below are allowed on
+// purpose. The library itself raises no panic.
+#![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
+
 //! The fixture store the tools are tested against.
 //!
 //! It is the API's own in-memory backend, filled with a small, known history:

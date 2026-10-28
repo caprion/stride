@@ -1,3 +1,8 @@
+// Integration tests are their own crate, so clippy's allow-in-tests
+// configuration does not cover them: the expectations below are allowed on
+// purpose. The library itself raises no panic.
+#![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
+
 //! Every tool, against the fixture store.
 //!
 //! Each test calls one tool and checks the shape of its answer: the three
@@ -438,7 +443,15 @@ fn the_comparison_puts_two_runs_on_one_axis() {
     assert_eq!(profile.len(), 120);
     assert_eq!(profile[0]["pct"], json!(0.0));
     assert_eq!(profile[119]["pct"], json!(100.0));
-    assert_eq!(profile[60]["hr"], json!(151.05));
+    // At the router's own resolution the profile is handed back untouched:
+    // the first and the last point are exactly the router's.
+    assert_eq!(profile[0]["hr"], json!(145.0));
+    assert_eq!(profile[119]["hr"], json!(157.0));
+    let middle = profile[60]["hr"].as_f64().expect("hr");
+    assert!(
+        (middle - 151.05042).abs() < 0.001,
+        "the router's own value, unrounded: {middle}"
+    );
 }
 
 #[test]
@@ -455,6 +468,14 @@ fn the_comparison_resamples_to_the_number_of_points_asked_for() {
     assert_eq!(profile.len(), 20);
     assert_eq!(profile[0]["pct"], json!(0.0));
     assert_eq!(profile[19]["pct"], json!(100.0));
+    // The ends are the router's own points; the middle is interpolated.
+    assert_eq!(profile[0]["hr"], json!(145.0));
+    assert_eq!(profile[19]["hr"], json!(157.0));
+    let middle = profile[10]["hr"].as_f64().expect("hr");
+    assert!(
+        middle > 145.0 && middle < 157.0,
+        "the middle is interpolated: {middle}"
+    );
 }
 
 #[test]

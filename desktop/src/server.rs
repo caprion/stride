@@ -20,7 +20,9 @@ use serde_json::Value;
 use stride_api::{Api, Response as ApiResponse};
 
 use crate::http::{Request, Response};
-use crate::security::{is_loopback_client, same_origin, RateLimiter, Security, BOOTSTRAP_PATH};
+use crate::security::{
+    is_loopback_client, redact, same_origin, RateLimiter, Security, BOOTSTRAP_PATH,
+};
 use crate::spa;
 
 /// The content security policy.
@@ -102,12 +104,26 @@ impl App {
     /// the development server, which is on another port and is in the
     /// allowed-origins list.
     fn preflight(&self, request: &Request) -> Response {
-        let origin = request.headers.get("origin").unwrap_or_default();
-        if !self.allowed_origins.iter().any(|allowed| allowed == origin) {
+        let origin = request.headers.get("origin");
+        let asked = request
+            .headers
+            .get("access-control-request-method")
+            .is_some();
+        if origin.is_none() || !asked {
+            // An ordinary `OPTIONS`: the router answers it.
+            return json_response(405, &serde_json::json!({ "detail": "Method Not Allowed" }));
+        }
+        let origin = origin.unwrap_or_default();
+        let allowed = self
+            .allowed_origins
+            .iter()
+            .any(|allowed| allowed == origin.trim_end_matches('/'))
+            || same_origin(Some(origin), request.host());
+        if !allowed {
             return Response::with_body(
-                403,
-                "application/json",
-                br#"{"detail":"Origin not allowed."}"#.to_vec(),
+                400,
+                "text/plain; charset=utf-8",
+                b"Disallowed CORS origin".to_vec(),
             );
         }
         Response::empty(204)
@@ -123,6 +139,10 @@ impl App {
     }
 
     /// The bootstrap: the cookie that lets the browser use the API.
+    ///
+    /// Only the local browser may have one. The reference answers a request
+    /// that is not from this machine with the middleware's message, and a
+    /// local request that carries a foreign `Origin` with the route's.
     fn bootstrap(&self, request: &Request) -> Response {
         if !self.security.enabled() {
             return Response::empty(204);
@@ -130,8 +150,23 @@ impl App {
         if !is_loopback_client(request) {
             return json_response(
                 403,
-                &serde_json::json!({ "detail": "Local same-origin bootstrap required." }),
+                &serde_json::json!({
+                    "detail": "Bootstrap is available only from the local Stride origin."
+                }),
             );
+        }
+        if let Some(origin) = request.headers.get("origin") {
+            let allowed = same_origin(Some(origin), request.host())
+                || self
+                    .allowed_origins
+                    .iter()
+                    .any(|allowed| allowed == origin.trim_end_matches('/'));
+            if !allowed {
+                return json_response(
+                    403,
+                    &serde_json::json!({ "detail": "Local same-origin bootstrap required." }),
+                );
+            }
         }
         Response::empty(204).header("Set-Cookie", &self.security.capability_cookie())
     }
@@ -172,7 +207,7 @@ impl App {
                 bytes,
             }) => Response::with_body(200, &content_type, bytes),
             Ok(ApiResponse::NoContent) => Response::empty(204),
-            Err(error) => json_response(error.status, &error.to_body()),
+            Err(error) => api_error(&error),
         }
     }
 
@@ -354,6 +389,40 @@ fn api_target(request: &Request) -> String {
     } else {
         format!("{path}?{}", request.query)
     }
+}
+
+/// The answer to a route that failed.
+///
+/// The `detail` is redacted on the way out: an upstream error can quote the
+/// credential it was given, and the reference redacts every answer that
+/// carries an exception detail.
+fn api_error(error: &stride_api::error::ApiError) -> Response {
+    let detail = match &error.detail {
+        Value::String(text) => Value::String(redact(text)),
+        Value::Array(items) => Value::Array(
+            items
+                .iter()
+                .map(|item| match item {
+                    Value::Object(map) => {
+                        let mut out = serde_json::Map::new();
+                        for (name, value) in map {
+                            out.insert(
+                                name.clone(),
+                                match value {
+                                    Value::String(text) => Value::String(redact(text)),
+                                    other => other.clone(),
+                                },
+                            );
+                        }
+                        Value::Object(out)
+                    }
+                    other => other.clone(),
+                })
+                .collect(),
+        ),
+        other => other.clone(),
+    };
+    json_response(error.status, &serde_json::json!({ "detail": detail }))
 }
 
 /// A JSON answer.

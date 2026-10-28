@@ -525,6 +525,67 @@ fn the_route_table_covers_every_path() {
     }
 }
 
+/// `?fields=` trims what nobody draws, and only what the caller asks for.
+///
+/// The default answer is untouched: the golden test above proves it, key for
+/// key and number for number.
+#[test]
+fn the_fields_parameter_trims_the_answer_and_nothing_else() {
+    let golden: Value = serde_json::from_str(GOLDEN).expect("the golden file parses");
+    let api = api(&golden);
+
+    // The whole summary, as it always was.
+    let whole = api
+        .call("GET", "/api/v1/activities", None)
+        .expect("the list answers");
+    let item = whole["items"][0].as_object().expect("an item").clone();
+    assert!(item.contains_key("route_preview"));
+    assert!(item.contains_key("pace_label"));
+
+    // Only the named fields.
+    let trimmed = api
+        .call("GET", "/api/v1/activities?fields=id,name,distance_m", None)
+        .expect("the list answers");
+    let trimmed_item = trimmed["items"][0].as_object().expect("an item");
+    let mut names: Vec<&str> = trimmed_item.keys().map(String::as_str).collect();
+    names.sort_unstable();
+    assert_eq!(names, ["distance_m", "id", "name"]);
+    // The envelope is not trimmed: the client still knows how many there are.
+    assert_eq!(trimmed["total"], whole["total"]);
+    assert_eq!(trimmed["pages"], whole["pages"]);
+
+    // A name nobody has is ignored, not an error.
+    let unknown = api
+        .call("GET", "/api/v1/activities?fields=id,nonsense", None)
+        .expect("the list answers");
+    assert_eq!(unknown["items"][0].as_object().expect("an item").len(), 1);
+
+    // The detail is trimmed the same way.
+    let detail = api
+        .call("GET", "/api/v1/activities/1?fields=id,name", None)
+        .expect("the detail answers");
+    let keys: Vec<&str> = detail
+        .as_object()
+        .expect("an object")
+        .keys()
+        .map(String::as_str)
+        .collect();
+    assert_eq!(keys, ["id", "name"]);
+
+    // The plan's phases are 107 KB that no screen draws: the week alone is
+    // a much smaller answer.
+    let current = api
+        .call("GET", "/api/v1/plan/current?fields=week", None)
+        .expect("the plan answers");
+    let keys: Vec<&str> = current
+        .as_object()
+        .expect("an object")
+        .keys()
+        .map(String::as_str)
+        .collect();
+    assert_eq!(keys, ["week"]);
+}
+
 /// The OpenAPI document lists 62 paths and 65 operations. Every one of them
 /// is in the route table, with the same parameter names.
 #[test]

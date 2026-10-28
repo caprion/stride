@@ -18,7 +18,6 @@ use stride_desktop::config;
 use stride_desktop::db;
 use stride_desktop::http::{self, Request, Response};
 use stride_desktop::server::App;
-use stride_desktop::state;
 
 const HELP: &str = "\
 Stride — the desktop app.
@@ -129,6 +128,5 @@ fn convert() -> Result<()> {
     for line in &report.drift {
         eprintln!("stride:   the schema drifted: {line}");
     }
-    let _ = state::load(&config.state_path);
     Ok(())
 }
