@@ -17,7 +17,17 @@ export default defineConfig({
   },
   build: {
     outDir: 'dist',
-    sourcemap: false,
+    sourcemap: process.env.BUNDLE_ANALYSE === '1',
     chunkSizeWarningLimit: 1200,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          react: ['react', 'react-dom', 'react-router-dom'],
+          charts: ['recharts'],
+          map: ['leaflet', 'react-leaflet'],
+          query: ['@tanstack/react-query'],
+        },
+      },
+    },
   },
 })

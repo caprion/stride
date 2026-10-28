@@ -82,10 +82,19 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
-      - uses: android-actions/setup-android@v3
       - uses: gradle/actions/setup-gradle@v4
         with:
           cache-read-only: ${{ github.ref_name }}
+
+      # The GitHub runner image already carries the Android SDK. It is only
+      # missing the platform and build-tools this project targets.
+      - name: Install the Android platform
+        env:
+          ANDROID_HOME: /usr/local/lib/android/sdk
+          ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
+        run: |
+          yes | sdkmanager --licenses > /dev/null 2>&1 || true
+          sdkmanager "platform-tools" "platforms;android-36" "build-tools;36.0.0"
 
       - name: Install the node modules
         run: |
@@ -115,11 +124,11 @@ jobs:
       - name: Sync the web app into the Android project
         run: npx cap sync android
 
-      - name: Accept the Android SDK licences
-        run: yes | sdkmanager --licenses > /dev/null || true
-
       - name: Build the release APK
         working-directory: android
+        env:
+          ANDROID_HOME: /usr/local/lib/android/sdk
+          ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
         run: ./gradlew assembleRelease --no-daemon
 
       - name: Collect the APK
