@@ -101,6 +101,18 @@ jobs:
           npm ci
           npm --prefix frontend ci
 
+      - name: Work out the version
+        id: version
+        run: |
+          if [[ "${{ github.ref_name }}" == v* ]]; then
+            name="${GITHUB_REF_NAME#v}"
+          else
+            name="0.0.0-dev"
+          fi
+          code=$(git rev-list --count HEAD)
+          echo "name=$name" >> "$GITHUB_OUTPUT"
+          echo "code=$code" >> "$GITHUB_OUTPUT"
+
       - name: Fetch the signing key
         env:
           KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
@@ -130,6 +142,8 @@ jobs:
           ANDROID_HOME: /usr/local/lib/android/sdk
           ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
         run: ./gradlew assembleRelease --no-daemon
+          -PstrideVersionName="${{ steps.version.outputs.name }}"
+          -PstrideVersionCode="${{ steps.version.outputs.code }}"
 
       - name: Collect the APK
         run: |

@@ -143,7 +143,11 @@ else
 fi
 
 head_ "5. Tests"
-if (cd backend && .venv/bin/python -m pytest -q >/dev/null 2>&1); then
+# The suite runs against the local virtualenv when there is one, and against
+# whatever python is on the PATH otherwise — which is what CI has.
+PY_BIN="backend/.venv/bin/python"
+[[ -x "$PY_BIN" ]] || PY_BIN="$(command -v python3 || command -v python)"
+if (cd backend && "$PY_BIN" -m pytest -q >/dev/null 2>&1); then
   ok "backend test suite passes"
 else
   bad "backend test suite fails"

@@ -1,3 +1,4 @@
+import { useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import {
   Area,
@@ -27,6 +28,7 @@ import {
 import { formatDate } from '../lib/format'
 import { Card, CardHeader, EmptyState, PageHeader, Skeleton, Badge } from '../components/ui'
 import { ChartFrame } from '../components/charts'
+import { SegmentedControl } from '../components/ui'
 
 const gradeColor: Record<string, string> = {
   peak: ZONE_COLORS[1],
@@ -46,7 +48,81 @@ const NoRows = ({ loading, title }: { loading: boolean; title: string }) =>
     <EmptyState title={title} description="There is no recorded data for this range yet." />
   )
 
+
+/**
+ * The year of readiness, as one strip.
+ *
+ * A circle per day meant 365 SVG nodes — and 367 on a real history, each
+ * with its own group wrapper. It was also hard to read: at that density the
+ * dots overlap into a smear.
+ *
+ * A strip of colour reads better *and* costs one DOM node: the grades are
+ * merged into runs and drawn as a single gradient with hard stops. It is the
+ * same idea as a year heatmap, and it survives being a hundred pixels wide.
+ */
+function ReadinessStrip({
+  items,
+}: {
+  items: { date: string; grade: string }[]
+}) {
+  const { gradient, first, last } = useMemo(() => {
+    if (!items.length) return { gradient: '', first: '', last: '' }
+    const runs: { grade: string; from: number; to: number }[] = []
+    items.forEach((item, index) => {
+      const run = runs[runs.length - 1]
+      if (run && run.grade === item.grade) run.to = index + 1
+      else runs.push({ grade: item.grade, from: index, to: index + 1 })
+    })
+    const total = items.length
+    const gradient =
+      'linear-gradient(90deg, ' +
+      runs
+        .map((run) => {
+          const from = ((run.from / total) * 100).toFixed(2)
+          const to = ((run.to / total) * 100).toFixed(2)
+          return `${gradeColor[run.grade] || INK_FAINT} ${from}% ${to}%`
+        })
+        .join(', ') +
+      ')'
+    return {
+      gradient,
+      first: items[0].date,
+      last: items[items.length - 1].date,
+    }
+  }, [items])
+
+  if (!gradient) return null
+
+  return (
+    <div className="px-1 pb-1 pt-2">
+      <div
+        className="h-2 w-full rounded-full"
+        style={{ backgroundImage: gradient }}
+        role="img"
+        aria-label="Readiness grade for each day, left to right"
+      />
+      <div className="mt-1 flex justify-between text-[10px] text-ink-faint">
+        <span>{formatDate(first)}</span>
+        <span>{formatDate(last)}</span>
+      </div>
+    </div>
+  )
+}
+
+const RANGES = [
+  { label: '30 days', value: 30 },
+  { label: '3 months', value: 90 },
+  { label: 'Year', value: 365 },
+]
+
 export default function PhysiologyPage() {
+  const [days, setDays] = useState(90)
+  const since = useMemo(() => {
+    const date = new Date()
+    date.setDate(date.getDate() - days)
+    return date.toISOString().slice(0, 10)
+  }, [days])
+
   const sources = useQuery({
     queryKey: ['physiology-sources'],
     queryFn: api.physiologySources,
@@ -180,7 +256,9 @@ export default function PhysiologyPage() {
               <div className="grid gap-5 p-5 lg:grid-cols-[220px_1fr]">
                 <div className="flex flex-col justify-center rounded-xl bg-surface-soft p-5">
                   <div className="flex items-baseline gap-2">
-                    <strong className="text-6xl font-bold text-ink">{current.score}</strong>
+                    <strong className="text-6xl font-bold text-ink">
+                      {Math.round(current.score)}
+                    </strong>
                     <span className="text-sm text-ink-muted">/ 100</span>
                   </div>
                   <Badge
@@ -256,6 +334,14 @@ export default function PhysiologyPage() {
               title="Sleep"
               subtitle={`Sleep stages by night · baseline ${sleep.data?.items.length ? `${Math.round((sleep.data.items.reduce((n, p) => n + (p.sleep_s ?? 0), 0) / sleep.data.items.length / 3600) * 10) / 10} h average` : '—'}`}
               height={280}
+              action={
+                <SegmentedControl
+                  options={RANGES}
+                  value={days}
+                  onChange={(value) => setDays(value as number)}
+                  className="self-start"
+                />
+              }
             >
               {sleep.isLoading ? (
                 <div className="p-3">
@@ -264,7 +350,7 @@ export default function PhysiologyPage() {
               ) : sleep.data?.items.length ? (
                 <ResponsiveContainer width="100%" height="100%">
                   <ComposedChart
-                    data={sleep.data.items.map((p) => ({
+                    data={sleep.data.items.filter((p) => p.date >= since).map((p) => ({
                       ...p,
                       label: formatDate(p.date).slice(0, 6),
                       deep: (p.deep_sleep_s ?? 0) / 3600,
@@ -336,7 +422,7 @@ export default function PhysiologyPage() {
               ) : hrv.data?.items.length ? (
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart
-                    data={hrv.data.items.map((p) => ({
+                    data={hrv.data.items.filter((p) => p.date >= since).map((p) => ({
                       ...p,
                       label: formatDate(p.date).slice(0, 6),
                     }))}
@@ -410,7 +496,7 @@ export default function PhysiologyPage() {
               ) : readiness.data?.items.length ? (
                 <ResponsiveContainer width="100%" height="100%">
                   <AreaChart
-                    data={readiness.data.items.map((p) => ({
+                    data={readiness.data.items.filter((p) => p.date >= since).map((p) => ({
                       ...p,
                       label: formatDate(p.date).slice(0, 6),
                     }))}
@@ -425,24 +511,21 @@ export default function PhysiologyPage() {
                       stroke={ACCENT_DATA}
                       fill={ACCENT_DATA}
                       fillOpacity={0.12}
-                      dot={(props: {
-                        cx?: number
-                        cy?: number
-                        payload?: { grade?: string }
-                      }) => (
-                        <circle
-                          cx={props.cx}
-                          cy={props.cy}
-                          r={3}
-                          fill={gradeColor[props.payload?.grade || 'unknown']}
-                        />
-                      )}
+                      dot={false}
                     />
                   </AreaChart>
                 </ResponsiveContainer>
               ) : (
                 <NoRows loading={false} title="No readiness history" />
               )}
+              {readiness.data?.items.length ? (
+                <ReadinessStrip
+                  items={readiness.data.items.map((p) => ({
+                    date: p.date,
+                    grade: p.grade ?? 'unknown',
+                  }))}
+                />
+              ) : null}
             </ChartFrame>
             <Card>
               <CardHeader
