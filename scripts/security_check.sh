@@ -242,6 +242,26 @@ if curl -fsS -m 4 -o /dev/null "$BASE/api/v1/health" 2>/dev/null; then
     rm -f "$master_jar"
   fi
 
+  # The served SPA must never serve a file from outside its own directory.
+  # This was a live hole: the catch-all resolved the raw, percent-decoded
+  # path, so a request for the state file - the Garmin key, the capability
+  # token - came back with no authentication at all.
+  traversal_ok=1
+  for probe in "/%2e%2e%2f%2e%2e%2fbackend%2fdata%2fstate.json" \
+               "/..%2f..%2fbackend/data/state.json" \
+               "/%2e%2e/%2e%2e/etc/passwd"; do
+    body=$(curl -s -m 6 "$BASE$probe" 2>/dev/null)
+    if [[ "$body" == *"personal_api_key"* || "$body" == *"root:x:"* \
+          || "$body" == *"capability_token"* ]]; then
+      traversal_ok=0
+    fi
+  done
+  if [[ "$traversal_ok" == "1" ]]; then
+    ok "the served app cannot be walked out of its own directory"
+  else
+    bad "the served app returned a file from outside its directory"
+  fi
+
   # A pairing code must only be mintable from the machine itself. The
   # tailnet address stands in for any other device on the network.
   #
