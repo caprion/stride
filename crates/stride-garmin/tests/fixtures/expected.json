@@ -1,4 +1,42 @@
 {
+  "activities_params": {
+    "beyond_the_cap": {
+      "endDate": "2026-01-31",
+      "limit": 1,
+      "start": 299,
+      "startDate": "2026-01-01"
+    },
+    "clamped_window": {
+      "endDate": "2026-01-31",
+      "limit": 100,
+      "start": 0,
+      "startDate": "2025-01-31"
+    },
+    "deep_page": {
+      "endDate": "2026-01-31",
+      "limit": 1,
+      "start": 299,
+      "startDate": "2026-01-01"
+    },
+    "default": {
+      "endDate": "2026-01-31",
+      "limit": 100,
+      "start": 0,
+      "startDate": "2026-01-01"
+    },
+    "over_the_limit": {
+      "endDate": "2026-01-31",
+      "limit": 100,
+      "start": 0,
+      "startDate": "2026-01-01"
+    },
+    "under_the_limit": {
+      "endDate": "2026-01-31",
+      "limit": 1,
+      "start": 0,
+      "startDate": "2026-01-01"
+    }
+  },
   "activity_detail": {
     "avg_cadence": 84.0,
     "avg_hr": 148.0,
@@ -250,6 +288,14 @@
       }
     ]
   },
+  "lists_bare_array": [
+    {
+      "activityId": 777,
+      "activityName": "Bare Array Run",
+      "startTimeLocal": "2026-03-09T05:55:00"
+    }
+  ],
+  "lists_unknown_envelope": [],
   "payloads": {
     "daily_heart_rate": {
       "heartRateSummary": {

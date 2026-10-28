@@ -37,7 +37,11 @@ os.environ.setdefault("STRIDE_DATA_DIR", tempfile.mkdtemp(prefix="stride-golden-
 sys.path.insert(0, str(ROOT / "backend"))
 
 from app.api.auth import _athlete_from_personal  # noqa: E402
-from app.ingest.garmin_personal import _as_list, _bounded_date_range  # noqa: E402
+from app.ingest.garmin_personal import (  # noqa: E402
+    GarminPersonalClient,
+    _as_list,
+    _bounded_date_range,
+)
 from app.services.personal_sync import _canonical_from_detail  # noqa: E402
 
 CANONICAL_KEYS = [
@@ -82,6 +86,31 @@ def canonical(activity: dict) -> dict:
 def listed(activity: dict) -> dict:
     """The facts the reference reads from a list item on its own."""
     return {key: activity.get(key) for key in LIST_KEYS}
+
+
+class _CapturingClient(GarminPersonalClient):
+    """The reference client with its HTTP call replaced by a capture.
+
+    The request parameters are what the reference *computes*, so the port has
+    to compute the same ones.
+    """
+
+    def __init__(self) -> None:
+        super().__init__("not-a-real-key")
+        self.captured: dict = {}
+
+    def _get(self, path, params=None, retry=True):  # noqa: ANN001, D102
+        self.captured = dict(params or {})
+        return []
+
+
+def activity_params(start: int, limit: int, start_date: str, end_date: str) -> dict:
+    """The query the reference sends for an activity search."""
+    client = _CapturingClient()
+    client.activities(
+        start=start, limit=limit, start_date=start_date, end_date=end_date
+    )
+    return client.captured
 
 
 def main() -> None:
@@ -159,6 +188,25 @@ def main() -> None:
             "long": list(_bounded_date_range("2025-01-01", "2026-01-31")),
             "inverted": list(_bounded_date_range("2026-03-10", "2026-03-01")),
         },
+        # The query the reference sends for an activity search: the start and
+        # limit clamps, and the window clamp.
+        "activities_params": {
+            "default": activity_params(0, 100, "2026-01-01", "2026-01-31"),
+            "deep_page": activity_params(299, 100, "2026-01-01", "2026-01-31"),
+            "beyond_the_cap": activity_params(500, 100, "2026-01-01", "2026-01-31"),
+            "over_the_limit": activity_params(0, 1000, "2026-01-01", "2026-01-31"),
+            "under_the_limit": activity_params(0, 0, "2026-01-01", "2026-01-31"),
+            "clamped_window": activity_params(0, 100, "2025-01-01", "2026-01-31"),
+        },
+        # `_as_list` on a payload that is not an envelope at all, and on an
+        # envelope under a name the reference does not know.
+        "lists_bare_array": _as_list(
+            load("activity_list_bare.json"), ("activityList", "activities", "activitySummaries")
+        ),
+        "lists_unknown_envelope": _as_list(
+            load("activity_list_unknown.json"),
+            ("activityList", "activities", "activitySummaries"),
+        ),
         # The raw wellness payloads: the reference returns them untouched.
         "payloads": {
             "sleep": sleep,

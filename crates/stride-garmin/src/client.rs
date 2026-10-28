@@ -265,7 +265,9 @@ impl GarminClient {
     /// One page of the activity search.
     ///
     /// `start` is the offset and `limit` the page size; both are clamped the
-    /// way the reference implementation clamps them.
+    /// way the reference implementation clamps them, and so are the dates.
+    /// This is the raw form of the reference's `activities()` — the same
+    /// request, with the same parameters.
     pub fn activity_page(
         &self,
         start: u32,
@@ -279,11 +281,11 @@ impl GarminClient {
             ("start".to_owned(), start.to_string()),
             ("limit".to_owned(), limit.to_string()),
         ];
-        if !start_date.is_empty() {
-            params.push(("startDate".to_owned(), start_date.to_owned()));
-        }
-        if !end_date.is_empty() {
-            params.push(("endDate".to_owned(), end_date.to_owned()));
+        if !start_date.is_empty() || !end_date.is_empty() {
+            let (start_day, end_day) =
+                bounded_range(optional_date(start_date)?, optional_date(end_date)?);
+            params.push(("startDate".to_owned(), start_day.to_string()));
+            params.push(("endDate".to_owned(), end_day.to_string()));
         }
         let payload = self.get_json(ACTIVITIES_PATH, &params)?;
         Ok(as_list(
@@ -313,8 +315,10 @@ impl GarminClient {
         activity_id: &str,
     ) -> Result<ActivityDetail, GarminError> {
         let payload = self.activity_detail(activity_id)?;
-        ActivityDetail::from_value(&payload, None)
-            .ok_or(GarminError::InvalidActivityId(activity_id.to_owned()))
+        ActivityDetail::from_value(&payload, None).ok_or_else(|| GarminError::Decode {
+            path: format!("{ACTIVITY_PATH}/{activity_id}"),
+            reason: "the activity detail is not an object".to_owned(),
+        })
     }
 
     /// The workouts associated with an activity.
@@ -903,6 +907,15 @@ fn parse_date(value: &str) -> Result<NaiveDate, GarminError> {
 /// Parses and echoes an ISO `YYYY-MM-DD` date.
 fn check_date(value: &str) -> Result<String, GarminError> {
     parse_date(value).map(|date| date.to_string())
+}
+
+/// Parses an ISO `YYYY-MM-DD` date, treating an empty string as absent.
+fn optional_date(value: &str) -> Result<Option<NaiveDate>, GarminError> {
+    if value.is_empty() {
+        Ok(None)
+    } else {
+        Ok(Some(parse_date(value)?))
+    }
 }
 
 /// Normalises a date range: at most 365 days, never inverted.

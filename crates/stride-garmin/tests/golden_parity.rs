@@ -459,3 +459,120 @@ fn query_value(query: &str, key: &str) -> String {
         .unwrap_or_default()
         .to_owned()
 }
+
+/// The query of a request, as a map of strings.
+fn query_map(query: &str) -> Value {
+    let mut map = Map::new();
+    for pair in query.split('&') {
+        if let Some((key, value)) = pair.split_once('=') {
+            map.insert(key.to_owned(), Value::String(value.to_owned()));
+        }
+    }
+    Value::Object(map)
+}
+
+/// Every value as a string, so a number and its text form compare equal.
+fn as_strings(value: &Value) -> Value {
+    match value {
+        Value::Object(map) => Value::Object(
+            map.iter()
+                .map(|(key, value)| {
+                    let text = match value {
+                        Value::String(text) => text.clone(),
+                        other => other.to_string(),
+                    };
+                    (key.clone(), Value::String(text))
+                })
+                .collect(),
+        ),
+        other => other.clone(),
+    }
+}
+
+#[test]
+fn the_golden_activity_search_query_matches_the_reference() {
+    let stub = StubServer::start();
+    stub.push(
+        "POST",
+        stride_garmin::TOKEN_PATH,
+        Reply::text("eyJhbGciOiJIUzI1NiJ9.golden-jwt.golden"),
+    );
+    for _ in 0..6 {
+        stub.push(
+            "GET",
+            ACTIVITIES_PATH,
+            Reply::json(fixture("activity_list.json")),
+        );
+    }
+    let client = client_for(&stub);
+    let expected = expected();
+
+    let cases = [
+        (0u32, 100u32, "2026-01-01", "2026-01-31", "default"),
+        (299, 100, "2026-01-01", "2026-01-31", "deep_page"),
+        (500, 100, "2026-01-01", "2026-01-31", "beyond_the_cap"),
+        (0, 1000, "2026-01-01", "2026-01-31", "over_the_limit"),
+        (0, 0, "2026-01-01", "2026-01-31", "under_the_limit"),
+        (0, 100, "2025-01-01", "2026-01-31", "clamped_window"),
+    ];
+    for (start, limit, from, to, name) in cases {
+        client
+            .activity_page(start, limit, from, to)
+            .expect("the activity search succeeds");
+        let requests = stub.requests_for("GET", ACTIVITIES_PATH);
+        let request = requests.last().expect("the request is recorded");
+        assert_close(
+            &query_map(&request.query),
+            &as_strings(&expected["activities_params"][name]),
+            &format!("activities_params.{name}"),
+        );
+    }
+}
+
+#[test]
+fn the_golden_envelope_edge_cases_match_the_reference() {
+    let stub = StubServer::start();
+    stub.push(
+        "POST",
+        stride_garmin::TOKEN_PATH,
+        Reply::text("eyJhbGciOiJIUzI1NiJ9.golden-jwt.golden"),
+    );
+    stub.push(
+        "GET",
+        ACTIVITIES_PATH,
+        Reply::json(fixture("activity_list_bare.json")),
+    );
+    stub.push(
+        "GET",
+        ACTIVITIES_PATH,
+        Reply::json(fixture("activity_list_unknown.json")),
+    );
+    let client = client_for(&stub);
+    let expected = expected();
+
+    // A payload that is not an envelope at all: the reference takes the array.
+    let bare = client
+        .activity_page(0, 100, "2026-01-01", "2026-01-31")
+        .expect("the activity search succeeds");
+    let expected_bare = expected["lists_bare_array"].as_array().expect("a list");
+    assert_eq!(bare.len(), expected_bare.len(), "the bare array's length");
+    assert_eq!(bare[0].external_id, "777");
+    assert_eq!(
+        bare[0].name,
+        expected_bare[0]["activityName"].as_str().unwrap()
+    );
+
+    // An envelope under a name the reference does not know: nothing.
+    let unknown = client
+        .activity_page(0, 100, "2026-01-01", "2026-01-31")
+        .expect("the activity search succeeds");
+    assert!(
+        unknown.is_empty(),
+        "an unknown envelope yields nothing, got {unknown:?}"
+    );
+    assert_eq!(
+        expected["lists_unknown_envelope"],
+        Value::Array(Vec::new()),
+        "the reference yields nothing too"
+    );
+}

@@ -17,6 +17,16 @@ calls its functions:
 | `activity_detail`, `activity_detail_fallback`, `activity_list` | `app.services.personal_sync._canonical_from_detail` |
 | `lists.*` | `app.ingest.garmin_personal._as_list` |
 | `dates.*` | `app.ingest.garmin_personal._bounded_date_range` |
+| `activities_params.*` | `app.ingest.garmin_personal.GarminPersonalClient.activities` — the client is called with its HTTP call replaced by a capture, so the expectation is the query the reference itself computes |
+
+`activities_params` pins the clamps the reference applies to an activity
+search: `start` is capped at 299, `limit` at 100 and at `300 - start`, and the
+window is clamped to a year. The port had two of these wrong and the golden
+set found both.
+
+`lists_bare_array` and `lists_unknown_envelope` pin `_as_list` on a payload
+that is not an envelope at all (the array is taken) and on one whose envelope
+the reference does not know (nothing is taken).
 
 The `*.json` files beside it are the Garmin payloads the expectations are
 computed from. They are hand-written, but every field in them is a field the
