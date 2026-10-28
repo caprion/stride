@@ -1,31 +1,31 @@
 import type { CapacitorConfig } from '@capacitor/cli'
 
 /**
- * Capacitor configuration.
+ * The app is Android-first and local-first.
  *
- * The app is Android-first and local-first. The web bundle is the whole UI;
- * the Garmin integration, the database and the analysis live on the machine
- * the athlete trusts — for now the instance on the tailnet.
+ * **The server URL is empty by default.** The phone is the whole thing: the
+ * Garmin credential, the encrypted database and the analysis all live on the
+ * device, and the web bundle that draws them is packaged in the APK. The
+ * WebView loads `file:///android_asset/public` and the phone talks to no
+ * server at all.
  *
- * `server.url` points the WebView at that instance. When the Kotlin core
- * lands, this becomes a bundled UI with a native bridge, and the URL goes
- * away entirely: the phone would then own the Garmin key and the database,
- * and need no server at all.
+ * The URL that used to be here — the instance on the tailnet — was the
+ * interim build, where the phone was a browser for a desktop. It is gone:
  *
- * The WebView is pointed at a *remote* origin, which is the whole attack
- * surface of this configuration: whatever answers on that URL is inside the
- * app's WebView, with the Capacitor bridge injected into it and the device
- * cookie for that origin in the WebView's jar. So the URL has to be HTTPS —
- * the build refuses to produce an APK that points at a cleartext origin,
- * because a mixed-content or cleartext WebView is how a device credential
- * ends up on the wire in the clear.
+ * * `STRIDE_SERVER_URL` still points the build at an instance, for a build
+ *   that wants the old behaviour (a development build against a running
+ *   instance);
+ * * the *runtime* URL lives in the native shell's settings, is empty by
+ *   default, and is applied by `MainActivity` when it is set.
+ *
+ * When a URL is set it has to be HTTPS. The build refuses to produce an APK
+ * that points at a cleartext origin, because a mixed-content or cleartext
+ * WebView is how a device credential ends up on the wire in the clear.
  */
 
-const DEFAULT_SERVER_URL = 'https://cf-openclaw.tail62fa14.ts.net:8443'
-const serverUrl = process.env.STRIDE_SERVER_URL ?? DEFAULT_SERVER_URL
+const serverUrl = process.env.STRIDE_SERVER_URL ?? ''
 
-if (!/^https:\/\//i.test(serverUrl)) {
-  // Fail the build rather than ship an APK whose WebView talks cleartext.
+if (serverUrl && !/^https:\/\//i.test(serverUrl)) {
   throw new Error(
     `STRIDE_SERVER_URL must be an https:// URL (got "${serverUrl}"). ` +
       'The WebView carries the paired-device credential; it must not travel over plain HTTP.',
@@ -37,7 +37,8 @@ const config: CapacitorConfig = {
   appName: 'Stride',
   webDir: 'frontend/dist',
   server: {
-    url: serverUrl,
+    // No URL: the bundled app, on the device.
+    ...(serverUrl ? { url: serverUrl } : {}),
     cleartext: false,
     androidScheme: 'https',
   },
