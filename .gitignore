@@ -29,3 +29,9 @@ frontend/dist/
 .agent-prompts/
 backend/instances/
 backend/data-snapshots/
+
+# Android signing — the keystore never enters the repository
+android/keystore.properties
+android/app/*.jks
+android/app/*.keystore
+.secrets/

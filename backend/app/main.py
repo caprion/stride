@@ -7,6 +7,7 @@ Serves the JSON API under ``/api/v1`` and, in production, the built SPA from
 from __future__ import annotations
 
 import logging
+from pathlib import Path
 import os
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException, Request
@@ -254,6 +255,31 @@ def health() -> dict:
             "plan_sessions": sessions,
         },
     }
+
+
+# ------------------------------------------------------- asset links ----
+
+ASSETLINKS_PATH = Path(__file__).with_name("assetlinks.json")
+
+
+@app.get("/.well-known/assetlinks.json", include_in_schema=False)
+async def assetlinks() -> Response:
+    """Prove this origin is allowed to launch the Android app.
+
+    A Trusted Web Activity will only open as a real app — full screen, no
+    browser, with the app's own icon and splash — if the origin can show
+    this file and it names the app's package and signing certificate.
+
+    Without it the APK opens a browser tab that looks like the app, which is
+    worse than no app at all.
+    """
+    if not ASSETLINKS_PATH.exists():
+        return JSONResponse({"detail": "Not found"}, status_code=404)
+    return Response(
+        content=ASSETLINKS_PATH.read_text(),
+        media_type="application/json",
+        headers={"Cache-Control": "public, max-age=3600"},
+    )
 
 
 # ---------------------------------------------------------------- SPA -----
