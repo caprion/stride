@@ -55,19 +55,51 @@ export const RAMP = ['#F2B01E', '#E08A3C', '#B4557F', '#6E6BA8', '#3F6E9E', '#1E
 /** Semantic series: heart rate zones, recovery through anaerobic. */
 export const ZONE_COLORS = ['#A8BCCB', '#2E8B7A', '#6E9E3C', '#D99A0B', '#C0392B'] as const
 
+/**
+ * The metric colours.
+ *
+ * A running app measures half a dozen things at once, and every one of them
+ * should look the same everywhere it appears. Heart rate is the same red on
+ * the activity page, in the comparison and on the physiology trend — and it
+ * is never the same colour as pace.
+ *
+ * The hues are one family: similar chroma, similar weight, so a screen with
+ * five of them reads as one palette rather than five. Amber is reserved for
+ * **effort** — the volume you spent, the bar that is yours — so the accent
+ * colour keeps one meaning.
+ *
+ * Pace is the azure of the brand, because pace is the spine of running and
+ * everything else is measured against it.
+ */
+export const METRIC = {
+  /** Pace — the spine. Every other metric is measured against it. */
+  pace: '#1E5E96',
+  /** Heart rate — heat. */
+  heartRate: '#D64A4A',
+  /** Elevation — terrain. */
+  elevation: '#6E6BA8',
+  /** Cadence — rhythm. */
+  cadence: '#2E8B7A',
+  /** Drift and decoupling — the gap between expected and actual. */
+  drift: '#B4557F',
+  /** Effort — what it cost. The one amber in the app. */
+  effort: '#F2B01E',
+} as const
+
 /** Data series that need to hold their own on a white card. */
 export const SERIES = {
   /** The paler tint behind the most recent bar. */
   actualSoft: ACCENT[200],
   /** A cool grey for planned volume and de-emphasised furniture. */
   plannedSoft: '#C7D6E3',
-  heartRate: '#1E5E96',
-  pace: '#B57C06',
-  cadence: '#2E8B7A',
-  elevation: '#6E6BA8',
+  heartRate: METRIC.heartRate,
+  pace: METRIC.pace,
+  cadence: METRIC.cadence,
+  elevation: METRIC.elevation,
+  drift: METRIC.drift,
   planned: '#C7D6E3',
-  actual: '#F2B01E',
-  accent: '#F2B01E',
+  actual: METRIC.effort,
+  accent: METRIC.effort,
 } as const
 
 /** Verdict colours, shared by the plan surface and the badge kit. */

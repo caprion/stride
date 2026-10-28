@@ -24,6 +24,22 @@ and no causality. That is the gap this fills.
 
 ---
 
+## Get the Android app
+
+Releases are on GitHub — no store, no account, no review queue.
+
+```bash
+gh release download v0.1.0 --repo caprion/stride
+```
+
+Install `stride-v0.1.0.apk` on the phone (allow installs from this source).
+It opens the instance you are running, so the phone needs to be able to reach
+it — over the tailnet, for now.
+
+The app is built in CI and signed with a key whose certificate is committed
+in `backend/app/assetlinks.json`; the key itself is only in the repository
+secrets.
+
 ## Showcase
 
 A one-page collage of every surface: **[`showcase/stride-collage.png`](file:///home/sumit/stride/showcase/stride-collage.png)**.
@@ -42,6 +58,7 @@ A one-page collage of every surface: **[`showcase/stride-collage.png`](file:///h
 | [`docs/piping-to-chatgpt.md`](file:///home/sumit/stride/docs/piping-to-chatgpt.md) | how to pipe the data through ChatGPT — MCP, and the four ways it can run |
 | [`docs/android-packaging.md`](file:///home/sumit/stride/docs/android-packaging.md) | **how the Android app is packaged, signed, built in CI and deployed** |
 | [`docs/production-deployment.md`](file:///home/sumit/stride/docs/production-deployment.md) | **the production instance: the vault key, the setup, the pre-flight** |
+| [`docs/design-review.md`](file:///home/sumit/stride/docs/design-review.md) | **the design review: the footprint, the colour language, every screen on a phone** |
 
 ## No social layer, on purpose
 

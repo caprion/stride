@@ -34,7 +34,7 @@ import {
   Zap,
 } from 'lucide-react'
 import { api } from '../lib/api'
-import { ACCENT_DATA, INK_FAINT, RAMP, ZONE_COLORS } from '../lib/palette'
+import { ACCENT_DATA, INK_FAINT, SERIES, ZONE_COLORS } from '../lib/palette'
 import type { ActivityDetail, ActivitySummary, Lap, Stream } from '../types'
 import type { Fingerprint } from '../types_phase2'
 import {
@@ -69,9 +69,11 @@ import {
 /* ------------------------------------------------------------------ consts */
 
 const BRAND = ACCENT_DATA
-const HR_COLOR = ACCENT_DATA
-const PACE_COLOR = RAMP[5]
-const ELEVATION_COLOR = RAMP[1]
+// The metric colours come from the shared palette, so a heart rate line is
+// the same red here, in the comparison and on the physiology trend.
+const HR_COLOR = SERIES.heartRate
+const PACE_COLOR = SERIES.pace
+const ELEVATION_COLOR = SERIES.elevation
 
 const TILE_URL = '/api/v1/tiles/{z}/{x}/{y}.png'
 const TILE_ATTRIBUTION =
