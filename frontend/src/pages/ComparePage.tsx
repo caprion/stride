@@ -467,8 +467,12 @@ export default function ComparePage() {
         <aside className="space-y-4 xl:sticky xl:top-4">
           <Card>
             <CardHeader
-              title={`Selected runs · ${selectedIds.length}/8`}
-              subtitle="Choose runs from anywhere in your history."
+              title={`Selected runs · ${selectedIds.length} of 8`}
+              subtitle={
+                selectedIds.length >= 8
+                  ? 'That is the most the chart will hold. Remove one to add another.'
+                  : 'Two or three reads best — the chart puts them on one distance axis. Eight is the limit.'
+              }
             />
             <div className="flex flex-wrap gap-2 px-4 pb-3">
               {selectedIds.map((id, index) => {
