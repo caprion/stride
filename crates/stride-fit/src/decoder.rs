@@ -22,7 +22,7 @@ pub(crate) const FIT_EPOCH_UNIX: i64 = 631_065_600;
 pub(crate) const TIMESTAMP_DEF_NUM: u8 = 253;
 
 /// A decoded field value.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub(crate) enum FieldValue {
     /// A number, still in the field's raw units.
     Number(f64),
@@ -125,11 +125,7 @@ where
             // bits 5-6 and the five-bit time offset in bits 0-4.
             ((header >> 5) & 0x3, false, false)
         } else {
-            (
-                header & 0x0f,
-                header & 0x40 != 0,
-                header & 0x20 != 0,
-            )
+            (header & 0x0f, header & 0x40 != 0, header & 0x20 != 0)
         };
 
         if compressed {
@@ -167,12 +163,8 @@ where
         }
 
         if is_definition {
-            let definition = read_definition_message(
-                bytes,
-                &mut cursor,
-                data_end,
-                developer_present,
-            )?;
+            let definition =
+                read_definition_message(bytes, &mut cursor, data_end, developer_present)?;
             definitions.insert(local, definition);
             continue;
         }
@@ -285,7 +277,12 @@ fn read_definition_message(
         }
     }
 
-    Ok(Definition { mesg_num, little_endian, fields, developer_bytes })
+    Ok(Definition {
+        mesg_num,
+        little_endian,
+        fields,
+        developer_bytes,
+    })
 }
 
 /// Read one data message using the layout of its local message type.
@@ -299,10 +296,9 @@ fn read_data_message(
     compressed_timestamp: Option<u32>,
     offset: usize,
 ) -> Result<Message, FitError> {
-    let definition = definitions.get(&local).ok_or(FitError::UnknownLocalMessage {
-        offset,
-        local,
-    })?;
+    let definition = definitions
+        .get(&local)
+        .ok_or(FitError::UnknownLocalMessage { offset, local })?;
 
     let mut fields = Vec::with_capacity(definition.fields.len());
     for field in &definition.fields {
@@ -521,7 +517,10 @@ mod tests {
         let mut bytes = tiny_fit();
         bytes[1] = 0x99;
         let error = for_each_message(&bytes, |_| Ok(())).unwrap_err();
-        assert!(matches!(error, FitError::UnsupportedVersion { .. }), "{error}");
+        assert!(
+            matches!(error, FitError::UnsupportedVersion { .. }),
+            "{error}"
+        );
     }
 
     #[test]
@@ -537,7 +536,10 @@ mod tests {
         // Claim a data message for a local type that was never defined.
         bytes[14 + 9] = 0x05;
         let error = for_each_message(&bytes, |_| Ok(())).unwrap_err();
-        assert!(matches!(error, FitError::UnknownLocalMessage { .. }), "{error}");
+        assert!(
+            matches!(error, FitError::UnknownLocalMessage { .. }),
+            "{error}"
+        );
     }
 
     #[test]
@@ -581,6 +583,33 @@ mod tests {
         .expect("the file parses");
         assert_eq!(seen.len(), 1);
         assert_eq!(seen[0].number(253), Some(2_000_000.0));
+    }
+
+    #[test]
+    fn a_null_value_is_an_absent_field() {
+        // Every FIT base type has a null value; a watch writes it when it has
+        // nothing to say. Reading it as a number turns a missing average
+        // speed into an average speed of 65.535 m/s.
+        assert_eq!(decode_value(&[0xff], 0x02, true), None); // uint8
+        assert_eq!(decode_value(&[0x7f], 0x01, true), None); // sint8
+        assert_eq!(decode_value(&[0x00], 0x0a, true), None); // uint8z
+        assert_eq!(decode_value(&[0xff, 0xff], 0x84, true), None); // uint16
+        assert_eq!(decode_value(&[0xff, 0x7f], 0x83, true), None); // sint16
+        assert_eq!(decode_value(&[0x00, 0x00], 0x8b, true), None); // uint16z
+        assert_eq!(decode_value(&[0xff, 0xff, 0xff, 0xff], 0x86, true), None); // uint32
+        assert_eq!(decode_value(&[0xff, 0xff, 0xff, 0x7f], 0x85, true), None); // sint32
+        assert_eq!(decode_value(&[0x00, 0x00, 0x00, 0x00], 0x8c, true), None); // uint32z
+        assert_eq!(decode_value(&[0xff; 8], 0x8f, true), None); // uint64
+        assert_eq!(decode_value(&[0xff; 4], 0x00, true), None); // enum
+                                                                // and a real value still decodes
+        assert_eq!(
+            decode_value(&[0xe8, 0x03], 0x84, true),
+            Some(FieldValue::Number(1000.0))
+        );
+        assert_eq!(
+            decode_value(&[0x64], 0x02, true),
+            Some(FieldValue::Number(100.0))
+        );
     }
 
     #[test]

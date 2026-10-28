@@ -15,7 +15,9 @@ pub enum FitError {
     NotFit,
 
     /// The file ended before a structure it declared was complete.
-    #[error("truncated FIT file: needed {needed} bytes at offset {offset}, only {available} available")]
+    #[error(
+        "truncated FIT file: needed {needed} bytes at offset {offset}, only {available} available"
+    )]
     Truncated {
         /// Byte offset where the read started.
         offset: usize,
@@ -49,7 +51,9 @@ pub enum FitError {
     },
 
     /// A data message referred to a definition that was never sent.
-    #[error("malformed FIT file at byte {offset}: data message for unknown local message type {local}")]
+    #[error(
+        "malformed FIT file at byte {offset}: data message for unknown local message type {local}"
+    )]
     UnknownLocalMessage {
         /// Byte offset of the message.
         offset: usize,

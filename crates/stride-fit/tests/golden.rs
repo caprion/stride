@@ -28,7 +28,11 @@ fn check_case(case: &str) {
     let expected = golden
         .get("import")
         .unwrap_or_else(|| panic!("{case}: the golden file has no import section"));
-    compare(&format!("{case}.import"), expected, &import_section(&activity));
+    compare(
+        &format!("{case}.import"),
+        expected,
+        &import_section(&activity),
+    );
 }
 
 #[test]

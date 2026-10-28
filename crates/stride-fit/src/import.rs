@@ -336,7 +336,10 @@ impl<'a> Importer<'a> {
             profile::MESG_FILE_ID => {
                 self.file_id_count += 1;
                 if self.file_id_count > 100 {
-                    return Err(FitError::TooManyMessages { kind: "file_id", limit: 100 });
+                    return Err(FitError::TooManyMessages {
+                        kind: "file_id",
+                        limit: 100,
+                    });
                 }
                 if let Some(serial) = number(&message, profile::MESG_FILE_ID, "serial_number") {
                     let serial = trunc_to_int(serial);
@@ -358,7 +361,10 @@ impl<'a> Importer<'a> {
             profile::MESG_LAP => {
                 self.lap_count += 1;
                 if self.lap_count > 10_000 {
-                    return Err(FitError::TooManyMessages { kind: "lap", limit: 10_000 });
+                    return Err(FitError::TooManyMessages {
+                        kind: "lap",
+                        limit: 10_000,
+                    });
                 }
                 self.laps.push(RawLap {
                     total_elapsed_time: number(&message, profile::MESG_LAP, "total_elapsed_time"),
@@ -377,7 +383,10 @@ impl<'a> Importer<'a> {
             profile::MESG_SESSION => {
                 self.session_count += 1;
                 if self.session_count > 100 {
-                    return Err(FitError::TooManyMessages { kind: "session", limit: 100 });
+                    return Err(FitError::TooManyMessages {
+                        kind: "session",
+                        limit: 100,
+                    });
                 }
                 // The reference reads the first session message and stops.
                 if self.session.is_none() {
@@ -471,7 +480,11 @@ impl<'a> Importer<'a> {
             }
         }
 
-        let heart_rate = in_range(number(message, profile::MESG_RECORD, "heart_rate"), 0.0, 300.0);
+        let heart_rate = in_range(
+            number(message, profile::MESG_RECORD, "heart_rate"),
+            0.0,
+            300.0,
+        );
         let cadence = in_range(number(message, profile::MESG_RECORD, "cadence"), 0.0, 300.0);
 
         // `speed` is preferred; `enhanced_speed` is the fallback.
@@ -570,8 +583,10 @@ impl<'a> Importer<'a> {
             _ => activity.moving_time_s,
         };
         activity.elevation_gain_m = bounded(session.total_ascent, 100_000.0).unwrap_or(0.0);
-        activity.avg_hr = bounded(session.avg_heart_rate, 300.0).map(|value| trunc_to_int(value) as f64);
-        activity.max_hr = bounded(session.max_heart_rate, 300.0).map(|value| trunc_to_int(value) as f64);
+        activity.avg_hr =
+            bounded(session.avg_heart_rate, 300.0).map(|value| trunc_to_int(value) as f64);
+        activity.max_hr =
+            bounded(session.max_heart_rate, 300.0).map(|value| trunc_to_int(value) as f64);
         activity.calories = bounded(session.total_calories, 1_000_000.0);
         // The activity's cadence is the session value **as stored** — it is not
         // halved, even though the laps' and the stream's are.
@@ -675,7 +690,9 @@ impl<'a> Importer<'a> {
                 distance_m: row.distance,
                 speed_ms: row.speed,
                 stored_cadence: row.cadence,
-                cadence_spm: row.cadence.map(|value| running_cadence(value, sport.as_deref())),
+                cadence_spm: row
+                    .cadence
+                    .map(|value| running_cadence(value, sport.as_deref())),
                 heart_rate_bpm: row.heart_rate,
                 altitude_m: row.altitude,
             })
@@ -688,7 +705,9 @@ impl<'a> Importer<'a> {
                 let running: Vec<&RecordRow> = self
                     .records
                     .iter()
-                    .filter(|record| classify_sample(record.speed, record.cadence) == SegmentKind::Run)
+                    .filter(|record| {
+                        classify_sample(record.speed, record.cadence) == SegmentKind::Run
+                    })
                     .collect();
                 if !running.is_empty() {
                     let heart_rate: Vec<(f64, f64)> = running
@@ -853,7 +872,8 @@ fn segment_records(
         }
 
         if index + 1 < records.len() {
-            if let (Some(previous), Some(current)) = (record.distance, records[index + 1].distance) {
+            if let (Some(previous), Some(current)) = (record.distance, records[index + 1].distance)
+            {
                 if current > previous {
                     match kind {
                         SegmentKind::Run => totals.run_metres += current - previous,
@@ -901,15 +921,15 @@ fn segment_records(
 /// A lap keeps its index and its distance, but its time, pace, heart rate
 /// and cadence describe only the running. A lap that was mostly walking
 /// comes back with very little running in it — which is the truth.
-fn running_laps(
-    laps: Vec<Lap>,
-    classified: &[ClassifiedRow],
-    sport: Option<&str>,
-) -> Vec<Lap> {
+fn running_laps(laps: Vec<Lap>, classified: &[ClassifiedRow], sport: Option<&str>) -> Vec<Lap> {
     let mut out = Vec::with_capacity(laps.len());
     let mut cursor = 0.0;
     for lap in laps {
-        let end = if lap.elapsed_s != 0.0 { lap.elapsed_s } else { cursor };
+        let end = if lap.elapsed_s != 0.0 {
+            lap.elapsed_s
+        } else {
+            cursor
+        };
         let start = cursor;
         cursor = end;
         let duration = (end - start).max(0.0);
@@ -940,10 +960,7 @@ fn running_laps(
             }
         }
 
-        let heart_rates: Vec<f64> = running
-            .iter()
-            .filter_map(|row| row.heart_rate)
-            .collect();
+        let heart_rates: Vec<f64> = running.iter().filter_map(|row| row.heart_rate).collect();
         let cadences: Vec<f64> = running
             .iter()
             .filter_map(|row| row.cadence.map(|value| running_cadence(value, sport)))
@@ -974,9 +991,13 @@ fn running_laps(
             max_cadence: cadences
                 .iter()
                 .copied()
-                .fold(None, |best: Option<f64>, value| Some(best.map_or(value, |b| b.max(value))))
+                .fold(None, |best: Option<f64>, value| {
+                    Some(best.map_or(value, |b| b.max(value)))
+                })
                 .map(|value| round_to(value, 1)),
-            pace_s_per_km: pace.filter(|value| *value != 0.0).map(|value| round_to(value, 2)),
+            pace_s_per_km: pace
+                .filter(|value| *value != 0.0)
+                .map(|value| round_to(value, 2)),
             elapsed_s: round_to(duration, 3),
             ..lap
         });

@@ -64,15 +64,36 @@ impl FieldSpec {
 }
 
 const fn num(mesg_num: u16, def_num: u8, name: &'static str, scale: f64, offset: f64) -> FieldSpec {
-    FieldSpec { mesg_num, def_num, name, scale, offset, kind: FieldKind::Number }
+    FieldSpec {
+        mesg_num,
+        def_num,
+        name,
+        scale,
+        offset,
+        kind: FieldKind::Number,
+    }
 }
 
 const fn text(mesg_num: u16, def_num: u8, name: &'static str) -> FieldSpec {
-    FieldSpec { mesg_num, def_num, name, scale: 1.0, offset: 0.0, kind: FieldKind::Text }
+    FieldSpec {
+        mesg_num,
+        def_num,
+        name,
+        scale: 1.0,
+        offset: 0.0,
+        kind: FieldKind::Text,
+    }
 }
 
 const fn enumeration(mesg_num: u16, def_num: u8, name: &'static str) -> FieldSpec {
-    FieldSpec { mesg_num, def_num, name, scale: 1.0, offset: 0.0, kind: FieldKind::Enum }
+    FieldSpec {
+        mesg_num,
+        def_num,
+        name,
+        scale: 1.0,
+        offset: 0.0,
+        kind: FieldKind::Enum,
+    }
 }
 
 /// The profile fields the importer reads.
@@ -269,7 +290,9 @@ fn lookup(table: &'static [(u8, &'static str)], value: u8) -> Option<&'static st
 /// An unknown value is rendered as its number, exactly like the reference
 /// decoder does for an enumeration it does not know.
 pub(crate) fn sport_name(value: u8) -> String {
-    lookup(SPORT, value).map(str::to_string).unwrap_or_else(|| value.to_string())
+    lookup(SPORT, value)
+        .map(str::to_string)
+        .unwrap_or_else(|| value.to_string())
 }
 
 /// The name of a FIT `manufacturer` value.
@@ -278,4 +301,3 @@ pub(crate) fn manufacturer_name(value: u8) -> String {
         .map(str::to_string)
         .unwrap_or_else(|| value.to_string())
 }
-

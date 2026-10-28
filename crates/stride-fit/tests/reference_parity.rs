@@ -115,8 +115,9 @@ fn reference_imports(
             String::from_utf8_lossy(&output.stderr).trim()
         ));
     }
-    let parsed: serde_json::Value = serde_json::from_str(String::from_utf8_lossy(&output.stdout).trim())
-        .map_err(|error| format!("the reference printed bad JSON: {error}"))?;
+    let parsed: serde_json::Value =
+        serde_json::from_str(String::from_utf8_lossy(&output.stdout).trim())
+            .map_err(|error| format!("the reference printed bad JSON: {error}"))?;
     match parsed {
         serde_json::Value::Object(map) => Ok(map),
         _ => Err("the reference did not print an object".to_string()),
@@ -130,7 +131,9 @@ fn real_files(dir: &Path) -> Vec<PathBuf> {
             entries
                 .filter_map(|entry| entry.ok().map(|entry| entry.path()))
                 .filter(|path| {
-                    path.extension().map(|ext| ext.eq_ignore_ascii_case("fit")).unwrap_or(false)
+                    path.extension()
+                        .map(|ext| ext.eq_ignore_ascii_case("fit"))
+                        .unwrap_or(false)
                 })
                 .collect()
         })
@@ -155,6 +158,10 @@ fn the_real_files_match_the_reference() {
         eprintln!("skipped: {} holds no .fit files", dir.display());
         return;
     }
+    eprintln!(
+        "checking {} real FIT files against the reference (this takes a minute: the reference is Python)",
+        files.len()
+    );
     let repo = repo_root();
 
     let started = std::time::Instant::now();
@@ -179,12 +186,14 @@ fn the_real_files_match_the_reference() {
             .unwrap_or_else(|error| panic!("{name}: the Rust importer failed: {error}"));
         let rust_elapsed = clock.elapsed();
 
-        compare(&format!("{name}.import"), expected, &import_section(&activity));
+        compare(
+            &format!("{name}.import"),
+            expected,
+            &import_section(&activity),
+        );
         eprintln!(
-            "{name}: {} records, {} samples, rust {:?}",
-            activity.samples.len(),
-            activity.samples.len(),
-            rust_elapsed
+            "{name}: {} samples, parsed in {rust_elapsed:?}",
+            activity.samples.len()
         );
     }
 }

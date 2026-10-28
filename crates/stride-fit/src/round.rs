@@ -19,9 +19,7 @@ pub(crate) fn round_to(value: f64, digits: usize) -> f64 {
     }
     // `format!` never fails and the result of a fixed-precision float format
     // always parses back into a finite `f64`.
-    format!("{value:.digits$}")
-        .parse::<f64>()
-        .unwrap_or(value)
+    format!("{value:.digits$}").parse::<f64>().unwrap_or(value)
 }
 
 /// Truncate towards zero, like Python's `int()` on a float.

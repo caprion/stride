@@ -41,6 +41,6 @@ mod round;
 
 pub use error::FitError;
 pub use import::{
-    classify_sample, parse_fit, running_cadence, Lap, ParsedActivity, Sample, Segment,
-    SegmentKind, Stream, MAX_FIT_INPUT_BYTES, MAX_FIT_RECORDS,
+    classify_sample, parse_fit, running_cadence, Lap, ParsedActivity, Sample, Segment, SegmentKind,
+    Stream, MAX_FIT_INPUT_BYTES, MAX_FIT_RECORDS,
 };

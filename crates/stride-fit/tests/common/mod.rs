@@ -16,7 +16,11 @@ pub fn repo_root() -> PathBuf {
         .join("..")
         .join("..")
         .canonicalize()
-        .unwrap_or_else(|_| PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("..").join(".."))
+        .unwrap_or_else(|_| {
+            PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+                .join("..")
+                .join("..")
+        })
 }
 
 /// The `import` section of a golden file, rendered from the parsed activity.
@@ -168,7 +172,10 @@ pub fn compare(path: &str, golden: &Value, actual: &Value) {
             assert_eq!(expected, found, "{path}: golden {expected}, got {found}");
         }
         (Value::String(expected), Value::String(found)) => {
-            assert_eq!(expected, found, "{path}: golden {expected:?}, got {found:?}");
+            assert_eq!(
+                expected, found,
+                "{path}: golden {expected:?}, got {found:?}"
+            );
         }
         (Value::Number(expected), Value::Number(found)) => {
             let expected = expected.as_f64().expect("a number");
@@ -199,7 +206,6 @@ pub fn compare(path: &str, golden: &Value, actual: &Value) {
         }
     }
 }
-
 
 /// The fixture of a case.
 pub fn fixture(case: &str) -> PathBuf {
