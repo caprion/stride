@@ -10,20 +10,23 @@ Three ways to get data in, all first-class:
 
 from __future__ import annotations
 
+import hmac
 import logging
 import os
+import secrets
 import threading
 import time
 import uuid
 from typing import Any
 
-from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile
+from fastapi import APIRouter, Depends, File, HTTPException, Query, Request, Response, UploadFile
 from fastapi.responses import HTMLResponse
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
 from ..config import DATA_DIR, state
 from ..db import get_db
+from ..security import is_loopback_client, set_capability_cookie
 from ..ingest.fit_importer import parse_fit
 from ..ingest.garmin_account import GarminAccountClient, GarminAccountError, MfaBroker
 from ..ingest.garmin_oauth import GarminAuthError, GarminOAuthClient
@@ -374,3 +377,81 @@ async def fit_import(files: list[UploadFile] = File(...), db: Session = Depends(
             errors.append({"filename": filename, "error": str(exc)[:300]})
     db.commit()
     return {"imported": len(imported), "activities": imported, "errors": errors}
+
+
+# --------------------------------------------------------------- pairing
+#
+# A browser on the tailnet is not a loopback client, so loading the app
+# cannot mint a capability cookie — by design, because "any device on my
+# tailnet can read my health data" is not a property anyone wants. The
+# missing half was a way for the athlete to *pair* a device deliberately.
+#
+# The operator runs ``scripts/prod.sh pair`` on the machine, which asks the
+# server for a fresh code over loopback. The code is short, short-lived and
+# single-use. It is exchanged for the same HttpOnly, SameSite=Strict cookie
+# that a loopback browser receives — so the device ends up with exactly the
+# same authority, and the code itself never becomes a long-lived secret that
+# JavaScript has to hold.
+
+
+PAIR_CODE_TTL_SECONDS = 600
+_PAIR_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"  # no look-alikes
+
+
+def _new_pair_code() -> str:
+    """A code that is easy to read aloud and type on a phone keyboard."""
+    return "-".join(
+        "".join(secrets.choice(_PAIR_ALPHABET) for _ in range(4))
+        for _ in range(2)
+    )
+
+
+def _pair_code_valid(code: str) -> bool:
+    expected = state.pairing_code
+    expires = state.pairing_expires_at
+    if not expected or not expires:
+        return False
+    if time.time() > float(expires):
+        return False
+    return hmac.compare_digest(str(code).strip().upper(), str(expected).upper())
+
+
+@router.get("/pair-code")
+def pair_code(request: Request) -> dict[str, Any]:
+    """Mint a pairing code. Loopback only — this is the operator's console."""
+    if not is_loopback_client(request):
+        raise HTTPException(
+            status_code=403,
+            detail="Pairing codes are issued on the Stride machine only.",
+        )
+    code = _new_pair_code()
+    expires = time.time() + PAIR_CODE_TTL_SECONDS
+    state.update(pairing_code=code, pairing_expires_at=str(expires))
+    log.info("pairing code issued; valid for %d minutes", PAIR_CODE_TTL_SECONDS // 60)
+    return {
+        "code": code,
+        "expires_in": PAIR_CODE_TTL_SECONDS,
+        "instructions": (
+            "Open Stride on the other device and enter this code. "
+            "It works once, and expires in 10 minutes."
+        ),
+    }
+
+
+class PairBody(BaseModel):
+    code: str = Field(..., min_length=4, max_length=32)
+
+
+@router.post("/pair")
+def pair(body: PairBody, request: Request) -> Response:
+    """Exchange a pairing code for the HttpOnly capability cookie."""
+    if not _pair_code_valid(body.code):
+        raise HTTPException(
+            status_code=401,
+            detail="That code is wrong, expired, or already used.",
+        )
+    # Single use. The code is consumed the moment it works.
+    state.update(pairing_code=None, pairing_expires_at=None)
+    response = Response(status_code=204)
+    set_capability_cookie(response, request)
+    return response

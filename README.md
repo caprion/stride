@@ -118,6 +118,24 @@ On this VM it is already running as a managed bb terminal (`Stride API`), so it
 is reachable over Tailscale at **http://100.89.222.50:8000** from any device on
 the tailnet.
 
+### Connecting a second device
+
+A browser on the same machine as the server is given a session cookie
+automatically. A browser on your phone is not — it is a different machine, and
+"any device on my tailnet can read my health data" is not a property anyone
+wants.
+
+So the athlete pairs the device deliberately:
+
+```bash
+cd ~/stride && ./scripts/prod.sh pair
+```
+
+That prints a code like `KD7P-3FQM`. Open Stride on the other device, enter
+the code, and the device is connected. The code works **once**, expires in
+**10 minutes**, and is exchanged for the same HttpOnly session cookie a local
+browser gets — the code itself never becomes a long-lived secret.
+
 The live instance is the **production** one: 160 real Garmin activities, 371
 days of physiology, the real training plan, and no synthetic data. It gets its
 Garmin Personal API Key from Azure Key Vault, so the key is never written to
@@ -132,6 +150,7 @@ disk and never reaches the browser.
 | `./scripts/prod.sh start` | Harden permissions, start, health-check |
 | `./scripts/prod.sh status` | What is running and what is in the database |
 | `./scripts/prod.sh doctor` | The full pre-flight — every check, or it fails |
+| `./scripts/prod.sh pair` | Mint a one-time code to connect another device |
 | `./scripts/prod.sh stop` | Stop the instance |
 | `./scripts/run.sh` | Build (if needed) and serve on `:8000` |
 | `./scripts/run.sh dev` | API on `:8000` with reload + Vite HMR on `:5173` |

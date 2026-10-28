@@ -173,6 +173,49 @@ are dropped. The current log is one clean `OK` row.
 
 ---
 
+## Connecting another device
+
+The browser on the machine that runs Stride is given a session cookie
+automatically, because the server mints it when it serves the app to a
+loopback client.
+
+A browser on the phone is a different machine. It cannot mint that cookie,
+and it should not be able to: if any device on the tailnet could, then the
+tailnet *is* the trust boundary, and that is a much bigger group than "the
+athlete's own devices".
+
+So the athlete pairs the device on purpose:
+
+```bash
+cd ~/stride && ./scripts/prod.sh pair
+```
+
+```
+▸ Open Stride on the other device and enter that code.
+▸ It works once and expires in 10 minutes.
+
+    KD7P-3FQM
+```
+
+The device shows a **Connect this device** screen instead of the dashboard,
+the athlete types the code, and the server exchanges it for the same HttpOnly,
+SameSite=Strict cookie a loopback browser receives. The code is consumed the
+moment it works.
+
+| property | why |
+|---|---|
+| minted on the machine only | `/auth/pair-code` refuses any client that is not loopback |
+| single use | the code is cleared the instant it is exchanged |
+| 10 minute life | a code left on a screen stops working |
+| 5 attempts a minute | a secret being guessed cannot be brute forced |
+| no look-alike characters | `I`, `O`, `0` and `1` are excluded — it is typed on a phone |
+| the code is not the capability | it is exchanged for the capability, never a long-lived secret in JavaScript |
+
+The security gate checks two of these on the live service: that a wrong code
+is refused, and that a remote client cannot mint one.
+
+---
+
 ## Health
 
 ```bash

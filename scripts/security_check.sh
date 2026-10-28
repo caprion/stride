@@ -175,6 +175,32 @@ if curl -fsS -m 4 -o /dev/null "$BASE/api/v1/health" 2>/dev/null; then
   else
     bad "no Content-Security-Policy on the served app"
   fi
+
+  # The pairing exchange is the one endpoint that answers without a
+  # capability token, so it gets its own checks.
+  code=$(curl -s -o /dev/null -w '%{http_code}' -m 6 -X POST -H "Origin: $BASE" \
+    -H 'Content-Type: application/json' -d '{"code":"ZZZZ-ZZZZ"}' "$BASE/api/v1/auth/pair")
+  if [[ "$code" == "401" || "$code" == "403" ]]; then
+    ok "the pairing exchange rejects a wrong code ($code)"
+  else
+    bad "the pairing exchange accepted a wrong code ($code)"
+  fi
+
+  # A pairing code must only be mintable from the machine itself. The
+  # non-loopback address of this host stands in for any other device on the
+  # tailnet.
+  LAN_IP=$(ip -4 addr show 2>/dev/null | awk '/inet /{print $2}' | cut -d/ -f1 \
+    | grep -v '^127\.' | head -1)
+  if [[ -n "$LAN_IP" ]]; then
+    code=$(curl -s -o /dev/null -w '%{http_code}' -m 6 "http://$LAN_IP:8000/api/v1/auth/pair-code")
+    if [[ "$code" == "401" || "$code" == "403" ]]; then
+      ok "a pairing code cannot be minted from another device ($code)"
+    else
+      bad "a remote client minted a pairing code ($code)"
+    fi
+  else
+    warn "no non-loopback address found — the remote pairing check was skipped"
+  fi
 else
   warn "the app is not running at $BASE — live checks skipped"
 fi

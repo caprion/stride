@@ -111,6 +111,15 @@ class AppState:
     # App-level session secret (so the web UI can hold a session cookie).
     session_secret: str = field(default_factory=lambda: secrets.token_hex(32))
 
+    # Device pairing. A browser on the tailnet is not a loopback client, so
+    # it cannot mint a capability cookie by loading the app. The operator
+    # generates a short code on the machine and types it into the device; the
+    # code is exchanged once for the same HttpOnly cookie a loopback browser
+    # gets. Single use, short lived, and never a long-lived secret in
+    # JavaScript.
+    pairing_code: str | None = None
+    pairing_expires_at: str | None = None
+
     _lock: threading.Lock = field(default_factory=threading.Lock, repr=False)
 
     # ------------------------------------------------------------------ io

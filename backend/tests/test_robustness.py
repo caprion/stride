@@ -427,3 +427,91 @@ def test_a_json_column_must_be_replaced_not_mutated():
         session.expire_all()
         assert session.get(Activity, row.id).raw.get("fit_imported") is True
     engine.dispose()
+
+
+# --------------------------------------------------------------------------
+# Device pairing
+# --------------------------------------------------------------------------
+#
+# A browser on the tailnet is not a loopback client, so it cannot be given a
+# capability cookie by loading the app. The athlete still wants their phone
+# to work, so the operator mints a single-use code on the machine and types
+# it into the device.
+#
+# The properties that matter: the code is mintable only on the machine, it
+# works once, it expires, and a wrong code is refused.
+
+
+def _pair_code(client, monkeypatch, loopback: bool = True) -> str:
+    import app.api.auth as auth_api
+
+    monkeypatch.setattr(auth_api, "is_loopback_client", lambda request: loopback)
+    response = client.get("/api/v1/auth/pair-code")
+    assert response.status_code == 200, response.text
+    return response.json()["code"]
+
+
+def test_pairing_code_can_only_be_minted_on_the_machine(client, monkeypatch):
+    """A remote device must not be able to mint a pairing code."""
+    import app.api.auth as auth_api
+
+    monkeypatch.setattr(auth_api, "is_loopback_client", lambda request: False)
+    response = client.get("/api/v1/auth/pair-code")
+    assert response.status_code == 403
+    assert "machine" in response.json()["detail"].lower()
+
+
+def test_a_wrong_pairing_code_is_refused(client, monkeypatch):
+    code = _pair_code(client, monkeypatch)
+    response = client.post("/api/v1/auth/pair", json={"code": "AAAA-BBBB"})
+    assert response.status_code == 401
+
+
+def test_a_pairing_code_works_once(client, monkeypatch):
+    from app.config import state
+
+    code = _pair_code(client, monkeypatch)
+    assert state.pairing_code == code
+
+    first = client.post("/api/v1/auth/pair", json={"code": code})
+    assert first.status_code == 204
+    cookie = first.headers.get("set-cookie", "")
+    assert "stride_capability" in cookie
+    assert "HttpOnly" in cookie
+    assert "SameSite=strict" in cookie.replace("Strict", "strict")
+
+    # Single use: the code is consumed the moment it works.
+    assert state.pairing_code is None
+    second = client.post("/api/v1/auth/pair", json={"code": code})
+    assert second.status_code == 401
+
+
+def test_a_pairing_code_expires(client, monkeypatch):
+    import time
+
+    from app.config import state
+
+    code = _pair_code(client, monkeypatch)
+    state.update(pairing_expires_at=str(time.time() - 1))
+    response = client.post("/api/v1/auth/pair", json={"code": code})
+    assert response.status_code == 401
+
+
+def test_a_pairing_code_is_readable_by_a_human(client, monkeypatch):
+    """No look-alike characters — it has to be typed on a phone.
+
+    I, O, 0 and 1 are the ones that get confused on a phone keyboard.
+    """
+    code = _pair_code(client, monkeypatch)
+    assert len(code) == 9 and code[4] == "-"
+    assert not set(code) & set("IO01")
+
+
+def test_pairing_does_not_leak_the_capability_token(client, monkeypatch):
+    """The pairing code must never be the capability itself."""
+    from app.config import state
+
+    code = _pair_code(client, monkeypatch)
+    assert code != state.capability_token
+    response = client.post("/api/v1/auth/pair", json={"code": code})
+    assert response.headers.get("set-cookie", "").find(state.capability_token) > 0

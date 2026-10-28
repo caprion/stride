@@ -5,6 +5,7 @@
 #   ./scripts/prod.sh start    harden permissions, start, health-check
 #   ./scripts/prod.sh status   what is running and what is in the database
 #   ./scripts/prod.sh doctor   the full pre-flight before you trust it
+#   ./scripts/prod.sh pair     mint a one-time code to connect another device
 #   ./scripts/prod.sh stop     stop the instance
 #
 # The production instance is the one at backend/data on :8000. It holds the
@@ -50,6 +51,28 @@ case "${1:-status}" in
     harden_permissions
     log "health:"
     health | "$PY" -m json.tool 2>/dev/null || health
+    ;;
+
+  pair)
+    # Mint a single-use pairing code for a device that is not on this
+    # machine — the phone on the tailnet, typically. The code is printed
+    # here, exchanged once for the session cookie, and expires in 10
+    # minutes.
+    if ! curl -fsS -m 5 "http://127.0.0.1:$PORT/api/v1/health" > /dev/null 2>&1; then
+      bad "Stride is not answering on :$PORT — start it with scripts/prod.sh start"
+      exit 1
+    fi
+    code="$(curl -fsS -m 10 "http://127.0.0.1:$PORT/api/v1/auth/pair-code" \
+      | "$PY" -c 'import json,sys; print(json.load(sys.stdin)["code"])' 2>/dev/null || true)"
+    if [[ -z "$code" ]]; then
+      bad "could not mint a pairing code"
+      exit 1
+    fi
+    echo
+    printf '    \033[1;38;5;208m%s\033[0m\n' "$code"
+    echo
+    log "Open Stride on the other device and enter that code."
+    log "It works once and expires in 10 minutes."
     ;;
 
   stop)
@@ -137,6 +160,27 @@ PY
       tail -20 /tmp/stride-doctor-gate.log
     fi
 
+    log "device pairing"
+    code="$(curl -fsS -m 8 "http://127.0.0.1:$PORT/api/v1/auth/pair-code" \
+      | "$PY" -c 'import json,sys; print(json.load(sys.stdin)["code"])' 2>/dev/null || true)"
+    if [[ -n "$code" ]]; then
+      ok "a pairing code can be minted on the machine"
+      paired="$(curl -s -o /dev/null -w '%{http_code}' -m 8 -X POST \
+        -H "Origin: http://127.0.0.1:$PORT" -H 'Content-Type: application/json' \
+        -d "{\"code\":\"$code\"}" "http://127.0.0.1:$PORT/api/v1/auth/pair")"
+      reused="$(curl -s -o /dev/null -w '%{http_code}' -m 8 -X POST \
+        -H "Origin: http://127.0.0.1:$PORT" -H 'Content-Type: application/json' \
+        -d "{\"code\":\"$code\"}" "http://127.0.0.1:$PORT/api/v1/auth/pair")"
+      if [[ "$paired" == "204" && "$reused" == "401" ]]; then
+        ok "the code works once and is refused the second time"
+      else
+        bad "the pairing exchange behaved oddly (first $paired, second $reused)"
+        fail=1
+      fi
+    else
+      bad "no pairing code could be minted"; fail=1
+    fi
+
     log "http"
     if [[ -n "$(health)" ]]; then
       ok "the instance answers on :$PORT"
@@ -154,7 +198,7 @@ PY
     ;;
 
   *)
-    echo "usage: $0 {setup|start|stop|status|doctor}" >&2
+    echo "usage: $0 {setup|start|stop|status|doctor|pair}" >&2
     exit 2
     ;;
 esac

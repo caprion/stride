@@ -38,13 +38,32 @@ scope** — say so in the privacy note rather than pretending otherwise.
 - [ ] The server binds loopback by default. A non-loopback bind is possible
       only with authentication switched on, and says so loudly.
 - [ ] Every `/api/v1` route requires the capability token, except an explicit
-      allowlist (`/health`, the bootstrap).
+      allowlist (`/health`, the bootstrap, and the pairing exchange).
 - [ ] State-changing requests are rejected cross-origin, so a malicious page
       cannot drive the local API.
 - [ ] CORS is not a wildcard and does not combine `allow_credentials` with a
       broad origin list.
 - [ ] Expensive routes (sync, history, connect) are rate limited.
 - [ ] Responses carrying health data are `Cache-Control: no-store`.
+
+### Device pairing
+
+The pairing exchange is the one route that answers without a capability
+token, so it gets its own checks.
+
+- [ ] A pairing code can only be minted from a loopback client. A device
+      elsewhere on the tailnet gets a refusal.
+- [ ] A code works exactly once. The second attempt is refused.
+- [ ] A code expires (10 minutes). An expired code is refused.
+- [ ] The exchange is rate limited — five attempts a minute per address.
+- [ ] The code is never the capability token. It is never written to a log
+      line, never carried in a URL, and the response body that carries it
+      goes only to a loopback caller — the operator's own console.
+- [ ] The paired device ends up with the same HttpOnly, SameSite=Strict
+      cookie a local browser gets. No long-lived secret is left in
+      JavaScript.
+- [ ] A wrong code is refused with a 401 and no detail about which part was
+      wrong.
 
 ## 4. The browser
 

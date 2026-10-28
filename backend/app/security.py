@@ -33,6 +33,17 @@ from .config import DATA_DIR, DB_PATH, STATE_PATH, state
 
 API_PREFIX = "/api/v1"
 BOOTSTRAP_PATH = f"{API_PREFIX}/bootstrap"
+
+# API paths that answer without a capability token. See the middleware for
+# why each one is safe on its own.
+CAPABILITY_FREE = frozenset(
+    {
+        f"{API_PREFIX}/health",
+        BOOTSTRAP_PATH,
+        f"{API_PREFIX}/auth/pair-code",
+        f"{API_PREFIX}/auth/pair",
+    }
+)
 AUTH_COOKIE = "stride_capability"
 
 log = logging.getLogger("stride.security")
@@ -326,6 +337,11 @@ def _rate_bucket(path: str) -> tuple[str, int] | None:
         return ("sync", 4)
     if path.startswith(f"{API_PREFIX}/auth/garmin/"):
         return ("garmin-auth", 10)
+    if path == f"{API_PREFIX}/auth/pair":
+        # A pairing code is a secret being guessed. Five attempts a minute
+        # from one address is generous for a human and hopeless for a
+        # brute force.
+        return ("pair", 5)
     return None
 
 
@@ -344,7 +360,7 @@ class SecurityMiddleware(BaseHTTPMiddleware):
 
         # CORS preflight carries neither a cookie nor a bearer header. Let the
         # CORS middleware decide it from the explicit origin allowlist.
-        if method != "OPTIONS" and is_api and path not in {f"{API_PREFIX}/health", BOOTSTRAP_PATH}:
+        if method != "OPTIONS" and is_api:
             # Garmin's OAuth provider redirects cross-site and therefore cannot
             # carry our Strict cookie. Its random pending request token is a
             # one-time transaction capability and is checked again by the route.
@@ -355,8 +371,20 @@ class SecurityMiddleware(BaseHTTPMiddleware):
                     request.query_params.get("oauth_token", ""), state.pending_oauth_token
                 )
             )
+
+            # Endpoints that answer without a capability token. Each is
+            # narrow and each proves itself in a different way: ``health`` is
+            # a liveness probe, ``bootstrap`` and ``pair-code`` are the
+            # loopback operator's console (the route checks the client is
+            # loopback), and ``pair`` is the exchange itself, which carries a
+            # single-use code that only the operator's machine can mint.
             valid, explicit_bearer = has_valid_capability(request)
-            if auth_enabled() and not testing and not (valid or callback_transaction):
+            if (
+                path not in CAPABILITY_FREE
+                and auth_enabled()
+                and not testing
+                and not (valid or callback_transaction)
+            ):
                 return self._protected_response(request, 401, "Capability token required.")
 
             if method in {"POST", "PUT", "PATCH", "DELETE"} and not testing:
@@ -365,13 +393,16 @@ class SecurityMiddleware(BaseHTTPMiddleware):
                 if not explicit_bearer and not is_trusted_same_origin(request, self.allowed_origins):
                     return self._protected_response(request, 403, "Same-origin request required.")
 
-            bucket = _rate_bucket(path)
-            if bucket and not testing:
-                client = request.client.host if request.client else "unknown"
-                if not _rate_limiter.allowed(client, *bucket):
-                    response = self._protected_response(request, 429, "Too many Garmin requests; retry shortly.")
-                    response.headers["Retry-After"] = "60"
-                    return response
+        # Rate limiting is applied to every API path, including the ones that
+        # do not need a capability. The pairing exchange in particular is a
+        # secret being guessed, and it is unauthenticated by design.
+        bucket = _rate_bucket(path)
+        if bucket and not testing and method != "OPTIONS":
+            client = request.client.host if request.client else "unknown"
+            if not _rate_limiter.allowed(client, *bucket):
+                response = self._protected_response(request, 429, "Too many requests; retry shortly.")
+                response.headers["Retry-After"] = "60"
+                return response
 
         if path == BOOTSTRAP_PATH and auth_enabled() and not testing:
             if not bootstrap_permitted(request, self.allowed_origins):
