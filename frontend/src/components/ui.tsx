@@ -38,7 +38,10 @@ export function CardHeader({
         <h3 className="text-[15px] font-semibold leading-tight text-ink">{title}</h3>
         {subtitle ? <p className="mt-0.5 text-[13px] text-ink-muted">{subtitle}</p> : null}
       </div>
-      {action ? <div className="shrink-0">{action}</div> : null}
+      {/* The action may be wider than the space left over - a segmented
+          control with eight metrics is. It gets to scroll rather than push
+          the page sideways. */}
+      {action ? <div className="min-w-0 max-w-full shrink-0">{action}</div> : null}
     </div>
   )
 }
@@ -231,15 +234,21 @@ export function SegmentedControl<T extends string | number>({
   className?: string
 }) {
   return (
+    // The row scrolls rather than overflowing the page. A control with eight
+    // options is wider than a phone, and a control that runs off the edge of
+    // the screen is a control nobody can use.
     <div
-      className={cn('inline-flex rounded-md border border-edge bg-surface p-0.5', className)}
+      className={cn(
+        'inline-flex max-w-full overflow-x-auto rounded-md border border-edge bg-surface p-0.5',
+        className,
+      )}
     >
       {options.map((option) => (
         <button
           key={String(option.value)}
           onClick={() => onChange(option.value)}
           className={cn(
-            'rounded px-3 py-1 text-[13px] font-medium transition-colors',
+            'shrink-0 rounded px-3 py-1 text-[13px] font-medium transition-colors',
             option.value === value
               ? 'bg-ink text-white'
               : 'text-ink-muted hover:bg-surface-soft hover:text-ink',

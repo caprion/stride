@@ -175,8 +175,11 @@ export default function FitnessPage() {
           />
         )}
       </Card>
+      {/* ``min-w-0`` matters: a grid item's default minimum width is its
+          content's, so without it the scrolling table refuses to shrink and
+          the whole page overflows sideways on a phone. */}
       <div className="grid gap-4 xl:grid-cols-[1.5fr_1fr]">
-        <div className="space-y-4">
+        <div className="min-w-0 space-y-4">
           <Card>
             <CardHeader
               title="Recent fingerprints"
