@@ -59,6 +59,7 @@ A one-page collage of every surface: **[`showcase/stride-collage.png`](file:///h
 | [`docs/android-packaging.md`](file:///home/sumit/stride/docs/android-packaging.md) | **how the Android app is packaged, signed, built in CI and deployed** |
 | [`docs/production-deployment.md`](file:///home/sumit/stride/docs/production-deployment.md) | **the production instance: the vault key, the setup, the pre-flight** |
 | [`docs/design-review.md`](file:///home/sumit/stride/docs/design-review.md) | **the design review: the footprint, the colour language, every screen on a phone** |
+| [`docs/language-choice.md`](file:///home/sumit/stride/docs/language-choice.md) | **Rust versus the current stack — an evaluation, nothing changed** |
 
 ## No social layer, on purpose
 
