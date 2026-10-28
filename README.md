@@ -48,6 +48,37 @@ app and it works.
 Set `STRIDE_TRUST_TAILNET=false` if you want the pairing code back — it is
 there for the case where the tailnet holds devices that are not yours.
 
+## What "local" means here, honestly
+
+There are two things in this repository and it is worth being precise about
+which is which.
+
+**The desktop app is local.** The database is on your machine, the Garmin key
+is in Key Vault on your machine, and the browser talks to a local process.
+Nothing is sent anywhere.
+
+**The Android app is currently a remote view.** The APK is a WebView pointed
+at the instance on your machine. The Garmin key never touches the phone; the
+database never touches the phone. The phone shows you your own data, over
+your own network.
+
+That is why it needed a pairing code, and why the code was the wrong
+experience: a remote client has to prove it is allowed, and *any* proof the
+athlete can type is a poor proof. The fix in v0.3.0 is to make the tailnet the
+trust boundary — the plain listener binds loopback, the TLS listener binds
+the tailnet address, and nothing is reachable from the internet at all.
+
+The **destination** is different, and it is the thing the pairing code was
+standing in for: **the phone owns its own data.** The Garmin key in the
+phone's Keystore, the phone's own database, the phone syncing with Garmin
+directly. No server, no tailnet, no pairing, and it works on a plane.
+
+That needs the domain logic — the FIT parser, the segmentation, the
+fingerprint, the readiness, the plan engine — to exist on the phone. That is
+the port, and it is the same size in Rust or Kotlin. See
+[`docs/language-choice.md`](file:///home/sumit/stride/docs/language-choice.md)
+for why one implementation, in one language, on both, is the prize.
+
 ## Showcase
 
 A one-page collage of every surface: **[`showcase/stride-collage.png`](file:///home/sumit/stride/showcase/stride-collage.png)**.
