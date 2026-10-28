@@ -231,3 +231,113 @@ def _assert_all_activities_extract(activities) -> None:
             f"activity {activity.id}: the segment split does not account for its elapsed time"
         )
         assert all(record[5] in ("run", "walk", "stand") for record in classified)
+
+
+# --------------------------------------------------------------------------
+# Schema drift
+# --------------------------------------------------------------------------
+#
+# `create_all` never alters an existing table, so a column removed from a
+# model stays in the database forever. If it was NOT NULL and had no default,
+# every INSERT that did not supply it fails — and the failure only appears
+# when something new is written, long after the change was made.
+#
+# That is exactly what happened to `activity.visibility` when the social
+# layer was removed: the app kept serving the 158 activities it already had
+# and could not import a single new one.
+#
+# The invariant, asserted below: **no NOT NULL column may exist in the
+# database that the ORM model does not know about.**
+
+
+def _model_tables() -> dict[str, dict]:
+    from app.models import Activity, ActivityLap, ActivityStream, HrZone
+    from app.models_phase2 import DailyPhysiology, PlanSession, RunFingerprint
+
+    return {
+        model.__table__.name: {column.name: column for column in model.__table__.columns}
+        for model in (
+            Activity,
+            ActivityLap,
+            ActivityStream,
+            HrZone,
+            DailyPhysiology,
+            RunFingerprint,
+            PlanSession,
+        )
+    }
+
+
+def test_no_not_null_orphan_columns_in_the_live_database():
+    """Every NOT NULL column in the live schema must exist in the model."""
+    import sqlite3
+
+    from app.config import DB_PATH
+
+    if not DB_PATH.exists():
+        pytest.skip("no live database")
+
+    connection = sqlite3.connect(DB_PATH)
+    try:
+        for table, model_columns in _model_tables().items():
+            rows = list(connection.execute(f"PRAGMA table_info({table})"))
+            if not rows:
+                continue
+            for row in rows:
+                name, not_null, default = row[1], row[3], row[4]
+                if not not_null:
+                    continue
+                column = model_columns.get(name)
+                assert column is not None, (
+                    f"{table}.{name} is NOT NULL in the database but is not in the "
+                    f"model — every insert that omits it will fail"
+                )
+                if column.primary_key:
+                    # SQLite fills an INTEGER PRIMARY KEY from the rowid.
+                    continue
+                supplied = (
+                    not column.nullable
+                    or column.default is not None
+                    or column.server_default is not None
+                    or default is not None
+                )
+                assert supplied, (
+                    f"{table}.{name} is NOT NULL in the database but the model could "
+                    f"insert NULL into it"
+                )
+    finally:
+        connection.close()
+
+
+def test_migration_drops_a_removed_not_null_column(tmp_path):
+    """The migration must remove a column the model no longer declares."""
+    import sqlite3
+
+    from sqlalchemy import create_engine
+
+    from app.db import _migrate
+    from app.models import Activity
+
+    path = tmp_path / "legacy.db"
+    connection = sqlite3.connect(path)
+    connection.execute(
+        "CREATE TABLE activity (id INTEGER PRIMARY KEY, source TEXT NOT NULL, "
+        "visibility VARCHAR(16) NOT NULL)"
+    )
+    connection.commit()
+    connection.close()
+
+    engine = create_engine(f"sqlite:///{path}")
+    try:
+        _migrate(engine)
+    finally:
+        engine.dispose()
+
+    connection = sqlite3.connect(path)
+    try:
+        columns = {row[1] for row in connection.execute("PRAGMA table_info(activity)")}
+    finally:
+        connection.close()
+    assert "visibility" not in columns
+    assert "source" in columns
+    assert Activity.__table__.name == "activity"

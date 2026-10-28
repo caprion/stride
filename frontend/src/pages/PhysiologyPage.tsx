@@ -214,10 +214,13 @@ export default function PhysiologyPage() {
                             <div className="flex items-center justify-between gap-3 text-sm">
                               <span className="font-semibold">{d.label}</span>
                               <span className="text-ink-muted">
-                                {num(d.value)}{' '}
-                                <span className="text-ink-faint">
-                                  · baseline {num(d.baseline)} · Δ {num(d.delta)}
-                                </span>
+                                {num(d.value)}
+                                {d.baseline != null && (
+                                  <span className="text-ink-faint">
+                                    {' '}· baseline {num(d.baseline)}
+                                    {d.delta != null && ` · Δ ${num(d.delta)}`}
+                                  </span>
+                                )}
                               </span>
                             </div>
                             <div className="mt-1 h-2 overflow-hidden rounded-full bg-surface-sunken">

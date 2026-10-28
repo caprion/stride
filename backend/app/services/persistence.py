@@ -181,7 +181,17 @@ def store_activity(
 
 
 def bootstrap_demo(db: Session) -> int:
-    """Seed the demo dataset if the activities table is empty."""
+    """Seed the demo dataset if the activities table is empty.
+
+    The demo set is synthetic. A production instance must not contain it, so
+    seeding is opt-in (``STRIDE_SEED_DEMO=1``) and off by default — a fresh
+    production database holds only what Garmin actually returned.
+    """
+    import os
+
+    if os.getenv("STRIDE_SEED_DEMO", "false").lower() not in ("1", "true", "yes", "on"):
+        return 0
+
     from ..ingest.demo import activities_from_cache, load_cache
 
     if db.query(Activity).count() > 0:

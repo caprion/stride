@@ -60,6 +60,38 @@ def _client() -> GarminPersonalClient:
     return GarminPersonalClient(state.personal_api_key or "")
 
 
+def _has_fit_records(existing: Activity | None) -> bool:
+    """Has this activity already been rebuilt from its original FIT file?
+
+    The Activity API returns a *chart* series — a few hundred points that
+    Garmin downsamples for the web page. The FIT file carries the original
+    per-second record stream, which is what the segmentation, the fingerprint
+    and the drift metrics are computed from.
+
+    The two are easy to confuse and expensive to get wrong: an activity with
+    a chart series looks imported, so the FIT is never downloaded, and the
+    fingerprint silently never appears for it. So this checks the *resolution*
+    of the series, not merely its presence.
+
+    Activities imported after this check was added carry an explicit
+    ``fit_imported`` marker; older ones are recognised by their per-second
+    resolution.
+    """
+    if existing is None:
+        return False
+    raw = existing.raw or {}
+    if isinstance(raw, dict) and raw.get("fit_imported"):
+        return True
+    if not existing.streams:
+        return False
+    longest = max((len(stream.values or []) for stream in existing.streams), default=0)
+    elapsed = existing.elapsed_time_s or 0.0
+    if not elapsed:
+        return False
+    # Per-second resolution: the series is about as long as the activity.
+    return longest >= 0.8 * elapsed
+
+
 # ------------------------------------------------------------- activities
 
 
@@ -210,11 +242,11 @@ def sync_activities(
             stored = (existing.raw or {}) if existing else {}
 
             # The FIT file is the source of truth. If this activity has already
-            # been imported, its track and streams cannot have changed, so the
-            # download is skipped and nothing is fetched for it at all.
-            already_imported = bool(
-                existing is not None and existing.geo_points and existing.streams
-            )
+            # been rebuilt from its FIT, its track and streams cannot have
+            # changed, so the download is skipped and nothing is fetched for
+            # it at all. An activity that only has the API's downsampled chart
+            # series has *not* been imported — it gets its FIT downloaded.
+            already_imported = _has_fit_records(existing)
 
             if already_imported and stored.get("summary"):
                 detail = {"summaryDTO": stored["summary"]}
@@ -256,6 +288,9 @@ def sync_activities(
                         parsed = {}
                     if parsed:
                         activity = _merge_fit(activity, parsed)
+                        raw_payload = activity.get("raw")
+                        if isinstance(raw_payload, dict):
+                            raw_payload["fit_imported"] = True
 
             out.append(activity)
             if progress is not None:
@@ -590,3 +625,124 @@ def run(days: int = 90, history: dict[str, Any] | None = None, progress: Any = N
         "wellness_days": wellness.get("days", 0),
         "wellness_errors": wellness.get("errors", []),
     }
+
+
+# ------------------------------------------------------------- backfill
+
+
+def backfill_fit_files(limit: int | None = None, progress: Any = None) -> dict[str, Any]:
+    """Re-download the FIT file for activities that only have chart data.
+
+    Garmin's activity *list* only returns about a year of history, but the
+    download service will still hand over the original FIT for any activity
+    id we hold. That is what makes the backfill possible: an activity
+    imported years ago through the web API has a downsampled chart series and
+    no per-record stream, and without the FIT it has no fingerprint, no
+    segmentation and no drift.
+
+    Nothing here talks to the activity list — it works purely from the ids
+    already stored locally.
+    """
+    from ..ingest.fit_importer import parse_fit
+    from ..services.persistence import store_activity
+
+    db = SessionLocal()
+    try:
+        targets = (
+            db.query(Activity)
+            .filter(Activity.source == "garmin_personal")
+            .order_by(Activity.local_date)
+            .all()
+        )
+        pending = [
+            activity
+            for activity in targets
+            if not _has_fit_records(activity)
+        ]
+        if limit:
+            pending = pending[:limit]
+
+        client = _client()
+        rebuilt = skipped = failed = 0
+        for position, activity in enumerate(pending, start=1):
+            try:
+                fit_bytes = client.activity_fit(activity.external_id)
+            except Exception as exc:
+                failed += 1
+                log.debug("FIT download failed for %s: %s", activity.external_id, exc)
+                continue
+            if not fit_bytes:
+                failed += 1
+                continue
+            try:
+                parsed = parse_fit(fit_bytes, filename=f"{activity.external_id}.fit")
+            except Exception as exc:
+                failed += 1
+                log.debug("FIT parse failed for %s: %s", activity.external_id, exc)
+                continue
+            if not parsed:
+                failed += 1
+                continue
+
+            # Start from what we already know about the activity and let the
+            # FIT contribute the parts the web API never carried.
+            data = _canonical_from_stored(activity)
+            merged = _merge_fit(data, parsed)
+            raw_payload = merged.get("raw")
+            if isinstance(raw_payload, dict):
+                raw_payload["fit_imported"] = True
+            store_activity(db, merged)
+            rebuilt += 1
+            if progress is not None:
+                progress(position, len(pending))
+        db.commit()
+    finally:
+        db.close()
+
+    log.info(
+        "FIT backfill: %d rebuilt, %d already current, %d unavailable",
+        rebuilt,
+        skipped,
+        failed,
+    )
+    return {
+        "candidates": len(pending),
+        "rebuilt": rebuilt,
+        "failed": failed,
+    }
+
+
+def _canonical_from_stored(activity: Activity) -> dict[str, Any]:
+    """Rebuild the canonical activity dict from a stored row."""
+    data = blank_activity()
+    data.update(
+        {
+            "source": activity.source,
+            "external_id": activity.external_id,
+            "name": activity.name,
+            "sport_type": activity.sport_type,
+            "description": activity.description,
+            "start_time": activity.start_time,
+            "local_date": activity.local_date,
+            "day_of_week": activity.day_of_week,
+            "distance_m": activity.distance_m,
+            "moving_time_s": activity.moving_time_s,
+            "elapsed_time_s": activity.elapsed_time_s,
+            "elevation_gain_m": activity.elevation_gain_m,
+            "avg_hr": activity.avg_hr,
+            "max_hr": activity.max_hr,
+            "calories": activity.calories,
+            "avg_cadence": activity.avg_cadence,
+            "max_cadence": activity.max_cadence,
+            "avg_speed_ms": activity.avg_speed_ms,
+            "max_speed_ms": activity.max_speed_ms,
+            "perceived_exertion": activity.perceived_exertion,
+            "device": activity.device,
+            "gear": activity.gear,
+            "is_trail": bool(activity.is_trail),
+            "is_commute": bool(activity.is_commute),
+            "geo_points": activity.geo_points,
+            "raw": dict(activity.raw or {}),
+        }
+    )
+    return data

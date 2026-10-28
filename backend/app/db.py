@@ -5,6 +5,8 @@ SQLite with WAL so the background sync worker can write while the API reads.
 
 from __future__ import annotations
 
+import logging
+
 from collections.abc import Iterator
 
 from sqlalchemy import create_engine, event
@@ -42,6 +44,9 @@ def get_db() -> Iterator[Session]:
         yield db
     finally:
         db.close()
+
+
+log = logging.getLogger("stride.db")
 
 
 def init_db() -> None:
@@ -82,7 +87,8 @@ def _migrate(engine) -> None:
     """Additive column migrations for databases created by an earlier build.
 
     ``create_all`` never alters an existing table, so a column added to a
-    model later has to be applied by hand. Every step is idempotent.
+    model later has to be applied by hand — and a column *removed* from the
+    model has to be dropped by hand too. Every step is idempotent.
     """
     from sqlalchemy import inspect, text
 
@@ -112,6 +118,11 @@ def _migrate(engine) -> None:
             ("second_half_pace_s_km", "REAL"),
         ],
     }
+    removals = {
+        # The social layer is gone — Stride has no feed, no followers and no
+        # publishing. The column was left behind NOT NULL with no default.
+        "activity": ["visibility"],
+    }
     with engine.begin() as connection:
         for table, columns in additions.items():
             if table not in existing:
@@ -121,3 +132,25 @@ def _migrate(engine) -> None:
                 if column in present:
                     continue
                 connection.execute(text(f"ALTER TABLE {table} ADD COLUMN {column} {kind}"))
+
+        # Columns that were removed from the model but are still in the table.
+        # A leftover NOT NULL column with no default breaks every INSERT that
+        # does not supply it — which is exactly what happened to `visibility`
+        # when the social layer was removed: the app imported nothing new and
+        # the failure only appeared at the first write.
+        for table, columns in removals.items():
+            if table not in existing:
+                continue
+            present = {col["name"] for col in inspector.get_columns(table)}
+            for column in columns:
+                if column not in present:
+                    continue
+                try:
+                    connection.execute(text(f"ALTER TABLE {table} DROP COLUMN {column}"))
+                except Exception as exc:  # pragma: no cover - needs a rebuild
+                    log.warning(
+                        "could not drop %s.%s automatically (%s); rebuild the table",
+                        table,
+                        column,
+                        exc,
+                    )

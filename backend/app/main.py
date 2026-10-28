@@ -143,7 +143,11 @@ _mount_optional("app.api.tiles")
 
 
 def _bootstrap() -> None:
-    """Seed the demo dataset on first run so the app is never empty."""
+    """Prepare a fresh database, then connect Garmin.
+
+    The demo dataset is only seeded when explicitly asked for; a production
+    instance starts empty and fills from the athlete's own Garmin account.
+    """
     from .services.persistence import bootstrap_demo
 
     db = SessionLocal()
@@ -215,7 +219,41 @@ def _start_scheduler() -> None:
 
 @app.get(f"{API_PREFIX}/health")
 def health() -> dict:
-    return {"ok": True, "service": "stride"}
+    """Readiness for the supervisor: is it up, and is it actually useful?
+
+    Reports the shape of the instance without leaking anything — the key's
+    source, never the key.
+    """
+    from .models import Activity
+    from .models_phase2 import DailyPhysiology, PlanSession
+
+    db = SessionLocal()
+    try:
+        activities = db.query(Activity).count()
+        real = db.query(Activity).filter(Activity.source != "demo").count()
+        physiology = db.query(DailyPhysiology).count()
+        sessions = db.query(PlanSession).count()
+    except Exception:  # pragma: no cover - a broken database is not healthy
+        return {"ok": False, "service": "stride", "error": "database unavailable"}
+    finally:
+        db.close()
+
+    return {
+        "ok": True,
+        "service": "stride",
+        "garmin": {
+            "connected": state.garmin_connected,
+            "method": state.garmin_method,
+            "key_source": "key_vault" if state.personal_api_key else "none",
+            "last_sync_at": state.last_sync_at,
+        },
+        "data": {
+            "activities": activities,
+            "from_garmin": real,
+            "physiology_days": physiology,
+            "plan_sessions": sessions,
+        },
+    }
 
 
 # ---------------------------------------------------------------- SPA -----

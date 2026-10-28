@@ -41,6 +41,7 @@ A one-page collage of every surface: **[`showcase/stride-collage.png`](file:///h
 | [`docs/ai-sign-in-discussion.md`](file:///home/sumit/stride/docs/ai-sign-in-discussion.md) | whether the Android app should offer "Sign in with ChatGPT" — and why the answer dissolves |
 | [`docs/piping-to-chatgpt.md`](file:///home/sumit/stride/docs/piping-to-chatgpt.md) | how to pipe the data through ChatGPT — MCP, and the four ways it can run |
 | [`docs/android-packaging.md`](file:///home/sumit/stride/docs/android-packaging.md) | **how the Android app is packaged, signed, built in CI and deployed** |
+| [`docs/production-deployment.md`](file:///home/sumit/stride/docs/production-deployment.md) | **the production instance: the vault key, the setup, the pre-flight** |
 
 ## No social layer, on purpose
 
@@ -117,18 +118,39 @@ On this VM it is already running as a managed bb terminal (`Stride API`), so it
 is reachable over Tailscale at **http://100.89.222.50:8000** from any device on
 the tailnet.
 
-The app seeds itself with a full year of demo data (161 runs with splits, heart
-rate, elevation and synthesised GPS routes) so it is never a blank slate. Connect
-Garmin in **Settings → Garmin connection** and the real data takes over.
+The live instance is the **production** one: 160 real Garmin activities, 371
+days of physiology, the real training plan, and no synthetic data. It gets its
+Garmin Personal API Key from Azure Key Vault, so the key is never written to
+disk and never reaches the browser.
+
+> The demo dataset is now **opt-in** (`STRIDE_SEED_DEMO=1`) and off by
+> default. A production database holds only what Garmin actually returned.
 
 | Command | What it does |
 |---|---|
+| `./scripts/prod.sh setup` | First run: schema, vault key, real history, plan |
+| `./scripts/prod.sh start` | Harden permissions, start, health-check |
+| `./scripts/prod.sh status` | What is running and what is in the database |
+| `./scripts/prod.sh doctor` | The full pre-flight — every check, or it fails |
+| `./scripts/prod.sh stop` | Stop the instance |
 | `./scripts/run.sh` | Build (if needed) and serve on `:8000` |
 | `./scripts/run.sh dev` | API on `:8000` with reload + Vite HMR on `:5173` |
 | `./scripts/run.sh stop` | Stop everything |
 | `./scripts/run.sh status` | Show what is running |
 | `./scripts/import-fit.sh *.fit` | Import FIT files from the shell |
 | `node scripts/screenshot.mjs` | Render every route in headless Chromium and report errors |
+
+The backend also has a production tool:
+
+```bash
+cd backend
+.venv/bin/python -m tools.production setup        # first run
+.venv/bin/python -m tools.production status       # what is in the database
+.venv/bin/python -m tools.production backfill-fit # rebuild FIT for old activities
+.venv/bin/python -m tools.production purge-demo   # remove synthetic activities
+```
+
+See [`docs/production-deployment.md`](file:///home/sumit/stride/docs/production-deployment.md).
 
 API docs live at **http://localhost:8000/api/v1/docs**.
 
