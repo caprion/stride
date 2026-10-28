@@ -152,7 +152,7 @@ that points out of it is refused exactly like `..` is.
 | test | what it proves |
 |---|---|
 | `tests/openapi.rs` | the router and the OpenAPI document the Python app generates agree: the same 62 paths, the same methods, the same path parameters, and every request body the document promises is accepted. |
-| `tests/spa.rs` | the SPA is served for an unknown path, the static files have the right content types, a `..` traversal returns nothing outside `frontend/dist`, and the capability gate answers the way the reference does. |
+| `tests/spa.rs` | the SPA is served for an unknown path, the static files have the right content types, a missing file under `/assets` is a 404 and not the app, a `..` traversal returns nothing outside `frontend/dist`, and the capability gate answers the way the reference does. |
 | `tests/database.rs` | the **real** database opens, every row survives the conversion, the plain file is kept, the wrong key is refused, and the router reads the converted file. |
 
 The database test takes **one** snapshot of the real database for the whole
@@ -162,3 +162,31 @@ database changes is a snapshot of two states at once. That is what the first
 version of the conversion did, and the test caught it: the plan, the
 physiology and the fingerprints came out empty and the streams came out
 half.
+
+## The same answers as the reference
+
+The reference app was running on `127.0.0.1:8000` while this was written, so
+the two were compared request by request, on the same data, with the same
+capability token (both read it from `backend/data/state.json`).
+
+**29 of the 31 requests answered identically** — the same status, the same
+content type and the same body: the SPA at `/`, at `/activities` and at
+`/fitness`; the 401 without a capability; the 404 `{"detail": "Not found"}`
+for an unknown API path; the 404 `{"detail": "Not Found"}` for a missing file
+under `/assets`; `text/javascript` for `sw.js`, `image/png` for the icons,
+`application/manifest+json` for the manifest; the SPA for `/missing.js`,
+`/favicon.ico` and `/../backend/app/config.py`; and ten authorised API
+routes — the activity list, the physiology, the statistics summary, the plan
+adherence, the fitness trends, the comparison candidates, the gear and the
+calendar — with the same keys and the same values.
+
+Two differences, and neither is the desktop's:
+
+* `/api/v1/health` answers the same keys in a different **order**: the
+  reference renders its dictionaries in the order it builds them, and
+  `serde_json`'s map is sorted. The shape is the same.
+* `/api/v1/sync/status` answers 501: `impl Backend for Store` in
+  `crates/stride-api/src/store.rs` says the sync state is not in the
+  database. The desktop serves whatever the one router says, and the router
+  does not know about the sync yet.
+

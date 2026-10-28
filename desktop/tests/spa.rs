@@ -111,6 +111,27 @@ fn a_static_file_is_served_with_its_content_type() {
 }
 
 #[test]
+fn a_missing_asset_is_a_404_not_the_app() {
+    let dist = dist("a_missing_asset_is_a_404_not_the_app");
+    let app = app(&dist);
+    // The reference mounts `frontend/dist/assets` as a static directory: a
+    // path under it that is not a file is a 404 there, not the app.
+    let response = app.handle(&request("GET", "/assets/does-not-exist.js"));
+    assert_eq!(response.status, 404);
+    assert_eq!(response.get("Content-Type"), Some("application/json"));
+    assert_eq!(body(&response), "{\"detail\":\"Not Found\"}");
+
+    let response = app.handle(&request("GET", "/assets/"));
+    assert_eq!(response.status, 404);
+    assert_eq!(body(&response), "{\"detail\":\"Not Found\"}");
+
+    // An asset that is there is still served.
+    let response = app.handle(&request("GET", "/assets/app.js"));
+    assert_eq!(response.status, 200);
+    assert_eq!(body(&response), "console.log(1)");
+}
+
+#[test]
 fn a_traversal_returns_nothing_outside_the_directory() {
     let dist = dist("a_traversal_returns_nothing_outside_the_directory");
     // The secret sits next to the app, not inside it.
@@ -121,11 +142,14 @@ fn a_traversal_returns_nothing_outside_the_directory() {
     std::fs::write(&outside, "the Garmin key").expect("the secret");
 
     let app = app(&dist);
-    for path in [
-        "/../stride-desktop-secret.txt",
-        "/assets/../../stride-desktop-secret.txt",
-        "/../../etc/passwd",
-        "/%2e%2e/stride-desktop-secret.txt",
+    // The reference answers a path under `/assets` that escapes the
+    // directory with a 404, and every other escaping path with the app.
+    // Neither of them ever serves the file.
+    for (path, status) in [
+        ("/../stride-desktop-secret.txt", 200),
+        ("/assets/../../stride-desktop-secret.txt", 404),
+        ("/../../etc/passwd", 200),
+        ("/%2e%2e/stride-desktop-secret.txt", 200),
     ] {
         let response = app.handle(&request("GET", path));
         let text = body(&response);
@@ -134,7 +158,7 @@ fn a_traversal_returns_nothing_outside_the_directory() {
             "{path} served the file outside the directory"
         );
         assert!(!text.contains("root:"), "{path} served /etc/passwd");
-        assert_eq!(response.status, 200, "{path}");
+        assert_eq!(response.status, status, "{path}");
     }
     std::fs::remove_file(&outside).ok();
 }

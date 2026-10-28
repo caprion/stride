@@ -251,6 +251,23 @@ impl App {
             return json_response(404, &serde_json::json!({ "detail": "Not found" }));
         }
 
+        // The reference mounts `frontend/dist/assets` as a static directory,
+        // and a path under it that is not a file is a 404 there — not the
+        // app. A missing script with a 200 and an HTML body is a debugging
+        // nightmare, and the reference does not do it.
+        if relative.starts_with("assets/") {
+            return match spa::resolve(&self.dist, path) {
+                Some(file) => match std::fs::read(&file) {
+                    Ok(bytes) => {
+                        let content_type = spa::content_type(&file);
+                        Response::with_body(200, content_type, bytes)
+                    }
+                    Err(_) => json_response(404, &serde_json::json!({ "detail": "Not Found" })),
+                },
+                None => json_response(404, &serde_json::json!({ "detail": "Not Found" })),
+            };
+        }
+
         if let Some(file) = spa::resolve(&self.dist, path) {
             let content_type = spa::content_type(&file);
             return match std::fs::read(&file) {
