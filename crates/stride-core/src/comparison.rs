@@ -291,10 +291,17 @@ pub fn profile_for(activity: &Activity, points: usize) -> Vec<ProfilePoint> {
                 let mut pairs: Vec<(f64, f64)> = (0..count.min(values.len()))
                     .map(|index| (distances[index], values[index]))
                     .collect();
+                // The reference sorts the `(x, y)` tuples, so equal distances
+                // are ordered by their value.
                 pairs.sort_by(|left, right| {
                     left.0
                         .partial_cmp(&right.0)
                         .unwrap_or(std::cmp::Ordering::Equal)
+                        .then_with(|| {
+                            left.1
+                                .partial_cmp(&right.1)
+                                .unwrap_or(std::cmp::Ordering::Equal)
+                        })
                 });
                 pairs
             }
@@ -406,5 +413,71 @@ pub fn compare(a: &Activity, b: &Activity) -> Comparison {
         parameters,
         profile_a: profile_for(a, PROFILE_POINTS),
         profile_b: profile_for(b, PROFILE_POINTS),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::model::Stream;
+
+    fn stream(seconds: Vec<f64>, values: Vec<Option<f64>>) -> Stream {
+        Stream { seconds, values, unit: None }
+    }
+
+    #[test]
+    fn the_profile_sorts_the_pairs_by_distance_and_then_by_value() {
+        // The reference sorts `(x, y)` tuples, so two samples at the same
+        // distance are ordered by their value and the interpolation reads the
+        // smaller one.
+        let mut streams = std::collections::BTreeMap::new();
+        streams.insert(
+            "distance".to_string(),
+            stream(vec![0.0, 1.0, 2.0], vec![Some(0.0), Some(10.0), Some(20.0)]),
+        );
+        streams.insert(
+            "hr".to_string(),
+            stream(vec![0.0, 1.0, 2.0], vec![Some(100.0), Some(200.0), Some(300.0)]),
+        );
+        let activity = Activity { streams, ..Activity::default() };
+        let profile = profile_for(&activity, 3);
+        assert_eq!(profile.len(), 3);
+        assert_eq!(profile[0].distance_m, 0.0);
+        assert_eq!(profile[1].distance_m, 10.0);
+        assert_eq!(profile[2].distance_m, 20.0);
+        assert_eq!(profile[0].hr, Some(100.0));
+        assert_eq!(profile[2].hr, Some(300.0));
+    }
+
+    #[test]
+    fn a_missing_value_shifts_the_series_like_the_reference_does() {
+        // The reference filters the absent values out of a stream *before*
+        // pairing it with the distance axis, so the series shifts. The port
+        // reproduces that, because the golden files were made with it.
+        let mut streams = std::collections::BTreeMap::new();
+        streams.insert(
+            "distance".to_string(),
+            stream(vec![0.0, 1.0, 2.0], vec![Some(0.0), Some(10.0), Some(20.0)]),
+        );
+        streams.insert(
+            "hr".to_string(),
+            stream(vec![0.0, 1.0, 2.0], vec![None, Some(200.0), Some(300.0)]),
+        );
+        let activity = Activity { streams, ..Activity::default() };
+        let profile = profile_for(&activity, 3);
+        // The absent sample is dropped, so 200 pairs with 0 m and 300 with
+        // 10 m; beyond 10 m the profile holds the last value.
+        assert_eq!(profile[0].hr, Some(200.0));
+        assert_eq!(profile[1].hr, Some(300.0));
+        assert_eq!(profile[2].hr, Some(300.0));
+    }
+
+    #[test]
+    fn the_parameter_list_is_the_reference_matrix() {
+        assert_eq!(PARAMETERS.len(), 15);
+        assert_eq!(PARAMETERS[0].key, "distance_m");
+        assert_eq!(PARAMETERS[2].better, Better::Lower);
+        assert_eq!(PARAMETERS[10].better, Better::Higher);
+        assert_eq!(PARAMETERS[4].better, Better::Neutral);
     }
 }

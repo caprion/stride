@@ -403,3 +403,77 @@ fn derive(day: &str, row: Option<&DailyPhysiology>, baseline: &Baselines) -> Rea
         rationale,
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::model::DailyPhysiology;
+
+    fn row(day: &str, sleep_s: Option<f64>) -> DailyPhysiology {
+        DailyPhysiology {
+            date: day.to_string(),
+            sleep_s,
+            ..DailyPhysiology::default()
+        }
+    }
+
+    #[test]
+    fn a_zero_sleep_is_a_driver_with_no_quality_not_a_missing_driver() {
+        // The reference asks whether the sleep is *present*, not whether it is
+        // positive: a night of zero sleep scores zero, it does not vanish.
+        let baseline = Baselines {
+            sleep_s: Some(25200.0),
+            hrv_ms: None,
+            resting_hr: None,
+        };
+        let score = readiness("2026-03-01", Some(&row("2026-03-01", Some(0.0))), &baseline);
+        let sleep = score
+            .drivers
+            .iter()
+            .find(|driver| driver.key == "sleep")
+            .expect("the sleep driver");
+        assert_eq!(sleep.value, 0.0);
+        assert_eq!(sleep.contribution, 0.0);
+        assert_eq!(sleep.baseline, Some(7.0));
+        assert_eq!(sleep.detail, "0h00m vs 7h00m baseline");
+    }
+
+    #[test]
+    fn a_missing_baseline_drops_the_personal_driver() {
+        let baseline = Baselines::default();
+        let score = readiness(
+            "2026-03-01",
+            Some(&row("2026-03-01", Some(27000.0))),
+            &baseline,
+        );
+        assert!(score.drivers.is_empty());
+        assert_eq!(score.score, None);
+        assert_eq!(score.grade, "unknown");
+    }
+
+    #[test]
+    fn the_baseline_window_excludes_today_and_older_rows() {
+        let rows = vec![
+            row("2026-01-01", Some(1000.0)),
+            row("2026-02-02", Some(27000.0)),
+            row("2026-02-27", Some(25200.0)),
+            row("2026-03-01", Some(99999.0)),
+        ];
+        let baseline = baselines(&rows, "2026-03-01");
+        // 2026-01-01 is outside the thirty-day window (which starts on
+        // 2026-01-30) and 2026-03-01 is today: neither counts.
+        assert_eq!(baseline.sleep_s, Some(26100.0));
+    }
+
+    #[test]
+    fn the_sleep_baseline_is_a_median_and_the_others_are_means() {
+        let rows = vec![
+            row("2026-02-27", Some(24000.0)),
+            row("2026-02-28", Some(27000.0)),
+            row("2026-03-01", Some(25200.0)),
+        ];
+        let baseline = baselines(&rows, "2026-03-02");
+        assert_eq!(baseline.sleep_s, Some(25200.0));
+    }
+}
+

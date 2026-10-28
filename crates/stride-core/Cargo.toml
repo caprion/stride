@@ -14,3 +14,6 @@ serde = { workspace = true }
 # parser. A dev-dependency keeps it out of the library's dependency graph.
 [dev-dependencies]
 serde_json = { workspace = true }
+
+[lints]
+workspace = true

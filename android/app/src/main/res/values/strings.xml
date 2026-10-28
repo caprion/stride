@@ -4,4 +4,33 @@
     <string name="title_activity_main">Stride</string>
     <string name="package_name">app.stride.running</string>
     <string name="custom_url_scheme">app.stride.running</string>
+
+    <!-- The native Garmin setup screen. The copy says what actually happens:
+         the key stays on the phone, and it goes to Garmin and nowhere else. -->
+    <string name="garmin_explanation">Your runs, with the detail behind them.\n\nConnect Garmin to bring your recent runs into Stride, including routes, splits and heart-rate detail. Stride checks Garmin for updates in the background and keeps a copy on this phone.</string>
+    <string name="garmin_key_label">Personal API key</string>
+    <string name="garmin_key_hint">Paste the key Garmin showed you</string>
+    <string name="garmin_show_key">Show the key</string>
+    <string name="garmin_open_garmin">Open Garmin to create a key</string>
+    <string name="garmin_connect">Connect Garmin</string>
+    <string name="garmin_replace_key">Replace key</string>
+    <string name="garmin_disconnect">Disconnect Garmin</string>
+    <string name="garmin_not_connected">Garmin is not connected. Stride still works with the runs already on this phone.</string>
+    <string name="garmin_connected">Garmin is connected. Stride pulls in the background and keeps a copy on this phone.</string>
+    <string name="garmin_checking">Checking the key with Garmin…</string>
+    <string name="garmin_key_too_short">That does not look like a Garmin key. Copy the whole thing.</string>
+    <string name="garmin_rejected">Garmin did not accept this key. Check that you copied the whole key, or create a new one in Garmin Connect. Your key has not been saved.</string>
+    <string name="garmin_connected_toast">Connected. Stride is importing your runs and wellness now.</string>
+    <string name="garmin_disconnected_toast">Disconnected. Your imported runs are still on this phone.</string>
+    <string name="garmin_no_browser">There is no browser on this phone to open Garmin.</string>
+    <string name="garmin_privacy">Your key stays on this phone. Stride sends it directly to Garmin to get a short-lived access token, and never to Stride\'s servers. Garmin shows the key only once, so keep it private. You can remove it here or revoke it in Garmin Connect at any time.</string>
+
+    <!-- The sync notifications. They say what happened and nothing about the
+         athlete\'s health. -->
+    <string name="sync_channel_name">Garmin sync</string>
+    <string name="sync_channel_description">Says when Stride has pulled new runs from Garmin.</string>
+    <string name="sync_in_progress_title">Syncing with Garmin</string>
+    <string name="sync_in_progress_text">Fetching your runs and wellness.</string>
+    <string name="sync_done_title">Stride is up to date</string>
+    <string name="sync_failed_title">Stride could not reach Garmin</string>
 </resources>

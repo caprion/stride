@@ -5,5 +5,11 @@
 //! `uniffi-bindgen`, which the Gradle build runs.
 
 fn main() {
-    uniffi::generate_scaffolding("src/stride.udl").expect("the UniFFI scaffolding could not be generated");
+    // The build script may panic: a build script that fails is a build
+    // failure, and there is nobody to show an error to.
+    #[allow(clippy::expect_used, clippy::panic)]
+    {
+        uniffi::generate_scaffolding("src/stride.udl")
+            .expect("the UniFFI scaffolding could not be generated");
+    }
 }

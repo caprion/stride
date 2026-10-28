@@ -16,3 +16,6 @@ rusqlite = { workspace = true }
 # The tests read the schema back with SQLite's own pragmas.
 rusqlite = { workspace = true }
 serde_json = { workspace = true }
+
+[lints]
+workspace = true

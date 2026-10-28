@@ -30,6 +30,13 @@ namespace stride {
   // token exchange and then forgotten: the bearer token lives in memory only.
   string stride_garmin_sync(string api_key, i64 days);
 
+  // Put the Garmin Personal API key in memory, or take it out again.
+  //
+  // The key is in memory for the length of one pull and no longer: the
+  // Kotlin shell unwraps it from the Keystore, hands it over for the pull,
+  // and clears it again. An empty string clears it.
+  string stride_set_garmin_key(string api_key);
+
   // What the core is and whether it is open. For the phone's own diagnostics.
   string stride_status();
 };

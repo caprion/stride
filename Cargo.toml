@@ -24,6 +24,21 @@ edition = "2021"
 rust-version = "1.75"
 license = "MIT"
 
+# Panics in a library are a process kill on a phone. The FFI boundary catches
+# them, but the rule is that the library does not raise them at all.
+[workspace.lints.clippy]
+unwrap_used = "deny"
+expect_used = "deny"
+panic = "deny"
+todo = "deny"
+unimplemented = "deny"
+missing_debug_implementations = "allow"
+
+[workspace.lints.rust]
+# Warn rather than deny: the FFI boundary must be `unsafe`, and it is the one
+# place it is allowed. The gate checks that `unsafe` appears nowhere else.
+unsafe_code = "warn"
+
 [workspace.dependencies]
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
@@ -32,6 +47,7 @@ thiserror = "1"
 anyhow = "1"
 uuid = { version = "1", features = ["v4", "serde"] }
 rusqlite = { version = "0.31", features = ["bundled-sqlcipher-vendored-openssl"] }
+zip = { version = "2.6", default-features = false, features = ["deflate"] }
 reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "blocking", "json", "gzip"] }
 
 [profile.release]

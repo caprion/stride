@@ -25,10 +25,11 @@ pub mod backend;
 pub mod garmin;
 pub mod rows;
 
-use std::ffi::{CStr, CString};
 use std::sync::{Arc, OnceLock, RwLock};
 
 use serde_json::{json, Value};
+
+use stride_api::Api;
 
 uniffi::include_scaffolding!("stride");
 
@@ -62,7 +63,9 @@ pub fn stride_open(db_path: String, db_key_hex: String) -> String {
         Ok(summary) => summary,
         Err(detail) => error_envelope(500, &detail),
     });
-    outcome.unwrap_or_else(|_| error_envelope(500, "the database could not be opened"))
+    outcome
+        .unwrap_or_else(|_| error_envelope(500, "the database could not be opened"))
+        .to_string()
 }
 
 /// The result of opening the database.
@@ -117,31 +120,53 @@ fn decode_key(hex: &str) -> Result<Vec<u8>, String> {
 /// returns.
 pub fn stride_call(method: String, path: String, body: Option<String>) -> String {
     let outcome = std::panic::catch_unwind(|| call(&method, &path, body.as_deref()));
-    outcome.unwrap_or_else(|_| error_envelope(500, "the request could not be completed"))
+    outcome
+        .unwrap_or_else(|_| error_envelope(500, "the request could not be completed").to_string())
 }
 
-/// The call, through the C ABI.
+/// The call, through the router.
+///
+/// The envelope is the one `stride-api`'s C ABI produces, so the Kotlin side
+/// reads one shape whichever way it asks:
+///
+/// ```text
+/// {"ok": true,  "status": 200, "body": { ... }}
+/// {"ok": false, "status": 404, "error": {"detail": "..."}}
+/// ```
 fn call(method: &str, path: &str, body: Option<&str>) -> String {
-    let method = CString::new(method).unwrap_or_default();
-    let path = CString::new(path).unwrap_or_default();
-    let body = body.and_then(|text| CString::new(text).ok());
-
-    // SAFETY: the three pointers are either null or point at a NUL-terminated
-    // string that outlives the call, which is what `stride_call` requires.
-    // The returned pointer is released with `stride_free` immediately after.
-    unsafe {
-        let raw = stride_api::ffi::stride_call(
-            method.as_ptr(),
-            path.as_ptr(),
-            body.as_ref().map_or(std::ptr::null(), |value| value.as_ptr()),
-        );
-        if raw.is_null() {
-            return error_envelope(500, "the core could not answer");
-        }
-        let text = CStr::from_ptr(raw).to_string_lossy().into_owned();
-        stride_api::ffi::stride_free(raw);
-        text
-    }
+    let Some(backend) = installed() else {
+        return error_envelope(503, "the database is not open").to_string();
+    };
+    let api = Api::new(backend);
+    let outcome = match api.call_response(method, path, body) {
+        Ok(stride_api::Response::Json(value)) => json!({
+            "ok": true,
+            "status": 200,
+            "body": value,
+        }),
+        Ok(stride_api::Response::NoContent) => json!({
+            "ok": true,
+            "status": 204,
+            "body": Value::Null,
+        }),
+        Ok(stride_api::Response::Binary {
+            content_type,
+            bytes,
+        }) => json!({
+            "ok": true,
+            "status": 200,
+            "body": {
+                "content_type": content_type,
+                "base64": stride_api::util::base64_encode(&bytes),
+            },
+        }),
+        Err(err) => json!({
+            "ok": false,
+            "status": err.status,
+            "error": err.to_body(),
+        }),
+    };
+    outcome.to_string()
 }
 
 /// Pull from Garmin into the local database.
@@ -151,10 +176,33 @@ fn call(method: &str, path: &str, body: Option<&str>) -> String {
 /// again — Garmin has no refresh token.
 pub fn stride_garmin_sync(api_key: String, days: i64) -> String {
     let outcome = std::panic::catch_unwind(|| match installed() {
-        Some(backend) => garmin::sync(&backend, &api_key, days),
+        Some(backend) => garmin::sync(&backend, &api_key, days)
+            .unwrap_or_else(|err| error_envelope(500, &err.to_string())),
         None => error_envelope(503, "the database is not open"),
     });
-    outcome.unwrap_or_else(|_| error_envelope(500, "the sync could not be completed"))
+    outcome
+        .unwrap_or_else(|_| error_envelope(500, "the sync could not be completed"))
+        .to_string()
+}
+
+/// Put the Garmin key in memory, or take it out again.
+///
+/// The key is in memory for the length of one pull. The Kotlin shell
+/// unwraps it from the Keystore, hands it over, and clears it again as soon
+/// as the pull is over.
+pub fn stride_set_garmin_key(api_key: String) -> String {
+    match installed() {
+        Some(backend) => {
+            backend.set_garmin_key(&api_key);
+            json!({
+                "ok": true,
+                "status": 200,
+                "body": {"in_memory": !api_key.is_empty()},
+            })
+            .to_string()
+        }
+        None => error_envelope(503, "the database is not open").to_string(),
+    }
 }
 
 /// What the core is, and whether it is open.
@@ -174,11 +222,10 @@ pub fn stride_status() -> String {
 }
 
 /// The envelope of a failure.
-fn error_envelope(status: u16, detail: &str) -> String {
+fn error_envelope(status: u16, detail: &str) -> Value {
     json!({
         "ok": false,
         "status": status,
         "error": {"detail": detail},
     })
-    .to_string()
 }

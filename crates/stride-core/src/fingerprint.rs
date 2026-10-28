@@ -441,3 +441,66 @@ fn derive(input: &FingerprintInput<'_>) -> Fingerprint {
         },
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::model::Lap;
+
+    fn lap(index: i64, distance: f64, duration: f64, cadence: Option<f64>, speed: Option<f64>) -> Lap {
+        Lap {
+            lap_index: index,
+            distance_m: Some(distance),
+            duration_s: Some(duration),
+            avg_cadence: cadence,
+            avg_speed_ms: speed,
+            avg_hr: Some(140.0),
+            max_hr: Some(150.0),
+            ..Lap::default()
+        }
+    }
+
+    #[test]
+    fn a_slow_short_strided_lap_is_dropped_as_walked() {
+        let laps = vec![
+            lap(1, 1000.0, 300.0, Some(120.0), Some(2.0)),
+            lap(2, 1000.0, 300.0, Some(160.0), Some(3.3)),
+        ];
+        let running = running_only(&laps);
+        assert_eq!(running.len(), 1);
+        assert_eq!(running[0].lap_index, 2);
+    }
+
+    #[test]
+    fn a_short_strided_but_fast_lap_is_kept() {
+        // Both conditions must hold: a runner with a short stride is not a
+        // walker.
+        let laps = vec![lap(1, 1000.0, 300.0, Some(120.0), Some(3.3))];
+        assert_eq!(running_only(&laps).len(), 1);
+    }
+
+    #[test]
+    fn when_every_lap_looks_walked_they_are_all_kept() {
+        let laps = vec![lap(1, 1000.0, 300.0, Some(100.0), Some(1.5))];
+        assert_eq!(running_only(&laps).len(), 1);
+    }
+
+    #[test]
+    fn the_efficiency_factor_is_speed_based() {
+        // A slower run with the same heart rate has a *lower* efficiency
+        // factor, which is the whole point of the Minetti definition.
+        let fast = vec![lap(1, 1000.0, 250.0, Some(160.0), Some(4.0))];
+        let slow = vec![lap(1, 1000.0, 400.0, Some(160.0), Some(2.5))];
+        let fast_ef = efficiency(&fast, 190.0).expect("an efficiency");
+        let slow_ef = efficiency(&slow, 190.0).expect("an efficiency");
+        assert!(fast_ef > slow_ef);
+    }
+
+    #[test]
+    fn a_lap_pace_uses_the_running_time_over_the_whole_distance() {
+        // The reference's quirk: a lap that was partly walked gets a pace
+        // that is too slow.
+        let pace = lap_pace(&lap(1, 238.0, 75.0, Some(156.0), Some(3.0))).expect("a pace");
+        assert!((pace - 75.0 * 1000.0 / 238.0).abs() < 1e-9);
+    }
+}

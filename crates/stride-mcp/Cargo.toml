@@ -11,3 +11,6 @@ serde_json = { workspace = true }
 chrono = { workspace = true }
 thiserror = { workspace = true }
 stride-api = { path = "../stride-api" }
+
+[lints]
+workspace = true

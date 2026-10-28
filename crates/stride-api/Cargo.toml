@@ -17,3 +17,6 @@ stride-core = { path = "../stride-core" }
 stride-fit = { path = "../stride-fit" }
 stride-garmin = { path = "../stride-garmin" }
 stride-store = { path = "../stride-store" }
+
+[lints]
+workspace = true

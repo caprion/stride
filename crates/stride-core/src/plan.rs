@@ -888,3 +888,150 @@ pub fn adherence_for(inputs: &PlanInputs<'_>) -> Adherence {
     let extra = extra_activities(inputs).len();
     adherence(&matches, extra)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::model::Lap;
+
+    fn session(session_type: &str, target: Option<f64>) -> PlanSession {
+        PlanSession {
+            id: 1,
+            date: "2026-03-02".to_string(),
+            session_type: session_type.to_string(),
+            title: None,
+            details: None,
+            target_distance_m: target,
+            pace_low_s_km: None,
+            pace_high_s_km: None,
+        }
+    }
+
+    fn activity(id: i64, sport: &str, distance: f64, day: &str) -> Activity {
+        Activity {
+            id,
+            name: format!("run {id}"),
+            local_date: day.to_string(),
+            start_date: day.to_string(),
+            sport_type: sport.to_string(),
+            source: "garmin".to_string(),
+            distance_m: distance,
+            moving_time_s: Some(distance / 3.0),
+            ..Activity::default()
+        }
+    }
+
+    #[test]
+    fn the_plan_uses_the_analytics_run_sports_not_the_model_ones() {
+        // The reference has two sets and they disagree. The plan engine uses
+        // the narrow one, so a walk does not answer a planned run.
+        assert!(is_run_sport("running"));
+        assert!(is_run_sport("treadmill_running"));
+        assert!(!is_run_sport("walking"));
+        assert!(!is_run_sport("hiking"));
+        assert!(crate::model::is_run_sport("walking"));
+    }
+
+    #[test]
+    fn a_walk_does_not_answer_a_planned_run() {
+        let sessions = vec![session("easy", Some(1000.0))];
+        let activities = vec![activity(1, "walking", 1000.0, "2026-03-02")];
+        let inputs = PlanInputs {
+            from: "2026-03-01",
+            to: "2026-03-03",
+            sessions: &sessions,
+            activities: &activities,
+            physiology: &[],
+        };
+        let matches = match_sessions(&inputs);
+        assert_eq!(matches.len(), 1);
+        assert_eq!(matches[0].verdict.verdict, "missed");
+        assert!(matches[0].activity.is_none());
+    }
+
+    #[test]
+    fn a_rest_session_with_no_activity_is_a_hit() {
+        let sessions = vec![session("rest", None)];
+        let inputs = PlanInputs {
+            from: "2026-03-01",
+            to: "2026-03-03",
+            sessions: &sessions,
+            activities: &[],
+            physiology: &[],
+        };
+        let matches = match_sessions(&inputs);
+        assert_eq!(matches[0].verdict.verdict, "hit");
+        assert!(matches[0].verdict.distance_hit);
+        assert_eq!(matches[0].verdict.pace_band_hit, None);
+        assert_eq!(matches[0].verdict.adherence_score, Some(100.0));
+    }
+
+    #[test]
+    fn a_run_on_a_rest_day_is_a_substitution() {
+        let sessions = vec![session("rest", None)];
+        let activities = vec![activity(1, "running", 1000.0, "2026-03-02")];
+        let inputs = PlanInputs {
+            from: "2026-03-01",
+            to: "2026-03-03",
+            sessions: &sessions,
+            activities: &activities,
+            physiology: &[],
+        };
+        let matches = match_sessions(&inputs);
+        assert_eq!(matches[0].verdict.verdict, "substituted");
+        // The distance and the pace both score 100; only the type scores zero.
+        assert_eq!(matches[0].verdict.adherence_score, Some(90.0));
+    }
+
+    #[test]
+    fn an_interval_session_with_three_long_laps_is_a_substitution() {
+        let mut planned = session("tempo", Some(1000.0));
+        planned.session_type = "tempo".to_string();
+        let mut activity = activity(1, "running", 1200.0, "2026-03-02");
+        activity.laps = (1..=3)
+            .map(|index| Lap {
+                lap_index: index,
+                distance_m: Some(400.0),
+                duration_s: Some(100.0),
+                ..Lap::default()
+            })
+            .collect();
+        let inputs = PlanInputs {
+            from: "2026-03-01",
+            to: "2026-03-03",
+            sessions: &[planned],
+            activities: &[activity],
+            physiology: &[],
+        };
+        let matches = match_sessions(&inputs);
+        assert_eq!(matches[0].verdict.verdict, "substituted");
+    }
+
+    #[test]
+    fn the_adherence_roll_up_counts_the_verdicts() {
+        let sessions = vec![
+            session("easy", Some(1000.0)),
+            PlanSession {
+                id: 2,
+                date: "2026-03-03".to_string(),
+                ..session("easy", Some(1000.0))
+            },
+        ];
+        let activities = vec![activity(1, "running", 1000.0, "2026-03-02")];
+        let inputs = PlanInputs {
+            from: "2026-03-01",
+            to: "2026-03-05",
+            sessions: &sessions,
+            activities: &activities,
+            physiology: &[],
+        };
+        let summary = adherence_for(&inputs);
+        assert_eq!(summary.planned_sessions, 2);
+        assert_eq!(summary.completed_sessions, 1);
+        assert_eq!(summary.overall_pct, Some(50.0));
+        assert_eq!(summary.planned_km, 2.0);
+        assert_eq!(summary.actual_km, 1.0);
+        assert_eq!(summary.rows.len(), 1);
+        assert_eq!(summary.rows[0].week_key, "2026-W10");
+    }
+}

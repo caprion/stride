@@ -29,13 +29,15 @@ use std::sync::Mutex;
 use serde_json::{json, Map, Value};
 
 use stride_api::backend::{
-    ActivityFilter, ActivityPatch, ActivityRow, Backend, BackendError, Counts, DailyMetricRow,
+    ActivityFilter, ActivityPatch, ActivityRow, Backend, Counts, DailyMetricRow,
     ImportRequest, LapRow, PhysiologyRow, PlanBlockFields, PlanBlockRow, PlanPhaseFields,
     PlanPhaseRow, PlanSessionFields, PlanSessionRow, PlanWeekFields, PlanWeekRow, SessionWithResult,
     SettingsPatch, StatusView, StreamRow, Tile, ZoneRow,
 };
 use stride_core as core;
+use stride_api::error::BackendError;
 use stride_store::model as store_model;
+use stride_store::repo::activity::{ActivityFilter as StoreFilter, ActivityOrder};
 use stride_store::Store;
 
 use crate::rows;
@@ -101,12 +103,12 @@ impl PhoneBackend {
 
     /// The runs of a range, as the domain sees them.
     fn core_activities(&self, from: &str, to: &str) -> Result<Vec<core::model::Activity>, BackendError> {
-        let mut filter = stride_store::repo::ActivityFilter {
+        let mut filter = StoreFilter {
             from: Some(from.to_string()),
             to: Some(to.to_string()),
             ..Default::default()
         };
-        filter.order = Some(stride_store::repo::ActivityOrder::Date);
+        filter.order = Some(ActivityOrder::Date);
         let activities = Self::map(self.store.activities_filtered(&filter))?;
         let mut out = Vec::with_capacity(activities.len());
         for activity in &activities {
@@ -161,12 +163,6 @@ impl PhoneBackend {
         Ok(core::max_hr_reference(&activities))
     }
 
-    /// The zone model the fingerprint is computed against.
-    fn zone_model(&self) -> Result<Vec<core::model::Zone>, BackendError> {
-        let reference = self.reference_max_hr()?;
-        Ok(core::zone_model(reference, None))
-    }
-
     /// The fingerprint of one run, with the fields the API adds.
     fn fingerprint_value(
         &self,
@@ -216,7 +212,7 @@ impl Backend for PhoneBackend {
     // ------------------------------------------------------------ activities
 
     fn activities(&self, filter: &ActivityFilter) -> Result<Vec<ActivityRow>, BackendError> {
-        let store_filter = stride_store::repo::ActivityFilter {
+        let store_filter = StoreFilter {
             from: filter.date_from.clone(),
             to: filter.date_to.clone(),
             sport: filter.sport.clone(),
@@ -224,9 +220,9 @@ impl Backend for PhoneBackend {
             exclude_source: Some("demo".to_string()),
             search: filter.query.clone(),
             order: Some(match filter.sort.as_str() {
-                "distance" => stride_store::repo::ActivityOrder::Distance,
-                "pace" => stride_store::repo::ActivityOrder::Pace,
-                _ => stride_store::repo::ActivityOrder::Date,
+                "distance" => ActivityOrder::Distance,
+                "pace" => ActivityOrder::Pace,
+                _ => ActivityOrder::Date,
             }),
             limit: None,
             offset: None,
@@ -238,19 +234,20 @@ impl Backend for PhoneBackend {
             .filter(|row| filter.all_sports || core::is_run_sport(&row.sport_type))
             .collect();
         // The paging is the router's business, but the store does not page.
-        let start = filter.page.max(0) as usize * filter.per_page.max(0) as usize;
+        // The page number is one-based, the way the query reads it.
+        let per_page = filter.per_page.max(0) as usize;
+        let start = filter.page.max(1) as usize - 1;
         if start > 0 {
-            rows = rows.into_iter().skip(start).collect();
+            rows = rows.into_iter().skip(start * per_page).collect();
         }
-        let per_page = filter.per_page;
         if per_page > 0 {
-            rows.truncate(per_page as usize);
+            rows.truncate(per_page);
         }
         Ok(rows)
     }
 
     fn activity_count(&self, filter: &ActivityFilter) -> Result<i64, BackendError> {
-        let store_filter = stride_store::repo::ActivityFilter {
+        let store_filter = StoreFilter {
             from: filter.date_from.clone(),
             to: filter.date_to.clone(),
             sport: filter.sport.clone(),
@@ -261,12 +258,9 @@ impl Backend for PhoneBackend {
             limit: None,
             offset: None,
         };
-        let count = Self::map(self.store.count_activities(&store_filter))?;
-        if filter.all_sports || core::is_run_sport(filter.sport.as_deref().unwrap_or("running")) {
-            Ok(count)
-        } else {
-            Ok(count)
-        }
+        // The count is the count of the rows the filter keeps. The store
+        // filters on the sport when one is named, and the router names it.
+        Self::map(self.store.count_activities(&store_filter))
     }
 
     fn activity(&self, id: i64) -> Result<Option<ActivityRow>, BackendError> {
@@ -319,14 +313,14 @@ impl Backend for PhoneBackend {
         if let Some(commute) = patch.is_commute {
             activity.is_commute = commute;
         }
-        activity.touch();
+        activity.updated_at = chrono::Utc::now();
         Self::map(self.store.upsert_activity(&activity))?;
         Ok(Some(rows::activity_row(&activity)))
     }
 
     fn counts(&self) -> Result<Counts, BackendError> {
         let activities = Self::map(self.store.count_activities(
-            &stride_store::repo::ActivityFilter::default(),
+            &StoreFilter::default(),
         ))?;
         let physiology = Self::map(self.store.physiology("0000-01-01", "9999-12-31"))?;
         let sessions = Self::map(self.store.plan_sessions("0000-01-01", "9999-12-31"))?;
@@ -352,10 +346,13 @@ impl Backend for PhoneBackend {
 
     fn daily_metrics(
         &self,
-        from: &str,
-        to: &str,
+        from: Option<&str>,
+        to: Option<&str>,
     ) -> Result<Vec<DailyMetricRow>, BackendError> {
-        let days = Self::map(self.store.daily_metrics(from, to))?;
+        let days = Self::map(self.store.daily_metrics(
+            from.unwrap_or("0000-01-01"),
+            to.unwrap_or("9999-12-31"),
+        ))?;
         Ok(days.iter().map(rows::daily_metric_row).collect())
     }
 
@@ -382,8 +379,12 @@ impl Backend for PhoneBackend {
     }
 
     fn plan_sessions(&self, week_id: i64) -> Result<Vec<PlanSessionRow>, BackendError> {
-        let sessions = Self::map(self.store.plan_sessions_for_week(week_id))?;
-        Ok(sessions.iter().map(rows::plan_session_row).collect())
+        let sessions = Self::map(self.store.plan_sessions("0000-01-01", "9999-12-31"))?;
+        Ok(sessions
+            .iter()
+            .filter(|session| session.week_id == Some(week_id))
+            .map(rows::plan_session_row)
+            .collect())
     }
 
     fn plan_sessions_in_range(
@@ -439,7 +440,10 @@ impl Backend for PhoneBackend {
             notes: fields.notes.clone(),
         };
         let id = Self::map(self.store.upsert_plan_phase(&phase))?;
-        let phase = Self::map(self.store.plan_phase(id))?
+        let phases = Self::map(self.store.plan_phases(block_id))?;
+        let phase = phases
+            .into_iter()
+            .find(|row| row.id == Some(id))
             .ok_or_else(|| BackendError::Store("the phase was not written".to_string()))?;
         Ok(rows::plan_phase_row(&phase))
     }
@@ -460,7 +464,10 @@ impl Backend for PhoneBackend {
             notes: fields.notes.clone(),
         };
         let id = Self::map(self.store.upsert_plan_week(&week))?;
-        let week = Self::map(self.store.plan_week(id))?
+        let weeks = Self::map(self.store.plan_weeks(phase_id))?;
+        let week = weeks
+            .into_iter()
+            .find(|row| row.id == Some(id))
             .ok_or_else(|| BackendError::Store("the week was not written".to_string()))?;
         Ok(rows::plan_week_row(&week))
     }
@@ -473,7 +480,7 @@ impl Backend for PhoneBackend {
         let session = store_model::PlanSession {
             id: None,
             week_id: Some(week_id),
-            block_id: fields.block_id,
+            block_id: None,
             date: fields.date.clone(),
             session_type: fields.session_type.clone(),
             title: fields.title.clone(),
@@ -581,8 +588,8 @@ impl Backend for PhoneBackend {
     }
 
     fn compare_candidates(&self, limit: usize) -> Result<Vec<Value>, BackendError> {
-        let mut filter = stride_store::repo::ActivityFilter {
-            order: Some(stride_store::repo::ActivityOrder::Date),
+        let mut filter = StoreFilter {
+            order: Some(ActivityOrder::Date),
             limit: Some(limit as i64),
             ..Default::default()
         };
@@ -613,9 +620,10 @@ impl Backend for PhoneBackend {
     }
 
     fn plan_adherence(&self, from: &str, to: &str) -> Result<Value, BackendError> {
-        let inputs = self.plan_inputs(from, to)?;
+        let data = self.plan_data(from, to)?;
+        let inputs = data.inputs(from, to);
         let matches = core::match_sessions(&inputs);
-        let extra = core::extra_activities(&inputs).len();
+        let extra = stride_core::plan::extra_activities(&inputs).len();
         let adherence = core::adherence(&matches, extra);
         Ok(serde_json::to_value(adherence).unwrap_or(Value::Null))
     }
@@ -625,9 +633,9 @@ impl Backend for PhoneBackend {
         from: &str,
         to: &str,
     ) -> Result<Vec<SessionWithResult>, BackendError> {
-        let inputs = self.plan_inputs(from, to)?;
+        let data = self.plan_data(from, to)?;
+        let inputs = data.inputs(from, to);
         let matches = core::match_sessions(&inputs);
-        let physiology = self.core_physiology()?;
 
         let mut out = Vec::with_capacity(matches.len());
         for matched in &matches {
@@ -642,27 +650,26 @@ impl Backend for PhoneBackend {
             };
 
             let activity_row = match matched.activity.as_ref() {
-                Some(activity) => self.core_activity_by_id(activity.id)?.map(|core| {
-                    let mut row = rows::activity_row(
-                        &self
-                            .store
-                            .activity(activity.id)
-                            .ok()
-                            .flatten()
-                            .unwrap_or_else(store_model::Activity::default),
-                    );
-                    row.id = activity.id;
-                    row
-                }),
+                Some(activity) => match self.store.activity(activity.id).ok().flatten() {
+                    Some(row) => {
+                        let mut row = rows::activity_row(&row);
+                        row.id = activity.id;
+                        Some(row)
+                    }
+                    None => None,
+                },
                 None => None,
             };
 
+            // The cause is explained against the run that answered the
+            // session, and against the physiology of the day.
+            let answered = matched
+                .activity
+                .as_ref()
+                .and_then(|activity| data.activities.iter().find(|row| row.id == activity.id));
             let (cause, confidence) = core::explain_cause(
                 &matched.session,
-                matched.activity.as_ref().map(|_| {
-                    // The cause is explained against the run itself.
-                    &inputs.activities[0]
-                }),
+                answered,
                 None,
                 &matched.verdict.verdict,
             );
@@ -681,8 +688,6 @@ impl Backend for PhoneBackend {
                 "cause_confidence": confidence.or(matched.verdict.cause_confidence),
                 "note": Value::Null,
             });
-            let _ = physiology;
-
             out.push(SessionWithResult {
                 session: session_row,
                 activity: activity_row,
@@ -817,6 +822,7 @@ impl Backend for PhoneBackend {
         &self,
         _activities: Option<i64>,
         _health_days: Option<i64>,
+        _background: bool,
     ) -> Result<Value, BackendError> {
         Err(BackendError::Unsupported(
             "the phone pulls a bounded window; there is no bulk history load".to_string(),
@@ -924,13 +930,9 @@ impl Backend for PhoneBackend {
 
 impl PhoneBackend {
     /// The plan engine's inputs for a range.
-    fn plan_inputs(
-        &self,
-        from: &str,
-        to: &str,
-    ) -> Result<core::plan::PlanInputs<'_>, BackendError> {
-        // The plan engine needs the sessions, the runs and the physiology of
-        // the range, and it borrows them, so they are kept alive here.
+    fn plan_data(&self, from: &str, to: &str) -> Result<PlanData, BackendError> {
+        // The plan engine borrows the sessions, the runs and the physiology of
+        // the range, so they are owned by a struct that outlives the call.
         let sessions = Self::map(self.store.plan_sessions(from, to))?;
         let activities = self.core_activities(from, to)?;
         let physiology = self.core_physiology_between(from, to)?;
@@ -938,20 +940,18 @@ impl PhoneBackend {
         let sessions: Vec<core::model::PlanSession> =
             sessions.iter().map(rows::core_plan_session).collect();
 
-        Ok(core::plan::PlanInputs {
-            from,
-            to,
-            sessions: &sessions,
-            activities: &activities,
-            physiology: &physiology,
+        Ok(PlanData {
+            sessions,
+            activities,
+            physiology,
         })
     }
 
     /// One run, in the shape the comparison view reads.
     fn compare_run(&self, activity: &core::model::Activity) -> Value {
         let mut values = Map::new();
-        for parameter in core::PARAMETERS.iter() {
-            let value = core::value_for(parameter, activity);
+        for parameter in stride_core::comparison::PARAMETERS.iter() {
+            let value = stride_core::comparison::value_for(parameter, activity);
             values.insert(parameter.key.to_string(), json!(value));
         }
         let profile = core::profile_for(activity, 120);
@@ -977,6 +977,29 @@ impl PhoneBackend {
             "values": values,
             "profile": profile,
         })
+    }
+}
+
+/// The plan engine's inputs, owned.
+///
+/// The engine borrows them, so they have to outlive the call that builds
+/// them.
+struct PlanData {
+    sessions: Vec<core::model::PlanSession>,
+    activities: Vec<core::model::Activity>,
+    physiology: Vec<core::model::DailyPhysiology>,
+}
+
+impl PlanData {
+    /// The inputs, borrowed.
+    fn inputs<'a>(&'a self, from: &'a str, to: &'a str) -> core::plan::PlanInputs<'a> {
+        core::plan::PlanInputs {
+            from,
+            to,
+            sessions: &self.sessions,
+            activities: &self.activities,
+            physiology: &self.physiology,
+        }
     }
 }
 

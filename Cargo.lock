@@ -1094,10 +1094,12 @@ version = "0.2.0"
 dependencies = [
  "anyhow",
  "chrono",
+ "rusqlite",
  "serde",
  "serde_json",
  "stride-api",
  "stride-store",
+ "thiserror 1.0.69",
 ]
 
 [[package]]

@@ -5,6 +5,13 @@ edition.workspace = true
 rust-version.workspace = true
 license.workspace = true
 
+# The library and the binary. The library exists so that the tests can drive
+# the server, the router and the static-file resolver without starting a
+# process.
+[lib]
+name = "stride_desktop"
+path = "src/lib.rs"
+
 [[bin]]
 name = "stride"
 path = "src/main.rs"
@@ -14,5 +21,15 @@ serde = { workspace = true }
 serde_json = { workspace = true }
 chrono = { workspace = true }
 anyhow = { workspace = true }
+thiserror = { workspace = true }
+# The plaintext-to-SQLCipher conversion reads the legacy database with a plain
+# SQLite connection. `rusqlite` is in the approved dependency set and is
+# already in the workspace, so this adds no new crate to the graph.
+rusqlite = { workspace = true }
 stride-api = { path = "../crates/stride-api" }
 stride-store = { path = "../crates/stride-store" }
+
+# The workspace's rules: no `unwrap`, no `expect`, no `panic!` and no `unsafe`
+# in the library.
+[lints]
+workspace = true

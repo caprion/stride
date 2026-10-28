@@ -20,6 +20,13 @@ The cases were chosen because each one breaks a plausible port:
 ``low_resolution``  a watch that records every five seconds, not every second.
 ``hilly``           an elevation profile that climbs and descends.
 ``gaps``            a paused watch: the record stream has holes in it.
+
+The last two cases are different in kind: they are not shaped by what a port
+might get wrong, they are shaped by what a *watch* actually writes. They were
+written after reading thirteen FIT files downloaded from the athlete's own
+Garmin account (March 2025 - October 2026), and they reproduce the byte
+layout of those files. The data is synthetic: every position is fabricated and
+the serial numbers are invented. See the section at the end of this file.
 """
 
 from __future__ import annotations
@@ -29,7 +36,16 @@ import json
 from pathlib import Path
 from typing import Any
 
-from fit_writer import FitWriter, epoch
+from fit_writer import (
+    BASE_BYTE,
+    BASE_SINT8,
+    BASE_UINT8,
+    BASE_UINT16,
+    BASE_UINT32,
+    FitWriter,
+    RawField,
+    epoch,
+)
 
 HERE = Path(__file__).resolve().parent
 FIXTURE_DIR = HERE / "fixtures"
@@ -520,6 +536,487 @@ def build_gaps() -> tuple[FitWriter, dict[str, Any]]:
     }
 
 
+# ---------------------------------------------------------------------------
+# The format a real watch writes
+#
+# The nine cases above are shaped by what a *port* might get wrong. The two
+# cases below are shaped by what a *watch* actually writes. They were written
+# after reading thirteen FIT files downloaded from the athlete's own Garmin
+# account (March 2025 - October 2026). The byte layout is copied from those
+# files; the data is not: every position is fabricated and describes a point
+# in the middle of the Atlantic ocean, and the serial numbers are invented.
+#
+# What the thirteen real files have in common, and what these two cases
+# reproduce:
+#
+#   * a 14-byte header, protocol version 1.0 (0x10), profile version 2196,
+#     little endian, a valid header CRC and a valid file CRC;
+#   * no compressed-timestamp headers, no developer fields, no 12-byte
+#     header and no big-endian file: not one of the thirteen uses them;
+#   * a record message that carries `enhanced_speed` (73) and
+#     `enhanced_altitude` (78) and *never* `speed` (6) or `altitude` (2) —
+#     the fallback the contract describes is the *normal* case on a real
+#     watch, and no synthetic case exercised it;
+#   * a record message that also carries fields the published FIT profile
+#     does not describe (87, 90, 134, 135, 136);
+#   * global messages the published FIT profile does not describe at all
+#     (233, 288, 326 ...), one of which carries nothing but a four-byte
+#     array;
+#   * local message numbers reused and redefined: the same local number
+#     carries a different global message later in the file, and the record
+#     message has two live layouts at the same time;
+#   * an *irregular* record stream: the gap between two records runs from
+#     one second to fourteen, not the uniform one second the synthetic cases
+#     assume;
+#   * a `device_info` message with no `product_name` in it, so the watch is
+#     reported as its manufacturer.
+#
+# The local message numbers below are the ones a real file uses: the device
+# defines a message, uses it, and then reuses the same number for something
+# else. A decoder that keeps one definition per local number for ever will
+# mis-read the second half of the file.
+
+# The Forerunner 965 — the watch that wrote all thirteen real files.
+GARMIN_PRODUCT_965 = 3914
+GARMIN_SOFTWARE_13 = 1300
+PROFILE_2196 = 2196
+PROTOCOL_FIT_10 = 0x10
+
+# Field definition numbers the published FIT profile does not describe.
+FIELD_87 = RawField(87, BASE_UINT16)
+FIELD_90 = RawField(90, BASE_SINT8)
+FIELD_134 = RawField(134, BASE_UINT8)
+FIELD_135 = RawField(135, BASE_UINT8)
+FIELD_136 = RawField(136, BASE_UINT8)
+
+# Global message numbers the published FIT profile does not describe.
+MESG_UNKNOWN_233 = 233
+MESG_UNKNOWN_288 = 288
+MESG_UNKNOWN_326 = 326
+
+# The gap, in seconds, between two consecutive records. Not random: a fixed
+# cycle, so the fixture is reproducible byte for byte. The thirteen real files
+# average 3.7 to 5.4 seconds between records and reach fourteen; this cycle
+# averages 3.5 and reaches eight. The 204-second hole of the second case is
+# the longest gap the real files contain.
+GAP_CYCLE = (1, 2, 3, 4, 5, 2, 6, 3, 1, 4, 7, 5, 2, 3, 8, 4)
+
+# The local message numbers of the file, as a real file numbers them.
+LOCAL_FILE_ID = 0
+LOCAL_FILE_CREATOR = 1
+LOCAL_UNKNOWN_233 = 2
+LOCAL_EVENT = 3
+LOCAL_DEVICE_INFO = 4
+LOCAL_SPORT = 5
+LOCAL_GPS_METADATA = 6
+LOCAL_RECORD_A = 7
+LOCAL_RECORD_B = 8
+LOCAL_LAP = 9
+LOCAL_SESSION = 10
+LOCAL_UNKNOWN_288 = 11
+LOCAL_UNKNOWN_326 = 12
+
+
+def _real_preamble(writer: FitWriter, date: str, serial: int) -> None:
+    """The preamble every real file has, in the order it has it."""
+    writer.message("file_id", {
+        "type": "activity",
+        "manufacturer": GARMIN_MANUFACTURER,
+        "product": GARMIN_PRODUCT_965,
+        "serial_number": serial,
+        "time_created": _timestamp(date, 0),
+    }, local=LOCAL_FILE_ID)
+    writer.message("file_creator", {
+        "software_version": 13.0,
+    }, local=LOCAL_FILE_CREATOR)
+    writer.message("event", {
+        "timestamp": _timestamp(date, 0),
+        "event": "timer",
+        "event_type": "start",
+    }, local=LOCAL_EVENT)
+    # No `product_name`: a real device_info message does not carry one, so the
+    # reference reports the watch as its manufacturer.
+    writer.message("device_info", {
+        "timestamp": _timestamp(date, 0),
+        "serial_number": serial,
+        "manufacturer": GARMIN_MANUFACTURER,
+        "product": GARMIN_PRODUCT_965,
+        "software_version": 13.0,
+        "device_index": 0,
+    }, local=LOCAL_DEVICE_INFO)
+    writer.message("sport", {
+        "name": "Run",
+        "sport": "running",
+        "sub_sport": "generic",
+    }, local=LOCAL_SPORT)
+
+
+def _real_private_messages(writer: FitWriter, date: str) -> None:
+    """The messages a real file carries that the FIT profile does not describe."""
+    # mesg 233: one field, and it is a four-byte array.
+    writer.raw_message(
+        MESG_UNKNOWN_233, [(RawField(2, BASE_BYTE, 4), b"\x01\x02\x03\x04")],
+        local=LOCAL_UNKNOWN_233,
+    )
+    # mesg 288: a timestamp and three small integers.
+    writer.raw_message(MESG_UNKNOWN_288, [
+        (RawField(253, BASE_UINT32), _timestamp(date, 0)),
+        (RawField(2, BASE_UINT16), 1017),
+        (RawField(0, BASE_SINT8), 28),
+        (RawField(1, BASE_SINT8), 45),
+    ], local=LOCAL_UNKNOWN_288)
+    # mesg 326: a timestamp and two counters.
+    writer.raw_message(MESG_UNKNOWN_326, [
+        (RawField(253, BASE_UINT32), _timestamp(date, 0)),
+        (RawField(0, BASE_UINT32), 49),
+        (RawField(1, BASE_UINT32), 19),
+    ], local=LOCAL_UNKNOWN_326)
+
+
+def _real_record_fields(date: str, record: Record, stance: bool = False) -> dict[Any, Any]:
+    """The record message a real watch writes.
+
+    The field set is the one the thirteen real files carry, in the order they
+    carry it, including the definition numbers the published FIT profile does
+    not describe. `enhanced_speed` and `enhanced_altitude` are there and
+    `speed` and `altitude` are not — a real watch writes the enhanced pair.
+    """
+    fields: dict[Any, Any] = {
+        "timestamp": _timestamp(date, record.t),
+        "position_lat": _semicircles(record.lat),
+        "position_long": _semicircles(record.lon),
+        "distance": record.distance,
+        "enhanced_speed": record.speed,
+        "enhanced_altitude": record.alt,
+        FIELD_87: 0,
+    }
+    if stance:
+        # The second live layout of the record message: the real files add
+        # field 90 to it part-way through the activity.
+        fields[FIELD_90] = 0
+    fields.update({
+        "heart_rate": record.hr,
+        "cadence": record.cadence,
+        "fractional_cadence": 0.5,
+        FIELD_134: 0xFF,
+        FIELD_135: 88,
+        FIELD_136: record.hr,
+    })
+    return fields
+
+
+def _real_gps_metadata(date: str, record: Record) -> dict[str, Any]:
+    """The GPS metadata a real watch writes beside every record."""
+    return {
+        "timestamp": _timestamp(date, record.t),
+        "position_lat": _semicircles(record.lat),
+        "position_long": _semicircles(record.lon),
+        "enhanced_altitude": record.alt,
+        "enhanced_speed": record.speed,
+    }
+
+
+def _real_lap_message(writer: FitWriter, date: str, index: int, elapsed_s: float, timer_s: float,
+                      distance_m: float, avg_hr: float, max_hr: float, avg_cadence: float,
+                      max_cadence: float, avg_speed: float, max_speed: float,
+                      ascent: float = 0.0, descent: float = 0.0) -> None:
+    """A lap message in the shape a real watch writes it.
+
+    `avg_speed` and `max_speed` are present but *invalid* (0xFFFF): a real
+    lap carries the enhanced speeds and leaves the old ones unset, so the
+    reference has to fall back to distance over time.
+    """
+    fields: dict[Any, Any] = {
+        "timestamp": _timestamp(date, int(elapsed_s)),
+        "start_time": _timestamp(date, 0),
+        "total_elapsed_time": elapsed_s,
+        "total_timer_time": timer_s,
+        "total_distance": distance_m,
+        "avg_heart_rate": avg_hr,
+        "max_heart_rate": max_hr,
+        "avg_cadence": avg_cadence,
+        "max_cadence": max_cadence,
+        "total_ascent": ascent,
+        "total_descent": descent,
+        "enhanced_avg_speed": avg_speed,
+        "enhanced_max_speed": max_speed,
+        RawField(13, BASE_UINT16): 0xFFFF,
+        RawField(14, BASE_UINT16): 0xFFFF,
+        "event": "lap",
+        "event_type": "stop",
+        "message_index": index,
+    }
+    writer.message("lap", fields, local=LOCAL_LAP)
+
+
+def _real_session_message(writer: FitWriter, date: str, sport: str, elapsed_s: float, timer_s: float,
+                          distance_m: float, avg_hr: float, max_hr: float, avg_cadence: float,
+                          max_cadence: float, calories: int, ascent: float, descent: float,
+                          avg_speed: float, max_speed: float, lap_count: int) -> None:
+    """A session message in the shape a real watch writes it."""
+    fields: dict[Any, Any] = {
+        "timestamp": _timestamp(date, int(elapsed_s)),
+        "start_time": _timestamp(date, 0),
+        "total_elapsed_time": elapsed_s,
+        "total_timer_time": timer_s,
+        "total_distance": distance_m,
+        "total_calories": calories,
+        "avg_heart_rate": avg_hr,
+        "max_heart_rate": max_hr,
+        "avg_cadence": avg_cadence,
+        "max_cadence": max_cadence,
+        "total_ascent": ascent,
+        "total_descent": descent,
+        "sport": sport,
+        "sub_sport": "generic",
+        "enhanced_avg_speed": avg_speed,
+        "enhanced_max_speed": max_speed,
+        RawField(14, BASE_UINT16): 0xFFFF,
+        RawField(15, BASE_UINT16): 0xFFFF,
+        "first_lap_index": 0,
+        "num_laps": lap_count,
+        "event": "lap",
+        "event_type": "stop",
+        "message_index": 0,
+    }
+    writer.message("session", fields, local=LOCAL_SESSION)
+
+
+def _real_activity_message(writer: FitWriter, date: str, elapsed_s: float) -> None:
+    """The activity message — written under the *file_id* local number.
+
+    A real file reuses local message number 0 for the activity message at the
+    end, so a decoder that remembers the first definition of local 0 for ever
+    reads the activity message as a file id.
+    """
+    writer.message("activity", {
+        "timestamp": _timestamp(date, int(elapsed_s)),
+        "total_timer_time": elapsed_s,
+        "num_sessions": 1,
+        "type": "manual",
+        "event": "activity",
+        "event_type": "stop",
+    }, local=LOCAL_FILE_ID)
+
+
+def _lap_stats(records: list[Record]) -> tuple[float, float, float, float]:
+    """The heart rate and stored cadence of a lap, the way a watch summarises it."""
+    heart_rates = [r.hr for r in records if r.hr is not None]
+    cadences = [r.cadence for r in records if r.cadence is not None]
+    return (
+        round(sum(heart_rates) / len(heart_rates), 3),
+        float(max(heart_rates)),
+        round(sum(cadences) / len(cadences), 3),
+        float(max(cadences)),
+    )
+
+
+def build_real_garmin_run() -> tuple[FitWriter, dict[str, Any]]:
+    """A steady run in the byte format a real Garmin Forerunner 965 writes.
+
+    The format is the one the thirteen real files use; the run is invented.
+    """
+    date = "2026-04-20T05:30:00Z"
+    serial = 3117010
+    records: list[Record] = []
+    elapsed = 0
+    distance = 0.0
+    interval = 0
+    for index in range(160):
+        gap = GAP_CYCLE[index % len(GAP_CYCLE)]
+        if index:
+            # The distance covered during the interval that just ended, at the
+            # speed of the sample that ended it.
+            distance += (records[-1].speed or 0.0) * interval
+        records.append(Record(
+            elapsed,
+            speed=round(3.0 + 0.1 * (index % 5), 2),
+            cadence=78 + (index % 3),
+            hr=140 + index // 20,
+            alt=900 + index // 10,
+            lat=round(10.0 + index * 0.00002, 7),
+            lon=round(20.0 + index * 0.000015, 7),
+            distance=round(distance, 2),
+        ))
+        elapsed += gap
+        interval = gap
+    total_elapsed = float(elapsed)
+    last_gap = GAP_CYCLE[(len(records) - 1) % len(GAP_CYCLE)]
+    total_distance = round(records[-1].distance + (records[-1].speed or 0.0) * last_gap, 2)
+
+    writer = FitWriter(profile_version=PROFILE_2196, protocol=PROTOCOL_FIT_10)
+    _real_preamble(writer, date, serial)
+    _real_private_messages(writer, date)
+
+    for index, record in enumerate(records):
+        # The watch writes its GPS metadata and its private sensor message
+        # beside every record.
+        writer.message("gps_metadata", _real_gps_metadata(date, record),
+                       local=LOCAL_GPS_METADATA, define=index == 0)
+        writer.raw_message(
+            MESG_UNKNOWN_233, [(RawField(2, BASE_BYTE, 4), b"\x01\x02\x03\x04")],
+            local=LOCAL_UNKNOWN_233, define=False,
+        )
+        # Part-way through the activity the watch starts a second live layout
+        # of the record message.
+        if index < 100:
+            writer.message("record", _real_record_fields(date, record),
+                           local=LOCAL_RECORD_A, define=index == 0)
+        else:
+            writer.message("record", _real_record_fields(date, record, stance=True),
+                           local=LOCAL_RECORD_B, define=index == 100)
+
+    for index, (start, stop) in enumerate(((0, 53), (53, 106), (106, 160))):
+        lap_records = records[start:stop]
+        avg_hr, max_hr, avg_cadence, max_cadence = _lap_stats(lap_records)
+        lap_elapsed = (records[stop].t - records[start].t) if stop < len(records) else (
+            total_elapsed - records[start].t
+        )
+        lap_distance = round(lap_records[-1].distance - lap_records[0].distance, 2)
+        _real_lap_message(
+            writer, date, index, lap_elapsed, lap_elapsed, lap_distance,
+            avg_hr, max_hr, avg_cadence, max_cadence,
+            round(sum(r.speed for r in lap_records) / len(lap_records), 3),
+            round(max(r.speed for r in lap_records), 3),
+            ascent=16.0 if index == 0 else 0.0,
+            descent=0.0,
+        )
+
+    all_hr = [r.hr for r in records]
+    all_cadence = [r.cadence for r in records]
+    _real_session_message(
+        writer, date, "running", total_elapsed, total_elapsed, total_distance,
+        round(sum(all_hr) / len(all_hr), 3), float(max(all_hr)),
+        round(sum(all_cadence) / len(all_cadence), 3), float(max(all_cadence)),
+        520, 16.0, 0.0,
+        round(sum(r.speed for r in records) / len(records), 3),
+        round(max(r.speed for r in records), 3),
+        3,
+    )
+    _real_activity_message(writer, date, total_elapsed)
+
+    return writer, {
+        "date": date,
+        "sport": "running",
+        "device": "Forerunner 965",
+        "watch": "records irregularly, one to fourteen seconds apart",
+        "notes": "The byte format of a real Garmin Forerunner 965 file (thirteen of them, March 2025 "
+                 "to October 2026): FIT protocol 1.0, enhanced speed and altitude instead of speed "
+                 "and altitude, fields and messages the published FIT profile does not describe, a "
+                 "redefined local message number and an irregular record stream. The format came "
+                 "from a real watch; the data did not, and every position is fabricated.",
+    }
+
+
+def build_real_garmin_gap() -> tuple[FitWriter, dict[str, Any]]:
+    """The same real-watch format, with the hole the real files contain.
+
+    The longest gap between two records in the thirteen real files is 204
+    seconds. It follows a *running* sample, the distance does not advance
+    across it (the watch recorded nothing at all), and the sample after it is
+    a standstill. So the hole is charged to the running — the interval after
+    a sample belongs to that sample — while the distance it covers is not.
+    """
+    date = "2026-04-21T06:00:00Z"
+    serial = 3117011
+    records: list[Record] = []
+    elapsed = 0
+    distance = 0.0
+    plan = (
+        (30, 1.2, 30, 105),   # walking warm-up
+        (90, 3.1, 78, None),  # running
+        (10, 0.0, 0, 120),    # standing: the watch came back at the aid station
+        (30, 2.4, 80, None),  # running again
+    )
+    hole_index = 119  # the gap *after* this record is the hole
+    index = 0
+    interval = 0
+    hole_interval = False
+    for block, (count, speed, cadence, hr) in enumerate(plan):
+        for _ in range(count):
+            gap = GAP_CYCLE[index % len(GAP_CYCLE)]
+            if index == hole_index:
+                # The hole: the watch stops writing records for three and a
+                # half minutes.
+                gap = 204
+            if index and not hole_interval:
+                distance += (records[-1].speed or 0.0) * interval
+            records.append(Record(
+                elapsed,
+                speed=speed,
+                cadence=cadence,
+                hr=(140 + (index - 30) // 10) if hr is None else hr,
+                alt=12,
+                lat=round(10.0 + index * 0.00002, 7),
+                lon=round(20.0 + index * 0.000015, 7),
+                distance=round(distance, 2),
+            ))
+            elapsed += gap
+            interval = gap
+            hole_interval = index == hole_index
+            index += 1
+    total_elapsed = float(elapsed)
+    last_gap = GAP_CYCLE[(len(records) - 1) % len(GAP_CYCLE)]
+    total_distance = round(records[-1].distance + (records[-1].speed or 0.0) * last_gap, 2)
+
+    writer = FitWriter(profile_version=PROFILE_2196, protocol=PROTOCOL_FIT_10)
+    _real_preamble(writer, date, serial)
+    _real_private_messages(writer, date)
+
+    for index, record in enumerate(records):
+        writer.message("gps_metadata", _real_gps_metadata(date, record),
+                       local=LOCAL_GPS_METADATA, define=index == 0)
+        writer.raw_message(
+            MESG_UNKNOWN_233, [(RawField(2, BASE_BYTE, 4), b"\x01\x02\x03\x04")],
+            local=LOCAL_UNKNOWN_233, define=False,
+        )
+        if index < 60:
+            writer.message("record", _real_record_fields(date, record),
+                           local=LOCAL_RECORD_A, define=index == 0)
+        else:
+            writer.message("record", _real_record_fields(date, record, stance=True),
+                           local=LOCAL_RECORD_B, define=index == 60)
+
+    for index, (start, stop) in enumerate(((0, 120), (120, 160))):
+        lap_records = records[start:stop]
+        avg_hr, max_hr, avg_cadence, max_cadence = _lap_stats(lap_records)
+        lap_elapsed = (records[stop].t - records[start].t) if stop < len(records) else (
+            total_elapsed - records[start].t
+        )
+        lap_distance = round(lap_records[-1].distance - lap_records[0].distance, 2)
+        _real_lap_message(
+            writer, date, index, lap_elapsed, lap_elapsed, lap_distance,
+            avg_hr, max_hr, avg_cadence, max_cadence,
+            round(sum(r.speed for r in lap_records) / len(lap_records), 3),
+            round(max(r.speed for r in lap_records), 3),
+        )
+
+    all_hr = [r.hr for r in records]
+    all_cadence = [r.cadence for r in records]
+    _real_session_message(
+        writer, date, "running", total_elapsed, total_elapsed, total_distance,
+        round(sum(all_hr) / len(all_hr), 3), float(max(all_hr)),
+        round(sum(all_cadence) / len(all_cadence), 3), float(max(all_cadence)),
+        300, 0.0, 0.0,
+        round(sum(r.speed for r in records) / len(records), 3),
+        round(max(r.speed for r in records), 3),
+        2,
+    )
+    _real_activity_message(writer, date, total_elapsed)
+
+    return writer, {
+        "date": date,
+        "sport": "running",
+        "device": "Forerunner 965",
+        "watch": "records irregularly, with a 204 second hole",
+        "notes": "The same real-watch format as real_garmin_run, with the 204 second hole the "
+                 "real files contain: the watch records nothing for three and a half minutes and "
+                 "the distance does not advance across it. The interval after a sample belongs to "
+                 "that sample, so the hole is charged to the running, while the laps — which "
+                 "only count the intervals between two running samples — are not.",
+    }
+
+
 BUILDERS = (
     ("mixed_run", build_mixed_run),
     ("hr_gps_run", build_hr_gps_run),
@@ -530,6 +1027,8 @@ BUILDERS = (
     ("low_resolution", build_low_resolution),
     ("hilly", build_hilly),
     ("gaps", build_gaps),
+    ("real_garmin_run", build_real_garmin_run),
+    ("real_garmin_gap", build_real_garmin_gap),
 )
 
 

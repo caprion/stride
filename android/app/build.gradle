@@ -1,5 +1,96 @@
 apply plugin: 'com.android.application'
 
+// The phone's shell is Kotlin: the bridge, the Keystore, the worker and the
+// notifications.
+apply plugin: 'org.jetbrains.kotlin.android'
+
+// ---------------------------------------------------------------------------
+// The Rust core.
+//
+// The phone runs the Rust core **in this process**: `cargo-ndk` builds it
+// for `aarch64-linux-android`, UniFFI generates the Kotlin bindings from the
+// UDL, and the shared object is packaged as `libuniffi_stride.so`.
+//
+// **arm64-v8a only.** Almost every phone in use is arm64, and the release
+// APK has to stay under 10 MB; a second ABI would take ~2.2 MB of that.
+// ---------------------------------------------------------------------------
+
+/** The Rust workspace of the phone. */
+def rustCrateDir = file('src/main/rust/stride-ffi')
+
+/** Where the generated Kotlin bindings go. */
+def uniffiGeneratedDir = layout.buildDirectory.dir('generated/uniffi/kotlin')
+
+/** Where `cargo-ndk` puts the shared objects. */
+def rustJniLibsDir = layout.buildDirectory.dir('rust/jniLibs')
+
+/** The Android SDK, from `local.properties` or the environment. */
+def androidSdkDir = {
+    def properties = new Properties()
+    def local = rootProject.file('local.properties')
+    if (local.exists()) {
+        local.withInputStream { properties.load(it) }
+    }
+    def dir = properties.getProperty('sdk.dir')
+    if (!dir) dir = System.getenv('ANDROID_HOME') ?: System.getenv('ANDROID_SDK_ROOT')
+    return dir ? file(dir).absolutePath : null
+}()
+
+/** The NDK, from the environment or from the SDK. */
+def androidNdkDir = {
+    if (System.getenv('ANDROID_NDK_HOME')) return System.getenv('ANDROID_NDK_HOME')
+    if (!androidSdkDir) return null
+    def root = new File(androidSdkDir, 'ndk')
+    if (!root.exists()) return null
+    def versions = (root.listFiles() ?: []).findAll { it.directory }.sort { it.name }
+    return versions.isEmpty() ? null : versions.last().absolutePath
+}()
+
+/**
+ * Generate the Kotlin bindings for the Rust core.
+ *
+ * UniFFI's CLI is not published as a binary for this version, so the build
+ * uses the generator as a library: `stride-bindgen` is a small crate in
+ * `src/main/rust/stride-bindgen` that writes the bindings into the build
+ * directory.
+ */
+tasks.register('uniffiGenerateKotlin', Exec) {
+    group = 'stride'
+    description = 'Generates the Kotlin bindings for the Rust core.'
+    workingDir rustCrateDir
+    commandLine 'cargo', 'run', '--release', '--manifest-path', 'stride-bindgen/Cargo.toml',
+            '--', 'src/stride.udl', uniffiGeneratedDir.get().asFile.absolutePath
+    inputs.file file('src/main/rust/stride-ffi/src/stride.udl')
+    outputs.dir uniffiGeneratedDir
+}
+
+/**
+ * Build the Rust core for the phone.
+ *
+ * `cargo-ndk` cross-compiles for `aarch64-linux-android` and drops the
+ * shared object into the jniLibs tree, which the APK then packages.
+ */
+tasks.register('cargoNdkBuild', Exec) {
+    group = 'stride'
+    description = 'Builds the Rust core for aarch64-linux-android.'
+    dependsOn 'uniffiGenerateKotlin'
+    workingDir rustCrateDir
+    commandLine 'cargo', 'ndk', '-t', 'arm64-v8a',
+            '-o', rustJniLibsDir.get().asFile.absolutePath,
+            'build', '--release', '--manifest-path', 'Cargo.toml'
+    if (androidNdkDir) {
+        environment 'ANDROID_NDK_HOME', androidNdkDir
+        environment 'ANDROID_NDK_ROOT', androidNdkDir
+    }
+    inputs.dir file('src/main/rust/stride-ffi/src')
+    inputs.file file('src/main/rust/stride-ffi/Cargo.toml')
+    outputs.dir rustJniLibsDir
+}
+
+tasks.matching { it.name == 'preBuild' }.configureEach {
+    dependsOn 'cargoNdkBuild'
+}
+
 // Release signing.
 //
 // The keystore never lives in the repository. In CI it comes from a secret;
@@ -118,10 +209,23 @@ android {
         versionCode (project.hasProperty('strideVersionCode') ? project.strideVersionCode.toInteger() : 1)
         versionName (project.hasProperty('strideVersionName') ? project.strideVersionName : '1.0.0')
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        // One ABI. The release APK has to stay under 10 MB, and the phone
+        // is arm64.
+        ndk {
+            abiFilters 'arm64-v8a'
+        }
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
              // Default: https://android.googlesource.com/platform/frameworks/base/+/282e181b58cf72b6ca770dc7ca5f91f135444502/tools/aapt/AaptAssets.cpp#61
             ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
+        }
+    }
+    sourceSets {
+        main {
+            // The Kotlin bindings UniFFI generates.
+            java.srcDirs += uniffiGeneratedDir
+            // The Rust core, as a shared object.
+            jniLibs.srcDirs += rustJniLibsDir
         }
     }
     buildTypes {
@@ -132,6 +236,13 @@ android {
                 signingConfig signingConfigs.getByName('stride')
             }
         }
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_21
+        targetCompatibility JavaVersion.VERSION_21
+    }
+    kotlinOptions {
+        jvmTarget = '21'
     }
 }
 
@@ -147,6 +258,17 @@ dependencies {
     implementation "androidx.appcompat:appcompat:$androidxAppCompatVersion"
     implementation "androidx.coordinatorlayout:coordinatorlayout:$androidxCoordinatorLayoutVersion"
     implementation "androidx.core:core-splashscreen:$coreSplashScreenVersion"
+    implementation "androidx.core:core-ktx:$androidxCoreVersion"
+
+    // The background pull. WorkManager survives the app being killed, and
+    // its constraints are the honest ones.
+    implementation "androidx.work:work-runtime-ktx:2.10.1"
+
+    // UniFFI's Kotlin bindings call the Rust core through JNA. The AAR is
+    // the Android build of JNA; it adds about a megabyte to the APK, which
+    // is the price of not hand-writing a JNI layer.
+    implementation("net.java.dev.jna:jna:5.17.0@aar")
+
     implementation project(':capacitor-android')
     testImplementation "junit:junit:$junitVersion"
     androidTestImplementation "androidx.test.ext:junit:$androidxJunitVersion"

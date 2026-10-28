@@ -1,0 +1,23 @@
+# The Kotlin binding generator.
+#
+# UniFFI's CLI is not published as a binary for this version, so the build
+# uses the library directly: this crate generates the Kotlin bindings from
+# the UDL in `../stride-ffi/src/stride.udl`.
+#
+# It is a build tool. Nothing it links ends up in the APK.
+
+[package]
+name = "stride-bindgen"
+version = "0.2.0"
+edition = "2021"
+rust-version = "1.75"
+license = "MIT"
+description = "Generates the Kotlin bindings for the phone's Rust core."
+
+[[bin]]
+name = "stride-bindgen"
+path = "src/main.rs"
+
+[dependencies]
+camino = "1"
+uniffi_bindgen = "0.29"

@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Android 12 and later: what may leave the phone.
+
+    Nothing. The database, the WAL, the wrapped keys, the credential, the FIT
+    blobs and the WebView's own storage are all excluded — from the cloud
+    backup and from the device-to-device transfer alike.
+
+    `allowBackup="false"` is in the manifest as well, because it alone is not
+    honoured on every manufacturer. A restored backup would carry the key and
+    the history to another device, and the Keystore key that protects them
+    does not travel: the result would be an unreadable file and a lost
+    history.
+-->
+<data-extraction-rules>
+    <cloud-backup>
+        <exclude domain="root" />
+        <exclude domain="file" />
+        <exclude domain="database" />
+        <exclude domain="sharedpref" />
+        <exclude domain="external" />
+        <exclude domain="device_root" />
+        <exclude domain="device_file" />
+        <exclude domain="device_database" />
+        <exclude domain="device_sharedpref" />
+    </cloud-backup>
+    <device-transfer>
+        <exclude domain="root" />
+        <exclude domain="file" />
+        <exclude domain="database" />
+        <exclude domain="sharedpref" />
+        <exclude domain="external" />
+        <exclude domain="device_root" />
+        <exclude domain="device_file" />
+        <exclude domain="device_database" />
+        <exclude domain="device_sharedpref" />
+    </device-transfer>
+</data-extraction-rules>

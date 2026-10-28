@@ -22,7 +22,7 @@
 use chrono::{Duration, NaiveDate, Utc};
 use serde_json::{json, Value};
 
-use stride_api::backend::BackendError;
+use stride_api::error::BackendError;
 use stride_fit::parse_fit;
 use stride_garmin::GarminClient;
 use stride_store::model as store_model;
@@ -43,8 +43,10 @@ pub fn validate(api_key: &str) -> Result<Value, BackendError> {
     let client = GarminClient::new(api_key);
     let profile = client.validate().map_err(garmin_error)?;
     Ok(json!({
-        "id": profile.id,
         "name": profile.athlete_name(),
+        "display_name": profile.display_name,
+        "full_name": profile.full_name,
+        "user_name": profile.user_name,
     }))
 }
 
@@ -68,10 +70,15 @@ pub fn sync(backend: &PhoneBackend, api_key: &str, days: i64) -> Result<Value, B
     let client = GarminClient::new(api_key);
     let days = days.clamp(1, 90);
     let end = Utc::now().date_naive();
-    let start = end - Duration::days(days as i64 - 1);
+    let start = end - Duration::days(days - 1);
 
+    let day_start = chrono::NaiveTime::from_hms_opt(0, 0, 0).unwrap_or_default();
+    let day_end = chrono::NaiveTime::from_hms_opt(23, 59, 59).unwrap_or_default();
     let summaries = client
-        .activities(start.and_time(chrono::NaiveTime::MIN).and_utc(), end.and_time(chrono::NaiveTime::MAX).and_utc())
+        .activities(
+            start.and_time(day_start).and_utc(),
+            end.and_time(day_end).and_utc(),
+        )
         .map_err(garmin_error)?;
 
     let mut found = 0usize;
@@ -169,6 +176,7 @@ fn import_detail(
         .unwrap_or_default();
     let day_of_week = start.map(|value| value.format("%A").to_string());
 
+    let is_trail = sport_type == "trail_running";
     let activity = store_model::Activity {
         id: None,
         athlete_id: None,
@@ -202,7 +210,7 @@ fn import_detail(
         perceived_exertion: None,
         device: device_name(metadata),
         gear: None,
-        is_trail: sport_type == "trail_running",
+        is_trail,
         is_commute: false,
         polyline: None,
         geo_points: None,
@@ -434,7 +442,7 @@ pub fn import_fit(
         description: None,
         start_time: parsed.start_time,
         local_date: parsed.local_date.clone(),
-        day_of_week: parsed.day_of_week.clone(),
+        day_of_week: Some(parsed.day_of_week.clone()),
         distance_m: parsed.distance_m,
         moving_time_s: parsed.moving_time_s,
         elapsed_time_s: parsed.elapsed_time_s,
@@ -464,7 +472,7 @@ pub fn import_fit(
         created_at: Utc::now(),
         updated_at: Utc::now(),
     };
-    activity.touch();
+    activity.updated_at = Utc::now();
 
     let id = backend
         .store()
@@ -631,11 +639,15 @@ fn parse_local_time(raw: &str) -> Option<chrono::NaiveDateTime> {
 /// The Garmin failure, as the backend's failure.
 fn garmin_error(err: stride_garmin::GarminError) -> BackendError {
     match err {
-        stride_garmin::GarminError::Unauthorized => BackendError::Domain(
+        stride_garmin::GarminError::InvalidKey { .. } => BackendError::Domain(
             "Garmin rejected the key. It may have expired or been revoked.".to_string(),
         ),
         stride_garmin::GarminError::RateLimited { .. } => BackendError::Domain(
             "Garmin is rate limiting the phone. The pull will be retried later.".to_string(),
+        ),
+        stride_garmin::GarminError::Forbidden => BackendError::Domain(
+            "Garmin refused the request: the key does not carry the scope for this endpoint."
+                .to_string(),
         ),
         other => BackendError::Domain(other.to_string()),
     }

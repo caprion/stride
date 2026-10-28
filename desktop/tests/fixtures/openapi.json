@@ -1,0 +1,3458 @@
+{
+ "openapi": "3.1.0",
+ "info": {
+  "title": "Stride",
+  "description": "A private, local-first running log with native Garmin ingest. Your data stays on your machine; sharing is Garmin's business, not ours.",
+  "version": "1.0.0"
+ },
+ "paths": {
+  "/api/v1/auth/garmin/personal-key": {
+   "post": {
+    "tags": [
+     "auth"
+    ],
+    "summary": "Connect Personal Key",
+    "description": "Connect with a Garmin Connect Personal API Key.\n\nThis is the recommended path: no developer registration, no consumer\nsecret, and it covers activities *and* wellness (sleep, HRV, body\nbattery, resting heart rate).",
+    "operationId": "connect_personal_key_api_v1_auth_garmin_personal_key_post",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/PersonalKeyBody"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": true,
+         "type": "object",
+         "title": "Response Connect Personal Key Api V1 Auth Garmin Personal Key Post"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/auth/garmin/personal-key/test": {
+   "post": {
+    "tags": [
+     "auth"
+    ],
+    "summary": "Test Personal Key",
+    "description": "Validate a key without storing it.",
+    "operationId": "test_personal_key_api_v1_auth_garmin_personal_key_test_post",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/PersonalKeyBody"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": true,
+         "type": "object",
+         "title": "Response Test Personal Key Api V1 Auth Garmin Personal Key Test Post"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/auth/status": {
+   "get": {
+    "tags": [
+     "auth"
+    ],
+    "summary": "Auth Status",
+    "operationId": "auth_status_api_v1_auth_status_get",
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": true,
+         "type": "object",
+         "title": "Response Auth Status Api V1 Auth Status Get"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/auth/garmin/developer-key": {
+   "post": {
+    "tags": [
+     "auth"
+    ],
+    "summary": "Start Developer Key",
+    "description": "Start the OAuth1 three-legged handshake and return the authorise URL.",
+    "operationId": "start_developer_key_api_v1_auth_garmin_developer_key_post",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/DeveloperKeyBody"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": true,
+         "type": "object",
+         "title": "Response Start Developer Key Api V1 Auth Garmin Developer Key Post"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/auth/garmin/callback": {
+   "get": {
+    "tags": [
+     "auth"
+    ],
+    "summary": "Garmin Callback",
+    "description": "OAuth1 redirect target. Garmin lands here after the athlete approves.",
+    "operationId": "garmin_callback_api_v1_auth_garmin_callback_get",
+    "parameters": [
+     {
+      "name": "oauth_token",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "string",
+       "default": "",
+       "title": "Oauth Token"
+      }
+     },
+     {
+      "name": "oauth_verifier",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "string",
+       "default": "",
+       "title": "Oauth Verifier"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/auth/garmin/exchange": {
+   "post": {
+    "tags": [
+     "auth"
+    ],
+    "summary": "Exchange",
+    "description": "Complete the handshake with the verifier Garmin showed the athlete.",
+    "operationId": "exchange_api_v1_auth_garmin_exchange_post",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/ExchangeBody"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": true,
+         "type": "object",
+         "title": "Response Exchange Api V1 Auth Garmin Exchange Post"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/auth/garmin/login": {
+   "post": {
+    "tags": [
+     "auth"
+    ],
+    "summary": "Login",
+    "description": "Log in with email + password. May return ``mfa_required``.",
+    "operationId": "login_api_v1_auth_garmin_login_post",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/LoginBody"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": true,
+         "type": "object",
+         "title": "Response Login Api V1 Auth Garmin Login Post"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/auth/garmin/mfa": {
+   "post": {
+    "tags": [
+     "auth"
+    ],
+    "summary": "Submit Mfa",
+    "operationId": "submit_mfa_api_v1_auth_garmin_mfa_post",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/MfaBody"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": true,
+         "type": "object",
+         "title": "Response Submit Mfa Api V1 Auth Garmin Mfa Post"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/auth/garmin/logout": {
+   "post": {
+    "tags": [
+     "auth"
+    ],
+    "summary": "Logout",
+    "operationId": "logout_api_v1_auth_garmin_logout_post",
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": true,
+         "type": "object",
+         "title": "Response Logout Api V1 Auth Garmin Logout Post"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/auth/garmin/fit-import": {
+   "post": {
+    "tags": [
+     "auth"
+    ],
+    "summary": "Fit Import",
+    "description": "Import one or more ``.FIT`` files. No Garmin credentials required.",
+    "operationId": "fit_import_api_v1_auth_garmin_fit_import_post",
+    "requestBody": {
+     "content": {
+      "multipart/form-data": {
+       "schema": {
+        "$ref": "#/components/schemas/Body_fit_import_api_v1_auth_garmin_fit_import_post"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": true,
+         "type": "object",
+         "title": "Response Fit Import Api V1 Auth Garmin Fit Import Post"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/auth/pair-code": {
+   "get": {
+    "tags": [
+     "auth"
+    ],
+    "summary": "Pair Code",
+    "description": "Mint a pairing code. Loopback only \u2014 this is the operator's console.",
+    "operationId": "pair_code_api_v1_auth_pair_code_get",
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": true,
+         "type": "object",
+         "title": "Response Pair Code Api V1 Auth Pair Code Get"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/auth/pair": {
+   "post": {
+    "tags": [
+     "auth"
+    ],
+    "summary": "Pair",
+    "description": "Exchange a pairing code for a device credential.\n\nThe device gets its **own** token, not the master capability. That is\nwhat makes a lost phone a solved problem: revoke it in Settings and the\nathlete's own machine is untouched.",
+    "operationId": "pair_api_v1_auth_pair_post",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/PairBody"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/auth/devices": {
+   "get": {
+    "tags": [
+     "auth"
+    ],
+    "summary": "List Devices",
+    "description": "The paired devices. Tokens are never returned \u2014 only their hashes.",
+    "operationId": "list_devices_api_v1_auth_devices_get",
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": true,
+         "type": "object",
+         "title": "Response List Devices Api V1 Auth Devices Get"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/auth/devices/{device_id}": {
+   "delete": {
+    "tags": [
+     "auth"
+    ],
+    "summary": "Revoke Device",
+    "description": "Revoke a paired device.",
+    "operationId": "revoke_device_api_v1_auth_devices__device_id__delete",
+    "parameters": [
+     {
+      "name": "device_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "title": "Device Id"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object",
+         "additionalProperties": true,
+         "title": "Response Revoke Device Api V1 Auth Devices  Device Id  Delete"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/activities": {
+   "get": {
+    "tags": [
+     "activities"
+    ],
+    "summary": "List Activities",
+    "operationId": "list_activities_api_v1_activities_get",
+    "parameters": [
+     {
+      "name": "page",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "integer",
+       "minimum": 1,
+       "default": 1,
+       "title": "Page"
+      }
+     },
+     {
+      "name": "per_page",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "integer",
+       "maximum": 200,
+       "minimum": 1,
+       "default": 20,
+       "title": "Per Page"
+      }
+     },
+     {
+      "name": "sport",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Sport"
+      }
+     },
+     {
+      "name": "from",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "From"
+      }
+     },
+     {
+      "name": "to",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "To"
+      }
+     },
+     {
+      "name": "q",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Q"
+      }
+     },
+     {
+      "name": "sort",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "string",
+       "default": "date",
+       "title": "Sort"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object",
+         "additionalProperties": true,
+         "title": "Response List Activities Api V1 Activities Get"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/activities/{activity_id}": {
+   "get": {
+    "tags": [
+     "activities"
+    ],
+    "summary": "Get Activity",
+    "operationId": "get_activity_api_v1_activities__activity_id__get",
+    "parameters": [
+     {
+      "name": "activity_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "integer",
+       "title": "Activity Id"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object",
+         "additionalProperties": true,
+         "title": "Response Get Activity Api V1 Activities  Activity Id  Get"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   },
+   "patch": {
+    "tags": [
+     "activities"
+    ],
+    "summary": "Patch Activity",
+    "operationId": "patch_activity_api_v1_activities__activity_id__patch",
+    "parameters": [
+     {
+      "name": "activity_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "integer",
+       "title": "Activity Id"
+      }
+     }
+    ],
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/ActivityPatch"
+       }
+      }
+     }
+    },
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object",
+         "additionalProperties": true,
+         "title": "Response Patch Activity Api V1 Activities  Activity Id  Patch"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/activities/{activity_id}/geo": {
+   "get": {
+    "tags": [
+     "activities"
+    ],
+    "summary": "Activity Geo",
+    "operationId": "activity_geo_api_v1_activities__activity_id__geo_get",
+    "parameters": [
+     {
+      "name": "activity_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "integer",
+       "title": "Activity Id"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object",
+         "additionalProperties": true,
+         "title": "Response Activity Geo Api V1 Activities  Activity Id  Geo Get"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/activities/{activity_id}/streams/{kind}": {
+   "get": {
+    "tags": [
+     "activities"
+    ],
+    "summary": "Activity Stream",
+    "operationId": "activity_stream_api_v1_activities__activity_id__streams__kind__get",
+    "parameters": [
+     {
+      "name": "activity_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "integer",
+       "title": "Activity Id"
+      }
+     },
+     {
+      "name": "kind",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "title": "Kind"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object",
+         "additionalProperties": true,
+         "title": "Response Activity Stream Api V1 Activities  Activity Id  Streams  Kind  Get"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/stats/summary": {
+   "get": {
+    "tags": [
+     "stats"
+    ],
+    "summary": "Summary",
+    "operationId": "summary_api_v1_stats_summary_get",
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": true,
+         "type": "object",
+         "title": "Response Summary Api V1 Stats Summary Get"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/stats/weekly": {
+   "get": {
+    "tags": [
+     "stats"
+    ],
+    "summary": "Weekly",
+    "operationId": "weekly_api_v1_stats_weekly_get",
+    "parameters": [
+     {
+      "name": "weeks",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "integer",
+       "maximum": 200,
+       "minimum": 1,
+       "default": 26,
+       "title": "Weeks"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object",
+         "additionalProperties": true,
+         "title": "Response Weekly Api V1 Stats Weekly Get"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/stats/monthly": {
+   "get": {
+    "tags": [
+     "stats"
+    ],
+    "summary": "Monthly",
+    "operationId": "monthly_api_v1_stats_monthly_get",
+    "parameters": [
+     {
+      "name": "months",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "integer",
+       "maximum": 60,
+       "minimum": 1,
+       "default": 12,
+       "title": "Months"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object",
+         "additionalProperties": true,
+         "title": "Response Monthly Api V1 Stats Monthly Get"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/stats/pace-trends": {
+   "get": {
+    "tags": [
+     "stats"
+    ],
+    "summary": "Pace Trends",
+    "operationId": "pace_trends_api_v1_stats_pace_trends_get",
+    "parameters": [
+     {
+      "name": "weeks",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "integer",
+       "maximum": 200,
+       "minimum": 1,
+       "default": 26,
+       "title": "Weeks"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object",
+         "additionalProperties": true,
+         "title": "Response Pace Trends Api V1 Stats Pace Trends Get"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/stats/hr-zones": {
+   "get": {
+    "tags": [
+     "stats"
+    ],
+    "summary": "Hr Zones",
+    "operationId": "hr_zones_api_v1_stats_hr_zones_get",
+    "parameters": [
+     {
+      "name": "weeks",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "integer",
+       "maximum": 104,
+       "minimum": 1,
+       "default": 12,
+       "title": "Weeks"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object",
+         "additionalProperties": true,
+         "title": "Response Hr Zones Api V1 Stats Hr Zones Get"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/stats/personal-records": {
+   "get": {
+    "tags": [
+     "stats"
+    ],
+    "summary": "Personal Records",
+    "operationId": "personal_records_api_v1_stats_personal_records_get",
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": true,
+         "type": "object",
+         "title": "Response Personal Records Api V1 Stats Personal Records Get"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/stats/heatmap": {
+   "get": {
+    "tags": [
+     "stats"
+    ],
+    "summary": "Heatmap",
+    "operationId": "heatmap_api_v1_stats_heatmap_get",
+    "parameters": [
+     {
+      "name": "year",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "integer"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Year"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object",
+         "additionalProperties": true,
+         "title": "Response Heatmap Api V1 Stats Heatmap Get"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/stats/elevation": {
+   "get": {
+    "tags": [
+     "stats"
+    ],
+    "summary": "Elevation",
+    "operationId": "elevation_api_v1_stats_elevation_get",
+    "parameters": [
+     {
+      "name": "weeks",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "integer",
+       "maximum": 200,
+       "minimum": 1,
+       "default": 26,
+       "title": "Weeks"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object",
+         "additionalProperties": true,
+         "title": "Response Elevation Api V1 Stats Elevation Get"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/calendar": {
+   "get": {
+    "tags": [
+     "calendar"
+    ],
+    "summary": "Calendar",
+    "operationId": "calendar_api_v1_calendar_get",
+    "parameters": [
+     {
+      "name": "year",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "integer",
+       "title": "Year"
+      }
+     },
+     {
+      "name": "month",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "integer",
+       "maximum": 12,
+       "minimum": 1,
+       "title": "Month"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object",
+         "additionalProperties": true,
+         "title": "Response Calendar Api V1 Calendar Get"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/sync/run": {
+   "post": {
+    "tags": [
+     "sync"
+    ],
+    "summary": "Run Sync",
+    "operationId": "run_sync_api_v1_sync_run_post",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "anyOf": [
+         {
+          "$ref": "#/components/schemas/SyncBody"
+         },
+         {
+          "type": "null"
+         }
+        ],
+        "title": "Body"
+       }
+      }
+     }
+    },
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": true,
+         "type": "object",
+         "title": "Response Run Sync Api V1 Sync Run Post"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/sync/status": {
+   "get": {
+    "tags": [
+     "sync"
+    ],
+    "summary": "Sync Status",
+    "operationId": "sync_status_api_v1_sync_status_get",
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": true,
+         "type": "object",
+         "title": "Response Sync Status Api V1 Sync Status Get"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/sync/runs": {
+   "get": {
+    "tags": [
+     "sync"
+    ],
+    "summary": "Sync Runs",
+    "operationId": "sync_runs_api_v1_sync_runs_get",
+    "parameters": [
+     {
+      "name": "limit",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "integer",
+       "maximum": 100,
+       "minimum": 1,
+       "default": 20,
+       "title": "Limit"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object",
+         "additionalProperties": true,
+         "title": "Response Sync Runs Api V1 Sync Runs Get"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/sync/history": {
+   "get": {
+    "tags": [
+     "sync"
+    ],
+    "summary": "History Settings",
+    "description": "The history windows currently configured.",
+    "operationId": "history_settings_api_v1_sync_history_get",
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": true,
+         "type": "object",
+         "title": "Response History Settings Api V1 Sync History Get"
+        }
+       }
+      }
+     }
+    }
+   },
+   "post": {
+    "tags": [
+     "sync"
+    ],
+    "summary": "Load History",
+    "description": "Load a chosen span of history from Garmin.\n\nThe Activity API serves the account's whole history, so \"everything\" is a\nreal option; the per-activity FIT download is what makes it slow, so this\nruns in the background and reports progress.",
+    "operationId": "load_history_api_v1_sync_history_post",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/HistoryBody"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": true,
+         "type": "object",
+         "title": "Response Load History Api V1 Sync History Post"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/sync/settings": {
+   "patch": {
+    "tags": [
+     "sync"
+    ],
+    "summary": "Patch Settings",
+    "operationId": "patch_settings_api_v1_sync_settings_patch",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/SettingsBody"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": true,
+         "type": "object",
+         "title": "Response Patch Settings Api V1 Sync Settings Patch"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/network/status": {
+   "get": {
+    "tags": [
+     "network"
+    ],
+    "summary": "Network Status",
+    "operationId": "network_status_api_v1_network_status_get",
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": true,
+         "type": "object",
+         "title": "Response Network Status Api V1 Network Status Get"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/network/route": {
+   "post": {
+    "tags": [
+     "network"
+    ],
+    "summary": "Set Route",
+    "operationId": "set_route_api_v1_network_route_post",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/RouteBody"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": true,
+         "type": "object",
+         "title": "Response Set Route Api V1 Network Route Post"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/health/daily": {
+   "get": {
+    "tags": [
+     "health"
+    ],
+    "summary": "Daily",
+    "operationId": "daily_api_v1_health_daily_get",
+    "parameters": [
+     {
+      "name": "from",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "From"
+      }
+     },
+     {
+      "name": "to",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "To"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object",
+         "additionalProperties": true,
+         "title": "Response Daily Api V1 Health Daily Get"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/plan/blocks": {
+   "get": {
+    "tags": [
+     "plan"
+    ],
+    "summary": "List Blocks",
+    "operationId": "list_blocks_api_v1_plan_blocks_get",
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": true,
+         "type": "object",
+         "title": "Response List Blocks Api V1 Plan Blocks Get"
+        }
+       }
+      }
+     }
+    }
+   },
+   "post": {
+    "tags": [
+     "plan"
+    ],
+    "summary": "Create Block",
+    "operationId": "create_block_api_v1_plan_blocks_post",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "additionalProperties": true,
+        "type": "object",
+        "title": "Payload"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": true,
+         "type": "object",
+         "title": "Response Create Block Api V1 Plan Blocks Post"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/plan/blocks/{block_id}": {
+   "get": {
+    "tags": [
+     "plan"
+    ],
+    "summary": "Get Block",
+    "operationId": "get_block_api_v1_plan_blocks__block_id__get",
+    "parameters": [
+     {
+      "name": "block_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "integer",
+       "title": "Block Id"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object",
+         "additionalProperties": true,
+         "title": "Response Get Block Api V1 Plan Blocks  Block Id  Get"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/plan/blocks/{block_id}/phases": {
+   "post": {
+    "tags": [
+     "plan"
+    ],
+    "summary": "Add Phase",
+    "operationId": "add_phase_api_v1_plan_blocks__block_id__phases_post",
+    "parameters": [
+     {
+      "name": "block_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "integer",
+       "title": "Block Id"
+      }
+     }
+    ],
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "type": "object",
+        "additionalProperties": true,
+        "title": "Payload"
+       }
+      }
+     }
+    },
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object",
+         "additionalProperties": true,
+         "title": "Response Add Phase Api V1 Plan Blocks  Block Id  Phases Post"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/plan/phases/{phase_id}/weeks": {
+   "post": {
+    "tags": [
+     "plan"
+    ],
+    "summary": "Add Week",
+    "operationId": "add_week_api_v1_plan_phases__phase_id__weeks_post",
+    "parameters": [
+     {
+      "name": "phase_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "integer",
+       "title": "Phase Id"
+      }
+     }
+    ],
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "type": "object",
+        "additionalProperties": true,
+        "title": "Payload"
+       }
+      }
+     }
+    },
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object",
+         "additionalProperties": true,
+         "title": "Response Add Week Api V1 Plan Phases  Phase Id  Weeks Post"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/plan/weeks/{week_id}/sessions": {
+   "post": {
+    "tags": [
+     "plan"
+    ],
+    "summary": "Add Session",
+    "operationId": "add_session_api_v1_plan_weeks__week_id__sessions_post",
+    "parameters": [
+     {
+      "name": "week_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "integer",
+       "title": "Week Id"
+      }
+     }
+    ],
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "type": "object",
+        "additionalProperties": true,
+        "title": "Payload"
+       }
+      }
+     }
+    },
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object",
+         "additionalProperties": true,
+         "title": "Response Add Session Api V1 Plan Weeks  Week Id  Sessions Post"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/plan/import": {
+   "post": {
+    "tags": [
+     "plan"
+    ],
+    "summary": "Import Document",
+    "description": "Import a plan document (markdown, csv or json) as a new block.",
+    "operationId": "import_document_api_v1_plan_import_post",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/ImportBody"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": true,
+         "type": "object",
+         "title": "Response Import Document Api V1 Plan Import Post"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/plan/current": {
+   "get": {
+    "tags": [
+     "plan"
+    ],
+    "summary": "Current",
+    "description": "The active block and the week we are in.",
+    "operationId": "current_api_v1_plan_current_get",
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": true,
+         "type": "object",
+         "title": "Response Current Api V1 Plan Current Get"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/plan/week": {
+   "get": {
+    "tags": [
+     "plan"
+    ],
+    "summary": "Get Week",
+    "description": "The plan week containing a date.",
+    "operationId": "get_week_api_v1_plan_week_get",
+    "parameters": [
+     {
+      "name": "date",
+      "in": "query",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "title": "Date"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object",
+         "additionalProperties": true,
+         "title": "Response Get Week Api V1 Plan Week Get"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/plan/results": {
+   "get": {
+    "tags": [
+     "plan"
+    ],
+    "summary": "Results",
+    "operationId": "results_api_v1_plan_results_get",
+    "parameters": [
+     {
+      "name": "from",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "From"
+      }
+     },
+     {
+      "name": "to",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "To"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object",
+         "additionalProperties": true,
+         "title": "Response Results Api V1 Plan Results Get"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/plan/adherence": {
+   "get": {
+    "tags": [
+     "plan"
+    ],
+    "summary": "Get Adherence",
+    "operationId": "get_adherence_api_v1_plan_adherence_get",
+    "parameters": [
+     {
+      "name": "from",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "From"
+      }
+     },
+     {
+      "name": "to",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "To"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object",
+         "additionalProperties": true,
+         "title": "Response Get Adherence Api V1 Plan Adherence Get"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/plan/today": {
+   "get": {
+    "tags": [
+     "plan"
+    ],
+    "summary": "Get Today",
+    "description": "Today's plan, today's readiness, and one actionable recommendation.",
+    "operationId": "get_today_api_v1_plan_today_get",
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": true,
+         "type": "object",
+         "title": "Response Get Today Api V1 Plan Today Get"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/physiology/daily": {
+   "get": {
+    "tags": [
+     "physiology"
+    ],
+    "summary": "Daily",
+    "operationId": "daily_api_v1_physiology_daily_get",
+    "parameters": [
+     {
+      "name": "fields",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "description": "Comma-separated item fields to return",
+       "title": "Fields"
+      },
+      "description": "Comma-separated item fields to return"
+     },
+     {
+      "name": "from",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string",
+         "format": "date"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "From"
+      }
+     },
+     {
+      "name": "to",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string",
+         "format": "date"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "To"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object",
+         "additionalProperties": true,
+         "title": "Response Daily Api V1 Physiology Daily Get"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/physiology/latest": {
+   "get": {
+    "tags": [
+     "physiology"
+    ],
+    "summary": "Latest",
+    "operationId": "latest_api_v1_physiology_latest_get",
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": true,
+         "type": "object",
+         "title": "Response Latest Api V1 Physiology Latest Get"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/physiology/sleep": {
+   "get": {
+    "tags": [
+     "physiology"
+    ],
+    "summary": "Sleep",
+    "operationId": "sleep_api_v1_physiology_sleep_get",
+    "parameters": [
+     {
+      "name": "from",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string",
+         "format": "date"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "From"
+      }
+     },
+     {
+      "name": "to",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string",
+         "format": "date"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "To"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object",
+         "additionalProperties": true,
+         "title": "Response Sleep Api V1 Physiology Sleep Get"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/physiology/hrv": {
+   "get": {
+    "tags": [
+     "physiology"
+    ],
+    "summary": "Hrv",
+    "operationId": "hrv_api_v1_physiology_hrv_get",
+    "parameters": [
+     {
+      "name": "fields",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "description": "Comma-separated item fields to return",
+       "title": "Fields"
+      },
+      "description": "Comma-separated item fields to return"
+     },
+     {
+      "name": "from",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string",
+         "format": "date"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "From"
+      }
+     },
+     {
+      "name": "to",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string",
+         "format": "date"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "To"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object",
+         "additionalProperties": true,
+         "title": "Response Hrv Api V1 Physiology Hrv Get"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/physiology/readiness": {
+   "get": {
+    "tags": [
+     "physiology"
+    ],
+    "summary": "Readiness",
+    "operationId": "readiness_api_v1_physiology_readiness_get",
+    "parameters": [
+     {
+      "name": "fields",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "description": "Comma-separated item fields to return",
+       "title": "Fields"
+      },
+      "description": "Comma-separated item fields to return"
+     },
+     {
+      "name": "from",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string",
+         "format": "date"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "From"
+      }
+     },
+     {
+      "name": "to",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string",
+         "format": "date"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "To"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object",
+         "additionalProperties": true,
+         "title": "Response Readiness Api V1 Physiology Readiness Get"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/physiology/sources": {
+   "get": {
+    "tags": [
+     "physiology"
+    ],
+    "summary": "Sources",
+    "description": "Stored measurements prove availability; connection capability alone does not.",
+    "operationId": "sources_api_v1_physiology_sources_get",
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": true,
+         "type": "object",
+         "title": "Response Sources Api V1 Physiology Sources Get"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/fitness/fingerprint": {
+   "get": {
+    "tags": [
+     "fitness"
+    ],
+    "summary": "Fingerprints",
+    "operationId": "fingerprints_api_v1_fitness_fingerprint_get",
+    "parameters": [
+     {
+      "name": "from",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string",
+         "format": "date"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "From"
+      }
+     },
+     {
+      "name": "to",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string",
+         "format": "date"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "To"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object",
+         "additionalProperties": true,
+         "title": "Response Fingerprints Api V1 Fitness Fingerprint Get"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/fitness/activity/{id}": {
+   "get": {
+    "tags": [
+     "fitness"
+    ],
+    "summary": "Activity Fingerprint",
+    "operationId": "activity_fingerprint_api_v1_fitness_activity__id__get",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "integer",
+       "title": "Id"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object",
+         "additionalProperties": true,
+         "title": "Response Activity Fingerprint Api V1 Fitness Activity  Id  Get"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/fitness/trends": {
+   "get": {
+    "tags": [
+     "fitness"
+    ],
+    "summary": "Trends",
+    "operationId": "trends_api_v1_fitness_trends_get",
+    "parameters": [
+     {
+      "name": "metric",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "string",
+       "default": "decoupling_pct",
+       "title": "Metric"
+      }
+     },
+     {
+      "name": "from",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string",
+         "format": "date"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "From"
+      }
+     },
+     {
+      "name": "to",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string",
+         "format": "date"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "To"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object",
+         "additionalProperties": true,
+         "title": "Response Trends Api V1 Fitness Trends Get"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/fitness/zones": {
+   "get": {
+    "tags": [
+     "fitness"
+    ],
+    "summary": "Zones",
+    "operationId": "zones_api_v1_fitness_zones_get",
+    "parameters": [
+     {
+      "name": "from",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string",
+         "format": "date"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "From"
+      }
+     },
+     {
+      "name": "to",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string",
+         "format": "date"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "To"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object",
+         "additionalProperties": true,
+         "title": "Response Zones Api V1 Fitness Zones Get"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/gear": {
+   "get": {
+    "tags": [
+     "gear"
+    ],
+    "summary": "Gear",
+    "operationId": "gear_api_v1_gear_get",
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": true,
+         "type": "object",
+         "title": "Response Gear Api V1 Gear Get"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/compare/candidates": {
+   "get": {
+    "tags": [
+     "compare"
+    ],
+    "summary": "List Candidates",
+    "description": "Runs that can be picked for a comparison.",
+    "operationId": "list_candidates_api_v1_compare_candidates_get",
+    "parameters": [
+     {
+      "name": "limit",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "integer",
+       "maximum": 1000,
+       "minimum": 1,
+       "default": 300,
+       "title": "Limit"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object",
+         "additionalProperties": true,
+         "title": "Response List Candidates Api V1 Compare Candidates Get"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/compare": {
+   "get": {
+    "tags": [
+     "compare"
+    ],
+    "summary": "Compare Runs",
+    "description": "Compare two or more runs on the same parameters.\n\nEvery run is resampled onto a shared distance axis, so the heart-rate,\ncadence, pace and elevation curves can be read against one another even\nwhen the runs are different lengths.",
+    "operationId": "compare_runs_api_v1_compare_get",
+    "parameters": [
+     {
+      "name": "ids",
+      "in": "query",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "description": "Comma-separated activity ids",
+       "title": "Ids"
+      },
+      "description": "Comma-separated activity ids"
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object",
+         "additionalProperties": true,
+         "title": "Response Compare Runs Api V1 Compare Get"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/tiles/{z}/{x}/{y}.png": {
+   "get": {
+    "tags": [
+     "tiles"
+    ],
+    "summary": "Get Tile",
+    "description": "Serve an OpenStreetMap tile from the athlete's own cache.",
+    "operationId": "get_tile_api_v1_tiles__z___x___y__png_get",
+    "parameters": [
+     {
+      "name": "z",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "title": "Z"
+      }
+     },
+     {
+      "name": "x",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "title": "X"
+      }
+     },
+     {
+      "name": "y",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "title": "Y"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/tiles/policy": {
+   "get": {
+    "tags": [
+     "tiles"
+    ],
+    "summary": "Tile Policy",
+    "description": "Where the tiles come from \u2014 surfaced so the UI can explain it.",
+    "operationId": "tile_policy_api_v1_tiles_policy_get",
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": true,
+         "type": "object",
+         "title": "Response Tile Policy Api V1 Tiles Policy Get"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/health": {
+   "get": {
+    "summary": "Health",
+    "description": "Readiness for the supervisor: is it up, and is it actually useful?\n\nReports the shape of the instance without leaking anything \u2014 the key's\nsource, never the key.",
+    "operationId": "health_api_v1_health_get",
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": true,
+         "type": "object",
+         "title": "Response Health Api V1 Health Get"
+        }
+       }
+      }
+     }
+    }
+   }
+  }
+ },
+ "components": {
+  "schemas": {
+   "ActivityPatch": {
+    "properties": {
+     "name": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Name"
+     },
+     "description": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Description"
+     },
+     "perceived_exertion": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Perceived Exertion"
+     },
+     "is_trail": {
+      "anyOf": [
+       {
+        "type": "boolean"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Is Trail"
+     },
+     "is_commute": {
+      "anyOf": [
+       {
+        "type": "boolean"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Is Commute"
+     }
+    },
+    "type": "object",
+    "title": "ActivityPatch"
+   },
+   "Body_fit_import_api_v1_auth_garmin_fit_import_post": {
+    "properties": {
+     "files": {
+      "items": {
+       "type": "string",
+       "contentMediaType": "application/octet-stream"
+      },
+      "type": "array",
+      "title": "Files"
+     }
+    },
+    "type": "object",
+    "required": [
+     "files"
+    ],
+    "title": "Body_fit_import_api_v1_auth_garmin_fit_import_post"
+   },
+   "DeveloperKeyBody": {
+    "properties": {
+     "consumer_key": {
+      "type": "string",
+      "minLength": 8,
+      "title": "Consumer Key"
+     },
+     "consumer_secret": {
+      "type": "string",
+      "minLength": 8,
+      "title": "Consumer Secret"
+     },
+     "callback": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Callback"
+     }
+    },
+    "type": "object",
+    "required": [
+     "consumer_key",
+     "consumer_secret"
+    ],
+    "title": "DeveloperKeyBody"
+   },
+   "ExchangeBody": {
+    "properties": {
+     "oauth_token": {
+      "type": "string",
+      "title": "Oauth Token",
+      "default": ""
+     },
+     "oauth_verifier": {
+      "type": "string",
+      "title": "Oauth Verifier",
+      "default": ""
+     }
+    },
+    "type": "object",
+    "title": "ExchangeBody"
+   },
+   "HTTPValidationError": {
+    "properties": {
+     "detail": {
+      "items": {
+       "$ref": "#/components/schemas/ValidationError"
+      },
+      "type": "array",
+      "title": "Detail"
+     }
+    },
+    "type": "object",
+    "title": "HTTPValidationError"
+   },
+   "HistoryBody": {
+    "properties": {
+     "activities": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Activities",
+      "default": 12
+     },
+     "health_days": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Health Days",
+      "default": 90
+     },
+     "background": {
+      "type": "boolean",
+      "title": "Background",
+      "default": true
+     }
+    },
+    "type": "object",
+    "title": "HistoryBody",
+    "description": "How much history to load.\n\n``activities`` is a number of months, or ``None`` for everything the\nGarmin account holds. ``health_days`` is how far back to pull sleep,\nresting heart rate, stress and body battery \u2014 Garmin keeps roughly a year\nof those, and its stats range endpoints refuse a window longer than about\nfour weeks, so the pull is chunked."
+   },
+   "ImportBody": {
+    "properties": {
+     "format": {
+      "type": "string",
+      "title": "Format",
+      "default": "markdown"
+     },
+     "content": {
+      "type": "string",
+      "title": "Content"
+     },
+     "name": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Name"
+     },
+     "anchor": {
+      "type": "string",
+      "title": "Anchor",
+      "default": "activities"
+     }
+    },
+    "type": "object",
+    "required": [
+     "content"
+    ],
+    "title": "ImportBody"
+   },
+   "LoginBody": {
+    "properties": {
+     "email": {
+      "type": "string",
+      "minLength": 3,
+      "title": "Email"
+     },
+     "password": {
+      "type": "string",
+      "minLength": 1,
+      "title": "Password"
+     }
+    },
+    "type": "object",
+    "required": [
+     "email",
+     "password"
+    ],
+    "title": "LoginBody"
+   },
+   "MfaBody": {
+    "properties": {
+     "mfa_token": {
+      "type": "string",
+      "title": "Mfa Token"
+     },
+     "code": {
+      "type": "string",
+      "minLength": 4,
+      "title": "Code"
+     }
+    },
+    "type": "object",
+    "required": [
+     "mfa_token",
+     "code"
+    ],
+    "title": "MfaBody"
+   },
+   "PairBody": {
+    "properties": {
+     "code": {
+      "type": "string",
+      "maxLength": 32,
+      "minLength": 4,
+      "title": "Code"
+     }
+    },
+    "type": "object",
+    "required": [
+     "code"
+    ],
+    "title": "PairBody"
+   },
+   "PersonalKeyBody": {
+    "properties": {
+     "api_key": {
+      "type": "string",
+      "minLength": 20,
+      "title": "Api Key"
+     }
+    },
+    "type": "object",
+    "required": [
+     "api_key"
+    ],
+    "title": "PersonalKeyBody"
+   },
+   "RouteBody": {
+    "properties": {
+     "route": {
+      "type": "string",
+      "title": "Route"
+     }
+    },
+    "type": "object",
+    "required": [
+     "route"
+    ],
+    "title": "RouteBody"
+   },
+   "SettingsBody": {
+    "properties": {
+     "sync_days": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Sync Days"
+     },
+     "auto_sync": {
+      "anyOf": [
+       {
+        "type": "boolean"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Auto Sync"
+     },
+     "sync_interval_minutes": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Sync Interval Minutes"
+     },
+     "network_route": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Network Route"
+     },
+     "exit_node": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Exit Node"
+     },
+     "demo_visible": {
+      "anyOf": [
+       {
+        "type": "boolean"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Demo Visible"
+     }
+    },
+    "type": "object",
+    "title": "SettingsBody"
+   },
+   "SyncBody": {
+    "properties": {
+     "days": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Days"
+     },
+     "background": {
+      "type": "boolean",
+      "title": "Background",
+      "default": true
+     }
+    },
+    "type": "object",
+    "title": "SyncBody"
+   },
+   "ValidationError": {
+    "properties": {
+     "loc": {
+      "items": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "integer"
+        }
+       ]
+      },
+      "type": "array",
+      "title": "Location"
+     },
+     "msg": {
+      "type": "string",
+      "title": "Message"
+     },
+     "type": {
+      "type": "string",
+      "title": "Error Type"
+     },
+     "input": {
+      "title": "Input"
+     },
+     "ctx": {
+      "type": "object",
+      "title": "Context"
+     }
+    },
+    "type": "object",
+    "required": [
+     "loc",
+     "msg",
+     "type"
+    ],
+    "title": "ValidationError"
+   }
+  }
+ }
+}

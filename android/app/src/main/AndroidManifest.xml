@@ -2,12 +2,15 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
     <application
-        android:allowBackup="true"
+        android:allowBackup="false"
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        android:fullBackupContent="@xml/backup_rules"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
-        android:theme="@style/AppTheme">
+        android:theme="@style/AppTheme"
+        android:usesCleartextTraffic="false">
 
         <activity
             android:configChanges="orientation|keyboardHidden|keyboard|screenSize|locale|smallestScreenSize|screenLayout|uiMode|navigation|density"
@@ -24,6 +27,30 @@
 
         </activity>
 
+        <!--
+            The native Garmin setup screen.
+
+            It is not exported: nothing outside the app may open it, and it
+            never hands the key to anything. It is the only place the Garmin
+            key is typed, which is what keeps the credential out of the
+            WebView.
+        -->
+        <activity
+            android:name=".setup.GarminSetupActivity"
+            android:label="@string/garmin_key_label"
+            android:exported="false"
+            android:excludeFromRecents="false" />
+
+        <!--
+            The foreground service for a long pull. It is `dataSync`, it is
+            not exported, and the notification it holds says "syncing" and
+            nothing about the athlete's health.
+        -->
+        <service
+            android:name=".sync.SyncForegroundService"
+            android:exported="false"
+            android:foregroundServiceType="dataSync" />
+
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.fileprovider"
@@ -37,5 +64,15 @@
 
     <!-- Permissions -->
 
+    <!-- The pull talks to Garmin, and nothing else. -->
     <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+
+    <!-- The sync notification. Android 13 and later ask the athlete; a
+         refusal never disables the import or the browsing. -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
+    <!-- The foreground service that holds a long pull. -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
 </manifest>

@@ -340,28 +340,43 @@ fn read_data_message(
 }
 
 /// Decode one field's raw bytes.
+///
+/// Every FIT base type has a *null value*: the bit pattern that means "not
+/// set". A watch writes it when it has nothing to say, and the reference
+/// decoder turns it into an absent field. Reading it as a number is how a
+/// missing average speed becomes an average speed of 65.535 m/s.
 fn decode_value(raw: &[u8], base_type: u8, little_endian: bool) -> Option<FieldValue> {
-    match base_type {
-        0 => {
-            // enum; 0xFF means "not set"
-            let value = raw.first().copied()?;
-            if value == 0xff {
-                None
-            } else {
-                Some(FieldValue::Number(f64::from(value)))
+    /// A number, unless it is the base type's null value.
+    macro_rules! number {
+        ($value:expr, $null:expr) => {
+            match $value {
+                Some(value) if value != $null => Some(FieldValue::Number(value as f64)),
+                _ => None,
             }
-        }
-        1 => Some(FieldValue::Number(f64::from(*raw.first()? as i8))),
-        2 | 10 => Some(FieldValue::Number(f64::from(*raw.first()?))),
-        131 => Some(FieldValue::Number(f64::from(read_i16(raw, little_endian)?))),
-        132 | 139 => Some(FieldValue::Number(f64::from(read_u16(raw, little_endian)?))),
-        133 => Some(FieldValue::Number(f64::from(read_i32(raw, little_endian)?))),
-        134 | 140 => Some(FieldValue::Number(f64::from(read_u32(raw, little_endian)?))),
-        136 => Some(FieldValue::Number(f64::from(read_f32(raw, little_endian)?))),
-        137 => Some(FieldValue::Number(read_f64(raw, little_endian)?)),
-        142 => Some(FieldValue::Number(read_i64(raw, little_endian)? as f64)),
-        143 | 144 => Some(FieldValue::Number(read_u64(raw, little_endian)? as f64)),
-        7 => {
+        };
+    }
+
+    match base_type {
+        0x00 => number!(raw.first().copied(), 0xff), // enum
+        0x01 => number!(raw.first().copied().map(|value| value as i8), 0x7f), // sint8
+        0x02 => number!(raw.first().copied(), 0xff), // uint8
+        0x0a => number!(raw.first().copied(), 0x00), // uint8z
+        0x83 => number!(read_i16(raw, little_endian), 0x7fff), // sint16
+        0x84 => number!(read_u16(raw, little_endian), 0xffff), // uint16
+        0x8b => number!(read_u16(raw, little_endian), 0x0000), // uint16z
+        0x85 => number!(read_i32(raw, little_endian), 0x7fff_ffff), // sint32
+        0x86 => number!(read_u32(raw, little_endian), 0xffff_ffff), // uint32
+        0x8c => number!(read_u32(raw, little_endian), 0x0000_0000), // uint32z
+        0x8e => number!(read_i64(raw, little_endian), 0x7fff_ffff_ffff_ffff), // sint64
+        0x8f => number!(read_u64(raw, little_endian), u64::MAX), // uint64
+        0x90 => number!(read_u64(raw, little_endian), 0), // uint64z
+        0x88 => read_f32(raw, little_endian)
+            .filter(|value| !value.is_nan())
+            .map(|value| FieldValue::Number(f64::from(value))), // float32
+        0x89 => read_f64(raw, little_endian)
+            .filter(|value| !value.is_nan())
+            .map(FieldValue::Number), // float64
+        0x07 => {
             // string, null terminated
             let end = raw.iter().position(|byte| *byte == 0).unwrap_or(raw.len());
             let text = String::from_utf8_lossy(&raw[..end]).into_owned();
@@ -371,7 +386,7 @@ fn decode_value(raw: &[u8], base_type: u8, little_endian: bool) -> Option<FieldV
                 Some(FieldValue::Text(text))
             }
         }
-        13 => {
+        0x0d => {
             // A byte array; the bytes are consumed but no field Stride reads
             // is of this type.
             None

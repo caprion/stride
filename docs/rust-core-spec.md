@@ -173,6 +173,11 @@ impl GarminClient {
     pub fn activities(&self, from: DateTime<Utc>, to: DateTime<Utc>)
         -> Result<Vec<ActivitySummary>, GarminError>;
     pub fn activity_detail(&self, id: &str) -> Result<Value, GarminError>;
+    /// The original FIT file. **Garmin serves it inside a ZIP archive** —
+    /// the client has to unzip it. The extraction must carry the same
+    /// guards as the Python reference: refuse an archive with more than 8
+    /// entries, refuse a member whose name is absolute or contains `..`
+    /// (zip slip), and cap the member size with a bounded read.
     pub fn activity_fit(&self, id: &str) -> Result<Vec<u8>, GarminError>;
     pub fn sleep(&self, day: &str) -> Result<Value, GarminError>;
     pub fn hrv(&self, day: &str) -> Result<Value, GarminError>;
@@ -302,6 +307,7 @@ The approved dependency set, and nothing else without asking:
 | crate | why |
 |---|---|
 | `serde`, `serde_json` | every boundary |
+| `zip` (`2.6`, `deflate` only) | Garmin serves the original FIT **inside a ZIP archive**, and there is no way to inflate a deflated member without a decoder. Pure Rust, no system libraries, so the NDK build stays self-sufficient. Hand-rolling DEFLATE is a worse trade. |
 | *(none)* | **The FIT decoder is written in-crate.** The Rust crate called `fitparse` is a *different project* from the Python `fitparse` the reference uses — same name, different field semantics — and it panics on the fixtures. |
 | `rusqlite` (feature `bundled-sqlcipher-vendored-openssl`) | the encrypted database — OpenSSL is **vendored**, so the NDK build has no system dependency and the APK is self-sufficient |
 | `reqwest` (feature `rustls-tls`, blocking) | the Garmin API |

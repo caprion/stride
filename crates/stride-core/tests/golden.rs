@@ -259,7 +259,7 @@ fn readiness_matches_the_golden_file() {
             .collect();
 
         let computed_baselines = baselines(&rows, day);
-        let actual = serde_json::to_value(&computed_baselines).expect("the baselines");
+        let actual = serde_json::to_value(computed_baselines).expect("the baselines");
         assert_same(
             &actual,
             &expected["baselines"],

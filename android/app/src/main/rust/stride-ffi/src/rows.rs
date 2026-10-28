@@ -45,6 +45,7 @@ pub fn activity_row(activity: &stride_store::model::Activity) -> ActivityRow {
         avg_cadence: activity.avg_cadence,
         max_cadence: activity.max_cadence,
         avg_speed_ms: activity.avg_speed_ms,
+        max_speed_ms: activity.max_speed_ms,
         perceived_exertion: activity.perceived_exertion,
         device: activity.device.clone(),
         gear: activity.gear.clone(),
@@ -112,8 +113,8 @@ pub fn stream_row(stream: &stride_store::model::ActivityStream) -> StreamRow {
     StreamRow {
         activity_id: stream.activity_id,
         kind: stream.kind.clone(),
-        seconds: number_list(stream.seconds.as_ref()),
-        values: optional_number_list(stream.values.as_ref()),
+        seconds: number_list(Some(&stream.seconds)),
+        values: optional_number_list(Some(&stream.values)),
         label: stream.label.clone(),
         unit: stream.unit.clone(),
     }
@@ -285,8 +286,8 @@ pub fn core_activity(
         streams_by_kind.insert(
             stream.kind.clone(),
             core_model::Stream {
-                seconds: number_list(stream.seconds.as_ref()),
-                values: optional_number_list(stream.values.as_ref()),
+                seconds: number_list(Some(&stream.seconds)),
+                values: optional_number_list(Some(&stream.values)),
                 unit: stream.unit.clone(),
             },
         );
@@ -369,6 +370,10 @@ pub fn core_physiology(row: &stride_store::model::DailyPhysiology) -> core_model
         training_readiness: row.training_readiness,
         acute_load: row.acute_load,
         chronic_load: row.chronic_load,
+        vo2max: None,
+        endurance_score: None,
+        running_tolerance: None,
+        source: Some("garmin_personal".to_string()),
     }
 }
 
@@ -383,8 +388,5 @@ pub fn core_plan_session(session: &stride_store::model::PlanSession) -> core_mod
         target_distance_m: session.target_distance_m,
         pace_low_s_km: session.pace_low_s_km,
         pace_high_s_km: session.pace_high_s_km,
-        hr_zone_target: session.hr_zone_target,
-        status: session.status.clone(),
-        notes: session.notes.clone(),
     }
 }

@@ -84,6 +84,30 @@
       "start": "2026-03-05T07:05:00Z",
       "watch": "records every second, no cadence sensor"
     },
+    "real_garmin_gap": {
+      "bytes": 10258,
+      "case_id": "real_garmin_gap",
+      "date": "2026-04-21",
+      "device": "Forerunner 965",
+      "file": "backend/tests/golden/fixtures/real_garmin_gap.fit",
+      "notes": "The same real-watch format as real_garmin_run, with the 204 second hole the real files contain: the watch records nothing for three and a half minutes and the distance does not advance across it. The interval after a sample belongs to that sample, so the hole is charged to the running, while the laps \u2014 which only count the intervals between two running samples \u2014 are not.",
+      "sha256": "b9022ccf8142e6a4f7dc5730e851874d55a70be6246f87ea90ce1b65100e1b26",
+      "sport": "running",
+      "start": "2026-04-21T06:00:00Z",
+      "watch": "records irregularly, with a 204 second hole"
+    },
+    "real_garmin_run": {
+      "bytes": 10323,
+      "case_id": "real_garmin_run",
+      "date": "2026-04-20",
+      "device": "Forerunner 965",
+      "file": "backend/tests/golden/fixtures/real_garmin_run.fit",
+      "notes": "The byte format of a real Garmin Forerunner 965 file (thirteen of them, March 2025 to October 2026): FIT protocol 1.0, enhanced speed and altitude instead of speed and altitude, fields and messages the published FIT profile does not describe, a redefined local message number and an irregular record stream. The format came from a real watch; the data did not, and every position is fabricated.",
+      "sha256": "d51266e221151a73a2a952fa68e8d5b7daff0d357e5a5d3d206d1ad7d7df50c2",
+      "sport": "running",
+      "start": "2026-04-20T05:30:00Z",
+      "watch": "records irregularly, one to fourteen seconds apart"
+    },
     "short_effort": {
       "bytes": 1177,
       "case_id": "short_effort",

@@ -2,8 +2,17 @@
  * Typed API client.
  *
  * Every call goes through `request`, so error handling and the base path live
- * in exactly one place. The backend is served from the same origin in
- * production and proxied by Vite in development.
+ * in exactly one place.
+ *
+ * There are **two backends** behind that one interface:
+ *
+ * * `apiHttp` — the desktop and the browser: `fetch` against the server that
+ *   serves the app;
+ * * `apiBridge` — the phone: the Capacitor plugin, which calls the Rust core
+ *   in the same process. The phone talks to no server.
+ *
+ * The app picks one at start-up and never changes its mind, so every page
+ * keeps working on both. The transport changes; the surface does not.
  */
 
 import type {
@@ -67,26 +76,153 @@ function shiftDate(iso: string, days: number): string {
   return date.toISOString().slice(0, 10)
 }
 
-async function request<T>(path: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(`${BASE}${path}`, {
-    headers: init?.body instanceof FormData ? {} : { 'Content-Type': 'application/json' },
-    ...init,
-  })
-  if (!response.ok) {
-    let detail = `Request failed (${response.status})`
-    try {
-      const body = await response.json()
-      if (typeof body?.detail === 'string') detail = body.detail
-      else if (Array.isArray(body?.detail))
-        detail = body.detail.map((d: any) => d?.msg).join(', ')
-    } catch {
-      /* keep the generic message */
-    }
-    throw new ApiError(detail, response.status)
-  }
-  if (response.status === 204) return undefined as T
-  return (await response.json()) as T
+/**
+ * The backend the app talks to.
+ *
+ * Both implementations answer with the parsed body and throw an `ApiError`
+ * with the status, so nothing above this line knows which one it is using.
+ */
+interface ApiBackend {
+  request<T>(path: string, init?: RequestInit): Promise<T>
 }
+
+/**
+ * The desktop's backend: the server that serves the app.
+ */
+const apiHttp: ApiBackend = {
+  async request<T>(path: string, init?: RequestInit): Promise<T> {
+    const response = await fetch(`${BASE}${path}`, {
+      headers: init?.body instanceof FormData ? {} : { 'Content-Type': 'application/json' },
+      ...init,
+    })
+    if (!response.ok) {
+      let detail = `Request failed (${response.status})`
+      try {
+        const body = await response.json()
+        if (typeof body?.detail === 'string') detail = body.detail
+        else if (Array.isArray(body?.detail))
+          detail = body.detail.map((d: any) => d?.msg).join(', ')
+      } catch {
+        /* keep the generic message */
+      }
+      throw new ApiError(detail, response.status)
+    }
+    if (response.status === 204) return undefined as T
+    return (await response.json()) as T
+  },
+}
+
+/**
+ * The plugin the phone's native shell registers.
+ *
+ * One method: `apiCall(method, path, body)`. The routing, the authorisation
+ * and the SQL all stay in Rust, so a new route needs no change here.
+ */
+interface StrideBridgePlugin {
+  apiCall(args: { method: string; path: string; body?: string }): Promise<{ json: string }>
+}
+
+/**
+ * The phone's backend: the Rust core, in this process.
+ *
+ * The plugin answers with the core's envelope as a JSON string:
+ *
+ * ```json
+ * {"ok": true,  "status": 200, "body": { ... }}
+ * {"ok": false, "status": 404, "error": {"detail": "..."}}
+ * ```
+ *
+ * which is the same shape the HTTP backend produces, so the app reads one
+ * answer whichever side it is talking to.
+ */
+const apiBridge: ApiBackend = {
+  async request<T>(path: string, init?: RequestInit): Promise<T> {
+    const plugin = strideBridge()
+    if (!plugin) throw new ApiError('the Stride core is not available', 503)
+
+    const method = (init?.method ?? 'GET').toUpperCase()
+    const body = await bridgeBody(init?.body)
+
+    let answer: { json?: string }
+    try {
+      answer = await plugin.apiCall({ method, path: `${BASE}${path}`, body })
+    } catch (cause: any) {
+      // The plugin rejects with the message, the status as the code and the
+      // error body as the data.
+      const status = Number(cause?.code) || 500
+      throw new ApiError(cause?.message ?? `Request failed (${status})`, status)
+    }
+
+    const envelope = JSON.parse(answer.json ?? '{}')
+    if (!envelope.ok) {
+      const detail = envelope.error?.detail
+      throw new ApiError(
+        typeof detail === 'string' ? detail : `Request failed (${envelope.status ?? 500})`,
+        envelope.status ?? 500,
+      )
+    }
+    return envelope.body as T
+  },
+}
+
+/**
+ * The plugin, if the phone's shell is there.
+ *
+ * The Capacitor runtime puts the registered plugins on `window.Capacitor`.
+ */
+function strideBridge(): StrideBridgePlugin | null {
+  const capacitor = (globalThis as any)?.Capacitor
+  const plugin = capacitor?.Plugins?.StrideApi
+  return plugin && typeof plugin.apiCall === 'function' ? (plugin as StrideBridgePlugin) : null
+}
+
+/**
+ * The body of a request, as the bridge sends it.
+ *
+ * A JSON body goes as it is. A form — the FIT upload — goes as the JSON the
+ * core reads: the file name and its bytes, base64-encoded.
+ */
+async function bridgeBody(body: BodyInit | null | undefined): Promise<string | undefined> {
+  if (body == null) return undefined
+  if (typeof body === 'string') return body
+  if (body instanceof FormData) {
+    const files: { filename: string; content_base64: string }[] = []
+    body.forEach((value, name) => {
+      if (!(value instanceof File)) return
+      files.push({ filename: value.name, content_base64: await fileToBase64(value) })
+    })
+    return JSON.stringify({ files })
+  }
+  return undefined
+}
+
+/** A file, as base64. */
+function fileToBase64(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onerror = () => reject(reader.error ?? new Error('the file could not be read'))
+    reader.onload = () => {
+      const result = String(reader.result ?? '')
+      const comma = result.indexOf(',')
+      resolve(comma >= 0 ? result.slice(comma + 1) : result)
+    }
+    reader.readAsDataURL(file)
+  })
+}
+
+/**
+ * The backend this app uses.
+ *
+ * The phone has the plugin; the desktop and the browser do not. The choice
+ * is made once, when the module loads, and the rest of the app never asks.
+ */
+const backend: ApiBackend = strideBridge() ? apiBridge : apiHttp
+
+async function request<T>(path: string, init?: RequestInit): Promise<T> {
+  return backend.request<T>(path, init)
+}
+
+export { apiHttp, apiBridge }
 
 function qs(params: Record<string, string | number | boolean | undefined | null>): string {  const search = new URLSearchParams()
   for (const [key, value] of Object.entries(params)) {

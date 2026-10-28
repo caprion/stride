@@ -38,3 +38,7 @@ android/app/*.keystore
 
 # Rust
 /target/
+
+# Rust build output inside the Android project
+android/app/src/main/rust/**/target/
+android/app/src/main/rust/**/Cargo.lock
