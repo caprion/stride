@@ -19,6 +19,7 @@ tolerance.
 | `golden/*.json` | the golden outputs, generated from the reference implementation |
 | `fit_writer.py` | a minimal, deterministic FIT writer (profile-driven, using the decoder's own profile) |
 | `make_fixtures.py` | the twelve case definitions and the fixture generator |
+| `test_fixture_privacy.py` | the guard: every committed position is the synthetic anchor, and none is near the athlete's real routes |
 
 ## Running it
 
@@ -67,7 +68,9 @@ every fixture is fabricated and describes the same point in the South Pacific
 real routes and 4 000 km from the nearest coast. Nothing derived from the
 real routes is committed — and nothing points at a real place, because the
 nine synthetic cases used to start at 12.9716/77.5946, which is the centre
-of Bengaluru and 10.7 km from a real route point.
+of Bengaluru and 10.7 km from a real route point. `test_fixture_privacy.py`
+is what keeps it that way: it fails if a fixture ever carries a coordinate
+that is not the anchor, or one inside the athlete's route box.
 
 What the thirteen real files have in common, and what these three cases
 reproduce:
