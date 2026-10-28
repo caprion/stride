@@ -374,7 +374,7 @@ function GarminConnectionCard({
                   Athlete
                 </dt>
                 <dd className="text-[13px] font-medium text-emerald-900">
-                  {name ?? 'Not reported by Garmin'}
+                  {name ?? 'Anonymous — Garmin shares no name'}
                 </dd>
               </div>
               <div className="flex items-baseline gap-2">

@@ -147,6 +147,7 @@ cd backend
 .venv/bin/python -m tools.production setup        # first run
 .venv/bin/python -m tools.production status       # what is in the database
 .venv/bin/python -m tools.production backfill-fit # rebuild FIT for old activities
+.venv/bin/python -m tools.production prune-sync-history # tidy the sync log
 .venv/bin/python -m tools.production purge-demo   # remove synthetic activities
 ```
 

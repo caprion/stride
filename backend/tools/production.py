@@ -58,14 +58,62 @@ def _print_summary(summary: dict) -> None:
 # ------------------------------------------------------------------ commands
 
 
-def cmd_backfill_fit(args) -> int:
-    """Re-download the FIT file for activities that only have chart data."""
-    from app.services.personal_sync import backfill_fit_files
+def cmd_prune_sync_history(args) -> int:
+    """Keep the sync log short and drop failures that have been resolved.
 
-    result = backfill_fit_files(limit=args.limit)
-    print(f"backfill: {result['rebuilt']} rebuilt, {result['failed']} unavailable")
+    The sync history is an operational log, not an audit record. A run that
+    failed because of a bug which has since been fixed is noise on the
+    Settings page — and it can be a lot of noise, because a broken sync
+    repeats on the schedule.
 
-    # A rebuilt activity needs its fingerprint recomputed.
+    A failure is *resolved* once a later run has succeeded, so those rows go.
+    The most recent failure is kept, because it is still the truth about the
+    last attempt.
+    """
+    from app.models import SyncRun
+
+    db = _db()
+    try:
+        total = db.query(SyncRun).count()
+        rows = db.query(SyncRun).order_by(SyncRun.started_at.desc()).all()
+        keep_ids = {row.id for row in rows[: args.keep]}
+
+        latest_ok = next(
+            (row for row in rows if (row.status or "").lower() == "ok"),
+            None,
+        )
+        removed = 0
+        for row in rows:
+            status = (row.status or "").lower()
+            # A failure is resolved once a later run has succeeded.
+            if (
+                status == "error"
+                and latest_ok is not None
+                and row.started_at < latest_ok.started_at
+            ):
+                db.delete(row)
+                removed += 1
+
+        for row in rows[args.keep :]:
+            if row.id in keep_ids:
+                continue
+            db.delete(row)
+            removed += 1
+        db.commit()
+    finally:
+        db.close()
+    print(f"sync history: kept {min(args.keep, total)}, removed {removed} of {total}")
+    return 0
+
+
+def _recompute_fingerprints() -> tuple[int, int]:
+    """Recompute every activity's fingerprint and persist it.
+
+    ``compute_many`` deliberately leaves the transaction to its caller — it
+    flushes but never commits — so this has to commit explicitly. Forgetting
+    that looks exactly like success: the count is right inside the process
+    and the rows are gone after it exits.
+    """
     from app.db import SessionLocal
     from app.models import Activity
     from app.services.fingerprint import compute_many
@@ -76,11 +124,23 @@ def cmd_backfill_fit(args) -> int:
             row[0]
             for row in db.query(Activity.id).filter(Activity.source == "garmin_personal").all()
         ]
+        items = compute_many(db, ids).get("items") or []
+        db.commit()
     finally:
         db.close()
-    items = compute_many(SessionLocal(), ids).get("items") or []
     computed = sum(1 for item in items if item)
-    print(f"fingerprints: {computed} of {len(ids)} activities")
+    return computed, len(ids)
+
+
+def cmd_backfill_fit(args) -> int:
+    """Re-download the FIT file for activities that only have chart data."""
+    from app.services.personal_sync import backfill_fit_files
+
+    result = backfill_fit_files(limit=args.limit)
+    print(f"backfill: {result['rebuilt']} rebuilt, {result['failed']} unavailable")
+
+    computed, total = _recompute_fingerprints()
+    print(f"fingerprints: {computed} of {total} activities")
     return 0 if result["failed"] == 0 else 1
 
 
@@ -244,6 +304,10 @@ def cmd_setup(args) -> int:
     if not args.skip_plan:
         cmd_import_plan(args)
 
+    if not args.skip_fingerprints:
+        computed, total = _recompute_fingerprints()
+        log.info("fingerprints: %d of %d activities", computed, total)
+
     db = _db()
     try:
         summary = _summary(db)
@@ -262,6 +326,7 @@ def main(argv: list[str] | None = None) -> int:
     setup.add_argument("--path", default=DEFAULT_PLAN_GLOB, help="plan document to import")
     setup.add_argument("--skip-sync", action="store_true")
     setup.add_argument("--skip-plan", action="store_true")
+    setup.add_argument("--skip-fingerprints", action="store_true")
     setup.set_defaults(func=cmd_setup)
 
     status = sub.add_parser("status", help="summarise the instance")
@@ -279,6 +344,10 @@ def main(argv: list[str] | None = None) -> int:
     )
     backfill.add_argument("--limit", type=int, default=None)
     backfill.set_defaults(func=cmd_backfill_fit)
+
+    prune = sub.add_parser("prune-sync-history", help="keep only the most recent sync runs")
+    prune.add_argument("--keep", type=int, default=20)
+    prune.set_defaults(func=cmd_prune_sync_history)
 
     args = parser.parse_args(argv)
     return args.func(args)

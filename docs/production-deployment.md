@@ -106,11 +106,17 @@ imported earlier through a different path. Those 57 had Garmin's
 drift — and the sync never noticed, because an activity with *some* stream
 data looks imported.
 
-Two changes:
+Three changes:
 
 - **The FIT marker.** An activity is "imported" only if it carries a
-  `fit_imported` marker or has per-second resolution. The resolution check is
-  the important part: presence was never enough.
+  `fit_imported` marker. A resolution check is *not* enough: an older watch
+  samples its records every few seconds, so a genuine record stream and
+  Garmin's chart series are the same length. The marker is the only reliable
+  signal.
+- **The marker survives a re-import.** It did not, once. The sync rebuilt
+  the payload from the API, dropped the marker, and every later sync
+  re-downloaded the FIT for activities that already had it. Now the stored
+  payload is carried forward.
 - **The backfill.** Garmin's download service will still hand over the
   original FIT for *any* activity id we hold, including ones outside the
   list's window. `tools.production` walks the activities we have, asks for
@@ -122,6 +128,20 @@ fingerprint** — up from 103.
 ```bash
 cd backend && .venv/bin/python -m tools.production backfill-fit
 ```
+
+It is idempotent: a second run rebuilds nothing and downloads nothing.
+
+#### Two traps worth knowing about
+
+**`compute_many` does not commit.** It flushes and leaves the transaction to
+its caller. A caller that forgets looks exactly like success — the count is
+right inside the process and the rows are gone after it exits. The backfill
+commits explicitly.
+
+**SQLAlchemy does not track mutations to a JSON column.** Marking an
+activity by mutating its `raw` dict in place is silently discarded on
+commit. The column has to be *replaced* with a new object. Both are covered
+by tests in `tests/test_robustness.py`.
 
 ### The answer to the retention question
 
@@ -135,6 +155,21 @@ files:
 So Stride can hold more history than Garmin's list shows — as long as it
 keeps the ids it has already seen. The retention limit is on *discovery*, not
 on *retrieval*.
+
+---
+
+## The sync log
+
+The sync history on the Settings page is an **operational log**, not an audit
+record. During the `visibility` bug it grew seventeen rows of the same
+failure, one every three hours.
+
+```bash
+cd backend && .venv/bin/python -m tools.production prune-sync-history --keep 8
+```
+
+A failure is *resolved* once a later run has succeeded, and resolved failures
+are dropped. The current log is one clean `OK` row.
 
 ---
 

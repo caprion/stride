@@ -348,6 +348,18 @@ def _reuse_stored(existing: Activity, activity: dict[str, Any]) -> None:
         if value is not None:
             activity[key] = value
 
+    # Keep whatever the stored payload knows that the API does not. The
+    # ``fit_imported`` marker lives here, and it is the only reliable signal
+    # that an activity was rebuilt from its FIT file — a resolution check
+    # cannot tell a record stream from a chart series when the watch samples
+    # every few seconds. Losing the marker makes the next sync re-download
+    # the FIT for an activity that already has it.
+    stored_raw = existing.raw or {}
+    current_raw = activity.get("raw")
+    if isinstance(stored_raw, dict) and isinstance(current_raw, dict):
+        for key, value in stored_raw.items():
+            current_raw.setdefault(key, value)
+
 
 def _merge_fit(activity: dict[str, Any], parsed: dict[str, Any]) -> dict[str, Any]:
     """Overlay the FIT's splits, streams and track onto the API's summary.
@@ -618,6 +630,11 @@ def run(days: int = 90, history: dict[str, Any] | None = None, progress: Any = N
         log.warning("Wellness pull failed: %s", exc)
         wellness = {"days": 0, "errors": [str(exc)]}
 
+    # Stamp the sync here, not only in the API wrapper: this function is also
+    # called from the production tool, and a sync that does not update the
+    # timestamp leaves the app claiming the data is older than it is.
+    state.update(last_sync_at=datetime.now(timezone.utc).isoformat())
+
     return {
         "activities_found": len(activities),
         "activities_new": created,
@@ -695,6 +712,28 @@ def backfill_fit_files(limit: int | None = None, progress: Any = None) -> dict[s
             rebuilt += 1
             if progress is not None:
                 progress(position, len(pending))
+        db.commit()
+    finally:
+        db.close()
+
+    # Mark the activities that already had their FIT, so the resolution
+    # heuristic never has to run again. The heuristic is a fallback for
+    # activities imported before the marker existed, and it is not reliable
+    # for an older watch that samples every few seconds — the marker is.
+    marked = 0
+    db = SessionLocal()
+    try:
+        for activity in db.query(Activity).filter(Activity.source == "garmin_personal").all():
+            raw = activity.raw
+            if not isinstance(raw, dict) or raw.get("fit_imported"):
+                continue
+            if not _has_fit_records(activity):
+                continue
+            # A new dict, not an in-place edit: SQLAlchemy does not track
+            # mutations to a JSON column's contents, so mutating the dict in
+            # place would be silently discarded on commit.
+            activity.raw = {**raw, "fit_imported": True}
+            marked += 1
         db.commit()
     finally:
         db.close()

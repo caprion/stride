@@ -341,3 +341,89 @@ def test_migration_drops_a_removed_not_null_column(tmp_path):
     assert "visibility" not in columns
     assert "source" in columns
     assert Activity.__table__.name == "activity"
+
+
+# --------------------------------------------------------------------------
+# The FIT marker
+# --------------------------------------------------------------------------
+#
+# An activity counts as "already imported from its FIT file" only if it
+# carries an explicit marker. A resolution check cannot do the job: an older
+# watch samples its records every few seconds, so a genuine record stream and
+# Garmin's downsampled chart series look the same length.
+#
+# The marker therefore has to survive a re-import. It did not, once: the
+# sync rebuilt the payload from the API, dropped the marker, and every
+# subsequent sync re-downloaded the FIT for activities that already had it.
+
+
+def test_reuse_stored_preserves_the_fit_marker():
+    """Re-using a stored activity must carry the marker forward."""
+    from app.models import Activity
+    from app.services.personal_sync import _reuse_stored
+
+    class FakeActivity:
+        geo_points = [[1.0, 2.0]]
+        streams = []
+        laps = []
+        running_time_s = 100.0
+        walking_time_s = 0.0
+        stopped_time_s = 0.0
+        running_distance_m = 500.0
+        raw = {"fit_imported": True, "training_effect": 3.2}
+
+    activity = {"raw": {"summary": {"activityId": 1}}}
+    _reuse_stored(FakeActivity(), activity)
+
+    assert activity["raw"]["fit_imported"] is True
+    assert activity["raw"]["training_effect"] == 3.2
+    # The API's own value wins where both have one.
+    assert activity["raw"]["summary"] == {"activityId": 1}
+
+
+def test_a_json_column_must_be_replaced_not_mutated():
+    """SQLAlchemy discards an in-place edit to a JSON column.
+
+    Marking an activity by mutating its ``raw`` dict looks like it works —
+    the value is right in the session — and is silently thrown away on
+    commit. The column has to be replaced with a new object.
+    """
+    from sqlalchemy import create_engine
+    from sqlalchemy.orm import Session
+
+    from app.models import Activity
+
+    engine = create_engine("sqlite://")
+    from app.db import Base
+
+    Base.metadata.create_all(engine)
+    with Session(engine) as session:
+        row = Activity(
+            source="garmin_personal",
+            external_id="1",
+            name="Run",
+            sport_type="running",
+            start_time=None,
+            local_date="2026-01-01",
+            distance_m=1000.0,
+            moving_time_s=300.0,
+            elapsed_time_s=300.0,
+            is_trail=False,
+            is_commute=False,
+            raw={"summary": {}},
+        )
+        session.add(row)
+        session.commit()
+
+        # Mutate in place: this is what does not work.
+        row.raw["fit_imported"] = True
+        session.commit()
+        session.expire_all()
+        assert session.get(Activity, row.id).raw.get("fit_imported") is None
+
+        # Replace the column: this is what works.
+        row.raw = {**row.raw, "fit_imported": True}
+        session.commit()
+        session.expire_all()
+        assert session.get(Activity, row.id).raw.get("fit_imported") is True
+    engine.dispose()
