@@ -108,11 +108,21 @@ def client(db, monkeypatch):
         main.app.dependency_overrides.update(previous)
 
 
+# The athlete's own plan document lives outside the repository. It is not
+# part of the source, so the tests that use it must skip when it is absent
+# rather than fail — the suite has to run on a stranger's machine, and in
+# CI, where it is never there.
+_REAL_PLAN = Path(
+    os.getenv("STRIDE_TEST_PLAN", "~/running/seasons/2026-spring-hm-sub2/plan.md")
+).expanduser()
+
+
 @pytest.fixture(scope="module")
 def real_plan():
     """Parse the actual athlete document rather than a substitute fixture."""
-    path = Path("/home/sumit/running/seasons/2026-spring-hm-sub2/plan.md")
-    return import_plan(path.read_text(), name="HM Sub-2:00 Campaign")
+    if not _REAL_PLAN.exists():
+        pytest.skip(f"the athlete's plan document is not present ({_REAL_PLAN})")
+    return import_plan(_REAL_PLAN.read_text(), name="HM Sub-2:00 Campaign")
 
 
 def _activity(day="2026-03-03", distance=5000, pace=350, name="Run"):

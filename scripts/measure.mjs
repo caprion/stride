@@ -57,6 +57,15 @@ for (const [name, route] of ROUTES) {
   // Let the charts settle — the heap grows as they mount.
   await page.waitForTimeout(1200)
 
+  // Chrome's performance.memory is bucketed and never drops back, so it
+  // cannot tell one screen from another. Ask the debugger for the real
+  // figure instead: collect the garbage, then read the heap.
+  const cdp = await context.newCDPSession(page)
+  await cdp.send('HeapProfiler.enable')
+  await cdp.send('HeapProfiler.collectGarbage')
+  const { usedSize, totalSize } = await cdp.send('Runtime.getHeapUsage')
+  await cdp.detach()
+
   const metrics = await page.evaluate(() => {
     const nav = performance.getEntriesByType('navigation')[0]
     const paint = performance.getEntriesByType('paint')
@@ -74,7 +83,7 @@ for (const [name, route] of ROUTES) {
     }
   })
 
-  rows.push({ name, route, ...metrics, bytes, loaded })
+  rows.push({ name, route, ...metrics, heap: usedSize, bytes, loaded })
   await context.close()
 }
 
