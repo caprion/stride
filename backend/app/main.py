@@ -30,6 +30,7 @@ from .security import (
     ensure_safe_bind_configuration,
     harden_storage,
     install_log_redaction,
+    is_loopback_client,
     redacted_http_exception_handler,
     redact_text,
     set_capability_cookie,
@@ -263,7 +264,7 @@ ASSETLINKS_PATH = Path(__file__).with_name("assetlinks.json")
 
 
 @app.get("/.well-known/assetlinks.json", include_in_schema=False)
-async def assetlinks() -> Response:
+async def assetlinks(request: Request) -> Response:
     """Prove this origin is allowed to launch the Android app.
 
     A Trusted Web Activity will only open as a real app — full screen, no
@@ -272,7 +273,15 @@ async def assetlinks() -> Response:
 
     Without it the APK opens a browser tab that looks like the app, which is
     worse than no app at all.
+
+    The file is only served where it can be *used*: Digital Asset Links is
+    defined over HTTPS, so a copy handed out over the cleartext listener is
+    inert. The contents are public anyway — the package name and the
+    signing certificate are in every APK — but there is no reason to put
+    them on the wire in the clear for the local network.
     """
+    if request.url.scheme != "https" and not is_loopback_client(request):
+        return JSONResponse({"detail": "Not found"}, status_code=404)
     if not ASSETLINKS_PATH.exists():
         return JSONResponse({"detail": "Not found"}, status_code=404)
     return Response(
@@ -284,6 +293,26 @@ async def assetlinks() -> Response:
 
 # ---------------------------------------------------------------- SPA -----
 
+def _dist_file(full_path: str) -> Path | None:
+    """Resolve a request path to a file inside ``frontend/dist``.
+
+    Returns ``None`` when the path escapes the directory — by ``..``, by
+    being absolute, or through a symlink — and when it is not a file.
+    """
+    if not full_path:
+        return None
+    try:
+        root = FRONTEND_DIST.resolve(strict=False)
+        candidate = (root / full_path.lstrip("/")).resolve(strict=False)
+    except (OSError, ValueError):
+        return None
+    if candidate != root and root not in candidate.parents:
+        return None
+    if not candidate.is_file():
+        return None
+    return candidate
+
+
 if FRONTEND_DIST.exists():
     assets = FRONTEND_DIST / "assets"
     if assets.exists():
@@ -293,8 +322,15 @@ if FRONTEND_DIST.exists():
     async def spa(full_path: str, request: Request):
         if full_path.startswith("api/"):
             return JSONResponse({"detail": "Not found"}, status_code=404)
-        candidate = FRONTEND_DIST / full_path
-        if full_path and candidate.is_file():
+        # The SPA catch-all serves files out of frontend/dist. The path comes
+        # straight off the wire, percent-decoded, so it can hold "..", an
+        # absolute path, or a symlink pointing anywhere. Everything has to be
+        # resolved and then checked to be *inside* the directory before it is
+        # served — otherwise this route is an unauthenticated read of any
+        # file the process can open, including the state file with the
+        # Garmin key and the capability token in it.
+        candidate = _dist_file(full_path)
+        if candidate is not None:
             return FileResponse(candidate)
         return FileResponse(FRONTEND_DIST / "index.html")
 

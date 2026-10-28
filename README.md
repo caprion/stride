@@ -32,13 +32,21 @@ Releases are on GitHub — no store, no account, no review queue.
 gh release download v0.1.0 --repo caprion/stride
 ```
 
-Install `stride-v0.1.0.apk` on the phone (allow installs from this source).
+Install the APK on the phone (allow installs from that source).
 It opens the instance you are running, so the phone needs to be able to reach
 it — over the tailnet, for now.
 
 The app is built in CI and signed with a key whose certificate is committed
 in `backend/app/assetlinks.json`; the key itself is only in the repository
 secrets.
+
+**No pairing code.** The server binds plain HTTP to loopback and HTTPS to the
+tailnet address, so nothing is reachable from the internet, and the tailnet is
+trusted (`STRIDE_TRUST_TAILNET`, on by default in `scripts/run.sh`). Open the
+app and it works.
+
+Set `STRIDE_TRUST_TAILNET=false` if you want the pairing code back — it is
+there for the case where the tailnet holds devices that are not yours.
 
 ## Showcase
 

@@ -31,6 +31,7 @@ log = logging.getLogger(__name__)
 router = APIRouter(prefix="/tiles", tags=["tiles"])
 
 TILE_URL = "https://tile.openstreetmap.org/{z}/{x}/{y}.png"
+TILE_HOST = "tile.openstreetmap.org"
 # A single 256px PNG tile is ~10-20 KB; 2 MB is a generous ceiling.
 MAX_TILE_BYTES = 2 * 1024 * 1024
 TILE_TIMEOUT = 15
@@ -40,30 +41,41 @@ CACHE_DIR = Path(DATA_DIR) / "tile-cache"
 _CACHE_SECONDS = 30 * 24 * 3600
 
 
-def _valid(z: str, x: str, y: str) -> bool:
+def _coordinates(z: str, x: str, y: str) -> tuple[int, int, int] | None:
     """Validate tile coordinates against the zoom's grid.
 
     x and y are indices into a ``2**zoom`` grid, so at zoom 12 they run to
     4095 — they are not small numbers.
+
+    The *parsed* numbers are returned, not the strings: the URL is built from
+    them, so nothing off the wire ever reaches the upstream URL.
     """
     try:
         zoom, xi, yi = int(z), int(x), int(y)
     except (TypeError, ValueError):
-        return False
+        return None
     if zoom < 0 or zoom > 19:
-        return False
+        return None
     limit = 2**zoom
-    return 0 <= xi < limit and 0 <= yi < limit
+    if not (0 <= xi < limit and 0 <= yi < limit):
+        return None
+    return zoom, xi, yi
+
+
+def _valid(z: str, x: str, y: str) -> bool:
+    return _coordinates(z, x, y) is not None
 
 
 @router.get("/{z}/{x}/{y}.png")
 def get_tile(z: str, x: str, y: str) -> Response:
     """Serve an OpenStreetMap tile from the athlete's own cache."""
-    if not _valid(z, x, y):
+    coordinates = _coordinates(z, x, y)
+    if coordinates is None:
         raise HTTPException(status_code=400, detail="Invalid tile coordinates.")
+    zoom, xi, yi = coordinates
 
     CACHE_DIR.mkdir(parents=True, exist_ok=True)
-    key = hashlib.sha256(f"{z}/{x}/{y}".encode()).hexdigest()[:32]
+    key = hashlib.sha256(f"{zoom}/{xi}/{yi}".encode()).hexdigest()[:32]
     path = CACHE_DIR / f"{key}.png"
 
     if path.exists() and (time.time() - path.stat().st_mtime) < _CACHE_SECONDS:
@@ -73,28 +85,43 @@ def get_tile(z: str, x: str, y: str) -> Response:
             headers={"Cache-Control": "public, max-age=86400", "X-Source": "cache"},
         )
 
+    url = TILE_URL.format(z=zoom, x=xi, y=yi)
     try:
-        response = requests.get(
-            TILE_URL.format(z=z, x=x, y=y),
+        with requests.get(
+            url,
             headers={"User-Agent": USER_AGENT, "Accept": "image/png,*/*"},
             timeout=TILE_TIMEOUT,
-        )
+            # This proxy fetches on the athlete's behalf, so it must fetch
+            # exactly the tile it was asked for. A redirect would turn it
+            # into a general-purpose fetcher — including one that can be
+            # aimed at an internal address or a cloud metadata endpoint.
+            allow_redirects=False,
+            stream=True,
+        ) as response:
+            if response.status_code != 200:
+                raise HTTPException(status_code=502, detail="Map tile unavailable.")
+            # The body is capped while it is read, not after: a hostile or
+            # broken upstream cannot make the server buffer it all in RAM.
+            body = bytearray()
+            for chunk in response.iter_content(64 * 1024):
+                body.extend(chunk)
+                if len(body) > MAX_TILE_BYTES:
+                    raise HTTPException(status_code=502, detail="Map tile too large.")
+            content = bytes(body)
     except requests.RequestException as exc:
-        log.debug("Tile fetch failed for %s/%s/%s: %s", z, x, y, type(exc).__name__)
+        log.debug("Tile fetch failed for %s/%s/%s: %s", zoom, xi, yi, type(exc).__name__)
         raise HTTPException(status_code=502, detail="Map tile unavailable.") from exc
 
-    if response.status_code != 200 or not response.content:
+    if not content:
         raise HTTPException(status_code=502, detail="Map tile unavailable.")
-    if len(response.content) > MAX_TILE_BYTES:
-        raise HTTPException(status_code=502, detail="Map tile too large.")
 
     try:
-        path.write_bytes(response.content)
+        path.write_bytes(content)
     except OSError:  # pragma: no cover - read-only filesystem
         pass
 
     return Response(
-        content=response.content,
+        content=content,
         media_type="image/png",
         headers={"Cache-Control": "public, max-age=86400", "X-Source": "upstream"},
     )

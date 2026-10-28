@@ -16,6 +16,85 @@ if (signingFile.exists()) {
 }
 def haveSigningKey = signingProps.containsKey('storePath')
 
+// The published fingerprint has to be the fingerprint of the key the APK is
+// actually signed with. When the two drift, Digital Asset Links stops
+// matching and the Trusted Web Activity quietly degrades into a browser tab
+// with a web page in it, which looks like a broken app rather than a broken
+// signature and is easy to miss. So the release build checks it.
+//
+// The check reads the certificate out of the keystore with keytool; the
+// password is handed over in the environment rather than on the command
+// line, where it would be visible in the process table.
+tasks.register('verifyAssetLinksFingerprint') {
+    doLast {
+        def assetLinks = project.rootProject.file('../backend/app/assetlinks.json')
+        if (!assetLinks.exists()) {
+            throw new GradleException("Missing ${assetLinks}: the published asset links file is required.")
+        }
+        def published = new groovy.json.JsonSlurper().parse(assetLinks, 'UTF-8')
+        def packageNames = [] as Set
+        def fingerprints = [] as Set
+        published.each { entry ->
+            def target = entry['target'] ?: [:]
+            if (target['package_name']) {
+                packageNames << target['package_name'].toString()
+            }
+            (target['sha256_cert_fingerprints'] ?: []).each { fp ->
+                fingerprints << fp.toString().replace(':', '').toUpperCase()
+            }
+        }
+        if (!fingerprints) {
+            throw new GradleException("${assetLinks} publishes no sha256_cert_fingerprints.")
+        }
+        if (!packageNames.contains('app.stride.running')) {
+            throw new GradleException("${assetLinks} does not name the package app.stride.running (found ${packageNames}).")
+        }
+        if (!haveSigningKey) {
+            logger.lifecycle('verifyAssetLinksFingerprint: no signing key configured, nothing to verify against.')
+            return
+        }
+
+        def storePassword = signingProps['storePassword']
+        if (!storePassword) {
+            throw new GradleException('keystore.properties has no storePassword.')
+        }
+        def storePath = project.file(signingProps['storePath']).absolutePath
+        if (!new File(storePath).exists()) {
+            throw new GradleException("Signing keystore ${storePath} does not exist.")
+        }
+        def builder = new ProcessBuilder([
+                'keytool', '-list', '-v',
+                '-keystore', storePath,
+                '-alias', signingProps['keyAlias'],
+                '-storepass:env', 'STRIDE_STORE_PASSWORD',
+        ]).redirectErrorStream(true)
+        builder.environment().put('STRIDE_STORE_PASSWORD', storePassword.toString())
+        def process = builder.start()
+        def output = process.inputStream.getText('UTF-8')
+        process.waitFor()
+        if (process.exitValue() != 0) {
+            throw new GradleException("keytool could not read ${storePath}:\n${output}")
+        }
+        def matcher = (output =~ /SHA256:\s*([0-9A-Fa-f:]+)/)
+        if (!matcher.find()) {
+            throw new GradleException("No SHA256 fingerprint in the signing certificate:\n${output}")
+        }
+        def actual = matcher.group(1).replace(':', '').toUpperCase()
+        if (!fingerprints.contains(actual)) {
+            throw new GradleException(
+                    "The signing certificate (${actual}) is not the one published in " +
+                    "${assetLinks} (${fingerprints.join(', ')}).\n" +
+                    'The app would open as a browser tab instead of a real app. ' +
+                    'Either publish the right fingerprint or sign with the published key.')
+        }
+        logger.lifecycle("verifyAssetLinksFingerprint: ${actual} matches ${assetLinks.name}.")
+    }
+}
+
+tasks.matching { it.name == 'preReleaseBuild' || it.name == 'assembleRelease' }.configureEach {
+    dependsOn 'verifyAssetLinksFingerprint'
+}
+
 android {
     if (haveSigningKey) {
         signingConfigs {

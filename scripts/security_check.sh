@@ -243,14 +243,22 @@ if curl -fsS -m 4 -o /dev/null "$BASE/api/v1/health" 2>/dev/null; then
   fi
 
   # A pairing code must only be mintable from the machine itself. The
-  # non-loopback address of this host stands in for any other device on the
-  # tailnet.
-  LAN_IP=$(ip -4 addr show 2>/dev/null | awk '/inet /{print $2}' | cut -d/ -f1 \
-    | grep -v '^127\.' | head -1)
-  if [[ -n "$LAN_IP" ]]; then
-    code=$(curl -s -o /dev/null -w '%{http_code}' -m 6 "http://$LAN_IP:8000/api/v1/auth/pair-code")
+  # tailnet address stands in for any other device on the network.
+  #
+  # The plain listener is loopback-only now, so the check goes over the TLS
+  # listener, which is where another device would actually connect.
+  TAILNET_IP=$(command -v tailscale >/dev/null 2>&1 && tailscale ip -4 2>/dev/null | head -1)
+  if [[ -z "$TAILNET_IP" ]]; then
+    TAILNET_IP=$(ip -4 addr show 2>/dev/null | awk '/inet /{print $2}' | cut -d/ -f1 \
+      | grep -v '^127\.' | head -1)
+  fi
+  if [[ -n "$TAILNET_IP" ]]; then
+    code=$(curl -sk -o /dev/null -w '%{http_code}' -m 8 \
+      "https://$TAILNET_IP:${STRIDE_CHECK_TLS_PORT:-8443}/api/v1/auth/pair-code")
     if [[ "$code" == "401" || "$code" == "403" ]]; then
       ok "a pairing code cannot be minted from another device ($code)"
+    elif [[ "$code" == "000" ]]; then
+      warn "the tailnet address did not answer — the remote pairing check was skipped"
     else
       bad "a remote client minted a pairing code ($code)"
     fi

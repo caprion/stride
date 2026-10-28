@@ -39,6 +39,14 @@ scope** — say so in the privacy note rather than pretending otherwise.
       only with authentication switched on, and says so loudly.
 - [ ] Every `/api/v1` route requires the capability token, except an explicit
       allowlist (`/health`, the bootstrap, and the pairing exchange).
+- [ ] The endpoints that mint authority (the bootstrap and the pairing code)
+      check **both** the peer address and the `Host` header, so a rebound
+      name cannot ask the machine for a capability.
+- [ ] The server that actually runs (`app.serve`) passes the address it is
+      about to bind into the safety check, so "a non-loopback bind refuses to
+      start without authentication" is enforced rather than intended.
+- [ ] uvicorn is started with `proxy_headers=False`: nothing on this machine
+      may make a remote client look like a loopback one.
 - [ ] State-changing requests are rejected cross-origin, so a malicious page
       cannot drive the local API.
 - [ ] CORS is not a wildcard and does not combine `allow_credentials` with a
@@ -53,15 +61,21 @@ token, so it gets its own checks.
 
 - [ ] A pairing code can only be minted from a loopback client. A device
       elsewhere on the tailnet gets a refusal.
-- [ ] A code works exactly once. The second attempt is refused.
-- [ ] A code expires (10 minutes). An expired code is refused.
+- [ ] A code works exactly once — the test and the clear happen under one
+      lock, so two simultaneous exchanges cannot both succeed.
+- [ ] A code expires (10 minutes). An expired code is refused. The deadline
+      comes from the server's clock, never from the client.
 - [ ] The exchange is rate limited — five attempts a minute per address.
+- [ ] A code that is not ASCII is refused with a 401, not a 500, and a code
+      of the wrong length is refused before it is compared.
 - [ ] The code is never the capability token. It is never written to a log
       line, never carried in a URL, and the response body that carries it
       goes only to a loopback caller — the operator's own console.
 - [ ] The paired device ends up with the same HttpOnly, SameSite=Strict
       cookie a local browser gets. No long-lived secret is left in
       JavaScript.
+- [ ] A device on another machine is paired over HTTPS only; a device
+      credential is never minted for a cleartext hop.
 - [ ] A wrong code is refused with a 401 and no detail about which part was
       wrong.
 
@@ -73,8 +87,13 @@ A paired device holds **its own** token, not the master capability.
       contains a usable credential.
 - [ ] The device cookie is long-lived; the machine's own session cookie is
       not. A shared computer should not stay signed in.
+- [ ] The device cookie is marked `Secure` for every device that is not on
+      this machine.
 - [ ] Revoking a device signs it out immediately and touches nothing else —
       the machine stays signed in, other devices stay signed in.
+- [ ] The device list is only ever edited under the state lock: a pairing, a
+      revocation and a "last seen" refresh cannot lose one another's update,
+      and a revoked device cannot be written back into the file.
 - [ ] The device list never returns a token or a hash.
 - [ ] A paired device cannot be minted from anywhere but the machine.
 
@@ -82,11 +101,17 @@ A paired device holds **its own** token, not the master capability.
 
 - [ ] A Content-Security-Policy is present, on the static build and as a
       response header, and the map still renders under it.
+- [ ] The SPA catch-all resolves the requested path and refuses to serve
+      anything outside `frontend/dist`: `..`, an absolute path and a symlink
+      all end in the SPA shell, never in a file.
 - [ ] The app loads **no** third-party resources: no Google Fonts, no
       analytics, no error reporting, no CDN. The only permitted outbound
       request is to the athlete's own Garmin.
 - [ ] The tile policy is a single source of truth and its default does not
       tell a third party the athlete's IP address.
+- [ ] The tile proxy fetches exactly one allowlisted URL: no redirects are
+      followed, the body is capped while it is read, and the coordinates are
+      parsed integers before they reach the URL.
 - [ ] No `dangerouslySetInnerHTML`, no `eval`, and athlete-supplied text
       (activity names, descriptions) is escaped.
 - [ ] Numbers that reach the DOM — GPS coordinates, paces, heart rates — are
@@ -121,6 +146,13 @@ A paired device holds **its own** token, not the master capability.
 - [ ] `pip-audit` and `npm audit --omit=dev` are clean.
 - [ ] The production build ships no source maps and no stray files.
 - [ ] No `VITE_*` environment variable can carry a secret into the bundle.
+- [ ] The signing certificate in `backend/app/assetlinks.json` is the one
+      the release APK is signed with: the release build checks it with
+      `keytool` and fails when they differ.
+- [ ] The Android app points its WebView at an `https://` URL, and the build
+      refuses to produce an APK that does not.
+- [ ] The keystore and `keystore.properties` are gitignored wherever they
+      live, and `*.jks` / `*.keystore` are ignored across the whole tree.
 
 ## 8. Before shipping a change
 

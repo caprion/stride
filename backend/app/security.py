@@ -104,7 +104,15 @@ def configured_bind() -> str:
             value = argument.split("=", 1)[1]
         if value:
             return value.strip()
-    return os.getenv("STRIDE_BIND", "127.0.0.1").strip() or "127.0.0.1"
+    # ``STRIDE_BIND`` is the documented control. ``STRIDE_HOST`` is what the
+    # two-listener server (``app.serve``) reads; it used to be invisible here,
+    # which meant the safety check below was looking at a different address
+    # from the one the server actually bound.
+    for name in ("STRIDE_BIND", "STRIDE_HOST"):
+        value = os.getenv(name, "").strip()
+        if value:
+            return value
+    return "127.0.0.1"
 
 
 def is_loopback_bind(bind: str | None = None) -> bool:
@@ -117,12 +125,19 @@ def is_loopback_bind(bind: str | None = None) -> bool:
         return False
 
 
-def ensure_safe_bind_configuration() -> None:
-    """Fail closed when the caller explicitly exposes the service unauthenticated."""
-    if not is_loopback_bind() and not auth_enabled():
+def ensure_safe_bind_configuration(bind: str | None = None) -> None:
+    """Fail closed when the caller explicitly exposes the service unauthenticated.
+
+    ``bind`` is the address the server is *about to* bind. Pass it whenever
+    the caller knows it — otherwise the address is guessed from the
+    environment, and a guess that does not match the real bind turns this
+    check into decoration.
+    """
+    address = bind or configured_bind()
+    if not is_loopback_bind(address) and not auth_enabled():
         raise RuntimeError(
-            "Refusing STRIDE_BIND=%s while STRIDE_DISABLE_AUTH is enabled. "
-            "A non-loopback Stride API requires capability authentication." % configured_bind()
+            "Refusing to bind %s while STRIDE_DISABLE_AUTH is enabled. "
+            "A non-loopback Stride API requires capability authentication." % address
         )
 
 
@@ -289,23 +304,27 @@ def touch_device(request: Request) -> None:
         return
     digest = hashlib.sha256(token.encode()).hexdigest()
     now = time.time()
-    with _last_seen_lock:
-        for device in state.devices or []:
-            if not hmac.compare_digest(str(device.get("token_hash", "")), digest):
+
+    def action(current: Any) -> tuple[bool, None]:
+        for entry in current.devices or []:
+            if not hmac.compare_digest(str(entry.get("token_hash", "")), digest):
                 continue
             try:
-                last = float(device.get("last_seen_epoch") or 0)
+                last = float(entry.get("last_seen_epoch") or 0)
             except (TypeError, ValueError):
                 last = 0.0
             if now - last < _LAST_SEEN_INTERVAL:
-                return
-            devices = [dict(d) for d in (state.devices or [])]
-            for entry in devices:
-                if hmac.compare_digest(str(entry.get("token_hash", "")), digest):
-                    entry["last_seen_at"] = datetime.now(timezone.utc).isoformat()
-                    entry["last_seen_epoch"] = now
-            state.update(devices=devices)
-            return
+                return False, None
+            entry["last_seen_at"] = datetime.now(timezone.utc).isoformat()
+            entry["last_seen_epoch"] = now
+            return True, None
+        return False, None
+
+    # The whole read-modify-write happens under the state lock. Writing a
+    # stale copy of the device list back would drop a device that had just
+    # been paired, and would resurrect one that had just been revoked.
+    with _last_seen_lock:
+        state.atomic(action)
 
 
 def has_valid_capability(request: Request) -> tuple[bool, bool]:
@@ -325,14 +344,114 @@ def has_valid_capability(request: Request) -> tuple[bool, bool]:
     return False, is_explicit_bearer
 
 
+def _host_header_is_loopback(request: Request) -> bool:
+    """Does the request name a loopback host?
+
+    The peer address is not enough on its own. A page the athlete happens to
+    have open can point a name it controls at 127.0.0.1 (DNS rebinding) and
+    then talk to Stride as the origin it came from: the TCP peer is
+    loopback and the Host header is the attacker's name. Anything that
+    *mints authority* — the bootstrap cookie, a pairing code — must insist
+    on both.
+    """
+    host = (request.headers.get("host") or "").strip()
+    if not host:
+        return False
+    if host.startswith("["):  # [::1]:8000
+        name = host[1:].split("]", 1)[0]
+    elif host.count(":") > 1:  # a bare IPv6 literal
+        name = host
+    else:
+        name = host.split(":", 1)[0]
+    if not name:
+        return False
+    if name.lower() == "localhost":
+        return True
+    try:
+        return ipaddress.ip_address(name).is_loopback
+    except ValueError:
+        return False
+
+
 def is_loopback_client(request: Request) -> bool:
+    """Is this request genuinely from *this* machine?
+
+    Two independent facts have to hold: the TCP peer is a loopback address,
+    and the request names a loopback host. The second half is what stops a
+    rebound name from asking for a capability.
+    """
     client = request.client
     if not client:
         return False
     try:
-        return ipaddress.ip_address(client.host).is_loopback
+        if not ipaddress.ip_address(client.host).is_loopback:
+            return False
     except ValueError:
         return False
+    return _host_header_is_loopback(request)
+
+
+def is_remote_client(request: Request) -> bool:
+    """Is this client definitely somewhere else on the network?
+
+    A peer address that cannot be parsed — a Unix socket, a test client — is
+    *not* treated as remote. It is not on a shared network, so it cannot be
+    sniffed there either.
+    """
+    client = request.client
+    if not client:
+        return False
+    try:
+        return not ipaddress.ip_address(client.host).is_loopback
+    except ValueError:
+        return False
+
+
+# Tailscale hands out addresses from the 100.64.0.0/10 carrier-grade NAT
+# range, so this is the tailnet and nothing else.
+TAILNET_NETWORK = ipaddress.ip_network("100.64.0.0/10")
+
+
+def is_tailnet_client(request: Request) -> bool:
+    """Is the TCP peer on the Tailscale network?"""
+    client = request.client
+    if not client:
+        return False
+    try:
+        return ipaddress.ip_address(client.host) in TAILNET_NETWORK
+    except ValueError:
+        return False
+
+
+def is_trusted_client(request: Request) -> bool:
+    """Is this client trusted without proving anything?
+
+    Two cases:
+
+    - **Loopback.** The machine itself. It has the database anyway.
+    - **The tailnet**, when the operator has said the tailnet is private
+      enough to trust (``STRIDE_TRUST_TAILNET=1``). This is the setting that
+      lets the phone work without a pairing code.
+
+    The trade-off is real and worth stating plainly: trusting the tailnet
+    means *every device on the tailnet can read the athlete's health data*.
+    That is a far smaller group than "the whole internet" and a far larger
+    group than "this device". It is off by default, because a stranger who
+    clones this repository should not find it trusting their network.
+    """
+    if is_loopback_client(request):
+        return True
+    return is_trusted_tailnet_client(request)
+
+
+def is_trusted_tailnet_client(request: Request) -> bool:
+    """Is this client on a tailnet the operator has chosen to trust?
+
+    Narrower than ``is_trusted_client``: loopback is not included, because
+    the local posture — a capability token for every API call — is worth
+    keeping exactly as it was.
+    """
+    return bool(getattr(state, "trust_tailnet", False)) and is_tailnet_client(request)
 
 
 def cors_origins() -> list[str]:
@@ -365,7 +484,7 @@ def bootstrap_permitted(request: Request, allowed_origins: list[str]) -> bool:
     response, and the Strict HttpOnly cookie uses a server-minted value.
     Cross-origin browser fetches do send Origin and are rejected.
     """
-    return is_loopback_client(request) and (
+    return is_trusted_client(request) and (
         not request.headers.get("origin") or is_trusted_same_origin(request, allowed_origins)
     )
 
@@ -397,8 +516,17 @@ def set_device_cookie(response: Response, request: Request, token: str) -> None:
     a shared computer. A paired phone is the athlete's own device and is
     expected to stay signed in, so it gets a persistent cookie — but of its
     own token, which can be revoked without touching anything else.
+
+    A device that lives on another machine gets the cookie marked Secure
+    whatever the scheme: a year-long bearer token must not ride a cleartext
+    hop. (Pairing such a device over plain HTTP is refused outright — see
+    the pairing route.)
     """
-    secure = _env_truthy("STRIDE_COOKIE_SECURE") or request.url.scheme == "https"
+    secure = (
+        _env_truthy("STRIDE_COOKIE_SECURE")
+        or request.url.scheme == "https"
+        or is_remote_client(request)
+    )
     response.set_cookie(
         DEVICE_COOKIE,
         token,
@@ -485,6 +613,7 @@ class SecurityMiddleware(BaseHTTPMiddleware):
                 and auth_enabled()
                 and not testing
                 and not (valid or callback_transaction)
+                and not is_trusted_tailnet_client(request)
             ):
                 return self._protected_response(request, 401, "Capability token required.")
             if valid and not testing:
@@ -493,7 +622,20 @@ class SecurityMiddleware(BaseHTTPMiddleware):
             if method in {"POST", "PUT", "PATCH", "DELETE"} and not testing:
                 # An explicit bearer header is not ambient browser authority;
                 # cookie authentication must prove it came from our origin.
-                if not explicit_bearer and not is_trusted_same_origin(request, self.allowed_origins):
+                #
+                # A trusted tailnet client may act without an Origin header --
+                # that is a native client, not a page. But when an Origin
+                # header *is* present it still has to match: the tailnet says
+                # who is calling, not which page the call came from. Without
+                # that, any page the athlete's phone visits could drive the
+                # API (a revoke, a sync) with a simple cross-origin request
+                # that never reaches the JavaScript.
+                trusted_tailnet = is_trusted_tailnet_client(request)
+                if (
+                    not explicit_bearer
+                    and not is_trusted_same_origin(request, self.allowed_origins)
+                    and not (trusted_tailnet and not request.headers.get("origin"))
+                ):
                     return self._protected_response(request, 403, "Same-origin request required.")
 
         # Rate limiting is applied to every API path, including the ones that
@@ -521,7 +663,7 @@ class SecurityMiddleware(BaseHTTPMiddleware):
             and not testing
             and method == "GET"
             and not is_api
-            and is_loopback_client(request)
+            and is_trusted_client(request)
             and response.headers.get("content-type", "").startswith("text/html")
         ):
             set_capability_cookie(response, request)

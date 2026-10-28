@@ -28,7 +28,12 @@ from sqlalchemy.orm import Session
 
 from ..config import DATA_DIR, state
 from ..db import get_db
-from ..security import is_loopback_client, set_capability_cookie, set_device_cookie
+from ..security import (
+    is_loopback_client,
+    is_remote_client,
+    set_capability_cookie,
+    set_device_cookie,
+)
 from ..ingest.fit_importer import parse_fit
 from ..ingest.garmin_account import GarminAccountClient, GarminAccountError, MfaBroker
 from ..ingest.garmin_oauth import GarminAuthError, GarminOAuthClient
@@ -408,19 +413,45 @@ def _new_pair_code() -> str:
     )
 
 
-def _pair_code_valid(code: str) -> bool:
-    expected = state.pairing_code
-    expires = state.pairing_expires_at
+def _pair_code_matches(expected: str | None, expires: str | None, code: str) -> bool:
+    """Is this the right pairing code, and is it still live?
+
+    The comparison is done on bytes. ``hmac.compare_digest`` refuses
+    non-ASCII *strings* with a TypeError, which used to turn a code typed
+    with an accent into a 500 instead of a 401 — and, worse, made "a pairing
+    code is pending" distinguishable from "no pairing code is pending" by
+    the status code alone.
+
+    The expiry is read from the server's own clock. Nothing the client sends
+    can move it.
+    """
     if not expected or not expires:
         return False
-    if time.time() > float(expires):
+    try:
+        deadline = float(expires)
+    except (TypeError, ValueError):
         return False
-    return hmac.compare_digest(str(code).strip().upper(), str(expected).upper())
+    if time.time() > deadline:
+        return False
+    try:
+        candidate = str(code).strip().upper().encode("utf-8")
+        wanted = str(expected).strip().upper().encode("utf-8")
+    except (AttributeError, UnicodeError):
+        return False
+    if len(candidate) != len(wanted):
+        # The length is not a secret — the code is always nine characters —
+        # but there is nothing to compare.
+        return False
+    return hmac.compare_digest(candidate, wanted)
 
 
 @router.get("/pair-code")
 def pair_code(request: Request) -> dict[str, Any]:
     """Mint a pairing code. Loopback only — this is the operator's console."""
+    # ``is_loopback_client`` checks the peer address *and* the Host header:
+    # the peer being local is not enough, because a name the athlete's
+    # browser resolves to 127.0.0.1 (DNS rebinding) would otherwise be able
+    # to ask this machine for a code.
     if not is_loopback_client(request):
         raise HTTPException(
             status_code=403,
@@ -452,13 +483,18 @@ def pair(body: PairBody, request: Request) -> Response:
     what makes a lost phone a solved problem: revoke it in Settings and the
     athlete's own machine is untouched.
     """
-    if not _pair_code_valid(body.code):
+    # A device on another machine is about to be handed a year-long bearer
+    # token. It must not be handed one over a cleartext hop, where every
+    # request on the shared network carries it. The phone can only install
+    # the app from a secure context anyway, so it is using HTTPS already.
+    if request.url.scheme != "https" and is_remote_client(request):
         raise HTTPException(
-            status_code=401,
-            detail="That code is wrong, expired, or already used.",
+            status_code=403,
+            detail=(
+                "Pair this device over HTTPS. A device credential must not be "
+                "carried over plain HTTP — use the TLS listener."
+            ),
         )
-    # Single use. The code is consumed the moment it works.
-    state.update(pairing_code=None, pairing_expires_at=None)
 
     token = secrets.token_urlsafe(32)
     device = {
@@ -468,9 +504,25 @@ def pair(body: PairBody, request: Request) -> Response:
         "created_at": datetime.now(timezone.utc).isoformat(),
         "last_seen_at": datetime.now(timezone.utc).isoformat(),
     }
-    devices = [d for d in (state.devices or []) if d.get("id") != device["id"]]
-    devices.append(device)
-    state.update(devices=devices)
+
+    def action(current: Any) -> tuple[bool, Any]:
+        # The code is tested *and* consumed under the state lock, so two
+        # simultaneous exchanges cannot both succeed: a single-use code is
+        # only single use if the test and the clear happen together.
+        if not _pair_code_matches(current.pairing_code, current.pairing_expires_at, body.code):
+            return False, None
+        current.pairing_code = None
+        current.pairing_expires_at = None
+        devices = [d for d in (current.devices or []) if d.get("id") != device["id"]]
+        devices.append(device)
+        current.devices = devices
+        return True, device
+
+    if state.atomic(action) is None:
+        raise HTTPException(
+            status_code=401,
+            detail="That code is wrong, expired, or already used.",
+        )
 
     response = Response(status_code=204)
     set_device_cookie(response, request, token)
@@ -514,8 +566,15 @@ def list_devices() -> dict[str, Any]:
 @router.delete("/devices/{device_id}")
 def revoke_device(device_id: str) -> dict[str, Any]:
     """Revoke a paired device."""
-    devices = [d for d in (state.devices or []) if d.get("id") != device_id]
-    if len(devices) == len(state.devices or []):
+
+    def action(current: Any) -> tuple[bool, Any]:
+        devices = [d for d in (current.devices or []) if d.get("id") != device_id]
+        if len(devices) == len(current.devices or []):
+            return False, None
+        current.devices = devices
+        return True, len(devices)
+
+    remaining = state.atomic(action)
+    if remaining is None:
         raise HTTPException(status_code=404, detail="No such device.")
-    state.update(devices=devices)
-    return {"ok": True, "remaining": len(devices)}
+    return {"ok": True, "remaining": remaining}

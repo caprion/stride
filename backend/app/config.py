@@ -88,6 +88,15 @@ class AppState:
     # it needs no developer registration and covers activities *and* wellness.
     personal_api_key: str | None = None
 
+    # Trust the tailnet. When this is on, any device on the Tailscale
+    # network can read the API without a pairing code. Off by default.
+    trust_tailnet: bool = os.getenv("STRIDE_TRUST_TAILNET", "false").lower() in (
+        "1",
+        "true",
+        "yes",
+        "on",
+    )
+
     # Networking — Garmin blocks datacenter IPs, so we may need the home exit node.
     network_route: str = "auto"  # "auto" | "direct" | "exit_node"
     exit_node: str | None = os.getenv("STRIDE_EXIT_NODE")
@@ -125,7 +134,9 @@ class AppState:
     # locking the athlete out of their own machine. Only the hash is kept.
     devices: list[dict[str, Any]] = field(default_factory=list)
 
-    _lock: threading.Lock = field(default_factory=threading.Lock, repr=False)
+    # A re-entrant lock: ``update()`` and ``atomic()`` hold it across the
+    # write to disk, and the write itself takes it again.
+    _lock: threading.RLock = field(default_factory=threading.RLock, repr=False)
 
     # ------------------------------------------------------------------ io
 
@@ -151,7 +162,19 @@ class AppState:
         # Repair permissions on an existing file, which may predate this
         # hardening and have been world-readable.
         _secure_file(STATE_PATH)
-        return cls(**{k: v for k, v in raw.items() if k in known and k != "schema_version"})
+        state = cls(**{k: v for k, v in raw.items() if k in known and k != "schema_version"})
+        # Whether the tailnet is trusted is a deployment decision, not state.
+        # It is always read from the environment, so a value written into the
+        # state file yesterday cannot keep a tailnet trusted after it was
+        # turned off today.
+        if "STRIDE_TRUST_TAILNET" in os.environ:
+            state.trust_tailnet = os.environ["STRIDE_TRUST_TAILNET"].strip().lower() in (
+                "1",
+                "true",
+                "yes",
+                "on",
+            )
+        return state
 
     def save(self) -> None:
         """Write the state file with owner-only permissions.
@@ -183,10 +206,31 @@ class AppState:
             _secure_dir(STATE_PATH.parent)
 
     def update(self, **kwargs: Any) -> None:
+        # The mutation and the write happen under one lock hold, so two
+        # concurrent updates cannot interleave: the file on disk is always a
+        # whole state, never a half-applied one.
         with self._lock:
             for key, value in kwargs.items():
                 setattr(self, key, value)
-        self.save()
+            self.save()
+
+    def atomic(self, action: Any) -> Any:
+        """Run a read-modify-write of the state under one lock hold.
+
+        ``action(state)`` must return ``(changed, value)``. When ``changed``
+        is true the state is written to disk before the lock is released.
+
+        This is the only safe way to touch a shared collection such as the
+        paired-device list. Reading the list, editing a copy and writing it
+        back — the obvious way — is a lost update: a device paired or revoked
+        while another request was mid-flight is silently dropped, and a
+        revoked device can be written straight back into the file.
+        """
+        with self._lock:
+            changed, value = action(self)
+            if changed:
+                self.save()
+            return value
 
     # -------------------------------------------------------------- helpers
 
