@@ -650,3 +650,69 @@ def test_garmin_workout_sources_are_local():
     result = GarminWorkoutClient(fake).sources()
     assert isinstance(result, dict)
     assert fake.calls == []
+
+
+# --------------------------------------------------------------------------
+# The plan is scoped to the block in force
+# --------------------------------------------------------------------------
+#
+# Importing a plan document again archives the previous block and creates a
+# new one, and the archived blocks often overlap the active one in date. If
+# the plan queries select by date alone, every session comes back once per
+# overlapping block: the week strip shows each session twice, the adherence
+# count doubles, and the "missed" tally is fiction.
+#
+# A live instance hit exactly this — 245 sessions reported for a block that
+# has 83.
+
+
+def _insert_block(db, block_id: int, status: str, start: str, end: str) -> None:
+    from app.models_phase2 import PlanBlock, PlanSession
+
+    db.add(
+        PlanBlock(
+            id=block_id,
+            name=f"Block {block_id}",
+            status=status,
+            start_date=start,
+            end_date=end,
+        )
+    )
+    for index in range(5):
+        db.add(
+            PlanSession(
+                block_id=block_id,
+                date=f"{start[:8]}{index + 1:02d}",
+                title=f"Session {index}",
+                session_type="easy",
+                target_distance_m=5000.0,
+            )
+        )
+    db.flush()
+
+
+def test_plan_sessions_are_scoped_to_the_active_block(db):
+    """Two overlapping blocks must not double every planned session."""
+    from app.services.plan_engine import _planned, active_block_id
+
+    _insert_block(db, 1, "archived", "2026-06-01", "2026-10-31")
+    _insert_block(db, 2, "active", "2026-06-01", "2026-10-31")
+    db.commit()
+
+    assert active_block_id(db) == 2
+    planned = _planned(db, "2026-06-01", "2026-10-31")
+    assert len(planned) == 5
+    assert {session.block_id for session in planned} == {2}
+
+
+def test_adherence_counts_only_the_active_block(db):
+    """The adherence summary must not count an archived block's sessions."""
+    from app.services.plan_engine import adherence
+
+    _insert_block(db, 1, "archived", "2026-06-01", "2026-10-31")
+    _insert_block(db, 2, "active", "2026-06-01", "2026-10-31")
+    db.commit()
+
+    summary = adherence(db, "2026-06-01", "2026-10-31")
+    assert summary["planned_sessions"] == 5
+    assert summary["planned_km"] == 25.0

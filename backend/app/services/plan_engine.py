@@ -17,8 +17,38 @@ def _date(s: str) -> date: return date.fromisoformat(s[:10])
 def _pace(a: Activity) -> float | None: return a.moving_time_s/(a.distance_m/1000) if a.distance_m and a.moving_time_s else None
 
 
+def active_block_id(db: Session) -> int | None:
+    """The id of the block in force, if there is one.
+
+    Every plan query has to be scoped to it. A plan document can be imported
+    more than once — each import archives the previous block and creates a new
+    one — and the archived blocks often *overlap* the active one in date.
+    Selecting sessions by date alone therefore returns each session once per
+    overlapping block: the week strip shows every session twice, the
+    adherence counts double, and the "missed" tally is fiction.
+    """
+    from ..models_phase2 import PlanBlock
+
+    block = db.execute(
+        select(PlanBlock)
+        .where(PlanBlock.status == "active")
+        .order_by(PlanBlock.start_date.desc())
+    ).scalars().first()
+    if block is None:
+        block = db.execute(
+            select(PlanBlock).order_by(PlanBlock.start_date.desc())
+        ).scalars().first()
+    return block.id if block is not None else None
+
+
 def _planned(db: Session, start: str, end: str) -> list[PlanSession]:
-    return list(db.execute(select(PlanSession).where(PlanSession.date >= start, PlanSession.date <= end).order_by(PlanSession.date, PlanSession.id)).scalars())
+    block_id = active_block_id(db)
+    stmt = select(PlanSession).where(
+        PlanSession.date >= start, PlanSession.date <= end
+    )
+    if block_id is not None:
+        stmt = stmt.where(PlanSession.block_id == block_id)
+    return list(db.execute(stmt.order_by(PlanSession.date, PlanSession.id)).scalars())
 
 
 def match_sessions(db: Session, from_date: str, to_date: str) -> list[dict[str, Any]]:

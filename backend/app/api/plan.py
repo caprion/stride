@@ -608,6 +608,27 @@ def get_week(day: str = Query(..., alias="date"), db: Session = Depends(get_db))
         .scalars()
         .first()
     )
+    # Only the block in force counts. Archived blocks often overlap the
+    # active one in date, and a week from an archived block would show
+    # sessions the athlete is no longer being asked to do.
+    block_id = plan_engine.active_block_id(db)
+    if week is not None and block_id is not None:
+        phase = db.get(PlanPhase, week.phase_id)
+        if phase is None or phase.block_id != block_id:
+            week = (
+                db.execute(
+                    select(PlanWeek)
+                    .join(PlanPhase, PlanPhase.id == PlanWeek.phase_id)
+                    .where(
+                        PlanWeek.start_date <= end,
+                        PlanWeek.end_date >= start,
+                        PlanPhase.block_id == block_id,
+                    )
+                    .order_by(PlanWeek.week_number)
+                )
+                .scalars()
+                .first()
+            )
     if week is None:
         return {
             "week": None,
