@@ -45,7 +45,6 @@
 
 use std::path::{Path, PathBuf};
 use std::process::Command;
-use std::time::Duration;
 
 use rusqlite::Connection;
 use stride_store::{Store, StoreError};
@@ -213,15 +212,20 @@ pub fn open_database(
 /// rate, sleep and GPS routes is not a file other processes on this machine
 /// should be able to read.
 fn harden(path: &Path) {
+    for suffix in ["", "-wal", "-shm"] {
+        let sidecar = sidecar(path, suffix);
+        if sidecar.exists() {
+            owner_only(&sidecar);
+        }
+    }
+}
+
+/// Make a file owner-only, where the filesystem agrees.
+fn owner_only(path: &Path) {
     #[cfg(unix)]
     {
         use std::os::unix::fs::PermissionsExt;
-        for suffix in ["", "-wal", "-shm"] {
-            let sidecar = sidecar(path, suffix);
-            if sidecar.exists() {
-                let _ = std::fs::set_permissions(&sidecar, std::fs::Permissions::from_mode(0o600));
-            }
-        }
+        let _ = std::fs::set_permissions(path, std::fs::Permissions::from_mode(0o600));
     }
     #[cfg(not(unix))]
     let _ = path;
@@ -276,9 +280,9 @@ pub fn convert_plaintext_to_encrypted(
     path: &Path,
     key: &[u8],
 ) -> Result<ConversionReport, DbError> {
-    // Another process writing to the file right now would make the copy a
-    // mixture of two states, and the rename would take the file away from
-    // it. So this is refused, and said so.
+    // Another process writing to the file right now would make the rename
+    // take the file away from it: its rows would go into the old inode and
+    // nowhere else. So this is refused, and said so.
     let users = users_of(path);
     if !users.is_empty() {
         return Err(DbError::InUse {
@@ -289,52 +293,127 @@ pub fn convert_plaintext_to_encrypted(
 
     let staged = staged_path(path);
     let backup = backup_path(path);
+    let snapshot = snapshot_path(path);
 
-    // A stale staged file from an interrupted conversion would be read as
-    // the source of truth, so it goes first.
+    // A stale file from an interrupted conversion would be read as the source
+    // of truth, so they go first.
     let _ = std::fs::remove_file(&staged);
+    let _ = std::fs::remove_file(&snapshot);
+    let _ = std::fs::remove_file(sidecar(&snapshot, "-wal"));
+    let _ = std::fs::remove_file(sidecar(&snapshot, "-shm"));
 
-    // The source: opened through SQLite, so its write-ahead log is applied
-    // and the rows are a consistent snapshot.
-    let source = Connection::open(path).map_err(|error| DbError::Legacy {
-        path: path.to_path_buf(),
+    // The source is snapshotted first, with SQLite's own `VACUUM INTO`. The
+    // database may be being written to while this runs — the reference app
+    // syncs from Garmin in the background — and a reader that is not inside a
+    // transaction can see a page that has been written and a page that has
+    // not, which is a database that is half of two states. The snapshot is
+    // the answer to that.
+    take_snapshot(path, &snapshot)?;
+
+    let outcome = convert_snapshot(&snapshot, path, &staged, &backup, key);
+    // The snapshot is a temporary file either way.
+    let _ = std::fs::remove_file(&snapshot);
+    let _ = std::fs::remove_file(sidecar(&snapshot, "-wal"));
+    let _ = std::fs::remove_file(sidecar(&snapshot, "-shm"));
+    outcome
+}
+
+/// Convert a snapshot of the plain database into the encrypted database.
+fn convert_snapshot(
+    snapshot: &Path,
+    original: &Path,
+    staged: &Path,
+    backup: &Path,
+    key: &[u8],
+) -> Result<ConversionReport, DbError> {
+    // The source: a static file, so everything about it is stable.
+    let source = Connection::open(snapshot).map_err(|error| DbError::Legacy {
+        path: snapshot.to_path_buf(),
         source: error,
     })?;
-    quick_check(&source, path)?;
+    quick_check(&source, snapshot)?;
 
-    let store = Store::open_and_migrate(&staged, key)?;
+    let store = Store::open_and_migrate(staged, key)?;
     let report = store
         .with_connection(|conn| {
             let report = copy_tables(conn, &source)?;
-            // Fold the write-ahead log back into the file, so that the file
-            // that is renamed into place is complete on its own.
-            conn.execute_batch("PRAGMA wal_checkpoint(TRUNCATE);")
+            // Fold the write-ahead log back into the file and turn the log
+            // off, so that the file that is renamed into place is complete on
+            // its own: one file, with the rows in it.
+            conn.execute_batch("PRAGMA wal_checkpoint(TRUNCATE); PRAGMA journal_mode=DELETE;")
                 .map_err(|source| StoreError::query("wal_checkpoint".to_string(), source))?;
             Ok(report)
         })
         .map_err(|error| DbError::Conversion(error.to_string()))?;
     drop(store);
 
-    let _ = std::fs::remove_file(sidecar(&staged, "-wal"));
-    let _ = std::fs::remove_file(sidecar(&staged, "-shm"));
+    let _ = std::fs::remove_file(sidecar(staged, "-wal"));
+    let _ = std::fs::remove_file(sidecar(staged, "-shm"));
 
     // Keep the plain file: the conversion is the one operation here that
-    // cannot be undone. It is written with SQLite's backup API, so it is a
-    // consistent snapshot and not a copy of three files that were written at
-    // three different moments.
-    write_backup(&source, &backup)?;
+    // cannot be undone. It holds a year of health data in the clear, so it
+    // is owner-only like the database.
+    copy_file(snapshot, backup)?;
+    owner_only(backup);
 
     // The plain file's write-ahead log belongs to the plain file. Leaving it
     // next to an encrypted database would make SQLite try to apply it.
-    let _ = std::fs::remove_file(sidecar(path, "-wal"));
-    let _ = std::fs::remove_file(sidecar(path, "-shm"));
+    let _ = std::fs::remove_file(sidecar(original, "-wal"));
+    let _ = std::fs::remove_file(sidecar(original, "-shm"));
 
-    std::fs::rename(&staged, path).map_err(|source| DbError::Io {
-        path: path.to_path_buf(),
+    std::fs::rename(staged, original).map_err(|source| DbError::Io {
+        path: original.to_path_buf(),
         source,
     })?;
 
     Ok(report)
+}
+
+/// Take a snapshot of a database that may be being written to.
+///
+/// `VACUUM INTO` is SQLite's own answer to "copy this database while
+/// somebody is writing to it": it reads the database in one transaction and
+/// writes a **new** file, in the rollback-journal mode, with no write-ahead
+/// log next to it. The snapshot is one self-contained file, so everything
+/// that reads it afterwards reads a database that is not changing.
+///
+/// The copy the backup API makes is not used here on purpose: the
+/// destination inherits the source's write-ahead mode, and a file whose
+/// header says "write-ahead log" but which has no log is a file that other
+/// tools read differently.
+pub fn take_snapshot(source: &Path, target: &Path) -> Result<(), DbError> {
+    let _ = std::fs::remove_file(target);
+    let origin = Connection::open(source).map_err(|error| DbError::Legacy {
+        path: source.to_path_buf(),
+        source: error,
+    })?;
+    let quoted = target.to_string_lossy().replace('\'', "''");
+    origin
+        .execute_batch(&format!("VACUUM INTO '{quoted}'"))
+        .map_err(|error| DbError::Legacy {
+            path: target.to_path_buf(),
+            source: error,
+        })?;
+    if !target.is_file() {
+        return Err(DbError::Conversion(format!(
+            "the snapshot at {} was not written",
+            target.display()
+        )));
+    }
+    Ok(())
+}
+
+/// Copy a file, if it is there.
+fn copy_file(from: &Path, to: &Path) -> Result<(), DbError> {
+    if !from.exists() {
+        return Ok(());
+    }
+    std::fs::copy(from, to)
+        .map(|_| ())
+        .map_err(|source| DbError::Io {
+            path: to.to_path_buf(),
+            source,
+        })
 }
 
 /// Check that the source is a database that can be read.
@@ -357,27 +436,6 @@ fn quick_check(source: &Connection, path: &Path) -> Result<(), DbError> {
             path.display()
         )));
     }
-    Ok(())
-}
-
-/// Write a consistent copy of the plain database.
-fn write_backup(source: &Connection, backup: &Path) -> Result<(), DbError> {
-    let _ = std::fs::remove_file(backup);
-    let mut destination = Connection::open(backup).map_err(|error| DbError::Legacy {
-        path: backup.to_path_buf(),
-        source: error,
-    })?;
-    let copy = rusqlite::backup::Backup::new(source, &mut destination).map_err(|error| {
-        DbError::Legacy {
-            path: backup.to_path_buf(),
-            source: error,
-        }
-    })?;
-    copy.run_to_completion(64, Duration::from_millis(10), None)
-        .map_err(|error| DbError::Legacy {
-            path: backup.to_path_buf(),
-            source: error,
-        })?;
     Ok(())
 }
 
@@ -607,6 +665,13 @@ fn strings(
 fn staged_path(path: &Path) -> PathBuf {
     let mut name = path.file_name().unwrap_or_default().to_os_string();
     name.push(".encrypted");
+    path.with_file_name(name)
+}
+
+/// The path the snapshot of the database is written to.
+fn snapshot_path(path: &Path) -> PathBuf {
+    let mut name = path.file_name().unwrap_or_default().to_os_string();
+    name.push(".snapshot");
     path.with_file_name(name)
 }
 

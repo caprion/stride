@@ -53,15 +53,42 @@ refuses it with `file is not a database`.
 `stride-store` cannot open a plain file — it always applies a key — so the
 desktop **converts** it, once, on the first run:
 
-* the plain file is read and written into a new, encrypted file, with the
-  same schema and the same rows;
+* the plain file is snapshotted with `VACUUM INTO` — SQLite's own answer to
+  "copy this database while somebody is writing to it" — and the snapshot is
+  read and written into a new, encrypted file, with the same schema and the
+  same rows;
 * the columns are matched **by name**, not by position: three tables
   (`activity`, `daily_physiology`, `run_fingerprint`) have the same columns
   in a different order, and a copy by position would put a timestamp in a
   distance column;
-* the plain file is kept as `<name>.plaintext-backup`;
+* the rows that were read and the rows that were written are counted, and the
+  original is **not** replaced if the two counts disagree;
+* the plain file is kept as `<name>.plaintext-backup`, owner-only, because it
+  holds a year of health data in the clear;
 * the conversion reports the tables it copied and any drift between the two
   schemas — on this machine, no drift: the same 17 tables, the same columns.
+
+### The conversion refuses to run while the database is in use
+
+The database is **live**: the reference app is running and syncing from
+Garmin into it. Two things would go wrong if the desktop converted it then:
+
+* the copy would be of a database that is being written under the copy, and
+  the rows would be a mixture of two states — which is how the first version
+  of this conversion lost the plan, the physiology and the fingerprints;
+* the rename would take the file away from the writer, and its rows would go
+  into the old inode and nowhere else.
+
+So the conversion refuses while another process has the file open, and says
+which process:
+
+```
+stride: the database at /home/sumit/stride/backend/data/stride.db is open in
+another process ([295179]). Stop it before the desktop converts the file: the
+conversion replaces it.
+```
+
+Stop the reference app, and the desktop converts the file on its next run.
 
 The key comes from `STRIDE_DB_KEY`, then from Azure Key Vault, then — only
 because there was nothing else — from `backend/data/stride-desktop.key`,
@@ -110,3 +137,11 @@ that points out of it is refused exactly like `..` is.
 | `tests/openapi.rs` | the router and the OpenAPI document the Python app generates agree: the same 62 paths, the same methods, the same path parameters, and every request body the document promises is accepted. |
 | `tests/spa.rs` | the SPA is served for an unknown path, the static files have the right content types, a `..` traversal returns nothing outside `frontend/dist`, and the capability gate answers the way the reference does. |
 | `tests/database.rs` | the **real** database opens, every row survives the conversion, the plain file is kept, the wrong key is refused, and the router reads the converted file. |
+
+The database test takes **one** snapshot of the real database for the whole
+run, with `VACUUM INTO`, and works on copies of it. The database is live —
+the reference app is writing to it — and a snapshot that is taken while the
+database changes is a snapshot of two states at once. That is what the first
+version of the conversion did, and the test caught it: the plan, the
+physiology and the fingerprints came out empty and the streams came out
+half.

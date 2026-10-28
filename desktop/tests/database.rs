@@ -15,7 +15,8 @@
 //! test says so and does nothing when it is not there.
 
 use std::path::{Path, PathBuf};
-use std::sync::Arc;
+use std::sync::{Arc, OnceLock};
+use std::time::Duration;
 
 use rusqlite::Connection;
 use stride_api::{Api, CoreBackend};
@@ -34,28 +35,53 @@ fn real_database() -> PathBuf {
         .join("stride.db")
 }
 
-/// A consistent copy of the real database.
+/// One snapshot of the real database, taken once for the whole test run.
 ///
-/// The database is **live**: the Python app is running and writing to it.
+/// The database is **live**: the reference app is running and writing to it.
 /// Copying the files one by one would copy a database that is being written
 /// under the copy — the main file at one moment and the write-ahead log at
 /// another — and the copy would be a mixture of two states. SQLite's own
-/// backup API takes a snapshot instead, which is what the conversion needs
-/// too.
+/// backup API takes a snapshot instead.
+///
+/// The snapshot is taken once and shared: two backups of a database that is
+/// being written to, at the same time, is two chances to read it while it
+/// changes.
+fn snapshot_of_the_real_database() -> Option<PathBuf> {
+    static SNAPSHOT: OnceLock<Option<PathBuf>> = OnceLock::new();
+    SNAPSHOT
+        .get_or_init(|| {
+            let source = real_database();
+            if !source.is_file() {
+                return None;
+            }
+            let directory = std::env::temp_dir().join("stride-desktop-db-snapshot");
+            let _ = std::fs::remove_dir_all(&directory);
+            std::fs::create_dir_all(&directory).ok()?;
+            let target = directory.join("stride.db");
+            // The reference app writes to the database while it syncs, so a
+            // snapshot can fail. A few tries, and then the test does
+            // nothing.
+            for _ in 0..5 {
+                if stride_desktop::db::take_snapshot(&source, &target).is_ok() {
+                    return Some(target);
+                }
+                std::thread::sleep(Duration::from_millis(250));
+            }
+            None
+        })
+        .clone()
+}
+
+/// A copy of the snapshot of the real database.
+///
+/// The snapshot is a static file, so copying it is copying a file and not a
+/// database that is being written to.
 fn copy_of_the_real_database(directory: &Path) -> Option<PathBuf> {
-    let source = real_database();
-    if !source.is_file() {
-        return None;
-    }
+    let source = snapshot_of_the_real_database()?;
     std::fs::create_dir_all(directory).ok()?;
     let target = directory.join("stride.db");
     let _ = std::fs::remove_file(&target);
-    let origin = Connection::open(&source).ok()?;
-    let mut destination = Connection::open(&target).ok()?;
-    let backup = rusqlite::backup::Backup::new(&origin, &mut destination).ok()?;
-    backup
-        .run_to_completion(64, std::time::Duration::from_millis(10), None)
-        .ok()?;
+    std::fs::copy(&source, &target).ok()?;
     Some(target)
 }
 
