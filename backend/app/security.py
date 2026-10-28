@@ -9,6 +9,7 @@ Garmin API quota merely because they can reach the port.
 
 from __future__ import annotations
 
+import hashlib
 import hmac
 import ipaddress
 import json
@@ -19,6 +20,7 @@ import secrets
 import sys
 import threading
 import time
+from datetime import datetime, timezone
 from collections import defaultdict, deque
 from collections.abc import Mapping
 from pathlib import Path
@@ -45,6 +47,11 @@ CAPABILITY_FREE = frozenset(
     }
 )
 AUTH_COOKIE = "stride_capability"
+
+# A paired device holds this instead of the master capability, so it can be
+# revoked on its own. It is a session cookie on the operator's own machine
+# and a long-lived one on a paired device.
+DEVICE_COOKIE = "stride_device"
 
 log = logging.getLogger("stride.security")
 
@@ -245,10 +252,77 @@ def _provided_token(request: Request) -> tuple[str | None, bool]:
     return request.cookies.get(AUTH_COOKIE), False
 
 
+def _device_token(request: Request) -> str | None:
+    return request.cookies.get(DEVICE_COOKIE)
+
+
+def device_token_valid(token: str | None) -> bool:
+    """Is this a live paired-device token?
+
+    The stored form is a SHA-256 hash, so the state file never contains a
+    usable credential — the same property the Garmin key has.
+    """
+    if not token:
+        return False
+    digest = hashlib.sha256(token.encode()).hexdigest()
+    for device in state.devices or []:
+        if hmac.compare_digest(str(device.get("token_hash", "")), digest):
+            return True
+    return False
+
+
+def has_valid_device(request: Request) -> bool:
+    return device_token_valid(_device_token(request))
+
+
+# How stale a device's "last seen" may get before it is refreshed. Writing
+# the state file is not free — it holds the Garmin key — so this is throttled
+# to once an hour rather than on every request.
+_LAST_SEEN_INTERVAL = 3600
+_last_seen_lock = threading.Lock()
+
+
+def touch_device(request: Request) -> None:
+    """Record that a paired device just used the API."""
+    token = _device_token(request)
+    if not token:
+        return
+    digest = hashlib.sha256(token.encode()).hexdigest()
+    now = time.time()
+    with _last_seen_lock:
+        for device in state.devices or []:
+            if not hmac.compare_digest(str(device.get("token_hash", "")), digest):
+                continue
+            try:
+                last = float(device.get("last_seen_epoch") or 0)
+            except (TypeError, ValueError):
+                last = 0.0
+            if now - last < _LAST_SEEN_INTERVAL:
+                return
+            devices = [dict(d) for d in (state.devices or [])]
+            for entry in devices:
+                if hmac.compare_digest(str(entry.get("token_hash", "")), digest):
+                    entry["last_seen_at"] = datetime.now(timezone.utc).isoformat()
+                    entry["last_seen_epoch"] = now
+            state.update(devices=devices)
+            return
+
+
 def has_valid_capability(request: Request) -> tuple[bool, bool]:
+    """Is this request authorised?
+
+    Two credentials are accepted: the master capability (the operator's own
+    machine) and a paired device's own token. A device token is deliberately
+    *not* the master capability, so revoking one phone does not lock the
+    athlete out of their laptop.
+    """
     provided, is_explicit_bearer = _provided_token(request)
     expected = capability_token()
-    return bool(provided and expected and hmac.compare_digest(provided, expected)), is_explicit_bearer
+    if provided and expected and hmac.compare_digest(provided, expected):
+        return True, is_explicit_bearer
+    if has_valid_device(request):
+        return True, is_explicit_bearer
+    return False, is_explicit_bearer
 
 
 def is_loopback_client(request: Request) -> bool:
@@ -307,6 +381,32 @@ def set_capability_cookie(response: Response, request: Request) -> None:
         samesite="strict",
         secure=secure,
         path="/",
+    )
+
+
+# How long a paired device stays signed in. Long enough that a phone is
+# signed in for good, short enough that a forgotten device ages out.
+DEVICE_COOKIE_MAX_AGE = 60 * 60 * 24 * 365
+
+
+def set_device_cookie(response: Response, request: Request, token: str) -> None:
+    """Give a paired device its own long-lived credential.
+
+    The master capability is a *session* cookie on the operator's own
+    machine: closing the browser signs it out, which is the right default for
+    a shared computer. A paired phone is the athlete's own device and is
+    expected to stay signed in, so it gets a persistent cookie — but of its
+    own token, which can be revoked without touching anything else.
+    """
+    secure = _env_truthy("STRIDE_COOKIE_SECURE") or request.url.scheme == "https"
+    response.set_cookie(
+        DEVICE_COOKIE,
+        token,
+        httponly=True,
+        samesite="strict",
+        secure=secure,
+        path="/",
+        max_age=DEVICE_COOKIE_MAX_AGE,
     )
 
 
@@ -386,6 +486,8 @@ class SecurityMiddleware(BaseHTTPMiddleware):
                 and not (valid or callback_transaction)
             ):
                 return self._protected_response(request, 401, "Capability token required.")
+            if valid and not testing:
+                touch_device(request)
 
             if method in {"POST", "PUT", "PATCH", "DELETE"} and not testing:
                 # An explicit bearer header is not ambient browser authority;

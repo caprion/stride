@@ -23,7 +23,13 @@ log() { printf '\033[38;5;208m▸\033[0m %s\n' "$*"; }
 # script itself because the pattern only appears in the file, not in argv.
 server_pid() {
   local port="$1"
-  pgrep -f "uvicorn app.main:app --host 0.0.0.0 --port $port" 2>/dev/null | head -1
+  # The server runs as ``python -m app.serve`` (both listeners, one process),
+  # but an older build may still be running as plain uvicorn. Match either,
+  # so a restart never leaves the old one holding the port.
+  local pid
+  pid="$(pgrep -f "python -m app.serve" 2>/dev/null | head -1)"
+  [[ -n "$pid" ]] || pid="$(pgrep -f "uvicorn app.main:app --host 0.0.0.0 --port $port" 2>/dev/null | head -1)"
+  echo "$pid"
 }
 
 stop_one() {
@@ -103,7 +109,10 @@ case "${1:-start}" in
       (cd "$ROOT/frontend" && npm install --silent && npm run build)
     fi
     log "starting Stride on :$PORT"
-    (cd "$ROOT/backend" && setsid "$VENV/bin/uvicorn" app.main:app --host 0.0.0.0 --port "$PORT" \
+    # app.serve runs the plain HTTP listener and, when a certificate is
+    # present, an HTTPS one in the same process — so there is one scheduler
+    # and one state file.
+    (cd "$ROOT/backend" && setsid "$VENV/bin/python" -m app.serve \
       < /dev/null > "$PID_DIR/api.log" 2>&1 &)
     sleep 4
     server_pid "$PORT" > "$PID_DIR/api.pid" 2>/dev/null || true

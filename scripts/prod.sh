@@ -68,10 +68,44 @@ case "${1:-status}" in
       bad "could not mint a pairing code"
       exit 1
     fi
+
+    # The address the phone will use. Prefer HTTPS on the tailnet's own
+    # name: a phone can only *install* the app from a secure context, so
+    # pairing over plain HTTP would leave the athlete with a browser tab
+    # forever. The certificate comes from Tailscale, so it is trusted and the
+    # phone shows no warning.
+    reach=""
+    scheme="https"
+    tls_port="${STRIDE_TLS_PORT:-8443}"
+    if [[ -f "$ROOT/backend/data/tls/stride.crt" ]]; then
+      if command -v tailscale > /dev/null 2>&1; then
+        reach="$(tailscale status --json 2>/dev/null \
+          | "$PY" -c 'import json,sys; d=json.load(sys.stdin); print((d.get("Self",{}).get("DNSName") or "").rstrip("."))' \
+          2>/dev/null)"
+      fi
+      [[ -n "$reach" ]] || reach="$(ip -4 addr show 2>/dev/null | awk '/inet /{print $2}' | cut -d/ -f1 \
+        | grep -v '^127\.' | head -1)"
+      url="https://$reach:$tls_port/#pair=$code"
+    else
+      scheme="http"
+      if command -v tailscale > /dev/null 2>&1; then
+        reach="$(tailscale ip -4 2>/dev/null | head -1)"
+      fi
+      if [[ -z "$reach" ]]; then
+        reach="$(ip -4 addr show 2>/dev/null | awk '/inet /{print $2}' | cut -d/ -f1 \
+          | grep -v '^127\.' | head -1)"
+      fi
+      [[ -n "$reach" ]] || reach="127.0.0.1"
+      url="http://$reach:$PORT/#pair=$code"
+    fi
     echo
+    if (cd "$ROOT/backend" && "$PY" -m tools.pair_qr "$url" 2>/dev/null); then
+      echo
+    fi
     printf '    \033[1;38;5;208m%s\033[0m\n' "$code"
+    printf '    \033[2m%s\033[0m\n' "$url"
     echo
-    log "Open Stride on the other device and enter that code."
+    log "Point the phone's camera at the code, or open that link."
     log "It works once and expires in 10 minutes."
     ;;
 

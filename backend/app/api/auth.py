@@ -10,6 +10,7 @@ Three ways to get data in, all first-class:
 
 from __future__ import annotations
 
+import hashlib
 import hmac
 import logging
 import os
@@ -17,6 +18,7 @@ import secrets
 import threading
 import time
 import uuid
+from datetime import datetime, timezone
 from typing import Any
 
 from fastapi import APIRouter, Depends, File, HTTPException, Query, Request, Response, UploadFile
@@ -26,7 +28,7 @@ from sqlalchemy.orm import Session
 
 from ..config import DATA_DIR, state
 from ..db import get_db
-from ..security import is_loopback_client, set_capability_cookie
+from ..security import is_loopback_client, set_capability_cookie, set_device_cookie
 from ..ingest.fit_importer import parse_fit
 from ..ingest.garmin_account import GarminAccountClient, GarminAccountError, MfaBroker
 from ..ingest.garmin_oauth import GarminAuthError, GarminOAuthClient
@@ -444,7 +446,12 @@ class PairBody(BaseModel):
 
 @router.post("/pair")
 def pair(body: PairBody, request: Request) -> Response:
-    """Exchange a pairing code for the HttpOnly capability cookie."""
+    """Exchange a pairing code for a device credential.
+
+    The device gets its **own** token, not the master capability. That is
+    what makes a lost phone a solved problem: revoke it in Settings and the
+    athlete's own machine is untouched.
+    """
     if not _pair_code_valid(body.code):
         raise HTTPException(
             status_code=401,
@@ -452,6 +459,63 @@ def pair(body: PairBody, request: Request) -> Response:
         )
     # Single use. The code is consumed the moment it works.
     state.update(pairing_code=None, pairing_expires_at=None)
+
+    token = secrets.token_urlsafe(32)
+    device = {
+        "id": uuid.uuid4().hex[:12],
+        "name": _device_name(request),
+        "token_hash": hashlib.sha256(token.encode()).hexdigest(),
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "last_seen_at": datetime.now(timezone.utc).isoformat(),
+    }
+    devices = [d for d in (state.devices or []) if d.get("id") != device["id"]]
+    devices.append(device)
+    state.update(devices=devices)
+
     response = Response(status_code=204)
-    set_capability_cookie(response, request)
+    set_device_cookie(response, request, token)
+    log.info("paired device %s (%s)", device["id"], device["name"])
     return response
+
+
+def _device_name(request: Request) -> str:
+    """A label the athlete can recognise in the device list."""
+    agent = request.headers.get("user-agent", "")
+    for marker, label in (
+        ("iPhone", "iPhone"),
+        ("iPad", "iPad"),
+        ("Android", "Android"),
+        ("Macintosh", "Mac"),
+        ("Windows", "Windows"),
+        ("CrOS", "ChromeOS"),
+        ("Linux", "Linux"),
+    ):
+        if marker in agent:
+            return label
+    return "Browser"
+
+
+@router.get("/devices")
+def list_devices() -> dict[str, Any]:
+    """The paired devices. Tokens are never returned — only their hashes."""
+    return {
+        "devices": [
+            {
+                "id": device.get("id"),
+                "name": device.get("name"),
+                "created_at": device.get("created_at"),
+                "last_seen_at": device.get("last_seen_at"),
+            }
+            for device in (state.devices or [])
+        ]
+    }
+
+
+@router.delete("/devices/{device_id}")
+def revoke_device(device_id: str) -> dict[str, Any]:
+    """Revoke a paired device."""
+    devices = [d for d in (state.devices or []) if d.get("id") != device_id]
+    if len(devices) == len(state.devices or []):
+        raise HTTPException(status_code=404, detail="No such device.")
+    state.update(devices=devices)
+    return {"ok": True, "remaining": len(devices)}

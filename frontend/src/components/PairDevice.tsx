@@ -19,10 +19,10 @@ import { KeyRound, ShieldCheck } from 'lucide-react'
 import { ApiError, api } from '../lib/api'
 import { Button, inputClass } from '../components/ui'
 
-export function PairDevice() {
+export function PairDevice({ initialError = null }: { initialError?: string | null }) {
   const queryClient = useQueryClient()
   const [code, setCode] = useState('')
-  const [error, setError] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(initialError)
 
   const pair = useMutation({
     mutationFn: (value: string) => api.pair(value),
@@ -116,7 +116,9 @@ export function PairDevice() {
               ./scripts/prod.sh pair
             </code>
             <p className="mt-2 text-[12px] leading-relaxed text-ink-muted">
-              It prints a code that works once and expires in 10 minutes.
+              It prints a QR code and the same code in text. Point your camera at the
+              screen, or type the code above. Either way it works once and expires in
+              10 minutes.
             </p>
           </div>
         </div>

@@ -131,10 +131,24 @@ So the athlete pairs the device deliberately:
 cd ~/stride && ./scripts/prod.sh pair
 ```
 
-That prints a code like `KD7P-3FQM`. Open Stride on the other device, enter
-the code, and the device is connected. The code works **once**, expires in
-**10 minutes**, and is exchanged for the same HttpOnly session cookie a local
-browser gets — the code itself never becomes a long-lived secret.
+That prints a **QR code**. Point the phone's camera at it and the phone is
+connected — one action, once, and it stays connected. (The same code is
+printed in text, for when the camera will not cooperate. It works **once** and
+expires in **10 minutes**.)
+
+The phone gets its **own** credential, not the master one, so a lost phone
+can be revoked on its own in **Settings → Connected devices** without
+touching the machine.
+
+The tailnet address is served over **HTTPS** with a Tailscale certificate, so
+the phone can *install* Stride — full screen, on the home screen, with no
+browser chrome. A service worker only registers in a secure context, which
+is why plain HTTP would leave you with a browser tab forever.
+
+| | |
+|---|---|
+| desktop | http://127.0.0.1:8000 |
+| phone | https://cf-openclaw.tail62fa14.ts.net:8443 |
 
 The live instance is the **production** one: 160 real Garmin activities, 371
 days of physiology, the real training plan, and no synthetic data. It gets its

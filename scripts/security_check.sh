@@ -156,6 +156,7 @@ fi
 
 head_ "6. Live service (skipped when the app is not running)"
 BASE="${STRIDE_CHECK_URL:-http://127.0.0.1:8000}"
+BASE_PORT="${STRIDE_CHECK_PORT:-8000}"
 if curl -fsS -m 4 -o /dev/null "$BASE/api/v1/health" 2>/dev/null; then
   code=$(curl -s -o /dev/null -w '%{http_code}' -m 6 "$BASE/api/v1/activities")
   if [[ "$code" == "401" || "$code" == "403" ]]; then
@@ -184,6 +185,47 @@ if curl -fsS -m 4 -o /dev/null "$BASE/api/v1/health" 2>/dev/null; then
     ok "the pairing exchange rejects a wrong code ($code)"
   else
     bad "the pairing exchange accepted a wrong code ($code)"
+  fi
+
+  # A paired device must be revocable, and revoking one must not touch the
+  # machine it was paired from.
+  # The gate pairs a throwaway device and revokes *that one*. It must never
+  # revoke a device the athlete is actually using.
+  # A jar with the operator's own capability, so the device list is readable.
+  master_jar=$(mktemp)
+  curl -s -c "$master_jar" -o /dev/null -m 6 "$BASE/api/v1/bootstrap"
+  before=$(curl -s -b "$master_jar" -m 6 "$BASE/api/v1/auth/devices" 2>/dev/null | tr ',' '\n' | grep -o '"id":"[a-f0-9]*"' | sort)
+  pair_code=$(curl -s -m 6 "$BASE/api/v1/auth/pair-code" 2>/dev/null \
+    | grep -o '"code":"[A-Z0-9-]*"' | head -1 | cut -d'"' -f4)
+  if [[ -n "$pair_code" ]]; then
+    jar=$(mktemp)
+    curl -s -c "$jar" -o /dev/null -m 6 -X POST -H "Origin: $BASE" \
+      -H 'Content-Type: application/json' -d "{\"code\":\"$pair_code\"}" \
+      "$BASE/api/v1/auth/pair"
+    code=$(curl -s -b "$jar" -o /dev/null -w '%{http_code}' -m 6 "$BASE/api/v1/activities")
+    if [[ "$code" == "200" ]]; then
+      ok "a paired device can read the API ($code)"
+    else
+      bad "a paired device could not read the API ($code)"
+    fi
+    after=$(curl -s -b "$master_jar" -m 6 "$BASE/api/v1/auth/devices" 2>/dev/null | tr ',' '\n' | grep -o '"id":"[a-f0-9]*"' | sort)
+    device_id=$(comm -13 <(echo "$before") <(echo "$after") | head -1 | cut -d'"' -f4)
+    if [[ -n "$device_id" ]]; then
+      curl -s -b "$master_jar" -o /dev/null -m 6 -X DELETE -H "Origin: $BASE" \
+        "$BASE/api/v1/auth/devices/$device_id"
+      code=$(curl -s -b "$jar" -o /dev/null -w '%{http_code}' -m 6 "$BASE/api/v1/activities")
+      if [[ "$code" == "401" ]]; then
+        ok "a revoked device is signed out ($code)"
+      else
+        bad "a revoked device still has access ($code)"
+      fi
+    else
+      warn "could not identify the device it paired to revoke it"
+    fi
+    rm -f "$jar" "$master_jar"
+  else
+    warn "could not mint a pairing code — the device checks were skipped"
+    rm -f "$master_jar"
   fi
 
   # A pairing code must only be mintable from the machine itself. The

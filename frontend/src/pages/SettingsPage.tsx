@@ -173,6 +173,69 @@ function HowItWorks({ children }: { children: React.ReactNode }) {
 
 /* ------------------------------------------------------------- the page */
 
+function PairedDevicesCard() {
+  const queryClient = useQueryClient()
+  const { data, isPending } = useQuery({
+    queryKey: ['paired-devices'],
+    queryFn: api.devices,
+  })
+
+  const revoke = useMutation({
+    mutationFn: (id: string) => api.revokeDevice(id),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['paired-devices'] }),
+  })
+
+  const devices = data?.devices ?? []
+
+  return (
+    <Card>
+      <CardHeader
+        title="Connected devices"
+        subtitle="Phones and browsers that have been paired to this instance."
+      />
+      <div className="px-5 pb-5">
+        {isPending ? (
+          <p className="text-[13px] text-ink-muted">Loading…</p>
+        ) : devices.length === 0 ? (
+          <p className="text-[13px] leading-relaxed text-ink-muted">
+            Nothing is paired. A browser on this machine connects by itself; any other
+            device needs a pairing code from{' '}
+            <span className="font-mono text-[12px]">scripts/prod.sh pair</span>.
+          </p>
+        ) : (
+          <ul className="divide-y divide-edge">
+            {devices.map((device) => (
+              <li key={device.id} className="flex items-center justify-between gap-3 py-2.5">
+                <div className="min-w-0">
+                  <p className="text-[13px] font-semibold text-ink">{device.name ?? 'Device'}</p>
+                  <p className="text-[12px] text-ink-muted">
+                    Paired{' '}
+                    {device.created_at
+                      ? new Date(device.created_at).toLocaleDateString()
+                      : '—'}
+                  </p>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => revoke.mutate(device.id)}
+                  disabled={revoke.isPending}
+                >
+                  Revoke
+                </Button>
+              </li>
+            ))}
+          </ul>
+        )}
+        <p className="mt-3 text-[12px] leading-relaxed text-ink-muted">
+          Revoking a device signs it out immediately. It does not affect this machine or any
+          other device.
+        </p>
+      </div>
+    </Card>
+  )
+}
+
 export function SettingsPage() {
   const queryClient = useQueryClient()
 
@@ -237,6 +300,8 @@ export function SettingsPage() {
           error={syncRunsQuery.isError ? messageOf(syncRunsQuery.error) : null}
           runs={syncRunsQuery.data?.items ?? []}
         />
+
+        <PairedDevicesCard />
 
         <AboutCard />
       </div>

@@ -191,16 +191,45 @@ cd ~/stride && ./scripts/prod.sh pair
 ```
 
 ```
-▸ Open Stride on the other device and enter that code.
-▸ It works once and expires in 10 minutes.
+████████████████████████████████████████████████████
+██████▀▀▀▀▀▀▀▀▀▀▀██    ████  ▄▄▀▀██████▄▄  ▀▀▀▀  ██▀▀▀▀▀▀▀▀▀▀██████
+██████  ██████  ██    ██▀▀▄▄▄▄  ▀▀████▀▀▀▀  ▄▄  ██  ██████  ██████
+...
 
     KD7P-3FQM
+    https://cf-openclaw.tail62fa14.ts.net:8443/#pair=KD7P-3FQM
+
+▸ Point the phone's camera at the code, or open that link.
+▸ It works once and expires in 10 minutes.
 ```
 
-The device shows a **Connect this device** screen instead of the dashboard,
-the athlete types the code, and the server exchanges it for the same HttpOnly,
-SameSite=Strict cookie a loopback browser receives. The code is consumed the
-moment it works.
+**Point the camera at the screen.** That is the whole flow: one action, once,
+and the phone is connected for good. The link is there for the times the
+camera will not do it.
+
+The code is carried in the URL *fragment*, never the query string. A fragment
+is not sent to the server, so it never lands in an access log, and the app
+clears it from the address bar the moment it is used.
+
+### The device gets its own credential
+
+The paired device is **not** given the master capability. It gets its own
+token, stored only as a SHA-256 hash, in a separate cookie that lasts a year
+rather than a browser session.
+
+That distinction is the whole reason the phone works well:
+
+| | the operator's machine | a paired phone |
+|---|---|---|
+| credential | the master capability | its own token |
+| cookie | session — closing the browser signs it out | a year |
+| if it is lost | nothing to do | revoke it in **Settings → Connected devices**, and nothing else is affected |
+
+The machine keeps the short-lived session cookie on purpose: a shared
+computer should not stay signed in. A phone is the athlete's own device and
+is expected to stay signed in.
+
+### Properties
 
 | property | why |
 |---|---|
@@ -209,10 +238,46 @@ moment it works.
 | 10 minute life | a code left on a screen stops working |
 | 5 attempts a minute | a secret being guessed cannot be brute forced |
 | no look-alike characters | `I`, `O`, `0` and `1` are excluded — it is typed on a phone |
-| the code is not the capability | it is exchanged for the capability, never a long-lived secret in JavaScript |
+| the code is not the credential | it is exchanged for one, never a long-lived secret in JavaScript |
+| revocable | each device holds its own token, so it can be signed out on its own |
 
-The security gate checks two of these on the live service: that a wrong code
-is refused, and that a remote client cannot mint one.
+The security gate checks four of these on the live service: a wrong code is
+refused, a remote client cannot mint one, a paired device can read the API,
+and a revoked device is signed out.
+
+---
+
+## The phone, specifically
+
+The tailnet address is served over **HTTPS** with a real certificate, from
+Tailscale:
+
+```bash
+tailscale cert --cert-file backend/data/tls/stride.crt \
+               --key-file backend/data/tls/stride.key \
+               cf-openclaw.tail62fa14.ts.net
+```
+
+That matters for one concrete reason: **a service worker only registers in a
+secure context.** On plain HTTP the browser refuses to install the app, so
+the athlete's phone would be stuck with a browser tab forever. With a
+trusted certificate the app installs, opens full-screen from the home screen,
+and looks like an app rather than a website. The certificate is publicly
+trusted, so the phone shows no warning.
+
+Both listeners run in one process (`app/serve.py`):
+
+| listener | who | why |
+|---|---|---|
+| `:8000` plain HTTP | the operator, the tailnet | the tools and the local browser |
+| `:8443` HTTPS | the phone | a secure context, so the app can be installed |
+
+One process means one scheduler and one state file — two processes would mean
+two auto-syncs racing each other against the Garmin API.
+
+The service worker caches the **shell** only. The API is never cached: health
+data is not something to serve out of a cache, and the app already promises
+that nothing leaves the machine.
 
 ---
 

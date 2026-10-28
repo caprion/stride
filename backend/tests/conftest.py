@@ -78,6 +78,11 @@ def client(db, monkeypatch):
     monkeypatch.setattr(state, "garmin_connected", False)
     monkeypatch.setattr(state, "garmin_method", None)
     monkeypatch.setattr(state, "demo_visible", False)
+    # The state is a module-level singleton, so anything a test writes into it
+    # would otherwise leak into the next test.
+    monkeypatch.setattr(state, "devices", [])
+    monkeypatch.setattr(state, "pairing_code", None)
+    monkeypatch.setattr(state, "pairing_expires_at", None)
     previous = main.app.dependency_overrides.copy()
     main.app.dependency_overrides[get_db] = database
     try:

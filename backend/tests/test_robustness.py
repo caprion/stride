@@ -476,9 +476,12 @@ def test_a_pairing_code_works_once(client, monkeypatch):
     first = client.post("/api/v1/auth/pair", json={"code": code})
     assert first.status_code == 204
     cookie = first.headers.get("set-cookie", "")
-    assert "stride_capability" in cookie
+    # The device gets its own cookie, not the master capability.
+    assert "stride_device" in cookie
     assert "HttpOnly" in cookie
     assert "SameSite=strict" in cookie.replace("Strict", "strict")
+    # And it persists: a phone is expected to stay signed in.
+    assert "Max-Age=" in cookie
 
     # Single use: the code is consumed the moment it works.
     assert state.pairing_code is None
@@ -508,10 +511,98 @@ def test_a_pairing_code_is_readable_by_a_human(client, monkeypatch):
 
 
 def test_pairing_does_not_leak_the_capability_token(client, monkeypatch):
-    """The pairing code must never be the capability itself."""
+    """A paired device must not be handed the master capability.
+
+    It gets its own token, so a lost phone can be revoked without locking the
+    athlete out of their own machine.
+    """
     from app.config import state
 
     code = _pair_code(client, monkeypatch)
     assert code != state.capability_token
     response = client.post("/api/v1/auth/pair", json={"code": code})
-    assert response.headers.get("set-cookie", "").find(state.capability_token) > 0
+    cookie = response.headers.get("set-cookie", "")
+    assert state.capability_token not in cookie
+    assert "stride_capability" not in cookie
+
+
+def test_a_paired_device_can_be_revoked(client, monkeypatch):
+    """Revoking a device must not touch anything else."""
+    from app.config import state
+
+    code = _pair_code(client, monkeypatch)
+    client.post("/api/v1/auth/pair", json={"code": code})
+    devices = state.devices or []
+    assert len(devices) == 1
+    device_id = devices[0]["id"]
+
+    listing = client.get("/api/v1/auth/devices")
+    assert listing.status_code == 200
+    assert listing.json()["devices"][0]["id"] == device_id
+    # A listing never carries a usable credential.
+    assert "token_hash" not in listing.json()["devices"][0]
+
+    revoked = client.delete(f"/api/v1/auth/devices/{device_id}")
+    assert revoked.status_code == 200
+    assert state.devices == []
+
+
+def test_the_state_file_never_holds_a_usable_device_token(client, monkeypatch):
+    """Only the hash of a device token is stored."""
+    import json
+
+    from app.config import STATE_PATH
+    from app.config import state
+
+    code = _pair_code(client, monkeypatch)
+    response = client.post("/api/v1/auth/pair", json={"code": code})
+    cookie = response.headers.get("set-cookie", "")
+    token = cookie.split("stride_device=", 1)[1].split(";", 1)[0]
+
+    stored = json.loads(STATE_PATH.read_text())
+    assert token not in json.dumps(stored)
+    assert state.devices[0]["token_hash"]
+
+
+def test_a_paired_device_token_authenticates(client, monkeypatch):
+    """The device cookie must work on its own — that is the point of pairing."""
+    from app.config import state
+
+    code = _pair_code(client, monkeypatch)
+    response = client.post("/api/v1/auth/pair", json={"code": code})
+    token = response.headers["set-cookie"].split("stride_device=", 1)[1].split(";", 1)[0]
+
+    client.cookies.set("stride_device", token)
+    assert client.get("/api/v1/auth/status").status_code == 200
+
+
+def test_a_device_token_alone_does_not_pass_the_capability_check():
+    """The device token is not the master capability."""
+    from app.security import device_token_valid, has_valid_capability
+
+    class FakeRequest:
+        def __init__(self, cookie):
+            self.cookies = {"stride_device": cookie}
+            self.headers = {}
+
+    assert device_token_valid("nonsense") is False
+    assert has_valid_capability(FakeRequest("nonsense"))[0] is False
+
+
+def test_a_device_token_is_checked_by_hash_not_by_value():
+    """The state file must never hold a usable device credential."""
+    import hashlib
+
+    from app.config import state
+    from app.security import device_token_valid
+
+    token = "a-secret-device-token"
+    state.devices = [
+        {
+            "id": "abc123",
+            "name": "Test",
+            "token_hash": hashlib.sha256(token.encode()).hexdigest(),
+        }
+    ]
+    assert device_token_valid(token) is True
+    assert device_token_valid("a-secret-device-toke") is False

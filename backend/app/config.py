@@ -120,6 +120,11 @@ class AppState:
     pairing_code: str | None = None
     pairing_expires_at: str | None = None
 
+    # Paired devices. Each one holds its own token — not the master
+    # capability — so a lost phone can be revoked on its own without
+    # locking the athlete out of their own machine. Only the hash is kept.
+    devices: list[dict[str, Any]] = field(default_factory=list)
+
     _lock: threading.Lock = field(default_factory=threading.Lock, repr=False)
 
     # ------------------------------------------------------------------ io

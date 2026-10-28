@@ -65,6 +65,19 @@ token, so it gets its own checks.
 - [ ] A wrong code is refused with a 401 and no detail about which part was
       wrong.
 
+### Device credentials
+
+A paired device holds **its own** token, not the master capability.
+
+- [ ] The device token is stored only as a hash. The state file never
+      contains a usable credential.
+- [ ] The device cookie is long-lived; the machine's own session cookie is
+      not. A shared computer should not stay signed in.
+- [ ] Revoking a device signs it out immediately and touches nothing else —
+      the machine stays signed in, other devices stay signed in.
+- [ ] The device list never returns a token or a hash.
+- [ ] A paired device cannot be minted from anywhere but the machine.
+
 ## 4. The browser
 
 - [ ] A Content-Security-Policy is present, on the static build and as a
