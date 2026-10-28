@@ -65,7 +65,7 @@ object SyncEngine {
 
         return try {
             val answer = StrideCore.garminSync(key, days)
-            parse(answer)
+            parse(answer, days)
         } catch (error: Throwable) {
             Log.w(TAG, "the pull failed: ${error.message}")
             SyncOutcome(
@@ -83,7 +83,7 @@ object SyncEngine {
     }
 
     /** Read the core's answer. */
-    private fun parse(answer: String): SyncOutcome {
+    private fun parse(answer: String, days: Long): SyncOutcome {
         val envelope = JSONObject(answer)
         if (!envelope.optBoolean("ok")) {
             val detail = envelope.optJSONObject("error")?.optString("detail")
@@ -95,9 +95,10 @@ object SyncEngine {
         val created = body.optInt("activities_new", 0)
         val wellness = body.optInt("wellness_days", 0)
         val errors = body.optJSONArray("errors")
+        val errorCount = errors?.length() ?: 0
         val message = when {
-            !errors.isNullOrEmpty() -> {
-                val first = errors.optJSONObject(0)?.optString("error") ?: "a problem"
+            errorCount > 0 -> {
+                val first = errors?.optJSONObject(0)?.optString("error") ?: "a problem"
                 "Imported $created new runs. One problem: $first"
             }
             created == 0 && found == 0 -> "Garmin had no runs in the last $days days."

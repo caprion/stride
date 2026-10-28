@@ -1,0 +1,6 @@
+{
+  "sleepSummaries": [
+    { "calendarDate": "2026-03-07", "sleepTimeSeconds": 27900.0, "deepSleepSeconds": 6420.0 },
+    { "calendarDate": "2026-03-08", "sleepTimeSeconds": 26400.0, "deepSleepSeconds": 5900.0 }
+  ]
+}

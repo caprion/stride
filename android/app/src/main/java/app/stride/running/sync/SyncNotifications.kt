@@ -74,7 +74,7 @@ object SyncNotifications {
             .setContentText(outcome.message)
             .setSmallIcon(
                 if (outcome.ok) {
-                    android.R.drawable.stat_notify_sync_done
+                    android.R.drawable.stat_notify_sync
                 } else {
                     android.R.drawable.stat_notify_error
                 }

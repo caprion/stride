@@ -1,0 +1,9 @@
+{
+  "zoneBounds": [
+    { "zoneNumber": 1, "zoneOrder": 1, "lowerBound": 0, "upperBound": 120, "zoneName": "Zone 1", "secsIntoZone": 0 },
+    { "zoneNumber": 2, "zoneOrder": 2, "lowerBound": 120, "upperBound": 140, "zoneName": "Zone 2", "secsIntoZone": 0 },
+    { "zoneNumber": 3, "zoneOrder": 3, "lowerBound": 140, "upperBound": 160, "zoneName": "Zone 3", "secsIntoZone": 0 },
+    { "zoneNumber": 4, "zoneOrder": 4, "lowerBound": 160, "upperBound": 175, "zoneName": "Zone 4", "secsIntoZone": 0 },
+    { "zoneNumber": 5, "zoneOrder": 5, "lowerBound": 175, "upperBound": 190, "zoneName": "Zone 5", "secsIntoZone": 0 }
+  ]
+}

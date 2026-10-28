@@ -7,7 +7,7 @@
       "device": "Edge 1040",
       "file": "backend/tests/golden/fixtures/cycling.fit",
       "notes": "Cycling cadence is 90 rpm and must stay 90: the halving correction applies to running sports only.",
-      "sha256": "3ea247a8230fc34ce567f65b1c438da5096641b1f0e495cf5c39bbf2c5e8ba4e",
+      "sha256": "825a66d7acdc7b233b4485319bcc1088f4a4559c72887ef408a9f94cc72e8313",
       "sport": "cycling",
       "start": "2026-03-07T17:30:00Z",
       "watch": "records every second"
@@ -31,7 +31,7 @@
       "device": "Forerunner 965",
       "file": "backend/tests/golden/fixtures/hilly.fit",
       "notes": "Climbs 60 m then descends 60 m; the elevation stream follows the running samples.",
-      "sha256": "a20e5befa827c16df37bfd2213ebdd47a1e5751dc17f4737f012a60876c2d63b",
+      "sha256": "28f3613e99b54cb1a3432b65d3345f5ee7da483b8c94c7ecfe682f42c4314dc3",
       "sport": "running",
       "start": "2026-03-09T05:55:00Z",
       "watch": "records every second"
@@ -43,7 +43,7 @@
       "device": "Forerunner 265",
       "file": "backend/tests/golden/fixtures/hr_gps_run.fit",
       "notes": "GPS present, heart rate present, cadence stored halved (80 -> 160 spm).",
-      "sha256": "833e5d3858854efb6c45c4ad7bf053dfccf9e64ae408800c63ae38cc154f7e24",
+      "sha256": "b2f96d71680efd8ea3de7f6c3a0b074743f28a0c1a3c192399af331a0f8a53a2",
       "sport": "running",
       "start": "2026-03-03T06:15:00Z",
       "watch": "records every second"
@@ -79,7 +79,7 @@
       "device": "Edge 1040",
       "file": "backend/tests/golden/fixtures/no_cadence.fit",
       "notes": "No cadence field anywhere: every cadence metric must be null, never zero.",
-      "sha256": "5b9a33f8f1593b56108c49a11c5e4d2ef83e90437b1c3667bcca37f0cdc0e9fb",
+      "sha256": "b2c43c8671acff02e71be9e7cf4dc99cb7f34e6b946d7c5a27167263b00b036d",
       "sport": "running",
       "start": "2026-03-05T07:05:00Z",
       "watch": "records every second, no cadence sensor"
@@ -91,10 +91,22 @@
       "device": "Forerunner 965",
       "file": "backend/tests/golden/fixtures/real_garmin_gap.fit",
       "notes": "The same real-watch format as real_garmin_run, with the 204 second hole the real files contain: the watch records nothing for three and a half minutes and the distance does not advance across it. The interval after a sample belongs to that sample, so the hole is charged to the running, while the laps \u2014 which only count the intervals between two running samples \u2014 are not.",
-      "sha256": "b9022ccf8142e6a4f7dc5730e851874d55a70be6246f87ea90ce1b65100e1b26",
+      "sha256": "217dc0b328407e15e82a2acb7d72557b08ccbb217c640ba43a9917e8e030b680",
       "sport": "running",
       "start": "2026-04-21T06:00:00Z",
       "watch": "records irregularly, with a 204 second hole"
+    },
+    "real_garmin_nulls": {
+      "bytes": 10885,
+      "case_id": "real_garmin_nulls",
+      "date": "2026-04-22",
+      "device": "Forerunner 965",
+      "file": "backend/tests/golden/fixtures/real_garmin_nulls.fit",
+      "notes": "The real-watch format, with the reserved 'no value' sentinels in the fields the importer reads: speed and altitude are 0xFFFF with the enhanced pair carrying the value, heart rate and cadence are 0xFF, one distance is 0xFFFFFFFF and one position is 0x7FFFFFFF. A sentinel is an absent field, and it is absent before any range check: 0xFFFF as a speed is 65.535 m/s, which is inside the range and would pass every check. Twelve laps, as the real files have.",
+      "sha256": "9713cfb9bef56048590ccc63c7503020055b66f5a7f96a82b49a024637fd5350",
+      "sport": "running",
+      "start": "2026-04-22T05:45:00Z",
+      "watch": "records irregularly, with a block of absent values"
     },
     "real_garmin_run": {
       "bytes": 10323,
@@ -103,7 +115,7 @@
       "device": "Forerunner 965",
       "file": "backend/tests/golden/fixtures/real_garmin_run.fit",
       "notes": "The byte format of a real Garmin Forerunner 965 file (thirteen of them, March 2025 to October 2026): FIT protocol 1.0, enhanced speed and altitude instead of speed and altitude, fields and messages the published FIT profile does not describe, a redefined local message number and an irregular record stream. The format came from a real watch; the data did not, and every position is fabricated.",
-      "sha256": "d51266e221151a73a2a952fa68e8d5b7daff0d357e5a5d3d206d1ad7d7df50c2",
+      "sha256": "8ed62ab6005d74ab69a5ce8b32f8a7b1fb04dc186097baaf16ba6416a9dfa2d3",
       "sport": "running",
       "start": "2026-04-20T05:30:00Z",
       "watch": "records irregularly, one to fourteen seconds apart"

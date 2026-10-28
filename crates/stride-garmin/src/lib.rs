@@ -32,4 +32,4 @@ pub use client::{
 };
 pub use error::GarminError;
 pub use fit::{extract_fit, MAX_FIT_BYTES, MAX_FIT_MEMBER_BYTES, MAX_ZIP_ENTRIES};
-pub use types::{ActivitySummary, Profile, Zone, ZoneModel};
+pub use types::{ActivityDetail, ActivitySummary, Profile, Zone, ZoneModel};

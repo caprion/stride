@@ -320,8 +320,8 @@ fn the_activities_are_paginated_up_to_the_page_limit() {
         101,
         "100 from the first page, 1 from the second"
     );
-    assert_eq!(activities[0].activity_id, "1000");
-    assert_eq!(activities[100].activity_id, "9999");
+    assert_eq!(activities[0].external_id, "1000");
+    assert_eq!(activities[100].external_id, "9999");
     assert_eq!(stub.count("GET", ACTIVITIES_PATH), 2);
 }
 

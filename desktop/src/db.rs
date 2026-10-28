@@ -21,6 +21,23 @@
 //! * the conversion reports what it found — the tables it copied, the rows
 //!   it copied, and any drift between the two schemas.
 //!
+//! ## The conversion is careful, because it replaces the file
+//!
+//! The file the desktop converts is a **live** database: the Python app is
+//! running and writing to it. So the conversion:
+//!
+//! * refuses to run while another process has the file open — the copy
+//!   would be of a database that is being written under it, and the rename
+//!   would take the file away from the writer;
+//! * reads the source in **one transaction**, so the rows it copies are a
+//!   consistent snapshot and not a mixture of two states;
+//! * checks the source's integrity before it starts;
+//! * counts the rows it read and the rows it wrote, and refuses to replace
+//!   the original if the two do not agree;
+//! * writes the backup with SQLite's own backup API, so the backup is a
+//!   consistent snapshot too, and not a copy of three files that were
+//!   written at three different moments.
+//!
 //! The key comes from `STRIDE_DB_KEY`, from Azure Key Vault, or — when
 //! neither has one — from a local key file next to the database. The last
 //! one is a convenience for a machine that has no vault, and it is written
@@ -28,7 +45,9 @@
 
 use std::path::{Path, PathBuf};
 use std::process::Command;
+use std::time::Duration;
 
+use rusqlite::Connection;
 use stride_store::{Store, StoreError};
 
 /// The name of the Key Vault secret that holds the database key.
@@ -67,6 +86,17 @@ pub enum DbError {
     /// The conversion did not work.
     #[error("the conversion failed: {0}")]
     Conversion(String),
+    /// Another process is using the database.
+    #[error(
+        "the database at {path} is open in another process ({pids:?}). \
+         Stop it before the desktop converts the file: the conversion replaces it."
+    )]
+    InUse {
+        /// The path.
+        path: PathBuf,
+        /// The processes that have it open.
+        pids: Vec<u32>,
+    },
     /// There is no key and none could be made.
     #[error("no database key: {0}")]
     NoKey(String),
@@ -197,6 +227,48 @@ fn harden(path: &Path) {
     let _ = path;
 }
 
+/// The processes that have the database open.
+///
+/// The conversion replaces the file, so it must not do that while somebody
+/// else is writing to it: the writer would carry on into the old inode and
+/// its rows would go nowhere. Linux says who has a file open in `/proc`.
+pub fn users_of(path: &Path) -> Vec<u32> {
+    let Ok(canonical) = path.canonicalize() else {
+        return Vec::new();
+    };
+    let mut users = Vec::new();
+    let Ok(processes) = std::fs::read_dir("/proc") else {
+        return Vec::new();
+    };
+    for process in processes.flatten() {
+        let name = process.file_name();
+        let Some(name) = name.to_str() else { continue };
+        if name.is_empty() || !name.chars().all(|character| character.is_ascii_digit()) {
+            continue;
+        }
+        let Ok(pid) = name.parse::<u32>() else {
+            continue;
+        };
+        if pid == std::process::id() {
+            continue;
+        }
+        let descriptors = process.path().join("fd");
+        let Ok(descriptors) = std::fs::read_dir(descriptors) else {
+            continue;
+        };
+        for descriptor in descriptors.flatten() {
+            if let Ok(target) = std::fs::read_link(descriptor.path()) {
+                if target == canonical {
+                    users.push(pid);
+                    break;
+                }
+            }
+        }
+    }
+    users.sort_unstable();
+    users
+}
+
 /// Convert the plain database at `path` into an encrypted one, in place.
 ///
 /// The plain file is kept as `<name>.plaintext-backup`.
@@ -204,6 +276,17 @@ pub fn convert_plaintext_to_encrypted(
     path: &Path,
     key: &[u8],
 ) -> Result<ConversionReport, DbError> {
+    // Another process writing to the file right now would make the copy a
+    // mixture of two states, and the rename would take the file away from
+    // it. So this is refused, and said so.
+    let users = users_of(path);
+    if !users.is_empty() {
+        return Err(DbError::InUse {
+            path: path.to_path_buf(),
+            pids: users,
+        });
+    }
+
     let staged = staged_path(path);
     let backup = backup_path(path);
 
@@ -211,10 +294,15 @@ pub fn convert_plaintext_to_encrypted(
     // the source of truth, so it goes first.
     let _ = std::fs::remove_file(&staged);
 
-    checkpoint_legacy(path)?;
+    // The source: opened through SQLite, so its write-ahead log is applied
+    // and the rows are a consistent snapshot.
+    let source = Connection::open(path).map_err(|error| DbError::Legacy {
+        path: path.to_path_buf(),
+        source: error,
+    })?;
+    quick_check(&source, path)?;
 
     let store = Store::open_and_migrate(&staged, key)?;
-    let source = path.canonicalize().unwrap_or_else(|_| path.to_path_buf());
     let report = store
         .with_connection(|conn| {
             let report = copy_tables(conn, &source)?;
@@ -231,10 +319,10 @@ pub fn convert_plaintext_to_encrypted(
     let _ = std::fs::remove_file(sidecar(&staged, "-shm"));
 
     // Keep the plain file: the conversion is the one operation here that
-    // cannot be undone.
-    copy_file(path, &backup)?;
-    copy_file(&sidecar(path, "-wal"), &sidecar(&backup, "-wal"))?;
-    copy_file(&sidecar(path, "-shm"), &sidecar(&backup, "-shm"))?;
+    // cannot be undone. It is written with SQLite's backup API, so it is a
+    // consistent snapshot and not a copy of three files that were written at
+    // three different moments.
+    write_backup(&source, &backup)?;
 
     // The plain file's write-ahead log belongs to the plain file. Leaving it
     // next to an encrypted database would make SQLite try to apply it.
@@ -249,58 +337,46 @@ pub fn convert_plaintext_to_encrypted(
     Ok(report)
 }
 
-/// The path the encrypted database is written to before it is put in place.
-fn staged_path(path: &Path) -> PathBuf {
-    let mut name = path.file_name().unwrap_or_default().to_os_string();
-    name.push(".encrypted");
-    path.with_file_name(name)
-}
-
-/// The path the plain database is kept at.
-fn backup_path(path: &Path) -> PathBuf {
-    let mut name = path.file_name().unwrap_or_default().to_os_string();
-    name.push(".plaintext-backup");
-    path.with_file_name(name)
-}
-
-/// The write-ahead log of a database.
-fn sidecar(path: &Path, suffix: &str) -> PathBuf {
-    let mut name = path.file_name().unwrap_or_default().to_os_string();
-    name.push(suffix);
-    path.with_file_name(name)
-}
-
-/// Copy a file, if it is there.
-fn copy_file(from: &Path, to: &Path) -> Result<(), DbError> {
-    if !from.exists() {
-        return Ok(());
-    }
-    std::fs::copy(from, to)
-        .map(|_| ())
-        .map_err(|source| DbError::Io {
-            path: to.to_path_buf(),
-            source,
-        })
-}
-
-/// Merge the legacy database's write-ahead log into its main file.
-///
-/// The legacy file is the Python app's, and it may have a log with rows in
-/// it that are not in the main file yet. Copying the file without the log
-/// would copy a database that is missing the most recent rows.
-fn checkpoint_legacy(path: &Path) -> Result<(), DbError> {
-    if !sidecar(path, "-wal").exists() {
-        return Ok(());
-    }
-    let connection = rusqlite::Connection::open(path).map_err(|source| DbError::Legacy {
-        path: path.to_path_buf(),
-        source,
-    })?;
-    connection
-        .execute_batch("PRAGMA wal_checkpoint(TRUNCATE);")
-        .map_err(|source| DbError::Legacy {
+/// Check that the source is a database that can be read.
+fn quick_check(source: &Connection, path: &Path) -> Result<(), DbError> {
+    let mut statement = source
+        .prepare("PRAGMA quick_check")
+        .map_err(|error| DbError::Legacy {
             path: path.to_path_buf(),
-            source,
+            source: error,
+        })?;
+    let verdict = statement
+        .query_row([], |row| row.get::<_, String>(0))
+        .map_err(|error| DbError::Legacy {
+            path: path.to_path_buf(),
+            source: error,
+        })?;
+    if verdict != "ok" {
+        return Err(DbError::Conversion(format!(
+            "the database at {} is not sound: {verdict}",
+            path.display()
+        )));
+    }
+    Ok(())
+}
+
+/// Write a consistent copy of the plain database.
+fn write_backup(source: &Connection, backup: &Path) -> Result<(), DbError> {
+    let _ = std::fs::remove_file(backup);
+    let mut destination = Connection::open(backup).map_err(|error| DbError::Legacy {
+        path: backup.to_path_buf(),
+        source: error,
+    })?;
+    let copy = rusqlite::backup::Backup::new(source, &mut destination).map_err(|error| {
+        DbError::Legacy {
+            path: backup.to_path_buf(),
+            source: error,
+        }
+    })?;
+    copy.run_to_completion(64, Duration::from_millis(10), None)
+        .map_err(|error| DbError::Legacy {
+            path: backup.to_path_buf(),
+            source: error,
         })?;
     Ok(())
 }
@@ -316,27 +392,86 @@ fn checkpoint_legacy(path: &Path) -> Result<(), DbError> {
 /// the plain header as an encrypted page and gives up. So the rows are read
 /// from the plain connection and written to the encrypted one, one row at a
 /// time, with the values passed through as they are.
+///
+/// The read happens inside one transaction, so the rows are a snapshot of
+/// one moment and not a mixture of two: the database may be being written
+/// to while this runs.
 fn copy_tables(
     conn: &rusqlite::Connection,
-    source_path: &Path,
+    source: &rusqlite::Connection,
 ) -> Result<ConversionReport, stride_store::StoreError> {
     let mut report = ConversionReport::default();
 
-    let source = rusqlite::Connection::open(source_path)
-        .map_err(|source| StoreError::query(format!("open {}", source_path.display()), source))?;
-
+    // The foreign keys are off while the tables are copied: they arrive in
+    // alphabetical order, so a child arrives before its parent. They are
+    // checked afterwards, with `foreign_key_check`.
     conn.execute_batch("PRAGMA foreign_keys=OFF;")
         .map_err(|source| StoreError::query("PRAGMA foreign_keys=OFF".to_string(), source))?;
 
+    source
+        .execute_batch("BEGIN;")
+        .map_err(|source| StoreError::query("BEGIN".to_string(), source))?;
+    let outcome = copy_tables_in_transaction(conn, source, &mut report);
+    // The transaction is read-only, so it is rolled back rather than
+    // committed: the source must not be written to.
+    let _ = source.execute_batch("ROLLBACK;");
+    outcome?;
+
+    // The rows that were written are counted again, in the file they were
+    // written to. If the two counts disagree, the file is not replaced.
+    for (table, rows) in &report.tables {
+        let written = count_rows(conn, table)?;
+        if written != *rows {
+            return Err(StoreError::query(
+                format!("the table {table}"),
+                rusqlite::Error::InvalidParameterName(format!(
+                    "{rows} rows were read and {written} were written"
+                )),
+            ));
+        }
+    }
+
+    // The foreign keys are checked after the copy, not during it: the tables
+    // arrive in alphabetical order and the children arrive before their
+    // parents.
+    let violations = conn
+        .prepare("PRAGMA foreign_key_check")
+        .and_then(|mut statement| {
+            let mut rows = statement.query([])?;
+            let mut count = 0i64;
+            while rows.next()?.is_some() {
+                count += 1;
+            }
+            Ok(count)
+        })
+        .unwrap_or(0);
+    if violations > 0 {
+        report
+            .drift
+            .push(format!("{violations} rows break a foreign key"));
+    }
+
+    conn.execute_batch("PRAGMA foreign_keys=ON;")
+        .map_err(|source| StoreError::query("PRAGMA foreign_keys=ON".to_string(), source))?;
+
+    Ok(report)
+}
+
+/// The copy itself, inside the transaction.
+fn copy_tables_in_transaction(
+    conn: &rusqlite::Connection,
+    source: &rusqlite::Connection,
+    report: &mut ConversionReport,
+) -> Result<(), stride_store::StoreError> {
     let tables = strings(
-        &source,
+        source,
         "SELECT name FROM main.sqlite_master WHERE type='table' \
          AND name NOT LIKE 'sqlite_%' ORDER BY name",
     )?;
 
     for table in tables {
         let target_columns = columns(conn, &table)?;
-        let source_columns = columns(&source, &table)?;
+        let source_columns = columns(source, &table)?;
         if target_columns.is_empty() {
             report
                 .drift
@@ -413,31 +548,14 @@ fn copy_tables(
         report.rows += copied;
         report.tables.push((table, copied));
     }
+    Ok(())
+}
 
-    // The foreign keys are checked after the copy, not during it: the tables
-    // arrive in alphabetical order and the children arrive before their
-    // parents.
-    let violations = conn
-        .prepare("PRAGMA foreign_key_check")
-        .and_then(|mut statement| {
-            let mut rows = statement.query([])?;
-            let mut count = 0i64;
-            while rows.next()?.is_some() {
-                count += 1;
-            }
-            Ok(count)
-        })
-        .unwrap_or(0);
-    if violations > 0 {
-        report
-            .drift
-            .push(format!("{violations} rows break a foreign key"));
-    }
-
-    conn.execute_batch("PRAGMA foreign_keys=ON;")
-        .map_err(|source| StoreError::query("PRAGMA foreign_keys=ON".to_string(), source))?;
-
-    Ok(report)
+/// The number of rows in a table.
+fn count_rows(conn: &rusqlite::Connection, table: &str) -> Result<i64, stride_store::StoreError> {
+    let statement = format!("SELECT count(*) FROM main.\"{table}\"");
+    conn.query_row(&statement, [], |row| row.get::<_, i64>(0))
+        .map_err(|error| StoreError::query(statement.clone(), error))
 }
 
 /// The columns of a table.
@@ -483,6 +601,27 @@ fn strings(
         }
     }
     Ok(values)
+}
+
+/// The path the encrypted database is written to before it is put in place.
+fn staged_path(path: &Path) -> PathBuf {
+    let mut name = path.file_name().unwrap_or_default().to_os_string();
+    name.push(".encrypted");
+    path.with_file_name(name)
+}
+
+/// The path the plain database is kept at.
+fn backup_path(path: &Path) -> PathBuf {
+    let mut name = path.file_name().unwrap_or_default().to_os_string();
+    name.push(".plaintext-backup");
+    path.with_file_name(name)
+}
+
+/// The write-ahead log of a database.
+fn sidecar(path: &Path, suffix: &str) -> PathBuf {
+    let mut name = path.file_name().unwrap_or_default().to_os_string();
+    name.push(suffix);
+    path.with_file_name(name)
 }
 
 /// Find the key the database is encrypted with.
@@ -600,6 +739,19 @@ mod tests {
         let path = std::env::temp_dir().join("stride-desktop-encrypted.db");
         std::fs::write(&path, [0x7fu8; 32]).expect("the file");
         assert_eq!(detect_format(&path).expect("the format"), Format::Encrypted);
+        let _ = std::fs::remove_file(&path);
+    }
+
+    #[test]
+    fn a_file_this_process_has_open_is_not_a_user() {
+        let path = std::env::temp_dir().join("stride-desktop-open.db");
+        std::fs::write(&path, b"SQLite format 3\0").expect("the file");
+        let file = std::fs::File::open(&path).expect("the file");
+        assert!(
+            !users_of(&path).contains(&std::process::id()),
+            "the process is reported as a user of its own file"
+        );
+        drop(file);
         let _ = std::fs::remove_file(&path);
     }
 }

@@ -44,13 +44,13 @@ class StrideApiPlugin : Plugin() {
         val method = call.getString("method")
         val path = call.getString("path")
         if (method.isNullOrBlank() || path.isNullOrBlank()) {
-            call.reject("a request needs a method and a path", "400", null)
+            call.reject("a request needs a method and a path", "400")
             return
         }
         val body = call.getString("body")
         val context = context
         if (context == null) {
-            call.reject("the app has no context", "500", null)
+            call.reject("the app has no context", "500")
             return
         }
 
@@ -58,7 +58,7 @@ class StrideApiPlugin : Plugin() {
             try {
                 val problem = StrideCore.ensureOpen(context)
                 if (problem != null) {
-                    call.reject(problem, "503", null)
+                    call.reject(problem, "503")
                     return@execute
                 }
 
@@ -73,7 +73,6 @@ class StrideApiPlugin : Plugin() {
                     call.reject(
                         "Garmin is not connected on this phone.",
                         "400",
-                        null,
                     )
                     return@execute
                 }
@@ -87,7 +86,7 @@ class StrideApiPlugin : Plugin() {
                 }
             } catch (error: Throwable) {
                 Log.w("StrideApi", "the request failed: ${error.message}")
-                call.reject(error.message ?: "the request could not be completed", "500", null)
+                call.reject(error.message ?: "the request could not be completed", "500")
             }
         }
     }

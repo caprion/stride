@@ -43,3 +43,6 @@ target/
 # Rust build output inside the Android project
 android/app/src/main/rust/**/target/
 android/app/src/main/rust/**/Cargo.lock
+
+# Scratch debugging programs - not part of the product
+desktop/examples/dbg.rs

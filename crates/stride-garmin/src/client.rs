@@ -39,7 +39,7 @@ use serde_json::Value;
 
 use crate::error::GarminError;
 use crate::fit::extract_fit;
-use crate::types::{ActivitySummary, Profile, ZoneModel};
+use crate::types::{ActivityDetail, ActivitySummary, Profile, ZoneModel};
 
 /// Garmin's Personal API host.
 pub const DEFAULT_BASE_URL: &str = "https://personal.connectapi.garmin.com";
@@ -302,6 +302,21 @@ impl GarminClient {
         self.get_json(&format!("{ACTIVITY_PATH}/{id}"), &[])
     }
 
+    /// One activity's detail, canonicalised the way the reference
+    /// implementation canonicalises it.
+    ///
+    /// This is the same payload [`GarminClient::activity_detail`] returns, put
+    /// through [`ActivityDetail::from_value`], so the numbers are the numbers
+    /// the Python reference produces.
+    pub fn activity_detail_canonical(
+        &self,
+        activity_id: &str,
+    ) -> Result<ActivityDetail, GarminError> {
+        let payload = self.activity_detail(activity_id)?;
+        ActivityDetail::from_value(&payload, None)
+            .ok_or(GarminError::InvalidActivityId(activity_id.to_owned()))
+    }
+
     /// The workouts associated with an activity.
     pub fn activity_workouts(&self, activity_id: &str) -> Result<Vec<Value>, GarminError> {
         let id = check_activity_id(activity_id)?;
@@ -383,6 +398,19 @@ impl GarminClient {
         )
     }
 
+    /// The body's battery, day by day, without the envelope.
+    ///
+    /// Garmin wraps this list in `bodyBatteryReports`, `bodyBatteryList` or
+    /// `reports`; the reference implementation unwraps it with `_as_list` and
+    /// this does the same.
+    pub fn body_battery_list(&self, from: &str, to: &str) -> Result<Vec<Value>, GarminError> {
+        let payload = self.body_battery(from, to)?;
+        Ok(as_list(
+            &payload,
+            &["bodyBatteryReports", "bodyBatteryList", "reports"],
+        ))
+    }
+
     /// The day's summary: resting heart rate, stress, body battery, steps.
     pub fn daily_summary(&self, day: &str) -> Result<Value, GarminError> {
         let date = check_date(day)?;
@@ -401,6 +429,15 @@ impl GarminClient {
         )
     }
 
+    /// The daily stress series, without the envelope.
+    pub fn stress_list(&self, from: &str, to: &str) -> Result<Vec<Value>, GarminError> {
+        let payload = self.stress(from, to)?;
+        Ok(as_list(
+            &payload,
+            &["stressValuesArray", "stressDailyList", "stressList"],
+        ))
+    }
+
     /// The daily steps series.
     pub fn steps(&self, from: &str, to: &str) -> Result<Value, GarminError> {
         let (start, end) = bounded_range(Some(parse_date(from)?), Some(parse_date(to)?));
@@ -410,10 +447,28 @@ impl GarminClient {
         )
     }
 
+    /// The daily steps series, without the envelope.
+    pub fn steps_list(&self, from: &str, to: &str) -> Result<Vec<Value>, GarminError> {
+        let payload = self.steps(from, to)?;
+        Ok(as_list(
+            &payload,
+            &["stepsDailyList", "stepsList", "stepsValuesArray"],
+        ))
+    }
+
     /// The weight series.
     pub fn weight(&self, from: &str, to: &str) -> Result<Value, GarminError> {
         let (start, end) = bounded_range(Some(parse_date(from)?), Some(parse_date(to)?));
         self.get_json(&format!("/weight-service/weight/all/{start}/{end}"), &[])
+    }
+
+    /// The weight series, without the envelope.
+    pub fn weight_list(&self, from: &str, to: &str) -> Result<Vec<Value>, GarminError> {
+        let payload = self.weight(from, to)?;
+        Ok(as_list(
+            &payload,
+            &["dateWeightList", "weightList", "weights"],
+        ))
     }
 
     /// The fitness age for a day.

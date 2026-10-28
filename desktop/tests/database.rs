@@ -34,7 +34,14 @@ fn real_database() -> PathBuf {
         .join("stride.db")
 }
 
-/// A copy of the real database, with its write-ahead log.
+/// A consistent copy of the real database.
+///
+/// The database is **live**: the Python app is running and writing to it.
+/// Copying the files one by one would copy a database that is being written
+/// under the copy — the main file at one moment and the write-ahead log at
+/// another — and the copy would be a mixture of two states. SQLite's own
+/// backup API takes a snapshot instead, which is what the conversion needs
+/// too.
 fn copy_of_the_real_database(directory: &Path) -> Option<PathBuf> {
     let source = real_database();
     if !source.is_file() {
@@ -42,21 +49,13 @@ fn copy_of_the_real_database(directory: &Path) -> Option<PathBuf> {
     }
     std::fs::create_dir_all(directory).ok()?;
     let target = directory.join("stride.db");
-    std::fs::copy(&source, &target).ok()?;
-    // The log holds rows that are not in the main file yet.
-    for suffix in ["-wal", "-shm"] {
-        let sidecar = source.with_file_name(format!(
-            "{}{suffix}",
-            source.file_name().unwrap_or_default().to_string_lossy()
-        ));
-        if sidecar.is_file() {
-            let name = format!(
-                "{}{suffix}",
-                target.file_name().unwrap_or_default().to_string_lossy()
-            );
-            std::fs::copy(&sidecar, directory.join(name)).ok()?;
-        }
-    }
+    let _ = std::fs::remove_file(&target);
+    let origin = Connection::open(&source).ok()?;
+    let mut destination = Connection::open(&target).ok()?;
+    let backup = rusqlite::backup::Backup::new(&origin, &mut destination).ok()?;
+    backup
+        .run_to_completion(64, std::time::Duration::from_millis(10), None)
+        .ok()?;
     Some(target)
 }
 
