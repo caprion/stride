@@ -41,7 +41,39 @@ def _tls_files(directory: Path) -> tuple[Path, Path] | None:
     return None
 
 
+def _close_inherited_descriptors() -> None:
+    """Close every descriptor above stderr.
+
+    A daemon that inherits a pipe keeps it open, and whoever wrote to that
+    pipe waits for an end-of-file that never comes. It is the reason a
+    start script can appear to hang when its output goes to a pipe rather
+    than to a file.
+
+    Nothing above stderr is needed: the log file is already open as stdout
+    and stderr.
+    """
+    try:
+        import os
+
+        keep = {0, 1, 2}
+        for fd in sorted(os.listdir("/proc/self/fd"), reverse=True):
+            try:
+                number = int(fd)
+            except ValueError:
+                continue
+            if number in keep:
+                continue
+            try:
+                os.close(number)
+            except OSError:
+                pass
+    except (ImportError, OSError):  # pragma: no cover - not Linux
+        pass
+
+
 def main() -> int:
+    _close_inherited_descriptors()
+
     from app.main import app
 
     http_port = int(os.getenv("STRIDE_PORT", "8000"))

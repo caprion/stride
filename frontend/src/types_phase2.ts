@@ -189,6 +189,8 @@ export interface ReadinessDriver {
   key: string
   label: string
   value: number | null
+  /** The unit the value is measured in — 'h', 'ms', 'bpm', or empty. */
+  unit: string
   baseline: number | null
   delta: number | null
   contribution: number

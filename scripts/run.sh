@@ -112,10 +112,23 @@ case "${1:-start}" in
     # app.serve runs the plain HTTP listener and, when a certificate is
     # present, an HTTPS one in the same process — so there is one scheduler
     # and one state file.
-    (cd "$ROOT/backend" && setsid "$VENV/bin/python" -m app.serve \
-      < /dev/null > "$PID_DIR/api.log" 2>&1 &)
-    sleep 4
+    # Launched fully detached: ``setsid --fork`` double-forks so the server
+    # sits in its own session and cannot hold the caller's stdout open.
+    # Without it, piping this script's output anywhere hangs forever waiting
+    # for an end-of-file the daemon will never send.
+    ( cd "$ROOT/backend" && exec setsid --fork "$VENV/bin/python" -m app.serve \
+      < /dev/null > "$PID_DIR/api.log" 2>&1 ) &
+    disown 2>/dev/null || true
     server_pid "$PORT" > "$PID_DIR/api.pid" 2>/dev/null || true
+    # Wait for the health endpoint rather than for a fixed number of seconds:
+    # a cold start after a rebuild takes longer than a warm one, and a fixed
+    # sleep reports "did not come up" for a server that is about to.
+    for _ in $(seq 1 40); do
+      if curl -fsS -m 2 "http://127.0.0.1:$PORT/api/v1/health" > /dev/null 2>&1; then
+        break
+      fi
+      sleep 0.5
+    done
     if curl -fsS -m 5 "http://127.0.0.1:$PORT/api/v1/health" > /dev/null 2>&1; then
       log "Stride is live → http://localhost:$PORT"
       log "logs: $PID_DIR/api.log"

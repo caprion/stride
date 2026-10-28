@@ -28,7 +28,7 @@ import {
 import { formatDate } from '../lib/format'
 import { Card, CardHeader, EmptyState, PageHeader, Skeleton, Badge } from '../components/ui'
 import { ChartFrame } from '../components/charts'
-import { SegmentedControl } from '../components/ui'
+import { RangeSelector, sinceDate } from '../components/RangeSelector'
 
 const gradeColor: Record<string, string> = {
   peak: ZONE_COLORS[1],
@@ -109,19 +109,9 @@ function ReadinessStrip({
   )
 }
 
-const RANGES = [
-  { label: '30 days', value: 30 },
-  { label: '3 months', value: 90 },
-  { label: 'Year', value: 365 },
-]
-
 export default function PhysiologyPage() {
   const [days, setDays] = useState(90)
-  const since = useMemo(() => {
-    const date = new Date()
-    date.setDate(date.getDate() - days)
-    return date.toISOString().slice(0, 10)
-  }, [days])
+  const since = useMemo(() => sinceDate(days), [days])
 
   const sources = useQuery({
     queryKey: ['physiology-sources'],
@@ -293,6 +283,7 @@ export default function PhysiologyPage() {
                               <span className="font-semibold">{d.label}</span>
                               <span className="text-ink-muted">
                                 {num(d.value)}
+                                {d.unit ? <span className="text-ink-faint"> {d.unit}</span> : null}
                                 {d.baseline != null && (
                                   <span className="text-ink-faint">
                                     {' '}· baseline {num(d.baseline)}
@@ -335,10 +326,9 @@ export default function PhysiologyPage() {
               subtitle={`Sleep stages by night · baseline ${sleep.data?.items.length ? `${Math.round((sleep.data.items.reduce((n, p) => n + (p.sleep_s ?? 0), 0) / sleep.data.items.length / 3600) * 10) / 10} h average` : '—'}`}
               height={280}
               action={
-                <SegmentedControl
-                  options={RANGES}
+                <RangeSelector
                   value={days}
-                  onChange={(value) => setDays(value as number)}
+                  onChange={setDays}
                   className="self-start"
                 />
               }

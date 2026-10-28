@@ -24,7 +24,7 @@ import {
 } from 'recharts'
 import { Card, CardHeader, cn } from './ui'
 import { formatDistanceShort, formatDuration, formatPace, formatWeekKey } from '../lib/format'
-import { GRID, INK_FAINT, INK_MUTED, RAMP, SERIES, ZONE_COLORS } from '../lib/palette'
+import { ACCENT, GRID, INK_FAINT, INK_MUTED, RAMP, SERIES, ZONE_COLORS } from '../lib/palette'
 
 const AXIS = { fontSize: 11, fill: INK_MUTED }
 
@@ -88,16 +88,36 @@ function TooltipBox({
 
 /* --------------------------------------------------------- weekly volume */
 
+
+/**
+ * How a week's volume compares with the target.
+ *
+ * One colour for every bar means the chart carries no information — it is
+ * sixteen amber rectangles. Three steps of the same amber say how close each
+ * week got, and because the accent colour is reserved for effort, the bar
+ * that did the most work is the deepest.
+ */
+export function volumeTier(km: number, goalKm: number): string {
+  if (!goalKm) return SERIES.actual
+  const ratio = km / goalKm
+  if (ratio >= 1) return ACCENT[600]
+  if (ratio >= 0.6) return ACCENT[400]
+  return ACCENT[200]
+}
+
 export function VolumeChart({
   data,
   height = 240,
   title = 'Weekly volume',
   subtitle,
+  goalKm,
 }: {
   data: { week_key?: string; label?: string; distance_m: number; activity_count?: number }[]
   height?: number
   title?: string
   subtitle?: ReactNode
+  /** A weekly target. When there is one, the bars say how close they got. */
+  goalKm?: number
 }) {
   const rows = data.map((d, index) => ({
     ...d,
@@ -138,12 +158,25 @@ export function VolumeChart({
               }}
             />
           ) : null}
+          {goalKm ? (
+            <ReferenceLine
+              y={goalKm}
+              stroke={SERIES.actual}
+              strokeDasharray="2 3"
+              label={{
+                value: `goal ${goalKm.toFixed(0)} km`,
+                position: 'insideTopRight',
+                fontSize: 10,
+                fill: INK_MUTED,
+              }}
+            />
+          ) : null}
           <Bar dataKey="km" name="Distance" radius={[3, 3, 0, 0]} maxBarSize={34}>
-            {rows.map((_row, index) => (
+            {rows.map((row, index) => (
               <Cell
                 key={index}
-                fill={index === rows.length - 1 ? SERIES.actual : SERIES.actualSoft}
-                fillOpacity={index === rows.length - 1 ? 1 : 0.85}
+                fill={goalKm ? volumeTier(row.km, goalKm) : index === rows.length - 1 ? SERIES.actual : SERIES.actualSoft}
+                fillOpacity={goalKm ? 1 : index === rows.length - 1 ? 1 : 0.85}
               />
             ))}
           </Bar>

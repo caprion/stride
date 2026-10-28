@@ -464,8 +464,9 @@ export function DashboardPage() {
             <VolumeChart
               data={weeklyItems}
               height={260}
+              goalKm={WEEK_TARGET_M / 1000}
               title="Weekly volume"
-              subtitle="Last 16 weeks — distance per ISO week"
+              subtitle="Last 16 weeks — distance per ISO week. Deeper amber means closer to the goal."
             />
           )}
 

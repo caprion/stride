@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
 import {
@@ -12,9 +12,11 @@ import {
   YAxis,
 } from 'recharts'
 import { api } from '../lib/api'
-import { ACCENT_DATA, GRID, INK_FAINT, INK_MUTED } from '../lib/palette'
+import { useMediaQuery } from '../lib/useMediaQuery'
+import { RangeSelector, sinceDate } from '../components/RangeSelector'
+import { GRID, INK_FAINT, INK_MUTED, METRIC } from '../lib/palette'
 import type { Fingerprint } from '../types_phase2'
-import { formatDate, formatDistance } from '../lib/format'
+import { formatDate, formatDistance, formatPaceWithUnit } from '../lib/format'
 import { ZoneBarChart } from '../components/charts'
 import {
   Badge,
@@ -34,15 +36,15 @@ type Metric =
   | 'efficiency_first'
   | 'pace_cv'
   | 'form_score'
-const metrics: { value: Metric; label: string; simple: string }[] = [
-  { value: 'hr_drift_pct', label: 'HR drift', simple: 'HR drift' },
-  { value: 'decoupling_pct', label: 'Aerobic decoupling', simple: 'decoupling' },
-  { value: 'cadence_avg', label: 'Cadence', simple: 'cadence' },
-  { value: 'cadence_cv', label: 'Cadence stability', simple: 'cadence stability' },
+const metrics: { value: Metric; label: string; simple: string; color: string }[] = [
+  { value: 'hr_drift_pct', label: 'HR drift', simple: 'HR drift', color: METRIC.heartRate },
+  { value: 'decoupling_pct', label: 'Aerobic decoupling', simple: 'decoupling', color: METRIC.drift },
+  { value: 'cadence_avg', label: 'Cadence', simple: 'cadence', color: METRIC.cadence },
+  { value: 'cadence_cv', label: 'Cadence stability', simple: 'cadence stability', color: METRIC.cadence },
   // TODO(shared): Add pace_drift_pct to the fitness/trends metric contract and backend.
-  { value: 'efficiency_first', label: 'Efficiency factor', simple: 'efficiency' },
-  { value: 'pace_cv', label: 'Pace consistency', simple: 'pace consistency' },
-  { value: 'form_score', label: 'Form score', simple: 'form score' },
+  { value: 'efficiency_first', label: 'Efficiency factor', simple: 'efficiency', color: METRIC.pace },
+  { value: 'pace_cv', label: 'Pace consistency', simple: 'pace consistency', color: METRIC.pace },
+  { value: 'form_score', label: 'Form score', simple: 'form score', color: METRIC.effort },
 ]
 const display = (v: number | null | undefined, suffix = '') =>
   v == null ? '—' : `${Number(v).toFixed(1)}${suffix}`
@@ -56,8 +58,15 @@ const favorable = (
     : (better === 'lower' ? value <= baseline : value >= baseline)
       ? 'text-positive'
       : 'text-negative'
+const MOBILE_ROWS = 25
+
 export default function FitnessPage() {
   const [metric, setMetric] = useState<Metric>('hr_drift_pct')
+  const [days, setDays] = useState(365)
+  // One DOM, two layouts. Rendering both would mean 160 extra rows of
+  // nothing on a phone.
+  const isWide = useMediaQuery('(min-width: 1024px)')
+  const [showAll, setShowAll] = useState(false)
   const trend = useQuery({
     queryKey: ['fitness-trend', metric],
     queryFn: () => api.fitnessTrends(metric),
@@ -74,6 +83,8 @@ export default function FitnessPage() {
     retry: false,
   })
   const gear = useQuery({ queryKey: ['gear-list'], queryFn: api.gearList, retry: false })
+  const since = useMemo(() => sinceDate(days), [days])
+  const metricColor = metrics.find((m) => m.value === metric)?.color ?? METRIC.effort
   const data = trend.data
   const metricLabel = metrics.find((m) => m.value === metric)?.simple ?? metric
   const trendPct = data?.trend_pct
@@ -107,11 +118,14 @@ export default function FitnessPage() {
               : 'Choose a metric to explore its recent trend.'
           }
           action={
-            <SegmentedControl
-              options={metrics.map((m) => ({ label: m.label, value: m.value }))}
-              value={metric}
-              onChange={setMetric}
-            />
+            <div className="flex flex-col items-end gap-2">
+              <SegmentedControl
+                options={metrics.map((m) => ({ label: m.label, value: m.value }))}
+                value={metric}
+                onChange={setMetric}
+              />
+              <RangeSelector value={days} onChange={setDays} />
+            </div>
           }
         />
         {trend.isLoading ? (
@@ -123,10 +137,12 @@ export default function FitnessPage() {
             <div className="h-64">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart
-                  data={data.points.map((p) => ({
-                    ...p,
-                    label: formatDate(p.date).slice(0, 6),
-                  }))}
+                  data={data.points
+                    .filter((p) => p.date >= since)
+                    .map((p) => ({
+                      ...p,
+                      label: formatDate(p.date).slice(0, 6),
+                    }))}
                 >
                   <CartesianGrid stroke={GRID} vertical={false} />
                   <XAxis dataKey="label" tick={{ fontSize: 10, fill: INK_MUTED }} />
@@ -141,7 +157,7 @@ export default function FitnessPage() {
                   <Line
                     dataKey="value"
                     name={data.label}
-                    stroke={ACCENT_DATA}
+                    stroke={metricColor}
                     strokeWidth={2.5}
                     dot={{ r: 3 }}
                     connectNulls
@@ -200,6 +216,7 @@ export default function FitnessPage() {
                     ? ` Across these runs: ${Math.round(excludedWalking / 60)}m walking and ${Math.round(excludedStanding / 60)}m standing excluded.`
                     : ''}
                 </p>
+                {isWide ? (
                 <div className="overflow-x-auto">
                   <table className="w-full min-w-[900px] text-left text-xs">
                     <thead className="bg-surface-soft text-[10px] uppercase tracking-wide text-ink-muted">
@@ -233,6 +250,15 @@ export default function FitnessPage() {
                     </tbody>
                   </table>
                 </div>
+                ) : (
+                  <FingerprintCards
+                    rows={showAll ? rows : rows.slice(0, MOBILE_ROWS)}
+                    total={rows.length}
+                    cvBaseline={cvBaseline}
+                    decoupleBaseline={decoupleBaseline}
+                    onShowAll={() => setShowAll(true)}
+                  />
+                )}
               </>
             ) : (
               <EmptyState
@@ -322,6 +348,115 @@ export default function FitnessPage() {
           </Card>
         </div>
       </div>
+    </div>
+  )
+}
+
+
+/**
+ * The fingerprint list, as cards.
+ *
+ * Eleven columns in a table is a spreadsheet, not a screen. On a phone the
+ * four numbers that actually say something — cadence stability, heart-rate
+ * drift, decoupling and pace drift — are what should be on the card, with
+ * everything else one tap away.
+ *
+ * Twenty-five runs is about what fits in a screen and a half. The rest are
+ * behind a button rather than fourteen screens of scrolling.
+ */
+function FingerprintCards({
+  rows,
+  total,
+  cvBaseline,
+  decoupleBaseline,
+  onShowAll,
+}: {
+  rows: Fingerprint[]
+  total: number
+  cvBaseline: number | null
+  decoupleBaseline: number | null
+  onShowAll: () => void
+}) {
+  return (
+    <div>
+      <ul className="divide-y divide-edge">
+        {rows.map((item) => (
+          <li key={item.activity_id} className="px-5 py-3.5">
+            <div className="flex items-baseline justify-between gap-3">
+              <Link
+                to={`/activities/${item.activity_id}`}
+                className="min-w-0 truncate text-[14px] font-semibold text-brand-600"
+              >
+                {item.activity_name || 'Run'}
+              </Link>
+              <span className="shrink-0 text-[12px] text-ink-muted">
+                {item.local_date ? formatDate(item.local_date) : '—'}
+              </span>
+            </div>
+            <p className="mt-0.5 text-[12px] text-ink-muted">
+              {formatDistance(item.distance_m)}
+              {item.pace_s_per_km ? ` · ${formatPaceWithUnit(item.pace_s_per_km)}` : ''}
+            </p>
+            <dl className="mt-2.5 grid grid-cols-2 gap-x-4 gap-y-2">
+              <Metric
+                label="Cadence"
+                value={display(item.cadence_avg, ' spm')}
+              />
+              <Metric
+                label="Cadence CV"
+                value={display(item.cadence_cv, '%')}
+                tone={favorable(item.cadence_cv, cvBaseline, 'lower')}
+              />
+              <Metric
+                label="HR drift"
+                value={display(item.hr_drift_pct, '%')}
+              />
+              <Metric
+                label="Decoupling"
+                value={display(item.decoupling_pct, '%')}
+                tone={favorable(item.decoupling_pct, decoupleBaseline, 'lower')}
+              />
+              <Metric
+                label="Pace drift"
+                value={display(item.pace_drift_pct, '%')}
+                tone={favorable(item.pace_drift_pct, null, 'lower')}
+              />
+            </dl>
+          </li>
+        ))}
+      </ul>
+      {rows.length < total ? (
+        <div className="border-t border-edge px-5 py-3">
+          <button
+            type="button"
+            onClick={onShowAll}
+            className="text-[13px] font-semibold text-brand-600"
+          >
+            Show all {total} runs
+          </button>
+        </div>
+      ) : null}
+    </div>
+  )
+}
+
+function Metric({
+  label,
+  value,
+  tone = '',
+}: {
+  label: string
+  value: string
+  tone?: string
+}) {
+  return (
+    <div className="min-w-0">
+      <dt className="text-[10px] font-semibold uppercase tracking-wide text-ink-faint">
+        {label}
+      </dt>
+      <dd className={`text-[14px] font-semibold tabular-nums ${tone || 'text-ink'}`}>
+        {value}
+      </dd>
     </div>
   )
 }

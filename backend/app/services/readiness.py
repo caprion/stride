@@ -57,7 +57,17 @@ def _derive(day: str, row: DailyPhysiology | None, baseline: dict[str, float | N
     drivers: list[dict[str, Any]] = []
     weights: list[float] = []
 
-    def add(key: str, label: str, value: float | None, reference: float | None, weight: float, quality: float | None, detail: str, personal: bool = True) -> None:
+    def add(
+        key: str,
+        label: str,
+        value: float | None,
+        reference: float | None,
+        weight: float,
+        quality: float | None,
+        detail: str,
+        personal: bool = True,
+        unit: str = "",
+    ) -> None:
         """Add one readiness driver.
 
         ``reference`` is what the driver's quality is measured against. For
@@ -70,17 +80,17 @@ def _derive(day: str, row: DailyPhysiology | None, baseline: dict[str, float | N
         """
         if value is None or quality is None or not number(value):
             return
-        drivers.append({'key': key, 'label': label, 'value': value, 'baseline': reference if personal else None, 'delta': value - reference if (personal and reference is not None) else None, 'contribution': weight * max(0.0, min(1.0, quality)), 'detail': detail})
+        drivers.append({'key': key, 'label': label, 'value': value, 'unit': unit, 'baseline': reference if personal else None, 'delta': value - reference if (personal and reference is not None) else None, 'contribution': weight * max(0.0, min(1.0, quality)), 'detail': detail})
         weights.append(weight)
 
     if row is not None:
         sleep = row.sleep_s / 3600 if number(row.sleep_s) and row.sleep_s is not None else None
         sleep_base = baseline['sleep_s'] / 3600 if baseline['sleep_s'] else None
-        add('sleep', 'Sleep', sleep, sleep_base, 25, sleep / sleep_base if sleep is not None and sleep_base else None, f'{_hours(sleep)} vs {_hours(sleep_base)} baseline' if sleep is not None and sleep_base else 'Personal sleep baseline unavailable')
+        add('sleep', 'Sleep', sleep, sleep_base, 25, sleep / sleep_base if sleep is not None and sleep_base else None, f'{_hours(sleep)} vs {_hours(sleep_base)} baseline' if sleep is not None and sleep_base else 'Personal sleep baseline unavailable', unit='h')
         add('sleep_score', 'Sleep score', row.sleep_score, 100, 10, row.sleep_score / 100 if row.sleep_score is not None else None, 'Garmin sleep score out of 100', personal=False)
         hrv_base, rhr_base = baseline['hrv_ms'], baseline['resting_hr']
-        add('hrv', 'HRV', row.hrv_ms, hrv_base, 25, row.hrv_ms / hrv_base if row.hrv_ms is not None and hrv_base else None, f'{_round(row.hrv_ms)} ms vs {_round(hrv_base)} ms baseline')
-        add('resting_hr', 'Resting HR', row.resting_hr, rhr_base, 15, 1 - (row.resting_hr - rhr_base) / (.2 * rhr_base) if row.resting_hr is not None and rhr_base else None, f'{_round(row.resting_hr)} bpm vs {_round(rhr_base)} bpm baseline')
+        add('hrv', 'HRV', row.hrv_ms, hrv_base, 25, row.hrv_ms / hrv_base if row.hrv_ms is not None and hrv_base else None, f'{_round(row.hrv_ms)} ms vs {_round(hrv_base)} ms baseline', unit='ms')
+        add('resting_hr', 'Resting HR', row.resting_hr, rhr_base, 15, 1 - (row.resting_hr - rhr_base) / (.2 * rhr_base) if row.resting_hr is not None and rhr_base else None, f'{_round(row.resting_hr)} bpm vs {_round(rhr_base)} bpm baseline', unit='bpm')
         add('stress', 'Stress', row.stress_avg, 0, 10, 1 - row.stress_avg / 100 if row.stress_avg is not None else None, 'Average daily stress; lower is better', personal=False)
         add('body_battery', 'Body battery', row.body_battery_avg, 100, 10, row.body_battery_avg / 100 if row.body_battery_avg is not None else None, 'Average daily body battery out of 100', personal=False)
         ratio = row.acute_load / row.chronic_load if number(row.acute_load) and row.acute_load is not None and number(row.chronic_load, True) and row.chronic_load is not None else None
