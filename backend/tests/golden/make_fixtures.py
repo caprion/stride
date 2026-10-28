@@ -1,4 +1,4 @@
-"""The golden fixtures: nine FIT files, each covering one thing that bites.
+"""The golden fixtures: twelve FIT files, each covering one thing that bites.
 
 Every case is described in plain Python below and rendered into a FIT file by
 :mod:`fit_writer`. There is no randomness and no clock reading anywhere, so
@@ -21,12 +21,12 @@ The cases were chosen because each one breaks a plausible port:
 ``hilly``           an elevation profile that climbs and descends.
 ``gaps``            a paused watch: the record stream has holes in it.
 
-The last two cases are different in kind: they are not shaped by what a port
+The last three cases are different in kind: they are not shaped by what a port
 might get wrong, they are shaped by what a *watch* actually writes. They were
 written after reading thirteen FIT files downloaded from the athlete's own
 Garmin account (March 2025 - October 2026), and they reproduce the byte
-layout of those files. The data is synthetic: every position is fabricated and
-the serial numbers are invented. See the section at the end of this file.
+layout of those files. The data is synthetic: every position is fabricated
+and the serial numbers are invented. See the section at the end of this file.
 """
 
 from __future__ import annotations
@@ -548,14 +548,15 @@ def build_gaps() -> tuple[FitWriter, dict[str, Any]]:
 # ---------------------------------------------------------------------------
 # The format a real watch writes
 #
-# The nine cases above are shaped by what a *port* might get wrong. The two
+# The nine cases above are shaped by what a *port* might get wrong. The three
 # cases below are shaped by what a *watch* actually writes. They were written
 # after reading thirteen FIT files downloaded from the athlete's own Garmin
 # account (March 2025 - October 2026). The byte layout is copied from those
-# files; the data is not: every position is fabricated and describes a point
-# in the middle of the Atlantic ocean, and the serial numbers are invented.
+# files; the data is not: every position is fabricated and describes the same
+# point in the South Pacific, 15 500 km from the nearest point of the
+# athlete's real routes, and the serial numbers are invented.
 #
-# What the thirteen real files have in common, and what these two cases
+# What the thirteen real files have in common, and what these three cases
 # reproduce:
 #
 #   * a 14-byte header, protocol version 1.0 (0x10), profile version 2196,
@@ -1196,11 +1197,13 @@ def build_real_garmin_nulls() -> tuple[FitWriter, dict[str, Any]]:
         "device": "Forerunner 965",
         "watch": "records irregularly, with a block of absent values",
         "notes": "The real-watch format, with the reserved 'no value' sentinels in the fields the "
-                 "importer reads: speed and altitude are 0xFFFF with the enhanced pair carrying "
-                 "the value, heart rate and cadence are 0xFF, one distance is 0xFFFFFFFF and one "
-                 "position is 0x7FFFFFFF. A sentinel is an absent field, and it is absent before "
-                 "any range check: 0xFFFF as a speed is 65.535 m/s, which is inside the range and "
-                 "would pass every check. Twelve laps, as the real files have.",
+                 "importer reads: the classic speed and altitude are 0xFFFF in the first half of "
+                 "the file and the enhanced pair is 0xFFFFFFFF in the second, the heart rate and "
+                 "the cadence are 0xFF, one distance is 0xFFFFFFFF and one position is "
+                 "0x7FFFFFFF. A sentinel is an absent field, and it is absent before any range "
+                 "check: 0xFFFF as a speed is 65.535 m/s, which is inside the range and would pass "
+                 "every check, and 0xFF as a heart rate is 255 bpm, which is inside 0-300. Twelve "
+                 "laps, as the real files have.",
     }
 
 
