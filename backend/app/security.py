@@ -438,10 +438,11 @@ def _rate_bucket(path: str) -> tuple[str, int] | None:
     if path.startswith(f"{API_PREFIX}/auth/garmin/"):
         return ("garmin-auth", 10)
     if path == f"{API_PREFIX}/auth/pair":
-        # A pairing code is a secret being guessed. Five attempts a minute
-        # from one address is generous for a human and hopeless for a
-        # brute force.
-        return ("pair", 5)
+        # A pairing code is a secret being guessed. Ten attempts a minute
+        # from one address is generous for a human — including one who
+        # mistypes a code twice — and hopeless for a brute force against a
+        # thirty-two character alphabet.
+        return ("pair", 10)
     return None
 
 

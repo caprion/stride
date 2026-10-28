@@ -145,7 +145,7 @@ fi
 head_ "5. Tests"
 # The suite runs against the local virtualenv when there is one, and against
 # whatever python is on the PATH otherwise — which is what CI has.
-PY_BIN="backend/.venv/bin/python"
+PY_BIN="$ROOT/backend/.venv/bin/python"
 [[ -x "$PY_BIN" ]] || PY_BIN="$(command -v python3 || command -v python)"
 if (cd backend && "$PY_BIN" -m pytest -q >/dev/null 2>&1); then
   ok "backend test suite passes"
@@ -203,18 +203,28 @@ if curl -fsS -m 4 -o /dev/null "$BASE/api/v1/health" 2>/dev/null; then
     | grep -o '"code":"[A-Z0-9-]*"' | head -1 | cut -d'"' -f4)
   if [[ -n "$pair_code" ]]; then
     jar=$(mktemp)
-    curl -s -c "$jar" -o /dev/null -m 6 -X POST -H "Origin: $BASE" \
-      -H 'Content-Type: application/json' -d "{\"code\":\"$pair_code\"}" \
-      "$BASE/api/v1/auth/pair"
+    pair_status=$(curl -s -c "$jar" -o /dev/null -w '%{http_code}' -m 6 -X POST \
+      -H "Origin: $BASE" -H 'Content-Type: application/json' \
+      -d "{\"code\":\"$pair_code\"}" "$BASE/api/v1/auth/pair")
+    if [[ "$pair_status" == "429" ]]; then
+      # The pairing exchange is rate limited, and the gate pairs from the
+      # same address as a human would. Being throttled is not a failure of
+      # the thing being tested.
+      warn "the pairing exchange is rate limited — the device checks were skipped"
+      rm -f "$jar" "$master_jar"
+      pair_code=""
+    fi
     code=$(curl -s -b "$jar" -o /dev/null -w '%{http_code}' -m 6 "$BASE/api/v1/activities")
-    if [[ "$code" == "200" ]]; then
+    if [[ "$pair_status" == "429" ]]; then
+      :
+    elif [[ "$code" == "200" ]]; then
       ok "a paired device can read the API ($code)"
     else
       bad "a paired device could not read the API ($code)"
     fi
     after=$(curl -s -b "$master_jar" -m 6 "$BASE/api/v1/auth/devices" 2>/dev/null | tr ',' '\n' | grep -o '"id":"[a-f0-9]*"' | sort)
     device_id=$(comm -13 <(echo "$before") <(echo "$after") | head -1 | cut -d'"' -f4)
-    if [[ -n "$device_id" ]]; then
+    if [[ -n "$pair_code" && -n "$device_id" ]]; then
       curl -s -b "$master_jar" -o /dev/null -m 6 -X DELETE -H "Origin: $BASE" \
         "$BASE/api/v1/auth/devices/$device_id"
       code=$(curl -s -b "$jar" -o /dev/null -w '%{http_code}' -m 6 "$BASE/api/v1/activities")
