@@ -134,10 +134,10 @@ def main() -> None:
     items = activity_list["activityList"]
     first, second = items[0], items[1]
 
+    # The port keeps the payload in `raw` and takes out only the key that
+    # collides with its own field name.
     profile_raw = {
-        key: value
-        for key, value in profile.items()
-        if key not in ("displayName", "fullName", "userName", "name")
+        key: value for key, value in profile.items() if key != "name"
     }
 
     expected = {

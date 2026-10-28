@@ -46,10 +46,13 @@ impl Profile {
             Value::Object(map) => map.clone(),
             _ => Map::new(),
         };
-        let display_name = take_string(&mut raw, "displayName");
-        let full_name = take_string(&mut raw, "fullName");
-        let user_name = take_string(&mut raw, "userName");
-        let name = take_string(&mut raw, "name");
+        let display_name = truthy(raw.get("displayName")).map(value_to_string);
+        let full_name = truthy(raw.get("fullName")).map(value_to_string);
+        let user_name = truthy(raw.get("userName")).map(value_to_string);
+        let name = truthy(raw.get("name")).map(value_to_string);
+        // The struct carries a field called `name`, so that one key is taken
+        // out of the raw map; everything else stays.
+        raw.remove("name");
         Self {
             display_name,
             full_name,
@@ -152,17 +155,24 @@ impl ActivitySummary {
     pub fn from_value(payload: &Value) -> Option<Self> {
         let object = payload.as_object()?;
         let mut raw = object.clone();
-        let external_id = take_id(&mut raw, "activityId")?;
-        let name = take_string(&mut raw, "activityName")
-            .or_else(|| take_string(&mut raw, "name"))
+        let external_id = truthy(raw.get("activityId")).map(value_to_string)?;
+        let name = truthy(raw.get("activityName"))
+            .map(value_to_string)
+            .or_else(|| truthy(raw.get("name")).map(value_to_string))
             .unwrap_or_else(|| "Run".to_owned());
-        let sport_type = raw
-            .get("activityTypeDTO")
+        let sport_type = truthy(raw.get("activityTypeDTO"))
             .and_then(Value::as_object)
-            .and_then(|dto| dto.get("typeKey"))
+            .and_then(|dto| truthy(dto.get("typeKey")))
             .and_then(Value::as_str)
             .map(str::to_owned);
-        let start_time_local = take_string(&mut raw, "startTimeLocal");
+        let start_time_local = truthy(raw.get("startTimeLocal"))
+            .and_then(Value::as_str)
+            .map(str::to_owned);
+        // The raw map is what a caller hands back to the canonicaliser as the
+        // list item, so it keeps the id, the name and the start time. Only
+        // "name" is taken out, because the struct carries a field of that
+        // name.
+        raw.remove("name");
         Some(Self {
             external_id,
             name,
@@ -398,6 +408,14 @@ fn id_to_string(value: &Value) -> String {
     }
 }
 
+/// Any value as a string.
+fn value_to_string(value: &Value) -> String {
+    match value {
+        Value::String(text) => text.clone(),
+        other => other.to_string(),
+    }
+}
+
 /// Parses a local start time the way the reference's `_parse_dt` does.
 ///
 /// The reference reads the local start time with three fixed formats and then
@@ -455,18 +473,5 @@ fn take_string(raw: &mut Map<String, Value>, key: &str) -> Option<String> {
     match value {
         Value::String(text) => Some(text),
         other => Some(other.to_string()),
-    }
-}
-
-/// Removes an identifier field from the raw map and returns it as a string.
-///
-/// Garmin sends the activity id as a number on some endpoints and as a string
-/// on others.
-fn take_id(raw: &mut Map<String, Value>, key: &str) -> Option<String> {
-    match raw.remove(key) {
-        Some(Value::String(text)) => Some(text),
-        Some(Value::Number(number)) => Some(number.to_string()),
-        Some(other) => Some(other.to_string()),
-        None => None,
     }
 }

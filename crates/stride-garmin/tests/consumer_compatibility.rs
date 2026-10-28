@@ -125,6 +125,21 @@ fn the_phone_ffi_calls_still_work() {
     assert_eq!(summaries.len(), 1);
 
     for summary in &summaries {
+        // The raw map is what the phone hands back to the canonicaliser as the
+        // list item, so it has to carry the id, the name and the start time.
+        assert!(
+            summary.raw.contains_key("activityId"),
+            "the raw map lost the activity id"
+        );
+        assert!(
+            summary.raw.contains_key("activityName"),
+            "the raw map lost the activity name"
+        );
+        assert!(
+            summary.raw.contains_key("startTimeLocal"),
+            "the raw map lost the start time"
+        );
+
         let detail = client
             .activity_detail(&summary.external_id)
             .expect("the detail succeeds");

@@ -388,9 +388,12 @@
   "profile": {
     "athlete_name": "Aarav Sharma",
     "raw": {
+      "displayName": "Aarav Sharma",
+      "fullName": "Aarav Kumar Sharma",
       "id": 48915637,
       "nickName": "Aarav",
       "profileImageType": "small",
+      "userName": "aarav.sharma",
       "userProfileId": 48915637
     }
   }

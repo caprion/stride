@@ -576,3 +576,30 @@ fn the_golden_envelope_edge_cases_match_the_reference() {
         "the reference yields nothing too"
     );
 }
+
+#[test]
+fn the_golden_canonical_activity_falls_back_to_the_list_item_the_way_the_phone_does() {
+    // The phone builds its fallback list item from `summary.raw`, so `raw`
+    // has to keep the keys the fallback reads: the id, the name and the local
+    // start time. This is the phone's call, on the phone's data.
+    let stub = stub_with(&[("GET", ACTIVITIES_PATH, "activity_list.json")]);
+    let client = client_for(&stub);
+
+    let summaries = client
+        .activity_page(0, 100, "2026-01-01", "2026-01-31")
+        .expect("the activity list succeeds");
+    assert_eq!(summaries.len(), 2);
+
+    let list_item = Value::Object(summaries[1].raw.clone());
+    let detail_payload = fixture("activity_detail_fallback.json");
+
+    let canonical = ActivityDetail::from_value(&detail_payload, Some(&list_item))
+        .expect("the detail canonicalises");
+    let expected = expected();
+
+    assert_close(
+        &canonical_value(&canonical),
+        &expected["activity_detail_fallback"],
+        "activity_detail_fallback",
+    );
+}
