@@ -17,7 +17,7 @@
 //! In Rust the type is `chrono::DateTime<Utc>`. `DbDateTime` is the thin
 //! wrapper that carries it across the SQL boundary.
 
-use chrono::{DateTime, NaiveDateTime, SecondsFormat, TimeZone, Utc};
+use chrono::{DateTime, NaiveDateTime, TimeZone, Utc};
 use rusqlite::types::{FromSql, FromSqlError, FromSqlResult, ToSql, ToSqlOutput, Value, ValueRef};
 
 use crate::error::{Result, StoreError};
@@ -118,7 +118,15 @@ pub fn parse_datetime(value: &str) -> Result<DateTime<Utc>> {
     })
 }
 
-/// ISO-8601 with a `Z` suffix, the way the API serialises a timestamp.
+/// The ISO-8601 form the golden contract uses.
+///
+/// `2026-03-02T05:30:00+00:00` — the offset is always `+00:00`, and the
+/// microseconds appear only when there are any. This is the exact text in
+/// `backend/tests/golden/golden/*.json`, so it is what the API answers with.
 pub fn to_iso8601(value: DateTime<Utc>) -> String {
-    value.to_rfc3339_opts(SecondsFormat::Millis, true)
+    if value.timestamp_subsec_micros() == 0 {
+        value.format("%Y-%m-%dT%H:%M:%S+00:00").to_string()
+    } else {
+        value.format("%Y-%m-%dT%H:%M:%S%.6f+00:00").to_string()
+    }
 }
