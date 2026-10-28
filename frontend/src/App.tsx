@@ -43,6 +43,12 @@ const queryClient = new QueryClient({
   },
 })
 
+// The measurement harness (scripts/measure.mjs) needs to see what the query
+// cache is holding — the resident queries and the size of their data are a
+// large part of what a renderer keeps alive on a phone. One property, no
+// runtime dependency, and it is the same client the app already uses.
+;(window as unknown as { __strideQueryClient?: QueryClient }).__strideQueryClient = queryClient
+
 function RouteFallback() {
   return (
     <div className="flex min-h-[60vh] items-center justify-center">

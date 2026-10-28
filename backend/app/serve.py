@@ -116,9 +116,10 @@ def main() -> int:
 
     # The safety check has to see the address this process is *about* to
     # bind. It used to read a different variable, so the guard was inert
-    # here: ``STRIDE_DISABLE_AUTH=true python -m app.serve`` bound 0.0.0.0
-    # and served the whole API to the network with no authentication at all,
-    # while the check believed the bind was 127.0.0.1.
+    # here: ``STRIDE_DISABLE_AUTH=true python -m app.serve`` bound every
+    # interface and served the whole API to the network with no
+    # authentication at all, while the check believed the bind was
+    # 127.0.0.1.
     #
     # Both listeners are checked. The TLS one is the one the phone reaches,
     # so it is the one that matters: a loopback plain listener with a
