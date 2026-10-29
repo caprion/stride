@@ -297,6 +297,61 @@
   ],
   "lists_unknown_envelope": [],
   "payloads": {
+    "activity_detail": {
+      "activityId": 19012837465,
+      "activityName": "Morning Run",
+      "activityStatistics": [
+        {
+          "distance": 4993.22,
+          "duration": 3125.44,
+          "timestamp": "2026-03-07T06:15:00.000-08:00"
+        }
+      ],
+      "activityTypeDTO": {
+        "typeId": 1,
+        "typeKey": "running"
+      },
+      "lapSummaries": [
+        {
+          "averageHR": 148.0,
+          "lapIndex": 0,
+          "totalDistance": 4993.22,
+          "totalDuration": 3125.44
+        }
+      ],
+      "metadataDTO": {
+        "manufacturer": "Garmin",
+        "sensors": [
+          {
+            "manufacturer": "Garmin",
+            "product": "Forerunner 265",
+            "sensorsEnabled": true,
+            "type": "WATCH"
+          }
+        ]
+      },
+      "startTimeLocal": "2026-03-07T06:15:00",
+      "summaryDTO": {
+        "aerobicTrainingEffect": 3.1,
+        "averageHR": 148.0,
+        "averageRunCadence": 84.0,
+        "averageSpeed": 1.6726,
+        "bmrCalories": 1480.0,
+        "calories": 512.0,
+        "distance": 4993.22,
+        "duration": 3125.44,
+        "elapsedDuration": 3125.44,
+        "elevationGain": 84.0,
+        "maxHR": 176.0,
+        "maxRunCadence": 92.0,
+        "maxSpeed": 4.1667,
+        "minHR": 92.0,
+        "movingDuration": 2986.12,
+        "startTimeLocal": "2026-03-07T06:15:00",
+        "strideLength": 118.72,
+        "trainingEffect": 2.4
+      }
+    },
     "daily_heart_rate": {
       "heartRateSummary": {
         "lastSevenDaysAvgRestingHeartRate": 48.1,
@@ -319,6 +374,13 @@
         "vo2Max": 52.0
       }
     },
+    "fitness_age": {
+      "averageVO2Max": 52.0,
+      "chronometricAge": 34.2,
+      "chronometricAgeType": "chronometric",
+      "physiologicalAge": 31.0,
+      "prevPhysiologicalAge": 34.8
+    },
     "hrv": {
       "hrvSummary": {
         "feedbackPhrase": "BALANCED",
@@ -339,6 +401,15 @@
         "sleepStartTimeGMT": "2026-03-07T22:30:00.000Z",
         "sleepTimeSeconds": 27900.0
       }
+    },
+    "weight": {
+      "dateWeightList": [
+        {
+          "bmi": 23.4,
+          "calendarDate": "2026-03-07",
+          "weight": 72150.0
+        }
+      ]
     },
     "zones": {
       "zones": [

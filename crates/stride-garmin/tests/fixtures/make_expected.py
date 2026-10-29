@@ -131,6 +131,7 @@ def main() -> None:
     hrv_range = load("hrv_range.json")
     sleep_range = load("sleep_range.json")
     weight = load("weight.json")
+    fitness_age = load("fitness_age.json")
 
     items = activity_list["activityList"]
     first, second = items[0], items[1]
@@ -213,13 +214,16 @@ def main() -> None:
         # when the payload does not yield five, so the reference value is the
         # one that fallback would use.
         "zones": zone_model(190.0, zones),
-        # The raw wellness payloads: the reference returns them untouched.
+        # The raw payloads: the reference returns them untouched.
         "payloads": {
             "sleep": sleep,
             "hrv": hrv,
             "daily_heart_rate": daily_heart_rate,
             "daily_summary": daily_summary,
             "zones": zones,
+            "weight": weight,
+            "fitness_age": fitness_age,
+            "activity_detail": detail,
         },
     }
 

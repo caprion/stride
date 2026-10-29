@@ -71,7 +71,7 @@ calls `_canonical_from_detail`, `_as_list`, `_bounded_date_range`,
 `_athlete_from_personal`, `zone_model` and the reference's own `activities()`
 with its HTTP call replaced by a capture.
 
-`tests/golden_parity.rs` (12 tests) compares the port with that file using the
+`tests/golden_parity.rs` (14 tests) compares the port with that file using the
 rule of `docs/core-contract.md` §8. `tests/consumer_compatibility.rs` (5 tests)
 makes the calls the shared sync (`crates/stride-api/src/sync.rs`) and the
 desktop's router make, so a change here breaks them here first.

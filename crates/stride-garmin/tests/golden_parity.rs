@@ -30,6 +30,7 @@ const DETAIL_PATH: &str = "/activity-service/activity/19012837465";
 const DETAIL_FALLBACK_PATH: &str = "/activity-service/activity/19012999001";
 const WORKOUTS_PATH: &str = "/activity-service/activity/19012837465/workouts";
 const ZONES_PATH: &str = "/biometric-service/heartRateZones/v2";
+const FITNESS_AGE_PATH: &str = "/fitnessage-service/fitnessage/v2/2026-03-07";
 const SLEEP_PATH: &str = "/sleep-service/sleep/dailySleep";
 const SLEEP_RANGE_PATH: &str = "/sleep-service/sleep/dailySleepSummariesByDate";
 const HRV_PATH: &str = "/hrv-service/hrv/2026-03-07";
@@ -265,6 +266,26 @@ fn the_golden_activity_list_matches_the_reference() {
 }
 
 #[test]
+fn the_golden_canonical_activity_can_be_built_from_an_explicit_list_item() {
+    // The caller that holds the list item can hand it over; the result is the
+    // same as the one the client finds for itself.
+    let stub = stub_with(&[("GET", DETAIL_FALLBACK_PATH, "activity_detail_fallback.json")]);
+    let client = client_for(&stub);
+
+    let list_item = fixture("activity_list.json")["activityList"][1].clone();
+    let canonical = client
+        .activity_detail_canonical_with("19012999001", Some(&list_item))
+        .expect("the detail canonicalises");
+    let expected = expected();
+
+    assert_close(
+        &canonical_value(&canonical),
+        &expected["activity_detail_fallback"],
+        "activity_detail_fallback",
+    );
+}
+
+#[test]
 fn the_golden_envelopes_match_the_reference() {
     let stub = stub_with(&[
         ("GET", ACTIVITIES_PATH, "activity_list.json"),
@@ -360,6 +381,41 @@ fn the_golden_envelopes_match_the_reference() {
         ),
         &expected["lists"]["weight"],
         "lists.weight",
+    );
+}
+
+#[test]
+fn the_golden_remaining_payloads_are_returned_untouched() {
+    // Every endpoint that returns a payload rather than a typed value: the
+    // detail, the weight series and the fitness age.
+    let stub = stub_with(&[
+        ("GET", DETAIL_PATH, "activity_detail.json"),
+        ("GET", WEIGHT_PATH, "weight.json"),
+        ("GET", FITNESS_AGE_PATH, "fitness_age.json"),
+    ]);
+    let client = client_for(&stub);
+    let expected = expected();
+
+    assert_close(
+        &client
+            .activity_detail("19012837465")
+            .expect("the detail succeeds"),
+        &expected["payloads"]["activity_detail"],
+        "payloads.activity_detail",
+    );
+    assert_close(
+        &client
+            .weight("2026-01-01", "2026-01-31")
+            .expect("the weight succeeds"),
+        &expected["payloads"]["weight"],
+        "payloads.weight",
+    );
+    assert_close(
+        &client
+            .fitness_age("2026-03-07")
+            .expect("the fitness age succeeds"),
+        &expected["payloads"]["fitness_age"],
+        "payloads.fitness_age",
     );
 }
 

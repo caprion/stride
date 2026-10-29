@@ -79,6 +79,30 @@ fn an_expired_token_is_exchanged_again() {
 }
 
 #[test]
+fn a_token_within_the_refresh_margin_is_exchanged_again() {
+    // The reference refreshes a minute early: a token with less than 60
+    // seconds of life left is not used.
+    let stub = StubServer::start();
+    stub.push("POST", TOKEN_PATH, token_reply());
+    stub.push("GET", PROFILE_PATH, profile_reply());
+    stub.push("POST", TOKEN_PATH, token_reply());
+    stub.push("GET", PROFILE_PATH, profile_reply());
+
+    let client = GarminClient::with_base_url(KEY, &stub.base_url())
+        .expect("the stub is a loopback host")
+        .with_token_ttl(std::time::Duration::from_secs(30))
+        .with_refresh_margin(std::time::Duration::from_secs(60));
+    client.profile().expect("the first profile read succeeds");
+    client.profile().expect("the second profile read succeeds");
+
+    assert_eq!(
+        stub.count("POST", TOKEN_PATH),
+        2,
+        "a token with less than the margin left is not used"
+    );
+}
+
+#[test]
 fn invalidating_the_token_forces_a_new_exchange() {
     let stub = StubServer::start();
     stub.push("POST", TOKEN_PATH, token_reply());
@@ -705,5 +729,48 @@ fn a_response_over_five_megabytes_is_refused() {
     assert!(
         matches!(error, GarminError::ResponseTooLarge { .. }),
         "expected ResponseTooLarge, got {error:?}"
+    );
+}
+
+// ------------------------------------------------------------- concurrency
+
+#[test]
+fn the_client_is_safe_to_share_between_threads() {
+    // The phone's sync worker and its UI both use the client. A deadlock in
+    // the token cache, or a poisoned lock, would freeze the app.
+    let stub = StubServer::start();
+    for _ in 0..8 {
+        stub.push("POST", TOKEN_PATH, token_reply());
+    }
+    for _ in 0..80 {
+        stub.push("GET", PROFILE_PATH, profile_reply());
+    }
+
+    let client = std::sync::Arc::new(client_for(&stub));
+    let mut handles = Vec::new();
+    for _ in 0..8 {
+        let client = std::sync::Arc::clone(&client);
+        handles.push(std::thread::spawn(move || {
+            for _ in 0..10 {
+                let profile = client.profile().expect("the profile read succeeds");
+                assert_eq!(profile.athlete_name(), Some("Test Athlete"));
+            }
+        }));
+    }
+    for handle in handles {
+        handle
+            .join()
+            .expect("the thread finishes without panicking");
+    }
+
+    assert!(
+        stub.count("GET", PROFILE_PATH) >= 80,
+        "every read must have been served, got {}",
+        stub.count("GET", PROFILE_PATH)
+    );
+    assert!(
+        stub.count("POST", TOKEN_PATH) <= 8,
+        "the token is exchanged once per thread at most, got {}",
+        stub.count("POST", TOKEN_PATH)
     );
 }
