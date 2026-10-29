@@ -66,6 +66,9 @@ desktop **converts** it, once, on the first run:
   distance column;
 * the rows that were read and the rows that were written are counted, and the
   original is **not** replaced if the two counts disagree;
+* the write-ahead log is folded back into the file and the rows are counted
+  **in the file**, so the file that is renamed into place is known to hold
+  them and not to have them in a log beside it;
 * the converted file is **read back** with the same key and its rows are
   counted again; if it does not answer, the plain file goes back where it
   was, because a desktop that cannot open the database is a nuisance and an
@@ -165,6 +168,14 @@ database changes is a copy of two states at once. That is what the first
 version of the conversion did, and the test caught it: the plan, the
 physiology and the fingerprints came out empty and the streams came out
 half.
+
+The **conversion** happens once too, and the tests read what it produced: a
+conversion copies a database of a few megabytes and encrypts it, and six of
+them at once is a few hundred megabytes of page cache and a hundred
+megabytes of disk. Every attempt gets its own directory, and a failed
+attempt is a failure the tests report — never a panic, because a panic in a
+`OnceLock`'s initializer is not remembered and the next caller runs it
+again, on top of the files of the attempt before it.
 
 ## The same answers as the reference
 
