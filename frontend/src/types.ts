@@ -225,7 +225,6 @@ export interface AuthStatus {
   auto_sync: boolean
   sync_interval_minutes: number
   last_sync_at: string | null
-  demo_visible: boolean
   network?: NetworkStatus
 }
 

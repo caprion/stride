@@ -15,6 +15,7 @@ import { api } from '../lib/api'
 import { isPhone } from '../lib/surface'
 import { useMediaQuery } from '../lib/useMediaQuery'
 import { RangeSelector, sinceDate } from '../components/RangeSelector'
+import { ConnectPrompt } from '../components/ConnectPrompt'
 import { GRID, INK_FAINT, INK_MUTED, METRIC } from '../lib/palette'
 import type { FingerprintSummary } from '../types_phase2'
 import { formatDate, formatDistance, formatPaceWithUnit } from '../lib/format'
@@ -282,10 +283,7 @@ export default function FitnessPage() {
                 )}
               </>
             ) : (
-              <EmptyState
-                title="No fingerprints yet"
-                description="Run data with cadence and heart-rate streams will build your fingerprint."
-              />
+              <ConnectPrompt what="your form" />
             )}
           </Card>
           <Card>

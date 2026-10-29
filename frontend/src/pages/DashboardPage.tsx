@@ -39,7 +39,7 @@ import {
   SPORT_COLOR,
 } from '../lib/format'
 import { ActivityCard } from '../components/ActivityCard'
-import { ConnectGarmin } from '../components/GarminStatus'
+import { ConnectPrompt } from '../components/ConnectPrompt'
 import { MonthlyBars, PaceTrendChart, VolumeChart, ZoneBarChart } from '../components/charts'
 import { isPhone } from '../lib/surface'
 import {
@@ -97,6 +97,12 @@ function TodayCard({
   }
 
   if (!data?.has_plan) {
+    /*
+      The phone has no plan tab and no plan editor: v1 views, it does not
+      author. So the phone does not offer a way to set one up — it says
+      where the plan comes from and stops.
+    */
+    const phone = isPhone()
     return (
       <Card className="mb-5">
         <div className="flex flex-wrap items-center justify-between gap-4 p-5">
@@ -107,16 +113,20 @@ function TodayCard({
             <div>
               <p className="text-[15px] font-semibold text-ink">No training plan yet</p>
               <p className="mt-0.5 text-[13px] text-ink-muted">
-                Import your plan to get daily guidance and plan-vs-actual tracking.
+                {phone
+                  ? 'Your usual week is worked out from your own runs.'
+                  : 'Import your plan to get daily guidance and plan-vs-actual tracking.'}
               </p>
             </div>
           </div>
-          <Link to="/plan">
-            <Button size="md">
-              Set up a plan
-              <ArrowRight size={15} strokeWidth={2.2} />
-            </Button>
-          </Link>
+          {phone ? null : (
+            <Link to="/plan">
+              <Button size="md">
+                Set up a plan
+                <ArrowRight size={15} strokeWidth={2.2} />
+              </Button>
+            </Link>
+          )}
         </div>
       </Card>
     )
@@ -203,13 +213,19 @@ function TodayCard({
           {data.rationale ? (
             <p className="mt-1 text-[12px] leading-snug text-ink-muted">{data.rationale}</p>
           ) : null}
-          <Link
-            to="/plan"
-            className="mt-2 inline-flex items-center gap-1 text-[13px] font-semibold text-brand-600 hover:underline"
-          >
-            See the full plan
-            <ArrowRight size={13} strokeWidth={2.2} />
-          </Link>
+          {/*
+            The plan is not on the phone, so there is nowhere for the link
+            to go. The recommendation stands on its own.
+          */}
+          {isPhone() ? null : (
+            <Link
+              to="/plan"
+              className="mt-2 inline-flex items-center gap-1 text-[13px] font-semibold text-brand-600 hover:underline"
+            >
+              See the full plan
+              <ArrowRight size={13} strokeWidth={2.2} />
+            </Link>
+          )}
         </div>
       </div>
     </Card>
@@ -518,12 +534,7 @@ export function DashboardPage() {
               </div>
             ) : recent.length === 0 ? (
               <Card>
-                <EmptyState
-                  icon={<Activity size={22} strokeWidth={1.8} />}
-                  title="No activities yet"
-                  description="Connect your watch and your runs start appearing."
-                  action={isPhone() ? <ConnectGarmin /> : undefined}
-                />
+                <ConnectPrompt what="your runs" />
               </Card>
             ) : (
               <div className="space-y-3">

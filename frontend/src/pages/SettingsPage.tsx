@@ -951,11 +951,7 @@ function PersonalKeySection({ onRefresh }: { onRefresh: () => Promise<void> }) {
       </SectionIntro>
 
       <HowItWorks>
-        Get a key from{' '}
-        <span className="font-semibold text-ink-soft">
-          connect.garmin.com/app/settings/personalApiToken
-        </span>
-        . Garmin shows it once — copy it and paste it below.
+        Garmin shows the key once — copy it and paste it below.
       </HowItWorks>
 
       <Field label="Personal API key" hint={localDataLine()}>
@@ -969,6 +965,22 @@ function PersonalKeySection({ onRefresh }: { onRefresh: () => Promise<void> }) {
           onChange={(e) => setApiKey(e.target.value)}
         />
       </Field>
+
+      {/*
+        One link, directly under the key field — the same place the native
+        screen has it. The label carries the one instruction that matters:
+        Garmin offers 30, 90, 180 days or a year, and a 30-day key means
+        the app stops working every month.
+      */}
+      <a
+        className="mt-2 inline-flex items-center gap-1.5 text-[13px] font-semibold text-brand-600 hover:text-brand-700"
+        href="https://connect.garmin.com/app/settings/personalApiToken"
+        target="_blank"
+        rel="noreferrer noopener"
+      >
+        <ExternalLink size={14} strokeWidth={2} />
+        Get a key from Garmin — pick the one-year expiry
+      </a>
 
       <div className="mt-3 flex flex-wrap items-center gap-2">
         <Button size="md" disabled={busy || !apiKey.trim()} onClick={() => connect.mutate()}>

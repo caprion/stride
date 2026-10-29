@@ -15,7 +15,6 @@ import {
   Heart,
   Mountain,
   Route as RouteIcon,
-  Target,
   Timer,
   TrendingUp,
 } from 'lucide-react'
@@ -35,6 +34,7 @@ import {
   SPORT_COLOR,
 } from '../lib/format'
 import { MonthlyBars, PaceTrendChart, VolumeChart, ZoneBarChart } from '../components/charts'
+import { ConnectPrompt } from '../components/ConnectPrompt'
 import {
   Card,
   CardHeader,
@@ -189,10 +189,10 @@ function Heatmap({
           <Skeleton className="h-[120px] w-full" />
         </div>
       ) : activeDays === 0 ? (
-        <EmptyState
-          icon={<CalendarDays size={22} strokeWidth={1.8} />}
-          title={`No runs logged in ${year}`}
-          description="Once activities are synced for this year, the grid fills in."
+        <ConnectPrompt
+          what="your stats"
+          emptyTitle={`No runs logged in ${year}`}
+          emptyDescription="Once activities are synced for this year, the grid fills in."
         />
       ) : (
         <div className="px-5 pb-5">
@@ -488,10 +488,10 @@ export function StatsPage() {
                 ))}
               </div>
             ) : records.length === 0 ? (
-              <EmptyState
-                icon={<Target size={22} strokeWidth={1.8} />}
-                title="No records yet"
-                description="Personal records appear once you have a few activities in the bank."
+              <ConnectPrompt
+                what="your stats"
+                emptyTitle="No records yet"
+                emptyDescription="Personal records appear once you have a few activities in the bank."
               />
             ) : (
               <div className="grid grid-cols-2 gap-px bg-edge sm:grid-cols-3">

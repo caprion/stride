@@ -11,7 +11,6 @@ import {
   BarChart3,
   CalendarDays,
   ClipboardCheck,
-  FlaskConical,
   Gauge,
   HeartPulse,
   LayoutDashboard,
@@ -19,12 +18,17 @@ import {
   TrendingUp,
   type LucideIcon,
 } from 'lucide-react'
-import { Link, NavLink, useLocation } from 'react-router-dom'
+import { Link, NavLink, Navigate, useLocation } from 'react-router-dom'
 import type { ReactNode } from 'react'
 import { api } from '../lib/api'
 import { formatDistanceShort } from '../lib/format'
-import { DESKTOP_DESTINATIONS, PHONE_DESTINATIONS, isPhone } from '../lib/surface'
-import { ConnectGarmin, GarminPill } from './GarminStatus'
+import {
+  DESKTOP_DESTINATIONS,
+  PHONE_DESTINATIONS,
+  isCutOnPhone,
+  isPhone,
+} from '../lib/surface'
+import { GarminPill } from './GarminStatus'
 import { cn } from './ui'
 
 const PRIMARY_NAV = [
@@ -84,6 +88,13 @@ export function AppLayout({ children }: { children: ReactNode }) {
   // set.
   const phone = isPhone()
   const destinations = phone ? PHONE_DESTINATIONS : DESKTOP_DESTINATIONS
+
+  /*
+    A phone that lands on a route it does not have — Plan, Compare, the
+    calendar — lands on **Today** instead of on a screen that is not part
+    of the phone. The desktop keeps every one of them.
+  */
+  const onACutRoute = phone && isCutOnPhone(location.pathname)
 
   const { data: auth } = useQuery({
     queryKey: ['auth-status'],
@@ -147,8 +158,6 @@ export function AppLayout({ children }: { children: ReactNode }) {
           </div>
         </div>
       </header>
-
-      {auth?.demo_visible ? <DemoNotice /> : null}
 
       <div className="mx-auto flex max-w-[1400px] gap-6 px-4 py-6">
         {/* -------------------------------------------------- left rail */}
@@ -214,7 +223,11 @@ export function AppLayout({ children }: { children: ReactNode }) {
 
         {/* --------------------------------------------------- content */}
         <main className="min-w-0 flex-1 pb-16" key={location.pathname}>
-          <div className="animate-fade-up">{children}</div>
+          {onACutRoute ? (
+            <Navigate to="/" replace />
+          ) : (
+            <div className="animate-fade-up">{children}</div>
+          )}
         </main>
       </div>
 
@@ -265,21 +278,5 @@ function AthleteAvatar({ name }: { name: string }) {
     >
       {initials || 'A'}
     </span>
-  )
-}
-
-/** A slim notice so nobody mistakes the seeded demo set for their real data. */
-function DemoNotice() {
-  return (
-    <div className="border-b border-amber-200 bg-amber-50">
-      <div className="mx-auto flex max-w-[1400px] items-center gap-3 px-4 py-2">
-        <FlaskConical size={15} className="shrink-0 text-warn" />
-        <p className="min-w-0 flex-1 text-[13px] text-amber-900">
-          You are browsing <strong>demo data</strong>. Connect your Garmin to sync your real
-          runs.
-        </p>
-        <ConnectGarmin small className="shrink-0" />
-      </div>
-    </div>
   )
 }

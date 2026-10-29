@@ -36,19 +36,21 @@ export interface Destination {
 }
 
 /**
- * The phone's six destinations.
+ * The phone's five destinations.
  *
- * What the phone keeps: what to do now, the plan against what was done, the
- * activity list, the body, the running fingerprint, and the statistics — the
- * personal records and the year in one screen, which is the thing an
- * athlete looks at after a good month.
+ * What the phone keeps: what to do now, the activity list, the body, the
+ * running fingerprint, and the statistics — the personal records and the
+ * year in one screen, which is the thing an athlete looks at after a good
+ * month.
  *
- * What it cuts is a laptop activity: two runs side by side, and the
- * calendar, which the Plan screen already carries.
+ * **Plan is not one of them.** The plan was meant to be the reason the app
+ * exists, and the inferred plan has just made it non-empty for everybody —
+ * but the athlete has used it and it does not work. The work stays: the
+ * inferred plan, the verdict logic, the `not_yet` state. The tab comes
+ * back when it reads well. **The desktop keeps Plan.**
  */
 export const PHONE_DESTINATIONS: Destination[] = [
   { to: '/', label: 'Today', icon: LayoutDashboard, end: true },
-  { to: '/plan', label: 'Plan', icon: ClipboardCheck },
   { to: '/feed', label: 'Runs', icon: Activity },
   { to: '/physiology', label: 'Body', icon: HeartPulse },
   { to: '/fitness', label: 'Form', icon: Gauge },
@@ -77,12 +79,13 @@ export const DESKTOP_DESTINATIONS: Destination[] = [
  *
  * * **Compare** — two runs side by side is a laptop activity.
  * * **Training calendar** — the Plan screen carries the schedule.
+ * * **Plan** — the tab comes off the phone for v1; the work stays.
  *
  * The Garmin forms, the network route and the history windows are not
  * routes: they are parts of the settings screen, and the phone's settings
  * screen does not carry them.
  */
-export const PHONE_CUT_ROUTES = ['/compare', '/training']
+export const PHONE_CUT_ROUTES = ['/compare', '/training', '/plan']
 
 /** Is this path one the phone does not have? */
 export function isCutOnPhone(pathname: string): boolean {

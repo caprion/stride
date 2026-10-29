@@ -19,7 +19,6 @@ import {
   Timer,
   TrendingUp,
 } from 'lucide-react'
-import { Link } from 'react-router-dom'
 import { api } from '../lib/api'
 import { ACCENT_DATA } from '../lib/palette'
 import {
@@ -31,7 +30,7 @@ import {
   SPORT_COLOR,
 } from '../lib/format'
 import { ActivityCard } from '../components/ActivityCard'
-import { ConnectGarmin } from '../components/GarminStatus'
+import { ConnectPrompt } from '../components/ConnectPrompt'
 import { isPhone } from '../lib/surface'
 import {
   Button,
@@ -196,36 +195,33 @@ export function FeedPage() {
             </Card>
           ) : items.length === 0 ? (
             <Card>
-              <EmptyState
-                icon={<SearchX size={22} strokeWidth={1.8} />}
-                title={
-                  debounced
-                    ? `No activities match “${debounced}”`
-                    : sport !== 'all'
-                      ? `No ${sportLabel(sport).toLowerCase()}s yet`
-                      : 'No activities yet'
-                }
-                description={
-                  debounced
-                    ? 'Try a different keyword, or widen the sport filter to see more.'
-                    : sport !== 'all'
-                      ? 'Nothing of this sport has been synced yet. Try another sport or clear the filters.'
-                      : 'Connect your watch and your runs start appearing.'
-                }
-                action={
-                  filtersActive ? (
+              {/*
+                Three different empties: the filters hid something, or
+                there is nothing of this sport yet, or there is nothing at
+                all — and nothing at all is the one that says what to do.
+              */}
+              {filtersActive ? (
+                <EmptyState
+                  icon={<SearchX size={22} strokeWidth={1.8} />}
+                  title={
+                    debounced
+                      ? `No activities match “${debounced}”`
+                      : `No ${sportLabel(sport).toLowerCase()}s yet`
+                  }
+                  description={
+                    debounced
+                      ? 'Try a different keyword, or widen the sport filter to see more.'
+                      : 'Nothing of this sport has been synced yet. Try another sport or clear the filters.'
+                  }
+                  action={
                     <Button variant="secondary" onClick={clearFilters}>
                       Clear filters
                     </Button>
-                  ) : isPhone() ? (
-                    <ConnectGarmin />
-                  ) : (
-                    <Link to="/settings">
-                      <Button variant="secondary">Connect Garmin</Button>
-                    </Link>
-                  )
-                }
-              />
+                  }
+                />
+              ) : (
+                <ConnectPrompt what="your runs" />
+              )}
             </Card>
           ) : (
             <div className="space-y-3">
