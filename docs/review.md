@@ -157,19 +157,29 @@ how close each week came to the goal instead of being sixteen identical
 amber rectangles. The phone's Plan screen fits its week strip and its
 verdict bar.
 
-**What still needs work.**
+**All three of these are now done** (v0.6.0):
 
-1. **The phone's Settings is the desktop's Settings.** It still shows the
-   network route, the history windows and the sync interval — all of which
-   configure a *server*. The phone has no server. It should be: connected or
-   not, sync now, forget the key, about. Four things.
-2. **The phone's Plan screen still has the import box**, and still lists all
-   eighty-three sessions.
-3. **The phone's tab bar still says "Activity feed"** rather than "Runs",
-   and the other destinations are not renamed yet.
-4. **The map is not the hero of an activity.** It is the third section. The
-   route is the thing an athlete remembers about a run, and it should be the
-   first thing they see.
+1. ~~The phone's Settings is the desktop's Settings.~~ **It is two cards
+   now** — Garmin (connected, when it last synced, Sync now, Forget the key)
+   and About. The desktop keeps every server setting.
+2. ~~The phone's Plan screen still has the import box, and still lists all
+   eighty-three sessions.~~ **Gone.** The import box is the desktop's, and
+   the phone's list is the near future. The counts follow: **3 of 8 sessions
+   and 50%**, where the whole block said 38 of 83 and 25%.
+3. ~~The map is not the hero of an activity.~~ **It is.** The route, then
+   the title and the numbers, then the analysis — with the heart rate red,
+   the pace blue and the elevation violet.
+
+### And the harness was lying about the phone
+
+The review captured the "phone" by rendering the desktop's web app at 390
+pixels. **The phone's surfaces only exist inside the WebView**, where
+Capacitor injects `window.Capacitor` — so the phone's Settings, its Plan
+screen and its six tabs were all invisible, and a phone-only change could
+look like it had landed when it had not.
+
+The harness now injects `window.Capacitor` for the phone context, so every
+screen in `showcase/review/` is the surface that actually ships.
 
 ---
 
