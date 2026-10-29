@@ -1155,6 +1155,17 @@ impl Backend for Store {
         // the Android preferences. The store answers with the defaults the
         // reference starts from; a backend that owns the state overrides
         // this (see the workstream report for the proposed signature).
+        //
+        // The one thing the store *does* know is when the last sync
+        // finished: the sync log is in the database. The dashboard's
+        // "Synced 2 days ago" reads it, so it must not be null just because
+        // the state layer is not in the stack.
+        let last_sync_at = self.sync_runs(20).ok().and_then(|runs| {
+            runs.iter()
+                .find(|run| run.status == "ok")
+                .and_then(|run| run.finished_at)
+                .map(python_iso)
+        });
         Ok(StatusView {
             athlete: json!({}),
             network_route: "auto".to_string(),
@@ -1164,6 +1175,7 @@ impl Backend for Store {
             auto_sync: true,
             sync_interval_minutes: 180,
             demo_visible: true,
+            last_sync_at,
             ..StatusView::default()
         })
     }
@@ -1193,9 +1205,27 @@ impl Backend for Store {
     }
 
     fn sync_status(&self) -> Result<Value, BackendError> {
-        Err(BackendError::Unsupported(
-            "the sync state is not in the database".to_string(),
-        ))
+        // The sync log is in the database, so the status can be read out of
+        // it: a run that is still marked running is running, and the last
+        // run's message is the message.
+        let runs = self
+            .sync_runs(10)
+            .map_err(|err| store_error("could not read the sync log", err))?;
+        let running = runs.iter().find(|run| run.status == "running");
+        let started_at = running
+            .map(|run| json!(python_iso(run.started_at)))
+            .unwrap_or(Value::Null);
+        let message = runs
+            .iter()
+            .find(|run| run.status != "running")
+            .and_then(|run| run.message.clone())
+            .map(Value::String)
+            .unwrap_or(Value::Null);
+        Ok(json!({
+            "running": running.is_some(),
+            "started_at": started_at,
+            "message": message,
+        }))
     }
 
     fn sync_runs(&self, limit: usize) -> Result<Vec<Value>, BackendError> {

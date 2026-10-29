@@ -15,6 +15,8 @@
 
 use std::sync::Arc;
 
+use serde_json::Value;
+
 use stride_api::{Api, CoreBackend, NetworkBackend, StateBackend, TileBackend};
 
 /// The routes that need a client this build does not have.
@@ -177,6 +179,40 @@ fn a_cached_tile_is_served_from_the_disk() {
         }
         other => panic!("the tile is not binary: {other:?}"),
     }
+}
+
+/// The sync status answers on the desktop's own stack.
+///
+/// The desktop builds `Api → CoreBackend → Store` — no state layer — so the
+/// sync status has to come out of the database, where the sync log is. The
+/// dashboard's "Synced 2 days ago" reads this route, so a 501 here is a
+/// visible gap and not a theoretical one.
+#[test]
+fn the_sync_status_answers_without_the_state_layer() {
+    let path = std::env::temp_dir().join(format!("stride-api-sync-{}.db", std::process::id()));
+    let _ = std::fs::remove_file(&path);
+    let store = stride_store::Store::open_and_migrate(&path, b"0123456789abcdef0123456789abcdef")
+        .expect("the store opens");
+    let backend = stride_api::store::backend(Arc::new(store));
+    // The desktop's stack: the rows and the domain, and nothing else.
+    let api = Api::new(Arc::new(CoreBackend::new(backend)));
+
+    let status = api
+        .call("GET", "/api/v1/sync/status", None)
+        .expect("the status answers");
+    for key in [
+        "running",
+        "started_at",
+        "message",
+        "last_sync_at",
+        "connected",
+        "method",
+    ] {
+        assert!(status.get(key).is_some(), "the status is missing {key}");
+    }
+    assert_eq!(status["running"], false);
+    assert_eq!(status["connected"], false);
+    assert_eq!(status["method"], Value::Null);
 }
 
 /// A tile that cannot be fetched is a 502, the way the reference answers it.

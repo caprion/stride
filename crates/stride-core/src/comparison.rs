@@ -647,7 +647,7 @@ pub fn run_payload(activity: &Activity) -> RunPayload {
         has_geo: activity
             .geo_points
             .as_ref()
-            .map_or(false, |points| !points.is_empty()),
+            .is_some_and(|points| !points.is_empty()),
         values: values_for(activity),
         profile: profile_for(activity, PROFILE_POINTS),
     }
@@ -655,13 +655,19 @@ pub fn run_payload(activity: &Activity) -> RunPayload {
 
 /// The runs that can be compared.
 ///
-/// The reference reads them in start-time order and keeps the first
-/// `limit`; the caller passes the runs in that order, because the order is
-/// the store's query, not the domain's.
-pub fn candidates(activities: &[Activity], limit: usize) -> Vec<Candidate> {
+/// The reference reads them in start-time order and keeps the first `limit`;
+/// the caller passes the runs in that order, because the order is the store's
+/// query, not the domain's.
+///
+/// The demo runs are hidden when the demo is hidden, which is the same rule
+/// the reference's `demo_filter` applies.
+pub fn candidates(activities: &[Activity], limit: usize, demo_visible: bool) -> Vec<Candidate> {
     activities
         .iter()
-        .filter(|activity| CANDIDATE_SPORTS.contains(&activity.sport_type.as_str()))
+        .filter(|activity| {
+            (demo_visible || activity.source != "demo")
+                && CANDIDATE_SPORTS.contains(&activity.sport_type.as_str())
+        })
         .take(limit)
         .map(|activity| Candidate {
             id: activity.id,
@@ -676,4 +682,81 @@ pub fn candidates(activities: &[Activity], limit: usize) -> Vec<Candidate> {
             source: activity.source.clone(),
         })
         .collect()
+}
+
+#[cfg(test)]
+mod payload_tests {
+    use super::*;
+
+    fn activity() -> Activity {
+        Activity {
+            id: 7,
+            name: "Morning easy".to_string(),
+            local_date: "2026-03-02".to_string(),
+            start_date: "2026-03-02".to_string(),
+            day_of_week: Some("Monday".to_string()),
+            sport_type: "running".to_string(),
+            source: "garmin_fit".to_string(),
+            distance_m: 1980.0,
+            moving_time_s: Some(600.0),
+            elevation_gain_m: Some(0.0),
+            avg_hr: Some(145.0),
+            max_hr: Some(150.0),
+            calories: Some(210.0),
+            ..Activity::default()
+        }
+    }
+
+    #[test]
+    fn a_duration_is_labelled_in_hours_and_minutes() {
+        assert_eq!(duration_label(Some(60.0)), Some("1:00".to_string()));
+        assert_eq!(duration_label(Some(600.0)), Some("10:00".to_string()));
+        assert_eq!(duration_label(Some(3661.0)), Some("1:01:01".to_string()));
+        assert_eq!(duration_label(Some(0.0)), None);
+        assert_eq!(duration_label(None), None);
+    }
+
+    #[test]
+    fn the_run_payload_is_the_reference_shape() {
+        let payload = run_payload(&activity());
+        assert_eq!(payload.id, 7);
+        assert_eq!(payload.name, "Morning easy");
+        assert_eq!(payload.moving_time_label, Some("10:00".to_string()));
+        let pace = payload.pace_s_per_km.expect("a pace");
+        assert!((pace - 303.0303030303).abs() < 1e-9);
+        assert!(!payload.has_geo);
+        assert_eq!(payload.values.len(), 15);
+        // Without streams there is no profile to compare.
+        assert!(payload.profile.is_empty());
+    }
+
+    #[test]
+    fn a_run_with_a_route_says_so() {
+        let mut activity = activity();
+        activity.geo_points = Some(vec![[28.6, 77.2]]);
+        assert!(run_payload(&activity).has_geo);
+    }
+
+    #[test]
+    fn the_candidates_are_the_four_run_sports() {
+        let mut walking = activity();
+        walking.id = 8;
+        walking.sport_type = "walking".to_string();
+        let mut running = activity();
+        running.id = 9;
+        let list = candidates(&[walking, running], 300, true);
+        assert_eq!(list.len(), 1);
+        assert_eq!(list[0].id, 9);
+        assert!(!list[0].has_fingerprint);
+        assert!(!list[0].has_profile);
+    }
+
+    #[test]
+    fn the_demo_runs_are_hidden_when_the_demo_is_hidden() {
+        let mut demo = activity();
+        demo.id = 10;
+        demo.source = "demo".to_string();
+        assert_eq!(candidates(&[demo.clone()], 300, true).len(), 1);
+        assert_eq!(candidates(&[demo], 300, false).len(), 0);
+    }
 }

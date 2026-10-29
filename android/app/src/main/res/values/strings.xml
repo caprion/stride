@@ -33,6 +33,13 @@
     <string name="server_url_cleared">Cleared. The app uses the bundled app from the next launch.</string>
     <string name="server_url_must_be_https">An instance URL has to be https.</string>
 
+    <!-- What the phone answers instead of the routes it does not have. -->
+    <string name="garmin_key_not_in_browser">The Garmin key is entered in the Stride app, not in the browser. The setup screen has opened.</string>
+    <string name="garmin_password_not_supported">This phone connects with a Personal API key. It never asks for, and never stores, your Garmin password.</string>
+    <string name="garmin_developer_key_not_supported">The phone connects with a Personal API key. There is no developer key here, and no OAuth client to use one with.</string>
+    <string name="garmin_not_connected_error">Garmin is not connected on this phone.</string>
+    <string name="screen_lock_required">Set a screen lock on this phone first. Stride will not keep your runs and your health data on a phone anyone can pick up.</string>
+
     <!-- The app gate. -->
     <string name="gate_title">Unlock Stride</string>
     <string name="gate_description">Your runs and your health data are behind your phone\'s screen lock.</string>

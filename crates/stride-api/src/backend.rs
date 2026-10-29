@@ -519,11 +519,16 @@ pub trait Backend: Send + Sync {
     /// One run, by the provider's identifier for it.
     ///
     /// The sync asks this to tell a new run from one it has seen before.
+    ///
+    /// The default is "no such run": a backend that keeps its rows somewhere
+    /// this trait cannot reach says so rather than pretending.
     fn activity_by_external(
         &self,
-        source: &str,
-        external_id: &str,
-    ) -> Result<Option<ActivityRow>, BackendError>;
+        _source: &str,
+        _external_id: &str,
+    ) -> Result<Option<ActivityRow>, BackendError> {
+        Ok(None)
+    }
 
     /// The splits of one run.
     fn activity_laps(&self, id: i64) -> Result<Vec<LapRow>, BackendError>;
@@ -548,27 +553,48 @@ pub trait Backend: Send + Sync {
     fn counts(&self) -> Result<Counts, BackendError>;
 
     /// Write a run the sync brought in, with its splits and its series.
+    ///
+    /// A backend that cannot be written to says so; the default is the
+    /// answer, so that a new method does not break every implementor.
     fn upsert_synced_activity(
         &self,
-        activity: &ActivityRow,
-        laps: &[LapRow],
-        streams: &[StreamRow],
-    ) -> Result<i64, BackendError>;
+        _activity: &ActivityRow,
+        _laps: &[LapRow],
+        _streams: &[StreamRow],
+    ) -> Result<i64, BackendError> {
+        Err(BackendError::Unsupported(
+            "this backend cannot be written to".to_string(),
+        ))
+    }
 
     /// Write one day of physiology.
-    fn upsert_physiology(&self, row: &PhysiologyRow) -> Result<(), BackendError>;
+    fn upsert_physiology(&self, _row: &PhysiologyRow) -> Result<(), BackendError> {
+        Err(BackendError::Unsupported(
+            "this backend cannot be written to".to_string(),
+        ))
+    }
 
     /// Write one day of the daily-metric table.
-    fn upsert_daily_metric(&self, row: &DailyMetricRow) -> Result<(), BackendError>;
+    fn upsert_daily_metric(&self, _row: &DailyMetricRow) -> Result<(), BackendError> {
+        Err(BackendError::Unsupported(
+            "this backend cannot be written to".to_string(),
+        ))
+    }
 
     /// Write one run of the sync log.
-    fn upsert_sync_run(&self, run: &SyncRunRow) -> Result<i64, BackendError>;
+    fn upsert_sync_run(&self, _run: &SyncRunRow) -> Result<i64, BackendError> {
+        Err(BackendError::Unsupported(
+            "this backend cannot be written to".to_string(),
+        ))
+    }
 
     /// The Garmin Personal API key, if there is one.
     ///
     /// A secret: it never reaches a response. The sync needs it and nothing
     /// else does, so it is a seam and not a route.
-    fn garmin_personal_key(&self) -> Result<Option<String>, BackendError>;
+    fn garmin_personal_key(&self) -> Result<Option<String>, BackendError> {
+        Ok(None)
+    }
 
     // ----------------------------------------------------------- physiology
 

@@ -16,6 +16,10 @@ members = [
     "crates/stride-api",
     "crates/stride-mcp",
     "desktop",
+    # The phone's own crate. It is in the root workspace so the root's gate
+    # covers it too - one command, one answer about the whole system.
+    "android/app/src/main/rust/stride-ffi",
+    "android/app/src/main/rust/stride-ffi/stride-bindgen",
 ]
 
 [workspace.package]

@@ -343,6 +343,25 @@ mod tests {
     }
 
     #[test]
+    fn a_giant_string_is_brought_under_the_bound() {
+        let value = json!({ "name": "x".repeat(200_000) });
+        let (bounded, trimmed) = bound(value, 4096);
+        assert!(trimmed);
+        assert!(size(&bounded) <= 4096);
+        // The key is still there: the shape of the answer survives.
+        assert!(bounded["name"].is_string());
+    }
+
+    #[test]
+    fn a_giant_string_that_is_not_on_a_character_boundary_is_cut_cleanly() {
+        // The emoji is four bytes; cutting in the middle of it would panic.
+        let value = json!({ "name": "🏃".repeat(2_000) });
+        let (bounded, _) = bound(value, 1024);
+        assert!(size(&bounded) <= 1024);
+        assert!(bounded["name"].is_string());
+    }
+
+    #[test]
     fn the_first_and_the_last_sample_survive() {
         let indices = sample_indices(1000, 240);
         assert_eq!(indices.first().copied(), Some(0));

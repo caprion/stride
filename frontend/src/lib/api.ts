@@ -239,6 +239,25 @@ function qs(params: Record<string, string | number | boolean | undefined | null>
   return text ? `?${text}` : ''
 }
 
+/**
+ * Are we running inside the native app?
+ *
+ * Capacitor injects `window.Capacitor` into the WebView and not into a
+ * browser, so this is the difference between "the phone" and "the desktop"
+ * without a build flag or a server-side flag. It matters: the phone connects
+ * to Garmin with a Personal API key and never asks for a password, so a
+ * screen offering a password form is a lie on the phone.
+ */
+export function isNativeApp(): boolean {
+  if (typeof window === 'undefined') return false
+  const scope = window as unknown as Record<string, unknown>
+  const capacitor = scope.Capacitor as
+    | { isNativePlatform?: () => boolean }
+    | undefined
+  return Boolean(capacitor?.isNativePlatform?.())
+  return Boolean(capacitor?.isNativePlatform?.())
+}
+
 export interface PairedDevice {
   id: string
   name: string | null

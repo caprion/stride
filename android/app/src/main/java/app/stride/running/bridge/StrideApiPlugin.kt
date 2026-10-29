@@ -9,6 +9,7 @@ import com.getcapacitor.PluginCall
 import com.getcapacitor.PluginMethod
 import com.getcapacitor.annotation.CapacitorPlugin
 import app.stride.running.core.StrideCore
+import app.stride.running.R
 import app.stride.running.security.DeviceCredential
 import app.stride.running.security.Secrets
 import app.stride.running.settings.AppSettings
@@ -72,86 +73,90 @@ class StrideApiPlugin : Plugin() {
                 // The Kotlin side unwraps it from the Keystore for the length
                 // of the call and hands it over; the core drops it again as
                 // soon as the call is over.
-                // The routes the phone does not have.
-                //
-                // The settings screen offers the desktop's three ways to
-                // connect: a Personal API key, a Garmin account with a
-                // password, and a developer key. The phone has exactly one of
-                // them — the Personal API key — and it never stores a Garmin
-                // password. So the other two are refused here, in the app,
-                // before the password ever leaves the page.
-                phoneOnlyRefusal(method, path)?.let { refusal ->
-                    call.reject(refusal, "501")
-                    return@execute
-                }
-
-                // The Garmin key never enters the WebView.
-                //
-                // The settings screen has a key field, because the desktop
-                // needs one: the desktop's key goes to the desktop's server.
-                // On the phone there is no server, so the field has no
-                // business existing — and the route that would carry the key
-                // is intercepted here and answered with the native setup
-                // screen instead, where the key is typed into the app and
-                // straight into the Keystore.
-                if (isKeyEntry(method, path)) {
-                    openNativeSetup(context)
-                    call.reject(
-                        "The Garmin key is entered in the Stride app, not in the browser. " +
-                            "The setup screen has opened.",
-                        "400",
-                    )
-                    return@execute
-                }
-
-                val isPull = method.equals("POST", ignoreCase = true) &&
-                    path.startsWith("/api/v1/sync/")
-
-                // A phone with no screen lock is a phone anyone can pick up.
-                // Real data — pulled runs, imported files — does not land on
-                // one.
-                val writesRealData = isPull ||
-                    path == "/api/v1/auth/garmin/fit-import"
-                if (writesRealData && !DeviceCredential.hasCredential(context)) {
-                    call.reject(
-                        "Set a screen lock on this phone first. Stride will not keep your " +
-                            "runs and your health data on a phone anyone can pick up.",
-                        "403",
-                    )
-                    return@execute
-                }
-                var key: String? = null
-                if (isPull) {
-                    key = Secrets.garminKey(context)
-                    if (key == null) {
+                // What the phone does with this request. The decisions live
+                // in PhoneRoutes, which has no Android in it and is unit
+                // tested; the side effects live here.
+                when (PhoneRoutes.decide(method, path)) {
+                    PhoneRoutes.Decision.GarminKeyEntry -> {
+                        // The Garmin key never enters the WebView.
+                        //
+                        // The settings screen has a key field, because the
+                        // desktop needs one: the desktop's key goes to the
+                        // desktop's server. On the phone there is no server,
+                        // so the route is answered with the native setup
+                        // screen instead, where the key is typed into the app
+                        // and straight into the Keystore.
+                        openNativeSetup(context)
                         call.reject(
-                            "Garmin is not connected on this phone.",
+                            context.getString(R.string.garmin_key_not_in_browser),
                             "400",
                         )
                         return@execute
                     }
-                    if (isBackgroundPull(body)) {
-                        // A background pull is a job: it survives the app
-                        // being killed, and the phone has one scheduler for
-                        // it. The job unwraps the key from the Keystore
-                        // itself, so nothing about the credential is in
-                        // WorkManager's database.
-                        SyncScheduler.pullNow(context, requestedDays(context, body))
-                    } else {
-                        // A pull the athlete is watching happens now, and
-                        // the core needs the key for it.
-                        StrideCore.setGarminKey(key)
+
+                    PhoneRoutes.Decision.GarminLogin -> {
+                        // The phone never asks for, and never stores, a
+                        // Garmin password.
+                        call.reject(
+                            context.getString(R.string.garmin_password_not_supported),
+                            "501",
+                        )
+                        return@execute
                     }
+
+                    PhoneRoutes.Decision.GarminDeveloperKey -> {
+                        call.reject(
+                            context.getString(R.string.garmin_developer_key_not_supported),
+                            "501",
+                        )
+                        return@execute
+                    }
+
+                    PhoneRoutes.Decision.GarminPull -> {
+                        // A pull needs the Garmin key, and the key comes
+                        // from the Keystore — never from the page.
+                        val key = Secrets.garminKey(context)
+                        if (key == null) {
+                            call.reject(
+                                context.getString(R.string.garmin_not_connected_error),
+                                "400",
+                            )
+                            return@execute
+                        }
+                        if (isBackgroundPull(body)) {
+                            // A background pull is a job: it survives the app
+                            // being killed, and the phone has one scheduler
+                            // for it. The job unwraps the key from the
+                            // Keystore itself, so nothing about the
+                            // credential is in WorkManager's database.
+                            SyncScheduler.pullNow(context, requestedDays(context, body))
+                        } else {
+                            // A pull the athlete is watching happens now, and
+                            // the core needs the key for it.
+                            StrideCore.setGarminKey(key)
+                        }
+                    }
+
+                    PhoneRoutes.Decision.Forward -> Unit
                 }
 
+                // A phone with no screen lock is a phone anyone can pick up.
+                // Real data — pulled runs, imported files — does not land on
+                // one.
+                val writesRealData =
+                    PhoneRoutes.decide(method, path) == PhoneRoutes.Decision.GarminPull ||
+                        path == "/api/v1/auth/garmin/fit-import"
+                if (writesRealData && !DeviceCredential.hasCredential(context)) {
+                    call.reject(context.getString(R.string.screen_lock_required), "403")
+                    return@execute
+                }
                 val isLogout = method.equals("POST", ignoreCase = true) &&
-                    path.startsWith("/api/v1/auth/garmin/logout")
+                    path == "/api/v1/auth/garmin/logout"
 
                 try {
                     val answer = StrideCore.call(method, path, body)
                     call.resolve(JSObject().put("json", answer))
                 } finally {
-                    if (key != null) StrideCore.setGarminKey("")
                     if (isLogout) {
                         // The credential lives in the Keystore, so the
                         // shell is what forgets it. The core's copy goes
@@ -168,40 +173,7 @@ class StrideApiPlugin : Plugin() {
         }
     }
 
-    /**
-     * The answer for a route the phone does not have.
-     *
-     * The phone connects with a Personal API key and nothing else: no
-     * password, no OAuth client, no consumer secret. The routes that would
-     * carry one are refused with the reason, so the athlete is not left
-     * typing a password into a form that was never going to work.
-     */
-    private fun phoneOnlyRefusal(method: String, path: String): String? {
-        if (!method.equals("POST", ignoreCase = true)) return null
-        return when (path) {
-            "/api/v1/auth/garmin/login",
-            "/api/v1/auth/garmin/mfa" ->
-                "This phone connects with a Personal API key. It never asks for, and never " +
-                    "stores, your Garmin password."
-            "/api/v1/auth/garmin/developer-key",
-            "/api/v1/auth/garmin/exchange" ->
-                "The phone connects with a Personal API key. There is no developer key here, " +
-                    "and no OAuth client to use one with."
-            else -> null
-        }
-    }
 
-    /**
-     * Whether the request is one that would carry the Garmin key.
-     *
-     * Both the connect route and the test route carry it in the body, and
-     * the body comes from the page. The phone answers neither.
-     */
-    private fun isKeyEntry(method: String, path: String): Boolean {
-        if (!method.equals("POST", ignoreCase = true)) return false
-        return path == "/api/v1/auth/garmin/personal-key" ||
-            path == "/api/v1/auth/garmin/personal-key/test"
-    }
 
     /** Open the native setup screen. */
     private fun openNativeSetup(context: android.content.Context) {

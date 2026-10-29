@@ -1369,7 +1369,7 @@ pub struct WeekPlan {
 pub fn week_plan(day: &str, sessions: &[PlanSession]) -> Option<WeekPlan> {
     let date = crate::date::Date::parse(day)?;
     let (start, end) = date.week_range();
-    let items = sessions
+    let mut items: Vec<PlanSession> = sessions
         .iter()
         .filter(|session| {
             session.date.as_str() >= start.to_string().as_str()
@@ -1377,9 +1377,50 @@ pub fn week_plan(day: &str, sessions: &[PlanSession]) -> Option<WeekPlan> {
         })
         .cloned()
         .collect();
+    // The week strip reads in date order.
+    items.sort_by(|left, right| {
+        left.date
+            .cmp(&right.date)
+            .then_with(|| left.id.cmp(&right.id))
+    });
     Some(WeekPlan {
         start_date: start.to_string(),
         end_date: end.to_string(),
         items,
     })
+}
+
+#[cfg(test)]
+mod week_tests {
+    use super::*;
+
+    #[test]
+    fn a_week_runs_from_monday_to_sunday_and_sorts_the_sessions() {
+        let sessions = vec![
+            PlanSession {
+                id: 2,
+                date: "2026-03-08".to_string(),
+                session_type: "easy".to_string(),
+                ..PlanSession::default()
+            },
+            PlanSession {
+                id: 1,
+                date: "2026-03-03".to_string(),
+                session_type: "tempo".to_string(),
+                ..PlanSession::default()
+            },
+            PlanSession {
+                id: 3,
+                date: "2026-03-10".to_string(),
+                session_type: "rest".to_string(),
+                ..PlanSession::default()
+            },
+        ];
+        let week = week_plan("2026-03-04", &sessions).expect("a week");
+        assert_eq!(week.start_date, "2026-03-02");
+        assert_eq!(week.end_date, "2026-03-08");
+        assert_eq!(week.items.len(), 2);
+        assert_eq!(week.items[0].date, "2026-03-03");
+        assert_eq!(week.items[1].date, "2026-03-08");
+    }
 }

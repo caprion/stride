@@ -26,7 +26,7 @@ import {
   Upload,
 } from 'lucide-react'
 import { Link } from 'react-router-dom'
-import { api } from '../lib/api'
+import { api, isNativeApp } from '../lib/api'
 import type { AuthStatus, NetworkStatus, SyncRun } from '../types'
 import { formatDateTime, formatNumber, formatRelative } from '../lib/format'
 import {
@@ -479,10 +479,20 @@ function GarminConnectionCard({
         <Toast notice={notice} />
         <div className="mt-4 space-y-6">
           <PersonalKeySection onRefresh={onRefresh} />
-          <Divider />
-          <AccountSection onRefresh={onRefresh} />
-          <Divider />
-          <DeveloperKeySection onRefresh={onRefresh} />
+          {/*
+            The phone connects with a Personal API key and nothing else. It
+            never asks for a Garmin password and it never runs an OAuth
+            dance, so offering those forms there would be a dead end - and
+            asking for a password on a screen is a thing not to do.
+          */}
+          {!isNativeApp() ? (
+            <>
+              <Divider />
+              <AccountSection onRefresh={onRefresh} />
+              <Divider />
+              <DeveloperKeySection onRefresh={onRefresh} />
+            </>
+          ) : null}
           <Divider />
           <FitImportSection />
         </div>

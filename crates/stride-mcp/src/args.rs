@@ -80,12 +80,6 @@ impl<'a> Args<'a> {
         }
     }
 
-    /// A string argument that must be there.
-    pub fn req_str(&self, key: &str) -> Result<&str, McpError> {
-        self.opt_str(key)?
-            .ok_or_else(|| McpError::invalid(self.tool, key, "is required"))
-    }
-
     /// A string argument from a fixed set.
     pub fn enum_str(&self, key: &str, allowed: &[&str]) -> Result<Option<String>, McpError> {
         match self.opt_str(key)? {
@@ -145,34 +139,6 @@ impl<'a> Args<'a> {
                 .map(Some)
                 .ok_or_else(|| McpError::invalid(self.tool, key, "must be a number")),
             Some(_) => Err(McpError::invalid(self.tool, key, "must be a number")),
-        }
-    }
-
-    /// A number argument with a range.
-    pub fn bounded_f64(
-        &self,
-        key: &str,
-        default: f64,
-        min: f64,
-        max: f64,
-    ) -> Result<f64, McpError> {
-        let value = self.opt_f64(key)?.unwrap_or(default);
-        if !value.is_finite() || value < min || value > max {
-            return Err(McpError::invalid(
-                self.tool,
-                key,
-                format!("must be a number between {min} and {max}"),
-            ));
-        }
-        Ok(value)
-    }
-
-    /// A boolean argument.
-    pub fn opt_bool(&self, key: &str) -> Result<Option<bool>, McpError> {
-        match self.value.get(key) {
-            None | Some(Value::Null) => Ok(None),
-            Some(Value::Bool(flag)) => Ok(Some(*flag)),
-            Some(_) => Err(McpError::invalid(self.tool, key, "must be a boolean")),
         }
     }
 

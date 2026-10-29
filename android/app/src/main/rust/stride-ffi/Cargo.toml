@@ -16,9 +16,6 @@
 # `uniffi`) plus the shared crates, and `chrono` for the tests. No new
 # third-party dependency is introduced here.
 
-[workspace]
-members = ["stride-bindgen"]
-
 [package]
 name = "stride-ffi"
 version = "0.2.0"
@@ -63,18 +60,3 @@ expect_used = "deny"
 panic = "deny"
 todo = "deny"
 unimplemented = "deny"
-
-[profile.release]
-opt-level = "z"
-lto = true
-codegen-units = 1
-strip = true
-# **Not** `panic = "abort"`.
-#
-# The root workspace aborts on a panic, which is right for a command-line
-# binary and wrong for a library that lives inside a phone app: an abort
-# kills the process, and the app dies with the athlete's data still on it.
-# The FFI catches unwinds and turns them into an error envelope, so the phone
-# can answer "something went wrong" instead of vanishing. The orchestrator
-# owns the root profile; this crate opts out and says so in its report.
-panic = "unwind"
