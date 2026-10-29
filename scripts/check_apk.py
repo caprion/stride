@@ -29,38 +29,62 @@ REQUIRED = [
 MIN_CORE_BYTES = 1_000_000
 
 
+def _digest(data: bytes) -> str:
+    import hashlib
+
+    return hashlib.md5(data).hexdigest()
+
+
 def _stale_core(apk: str) -> str | None:
-    """Is the core in the APK the one cargo just built?
+    """Is the core in the APK the one that was just built?
 
     Gradle's copy task used to ask only whether the ABI had changed, so a
     cargo rebuild was invisible to it and the APK shipped the core from an
     earlier build. The build succeeded, the app ran, and it was the wrong
     code.
+
+    The chain is checked in two steps, and each is within one machine, so the
+    bytes are comparable: **the APK must contain the staged copy, and the
+    staged copy must be the one cargo just built.** Comparing the APK
+    straight against cargo would be wrong - Rust builds are not
+    byte-reproducible across different build directories, so two honest
+    builds of the same source differ.
     """
     import glob
-    import hashlib
     import os
+
+    staged = sorted(
+        glob.glob("android/app/build/rust/jniLibs/*/libuniffi_stride.so")
+    )
+    if not staged:
+        return None
+    staged_path = max(staged, key=os.path.getmtime)
+    with open(staged_path, "rb") as handle:
+        staged_digest = _digest(handle.read())
 
     built = []
     for pattern in (
-        "target/aarch64-linux-android/release/libuniffi_stride.so",
-        "target/x86_64-linux-android/release/libuniffi_stride.so",
+        "target/*/release/libuniffi_stride.so",
         "android/app/src/main/rust/stride-ffi/target/*/release/libuniffi_stride.so",
     ):
         built.extend(glob.glob(pattern))
-    if not built:
-        return None
-    newest = max(built, key=os.path.getmtime)
-    with open(newest, "rb") as handle:
-        expected = hashlib.md5(handle.read()).hexdigest()
+    if built:
+        newest = max(built, key=os.path.getmtime)
+        with open(newest, "rb") as handle:
+            if _digest(handle.read()) != staged_digest:
+                return (
+                    f"the staged core ({staged_path}) is not the one cargo built "
+                    f"({newest}) - the copy task did not run"
+                )
+
     with zipfile.ZipFile(apk) as archive:
         for name in archive.namelist():
             if name.endswith("libuniffi_stride.so"):
-                actual = hashlib.md5(archive.read(name)).hexdigest()
-                if actual != expected:
+                actual = _digest(archive.read(name))
+                if actual != staged_digest:
                     return (
-                        f"the APK carries {actual[:12]} but cargo built "
-                        f"{expected[:12]} ({newest})"
+                        f"the APK carries {actual[:12]} but the staged copy is "
+                        f"{staged_digest[:12]}"
                     )
     return None
 
@@ -77,8 +101,17 @@ def main(argv: list[str]) -> int:
     for path in paths:
         # A stale core is the failure this check exists for: the APK would
         # run yesterday's code and the build would say nothing. The core in
-        # the APK has to be the core cargo just built.
-        stale = _stale_core(path)
+        # the APK has to be the core that was just built.
+        #
+        # The byte comparison only means anything for an APK built *here*.
+        # Rust builds are not byte-reproducible across build directories, so
+        # an artifact downloaded from CI would differ from a local build of
+        # the same source - and that is not staleness.
+        local = path.startswith("android/app/build/outputs/")
+        stale = _stale_core(path) if local else None
+        if not local:
+            print(f"\n  {path}")
+            print("    (downloaded artifact - the core cannot be compared with a local build)")
         if stale:
             print(f"\n  {path}")
             print(f"    STALE: {stale}")
