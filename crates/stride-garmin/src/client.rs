@@ -738,7 +738,7 @@ impl GarminClient {
                         host: host.to_owned(),
                     });
                 }
-                if destination.host_str() != url.host_str() {
+                if !keeps_authorization(&url, &destination) {
                     header = None;
                 }
                 url = destination;
@@ -880,6 +880,15 @@ impl FetchFailure {
     }
 }
 
+/// True when the authorization header may follow a redirect.
+///
+/// The reference compares the host names only, so a redirect to another port
+/// on the same host keeps the token, and a redirect to another host does
+/// not — a token must never be handed to a host it was not meant for.
+fn keeps_authorization(from: &Url, to: &Url) -> bool {
+    from.host_str() == to.host_str()
+}
+
 /// True when credentials may be sent to this host.
 ///
 /// Garmin's own hosts over HTTPS, or a loopback host over HTTP so that the
@@ -993,4 +1002,56 @@ fn bounded_range(start: Option<NaiveDate>, end: Option<NaiveDate>) -> (NaiveDate
         start_day = end_day - chrono::Duration::days(MAX_RANGE_DAYS);
     }
     (start_day, end_day)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{host_allowed, keeps_authorization};
+    use reqwest::Url;
+
+    fn url(text: &str) -> Url {
+        Url::parse(text).expect("the url parses")
+    }
+
+    #[test]
+    fn a_token_may_follow_a_redirect_on_the_same_host() {
+        assert!(keeps_authorization(
+            &url("https://personal.connectapi.garmin.com/a"),
+            &url("https://personal.connectapi.garmin.com/b")
+        ));
+        // The reference compares the host name, not the port.
+        assert!(keeps_authorization(
+            &url("https://personal.connectapi.garmin.com/a"),
+            &url("https://personal.connectapi.garmin.com:443/b")
+        ));
+    }
+
+    #[test]
+    fn a_token_may_not_follow_a_redirect_to_another_host() {
+        assert!(!keeps_authorization(
+            &url("https://personal.connectapi.garmin.com/a"),
+            &url("https://evil.example.com/b")
+        ));
+        assert!(!keeps_authorization(
+            &url("http://127.0.0.1:8080/a"),
+            &url("http://localhost:8080/b")
+        ));
+    }
+
+    #[test]
+    fn credentials_only_go_to_garmin_or_to_a_loopback() {
+        assert!(host_allowed("https", "personal.connectapi.garmin.com"));
+        assert!(host_allowed("https", "connectapi.garmin.com"));
+        assert!(host_allowed("https", "connect.garmin.com"));
+        assert!(host_allowed("http", "127.0.0.1"));
+        assert!(host_allowed("http", "localhost"));
+        assert!(host_allowed("http", "::1"));
+
+        // The scheme matters: Garmin over plain HTTP, and a loopback over
+        // TLS, are both refused.
+        assert!(!host_allowed("http", "personal.connectapi.garmin.com"));
+        assert!(!host_allowed("https", "evil.example.com"));
+        assert!(!host_allowed("http", "evil.example.com"));
+        assert!(!host_allowed("http", "10.0.0.1"));
+    }
 }

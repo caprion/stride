@@ -47,6 +47,8 @@ pub enum Reply {
     Empty(u16),
     /// A status code and a body.
     Status(u16, String),
+    /// A redirect to another location.
+    Redirect(String),
 }
 
 impl Reply {
@@ -75,23 +77,34 @@ impl Reply {
         Reply::Status(code, body.into())
     }
 
+    /// A redirect to another location.
+    pub fn redirect(location: impl Into<String>) -> Self {
+        Reply::Redirect(location.into())
+    }
+
     fn write(&self, stream: &mut TcpStream) -> std::io::Result<()> {
-        let (code, content_type, body): (u16, &str, Vec<u8>) = match self {
+        let (code, content_type, body, location): (u16, &str, Vec<u8>, Option<&str>) = match self {
             Reply::Json(value) => (
                 200,
                 "application/json",
                 serde_json::to_vec(value).unwrap_or_default(),
+                None,
             ),
-            Reply::Text(text) => (200, "text/plain", text.as_bytes().to_vec()),
-            Reply::Bytes(bytes) => (200, "application/octet-stream", bytes.clone()),
-            Reply::Empty(code) => (*code, "text/plain", Vec::new()),
-            Reply::Status(code, text) => (*code, "text/plain", text.as_bytes().to_vec()),
+            Reply::Text(text) => (200, "text/plain", text.as_bytes().to_vec(), None),
+            Reply::Bytes(bytes) => (200, "application/octet-stream", bytes.clone(), None),
+            Reply::Empty(code) => (*code, "text/plain", Vec::new(), None),
+            Reply::Status(code, text) => (*code, "text/plain", text.as_bytes().to_vec(), None),
+            Reply::Redirect(location) => (302, "text/plain", Vec::new(), Some(location)),
         };
-        let head = format!(
-            "HTTP/1.1 {code} {reason}\r\nContent-Type: {content_type}\r\nContent-Length: {len}\r\nConnection: close\r\n\r\n",
+        let mut head = format!(
+            "HTTP/1.1 {code} {reason}\r\nContent-Type: {content_type}\r\nContent-Length: {len}\r\nConnection: close\r\n",
             reason = reason(code),
             len = body.len(),
         );
+        if let Some(location) = location {
+            head.push_str(&format!("Location: {location}\r\n"));
+        }
+        head.push_str("\r\n");
         stream.write_all(head.as_bytes())?;
         stream.write_all(&body)?;
         stream.flush()

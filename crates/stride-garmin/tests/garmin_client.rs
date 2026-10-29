@@ -602,3 +602,108 @@ fn an_invalid_date_is_refused_before_the_request() {
     );
     assert!(stub.requests().is_empty(), "nothing may be sent");
 }
+
+// ----------------------------------------------------------------- redirects
+
+#[test]
+fn a_redirect_on_the_same_host_is_followed_with_the_token() {
+    let stub = StubServer::start();
+    stub.push("POST", TOKEN_PATH, token_reply());
+    stub.push(
+        "GET",
+        PROFILE_PATH,
+        Reply::redirect("/userprofile-service/v2"),
+    );
+    stub.push("GET", "/userprofile-service/v2", profile_reply());
+
+    let client = client_for(&stub);
+    let profile = client.profile().expect("the redirect is followed");
+
+    assert_eq!(profile.athlete_name(), Some("Test Athlete"));
+    let second = &stub.requests_for("GET", "/userprofile-service/v2")[0];
+    assert_eq!(
+        second.header("authorization"),
+        Some("Bearer eyJhbGciOiJIUzI1NiJ9.stub-jwt.stub"),
+        "a redirect on the same host keeps the token"
+    );
+}
+
+#[test]
+fn a_redirect_outside_garmin_is_refused() {
+    let stub = StubServer::start();
+    stub.push("POST", TOKEN_PATH, token_reply());
+    stub.push(
+        "GET",
+        PROFILE_PATH,
+        Reply::redirect("https://evil.example.com/steal"),
+    );
+
+    let client = client_for(&stub);
+    let error = client.profile().expect_err("the redirect is refused");
+
+    assert!(
+        matches!(error, GarminError::UntrustedHost { .. }),
+        "expected UntrustedHost, got {error:?}"
+    );
+    assert_eq!(
+        stub.count("GET", PROFILE_PATH),
+        1,
+        "nothing may follow a refused redirect"
+    );
+}
+
+#[test]
+fn a_redirect_without_a_location_is_refused() {
+    let stub = StubServer::start();
+    stub.push("POST", TOKEN_PATH, token_reply());
+    stub.push("GET", PROFILE_PATH, Reply::status(302));
+
+    let client = client_for(&stub);
+    let error = client.profile().expect_err("the redirect is refused");
+
+    assert!(
+        matches!(error, GarminError::Redirect { .. }),
+        "expected Redirect, got {error:?}"
+    );
+}
+
+#[test]
+fn a_redirect_loop_stops() {
+    let stub = StubServer::start();
+    stub.push("POST", TOKEN_PATH, token_reply());
+    for _ in 0..8 {
+        stub.push("GET", PROFILE_PATH, Reply::redirect(PROFILE_PATH));
+    }
+
+    let client = client_for(&stub);
+    let error = client.profile().expect_err("the loop stops");
+
+    assert!(
+        matches!(error, GarminError::TooManyRedirects { .. }),
+        "expected TooManyRedirects, got {error:?}"
+    );
+    assert!(
+        stub.count("GET", PROFILE_PATH) <= 6,
+        "at most six redirects may be followed, got {}",
+        stub.count("GET", PROFILE_PATH)
+    );
+}
+
+#[test]
+fn a_response_over_five_megabytes_is_refused() {
+    let stub = StubServer::start();
+    stub.push("POST", TOKEN_PATH, token_reply());
+    stub.push(
+        "GET",
+        PROFILE_PATH,
+        Reply::bytes(vec![b'x'; 5 * 1024 * 1024 + 1]),
+    );
+
+    let client = client_for(&stub);
+    let error = client.profile().expect_err("the response is too large");
+
+    assert!(
+        matches!(error, GarminError::ResponseTooLarge { .. }),
+        "expected ResponseTooLarge, got {error:?}"
+    );
+}
