@@ -28,6 +28,12 @@ pub const MAX_SAMPLES: usize = 240;
 /// The largest number of segments in one analysis.
 pub const MAX_SEGMENTS: usize = 60;
 
+/// The largest number of entries in a series or a list of days.
+///
+/// A year of daily data is 365 rows; a year of runs is 365 rows. A harness
+/// does not need either in one answer.
+pub const MAX_SERIES: usize = 120;
+
 /// The largest number of limitations an answer may carry.
 pub const MAX_LIMITATIONS: usize = 20;
 
@@ -90,6 +96,7 @@ impl Envelope {
                     list.push(Value::String(
                         "the answer was trimmed to fit the harness context budget".to_string(),
                     ));
+                    list.truncate(MAX_LIMITATIONS);
                 }
             }
         }
@@ -129,20 +136,43 @@ pub fn size(value: &Value) -> usize {
 
 /// Bring a value inside a size bound.
 ///
-/// The largest list in the answer is halved until the answer fits. Halving
-/// keeps the shape of the answer intact — the keys are still there, the lists
-/// are just shorter — and the caller is told that it happened.
+/// The largest list in the answer is halved until the answer fits, and if the
+/// bulk is in a string rather than in a list, the longest string is halved
+/// too. Halving keeps the shape of the answer intact — the keys are still
+/// there, the lists are just shorter — and the caller is told that it
+/// happened.
+///
+/// The bound is a guarantee, not a hope: an answer that is over the cap is
+/// brought under it, whatever it is made of.
 pub fn bound(value: Value, cap: usize) -> (Value, bool) {
     let mut value = value;
     let mut trimmed = false;
-    for _ in 0..256 {
+    for _ in 0..512 {
         if size(&value) <= cap {
             break;
         }
-        let mut best: Option<(Vec<Segment>, usize)> = None;
+        let mut lists: Option<(Vec<Segment>, usize)> = None;
         let mut path = Vec::new();
-        longest_list(&value, &mut path, &mut best);
-        let Some((path, length)) = best else {
+        longest_list(&value, &mut path, &mut lists);
+        let mut strings: Option<(Vec<Segment>, usize)> = None;
+        let mut path = Vec::new();
+        longest_string(&value, &mut path, &mut strings);
+
+        // Whichever is bigger goes first.
+        let list_len = lists.as_ref().map_or(0, |(_, length)| *length);
+        let string_len = strings.as_ref().map_or(0, |(_, length)| *length);
+        if string_len > list_len {
+            let Some((path, length)) = strings else {
+                break;
+            };
+            if length == 0 {
+                break;
+            }
+            shorten(&mut value, &path, length / 2);
+            trimmed = true;
+            continue;
+        }
+        let Some((path, length)) = lists else {
             break;
         };
         if length == 0 {
@@ -184,6 +214,64 @@ fn longest_list(value: &Value, path: &mut Vec<Segment>, best: &mut Option<(Vec<S
             }
         }
         _ => {}
+    }
+}
+
+/// Find the longest string in a value, and where it is.
+fn longest_string(
+    value: &Value,
+    path: &mut Vec<Segment>,
+    best: &mut Option<(Vec<Segment>, usize)>,
+) {
+    match value {
+        Value::String(text) => {
+            if text.len() > best.as_ref().map_or(0, |(_, length)| *length) {
+                *best = Some((path.clone(), text.len()));
+            }
+        }
+        Value::Array(items) => {
+            for (index, item) in items.iter().enumerate() {
+                path.push(Segment::Index(index));
+                longest_string(item, path, best);
+                path.pop();
+            }
+        }
+        Value::Object(map) => {
+            for (key, item) in map {
+                path.push(Segment::Key(key.clone()));
+                longest_string(item, path, best);
+                path.pop();
+            }
+        }
+        _ => {}
+    }
+}
+
+/// Shorten a string to `keep` bytes.
+fn shorten(value: &mut Value, path: &[Segment], keep: usize) {
+    let Some((first, rest)) = path.split_first() else {
+        if let Value::String(text) = value {
+            if text.len() > keep {
+                let mut cut = keep;
+                while cut > 0 && !text.is_char_boundary(cut) {
+                    cut -= 1;
+                }
+                *text = text[..cut].to_string();
+            }
+        }
+        return;
+    };
+    match first {
+        Segment::Key(key) => {
+            if let Some(child) = value.get_mut(key) {
+                shorten(child, rest, keep);
+            }
+        }
+        Segment::Index(index) => {
+            if let Some(child) = value.get_mut(*index) {
+                shorten(child, rest, keep);
+            }
+        }
     }
 }
 

@@ -115,10 +115,40 @@ pub fn run(api: &dyn StrideApi, _ctx: &Context, args: &Value) -> Result<Value, M
         Some(basis) => Some(compare(api, &activity, activity_id, basis)?),
     };
 
+    let paces: Vec<f64> = segments
+        .iter()
+        .filter_map(|segment| segment.pace_s_per_km)
+        .filter(|pace| *pace > 0.0)
+        .collect();
+    let mut fastest = paces.iter().copied().fold(None, |low: Option<f64>, pace| {
+        Some(match low {
+            Some(low) => low.min(pace),
+            None => pace,
+        })
+    });
+    let mut slowest = paces.iter().copied().fold(None, |high: Option<f64>, pace| {
+        Some(match high {
+            Some(high) => high.max(pace),
+            None => pace,
+        })
+    });
+    // When every split was run at the same pace there is no fastest and no
+    // slowest split, and saying otherwise would be noise.
+    if fastest
+        .zip(slowest)
+        .is_some_and(|(fast, slow)| close(fast, slow))
+    {
+        fastest = None;
+        slowest = None;
+    }
+    let first_pace = segments.first().and_then(|segment| segment.pace_s_per_km);
     let shown_segments: Vec<Value> = segments
         .iter()
         .take(MAX_SEGMENTS)
-        .map(segment_value)
+        .map(|segment| {
+            let note = note_of(segment, fastest, slowest, first_pace);
+            segment.value(note.as_deref())
+        })
         .collect();
 
     let mut data = json!({
@@ -160,7 +190,11 @@ struct Segment {
 
 impl Segment {
     /// The segment as the answer carries it.
-    fn value(&self) -> Value {
+    ///
+    /// The note is a description of the split, never a cause: a split with a
+    /// grade of 4 % is "a climb", and the split after it being slower is
+    /// two facts that happen to sit next to each other.
+    fn value(&self, note: Option<&str>) -> Value {
         json!({
             "lap_index": self.index,
             "distance_m": common::round_to(self.distance_m, 1),
@@ -169,6 +203,7 @@ impl Segment {
             "hr": self.avg_hr,
             "elevation_gain_m": self.elevation_gain_m,
             "grade_pct": self.grade_pct,
+            "notes": note,
         })
     }
 }
@@ -199,9 +234,45 @@ fn build_segments(laps: &[Value]) -> Vec<Segment> {
         .collect()
 }
 
-/// The segment as the answer carries it.
-fn segment_value(segment: &Segment) -> Value {
-    segment.value()
+/// The note of a split: what it is, not why it happened.
+fn note_of(
+    segment: &Segment,
+    fastest: Option<f64>,
+    slowest: Option<f64>,
+    first_pace: Option<f64>,
+) -> Option<String> {
+    let mut notes: Vec<&str> = Vec::new();
+    if let Some(grade) = segment.grade_pct {
+        if grade >= 3.0 {
+            notes.push("a climb");
+        } else if grade <= -3.0 {
+            notes.push("a descent");
+        }
+    }
+    if let (Some(pace), Some(fastest)) = (segment.pace_s_per_km, fastest) {
+        if close(pace, fastest) {
+            notes.push("the fastest split of the run");
+        }
+    }
+    if let (Some(pace), Some(slowest)) = (segment.pace_s_per_km, slowest) {
+        if close(pace, slowest) {
+            notes.push("the slowest split of the run");
+        }
+    }
+    if let (Some(pace), Some(first)) = (segment.pace_s_per_km, first_pace) {
+        if first > 0.0 && pace > first * 1.05 {
+            notes.push("slower than the first split");
+        }
+    }
+    if notes.is_empty() {
+        return None;
+    }
+    Some(notes.join(", "))
+}
+
+/// Whether two paces are the same to the tenth of a second.
+fn close(left: f64, right: f64) -> bool {
+    (left - right).abs() < 0.05
 }
 
 /// The findings, filtered by what the caller asked about.

@@ -471,6 +471,33 @@ pub struct ImportRequest {
     pub anchor: String,
 }
 
+/// One run of the sync log.
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct SyncRunRow {
+    #[serde(default)]
+    pub id: Option<i64>,
+    #[serde(default)]
+    pub source: String,
+    #[serde(default)]
+    pub started_at: Option<String>,
+    #[serde(default)]
+    pub finished_at: Option<String>,
+    #[serde(default)]
+    pub status: String,
+    #[serde(default)]
+    pub days: i64,
+    #[serde(default)]
+    pub activities_found: i64,
+    #[serde(default)]
+    pub activities_new: i64,
+    #[serde(default)]
+    pub activities_updated: i64,
+    #[serde(default)]
+    pub message: Option<String>,
+    #[serde(default)]
+    pub error: Option<String>,
+}
+
 /// Everything the router needs from the rest of the system.
 ///
 /// Implementations: `stride_store::Store` (through an adapter, proposed in the
@@ -488,6 +515,15 @@ pub trait Backend: Send + Sync {
 
     /// One run.
     fn activity(&self, id: i64) -> Result<Option<ActivityRow>, BackendError>;
+
+    /// One run, by the provider's identifier for it.
+    ///
+    /// The sync asks this to tell a new run from one it has seen before.
+    fn activity_by_external(
+        &self,
+        source: &str,
+        external_id: &str,
+    ) -> Result<Option<ActivityRow>, BackendError>;
 
     /// The splits of one run.
     fn activity_laps(&self, id: i64) -> Result<Vec<LapRow>, BackendError>;
@@ -510,6 +546,29 @@ pub trait Backend: Send + Sync {
 
     /// The counts the health route reports.
     fn counts(&self) -> Result<Counts, BackendError>;
+
+    /// Write a run the sync brought in, with its splits and its series.
+    fn upsert_synced_activity(
+        &self,
+        activity: &ActivityRow,
+        laps: &[LapRow],
+        streams: &[StreamRow],
+    ) -> Result<i64, BackendError>;
+
+    /// Write one day of physiology.
+    fn upsert_physiology(&self, row: &PhysiologyRow) -> Result<(), BackendError>;
+
+    /// Write one day of the daily-metric table.
+    fn upsert_daily_metric(&self, row: &DailyMetricRow) -> Result<(), BackendError>;
+
+    /// Write one run of the sync log.
+    fn upsert_sync_run(&self, run: &SyncRunRow) -> Result<i64, BackendError>;
+
+    /// The Garmin Personal API key, if there is one.
+    ///
+    /// A secret: it never reaches a response. The sync needs it and nothing
+    /// else does, so it is a seam and not a route.
+    fn garmin_personal_key(&self) -> Result<Option<String>, BackendError>;
 
     // ----------------------------------------------------------- physiology
 

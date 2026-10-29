@@ -112,6 +112,83 @@ pub fn baselines(rows: &[DailyPhysiology], day: &str) -> Baselines {
     }
 }
 
+/// The error the domain returns when a range does not make sense.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum CoreError {
+    /// The range ends before it starts.
+    InvalidRange {
+        /// The first day of the range.
+        start: String,
+        /// The last day of the range.
+        end: String,
+    },
+}
+
+impl std::fmt::Display for CoreError {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            CoreError::InvalidRange { start, end } => {
+                write!(formatter, "start must not be after end: {start} > {end}")
+            }
+        }
+    }
+}
+
+impl std::error::Error for CoreError {}
+
+/// The readiness score for every day of a range.
+///
+/// The missing days are included explicitly, so a gap never looks like poor
+/// recovery.
+pub fn readiness_range(
+    rows: &[DailyPhysiology],
+    start: &str,
+    end: &str,
+) -> Result<Vec<Readiness>, CoreError> {
+    let first = crate::date::Date::parse(start).ok_or(CoreError::InvalidRange {
+        start: start.to_string(),
+        end: end.to_string(),
+    })?;
+    let last = crate::date::Date::parse(end).ok_or(CoreError::InvalidRange {
+        start: start.to_string(),
+        end: end.to_string(),
+    })?;
+    if first > last {
+        return Err(CoreError::InvalidRange {
+            start: start.to_string(),
+            end: end.to_string(),
+        });
+    }
+
+    // The reference reads thirty days of history before the range and keeps
+    // it in the baseline window, so the history is the rows from the day
+    // before the range's first day.
+    let history_start = first.add_days(-BASELINE_WINDOW_DAYS);
+    let history: Vec<DailyPhysiology> = rows
+        .iter()
+        .filter(|row| {
+            let date = row.date.get(..10).unwrap_or(row.date.as_str());
+            let start = history_start.to_string();
+            date >= start.as_str() && date <= last.to_string().as_str()
+        })
+        .cloned()
+        .collect();
+
+    let mut items = Vec::new();
+    let mut day = first;
+    loop {
+        let key = day.to_string();
+        let row = history.iter().find(|row| row.date == key);
+        let baseline = baselines(&history, &key);
+        items.push(readiness(&key, row, &baseline));
+        if day == last {
+            break;
+        }
+        day = day.add_days(1);
+    }
+    Ok(items)
+}
+
 /// The readiness score for one day.
 pub fn readiness(day: &str, row: Option<&DailyPhysiology>, baseline: &Baselines) -> Readiness {
     derive(day, row, baseline)
@@ -476,5 +553,43 @@ mod tests {
         ];
         let baseline = baselines(&rows, "2026-03-02");
         assert_eq!(baseline.sleep_s, Some(25200.0));
+    }
+}
+
+#[cfg(test)]
+mod range_tests {
+    use super::*;
+
+    #[test]
+    fn a_range_includes_the_missing_days() {
+        let rows = vec![DailyPhysiology {
+            date: "2026-03-02".to_string(),
+            sleep_s: Some(27000.0),
+            ..DailyPhysiology::default()
+        }];
+        let scores = readiness_range(&rows, "2026-03-01", "2026-03-03").expect("a range");
+        assert_eq!(scores.len(), 3);
+        assert_eq!(scores[0].date, "2026-03-01");
+        assert_eq!(scores[1].date, "2026-03-02");
+        assert_eq!(scores[2].date, "2026-03-03");
+        // The day with no row scores nothing, and says so.
+        assert_eq!(scores[0].score, None);
+        assert_eq!(scores[0].grade, "unknown");
+    }
+
+    #[test]
+    fn a_range_that_ends_before_it_starts_is_an_error() {
+        let error = readiness_range(&[], "2026-03-05", "2026-03-01").expect_err("an error");
+        assert_eq!(
+            error,
+            CoreError::InvalidRange {
+                start: "2026-03-05".to_string(),
+                end: "2026-03-01".to_string()
+            }
+        );
+        assert_eq!(
+            error.to_string(),
+            "start must not be after end: 2026-03-05 > 2026-03-01"
+        );
     }
 }

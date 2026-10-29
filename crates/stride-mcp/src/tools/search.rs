@@ -24,28 +24,6 @@ run summaries with a cursor for the next page. Runs only, unless the sport is \"
 distance filters are applied to the page the API returned, so the total can be larger than the \
 number of items that match.";
 
-/// The other sports the athlete's history can hold.
-///
-/// `sport: "all"` asks for every sport, and the API's activity filter can
-/// only name one sport at a time — so "all" is a fan-out over the run sports
-/// (the API's default) and this list. A sport that is not in either list is
-/// not returned, and the answer says so.
-const OTHER_SPORTS: &[&str] = &[
-    "cycling",
-    "indoor_cycling",
-    "walking",
-    "treadmill_walking",
-    "hiking",
-    "swimming",
-    "rowing",
-    "elliptical",
-    "strength_training",
-    "multisport",
-    "cross_country_skiing",
-    "downhill_skiing",
-    "other",
-];
-
 /// The arguments.
 pub fn schema() -> Value {
     schema::object(
@@ -53,8 +31,9 @@ pub fn schema() -> Value {
             "from": schema::date("The first day of the range, inclusive."),
             "to": schema::date("The last day of the range, inclusive."),
             "sport": schema::string(
-                "The sport to match exactly, or \"all\" for every sport. Defaults to the run \
-        sports (running, trail running, treadmill, virtual, street and track).",
+                "The sport to match exactly, or \"all\" for every sport the athlete's history \
+        holds. Defaults to the run sports (running, trail running, treadmill, virtual, street and \
+        track).",
             ),
             "min_distance_m": schema::number(
                 "Only runs at least this long, in metres.",
@@ -132,8 +111,9 @@ pub fn run(api: &dyn StrideApi, _ctx: &Context, args: &Value) -> Result<Value, M
 
     match sport.as_deref() {
         Some("all") => {
-            // The API filters on one sport at a time, so "all" is the run
-            // sports (its default) plus every other sport we know of.
+            // The API filters on one sport at a time, so "all" is a fan-out:
+            // the run sports (the API's default) and every other sport in
+            // the athlete's own history, which the summary knows.
             let (found, count) = fetch(
                 api,
                 &Page {
@@ -148,7 +128,16 @@ pub fn run(api: &dyn StrideApi, _ctx: &Context, args: &Value) -> Result<Value, M
             )?;
             collected.extend(found);
             total += count;
-            for other in OTHER_SPORTS {
+            let others = other_sports(api);
+            let plural = if others.len() == 1 { "sport" } else { "sports" };
+            if others.is_empty() {
+                limitations.push(
+                    "sport \"all\" covers the run sports; the other sports of the athlete's \
+history could not be read."
+                        .to_string(),
+                );
+            }
+            for other in &others {
                 let (found, count) = fetch(
                     api,
                     &Page {
@@ -164,12 +153,11 @@ pub fn run(api: &dyn StrideApi, _ctx: &Context, args: &Value) -> Result<Value, M
                 collected.extend(found);
                 total += count;
             }
-            limitations.push(
-                "sport \"all\" covers the run sports plus a fixed list of other sports; a sport \
-outside that list is not returned. The page is taken from each sport separately, so the \
-cursor moves within a sport."
-                    .to_string(),
-            );
+            limitations.push(format!(
+                "sport \"all\" covers the run sports and the {} other {plural} of the athlete's \
+history. The page is taken from each sport separately, so the cursor moves within a sport.",
+                others.len()
+            ));
         }
         Some(sport) => {
             let (found, count) = fetch(
@@ -341,6 +329,31 @@ struct Page<'a> {
     sort: &'a str,
     page: i64,
     per_page: i64,
+}
+
+/// The sports of the athlete's history that are not run sports.
+///
+/// The router's own summary lists every sport the database holds, so "all"
+/// is the athlete's sports and not a guess about what sports exist.
+fn other_sports(api: &dyn StrideApi) -> Vec<String> {
+    let Ok(summary) = common::get(api, NAME, "/api/v1/stats/summary") else {
+        return Vec::new();
+    };
+    let mut sports: Vec<String> = summary
+        .get("sport_breakdown")
+        .and_then(Value::as_array)
+        .map(|items| {
+            items
+                .iter()
+                .filter_map(|item| common::str_of(item, "sport_type"))
+                .filter(|sport| !stride_api::backend::is_run_sport(sport))
+                .map(str::to_string)
+                .collect()
+        })
+        .unwrap_or_default();
+    sports.sort();
+    sports.dedup();
+    sports
 }
 
 /// Ask the API for one page of runs.

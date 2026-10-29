@@ -27,6 +27,19 @@
 //!
 //! `Option<f64>` is `null`. There is no sentinel: a missing heart rate is
 //! `None`, never `0.0`.
+//!
+//! # What the router needs
+//!
+//! Every struct here serialises to the reference's shape, with the
+//! reference's key order, so `stride-api` can serve the responses without
+//! reshaping anything:
+//!
+//! * [`model::Fingerprint`] is the fingerprint payload;
+//! * [`readiness::Readiness`] is the readiness payload;
+//! * [`plan::SessionMatch`] is one planned session and its verdict, and
+//!   [`plan::Adherence`] is the adherence roll-up;
+//! * [`comparison::values_for`] is the comparison's `values` object and
+//!   [`comparison::PARAMETERS`] is its parameter matrix.
 
 pub mod comparison;
 pub mod date;
@@ -38,13 +51,15 @@ pub mod plan;
 pub mod readiness;
 
 pub use comparison::{
-    compare, profile_for, Comparison, Parameter, ParameterComparison, ProfilePoint, Winner,
-    PROFILE_POINTS,
+    candidates, compare, duration_label, profile_for, run_payload, value_for, values_for,
+    Candidate, Comparison, Parameter, ParameterComparison, ProfilePoint, RunPayload, Winner,
+    CANDIDATE_SPORTS, PROFILE_POINTS,
 };
 pub use date::Date;
 pub use fingerprint::{
-    athlete_zones, default_zone_model, fingerprint, max_hr_reference, zone_model, FingerprintInput,
-    StoredZone,
+    athlete_zones, default_zone_model, fingerprint, fingerprint_metric, fingerprint_trend,
+    max_hr_reference, metric, zone_model, zone_shares, FingerprintInput, FingerprintItem, Metric,
+    StoredZone, Trend, TrendInput, TrendPoint, ZoneShare, METRICS,
 };
 pub use model::{
     Activity, DailyPhysiology, Fingerprint, Lap, MatchedActivity, PlanSession, Stream, Zone,
@@ -52,7 +67,10 @@ pub use model::{
 };
 pub use ordered::OrderedMap;
 pub use plan::{
-    adherence, explain_cause, is_run_sport, match_sessions, verdict_for, Adherence, AdherenceRow,
-    CauseInputs, PlanInputs, SessionMatch, Verdict, RUN_SPORTS as PLAN_RUN_SPORTS,
+    adherence, explain_cause, is_run_sport, match_sessions, today_plan, verdict_for, week_plan,
+    Adherence, AdherenceRow, CauseInputs, PlanInputs, SessionMatch, SessionRow, TodayInput,
+    TodayPlan, Verdict, WeekPlan, WeekSummary, WeekTarget, RUN_SPORTS as PLAN_RUN_SPORTS,
 };
-pub use readiness::{baselines, readiness, Baselines, Readiness, ReadinessDriver};
+pub use readiness::{
+    baselines, readiness, readiness_range, Baselines, CoreError, Readiness, ReadinessDriver,
+};

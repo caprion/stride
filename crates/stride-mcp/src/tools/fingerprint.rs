@@ -183,6 +183,15 @@ pub fn run(api: &dyn StrideApi, ctx: &Context, args: &Value) -> Result<Value, Mc
     }
     groups.sort_by(|left, right| left.0.cmp(&right.0));
 
+    // One group per run is one group per run the athlete has done. The
+    // answer carries the most recent ones and says how many it left out.
+    let mut dropped_groups = 0usize;
+    if groups.len() > crate::output::MAX_SERIES {
+        dropped_groups = groups.len() - crate::output::MAX_SERIES;
+        let start = groups.len() - crate::output::MAX_SERIES;
+        groups = groups.split_off(start);
+    }
+
     let series: Vec<Value> = groups
         .iter()
         .map(|(period, runs)| {
@@ -280,6 +289,12 @@ pub fn run(api: &dyn StrideApi, ctx: &Context, args: &Value) -> Result<Value, Mc
                 "the range holds too few runs to tell a long run from a short one".to_string(),
             ),
         }
+    }
+    if dropped_groups > 0 {
+        limitations.push(format!(
+            "the range holds {dropped_groups} more groups than the answer carries; the oldest \
+groups are not shown."
+        ));
     }
     if groups.len() == 1 {
         limitations.push("the range holds one group, so no trend can be read from it".to_string());

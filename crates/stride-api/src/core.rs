@@ -75,6 +75,9 @@ impl CoreBackend {
         for zone in zones {
             core_zones.push(stride_core::ZoneTime {
                 zone_no: zone.zone_no,
+                name: Some(zone.name.clone()),
+                low_bpm: zone.low_bpm,
+                high_bpm: zone.high_bpm,
                 time_s: zone.time_s,
             });
         }
@@ -108,6 +111,7 @@ impl CoreBackend {
             running_time_s: row.running_time_s,
             walking_time_s: row.walking_time_s,
             stopped_time_s: row.stopped_time_s,
+            geo_points: row.geo_points.clone(),
             laps: core_laps,
             zones: core_zones,
             streams: core_streams,
@@ -497,6 +501,42 @@ impl Backend for CoreBackend {
 
     fn activity(&self, id: i64) -> Result<Option<ActivityRow>, BackendError> {
         self.inner.activity(id)
+    }
+
+    fn activity_by_external(
+        &self,
+        source: &str,
+        external_id: &str,
+    ) -> Result<Option<crate::backend::ActivityRow>, BackendError> {
+        self.inner.activity_by_external(source, external_id)
+    }
+
+    fn upsert_synced_activity(
+        &self,
+        activity: &crate::backend::ActivityRow,
+        laps: &[crate::backend::LapRow],
+        streams: &[crate::backend::StreamRow],
+    ) -> Result<i64, BackendError> {
+        self.inner.upsert_synced_activity(activity, laps, streams)
+    }
+
+    fn upsert_physiology(&self, row: &crate::backend::PhysiologyRow) -> Result<(), BackendError> {
+        self.inner.upsert_physiology(row)
+    }
+
+    fn upsert_daily_metric(
+        &self,
+        row: &crate::backend::DailyMetricRow,
+    ) -> Result<(), BackendError> {
+        self.inner.upsert_daily_metric(row)
+    }
+
+    fn upsert_sync_run(&self, run: &crate::backend::SyncRunRow) -> Result<i64, BackendError> {
+        self.inner.upsert_sync_run(run)
+    }
+
+    fn garmin_personal_key(&self) -> Result<Option<String>, BackendError> {
+        self.inner.garmin_personal_key()
     }
 
     fn activity_laps(&self, id: i64) -> Result<Vec<LapRow>, BackendError> {

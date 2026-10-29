@@ -15,14 +15,47 @@ apply plugin: 'org.jetbrains.kotlin.android'
 // APK has to stay under 10 MB; a second ABI would take ~2.2 MB of that.
 // ---------------------------------------------------------------------------
 
+/**
+ * The ABIs this build carries.
+ *
+ * **arm64-v8a only**, which is what ships: almost every phone in use is
+ * arm64, and the release APK has to stay under 10 MB. The x86_64 variant
+ * exists for the emulator and is never published — it is a debug build, and
+ * it is what the acceptance test runs on.
+ *
+ *     ./gradlew :app:assembleDebug -PstrideEmulatorAbi=x86_64
+ */
+def targetAbis = project.hasProperty('strideEmulatorAbi')
+        ? [project.strideEmulatorAbi]
+        : ['arm64-v8a']
+
 /** The Rust workspace of the phone. */
 def rustCrateDir = file('src/main/rust/stride-ffi')
 
 /** Where the generated Kotlin bindings go. */
 def uniffiGeneratedDir = layout.buildDirectory.dir('generated/uniffi/kotlin')
 
-/** Where `cargo-ndk` puts the shared objects. */
+/** Where the shared object is staged for the APK. */
 def rustJniLibsDir = layout.buildDirectory.dir('rust/jniLibs')
+
+/**
+ * The Rust target triple of an ABI.
+ *
+ * `cargo-ndk` builds into `target/<triple>/release`, and the triple is not
+ * the ABI name: `arm64-v8a` is `aarch64-linux-android`.
+ */
+def rustTriple = { abi ->
+    switch (abi) {
+        case 'arm64-v8a': return 'aarch64-linux-android'
+        case 'x86_64': return 'x86_64-linux-android'
+        case 'armeabi-v7a': return 'armv7-linux-androideabi'
+        default: return null
+    }
+}
+
+/** Where `cargo-ndk` leaves the cross-compiled artefacts. */
+def rustTargetDir = file(
+        "src/main/rust/stride-ffi/target/${rustTriple(targetAbis[0])}/release")
 
 /** The Android SDK, from `local.properties` or the environment. */
 def androidSdkDir = {
@@ -67,16 +100,17 @@ tasks.register('uniffiGenerateKotlin', Exec) {
 /**
  * Build the Rust core for the phone.
  *
- * `cargo-ndk` cross-compiles for `aarch64-linux-android` and drops the
- * shared object into the jniLibs tree, which the APK then packages.
+ * `cargo-ndk` cross-compiles for `aarch64-linux-android`. The artefacts stay
+ * in the cargo target directory: only `libuniffi_stride.so` is packaged, so
+ * the shared objects of the path dependencies (`libstride_api.so`) do not
+ * ride along.
  */
 tasks.register('cargoNdkBuild', Exec) {
     group = 'stride'
     description = 'Builds the Rust core for aarch64-linux-android.'
     dependsOn 'uniffiGenerateKotlin'
     workingDir rustCrateDir
-    commandLine 'cargo', 'ndk', '-t', 'arm64-v8a',
-            '-o', rustJniLibsDir.get().asFile.absolutePath,
+    commandLine 'cargo', 'ndk', '-t', targetAbis.join(','),
             'build', '--release', '--manifest-path', 'Cargo.toml'
     if (androidNdkDir) {
         environment 'ANDROID_NDK_HOME', androidNdkDir
@@ -84,11 +118,26 @@ tasks.register('cargoNdkBuild', Exec) {
     }
     inputs.dir file('src/main/rust/stride-ffi/src')
     inputs.file file('src/main/rust/stride-ffi/Cargo.toml')
-    outputs.dir rustJniLibsDir
+    outputs.dir rustTargetDir
+}
+
+/** Put the core's shared object where the APK picks it up. */
+tasks.register('copyRustLibrary', Copy) {
+    group = 'stride'
+    description = 'Packages the Rust core as lib/arm64-v8a/libuniffi_stride.so.'
+    dependsOn 'cargoNdkBuild'
+    from(new File(rustTargetDir, 'libuniffi_stride.so'))
+    into(new File(rustJniLibsDir.get().asFile, targetAbis[0]))
+    doFirst {
+        // Only the core's own library ships. A shared object left over from
+        // an earlier build — `libstride_api.so`, say — would be packaged
+        // beside it and the app would carry a megabyte it never loads.
+        delete rustJniLibsDir
+    }
 }
 
 tasks.matching { it.name == 'preBuild' }.configureEach {
-    dependsOn 'cargoNdkBuild'
+    dependsOn 'copyRustLibrary'
 }
 
 // Release signing.
@@ -209,10 +258,10 @@ android {
         versionCode (project.hasProperty('strideVersionCode') ? project.strideVersionCode.toInteger() : 1)
         versionName (project.hasProperty('strideVersionName') ? project.strideVersionName : '1.0.0')
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
-        // One ABI. The release APK has to stay under 10 MB, and the phone
-        // is arm64.
+        // One ABI in the release build; the emulator variant asks for its
+        // own.
         ndk {
-            abiFilters 'arm64-v8a'
+            abiFilters(*targetAbis)
         }
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
@@ -226,6 +275,18 @@ android {
             java.srcDirs += uniffiGeneratedDir
             // The Rust core, as a shared object.
             jniLibs.srcDirs += rustJniLibsDir
+        }
+    }
+    packaging {
+        jniLibs {
+            // The native libraries are compressed in the APK.
+            //
+            // The budget is the APK: the Rust core is nine megabytes of
+            // encrypted database and TLS, and a stored (uncompressed) shared
+            // object would put the download over the ten megabyte limit on
+            // its own. Compressed, the APK is under it. The phone extracts
+            // the library at install time, which is what the loader expects.
+            useLegacyPackaging true
         }
     }
     buildTypes {
@@ -263,6 +324,11 @@ dependencies {
     // The background pull. WorkManager survives the app being killed, and
     // its constraints are the honest ones.
     implementation "androidx.work:work-runtime-ktx:2.10.1"
+
+    // The app gate asks the phone for its own credential. The platform's
+    // BiometricPrompt lost the pieces this needs in the API 36 platform, so
+    // the prompt is AndroidX's — which is what the platform API turned into.
+    implementation "androidx.biometric:biometric:1.1.0"
 
     // UniFFI's Kotlin bindings call the Rust core through JNA. The AAR is
     // the Android build of JNA; it adds about a megabyte to the APK, which

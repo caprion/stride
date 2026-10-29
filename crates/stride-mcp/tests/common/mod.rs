@@ -149,6 +149,26 @@ pub fn store() -> MemBackend {
         lap_count: 2,
         ..Default::default()
     });
+    // A run that is not a run: the search has to be able to say "all".
+    store.add_activity(ActivityRow {
+        id: 6,
+        source: "garmin_personal".into(),
+        external_id: "14800000000".into(),
+        name: "Evening ride".into(),
+        sport_type: "cycling".into(),
+        start_time: Some("2026-10-25T17:30:00+00:00".into()),
+        local_date: "2026-10-25".into(),
+        day_of_week: Some("Sunday".into()),
+        distance_m: 30_000.0,
+        moving_time_s: 3_600.0,
+        elapsed_time_s: 3_720.0,
+        elevation_gain_m: 180.0,
+        avg_hr: Some(138.0),
+        max_hr: Some(165.0),
+        avg_cadence: Some(90.0),
+        lap_count: 3,
+        ..Default::default()
+    });
     store.add_activity(ActivityRow {
         id: 5,
         source: "garmin_personal".into(),
@@ -183,12 +203,24 @@ pub fn store() -> MemBackend {
             } else {
                 10.0
             };
+            // The first run climbs on its second split and fades on its last,
+            // so the analysis has something to say.
+            let climb = if activity == 1 && index == 1 {
+                120.0
+            } else {
+                10.0
+            };
+            let speed = if activity == 1 {
+                [3.33, 3.30, 3.28, 3.10][index.min(3)]
+            } else {
+                3.33
+            };
             store.add_lap(LapRow {
                 activity_id: activity,
                 lap_index: index as i64 + 1,
                 distance_m: *distance,
                 duration_s: distance * 3.0,
-                avg_speed_ms: Some(3.33),
+                avg_speed_ms: Some(speed),
                 max_speed_ms: Some(4.4),
                 avg_hr: Some(148.0 + index as f64 * 3.0),
                 max_hr: Some(170.0 + index as f64),
@@ -198,7 +230,7 @@ pub fn store() -> MemBackend {
                 elevation_gain_m: Some(grade),
                 elevation_loss_m: Some(grade / 2.0),
                 start_elevation_m: Some(100.0 + index as f64 * 10.0),
-                end_elevation_m: Some(110.0 + index as f64 * 10.0),
+                end_elevation_m: Some(100.0 + index as f64 * 10.0 + climb),
                 running_distance_m: Some(*distance - 10.0),
                 elapsed_s: Some(distance * 3.1),
             });

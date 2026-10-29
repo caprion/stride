@@ -215,13 +215,17 @@ function fileToBase64(file: File): Promise<string> {
 /**
  * The backend this app uses.
  *
- * The phone has the plugin; the desktop and the browser do not. The choice
- * is made once, when the module loads, and the rest of the app never asks.
+ * The phone has the plugin; the desktop and the browser do not. The choice is
+ * made per request rather than once at load: the native bridge injects the
+ * plugin list into the page as it starts, and a module that decided before
+ * that happened would pick the wrong one and never look again.
  */
-const backend: ApiBackend = strideBridge() ? apiBridge : apiHttp
+function backend(): ApiBackend {
+  return strideBridge() ? apiBridge : apiHttp
+}
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
-  return backend.request<T>(path, init)
+  return backend().request<T>(path, init)
 }
 
 export { apiHttp, apiBridge }

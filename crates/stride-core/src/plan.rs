@@ -110,6 +110,53 @@ pub struct PlanInputs<'a> {
     pub physiology: &'a [DailyPhysiology],
 }
 
+/// One row of the plan response: a session, the activity that answered it and
+/// the verdict.
+///
+/// The reference serves the session and the activity as nested objects and the
+/// verdict's fields beside them. This is that shape, in that order, so the
+/// router can serialise it without reshaping anything.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct SessionRow {
+    /// The planned session.
+    pub session: PlanSession,
+    /// The activity that answered it, if any.
+    pub activity: Option<MatchedActivity>,
+    /// The verdict.
+    pub verdict: String,
+    /// Whether the distance target was met.
+    pub distance_hit: bool,
+    /// Whether the pace band was met.
+    pub pace_band_hit: Option<bool>,
+    /// The distance difference from the target, in metres.
+    pub distance_delta_m: Option<f64>,
+    /// The pace difference from the middle of the band.
+    pub pace_delta_s_km: Option<f64>,
+    /// The adherence score, out of 100.
+    pub adherence_score: Option<f64>,
+    /// Why the session went the way it did.
+    pub cause: Option<String>,
+    /// How sure the cause is.
+    pub cause_confidence: Option<f64>,
+}
+
+impl From<&SessionMatch> for SessionRow {
+    fn from(entry: &SessionMatch) -> Self {
+        Self {
+            session: entry.session.clone(),
+            activity: entry.activity.clone(),
+            verdict: entry.verdict.verdict.clone(),
+            distance_hit: entry.verdict.distance_hit,
+            pace_band_hit: entry.verdict.pace_band_hit,
+            distance_delta_m: entry.verdict.distance_delta_m,
+            pace_delta_s_km: entry.verdict.pace_delta_s_km,
+            adherence_score: entry.verdict.adherence_score,
+            cause: entry.verdict.cause.clone(),
+            cause_confidence: entry.verdict.cause_confidence,
+        }
+    }
+}
+
 /// The physiology a cause is explained against.
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct CauseInputs {
@@ -1024,4 +1071,315 @@ mod tests {
         assert_eq!(summary.rows.len(), 1);
         assert_eq!(summary.rows[0].week_key, "2026-W10");
     }
+}
+
+/// The plan week a session belongs to.
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
+pub struct WeekTarget {
+    /// The week's row id.
+    #[serde(default)]
+    pub id: i64,
+    /// The week's number in its phase.
+    #[serde(default)]
+    pub week_number: i64,
+    /// The week's target distance, in kilometres.
+    #[serde(default)]
+    pub target_km: Option<f64>,
+    /// The Monday the week starts on.
+    #[serde(default)]
+    pub start_date: Option<String>,
+}
+
+/// The week as the plan response reports it.
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
+pub struct WeekSummary {
+    /// The week's row id.
+    #[serde(default)]
+    pub id: i64,
+    /// The week's number in its phase.
+    #[serde(default)]
+    pub week_number: i64,
+    /// The week's target distance, in kilometres.
+    #[serde(default)]
+    pub target_km: Option<f64>,
+}
+
+/// Everything today's recommendation is derived from.
+#[derive(Clone, Debug, Default)]
+pub struct TodayInput<'a> {
+    /// The day, `YYYY-MM-DD`.
+    pub day: &'a str,
+    /// The session planned for that day, if there is one.
+    pub session: Option<&'a PlanSession>,
+    /// The week the session belongs to, with the start date the
+    /// week-to-date volume is measured from.
+    pub week: Option<WeekTarget>,
+    /// Garmin's own training readiness for the day.
+    pub training_readiness: Option<f64>,
+    /// The distance logged in the run activities from the week's start to the
+    /// day, in metres.
+    pub logged_distance_m: f64,
+}
+
+/// What to do today.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct TodayPlan {
+    /// The day, `YYYY-MM-DD`.
+    pub date: String,
+    /// The session planned for the day.
+    pub session: Option<PlanSession>,
+    /// The week the session belongs to.
+    pub week: Option<WeekSummary>,
+    /// Garmin's own training readiness for the day.
+    pub readiness: Option<f64>,
+    /// What to do.
+    pub recommendation: String,
+    /// Why.
+    pub rationale: String,
+    /// Whether a plan exists for the day.
+    pub has_plan: bool,
+}
+
+/// Today's recommendation.
+///
+/// The reference reads the clock and the database; everything it then *decides*
+/// is a function of the day, the session, the week's target, the day's
+/// training readiness and the distance logged so far. That is what this is:
+/// the decision, without the clock and without the database.
+///
+/// Two signals shorten the session: a training readiness below 40, and a
+/// week-to-date running volume that is behind the week's target.
+pub fn today_plan(input: &TodayInput<'_>) -> TodayPlan {
+    let session = input.session;
+    let Some(session) = session else {
+        return TodayPlan {
+            date: input.day.to_string(),
+            session: None,
+            week: None,
+            readiness: input.training_readiness,
+            recommendation:
+                "No plan is defined for today; add or import a plan to get a recommendation."
+                    .to_string(),
+            rationale: "There is no planned session to compare or adjust.".to_string(),
+            has_plan: false,
+        };
+    };
+
+    let low = input
+        .training_readiness
+        .is_some_and(|readiness| readiness < 40.0);
+
+    let mut behind = false;
+    if let Some(week) = &input.week {
+        if let (Some(target_km), Some(start_date)) = (week.target_km, week.start_date.as_deref()) {
+            if target_km != 0.0 {
+                // The days from the week's start to the day, and never less
+                // than one.
+                let elapsed = crate::date::Date::parse(input.day)
+                    .zip(crate::date::Date::parse(start_date))
+                    .map(|(day, start)| (1 - day.days_until(start)).max(1))
+                    .unwrap_or(1);
+                let expected = target_km * (elapsed as f64 / 7.0).min(1.0) * 0.75;
+                behind = (input.logged_distance_m / 1000.0) < expected;
+            }
+        }
+    }
+
+    let adjust = low || behind;
+    let why = if low {
+        "readiness is low"
+    } else {
+        "this week's running volume is behind target"
+    };
+    let recommendation = if adjust {
+        format!("Shorten today's session or swap quality for an easy run because {why}.")
+    } else {
+        let title = session
+            .title
+            .clone()
+            .filter(|title| !title.is_empty())
+            .unwrap_or_else(|| session.session_type.clone());
+        format!("Complete the planned {title} session.")
+    };
+
+    let mut reasons: Vec<&str> = Vec::new();
+    if low {
+        reasons.push("readiness is below 40");
+    }
+    if behind {
+        reasons.push("week-to-date running volume is behind its target");
+    }
+    let rationale = if reasons.is_empty() {
+        "No low-readiness or behind-volume signal was available.".to_string()
+    } else {
+        reasons.join("; ")
+    };
+
+    TodayPlan {
+        date: input.day.to_string(),
+        session: Some(session.clone()),
+        week: input.week.as_ref().map(|week| WeekSummary {
+            id: week.id,
+            week_number: week.week_number,
+            target_km: week.target_km,
+        }),
+        readiness: input.training_readiness,
+        recommendation,
+        rationale,
+        has_plan: true,
+    }
+}
+
+#[cfg(test)]
+mod today_tests {
+    use super::*;
+
+    fn session(title: Option<&str>) -> PlanSession {
+        PlanSession {
+            id: 1,
+            date: "2026-03-04".to_string(),
+            session_type: "easy".to_string(),
+            title: title.map(str::to_string),
+            details: None,
+            target_distance_m: Some(400.0),
+            pace_low_s_km: None,
+            pace_high_s_km: None,
+        }
+    }
+
+    fn week(target_km: Option<f64>, start_date: &str) -> WeekTarget {
+        WeekTarget {
+            id: 1,
+            week_number: 1,
+            target_km,
+            start_date: Some(start_date.to_string()),
+        }
+    }
+
+    #[test]
+    fn a_day_without_a_plan_says_so() {
+        let plan = today_plan(&TodayInput {
+            day: "2026-03-04",
+            session: None,
+            week: None,
+            training_readiness: Some(40.0),
+            logged_distance_m: 0.0,
+        });
+        assert!(!plan.has_plan);
+        assert_eq!(plan.session, None);
+        assert_eq!(
+            plan.recommendation,
+            "No plan is defined for today; add or import a plan to get a recommendation."
+        );
+        assert_eq!(
+            plan.rationale,
+            "There is no planned session to compare or adjust."
+        );
+        assert_eq!(plan.readiness, Some(40.0));
+    }
+
+    #[test]
+    fn a_planned_day_is_completed_as_planned() {
+        let plan = today_plan(&TodayInput {
+            day: "2026-03-04",
+            session: Some(&session(Some("Easy 400"))),
+            week: Some(week(Some(25.0), "2026-03-02")),
+            training_readiness: Some(80.0),
+            logged_distance_m: 10_000.0,
+        });
+        assert!(plan.has_plan);
+        assert_eq!(
+            plan.recommendation,
+            "Complete the planned Easy 400 session."
+        );
+        assert_eq!(
+            plan.rationale,
+            "No low-readiness or behind-volume signal was available."
+        );
+    }
+
+    #[test]
+    fn a_readiness_below_forty_shortens_the_session() {
+        let plan = today_plan(&TodayInput {
+            day: "2026-03-04",
+            session: Some(&session(None)),
+            week: Some(week(Some(25.0), "2026-03-02")),
+            training_readiness: Some(39.0),
+            logged_distance_m: 10_000.0,
+        });
+        assert_eq!(
+            plan.recommendation,
+            "Shorten today's session or swap quality for an easy run because readiness is low."
+        );
+        assert_eq!(plan.rationale, "readiness is below 40");
+        // Without a title the session's type is used.
+        assert!(plan.recommendation.contains("readiness"));
+    }
+
+    #[test]
+    fn a_week_behind_its_target_shortens_the_session() {
+        let plan = today_plan(&TodayInput {
+            day: "2026-03-04",
+            session: Some(&session(Some("Easy 400"))),
+            week: Some(week(Some(40.0), "2026-03-02")),
+            training_readiness: Some(80.0),
+            logged_distance_m: 1_000.0,
+        });
+        assert_eq!(
+            plan.recommendation,
+            "Shorten today's session or swap quality for an easy run because this week's running volume is behind target."
+        );
+        assert_eq!(
+            plan.rationale,
+            "week-to-date running volume is behind its target"
+        );
+    }
+
+    #[test]
+    fn both_signals_are_reported_together() {
+        let plan = today_plan(&TodayInput {
+            day: "2026-03-04",
+            session: Some(&session(Some("Easy 400"))),
+            week: Some(week(Some(40.0), "2026-03-02")),
+            training_readiness: Some(20.0),
+            logged_distance_m: 1_000.0,
+        });
+        assert_eq!(
+            plan.rationale,
+            "readiness is below 40; week-to-date running volume is behind its target"
+        );
+    }
+}
+
+/// One week of the plan.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct WeekPlan {
+    /// The Monday the week starts on.
+    pub start_date: String,
+    /// The Sunday the week ends on.
+    pub end_date: String,
+    /// The sessions of the week.
+    pub items: Vec<PlanSession>,
+}
+
+/// The plan of the week a day falls in.
+///
+/// The sessions are the ones of the active block; this keeps the ones of the
+/// week and the week's dates.
+pub fn week_plan(day: &str, sessions: &[PlanSession]) -> Option<WeekPlan> {
+    let date = crate::date::Date::parse(day)?;
+    let (start, end) = date.week_range();
+    let items = sessions
+        .iter()
+        .filter(|session| {
+            session.date.as_str() >= start.to_string().as_str()
+                && session.date.as_str() <= end.to_string().as_str()
+        })
+        .cloned()
+        .collect();
+    Some(WeekPlan {
+        start_date: start.to_string(),
+        end_date: end.to_string(),
+        items,
+    })
 }

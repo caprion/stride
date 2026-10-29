@@ -81,6 +81,12 @@ impl Date {
         Self::from_days(days - weekday)
     }
 
+    /// The Monday and the Sunday of this date's week.
+    pub fn week_range(self) -> (Self, Self) {
+        let start = self.iso_week_start();
+        (start, start.add_days(6))
+    }
+
     /// The ISO-8601 week key, `YYYY-Www`.
     pub fn iso_week_key(self) -> String {
         let (year, week) = self.iso_week();
@@ -157,6 +163,15 @@ mod tests {
         let date = Date::parse("2026-03-09").expect("a date");
         assert_eq!(date.iso_week_key(), "2026-W11");
         assert_eq!(date.iso_week_start().to_string(), "2026-03-09");
+    }
+
+    #[test]
+    fn a_week_runs_from_monday_to_sunday() {
+        // 2026-03-04 is a Wednesday.
+        let date = Date::parse("2026-03-04").expect("a date");
+        let (start, end) = date.week_range();
+        assert_eq!(start.to_string(), "2026-03-02");
+        assert_eq!(end.to_string(), "2026-03-08");
     }
 
     #[test]

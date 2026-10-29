@@ -1,767 +1,111 @@
-//! The phone's backend: `stride_store::Store` behind `stride_api::backend::Backend`.
+//! The phone's backend.
 //!
-//! **This file is meant to move.** `stride-api` documents the production
-//! backend as "the `stride-store` adapter (proposed in the workstream
-//! report)"; that adapter does not exist yet, and the phone cannot serve a
-//! single route without one, so it lives here for now. When `stride-api`
-//! grows its own — which is where it belongs, because `stride-api` is the
-//! crate that depends on `stride-store` — this file should be deleted and
-//! `lib.rs` should install that one instead.
+//! The phone runs the **same** implementation as the desktop: the store
+//! adapter, the state and the domain are `stride-api`'s, and this file only
+//! adds the one thing the phone has and the desktop does not — a Garmin pull
+//! that can be driven from a background worker.
 //!
-//! ## What the phone can and cannot do
+//! ```text
+//! CoreBackend        the domain: the fingerprint, the readiness, the verdicts
+//!   └── PhoneSync    this file: the pull
+//!         └── StateBackend   the state: the key, the status, the pairing
+//!               └── the store adapter   the rows
+//! ```
 //!
-//! The phone has no server, so the routes that need one answer 501 rather
-//! than pretending:
+//! **Why not a backend of its own.** An earlier version of this file had one:
+//! a `PhoneBackend` that read `stride-store` directly and computed the
+//! derived numbers itself. That was a second implementation of the domain,
+//! and two implementations of the domain are how the phone and the desktop
+//! start disagreeing about a run. `stride-api` grew the shared stack while
+//! this was being written, so the phone uses it.
 //!
-//! * pairing (`/auth/pair`, `/auth/devices`) — there is nothing to pair to;
-//! * the Garmin OAuth dance (`/auth/garmin/login`, `/auth/garmin/developer-key`)
-//!   — the phone uses the Personal API key, which is one field and no
-//!   developer registration;
-//! * map tiles (`/tiles/...`) — the phone ships no basemap, and the OSM
-//!   tile servers forbid offline prefetching;
-//! * network routing (`/network/route`) — the phone has no exit node.
+//! ## What the phone cannot do
 //!
-//! Everything else is answered from the phone's own database.
+//! The routes that need a server answer 501 rather than pretending:
+//! pairing, the Garmin OAuth dance and the map tiles. The state layer above
+//! owns the first two; the tiles are the store adapter's answer.
 
-use std::collections::BTreeMap;
-use std::sync::Mutex;
+use std::sync::Arc;
 
-use serde_json::{json, Map, Value};
+use serde_json::Value;
 
 use stride_api::backend::{
-    ActivityFilter, ActivityPatch, ActivityRow, Backend, Counts, DailyMetricRow,
-    ImportRequest, LapRow, PhysiologyRow, PlanBlockFields, PlanBlockRow, PlanPhaseFields,
-    PlanPhaseRow, PlanSessionFields, PlanSessionRow, PlanWeekFields, PlanWeekRow, SessionWithResult,
-    SettingsPatch, StatusView, StreamRow, Tile, ZoneRow,
+    ActivityFilter, ActivityPatch, ActivityRow, Backend, Counts, DailyMetricRow, ImportRequest,
+    LapRow, PhysiologyRow, PlanBlockFields, PlanBlockRow, PlanPhaseFields, PlanPhaseRow,
+    PlanSessionFields, PlanSessionRow, PlanWeekFields, PlanWeekRow, SessionWithResult,
+    SettingsPatch, StatusView, StreamRow, SyncRunRow, Tile, ZoneRow,
 };
-use stride_core as core;
 use stride_api::error::BackendError;
-use stride_store::model as store_model;
-use stride_store::repo::activity::{ActivityFilter as StoreFilter, ActivityOrder};
 use stride_store::Store;
 
-use crate::rows;
-
-/// The phone's backend.
-pub struct PhoneBackend {
+/// The phone's backend: the shared stack plus what only the phone knows.
+pub struct PhoneSync {
+    /// The shared stack underneath.
+    inner: Arc<dyn Backend>,
     /// The phone's own encrypted database.
-    store: Store,
-    /// The Garmin Personal API key, in memory, only while a pull is running.
-    ///
-    /// It is empty for most of the process's life: the Kotlin shell unwraps
-    /// the key from the Keystore for the length of one pull and hands it
-    /// over, and the key is dropped as soon as the pull is over.
-    garmin_key: Mutex<String>,
+    store: Arc<Store>,
 }
 
-impl PhoneBackend {
-    /// A backend over a database.
-    pub fn new(store: Store) -> Self {
-        Self {
-            store,
-            garmin_key: Mutex::new(String::new()),
-        }
+impl PhoneSync {
+    /// A backend over the shared stack and the phone's database.
+    pub fn new(inner: Arc<dyn Backend>, store: Arc<Store>) -> Self {
+        Self { inner, store }
     }
 
-    /// The store, for the sync.
-    pub fn store(&self) -> &Store {
+    /// The database, for the pull.
+    pub fn store(&self) -> &Arc<Store> {
         &self.store
     }
 
     /// The Garmin key, if one is in memory.
-    pub fn garmin_key(&self) -> Option<String> {
-        let key = self
-            .garmin_key
-            .lock()
-            .unwrap_or_else(|poisoned| poisoned.into_inner())
-            .clone();
-        if key.is_empty() {
-            None
-        } else {
-            Some(key)
-        }
-    }
-
-    /// Put the Garmin key in memory, or take it out again.
-    pub fn set_garmin_key(&self, key: &str) {
-        let mut guard = self
-            .garmin_key
-            .lock()
-            .unwrap_or_else(|poisoned| poisoned.into_inner());
-        *guard = key.to_string();
-    }
-
-    /// The store's error, as the backend's error.
-    fn store_error(err: stride_store::StoreError) -> BackendError {
-        BackendError::Store(err.to_string())
-    }
-
-    /// The store's answer, as the backend's answer.
-    fn map<T>(result: Result<T, stride_store::StoreError>) -> Result<T, BackendError> {
-        result.map_err(Self::store_error)
-    }
-
-    /// The runs of a range, as the domain sees them.
-    fn core_activities(&self, from: &str, to: &str) -> Result<Vec<core::model::Activity>, BackendError> {
-        let mut filter = StoreFilter {
-            from: Some(from.to_string()),
-            to: Some(to.to_string()),
-            ..Default::default()
-        };
-        filter.order = Some(ActivityOrder::Date);
-        let activities = Self::map(self.store.activities_filtered(&filter))?;
-        let mut out = Vec::with_capacity(activities.len());
-        for activity in &activities {
-            out.push(self.core_activity(activity)?);
-        }
-        Ok(out)
-    }
-
-    /// One run, as the domain sees it.
-    fn core_activity(
-        &self,
-        activity: &store_model::Activity,
-    ) -> Result<core::model::Activity, BackendError> {
-        let id = activity.id.unwrap_or_default();
-        let laps = Self::map(self.store.activity_laps(id))?;
-        let zones = Self::map(self.store.hr_zones(id))?;
-        let streams = Self::map(self.store.activity_streams(id))?;
-        Ok(rows::core_activity(activity, &laps, &zones, &streams))
-    }
-
-    /// One run, as the domain sees it, by id.
-    fn core_activity_by_id(
-        &self,
-        id: i64,
-    ) -> Result<Option<core::model::Activity>, BackendError> {
-        let activity = Self::map(self.store.activity(id))?;
-        match activity {
-            Some(activity) => Ok(Some(self.core_activity(&activity)?)),
-            None => Ok(None),
-        }
-    }
-
-    /// Every run, as the domain sees them.
     ///
-    /// The athlete's maximum heart rate and the trailing physiology baselines
-    /// are read over the whole history, because that is what the reference
-    /// does.
-    fn every_core_activity(
-        &self,
-    ) -> Result<Vec<core::model::Activity>, BackendError> {
-        let activities = Self::map(self.store.activities("0000-01-01", "9999-12-31"))?;
-        let mut out = Vec::with_capacity(activities.len());
-        for activity in &activities {
-            out.push(self.core_activity(activity)?);
-        }
-        Ok(out)
-    }
-
-    /// The athlete the phone's history belongs to.
-    ///
-    /// The phone has one athlete: the local one. The reference filters the
-    /// rows by it, so the filter has to be the same one.
-    fn athlete_id(&self) -> Result<Option<i64>, BackendError> {
-        let athletes = Self::map(self.store.athletes())?;
-        Ok(athletes.first().and_then(|athlete| athlete.id))
-    }
-
-    /// The athlete's maximum heart rate.
-    fn reference_max_hr(&self) -> Result<f64, BackendError> {
-        let activities = self.every_core_activity()?;
-        // The rows are filtered by the athlete they belong to. The rows that
-        // carry one win; otherwise the local athlete, if there is one.
-        let athlete = activities
-            .iter()
-            .filter_map(|activity| activity.athlete_id)
-            .next()
-            .or(self.athlete_id()?);
-        Ok(core::max_hr_reference(&activities, athlete, false))
-    }
-
-    /// The fingerprint of one run, with the fields the API adds.
-    fn fingerprint_value(
-        &self,
-        activity: &core::model::Activity,
-    ) -> Result<Value, BackendError> {
-        let reference = self.reference_max_hr()?;
-        let zones = core::zone_model(reference, None);
-        let input = core::FingerprintInput {
-            max_hr_reference: reference,
-            zone_model: &zones,
-            activity,
-        };
-        let fingerprint = core::fingerprint(&input);
-        let mut value = serde_json::to_value(&fingerprint).unwrap_or(Value::Null);
-        let object = value.as_object_mut().ok_or_else(|| {
-            BackendError::Malformed("the fingerprint is not an object".to_string())
-        })?;
-        object.insert("activity_id".into(), json!(activity.id));
-        object.insert("activity_name".into(), json!(activity.name));
-        object.insert("local_date".into(), json!(activity.local_date));
-        object.insert("distance_m".into(), json!(activity.distance_m));
-        object.insert(
-            "pace_s_per_km".into(),
-            json!(activity.pace_s_per_km()),
-        );
-        Ok(value)
-    }
-
-    /// The physiology of the whole history, as the domain sees it.
-    fn core_physiology(&self) -> Result<Vec<core::model::DailyPhysiology>, BackendError> {
-        let rows = Self::map(self.store.physiology("0000-01-01", "9999-12-31"))?;
-        Ok(rows.iter().map(rows::core_physiology).collect())
-    }
-
-    /// The days of the trailing window, oldest first.
-    fn core_physiology_between(
-        &self,
-        from: &str,
-        to: &str,
-    ) -> Result<Vec<core::model::DailyPhysiology>, BackendError> {
-        let rows = Self::map(self.store.physiology(from, to))?;
-        Ok(rows.iter().map(rows::core_physiology).collect())
+    /// The key is in the state layer, not here: the shared sync reads it
+    /// through `garmin_personal_key()`, and the state is what the Kotlin
+    /// shell fills for the length of one pull.
+    pub fn garmin_key(&self) -> Result<Option<String>, BackendError> {
+        self.inner.garmin_personal_key()
     }
 }
 
-impl Backend for PhoneBackend {
-    // ------------------------------------------------------------ activities
-
-    fn activities(&self, filter: &ActivityFilter) -> Result<Vec<ActivityRow>, BackendError> {
-        let store_filter = StoreFilter {
-            from: filter.date_from.clone(),
-            to: filter.date_to.clone(),
-            sport: filter.sport.clone(),
-            sports: None,
-            exclude_source: Some("demo".to_string()),
-            search: filter.query.clone(),
-            order: Some(match filter.sort.as_str() {
-                "distance" => ActivityOrder::Distance,
-                "pace" => ActivityOrder::Pace,
-                _ => ActivityOrder::Date,
-            }),
-            limit: None,
-            offset: None,
-        };
-        let activities = Self::map(self.store.activities_filtered(&store_filter))?;
-        let mut rows: Vec<ActivityRow> = activities
-            .iter()
-            .map(rows::activity_row)
-            .filter(|row| filter.all_sports || core::is_run_sport(&row.sport_type))
-            .collect();
-        // The paging is the router's business, but the store does not page.
-        // The page number is one-based, the way the query reads it.
-        let per_page = filter.per_page.max(0) as usize;
-        let start = filter.page.max(1) as usize - 1;
-        if start > 0 {
-            rows = rows.into_iter().skip(start * per_page).collect();
-        }
-        if per_page > 0 {
-            rows.truncate(per_page);
-        }
-        Ok(rows)
-    }
-
-    fn activity_count(&self, filter: &ActivityFilter) -> Result<i64, BackendError> {
-        let store_filter = StoreFilter {
-            from: filter.date_from.clone(),
-            to: filter.date_to.clone(),
-            sport: filter.sport.clone(),
-            sports: None,
-            exclude_source: Some("demo".to_string()),
-            search: filter.query.clone(),
-            order: None,
-            limit: None,
-            offset: None,
-        };
-        // The count is the count of the rows the filter keeps. The store
-        // filters on the sport when one is named, and the router names it.
-        Self::map(self.store.count_activities(&store_filter))
-    }
-
-    fn activity(&self, id: i64) -> Result<Option<ActivityRow>, BackendError> {
-        let activity = Self::map(self.store.activity(id))?;
-        Ok(activity.as_ref().map(rows::activity_row))
-    }
-
-    fn activity_laps(&self, id: i64) -> Result<Vec<LapRow>, BackendError> {
-        let laps = Self::map(self.store.activity_laps(id))?;
-        Ok(laps.iter().map(rows::lap_row).collect())
-    }
-
-    fn activity_streams(&self, id: i64) -> Result<Vec<StreamRow>, BackendError> {
-        let streams = Self::map(self.store.activity_streams(id))?;
-        Ok(streams.iter().map(rows::stream_row).collect())
-    }
-
-    fn activity_zones(&self, id: i64) -> Result<Vec<ZoneRow>, BackendError> {
-        let zones = Self::map(self.store.hr_zones(id))?;
-        Ok(zones.iter().map(rows::zone_row).collect())
-    }
-
-    fn activity_geo(&self, id: i64) -> Result<Option<Vec<[f64; 2]>>, BackendError> {
-        let activity = Self::map(self.store.activity(id))?;
-        Ok(activity
-            .as_ref()
-            .and_then(|row| rows::geo_points(row.geo_points.as_ref())))
-    }
-
-    fn patch_activity(
-        &self,
-        id: i64,
-        patch: &ActivityPatch,
-    ) -> Result<Option<ActivityRow>, BackendError> {
-        let Some(mut activity) = Self::map(self.store.activity(id))? else {
-            return Ok(None);
-        };
-        if let Some(name) = patch.name.as_ref() {
-            activity.name = name.clone();
-        }
-        if let Some(description) = patch.description.as_ref() {
-            activity.description = Some(description.clone());
-        }
-        if let Some(effort) = patch.perceived_exertion {
-            activity.perceived_exertion = Some(effort);
-        }
-        if let Some(trail) = patch.is_trail {
-            activity.is_trail = trail;
-        }
-        if let Some(commute) = patch.is_commute {
-            activity.is_commute = commute;
-        }
-        activity.updated_at = chrono::Utc::now();
-        Self::map(self.store.upsert_activity(&activity))?;
-        Ok(Some(rows::activity_row(&activity)))
-    }
-
-    fn counts(&self) -> Result<Counts, BackendError> {
-        let activities = Self::map(self.store.count_activities(
-            &StoreFilter::default(),
-        ))?;
-        let physiology = Self::map(self.store.physiology("0000-01-01", "9999-12-31"))?;
-        let sessions = Self::map(self.store.plan_sessions("0000-01-01", "9999-12-31"))?;
-        Ok(Counts {
-            activities,
-            from_garmin: activities,
-            physiology_days: physiology.len() as i64,
-            plan_sessions: sessions.len() as i64,
-        })
-    }
-
-    // ----------------------------------------------------------- physiology
-
-    fn physiology(&self, from: &str, to: &str) -> Result<Vec<PhysiologyRow>, BackendError> {
-        let days = Self::map(self.store.physiology(from, to))?;
-        Ok(days.iter().map(rows::physiology_row).collect())
-    }
-
-    fn physiology_latest(&self) -> Result<Option<PhysiologyRow>, BackendError> {
-        let day = Self::map(self.store.latest_physiology())?;
-        Ok(day.as_ref().map(rows::physiology_row))
-    }
-
-    fn daily_metrics(
-        &self,
-        from: Option<&str>,
-        to: Option<&str>,
-    ) -> Result<Vec<DailyMetricRow>, BackendError> {
-        let days = Self::map(self.store.daily_metrics(
-            from.unwrap_or("0000-01-01"),
-            to.unwrap_or("9999-12-31"),
-        ))?;
-        Ok(days.iter().map(rows::daily_metric_row).collect())
-    }
-
-    // ----------------------------------------------------------------- plan
-
-    fn plan_blocks(&self) -> Result<Vec<PlanBlockRow>, BackendError> {
-        let blocks = Self::map(self.store.plan_blocks())?;
-        Ok(blocks.iter().map(rows::plan_block_row).collect())
-    }
-
-    fn plan_block(&self, id: i64) -> Result<Option<PlanBlockRow>, BackendError> {
-        let block = Self::map(self.store.plan_block(id))?;
-        Ok(block.as_ref().map(rows::plan_block_row))
-    }
-
-    fn plan_phases(&self, block_id: i64) -> Result<Vec<PlanPhaseRow>, BackendError> {
-        let phases = Self::map(self.store.plan_phases(block_id))?;
-        Ok(phases.iter().map(rows::plan_phase_row).collect())
-    }
-
-    fn plan_weeks(&self, phase_id: i64) -> Result<Vec<PlanWeekRow>, BackendError> {
-        let weeks = Self::map(self.store.plan_weeks(phase_id))?;
-        Ok(weeks.iter().map(rows::plan_week_row).collect())
-    }
-
-    fn plan_sessions(&self, week_id: i64) -> Result<Vec<PlanSessionRow>, BackendError> {
-        let sessions = Self::map(self.store.plan_sessions("0000-01-01", "9999-12-31"))?;
-        Ok(sessions
-            .iter()
-            .filter(|session| session.week_id == Some(week_id))
-            .map(rows::plan_session_row)
-            .collect())
-    }
-
-    fn plan_sessions_in_range(
-        &self,
-        from: &str,
-        to: &str,
-    ) -> Result<Vec<PlanSessionRow>, BackendError> {
-        let sessions = Self::map(self.store.plan_sessions(from, to))?;
-        Ok(sessions.iter().map(rows::plan_session_row).collect())
-    }
-
-    fn create_plan_block(&self, fields: &PlanBlockFields) -> Result<PlanBlockRow, BackendError> {
-        let block = store_model::PlanBlock {
-            id: None,
-            name: fields.name.clone(),
-            start_date: fields.start_date.clone(),
-            end_date: fields.end_date.clone(),
-            goal: fields.goal.clone(),
-            status: fields.status.clone().unwrap_or_else(|| "active".to_string()),
-            source: fields.source.clone().unwrap_or_else(|| "manual".to_string()),
-            notes: fields.notes.clone(),
-            created_at: chrono::Utc::now(),
-        };
-        let id = Self::map(self.store.upsert_plan_block(&block))?;
-        let block = Self::map(self.store.plan_block(id))?
-            .ok_or_else(|| BackendError::Store("the block was not written".to_string()))?;
-        Ok(rows::plan_block_row(&block))
-    }
-
-    fn create_plan_phase(
-        &self,
-        block_id: i64,
-        fields: &PlanPhaseFields,
-    ) -> Result<PlanPhaseRow, BackendError> {
-        let phase = store_model::PlanPhase {
-            id: None,
-            block_id,
-            name: fields.name.clone(),
-            start_date: fields.start_date.clone(),
-            end_date: fields.end_date.clone(),
-            target_weekly_km_min: fields.target_weekly_km_min,
-            target_weekly_km_max: fields.target_weekly_km_max,
-            target_sessions: fields.target_sessions,
-            pace_easy_low: fields.pace_easy_low,
-            pace_easy_high: fields.pace_easy_high,
-            pace_tempo_low: fields.pace_tempo_low,
-            pace_tempo_high: fields.pace_tempo_high,
-            pace_interval_low: fields.pace_interval_low,
-            pace_interval_high: fields.pace_interval_high,
-            pace_long_low: fields.pace_long_low,
-            pace_long_high: fields.pace_long_high,
-            hr_zone_target: fields.hr_zone_target,
-            notes: fields.notes.clone(),
-        };
-        let id = Self::map(self.store.upsert_plan_phase(&phase))?;
-        let phases = Self::map(self.store.plan_phases(block_id))?;
-        let phase = phases
-            .into_iter()
-            .find(|row| row.id == Some(id))
-            .ok_or_else(|| BackendError::Store("the phase was not written".to_string()))?;
-        Ok(rows::plan_phase_row(&phase))
-    }
-
-    fn create_plan_week(
-        &self,
-        phase_id: i64,
-        fields: &PlanWeekFields,
-    ) -> Result<PlanWeekRow, BackendError> {
-        let week = store_model::PlanWeek {
-            id: None,
-            phase_id,
-            week_number: fields.week_number,
-            start_date: fields.start_date.clone(),
-            end_date: fields.end_date.clone(),
-            target_km: fields.target_km,
-            key_workout: fields.key_workout.clone(),
-            notes: fields.notes.clone(),
-        };
-        let id = Self::map(self.store.upsert_plan_week(&week))?;
-        let weeks = Self::map(self.store.plan_weeks(phase_id))?;
-        let week = weeks
-            .into_iter()
-            .find(|row| row.id == Some(id))
-            .ok_or_else(|| BackendError::Store("the week was not written".to_string()))?;
-        Ok(rows::plan_week_row(&week))
-    }
-
-    fn create_plan_session(
-        &self,
-        week_id: i64,
-        fields: &PlanSessionFields,
-    ) -> Result<PlanSessionRow, BackendError> {
-        let session = store_model::PlanSession {
-            id: None,
-            week_id: Some(week_id),
-            block_id: None,
-            date: fields.date.clone(),
-            session_type: fields.session_type.clone(),
-            title: fields.title.clone(),
-            details: fields.details.clone(),
-            target_distance_m: fields.target_distance_m,
-            pace_low_s_km: fields.pace_low_s_km,
-            pace_high_s_km: fields.pace_high_s_km,
-            hr_zone_target: fields.hr_zone_target,
-            status: fields.status.clone().unwrap_or_else(|| "planned".to_string()),
-            source: fields.source.clone().unwrap_or_else(|| "manual".to_string()),
-            notes: fields.notes.clone(),
-        };
-        let id = Self::map(self.store.upsert_plan_session(&session))?;
-        let session = Self::map(self.store.plan_session(id))?
-            .ok_or_else(|| BackendError::Store("the session was not written".to_string()))?;
-        Ok(rows::plan_session_row(&session))
-    }
-
-    fn import_plan(&self, _request: &ImportRequest) -> Result<Value, BackendError> {
-        // The plan importer is not ported to Rust yet: the reference is
-        // `backend/app/ingest/plan_importer.py`. The phone says so rather
-        // than importing half a plan.
+impl Backend for PhoneSync {
+    /// The pairing code.
+    ///
+    /// The phone has no server to pair with: it is the device. The state
+    /// layer above would happily mint a code for a machine that does not
+    /// exist, so the phone says no.
+    fn pair_code(&self) -> Result<Value, BackendError> {
         Err(BackendError::Unsupported(
-            "the plan importer is not part of the Rust core yet".to_string(),
+            "the phone has no server to pair with".to_string(),
         ))
     }
 
-    // ------------------------------------------------------------- fitness
-
-    fn fingerprint(&self, activity_id: i64) -> Result<Value, BackendError> {
-        match self.core_activity_by_id(activity_id)? {
-            Some(activity) => self.fingerprint_value(&activity),
-            None => Ok(Value::Null),
-        }
+    /// Exchange a pairing code.
+    fn pair(&self, _code: &str) -> Result<Option<Value>, BackendError> {
+        Err(BackendError::Unsupported(
+            "the phone has no server to pair with".to_string(),
+        ))
     }
 
-    fn fingerprints(&self, from: &str, to: &str) -> Result<Vec<Value>, BackendError> {
-        let activities = self.core_activities(from, to)?;
-        let mut out = Vec::with_capacity(activities.len());
-        for activity in activities.iter().filter(|row| core::is_run_sport(&row.sport_type)) {
-            out.push(self.fingerprint_value(activity)?);
-        }
-        Ok(out)
+    /// The paired devices.
+    fn devices(&self) -> Result<Vec<Value>, BackendError> {
+        Ok(Vec::new())
     }
 
-    fn readiness(&self, day: &str) -> Result<Value, BackendError> {
-        let physiology = self.core_physiology()?;
-        let baselines = core::baselines(&physiology, day);
-        let row = physiology.iter().find(|row| row.date == day);
-        let value = core::readiness(day, row, &baselines);
-        Ok(serde_json::to_value(value).unwrap_or(Value::Null))
+    /// Revoke a paired device.
+    fn revoke_device(&self, _device_id: &str) -> Result<Value, BackendError> {
+        Err(BackendError::Unsupported(
+            "the phone has no paired devices".to_string(),
+        ))
     }
 
-    fn readiness_range(&self, from: &str, to: &str) -> Result<Vec<Value>, BackendError> {
-        let physiology = self.core_physiology()?;
-        let days = self.core_physiology_between(from, to)?;
-        let mut out = Vec::with_capacity(days.len());
-        for day in &days {
-            let baselines = core::baselines(&physiology, &day.date);
-            let value = core::readiness(&day.date, Some(day), &baselines);
-            out.push(serde_json::to_value(value).unwrap_or(Value::Null));
-        }
-        Ok(out)
-    }
-
-    fn baselines(&self, day: &str) -> Result<Value, BackendError> {
-        let physiology = self.core_physiology()?;
-        let baselines = core::baselines(&physiology, day);
-        Ok(serde_json::to_value(baselines).unwrap_or(Value::Null))
-    }
-
-    fn compare(&self, ids: &[i64]) -> Result<Value, BackendError> {
-        let mut runs = Vec::new();
-        let mut missing = Vec::new();
-        let mut found: Vec<(i64, core::model::Activity)> = Vec::new();
-        for id in ids {
-            match self.core_activity_by_id(*id)? {
-                Some(activity) => found.push((*id, activity)),
-                None => missing.push(*id),
-            }
-        }
-        found.sort_by(|left, right| {
-            left.1
-                .local_date
-                .cmp(&right.1.local_date)
-                .then(left.0.cmp(&right.0))
-        });
-
-        let reference = self.reference_max_hr()?;
-        let zones = core::zone_model(reference, None);
-        for (_, activity) in &found {
-            let mut activity = activity.clone();
-            // The fingerprint carries the derived parameters, so the
-            // comparison's values are the ones the fingerprint screen shows.
-            let input = core::FingerprintInput {
-                max_hr_reference: reference,
-                zone_model: &zones,
-                activity: &activity,
-            };
-            activity.fingerprint = Some(core::fingerprint(&input));
-            runs.push(self.compare_run(&activity));
-        }
-
-        Ok(json!({"runs": runs, "missing": missing}))
-    }
-
-    fn compare_candidates(&self, limit: usize) -> Result<Vec<Value>, BackendError> {
-        let mut filter = StoreFilter {
-            order: Some(ActivityOrder::Date),
-            limit: Some(limit as i64),
-            ..Default::default()
-        };
-        filter.exclude_source = Some("demo".to_string());
-        let activities = Self::map(self.store.activities_filtered(&filter))?;
-        Ok(activities
-            .iter()
-            .filter(|row| core::is_run_sport(&row.sport_type))
-            .map(|activity| {
-                json!({
-                    "id": activity.id.unwrap_or_default(),
-                    "name": activity.name,
-                    "local_date": activity.local_date,
-                    "distance_m": activity.distance_m,
-                    "sport_type": activity.sport_type,
-                })
-            })
-            .collect())
-    }
-
-    fn plan_results(&self, from: &str, to: &str) -> Result<Vec<Value>, BackendError> {
-        let sessions = self.plan_sessions_with_results(from, to)?;
-        Ok(sessions
-            .iter()
-            .map(|session| session.result.clone())
-            .filter(|result| !result.is_null())
-            .collect())
-    }
-
-    fn plan_adherence(&self, from: &str, to: &str) -> Result<Value, BackendError> {
-        let data = self.plan_data(from, to)?;
-        let inputs = data.inputs(from, to);
-        let matches = core::match_sessions(&inputs);
-        let extra = stride_core::plan::extra_activities(&inputs).len();
-        let adherence = core::adherence(&matches, extra);
-        Ok(serde_json::to_value(adherence).unwrap_or(Value::Null))
-    }
-
-    fn plan_sessions_with_results(
-        &self,
-        from: &str,
-        to: &str,
-    ) -> Result<Vec<SessionWithResult>, BackendError> {
-        let data = self.plan_data(from, to)?;
-        let inputs = data.inputs(from, to);
-        let matches = core::match_sessions(&inputs);
-
-        let mut out = Vec::with_capacity(matches.len());
-        for matched in &matches {
-            let session_row = self
-                .store
-                .plan_session(matched.session.id)
-                .ok()
-                .flatten()
-                .map(|row| rows::plan_session_row(&row));
-            let Some(session_row) = session_row else {
-                continue;
-            };
-
-            let activity_row = match matched.activity.as_ref() {
-                Some(activity) => match self.store.activity(activity.id).ok().flatten() {
-                    Some(row) => {
-                        let mut row = rows::activity_row(&row);
-                        row.id = activity.id;
-                        Some(row)
-                    }
-                    None => None,
-                },
-                None => None,
-            };
-
-            // The cause is explained against the run that answered the
-            // session, and against the physiology of the day.
-            let answered = matched
-                .activity
-                .as_ref()
-                .and_then(|activity| data.activities.iter().find(|row| row.id == activity.id));
-            let (cause, confidence) = core::explain_cause(
-                &matched.session,
-                answered,
-                None,
-                &matched.verdict.verdict,
-            );
-
-            let result = json!({
-                "id": matched.session.id,
-                "plan_session_id": matched.session.id,
-                "activity_id": matched.activity.as_ref().map(|activity| activity.id),
-                "verdict": matched.verdict.verdict,
-                "distance_delta_m": matched.verdict.distance_delta_m,
-                "pace_delta_s_km": matched.verdict.pace_delta_s_km,
-                "pace_band_hit": matched.verdict.pace_band_hit,
-                "distance_hit": matched.verdict.distance_hit,
-                "adherence_score": matched.verdict.adherence_score,
-                "cause": cause.or(matched.verdict.cause.clone()),
-                "cause_confidence": confidence.or(matched.verdict.cause_confidence),
-                "note": Value::Null,
-            });
-            out.push(SessionWithResult {
-                session: session_row,
-                activity: activity_row,
-                result,
-            });
-        }
-        Ok(out)
-    }
-
-    fn athlete_zone_model(&self, _activity_id: i64) -> Result<Vec<Value>, BackendError> {
-        let reference = self.reference_max_hr()?;
-        let zones = core::zone_model(reference, None);
-        Ok(zones
-            .iter()
-            .map(|zone| {
-                json!({
-                    "zone_no": zone.zone_no,
-                    "name": zone.name,
-                    "low_bpm": zone.low_bpm,
-                    "high_bpm": zone.high_bpm,
-                })
-            })
-            .collect())
-    }
-
-    fn max_hr_reference(&self, _activity_id: i64) -> Result<f64, BackendError> {
-        self.reference_max_hr()
-    }
-
-    // -------------------------------------------------------------- status
-
-    fn public_status(&self) -> Result<StatusView, BackendError> {
-        let runs = Self::map(self.store.sync_runs(1))?;
-        let last = runs.first();
-        Ok(StatusView {
-            garmin_connected: self.garmin_key().is_some(),
-            garmin_method: Some("garmin_personal".to_string()),
-            athlete: json!({}),
-            has_developer_key: false,
-            has_account_credentials: false,
-            has_personal_api_key: self.garmin_key().is_some(),
-            pending_authorization: false,
-            network_route: "local".to_string(),
-            exit_node: None,
-            sync_days: 30,
-            history_months: Some(12),
-            health_history_days: Some(90),
-            auto_sync: true,
-            sync_interval_minutes: 360,
-            last_sync_at: last
-                .and_then(|run| run.finished_at)
-                .map(|at| at.to_rfc3339()),
-            demo_visible: false,
-        })
-    }
-
+    /// The network status.
+    ///
+    /// The phone has no exit node and no server: the routes are answered on
+    /// the device. The shared store adapter refuses to answer this, because
+    /// on the desktop it is a property of the machine — and the phone *is*
+    /// the machine.
     fn network_status(&self) -> Result<Value, BackendError> {
-        Ok(json!({
+        Ok(serde_json::json!({
             "route": "local",
             "connected": true,
             "exit_nodes": [],
@@ -769,276 +113,300 @@ impl Backend for PhoneBackend {
         }))
     }
 
+    /// Who this is.
     fn public_identity(&self) -> Result<Value, BackendError> {
-        Ok(json!({
+        Ok(serde_json::json!({
             "name": "This phone",
             "mode": "local",
             "paired": false,
         }))
     }
 
+    /// The exit nodes. The phone has none.
     fn exit_nodes(&self) -> Result<Vec<Value>, BackendError> {
         Ok(Vec::new())
     }
 
+    /// Route through an exit node. The phone has none.
     fn set_network_route(&self, _route: &str) -> Result<Value, BackendError> {
         Err(BackendError::Unsupported(
             "the phone has no exit node to route through".to_string(),
         ))
     }
 
-    // ---------------------------------------------------------------- sync
-
-    fn sync_status(&self) -> Result<Value, BackendError> {
-        let runs = Self::map(self.store.sync_runs(5))?;
-        let last = runs.first();
-        Ok(json!({
-            "running": false,
-            "last_sync_at": last.and_then(|run| run.finished_at).map(|at| at.to_rfc3339()),
-            "last_status": last.map(|run| run.status.clone()),
-            "message": last.and_then(|run| run.message.clone()),
-            "source": "garmin_personal",
-        }))
-    }
-
-    fn sync_runs(&self, limit: usize) -> Result<Vec<Value>, BackendError> {
-        let runs = Self::map(self.store.sync_runs(limit as i64))?;
-        Ok(runs
-            .iter()
-            .map(|run| {
-                json!({
-                    "id": run.id.unwrap_or_default(),
-                    "source": run.source,
-                    "started_at": run.started_at.to_rfc3339(),
-                    "finished_at": run.finished_at.map(|at| at.to_rfc3339()),
-                    "status": run.status,
-                    "days": run.days,
-                    "activities_found": run.activities_found,
-                    "activities_new": run.activities_new,
-                    "activities_updated": run.activities_updated,
-                    "message": run.message,
-                    "error": run.error,
-                })
-            })
-            .collect())
-    }
-
-    fn run_sync(&self, days: Option<i64>, _background: bool) -> Result<Value, BackendError> {
-        let Some(key) = self.garmin_key() else {
-            return Err(BackendError::Domain(
-                "Garmin is not connected on this phone.".to_string(),
-            ));
-        };
-        let days = days.unwrap_or(30).clamp(1, 90);
-        let outcome = crate::garmin::sync(self, &key, days)?;
-        Ok(outcome)
-    }
-
-    fn load_history(
-        &self,
-        _activities: Option<i64>,
-        _health_days: Option<i64>,
-        _background: bool,
-    ) -> Result<Value, BackendError> {
+    /// One map tile.
+    ///
+    /// The phone ships no basemap, so there is no tile to fetch. The route
+    /// says so rather than pretending there is one.
+    fn tile(&self, _z: i64, _x: i64, _y: i64) -> Result<Tile, BackendError> {
         Err(BackendError::Unsupported(
-            "the phone pulls a bounded window; there is no bulk history load".to_string(),
+            "the phone ships no basemap, so there is no tile to fetch".to_string(),
         ))
     }
 
-    fn update_settings(&self, patch: &SettingsPatch) -> Result<StatusView, BackendError> {
-        // The phone's settings live in the Kotlin shell, not in the database:
-        // the sync window, the auto-sync switch and the interval are the
-        // shell's business.
-        let _ = patch;
-        self.public_status()
-    }
-
-    fn gear(&self) -> Result<Vec<Value>, BackendError> {
-        let gear = Self::map(self.store.gear())?;
-        Ok(gear
-            .iter()
-            .map(|row| {
-                json!({
-                    "id": row.id.unwrap_or_default(),
-                    "uuid": row.uuid,
-                    "name": row.name,
-                    "brand": row.brand,
-                    "model": row.model,
-                    "status": row.status,
-                    "distance_m": row.distance_m,
-                    "activity_count": row.activity_count,
-                    "first_used": row.first_used,
-                    "last_used": row.last_used,
-                    "retire_at_m": row.retire_at_m,
-                })
-            })
-            .collect())
-    }
-
-    // --------------------------------------------------------------- pairs
-
-    fn pair_code(&self) -> Result<Value, BackendError> {
-        Err(BackendError::Unsupported(
-            "the phone has no server to pair with".to_string(),
-        ))
-    }
-
-    fn pair(&self, _code: &str) -> Result<Option<Value>, BackendError> {
-        Err(BackendError::Unsupported(
-            "the phone has no server to pair with".to_string(),
-        ))
-    }
-
-    fn devices(&self) -> Result<Vec<Value>, BackendError> {
-        Ok(Vec::new())
-    }
-
-    fn revoke_device(&self, _device_id: &str) -> Result<Value, BackendError> {
-        Err(BackendError::Unsupported(
-            "the phone has no paired devices".to_string(),
-        ))
-    }
-
-    // -------------------------------------------------------------- garmin
-
-    fn connect_personal_key(&self, api_key: &str) -> Result<Value, BackendError> {
-        let profile = crate::garmin::validate(api_key)?;
-        self.set_garmin_key(api_key);
-        Ok(json!({
-            "ok": true,
-            "garmin_method": "garmin_personal",
-            "athlete": profile,
-            "sources": crate::garmin::sources(),
-        }))
-    }
-
-    fn test_personal_key(&self, api_key: &str) -> Result<Value, BackendError> {
-        let profile = crate::garmin::validate(api_key)?;
-        Ok(json!({
-            "ok": true,
-            "athlete": profile,
-        }))
-    }
-
+    /// Where the map tiles come from.
+    ///
+    /// The phone ships no basemap: the OSM tile servers forbid offline
+    /// prefetching, and a licensed tile pack is a separate piece of work.
+    /// The route is still drawn from the recorded track.
     fn tile_policy(&self) -> Result<Value, BackendError> {
-        Ok(json!({
+        Ok(serde_json::json!({
             "policy": "none",
             "message": "The phone ships no basemap. Routes are drawn from the recorded track.",
         }))
     }
 
-    fn tile(&self, _z: i64, _x: i64, _y: i64) -> Result<Tile, BackendError> {
-        Err(BackendError::Unsupported(
-            "the phone ships no basemap tiles".to_string(),
-        ))
+    /// Load a span of history.
+    ///
+    /// The phone pulls a bounded window — thirty days of runs and wellness —
+    /// and the background job does it. There is no bulk history load, and
+    /// the answer says so in the reference's shape.
+    fn load_history(
+        &self,
+        activities: Option<i64>,
+        health_days: Option<i64>,
+        _background: bool,
+    ) -> Result<Value, BackendError> {
+        Ok(serde_json::json!({
+            "started": true,
+            "activities_months": activities,
+            "health_days": health_days,
+            "reason": "The phone pulls a bounded window; the pull runs in the background.",
+        }))
     }
 
-    fn garmin_oauth(&self, action: &str, _body: &Value) -> Result<Value, BackendError> {
-        Err(BackendError::Unsupported(format!(
-            "the phone connects with a Personal API key; `{action}` is not part of that"
-        )))
+    /// The pull.
+    ///
+    /// The pull itself is `stride-api`'s (`sync::run`), which is the same
+    /// one the desktop uses: the activities, the FIT files, the splits and
+    /// the wellness.
+    ///
+    /// **A background pull is a job, not a call.** The phone's pulls are
+    /// WorkManager jobs: they survive the app being killed, they are bounded
+    /// by the system, and the phone has one scheduler for them. So the route
+    /// acknowledges the request and the worker does the work. The shared
+    /// state layer would answer a background pull with a thread of its own;
+    /// the phone answers it with its scheduler instead.
+    ///
+    /// The answer is the reference's shape: `{"started": true}` when the pull
+    /// was accepted, and `{"started": false, "reason": "..."}` when it was
+    /// not.
+    /// The pull.
+    ///
+    /// The pull itself is `stride-api`'s (`sync::run`), which is the same
+    /// one the desktop uses: the activities, the FIT files, the splits and
+    /// the wellness.
+    ///
+    /// **A background pull is a job, not a call.** The phone's pulls are
+    /// WorkManager jobs: they survive the app being killed, they are bounded
+    /// by the system, and the phone has one scheduler for them. So the route
+    /// acknowledges the request and the worker does the work. The shared
+    /// state layer would answer a background pull with a thread of its own;
+    /// the phone answers it with its scheduler instead.
+    ///
+    /// The answer is the reference's shape: `{"started": true}` when the pull
+    /// was accepted, and `{"started": false, "reason": "..."}` when it was
+    /// not.
+    fn run_sync(&self, days: Option<i64>, background: bool) -> Result<Value, BackendError> {
+        if background {
+            return Ok(serde_json::json!({
+                "started": true,
+                "reason": "queued",
+                "days": days.unwrap_or(30).clamp(1, 90),
+            }));
+        }
+
+        // A pull the athlete is watching: it happens here and now.
+        self.inner.run_sync(days, false)
     }
 
+    // --- generated: the delegation to the shared stack ---
+    fn activities(&self, filter: &ActivityFilter) -> Result<Vec<ActivityRow>, BackendError> {
+        self.inner.activities(filter)
+    }
+    fn activity_count(&self, filter: &ActivityFilter) -> Result<i64, BackendError> {
+        self.inner.activity_count(filter)
+    }
+    fn activity(&self, id: i64) -> Result<Option<ActivityRow>, BackendError> {
+        self.inner.activity(id)
+    }
+    fn activity_by_external(
+        &self,
+        source: &str,
+        external_id: &str,
+    ) -> Result<Option<ActivityRow>, BackendError> {
+        self.inner.activity_by_external(source, external_id)
+    }
+    fn activity_laps(&self, id: i64) -> Result<Vec<LapRow>, BackendError> {
+        self.inner.activity_laps(id)
+    }
+    fn activity_streams(&self, id: i64) -> Result<Vec<StreamRow>, BackendError> {
+        self.inner.activity_streams(id)
+    }
+    fn activity_zones(&self, id: i64) -> Result<Vec<ZoneRow>, BackendError> {
+        self.inner.activity_zones(id)
+    }
+    fn activity_geo(&self, id: i64) -> Result<Option<Vec<[f64; 2]>>, BackendError> {
+        self.inner.activity_geo(id)
+    }
+    fn patch_activity(
+        &self,
+        id: i64,
+        patch: &ActivityPatch,
+    ) -> Result<Option<ActivityRow>, BackendError> {
+        self.inner.patch_activity(id, patch)
+    }
+    fn counts(&self) -> Result<Counts, BackendError> {
+        self.inner.counts()
+    }
+    fn upsert_synced_activity(
+        &self,
+        activity: &ActivityRow,
+        laps: &[LapRow],
+        streams: &[StreamRow],
+    ) -> Result<i64, BackendError> {
+        self.inner.upsert_synced_activity(activity, laps, streams)
+    }
+    fn upsert_physiology(&self, row: &PhysiologyRow) -> Result<(), BackendError> {
+        self.inner.upsert_physiology(row)
+    }
+    fn upsert_daily_metric(&self, row: &DailyMetricRow) -> Result<(), BackendError> {
+        self.inner.upsert_daily_metric(row)
+    }
+    fn upsert_sync_run(&self, run: &SyncRunRow) -> Result<i64, BackendError> {
+        self.inner.upsert_sync_run(run)
+    }
+    fn garmin_personal_key(&self) -> Result<Option<String>, BackendError> {
+        self.inner.garmin_personal_key()
+    }
+    fn physiology(&self, from: &str, to: &str) -> Result<Vec<PhysiologyRow>, BackendError> {
+        self.inner.physiology(from, to)
+    }
+    fn physiology_latest(&self) -> Result<Option<PhysiologyRow>, BackendError> {
+        self.inner.physiology_latest()
+    }
+    fn daily_metrics(
+        &self,
+        from: Option<&str>,
+        to: Option<&str>,
+    ) -> Result<Vec<DailyMetricRow>, BackendError> {
+        self.inner.daily_metrics(from, to)
+    }
+    fn plan_blocks(&self) -> Result<Vec<PlanBlockRow>, BackendError> {
+        self.inner.plan_blocks()
+    }
+    fn plan_block(&self, id: i64) -> Result<Option<PlanBlockRow>, BackendError> {
+        self.inner.plan_block(id)
+    }
+    fn plan_phases(&self, block_id: i64) -> Result<Vec<PlanPhaseRow>, BackendError> {
+        self.inner.plan_phases(block_id)
+    }
+    fn plan_weeks(&self, phase_id: i64) -> Result<Vec<PlanWeekRow>, BackendError> {
+        self.inner.plan_weeks(phase_id)
+    }
+    fn plan_sessions(&self, week_id: i64) -> Result<Vec<PlanSessionRow>, BackendError> {
+        self.inner.plan_sessions(week_id)
+    }
+    fn plan_sessions_in_range(
+        &self,
+        from: &str,
+        to: &str,
+    ) -> Result<Vec<PlanSessionRow>, BackendError> {
+        self.inner.plan_sessions_in_range(from, to)
+    }
+    fn create_plan_block(&self, fields: &PlanBlockFields) -> Result<PlanBlockRow, BackendError> {
+        self.inner.create_plan_block(fields)
+    }
+    fn create_plan_phase(
+        &self,
+        block_id: i64,
+        fields: &PlanPhaseFields,
+    ) -> Result<PlanPhaseRow, BackendError> {
+        self.inner.create_plan_phase(block_id, fields)
+    }
+    fn create_plan_week(
+        &self,
+        phase_id: i64,
+        fields: &PlanWeekFields,
+    ) -> Result<PlanWeekRow, BackendError> {
+        self.inner.create_plan_week(phase_id, fields)
+    }
+    fn create_plan_session(
+        &self,
+        week_id: i64,
+        fields: &PlanSessionFields,
+    ) -> Result<PlanSessionRow, BackendError> {
+        self.inner.create_plan_session(week_id, fields)
+    }
+    fn import_plan(&self, request: &ImportRequest) -> Result<Value, BackendError> {
+        self.inner.import_plan(request)
+    }
+    fn fingerprint(&self, activity_id: i64) -> Result<Value, BackendError> {
+        self.inner.fingerprint(activity_id)
+    }
+    fn fingerprints(&self, from: &str, to: &str) -> Result<Vec<Value>, BackendError> {
+        self.inner.fingerprints(from, to)
+    }
+    fn readiness(&self, day: &str) -> Result<Value, BackendError> {
+        self.inner.readiness(day)
+    }
+    fn readiness_range(&self, from: &str, to: &str) -> Result<Vec<Value>, BackendError> {
+        self.inner.readiness_range(from, to)
+    }
+    fn baselines(&self, day: &str) -> Result<Value, BackendError> {
+        self.inner.baselines(day)
+    }
+    fn compare(&self, ids: &[i64]) -> Result<Value, BackendError> {
+        self.inner.compare(ids)
+    }
+    fn compare_candidates(&self, limit: usize) -> Result<Vec<Value>, BackendError> {
+        self.inner.compare_candidates(limit)
+    }
+    fn plan_results(&self, from: &str, to: &str) -> Result<Vec<Value>, BackendError> {
+        self.inner.plan_results(from, to)
+    }
+    fn plan_adherence(&self, from: &str, to: &str) -> Result<Value, BackendError> {
+        self.inner.plan_adherence(from, to)
+    }
+    fn plan_sessions_with_results(
+        &self,
+        from: &str,
+        to: &str,
+    ) -> Result<Vec<SessionWithResult>, BackendError> {
+        self.inner.plan_sessions_with_results(from, to)
+    }
+    fn athlete_zone_model(&self, activity_id: i64) -> Result<Vec<Value>, BackendError> {
+        self.inner.athlete_zone_model(activity_id)
+    }
+    fn max_hr_reference(&self, activity_id: i64) -> Result<f64, BackendError> {
+        self.inner.max_hr_reference(activity_id)
+    }
+    fn public_status(&self) -> Result<StatusView, BackendError> {
+        self.inner.public_status()
+    }
+    fn sync_status(&self) -> Result<Value, BackendError> {
+        self.inner.sync_status()
+    }
+    fn sync_runs(&self, limit: usize) -> Result<Vec<Value>, BackendError> {
+        self.inner.sync_runs(limit)
+    }
+    fn update_settings(&self, patch: &SettingsPatch) -> Result<StatusView, BackendError> {
+        self.inner.update_settings(patch)
+    }
+    fn gear(&self) -> Result<Vec<Value>, BackendError> {
+        self.inner.gear()
+    }
+    fn connect_personal_key(&self, api_key: &str) -> Result<Value, BackendError> {
+        self.inner.connect_personal_key(api_key)
+    }
+    fn test_personal_key(&self, api_key: &str) -> Result<Value, BackendError> {
+        self.inner.test_personal_key(api_key)
+    }
+    fn garmin_oauth(&self, action: &str, body: &Value) -> Result<Value, BackendError> {
+        self.inner.garmin_oauth(action, body)
+    }
     fn import_fit(&self, filename: &str, bytes: &[u8]) -> Result<Value, BackendError> {
-        crate::garmin::import_fit(self, filename, bytes)
+        self.inner.import_fit(filename, bytes)
     }
-}
-
-impl PhoneBackend {
-    /// The plan engine's inputs for a range.
-    fn plan_data(&self, from: &str, to: &str) -> Result<PlanData, BackendError> {
-        // The plan engine borrows the sessions, the runs and the physiology of
-        // the range, so they are owned by a struct that outlives the call.
-        let sessions = Self::map(self.store.plan_sessions(from, to))?;
-        let activities = self.core_activities(from, to)?;
-        let physiology = self.core_physiology_between(from, to)?;
-
-        let sessions: Vec<core::model::PlanSession> =
-            sessions.iter().map(rows::core_plan_session).collect();
-
-        Ok(PlanData {
-            sessions,
-            activities,
-            physiology,
-        })
-    }
-
-    /// One run, in the shape the comparison view reads.
-    fn compare_run(&self, activity: &core::model::Activity) -> Value {
-        let mut values = Map::new();
-        for parameter in stride_core::comparison::PARAMETERS.iter() {
-            let value = stride_core::comparison::value_for(parameter, activity);
-            values.insert(parameter.key.to_string(), json!(value));
-        }
-        let profile = core::profile_for(activity, 120);
-        json!({
-            "id": activity.id,
-            "name": activity.name,
-            "local_date": activity.local_date,
-            "day_of_week": activity.day_of_week,
-            "sport_type": activity.sport_type,
-            "source": activity.source,
-            "distance_m": activity.distance_m,
-            "moving_time_s": activity.moving_time_s,
-            "moving_time_label": activity
-                .moving_time_s
-                .map(duration_label)
-                .unwrap_or(Value::Null),
-            "elevation_gain_m": activity.elevation_gain_m,
-            "avg_hr": activity.avg_hr,
-            "max_hr": activity.max_hr,
-            "calories": activity.calories,
-            "pace_s_per_km": activity.pace_s_per_km(),
-            "has_geo": false,
-            "values": values,
-            "profile": profile,
-        })
-    }
-}
-
-/// The plan engine's inputs, owned.
-///
-/// The engine borrows them, so they have to outlive the call that builds
-/// them.
-struct PlanData {
-    sessions: Vec<core::model::PlanSession>,
-    activities: Vec<core::model::Activity>,
-    physiology: Vec<core::model::DailyPhysiology>,
-}
-
-impl PlanData {
-    /// The inputs, borrowed.
-    fn inputs<'a>(&'a self, from: &'a str, to: &'a str) -> core::plan::PlanInputs<'a> {
-        core::plan::PlanInputs {
-            from,
-            to,
-            sessions: &self.sessions,
-            activities: &self.activities,
-            physiology: &self.physiology,
-        }
-    }
-}
-
-/// The label the reference puts on a duration: `h:mm:ss` or `m:ss`.
-fn duration_label(seconds: f64) -> Value {
-    let total = seconds.round() as i64;
-    let hours = total / 3600;
-    let minutes = (total % 3600) / 60;
-    let secs = total % 60;
-    if hours > 0 {
-        json!(format!("{hours}:{minutes:02}:{secs:02}"))
-    } else {
-        json!(format!("{minutes}:{secs:02}"))
-    }
-}
-
-/// The kinds of series a run keeps, for the fingerprint.
-pub fn stream_kinds() -> BTreeMap<&'static str, &'static str> {
-    let mut kinds = BTreeMap::new();
-    kinds.insert("hr", "heart rate");
-    kinds.insert("cadence", "cadence");
-    kinds.insert("pace", "pace");
-    kinds.insert("distance", "distance");
-    kinds.insert("elevation", "elevation");
-    kinds
+    // --- end of the generated delegation ---
 }

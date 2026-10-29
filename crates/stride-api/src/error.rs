@@ -94,6 +94,16 @@ pub enum BackendError {
     #[error("forbidden: {0}")]
     Forbidden(String),
 
+    /// The caller did not prove who they are.
+    #[error("unauthorized: {0}")]
+    Unauthorized(String),
+
+    /// Something upstream could not be reached.
+    ///
+    /// 502: the request was fine and the thing it asked for is not there.
+    #[error("unavailable: {0}")]
+    Unavailable(String),
+
     /// The operation is part of the contract but this build does not implement
     /// it — the phone build has no Garmin client, for instance.
     #[error("not implemented: {0}")]
@@ -105,12 +115,31 @@ pub enum BackendError {
 }
 
 impl BackendError {
+    /// The message the API shows.
+    ///
+    /// The `detail` of the answer is the message alone — the same text the
+    /// Python's `HTTPException` carries — so the prefix thiserror adds for
+    /// the logs never reaches the browser.
+    pub fn detail(&self) -> &str {
+        match self {
+            BackendError::Store(message)
+            | BackendError::Domain(message)
+            | BackendError::Forbidden(message)
+            | BackendError::Unauthorized(message)
+            | BackendError::Unavailable(message)
+            | BackendError::Unsupported(message)
+            | BackendError::Malformed(message) => message,
+        }
+    }
+
     /// The status this failure maps to.
     pub fn status(&self) -> u16 {
         match self {
             BackendError::Unsupported(_) => 501,
             BackendError::Domain(_) => 400,
             BackendError::Forbidden(_) => 403,
+            BackendError::Unauthorized(_) => 401,
+            BackendError::Unavailable(_) => 502,
             _ => 500,
         }
     }
@@ -118,7 +147,7 @@ impl BackendError {
 
 impl From<BackendError> for ApiError {
     fn from(err: BackendError) -> Self {
-        ApiError::new(err.status(), err.to_string())
+        ApiError::new(err.status(), err.detail().to_string())
     }
 }
 

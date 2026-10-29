@@ -175,7 +175,7 @@ mod tests {
         ActivityFilter, ActivityPatch, ActivityRow, Backend, Counts, DailyMetricRow, ImportRequest,
         LapRow, PhysiologyRow, PlanBlockFields, PlanBlockRow, PlanPhaseFields, PlanPhaseRow,
         PlanSessionFields, PlanSessionRow, PlanWeekFields, PlanWeekRow, SessionWithResult,
-        SettingsPatch, StatusView, StreamRow, Tile, ZoneRow,
+        SettingsPatch, StatusView, StreamRow, SyncRunRow, Tile, ZoneRow,
     };
     use crate::error::BackendError;
 
@@ -260,6 +260,45 @@ mod tests {
             _id: i64,
             _patch: &ActivityPatch,
         ) -> Result<Option<ActivityRow>, BackendError> {
+            Err(BackendError::Unsupported(
+                "the FFI test does not call this".to_string(),
+            ))
+        }
+        fn activity_by_external(
+            &self,
+            _source: &str,
+            _external_id: &str,
+        ) -> Result<Option<ActivityRow>, BackendError> {
+            Err(BackendError::Unsupported(
+                "the FFI test does not call this".to_string(),
+            ))
+        }
+        fn upsert_synced_activity(
+            &self,
+            _activity: &ActivityRow,
+            _laps: &[LapRow],
+            _streams: &[StreamRow],
+        ) -> Result<i64, BackendError> {
+            Err(BackendError::Unsupported(
+                "the FFI test does not call this".to_string(),
+            ))
+        }
+        fn upsert_physiology(&self, _row: &PhysiologyRow) -> Result<(), BackendError> {
+            Err(BackendError::Unsupported(
+                "the FFI test does not call this".to_string(),
+            ))
+        }
+        fn upsert_daily_metric(&self, _row: &DailyMetricRow) -> Result<(), BackendError> {
+            Err(BackendError::Unsupported(
+                "the FFI test does not call this".to_string(),
+            ))
+        }
+        fn upsert_sync_run(&self, _run: &SyncRunRow) -> Result<i64, BackendError> {
+            Err(BackendError::Unsupported(
+                "the FFI test does not call this".to_string(),
+            ))
+        }
+        fn garmin_personal_key(&self) -> Result<Option<String>, BackendError> {
             Err(BackendError::Unsupported(
                 "the FFI test does not call this".to_string(),
             ))

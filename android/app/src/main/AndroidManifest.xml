@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
 
     <application
         android:allowBackup="false"
@@ -42,14 +43,19 @@
             android:excludeFromRecents="false" />
 
         <!--
-            The foreground service for a long pull. It is `dataSync`, it is
-            not exported, and the notification it holds says "syncing" and
-            nothing about the athlete's health.
+            The foreground service for a long pull.
+
+            It is WorkManager's own: a pull can outlast the system's
+            patience with a background job, and the job holds a foreground
+            notification while it runs. The type has to be declared here,
+            because the platform refuses a foreground service whose type is
+            not a subset of the one in the manifest — and the type is
+            `dataSync`, which is what a pull is.
         -->
         <service
-            android:name=".sync.SyncForegroundService"
-            android:exported="false"
-            android:foregroundServiceType="dataSync" />
+            android:name="androidx.work.impl.foreground.SystemForegroundService"
+            android:foregroundServiceType="dataSync"
+            tools:node="merge" />
 
         <provider
             android:name="androidx.core.content.FileProvider"

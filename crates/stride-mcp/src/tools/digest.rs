@@ -304,11 +304,8 @@ fn load_of(api: &dyn StrideApi, from: NaiveDate, to: NaiveDate) -> Result<Load, 
             runs: total,
             elevation_m: common::round_to(elevation, 1),
             moving_time_s: common::round_to(moving, 1),
-            pace_s_per_km: if distance > 0.0 {
-                Some(common::round_to(moving / (distance / 1000.0), 2))
-            } else {
-                None
-            },
+            pace_s_per_km: common::pace_s_per_km(distance, moving)
+                .map(|value| common::round_to(value, 2)),
             complete: true,
         });
     }
@@ -334,11 +331,8 @@ fn load_of(api: &dyn StrideApi, from: NaiveDate, to: NaiveDate) -> Result<Load, 
         runs,
         elevation_m: common::round_to(elevation, 1),
         moving_time_s: common::round_to(moving, 1),
-        pace_s_per_km: if distance > 0.0 {
-            Some(common::round_to(moving / (distance / 1000.0), 2))
-        } else {
-            None
-        },
+        pace_s_per_km: common::pace_s_per_km(distance, moving)
+            .map(|value| common::round_to(value, 2)),
         complete: false,
     })
 }

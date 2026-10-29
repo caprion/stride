@@ -67,21 +67,37 @@ pub fn run(api: &dyn StrideApi, ctx: &Context, args: &Value) -> Result<Value, Mc
         ("to", Some(common::date_text(to))),
     ]);
 
-    let readiness = items(&common::get(
-        api,
-        NAME,
-        &format!("/api/v1/physiology/readiness?{range}"),
-    )?);
-    let daily = items(&common::get(
+    // Each of the three endpoints knows a part of a day. One of them being
+    // empty is not a failure of the tool: the rest is still an answer, and
+    // the answer says which part is missing.
+    let mut limitations: Vec<String> = Vec::new();
+    let readiness = match common::get(api, NAME, &format!("/api/v1/physiology/readiness?{range}")) {
+        Ok(value) => items(&value),
+        Err(_) => {
+            limitations.push("the readiness of the range could not be read".to_string());
+            Vec::new()
+        }
+    };
+    let daily = match common::get(
         api,
         NAME,
         &format!("/api/v1/physiology/daily?{range}&fields={DAILY_FIELDS}"),
-    )?);
-    let hrv = items(&common::get(
-        api,
-        NAME,
-        &format!("/api/v1/physiology/hrv?{range}"),
-    )?);
+    ) {
+        Ok(value) => items(&value),
+        Err(_) => {
+            limitations.push(
+                "the sleep and the resting heart rate of the range could not be read".to_string(),
+            );
+            Vec::new()
+        }
+    };
+    let hrv = match common::get(api, NAME, &format!("/api/v1/physiology/hrv?{range}")) {
+        Ok(value) => items(&value),
+        Err(_) => {
+            limitations.push("the HRV of the range could not be read".to_string());
+            Vec::new()
+        }
+    };
 
     // One row per day, keyed by the date. The three endpoints each know
     // part of a day, so the parts are merged rather than overwritten.
@@ -152,6 +168,16 @@ pub fn run(api: &dyn StrideApi, ctx: &Context, args: &Value) -> Result<Value, Mc
 
     days.sort_by(|left, right| left.0.cmp(&right.0));
 
+    // A year of daily data is 365 rows. The most recent ones are the ones
+    // that answer a question, so the oldest are dropped and the answer says
+    // how many.
+    let mut dropped_days = 0usize;
+    if days.len() > crate::output::MAX_SERIES {
+        dropped_days = days.len() - crate::output::MAX_SERIES;
+        let start = days.len() - crate::output::MAX_SERIES;
+        days = days.split_off(start);
+    }
+
     // What is not there at all.
     let mut missing_sources: Vec<String> = Vec::new();
     if let Ok(sources) = common::get(api, NAME, "/api/v1/physiology/sources") {
@@ -186,11 +212,16 @@ pub fn run(api: &dyn StrideApi, ctx: &Context, args: &Value) -> Result<Value, Mc
         })
         .collect();
 
-    let mut limitations: Vec<String> = Vec::new();
     if focus != "all" {
         limitations.push(format!(
             "the focus is \"{focus}\"; the other measurements are still returned so that the \
 readiness drivers can be read against them."
+        ));
+    }
+    if dropped_days > 0 {
+        limitations.push(format!(
+            "the range holds {dropped_days} more days than the answer carries; the oldest days \
+are not shown."
         ));
     }
     if measured < rendered.len() {
@@ -209,6 +240,7 @@ readiness drivers can be read against them."
     let mut envelope = Envelope::new(data)
         .coverage("from", common::date_text(from))
         .coverage("to", common::date_text(to))
+        .coverage("days_in_range", (to - from).num_days() + 1)
         .coverage("days", days.len())
         .coverage("days_with_readiness", measured)
         .coverage("missing_sources", missing_sources.join(","))

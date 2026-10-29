@@ -5,6 +5,7 @@ import android.os.Bundle
 import android.util.Log
 import app.stride.running.bridge.StrideApiPlugin
 import app.stride.running.core.StrideCore
+import app.stride.running.security.AppGate
 import app.stride.running.settings.AppSettings
 import app.stride.running.sync.SyncNotifications
 import app.stride.running.sync.SyncScheduler
@@ -26,6 +27,15 @@ import java.io.File
  */
 class MainActivity : BridgeActivity() {
 
+    /**
+     * The app gate.
+     *
+     * The phone holds a year of health data; a phone left unlocked in a bag
+     * must not show it. The gate asks the device for its credential when the
+     * app opens and after it has been in the background for a minute.
+     */
+    private val gate by lazy { AppGate(this) }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         // The plugin has to be registered before the bridge is built.
         registerPlugin(StrideApiPlugin::class.java)
@@ -41,6 +51,9 @@ class MainActivity : BridgeActivity() {
 
         SyncNotifications.ensureChannel(this)
 
+        // The gate goes up before anything is shown.
+        gate.lock()
+
         // The core is opened in the background: the Keystore needs the phone
         // to be unlocked, and the WebView must not wait for it.
         Thread({
@@ -51,6 +64,16 @@ class MainActivity : BridgeActivity() {
             }
             SyncScheduler.schedule(applicationContext)
         }, "stride-open").apply { isDaemon = true }.start()
+    }
+
+    override fun onStart() {
+        super.onStart()
+        gate.onForeground()
+    }
+
+    override fun onStop() {
+        gate.onBackground()
+        super.onStop()
     }
 
     /**

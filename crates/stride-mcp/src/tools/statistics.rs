@@ -132,6 +132,16 @@ series."
         }
     }
 
+    if series.len() > crate::output::MAX_SERIES {
+        let dropped = series.len() - crate::output::MAX_SERIES;
+        let start = series.len() - crate::output::MAX_SERIES;
+        series = series.split_off(start);
+        limitations.push(format!(
+            "the range holds more than {} periods; the {dropped} oldest are not in the series.",
+            crate::output::MAX_SERIES
+        ));
+    }
+
     let runs: i64 = series
         .iter()
         .filter_map(|item| common::i64_of(item, "run_count"))
@@ -148,11 +158,10 @@ series."
         .iter()
         .filter_map(|item| common::f64_of(item, "moving_time_s"))
         .sum();
-    let weighted_pace = if distance > 0.0 {
-        Some(common::round_to(moving / (distance / 1000.0), 2))
-    } else {
-        None
-    };
+    // The pace of the range: the moving time over the distance, computed the
+    // way the reference computes it.
+    let weighted_pace =
+        common::pace_s_per_km(distance, moving).map(|value| common::round_to(value, 2));
 
     // ------------------------------------------------------------ the zones
     let mut zones = Value::Null;

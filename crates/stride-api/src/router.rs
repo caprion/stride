@@ -112,14 +112,15 @@ impl Route {
             .filter(|part| !part.is_empty())
             .map(|part| {
                 if let Some(rest) = part.strip_prefix('{') {
-                    let (name, suffix) = match rest.strip_suffix('}') {
-                        Some(name) => (name, ""),
-                        None => match rest.split_once("}.") {
-                            Some((name, suffix)) => (name, suffix),
-                            None => (rest, ""),
-                        },
-                    };
-                    Segment::Param { name, suffix }
+                    // `{y}.png` — a parameter with a suffix on it.
+                    if let Some(name) = rest.strip_suffix("}.png") {
+                        return Segment::Param {
+                            name,
+                            suffix: ".png",
+                        };
+                    }
+                    let name = rest.strip_suffix('}').unwrap_or(rest);
+                    Segment::Param { name, suffix: "" }
                 } else {
                     Segment::Literal(part)
                 }

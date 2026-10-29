@@ -126,6 +126,15 @@ pub struct ZoneTime {
     /// The zone's number.
     #[serde(default)]
     pub zone_no: i64,
+    /// The zone's name.
+    #[serde(default)]
+    pub name: Option<String>,
+    /// The zone's lower bound, in beats per minute.
+    #[serde(default)]
+    pub low_bpm: Option<f64>,
+    /// The zone's upper bound, in beats per minute.
+    #[serde(default)]
+    pub high_bpm: Option<f64>,
     /// The time spent in the zone, in seconds.
     #[serde(default)]
     pub time_s: f64,
@@ -210,6 +219,13 @@ pub struct Activity {
     /// The time spent standing still, in seconds.
     #[serde(default)]
     pub stopped_time_s: Option<f64>,
+    /// The decoded GPS points, `[latitude, longitude]` in degrees.
+    ///
+    /// The domain does not use them; they are here so the row maps onto the
+    /// struct one to one, and so the router can answer `has_geo` without
+    /// reading the activity twice.
+    #[serde(default)]
+    pub geo_points: Option<Vec<[f64; 2]>>,
     /// The laps, in the order they were recorded.
     #[serde(default)]
     pub laps: Vec<Lap>,
@@ -386,6 +402,13 @@ pub struct Fingerprint {
     #[serde(default)]
     pub cadence_drift_pct: Option<f64>,
     /// The average heart rate, in beats per minute.
+    ///
+    /// The golden file prints this one as an integer (`142`) and the port
+    /// prints `142.0`. The number is the same; the difference is that the
+    /// golden generator fingerprinted an activity that was never re-read from
+    /// the database, so SQLAlchemy's identity map still held the importer's
+    /// Python `int`. A request that reads the activity back — which is what
+    /// the deployed API does — gets `142.0`, like this port.
     #[serde(default)]
     pub hr_avg: Option<f64>,
     /// The maximum heart rate, in beats per minute.

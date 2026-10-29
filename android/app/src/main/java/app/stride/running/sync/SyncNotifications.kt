@@ -27,7 +27,8 @@ object SyncNotifications {
     /** The channel the sync notifications go to. */
     const val CHANNEL_ID = "stride.sync"
 
-    private const val PROGRESS_ID = 4101
+    /** The id of the ongoing notification. The worker holds it while it runs. */
+    const val PROGRESS_ID = 4101
     private const val RESULT_ID = 4102
 
     /** Create the channel. Android 8 and later need one. */

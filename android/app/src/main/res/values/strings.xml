@@ -25,6 +25,20 @@
     <string name="garmin_no_browser">There is no browser on this phone to open Garmin.</string>
     <string name="garmin_privacy">Your key stays on this phone. Stride sends it directly to Garmin to get a short-lived access token, and never to Stride\'s servers. Garmin shows the key only once, so keep it private. You can remove it here or revoke it in Garmin Connect at any time.</string>
 
+    <!-- The instance URL. Empty by default: the phone talks to Garmin. -->
+    <string name="server_url_label">Instance URL (optional)</string>
+    <string name="server_url_hint">Leave empty: the phone runs the whole app</string>
+    <string name="server_url_save">Save the instance URL</string>
+    <string name="server_url_saved">Saved. The app uses the instance from the next launch.</string>
+    <string name="server_url_cleared">Cleared. The app uses the bundled app from the next launch.</string>
+    <string name="server_url_must_be_https">An instance URL has to be https.</string>
+
+    <!-- The app gate. -->
+    <string name="gate_title">Unlock Stride</string>
+    <string name="gate_description">Your runs and your health data are behind your phone\'s screen lock.</string>
+    <string name="gate_locked">Stride is locked.\n\nYour runs, your physiology and your plans are behind your phone\'s own credential.</string>
+    <string name="gate_unlock">Unlock</string>
+
     <!-- The sync notifications. They say what happened and nothing about the
          athlete\'s health. -->
     <string name="sync_channel_name">Garmin sync</string>

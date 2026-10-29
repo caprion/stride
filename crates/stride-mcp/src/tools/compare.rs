@@ -201,6 +201,22 @@ pub fn run(api: &dyn StrideApi, _ctx: &Context, args: &Value) -> Result<Value, M
             missing.len()
         ));
     }
+    // The router sends a profile at its own resolution. When the caller asks
+    // for another, the profile is resampled here, and that is not the same
+    // thing as a profile the router computed at that resolution.
+    let source_points = runs
+        .iter()
+        .filter_map(|run| run.get("profile").and_then(Value::as_array))
+        .map(|profile| profile.len())
+        .max()
+        .unwrap_or(0);
+    if source_points > 0 && source_points != points {
+        limitations.push(format!(
+            "the profile was resampled from the router's {source_points}-point profile by linear \
+interpolation on the share of the distance; a profile the router computed at {points} points \
+would differ by the interpolation error."
+        ));
+    }
     if let Some(spread) = spread {
         if spread > 0.0 {
             limitations.push(format!(
@@ -235,6 +251,7 @@ share of each run's own distance, not on the same ground."
         .coverage("runs_requested", unique.len())
         .coverage("runs_returned", rendered.len())
         .coverage("profile_points", points)
+        .coverage("source_profile_points", source_points)
         .coverage("distance_spread_m", spread)
         .coverage("attributed_to", "the runs named in activity_ids");
     for limitation in limitations {

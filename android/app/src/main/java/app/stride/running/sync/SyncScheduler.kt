@@ -10,6 +10,7 @@ import androidx.work.OutOfQuotaPolicy
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import app.stride.running.settings.AppSettings
+import androidx.work.workDataOf
 import java.util.concurrent.TimeUnit
 
 /**
@@ -32,6 +33,9 @@ object SyncScheduler {
 
     /** The name of the one-shot work. Unique. */
     const val ONESHOT_NAME = "stride-garmin-sync-now"
+
+    /** The work data key for the window. A number of days; not a secret. */
+    const val KEY_DAYS = "days"
 
     /** Schedule the periodic pull, replacing whatever was there. */
     fun schedule(context: Context) {
@@ -62,14 +66,22 @@ object SyncScheduler {
         )
     }
 
-    /** Pull now, in the background. */
-    fun pullNow(context: Context) {
+    /**
+     * Pull now, in the background.
+     *
+     * The window travels as work data: a number of days is not a secret.
+     * The Garmin key does **not** travel — the worker unwraps it from the
+     * Keystore itself, so nothing about the credential is in WorkManager's
+     * database.
+     */
+    fun pullNow(context: Context, days: Int = AppSettings(context).syncDays) {
         val constraints = Constraints.Builder()
             .setRequiredNetworkType(androidx.work.NetworkType.CONNECTED)
             .build()
 
         val request = OneTimeWorkRequestBuilder<GarminSyncWorker>()
             .setConstraints(constraints)
+            .setInputData(workDataOf(KEY_DAYS to days.coerceIn(1, 90)))
             .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 15, TimeUnit.MINUTES)
             .setExpedited(OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST)
             .addTag(ONESHOT_NAME)
@@ -86,13 +98,5 @@ object SyncScheduler {
     fun cancel(context: Context) {
         WorkManager.getInstance(context).cancelUniqueWork(PERIODIC_NAME)
         WorkManager.getInstance(context).cancelUniqueWork(ONESHOT_NAME)
-    }
-
-    /** Whether a pull is queued or running. */
-    fun isRunning(context: Context): Boolean {
-        val infos = WorkManager.getInstance(context)
-            .getWorkInfosForUniqueWork(PERIODIC_NAME)
-            .get()
-        return infos.any { !it.state.isFinished }
     }
 }

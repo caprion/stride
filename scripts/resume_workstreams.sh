@@ -40,7 +40,7 @@ while read -r id; do
   case "$status" in
     idle|queued|pending|error|paused|blocked|"")
       if bb thread tell "$id" \
-        "Continue where you left off. Re-read your own last report, check whether anything in your scope is still unfinished, and finish it. If you own a crate, run ./scripts/rust_gate.sh before you report, and report the numbers - not adjectives." \
+        "Continue where you left off. Re-read your own last report, check whether anything in your scope is still unfinished, and finish it. Run whatever gate or test command your own project uses before you report, and report the numbers - not adjectives." \
         >/dev/null 2>&1; then
         resumed=$((resumed + 1))
         echo "$id $now" >> "$STAMPS"

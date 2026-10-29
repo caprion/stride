@@ -128,7 +128,9 @@ fn the_routes_answer_from_the_phone_database() {
         let store = Store::open(std::path::Path::new(&dir.db()), &[3u8; 32])
             .expect("the store could not be opened");
         let run = a_run();
-        let id = store.upsert_activity(&run).expect("the run was not written");
+        let id = store
+            .upsert_activity(&run)
+            .expect("the run was not written");
         let lap = ActivityLap {
             activity_id: id,
             lap_index: 1,
@@ -143,11 +145,8 @@ fn the_routes_answer_from_the_phone_database() {
             .expect("the lap was not written");
     }
 
-    let list = uniffi_stride::stride_call(
-        "GET".into(),
-        "/api/v1/activities?per_page=10".into(),
-        None,
-    );
+    let list =
+        uniffi_stride::stride_call("GET".into(), "/api/v1/activities?per_page=10".into(), None);
     let parsed: Value = serde_json::from_str(&list).expect("the answer is JSON");
     assert_eq!(parsed["ok"], true, "the answer was {list}");
     let items = parsed["body"]["items"].as_array().expect("there are items");
@@ -155,11 +154,7 @@ fn the_routes_answer_from_the_phone_database() {
     assert_eq!(items[0]["name"], "Morning run");
     assert_eq!(items[0]["distance_m"], 10_000.0);
 
-    let detail = uniffi_stride::stride_call(
-        "GET".into(),
-        "/api/v1/activities/1".into(),
-        None,
-    );
+    let detail = uniffi_stride::stride_call("GET".into(), "/api/v1/activities/1".into(), None);
     let parsed: Value = serde_json::from_str(&detail).expect("the answer is JSON");
     assert_eq!(parsed["ok"], true, "the answer was {detail}");
     assert_eq!(parsed["body"]["name"], "Morning run");
@@ -170,11 +165,8 @@ fn the_routes_answer_from_the_phone_database() {
     assert_eq!(laps[0]["distance_m"], 1_000.0);
 
     // The fingerprint is the domain's answer, computed on the phone.
-    let fingerprint = uniffi_stride::stride_call(
-        "GET".into(),
-        "/api/v1/fitness/fingerprint".into(),
-        None,
-    );
+    let fingerprint =
+        uniffi_stride::stride_call("GET".into(), "/api/v1/fitness/fingerprint".into(), None);
     let parsed: Value = serde_json::from_str(&fingerprint).expect("the answer is JSON");
     assert_eq!(parsed["ok"], true, "the answer was {fingerprint}");
     let items = parsed["body"]["items"].as_array().expect("there are items");
@@ -195,11 +187,129 @@ fn the_routes_the_phone_cannot_answer_say_so() {
     assert_eq!(parsed["ok"], false, "the answer was {pairing}");
     assert_eq!(parsed["status"], 501);
 
-    // The tile policy is the honest one: the phone ships no basemap.
+    // The basemap: the phone ships no tiles, and says so.
     let policy = uniffi_stride::stride_call("GET".into(), "/api/v1/tiles/policy".into(), None);
     let parsed: Value = serde_json::from_str(&policy).expect("the answer is JSON");
     assert_eq!(parsed["ok"], true, "the answer was {policy}");
     assert_eq!(parsed["body"]["policy"], "none");
+
+    // A tile itself is not there: the phone ships no basemap, and says so.
+    let tile = uniffi_stride::stride_call("GET".into(), "/api/v1/tiles/3/4/5.png".into(), None);
+    let parsed: Value = serde_json::from_str(&tile).expect("the answer is JSON");
+    assert_eq!(parsed["ok"], false, "the answer was {tile}");
+    assert_eq!(parsed["status"], 501);
+    assert!(parsed["error"]["detail"]
+        .as_str()
+        .unwrap_or_default()
+        .contains("basemap"));
+}
+
+#[test]
+fn a_pull_is_answered_the_way_the_spa_expects() {
+    let _guard = lock();
+    let dir = TempDir::new("pull");
+    let answer = uniffi_stride::stride_open(dir.db(), key_hex(11));
+    assert!(answer.contains("\"ok\":true"), "the answer was {answer}");
+
+    // A background pull is a job: the route acknowledges it and the phone's
+    // scheduler does the work.
+    let queued = uniffi_stride::stride_call(
+        "POST".into(),
+        "/api/v1/sync/run".into(),
+        Some("{\"days\":30,\"background\":true}".to_string()),
+    );
+    let parsed: Value = serde_json::from_str(&queued).expect("the answer is JSON");
+    assert_eq!(parsed["ok"], true, "the answer was {queued}");
+    assert_eq!(parsed["body"]["started"], true, "the answer was {queued}");
+    assert_eq!(parsed["body"]["reason"], "queued");
+
+    // A pull the athlete is watching needs the key, and says so when there
+    // is none.
+    let inline = uniffi_stride::stride_call(
+        "POST".into(),
+        "/api/v1/sync/run".into(),
+        Some("{\"days\":30,\"background\":false}".to_string()),
+    );
+    let parsed: Value = serde_json::from_str(&inline).expect("the answer is JSON");
+    assert_eq!(parsed["ok"], false, "the answer was {inline}");
+    assert_eq!(parsed["status"], 400);
+    let detail = parsed["error"]["detail"]
+        .as_str()
+        .unwrap_or_default()
+        .to_string();
+    assert!(
+        detail.contains("no Garmin key") || detail.contains("not connected"),
+        "the detail was {detail}"
+    );
+}
+
+/// The path of a golden fixture, from this crate.
+fn fixture(name: &str) -> std::path::PathBuf {
+    // android/app/src/main/rust/stride-ffi -> the repository root
+    let mut path = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    for _ in 0..6 {
+        path = path
+            .parent()
+            .expect("the crate has five parents")
+            .to_path_buf();
+    }
+    path.join("backend/tests/golden/fixtures").join(name)
+}
+
+#[test]
+fn a_fit_file_imported_the_way_the_bridge_sends_it_gives_the_golden_numbers() {
+    let _guard = lock();
+    let dir = TempDir::new("fit");
+    let answer = uniffi_stride::stride_open(dir.db(), key_hex(13));
+    assert!(answer.contains("\"ok\":true"), "the answer was {answer}");
+
+    // The body is the one the phone's bridge sends: the file name and its
+    // bytes, base64-encoded.
+    let bytes = std::fs::read(fixture("hr_gps_run.fit")).expect("the fixture is there");
+    let body = serde_json::json!({
+        "files": [{
+            "filename": "hr_gps_run.fit",
+            "content_base64": stride_api::util::base64_encode(&bytes),
+        }]
+    })
+    .to_string();
+
+    let answer = uniffi_stride::stride_call(
+        "POST".into(),
+        "/api/v1/auth/garmin/fit-import".into(),
+        Some(body),
+    );
+    let parsed: Value = serde_json::from_str(&answer).expect("the answer is JSON");
+    assert_eq!(parsed["ok"], true, "the answer was {answer}");
+    assert_eq!(parsed["body"]["imported"], 1, "the answer was {answer}");
+    assert_eq!(parsed["body"]["errors"].as_array().map(Vec::len), Some(0));
+
+    // The run is in the phone's own database now, with the numbers the
+    // golden file says.
+    let detail = uniffi_stride::stride_call("GET".into(), "/api/v1/activities/1".into(), None);
+    let parsed: Value = serde_json::from_str(&detail).expect("the answer is JSON");
+    assert_eq!(parsed["ok"], true, "the answer was {detail}");
+    let run = &parsed["body"];
+    assert_eq!(run["name"], "hr gps run", "the run was {run}");
+    assert_eq!(run["sport_type"], "running");
+    assert_eq!(run["source"], "garmin_fit");
+    assert_eq!(run["external_id"], "3117002");
+    assert_eq!(run["local_date"], "2026-03-03");
+    assert_eq!(run["day_of_week"], "Tuesday");
+    assert_eq!(run["distance_m"], 1980.0);
+    assert_eq!(run["moving_time_s"], 600.0);
+    assert_eq!(run["elapsed_time_s"], 600.0);
+    assert_eq!(run["avg_hr"], 145.0);
+    assert_eq!(run["max_hr"], 150.0);
+    assert_eq!(run["calories"], 640.0);
+    // The cadence is the halved one, corrected: the file stores 40.
+    assert_eq!(run["avg_cadence"], 80.0);
+    assert_eq!(run["max_cadence"], 80.0);
+    assert_eq!(run["running_time_s"], 599.0);
+    assert_eq!(run["walking_time_s"], 0.0);
+    assert_eq!(run["stopped_time_s"], 0.0);
+    assert_eq!(run["running_distance_m"], 1976.7);
+    assert_eq!(run["device"], "Forerunner 265");
 }
 
 #[test]

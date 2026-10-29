@@ -1072,6 +1072,7 @@ version = "0.2.0"
 dependencies = [
  "chrono",
  "flate2",
+ "reqwest",
  "serde",
  "serde_json",
  "stride-core",

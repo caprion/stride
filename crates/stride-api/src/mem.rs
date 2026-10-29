@@ -19,7 +19,7 @@ use crate::backend::{
     ActivityFilter, ActivityPatch, ActivityRow, Backend, Counts, DailyMetricRow, ImportRequest,
     LapRow, PhysiologyRow, PlanBlockFields, PlanBlockRow, PlanPhaseFields, PlanPhaseRow,
     PlanSessionFields, PlanSessionRow, PlanWeekFields, PlanWeekRow, SessionWithResult,
-    SettingsPatch, StatusView, StreamRow, Tile, ZoneRow,
+    SettingsPatch, StatusView, StreamRow, SyncRunRow, Tile, ZoneRow,
 };
 use crate::error::BackendError;
 
@@ -380,6 +380,96 @@ impl Backend for MemBackend {
             physiology_days: physiology.len() as i64,
             plan_sessions: sessions.len() as i64,
         })
+    }
+
+    fn activity_by_external(
+        &self,
+        source: &str,
+        external_id: &str,
+    ) -> Result<Option<ActivityRow>, BackendError> {
+        Ok(self
+            .activities
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner())
+            .iter()
+            .find(|row| row.source == source && row.external_id == external_id)
+            .cloned())
+    }
+
+    fn upsert_synced_activity(
+        &self,
+        activity: &ActivityRow,
+        laps: &[LapRow],
+        _streams: &[StreamRow],
+    ) -> Result<i64, BackendError> {
+        let mut row = activity.clone();
+        if row.id == 0 {
+            let mut next = self
+                .next_id
+                .lock()
+                .unwrap_or_else(|poisoned| poisoned.into_inner());
+            row.id = *next;
+            *next += 1;
+        }
+        row.lap_count = laps.len() as i64;
+        let mut guard = self
+            .activities
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner());
+        match guard.iter_mut().find(|existing| existing.id == row.id) {
+            Some(existing) => *existing = row,
+            None => guard.push(row),
+        }
+        Ok(activity.id)
+    }
+
+    fn upsert_physiology(&self, row: &PhysiologyRow) -> Result<(), BackendError> {
+        let mut guard = self
+            .physiology
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner());
+        match guard.iter_mut().find(|existing| existing.date == row.date) {
+            Some(existing) => *existing = row.clone(),
+            None => guard.push(row.clone()),
+        }
+        Ok(())
+    }
+
+    fn upsert_daily_metric(&self, row: &DailyMetricRow) -> Result<(), BackendError> {
+        let mut guard = self
+            .daily_metrics
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner());
+        match guard.iter_mut().find(|existing| existing.date == row.date) {
+            Some(existing) => *existing = row.clone(),
+            None => guard.push(row.clone()),
+        }
+        Ok(())
+    }
+
+    fn upsert_sync_run(&self, run: &SyncRunRow) -> Result<i64, BackendError> {
+        let mut guard = self
+            .sync_runs
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner());
+        guard.push(json!({
+            "id": run.id,
+            "source": run.source,
+            "started_at": run.started_at,
+            "finished_at": run.finished_at,
+            "status": run.status,
+            "days": run.days,
+            "activities_found": run.activities_found,
+            "activities_new": run.activities_new,
+            "activities_updated": run.activities_updated,
+            "message": run.message,
+            "error": run.error,
+        }));
+        Ok(run.id.unwrap_or_default())
+    }
+
+    fn garmin_personal_key(&self) -> Result<Option<String>, BackendError> {
+        Ok(None)
     }
 
     fn physiology(&self, from: &str, to: &str) -> Result<Vec<PhysiologyRow>, BackendError> {

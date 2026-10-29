@@ -180,28 +180,33 @@ pub fn run(api: &dyn StrideApi, ctx: &Context, args: &Value) -> Result<Value, Mc
         }
     }
 
-    // The adherence of the range is the same number the plan page shows.
-    if view == "current" || view == "week" {
-        let path = format!(
-            "/api/v1/plan/adherence?{}",
-            common::query(&[
-                ("from", from.map(common::date_text)),
-                ("to", to.map(common::date_text)),
-            ])
-        );
-        if let Ok(adherence) = common::get(api, NAME, &path) {
-            data["adherence"] = json!({
-                "overall_pct": common::f64_of(&adherence, "overall_pct"),
-                "planned_km": common::f64_of(&adherence, "planned_km"),
-                "actual_km": common::f64_of(&adherence, "actual_km"),
-                "planned_sessions": common::i64_of(&adherence, "planned_sessions"),
-                "completed_sessions": common::i64_of(&adherence, "completed_sessions"),
-                "hit_sessions": common::i64_of(&adherence, "hit_sessions"),
-                "missed_sessions": common::i64_of(&adherence, "missed_sessions"),
-                "extra_sessions": common::i64_of(&adherence, "extra_sessions"),
-                "by_verdict": adherence.get("by_verdict").cloned().unwrap_or(Value::Null),
-            });
-        }
+    // The adherence of the range is the same number the plan page shows. The
+    // results view asks for a range of its own; the other views ask for the
+    // range of the plan in force.
+    let (adherence_from, adherence_to) = if view == "results" {
+        (from, to)
+    } else {
+        (None, None)
+    };
+    let path = format!(
+        "/api/v1/plan/adherence?{}",
+        common::query(&[
+            ("from", adherence_from.map(common::date_text)),
+            ("to", adherence_to.map(common::date_text)),
+        ])
+    );
+    if let Ok(adherence) = common::get(api, NAME, &path) {
+        data["adherence"] = json!({
+            "overall_pct": common::f64_of(&adherence, "overall_pct"),
+            "planned_km": common::f64_of(&adherence, "planned_km"),
+            "actual_km": common::f64_of(&adherence, "actual_km"),
+            "planned_sessions": common::i64_of(&adherence, "planned_sessions"),
+            "completed_sessions": common::i64_of(&adherence, "completed_sessions"),
+            "hit_sessions": common::i64_of(&adherence, "hit_sessions"),
+            "missed_sessions": common::i64_of(&adherence, "missed_sessions"),
+            "extra_sessions": common::i64_of(&adherence, "extra_sessions"),
+            "by_verdict": adherence.get("by_verdict").cloned().unwrap_or(Value::Null),
+        });
     }
 
     let mut envelope = Envelope::new(data)

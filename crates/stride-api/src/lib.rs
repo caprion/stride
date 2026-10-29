@@ -13,6 +13,24 @@
 //! assert_eq!(health["ok"], true);
 //! ```
 //!
+//! ## How the pieces stack
+//!
+//! The router reads from a [`Backend`], and the backends stack:
+//!
+//! ```text
+//! Api
+//!  └─ CoreBackend      the domain: fingerprint, readiness, plan verdicts, comparison
+//!      └─ NetworkBackend  the machine's exit node, read from Tailscale
+//!          └─ StateBackend  the credentials, the pairing code, the sync settings
+//!              └─ stride_store::Store   the rows
+//! ```
+//!
+//! Each layer is optional: a host that has no Tailscale leaves the network
+//! layer out, and a host that keeps its state elsewhere leaves the state
+//! layer out. `stride_api::store::backend` builds the bottom layer,
+//! `stride_api::core::CoreBackend` and `stride_api::network::NetworkBackend`
+//! and `stride_api::state::StateBackend` the ones above it.
+//!
 //! **The response shapes do not change.** The React app consumes them and it
 //! is not being rewritten, so every key, every `null` and every rounding is
 //! a port of the Python implementation. `docs/rust-core-spec.md` and
@@ -25,19 +43,24 @@ pub mod core;
 pub mod error;
 pub mod ffi;
 pub mod mem;
+pub mod network;
 pub mod num;
+pub mod plan_import;
 pub mod query;
 pub mod router;
 pub mod routes;
 pub mod shapes;
+pub mod state;
 pub mod store;
+pub mod sync;
+pub mod tiles;
 pub mod util;
 
 use std::sync::Arc;
 
 use serde_json::Value;
 
-use crate::backend::Backend;
+pub use crate::backend::Backend;
 use crate::error::ApiError;
 use crate::query::Query;
 use crate::routes::Ctx;
@@ -98,6 +121,30 @@ impl Response {
             }),
         }
     }
+}
+
+/// The whole stack, built in one call.
+///
+/// The layers are: the domain on top, then the map tiles, then the machine's
+/// network route, then the application state, then the rows. A host that
+/// wants them all asks for them all:
+///
+/// ```no_run
+/// # use std::sync::Arc;
+/// # use stride_api::{stack, Backend};
+/// # fn run(store: Arc<dyn Backend>, cache: &std::path::Path) {
+/// let api = stack(store, cache);
+/// # }
+/// ```
+///
+/// A host that wants fewer layers builds them by hand — the order is the
+/// only thing that matters, and it is documented on [`Api`].
+pub fn stack(backend: Arc<dyn Backend>, cache_dir: &std::path::Path) -> Api {
+    let tiles = tiles::TileBackend::new(backend, cache_dir.to_path_buf());
+    let network = network::NetworkBackend::new(Arc::new(tiles));
+    let state = state::StateBackend::new(Arc::new(network));
+    let core = core::CoreBackend::new(Arc::new(state));
+    Api::new(Arc::new(core))
 }
 
 /// The router.
@@ -228,6 +275,9 @@ impl std::fmt::Debug for Api {
 pub use core::CoreBackend;
 pub use error::{ApiError as Error, BackendError};
 pub use mem::MemBackend;
+pub use network::NetworkBackend;
+pub use state::{State, StateBackend};
+pub use tiles::TileBackend;
 
 #[cfg(test)]
 mod tests {

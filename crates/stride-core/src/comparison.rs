@@ -17,6 +17,7 @@
 use serde::{Deserialize, Serialize};
 
 use crate::model::{Activity, Fingerprint};
+use crate::ordered::OrderedMap;
 
 /// How many points each run's profile is resampled to.
 pub const PROFILE_POINTS: usize = 120;
@@ -356,6 +357,18 @@ pub fn value_for(parameter: &Parameter, activity: &Activity) -> Option<f64> {
     }
 }
 
+/// The fifteen parameter values of one run, keyed by the parameter's key.
+///
+/// This is the reference's `values` map — the object the comparison view
+/// reads — so the router can serve it without inventing a shape.
+pub fn values_for(activity: &Activity) -> OrderedMap<Option<f64>> {
+    let mut values = OrderedMap::new();
+    for parameter in PARAMETERS.iter() {
+        values.push(parameter.key, value_for(parameter, activity));
+    }
+    values
+}
+
 /// One field of the fingerprint, by name.
 fn fingerprint_field(fingerprint: &Fingerprint, field: &str) -> Option<f64> {
     match field {
@@ -486,6 +499,32 @@ mod tests {
     }
 
     #[test]
+    fn the_values_map_is_the_reference_values_object() {
+        // The router serves the reference's `values` object: the fifteen
+        // parameter keys, in the matrix's order.
+        let activity = Activity {
+            distance_m: 1980.0,
+            moving_time_s: Some(600.0),
+            elevation_gain_m: Some(0.0),
+            avg_hr: Some(145.0),
+            ..Activity::default()
+        };
+        let values = values_for(&activity);
+        let keys: Vec<&str> = values.iter().map(|(key, _)| key).collect();
+        let expected: Vec<&str> = PARAMETERS.iter().map(|p| p.key).collect();
+        assert_eq!(keys, expected);
+        assert_eq!(values.get("distance_m"), Some(&Some(1980.0)));
+        let pace = values
+            .get("pace_s_per_km")
+            .copied()
+            .flatten()
+            .expect("a pace");
+        assert!((pace - 303.0303030303).abs() < 1e-9);
+        assert_eq!(values.get("avg_hr"), Some(&Some(145.0)));
+        assert_eq!(values.get("form_score"), Some(&None));
+    }
+
+    #[test]
     fn the_parameter_list_is_the_reference_matrix() {
         assert_eq!(PARAMETERS.len(), 15);
         assert_eq!(PARAMETERS[0].key, "distance_m");
@@ -493,4 +532,148 @@ mod tests {
         assert_eq!(PARAMETERS[10].better, Better::Higher);
         assert_eq!(PARAMETERS[4].better, Better::Neutral);
     }
+}
+
+/// The sports the comparison offers as candidates.
+///
+/// The reference lists four: the run sports the comparison can chart.
+pub const CANDIDATE_SPORTS: [&str; 4] = [
+    "running",
+    "trail_running",
+    "treadmill_running",
+    "virtualrun",
+];
+
+/// A run as the comparison view reads it.
+#[derive(Clone, Debug, PartialEq, Serialize)]
+pub struct RunPayload {
+    /// The run's row id.
+    pub id: i64,
+    /// The athlete's name for the run.
+    pub name: String,
+    /// The athlete-local date of the run.
+    pub local_date: String,
+    /// The weekday name of the run.
+    pub day_of_week: Option<String>,
+    /// The normalised sport type.
+    pub sport_type: String,
+    /// Where the run came from.
+    pub source: String,
+    /// The distance, in metres.
+    pub distance_m: f64,
+    /// The moving time, in seconds.
+    pub moving_time_s: Option<f64>,
+    /// The moving time as `h:mm:ss` or `mm:ss`.
+    pub moving_time_label: Option<String>,
+    /// The elevation gain, in metres.
+    pub elevation_gain_m: Option<f64>,
+    /// The average heart rate, in beats per minute.
+    pub avg_hr: Option<f64>,
+    /// The maximum heart rate, in beats per minute.
+    pub max_hr: Option<f64>,
+    /// The calories burned.
+    pub calories: Option<f64>,
+    /// The average pace, in seconds per kilometre.
+    pub pace_s_per_km: Option<f64>,
+    /// Whether the run has a route.
+    pub has_geo: bool,
+    /// The fifteen parameter values.
+    pub values: OrderedMap<Option<f64>>,
+    /// The run's profile: 120 points on a shared distance axis.
+    pub profile: Vec<ProfilePoint>,
+}
+
+/// A run as the candidate list reads it.
+#[derive(Clone, Debug, PartialEq, Serialize)]
+pub struct Candidate {
+    /// The run's row id.
+    pub id: i64,
+    /// The athlete's name for the run.
+    pub name: String,
+    /// The athlete-local date of the run.
+    pub local_date: String,
+    /// The distance, in metres.
+    pub distance_m: f64,
+    /// The average pace, in seconds per kilometre.
+    pub pace_s_per_km: Option<f64>,
+    /// The average heart rate, in beats per minute.
+    pub avg_hr: Option<f64>,
+    /// The elevation gain, in metres.
+    pub elevation_gain_m: Option<f64>,
+    /// Whether the run has a fingerprint to compare.
+    pub has_fingerprint: bool,
+    /// Whether the run has streams, and so a profile.
+    pub has_profile: bool,
+    /// Where the run came from.
+    pub source: String,
+}
+
+/// A duration as `h:mm:ss` or `mm:ss`.
+///
+/// The reference rounds to the nearest second and leaves the hours out when
+/// there are none.
+pub fn duration_label(seconds: Option<f64>) -> Option<String> {
+    let seconds = seconds?;
+    if seconds == 0.0 {
+        return None;
+    }
+    let total = crate::numeric::round_int(seconds);
+    let (hours, remainder) = (total.div_euclid(3600), total.rem_euclid(3600));
+    let (minutes, secs) = (remainder.div_euclid(60), remainder.rem_euclid(60));
+    if hours > 0 {
+        Some(format!("{hours}:{minutes:02}:{secs:02}"))
+    } else {
+        Some(format!("{minutes}:{secs:02}"))
+    }
+}
+
+/// Everything the comparison view needs about one run.
+pub fn run_payload(activity: &Activity) -> RunPayload {
+    RunPayload {
+        id: activity.id,
+        name: activity.name.clone(),
+        local_date: activity.local_date.clone(),
+        day_of_week: activity.day_of_week.clone(),
+        sport_type: activity.sport_type.clone(),
+        source: activity.source.clone(),
+        distance_m: activity.distance_m,
+        moving_time_s: activity.moving_time_s,
+        moving_time_label: duration_label(activity.moving_time_s),
+        elevation_gain_m: activity.elevation_gain_m,
+        avg_hr: activity.avg_hr,
+        max_hr: activity.max_hr,
+        calories: activity.calories,
+        pace_s_per_km: pace_s_per_km(activity.distance_m, activity.moving_time_s),
+        has_geo: activity
+            .geo_points
+            .as_ref()
+            .map_or(false, |points| !points.is_empty()),
+        values: values_for(activity),
+        profile: profile_for(activity, PROFILE_POINTS),
+    }
+}
+
+/// The runs that can be compared.
+///
+/// The reference reads them in start-time order and keeps the first
+/// `limit`; the caller passes the runs in that order, because the order is
+/// the store's query, not the domain's.
+pub fn candidates(activities: &[Activity], limit: usize) -> Vec<Candidate> {
+    activities
+        .iter()
+        .filter(|activity| CANDIDATE_SPORTS.contains(&activity.sport_type.as_str()))
+        .take(limit)
+        .map(|activity| Candidate {
+            id: activity.id,
+            name: activity.name.clone(),
+            local_date: activity.local_date.clone(),
+            distance_m: activity.distance_m,
+            pace_s_per_km: pace_s_per_km(activity.distance_m, activity.moving_time_s),
+            avg_hr: activity.avg_hr,
+            elevation_gain_m: activity.elevation_gain_m,
+            has_fingerprint: activity.fingerprint.is_some(),
+            has_profile: !activity.streams.is_empty(),
+            source: activity.source.clone(),
+        })
+        .collect()
 }

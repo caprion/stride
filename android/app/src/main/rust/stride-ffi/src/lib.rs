@@ -7,53 +7,64 @@
 //! The contract is `docs/rust-core-spec.md`: `stride-api` owns the router and
 //! the response shapes, and this crate is the thin shell around it.
 //!
-//! ## Why there is a store backend here
+//! ## What the shell does
 //!
-//! `stride-api` defines the `Backend` trait the router reads through, and
-//! documents the production implementation as "the `stride-store` adapter
-//! (proposed in the workstream report)". That adapter does not exist yet, and
-//! the phone cannot ship without it, so this crate carries one:
-//! `backend::PhoneBackend` implements `Backend` over `stride_store::Store`
-//! and computes the derived numbers with `stride_core`.
+//! * it opens the phone's own SQLCipher database with the key the Keystore
+//!   protected, and migrates it;
+//! * it stacks the shared backends — the store adapter, the state and the
+//!   domain — so the phone answers the routes exactly as the desktop does;
+//! * it adds the one thing the phone has and the desktop does not: a Garmin
+//!   pull a background worker can drive;
+//! * it calls the router, and it never lets a panic out.
 //!
-//! It is **meant to move**. When `stride-api` grows its own store adapter —
-//! which is where it belongs, because `stride-api` is the crate that depends
-//! on `stride-store` — this copy should be deleted and this crate should call
-//! the one there. The workstream report says so.
+//! The backend stack:
+//!
+//! ```text
+//! CoreBackend        the domain: the fingerprint, the readiness, the verdicts
+//!   └── PhoneSync    the pull
+//!         └── StateBackend   the state: the key, the status, the pairing
+//!               └── the store adapter   the rows
+//! ```
 
 pub mod backend;
-pub mod garmin;
-pub mod rows;
 
 use std::sync::{Arc, OnceLock, RwLock};
 
 use serde_json::{json, Value};
 
-use stride_api::Api;
+use stride_api::backend::Backend;
+use stride_api::{Api, Response};
+use stride_api::{CoreBackend, StateBackend};
 
 uniffi::include_scaffolding!("stride");
 
-/// The backend the routes read through.
-///
-/// The phone opens its database once, at start-up, and installs the backend
-/// here. Every call after that goes through the same router the desktop
-/// uses.
-static BACKEND: OnceLock<RwLock<Option<Arc<backend::PhoneBackend>>>> = OnceLock::new();
-
-/// The process-wide backend slot.
-fn slot() -> &'static RwLock<Option<Arc<backend::PhoneBackend>>> {
-    BACKEND.get_or_init(|| RwLock::new(None))
+/// The backends the phone runs, and the state they share.
+struct PhoneCore {
+    /// The state: the Garmin key, the status the browser reads.
+    state: Arc<StateBackend>,
+    /// The pull.
+    sync: Arc<backend::PhoneSync>,
+    /// The domain.
+    core: Arc<CoreBackend>,
 }
 
-/// The installed backend, if there is one.
-fn installed() -> Option<Arc<backend::PhoneBackend>> {
+/// The process-wide stack.
+static CORE: OnceLock<RwLock<Option<Arc<PhoneCore>>>> = OnceLock::new();
+
+/// The process-wide slot.
+fn slot() -> &'static RwLock<Option<Arc<PhoneCore>>> {
+    CORE.get_or_init(|| RwLock::new(None))
+}
+
+/// The stack, if it is open.
+fn installed() -> Option<Arc<PhoneCore>> {
     slot()
         .read()
         .unwrap_or_else(|poisoned| poisoned.into_inner())
         .clone()
 }
 
-/// Open the phone's database and install the backend.
+/// Open the phone's database and install the backends.
 ///
 /// The answer is a JSON envelope: `{"ok": true, ...}` or
 /// `{"ok": false, "error": {"detail": "..."}}`. The Kotlin side reads it as
@@ -68,19 +79,29 @@ pub fn stride_open(db_path: String, db_key_hex: String) -> String {
         .to_string()
 }
 
-/// The result of opening the database.
+/// Open the database and stack the backends.
 fn open(db_path: &str, db_key_hex: &str) -> Result<Value, String> {
     let key = decode_key(db_key_hex)?;
     let path = std::path::Path::new(db_path);
-    let store = stride_store::Store::open_and_migrate(path, &key)
-        .map_err(|err| format!("the database could not be opened: {err}"))?;
+    let store = Arc::new(
+        stride_store::Store::open_and_migrate(path, &key)
+            .map_err(|err| format!("the database could not be opened: {err}"))?,
+    );
 
-    let backend = Arc::new(backend::PhoneBackend::new(store));
+    // The shared stack: the rows, the state, the domain.
+    let rows = stride_api::store::backend(store.clone());
+    let state = Arc::new(StateBackend::new(rows));
+    let sync = Arc::new(backend::PhoneSync::new(
+        state.clone() as Arc<dyn Backend>,
+        store,
+    ));
+    let core = Arc::new(CoreBackend::new(sync.clone() as Arc<dyn Backend>));
+
     {
         let mut guard = slot()
             .write()
             .unwrap_or_else(|poisoned| poisoned.into_inner());
-        *guard = Some(backend);
+        *guard = Some(Arc::new(PhoneCore { state, sync, core }));
     }
 
     Ok(json!({
@@ -105,7 +126,8 @@ fn decode_key(hex: &str) -> Result<Vec<u8>, String> {
     let mut key = Vec::with_capacity(32);
     let bytes = trimmed.as_bytes();
     for pair in bytes.chunks(2) {
-        let text = std::str::from_utf8(pair).map_err(|_| "the database key is not hex".to_string())?;
+        let text =
+            std::str::from_utf8(pair).map_err(|_| "the database key is not hex".to_string())?;
         let byte =
             u8::from_str_radix(text, 16).map_err(|_| "the database key is not hex".to_string())?;
         key.push(byte);
@@ -115,41 +137,37 @@ fn decode_key(hex: &str) -> Result<Vec<u8>, String> {
 
 /// Call a route.
 ///
-/// The answer is the same envelope `stride-api`'s C ABI produces, because it
-/// *is* that function: this crate calls the ABI and frees the string it
-/// returns.
-pub fn stride_call(method: String, path: String, body: Option<String>) -> String {
-    let outcome = std::panic::catch_unwind(|| call(&method, &path, body.as_deref()));
-    outcome
-        .unwrap_or_else(|_| error_envelope(500, "the request could not be completed").to_string())
-}
-
-/// The call, through the router.
-///
-/// The envelope is the one `stride-api`'s C ABI produces, so the Kotlin side
-/// reads one shape whichever way it asks:
+/// The answer is the envelope the SPA reads:
 ///
 /// ```text
 /// {"ok": true,  "status": 200, "body": { ... }}
 /// {"ok": false, "status": 404, "error": {"detail": "..."}}
 /// ```
+pub fn stride_call(method: String, path: String, body: Option<String>) -> String {
+    let outcome = std::panic::catch_unwind(|| call(&method, &path, body.as_deref()));
+    outcome
+        .unwrap_or_else(|_| error_envelope(500, "the request could not be completed").to_string())
+        .to_string()
+}
+
+/// The call, through the router.
 fn call(method: &str, path: &str, body: Option<&str>) -> String {
-    let Some(backend) = installed() else {
+    let Some(core) = installed() else {
         return error_envelope(503, "the database is not open").to_string();
     };
-    let api = Api::new(backend);
+    let api = Api::new(core.core.clone() as Arc<dyn Backend>);
     let outcome = match api.call_response(method, path, body) {
-        Ok(stride_api::Response::Json(value)) => json!({
+        Ok(Response::Json(value)) => json!({
             "ok": true,
             "status": 200,
             "body": value,
         }),
-        Ok(stride_api::Response::NoContent) => json!({
+        Ok(Response::NoContent) => json!({
             "ok": true,
             "status": 204,
             "body": Value::Null,
         }),
-        Ok(stride_api::Response::Binary {
+        Ok(Response::Binary {
             content_type,
             bytes,
         }) => json!({
@@ -169,20 +187,47 @@ fn call(method: &str, path: &str, body: Option<&str>) -> String {
     outcome.to_string()
 }
 
-/// Pull from Garmin into the local database.
+/// Pull from Garmin into the phone's database.
 ///
-/// The key is used for the token exchange and then dropped. The bearer token
-/// stays in memory, inside the client, and is refreshed by exchanging the key
-/// again — Garmin has no refresh token.
+/// The pull itself is `stride-api`'s: the same one the desktop runs, over
+/// the same database. The key is used for the token exchange and then
+/// dropped: the bearer token stays in memory, inside the client, and is
+/// refreshed by exchanging the key again — Garmin has no refresh token.
 pub fn stride_garmin_sync(api_key: String, days: i64) -> String {
     let outcome = std::panic::catch_unwind(|| match installed() {
-        Some(backend) => garmin::sync(&backend, &api_key, days)
-            .unwrap_or_else(|err| error_envelope(500, &err.to_string())),
+        Some(core) => {
+            // The key is in memory for the length of the pull, and no
+            // longer: the shell unwraps it from the Keystore, hands it over
+            // and takes it back.
+            set_key(&core, &api_key);
+            let pulled = core.sync.run_sync(Some(days), false);
+            set_key(&core, "");
+            match pulled {
+                Ok(value) => json!({"ok": true, "status": 200, "body": value}),
+                Err(err) => error_envelope(500, &err.to_string()),
+            }
+        }
         None => error_envelope(503, "the database is not open"),
     });
     outcome
         .unwrap_or_else(|_| error_envelope(500, "the sync could not be completed"))
         .to_string()
+}
+
+/// Put the Garmin key in the state's memory, or take it out again.
+///
+/// The state is what the sync reads the key through, and what tells the
+/// browser that Garmin is connected.
+fn set_key(core: &PhoneCore, api_key: &str) {
+    let mut state = core.state.state();
+    state.personal_api_key = if api_key.is_empty() {
+        None
+    } else {
+        Some(api_key.to_string())
+    };
+    state.status.has_personal_api_key = state.personal_api_key.is_some();
+    state.status.garmin_connected = state.personal_api_key.is_some();
+    core.state.set_state(state);
 }
 
 /// Put the Garmin key in memory, or take it out again.
@@ -192,8 +237,8 @@ pub fn stride_garmin_sync(api_key: String, days: i64) -> String {
 /// as the pull is over.
 pub fn stride_set_garmin_key(api_key: String) -> String {
     match installed() {
-        Some(backend) => {
-            backend.set_garmin_key(&api_key);
+        Some(core) => {
+            set_key(&core, &api_key);
             json!({
                 "ok": true,
                 "status": 200,
@@ -207,14 +252,14 @@ pub fn stride_set_garmin_key(api_key: String) -> String {
 
 /// What the core is, and whether it is open.
 pub fn stride_status() -> String {
-    let backend = installed();
+    let open = installed().is_some();
     json!({
         "ok": true,
         "status": 200,
         "body": {
             "core": "stride-ffi",
             "version": env!("CARGO_PKG_VERSION"),
-            "open": backend.is_some(),
+            "open": open,
             "backend": "phone",
         }
     })

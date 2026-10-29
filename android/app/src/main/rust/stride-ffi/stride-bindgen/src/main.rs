@@ -24,7 +24,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let udl = Utf8PathBuf::from(udl);
     let out = Utf8PathBuf::from_path_buf(out).map_err(|path| {
-        format!("the output directory is not valid UTF-8: {}", path.display())
+        format!(
+            "the output directory is not valid UTF-8: {}",
+            path.display()
+        )
     })?;
 
     uniffi_bindgen::generate_bindings(

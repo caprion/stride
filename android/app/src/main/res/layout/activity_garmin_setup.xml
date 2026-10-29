@@ -105,5 +105,36 @@
             android:layout_marginTop="24dp"
             android:text="@string/garmin_privacy"
             android:textSize="12sp" />
+
+        <!--
+            The instance URL. It is empty by default: the phone is the whole
+            thing and it points at Garmin, not at a server. It is here for the
+            interim build, where the phone was a browser for a desktop.
+        -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:text="@string/server_url_label"
+            android:textStyle="bold" />
+
+        <EditText
+            android:id="@+id/server_url"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:autofillHints=""
+            android:importantForAutofill="no"
+            android:inputType="textUri"
+            android:maxLines="1"
+            android:minHeight="48dp"
+            android:hint="@string/server_url_hint" />
+
+        <Button
+            android:id="@+id/server_save"
+            style="?android:attr/borderlessButtonStyle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:minHeight="48dp"
+            android:text="@string/server_url_save" />
     </LinearLayout>
 </ScrollView>

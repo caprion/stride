@@ -1,6 +1,9 @@
 package app.stride.running.sync
 
 import android.content.Context
+import android.content.pm.ServiceInfo
+import android.os.Build
+import androidx.work.ForegroundInfo
 import androidx.work.Worker
 import androidx.work.WorkerParameters
 import app.stride.running.core.StrideCore
@@ -29,6 +32,12 @@ class GarminSyncWorker(
     override fun doWork(): Result {
         val context = applicationContext
 
+        // A pull can outlast the system's patience with a background job, so
+        // the job holds a foreground notification while it runs: that is the
+        // foreground service the design asks for, with the system's own
+        // bookkeeping rather than a hand-rolled one.
+        setForegroundAsync(foregroundInfo())
+
         // A locked phone cannot use the Keystore key, so there is nothing to
         // do but come back later.
         if (SyncEngine.isLocked(context)) {
@@ -44,8 +53,11 @@ class GarminSyncWorker(
             return Result.retry()
         }
 
-        val settings = AppSettings(context)
-        val outcome = SyncEngine.run(context, settings.syncDays.toLong())
+        // The window travels with the job; the default is the setting.
+        val days = inputData.getInt(SyncScheduler.KEY_DAYS, 0)
+            .takeIf { it > 0 }
+            ?: AppSettings(context).syncDays
+        val outcome = SyncEngine.run(context, days.toLong())
 
         SyncNotifications.finished(context, outcome)
 
@@ -55,6 +67,20 @@ class GarminSyncWorker(
             // is worth one more try and then the phone says "action needed".
             outcome.error == "locked" || outcome.error == "failed" -> Result.retry()
             else -> Result.failure()
+        }
+    }
+
+    /** The notification the job holds while it runs. */
+    private fun foregroundInfo(): ForegroundInfo {
+        val notification = SyncNotifications.progress(applicationContext)
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            ForegroundInfo(
+                SyncNotifications.PROGRESS_ID,
+                notification,
+                ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC,
+            )
+        } else {
+            ForegroundInfo(SyncNotifications.PROGRESS_ID, notification)
         }
     }
 }

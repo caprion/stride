@@ -11,6 +11,8 @@
 
 use std::sync::Arc;
 
+use chrono::Datelike;
+
 use serde_json::{json, Value};
 
 use stride_store::repo::activity::{ActivityFilter as StoreFilter, ActivityOrder};
@@ -20,7 +22,7 @@ use crate::backend::{
     ActivityFilter, ActivityPatch, ActivityRow, Backend, Counts, DailyMetricRow, ImportRequest,
     LapRow, PhysiologyRow, PlanBlockFields, PlanBlockRow, PlanPhaseFields, PlanPhaseRow,
     PlanSessionFields, PlanSessionRow, PlanWeekFields, PlanWeekRow, SettingsPatch, StatusView,
-    StreamRow, Tile, ZoneRow,
+    StreamRow, SyncRunRow, Tile, ZoneRow,
 };
 use crate::error::BackendError;
 
@@ -398,6 +400,199 @@ impl Backend for Store {
         })
     }
 
+    fn activity_by_external(
+        &self,
+        source: &str,
+        external_id: &str,
+    ) -> Result<Option<ActivityRow>, BackendError> {
+        let Some(activity) = self
+            .activity_by_external(source, external_id)
+            .map_err(|err| store_error("could not read the activity", err))?
+        else {
+            return Ok(None);
+        };
+        Ok(Some(activity_row(&activity)))
+    }
+
+    fn upsert_synced_activity(
+        &self,
+        activity: &ActivityRow,
+        laps: &[LapRow],
+        streams: &[StreamRow],
+    ) -> Result<i64, BackendError> {
+        let row = stride_store::Activity {
+            id: None,
+            athlete_id: activity.athlete_id,
+            source: activity.source.clone(),
+            external_id: activity.external_id.clone(),
+            name: activity.name.clone(),
+            sport_type: activity.sport_type.clone(),
+            description: activity.description.clone(),
+            start_time: activity
+                .start_time
+                .as_deref()
+                .and_then(|raw| chrono::DateTime::parse_from_rfc3339(raw).ok())
+                .map(|raw| raw.with_timezone(&chrono::Utc))
+                .unwrap_or_else(chrono::Utc::now),
+            local_date: activity.local_date.clone(),
+            day_of_week: activity.day_of_week.clone(),
+            distance_m: activity.distance_m,
+            moving_time_s: activity.moving_time_s,
+            elapsed_time_s: activity.elapsed_time_s,
+            elevation_gain_m: activity.elevation_gain_m,
+            avg_hr: activity.avg_hr,
+            max_hr: activity.max_hr,
+            calories: activity.calories,
+            avg_cadence: activity.avg_cadence,
+            max_cadence: activity.max_cadence,
+            avg_speed_ms: activity.avg_speed_ms,
+            max_speed_ms: activity.max_speed_ms,
+            running_time_s: activity.running_time_s,
+            walking_time_s: activity.walking_time_s,
+            stopped_time_s: activity.stopped_time_s,
+            running_distance_m: activity.running_distance_m,
+            perceived_exertion: activity.perceived_exertion,
+            device: activity.device.clone(),
+            gear: activity.gear.clone(),
+            is_trail: activity.is_trail,
+            is_commute: activity.is_commute,
+            geo_points: activity.geo_points.as_ref().map(|points| json!(points)),
+            ..stride_store::Activity::default()
+        };
+        let id = self
+            .upsert_activity(&row)
+            .map_err(|err| store_error("could not write the activity", err))?;
+        if !laps.is_empty() {
+            let store_laps: Vec<stride_store::ActivityLap> = laps
+                .iter()
+                .map(|lap| stride_store::ActivityLap {
+                    activity_id: id,
+                    lap_index: lap.lap_index,
+                    distance_m: lap.distance_m,
+                    duration_s: lap.duration_s,
+                    avg_speed_ms: lap.avg_speed_ms,
+                    max_speed_ms: lap.max_speed_ms,
+                    avg_hr: lap.avg_hr,
+                    max_hr: lap.max_hr,
+                    avg_cadence: lap.avg_cadence,
+                    max_cadence: lap.max_cadence,
+                    stride_length_m: lap.stride_length_m,
+                    elevation_gain_m: lap.elevation_gain_m,
+                    elevation_loss_m: lap.elevation_loss_m,
+                    start_elevation_m: lap.start_elevation_m,
+                    end_elevation_m: lap.end_elevation_m,
+                    running_distance_m: lap.running_distance_m,
+                    elapsed_s: lap.elapsed_s,
+                    ..stride_store::ActivityLap::default()
+                })
+                .collect();
+            self.replace_activity_laps(id, &store_laps)
+                .map_err(|err| store_error("could not write the splits", err))?;
+        }
+        if !streams.is_empty() {
+            let store_streams: Vec<stride_store::ActivityStream> = streams
+                .iter()
+                .map(|stream| stride_store::ActivityStream {
+                    activity_id: id,
+                    kind: stream.kind.clone(),
+                    seconds: json!(stream.seconds),
+                    values: json!(stream.values),
+                    label: stream.label.clone(),
+                    unit: stream.unit.clone(),
+                    ..stride_store::ActivityStream::default()
+                })
+                .collect();
+            self.replace_activity_streams(id, &store_streams)
+                .map_err(|err| store_error("could not write the series", err))?;
+        }
+        Ok(id)
+    }
+
+    fn upsert_physiology(&self, row: &PhysiologyRow) -> Result<(), BackendError> {
+        let physiology = stride_store::DailyPhysiology {
+            date: row.date.clone(),
+            sleep_s: row.sleep_s,
+            sleep_score: row.sleep_score,
+            deep_sleep_s: row.deep_sleep_s,
+            rem_s: row.rem_s,
+            light_sleep_s: row.light_sleep_s,
+            awake_s: row.awake_s,
+            hrv_ms: row.hrv_ms,
+            hrv_status: row.hrv_status.clone(),
+            resting_hr: row.resting_hr,
+            max_hr: row.max_hr,
+            stress_avg: row.stress_avg,
+            stress_max: row.stress_max,
+            body_battery_min: row.body_battery_min,
+            body_battery_avg: row.body_battery_avg,
+            body_battery_max: row.body_battery_max,
+            steps: row.steps,
+            training_readiness: row.training_readiness,
+            acute_load: row.acute_load,
+            chronic_load: row.chronic_load,
+            vo2max: row.vo2max,
+            endurance_score: row.endurance_score,
+            running_tolerance: row.running_tolerance,
+            source: row
+                .source
+                .clone()
+                .unwrap_or_else(|| "garmin_personal".to_string()),
+            updated_at: chrono::Utc::now(),
+        };
+        self.upsert_physiology(&physiology)
+            .map_err(|err| store_error("could not write the physiology", err))
+    }
+
+    fn upsert_daily_metric(&self, row: &DailyMetricRow) -> Result<(), BackendError> {
+        let metric = stride_store::DailyMetric {
+            date: row.date.clone(),
+            resting_hr: row.resting_hr,
+            max_hr: row.max_hr,
+            sleep_s: row.sleep_s,
+            deep_sleep_s: row.deep_sleep_s,
+            hrv_ms: row.hrv_ms,
+            stress: row.stress,
+            steps: row.steps,
+            body_battery: row.body_battery,
+            readiness: row.readiness,
+            distance_m: row.distance_m,
+        };
+        self.upsert_daily_metric(&metric)
+            .map_err(|err| store_error("could not write the daily metric", err))
+    }
+
+    fn upsert_sync_run(&self, run: &SyncRunRow) -> Result<i64, BackendError> {
+        let record = stride_store::SyncRun {
+            id: None,
+            source: run.source.clone(),
+            started_at: run
+                .started_at
+                .as_deref()
+                .and_then(|raw| chrono::DateTime::parse_from_rfc3339(raw).ok())
+                .map(|raw| raw.with_timezone(&chrono::Utc))
+                .unwrap_or_else(chrono::Utc::now),
+            finished_at: run
+                .finished_at
+                .as_deref()
+                .and_then(|raw| chrono::DateTime::parse_from_rfc3339(raw).ok())
+                .map(|raw| raw.with_timezone(&chrono::Utc)),
+            status: run.status.clone(),
+            days: run.days,
+            activities_found: run.activities_found,
+            activities_new: run.activities_new,
+            activities_updated: run.activities_updated,
+            message: run.message.clone(),
+            error: run.error.clone(),
+        };
+        self.upsert_sync_run(&record)
+            .map_err(|err| store_error("could not write the sync log", err))
+    }
+
+    fn garmin_personal_key(&self) -> Result<Option<String>, BackendError> {
+        // The key is in the state, not in the database.
+        Ok(None)
+    }
+
     fn physiology(&self, from: &str, to: &str) -> Result<Vec<PhysiologyRow>, BackendError> {
         let rows = self
             .physiology(from, to)
@@ -707,10 +902,174 @@ impl Backend for Store {
         })
     }
 
-    fn import_plan(&self, _request: &ImportRequest) -> Result<Value, BackendError> {
-        Err(BackendError::Unsupported(
-            "the plan importer lives in the ingest layer, not in the store".to_string(),
-        ))
+    fn import_plan(&self, request: &ImportRequest) -> Result<Value, BackendError> {
+        // The document is parsed by the importer and written by the store.
+        let year = chrono::Datelike::year(&chrono::Utc::now());
+        let parsed = match crate::plan_import::import_plan(
+            &request.content,
+            &request.format,
+            request.name.as_deref(),
+            year,
+        ) {
+            Ok(parsed) => parsed,
+            Err(message) => {
+                // A document that cannot be read is an answer, not a crash.
+                return Ok(json!({
+                    "ok": false,
+                    "block_id": Value::Null,
+                    "name": request.name,
+                    "phases": 0,
+                    "weeks": 0,
+                    "sessions": 0,
+                    "warnings": [],
+                    "error": message,
+                }));
+            }
+        };
+
+        let today = chrono::Utc::now()
+            .date_naive()
+            .format("%Y-%m-%d")
+            .to_string();
+        let block_name = parsed["block"]["name"]
+            .as_str()
+            .unwrap_or("Imported plan")
+            .to_string();
+        let block = self.create_plan_block(&PlanBlockFields {
+            name: block_name.clone(),
+            start_date: parsed["block"]["start_date"]
+                .as_str()
+                .unwrap_or(&today)
+                .to_string(),
+            end_date: parsed["block"]["end_date"].as_str().map(str::to_string),
+            goal: parsed["block"]["goal"].as_str().map(str::to_string),
+            status: Some("active".to_string()),
+            source: Some("imported".to_string()),
+            notes: None,
+        })?;
+
+        // The phases.
+        let mut phase_ids: Vec<i64> = Vec::new();
+        for phase in parsed["phases"].as_array().cloned().unwrap_or_default() {
+            let fields = PlanPhaseFields {
+                name: phase["name"].as_str().unwrap_or("Phase").to_string(),
+                start_date: phase["start_date"].as_str().map(str::to_string),
+                end_date: phase["end_date"].as_str().map(str::to_string),
+                target_weekly_km_min: phase["target_weekly_km_min"].as_f64(),
+                target_weekly_km_max: phase["target_weekly_km_max"].as_f64(),
+                target_sessions: phase["target_sessions"].as_i64(),
+                pace_easy_low: phase["pace_easy_low"].as_i64().map(|value| value as f64),
+                pace_easy_high: phase["pace_easy_high"].as_i64().map(|value| value as f64),
+                pace_tempo_low: phase["pace_tempo_low"].as_i64().map(|value| value as f64),
+                pace_tempo_high: phase["pace_tempo_high"].as_i64().map(|value| value as f64),
+                pace_interval_low: phase["pace_interval_low"]
+                    .as_i64()
+                    .map(|value| value as f64),
+                pace_interval_high: phase["pace_interval_high"]
+                    .as_i64()
+                    .map(|value| value as f64),
+                pace_long_low: phase["pace_long_low"].as_i64().map(|value| value as f64),
+                pace_long_high: phase["pace_long_high"].as_i64().map(|value| value as f64),
+                hr_zone_target: phase["hr_zone_target"].as_i64(),
+                notes: None,
+            };
+            let written = self.create_plan_phase(block.id, &fields)?;
+            phase_ids.push(written.id);
+        }
+
+        // The weeks, each under its phase.
+        let mut week_ids: Vec<(i64, String, String)> = Vec::new();
+        for week in parsed["weeks"].as_array().cloned().unwrap_or_default() {
+            let index = week["phase_index"].as_i64().unwrap_or(0);
+            let phase_id = match phase_ids
+                .get(index.max(0) as usize)
+                .copied()
+                .or_else(|| phase_ids.first().copied())
+            {
+                Some(phase_id) => phase_id,
+                None => {
+                    // A document with weeks but no phases still needs one to
+                    // hang them on.
+                    let written = self.create_plan_phase(
+                        block.id,
+                        &PlanPhaseFields {
+                            name: "Imported".to_string(),
+                            ..PlanPhaseFields::default()
+                        },
+                    )?;
+                    phase_ids.push(written.id);
+                    written.id
+                }
+            };
+            let fields = PlanWeekFields {
+                week_number: week["week_number"].as_i64().unwrap_or(1),
+                start_date: week["start_date"].as_str().map(str::to_string),
+                end_date: week["end_date"].as_str().map(str::to_string),
+                target_km: week["target_km"].as_f64(),
+                key_workout: week["key_workout"].as_str().map(str::to_string),
+                notes: None,
+            };
+            let written = self.create_plan_week(phase_id, &fields)?;
+            week_ids.push((
+                written.id,
+                written.start_date.clone().unwrap_or_default(),
+                written.end_date.clone().unwrap_or_default(),
+            ));
+        }
+
+        // The sessions, each under the week that holds its date.
+        let mut session_count = 0usize;
+        for session in parsed["sessions"].as_array().cloned().unwrap_or_default() {
+            let date = session["date"].as_str().unwrap_or_default().to_string();
+            let week_id = week_ids
+                .iter()
+                .find(|(_, start, end)| {
+                    !start.is_empty()
+                        && !end.is_empty()
+                        && date.as_str() >= start.as_str()
+                        && date.as_str() <= end.as_str()
+                })
+                .map(|(id, _, _)| *id);
+            let Some(week_id) = week_id else {
+                // A session with no week is not scheduled.
+                continue;
+            };
+            let fields = PlanSessionFields {
+                date,
+                session_type: session["session_type"]
+                    .as_str()
+                    .unwrap_or("easy")
+                    .to_string(),
+                title: session["title"].as_str().map(str::to_string),
+                details: session["details"].as_str().map(str::to_string),
+                target_distance_m: session["target_distance_m"].as_f64(),
+                pace_low_s_km: session["pace_low_s_km"].as_f64(),
+                pace_high_s_km: session["pace_high_s_km"].as_f64(),
+                hr_zone_target: session["hr_zone_target"].as_i64(),
+                status: session["status"].as_str().map(str::to_string),
+                source: session["source"].as_str().map(str::to_string),
+                notes: None,
+            };
+            self.create_plan_session(week_id, &fields)?;
+            session_count += 1;
+        }
+
+        // The anchoring: a plan that does not overlap the runs it governs
+        // reports every session as missed.
+        if request.anchor == "activities" {
+            anchor_plan_to_history(self, block.id)?;
+        }
+
+        Ok(json!({
+            "ok": true,
+            "block_id": block.id,
+            "name": block.name,
+            "phases": phase_ids.len(),
+            "weeks": week_ids.len(),
+            "sessions": session_count,
+            "warnings": parsed["warnings"].clone(),
+            "error": Value::Null,
+        }))
     }
 
     fn fingerprint(&self, _activity_id: i64) -> Result<Value, BackendError> {
@@ -965,10 +1324,104 @@ impl Backend for Store {
         ))
     }
 
-    fn import_fit(&self, _filename: &str, _bytes: &[u8]) -> Result<Value, BackendError> {
-        Err(BackendError::Unsupported(
-            "the FIT files are parsed by stride-fit and written by the ingest layer".to_string(),
-        ))
+    fn import_fit(&self, filename: &str, bytes: &[u8]) -> Result<Value, BackendError> {
+        // The file is parsed by `stride-fit` and written by the store: the
+        // same two steps the Python's ingest layer takes.
+        let parsed = stride_fit::parse_fit(bytes, filename).map_err(|err| {
+            BackendError::Domain(format!(
+                "the FIT file {filename} could not be parsed: {err}"
+            ))
+        })?;
+        let existed = self
+            .activity_by_external(&parsed.source, &parsed.external_id)
+            .map_err(|err| store_error("could not read the activity", err))?
+            .is_some();
+
+        let activity = stride_store::Activity {
+            source: parsed.source.clone(),
+            external_id: parsed.external_id.clone(),
+            name: parsed.name.clone(),
+            sport_type: parsed.sport_type.clone(),
+            start_time: parsed.start_time,
+            local_date: parsed.local_date.clone(),
+            day_of_week: Some(parsed.day_of_week.clone()),
+            distance_m: parsed.distance_m,
+            moving_time_s: parsed.moving_time_s,
+            elapsed_time_s: parsed.elapsed_time_s,
+            elevation_gain_m: parsed.elevation_gain_m,
+            avg_hr: parsed.avg_hr,
+            max_hr: parsed.max_hr,
+            calories: parsed.calories,
+            avg_cadence: parsed.avg_cadence,
+            max_cadence: parsed.max_cadence,
+            avg_speed_ms: parsed.avg_speed_ms,
+            max_speed_ms: parsed.max_speed_ms,
+            running_time_s: parsed.running_time_s,
+            walking_time_s: parsed.walking_time_s,
+            stopped_time_s: parsed.stopped_time_s,
+            running_distance_m: parsed.running_distance_m,
+            perceived_exertion: parsed.perceived_exertion.map(|value| value as i64),
+            device: parsed.device.clone(),
+            gear: parsed.gear.clone(),
+            is_trail: parsed.is_trail,
+            is_commute: parsed.is_commute,
+            geo_points: parsed.geo_points.as_ref().map(|points| json!(points)),
+            ..stride_store::Activity::default()
+        };
+        let id = self
+            .upsert_activity(&activity)
+            .map_err(|err| store_error("could not write the activity", err))?;
+
+        let laps: Vec<stride_store::ActivityLap> = parsed
+            .laps
+            .iter()
+            .map(|lap| stride_store::ActivityLap {
+                activity_id: id,
+                lap_index: lap.lap_index,
+                distance_m: lap.distance_m,
+                duration_s: lap.duration_s,
+                avg_speed_ms: lap.avg_speed_ms,
+                max_speed_ms: lap.max_speed_ms,
+                avg_hr: lap.avg_hr,
+                max_hr: lap.max_hr,
+                avg_cadence: lap.avg_cadence,
+                max_cadence: lap.max_cadence,
+                stride_length_m: lap.stride_length_m,
+                elevation_gain_m: lap.elevation_gain_m,
+                elevation_loss_m: lap.elevation_loss_m,
+                start_elevation_m: lap.start_elevation_m,
+                end_elevation_m: lap.end_elevation_m,
+                running_distance_m: lap.running_distance_m,
+                elapsed_s: Some(lap.elapsed_s),
+                ..stride_store::ActivityLap::default()
+            })
+            .collect();
+        self.replace_activity_laps(id, &laps)
+            .map_err(|err| store_error("could not write the splits", err))?;
+
+        let streams: Vec<stride_store::ActivityStream> = parsed
+            .streams
+            .iter()
+            .map(|(kind, stream)| stride_store::ActivityStream {
+                activity_id: id,
+                kind: kind.clone(),
+                seconds: json!(stream.seconds),
+                values: json!(stream.values),
+                label: None,
+                unit: Some(stream.unit.clone()),
+                ..stride_store::ActivityStream::default()
+            })
+            .collect();
+        self.replace_activity_streams(id, &streams)
+            .map_err(|err| store_error("could not write the series", err))?;
+
+        Ok(json!({
+            "id": id,
+            "name": activity.name,
+            "date": activity.local_date,
+            "distance_m": activity.distance_m,
+            "created": !existed,
+        }))
     }
 }
 
@@ -990,6 +1443,133 @@ fn session_row(session: &stride_store::PlanSession) -> PlanSessionRow {
         source: session.source.clone(),
         notes: session.notes.clone(),
     }
+}
+
+/// Shift a plan so that its last week ends with the athlete's latest run.
+///
+/// Without this, a plan written for a past season never overlaps the runs it
+/// is supposed to govern, and every session reads as "missed". The whole
+/// block is shifted by whole weeks, so every internal relationship survives.
+fn anchor_plan_to_history(store: &Store, block_id: i64) -> Result<(), BackendError> {
+    let demo_visible = store
+        .public_status()
+        .map(|status| status.demo_visible)
+        .unwrap_or(true);
+    let mut filter = StoreFilter::default();
+    if !demo_visible {
+        filter.exclude_source = Some("demo".to_string());
+    }
+    let activities = store
+        .activities_filtered(&filter)
+        .map_err(|err| store_error("could not read the activities", err))?;
+    let Some(latest) = activities
+        .iter()
+        .filter_map(|activity| activity.local_date.parse::<chrono::NaiveDate>().ok())
+        .max()
+    else {
+        return Ok(());
+    };
+    let Some(block) = store
+        .plan_block(block_id)
+        .map_err(|err| store_error("could not read the plan block", err))?
+    else {
+        return Ok(());
+    };
+    let Some(plan_end) = block
+        .end_date
+        .as_deref()
+        .and_then(|date| date.parse::<chrono::NaiveDate>().ok())
+    else {
+        return Ok(());
+    };
+    // The week the last run falls in ends on its Sunday.
+    let latest_week_end =
+        latest + chrono::Duration::days(6 - latest.weekday().num_days_from_monday() as i64);
+    let shift_days = (latest_week_end - plan_end).num_days();
+    let shift = crate::num::round_to(shift_days as f64 / 7.0, 0) as i64 * 7;
+    if shift == 0 {
+        return Ok(());
+    }
+
+    let move_date = |value: &str| -> Option<String> {
+        if value.is_empty() {
+            return None;
+        }
+        value.parse::<chrono::NaiveDate>().ok().map(|date| {
+            (date + chrono::Duration::days(shift))
+                .format("%Y-%m-%d")
+                .to_string()
+        })
+    };
+
+    // The block.
+    if let Some(mut block) = store
+        .plan_block(block_id)
+        .map_err(|err| store_error("could not read the plan block", err))?
+    {
+        if let Some(start) = move_date(&block.start_date) {
+            block.start_date = start;
+        }
+        let end = block.end_date.as_deref().and_then(move_date);
+        block.end_date = end.or(block.end_date);
+        store
+            .upsert_plan_block(&block)
+            .map_err(|err| store_error("could not write the plan block", err))?;
+    }
+    // The phases.
+    for phase in store
+        .plan_phases(block_id)
+        .map_err(|err| store_error("could not read the plan phases", err))?
+    {
+        let mut phase = phase;
+        let start = phase.start_date.as_deref().and_then(move_date);
+        let end = phase.end_date.as_deref().and_then(move_date);
+        phase.start_date = start.or(phase.start_date);
+        phase.end_date = end.or(phase.end_date);
+        store
+            .upsert_plan_phase(&phase)
+            .map_err(|err| store_error("could not write the plan phase", err))?;
+    }
+    // The weeks and the sessions.
+    let mut weeks = Vec::new();
+    for phase in store
+        .plan_phases(block_id)
+        .map_err(|err| store_error("could not read the plan phases", err))?
+    {
+        for week in store
+            .plan_weeks(phase.id.unwrap_or_default())
+            .map_err(|err| store_error("could not read the plan weeks", err))?
+        {
+            weeks.push(week);
+        }
+    }
+    for week in &weeks {
+        // The sessions are read with the week's *old* dates, before the week
+        // moves: otherwise the week and its sessions fall apart.
+        let (from, to) = (
+            week.start_date.as_deref().unwrap_or("0000-01-01"),
+            week.end_date.as_deref().unwrap_or("9999-12-31"),
+        );
+        let sessions = store
+            .plan_sessions(from, to)
+            .map_err(|err| store_error("could not read the plan sessions", err))?;
+        let mut week = week.clone();
+        let start = week.start_date.as_deref().and_then(move_date);
+        let end = week.end_date.as_deref().and_then(move_date);
+        week.start_date = start.or(week.start_date);
+        week.end_date = end.or(week.end_date);
+        store
+            .upsert_plan_week(&week)
+            .map_err(|err| store_error("could not write the plan week", err))?;
+        for session in sessions {
+            let mut session = session;
+            session.date = move_date(&session.date).unwrap_or(session.date);
+            store
+                .upsert_plan_session(&session)
+                .map_err(|err| store_error("could not write the plan session", err))?;
+        }
+    }
+    Ok(())
 }
 
 /// The block a week belongs to.

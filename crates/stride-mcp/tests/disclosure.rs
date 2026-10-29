@@ -186,6 +186,40 @@ fn big_store() -> MemBackend {
             ..Default::default()
         });
     }
+    // A year of daily data, and a fingerprint for every run of the range.
+    let first_day = chrono::NaiveDate::from_ymd_opt(2026, 1, 1).expect("a date");
+    for day in 0..200_i64 {
+        store.add_physiology(stride_api::backend::PhysiologyRow {
+            date: (first_day + chrono::Duration::days(day))
+                .format("%Y-%m-%d")
+                .to_string(),
+            sleep_s: Some(25_200.0),
+            hrv_ms: Some(58.0),
+            resting_hr: Some(48.0),
+            ..Default::default()
+        });
+    }
+    let first = chrono::NaiveDate::from_ymd_opt(2026, 1, 1).expect("a date");
+    let fingerprints: Vec<Value> = (0..200)
+        .map(|index| {
+            json!({
+                "activity_id": index + 1,
+                "local_date": (first + chrono::Duration::days(index)).format("%Y-%m-%d").to_string(),
+                "cadence_avg": 84.0,
+                "cadence_cv": 1.8,
+                "decoupling_pct": 3.4,
+                "efficiency_first": 2.4,
+                "pace_cv": 3.1,
+            })
+        })
+        .collect();
+    for key in [
+        "fingerprints:2026-07-07:2026-10-28",
+        "fingerprints:2026-01-01:2026-10-28",
+    ] {
+        store.set_derived(key, Value::Array(fingerprints.clone()));
+    }
+
     store
 }
 
@@ -238,6 +272,47 @@ fn a_large_history_still_answers_inside_the_bound() {
     let answer = tools
         .call("training_digest", &json!({ "period": "28d" }))
         .expect("the digest");
+    assert!(serde_json::to_string(&answer).expect("json").len() <= MAX_OUTPUT_BYTES);
+}
+
+#[test]
+fn a_year_of_days_is_still_a_bounded_list() {
+    let tools = big_tools();
+    let answer = tools
+        .call(
+            "physiology_context",
+            &json!({ "from": "2026-01-01", "to": "2026-10-28" }),
+        )
+        .expect("the physiology");
+    let days = answer["data"]["days"].as_array().expect("days");
+    assert!(days.len() <= 120, "the days are capped: {}", days.len());
+    // And the answer says that days were left out.
+    let limitations = answer["limitations"].as_array().expect("limitations");
+    assert!(limitations
+        .iter()
+        .any(|text| text.as_str().expect("text").contains("oldest days")));
+    assert!(serde_json::to_string(&answer).expect("json").len() <= MAX_OUTPUT_BYTES);
+}
+
+#[test]
+fn a_year_of_runs_is_still_a_bounded_series() {
+    let tools = big_tools();
+    let answer = tools
+        .call(
+            "fingerprint_trends",
+            &json!({ "from": "2026-01-01", "to": "2026-10-28", "group_by": "run" }),
+        )
+        .expect("the fingerprint");
+    let series = answer["data"]["series"].as_array().expect("series");
+    assert!(
+        series.len() <= 120,
+        "the series is capped: {}",
+        series.len()
+    );
+    let limitations = answer["limitations"].as_array().expect("limitations");
+    assert!(limitations
+        .iter()
+        .any(|text| text.as_str().expect("text").contains("oldest groups")));
     assert!(serde_json::to_string(&answer).expect("json").len() <= MAX_OUTPUT_BYTES);
 }
 

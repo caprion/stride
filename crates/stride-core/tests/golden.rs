@@ -17,12 +17,12 @@
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 
-use serde_json::{json, Map, Value};
+use serde_json::{json, Value};
 
 use stride_core::comparison::{compare, profile_for, PROFILE_POINTS};
 use stride_core::fingerprint::{default_zone_model, zone_model, FingerprintInput, StoredZone};
 use stride_core::model::{Activity, DailyPhysiology, Lap, PlanSession, Stream, Zone};
-use stride_core::plan::{adherence_for, match_sessions, PlanInputs};
+use stride_core::plan::{adherence_for, match_sessions, PlanInputs, SessionRow};
 use stride_core::readiness::{baselines, readiness};
 
 /// The golden fixtures.
@@ -112,6 +112,7 @@ fn activity_from_import(import: &Value, id: i64, name: Option<&str>) -> Activity
         running_time_s: scalars["running_time_s"].as_f64(),
         walking_time_s: scalars["walking_time_s"].as_f64(),
         stopped_time_s: scalars["stopped_time_s"].as_f64(),
+        geo_points: None,
         laps: Vec::new(),
         zones: Vec::new(),
         streams: BTreeMap::new(),
@@ -128,6 +129,9 @@ fn activity_from_import(import: &Value, id: i64, name: Option<&str>) -> Activity
             .iter()
             .map(|zone| stride_core::model::ZoneTime {
                 zone_no: zone["zone_no"].as_i64().unwrap_or_default(),
+                name: zone["name"].as_str().map(str::to_string),
+                low_bpm: zone["low_bpm"].as_f64(),
+                high_bpm: zone["high_bpm"].as_f64(),
                 time_s: zone["time_s"].as_f64().unwrap_or_default(),
             })
             .collect();
@@ -215,6 +219,11 @@ fn fingerprints_match_the_golden_files() {
             inputs["activity_source"].as_str().unwrap_or_default(),
             activity.source,
             "{name}: activity source"
+        );
+        assert_eq!(
+            inputs["athlete_id"].as_i64(),
+            activity.athlete_id,
+            "{name}: athlete id"
         );
     }
 }
@@ -430,73 +439,42 @@ fn the_plan_matches_the_golden_file() {
     assert_eq!(matches.len(), expected_rows.len());
 
     for (entry, expected) in matches.iter().zip(expected_rows.iter()) {
-        let mut row = Map::new();
-        row.insert(
-            "session".to_string(),
-            serde_json::to_value(&entry.session).expect("the session"),
-        );
-        row.insert(
-            "activity".to_string(),
-            match &entry.activity {
-                Some(activity) => serde_json::to_value(activity).expect("the activity"),
-                None => Value::Null,
-            },
-        );
-        row.insert(
-            "verdict".to_string(),
-            Value::String(entry.verdict.verdict.clone()),
-        );
-        row.insert(
-            "distance_hit".to_string(),
-            Value::Bool(entry.verdict.distance_hit),
-        );
-        row.insert(
-            "pace_band_hit".to_string(),
-            match entry.verdict.pace_band_hit {
-                Some(value) => Value::Bool(value),
-                None => Value::Null,
-            },
-        );
-        row.insert(
-            "distance_delta_m".to_string(),
-            match entry.verdict.distance_delta_m {
-                Some(value) => json!(value),
-                None => Value::Null,
-            },
-        );
-        row.insert(
-            "pace_delta_s_km".to_string(),
-            match entry.verdict.pace_delta_s_km {
-                Some(value) => json!(value),
-                None => Value::Null,
-            },
-        );
-        row.insert(
-            "adherence_score".to_string(),
-            match entry.verdict.adherence_score {
-                Some(value) => json!(value),
-                None => Value::Null,
-            },
-        );
-        row.insert(
-            "cause".to_string(),
-            match &entry.verdict.cause {
-                Some(cause) => Value::String(cause.clone()),
-                None => Value::Null,
-            },
-        );
-        row.insert(
-            "cause_confidence".to_string(),
-            match entry.verdict.cause_confidence {
-                Some(value) => json!(value),
-                None => Value::Null,
-            },
-        );
+        // The crate's own response row, in the reference's key order.
+        let row: SessionRow = entry.into();
+        let actual = serde_json::to_value(&row).expect("the row");
         assert_same(
-            &Value::Object(row),
+            &actual,
             expected,
             &format!("plan.sessions[{}]", entry.session.id),
         );
+
+        // The key order is part of the contract. `serde_json::Value` sorts
+        // its keys, so the order is checked in the *text*, which keeps the
+        // insertion order.
+        let text = serde_json::to_string(&row).expect("the row");
+        let expected_keys = [
+            "session",
+            "activity",
+            "verdict",
+            "distance_hit",
+            "pace_band_hit",
+            "distance_delta_m",
+            "pace_delta_s_km",
+            "adherence_score",
+            "cause",
+            "cause_confidence",
+        ];
+        let mut position = 0;
+        for key in expected_keys {
+            let needle = format!("\"{key}\":");
+            let found = text[position..].find(&needle).unwrap_or_else(|| {
+                panic!(
+                    "plan.sessions[{}]: {key} is missing or out of order",
+                    entry.session.id
+                )
+            });
+            position += found + needle.len();
+        }
     }
 
     let summary = adherence_for(&inputs);

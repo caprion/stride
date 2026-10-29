@@ -536,3 +536,541 @@ mod tests {
         assert!((pace - 75.0 * 1000.0 / 238.0).abs() < 1e-9);
     }
 }
+
+/// One item of the `/fitness/fingerprint` response.
+///
+/// The reference stores the derived payload next to a few facts about the
+/// activity, and serves them in that order. The flattened fingerprint keeps
+/// the order, so the router can serialise this straight into the response.
+#[derive(Clone, Debug, PartialEq, Deserialize)]
+pub struct FingerprintItem {
+    /// The activity's row id.
+    pub activity_id: i64,
+    /// The derived mechanics.
+    #[serde(flatten)]
+    pub fingerprint: Fingerprint,
+    /// The athlete's name for the run.
+    pub activity_name: String,
+    /// The athlete-local date of the run.
+    pub local_date: String,
+    /// The distance, in metres.
+    pub distance_m: f64,
+    /// The average pace, in seconds per kilometre.
+    pub pace_s_per_km: Option<f64>,
+    /// Where the run came from.
+    pub source: String,
+    /// Whether the run is a synthetic demo.
+    pub is_demo: bool,
+}
+
+impl Serialize for FingerprintItem {
+    /// The reference's key order: the id, the derived mechanics, then the
+    /// facts about the activity.
+    ///
+    /// Serde's `flatten` would put the derived fields *last*, so the item
+    /// serialises by hand instead.
+    fn serialize<S: serde::ser::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        use serde::ser::SerializeMap;
+        let mut map = serializer.serialize_map(None)?;
+        map.serialize_entry("activity_id", &self.activity_id)?;
+        map.serialize_entry("cadence_avg", &self.fingerprint.cadence_avg)?;
+        map.serialize_entry("cadence_cv", &self.fingerprint.cadence_cv)?;
+        map.serialize_entry("cadence_drift_pct", &self.fingerprint.cadence_drift_pct)?;
+        map.serialize_entry("hr_avg", &self.fingerprint.hr_avg)?;
+        map.serialize_entry("hr_max", &self.fingerprint.hr_max)?;
+        map.serialize_entry("hr_drift_pct", &self.fingerprint.hr_drift_pct)?;
+        map.serialize_entry("efficiency_first", &self.fingerprint.efficiency_first)?;
+        map.serialize_entry("efficiency_last", &self.fingerprint.efficiency_last)?;
+        map.serialize_entry("decoupling_pct", &self.fingerprint.decoupling_pct)?;
+        map.serialize_entry("pace_cv", &self.fingerprint.pace_cv)?;
+        map.serialize_entry("negative_split_pct", &self.fingerprint.negative_split_pct)?;
+        map.serialize_entry("stride_length_cm", &self.fingerprint.stride_length_cm)?;
+        map.serialize_entry("form_score", &self.fingerprint.form_score)?;
+        map.serialize_entry("zone_distribution", &self.fingerprint.zone_distribution)?;
+        map.serialize_entry("running_time_s", &self.fingerprint.running_time_s)?;
+        map.serialize_entry("walking_time_s", &self.fingerprint.walking_time_s)?;
+        map.serialize_entry("stopped_time_s", &self.fingerprint.stopped_time_s)?;
+        map.serialize_entry("hr_drift_bpm", &self.fingerprint.hr_drift_bpm)?;
+        map.serialize_entry("pace_drift_pct", &self.fingerprint.pace_drift_pct)?;
+        map.serialize_entry("first_half_hr", &self.fingerprint.first_half_hr)?;
+        map.serialize_entry("second_half_hr", &self.fingerprint.second_half_hr)?;
+        map.serialize_entry(
+            "first_half_pace_s_km",
+            &self.fingerprint.first_half_pace_s_km,
+        )?;
+        map.serialize_entry(
+            "second_half_pace_s_km",
+            &self.fingerprint.second_half_pace_s_km,
+        )?;
+        map.serialize_entry("notes", &self.fingerprint.notes)?;
+        map.serialize_entry("activity_name", &self.activity_name)?;
+        map.serialize_entry("local_date", &self.local_date)?;
+        map.serialize_entry("distance_m", &self.distance_m)?;
+        map.serialize_entry("pace_s_per_km", &self.pace_s_per_km)?;
+        map.serialize_entry("source", &self.source)?;
+        map.serialize_entry("is_demo", &self.is_demo)?;
+        map.end()
+    }
+}
+
+impl FingerprintItem {
+    /// Build the item from an activity and its fingerprint.
+    pub fn new(activity_id: i64, activity: &Activity, fingerprint: Fingerprint) -> Self {
+        let pace = match (activity.moving_time_s, activity.distance_m) {
+            (Some(moving), distance) if moving > 0.0 && distance > 0.0 => {
+                Some(moving * 1000.0 / distance)
+            }
+            _ => None,
+        };
+        Self {
+            activity_id,
+            fingerprint,
+            activity_name: activity.name.clone(),
+            local_date: activity.local_date.clone(),
+            distance_m: activity.distance_m,
+            pace_s_per_km: pace,
+            source: activity.source.clone(),
+            is_demo: activity.source == "demo",
+        }
+    }
+}
+
+/// One zone's share of an activity's time in the zones.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct ZoneShare {
+    /// The zone's number.
+    pub zone_no: i64,
+    /// The zone's name.
+    pub name: String,
+    /// The zone's lower bound, in beats per minute.
+    pub low_bpm: Option<f64>,
+    /// The zone's upper bound, in beats per minute.
+    pub high_bpm: Option<f64>,
+    /// The time spent in the zone, in seconds.
+    pub time_s: f64,
+    /// The share of the activity's zoned time, in percent.
+    pub percent: f64,
+}
+
+/// The time in each zone, as a share of the activity's zoned time.
+///
+/// The reference merges the zone model with the activity's own zone rows — a
+/// stored row wins, because it carries the zone's real boundaries — and adds
+/// the zones the distribution names even when the model does not.
+pub fn zone_shares(
+    distribution: Option<&OrderedMap<f64>>,
+    model: &[Zone],
+    stored: &[crate::model::ZoneTime],
+) -> Vec<ZoneShare> {
+    let empty = OrderedMap::new();
+    let distribution = distribution.unwrap_or(&empty);
+    let total: f64 = distribution.iter().map(|(_, seconds)| *seconds).sum();
+
+    let mut zone_numbers: Vec<i64> = distribution
+        .iter()
+        .filter_map(|(key, _)| key.parse::<i64>().ok())
+        .collect();
+    for zone in model {
+        zone_numbers.push(zone.zone_no);
+    }
+    zone_numbers.sort_unstable();
+    zone_numbers.dedup();
+
+    zone_numbers
+        .into_iter()
+        .map(|zone_no| {
+            let metadata = model.iter().find(|zone| zone.zone_no == zone_no);
+            let stored_row = stored.iter().find(|zone| zone.zone_no == zone_no);
+            let (name, low_bpm, high_bpm) = match stored_row {
+                Some(row) => (
+                    row.name
+                        .clone()
+                        .unwrap_or_else(|| format!("Zone {zone_no}")),
+                    row.low_bpm,
+                    row.high_bpm,
+                ),
+                None => match metadata {
+                    Some(zone) => (zone.name.clone(), Some(zone.low_bpm), zone.high_bpm),
+                    None => (format!("Zone {zone_no}"), None, None),
+                },
+            };
+            let seconds = distribution
+                .get(&zone_no.to_string())
+                .copied()
+                .unwrap_or(0.0);
+            ZoneShare {
+                zone_no,
+                name,
+                low_bpm,
+                high_bpm,
+                time_s: seconds,
+                percent: if total != 0.0 {
+                    seconds / total * 100.0
+                } else {
+                    0.0
+                },
+            }
+        })
+        .collect()
+}
+
+#[cfg(test)]
+mod item_tests {
+    use super::*;
+
+    #[test]
+    fn the_fitness_item_serialises_in_the_reference_order() {
+        let activity = Activity {
+            id: 7,
+            name: "Morning easy".to_string(),
+            local_date: "2026-03-02".to_string(),
+            source: "garmin_fit".to_string(),
+            distance_m: 443.0,
+            moving_time_s: Some(150.0),
+            ..Activity::default()
+        };
+        let item = FingerprintItem::new(7, &activity, Fingerprint::default());
+        let value = serde_json::to_value(&item).expect("an item");
+        assert_eq!(value["pace_s_per_km"], serde_json::json!(338.6004514672686));
+        assert_eq!(value["is_demo"], serde_json::json!(false));
+
+        // The key order is part of the contract, and `serde_json::Value`
+        // sorts its keys — so the order is checked in the *text*, which
+        // keeps the insertion order.
+        let text = serde_json::to_string(&item).expect("an item");
+        let expected = [
+            "activity_id",
+            "cadence_avg",
+            "cadence_cv",
+            "cadence_drift_pct",
+            "hr_avg",
+            "hr_max",
+            "hr_drift_pct",
+            "efficiency_first",
+            "efficiency_last",
+            "decoupling_pct",
+            "pace_cv",
+            "negative_split_pct",
+            "stride_length_cm",
+            "form_score",
+            "zone_distribution",
+            "running_time_s",
+            "walking_time_s",
+            "stopped_time_s",
+            "hr_drift_bpm",
+            "pace_drift_pct",
+            "first_half_hr",
+            "second_half_hr",
+            "first_half_pace_s_km",
+            "second_half_pace_s_km",
+            "notes",
+            "activity_name",
+            "local_date",
+            "distance_m",
+            "pace_s_per_km",
+            "source",
+            "is_demo",
+        ];
+        let mut position = 0;
+        for key in expected {
+            let needle = format!("\"{key}\":");
+            let found = text[position..]
+                .find(&needle)
+                .unwrap_or_else(|| panic!("{key} is missing or out of order"));
+            position += found + needle.len();
+        }
+    }
+
+    #[test]
+    fn the_zone_shares_merge_the_model_and_the_stored_rows() {
+        let model = default_zone_model(155.0);
+        let mut distribution = OrderedMap::new();
+        distribution.push("4", 75.0);
+        distribution.push("5", 63.0);
+        let shares = zone_shares(Some(&distribution), &model, &[]);
+        assert_eq!(shares.len(), 5);
+        assert_eq!(shares[3].zone_no, 4);
+        assert_eq!(shares[3].name, "Threshold");
+        assert_eq!(shares[3].low_bpm, Some(124.0));
+        assert_eq!(shares[3].high_bpm, Some(139.5));
+        assert_eq!(shares[3].time_s, 75.0);
+        assert_eq!(shares[3].percent, 75.0 / 138.0 * 100.0);
+        assert_eq!(shares[0].time_s, 0.0);
+        assert_eq!(shares[0].percent, 0.0);
+    }
+}
+
+/// One metric the trends view can chart.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize)]
+pub struct Metric {
+    /// The metric's key: the fingerprint field it reads.
+    pub key: &'static str,
+    /// The metric's label, as the UI shows it.
+    pub label: &'static str,
+    /// The metric's unit.
+    pub unit: &'static str,
+    /// Which direction is good: `higher`, `lower` or `neutral`.
+    pub better: &'static str,
+}
+
+/// The metrics the trends view can chart.
+///
+/// The reference validates the metric against this table and serves the
+/// label, the unit and the direction with every trend.
+pub const METRICS: [Metric; 11] = [
+    Metric {
+        key: "cadence_avg",
+        label: "Average cadence",
+        unit: "spm",
+        better: "higher",
+    },
+    Metric {
+        key: "cadence_cv",
+        label: "Cadence variability",
+        unit: "%",
+        better: "lower",
+    },
+    Metric {
+        key: "cadence_drift_pct",
+        label: "Cadence drift",
+        unit: "%",
+        better: "lower",
+    },
+    Metric {
+        key: "hr_drift_pct",
+        label: "Heart rate drift",
+        unit: "%",
+        better: "lower",
+    },
+    Metric {
+        key: "hr_drift_bpm",
+        label: "Heart rate drift",
+        unit: "bpm",
+        better: "lower",
+    },
+    Metric {
+        key: "pace_drift_pct",
+        label: "Pace drift",
+        unit: "%",
+        better: "lower",
+    },
+    Metric {
+        key: "decoupling_pct",
+        label: "Aerobic decoupling",
+        unit: "%",
+        better: "lower",
+    },
+    Metric {
+        key: "efficiency_first",
+        label: "Efficiency factor",
+        unit: "m/s per HR fraction",
+        better: "higher",
+    },
+    Metric {
+        key: "pace_cv",
+        label: "Pace variability",
+        unit: "%",
+        better: "lower",
+    },
+    Metric {
+        key: "stride_length_cm",
+        label: "Stride length",
+        unit: "cm",
+        better: "neutral",
+    },
+    Metric {
+        key: "form_score",
+        label: "Form score",
+        unit: "points",
+        better: "higher",
+    },
+];
+
+/// The metadata of one chartable metric.
+pub fn metric(key: &str) -> Option<&'static Metric> {
+    METRICS.iter().find(|metric| metric.key == key)
+}
+
+/// One run's value of a chartable metric.
+pub fn fingerprint_metric(fingerprint: &Fingerprint, key: &str) -> Option<f64> {
+    match key {
+        "cadence_avg" => fingerprint.cadence_avg,
+        "cadence_cv" => fingerprint.cadence_cv,
+        "cadence_drift_pct" => fingerprint.cadence_drift_pct,
+        "hr_drift_pct" => fingerprint.hr_drift_pct,
+        "hr_drift_bpm" => fingerprint.hr_drift_bpm,
+        "pace_drift_pct" => fingerprint.pace_drift_pct,
+        "decoupling_pct" => fingerprint.decoupling_pct,
+        "efficiency_first" => fingerprint.efficiency_first,
+        "pace_cv" => fingerprint.pace_cv,
+        "stride_length_cm" => fingerprint.stride_length_cm,
+        "form_score" => fingerprint.form_score,
+        _ => None,
+    }
+}
+
+/// One run in a trend.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct TrendInput {
+    /// The athlete-local date of the run.
+    pub local_date: String,
+    /// The run's row id.
+    pub activity_id: i64,
+    /// The run's value of the metric, if it has one.
+    pub value: Option<f64>,
+}
+
+/// One point of a trend.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct TrendPoint {
+    /// The athlete-local date of the run.
+    pub date: String,
+    /// The run's value of the metric.
+    pub value: f64,
+    /// The run's row id.
+    pub activity_id: i64,
+}
+
+/// The trend of one metric over the athlete's runs.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct Trend {
+    /// The metric's key.
+    pub metric: String,
+    /// The points, in date order.
+    pub points: Vec<TrendPoint>,
+    /// The mean of the first half.
+    pub baseline: Option<f64>,
+    /// The change from the first half to the second, in percent.
+    pub trend_pct: Option<f64>,
+    /// The metric's label.
+    pub label: String,
+    /// The metric's unit.
+    pub unit: String,
+    /// Which direction is good.
+    pub better: String,
+}
+
+/// Compare the chronological halves of one metric.
+///
+/// A zero baseline has no percentage change, so the trend is `None` rather
+/// than a division by zero.
+pub fn fingerprint_trend(rows: &[TrendInput], key: &str) -> Option<Trend> {
+    let metric = metric(key)?;
+    let mut points: Vec<TrendPoint> = rows
+        .iter()
+        .filter(|row| row.value.is_some_and(|value| value.is_finite()))
+        .map(|row| TrendPoint {
+            date: row.local_date.clone(),
+            value: row.value.unwrap_or_default(),
+            activity_id: row.activity_id,
+        })
+        .collect();
+    points.sort_by(|left, right| {
+        left.date
+            .cmp(&right.date)
+            .then_with(|| left.activity_id.cmp(&right.activity_id))
+    });
+
+    let half = points.len() / 2;
+    let baseline = if half == 0 {
+        None
+    } else {
+        crate::numeric::mean(
+            &points[..half]
+                .iter()
+                .map(|point| point.value)
+                .collect::<Vec<_>>(),
+        )
+    };
+    let recent = if half == 0 {
+        None
+    } else {
+        crate::numeric::mean(
+            &points[half..]
+                .iter()
+                .map(|point| point.value)
+                .collect::<Vec<_>>(),
+        )
+    };
+    let trend_pct = match (baseline, recent) {
+        (Some(baseline), Some(recent)) if baseline != 0.0 => {
+            Some((recent - baseline) / baseline.abs() * 100.0)
+        }
+        _ => None,
+    };
+
+    Some(Trend {
+        metric: key.to_string(),
+        points,
+        baseline,
+        trend_pct,
+        label: metric.label.to_string(),
+        unit: metric.unit.to_string(),
+        better: metric.better.to_string(),
+    })
+}
+
+#[cfg(test)]
+mod trend_tests {
+    use super::*;
+
+    fn row(date: &str, id: i64, value: Option<f64>) -> TrendInput {
+        TrendInput {
+            local_date: date.to_string(),
+            activity_id: id,
+            value,
+        }
+    }
+
+    #[test]
+    fn the_metric_table_is_the_reference_table() {
+        assert_eq!(METRICS.len(), 11);
+        assert_eq!(metric("form_score").expect("a metric").label, "Form score");
+        assert_eq!(metric("form_score").expect("a metric").better, "higher");
+        assert_eq!(metric("pace_cv").expect("a metric").better, "lower");
+        assert_eq!(
+            metric("stride_length_cm").expect("a metric").better,
+            "neutral"
+        );
+        assert!(metric("hr_avg").is_none());
+    }
+
+    #[test]
+    fn the_trend_compares_the_chronological_halves() {
+        let rows = vec![
+            row("2026-03-03", 3, Some(30.0)),
+            row("2026-03-01", 1, Some(10.0)),
+            row("2026-03-02", 2, Some(20.0)),
+        ];
+        let trend = fingerprint_trend(&rows, "form_score").expect("a trend");
+        // The points are in date order, whatever order the rows arrive in.
+        let dates: Vec<&str> = trend
+            .points
+            .iter()
+            .map(|point| point.date.as_str())
+            .collect();
+        assert_eq!(dates, vec!["2026-03-01", "2026-03-02", "2026-03-03"]);
+        // Three points: the first half is one point, the second half is two.
+        assert_eq!(trend.baseline, Some(10.0));
+        assert_eq!(trend.trend_pct, Some(150.0));
+        assert_eq!(trend.label, "Form score");
+        assert_eq!(trend.unit, "points");
+        assert_eq!(trend.better, "higher");
+    }
+
+    #[test]
+    fn a_trend_without_a_baseline_has_no_percentage() {
+        let rows = vec![row("2026-03-01", 1, Some(10.0))];
+        let trend = fingerprint_trend(&rows, "form_score").expect("a trend");
+        assert_eq!(trend.baseline, None);
+        assert_eq!(trend.trend_pct, None);
+    }
+
+    #[test]
+    fn an_absent_value_is_not_a_point() {
+        let rows = vec![row("2026-03-01", 1, None), row("2026-03-02", 2, Some(20.0))];
+        let trend = fingerprint_trend(&rows, "form_score").expect("a trend");
+        assert_eq!(trend.points.len(), 1);
+        assert_eq!(trend.points[0].activity_id, 2);
+    }
+}

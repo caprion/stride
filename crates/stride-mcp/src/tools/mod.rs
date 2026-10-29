@@ -101,6 +101,25 @@ impl Tools {
         }
     }
 
+    /// The tools over a store, counting from a fixed day.
+    ///
+    /// The router and the tools are built with the same day, so "this week"
+    /// means the same week on both sides of the seam. A host that reaches
+    /// Stride over a socket rather than in process uses [`Tools::new`] and
+    /// supplies its own [`StrideApi`].
+    pub fn over(backend: Arc<dyn stride_api::backend::Backend>, today: NaiveDate) -> Self {
+        let api = stride_api::Api::with_today(backend, today);
+        Self {
+            api: Arc::new(api),
+            today,
+        }
+    }
+
+    /// The tools over a store, counting from today.
+    pub fn over_now(backend: Arc<dyn stride_api::backend::Backend>) -> Self {
+        Self::over(backend, chrono::Utc::now().date_naive())
+    }
+
     /// The tools over a router, counting from a fixed day.
     pub fn with_today(api: Arc<dyn StrideApi>, today: NaiveDate) -> Self {
         Self { api, today }

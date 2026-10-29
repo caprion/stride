@@ -167,6 +167,129 @@ fn the_router_reads_a_real_database() {
     assert_eq!(stats["totals"]["avg_pace_s_per_km"], 300.0);
 }
 
+/// A FIT file goes in, and the router serves it.
+#[test]
+fn a_fit_file_goes_in_and_comes_out() {
+    let (store, _directory) = store();
+    let store = Arc::new(store);
+    let backend = stride_api::store::backend(store.clone());
+    let api = Api::with_today(
+        Arc::new(CoreBackend::new(backend)),
+        chrono::NaiveDate::from_ymd_opt(2026, 3, 2).unwrap(),
+    );
+
+    // One of the golden fixtures: a run with a walk and a stand in it.
+    let path = std::path::Path::new("../../backend/tests/golden/fixtures/mixed_run.fit");
+    let bytes = std::fs::read(path).expect("the fixture is there");
+
+    let imported = api
+        .call(
+            "POST",
+            "/api/v1/auth/garmin/fit-import",
+            Some(&format!(
+                r#"{{"files": [{{"filename": "mixed_run.fit", "content_base64": "{}"}}]}}"#,
+                stride_api::util::base64_encode(&bytes)
+            )),
+        )
+        .expect("the import answers");
+    assert_eq!(imported["imported"], 1);
+    assert_eq!(imported["errors"].as_array().map(Vec::len), Some(0));
+    let activity = &imported["activities"][0];
+    assert_eq!(activity["name"], "mixed run");
+    assert_eq!(activity["date"], "2026-03-02");
+    assert_eq!(activity["distance_m"], 443.0);
+    assert_eq!(activity["created"], true);
+
+    // The router serves it, with the numbers the reference recorded.
+    let id = activity["id"].as_i64().expect("an id");
+    let detail = api
+        .call("GET", &format!("/api/v1/activities/{id}"), None)
+        .expect("the detail answers");
+    assert_eq!(detail["distance_m"], 443.0);
+    assert_eq!(detail["pace_s_per_km"], 338.6);
+    assert_eq!(detail["pace_label"], "5:39");
+    assert_eq!(detail["running_time_s"], 139.0);
+    assert_eq!(detail["walking_time_s"], 10.0);
+    assert_eq!(detail["stopped_time_s"], 20.0);
+    assert_eq!(detail["lap_count"], 2);
+
+    // Importing the same file again is the same run, not a second one.
+    let again = api
+        .call(
+            "POST",
+            "/api/v1/auth/garmin/fit-import",
+            Some(&format!(
+                r#"{{"files": [{{"filename": "mixed_run.fit", "content_base64": "{}"}}]}}"#,
+                stride_api::util::base64_encode(&bytes)
+            )),
+        )
+        .expect("the import answers");
+    assert_eq!(again["activities"][0]["id"], id);
+    assert_eq!(again["activities"][0]["created"], false);
+}
+
+/// A plan document goes in, and the plan tables hold it.
+#[test]
+fn a_plan_document_goes_in_and_comes_out() {
+    let (store, _directory) = store();
+    // A run in March, so the plan has a history to be anchored to.
+    seed(&store);
+    let store = Arc::new(store);
+    let backend = stride_api::store::backend(store.clone());
+    let api = Api::with_today(
+        Arc::new(CoreBackend::new(backend)),
+        chrono::NaiveDate::from_ymd_opt(2026, 3, 2).unwrap(),
+    );
+
+    let document = "# 2026 Spring Block\n\n## Weekly running volume\n\n| Week | Phase | Running | Tuesday | Notes |\n|---|---|---|---|---|\n| 1 | Base | 25 km | Quality | easy |\n| 2 | Base | 30 km | Tempo 12km @ 4:30/km | |\n\n## Week 1 - Base (March 2 - March 8) 25 km\n\n| Day | Session | Details |\n|---|---|---|\n| Mon | Rest | |\n| Tue | Easy 8km | 4:45-5:00/km |\n| Sat | Long 14km | 5:15/km |\n";
+    let body = serde_json::json!({
+        "format": "markdown",
+        "content": document,
+        "name": "Spring block",
+        "anchor": "activities",
+    })
+    .to_string();
+
+    let imported = api
+        .call("POST", "/api/v1/plan/import", Some(&body))
+        .expect("the import answers");
+    assert_eq!(imported["ok"], true);
+    assert_eq!(imported["name"], "Spring block");
+    assert_eq!(imported["weeks"], 2);
+    // Three dated sessions in the first week, and four from the template in
+    // the second, which has no dated rows.
+    assert_eq!(imported["sessions"], 7);
+    assert_eq!(imported["error"], serde_json::Value::Null);
+    let block_id = imported["block_id"].as_i64().expect("a block");
+
+    // The block is there, with its phases, weeks and sessions.
+    let blocks = api
+        .call("GET", "/api/v1/plan/blocks", None)
+        .expect("the blocks answer");
+    assert_eq!(blocks["items"].as_array().map(Vec::len), Some(1));
+    assert_eq!(blocks["items"][0]["id"], block_id);
+    assert_eq!(blocks["items"][0]["source"], "imported");
+    assert_eq!(blocks["items"][0]["week_count"], 2);
+    assert_eq!(blocks["items"][0]["session_count"], 7);
+
+    let detail = api
+        .call("GET", &format!("/api/v1/plan/blocks/{block_id}"), None)
+        .expect("the block answers");
+    let weeks = detail["phases"][0]["weeks"].as_array().expect("the weeks");
+    assert_eq!(weeks.len(), 2);
+    // The plan was anchored to the run: it now ends in the week of the run.
+    let first_start = weeks[0]["week"]["start_date"].as_str().expect("a date");
+    assert_eq!(first_start, "2026-02-23");
+    assert_eq!(weeks[0]["week"]["end_date"], "2026-03-01");
+    let sessions = weeks[0]["sessions"].as_array().expect("the sessions");
+    assert_eq!(sessions.len(), 3);
+    assert_eq!(sessions[1]["session_type"], "easy");
+    assert_eq!(sessions[1]["target_distance_m"], 8000.0);
+    // Read back out of the database the pace is a float, as the reference's
+    // is: the importer's 285 is an integer, the column is a float.
+    assert_eq!(sessions[1]["pace_low_s_km"], 285.0);
+}
+
 /// A tiny temporary-directory helper, so the test does not need a crate.
 mod tempdir {
     use std::path::{Path, PathBuf};

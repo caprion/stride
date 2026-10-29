@@ -14,6 +14,10 @@ crate-type = ["cdylib", "staticlib", "rlib"]
 # lock file (reqwest's gzip feature pulls it in), so this adds no new crate
 # to the graph.
 flate2 = { version = "1", default-features = false, features = ["rust_backend"] }
+# The map tiles are fetched over HTTPS. `reqwest` is in the approved set and
+# is already in the graph — `stride-garmin` uses it for the Garmin API — so
+# this adds no new crate and no new code to the binaries.
+reqwest = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 chrono = { workspace = true }

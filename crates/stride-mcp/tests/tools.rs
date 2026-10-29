@@ -199,6 +199,17 @@ fn the_analysis_splits_the_run_and_says_what_it_found() {
     assert_eq!(segments[0]["distance_m"], json!(2_500.0));
     assert_eq!(segments[0]["pace_s_per_km"], json!(300.3));
 
+    // The splits are described, never explained: the second split of the
+    // fixture's run climbs, the last one fades.
+    assert_eq!(segments[0]["notes"], json!("the fastest split of the run"));
+    assert_eq!(segments[1]["grade_pct"], json!(4.8));
+    assert_eq!(segments[1]["notes"], json!("a climb"));
+    assert_eq!(segments[2]["notes"], Value::Null);
+    assert_eq!(
+        segments[3]["notes"],
+        json!("the slowest split of the run, slower than the first split")
+    );
+
     let signals = answer["data"]["signals"].as_array().expect("signals");
     assert!(!signals.is_empty());
     for signal in signals {
@@ -416,12 +427,16 @@ fn the_search_can_ask_for_every_sport() {
         )
         .expect("the search");
     let items = answer["data"]["items"].as_array().expect("items");
-    // The four runs of the period, and the other sports hold none.
-    assert_eq!(items.len(), 4);
+    // The four runs of the period and the ride: "all" is the athlete's own
+    // sports, not a guess about what sports exist.
+    assert_eq!(items.len(), 5);
+    assert!(items
+        .iter()
+        .any(|item| item["sport_type"] == json!("cycling")));
     let limitations = answer["limitations"].as_array().expect("limitations");
     assert!(limitations
         .iter()
-        .any(|text| text.as_str().expect("text").contains("all")));
+        .any(|text| text.as_str().expect("text").contains("1 other sport")));
 }
 
 #[test]
@@ -476,6 +491,13 @@ fn the_comparison_resamples_to_the_number_of_points_asked_for() {
         middle > 145.0 && middle < 157.0,
         "the middle is interpolated: {middle}"
     );
+    // And the answer says that the profile was resampled, and from what.
+    assert_eq!(answer["coverage"]["source_profile_points"], json!(120));
+    assert_eq!(answer["coverage"]["profile_points"], json!(20));
+    let limitations = answer["limitations"].as_array().expect("limitations");
+    assert!(limitations
+        .iter()
+        .any(|text| text.as_str().expect("text").contains("resampled")));
 }
 
 #[test]
@@ -532,6 +554,30 @@ fn a_date_that_is_not_a_date_is_refused() {
         .expect_err("the search");
     assert_eq!(error.code(), "invalid_params");
     assert!(error.to_string().contains("YYYY-MM-DD"));
+}
+
+#[test]
+fn the_router_and_the_tools_count_from_the_same_day() {
+    use std::sync::Arc;
+
+    // The fixture's plan week is the week of 2026-10-26.
+    let store = common::store();
+    let day = chrono::NaiveDate::parse_from_str("2026-10-28", "%Y-%m-%d").expect("the day");
+    let tools = stride_mcp::Tools::over(Arc::new(store), day);
+
+    // The tools count from that day: the digest's period ends on it.
+    let answer = tools
+        .call("training_digest", &json!({ "period": "7d" }))
+        .expect("the digest");
+    assert_eq!(answer["coverage"]["to"], json!("2026-10-28"));
+
+    // And the router counts from it too: the plan's current week is the one
+    // that contains it.
+    let answer = tools
+        .call("plan_context", &json!({ "view": "current" }))
+        .expect("the plan");
+    assert_eq!(answer["data"]["week"]["week_number"], json!(4));
+    assert_eq!(answer["data"]["week"]["start_date"], json!("2026-10-26"));
 }
 
 #[test]

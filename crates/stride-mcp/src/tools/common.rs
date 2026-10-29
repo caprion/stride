@@ -169,6 +169,15 @@ pub fn pace_of(summary: &Value) -> Option<f64> {
     f64_of(summary, "pace_s_per_km")
 }
 
+/// The pace in seconds per kilometre, computed the way the reference does.
+///
+/// The reference is `analytics._pace_s_per_km`: the moving time over the
+/// distance, and nothing when either is zero. The router owns that
+/// arithmetic, so this crate does not do it a second time.
+pub fn pace_s_per_km(distance_m: f64, moving_time_s: f64) -> Option<f64> {
+    stride_api::num::pace_s_per_km(distance_m, moving_time_s)
+}
+
 /// A date as `YYYY-MM-DD`.
 pub fn date_text(date: chrono::NaiveDate) -> String {
     date.format("%Y-%m-%d").to_string()
