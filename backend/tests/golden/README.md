@@ -127,6 +127,11 @@ the file name instead. It looks like a bug in `value_of` — one line in
 `backend/app/ingest/fit_importer.py` — and the contract does not define the
 case at all.
 
+The port was compared with these goldens field by field, collecting *every*
+difference rather than stopping at the first: the nine pre-existing cases,
+`real_garmin_run` and `real_garmin_gap` match exactly, and `real_garmin_nulls`
+differs in one field — the `external_id` above, and nothing else.
+
 ## Regenerating a fixture
 
 The fixtures are generated, not captured. `make_fixtures.py` builds them from
