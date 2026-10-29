@@ -70,8 +70,9 @@ desktop **converts** it, once, on the first run:
   counted again; if it does not answer, the plain file goes back where it
   was, because a desktop that cannot open the database is a nuisance and an
   empty database is a disaster;
-* the plain file is kept as `<name>.plaintext-backup`, owner-only, because it
-  holds a year of health data in the clear;
+* the plain file is kept as `<name>.plaintext-backup`, and the database and
+  that copy are both owner-only (mode 0600), because they hold a year of
+  health data;
 * the conversion reports the tables it copied and any drift between the two
   schemas — on this machine, no drift: the same 17 tables, the same columns.
 
@@ -115,6 +116,7 @@ the key.
 | `src/server.rs` | the routing: the API, the SPA, the headers. |
 | `src/spa.rs` | the static files, and the traversal hole that is not there. |
 | `src/state.rs` | the state file and the capability token. |
+| `tools/compare_with_reference.py` | asks the reference and the desktop the same questions and says where they differ. |
 
 ## Why the HTTP server is hand-written
 
@@ -154,7 +156,7 @@ that points out of it is refused exactly like `..` is.
 |---|---|
 | `tests/openapi.rs` | the router and the OpenAPI document the Python app generates agree: the same 62 paths, the same methods, the same path parameters, and every request body the document promises is accepted. |
 | `tests/spa.rs` | the SPA is served for an unknown path, the static files have the right content types, a missing file under `/assets` is a 404 and not the app, a `..` traversal returns nothing outside `frontend/dist`, and the capability gate answers the way the reference does. |
-| `tests/database.rs` | the **real** database opens, every row survives the conversion, the plain file is kept, the wrong key is refused, and the router reads the converted file. |
+| `tests/database.rs` | the **real** database opens, every row survives the conversion, the plain file is kept, the wrong key is refused, the database and the plain file are owner-only, and the router reads the converted file. |
 
 The database test takes **one** copy of the real database for the whole
 run, with `VACUUM INTO`, and works on copies of it. The database is live —

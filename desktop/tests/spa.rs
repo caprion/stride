@@ -50,7 +50,6 @@ fn request(method: &str, path: &str) -> Request {
     headers.push("Host", "127.0.0.1:8000");
     Request {
         method: method.to_string(),
-        target: path.to_string(),
         path: path.to_string(),
         query: String::new(),
         headers,

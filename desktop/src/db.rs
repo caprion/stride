@@ -380,6 +380,8 @@ pub fn convert_plaintext_to_encrypted(
         path: path.to_path_buf(),
         source,
     })?;
+    // The database is owner-only, like the file it replaced.
+    harden(path);
 
     // Read it back. The file that is now in place is opened with the same
     // key and its rows are counted; if it does not answer, the plain file

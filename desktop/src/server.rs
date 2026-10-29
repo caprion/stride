@@ -464,7 +464,6 @@ mod tests {
         }
         Request {
             method: method.to_string(),
-            target: path.to_string(),
             path: path.to_string(),
             query: String::new(),
             headers: head,

@@ -248,6 +248,33 @@ fn the_wrong_key_is_refused() {
     );
 }
 
+/// The database and the plain file it keeps are owner-only.
+///
+/// The reference hardens its files the same way (`harden_storage`): a year
+/// of heart rate, sleep and GPS routes is not a file other processes on this
+/// machine should be able to read.
+#[cfg(unix)]
+#[test]
+fn the_database_and_the_plain_file_are_owner_only() {
+    use std::os::unix::fs::PermissionsExt;
+
+    let directory = scratch("modes");
+    let Some(copy) = copy_of_the_real_database(&directory) else {
+        eprintln!("stride: the real database is not there; the test does nothing");
+        return;
+    };
+    db::convert_plaintext_to_encrypted(&copy, KEY).expect("the conversion");
+
+    for name in ["stride.db", "stride.db.plaintext-backup"] {
+        let path = directory.join(name);
+        let mode = std::fs::metadata(&path)
+            .expect("the file")
+            .permissions()
+            .mode();
+        assert_eq!(mode & 0o777, 0o600, "{} is {mode:o}", path.display());
+    }
+}
+
 /// A database that is not there is created, encrypted, with the schema.
 #[test]
 fn a_new_database_is_created_encrypted() {

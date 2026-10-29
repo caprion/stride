@@ -75,8 +75,6 @@ impl Headers {
 pub struct Request {
     /// The method, upper-cased.
     pub method: String,
-    /// The request target, exactly as it arrived.
-    pub target: String,
     /// The path, percent-decoded — the way Starlette hands it to a route.
     pub path: String,
     /// The query string, exactly as it arrived. The router decodes it.
@@ -392,7 +390,6 @@ fn read_request(
 
     Ok(Some(Request {
         method,
-        target,
         path,
         query,
         headers,
@@ -478,7 +475,6 @@ mod tests {
         headers.push("Cookie", "stride_capability=abc123; other=1");
         let request = Request {
             method: "GET".to_string(),
-            target: "/".to_string(),
             path: "/".to_string(),
             query: String::new(),
             headers,
