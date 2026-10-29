@@ -28,25 +28,33 @@ and no causality. That is the gap this fills.
 
 Releases are on GitHub — no store, no account, no review queue.
 
+**The app is the app.** From **v0.4.0** the APK carries the whole of Stride:
+the Rust core runs inside the phone, the Garmin key lives in the phone's
+Keystore, the phone has its own encrypted database, and it talks to Garmin
+directly. No server, no tailnet, no pairing code — it works on a plane.
+
 ```bash
-gh release download v0.1.0 --repo caprion/stride
+gh release download v0.4.2 --repo caprion/stride
 ```
 
-Install the APK on the phone (allow installs from that source).
-It opens the instance you are running, so the phone needs to be able to reach
-it — over the tailnet, for now.
+Install the APK on the phone (allow installs from that source), open it, and
+enter your Garmin Personal API key on the native screen.
+
+| | |
+|---|---|
+| the APK | **8.6 MB**, arm64-v8a only |
+| the Rust core | 8.57 MB, SQLCipher and OpenSSL vendored |
+| the Rust gate | 9 of 9 — 322 tests, 34 golden assertions |
+| the route parity | 38 routes, **0 differences** against the Python reference |
 
 The app is built in CI and signed with a key whose certificate is committed
 in `backend/app/assetlinks.json`; the key itself is only in the repository
-secrets.
+secrets. `scripts/check_apk.py` asserts that the published APK really carries
+the core — a build that quietly loses it still succeeds otherwise, and that
+happened once.
 
-**No pairing code.** The server binds plain HTTP to loopback and HTTPS to the
-tailnet address, so nothing is reachable from the internet, and the tailnet is
-trusted (`STRIDE_TRUST_TAILNET`, on by default in `scripts/run.sh`). Open the
-app and it works.
-
-Set `STRIDE_TRUST_TAILNET=false` if you want the pairing code back — it is
-there for the case where the tailnet holds devices that are not yours.
+The desktop is the same core now: one binary, the same API, the same
+numbers, and no server to keep alive.
 
 ## What "local" means here, honestly
 

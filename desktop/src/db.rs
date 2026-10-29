@@ -358,33 +358,24 @@ pub fn convert_plaintext_to_encrypted(
             // wrote the rows is the one that folds them back — it holds the
             // lock, and a second connection would be told the database is
             // locked.
-            trace(format!(
-                "the staged file: {} bytes, a log: {}, files in the directory: {}",
-                std::fs::metadata(&staged).map(|m| m.len()).unwrap_or(0),
-                sidecar(&staged, "-wal").exists(),
-                std::fs::read_dir(staged.parent().unwrap_or(Path::new("/")))
-                    .map(|d| d.count())
-                    .unwrap_or(0)
-            ));
+            // Fold the write-ahead log back into the file, so that the
+            // rows are in the file that is renamed into place and not in a
+            // log beside it.
             conn.execute_batch("PRAGMA wal_checkpoint(TRUNCATE);")
                 .map_err(|source| StoreError::query("wal_checkpoint".to_string(), source))?;
-            conn.execute_batch("PRAGMA journal_mode=DELETE;")
-                .map_err(|source| {
-                    trace(format!(
-                        "the staged file is {} {:?}; the directory is {:?}; the log is there: {}",
-                        staged.display(),
-                        std::fs::metadata(&staged).map(|m| {
-                            use std::os::unix::fs::PermissionsExt;
-                            format!("{:o}", m.permissions().mode())
-                        }),
-                        std::fs::metadata(staged.parent().unwrap_or(Path::new("/"))).map(|m| {
-                            use std::os::unix::fs::PermissionsExt;
-                            format!("{:o}", m.permissions().mode())
-                        }),
-                        sidecar(&staged, "-wal").exists(),
+            // And then they are counted in the file itself: a checkpoint
+            // that did not fold them back is a checkpoint that failed.
+            for (table, rows) in &report.tables {
+                let written = count_rows(conn, table)?;
+                if written != *rows {
+                    return Err(StoreError::query(
+                        format!("the table {table}"),
+                        rusqlite::Error::InvalidParameterName(format!(
+                            "{rows} rows were copied and {written} are in the file"
+                        )),
                     ));
-                    StoreError::query("journal_mode=DELETE".to_string(), source)
-                })?;
+                }
+            }
             Ok(report)
         })
         .map_err(|error| DbError::Conversion(error.to_string()))?;
