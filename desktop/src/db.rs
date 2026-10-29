@@ -308,82 +308,76 @@ pub fn convert_plaintext_to_encrypted(
 
     let staged = staged_path(path);
     let backup = backup_path(path);
-    let snapshot = snapshot_path(path);
 
     // A stale file from an interrupted conversion would be read as the source
     // of truth, so they go first.
-    let _ = std::fs::remove_file(&staged);
-    let _ = std::fs::remove_file(&snapshot);
-    let _ = std::fs::remove_file(sidecar(&snapshot, "-wal"));
-    let _ = std::fs::remove_file(sidecar(&snapshot, "-shm"));
+    for stale in [
+        &staged,
+        &backup,
+        &sidecar(&staged, "-wal"),
+        &sidecar(&staged, "-shm"),
+        &sidecar(&backup, "-wal"),
+        &sidecar(&backup, "-shm"),
+    ] {
+        let _ = std::fs::remove_file(stale);
+    }
 
-    // The source is snapshotted first, with SQLite's own `VACUUM INTO`. The
-    // database may be being written to while this runs — the reference app
-    // syncs from Garmin in the background — and a reader that is not inside a
-    // transaction can see a page that has been written and a page that has
-    // not, which is a database that is half of two states. The snapshot is
-    // the answer to that.
-    take_snapshot(path, &snapshot)?;
-    trace(format!(
-        "snapshot {} -> {} ({} bytes)",
-        path.display(),
-        snapshot.display(),
-        std::fs::metadata(&snapshot).map(|m| m.len()).unwrap_or(0)
-    ));
-
-    let outcome = convert_snapshot(&snapshot, path, &staged, &backup, key);
-    // The snapshot is a temporary file either way.
-    let _ = std::fs::remove_file(&snapshot);
-    let _ = std::fs::remove_file(sidecar(&snapshot, "-wal"));
-    let _ = std::fs::remove_file(sidecar(&snapshot, "-shm"));
-    outcome
-}
-
-/// Convert a snapshot of the plain database into the encrypted database.
-fn convert_snapshot(
-    snapshot: &Path,
-    original: &Path,
-    staged: &Path,
-    backup: &Path,
-    key: &[u8],
-) -> Result<ConversionReport, DbError> {
-    // The source: a static file, so everything about it is stable.
-    let source = Connection::open(snapshot).map_err(|error| DbError::Legacy {
-        path: snapshot.to_path_buf(),
+    // The source: the plain database the reference app wrote. It is read
+    // inside one transaction below, which is a consistent snapshot of it —
+    // in the write-ahead mode a reader sees one moment of the database, even
+    // while the reference app is syncing into it.
+    let source = Connection::open(path).map_err(|error| DbError::Legacy {
+        path: path.to_path_buf(),
         source: error,
     })?;
-    quick_check(&source, snapshot)?;
+    quick_check(&source, path)?;
 
-    let store = Store::open_and_migrate(staged, key)?;
+    // The plain file is kept, because the conversion is the one operation
+    // here that cannot be undone. It is SQLite's own copy — one file, with
+    // the data in it and no write-ahead log next to it — and it is checked
+    // against the database it came from.
+    take_snapshot(path, &backup)?;
+    owner_only(&backup);
+
+    // The encrypted copy.
+    let store = Store::open_and_migrate(&staged, key)?;
     let report = store
         .with_connection(|conn| {
-            let report = copy_tables(conn, &source)?;
-            // Fold the write-ahead log back into the file and turn the log
-            // off, so that the file that is renamed into place is complete on
-            // its own: one file, with the rows in it.
-            conn.execute_batch("PRAGMA wal_checkpoint(TRUNCATE); PRAGMA journal_mode=DELETE;")
-                .map_err(|source| StoreError::query("wal_checkpoint".to_string(), source))?;
-            Ok(report)
+            // One read transaction: the rows that are copied are the rows of
+            // one moment, and not a mixture of two states.
+            source
+                .execute_batch("BEGIN;")
+                .map_err(|error| StoreError::query("BEGIN".to_string(), error))?;
+            let outcome = copy_tables(conn, &source);
+            // The transaction is a read: it is rolled back, not committed.
+            let _ = source.execute_batch("ROLLBACK;");
+            outcome
         })
         .map_err(|error| DbError::Conversion(error.to_string()))?;
     drop(store);
 
-    let _ = std::fs::remove_file(sidecar(staged, "-wal"));
-    let _ = std::fs::remove_file(sidecar(staged, "-shm"));
-
-    // Keep the plain file: the conversion is the one operation here that
-    // cannot be undone. It holds a year of health data in the clear, so it
-    // is owner-only like the database.
-    copy_file(snapshot, backup)?;
-    owner_only(backup);
+    // Fold the write-ahead log back into the file and turn the log off, so
+    // that the file that is renamed into place is complete on its own: one
+    // file, with the rows in it.
+    {
+        let connection = Store::open(&staged, key)?;
+        connection
+            .with_connection(|conn| {
+                conn.execute_batch("PRAGMA wal_checkpoint(TRUNCATE); PRAGMA journal_mode=DELETE;")
+                    .map_err(|source| StoreError::query("wal_checkpoint".to_string(), source))
+            })
+            .map_err(|error| DbError::Conversion(error.to_string()))?;
+    }
+    let _ = std::fs::remove_file(sidecar(&staged, "-wal"));
+    let _ = std::fs::remove_file(sidecar(&staged, "-shm"));
 
     // The plain file's write-ahead log belongs to the plain file. Leaving it
     // next to an encrypted database would make SQLite try to apply it.
-    let _ = std::fs::remove_file(sidecar(original, "-wal"));
-    let _ = std::fs::remove_file(sidecar(original, "-shm"));
+    let _ = std::fs::remove_file(sidecar(path, "-wal"));
+    let _ = std::fs::remove_file(sidecar(path, "-shm"));
 
-    std::fs::rename(staged, original).map_err(|source| DbError::Io {
-        path: original.to_path_buf(),
+    std::fs::rename(&staged, path).map_err(|source| DbError::Io {
+        path: path.to_path_buf(),
         source,
     })?;
 
@@ -391,10 +385,10 @@ fn convert_snapshot(
     // key and its rows are counted; if it does not answer, the plain file
     // goes back where it was, because a desktop that cannot open the
     // database is a nuisance and an empty database is a disaster.
-    if let Err(error) = verify_converted(original, key, &report) {
+    if let Err(error) = verify_converted(path, key, &report) {
         trace(format!("the converted file did not answer: {error}"));
-        let _ = std::fs::remove_file(original);
-        let _ = copy_file(backup, original);
+        let _ = std::fs::remove_file(path);
+        let _ = std::fs::copy(&backup, path);
         return Err(DbError::Conversion(format!(
             "the converted database did not answer, and the plain file was put back: {error}"
         )));
@@ -535,21 +529,6 @@ fn table_counts(path: &Path) -> Result<Vec<(String, i64)>, DbError> {
     Ok(counts)
 }
 
-/// Copy a file, if it is there.
-fn copy_file(from: &Path, to: &Path) -> Result<(), DbError> {
-    if !from.exists() {
-        trace(format!("copy_file: {} does not exist", from.display()));
-        return Ok(());
-    }
-    trace(format!("copy_file: {} -> {}", from.display(), to.display()));
-    std::fs::copy(from, to)
-        .map(|_| ())
-        .map_err(|source| DbError::Io {
-            path: to.to_path_buf(),
-            source,
-        })
-}
-
 /// Check that the source is a database that can be read.
 fn quick_check(source: &Connection, path: &Path) -> Result<(), DbError> {
     let mut statement = source
@@ -600,14 +579,7 @@ fn copy_tables(
     conn.execute_batch("PRAGMA foreign_keys=OFF;")
         .map_err(|source| StoreError::query("PRAGMA foreign_keys=OFF".to_string(), source))?;
 
-    source
-        .execute_batch("BEGIN;")
-        .map_err(|source| StoreError::query("BEGIN".to_string(), source))?;
-    let outcome = copy_tables_in_transaction(conn, source, &mut report);
-    // The transaction is read-only, so it is rolled back rather than
-    // committed: the source must not be written to.
-    let _ = source.execute_batch("ROLLBACK;");
-    outcome?;
+    copy_tables_in_transaction(conn, source, &mut report)?;
 
     // The rows that were written are counted again, in the file they were
     // written to. If the two counts disagree, the file is not replaced.
@@ -799,13 +771,6 @@ fn strings(
 fn staged_path(path: &Path) -> PathBuf {
     let mut name = path.file_name().unwrap_or_default().to_os_string();
     name.push(".encrypted");
-    path.with_file_name(name)
-}
-
-/// The path the snapshot of the database is written to.
-fn snapshot_path(path: &Path) -> PathBuf {
-    let mut name = path.file_name().unwrap_or_default().to_os_string();
-    name.push(".snapshot");
     path.with_file_name(name)
 }
 

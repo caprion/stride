@@ -53,11 +53,12 @@ refuses it with `file is not a database`.
 `stride-store` cannot open a plain file — it always applies a key — so the
 desktop **converts** it, once, on the first run:
 
-* the plain file is snapshotted with `VACUUM INTO` — SQLite's own answer to
-  "copy this database while somebody is writing to it" — and the snapshot is
-  read and written into a new, encrypted file, with the same schema and the
-  same rows;
-* the snapshot is **checked against the database** — the row count of every
+* the plain file is copied with `VACUUM INTO` — SQLite's own answer to
+  "copy this database while somebody is writing to it" — and that copy is
+  kept as the backup;
+* the rows that are encrypted are read inside **one transaction**, so they
+  are one moment of the database and not a mixture of two states;
+* the backup is **checked against the database** — the row count of every
   table — and taken again if they do not agree, up to three times;
 * the columns are matched **by name**, not by position: three tables
   (`activity`, `daily_physiology`, `run_fingerprint`) have the same columns
@@ -131,7 +132,7 @@ connections (64) and the time a connection may stay silent (30 s).
 `stride-store` are the workspace's. The one addition is **`rusqlite`**,
 which is already in the approved set and already in the workspace: it is the
 plain SQLite connection that reads the reference app's database while it is
-being converted — `VACUUM INTO` for the snapshot, `PRAGMA quick_check` for
+being converted — `VACUUM INTO` for the backup, `PRAGMA quick_check` for
 the soundness check. It is the same crate `stride-store` is built on, with
 the same vendored SQLCipher, so the binary carries one SQLite library and
 not two.
@@ -155,10 +156,10 @@ that points out of it is refused exactly like `..` is.
 | `tests/spa.rs` | the SPA is served for an unknown path, the static files have the right content types, a missing file under `/assets` is a 404 and not the app, a `..` traversal returns nothing outside `frontend/dist`, and the capability gate answers the way the reference does. |
 | `tests/database.rs` | the **real** database opens, every row survives the conversion, the plain file is kept, the wrong key is refused, and the router reads the converted file. |
 
-The database test takes **one** snapshot of the real database for the whole
+The database test takes **one** copy of the real database for the whole
 run, with `VACUUM INTO`, and works on copies of it. The database is live —
-the reference app is writing to it — and a snapshot that is taken while the
-database changes is a snapshot of two states at once. That is what the first
+the reference app is writing to it — and a copy that is taken while the
+database changes is a copy of two states at once. That is what the first
 version of the conversion did, and the test caught it: the plan, the
 physiology and the fingerprints came out empty and the streams came out
 half.
