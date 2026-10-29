@@ -54,10 +54,13 @@ case "${1:-status}" in
     ;;
 
   pair)
-    # Mint a single-use pairing code for a device that is not on this
-    # machine — the phone on the tailnet, typically. The code is printed
-    # here, exchanged once for the session cookie, and expires in 10
+    # Mint a single-use pairing code for a browser on another machine — a
+    # phone reaching this instance over the network, typically. The code is
+    # printed here, exchanged once for the session cookie, and expires in 10
     # minutes.
+    #
+    # Note this is for the *browser*. The Android app does not pair: it is
+    # the whole thing, and it talks to Garmin itself.
     if ! curl -fsS -m 5 "http://127.0.0.1:$PORT/api/v1/health" > /dev/null 2>&1; then
       bad "Stride is not answering on :$PORT — start it with scripts/prod.sh start"
       exit 1
@@ -69,33 +72,20 @@ case "${1:-status}" in
       exit 1
     fi
 
-    # The address the phone will use. Prefer HTTPS on the tailnet's own
-    # name: a phone can only *install* the app from a secure context, so
-    # pairing over plain HTTP would leave the athlete with a browser tab
-    # forever. The certificate comes from Tailscale, so it is trusted and the
-    # phone shows no warning.
-    reach=""
-    scheme="https"
+    # The address the other device will use. It is the operator's to say:
+    # the repository does not know, and does not guess.
+    #
+    # HTTPS is preferred because a phone can only *install* a web app from a
+    # secure context - pairing over plain HTTP would leave the athlete with
+    # a browser tab forever.
     tls_port="${STRIDE_TLS_PORT:-8443}"
-    if [[ -f "$ROOT/backend/data/tls/stride.crt" ]]; then
-      if command -v tailscale > /dev/null 2>&1; then
-        reach="$(tailscale status --json 2>/dev/null \
-          | "$PY" -c 'import json,sys; d=json.load(sys.stdin); print((d.get("Self",{}).get("DNSName") or "").rstrip("."))' \
-          2>/dev/null)"
-      fi
-      [[ -n "$reach" ]] || reach="$(ip -4 addr show 2>/dev/null | awk '/inet /{print $2}' | cut -d/ -f1 \
-        | grep -v '^127\.' | head -1)"
+    reach="${STRIDE_TLS_HOST:-}"
+    if [[ -n "$reach" && "$reach" != "0.0.0.0" && "$reach" != "::" ]]; then
       url="https://$reach:$tls_port/#pair=$code"
     else
-      scheme="http"
-      if command -v tailscale > /dev/null 2>&1; then
-        reach="$(tailscale ip -4 2>/dev/null | head -1)"
-      fi
-      if [[ -z "$reach" ]]; then
-        reach="$(ip -4 addr show 2>/dev/null | awk '/inet /{print $2}' | cut -d/ -f1 \
-          | grep -v '^127\.' | head -1)"
-      fi
-      [[ -n "$reach" ]] || reach="127.0.0.1"
+      warn "set STRIDE_TLS_HOST to the address other devices reach this machine on"
+      warn "so the link below points somewhere they can open."
+      reach="127.0.0.1"
       url="http://$reach:$PORT/#pair=$code"
     fi
     echo

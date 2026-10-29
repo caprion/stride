@@ -116,12 +116,16 @@ case "${1:-start}" in
     # sits in its own session and cannot hold the caller's stdout open.
     # Without it, piping this script's output anywhere hangs forever waiting
     # for an end-of-file the daemon will never send.
-    # The tailnet is trusted by default here: the plain listener is on
-    # loopback and the TLS one on the tailnet address, so nothing is
-    # reachable from the internet, and every device on the tailnet is the
-    # athlete's own. Set STRIDE_TRUST_TAILNET=false to require the pairing
-    # code instead.
-    export STRIDE_TRUST_TAILNET="${STRIDE_TRUST_TAILNET:-true}"
+    # The plain listener is on loopback and the TLS one on whatever address
+    # the operator names, so nothing is reachable from the internet unless
+    # the operator says so.
+    #
+    # A *trusted network* is one the operator names in STRIDE_TRUSTED_NETWORKS.
+    # Clients from it are trusted without a pairing code; nobody else is.
+    # Both default to the safe answer: loopback only, pairing code required.
+    export STRIDE_TRUST_REMOTE="${STRIDE_TRUST_REMOTE:-false}"
+    export STRIDE_TLS_HOST="${STRIDE_TLS_HOST:-0.0.0.0}"
+    export STRIDE_TLS_PORT="${STRIDE_TLS_PORT:-8443}"
     ( cd "$ROOT/backend" && exec setsid --fork "$VENV/bin/python" -m app.serve \
       < /dev/null > "$PID_DIR/api.log" 2>&1 ) &
     disown 2>/dev/null || true
