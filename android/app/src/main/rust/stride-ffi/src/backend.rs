@@ -44,12 +44,19 @@ pub struct PhoneSync {
     inner: Arc<dyn Backend>,
     /// The phone's own encrypted database.
     store: Arc<Store>,
+    /// The database, read on its own.
+    ///
+    /// The state layer above answers the status from memory, and the memory
+    /// forgets the key as soon as a pull is over. The sync log is in the
+    /// database, so the time of the last pull is read from there.
+    rows: Arc<dyn Backend>,
 }
 
 impl PhoneSync {
     /// A backend over the shared stack and the phone's database.
     pub fn new(inner: Arc<dyn Backend>, store: Arc<Store>) -> Self {
-        Self { inner, store }
+        let rows = stride_api::store::backend(store.clone());
+        Self { inner, store, rows }
     }
 
     /// The database, for the pull.
@@ -122,6 +129,22 @@ impl Backend for PhoneSync {
         }))
     }
 
+    /// The status the app reads.
+    ///
+    /// The state layer holds the Garmin connection in memory, and the memory
+    /// forgets the key as soon as the pull that used it is over — the key
+    /// lives in the Keystore, and the core holds it for the length of a
+    /// pull and no longer. The sync log is in the database, so the time of
+    /// the last pull is read from there: it is the evidence that survives
+    /// the key going back into the Keystore.
+    fn public_status(&self) -> Result<StatusView, BackendError> {
+        let mut status = self.inner.public_status()?;
+        if status.last_sync_at.is_none() {
+            status.last_sync_at = self.rows.public_status()?.last_sync_at;
+        }
+        Ok(status)
+    }
+
     /// The exit nodes. The phone has none.
     fn exit_nodes(&self) -> Result<Vec<Value>, BackendError> {
         Ok(Vec::new())
@@ -175,22 +198,6 @@ impl Backend for PhoneSync {
         }))
     }
 
-    /// The pull.
-    ///
-    /// The pull itself is `stride-api`'s (`sync::run`), which is the same
-    /// one the desktop uses: the activities, the FIT files, the splits and
-    /// the wellness.
-    ///
-    /// **A background pull is a job, not a call.** The phone's pulls are
-    /// WorkManager jobs: they survive the app being killed, they are bounded
-    /// by the system, and the phone has one scheduler for them. So the route
-    /// acknowledges the request and the worker does the work. The shared
-    /// state layer would answer a background pull with a thread of its own;
-    /// the phone answers it with its scheduler instead.
-    ///
-    /// The answer is the reference's shape: `{"started": true}` when the pull
-    /// was accepted, and `{"started": false, "reason": "..."}` when it was
-    /// not.
     /// The pull.
     ///
     /// The pull itself is `stride-api`'s (`sync::run`), which is the same
@@ -380,9 +387,6 @@ impl Backend for PhoneSync {
     }
     fn max_hr_reference(&self, activity_id: i64) -> Result<f64, BackendError> {
         self.inner.max_hr_reference(activity_id)
-    }
-    fn public_status(&self) -> Result<StatusView, BackendError> {
-        self.inner.public_status()
     }
     fn sync_status(&self) -> Result<Value, BackendError> {
         self.inner.sync_status()

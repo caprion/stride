@@ -20,9 +20,7 @@ use serde_json::Value;
 use stride_api::{Api, Response as ApiResponse};
 
 use crate::http::{Request, Response};
-use crate::security::{
-    is_loopback_client, redact, same_origin, RateLimiter, Security, BOOTSTRAP_PATH,
-};
+use crate::security::{redact, same_origin, RateLimiter, Security, BOOTSTRAP_PATH};
 use crate::spa;
 
 /// The content security policy.
@@ -140,14 +138,15 @@ impl App {
 
     /// The bootstrap: the cookie that lets the browser use the API.
     ///
-    /// Only the local browser may have one. The reference answers a request
-    /// that is not from this machine with the middleware's message, and a
-    /// local request that carries a foreign `Origin` with the route's.
+    /// Only a trusted client may have one: the loopback browser, or a client
+    /// on a network the operator has chosen to trust. The reference answers a
+    /// request that is not from this machine with the middleware's message,
+    /// and a request that carries a foreign `Origin` with the route's.
     fn bootstrap(&self, request: &Request) -> Response {
         if !self.security.enabled() {
             return Response::empty(204);
         }
-        if !is_loopback_client(request) {
+        if !self.security.is_trusted_client(request) {
             return json_response(
                 403,
                 &serde_json::json!({
@@ -226,6 +225,13 @@ impl App {
         }
         let origin = request.headers.get("origin");
         if same_origin(origin, request.host()) {
+            return true;
+        }
+        // A client from a trusted network may act without an `Origin` header:
+        // that is a native client, not a page. When an `Origin` header *is*
+        // present it still has to match — the network says who is calling,
+        // not which page the call came from.
+        if self.security.is_trusted_remote_client(request) && origin.is_none() {
             return true;
         }
         match origin {
@@ -308,11 +314,12 @@ impl App {
         self.maybe_mint_cookie(request, &response)
     }
 
-    /// Hand the browser its capability, when it is the loopback browser.
+    /// Hand the browser its capability, when it is a trusted client.
     ///
     /// Loading the app establishes the session: the cookie is HttpOnly, so
-    /// the page never sees the capability, and it is minted only for a
-    /// loopback peer whose `Host` header also says loopback.
+    /// the page never sees the capability. It is minted for the loopback peer
+    /// whose `Host` header also says loopback, and for a client on a network
+    /// the operator has chosen to trust.
     fn maybe_mint_cookie(&self, request: &Request, response: &Response) -> Response {
         if !self.security.enabled() {
             return response.clone();
@@ -320,7 +327,7 @@ impl App {
         let is_html = response
             .get("Content-Type")
             .is_some_and(|value| value.starts_with("text/html"));
-        if !is_html || !is_loopback_client(request) {
+        if !is_html || !self.security.is_trusted_client(request) {
             return response.clone();
         }
         response

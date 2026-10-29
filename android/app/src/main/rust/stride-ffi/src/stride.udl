@@ -37,6 +37,13 @@ namespace stride {
   // and clears it again. An empty string clears it.
   string stride_set_garmin_key(string api_key);
 
+  // Say whether the phone holds a Garmin key.
+  //
+  // The key itself lives in the Keystore and the core never keeps it. This
+  // says the *fact* of it, so the app can say "Garmin is connected" without
+  // the key being in memory, and without the page ever seeing it.
+  string stride_set_garmin_connected(boolean connected);
+
   // What the core is and whether it is open. For the phone's own diagnostics.
   string stride_status();
 };

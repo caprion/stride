@@ -1,8 +1,9 @@
-import { Suspense, lazy } from 'react'
+import { Suspense, lazy, type ReactNode } from 'react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { AppLayout } from './components/AppLayout'
 import { AuthGate } from './components/AuthGate'
+import { isPhone } from './lib/surface'
 
 // Every screen is loaded on demand.
 //
@@ -13,9 +14,7 @@ import { AuthGate } from './components/AuthGate'
 const DashboardPage = lazy(() =>
   import('./pages/DashboardPage').then((m) => ({ default: m.DashboardPage })),
 )
-const FeedPage = lazy(() =>
-  import('./pages/FeedPage').then((m) => ({ default: m.FeedPage })),
-)
+const FeedPage = lazy(() => import('./pages/FeedPage').then((m) => ({ default: m.FeedPage })))
 const ActivityPage = lazy(() =>
   import('./pages/ActivityPage').then((m) => ({ default: m.ActivityPage })),
 )
@@ -64,6 +63,20 @@ function RouteFallback() {
   )
 }
 
+/**
+ * A route the phone does not have.
+ *
+ * On the phone the cut routes land on **Today** rather than on a screen that
+ * does not belong there. The desktop keeps the screen, and the desktop is
+ * the only surface that ever fetches the chunk: the phone redirects before
+ * the page is drawn, so the bundle for a screen the phone cannot show is
+ * never downloaded.
+ */
+function PhoneCut({ children }: { children: ReactNode }) {
+  if (isPhone()) return <Navigate to="/" replace />
+  return <>{children}</>
+}
+
 export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
@@ -76,13 +89,35 @@ export default function App() {
                 <Route path="/plan" element={<PlanPage />} />
                 <Route path="/feed" element={<FeedPage />} />
                 <Route path="/activities/:id" element={<ActivityPage />} />
-                <Route path="/training" element={<TrainingPage />} />
                 <Route path="/physiology" element={<PhysiologyPage />} />
                 <Route path="/fitness" element={<FitnessPage />} />
-                <Route path="/compare" element={<ComparePage />} />
-                <Route path="/stats" element={<StatsPage />} />
                 <Route path="/settings" element={<SettingsPage />} />
-                    <Route path="*" element={<Navigate to="/" replace />} />
+                {/* The three the phone cuts. The desktop keeps them. */}
+                <Route
+                  path="/training"
+                  element={
+                    <PhoneCut>
+                      <TrainingPage />
+                    </PhoneCut>
+                  }
+                />
+                <Route
+                  path="/compare"
+                  element={
+                    <PhoneCut>
+                      <ComparePage />
+                    </PhoneCut>
+                  }
+                />
+                <Route
+                  path="/stats"
+                  element={
+                    <PhoneCut>
+                      <StatsPage />
+                    </PhoneCut>
+                  }
+                />
+                <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>
             </Suspense>
           </AppLayout>

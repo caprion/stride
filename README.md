@@ -3,7 +3,7 @@
 > **Most running apps tell you what you did. Stride tells you whether that was
 > the right thing to do — and what to do tomorrow.**
 
-A private, local-first running log with native Garmin ingest, built around one loop:
+A private, local-first running log, built around one loop:
 
 **Plan → Execute → Understand → Adapt.**
 
@@ -11,103 +11,229 @@ The plan exists as a first-class object. Every session gets a verdict *and* a
 cause. The athlete's physiology and running mechanics are modelled. The app
 tells you what to do today.
 
-A social running app is a **social activity log**: it has no concept of intent, no physiology
-and no causality. That is the gap this fills.
-
-```
-┌────────────┐        ┌──────────────────┐        ┌──────────────────┐
-│ Garmin     │  OAuth │  Stride backend  │  SQL  │  Stride frontend │
-│ Connect    │───────▶│  FastAPI+SQLite  │───────▶│  React SPA       │
-│ (watch)    │  FIT   │  ingest + stats  │        │  (port 8000)     │
-└────────────┘  file  └──────────────────┘        └──────────────────┘
-```
+A social running app is a **social activity log**: it has no concept of
+intent, no physiology and no causality. That is the gap this fills.
 
 ---
 
-## Get the Android app
+## The app is the app
 
-Releases are on GitHub — no store, no account, no review queue.
+**Your data stays on this phone.**
 
-**The app is the app.** From **v0.4.0** the APK carries the whole of Stride:
-the Rust core runs inside the phone, the Garmin key lives in the phone's
-Keystore, the phone has its own encrypted database, and it talks to Garmin
-directly. No server, no tailnet, no pairing code — it works on a plane.
+The Android APK carries the whole of Stride. The Rust core — the FIT parser,
+the run/walk/stand segmentation, the running fingerprint, the readiness
+score, the plan engine, the Garmin client and the encrypted database — runs
+*inside* the phone. The Garmin Personal API key lives in the phone's
+Keystore. The phone has its own database and talks to Garmin directly.
+
+There is no server to reach, no pairing code to type and no account to
+create. It works on a plane, with the VM switched off.
 
 ```bash
 gh release download v0.4.2 --repo caprion/stride
 ```
 
 Install the APK on the phone (allow installs from that source), open it, and
-enter your Garmin Personal API key on the native screen.
+paste your Garmin Personal API key into the one native screen that asks for
+it. The screen says **Checking…**, then **Syncing…**, then **Connected · 160
+runs**, and it goes away. The key never enters the WebView: it is typed into
+a native field, wrapped by a non-exportable Keystore key, and written to
+`noBackupFilesDir`.
 
 | | |
 |---|---|
-| the APK | **8.6 MB**, arm64-v8a only |
-| the Rust core | 8.57 MB, SQLCipher and OpenSSL vendored |
-| the Rust gate | 9 of 9 — 322 tests, 34 golden assertions |
-| the route parity | 38 routes, **0 differences** against the Python reference |
+| the APK | **8.6 MB** (8,609,784 bytes), arm64-v8a |
+| the Rust core inside it | **8.58 MiB** — SQLCipher and OpenSSL vendored |
+| the desktop binary | **7.0 MB** (`target/release/stride`) |
 
-The app is built in CI and signed with a key whose certificate is committed
-in `backend/app/assetlinks.json`; the key itself is only in the repository
+The app is built in CI and signed with a key whose certificate is committed in
+`backend/app/assetlinks.json`; the key itself is only in the repository
 secrets. `scripts/check_apk.py` asserts that the published APK really carries
-the core — a build that quietly loses it still succeeds otherwise, and that
-happened once.
+the core and points at nothing — a build that quietly loses it still
+succeeds otherwise, and that happened once.
 
-The desktop is the same core now: one binary, the same API, the same
-numbers, and no server to keep alive.
+### The desktop is the same core
 
-## What "local" means here, honestly
+The desktop is the same Rust core as **one binary**. It serves the same
+React app and the same API, out of the same crate, against the same
+database. There is no second implementation of the domain logic and no
+process to keep alive.
 
-There are two things in this repository and it is worth being precise about
-which is which.
+The desktop is the same product with more room: it keeps the comparison, the
+statistics and the training calendar. The phone shows five surfaces — Today,
+Plan, Runs, Body and Form — because the cut is the phone's, not the
+product's.
 
-**The desktop app is local.** The database is on your machine, the Garmin key
-is in Key Vault on your machine, and the browser talks to a local process.
-Nothing is sent anywhere.
+### The Python app is the reference, not the product
 
-**The Android app is currently a remote view.** The APK is a WebView pointed
-at the instance on your machine. The Garmin key never touches the phone; the
-database never touches the phone. The phone shows you your own data, over
-your own network.
+`backend/` is the **oracle**: the original implementation, kept so the Rust
+core can be proved equal to it rather than believed equal to it. It answers
+the same routes with the same shapes, and the golden fixtures under
+`backend/tests/golden/` are what say which of the two is right. It is not
+what the athlete runs.
 
-That is why it needed a pairing code, and why the code was the wrong
-experience: a remote client has to prove it is allowed, and *any* proof the
-athlete can type is a poor proof. The fix in v0.3.0 is to make the tailnet the
-trust boundary — the plain listener binds loopback, the TLS listener binds
-the tailnet address, and nothing is reachable from the internet at all.
+---
 
-The **destination** is different, and it is the thing the pairing code was
-standing in for: **the phone owns its own data.** The Garmin key in the
-phone's Keystore, the phone's own database, the phone syncing with Garmin
-directly. No server, no tailnet, no pairing, and it works on a plane.
+## What is measured
 
-That needs the domain logic — the FIT parser, the segmentation, the
-fingerprint, the readiness, the plan engine — to exist on the phone. That is
-the port, and it is the same size in Rust or Kotlin. See
-[`docs/language-choice.md`](file:///home/sumit/stride/docs/language-choice.md)
-for why one implementation, in one language, on both, is the prize.
+Every number below is from a gate in this repository, not from a judgement
+call.
+
+| gate | what it says | result |
+|---|---|---|
+| `./scripts/rust_gate.sh` | format, clippy, release build, tests, golden fixtures, panics, dependency set, size | **9 passed, 0 failed, 0 warnings** — 331 tests, 36 golden assertions |
+| `./scripts/security_check.sh` | the Python side: permissions, configuration, dependencies, tests, the live service | **26 passed, 0 failed, 1 warning** |
+| `python3 scripts/check_apk.py <apk>` | the APK carries the Rust core and points at nothing | **the APK carries the Rust core and points at nothing** |
+| `python3 scripts/api_parity.py` | the Rust router and the Python reference, route by route | **37 of 38 routes answer with the same shape** |
+
+The one parity difference is `GET /api/v1/health`: the Rust core reports
+`garmin.method: null` where the reference reports `"personal"`. It is a
+nullability difference in one field, and it is open.
+
+---
 
 ## Showcase
 
-A one-page collage of every surface: **[`showcase/stride-collage.png`](file:///home/sumit/stride/showcase/stride-collage.png)**.
+A one-page collage of every surface: **[`showcase/stride-collage.png`](showcase/stride-collage.png)**.
+
+---
+
+## Connecting Garmin
+
+The phone connects with a **Personal API key** — Garmin's own first-party
+API for your own account. Generate one at
+`https://connect.garmin.com/app/settings/personalApiToken` while signed in
+to Garmin Connect Web. **No developer-program registration, no consumer
+secret, no browser authorisation dance** — and it covers *activities and
+wellness*: sleep, resting heart rate, stress, body battery, HRV and scheduled
+workouts.
+
+Two steps happen behind the scenes:
+
+1. `POST /personalapitoken-service/personal-api/personal-api-key/token` with
+   `Authorization: ApiKey <key>` returns a JWT valid for 24 hours (scopes:
+   `CONNECT_READ`, `PERSONAL_API_FITNESS_READ`, `PERSONAL_API_WELLNESS_READ`,
+   `PERSONAL_API_USER_READ`, `PERSONAL_API_NUTRITION_READ`).
+2. Every other endpoint is a plain bearer-authenticated GET against
+   `personal.connectapi.garmin.com`.
+
+The original `.FIT` file is downloaded per activity, so each run keeps its full
+GPS track, per-second heart rate and kilometre splits — not just a summary.
+
+The desktop also imports `.FIT` files — the parser is the same
+`stride-fit` crate the phone uses — and the reference application still
+accepts a developer key and an account login with MFA.
+
+**The gap:** the Rust desktop answers `501 Not Implemented` to the developer
+key and the account login ("the Garmin account flow is driven by the Garmin
+client"). The phone is not affected: it uses the Personal API key and nothing
+else, and never asks for, and never stores, a Garmin password.
+
+---
+
+## Configuration
+
+Everything is an environment variable. The desktop reads them at startup; the
+phone reads the same names from its own settings.
+
+| Variable | Default | Purpose |
+|---|---|---|
+| `STRIDE_TLS_HOST` | `0.0.0.0` | the address the HTTPS listener binds |
+| `STRIDE_TLS_PORT` | `8443` | the port for it |
+| `STRIDE_TRUST_REMOTE` | `false` | when true, clients from the trusted networks are trusted without a pairing code |
+| `STRIDE_TRUSTED_NETWORKS` | empty | comma-separated CIDRs those clients come from. **Empty means nothing extra is trusted** — loopback only |
+| `STRIDE_BIND` | `127.0.0.1` | the address the desktop binary binds. A non-loopback address is refused |
+| `STRIDE_PORT` | `8000` | the port the desktop binary binds |
+| `STRIDE_DATA_DIR` | `backend/data` | the database and the state file |
+| `STRIDE_CORS_ORIGINS` | `http://localhost:5173` | the origins that may call the API from a page. A `*` is refused |
+
+The listener **detects nothing**. It binds `STRIDE_TLS_HOST` and nothing
+else; no network's own tooling is run at startup.
+
+### Reaching the app from another device
+
+The phone reaches the desktop over the address the HTTPS listener binds:
+
+```
+STRIDE_TLS_HOST    the address the HTTPS listener binds
+STRIDE_TLS_PORT    the port for it
+```
+
+The certificate on that listener has to be one the browser on the phone
+trusts, or the phone will not install the app — a service worker only
+registers in a secure context, and plain HTTP leaves the athlete with a
+browser tab forever. **The operator's address and certificate are the
+operator's business; this repository names neither.**
+
+With the listener up and the certificate trusted, a browser reaches the
+desktop at `https://<STRIDE_TLS_HOST>:<STRIDE_TLS_PORT>`.
+
+A browser on the same machine as the desktop is given a session cookie
+automatically. A browser on another device is not, so it has to be paired on
+purpose. **The phone app does not need this** — it has its own database and
+its own Garmin key — but a second browser, or a browser on another machine,
+does.
+
+**Today the pairing code is minted by the reference application**, not by the
+Rust desktop:
+
+```bash
+./scripts/prod.sh pair
+```
+
+That prints a **QR code**. Point the phone's camera at it and the phone is
+connected — one action, once, and it stays connected. The device gets its
+**own** credential, so a lost phone can be revoked on its own in
+**Settings → Connected devices** without touching the machine. The code is
+carried in the URL *fragment*, never the query string, so it never lands in
+an access log; it works **once** and expires in **10 minutes**.
+
+**The gap:** the Rust desktop answers `501 Not Implemented` to
+`GET /api/v1/auth/pair-code` — the store backend says "the pairing code is
+minted by the application state" and the application state has not been wired
+to it. Until that is done, the Rust desktop serves the browser on its own
+machine and nothing else.
+
+---
+
+## The egress route
+
+Garmin throttles **datacentre IPs** hard, and from a datacentre address the
+web-login path is blocked by a bot challenge. The same request from a
+residential address succeeds. So Stride has a *network route* concept: the
+Garmin traffic can be sent out through a machine of the operator's choosing.
+
+| Route | Egress | Use when |
+|---|---|---|
+| `direct` | the machine itself | Garmin may rate-limit or block |
+| `exit_node` | the chosen machine | reliable Garmin access |
+
+The app also detects a `429` or a bot challenge mid-sync and retries once
+through the other route automatically. The switch changes the **whole
+machine's** egress, not just Stride's traffic — switch it back to `direct`
+when other traffic needs the machine's own address.
+
+---
 
 ## Design documents
 
 | Document | What it decides |
 |---|---|
-| [`DESIGN.md`](file:///home/sumit/stride/DESIGN.md) | the product: plan-vs-actual, physiology, fingerprint, comparison |
-| [`docs/android-v1.md`](file:///home/sumit/stride/docs/android-v1.md) | **the small, secure, Garmin-only Android app (target < 10 MB)** |
-| [`docs/android-app.md`](file:///home/sumit/stride/docs/android-app.md) | the full Android architecture and threat model |
-| [`docs/garmin-on-device.md`](file:///home/sumit/stride/docs/garmin-on-device.md) | key entry, Keystore storage, pull cadence, error copy |
-| [`docs/harness-integration.md`](file:///home/sumit/stride/docs/harness-integration.md) | MCP sidecar so your own Claude Code / Codex can query your data |
-| [`docs/working-agreement.md`](file:///home/sumit/stride/docs/working-agreement.md) | how we run big changes with parallel agents |
-| [`docs/ai-sign-in-discussion.md`](file:///home/sumit/stride/docs/ai-sign-in-discussion.md) | whether the Android app should offer "Sign in with ChatGPT" — and why the answer dissolves |
-| [`docs/piping-to-chatgpt.md`](file:///home/sumit/stride/docs/piping-to-chatgpt.md) | how to pipe the data through ChatGPT — MCP, and the four ways it can run |
-| [`docs/android-packaging.md`](file:///home/sumit/stride/docs/android-packaging.md) | **how the Android app is packaged, signed, built in CI and deployed** |
-| [`docs/production-deployment.md`](file:///home/sumit/stride/docs/production-deployment.md) | **the production instance: the vault key, the setup, the pre-flight** |
-| [`docs/design-review.md`](file:///home/sumit/stride/docs/design-review.md) | **the design review: the footprint, the colour language, every screen on a phone** |
-| [`docs/language-choice.md`](file:///home/sumit/stride/docs/language-choice.md) | **Rust versus the current stack — an evaluation, nothing changed** |
-| [`docs/self-sufficient-app.md`](file:///home/sumit/stride/docs/self-sufficient-app.md) | **the plan for an APK that is the whole app — decisions, phases, contracts** |
+| [`DESIGN.md`](DESIGN.md) | the product: plan-vs-actual, physiology, fingerprint, comparison |
+| [`docs/rust-core-spec.md`](docs/rust-core-spec.md) | the crates, the data model and the route table |
+| [`docs/core-contract.md`](docs/core-contract.md) | the byte-level contract: units, rounding, `None` |
+| [`docs/phone-simplification.md`](docs/phone-simplification.md) | the frozen contract for the phone: one screen, half as much |
+| [`docs/self-sufficient-app.md`](docs/self-sufficient-app.md) | what the self-sufficient app is, and what is built |
+| [`docs/production-deployment.md`](docs/production-deployment.md) | how the deployment is configured and checked |
+| [`docs/design-review.md`](docs/design-review.md) | the footprint, the colour language, every screen on a phone |
+| [`docs/android-app.md`](docs/android-app.md) | the Android architecture and the threat model |
+| [`docs/android-packaging.md`](docs/android-packaging.md) | how the APK is packaged, signed, built in CI |
+| [`docs/garmin-on-device.md`](docs/garmin-on-device.md) | key entry, Keystore storage, pull cadence |
+| [`docs/harness-integration.md`](docs/harness-integration.md) | the MCP sidecar, so your own agent can query your data |
+| [`docs/security/AUDIT.md`](docs/security/AUDIT.md) | the security audit and what it found |
+| [`docs/working-agreement.md`](docs/working-agreement.md) | how we run big changes with parallel agents |
+
+---
 
 ## No social layer, on purpose
 
@@ -117,319 +243,38 @@ yours alone. **Sharing is Garmin's business**: every activity links back to its
 original in Garmin Connect, and Garmin decides who may open it. Stride never
 publishes, never mirrors and never asks for an account.
 
-## Protecting the athlete's data
-
-The history in `backend/data/` is the only copy of a year of training. Two
-mechanisms guard it.
-
-**Snapshots.**
-
-```bash
-./scripts/snapshot.sh              # take one (verified, checksummed)
-./scripts/snapshot.sh --list
-./scripts/snapshot.sh --restore <name>
-```
-
-A snapshot is the database (WAL-checkpointed first, so it is a consistent
-set), the state file with the Garmin credential, and a manifest with SHA-256
-checksums. The snapshot is written `0600` and its database is integrity-checked
-after the copy — a snapshot that cannot be restored is worse than none. A
-restore takes a safety snapshot of the current state first.
-
-**Parallel instances, on their own port and their own database.**
-
-```bash
-./scripts/instance.sh next 8010 --clone   # a copy of the current data
-./scripts/instance.sh --list
-./scripts/instance.sh --stop next
-```
-
-Each instance gets `backend/instances/<name>/data` as its own `STRIDE_DATA_DIR`,
-so a new iteration **cannot** touch the live history. The Vite proxy target is
-configurable (`VITE_API_TARGET`), so the two versions can run side by side —
-`localhost:8010` for the API, `localhost:8011` for its frontend — and the
-instance can be deleted afterwards without a trace.
-
-The live instance is the one on **:8000**. Leave it alone.
-
-## The differentiator
-
-| | A social running app | Stride |
-|---|---|---|
-| **Plan** | none — "Training Log" is a calendar of the past | block → phase → week → session, with distance and pace targets |
-| **Completion** | n/a | every session gets a verdict: `hit` · `missed_pace` · `short` · `missed` · `substituted` · `bonus` |
-| **Why** | n/a | causes from sleep, HRV, resting HR, cadence stability and load — with a confidence |
-| **The athlete** | one run at a time | readiness score with visible drivers; a running fingerprint (cadence stability, aerobic decoupling, efficiency, stride length) |
-| **Tomorrow** | n/a | one actionable recommendation for today |
-
-> "Thu tempo: planned 9 km @ 5:40–5:45, ran 9.0 km @ 6:02 (−17 s/km). Night
-> before: sleep 5 h 40 m (baseline 7 h 32 m), HRV 34 ms (baseline 48 ms,
-> −29 %), RHR 63 bpm (baseline 59 bpm). → **Fatigue-driven fade, not a fitness
-> regression.**"
-
-See [`DESIGN.md`](file:///home/sumit/stride/DESIGN.md) for the full design.
-
----
-
-## Quick start
-
-```bash
-cd ~/stride
-./scripts/run.sh            # builds the SPA if needed, starts the app
-```
-
-Then open **http://localhost:8000**.
-
-On this VM it is already running as a managed bb terminal (`Stride API`), so it
-is reachable over Tailscale at **http://100.89.222.50:8000** from any device on
-the tailnet.
-
-### Connecting a second device
-
-A browser on the same machine as the server is given a session cookie
-automatically. A browser on your phone is not — it is a different machine, and
-"any device on my tailnet can read my health data" is not a property anyone
-wants.
-
-So the athlete pairs the device deliberately:
-
-```bash
-cd ~/stride && ./scripts/prod.sh pair
-```
-
-That prints a **QR code**. Point the phone's camera at it and the phone is
-connected — one action, once, and it stays connected. (The same code is
-printed in text, for when the camera will not cooperate. It works **once** and
-expires in **10 minutes**.)
-
-The phone gets its **own** credential, not the master one, so a lost phone
-can be revoked on its own in **Settings → Connected devices** without
-touching the machine.
-
-The tailnet address is served over **HTTPS** with a Tailscale certificate, so
-the phone can *install* Stride — full screen, on the home screen, with no
-browser chrome. A service worker only registers in a secure context, which
-is why plain HTTP would leave you with a browser tab forever.
-
-| | |
-|---|---|
-| desktop | http://127.0.0.1:8000 |
-| phone | https://cf-openclaw.tail62fa14.ts.net:8443 |
-
-The live instance is the **production** one: 160 real Garmin activities, 371
-days of physiology, the real training plan, and no synthetic data. It gets its
-Garmin Personal API Key from Azure Key Vault, so the key is never written to
-disk and never reaches the browser.
-
-> The demo dataset is now **opt-in** (`STRIDE_SEED_DEMO=1`) and off by
-> default. A production database holds only what Garmin actually returned.
-
-| Command | What it does |
-|---|---|
-| `./scripts/prod.sh setup` | First run: schema, vault key, real history, plan |
-| `./scripts/prod.sh start` | Harden permissions, start, health-check |
-| `./scripts/prod.sh status` | What is running and what is in the database |
-| `./scripts/prod.sh doctor` | The full pre-flight — every check, or it fails |
-| `./scripts/prod.sh pair` | Mint a one-time code to connect another device |
-| `./scripts/prod.sh stop` | Stop the instance |
-| `./scripts/run.sh` | Build (if needed) and serve on `:8000` |
-| `./scripts/run.sh dev` | API on `:8000` with reload + Vite HMR on `:5173` |
-| `./scripts/run.sh stop` | Stop everything |
-| `./scripts/run.sh status` | Show what is running |
-| `./scripts/import-fit.sh *.fit` | Import FIT files from the shell |
-| `node scripts/screenshot.mjs` | Render every route in headless Chromium and report errors |
-
-The backend also has a production tool:
-
-```bash
-cd backend
-.venv/bin/python -m tools.production setup        # first run
-.venv/bin/python -m tools.production status       # what is in the database
-.venv/bin/python -m tools.production backfill-fit # rebuild FIT for old activities
-.venv/bin/python -m tools.production prune-sync-history # tidy the sync log
-.venv/bin/python -m tools.production purge-demo   # remove synthetic activities
-```
-
-See [`docs/production-deployment.md`](file:///home/sumit/stride/docs/production-deployment.md).
-
-API docs live at **http://localhost:8000/api/v1/docs**.
-
-### Running it as a managed service
-
-```bash
-bb terminal create --machine host_8ej6yymhhj --cwd /home/sumit/stride \
-  --title "Stride API" \
-  --command "cd /home/sumit/stride/backend && exec /home/sumit/stride/backend/.venv/bin/uvicorn app.main:app --host 0.0.0.0 --port 8000"
-```
-
-### Tests
-
-```bash
-cd backend && .venv/bin/python -m pytest -q     # 74 tests
-cd frontend && npm run typecheck                # zero errors
-```
-
----
-
-## Connecting your Garmin
-
-There are three ways in. All three are supported; none is required to run the app.
-
-### 1. Personal API key (recommended — easiest, and the only one that covers wellness)
-
-Garmin's own first-party API for your own account. You generate a key at
-`https://connect.garmin.com/app/settings/personalApiToken` while signed in to
-Garmin Connect Web. **No developer-program registration, no consumer secret, no
-browser authorisation dance** — and it covers *activities and wellness*:
-sleep, resting heart rate, stress, body battery, HRV and scheduled workouts.
-
-Stride reads it from **Azure Key Vault** (`claw-agent` → `garmin-api`) on this
-VM, so it connects itself at startup; you can also paste one in Settings.
-
-Two steps happen behind the scenes:
-
-1. `POST /personalapitoken-service/personal-api/personal-api-key/token` with
-   `Authorization: ApiKey <key>` returns a JWT valid for 24 hours (scopes:
-   `CONNECT_READ`, `PERSONAL_API_FITNESS_READ`, `PERSONAL_API_WELLNESS_READ`,
-   `PERSONAL_API_USER_READ`, `PERSONAL_API_NUTRITION_READ`). Stride refreshes it
-   automatically.
-2. Every other endpoint is a plain bearer-authenticated GET against
-   `personal.connectapi.garmin.com`.
-
-The original `.FIT` file is downloaded per activity, so each run keeps its full
-GPS track, per-second heart rate and kilometre splits — not just a summary.
-
-### 2. Developer API key (for people who already have one)
-
-Garmin's official OAuth1 Activity API. Requires a **Consumer Key** and
-**Consumer Secret** from [developer.garmin.com](https://developer.garmin.com).
-
-1. In the app: **Settings → Garmin connection → Developer API key**.
-2. Paste the key and secret, click **Connect with key**.
-3. The app opens Garmin's authorisation page. Sign in and approve.
-4. Garmin redirects back to the app and the connection is live.
-
-> Garmin paused new applications to the Connect Developer Program in 2026, so
-> you may not be able to register a new app. If you already have a key, this is
-> the best path — it never touches your password.
-
-### 3. Your Garmin account (the fallback)
-
-Email and password, with an inline MFA step when Garmin demands a 6-digit code.
-Uses the `garminconnect` library under the hood and stores a refreshable session
-token so you only do this once.
-
-Use this when a Personal API key is not available. It unlocks the same wellness
-data (sleep, resting heart rate, stress, body battery, HRV) plus Garmin's
-*scheduled workouts*, which Stride reads as a plan source — at the cost of
-handing Garmin your password.
-
-### 4. FIT files (no credentials at all)
-
-Export `.FIT` files from Garmin Connect (an activity → **⋯** → **Download FIT**)
-and drop them into the app. The importer decodes the full file: GPS track,
-per-second heart rate, cadence, elevation and laps.
-
-```bash
-# or from the command line
-curl -X POST http://localhost:8000/api/v1/auth/garmin/fit-import \
-     -F "files=@activity.fit"
-
-./scripts/import-fit.sh ~/Downloads/*.fit
-```
-
-### Importing your training plan
-
-**Plan → Import a plan**, then paste a markdown (or CSV, or JSON) plan document.
-Stride parses the weekly volume table, the phase pace bands and the day-level
-session tables, and builds the plan hierarchy from it.
-
-The importer is tested against a real 20-week plan and yields **8 phases, 20
-weeks and 83 day-level sessions**, with pace bands on 67 of them. Imported plans
-are **anchored to your activity history**, so the plan and your runs sit on the
-same timeline instead of the plan reading as "every session missed".
-
----
-
-## The network problem (and why there is a network setting)
-
-Garmin throttles **datacentre IPs** hard. From this VM (Azure, AS8075) every
-login attempt returns `429 Too Many Requests` and the web-login path is blocked
-by a Cloudflare bot challenge. The same request from a residential IP succeeds.
-
-So Stride can route its Garmin traffic through the **raspberrypi at home**,
-which advertises itself as a Tailscale exit node. This is what the *Network
-route* control in Settings switches.
-
-| Route | Egress | Use when |
-|---|---|---|
-| `direct` | Azure (datacentre) | Garmin may rate-limit or block |
-| `exit_node` | Home broadband (residential) | Reliable Garmin access |
-
-The app also detects a `429`/bot-challenge mid-sync and retries once through the
-exit node automatically.
-
-> The exit-node switch changes the whole machine's egress, not just Stride's
-> traffic — it is a machine-level Tailscale setting. Switch it back to `direct`
-> when you are done if other traffic needs Azure egress.
-
 ---
 
 ## Architecture
 
 ```
 stride/
-├── backend/                     FastAPI + SQLAlchemy + SQLite
-│   ├── app/
-│   │   ├── main.py              app entrypoint, SPA hosting, scheduler
-│   │   ├── config.py            env config + persisted runtime state
-│   │   ├── db.py                engine, session, WAL pragmas
-│   │   ├── models.py            ORM schema (activities, laps, streams, zones)
-│   │   ├── models_phase2.py     plan hierarchy · results · physiology · fingerprint · gear
-│   │   ├── network.py           Tailscale exit-node management
-│   │   ├── api/                 auth · activities · stats · calendar · sync · plan · physiology · fitness
-│   │   ├── ingest/              garmin_oauth · garmin_account · garmin_health ·
-│   │   │                        garmin_workouts · fit_importer · plan_importer · demo
-│   │   └── services/            persistence · analytics · sync · plan_engine · fingerprint · readiness
-│   ├── tests/                   74 tests (Phase 1 + Phase 2)
-│   └── data/                    stride.db + state.json (gitignored)
-├── frontend/                    React 18 + TS + Vite + Tailwind + Recharts + Leaflet
-│   ├── src/components/          design system: ui · charts · ActivityCard · RouteThumb
-│   ├── src/lib/                 api client + formatters
-│   ├── src/pages/               Dashboard · Plan · Feed · Activity · Training ·
-│   │                            Physiology · Fitness · Stats · Settings
-│   ├── CONTRACT.md              the frozen API/design contract
-│   └── types_phase2.ts          the frozen Phase-2 types
-├── scripts/run.sh               one-command launcher
-├── scripts/import-fit.sh        FIT import from the shell
-├── scripts/screenshot.mjs       headless render + error check for every route
-├── DESIGN.md                    the Phase-2 design of record
-└── PLAN.md                      scope, discovery findings, risks
+├── crates/
+│   ├── stride-core/         fingerprint, readiness, plan engine, comparison
+│   ├── stride-fit/          the FIT parser and the segmentation
+│   ├── stride-garmin/       the Garmin Personal API client
+│   ├── stride-store/        the schema, the migrations, the repositories
+│   ├── stride-api/          the request router — the one router, two hosts
+│   └── stride-mcp/          the harness tools
+├── android/                 the Kotlin shell: the Keystore, the bridge, the notifications
+├── desktop/                 one binary: the router over HTTP, serving the SPA
+├── frontend/                the React app
+├── backend/                 the Python reference implementation, and the oracle
+└── scripts/                 the gates
 ```
 
-### Surfaces
+One router, two hosts: the desktop runs it over HTTP, the phone calls it
+in-process through the FFI. The SPA is unchanged and only its transport
+swaps.
 
-| Route | What it is |
-|---|---|
-| `/` | **Today** — the plan for today, readiness, one recommendation; then volume, pace, records, recent runs |
-| `/plan` | **Plan vs actual** — the week strip (planned beside done), per-session verdicts with causes, weekly adherence, import |
-| `/physiology` | Readiness score with its drivers, sleep stages, HRV against a 30-day baseline |
-| `/fitness` | **Running fingerprint** — cadence stability, HR drift, aerobic decoupling, efficiency, zone split, shoe rotation |
-| `/feed` | Activity feed with route thumbnails, filters, pagination |
-| `/activities/:id` | Interactive map, stat strip, HR/pace/elevation charts, splits table, notes |
-| `/training` | Month calendar with volume tiers, day detail, streaks |
-| `/stats` | Totals & gains, personal records, sport split, year heatmap, trends |
-| `/settings` | Connect Garmin, network route, sync settings, sync history |
+### The data model
 
----
-
-### Data model
-
-`activity` is the canonical row. Every ingest path normalises into the same
-shape before it touches the database, so nothing downstream branches on source.
+The schema is the one the Python app has always had, and it does not change:
+the desktop's export has to open on the phone. `activity` is the canonical
+row; every ingest path normalises into the same shape before it touches the
+database, so nothing downstream branches on source.
 
 ```
-athlete          id, name, email, timezone
 activity         id, source, external_id, name, sport_type, start_time, local_date,
                  distance_m, moving_time_s, elapsed_time_s, elevation_gain_m,
                  avg_hr, max_hr, calories, avg_cadence, avg_speed_ms,
@@ -439,79 +284,42 @@ activity_lap     activity_id, lap_index, distance_m, duration_s, avg_speed_ms,
                  avg_hr, max_hr, avg_cadence, stride_length_m, elevation_*
 activity_stream  activity_id, kind(hr|pace|elevation|distance|cadence), seconds, values
 hr_zone          activity_id, zone_no, name, low_bpm, high_bpm, time_s
-daily_metric     date, resting_hr, sleep_s, hrv_ms, stress, steps, body_battery, readiness
+daily_physiology date, resting_hr, sleep_s, hrv_ms, stress, steps, body_battery, readiness
 sync_run         started_at, finished_at, status, days, activities_found/new/updated, error
 ```
 
-`unique(source, external_id)` makes re-syncing idempotent — Garmin lets you
-rename an activity or add a description, and the next sync updates it in place.
-
-Derived numbers (pace, weekly volume, HR-zone distribution, personal records,
-streaks) are computed on read, so there are no stale aggregates.
+`unique(source, external_id)` makes re-syncing idempotent. Derived numbers
+(pace, weekly volume, HR-zone distribution, personal records, streaks) are
+computed on read, so there are no stale aggregates.
 
 ---
 
-## API
+## Running it
 
-Base URL `/api/v1`. Full OpenAPI docs at `/api/v1/docs`.
-
-| Method | Path | Purpose |
-|---|---|---|
-| GET | `/auth/status` | Garmin connection + network route |
-| POST | `/auth/garmin/developer-key` | Start the OAuth1 handshake → authorise URL |
-| GET | `/auth/garmin/callback` | OAuth1 redirect target |
-| POST | `/auth/garmin/exchange` | Complete the handshake with the verifier |
-| POST | `/auth/garmin/login` | Account login (may return `mfa_required`) |
-| POST | `/auth/garmin/mfa` | Submit the MFA code |
-| POST | `/auth/garmin/fit-import` | Upload `.FIT` files |
-| POST | `/sync/run` | Trigger a sync |
-| GET | `/sync/status` · `/sync/runs` | Sync state and history |
-| PATCH | `/sync/settings` | Sync days, interval, auto-sync, route |
-| GET | `/activities` | Paged, filterable, sortable |
-| GET | `/activities/{id}` | Full detail: laps, streams, zones, route |
-| PATCH | `/activities/{id}` | Rename, describe, rate effort |
-| GET | `/activities/{id}/geo` · `/streams/{kind}` | Track and series |
-| GET | `/stats/summary` | Totals & gains, PRs, streaks, sport split |
-| GET | `/stats/weekly` · `/monthly` · `/pace-trends` · `/hr-zones` · `/personal-records` · `/heatmap` | Analytics |
-| GET | `/calendar?year=&month=` | Calendar with per-day activities |
-| GET | `/network/status` · POST `/network/route` | Egress diagnostics and control |
-
----
-
-## Configuration
-
-Environment variables (all optional):
-
-| Variable | Default | Purpose |
-|---|---|---|
-| `STRIDE_PORT` | `8000` | Port the app serves on |
-| `STRIDE_DATA_DIR` | `backend/data` | SQLite + state location |
-| `STRIDE_PUBLIC_URL` | `http://localhost:8000` | OAuth callback base URL |
-| `STRIDE_EXIT_NODE` | — | Tailscale node used as the exit node |
-| `STRIDE_DEMO_CACHE` | `~/running/sample-data/unified-cache.json` | Demo dataset |
-
-Garmin credentials, OAuth tokens and sync settings are stored in
-`backend/data/state.json` (mode `600`, gitignored). Nothing leaves the machine.
-
----
-
-## Testing the ingest paths
+### The desktop
 
 ```bash
-cd backend
-.venv/bin/python -m pytest              # if you add tests
+cargo run --release -p stride-desktop
 ```
 
-Manual checks:
+It serves the SPA and the API on `127.0.0.1:8000` and opens the athlete's
+own database. The first run converts the plain database into an encrypted
+one — the copy is kept, the row counts are checked, and the plain file is
+only replaced when the converted one reads back with the same rows.
+
+### The reference implementation
 
 ```bash
-# FIT import, end to end
-curl -X POST http://localhost:8000/api/v1/auth/garmin/fit-import -F "files=@run.fit"
+cd backend && .venv/bin/python -m app.serve      # the Python app, :8000
+```
 
-# Developer-key handshake (fails cleanly without a real key)
-curl -X POST http://localhost:8000/api/v1/auth/garmin/developer-key \
-     -H 'Content-Type: application/json' \
-     -d '{"consumer_key":"...","consumer_secret":"..."}'
+### Tests
+
+```bash
+./scripts/rust_gate.sh          # the Rust workspace
+./scripts/security_check.sh      # the Python side
+cd backend && .venv/bin/python -m pytest -q
+cd frontend && npm run typecheck
 ```
 
 ---

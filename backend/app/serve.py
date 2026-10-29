@@ -1,18 +1,22 @@
 """Run Stride's API on two listeners, in one process.
 
-- **Plain HTTP on :8000** — the operator's own machine, and the tailnet.
+- **Plain HTTP on :8000** — the operator's own machine.
 - **HTTPS on :8443** — the phone.
 
 The phone needs HTTPS for one concrete reason: a service worker only
 registers in a *secure context*. On plain HTTP the browser would refuse to
 install the app, so the athlete's phone would be stuck with a browser tab
-instead of a full-screen app on the home screen. The certificate comes from
-Tailscale (``tailscale cert``), so it is a real, publicly trusted one and the
-phone shows no warning.
+instead of a full-screen app on the home screen. The certificate is the
+deployment's business; point ``STRIDE_TLS_DIR`` at it.
 
 Both listeners serve the same application in the same process, so there is
 one scheduler, one database and one state file. Two processes would mean two
 auto-syncs racing each other against the Garmin API.
+
+The HTTPS listener binds ``STRIDE_TLS_HOST`` (``0.0.0.0`` by default) and
+``STRIDE_TLS_PORT`` (``8443`` by default). It *detects nothing*: no address
+is discovered at startup, and no external command is run to work out where
+to listen. The address the operator wants is the address they configure.
 
     python -m app.serve
 """
@@ -71,21 +75,23 @@ def _close_inherited_descriptors() -> None:
         pass
 
 
-def _tailscale_ipv4() -> str | None:
-    """This machine's address on the tailnet, if it has one."""
-    import subprocess
+def tls_listener() -> tuple[str, int]:
+    """The address the HTTPS listener binds.
 
+    ``STRIDE_TLS_HOST`` (default ``0.0.0.0``) and ``STRIDE_TLS_PORT``
+    (default ``8443``). Nothing is detected and nothing is discovered: the
+    operator's configuration is the answer, and the listener binds exactly
+    that and nothing else.
+    """
+    host = os.getenv("STRIDE_TLS_HOST", "0.0.0.0")
+    raw_port = os.getenv("STRIDE_TLS_PORT", "8443")
     try:
-        result = subprocess.run(
-            ["tailscale", "ip", "-4"],
-            capture_output=True,
-            text=True,
-            timeout=5,
-        )
-    except (OSError, subprocess.SubprocessError):
-        return None
-    address = result.stdout.strip().splitlines()
-    return address[0].strip() if address else None
+        port = int(raw_port)
+    except ValueError as exc:
+        raise RuntimeError(
+            f"STRIDE_TLS_PORT must be a number, not {raw_port!r}"
+        ) from exc
+    return host, port
 
 
 def main() -> int:
@@ -95,24 +101,14 @@ def main() -> int:
     from app.security import ensure_safe_bind_configuration
 
     http_port = int(os.getenv("STRIDE_PORT", "8000"))
-    tls_port = int(os.getenv("STRIDE_TLS_PORT", "8443"))
-    # One address for both listeners. ``STRIDE_BIND`` is the documented
+    # The HTTPS listener is for the phone. It binds exactly what the
+    # operator configured — no address detection, no external command.
+    tls_host, tls_port = tls_listener()
+    # One address for the plain listener. ``STRIDE_BIND`` is the documented
     # control; ``STRIDE_HOST`` is the older name and still honoured.
     # The plain listener is for the browser on this machine, so it binds
-    # loopback. The TLS listener is for the phone, so it binds the tailnet
-    # address. Nothing is ever bound on the public interface.
+    # loopback.
     host = os.getenv("STRIDE_BIND") or os.getenv("STRIDE_HOST") or "127.0.0.1"
-    tls_host = (
-        os.getenv("STRIDE_TLS_HOST")
-        or os.getenv("STRIDE_TLS_BIND")
-        or _tailscale_ipv4()
-        or "127.0.0.1"
-    )
-    if tls_host == "127.0.0.1":
-        log.warning(
-            "no tailnet address found - the HTTPS listener is on loopback only, "
-            "so a phone cannot reach it"
-        )
 
     # The safety check has to see the address this process is *about* to
     # bind. It used to read a different variable, so the guard was inert
@@ -123,7 +119,7 @@ def main() -> int:
     #
     # Both listeners are checked. The TLS one is the one the phone reaches,
     # so it is the one that matters: a loopback plain listener with a
-    # tailnet TLS listener is still an exposed API.
+    # wildcard TLS listener is still an exposed API.
     ensure_safe_bind_configuration(host)
     ensure_safe_bind_configuration(tls_host)
 

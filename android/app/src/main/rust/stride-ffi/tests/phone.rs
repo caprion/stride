@@ -319,3 +319,111 @@ fn the_status_answers_before_anything_is_open() {
     assert_eq!(parsed["ok"], true);
     assert_eq!(parsed["body"]["core"], "stride-ffi");
 }
+
+#[test]
+fn the_app_can_see_that_garmin_is_connected() {
+    let _guard = lock();
+    let dir = TempDir::new("connected");
+    let answer = uniffi_stride::stride_open(dir.db(), key_hex(17));
+    assert!(answer.contains("\"ok\":true"), "the answer was {answer}");
+
+    // No key: not connected, and the app is told so.
+    let status = uniffi_stride::stride_call("GET".into(), "/api/v1/auth/status".into(), None);
+    let parsed: Value = serde_json::from_str(&status).expect("the answer is JSON");
+    assert_eq!(
+        parsed["body"]["garmin_connected"], false,
+        "the answer was {status}"
+    );
+    assert_eq!(
+        parsed["body"]["garmin_method"],
+        Value::Null,
+        "the answer was {status}"
+    );
+
+    // The key is there: the app can see that Garmin is connected, and by
+    // what. The phone never sends the key to the page.
+    uniffi_stride::stride_set_garmin_key("a-personal-api-key".to_string());
+    let status = uniffi_stride::stride_call("GET".into(), "/api/v1/auth/status".into(), None);
+    let parsed: Value = serde_json::from_str(&status).expect("the answer is JSON");
+    assert_eq!(
+        parsed["body"]["garmin_connected"], true,
+        "the answer was {status}"
+    );
+    assert_eq!(
+        parsed["body"]["garmin_method"], "personal",
+        "the answer was {status}"
+    );
+
+    // The key goes: so does the connection.
+    uniffi_stride::stride_set_garmin_key(String::new());
+    let status = uniffi_stride::stride_call("GET".into(), "/api/v1/auth/status".into(), None);
+    let parsed: Value = serde_json::from_str(&status).expect("the answer is JSON");
+    assert_eq!(
+        parsed["body"]["garmin_connected"], false,
+        "the answer was {status}"
+    );
+    assert_eq!(
+        parsed["body"]["garmin_method"],
+        Value::Null,
+        "the answer was {status}"
+    );
+}
+
+#[test]
+fn the_time_of_the_last_pull_survives_in_the_phone_database() {
+    let _guard = lock();
+    let dir = TempDir::new("last-sync");
+    let answer = uniffi_stride::stride_open(dir.db(), key_hex(19));
+    assert!(answer.contains("\"ok\":true"), "the answer was {answer}");
+
+    // Nothing has been pulled yet.
+    let status = uniffi_stride::stride_call("GET".into(), "/api/v1/sync/status".into(), None);
+    let parsed: Value = serde_json::from_str(&status).expect("the answer is JSON");
+    assert_eq!(parsed["ok"], true, "the answer was {status}");
+    assert_eq!(
+        parsed["body"]["last_sync_at"],
+        Value::Null,
+        "the answer was {status}"
+    );
+
+    // A pull that worked, written the way the phone's shell writes it.
+    {
+        let store = Store::open(std::path::Path::new(&dir.db()), &[19u8; 32])
+            .expect("the store could not be opened");
+        let now = chrono::Utc::now();
+        store
+            .upsert_sync_run(&stride_store::model::SyncRun {
+                id: None,
+                source: "garmin_personal".to_string(),
+                started_at: now,
+                finished_at: Some(now),
+                status: "ok".to_string(),
+                days: 365,
+                activities_found: 160,
+                activities_new: 160,
+                activities_updated: 0,
+                message: Some("160 runs, 160 new, 0 updated".to_string()),
+                error: None,
+            })
+            .expect("the sync log was not written");
+    }
+
+    // The app reads the time of the last pull out of the phone's own
+    // database, not out of the memory the key was in.
+    let status = uniffi_stride::stride_call("GET".into(), "/api/v1/sync/status".into(), None);
+    let parsed: Value = serde_json::from_str(&status).expect("the answer is JSON");
+    assert_eq!(parsed["ok"], true, "the answer was {status}");
+    assert!(
+        parsed["body"]["last_sync_at"].is_string(),
+        "the answer was {status}"
+    );
+
+    // And the log itself is there for the app to read.
+    let runs = uniffi_stride::stride_call("GET".into(), "/api/v1/sync/runs".into(), None);
+    let parsed: Value = serde_json::from_str(&runs).expect("the answer is JSON");
+    assert_eq!(parsed["ok"], true, "the answer was {runs}");
+    let items = parsed["body"]["items"].as_array().expect("there are items");
+    assert_eq!(items.len(), 1, "the log was {runs}");
+    assert_eq!(items[0]["activities_found"], 160, "the log was {runs}");
+    assert_eq!(items[0]["status"], "ok", "the log was {runs}");
+}

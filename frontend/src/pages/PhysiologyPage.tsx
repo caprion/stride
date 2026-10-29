@@ -27,6 +27,7 @@ import {
 } from '../lib/palette'
 import { formatDate } from '../lib/format'
 import { Card, CardHeader, EmptyState, PageHeader, Skeleton, Badge } from '../components/ui'
+import { isPhone } from '../lib/surface'
 import { ChartFrame } from '../components/charts'
 import { RangeSelector, sinceDate } from '../components/RangeSelector'
 
@@ -56,7 +57,6 @@ const NoRows = ({ loading, title }: { loading: boolean; title: string }) =>
     <EmptyState title={title} description="There is no recorded data for this range yet." />
   )
 
-
 /**
  * The year of readiness, as one strip.
  *
@@ -68,11 +68,7 @@ const NoRows = ({ loading, title }: { loading: boolean; title: string }) =>
  * merged into runs and drawn as a single gradient with hard stops. It is the
  * same idea as a year heatmap, and it survives being a hundred pixels wide.
  */
-function ReadinessStrip({
-  items,
-}: {
-  items: { date: string; grade: string }[]
-}) {
+function ReadinessStrip({ items }: { items: { date: string; grade: string }[] }) {
   const { gradient, first, last } = useMemo(() => {
     if (!items.length) return { gradient: '', first: '', last: '' }
     const runs: { grade: string; from: number; to: number }[] = []
@@ -163,7 +159,7 @@ export default function PhysiologyPage() {
   return (
     <div className="mx-auto max-w-7xl p-5">
       <PageHeader
-        title="Physiology"
+        title={isPhone() ? 'Body' : 'Physiology'}
         description="Your recovery state, the signals behind it, and how they are moving."
       />
       {sources.isLoading ? (
@@ -291,10 +287,13 @@ export default function PhysiologyPage() {
                               <span className="font-semibold">{d.label}</span>
                               <span className="text-ink-muted">
                                 {num(d.value)}
-                                {d.unit ? <span className="text-ink-faint"> {d.unit}</span> : null}
+                                {d.unit ? (
+                                  <span className="text-ink-faint"> {d.unit}</span>
+                                ) : null}
                                 {d.baseline != null && (
                                   <span className="text-ink-faint">
-                                    {' '}· baseline {num(d.baseline)}
+                                    {' '}
+                                    · baseline {num(d.baseline)}
                                     {d.delta != null && ` · Δ ${num(d.delta)}`}
                                   </span>
                                 )}
@@ -333,13 +332,7 @@ export default function PhysiologyPage() {
               title="Sleep"
               subtitle={`Sleep stages by night · baseline ${sleep.data?.items.length ? `${Math.round((sleep.data.items.reduce((n, p) => n + (p.sleep_s ?? 0), 0) / sleep.data.items.length / 3600) * 10) / 10} h average` : '—'}`}
               height={280}
-              action={
-                <RangeSelector
-                  value={days}
-                  onChange={setDays}
-                  className="self-start"
-                />
-              }
+              action={<RangeSelector value={days} onChange={setDays} className="self-start" />}
             >
               {sleep.isLoading ? (
                 <div className="p-3">
@@ -348,14 +341,16 @@ export default function PhysiologyPage() {
               ) : sleep.data?.items.length ? (
                 <ResponsiveContainer width="100%" height="100%">
                   <ComposedChart
-                    data={sleep.data.items.filter((p) => p.date >= since).map((p) => ({
-                      ...p,
-                      label: formatDate(p.date).slice(0, 6),
-                      deep: (p.deep_sleep_s ?? 0) / 3600,
-                      rem: (p.rem_s ?? 0) / 3600,
-                      light: (p.light_sleep_s ?? 0) / 3600,
-                      awake: (p.awake_s ?? 0) / 3600,
-                    }))}
+                    data={sleep.data.items
+                      .filter((p) => p.date >= since)
+                      .map((p) => ({
+                        ...p,
+                        label: formatDate(p.date).slice(0, 6),
+                        deep: (p.deep_sleep_s ?? 0) / 3600,
+                        rem: (p.rem_s ?? 0) / 3600,
+                        light: (p.light_sleep_s ?? 0) / 3600,
+                        awake: (p.awake_s ?? 0) / 3600,
+                      }))}
                   >
                     <CartesianGrid stroke={GRID} vertical={false} />
                     <XAxis dataKey="label" tick={{ fontSize: 10, fill: INK_MUTED }} />
@@ -420,10 +415,12 @@ export default function PhysiologyPage() {
               ) : hrv.data?.items.length ? (
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart
-                    data={hrv.data.items.filter((p) => p.date >= since).map((p) => ({
-                      ...p,
-                      label: formatDate(p.date).slice(0, 6),
-                    }))}
+                    data={hrv.data.items
+                      .filter((p) => p.date >= since)
+                      .map((p) => ({
+                        ...p,
+                        label: formatDate(p.date).slice(0, 6),
+                      }))}
                   >
                     <CartesianGrid stroke={GRID} vertical={false} />
                     <XAxis dataKey="label" tick={{ fontSize: 10, fill: INK_MUTED }} />
@@ -494,10 +491,12 @@ export default function PhysiologyPage() {
               ) : readiness.data?.items.length ? (
                 <ResponsiveContainer width="100%" height="100%">
                   <AreaChart
-                    data={readiness.data.items.filter((p) => p.date >= since).map((p) => ({
-                      ...p,
-                      label: formatDate(p.date).slice(0, 6),
-                    }))}
+                    data={readiness.data.items
+                      .filter((p) => p.date >= since)
+                      .map((p) => ({
+                        ...p,
+                        label: formatDate(p.date).slice(0, 6),
+                      }))}
                   >
                     <CartesianGrid stroke={GRID} vertical={false} />
                     <XAxis dataKey="label" tick={{ fontSize: 10, fill: INK_MUTED }} />

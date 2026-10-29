@@ -1,13 +1,17 @@
 package app.stride.running
 
 import android.content.Context
+import android.content.Intent
 import android.os.Bundle
 import android.view.WindowManager
 import android.util.Log
 import app.stride.running.bridge.StrideApiPlugin
 import app.stride.running.core.StrideCore
 import app.stride.running.security.AppGate
+import app.stride.running.security.Secrets
 import app.stride.running.settings.AppSettings
+import app.stride.running.setup.GarminSetupActivity
+import app.stride.running.setup.SetupEntry
 import app.stride.running.sync.SyncNotifications
 import app.stride.running.sync.SyncScheduler
 import com.getcapacitor.BridgeActivity
@@ -37,6 +41,14 @@ class MainActivity : BridgeActivity() {
      */
     private val gate by lazy { AppGate(this) }
 
+    /**
+     * Whether the Garmin setup screen has been opened from here.
+     *
+     * It is opened once, on the first launch, and never again: not because
+     * it was dismissed, and not because the app was restarted.
+     */
+    private var setupOpened = false
+
     override fun onCreate(savedInstanceState: Bundle?) {
         // The plugin has to be registered before the bridge is built.
         registerPlugin(StrideApiPlugin::class.java)
@@ -51,6 +63,12 @@ class MainActivity : BridgeActivity() {
         super.onCreate(savedInstanceState)
 
         SyncNotifications.ensureChannel(this)
+
+        // The setup screen waits for the gate: it is opened behind the
+        // credential, never in front of it. The listener is set first: a
+        // phone with no screen lock has nothing to unlock, so the gate
+        // opens at once and says so.
+        gate.onUnlocked = { openSetupIfNeeded() }
 
         // The gate goes up before anything is shown.
         gate.lock()
@@ -74,6 +92,17 @@ class MainActivity : BridgeActivity() {
                 Log.i("Stride", "the core is not open: $problem")
                 return@Thread
             }
+            // The phone's key lives in the Keystore and the core never keeps
+            // it. The core is told the *fact* of it, so the app can say
+            // "Garmin is connected" after a restart without the key being in
+            // memory.
+            val key = try {
+                Secrets.garminKey(applicationContext)
+            } catch (error: Exception) {
+                Log.i("Stride", "the Garmin key could not be read: ${error.message}")
+                null
+            }
+            StrideCore.setGarminConnected(!key.isNullOrBlank())
             SyncScheduler.schedule(applicationContext)
         }, "stride-open").apply { isDaemon = true }.start()
     }
@@ -81,11 +110,50 @@ class MainActivity : BridgeActivity() {
     override fun onStart() {
         super.onStart()
         gate.onForeground()
+        if (gate.isUnlocked) openSetupIfNeeded()
     }
 
     override fun onStop() {
         gate.onBackground()
         super.onStop()
+    }
+
+    /**
+     * Open the Garmin setup screen, once.
+     *
+     * The app without a key cannot show the athlete their runs, so the one
+     * thing the app needs from them is asked for on the first launch: the
+     * native screen, where the key is typed into the app and never into the
+     * page.
+     *
+     * Three conditions, and all three have to hold:
+     *
+     * * there is no key — once there is one, the app has what it needs and
+     *   the screen has nothing left to ask for;
+     * * the athlete has not dismissed the screen — being dismissed is a
+     *   decision, and it is kept;
+     * * the screen has not been opened from here already.
+     */
+    private fun openSetupIfNeeded() {
+        if (setupOpened) return
+        if (!SetupEntry.shouldOpen(hasGarminKey(), AppSettings(this).setupDismissed)) return
+
+        setupOpened = true
+        try {
+            startActivity(Intent(this, GarminSetupActivity::class.java))
+        } catch (error: Exception) {
+            Log.w("Stride", "the setup screen could not be opened: ${error.message}")
+        }
+    }
+
+    /** Whether the phone holds a Garmin key. */
+    private fun hasGarminKey(): Boolean = try {
+        !Secrets.garminKey(this).isNullOrBlank()
+    } catch (error: Exception) {
+        // A phone whose key store has been reset has no key, and the
+        // setup screen is the way to put one back.
+        Log.i("Stride", "the Garmin key could not be read: ${error.message}")
+        false
     }
 
     /**

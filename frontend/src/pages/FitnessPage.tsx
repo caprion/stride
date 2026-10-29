@@ -12,6 +12,7 @@ import {
   YAxis,
 } from 'recharts'
 import { api } from '../lib/api'
+import { isPhone } from '../lib/surface'
 import { useMediaQuery } from '../lib/useMediaQuery'
 import { RangeSelector, sinceDate } from '../components/RangeSelector'
 import { GRID, INK_FAINT, INK_MUTED, METRIC } from '../lib/palette'
@@ -38,12 +39,32 @@ type Metric =
   | 'form_score'
 const metrics: { value: Metric; label: string; simple: string; color: string }[] = [
   { value: 'hr_drift_pct', label: 'HR drift', simple: 'HR drift', color: METRIC.heartRate },
-  { value: 'decoupling_pct', label: 'Aerobic decoupling', simple: 'decoupling', color: METRIC.drift },
+  {
+    value: 'decoupling_pct',
+    label: 'Aerobic decoupling',
+    simple: 'decoupling',
+    color: METRIC.drift,
+  },
   { value: 'cadence_avg', label: 'Cadence', simple: 'cadence', color: METRIC.cadence },
-  { value: 'cadence_cv', label: 'Cadence stability', simple: 'cadence stability', color: METRIC.cadence },
+  {
+    value: 'cadence_cv',
+    label: 'Cadence stability',
+    simple: 'cadence stability',
+    color: METRIC.cadence,
+  },
   // TODO(shared): Add pace_drift_pct to the fitness/trends metric contract and backend.
-  { value: 'efficiency_first', label: 'Efficiency factor', simple: 'efficiency', color: METRIC.pace },
-  { value: 'pace_cv', label: 'Pace consistency', simple: 'pace consistency', color: METRIC.pace },
+  {
+    value: 'efficiency_first',
+    label: 'Efficiency factor',
+    simple: 'efficiency',
+    color: METRIC.pace,
+  },
+  {
+    value: 'pace_cv',
+    label: 'Pace consistency',
+    simple: 'pace consistency',
+    color: METRIC.pace,
+  },
   { value: 'form_score', label: 'Form score', simple: 'form score', color: METRIC.effort },
 ]
 const display = (v: number | null | undefined, suffix = '') =>
@@ -106,7 +127,7 @@ export default function FitnessPage() {
   return (
     <div className="mx-auto max-w-7xl p-5">
       <PageHeader
-        title="Running fingerprint"
+        title={isPhone() ? 'Form' : 'Running fingerprint'}
         description="The mechanics that make your running yours — and how they change over time."
       />
       <Card className="mb-4">
@@ -217,39 +238,39 @@ export default function FitnessPage() {
                     : ''}
                 </p>
                 {isWide ? (
-                <div className="overflow-x-auto">
-                  <table className="w-full min-w-[900px] text-left text-xs">
-                    <thead className="bg-surface-soft text-[10px] uppercase tracking-wide text-ink-muted">
-                      <tr>
-                        {[
-                          'Date',
-                          'Run',
-                          'Distance',
-                          'Cadence',
-                          'Cadence CV',
-                          'HR drift',
-                          'Decoupling',
-                          'Pace drift',
-                          'Form',
-                        ].map((h) => (
-                          <th key={h} className="px-3 py-2.5">
-                            {h}
-                          </th>
+                  <div className="overflow-x-auto">
+                    <table className="w-full min-w-[900px] text-left text-xs">
+                      <thead className="bg-surface-soft text-[10px] uppercase tracking-wide text-ink-muted">
+                        <tr>
+                          {[
+                            'Date',
+                            'Run',
+                            'Distance',
+                            'Cadence',
+                            'Cadence CV',
+                            'HR drift',
+                            'Decoupling',
+                            'Pace drift',
+                            'Form',
+                          ].map((h) => (
+                            <th key={h} className="px-3 py-2.5">
+                              {h}
+                            </th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-edge">
+                        {rows.map((r) => (
+                          <FingerprintRow
+                            key={r.activity_id}
+                            item={r}
+                            cvBaseline={cvBaseline}
+                            decoupleBaseline={decoupleBaseline}
+                          />
                         ))}
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-edge">
-                      {rows.map((r) => (
-                        <FingerprintRow
-                          key={r.activity_id}
-                          item={r}
-                          cvBaseline={cvBaseline}
-                          decoupleBaseline={decoupleBaseline}
-                        />
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                      </tbody>
+                    </table>
+                  </div>
                 ) : (
                   <FingerprintCards
                     rows={showAll ? rows : rows.slice(0, MOBILE_ROWS)}
@@ -352,7 +373,6 @@ export default function FitnessPage() {
   )
 }
 
-
 /**
  * The fingerprint list, as cards.
  *
@@ -398,19 +418,13 @@ function FingerprintCards({
               {item.pace_s_per_km ? ` · ${formatPaceWithUnit(item.pace_s_per_km)}` : ''}
             </p>
             <dl className="mt-2.5 grid grid-cols-2 gap-x-4 gap-y-2">
-              <Metric
-                label="Cadence"
-                value={display(item.cadence_avg, ' spm')}
-              />
+              <Metric label="Cadence" value={display(item.cadence_avg, ' spm')} />
               <Metric
                 label="Cadence CV"
                 value={display(item.cadence_cv, '%')}
                 tone={favorable(item.cadence_cv, cvBaseline, 'lower')}
               />
-              <Metric
-                label="HR drift"
-                value={display(item.hr_drift_pct, '%')}
-              />
+              <Metric label="HR drift" value={display(item.hr_drift_pct, '%')} />
               <Metric
                 label="Decoupling"
                 value={display(item.decoupling_pct, '%')}
@@ -440,15 +454,7 @@ function FingerprintCards({
   )
 }
 
-function Metric({
-  label,
-  value,
-  tone = '',
-}: {
-  label: string
-  value: string
-  tone?: string
-}) {
+function Metric({ label, value, tone = '' }: { label: string; value: string; tone?: string }) {
   return (
     <div className="min-w-0">
       <dt className="text-[10px] font-semibold uppercase tracking-wide text-ink-faint">

@@ -5,7 +5,7 @@
  * with the athlete's own sections, and a dense content column in the middle.
  */
 
-import { useMutation, useQuery } from '@tanstack/react-query'
+import { useQuery } from '@tanstack/react-query'
 import {
   Activity,
   BarChart3,
@@ -15,18 +15,17 @@ import {
   Gauge,
   HeartPulse,
   LayoutDashboard,
-  RefreshCw,
   Settings as SettingsIcon,
   TrendingUp,
-  Wifi,
-  WifiOff,
   type LucideIcon,
 } from 'lucide-react'
 import { Link, NavLink, useLocation } from 'react-router-dom'
 import type { ReactNode } from 'react'
 import { api } from '../lib/api'
-import { formatDistanceShort, formatRelative } from '../lib/format'
-import { Badge, Button, cn } from './ui'
+import { formatDistanceShort } from '../lib/format'
+import { DESKTOP_DESTINATIONS, PHONE_DESTINATIONS, isPhone } from '../lib/surface'
+import { ConnectGarmin, GarminPill } from './GarminStatus'
+import { cn } from './ui'
 
 const PRIMARY_NAV = [
   { to: '/', label: 'Dashboard', icon: LayoutDashboard, end: true },
@@ -80,16 +79,16 @@ function NavItem({
 export function AppLayout({ children }: { children: ReactNode }) {
   const location = useLocation()
 
+  // The phone and the desktop are the same app with a different amount of
+  // room. The phone shows five destinations; the desktop shows its full
+  // set.
+  const phone = isPhone()
+  const destinations = phone ? PHONE_DESTINATIONS : DESKTOP_DESTINATIONS
+
   const { data: auth } = useQuery({
     queryKey: ['auth-status'],
     queryFn: api.authStatus,
     refetchInterval: 30_000,
-  })
-
-  const { data: sync } = useQuery({
-    queryKey: ['sync-status'],
-    queryFn: api.syncStatus,
-    refetchInterval: 15_000,
   })
 
   const { data: summary } = useQuery({
@@ -98,8 +97,6 @@ export function AppLayout({ children }: { children: ReactNode }) {
     staleTime: 60_000,
   })
 
-  const connected = auth?.garmin_connected ?? false
-  const syncing = sync?.running ?? false
   const athleteName =
     (auth?.athlete?.full_name as string | undefined) ||
     (auth?.athlete?.name as string | undefined) ||
@@ -120,30 +117,27 @@ export function AppLayout({ children }: { children: ReactNode }) {
           </Link>
 
           <nav className="ml-4 hidden items-center gap-1 md:flex">
-            {PRIMARY_NAV.map((item) => (
-              <NavLink
-                key={item.to}
-                to={item.to}
-                end={item.end}
-                className={({ isActive }) =>
-                  cn(
-                    'rounded-md px-3 py-1.5 text-[14px] font-semibold transition-colors',
-                    isActive ? 'text-brand-600' : 'text-ink-soft hover:text-ink',
-                  )
-                }
-              >
-                {item.label}
-              </NavLink>
-            ))}
+            {phone
+              ? null
+              : PRIMARY_NAV.map((item) => (
+                  <NavLink
+                    key={item.to}
+                    to={item.to}
+                    end={item.end}
+                    className={({ isActive }) =>
+                      cn(
+                        'rounded-md px-3 py-1.5 text-[14px] font-semibold transition-colors',
+                        isActive ? 'text-brand-600' : 'text-ink-soft hover:text-ink',
+                      )
+                    }
+                  >
+                    {item.label}
+                  </NavLink>
+                ))}
           </nav>
 
           <div className="ml-auto flex items-center gap-2">
-            <SyncPill
-              connected={connected}
-              syncing={syncing}
-              lastSyncAt={sync?.last_sync_at ?? auth?.last_sync_at ?? null}
-              exitNodeActive={auth?.network?.exit_node_active ?? false}
-            />
+            <GarminPill />
             <Link to="/settings" aria-label="Settings">
               <span className="flex h-8 w-8 items-center justify-center rounded-full bg-surface-sunken text-ink-soft transition-colors hover:bg-edge">
                 <SettingsIcon size={16} />
@@ -158,7 +152,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
 
       <div className="mx-auto flex max-w-[1400px] gap-6 px-4 py-6">
         {/* -------------------------------------------------- left rail */}
-        <aside className="hidden w-[212px] shrink-0 lg:block">
+        <aside className={cn('w-[212px] shrink-0', phone ? 'hidden' : 'hidden lg:block')}>
           <div className="sticky top-20 space-y-5">
             <nav className="space-y-0.5">
               {SECONDARY_NAV.map((item) => (
@@ -210,30 +204,11 @@ export function AppLayout({ children }: { children: ReactNode }) {
               </div>
             ) : null}
 
-            {connected ? (
-              <div className="rounded-card border border-edge bg-surface p-4 shadow-card">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.07em] text-ink-muted">
-                  Garmin
-                </p>
-                <p className="mt-1 flex items-center gap-1.5 text-[13px] font-medium text-positive">
-                  <span className="h-2 w-2 rounded-full bg-positive" />
-                  Connected
-                </p>
-                <p className="mt-1 text-[12px] text-ink-muted">
-                  {auth?.garmin_method === 'developer_key' ? 'Developer key' : 'Account'}
-                </p>
-              </div>
-            ) : (
-              <div className="rounded-card border border-dashed border-edge bg-surface p-4">
-                <p className="text-[13px] font-semibold text-ink">Connect Garmin</p>
-                <p className="mt-1 text-[12px] text-ink-muted">
-                  Sync your watch automatically.
-                </p>
-                <Link to="/settings" className="mt-2.5 inline-block">
-                  <Button size="sm">Connect</Button>
-                </Link>
-              </div>
-            )}
+            {/*
+              The connection state is said in one place — the indicator in
+              the top bar. The rail does not carry a second opinion about
+              it.
+            */}
           </div>
         </aside>
 
@@ -244,8 +219,18 @@ export function AppLayout({ children }: { children: ReactNode }) {
       </div>
 
       {/* --------------------------------------------- mobile bottom bar */}
-      <nav className="fixed bottom-0 left-0 right-0 z-40 flex border-t border-edge bg-surface md:hidden">
-        {PRIMARY_NAV.map((item) => (
+      {/*
+        The phone's navigation: five destinations, always at the bottom —
+        a phone turned sideways is still a phone. The desktop shows its
+        full set in the same place.
+      */}
+      <nav
+        className={cn(
+          'fixed bottom-0 left-0 right-0 z-40 border-t border-edge bg-surface',
+          phone ? 'flex' : 'hidden md:flex',
+        )}
+      >
+        {destinations.map((item) => (
           <NavLink
             key={item.to}
             to={item.to}
@@ -293,65 +278,8 @@ function DemoNotice() {
           You are browsing <strong>demo data</strong>. Connect your Garmin to sync your real
           runs.
         </p>
-        <Link
-          to="/settings"
-          className="shrink-0 rounded-md bg-amber-500 px-3 py-1 text-[12px] font-semibold text-white hover:bg-amber-600"
-        >
-          Connect Garmin
-        </Link>
+        <ConnectGarmin small className="shrink-0" />
       </div>
     </div>
-  )
-}
-
-function SyncPill({
-  connected,
-  syncing,
-  lastSyncAt,
-  exitNodeActive,
-}: {
-  connected: boolean
-  syncing: boolean
-  lastSyncAt: string | null
-  exitNodeActive: boolean
-}) {
-  const { mutate, isPending } = useMutation({
-    mutationFn: () => api.runSync(),
-  })
-
-  if (syncing) {
-    return (
-      <Badge tone="info">
-        <RefreshCw size={11} className="animate-spin" />
-        Syncing
-      </Badge>
-    )
-  }
-
-  if (!connected) {
-    return (
-      <Link to="/settings">
-        <Badge tone="neutral">
-          <WifiOff size={11} />
-          Garmin offline
-        </Badge>
-      </Link>
-    )
-  }
-
-  return (
-    <button
-      onClick={() => mutate()}
-      disabled={isPending}
-      className="hidden items-center gap-2 rounded-full border border-edge bg-surface px-3 py-1.5 text-[12px] text-ink-soft transition-colors hover:bg-surface-soft sm:inline-flex"
-      title="Sync now"
-    >
-      <span className="h-2 w-2 rounded-full bg-positive" />
-      <span className="font-medium">Synced {formatRelative(lastSyncAt)}</span>
-      <RefreshCw size={12} className={cn(isPending && 'animate-spin')} />
-      {exitNodeActive ? (
-        <Wifi size={12} className="text-brand-500" aria-label="Routed via home exit node" />
-      ) : null}
-    </button>
   )
 }

@@ -3,8 +3,9 @@
 The capability stored here is deliberately *not* an account login.  It is a
 random secret held by the local athlete's browser in an HttpOnly cookie (or
 presented explicitly in an Authorization header).  It prevents other local
-processes and tailnet peers from reading health data or spending the athlete's
-Garmin API quota merely because they can reach the port.
+processes and peers on the operator's network from reading health data or
+spending the athlete's Garmin API quota merely because they can reach the
+port.
 """
 
 from __future__ import annotations
@@ -31,7 +32,14 @@ from fastapi import HTTPException, Request
 from fastapi.responses import JSONResponse, Response
 from starlette.middleware.base import BaseHTTPMiddleware
 
-from .config import DATA_DIR, DB_PATH, STATE_PATH, state
+from .config import (
+    DATA_DIR,
+    DB_PATH,
+    STATE_PATH,
+    state,
+    trust_remote_enabled,
+    trusted_networks,
+)
 
 API_PREFIX = "/api/v1"
 BOOTSTRAP_PATH = f"{API_PREFIX}/bootstrap"
@@ -407,20 +415,21 @@ def is_remote_client(request: Request) -> bool:
         return False
 
 
-# Tailscale hands out addresses from the 100.64.0.0/10 carrier-grade NAT
-# range, so this is the tailnet and nothing else.
-TAILNET_NETWORK = ipaddress.ip_network("100.64.0.0/10")
+def is_trusted_network_client(request: Request) -> bool:
+    """Is the TCP peer inside one of the operator's trusted networks?
 
-
-def is_tailnet_client(request: Request) -> bool:
-    """Is the TCP peer on the Tailscale network?"""
+    The networks are the ones the operator configured
+    (``STRIDE_TRUSTED_NETWORKS``). The default list is empty, so by default
+    no remote address is in a trusted network at all.
+    """
     client = request.client
     if not client:
         return False
     try:
-        return ipaddress.ip_address(client.host) in TAILNET_NETWORK
+        address = ipaddress.ip_address(client.host)
     except ValueError:
         return False
+    return any(address in network for network in trusted_networks())
 
 
 def is_trusted_client(request: Request) -> bool:
@@ -429,29 +438,30 @@ def is_trusted_client(request: Request) -> bool:
     Two cases:
 
     - **Loopback.** The machine itself. It has the database anyway.
-    - **The tailnet**, when the operator has said the tailnet is private
-      enough to trust (``STRIDE_TRUST_TAILNET=1``). This is the setting that
-      lets the phone work without a pairing code.
+    - **A trusted network**, when the operator has said the clients from
+      those networks are trusted (``STRIDE_TRUST_REMOTE=1`` together with
+      ``STRIDE_TRUSTED_NETWORKS``). This is the setting that lets the phone
+      work without a pairing code.
 
-    The trade-off is real and worth stating plainly: trusting the tailnet
-    means *every device on the tailnet can read the athlete's health data*.
-    That is a far smaller group than "the whole internet" and a far larger
-    group than "this device". It is off by default, because a stranger who
-    clones this repository should not find it trusting their network.
+    The trade-off is real and worth stating plainly: trusting a network
+    means *every device on it can read the athlete's health data*. That is a
+    far smaller group than "the whole internet" and a far larger group than
+    "this device". It is off by default, because a stranger who clones this
+    repository should not find it trusting their network.
     """
     if is_loopback_client(request):
         return True
-    return is_trusted_tailnet_client(request)
+    return is_trusted_remote_client(request)
 
 
-def is_trusted_tailnet_client(request: Request) -> bool:
-    """Is this client on a tailnet the operator has chosen to trust?
+def is_trusted_remote_client(request: Request) -> bool:
+    """Is this client on a network the operator has chosen to trust?
 
     Narrower than ``is_trusted_client``: loopback is not included, because
     the local posture — a capability token for every API call — is worth
     keeping exactly as it was.
     """
-    return bool(getattr(state, "trust_tailnet", False)) and is_tailnet_client(request)
+    return trust_remote_enabled() and is_trusted_network_client(request)
 
 
 def cors_origins() -> list[str]:
@@ -613,7 +623,7 @@ class SecurityMiddleware(BaseHTTPMiddleware):
                 and auth_enabled()
                 and not testing
                 and not (valid or callback_transaction)
-                and not is_trusted_tailnet_client(request)
+                and not is_trusted_remote_client(request)
             ):
                 return self._protected_response(request, 401, "Capability token required.")
             if valid and not testing:
@@ -623,18 +633,18 @@ class SecurityMiddleware(BaseHTTPMiddleware):
                 # An explicit bearer header is not ambient browser authority;
                 # cookie authentication must prove it came from our origin.
                 #
-                # A trusted tailnet client may act without an Origin header --
-                # that is a native client, not a page. But when an Origin
-                # header *is* present it still has to match: the tailnet says
-                # who is calling, not which page the call came from. Without
-                # that, any page the athlete's phone visits could drive the
-                # API (a revoke, a sync) with a simple cross-origin request
-                # that never reaches the JavaScript.
-                trusted_tailnet = is_trusted_tailnet_client(request)
+                # A client from a trusted network may act without an Origin
+                # header -- that is a native client, not a page. But when an
+                # Origin header *is* present it still has to match: the
+                # network says who is calling, not which page the call came
+                # from. Without that, any page the athlete's phone visits
+                # could drive the API (a revoke, a sync) with a simple
+                # cross-origin request that never reaches the JavaScript.
+                trusted_remote = is_trusted_remote_client(request)
                 if (
                     not explicit_bearer
                     and not is_trusted_same_origin(request, self.allowed_origins)
-                    and not (trusted_tailnet and not request.headers.get("origin"))
+                    and not (trusted_remote and not request.headers.get("origin"))
                 ):
                     return self._protected_response(request, 403, "Same-origin request required.")
 
@@ -657,7 +667,8 @@ class SecurityMiddleware(BaseHTTPMiddleware):
 
         # Loading the production SPA establishes the HttpOnly session without
         # putting the capability into HTML or JavaScript. Only loopback clients
-        # may mint it; a tailnet browser must present the bearer capability.
+        # may mint it; a browser on a remote network must present the bearer
+        # capability.
         if (
             auth_enabled()
             and not testing

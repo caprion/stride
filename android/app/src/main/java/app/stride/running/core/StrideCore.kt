@@ -9,6 +9,7 @@ import org.json.JSONObject
 import uniffi.stride.strideCall
 import uniffi.stride.strideGarminSync
 import uniffi.stride.strideOpen
+import uniffi.stride.strideSetGarminConnected
 import uniffi.stride.strideSetGarminKey
 import uniffi.stride.strideStatus
 import java.io.File
@@ -120,6 +121,18 @@ object StrideCore {
      */
     fun setGarminKey(apiKey: String) {
         strideSetGarminKey(apiKey)
+    }
+
+    /**
+     * Say whether the phone holds a Garmin key.
+     *
+     * The key itself lives in the Keystore, and the core never keeps it:
+     * this is the fact of it, so the app can say "Garmin is connected"
+     * without the key being in the process's memory, and without the page
+     * ever seeing it.
+     */
+    fun setGarminConnected(connected: Boolean) {
+        strideSetGarminConnected(connected)
     }
 
     /** What the core is, for the phone's own diagnostics. */

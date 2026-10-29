@@ -433,7 +433,7 @@ def test_a_json_column_must_be_replaced_not_mutated():
 # Device pairing
 # --------------------------------------------------------------------------
 #
-# A browser on the tailnet is not a loopback client, so it cannot be given a
+# A browser on a remote network is not a loopback client, so it cannot be given a
 # capability cookie by loading the app. The athlete still wants their phone
 # to work, so the operator mints a single-use code on the machine and types
 # it into the device.

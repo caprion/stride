@@ -20,10 +20,19 @@
 //! * The cookie is minted for the loopback browser only, and only when the
 //!   peer address *and* the `Host` header both say loopback — a rebound name
 //!   must not be able to ask for a credential.
+//!
+//! ## The trusted networks
+//!
+//! A client from a network the operator has chosen to trust
+//! (`STRIDE_TRUST_REMOTE` together with `STRIDE_TRUSTED_NETWORKS`) is
+//! trusted without a pairing code. The default list is empty, so by default
+//! no remote address is trusted at all.
 
 use std::collections::HashMap;
 use std::net::IpAddr;
 use std::time::{Duration, Instant};
+
+use stride_api::network::TrustConfig;
 
 use crate::http::Request;
 
@@ -53,6 +62,8 @@ pub struct Security {
     enabled: bool,
     /// Whether the cookie is marked `Secure`.
     cookie_secure: bool,
+    /// Who may use the API without a pairing code.
+    trust: TrustConfig,
 }
 
 impl Security {
@@ -62,6 +73,22 @@ impl Security {
             token: token.into(),
             enabled,
             cookie_secure,
+            trust: TrustConfig::default(),
+        }
+    }
+
+    /// A gate with a capability and a trust configuration.
+    pub fn with_trust(
+        token: impl Into<String>,
+        enabled: bool,
+        cookie_secure: bool,
+        trust: TrustConfig,
+    ) -> Self {
+        Self {
+            token: token.into(),
+            enabled,
+            cookie_secure,
+            trust,
         }
     }
 
@@ -116,6 +143,23 @@ impl Security {
             .map(|token| (token.to_string(), false))
     }
 
+    /// Is this client on a network the operator has chosen to trust?
+    ///
+    /// Narrower than [`Security::is_trusted_client`]: loopback is not
+    /// included, because the local posture — a capability token for every API
+    /// call — is worth keeping exactly as it was.
+    pub fn is_trusted_remote_client(&self, request: &Request) -> bool {
+        self.trust.trusts(&request.peer)
+    }
+
+    /// Is this client trusted without proving anything?
+    ///
+    /// Two cases: the loopback interface, and a network the operator has
+    /// chosen to trust.
+    pub fn is_trusted_client(&self, request: &Request) -> bool {
+        is_loopback_client(request) || self.is_trusted_remote_client(request)
+    }
+
     /// Is the request authorised?
     ///
     /// `Ok(true)` when the request carries the capability, `Ok(false)` when
@@ -127,6 +171,11 @@ impl Security {
         }
         if Self::is_capability_free(path) {
             return Ok(false);
+        }
+        // A client from a trusted network is trusted without a capability:
+        // the network says who is calling.
+        if self.is_trusted_remote_client(request) {
+            return Ok(true);
         }
         let provided = self.provided_token(request);
         let authorised = provided
@@ -456,5 +505,49 @@ mod tests {
         assert!(limiter.allow("127.0.0.1", "pair", 2));
         assert!(!limiter.allow("127.0.0.1", "pair", 2));
         assert!(limiter.allow("127.0.0.2", "pair", 2));
+    }
+
+    /// A client from a trusted network needs no capability.
+    #[test]
+    fn a_client_from_a_trusted_network_needs_no_capability() {
+        use stride_api::network::{Cidr, TrustConfig};
+
+        let trust = TrustConfig {
+            remote: true,
+            networks: vec![Cidr::parse("100.64.0.0/10").expect("the network")],
+        };
+        let security =
+            Security::with_trust("a-capability-token-that-is-long-enough", true, false, trust);
+
+        let trusted = request("100.89.222.50", "192.0.2.10:8443", &[]);
+        assert!(security.is_trusted_remote_client(&trusted));
+        assert!(security.is_trusted_client(&trusted));
+        assert_eq!(
+            security.authorize(&trusted, "/api/v1/activities"),
+            Ok(true),
+            "a trusted client is trusted without a capability"
+        );
+
+        let other = request("192.0.2.7", "192.0.2.7:8443", &[]);
+        assert!(!security.is_trusted_remote_client(&other));
+        assert!(!security.is_trusted_client(&other));
+        assert_eq!(
+            security.authorize(&other, "/api/v1/activities"),
+            Err(GateError::Unauthenticated),
+            "a client from another network needs a capability"
+        );
+    }
+
+    /// With no trusted network configured, a remote client is not trusted.
+    #[test]
+    fn with_no_trusted_network_a_remote_client_is_not_trusted() {
+        let security = Security::new("a-capability-token-that-is-long-enough", true, false);
+        let remote = request("100.89.222.50", "192.0.2.10:8443", &[]);
+        assert!(!security.is_trusted_remote_client(&remote));
+        assert!(!security.is_trusted_client(&remote));
+        assert_eq!(
+            security.authorize(&remote, "/api/v1/activities"),
+            Err(GateError::Unauthenticated)
+        );
     }
 }

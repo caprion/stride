@@ -27,6 +27,9 @@ import {
 } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { api, isNativeApp } from '../lib/api'
+import { useGarminActions, useGarminState } from '../lib/garmin'
+import { isPhone, localDataLine } from '../lib/surface'
+import { ConnectGarmin } from '../components/GarminStatus'
 import type { AuthStatus, NetworkStatus, SyncRun } from '../types'
 import { formatDateTime, formatNumber, formatRelative } from '../lib/format'
 import {
@@ -198,8 +201,8 @@ function PairedDevicesCard() {
           <p className="text-[13px] text-ink-muted">Loading…</p>
         ) : devices.length === 0 ? (
           <p className="text-[13px] leading-relaxed text-ink-muted">
-            Nothing is paired. A browser on this machine connects by itself; any other
-            device needs a pairing code from{' '}
+            Nothing is paired. A browser on this machine connects by itself; any other device
+            needs a pairing code from{' '}
             <span className="font-mono text-[12px]">scripts/prod.sh pair</span>.
           </p>
         ) : (
@@ -207,12 +210,12 @@ function PairedDevicesCard() {
             {devices.map((device) => (
               <li key={device.id} className="flex items-center justify-between gap-3 py-2.5">
                 <div className="min-w-0">
-                  <p className="text-[13px] font-semibold text-ink">{device.name ?? 'Device'}</p>
+                  <p className="text-[13px] font-semibold text-ink">
+                    {device.name ?? 'Device'}
+                  </p>
                   <p className="text-[12px] text-ink-muted">
                     Paired{' '}
-                    {device.created_at
-                      ? new Date(device.created_at).toLocaleDateString()
-                      : '—'}
+                    {device.created_at ? new Date(device.created_at).toLocaleDateString() : '—'}
                   </p>
                 </div>
                 <Button
@@ -237,6 +240,15 @@ function PairedDevicesCard() {
 }
 
 export function SettingsPage() {
+  // The phone has four things to configure: whether Garmin is connected, a
+  // sync, the key itself, and what this app is. The desktop keeps the
+  // whole set — it has the room, and the network route and the history
+  // windows are its business.
+  if (isPhone()) return <PhoneSettings />
+  return <DesktopSettings />
+}
+
+function DesktopSettings() {
   const queryClient = useQueryClient()
 
   const authQuery = useQuery({ queryKey: ['auth-status'], queryFn: api.authStatus })
@@ -268,7 +280,6 @@ export function SettingsPage() {
           often your runs are imported.
         </p>
       </div>
-
       <div className="space-y-6">
         <GarminConnectionCard
           auth={auth}
@@ -304,6 +315,127 @@ export function SettingsPage() {
         <PairedDevicesCard />
 
         <AboutCard />
+      </div>
+    </div>
+  )
+}
+
+/* ---------------------------------------------------- the phone's screen */
+
+/**
+ * The phone's settings screen: four things.
+ *
+ * * whether Garmin is connected,
+ * * a sync,
+ * * forgetting the key,
+ * * and what this app is.
+ *
+ * There is no Garmin form here: the key is typed in the native screen, and
+ * the native screen is the only place it is typed. There is no network route
+ * either: the phone has no server to route to.
+ */
+function PhoneSettings() {
+  const { connected, syncing, lastSyncAt, runs } = useGarminState()
+  const { syncNow, forgetKey } = useGarminActions()
+  const [notice, setNotice] = useState<Notice | null>(null)
+  const [confirmForget, setConfirmForget] = useState(false)
+
+  return (
+    <div className="mx-auto max-w-[560px]">
+      <h1 className="mb-5 text-[26px] font-bold leading-tight tracking-tight text-ink">
+        Settings
+      </h1>
+
+      <div className="space-y-6">
+        <Card>
+          <CardHeader title="Garmin" />
+          <div className="px-5 pb-5">
+            <div className="flex items-center gap-2">
+              <span
+                className={cn(
+                  'h-2.5 w-2.5 rounded-full',
+                  connected ? 'bg-positive' : 'bg-ink-faint',
+                )}
+              />
+              <p className="text-[15px] font-semibold text-ink">
+                {connected ? 'Connected' : 'Not connected'}
+              </p>
+            </div>
+            <p className="mt-1 text-[13px] text-ink-muted">
+              {runs > 0
+                ? `${formatNumber(runs)} ${runs === 1 ? 'run' : 'runs'} on this phone`
+                : 'No runs on this phone yet'}
+              {lastSyncAt ? ` · synced ${formatRelative(lastSyncAt)}` : ''}
+            </p>
+
+            <div className="mt-4 flex flex-wrap items-center gap-2">
+              <ConnectGarmin />
+              <Button
+                variant="secondary"
+                onClick={() => syncNow.mutate()}
+                disabled={syncNow.isPending || syncing}
+              >
+                {syncNow.isPending || syncing ? (
+                  <Loader2 size={14} strokeWidth={2} className="animate-spin" />
+                ) : (
+                  <RefreshCw size={14} strokeWidth={2} />
+                )}
+                {syncing ? 'Syncing…' : 'Sync now'}
+              </Button>
+              {connected ? (
+                <Button variant="ghost" onClick={() => setConfirmForget(true)}>
+                  Forget the key
+                </Button>
+              ) : null}
+            </div>
+
+            {confirmForget ? (
+              <div className="mt-4">
+                <Alert tone="warn" title="Forget the key on this phone?">
+                  Stride stops pulling new runs. The runs already here stay.
+                </Alert>
+                <div className="mt-2 flex gap-2">
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => setConfirmForget(false)}
+                    disabled={forgetKey.isPending}
+                  >
+                    Keep it
+                  </Button>
+                  <Button
+                    variant="danger"
+                    size="sm"
+                    onClick={() =>
+                      forgetKey.mutate(undefined, {
+                        onSuccess: () => {
+                          setNotice({ tone: 'positive', text: 'The key is forgotten.' })
+                          setConfirmForget(false)
+                        },
+                        onError: (error) =>
+                          setNotice({ tone: 'negative', text: messageOf(error) }),
+                      })
+                    }
+                    disabled={forgetKey.isPending}
+                  >
+                    Forget it
+                  </Button>
+                </div>
+              </div>
+            ) : null}
+
+            <div className="mt-3">
+              <Toast notice={notice} />
+            </div>
+          </div>
+        </Card>
+
+        <Card>
+          <CardHeader title="About" />
+          <div className="px-5 pb-5">
+            <p className="text-[13px] leading-relaxed text-ink-soft">{localDataLine()}</p>
+          </div>
+        </Card>
       </div>
     </div>
   )
@@ -472,8 +604,7 @@ function GarminConnectionCard({
       <div className="px-5 pb-5">
         <div className="mb-4">
           <Alert tone="info" title="Not connected yet">
-            Stride is ready. Connect your watch in one of the ways below and your runs start
-            appearing on their own.
+            Connect your watch. Your runs start appearing on their own.
           </Alert>
         </div>
         <Toast notice={notice} />
@@ -565,10 +696,9 @@ function DeveloperKeySection({ onRefresh }: { onRefresh: () => Promise<void> }) 
       </p>
 
       <HowItWorks>
-        Get a key from <span className="font-semibold text-ink-soft">developer.garmin.com</span>{' '}
-        →<span className="font-semibold text-ink-soft"> My Applications</span> → create an app →
-        copy the <span className="font-semibold text-ink-soft">OAuth Consumer Key</span> and
-        <span className="font-semibold text-ink-soft"> OAuth Consumer Secret</span> below.
+        Create an app at{' '}
+        <span className="font-semibold text-ink-soft">developer.garmin.com</span> and copy the
+        consumer key and the consumer secret below.
       </HowItWorks>
 
       {!authorize ? (
@@ -736,21 +866,14 @@ function PersonalKeySection({ onRefresh }: { onRefresh: () => Promise<void> }) {
       </SectionIntro>
 
       <HowItWorks>
-        Open{' '}
+        Get a key from{' '}
         <span className="font-semibold text-ink-soft">
           connect.garmin.com/app/settings/personalApiToken
-        </span>{' '}
-        while signed in to Garmin Connect, choose{' '}
-        <span className="font-semibold text-ink-soft">Create Key</span>, accept the terms and
-        pick an expiration period. Garmin shows the key{' '}
-        <span className="font-semibold text-ink-soft">only once</span> — copy it and paste it
-        below.
+        </span>
+        . Garmin shows it once — copy it and paste it below.
       </HowItWorks>
 
-      <Field
-        label="Personal API key"
-        hint="Stored on this machine only, and used for nothing except talking to Garmin."
-      >
+      <Field label="Personal API key" hint={localDataLine()}>
         <input
           type="password"
           autoComplete="off"
@@ -835,14 +958,10 @@ function AccountSection({ onRefresh }: { onRefresh: () => Promise<void> }) {
   return (
     <section>
       <SectionIntro title="Garmin account">
-        Sign in with your normal Garmin email and password. Stride stores them locally and asks
-        Garmin for a verification code when needed.
+        Sign in with your normal Garmin email and password.
       </SectionIntro>
 
-      <HowItWorks>
-        Garmin sends a one-time code to the phone number on your account. Type it here and the
-        connection is finished.
-      </HowItWorks>
+      <HowItWorks>Garmin sends a one-time code to your phone.</HowItWorks>
 
       {!mfaToken ? (
         <>
@@ -857,7 +976,7 @@ function AccountSection({ onRefresh }: { onRefresh: () => Promise<void> }) {
                 autoComplete="username"
               />
             </Field>
-            <Field label="Password" hint="Your Garmin password. It stays on this machine.">
+            <Field label="Password" hint={localDataLine()}>
               <input
                 className={inputClass}
                 type="password"
@@ -992,14 +1111,12 @@ function FitImportSection() {
   return (
     <section>
       <SectionIntro title="Import FIT files" badge="No account needed" badgeTone="info">
-        Already have files from Garmin Connect? Drop them in and they show up immediately —
-        nothing is connected and no password is involved.
+        Already have files from Garmin Connect? Drop them in and they show up immediately.
       </SectionIntro>
 
       <HowItWorks>
         Export <span className="font-semibold text-ink-soft">.FIT</span> files from Garmin
-        Connect (Activities → ⋯ → Download FIT) and choose them below. You can select several at
-        once.
+        Connect (Activities → ⋯ → Download FIT) and choose them below.
       </HowItWorks>
 
       <div className="mt-3">
@@ -1681,21 +1798,9 @@ function AboutCard() {
     <Card>
       <CardHeader title="About" />
       <div className="px-5 pb-5">
-        <p className="text-[13px] leading-relaxed text-ink-soft">
-          Stride is a private running log that mirrors your Garmin watch into a clean, local
-          dashboard. Everything you see is stored on your own machine in a SQLite database under{' '}
-          <span className="font-mono text-[12px] text-ink">backend/data/</span> — nothing is
-          sent to a third-party service and there is no account to sign up for.
-        </p>
+        <p className="text-[13px] leading-relaxed text-ink-soft">{localDataLine()}</p>
         <p className="mt-3 text-[13px] leading-relaxed text-ink-soft">
-          There is no feed, no followers and no comments here, and there is not going to be one:
-          a social layer would mean the data stopped being yours alone. If you want to share a
-          run, share the Garmin link — Garmin decides who may open it.
-        </p>
-        <p className="mt-3 text-[13px] leading-relaxed text-ink-soft">
-          Start it again after a restart with{' '}
-          <span className="font-mono text-[12px] text-ink">./scripts/run.sh</span> from the
-          project folder; it brings up the API and the web app together.
+          Stride is a private running log for your Garmin watch.
         </p>
       </div>
     </Card>

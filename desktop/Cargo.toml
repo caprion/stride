@@ -29,6 +29,21 @@ thiserror = { workspace = true }
 # while it is being converted. `VACUUM INTO` does the snapshot and needs no
 # extra feature.
 rusqlite = { workspace = true }
+# The HTTPS listener, for a phone's browser.
+#
+# `rustls` and `ring` are already in the binary: `reqwest` (the Garmin
+# client) is built on `rustls-tls`, so the TLS stack is in the graph and in
+# the binary already. Naming it here adds no new crate to the graph — it
+# only turns on the *server* half of a library that is already linked.
+# `rustls-pemfile` is rustls's own PEM reader; it adds two small crates
+# (`rustls-pemfile` and `pem`), and `base64`, which is in the lock already.
+rustls = { version = "0.23", default-features = false, features = [
+    "ring",
+    "std",
+    "tls12",
+    "logging",
+] }
+rustls-pemfile = "2"
 stride-api = { path = "../crates/stride-api" }
 stride-store = { path = "../crates/stride-store" }
 

@@ -6,6 +6,11 @@
     a WebView is a browser, and anything in it is one injection away from a
     stranger. The key is typed here, in the app, and goes straight into the
     Keystore-wrapped envelope.
+
+    One thing on the screen: the key. There is no server field - the phone
+    has no server, it *is* the app - and no paragraph about what local-first
+    means. The status line says what is happening, and the line underneath
+    says how many runs have arrived.
 -->
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
@@ -21,35 +26,21 @@
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="@string/app_name"
+            android:text="@string/garmin_title"
             android:textSize="24sp"
-            android:textStyle="bold" />
-
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
-            android:text="@string/garmin_explanation"
-            android:textSize="15sp" />
-
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="24dp"
-            android:text="@string/garmin_key_label"
             android:textStyle="bold" />
 
         <EditText
             android:id="@+id/garmin_key"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
+            android:layout_marginTop="24dp"
             android:autofillHints=""
+            android:hint="@string/garmin_key_hint"
             android:importantForAutofill="no"
             android:inputType="textPassword"
             android:maxLines="1"
-            android:minHeight="48dp"
-            android:hint="@string/garmin_key_hint" />
+            android:minHeight="48dp" />
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -74,12 +65,25 @@
                 android:text="@string/garmin_open_garmin" />
         </LinearLayout>
 
+        <!--
+            The state. One line, and the words are the words: checking,
+            syncing, connected, refused.
+        -->
         <TextView
             android:id="@+id/garmin_status"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="16dp"
-            android:textSize="14sp" />
+            android:textSize="16sp" />
+
+        <!-- The count as it arrives: "12 runs", then "160 runs". -->
+        <TextView
+            android:id="@+id/garmin_progress"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:textSize="14sp"
+            android:visibility="gone" />
 
         <Button
             android:id="@+id/garmin_connect"
@@ -88,6 +92,16 @@
             android:layout_marginTop="24dp"
             android:minHeight="48dp"
             android:text="@string/garmin_connect" />
+
+        <Button
+            android:id="@+id/garmin_not_now"
+            style="?android:attr/borderlessButtonStyle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:minHeight="48dp"
+            android:text="@string/garmin_not_now"
+            android:visibility="gone" />
 
         <Button
             android:id="@+id/garmin_disconnect"
@@ -99,42 +113,12 @@
             android:text="@string/garmin_disconnect"
             android:visibility="gone" />
 
+        <!-- The one line about privacy. -->
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="24dp"
             android:text="@string/garmin_privacy"
             android:textSize="12sp" />
-
-        <!--
-            The instance URL. It is empty by default: the phone is the whole
-            thing and it points at Garmin, not at a server. It is here for the
-            interim build, where the phone was a browser for a desktop.
-        -->
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="24dp"
-            android:text="@string/server_url_label"
-            android:textStyle="bold" />
-
-        <EditText
-            android:id="@+id/server_url"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:autofillHints=""
-            android:importantForAutofill="no"
-            android:inputType="textUri"
-            android:maxLines="1"
-            android:minHeight="48dp"
-            android:hint="@string/server_url_hint" />
-
-        <Button
-            android:id="@+id/server_save"
-            style="?android:attr/borderlessButtonStyle"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:minHeight="48dp"
-            android:text="@string/server_url_save" />
     </LinearLayout>
 </ScrollView>

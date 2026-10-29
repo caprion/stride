@@ -7,14 +7,28 @@
 //!
 //! ## Loopback only
 //!
-//! The desktop binds the loopback interface and nothing else. The browser
-//! that talks to it is on the same machine, and the phone has its own
+//! The plain listener binds the loopback interface and nothing else. The
+//! browser that talks to it is on the same machine, and the phone has its own
 //! database and its own process. A non-loopback bind is refused, rather
-//! than warned about: the reference server has a tailnet listener, and this
-//! binary has no business being one.
+//! than warned about.
+//!
+//! ## The TLS listener
+//!
+//! The phone's browser may talk to the desktop over HTTPS, on the address the
+//! operator configured: `STRIDE_TLS_HOST` and `STRIDE_TLS_PORT`. **Nothing is
+//! detected**: the listener binds what it is told, no address is discovered
+//! and no command is run to work out where to listen.
+//!
+//! ## The trust configuration
+//!
+//! `STRIDE_TRUST_REMOTE` and `STRIDE_TRUSTED_NETWORKS` say which clients may
+//! use the API without a pairing code. The default trusts nobody but the
+//! loopback interface: there is no hard-coded range anywhere.
 
 use std::net::{IpAddr, SocketAddr};
 use std::path::{Path, PathBuf};
+
+use stride_api::network::TrustConfig;
 
 /// The root of the repository, as the build saw it.
 pub fn repository_root() -> PathBuf {
@@ -45,6 +59,12 @@ pub struct Config {
     pub auth_enabled: bool,
     /// Whether the capability cookie is marked `Secure`.
     pub cookie_secure: bool,
+    /// The address the HTTPS listener binds, if there is one.
+    pub tls_bind: SocketAddr,
+    /// Where the certificate and the key live.
+    pub tls_dir: PathBuf,
+    /// Who may use the API without a pairing code.
+    pub trust: TrustConfig,
 }
 
 /// Where the database key came from.
@@ -152,6 +172,28 @@ pub fn from_env() -> Result<Config, ConfigError> {
         _ => (None, KeySource::None),
     };
 
+    // The HTTPS listener: the address the operator configured. It is not
+    // detected and it is not discovered — it is what the environment says.
+    let tls_host = std::env::var("STRIDE_TLS_HOST")
+        .ok()
+        .filter(|value| !value.trim().is_empty())
+        .unwrap_or_else(|| "0.0.0.0".to_string());
+    let tls_address = listen_address("STRIDE_TLS_HOST", &tls_host)?;
+    let tls_port: u16 = match std::env::var("STRIDE_TLS_PORT") {
+        Ok(raw) if !raw.trim().is_empty() => {
+            raw.trim().parse().map_err(|error| ConfigError::Invalid {
+                name: "STRIDE_TLS_PORT",
+                reason: format!("{error}"),
+            })?
+        }
+        _ => 8443,
+    };
+    let tls_dir = std::env::var("STRIDE_TLS_DIR")
+        .ok()
+        .filter(|value| !value.trim().is_empty())
+        .map(PathBuf::from)
+        .unwrap_or_else(|| data_dir.join("tls"));
+
     Ok(Config {
         bind: SocketAddr::new(address, port),
         data_dir,
@@ -162,6 +204,21 @@ pub fn from_env() -> Result<Config, ConfigError> {
         db_key_source,
         auth_enabled: !env_truthy("STRIDE_DISABLE_AUTH"),
         cookie_secure: env_truthy("STRIDE_COOKIE_SECURE"),
+        tls_bind: SocketAddr::new(tls_address, tls_port),
+        tls_dir,
+        trust: TrustConfig::from_env(),
+    })
+}
+
+/// An address to listen on.
+///
+/// The name says what it is: an address, not a name. A name would need a
+/// resolver, and the address the operator wants is an address.
+pub fn listen_address(name: &'static str, raw: &str) -> Result<IpAddr, ConfigError> {
+    let value = raw.trim().trim_start_matches('[').trim_end_matches(']');
+    value.parse().map_err(|error| ConfigError::Invalid {
+        name,
+        reason: format!("{error}"),
     })
 }
 
@@ -227,12 +284,39 @@ mod tests {
             "every interface is not loopback"
         );
         assert!(
-            bind_address("100.89.222.50").is_err(),
-            "the tailnet is not loopback"
+            bind_address("192.0.2.10").is_err(),
+            "another machine is not loopback"
         );
         assert!(
             bind_address("::").is_err(),
             "every interface is not loopback"
+        );
+    }
+
+    /// The TLS listener binds what it is told, and it is not detected.
+    #[test]
+    fn the_tls_listener_binds_what_it_is_told() {
+        assert_eq!(
+            listen_address("STRIDE_TLS_HOST", "0.0.0.0")
+                .expect("the address")
+                .to_string(),
+            "0.0.0.0"
+        );
+        assert_eq!(
+            listen_address("STRIDE_TLS_HOST", " 192.0.2.10 ")
+                .expect("the address")
+                .to_string(),
+            "192.0.2.10"
+        );
+        assert_eq!(
+            listen_address("STRIDE_TLS_HOST", "[::1]")
+                .expect("the address")
+                .to_string(),
+            "::1"
+        );
+        assert!(
+            listen_address("STRIDE_TLS_HOST", "a name").is_err(),
+            "a name is not an address"
         );
     }
 }

@@ -8,7 +8,7 @@ Decision date: 2026-10-23. Status: proposed architecture; no Android implementat
 
 This preserves Stride's expensive product assets: activity charts, comparison presentation, plan-vs-actual screens, physiology screens, formatting and design language. It also accepts the real cost: the current Python backend contains most of the product's computation. A WebView wrapper alone provides neither offline Stride nor secure credential handling. That backend logic must be ported regardless of which UI framework wins.
 
-The phone database is authoritative. There is no Stride account, hosted API dependency, desktop proxy, Azure Key Vault dependency, Tailscale route switching or required Garmin connection. Garmin Connect still supplies watch-recorded activities when the athlete opts in; this is not direct Bluetooth watch sync.
+The phone database is authoritative. There is no Stride account, hosted API dependency, desktop proxy, Azure Key Vault dependency, network-route switching or required Garmin connection. Garmin Connect still supplies watch-recorded activities when the athlete opts in; this is not direct Bluetooth watch sync.
 
 ### Options compared
 

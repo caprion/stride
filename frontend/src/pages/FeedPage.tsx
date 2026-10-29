@@ -31,6 +31,8 @@ import {
   SPORT_COLOR,
 } from '../lib/format'
 import { ActivityCard } from '../components/ActivityCard'
+import { ConnectGarmin } from '../components/GarminStatus'
+import { isPhone } from '../lib/surface'
 import {
   Button,
   Card,
@@ -128,7 +130,7 @@ export function FeedPage() {
   return (
     <div>
       <PageHeader
-        title="Activity feed"
+        title={isPhone() ? 'Runs' : 'Activity feed'}
         description={
           activitiesQuery.isLoading
             ? 'Loading your activities…'
@@ -208,16 +210,18 @@ export function FeedPage() {
                     ? 'Try a different keyword, or widen the sport filter to see more.'
                     : sport !== 'all'
                       ? 'Nothing of this sport has been synced yet. Try another sport or clear the filters.'
-                      : 'Sync your watch or import a FIT file to build your history.'
+                      : 'Connect your watch and your runs start appearing.'
                 }
                 action={
                   filtersActive ? (
                     <Button variant="secondary" onClick={clearFilters}>
                       Clear filters
                     </Button>
+                  ) : isPhone() ? (
+                    <ConnectGarmin />
                   ) : (
                     <Link to="/settings">
-                      <Button variant="secondary">Connect a device</Button>
+                      <Button variant="secondary">Connect Garmin</Button>
                     </Link>
                   )
                 }

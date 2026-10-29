@@ -563,7 +563,7 @@ impl Backend for Store {
 
     fn upsert_sync_run(&self, run: &SyncRunRow) -> Result<i64, BackendError> {
         let record = stride_store::SyncRun {
-            id: None,
+            id: run.id,
             source: run.source.clone(),
             started_at: run
                 .started_at
@@ -1071,23 +1071,32 @@ impl Backend for Store {
 
     fn sync_status(&self) -> Result<Value, BackendError> {
         // The sync log is in the database, so the status can be read out of
-        // it: a run that is still marked running is running, and the last
-        // run's message is the message.
+        // it: the newest run says whether a sync is running, when it started
+        // and what it said.
+        //
+        // The reference keeps the start time and the message after the sync
+        // has finished — `started_at` is when the last sync began, and the
+        // message is what it said — so the newest run is the answer, not the
+        // newest *finished* run.
         let runs = self
             .sync_runs(10)
             .map_err(|err| store_error("could not read the sync log", err))?;
-        let running = runs.iter().find(|run| run.status == "running");
-        let started_at = running
+        let newest = runs.first();
+        let running = newest.map(|run| run.status == "running").unwrap_or(false);
+        let started_at = newest
             .map(|run| json!(python_iso(run.started_at)))
             .unwrap_or(Value::Null);
-        let message = runs
-            .iter()
-            .find(|run| run.status != "running")
-            .and_then(|run| run.message.clone())
-            .map(Value::String)
-            .unwrap_or(Value::Null);
+        let message = if running {
+            // A sync that is running has no message yet.
+            Value::Null
+        } else {
+            newest
+                .and_then(|run| run.message.clone())
+                .map(Value::String)
+                .unwrap_or(Value::Null)
+        };
         Ok(json!({
-            "running": running.is_some(),
+            "running": running,
             "started_at": started_at,
             "message": message,
         }))

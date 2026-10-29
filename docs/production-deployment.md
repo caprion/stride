@@ -1,8 +1,8 @@
 # The production instance
 
-The app on `:8000` is the real thing: the athlete's own Garmin history, the
-real training plan, no synthetic data, and a Garmin key that never touches
-disk in plain text.
+The instance on `:8000` is the real thing: the athlete's own Garmin history,
+the real training plan, no synthetic data, and a Garmin key that never
+touches disk in plain text.
 
 This is how it is built, run and checked.
 
@@ -11,18 +11,18 @@ This is how it is built, run and checked.
 ## The shape of it
 
 ```
-~/stride/backend/data/            0700
-├── stride.db                     0600   160 activities, 371 physiology days
-├── stride.db-wal                 0600
-├── stride.db-shm                 0600
-├── state.json                    0600   the session token, the key pointer
-└── tile-cache/                   0700   the OSM tiles, proxied
+backend/data/                  0700
+├── stride.db                  0600   160 activities, 372 physiology days
+├── stride.db-wal              0600
+├── stride.db-shm              0600
+├── state.json                 0600   the session token, the key pointer
+├── stride-desktop.key         0600   the SQLCipher key, when Key Vault is not reachable
+└── tile-cache/                0700   the map tiles, proxied
 ```
 
-The Garmin Personal API Key comes from **Azure Key Vault** (`claw-agent` →
-`garmin-api`) through Managed Identity. It is never written to disk, never
-sent to the browser, and never appears in a log. The app only ever reports
-`key_source: key_vault`.
+The Garmin Personal API Key comes from **Azure Key Vault** through Managed
+Identity. It is never written to disk, never sent to the browser, and never
+appears in a log. The app only ever reports `key_source: key_vault`.
 
 ---
 
@@ -45,9 +45,46 @@ sent to the browser, and never appears in a log. The app only ever reports
 | key from Key Vault | not a pasted-in key, not a file |
 | zero demo activities | the database holds only real runs |
 | no NOT NULL orphan columns | the schema still matches the model |
-| backend tests | 120 pass |
-| security gate | 22 pass |
+| backend tests | the suite passes |
+| security gate | the gate passes |
+| a pairing code can be minted, works once and is refused the second time | the second-device flow is intact |
 | the instance answers | it is actually up |
+
+---
+
+## The configuration
+
+**No network is named.** The deployment configures a network; the operator's
+address is the operator's business.
+
+| variable | default | what it does |
+|---|---|---|
+| `STRIDE_TLS_HOST` | `0.0.0.0` | the address the HTTPS listener binds |
+| `STRIDE_TLS_PORT` | `8443` | the port for it |
+| `STRIDE_TLS_DIR` | `data/tls` | where the certificate and the key are. It looks for `stride.crt` and `stride.key` |
+| `STRIDE_TRUST_REMOTE` | `false` | when true, clients from the trusted networks are trusted without a pairing code |
+| `STRIDE_TRUSTED_NETWORKS` | empty | comma-separated CIDRs those clients come from. **Empty means nothing extra is trusted** — loopback only |
+| `STRIDE_PORT` | `8000` | the plain listener |
+| `STRIDE_DATA_DIR` | `backend/data` | the database and the state file |
+| `STRIDE_CORS_ORIGINS` | `http://localhost:5173` | the origins that may call the API from a page. A `*` is refused |
+
+**The listener detects nothing.** It binds `STRIDE_TLS_HOST` and nothing
+else: no address is discovered at startup and no external command is run to
+work out where to listen. The address the operator wants is the address they
+configure.
+
+### Reaching it from another device
+
+The phone reaches the desktop over the address the HTTPS listener binds, and
+the certificate on that listener has to be one the browser trusts — otherwise
+the phone will not install the app, because a service worker only registers
+in a secure context.
+
+The trade-off in `STRIDE_TRUST_REMOTE` is worth stating plainly: **trusting
+a network means every device on it can read the athlete's health data.**
+That is a far smaller group than the whole internet and a far larger group
+than one device. It is off by default, because a stranger who clones this
+repository should not find it trusting their network.
 
 ---
 
@@ -60,7 +97,7 @@ sent to the browser, and never appears in a log. The app only ever reports
 4. **Pulls the history** — activities and wellness.
 5. **Imports the training plan** and anchors it to the activity history.
 
-The demo dataset is now **opt-in** (`STRIDE_SEED_DEMO=1`) and off by default.
+The demo dataset is **opt-in** (`STRIDE_SEED_DEMO=1`) and off by default.
 A production instance starts empty and fills only from Garmin. That is the
 whole point: a database that could contain a synthetic run is a database you
 cannot trust.
@@ -69,8 +106,7 @@ cannot trust.
 
 The plan document's title is *"20-Week Integrated Training Plan: HM Sub-2:00
 Campaign"*. The block used to be called `plan`, because that was the file
-name. It now takes the campaign from the title, so it matches the earlier
-blocks: **HM Sub-2:00 Campaign**.
+name. It now takes the campaign from the title: **HM Sub-2:00 Campaign**.
 
 ---
 
@@ -85,26 +121,25 @@ in the database, `NOT NULL`, with no default. The model no longer declared
 it, so every INSERT omitted it, and **every single new activity import
 failed**.
 
-The app kept working, because it was serving the 158 activities it already
-had. The failure only appeared the moment something new was written.
+The app kept working, because it was serving the activities it already had.
+The failure only appeared the moment something new was written.
 
-The fix is a migration that drops removed columns, and a test that asserts the
-invariant forever:
+The fix is a migration that drops removed columns, and a test that asserts
+the invariant forever:
 
 > **no NOT NULL column may exist in the database that the ORM model does not
 > know about**
 
-That test is in `tests/test_robustness.py` and it runs in the gate.
+That test is in `backend/tests/test_robustness.py` and it runs in the gate.
 
 ### 2. 57 activities had no fingerprint, and no way to get one
 
-The Personal API's activity *list* returns about a year — 103 activities,
-back to October 2025. The database holds 160, because older ones were
-imported earlier through a different path. Those 57 had Garmin's
-**downsampled chart series** (about 125 points) instead of the FIT's
-**per-record stream**, so they had no segmentation, no fingerprint and no
-drift — and the sync never noticed, because an activity with *some* stream
-data looks imported.
+The Personal API's activity *list* returns about a year — 103 activities.
+The database held 160, because older ones were imported earlier through a
+different path. Those 57 had Garmin's **downsampled chart series** (about
+125 points) instead of the FIT's **per-record stream**, so they had no
+segmentation, no fingerprint and no drift — and the sync never noticed,
+because an activity with *some* stream data looks imported.
 
 Three changes:
 
@@ -113,14 +148,10 @@ Three changes:
   samples its records every few seconds, so a genuine record stream and
   Garmin's chart series are the same length. The marker is the only reliable
   signal.
-- **The marker survives a re-import.** It did not, once. The sync rebuilt
-  the payload from the API, dropped the marker, and every later sync
-  re-downloaded the FIT for activities that already had it. Now the stored
-  payload is carried forward.
+- **The marker survives a re-import.** The stored payload is carried forward.
 - **The backfill.** Garmin's download service will still hand over the
   original FIT for *any* activity id we hold, including ones outside the
-  list's window. `tools.production` walks the activities we have, asks for
-  each one's FIT by id, and rebuilds it.
+  list's window.
 
 All 57 were rebuilt. **Every one of the 160 activities now has a
 fingerprint** — up from 103.
@@ -169,43 +200,31 @@ cd backend && .venv/bin/python -m tools.production prune-sync-history --keep 8
 ```
 
 A failure is *resolved* once a later run has succeeded, and resolved failures
-are dropped. The current log is one clean `OK` row.
+are dropped.
 
 ---
 
 ## Connecting another device
 
-The browser on the machine that runs Stride is given a session cookie
-automatically, because the server mints it when it serves the app to a
-loopback client.
+**The phone app does not need this.** It has its own database and its own
+Garmin key. This is about a *browser* on another device reaching the
+desktop.
 
-A browser on the phone is a different machine. It cannot mint that cookie,
-and it should not be able to: if any device on the tailnet could, then the
-tailnet *is* the trust boundary, and that is a much bigger group than "the
-athlete's own devices".
+A browser on the machine that runs Stride is given a session cookie
+automatically, because the server mints it when it serves the app to a
+loopback client. A browser somewhere else is a different machine. It cannot
+mint that cookie, and it should not be able to: if every device on the
+network could, then the network *is* the trust boundary, and that is a much
+bigger group than "the athlete's own devices".
 
 So the athlete pairs the device on purpose:
 
 ```bash
-cd ~/stride && ./scripts/prod.sh pair
+./scripts/prod.sh pair
 ```
 
-```
-████████████████████████████████████████████████████
-██████▀▀▀▀▀▀▀▀▀▀▀██    ████  ▄▄▀▀██████▄▄  ▀▀▀▀  ██▀▀▀▀▀▀▀▀▀▀██████
-██████  ██████  ██    ██▀▀▄▄▄▄  ▀▀████▀▀▀▀  ▄▄  ██  ██████  ██████
-...
-
-    KD7P-3FQM
-    https://cf-openclaw.tail62fa14.ts.net:8443/#pair=KD7P-3FQM
-
-▸ Point the phone's camera at the code, or open that link.
-▸ It works once and expires in 10 minutes.
-```
-
-**Point the camera at the screen.** That is the whole flow: one action, once,
-and the phone is connected for good. The link is there for the times the
-camera will not do it.
+That prints a QR code. **Point the camera at the screen.** That is the whole
+flow: one action, once, and the phone is connected for good.
 
 The code is carried in the URL *fragment*, never the query string. A fragment
 is not sent to the server, so it never lands in an access log, and the app
@@ -217,17 +236,11 @@ The paired device is **not** given the master capability. It gets its own
 token, stored only as a SHA-256 hash, in a separate cookie that lasts a year
 rather than a browser session.
 
-That distinction is the whole reason the phone works well:
-
-| | the operator's machine | a paired phone |
+| | the operator's machine | a paired device |
 |---|---|---|
 | credential | the master capability | its own token |
 | cookie | session — closing the browser signs it out | a year |
 | if it is lost | nothing to do | revoke it in **Settings → Connected devices**, and nothing else is affected |
-
-The machine keeps the short-lived session cookie on purpose: a shared
-computer should not stay signed in. A phone is the athlete's own device and
-is expected to stay signed in.
 
 ### Properties
 
@@ -245,35 +258,21 @@ The security gate checks four of these on the live service: a wrong code is
 refused, a remote client cannot mint one, a paired device can read the API,
 and a revoked device is signed out.
 
+> **The Rust desktop does not mint pairing codes yet.** `GET
+> /api/v1/auth/pair-code` answers `501` there. This section is about the
+> reference instance.
+
 ---
 
-## The phone, specifically
-
-The tailnet address is served over **HTTPS** with a real certificate, from
-Tailscale:
-
-```bash
-tailscale cert --cert-file backend/data/tls/stride.crt \
-               --key-file backend/data/tls/stride.key \
-               cf-openclaw.tail62fa14.ts.net
-```
-
-That matters for one concrete reason: **a service worker only registers in a
-secure context.** On plain HTTP the browser refuses to install the app, so
-the athlete's phone would be stuck with a browser tab forever. With a
-trusted certificate the app installs, opens full-screen from the home screen,
-and looks like an app rather than a website. The certificate is publicly
-trusted, so the phone shows no warning.
-
-Both listeners run in one process (`app/serve.py`):
+## Two listeners, one process
 
 | listener | who | why |
 |---|---|---|
-| `:8000` plain HTTP | the operator, the tailnet | the tools and the local browser |
-| `:8443` HTTPS | the phone | a secure context, so the app can be installed |
+| `:8000` plain HTTP | the operator, on the machine | the tools and the local browser |
+| the HTTPS listener | another device | a secure context, so the app can be installed |
 
-One process means one scheduler and one state file — two processes would mean
-two auto-syncs racing each other against the Garmin API.
+One process means one scheduler and one state file — two processes would
+mean two auto-syncs racing each other against the Garmin API.
 
 The service worker caches the **shell** only. The API is never cached: health
 data is not something to serve out of a cache, and the app already promises
@@ -295,12 +294,12 @@ curl -s http://127.0.0.1:8000/api/v1/health | python3 -m json.tool
     "connected": true,
     "method": "personal",
     "key_source": "key_vault",
-    "last_sync_at": "2026-10-26T11:15:01.733816+00:00"
+    "last_sync_at": "2026-10-29T04:02:23.128379+00:00"
   },
   "data": {
     "activities": 160,
     "from_garmin": 160,
-    "physiology_days": 371,
+    "physiology_days": 372,
     "plan_sessions": 332
   }
 }
@@ -317,8 +316,7 @@ It reports the key's *source*, never the key.
 ```
 
 Verified, checksummed snapshots under `backend/data-snapshots/`, with a safe
-restore. The snapshot taken before this work is `20261028T060708Z` — it holds
-the pre-purge state, so the demo data can be brought back if anyone wants it.
+restore.
 
 ---
 
@@ -327,7 +325,7 @@ the pre-purge state, so the demo data can be brought back if anyone wants it.
 The gate is the contract:
 
 ```bash
-./scripts/security_check.sh      # 22 passed, 0 failed, 0 warnings
+./scripts/security_check.sh      # 26 passed, 0 failed, 1 warning
 ./scripts/prod.sh doctor         # every check green
 ```
 

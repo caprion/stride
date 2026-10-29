@@ -15,6 +15,8 @@ use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 
 use serde_json::Value;
+use stride_api::network::TrustConfig;
+use stride_api::State;
 
 /// The key the capability token lives under.
 pub const CAPABILITY_KEY: &str = "capability_token";
@@ -144,6 +146,67 @@ pub fn capability_token(path: &Path) -> Result<String, StateError> {
     state.insert(CAPABILITY_KEY.to_string(), Value::String(token.clone()));
     save(path, &state)?;
     Ok(token)
+}
+
+/// The state the API reads, from the state file.
+///
+/// The Python keeps the Garmin key, the connection and the sync settings in
+/// `state.json`, and the desktop reads the same file, so the two agree on
+/// what "connected" means and on when the last sync was.
+///
+/// **The trust configuration is not here.** It is deployment configuration,
+/// read from the environment (`STRIDE_TRUST_REMOTE` and
+/// `STRIDE_TRUSTED_NETWORKS`), and it is never taken from the file: a stale
+/// file must not be able to keep a network trusted after the operator turned
+/// it off.
+pub fn api_state(path: &Path, trust: TrustConfig) -> State {
+    let file = load(path).unwrap_or_default();
+    let mut state = State {
+        trust,
+        ..State::default()
+    };
+    state.personal_api_key = text(&file, "personal_api_key");
+    state.status.garmin_connected = file
+        .get("garmin_connected")
+        .and_then(Value::as_bool)
+        .unwrap_or(false);
+    state.status.garmin_method = text(&file, "garmin_method");
+    if let Some(athlete) = file.get("garmin_athlete") {
+        if athlete.is_object() {
+            state.status.athlete = athlete.clone();
+        }
+    }
+    state.status.last_sync_at = text(&file, "last_sync_at");
+    state.status.network_route =
+        text(&file, "network_route").unwrap_or_else(|| state.status.network_route.clone());
+    state.status.exit_node = text(&file, "exit_node");
+    if let Some(days) = file.get("sync_days").and_then(Value::as_i64) {
+        state.status.sync_days = days;
+    }
+    if let Some(auto) = file.get("auto_sync").and_then(Value::as_bool) {
+        state.status.auto_sync = auto;
+    }
+    if let Some(minutes) = file.get("sync_interval_minutes").and_then(Value::as_i64) {
+        state.status.sync_interval_minutes = minutes;
+    }
+    if let Some(months) = file.get("history_months").and_then(Value::as_i64) {
+        state.status.history_months = Some(months);
+    }
+    if let Some(days) = file.get("health_history_days").and_then(Value::as_i64) {
+        state.status.health_history_days = Some(days);
+    }
+    if let Some(demo) = file.get("demo_visible").and_then(Value::as_bool) {
+        state.status.demo_visible = demo;
+    }
+    state
+}
+
+/// A string in the state file, if it is one.
+fn text(file: &BTreeMap<String, Value>, key: &str) -> Option<String> {
+    file.get(key)
+        .and_then(Value::as_str)
+        .map(|value| value.to_string())
+        .filter(|value| !value.is_empty())
 }
 
 /// A random URL-safe token.

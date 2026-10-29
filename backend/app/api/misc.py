@@ -180,7 +180,7 @@ def set_route(body: RouteBody) -> dict[str, Any]:
         if not node:
             raise HTTPException(
                 status_code=400,
-                detail="No exit node is available on this tailnet.",
+                detail="No exit node is available.",
             )
         ok, message = network.set_exit_node(node)
         if ok:

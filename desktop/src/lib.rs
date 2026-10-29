@@ -41,6 +41,7 @@ pub mod security;
 pub mod server;
 pub mod spa;
 pub mod state;
+pub mod tls;
 
 use std::sync::Arc;
 
@@ -88,12 +89,26 @@ pub fn build(config: &Config) -> anyhow::Result<Runtime> {
         .with_context(|| format!("the database at {}", config.db_path.display()))?;
     let store = Arc::new(store);
 
-    let backend = stride_api::store::backend(Arc::clone(&store));
-    let api = Api::new(Arc::new(CoreBackend::new(backend)));
+    // The stack, from the bottom up: the rows, the state, the machine, and
+    // the domain on top.
+    //
+    // The state comes from the state file, so the desktop and the reference
+    // agree on what "connected" means and on when the last sync was. The
+    // trust configuration comes from the environment, never from the file.
+    let rows = stride_api::store::backend(Arc::clone(&store));
+    let api_state = state::api_state(&config.state_path, config.trust.clone());
+    let state_backend = Arc::new(stride_api::StateBackend::with_state(rows, api_state));
+    let network = Arc::new(stride_api::NetworkBackend::new(state_backend));
+    let api = Api::new(Arc::new(CoreBackend::new(network)));
 
     let token = state::capability_token(&config.state_path)
         .with_context(|| format!("the state file at {}", config.state_path.display()))?;
-    let security = Security::new(token, config.auth_enabled, config.cookie_secure);
+    let security = Security::with_trust(
+        token,
+        config.auth_enabled,
+        config.cookie_secure,
+        config.trust.clone(),
+    );
 
     let app = App::new(api, security, config.dist.clone(), allowed_origins());
 

@@ -43,6 +43,10 @@ KEEP = {
     "tile",
     "load_history",
     "run_sync",
+    # The phone answers the status itself: the state layer forgets the key
+    # as soon as a pull is over, so the time of the last pull is read from
+    # the sync log in the database.
+    "public_status",
 }
 
 

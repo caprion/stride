@@ -223,7 +223,21 @@ pub type Handler = Arc<dyn Fn(&Request) -> Response + Send + Sync>;
 /// Every connection gets a thread. The desktop serves one browser, so the
 /// number of connections is small and bounded.
 pub fn serve(listener: TcpListener, handler: Handler) -> std::io::Result<()> {
+    serve_with(listener, handler, |stream: TcpStream| Some(stream))
+}
+
+/// Serve a listener whose connections are made by `accept`.
+///
+/// The TLS listener uses this: `accept` performs the handshake and hands back
+/// the encrypted stream. The handshake happens on the connection's own
+/// thread, so a client that says nothing cannot hold up the listener.
+pub fn serve_with<S, A>(listener: TcpListener, handler: Handler, accept: A) -> std::io::Result<()>
+where
+    S: Read + Write + Send + 'static,
+    A: Fn(TcpStream) -> Option<S> + Send + Sync + 'static,
+{
     let live = Arc::new(AtomicUsize::new(0));
+    let accept = Arc::new(accept);
     for stream in listener.incoming() {
         let stream = match stream {
             Ok(stream) => stream,
@@ -232,6 +246,13 @@ pub fn serve(listener: TcpListener, handler: Handler) -> std::io::Result<()> {
                 continue;
             }
         };
+        let peer = match stream.peer_addr() {
+            Ok(peer) => peer.ip(),
+            Err(_) => continue,
+        };
+        let _ = stream.set_read_timeout(Some(IO_TIMEOUT));
+        let _ = stream.set_write_timeout(Some(IO_TIMEOUT));
+        let _ = stream.set_nodelay(true);
         if live.load(Ordering::Relaxed) >= MAX_CONNECTIONS {
             // Too many connections: answer the browser and let it retry.
             let mut stream = stream;
@@ -248,11 +269,14 @@ pub fn serve(listener: TcpListener, handler: Handler) -> std::io::Result<()> {
         }
         live.fetch_add(1, Ordering::Relaxed);
         let handler = Arc::clone(&handler);
+        let accept = Arc::clone(&accept);
         let counter = Arc::clone(&live);
         let spawned = thread::Builder::new()
             .name("stride-http".to_string())
             .spawn(move || {
-                handle_connection(stream, handler);
+                if let Some(stream) = accept(stream) {
+                    serve_connection(stream, peer, handler);
+                }
                 counter.fetch_sub(1, Ordering::Relaxed);
             });
         if spawned.is_err() {
@@ -263,26 +287,16 @@ pub fn serve(listener: TcpListener, handler: Handler) -> std::io::Result<()> {
 }
 
 /// Serve one connection.
-fn handle_connection(stream: TcpStream, handler: Handler) {
-    let peer = match stream.peer_addr() {
-        Ok(peer) => peer.ip(),
-        Err(_) => return,
-    };
-    let _ = stream.set_read_timeout(Some(IO_TIMEOUT));
-    let _ = stream.set_write_timeout(Some(IO_TIMEOUT));
-    let _ = stream.set_nodelay(true);
-
-    let mut writer = match stream.try_clone() {
-        Ok(writer) => writer,
-        Err(_) => return,
-    };
+///
+/// The stream is generic because the same code serves the plain listener and
+/// the TLS one: a TLS stream is a stream.
+fn serve_connection<S: Read + Write>(stream: S, peer: IpAddr, handler: Handler) {
     let mut reader = BufReader::new(stream);
-
-    let request = match read_request(&mut reader, &mut writer, peer) {
+    let request = match read_request(&mut reader, peer) {
         Ok(Some(request)) => request,
         Ok(None) => return,
         Err(response) => {
-            let _ = write_response(&mut writer, &response, false);
+            let _ = write_response(reader.get_mut(), &response, false);
             return;
         }
     };
@@ -290,13 +304,15 @@ fn handle_connection(stream: TcpStream, handler: Handler) {
     let response = handler(&request);
     // A `HEAD` answer carries the headers of the `GET` answer and no body.
     let head_only = request.method == "HEAD";
-    let _ = write_response(&mut writer, &response, head_only);
+    // The request has been read; whatever is left in the buffer is of no use
+    // to anybody, because the connection closes after this answer.
+    let mut stream = reader.into_inner();
+    let _ = write_response(&mut stream, &response, head_only);
 }
 
 /// Read one request. `Ok(None)` means the connection ended cleanly.
-fn read_request(
-    reader: &mut BufReader<TcpStream>,
-    writer: &mut TcpStream,
+fn read_request<R: Read + Write>(
+    reader: &mut BufReader<R>,
     peer: IpAddr,
 ) -> Result<Option<Request>, Response> {
     let mut head = Vec::new();
@@ -350,8 +366,9 @@ fn read_request(
         .get("expect")
         .is_some_and(|value| value.eq_ignore_ascii_case("100-continue"))
     {
-        let _ = writer.write_all(b"HTTP/1.1 100 Continue\r\n\r\n");
-        let _ = writer.flush();
+        let stream = reader.get_mut();
+        let _ = stream.write_all(b"HTTP/1.1 100 Continue\r\n\r\n");
+        let _ = stream.flush();
     }
 
     if headers
@@ -399,7 +416,7 @@ fn read_request(
 }
 
 /// Read one line, with the length it took.
-fn read_line(reader: &mut BufReader<TcpStream>, out: &mut Vec<u8>) -> std::io::Result<usize> {
+fn read_line<R: Read>(reader: &mut BufReader<R>, out: &mut Vec<u8>) -> std::io::Result<usize> {
     let mut total = 0;
     loop {
         let available = reader.fill_buf()?;
@@ -433,8 +450,8 @@ fn bad_request(detail: &str) -> Response {
 }
 
 /// Write an answer.
-fn write_response(
-    stream: &mut TcpStream,
+fn write_response<T: Write>(
+    stream: &mut T,
     response: &Response,
     head_only: bool,
 ) -> std::io::Result<()> {

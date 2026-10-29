@@ -18,7 +18,8 @@ is `scripts/security_check.sh`; the human checklist is `CHECKLIST.md`.
 
 ### 1. The local API had no authentication at all — **critical**
 
-Any process on the machine, and anything on the tailnet, could read a year of
+Any process on the machine, and anything on the operator's network, could
+read a year of
 sleep, heart rate, stress and GPS routes, and drive syncs that spend the
 athlete's Garmin quota.
 
@@ -27,7 +28,8 @@ athlete's Garmin quota.
 `0600`, and handed to the browser as an `HttpOnly`, `SameSite=Strict` cookie —
 it is never returned in a response body and never reaches JavaScript. Loading
 the SPA from loopback mints the cookie, so **the app needed no frontend change**.
-A tailnet client must present the token explicitly as a bearer.
+A client on the operator's network must present the token explicitly as a
+bearer.
 
 ### 2. The server bound `0.0.0.0` — **high**
 
@@ -160,8 +162,8 @@ audit and had never been reviewed: the device pairing exchange, the device
 credentials, the asset-links route, the two-listener server, the Android app
 and the tile proxy.
 
-The audit was run against the **live instance** on this machine (the tailnet
-address `100.89.222.50`, plain HTTP on `:8000`, HTTPS on `:8443`), not only
+The audit was run against the **live instance** on this machine (the address
+the listener binds, plain HTTP on `:8000`, HTTPS on the TLS port), not only
 against the test client, so every "the request that reaches it" below is a
 request that was actually sent and answered.
 
@@ -188,7 +190,7 @@ perfectly ordinary in it, and `Path.__truediv__` with an absolute path
 discards the base entirely.
 
 **The request that reaches it** (no capability token, no cookie, plain HTTP,
-from the tailnet or the Azure VNet):
+from the operator's network or the Azure VNet):
 
 ```
 GET /%2e%2e%2f%2e%2e%2fbackend%2fdata%2fstate.json
@@ -365,9 +367,11 @@ same detail as every other wrong code.
 
 `set_device_cookie()` set `Secure` only when the request arrived over HTTPS.
 The pairing exchange accepted a plain-HTTP request from a remote client. So a
-phone that paired over `http://<tailnet address>:8000` was handed a
+phone that paired over `http://<the address the listener binds>:8000` was
+handed a
 **year-long bearer token** (`Max-Age=31536000`) that it then sent, in the
-clear, on every request. On the tailnet the transport is WireGuard-encrypted,
+clear, on every request. On the operator's network the transport is
+encrypted,
 but the plain listener binds `0.0.0.0`, which is also the Azure VNet
 interface, where it is not.
 
@@ -375,7 +379,7 @@ interface, where it is not.
 over plain HTTP:
 
 ```
-POST /api/v1/auth/pair   (peer 100.89.222.50, scheme http)
+POST /api/v1/auth/pair   (peer <the operator's address>, scheme http)
 → 403 "Pair this device over HTTPS. A device credential must not be carried
         over plain HTTP — use the TLS listener."
 ```
@@ -391,8 +395,8 @@ loopback client, and it is a *session* cookie there.
 
 `app.serve` used uvicorn's defaults, which are `proxy_headers=True` and
 `forwarded_allow_ips=127.0.0.1`. Stride is not behind a proxy, but if
-anything ever were — a reverse proxy on this box, a tunnel, `tailscale serve`
-pointed at `:8000` — then a remote client could set `X-Forwarded-For:
+anything ever were — a reverse proxy on this box, a tunnel, or a port
+forward pointed at `:8000` — then a remote client could set `X-Forwarded-For:
 127.0.0.1` and be *seen* as a loopback client by every check in this
 document: the pairing code, the bootstrap, the capability cookie.
 
@@ -484,8 +488,8 @@ These were checked because they were asked about, and they hold.
 not only in the middleware.** The middleware's `CAPABILITY_FREE` set does
 include `/api/v1/auth/pair-code`, but the route itself refuses a client that
 is not on this machine — `pair_code()` calls `is_loopback_client()` and
-answers `403`. Verified live: `GET http://100.89.222.50:8000/api/v1/auth/pair-code`
-→ `403`, from the tailnet address, with no token. The middleware's allowlist
+answers `403`. Verified live: `GET http://<the operator's address>:8000/api/v1/auth/pair-code`
+→ `403`, from a remote address, with no token. The middleware's allowlist
 only decides *that the middleware does not demand a token*; the route decides
 *who gets the code*.
 
@@ -572,15 +576,16 @@ the athlete's own cache.
    `test_a_pairing_code_is_consumed_atomically`,
    `test_revoking_a_device_is_not_undone_by_a_concurrent_last_seen_refresh`.
 5. **The plain HTTP listener used to bind `0.0.0.0`**, which is the Azure VNet
-   interface as well as the tailnet. This was fixed while the audit was
+   interface as well as the operator's network. This was fixed while the audit was
    running, by the same change that split the two listeners: the plain one is
-   now on loopback and the TLS one on the tailnet address, so nothing is
+   now on loopback and the TLS one on the operator's address, so nothing is
    bound on the public interface any more. The gate's remote pairing check
    was moved to the TLS listener at the same time. (It picks the first
    non-loopback address, which on this machine is the VNet address rather
-   than the tailnet one, so that check currently warns instead of running;
-   `tailscale ip -4` would make it run. The route's behaviour was verified
-   by hand over the TLS listener: a request from the tailnet address is
+   than the TLS one, so that check currently warns instead of running;
+   pointing it at the TLS address would make it run. The route's behaviour
+   was verified
+   by hand over the TLS listener: a request from a remote address is
    refused with `403`.)
 6. **The tile cache is unbounded on disk and upstream fetches are not rate
    limited.** Both are reachable only with a valid credential (a paired
@@ -599,33 +604,37 @@ the athlete's own cache.
 
 ---
 
-## In flight while this audit was running: "trust the tailnet"
+## In flight while this audit was running: "trust the operator's network"
 
 A second change landed in the same files during the audit: an opt-in
-`STRIDE_TRUST_TAILNET` mode in which a device on the tailnet may read and
-drive the API without a capability token or a pairing code, and the server
-binds its plain listener to loopback and its TLS listener to the tailnet
-address. It is not this audit's work and it was not reviewed here, but it
-touches the findings above, so:
+`STRIDE_TRUST_REMOTE` mode in which a device on one of the operator's
+configured networks may read and drive the API without a capability token or
+a pairing code, and the server binds its plain listener to loopback and its
+TLS listener to the operator's address. The networks are the ones named in
+`STRIDE_TRUSTED_NETWORKS`; the default list is empty, so nothing extra is
+trusted until the operator says so.
+
+It is not this audit's work and it was not reviewed here, but it touches the
+findings above, so:
 
 - **The pairing exchange is still loopback-only.** `pair-code` asks
-  `is_loopback_client()`, not `is_trusted_client()`, so a trusted tailnet
-  peer still gets `403` — verified over the TLS listener.
+  `is_loopback_client()`, not `is_trusted_client()`, so a trusted peer still
+  gets `403` — verified over the TLS listener.
 - **The capability token is no longer the boundary in that mode.** In
-  `trust_tailnet` mode the boundary is the tailnet itself. Findings 7 and 9
-  are unaffected (a device credential is still never minted over cleartext,
-  and the tile proxy still fetches one allowlisted URL), but the "the API
-  needs a token" property of the first audit is deliberately relaxed in that
-  mode.
+  `STRIDE_TRUST_REMOTE` mode the boundary is the operator's network itself.
+  Findings 7 and 9 are unaffected (a device credential is still never minted
+  over cleartext, and the tile proxy still fetches one allowlisted URL), but
+  the "the API needs a token" property of the first audit is deliberately
+  relaxed in that mode.
 - **One hole was closed.** The mode skipped the same-origin check for
-  tailnet clients outright, which meant that any page the athlete's phone
+  trusted clients outright, which meant that any page the athlete's phone
   visited could make simple cross-origin `POST`/`DELETE` requests to the API
   — a page cannot read the responses (CORS still blocks that), but it can
   revoke a device or trigger a sync. The check now applies whenever the
   request carries an `Origin` header; only a request with **no** `Origin`
-  (a native client) is let through on the tailnet. That keeps the feature's
-  intent — the tailnet says who is calling — without letting a web page
-  borrow the phone's network position.
+  (a native client) is let through from a trusted network. That keeps the
+  feature's intent — the operator's configuration says who is calling —
+  without letting a web page borrow the phone's network position.
 
 ---
 
@@ -643,7 +652,7 @@ And one launch-time refusal, which is the first audit's rule finally being
 enforced rather than merely intended: `python -m app.serve` with
 `STRIDE_DISABLE_AUTH=true` now refuses to start, because it binds an address
 that is not loopback — and the check covers *both* listeners, so a loopback
-plain listener with a tailnet TLS listener is still caught.
+plain listener with a TLS listener on a remote address is still caught.
 
 One credential was rotated during the audit: the master capability token was
 printed in full by one of the probes below, so it was replaced. The athlete's

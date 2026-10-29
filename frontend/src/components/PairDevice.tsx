@@ -17,6 +17,7 @@ import { useState } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { KeyRound, ShieldCheck } from 'lucide-react'
 import { ApiError, api } from '../lib/api'
+import { localDataLine } from '../lib/surface'
 import { Button, inputClass } from '../components/ui'
 
 export function PairDevice({ initialError = null }: { initialError?: string | null }) {
@@ -66,8 +67,8 @@ export function PairDevice({ initialError = null }: { initialError?: string | nu
         <div className="rounded-xl border border-edge bg-surface p-6 shadow-card">
           <h1 className="text-[19px] font-bold text-ink">Connect this device</h1>
           <p className="mt-2 text-[13px] leading-relaxed text-ink-muted">
-            Stride keeps your training data on your own machine. A browser that is
-            not on the same device needs to be paired before it can read anything.
+            This browser is not on the machine running Stride. Pair it to read your training
+            data.
           </p>
 
           <form onSubmit={submit} className="mt-5">
@@ -94,9 +95,7 @@ export function PairDevice({ initialError = null }: { initialError?: string | nu
               />
             </div>
 
-            {error && (
-              <p className="mt-2 text-[12px] font-medium text-negative">{error}</p>
-            )}
+            {error && <p className="mt-2 text-[12px] font-medium text-negative">{error}</p>}
 
             <Button
               type="submit"
@@ -116,17 +115,13 @@ export function PairDevice({ initialError = null }: { initialError?: string | nu
               ./scripts/prod.sh pair
             </code>
             <p className="mt-2 text-[12px] leading-relaxed text-ink-muted">
-              It prints a QR code and the same code in text. Point your camera at the
-              screen, or type the code above. Either way it works once and expires in
-              10 minutes.
+              It prints a QR code and the same code in text. It works once and expires in 10
+              minutes.
             </p>
           </div>
         </div>
 
-        <p className="mt-4 text-center text-[12px] text-ink-faint">
-          Nothing is sent to a third party. The code is exchanged for a session
-          cookie and never leaves your machine.
-        </p>
+        <p className="mt-4 text-center text-[12px] text-ink-faint">{localDataLine()}</p>
       </div>
     </div>
   )

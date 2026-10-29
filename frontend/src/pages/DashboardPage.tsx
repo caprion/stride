@@ -39,7 +39,9 @@ import {
   SPORT_COLOR,
 } from '../lib/format'
 import { ActivityCard } from '../components/ActivityCard'
+import { ConnectGarmin } from '../components/GarminStatus'
 import { MonthlyBars, PaceTrendChart, VolumeChart, ZoneBarChart } from '../components/charts'
+import { isPhone } from '../lib/surface'
 import {
   Badge,
   Button,
@@ -356,12 +358,18 @@ export function DashboardPage() {
                 Browse activities
               </Button>
             </Link>
-            <Link to="/training">
-              <Button size="md">
-                <CalendarDays size={15} strokeWidth={2} />
-                Training log
-              </Button>
-            </Link>
+            {/*
+              The training log is the calendar, and the calendar is a laptop
+              activity: the Plan screen carries the schedule on the phone.
+            */}
+            {isPhone() ? null : (
+              <Link to="/training">
+                <Button size="md">
+                  <CalendarDays size={15} strokeWidth={2} />
+                  Training log
+                </Button>
+              </Link>
+            )}
           </>
         }
       />
@@ -513,7 +521,8 @@ export function DashboardPage() {
                 <EmptyState
                   icon={<Activity size={22} strokeWidth={1.8} />}
                   title="No activities yet"
-                  description="Sync your watch or import a FIT file to get started."
+                  description="Connect your watch and your runs start appearing."
+                  action={isPhone() ? <ConnectGarmin /> : undefined}
                 />
               </Card>
             ) : (

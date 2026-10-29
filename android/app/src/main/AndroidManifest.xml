@@ -35,10 +35,15 @@
             never hands the key to anything. It is the only place the Garmin
             key is typed, which is what keeps the credential out of the
             WebView.
+
+            The screen keeps its layout when the phone is turned: a pull can
+            take a while, and the athlete should not lose the count by
+            turning the phone.
         -->
         <activity
             android:name=".setup.GarminSetupActivity"
-            android:label="@string/garmin_key_label"
+            android:configChanges="orientation|keyboardHidden|keyboard|screenSize|screenLayout|smallestScreenSize|uiMode|density"
+            android:label="@string/garmin_title"
             android:exported="false"
             android:excludeFromRecents="false" />
 

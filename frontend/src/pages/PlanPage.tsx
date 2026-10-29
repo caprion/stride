@@ -27,6 +27,7 @@ import {
   inputClass,
 } from '../components/ui'
 import { ChartFrame } from '../components/charts'
+import { isPhone } from '../lib/surface'
 
 const tones: Record<Verdict, 'positive' | 'warn' | 'negative' | 'info' | 'brand'> = {
   hit: 'positive',
@@ -132,7 +133,7 @@ export default function PlanPage() {
   return (
     <div className="mx-auto max-w-7xl p-5">
       <PageHeader
-        title="Plan vs actual"
+        title={isPhone() ? 'Plan' : 'Plan vs actual'}
         description={
           current.data?.block ? (
             <>

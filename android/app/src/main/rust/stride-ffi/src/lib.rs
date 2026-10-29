@@ -33,6 +33,7 @@ use std::sync::{Arc, OnceLock, RwLock};
 use serde_json::{json, Value};
 
 use stride_api::backend::Backend;
+use stride_api::backend::SyncRunRow;
 use stride_api::{Api, Response};
 use stride_api::{CoreBackend, StateBackend};
 
@@ -43,6 +44,12 @@ use stride_api::{CoreBackend, StateBackend};
 // `unsafe_code` allowance they need, so the lint stays armed for the rest of
 // the crate.
 uniffi::include_scaffolding!("stride");
+
+/// The method the phone connects with.
+///
+/// The desktop has two: a developer key and an account. The phone has one —
+/// the athlete's Personal API key — and the app says so by name.
+const METHOD: &str = "personal";
 
 /// The backends the phone runs, and the state they share.
 struct PhoneCore {
@@ -206,11 +213,31 @@ pub fn stride_garmin_sync(api_key: String, days: i64) -> String {
             // longer: the shell unwraps it from the Keystore, hands it over
             // and takes it back.
             set_key(&core, &api_key);
+            let started = chrono::Utc::now();
             let pulled = core.sync.run_sync(Some(days), false);
-            set_key(&core, "");
+            let finished = chrono::Utc::now();
             match pulled {
-                Ok(value) => json!({"ok": true, "status": 200, "body": value}),
-                Err(err) => error_envelope(500, &err.to_string()),
+                Ok(value) => {
+                    // The log is in the phone's own database: it is the
+                    // evidence that survives the key going back into the
+                    // Keystore.
+                    write_sync_run(&core, &value, days, &started, &finished, None);
+                    remember_connection(&core, true);
+                    json!({"ok": true, "status": 200, "body": value})
+                }
+                Err(err) => {
+                    let detail = err.to_string();
+                    write_sync_run(
+                        &core,
+                        &Value::Null,
+                        days,
+                        &started,
+                        &finished,
+                        Some(detail.clone()),
+                    );
+                    remember_connection(&core, false);
+                    error_envelope(500, &detail)
+                }
             }
         }
         None => error_envelope(503, "the database is not open"),
@@ -218,6 +245,70 @@ pub fn stride_garmin_sync(api_key: String, days: i64) -> String {
     outcome
         .unwrap_or_else(|_| error_envelope(500, "the sync could not be completed"))
         .to_string()
+}
+
+/// Write one line of the sync log.
+///
+/// The log is in the phone's own database, in the same table the desktop
+/// uses. It answers two questions the app asks: when did the last pull
+/// finish, and what did it bring back.
+fn write_sync_run(
+    core: &PhoneCore,
+    value: &Value,
+    days: i64,
+    started: &chrono::DateTime<chrono::Utc>,
+    finished: &chrono::DateTime<chrono::Utc>,
+    error: Option<String>,
+) {
+    let found = value
+        .get("activities_found")
+        .and_then(Value::as_i64)
+        .unwrap_or(0);
+    let new = value
+        .get("activities_new")
+        .and_then(Value::as_i64)
+        .unwrap_or(0);
+    let updated = value
+        .get("activities_updated")
+        .and_then(Value::as_i64)
+        .unwrap_or(0);
+    let message = error
+        .clone()
+        .or_else(|| Some(format!("{found} runs, {new} new, {updated} updated")));
+    let row = SyncRunRow {
+        id: None,
+        source: "garmin_personal".to_string(),
+        started_at: Some(started.to_rfc3339()),
+        finished_at: Some(finished.to_rfc3339()),
+        status: if error.is_some() { "error" } else { "ok" }.to_string(),
+        days,
+        activities_found: found,
+        activities_new: new,
+        activities_updated: updated,
+        message,
+        error,
+    };
+    if let Err(failure) = core.sync.upsert_sync_run(&row) {
+        eprintln!("the sync log could not be written: {failure}");
+    }
+}
+
+/// Remember that Garmin is connected, once the pull is over.
+///
+/// The key goes back into the Keystore: the core holds it for the length of
+/// a pull and no longer. The *fact* of the connection stays, because the
+/// phone is connected — the next pull will use the same key, and the app
+/// has to be able to say so. Without this the dashboard would answer "not
+/// connected" a second after the screen said "Connected · 160 runs".
+fn remember_connection(core: &PhoneCore, synced: bool) {
+    let mut state = core.state.state();
+    state.personal_api_key = None;
+    state.status.garmin_connected = true;
+    state.status.garmin_method = Some(METHOD.to_string());
+    if synced {
+        state.status.last_sync_at = Some(stride_api::store::python_iso(chrono::Utc::now()));
+    }
+    core.state.set_state(state);
 }
 
 /// Put the Garmin key in the state's memory, or take it out again.
@@ -233,6 +324,11 @@ fn set_key(core: &PhoneCore, api_key: &str) {
     };
     state.status.has_personal_api_key = state.personal_api_key.is_some();
     state.status.garmin_connected = state.personal_api_key.is_some();
+    state.status.garmin_method = if state.personal_api_key.is_some() {
+        Some(METHOD.to_string())
+    } else {
+        None
+    };
     core.state.set_state(state);
 }
 
@@ -249,6 +345,34 @@ pub fn stride_set_garmin_key(api_key: String) -> String {
                 "ok": true,
                 "status": 200,
                 "body": {"in_memory": !api_key.is_empty()},
+            })
+            .to_string()
+        }
+        None => error_envelope(503, "the database is not open").to_string(),
+    }
+}
+
+/// Say whether the phone holds a Garmin key.
+///
+/// The key itself lives in the Keystore, and the core holds it for the
+/// length of a pull and no longer. This says the *fact* of it, so the app
+/// can say "Garmin is connected" — in the app, and to the page, which never
+/// sees the key.
+pub fn stride_set_garmin_connected(connected: bool) -> String {
+    match installed() {
+        Some(core) => {
+            let mut state = core.state.state();
+            state.status.garmin_connected = connected;
+            state.status.garmin_method = if connected {
+                Some(METHOD.to_string())
+            } else {
+                None
+            };
+            core.state.set_state(state);
+            json!({
+                "ok": true,
+                "status": 200,
+                "body": {"connected": connected},
             })
             .to_string()
         }

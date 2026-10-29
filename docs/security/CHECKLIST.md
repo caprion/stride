@@ -15,7 +15,8 @@ The athlete's data is a year of sleep, resting heart rate, stress, body
 battery, heart-rate zones and GPS routes — plus a **live Garmin Personal API
 key** that can read and write their Garmin account. The realistic adversaries
 are: another process on the machine, a page the athlete visits in a browser
-that tries to drive the local API, someone with the tailnet, and a lost or
+that tries to drive the local API, someone on the operator's network, and a
+lost or
 compromised phone. A determined attacker with root on the device is **out of
 scope** — say so in the privacy note rather than pretending otherwise.
 
@@ -60,7 +61,7 @@ The pairing exchange is the one route that answers without a capability
 token, so it gets its own checks.
 
 - [ ] A pairing code can only be minted from a loopback client. A device
-      elsewhere on the tailnet gets a refusal.
+      elsewhere on the operator's network gets a refusal.
 - [ ] A code works exactly once — the test and the clear happen under one
       lock, so two simultaneous exchanges cannot both succeed.
 - [ ] A code expires (10 minutes). An expired code is refused. The deadline

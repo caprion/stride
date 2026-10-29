@@ -84,15 +84,15 @@ The app has ten surfaces. **On the phone, five.**
 | keep | why |
 |---|---|
 | **Today** | what to do now |
-| **Plan** | the plan against what was actually done — the reason the app exists |
+| **Plan** | the intent against what was actually done — the reason the app exists |
 | **Runs** | the activity list |
 | **Body** | readiness, sleep, heart rate |
 | **Form** | the running fingerprint — the thing nothing else does |
+| **Stats** | the personal records and the year in one screen — the thing an athlete looks at after a good month |
 
 | cut from the phone | why |
 |---|---|
 | **Compare** | two runs side by side is a laptop activity |
-| **Stats** | totals, records and the year heatmap are a laptop activity |
 | **Training calendar** | the Plan screen carries the schedule |
 | **The Garmin forms** | one native screen, already built |
 | **Network route, history windows** | they configure a *server*. The phone has no server. |
@@ -117,7 +117,41 @@ the same one with more room.
 
 ---
 
-## 4. The configuration, with no vendor in it
+## 4. Where a plan comes from
+
+**The Plan screen is empty for most athletes, and that is a design flaw, not
+a missing feature.**
+
+A plan is *intent*: a dated list of sessions with a target — a distance, a
+pace band, a type. The screen compares the intent with what happened and
+says why it did not match.
+
+There is one source today — a markdown document somebody writes. An athlete
+who does not plan in a text file has no plan, and the screen has nothing to
+say. There is also a client that can fetch Garmin's scheduled workouts and
+**nothing calls it**.
+
+Three sources, and the order matters:
+
+1. **The plan you already have — inferred from your own history.**
+   Every runner has an implicit plan: their weekly volume, their rest days,
+   their long-run day, their usual session length per weekday. Twelve weeks
+   of history gives all of it. **Zero setup, and it works for everybody.**
+
+   And it is not a prescription, so the words must not pretend it is. An
+   inferred plan is a *baseline*: **"less than usual"**, **"more than
+   usual"**, **"a usual day"** — not "missed" and "hit".
+
+2. **The plan you wrote down — Garmin's scheduled workouts.** If you
+   schedule workouts in Garmin Connect, those are your plan. The client is
+   already written; it needs wiring.
+
+3. **The plan you type in — a manual week.** Real, and a separate piece of
+   work: an editor, an API and the storage for it.
+
+---
+
+## 5. The configuration, with no vendor in it
 
 The repository must not name a network vendor. It configures a network.
 
@@ -128,9 +162,9 @@ The repository must not name a network vendor. It configures a network.
 | `STRIDE_TRUST_REMOTE` | when true, clients from the trusted networks are trusted without a pairing code | `false` |
 | `STRIDE_TRUSTED_NETWORKS` | comma-separated CIDRs those clients come from | empty — loopback only |
 
-The old `STRIDE_TRUST_TAILNET` becomes `STRIDE_TRUST_REMOTE`. The
-hard-coded `100.64.0.0/10` becomes `STRIDE_TRUSTED_NETWORKS`, and **empty
-means nothing extra is trusted**.
+The old trust setting becomes `STRIDE_TRUST_REMOTE`. The hard-coded
+private range becomes `STRIDE_TRUSTED_NETWORKS`, and **empty means nothing
+extra is trusted**.
 
 The listener must not *detect* anything: it binds `STRIDE_TLS_HOST` and
 nothing else. No vendor's CLI is run at startup.
@@ -140,7 +174,7 @@ in the docs, not in a test. The address is the operator's business.
 
 ---
 
-## 5. The rules
+## 6. The rules
 
 1. **One screen for the key.** No exceptions, no "advanced".
 2. **The sync follows the key.** There is no separate sync step in the

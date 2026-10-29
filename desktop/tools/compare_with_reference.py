@@ -120,8 +120,6 @@ KNOWN = {
     # The reference renders its dictionaries in the order it builds them and
     # serde_json's map is sorted: the same keys in a different order.
     "GET /api/v1/health",
-    # The api crate's store backend does not know about the sync yet.
-    "GET /api/v1/sync/status",
 }
 
 

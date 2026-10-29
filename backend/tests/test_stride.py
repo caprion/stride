@@ -239,4 +239,4 @@ def test_calendar_shape(client):
 def test_network_status_shape(client):
     response = client.get("/api/v1/network/status")
     assert response.status_code == 200
-    assert "tailscale_available" in response.json()
+    assert "exit_node_tooling_available" in response.json()

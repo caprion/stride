@@ -88,7 +88,6 @@ function TooltipBox({
 
 /* --------------------------------------------------------- weekly volume */
 
-
 /**
  * How a week's volume compares with the target.
  *
@@ -175,7 +174,13 @@ export function VolumeChart({
             {rows.map((row, index) => (
               <Cell
                 key={index}
-                fill={goalKm ? volumeTier(row.km, goalKm) : index === rows.length - 1 ? SERIES.actual : SERIES.actualSoft}
+                fill={
+                  goalKm
+                    ? volumeTier(row.km, goalKm)
+                    : index === rows.length - 1
+                      ? SERIES.actual
+                      : SERIES.actualSoft
+                }
                 fillOpacity={goalKm ? 1 : index === rows.length - 1 ? 1 : 0.85}
               />
             ))}

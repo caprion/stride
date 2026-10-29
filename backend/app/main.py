@@ -117,8 +117,9 @@ def bootstrap_capability(request: Request) -> Response:
     """Set the HttpOnly browser capability without ever returning it.
 
     The middleware permits this endpoint without prior API authentication, but
-    only a loopback browser at Stride's own origin can use it. Tailnet clients
-    must already possess and send the explicit bearer capability.
+    only a loopback browser at Stride's own origin can use it. A client on a
+    remote network must already possess and send the explicit bearer
+    capability.
     """
     if auth_enabled() and not bootstrap_permitted(request, _cors_origins):
         raise HTTPException(status_code=403, detail="Local same-origin bootstrap required.")

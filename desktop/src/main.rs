@@ -18,6 +18,7 @@ use stride_desktop::config;
 use stride_desktop::db;
 use stride_desktop::http::{self, Request, Response};
 use stride_desktop::server::App;
+use stride_desktop::tls;
 
 const HELP: &str = "\
 Stride — the desktop app.
@@ -30,6 +31,13 @@ Usage:
 Environment:
   STRIDE_BIND            the address to bind (default 127.0.0.1, loopback only)
   STRIDE_PORT            the port to bind (default 8000)
+  STRIDE_TLS_HOST        the address the HTTPS listener binds (default 0.0.0.0)
+  STRIDE_TLS_PORT        the port for it (default 8443)
+  STRIDE_TLS_DIR         where the certificate and the key live
+                         (default <data dir>/tls)
+  STRIDE_TRUST_REMOTE    set it to trust the clients from the trusted networks
+                         without a pairing code (default false)
+  STRIDE_TRUSTED_NETWORKS the CIDRs those clients come from (default empty)
   STRIDE_DATA_DIR        where the database and the state file live
                          (default backend/data)
   STRIDE_DB_PATH         the database (default <data dir>/stride.db)
@@ -94,6 +102,13 @@ fn serve() -> Result<()> {
         );
     }
 
+    let app: Arc<App> = Arc::new(runtime.app);
+
+    // The HTTPS listener is for a phone's browser. It binds exactly what the
+    // operator configured — no address detection, no external command — and it
+    // runs only when there is a certificate to serve it with.
+    start_tls(&config, Arc::clone(&app));
+
     let listener = TcpListener::bind(config.bind)
         .with_context(|| format!("could not bind {}", config.bind))?;
     eprintln!(
@@ -103,10 +118,56 @@ fn serve() -> Result<()> {
         config.bind.port()
     );
 
-    let app: Arc<App> = Arc::new(runtime.app);
     let handler: http::Handler =
         Arc::new(move |request: &Request| -> Response { app.handle(request) });
     http::serve(listener, handler).context("the server stopped")
+}
+
+/// Start the HTTPS listener, if there is a certificate.
+///
+/// The certificate is the operator's business: point `STRIDE_TLS_DIR` at the
+/// directory that holds it. With no certificate the desktop serves plain HTTP
+/// only, and says so.
+fn start_tls(config: &config::Config, app: Arc<App>) {
+    let server_config = match tls::load(&config.tls_dir) {
+        Ok(Some(server_config)) => Arc::new(server_config),
+        Ok(None) => {
+            eprintln!(
+                "stride: no TLS certificate in {} — the app is reachable over plain HTTP only",
+                config.tls_dir.display()
+            );
+            return;
+        }
+        Err(err) => {
+            eprintln!("stride: the TLS certificate could not be read: {err}");
+            return;
+        }
+    };
+    let listener = match TcpListener::bind(config.tls_bind) {
+        Ok(listener) => listener,
+        Err(err) => {
+            eprintln!(
+                "stride: could not bind the TLS listener on {}: {err}",
+                config.tls_bind
+            );
+            return;
+        }
+    };
+    eprintln!(
+        "stride: serving https://{}:{}",
+        config.tls_bind.ip(),
+        config.tls_bind.port()
+    );
+    let handler: http::Handler =
+        Arc::new(move |request: &Request| -> Response { app.handle(request) });
+    let acceptor = Arc::clone(&server_config);
+    let _ = std::thread::Builder::new()
+        .name("stride-tls".to_string())
+        .spawn(move || {
+            let _ = http::serve_with(listener, handler, move |stream| {
+                tls::accept(Arc::clone(&acceptor), stream)
+            });
+        });
 }
 
 /// Convert the plain database into an encrypted one.

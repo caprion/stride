@@ -13,6 +13,7 @@ the user connects Garmin once from the Settings screen and we never ask again.
 
 from __future__ import annotations
 
+import ipaddress
 import json
 import logging
 import os
@@ -56,6 +57,79 @@ log = logging.getLogger(__name__)
 
 FRONTEND_DIST = BASE_DIR / "frontend" / "dist"
 
+
+# ---------------------------------------------------------------------------
+# Trust configuration
+# ---------------------------------------------------------------------------
+#
+# Whether a client from a trusted network may use the API without a pairing
+# code is a *deployment* decision, not application state. It is read from the
+# environment once, at load time, and it is never written to the state file:
+# a stale value in ``state.json`` must not be able to keep a network trusted
+# after the operator turned it off.
+#
+# ``STRIDE_TRUST_REMOTE``
+#     true — clients from the trusted networks are trusted without a pairing
+#     code. false (the default) — every remote client needs one.
+# ``STRIDE_TRUSTED_NETWORKS``
+#     comma-separated CIDRs the trusted clients come from. Empty — the
+#     default — means nothing extra is trusted; only the loopback interface
+#     is.
+
+_TRUTHY = ("1", "true", "yes", "on")
+
+
+def _env_flag(name: str, default: bool = False) -> bool:
+    """Read a boolean flag from the environment."""
+    raw = os.getenv(name)
+    if raw is None:
+        return default
+    return raw.strip().lower() in _TRUTHY
+
+
+def _parse_networks(raw: str) -> tuple[Any, ...]:
+    """Parse a comma-separated list of CIDRs.
+
+    A bare address is accepted as a single-host network. An entry that does
+    not parse is dropped with a warning: a typo must not widen the trust
+    boundary, and it must not stop the server from starting either.
+    """
+    networks: list[Any] = []
+    for item in raw.split(","):
+        text = item.strip()
+        if not text:
+            continue
+        try:
+            networks.append(ipaddress.ip_network(text, strict=False))
+            continue
+        except ValueError:
+            pass
+        try:
+            networks.append(ipaddress.ip_network(ipaddress.ip_address(text)))
+        except ValueError:
+            log.warning(
+                "Ignoring %r in STRIDE_TRUSTED_NETWORKS: not a CIDR or an address",
+                text,
+            )
+    return tuple(networks)
+
+
+#: Whether remote clients from the trusted networks skip the pairing code.
+TRUST_REMOTE = _env_flag("STRIDE_TRUST_REMOTE")
+
+#: The networks those clients come from. Empty means loopback only.
+TRUSTED_NETWORKS = _parse_networks(os.getenv("STRIDE_TRUSTED_NETWORKS", ""))
+
+
+def trust_remote_enabled() -> bool:
+    """Are clients from the trusted networks trusted without a pairing code?"""
+    return TRUST_REMOTE
+
+
+def trusted_networks() -> tuple[Any, ...]:
+    """The networks a remote client is trusted from. Empty by default."""
+    return TRUSTED_NETWORKS
+
 # Fallback source of the demo dataset that ships with the app.
 DEMO_CACHE = Path(os.getenv("STRIDE_DEMO_CACHE", Path.home() / "running" / "sample-data" / "unified-cache.json"))
 
@@ -88,16 +162,12 @@ class AppState:
     # it needs no developer registration and covers activities *and* wellness.
     personal_api_key: str | None = None
 
-    # Trust the tailnet. When this is on, any device on the Tailscale
-    # network can read the API without a pairing code. Off by default.
-    trust_tailnet: bool = os.getenv("STRIDE_TRUST_TAILNET", "false").lower() in (
-        "1",
-        "true",
-        "yes",
-        "on",
-    )
+    # Whether the trusted networks are trusted at all is *not* here: it is
+    # deployment configuration (``STRIDE_TRUST_REMOTE`` and
+    # ``STRIDE_TRUSTED_NETWORKS``), read at load time and never persisted.
+    # See the trust configuration above.
 
-    # Networking — Garmin blocks datacenter IPs, so we may need the home exit node.
+    # Networking — Garmin blocks datacenter IPs, so we may need a remote egress node.
     network_route: str = "auto"  # "auto" | "direct" | "exit_node"
     exit_node: str | None = os.getenv("STRIDE_EXIT_NODE")
 
@@ -120,7 +190,7 @@ class AppState:
     # App-level session secret (so the web UI can hold a session cookie).
     session_secret: str = field(default_factory=lambda: secrets.token_hex(32))
 
-    # Device pairing. A browser on the tailnet is not a loopback client, so
+    # Device pairing. A browser on a remote network is not a loopback client, so
     # it cannot mint a capability cookie by loading the app. The operator
     # generates a short code on the machine and types it into the device; the
     # code is exchanged once for the same HttpOnly cookie a loopback browser
@@ -162,19 +232,11 @@ class AppState:
         # Repair permissions on an existing file, which may predate this
         # hardening and have been world-readable.
         _secure_file(STATE_PATH)
-        state = cls(**{k: v for k, v in raw.items() if k in known and k != "schema_version"})
-        # Whether the tailnet is trusted is a deployment decision, not state.
-        # It is always read from the environment, so a value written into the
-        # state file yesterday cannot keep a tailnet trusted after it was
-        # turned off today.
-        if "STRIDE_TRUST_TAILNET" in os.environ:
-            state.trust_tailnet = os.environ["STRIDE_TRUST_TAILNET"].strip().lower() in (
-                "1",
-                "true",
-                "yes",
-                "on",
-            )
-        return state
+        # Unknown keys are dropped, and the trust configuration is not a field
+        # at all: it is read from the environment at load time, so a value
+        # written into the state file yesterday cannot keep a network trusted
+        # after it was turned off today.
+        return cls(**{k: v for k, v in raw.items() if k in known and k != "schema_version"})
 
     def save(self) -> None:
         """Write the state file with owner-only permissions.

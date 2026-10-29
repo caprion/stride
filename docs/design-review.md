@@ -11,6 +11,10 @@ reports the same number on every screen. Storage was measured with
 `dbstat`. Every number below is from a script in `scripts/`, not from a
 judgement call.
 
+**Status.** §5 says what was done; §6 says what is still open. The Rust port
+did not change the front end, so the measurements in §1–§3 still describe the
+app the athlete sees.
+
 ---
 
 ## 1. The footprint
@@ -59,12 +63,10 @@ nodes** — and the sleep chart is readable for the first time.
 The original FIT file for the same activity is **20 KB**.
 
 > **The phone should keep the FIT and derive from it.** Six times smaller,
-> and the FIT is the source of truth anyway — it is what
-> `docs/android-app.md` already says to do. The desktop can afford to
+> and the FIT is the source of truth anyway. The desktop can afford to
 > explode it because the desktop has the disk.
 
-This is the single biggest storage decision in the app and it should be made
-in the Kotlin port, not after it.
+**This is still open.** It is item 1 in §6.
 
 ---
 
@@ -140,6 +142,11 @@ Screens are counted in phone viewports (844 px tall).
 | stats | 5.8 | good. |
 | settings | 8.2 | good. |
 
+**The phone shows five of them.** Today, Plan, Runs, Body and Form. Compare,
+Stats and the training calendar are cut from the phone and kept on the
+desktop — the desktop has the room, and they are good there. The cut is the
+phone's, not the product's; the contract is `docs/phone-simplification.md`.
+
 ### The bug that was hiding
 
 The fingerprint page rendered **938 CSS pixels wide on a 390-pixel
@@ -179,30 +186,51 @@ verdict colours another, and they overlap.
 
 ---
 
-## 5. What is still wrong
+## 5. What was done
 
-Ranked by how much it costs the person using it.
+Each of the five open items from the last review, and where it was fixed.
 
-1. **The fingerprint table is 160 rows.** Fourteen screens of scrolling on a
-   phone, eleven columns. It needs to be **cards on mobile** — one activity
-   per card with the four numbers that matter — and a "show all" for the
-   desktop table.
-2. **Units are inconsistent.** The readiness driver list shows `6.3` where
-   the line below it says `6h16m`. A number without its unit is a bug, not
-   a style.
-3. **The dashboard's weekly volume bars are one amber at low opacity.** Every
-   bar the same colour means the chart carries no information. It should
-   encode the volume *tier* — easy, moderate, hard — in three steps of the
-   amber, which is the one colour that means effort.
-4. **The comparison screen says "0/8".** Eight runs on a shared distance
-   axis is a lot to compare; two or three is the useful number, and eight
-   is what the chart can technically hold. The copy should say what to
-   pick.
-5. **The readiness score on physiology showed `67.39`.** Now `67`.
+| the item | the fix | where |
+|---|---|---|
+| **the fingerprint table is 160 rows** — fourteen screens of scrolling on a phone | one activity per card on a phone, with the four numbers that matter; the table stays for the desktop | `frontend/src/pages/FitnessPage.tsx` — `FingerprintCards` |
+| **units are inconsistent** — the driver list showed `6.3` where the line below it said `6h16m` | every driver renders its own unit, and its baseline and delta with it | `frontend/src/pages/PhysiologyPage.tsx` — the driver row renders `d.unit` |
+| **the dashboard's weekly volume bars are one amber at low opacity** — every bar the same colour, so the chart carries no information | the bars encode the volume tier: deeper amber is closer to the goal | `frontend/src/pages/DashboardPage.tsx` — the weekly volume chart |
+| **the comparison screen says "0/8"** — eight runs on a shared distance axis is a lot to compare | the copy says what to pick: "Two or three reads best — the chart puts them on one distance axis. Eight is the limit." | `frontend/src/pages/ComparePage.tsx` |
+| **the readiness score showed `67.39`** | it is rounded: `Math.round(current.score)` | `frontend/src/pages/PhysiologyPage.tsx` |
+
+And the order of work that followed:
+
+| | what | state |
+|---|---|---|
+| 1 | Fingerprint table as cards on a phone | **done** |
+| 2 | Units on every driver number | **done** |
+| 3 | Volume bars coloured by tier | **done** |
+| 4 | Range selectors on the other trend charts | **done** — the fitness trend has one too |
+| 5 | The map as the hero of the activity page | **done** — `RouteHero` is section 1 of the activity page, before the title and the stats |
+| 6 | Store the FIT, derive the streams | **open** — see §6 |
 
 ---
 
-## 6. The direction, honestly
+## 6. What is still open
+
+1. **The phone still stores the exploded per-second series.** 115 KB per
+   activity against **20 KB** for the original FIT file — **six times** the
+   storage, and the FIT is the source of truth anyway. The fix is in the
+   store, not in the UI: keep the FIT, derive the streams on read. The
+   desktop can afford to explode it; the phone cannot.
+2. **The renderer costs about 100 MB on the phone.** Measured by the memory
+   workstream. A native UI is the answer if it matters; it is not yet a
+   decision, and the bundled WebView is what ships.
+3. **The readiness traffic light is not a traffic light.** The grade colours
+   and the verdict colours are still two sets that overlap. It should be one
+   scale, everywhere: in the strip, in the badge, in the driver list.
+4. **The fingerprint page is still 14.8 screens.** The cards helped; the
+   trend on it did not get a range selector until late, and the page is
+   still the longest in the app.
+
+---
+
+## 7. The direction, honestly
 
 **What gets better**
 
@@ -235,16 +263,3 @@ Ranked by how much it costs the person using it.
 - **Do not put a number on the home screen that cannot be explained.** The
   dashboard shows readiness, volume, pace and the plan for today. That is
   the right amount.
-
----
-
-## 7. The order
-
-| | what | why now |
-|---|---|---|
-| 1 | Fingerprint table as cards on a phone | the worst screen by a distance |
-| 2 | Units on every driver number | a bug, and it is two minutes |
-| 3 | Volume bars coloured by tier | the dashboard's best chart is currently inert |
-| 4 | Range selectors on the other trend charts | the physiology one proved it |
-| 5 | The map as the hero of the activity page | the single biggest "this feels like an app" change |
-| 6 | Store the FIT, derive the streams | in the Kotlin port, not after it |

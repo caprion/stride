@@ -388,9 +388,9 @@ async def fit_import(files: list[UploadFile] = File(...), db: Session = Depends(
 
 # --------------------------------------------------------------- pairing
 #
-# A browser on the tailnet is not a loopback client, so loading the app
+# A browser on a remote network is not a loopback client, so loading the app
 # cannot mint a capability cookie — by design, because "any device on my
-# tailnet can read my health data" is not a property anyone wants. The
+# network can read my health data" is not a property anyone wants. The
 # missing half was a way for the athlete to *pair* a device deliberately.
 #
 # The operator runs ``scripts/prod.sh pair`` on the machine, which asks the
@@ -455,7 +455,7 @@ def pair_code(request: Request) -> dict[str, Any]:
     if not is_loopback_client(request):
         raise HTTPException(
             status_code=403,
-            detail="Pairing codes are issued on the Stride machine only.",
+            detail="A pairing code can only be requested on the machine running Stride.",
         )
     code = _new_pair_code()
     expires = time.time() + PAIR_CODE_TTL_SECONDS
@@ -465,8 +465,8 @@ def pair_code(request: Request) -> dict[str, Any]:
         "code": code,
         "expires_in": PAIR_CODE_TTL_SECONDS,
         "instructions": (
-            "Open Stride on the other device and enter this code. "
-            "It works once, and expires in 10 minutes."
+            "The phone asks for a pairing code. Type this code on the phone. "
+            "It works once, and it expires in 10 minutes."
         ),
     }
 

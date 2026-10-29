@@ -23,12 +23,14 @@
 //! The example takes a [`Backend`] and not a store, so that it does not
 //! depend on which copy of the store crate the graph happens to hold.
 
+use std::net::IpAddr;
 use std::sync::{Arc, Mutex};
 
 use serde_json::{json, Value};
 
-use crate::backend::{Backend, SettingsPatch, StatusView};
+use crate::backend::{Backend, SettingsPatch, StatusView, SyncRunRow};
 use crate::error::BackendError as Error;
+use crate::network::TrustConfig;
 
 /// The characters a pairing code is made of.
 ///
@@ -58,6 +60,14 @@ pub struct State {
     pub sync_started_at: Option<String>,
     /// What the last sync said.
     pub sync_message: Option<String>,
+    /// Who may use the API without a pairing code.
+    ///
+    /// This is *deployment* configuration, not application state: it is read
+    /// from the environment (`STRIDE_TRUST_REMOTE` and
+    /// `STRIDE_TRUSTED_NETWORKS`) and it is never written to the state file,
+    /// so a stale file cannot keep a network trusted after the operator
+    /// turned it off.
+    pub trust: TrustConfig,
 }
 
 impl Default for State {
@@ -81,6 +91,7 @@ impl Default for State {
             sync_running: false,
             sync_started_at: None,
             sync_message: None,
+            trust: TrustConfig::default(),
         }
     }
 }
@@ -127,6 +138,14 @@ impl StateBackend {
         self.state
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner())
+    }
+
+    /// Is this address in one of the trusted networks?
+    ///
+    /// The trust configuration is the deployment's, and it is read from the
+    /// environment. Empty means nothing extra is trusted.
+    pub fn trusts(&self, address: &IpAddr) -> bool {
+        self.locked().trust.trusts(address)
     }
 }
 
@@ -220,14 +239,41 @@ impl StateBackend {
             .personal_api_key
             .clone()
             .ok_or_else(|| Error::Domain("There is no Garmin key to sync with.".to_string()))?;
+        let (source, window) = {
+            let state = self.locked();
+            (
+                state
+                    .status
+                    .garmin_method
+                    .clone()
+                    .unwrap_or_else(|| "personal".to_string()),
+                days.unwrap_or(state.status.sync_days).clamp(1, 365),
+            )
+        };
         let today = chrono::Utc::now().date_naive();
         let started = chrono::Utc::now();
+        let started_at = started.to_rfc3339();
         {
             let mut state = self.locked();
             state.sync_running = true;
-            state.sync_started_at = Some(started.to_rfc3339());
+            state.sync_started_at = Some(started_at.clone());
             state.sync_message = None;
         }
+        // The sync log: the row that says a sync is running, and the row the
+        // history reads afterwards.
+        let run_id = self
+            .inner
+            .upsert_sync_run(&SyncRunRow {
+                id: None,
+                source: source.clone(),
+                started_at: Some(started_at.clone()),
+                finished_at: None,
+                status: "running".to_string(),
+                days: window,
+                ..SyncRunRow::default()
+            })
+            .ok();
+
         if background {
             // The sync runs on its own thread: the caller is told it started,
             // the way the reference answers.
@@ -236,42 +282,89 @@ impl StateBackend {
             let key = key.clone();
             std::thread::spawn(move || {
                 let outcome = crate::sync::run(backend.as_ref(), &key, days, health_days, today);
-                let mut guard = state
-                    .lock()
-                    .unwrap_or_else(|poisoned| poisoned.into_inner());
-                guard.sync_running = false;
-                guard.sync_message = Some(match &outcome {
-                    Ok(outcome) => format!(
-                        "{} runs, {} new, {} updated, {} days",
-                        outcome.activities_found,
-                        outcome.activities_new,
-                        outcome.activities_updated,
-                        outcome.days
-                    ),
-                    Err(err) => err.to_string(),
-                });
+                Self::finish_sync(
+                    &backend,
+                    &state,
+                    run_id,
+                    &source,
+                    window,
+                    &started_at,
+                    &outcome,
+                );
             });
             return Ok(json!({ "started": true }));
         }
         let outcome = crate::sync::run(self.inner.as_ref(), &key, days, health_days, today);
-        let mut state = self.locked();
-        state.sync_running = false;
+        Self::finish_sync(
+            &self.inner,
+            &self.state,
+            run_id,
+            &source,
+            window,
+            &started_at,
+            &outcome,
+        );
         match outcome {
-            Ok(outcome) => {
-                state.sync_message = Some(format!(
-                    "{} runs, {} new, {} updated, {} days",
-                    outcome.activities_found,
-                    outcome.activities_new,
-                    outcome.activities_updated,
-                    outcome.days
-                ));
-                Ok(outcome.to_value())
-            }
-            Err(err) => {
-                state.sync_message = Some(err.to_string());
-                Err(err)
+            Ok(outcome) => Ok(outcome.to_value()),
+            Err(err) => Err(err),
+        }
+    }
+
+    /// Finish a sync: the log, the state and the message.
+    ///
+    /// The message is the reference's wording: the dashboard shows it, and
+    /// the desktop's answer has to be the same sentence.
+    fn finish_sync(
+        backend: &Arc<dyn Backend>,
+        state: &Arc<Mutex<State>>,
+        run_id: Option<i64>,
+        source: &str,
+        days: i64,
+        started_at: &str,
+        outcome: &Result<crate::sync::SyncOutcome, Error>,
+    ) -> String {
+        let finished = chrono::Utc::now();
+        let finished_at = finished.to_rfc3339();
+        let (status, message, error, found, new, updated) = match outcome {
+            Ok(outcome) => (
+                "ok",
+                format!(
+                    "Synced {} new and {} updated activities, plus {} days of health data.",
+                    outcome.activities_new, outcome.activities_updated, outcome.days
+                ),
+                None,
+                outcome.activities_found as i64,
+                outcome.activities_new as i64,
+                outcome.activities_updated as i64,
+            ),
+            Err(err) => ("error", err.to_string(), Some(err.to_string()), 0, 0, 0),
+        };
+        // The log: the same row, finished.
+        let _ = backend.upsert_sync_run(&SyncRunRow {
+            id: run_id,
+            source: source.to_string(),
+            started_at: Some(started_at.to_string()),
+            finished_at: Some(finished_at.clone()),
+            status: status.to_string(),
+            days,
+            activities_found: found,
+            activities_new: new,
+            activities_updated: updated,
+            message: Some(message.clone()),
+            error,
+        });
+        {
+            let mut guard = state
+                .lock()
+                .unwrap_or_else(|poisoned| poisoned.into_inner());
+            guard.sync_running = false;
+            guard.sync_message = Some(message.clone());
+            if outcome.is_ok() {
+                // The dashboard's "Synced 2 days ago" reads this.
+                guard.status.last_sync_at = Some(finished_at);
             }
         }
+        message
     }
 }
 
@@ -281,6 +374,13 @@ impl Backend for StateBackend {
         // The key is a secret: the browser learns that there is one, never
         // what it is.
         status.has_personal_api_key = self.locked().personal_api_key.is_some();
+        if status.last_sync_at.is_none() {
+            // The log knows when the last sync finished, even after a
+            // restart: the dashboard's "Synced 2 days ago" reads it.
+            if let Ok(inner) = self.inner.public_status() {
+                status.last_sync_at = inner.last_sync_at;
+            }
+        }
         Ok(status)
     }
 
@@ -439,11 +539,16 @@ impl Backend for StateBackend {
 
     fn sync_status(&self) -> Result<Value, Error> {
         let state = self.locked();
-        Ok(json!({
-            "running": state.sync_running,
-            "started_at": state.sync_started_at,
-            "message": state.sync_message,
-        }))
+        if state.sync_running || state.sync_started_at.is_some() || state.sync_message.is_some() {
+            return Ok(json!({
+                "running": state.sync_running,
+                "started_at": state.sync_started_at,
+                "message": state.sync_message,
+            }));
+        }
+        // This process has not synced, so the log knows: the last run's start
+        // time, its message, and whether it is still running.
+        self.inner.sync_status()
     }
 
     fn garmin_oauth(&self, action: &str, _body: &Value) -> Result<Value, Error> {

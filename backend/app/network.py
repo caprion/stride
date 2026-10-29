@@ -1,13 +1,28 @@
-"""Network route management.
+"""Egress route management.
 
 Garmin throttles datacentre IPs hard (HTTP 429 on every login and token
-request). This VM is Azure/AS8075, so a straight-line sync from here is rate
-limited. The fleet already has a residential node — the raspberrypi at home —
-which advertises itself as a Tailscale exit node.
+request). A server that runs in a datacentre therefore needs a way out:
+the app can route its outbound traffic through an **exit node** — another
+machine on the operator's network that forwards traffic — so the provider
+sees the operator's own address instead of the datacentre one.
 
-So: the app can route its Garmin traffic through the exit node. We do that by
-toggling the node's own exit-node setting, which is a local, reversible
-operation (``tailscale set --exit-node=<ip>`` / ``--exit-node=none``).
+Which tool performs that switch is the *deployment's* business, not the
+application's. The backend asks for an executable named by
+``STRIDE_EXIT_NODE_TOOL`` and speaks a small JSON protocol to it:
+
+``<tool> status --json``
+    ``{"exit_node": "<address>|null", "active": true|false}``
+
+``<tool> nodes --json``
+    ``[{"ip": "...", "hostname": "...", "online": true, "selected": false}]``
+
+``<tool> set --exit-node=<address|none>``
+    exit status 0 when the route was changed.
+
+No particular networking product is named here, and none is detected: the
+backend runs no command to work out where the network is, it only runs the
+tool the operator told it about. With no tool configured the feature is
+simply unavailable, and the app says so rather than guessing.
 
 Modes
 -----
@@ -21,44 +36,53 @@ from __future__ import annotations
 
 import json
 import logging
+import os
 import shutil
 import subprocess
 from typing import Any
 
 log = logging.getLogger(__name__)
 
+#: The executable that performs the switch. Unset means "the default name".
+TOOL_ENV = "STRIDE_EXIT_NODE_TOOL"
 
-def _tailscale() -> str | None:
-    return shutil.which("tailscale")
+#: The name the tool is looked up under on PATH when the environment does
+#: not name one. A deployment provides it; the repository does not.
+DEFAULT_TOOL_NAME = "stride-exit-node"
+
+_TOOL_TIMEOUT = 20
 
 
-def tailscale_available() -> bool:
-    return _tailscale() is not None
+def _tool() -> str | None:
+    """The configured exit-node tool, resolved to an executable path."""
+    configured = os.getenv(TOOL_ENV, "").strip() or DEFAULT_TOOL_NAME
+    if os.path.sep in configured:
+        return configured if os.path.isfile(configured) else None
+    return shutil.which(configured)
 
 
-def _run(args: list[str], timeout: int = 20) -> tuple[int, str]:
-    binary = _tailscale()
+def exit_node_tooling_available() -> bool:
+    """Is an exit-node tool configured and executable?"""
+    return _tool() is not None
+
+
+def _run(args: list[str], timeout: int = _TOOL_TIMEOUT) -> tuple[int, str]:
+    binary = _tool()
     if not binary:
-        return 127, "tailscale not installed"
+        return 127, f"no exit-node tool found ({TOOL_ENV} or {DEFAULT_TOOL_NAME} on PATH)"
     try:
         proc = subprocess.run(
             [binary, *args], capture_output=True, text=True, timeout=timeout
         )
-        return proc.returncode, (proc.stdout or "") + (proc.stderr or "")
     except (subprocess.TimeoutExpired, OSError) as exc:
         return 1, str(exc)
+    return proc.returncode, (proc.stdout or "") + (proc.stderr or "")
 
 
 def status() -> dict[str, Any]:
-    """Current exit-node configuration of this machine.
-
-    Note on the JSON shape: in this Tailscale version the authoritative
-    "am I using an exit node?" signal is the top-level ``ExitNodeStatus``
-    object. ``Self.ExitNode`` means "this node *offers* exit-node service",
-    which is a different question.
-    """
+    """The current exit-node configuration of this machine."""
     info: dict[str, Any] = {
-        "tailscale_available": tailscale_available(),
+        "exit_node_tooling_available": exit_node_tooling_available(),
         "exit_node": None,
         "exit_node_active": False,
         "public_ip": None,
@@ -68,18 +92,12 @@ def status() -> dict[str, Any]:
     if code == 0:
         try:
             data = json.loads(out)
-            status = data.get("ExitNodeStatus") or {}
-            addresses = status.get("TailscaleIPs") or []
-            if addresses:
-                info["exit_node"] = addresses[0].split("/")[0]
-            info["exit_node_active"] = bool(status.get("ID"))
-            if not info["exit_node"]:
-                # Older shape: the selected node is reported on Self.
-                self_state = data.get("Self") or {}
-                info["exit_node"] = self_state.get("ExitNodeIP") or None
-                info["exit_node_active"] = bool(self_state.get("ExitNodeIP"))
         except json.JSONDecodeError:
-            pass
+            data = {}
+        if isinstance(data, dict):
+            address = data.get("exit_node")
+            info["exit_node"] = str(address) if address else None
+            info["exit_node_active"] = bool(data.get("active"))
     # The *actual* route, as opposed to the configured preference.
     info["route"] = "exit_node" if info["exit_node_active"] else "direct"
     return info
@@ -128,36 +146,30 @@ def clear_exit_node() -> tuple[bool, str]:
 
 
 def available_exit_nodes() -> list[dict[str, Any]]:
-    """Exit nodes advertised on the tailnet.
-
-    ``tailscale exit-node list`` has no ``--json`` flag in this version, so the
-    table output is parsed instead.
-    """
-    code, out = _run(["exit-node", "list"])
+    """The exit nodes the configured tool advertises."""
+    code, out = _run(["nodes", "--json"])
     if code != 0:
         return []
+    try:
+        data = json.loads(out)
+    except json.JSONDecodeError:
+        return []
+    if not isinstance(data, list):
+        return []
     nodes: list[dict[str, Any]] = []
-    for line in out.splitlines():
-        if not line.strip() or line.lstrip().startswith("IP "):
+    for entry in data:
+        if not isinstance(entry, dict):
             continue
-        if not line.startswith(" "):
-            continue
-        parts = [p.strip() for p in line.strip().split(None, 1)]
-        if len(parts) < 2:
-            continue
-        ip = parts[0]
-        rest = parts[1]
-        hostname = rest.split()[0] if rest.split() else ""
-        status = rest.split()[-1].lower() if rest.split() else ""
-        if not ip or ip.lower() == "ip":
+        address = entry.get("ip")
+        if not address:
             continue
         nodes.append(
             {
-                "id": hostname,
-                "ip": ip,
-                "hostname": hostname,
-                "online": status not in ("offline", "unavailable"),
-                "selected": status == "selected",
+                "id": str(entry.get("hostname") or address),
+                "ip": str(address),
+                "hostname": str(entry.get("hostname") or ""),
+                "online": bool(entry.get("online", True)),
+                "selected": bool(entry.get("selected", False)),
             }
         )
     return nodes
@@ -166,8 +178,9 @@ def available_exit_nodes() -> list[dict[str, Any]]:
 def resolve_exit_node() -> str | None:
     """Pick an exit node when none is configured.
 
-    The fleet's residential node (the raspberrypi at home) is the one that
-    makes Garmin reachable, so prefer the first online node advertised.
+    The first online node the tool advertises is the one that is used, so a
+    deployment with a single residential node works without any extra
+    configuration.
     """
     for node in available_exit_nodes():
         if node.get("online") and node.get("ip"):

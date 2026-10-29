@@ -5,40 +5,51 @@
     <string name="package_name">app.stride.running</string>
     <string name="custom_url_scheme">app.stride.running</string>
 
-    <!-- The native Garmin setup screen. The copy says what actually happens:
-         the key stays on the phone, and it goes to Garmin and nowhere else. -->
-    <string name="garmin_explanation">Your runs, with the detail behind them.\n\nConnect Garmin to bring your recent runs into Stride, including routes, splits and heart-rate detail. Stride checks Garmin for updates in the background and keeps a copy on this phone.</string>
-    <string name="garmin_key_label">Personal API key</string>
+    <!--
+        The native Garmin screen.
+
+        One screen, one thing on it: the key. The screen says what is
+        happening - checking, syncing, connected, refused - and one line
+        about privacy. Nothing else.
+    -->
+    <string name="garmin_title">Connect Garmin</string>
     <string name="garmin_key_hint">Paste the key Garmin showed you</string>
     <string name="garmin_show_key">Show the key</string>
-    <string name="garmin_open_garmin">Open Garmin to create a key</string>
-    <string name="garmin_connect">Connect Garmin</string>
+    <string name="garmin_open_garmin">Get a key from Garmin</string>
+    <string name="garmin_connect">Connect</string>
     <string name="garmin_replace_key">Replace key</string>
     <string name="garmin_disconnect">Disconnect Garmin</string>
-    <string name="garmin_not_connected">Garmin is not connected. Stride still works with the runs already on this phone.</string>
-    <string name="garmin_connected">Garmin is connected. Stride pulls in the background and keeps a copy on this phone.</string>
-    <string name="garmin_checking">Checking the key with Garmin…</string>
-    <string name="garmin_key_too_short">That does not look like a Garmin key. Copy the whole thing.</string>
-    <string name="garmin_rejected">Garmin did not accept this key. Check that you copied the whole key, or create a new one in Garmin Connect. Your key has not been saved.</string>
-    <string name="garmin_connected_toast">Connected. Stride is importing your runs and wellness now.</string>
-    <string name="garmin_disconnected_toast">Disconnected. Your imported runs are still on this phone.</string>
-    <string name="garmin_no_browser">There is no browser on this phone to open Garmin.</string>
-    <string name="garmin_privacy">Your key stays on this phone. Stride sends it directly to Garmin to get a short-lived access token, and never to Stride\'s servers. Garmin shows the key only once, so keep it private. You can remove it here or revoke it in Garmin Connect at any time.</string>
+    <string name="garmin_not_now">Not now</string>
 
-    <!-- The instance URL. Empty by default: the phone talks to Garmin. -->
-    <string name="server_url_label">Instance URL (optional)</string>
-    <string name="server_url_hint">Leave empty: the phone runs the whole app</string>
-    <string name="server_url_save">Save the instance URL</string>
-    <string name="server_url_saved">Saved. The app uses the instance from the next launch.</string>
-    <string name="server_url_cleared">Cleared. The app uses the bundled app from the next launch.</string>
-    <string name="server_url_must_be_https">An instance URL has to be https.</string>
+    <!-- The states. These are the words the athlete reads. -->
+    <string name="garmin_not_connected">Garmin is not connected.</string>
+    <string name="garmin_connected">Connected</string>
+    <string name="garmin_checking">Checking…</string>
+    <string name="garmin_syncing">Syncing…</string>
+    <string name="garmin_refused">Garmin did not accept this key.</string>
+    <string name="garmin_failed">Garmin could not be reached.</string>
+    <string name="garmin_key_too_short">That does not look like a Garmin key. Copy the whole thing.</string>
+    <string name="garmin_no_browser">There is no browser on this phone to open Garmin.</string>
+    <string name="garmin_credential_refused">Your phone\'s credential was not given. Nothing was changed.</string>
+
+    <!-- The run count. "12 runs", and then "Connected · 160 runs". -->
+    <plurals name="garmin_runs">
+        <item quantity="one">%1$d run</item>
+        <item quantity="other">%1$d runs</item>
+    </plurals>
+    <plurals name="garmin_connected_runs">
+        <item quantity="one">Connected · %1$d run</item>
+        <item quantity="other">Connected · %1$d runs</item>
+    </plurals>
+
+    <!-- The one line about privacy. There is only one. -->
+    <string name="garmin_privacy">Your data stays on this phone.</string>
 
     <!-- What the phone answers instead of the routes it does not have. -->
     <string name="garmin_key_not_in_browser">The Garmin key is entered in the Stride app, not in the browser. The setup screen has opened.</string>
     <string name="garmin_password_not_supported">This phone connects with a Personal API key. It never asks for, and never stores, your Garmin password.</string>
     <string name="garmin_developer_key_not_supported">The phone connects with a Personal API key. There is no developer key here, and no OAuth client to use one with.</string>
     <string name="garmin_not_connected_error">Garmin is not connected on this phone.</string>
-    <string name="garmin_credential_refused">Your phone\'s credential was not given, so nothing was changed.</string>
     <string name="garmin_key_locked">The phone is locked, so the key cannot be read. Unlock it and try again — your runs are still here.</string>
     <string name="garmin_key_gone">This phone\'s key store was reset, so the saved Garmin key cannot be read. Connect Garmin again.</string>
     <string name="screen_lock_required">Set a screen lock on this phone first. Stride will not keep your runs and your health data on a phone anyone can pick up.</string>

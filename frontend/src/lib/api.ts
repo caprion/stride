@@ -61,7 +61,8 @@ import type {
 
 const BASE = '/api/v1'
 
-export class ApiError extends Error {  status: number
+export class ApiError extends Error {
+  status: number
   constructor(message: string, status: number) {
     super(message)
     this.name = 'ApiError'
@@ -230,7 +231,8 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 
 export { apiHttp, apiBridge }
 
-function qs(params: Record<string, string | number | boolean | undefined | null>): string {  const search = new URLSearchParams()
+function qs(params: Record<string, string | number | boolean | undefined | null>): string {
+  const search = new URLSearchParams()
   for (const [key, value] of Object.entries(params)) {
     if (value === undefined || value === null || value === '') continue
     search.set(key, String(value))
@@ -251,10 +253,52 @@ function qs(params: Record<string, string | number | boolean | undefined | null>
 export function isNativeApp(): boolean {
   if (typeof window === 'undefined') return false
   const scope = window as unknown as Record<string, unknown>
-  const capacitor = scope.Capacitor as
-    | { isNativePlatform?: () => boolean }
-    | undefined
+  const capacitor = scope.Capacitor as { isNativePlatform?: () => boolean } | undefined
   return Boolean(capacitor?.isNativePlatform?.())
+}
+
+/**
+ * Open the phone's native Garmin setup screen.
+ *
+ * **The key is typed once, in the app.** On the phone the key is wrapped by
+ * a Keystore key and written to `noBackupFilesDir`; it never enters the
+ * WebView. So the web app must not offer a key form on the phone — it
+ * offers a button, and this is what the button does.
+ *
+ * The phone's shell answers the route that would carry a key by opening the
+ * native screen instead: the screen is up *before* the request is refused,
+ * so the refusal is the answer. If the shell ever grows a plugin method for
+ * it, that is used first.
+ *
+ * On the desktop there is no native screen and this throws: the desktop
+ * keeps its key form.
+ */
+export async function openNativeGarminSetup(): Promise<void> {
+  const plugin = strideBridge() as
+    | (StrideBridgePlugin & {
+        openGarminSetup?: () => Promise<void>
+      })
+    | null
+  if (!plugin) {
+    throw new ApiError('the native setup screen is not available', 503)
+  }
+
+  if (typeof plugin.openGarminSetup === 'function') {
+    await plugin.openGarminSetup()
+    return
+  }
+
+  try {
+    await plugin.apiCall({
+      method: 'POST',
+      path: `${BASE}/auth/garmin/personal-key`,
+      body: JSON.stringify({ api_key: '' }),
+    })
+  } catch {
+    // The refusal is how the screen is opened: the shell opens the native
+    // screen and then answers with an error. There is nothing to report.
+    return
+  }
 }
 
 export interface PairedDevice {
@@ -273,7 +317,8 @@ export const api = {
    * browser is not on the same machine as the server — the phone on the
    * tailnet, for instance.
    */
-  pair: (code: string) => request<void>('/auth/pair', { method: 'POST', body: JSON.stringify({ code }) }),
+  pair: (code: string) =>
+    request<void>('/auth/pair', { method: 'POST', body: JSON.stringify({ code }) }),
 
   /** The devices that have been paired to this instance. */
   devices: () => request<{ devices: PairedDevice[] }>('/auth/devices'),
@@ -490,7 +535,9 @@ export const api = {
   // the field list is a required argument so the trim is visible at the
   // call site rather than hidden in the client.
   physiologyDaily: (fields: string, from?: string, to?: string) =>
-    request<{ items: DailyPhysiologySummary[] }>(`/physiology/daily${qs({ from, to, fields })}`),
+    request<{ items: DailyPhysiologySummary[] }>(
+      `/physiology/daily${qs({ from, to, fields })}`,
+    ),
   physiologyLatest: () =>
     request<{ day: DailyPhysiology | null; readiness: Readiness | null }>('/physiology/latest'),
   physiologySleep: (from?: string, to?: string, fields?: string) =>

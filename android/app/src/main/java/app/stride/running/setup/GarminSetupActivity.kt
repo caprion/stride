@@ -1,25 +1,25 @@
 package app.stride.running.setup
 
+import android.app.Application
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
 import android.text.method.PasswordTransformationMethod
 import android.view.View
 import android.view.WindowManager
+import androidx.activity.OnBackPressedCallback
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
-import app.stride.running.security.DeviceCredential
 import android.widget.Button
 import android.widget.EditText
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import app.stride.running.R
-import app.stride.running.core.StrideCore
+import app.stride.running.security.DeviceCredential
 import app.stride.running.security.Secrets
-import app.stride.running.sync.SyncScheduler
-import org.json.JSONObject
-import java.util.concurrent.Executors
+import app.stride.running.settings.AppSettings
+import app.stride.running.sync.SyncEngine
 
 /**
  * The native Garmin setup screen.
@@ -33,18 +33,28 @@ import java.util.concurrent.Executors
  *
  * The key goes to Garmin and nowhere else. It has to: Garmin's token
  * endpoint is the only thing that can issue the bearer token the pull uses.
+ *
+ * **One screen, and it does the work.** The key is entered once. Saving it
+ * *is* the request to sync: the screen checks the key, keeps it, pulls, and
+ * says what happened — "Checking…", "Syncing…" with the number of runs as
+ * they arrive, and then "Connected · 160 runs", and then it goes away.
+ * There is no second screen and no second button.
+ *
+ * There is no server field. The phone has no server: it *is* the app.
  */
-class GarminSetupActivity : AppCompatActivity() {
-
-    private val worker = Executors.newSingleThreadExecutor { runnable ->
-        Thread(runnable, "stride-setup").apply { isDaemon = true }
-    }
+class GarminSetupActivity : AppCompatActivity(), SetupRunner.Listener {
 
     private lateinit var keyField: EditText
     private lateinit var status: TextView
+    private lateinit var progress: TextView
     private lateinit var connect: Button
     private lateinit var disconnect: Button
-    private lateinit var serverField: EditText
+    private lateinit var notNow: Button
+
+    private lateinit var runner: SetupRunner
+
+    /** Whether a Garmin key is on the phone. */
+    private var connected = false
 
     /**
      * The device's credential, asked for again before the credential changes.
@@ -70,28 +80,47 @@ class GarminSetupActivity : AppCompatActivity() {
         setContentView(R.layout.activity_garmin_setup)
 
         keyField = findViewById(R.id.garmin_key)
-        serverField = findViewById(R.id.server_url)
         status = findViewById(R.id.garmin_status)
+        progress = findViewById(R.id.garmin_progress)
         connect = findViewById(R.id.garmin_connect)
         disconnect = findViewById(R.id.garmin_disconnect)
+        notNow = findViewById(R.id.garmin_not_now)
+
+        runner = SetupRunner(application as Application, this)
 
         keyField.transformationMethod = PasswordTransformationMethod.getInstance()
         keyField.setHorizontallyScrolling(false)
 
-        findViewById<Button>(R.id.garmin_open_garmin).setOnClickListener {
-            openGarmin()
-        }
         findViewById<Button>(R.id.garmin_show).setOnClickListener {
             val shown = keyField.transformationMethod == null
             keyField.transformationMethod =
                 if (shown) PasswordTransformationMethod.getInstance() else null
             keyField.setSelection(keyField.text?.length ?: 0)
         }
+        findViewById<Button>(R.id.garmin_open_garmin).setOnClickListener {
+            openGarmin()
+        }
         connect.setOnClickListener { withCredential { connect() } }
         disconnect.setOnClickListener { withCredential { disconnect() } }
-        findViewById<Button>(R.id.server_save).setOnClickListener { saveServerUrl() }
+        notNow.setOnClickListener { dismissSetup() }
+
+        // Leaving the screen without connecting is a dismissal: the screen
+        // does not come back on the next launch.
+        onBackPressedDispatcher.addCallback(
+            this,
+            object : OnBackPressedCallback(true) {
+                override fun handleOnBackPressed() {
+                    dismissSetup()
+                }
+            },
+        )
 
         refresh()
+    }
+
+    override fun onDestroy() {
+        runner.close()
+        super.onDestroy()
     }
 
     /**
@@ -114,17 +143,27 @@ class GarminSetupActivity : AppCompatActivity() {
 
     /** What the screen shows when it opens. */
     private fun refresh() {
-        val connected = !Secrets.garminKey(this).isNullOrBlank()
-        status.text = if (connected) {
-            getString(R.string.garmin_connected)
+        connected = hasKey()
+        if (connected) {
+            // The phone has a key: the screen says so, and counts the runs
+            // in the background rather than blocking the first frame.
+            show(SetupUi(SetupPhase.Connected, runs = -1))
+            runner.count count@{ runs ->
+                if (isFinishing || isDestroyed) return@count
+                if (connected) show(SetupUi(SetupPhase.Connected, runs = runs))
+            }
         } else {
-            getString(R.string.garmin_not_connected)
+            show(SetupUi(SetupPhase.Idle))
         }
-        disconnect.visibility = if (connected) View.VISIBLE else View.GONE
-        serverField.setText(app.stride.running.settings.AppSettings(this).serverUrl)
-        connect.text = getString(
-            if (connected) R.string.garmin_replace_key else R.string.garmin_connect
-        )
+    }
+
+    /** Whether the phone holds a Garmin key. */
+    private fun hasKey(): Boolean = try {
+        !Secrets.garminKey(this).isNullOrBlank()
+    } catch (_: Exception) {
+        // A locked phone cannot read the key. It has not got one as far as
+        // the screen is concerned, and the athlete is asked for it again.
+        false
     }
 
     /** Open Garmin's key page in the browser. */
@@ -140,77 +179,96 @@ class GarminSetupActivity : AppCompatActivity() {
         }
     }
 
-    /** Validate the key against Garmin and, if it works, keep it. */
+    /**
+     * Validate the key against Garmin and, if it works, keep it and pull.
+     *
+     * The runner does the work and reports the states; this is the button.
+     */
     private fun connect() {
         val key = keyField.text?.toString()?.trim().orEmpty()
         if (key.length < 20) {
             status.text = getString(R.string.garmin_key_too_short)
             return
         }
-
-        status.text = getString(R.string.garmin_checking)
-        connect.isEnabled = false
-
-        worker.execute {
-            val problem = StrideCore.ensureOpen(applicationContext)
-            if (problem != null) {
-                runOnUiThread {
-                    status.text = problem
-                    connect.isEnabled = true
-                }
-                return@execute
-            }
-
-            // The key is checked before it is kept: the token exchange and a
-            // profile read both have to work before the key is worth having.
-            val body = JSONObject().put("api_key", key).toString()
-            val answer = StrideCore.call("POST", "/api/v1/auth/garmin/personal-key/test", body)
-            val envelope = JSONObject(answer)
-
-            runOnUiThread {
-                connect.isEnabled = true
-                if (!envelope.optBoolean("ok")) {
-                    status.text = envelope.optJSONObject("error")?.optString("detail")
-                        ?: getString(R.string.garmin_rejected)
-                    return@runOnUiThread
-                }
-                Secrets.saveGarminKey(this, key)
-                // The buffer is dropped: the key is not kept in the field's
-                // state, and it is not in the saved instance state.
-                keyField.setText("")
-                refresh()
-                SyncScheduler.schedule(this)
-                SyncScheduler.pullNow(this)
-                Toast.makeText(this, R.string.garmin_connected_toast, Toast.LENGTH_LONG).show()
-            }
-        }
-    }
-
-    /**
-     * Save the server URL, or clear it.
-     *
-     * It is empty by default: the phone is the whole thing, and it points at
-     * Garmin, not at a server. Setting it points the WebView at an instance
-     * instead — the interim build — and clearing it goes back to the bundled
-     * app. The next launch of the app picks the change up.
-     */
-    private fun saveServerUrl() {
-        val url = serverField.text?.toString()?.trim().orEmpty()
-        if (url.isNotEmpty() && !url.startsWith("https://")) {
-            status.text = getString(R.string.server_url_must_be_https)
-            return
-        }
-        app.stride.running.settings.AppSettings(this).serverUrl = url
-        status.text = getString(
-            if (url.isEmpty()) R.string.server_url_cleared else R.string.server_url_saved
-        )
+        runner.connect(key)
     }
 
     /** Forget the key. The imported runs stay on the phone. */
     private fun disconnect() {
-        Secrets.forgetGarminKey(this)
-        SyncScheduler.cancel(this)
-        refresh()
-        Toast.makeText(this, R.string.garmin_disconnected_toast, Toast.LENGTH_LONG).show()
+        runner.forget()
+        connected = false
+        show(SetupUi(SetupPhase.Idle))
+    }
+
+    /**
+     * Leave the screen, and remember that it was left.
+     *
+     * The screen is not the app: it is the one thing the athlete has to do
+     * once. Being dismissed is a decision, and it is kept.
+     */
+    private fun dismissSetup() {
+        AppSettings(this).setupDismissed = true
+        finish()
+    }
+
+    /** The state the runner reports. */
+    override fun onState(ui: SetupUi) {
+        if (ui.phase == SetupPhase.Syncing) {
+            // The key is in the Keystore now. The buffer is dropped: it is
+            // not kept in the field, and it is not in the saved state.
+            keyField.setText("")
+        }
+        if (ui.phase == SetupPhase.Connected) {
+            connected = true
+            // A key is on the phone, so the screen has nothing left to ask
+            // for.
+            AppSettings(this).setupDismissed = true
+        }
+        show(ui)
+        if (ui.phase == SetupPhase.Connected) {
+            // The screen goes away once it has said what it came to say.
+            leaveSoon()
+        }
+    }
+
+    /** Show a state. */
+    private fun show(ui: SetupUi) {
+        status.text = render(SetupCopy.status(ui))
+        val line = SetupCopy.progress(ui)
+        when {
+            // The count, while the pull runs.
+            line != null -> {
+                progress.visibility = View.VISIBLE
+                progress.text = render(line)
+            }
+            // The reason, when there is one.
+            ui.detail != null -> {
+                progress.visibility = View.VISIBLE
+                progress.text = ui.detail
+            }
+            else -> progress.visibility = View.GONE
+        }
+
+        val working = ui.phase == SetupPhase.Checking || ui.phase == SetupPhase.Syncing
+        connect.isEnabled = !working
+        keyField.isEnabled = !working
+        disconnect.visibility = if (connected) View.VISIBLE else View.GONE
+        notNow.visibility = if (connected || working) View.GONE else View.VISIBLE
+        connect.setText(if (connected) R.string.garmin_replace_key else R.string.garmin_connect)
+    }
+
+    /** A line of the screen: the words, and the number they count. */
+    private fun render(line: Line): String {
+        val count = line.count ?: return getString(line.resource)
+        return if (line.plural) {
+            resources.getQuantityString(line.resource, count, count)
+        } else {
+            getString(line.resource, count)
+        }
+    }
+
+    /** Leave the screen in a moment, so the last words are read. */
+    private fun leaveSoon() {
+        status.postDelayed({ if (!isFinishing) finish() }, 1_500L)
     }
 }

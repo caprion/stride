@@ -44,6 +44,20 @@ class AppGate(private val activity: FragmentActivity) {
     private var backgroundedAt = 0L
 
     /**
+     * Called when the gate opens.
+     *
+     * The app asks the device for its credential when it opens, and the
+     * setup screen — the one thing the athlete has to do once — waits for
+     * that answer: the screen is opened behind the gate, never in front of
+     * it.
+     */
+    var onUnlocked: (() -> Unit)? = null
+
+    /** Whether the gate is open. */
+    val isUnlocked: Boolean
+        get() = unlocked
+
+    /**
      * Whether the phone was locked when the app went away.
      *
      * The design says the gate closes *immediately* when the device locks.
@@ -89,6 +103,7 @@ class AppGate(private val activity: FragmentActivity) {
             (view.parent as? ViewGroup)?.removeView(view)
         }
         overlay = null
+        onUnlocked?.invoke()
     }
 
     /** Open the gate and ask the device who is holding the phone. */

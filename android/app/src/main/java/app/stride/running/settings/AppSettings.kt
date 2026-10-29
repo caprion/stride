@@ -39,6 +39,21 @@ class AppSettings(context: Context) {
         get() = preferences.getBoolean(KEY_NETWORK, true)
         set(value) = preferences.edit().putBoolean(KEY_NETWORK, value).apply()
 
+    /**
+     * Whether the Garmin setup screen has been dealt with.
+     *
+     * The screen opens itself on the first launch: an athlete with no key
+     * has an app that cannot show their runs, so the one thing the app
+     * needs from them is asked for once. This flag is what "once" means.
+     *
+     * It is set when the athlete connects, and when they dismiss the screen
+     * without connecting — being dismissed is a decision too, and it is
+     * kept.
+     */
+    var setupDismissed: Boolean
+        get() = preferences.getBoolean(KEY_SETUP_DISMISSED, false)
+        set(value) = preferences.edit().putBoolean(KEY_SETUP_DISMISSED, value).apply()
+
     companion object {
         private const val NAME = "stride.settings"
         private const val KEY_SERVER_URL = "server_url"
@@ -46,5 +61,6 @@ class AppSettings(context: Context) {
         private const val KEY_AUTO_SYNC = "auto_sync"
         private const val KEY_SYNC_INTERVAL = "sync_interval_hours"
         private const val KEY_NETWORK = "network_enabled"
+        private const val KEY_SETUP_DISMISSED = "setup_dismissed"
     }
 }

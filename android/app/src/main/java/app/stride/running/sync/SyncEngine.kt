@@ -82,6 +82,33 @@ object SyncEngine {
         return keyguard?.isDeviceLocked == true
     }
 
+    /**
+     * How many runs the phone has.
+     *
+     * It is the number the database holds, so it grows as a pull lands them:
+     * that is what "12 runs" is while the pull runs, and what "160 runs" is
+     * when it is over. A phone that cannot be opened has no runs to count,
+     * and the count is zero.
+     */
+    fun runCount(context: Context): Int {
+        val problem = StrideCore.ensureOpen(context)
+        if (problem != null) {
+            Log.i(TAG, "the runs cannot be counted: $problem")
+            return 0
+        }
+        return try {
+            val envelope = JSONObject(StrideCore.call("GET", "/api/v1/activities?per_page=1", null))
+            if (!envelope.optBoolean("ok")) {
+                0
+            } else {
+                envelope.optJSONObject("body")?.optInt("total", 0) ?: 0
+            }
+        } catch (error: Throwable) {
+            Log.w(TAG, "the runs could not be counted: ${error.message}")
+            0
+        }
+    }
+
     /** Read the core's answer. */
     private fun parse(answer: String, days: Long): SyncOutcome {
         val envelope = JSONObject(answer)
