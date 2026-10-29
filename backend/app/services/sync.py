@@ -236,9 +236,6 @@ def _run_sync_blocking(days: int | None = None, history: dict[str, Any] | None =
                     f"{result.get('wellness_requests', 0)} requests)."
                 )
                 state.update(last_sync_at=datetime.now(timezone.utc).isoformat())
-                if result["activities_new"] and state.demo_visible:
-                    state.update(demo_visible=False)
-                    run.message += " Demo activities hidden."
                 _sync_state.update({"running": False, "message": run.message})
                 log.info(run.message)
                 return
@@ -271,11 +268,6 @@ def _run_sync_blocking(days: int | None = None, history: dict[str, Any] | None =
             run.status = "ok"
             run.message = f"Synced {created} new and {updated} updated activities."
             state.update(last_sync_at=datetime.now(timezone.utc).isoformat())
-            # Real activities arrived: retire the synthetic demo set so the
-            # feed does not mix fake runs with real ones.
-            if created and state.demo_visible:
-                state.update(demo_visible=False)
-                run.message += " Demo activities hidden."
             _sync_state.update({"running": False, "message": run.message})
             log.info(run.message)
 

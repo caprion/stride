@@ -130,10 +130,6 @@ def trusted_networks() -> tuple[Any, ...]:
     """The networks a remote client is trusted from. Empty by default."""
     return TRUSTED_NETWORKS
 
-# Fallback source of the demo dataset that ships with the app.
-DEMO_CACHE = Path(os.getenv("STRIDE_DEMO_CACHE", Path.home() / "running" / "sample-data" / "unified-cache.json"))
-
-
 @dataclass
 class AppState:
     """Mutable, persisted application state."""
@@ -181,11 +177,6 @@ class AppState:
     # account holds"; the Activity API has no short retention window.
     history_months: int | None = 12
     health_history_days: int | None = 90
-
-    # Demo activities are synthetic. They are seeded on first boot so the app
-    # is never empty, and switched off automatically the moment real Garmin
-    # data arrives — mixing synthetic runs with real ones would be misleading.
-    demo_visible: bool = True
 
     # App-level session secret (so the web UI can hold a session cookie).
     session_secret: str = field(default_factory=lambda: secrets.token_hex(32))
@@ -318,7 +309,6 @@ class AppState:
             "auto_sync": self.auto_sync,
             "sync_interval_minutes": self.sync_interval_minutes,
             "last_sync_at": self.last_sync_at,
-            "demo_visible": self.demo_visible,
         }
 
 

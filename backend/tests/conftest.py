@@ -64,7 +64,7 @@ def db(tmp_path):
 
 @pytest.fixture()
 def client(db, monkeypatch):
-    """Exercise real routers without demo seeding or background sync."""
+    """Exercise real routers without seeding or background sync."""
     from fastapi.testclient import TestClient
 
     from app import main
@@ -77,7 +77,6 @@ def client(db, monkeypatch):
     monkeypatch.setattr(main, "_start_scheduler", lambda: None)
     monkeypatch.setattr(state, "garmin_connected", False)
     monkeypatch.setattr(state, "garmin_method", None)
-    monkeypatch.setattr(state, "demo_visible", False)
     # The state is a module-level singleton, so anything a test writes into it
     # would otherwise leak into the next test.
     monkeypatch.setattr(state, "devices", [])

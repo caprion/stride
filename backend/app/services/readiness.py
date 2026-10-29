@@ -10,6 +10,14 @@ load = 1-max(0,acute/chronic-1.3)/1.3.
 Weights are 25/10/25/15/10/10/5. Contributions are renormalised to 100
 over available drivers. Unknown persists score 0 because the frozen column
 is nonnullable, but returns score None so clients cannot mistake it for low.
+
+The score keeps all seven drivers, and it keeps them for now: Garmin's own
+metrics — the stress, the body battery and the acute/chronic load — come off
+the Body screen in v0.7.0, but a readiness number that quietly changes
+meaning between two versions of the app is worse than a screen with two
+extra series on it. The screen shows the drivers in ``SHOWN_DRIVERS`` and
+hides the rest; the score, the grade and the drivers this module returns do
+not change.
 """
 from __future__ import annotations
 
@@ -22,6 +30,15 @@ from sqlalchemy.orm import Session
 
 from ..models_phase2 import DailyPhysiology, Readiness, utcnow
 from .fingerprint import number
+
+#: The readiness drivers the Body screen shows.
+#:
+#: The calculation uses all seven (see the module docstring); these four are
+#: the ones the screen draws: the sleep, the sleep score, the HRV and the
+#: resting heart rate. The screen hides ``stress``, ``body_battery`` and
+#: ``load`` by key — the response still carries them, because they are part
+#: of the explanation of a score that is computed over them.
+SHOWN_DRIVERS = ('sleep', 'sleep_score', 'hrv', 'resting_hr')
 
 
 def baselines(rows: list[DailyPhysiology], day: str) -> dict[str, float | None]:

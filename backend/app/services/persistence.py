@@ -206,28 +206,35 @@ def store_activity(
     return activity, created
 
 
-def bootstrap_demo(db: Session) -> int:
-    """Seed the demo dataset if the activities table is empty.
+def purge_synthetic_activities(db: Session) -> int:
+    """Delete the synthetic activities an older installation may still hold.
 
-    The demo set is synthetic. A production instance must not contain it, so
-    seeding is opt-in (``STRIDE_SEED_DEMO=1``) and off by default — a fresh
-    production database holds only what Garmin actually returned.
+    The sample dataset is gone — it is not seeded, not filtered and not
+    behind a flag. An installation that was seeded before it was removed
+    still has those rows in its database, and without this they would sit in
+    the athlete's feed looking like their own runs. They are removed once, at
+    startup, and never come back.
+
+    The children go with them: the laps, the streams, the heart-rate zones
+    and the fingerprint are all rows keyed on the activity.
     """
-    import os
+    from ..models_phase2 import RunFingerprint
 
-    if os.getenv("STRIDE_SEED_DEMO", "false").lower() not in ("1", "true", "yes", "on"):
+    ids = [
+        row[0]
+        for row in db.query(Activity.id).filter(Activity.source == "demo").all()
+    ]
+    if not ids:
         return 0
-
-    from ..ingest.demo import activities_from_cache, load_cache
-
-    if db.query(Activity).count() > 0:
-        return 0
-    cache = load_cache()
-    if not cache:
-        return 0
-    activities = activities_from_cache(cache)
-    for activity in activities:
-        store_activity(db, activity)
+    for model in (ActivityLap, ActivityStream, HrZone, RunFingerprint):
+        db.query(model).filter(model.activity_id.in_(ids)).delete(
+            synchronize_session=False
+        )
+    removed = (
+        db.query(Activity)
+        .filter(Activity.id.in_(ids))
+        .delete(synchronize_session=False)
+    )
     db.commit()
-    log.info("Seeded %d demo activities", len(activities))
-    return len(activities)
+    log.info("Removed %d synthetic activities left over from an older install", removed)
+    return removed

@@ -161,21 +161,29 @@ _mount_optional("app.api.tiles")
 def _bootstrap() -> None:
     """Prepare a fresh database, then connect Garmin.
 
-    The demo dataset is only seeded when explicitly asked for; a production
-    instance starts empty and fills from the athlete's own Garmin account.
+    There is no sample data: a fresh instance starts empty and fills from
+    the athlete's own Garmin account. An empty app is the truth, and it is
+    the first thing every new installation shows.
+
+    An installation that predates the removal of the sample dataset still
+    holds those rows; they are deleted here so they cannot reappear in the
+    athlete's feed.
     """
-    from .services.persistence import bootstrap_demo
+    _purge_synthetic_activities()
+    _bootstrap_garmin()
+
+
+def _purge_synthetic_activities() -> None:
+    """Delete the synthetic activities an older installation may still hold."""
+    from .services.persistence import purge_synthetic_activities
 
     db = SessionLocal()
     try:
-        seeded = bootstrap_demo(db)
-        if seeded:
-            log.info("Seeded %d demo activities — the app is ready to explore.", seeded)
+        purge_synthetic_activities(db)
     except Exception as exc:  # pragma: no cover
-        log.warning("Demo bootstrap failed: %s", redact_text(exc))
+        log.warning("Could not clear the synthetic activities: %s", redact_text(exc))
     finally:
         db.close()
-    _bootstrap_garmin()
 
 
 def _bootstrap_garmin() -> None:
@@ -246,7 +254,9 @@ def health() -> dict:
     db = SessionLocal()
     try:
         activities = db.query(Activity).count()
-        real = db.query(Activity).filter(Activity.source != "demo").count()
+        # Every activity in the database came from Garmin: there is no
+        # synthetic source any more.
+        real = activities
         physiology = db.query(DailyPhysiology).count()
         sessions = db.query(PlanSession).count()
     except Exception:  # pragma: no cover - a broken database is not healthy

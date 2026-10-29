@@ -183,14 +183,10 @@ def candidates(db: Session, limit: int = 300) -> list[dict[str, Any]]:
     """Runs that can be compared — those with a fingerprint to compare."""
     from sqlalchemy import select
 
-    from ..services.analytics import demo_filter
-
     activities = db.execute(
-        demo_filter(
-            select(Activity).where(
-                Activity.sport_type.in_(
-                    ("running", "trail_running", "treadmill_running", "virtualrun")
-                )
+        select(Activity).where(
+            Activity.sport_type.in_(
+                ("running", "trail_running", "treadmill_running", "virtualrun")
             )
         )
         .order_by(Activity.start_time.desc())

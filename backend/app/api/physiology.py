@@ -15,6 +15,36 @@ from ..services.readiness import baselines, compute_readiness, compute_readiness
 
 router = APIRouter(prefix='/physiology', tags=['physiology'])
 
+#: The fields of a day that the Body screen draws: today's readiness, sleep,
+#: and resting heart rate with HRV.
+#:
+#: Garmin's own metrics — the body battery, the stress and the acute/chronic
+#: load — are not among them, and neither are the training-status columns
+#: (``vo2max``, ``endurance_score``, ``running_tolerance``,
+#: ``training_readiness``), the step count or the day's maximum heart rate.
+#: Nothing draws them, and the plan engine does not read them: it needs the
+#: sleep, the HRV and the resting heart rate.
+#:
+#: The daily endpoint used to answer with every column of every day. A year
+#: of that is 189,811 bytes, and almost none of it was drawn. These ten
+#: fields are 70,091 bytes for the same year.
+#:
+#: A caller that names its own fields still gets them, including the ones
+#: this list leaves out: the desktop keeps the table, and the harness tool
+#: reads the source of a day.
+BODY_FIELDS = (
+    'date',
+    'sleep_s',
+    'sleep_score',
+    'deep_sleep_s',
+    'rem_s',
+    'light_sleep_s',
+    'awake_s',
+    'hrv_ms',
+    'hrv_status',
+    'resting_hr',
+)
+
 
 def date_range(
     start: date | None = Query(None, alias='from'),
@@ -41,7 +71,17 @@ def _rows(db: Session, bounds: tuple[str, str], history: bool = False) -> list[D
 
 
 def _daily(row: DailyPhysiology) -> dict[str, Any]:
+    """Every stored column of one day."""
     return {column.name: getattr(row, column.name) for column in DailyPhysiology.__table__.columns}
+
+
+def _body(item: dict[str, Any]) -> dict[str, Any]:
+    """Keep only the fields of a day that the Body screen draws.
+
+    The shape of what stays is the shape it had: the same names, the same
+    types, the same nulls. Only the columns nothing draws are gone.
+    """
+    return {key: value for key, value in item.items() if key in BODY_FIELDS}
 
 
 def _wanted(fields: str | None) -> list[str] | None:
@@ -76,7 +116,11 @@ def daily(
     db: Session = Depends(get_db),
 ) -> dict[str, Any]:
     wanted = _wanted(fields)
-    return {'items': [_pick(_daily(row), wanted) for row in _rows(db, bounds)]}
+    rows = _rows(db, bounds)
+    if wanted is None:
+        # No fields asked for: the day as the Body screen draws it.
+        return {'items': [_body(_daily(row)) for row in rows]}
+    return {'items': [_pick(_daily(row), wanted) for row in rows]}
 
 
 @router.get('/latest')
@@ -86,7 +130,7 @@ def latest(db: Session = Depends(get_db)) -> dict[str, Any]:
         return {'day': None, 'readiness': None}
     readiness = compute_readiness(db, row.date)
     db.commit()
-    return {'day': _daily(row), 'readiness': readiness}
+    return {'day': _body(_daily(row)), 'readiness': readiness}
 
 
 @router.get('/sleep')

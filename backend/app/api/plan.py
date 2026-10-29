@@ -30,7 +30,7 @@ from ..models import Activity
 from ..models_phase2 import PlanBlock, PlanPhase, PlanResult, PlanSession, PlanWeek
 from ..ingest.plan_importer import import_plan
 from ..services import plan_engine, plan_sources
-from ..services.analytics import _duration_label, _pace_s_per_km, demo_filter
+from ..services.analytics import _duration_label, _pace_s_per_km
 
 log = logging.getLogger(__name__)
 
@@ -654,9 +654,6 @@ def _anchor_to_history(
     whole block by whole weeks keeps every internal relationship intact.
     """
     stmt = select(func.max(Activity.local_date))
-    if not state.demo_visible:
-        # Anchor to the athlete's real runs, not the synthetic demo set.
-        stmt = stmt.where(Activity.source != "demo")
     latest = db.execute(stmt).scalar()
     if not latest:
         return
@@ -810,10 +807,8 @@ def plan_sources_route(
     last = date_to or end
     activities = list(
         db.execute(
-            demo_filter(
-                select(Activity).where(
-                    Activity.local_date >= first, Activity.local_date <= last
-                )
+            select(Activity).where(
+                Activity.local_date >= first, Activity.local_date <= last
             )
         ).scalars()
     )

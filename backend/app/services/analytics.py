@@ -17,16 +17,8 @@ from sqlalchemy.orm import Session
 
 from ..ingest.normalize import week_key
 from ..models import Activity, ActivityLap
-from ..config import state
 
 RUN_SPORTS = ("running", "trail_running", "treadmill_running", "virtualrun", "street_running", "track_running")
-
-
-def demo_filter(stmt):
-    """Hide synthetic demo activities once real data is in play."""
-    if not state.demo_visible:
-        return stmt.where(Activity.source != "demo")
-    return stmt
 
 
 def _runs_query(db: Session, sport: str | None = None):
@@ -35,7 +27,7 @@ def _runs_query(db: Session, sport: str | None = None):
         stmt = stmt.where(Activity.sport_type == sport)
     else:
         stmt = stmt.where(Activity.sport_type.in_(RUN_SPORTS))
-    return demo_filter(stmt).order_by(Activity.start_time.desc())
+    return stmt.order_by(Activity.start_time.desc())
 
 def _pace_s_per_km(distance_m: float, moving_time_s: float) -> float | None:
     if not distance_m or distance_m <= 0 or not moving_time_s or moving_time_s <= 0:
@@ -114,17 +106,15 @@ def summary(db: Session) -> dict[str, Any]:
 
 def sport_breakdown(db: Session) -> list[dict[str, Any]]:
     rows = db.execute(
-        demo_filter(
-            select(
-                Activity.sport_type,
-                func.count(Activity.id),
-                func.sum(Activity.distance_m),
-                func.sum(Activity.elevation_gain_m),
-                func.sum(Activity.moving_time_s),
-            )
-            .group_by(Activity.sport_type)
-            .order_by(func.sum(Activity.distance_m).desc())
+        select(
+            Activity.sport_type,
+            func.count(Activity.id),
+            func.sum(Activity.distance_m),
+            func.sum(Activity.elevation_gain_m),
+            func.sum(Activity.moving_time_s),
         )
+        .group_by(Activity.sport_type)
+        .order_by(func.sum(Activity.distance_m).desc())
     ).all()
     return [
         {
@@ -338,19 +328,17 @@ def heatmap(db: Session, year: int | None = None) -> dict[str, Any]:
     """Daily distance for the activity calendar heatmap."""
     target_year = year or date.today().year
     rows = db.execute(
-        demo_filter(
-            select(
-                Activity.local_date,
-                func.sum(Activity.distance_m),
-                func.count(Activity.id),
-            )
-            .where(
-                Activity.local_date.like(f"{target_year}-%"),
-                Activity.sport_type.in_(RUN_SPORTS),
-            )
-            .group_by(Activity.local_date)
-            .order_by(Activity.local_date)
+        select(
+            Activity.local_date,
+            func.sum(Activity.distance_m),
+            func.count(Activity.id),
         )
+        .where(
+            Activity.local_date.like(f"{target_year}-%"),
+            Activity.sport_type.in_(RUN_SPORTS),
+        )
+        .group_by(Activity.local_date)
+        .order_by(Activity.local_date)
     ).all()
     days = [
         {
@@ -415,14 +403,12 @@ def calendar(db: Session, year: int, month: int) -> dict[str, Any]:
     prefix = f"{year:04d}-{month:02d}"
     activities = (
         db.execute(
-            demo_filter(
-                select(Activity)
-                .where(
-                    Activity.local_date.like(f"{prefix}%"),
-                    Activity.sport_type.in_(RUN_SPORTS),
-                )
-                .order_by(Activity.start_time)
+            select(Activity)
+            .where(
+                Activity.local_date.like(f"{prefix}%"),
+                Activity.sport_type.in_(RUN_SPORTS),
             )
+            .order_by(Activity.start_time)
         )
         .scalars()
         .all()
@@ -485,12 +471,10 @@ def _activity_card(activity: Activity) -> dict[str, Any]:
 def recent_activities(db: Session, limit: int = 10) -> list[dict[str, Any]]:
     rows = (
         db.execute(
-            demo_filter(
-                select(Activity)
-                .where(Activity.sport_type.in_(RUN_SPORTS))
-                .order_by(Activity.start_time.desc())
-                .limit(limit)
-            )
+            select(Activity)
+            .where(Activity.sport_type.in_(RUN_SPORTS))
+            .order_by(Activity.start_time.desc())
+            .limit(limit)
         )
         .scalars()
         .all()

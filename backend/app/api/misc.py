@@ -69,7 +69,6 @@ class SettingsBody(BaseModel):
     sync_interval_minutes: int | None = None
     network_route: str | None = None
     exit_node: str | None = None
-    demo_visible: bool | None = None
 
 
 class HistoryBody(BaseModel):
@@ -140,8 +139,6 @@ def patch_settings(body: SettingsBody) -> dict[str, Any]:
         updates["network_route"] = body.network_route
     if body.exit_node is not None:
         updates["exit_node"] = body.exit_node
-    if body.demo_visible is not None:
-        updates["demo_visible"] = body.demo_visible
     if updates:
         state.update(**updates)
     return state.public_status()

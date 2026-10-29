@@ -17,7 +17,6 @@ from ..services.analytics import (
     _duration_label,
     _pace_label as pace_label,
     _pace_s_per_km,
-    demo_filter,
 )
 
 router = APIRouter(prefix="/activities", tags=["activities"])
@@ -114,7 +113,6 @@ def list_activities(
         stmt = stmt.where(Activity.sport_type == sport)
     else:
         stmt = stmt.where(Activity.sport_type.in_(RUN_SPORTS))
-    stmt = demo_filter(stmt)
     if date_from:
         stmt = stmt.where(Activity.local_date >= date_from)
     if date_to:

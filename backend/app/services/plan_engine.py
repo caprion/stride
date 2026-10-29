@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session
 
 from ..models import Activity
 from ..models_phase2 import DailyPhysiology, PlanPhase, PlanResult, PlanSession, PlanWeek, RunFingerprint
-from ..services.analytics import RUN_SPORTS, demo_filter
+from ..services.analytics import RUN_SPORTS
 
 #: A session that has not happened yet. It is neither a hit nor a miss: it is
 #: not evidence of anything, and it does not count in the adherence
@@ -120,7 +120,7 @@ def match_sessions(db: Session, from_date: str, to_date: str, today: date | str 
     """
     today = _today(today)
     planned = _planned(db, from_date, to_date)
-    acts = list(db.execute(demo_filter(select(Activity).where(Activity.local_date >= (date.fromisoformat(from_date)-timedelta(days=2)).isoformat(), Activity.local_date <= (date.fromisoformat(to_date)+timedelta(days=2)).isoformat()))).scalars())
+    acts = list(db.execute(select(Activity).where(Activity.local_date >= (date.fromisoformat(from_date)-timedelta(days=2)).isoformat(), Activity.local_date <= (date.fromisoformat(to_date)+timedelta(days=2)).isoformat())).scalars())
     claimed: set[int] = set(); out=[]
     for s in planned:
         target = date.fromisoformat(s.date); candidates = [a for a in acts if a.id not in claimed and a.local_date]
@@ -297,7 +297,7 @@ def adherence(db: Session, from_date: str, to_date: str, today: date | str | Non
 
 
 def extra_activities(db: Session, from_date: str, to_date: str) -> list[dict[str, Any]]:
-    acts=list(db.execute(demo_filter(select(Activity).where(Activity.local_date>=from_date,Activity.local_date<=to_date,Activity.sport_type.in_(RUN_SPORTS)))).scalars())
+    acts=list(db.execute(select(Activity).where(Activity.local_date>=from_date,Activity.local_date<=to_date,Activity.sport_type.in_(RUN_SPORTS))).scalars())
     planned=_planned(db,from_date,to_date); claimed=set()
     for s in planned:
         options=[a for a in acts if a.id not in claimed and abs((_date(a.local_date)-_date(s.date)).days)<=2]
@@ -311,7 +311,7 @@ def today(db: Session) -> dict[str, Any]:
     s=sessions[0]; week=db.get(PlanWeek,s.week_id) if s.week_id else None; low=bool(readiness and readiness.training_readiness is not None and readiness.training_readiness<40)
     behind=False
     if week and week.target_km and week.start_date:
-        logged=db.execute(demo_filter(select(func.coalesce(func.sum(Activity.distance_m),0)).where(Activity.local_date>=week.start_date,Activity.local_date<=d,Activity.sport_type.in_(RUN_SPORTS)))).scalar_one()
+        logged=db.execute(select(func.coalesce(func.sum(Activity.distance_m),0)).where(Activity.local_date>=week.start_date,Activity.local_date<=d,Activity.sport_type.in_(RUN_SPORTS))).scalar_one()
         elapsed=max(1,(_date(d)-_date(week.start_date)).days+1)
         behind=(logged/1000) < week.target_km*min(elapsed/7,1)*.75
     adjust=low or behind

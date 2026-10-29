@@ -85,7 +85,7 @@ def db(tmp_path):
 
 @pytest.fixture()
 def client(db, monkeypatch):
-    """Exercise real routers without demo seeding or background sync."""
+    """Exercise real routers without seeding or background sync."""
     from fastapi.testclient import TestClient
     from app import main
     from app.config import state
@@ -97,7 +97,6 @@ def client(db, monkeypatch):
     monkeypatch.setattr(main, "_start_scheduler", lambda: None)
     monkeypatch.setattr(state, "garmin_connected", False)
     monkeypatch.setattr(state, "garmin_method", None)
-    monkeypatch.setattr(state, "demo_visible", False)
     previous = main.app.dependency_overrides.copy()
     main.app.dependency_overrides[get_db] = database
     try:

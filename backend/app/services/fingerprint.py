@@ -67,8 +67,6 @@ def _pace(lap: ActivityLap) -> float | None:
 def max_hr_reference(db: Session, athlete_id: int | None) -> float:
     """Never mix another athlete's observed maximum into this run."""
     statement = select(func.max(Activity.max_hr)).where(Activity.athlete_id == athlete_id)
-    if not state.demo_visible:
-        statement = statement.where(Activity.source != 'demo')
     value = db.scalar(statement)
     return float(value) if value is not None and number(value, True) else 190.0
 
@@ -197,8 +195,8 @@ def _derive(activity: Activity, reference: float) -> dict[str, Any]:
     maxima = values(laps, 'max_hr')
     if activity.max_hr is not None and number(activity.max_hr, True):
         maxima.append(activity.max_hr)
-    # TODO(shared): demo.py stores centimetre-valued strideLength as metres;
-    # normalise upstream before persistence. Reject implausible >3 m here.
+    # TODO(shared): stride length is normalised upstream before persistence.
+    # Reject implausible >3 m here.
     if hr_avg is None:
         samples = [v for stream in activity.streams if stream.kind == 'hr' for v in stream.values if number(v, True)]
         hr_avg = _mean(samples)

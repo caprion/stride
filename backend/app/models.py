@@ -3,7 +3,7 @@
 Design notes
 ------------
 * ``activity`` is the canonical row. Every ingest path (Garmin OAuth, Garmin
-  account, FIT upload, demo seed) normalises into the same shape before it
+  account, FIT upload) normalises into the same shape before it
   touches the DB, so downstream analytics never branches on source.
 * Per-second streams live in a side table as JSON arrays rather than one row per
   sample — a 2-hour run is ~7k samples, and JSON keeps the read path to a single

@@ -14,7 +14,7 @@ from sqlalchemy.orm import Session
 from ..db import get_db
 from ..models import Activity
 from ..models_phase2 import Gear
-from ..services.analytics import RUN_SPORTS, demo_filter
+from ..services.analytics import RUN_SPORTS
 from ..services.fingerprint import (
     METRICS, athlete_zones, compute_fingerprint, compute_many,
     fingerprint_trend, max_hr_reference,
@@ -28,10 +28,10 @@ gear_router = APIRouter(tags=['gear'])
 
 def _items(db: Session, bounds: tuple[str, str]) -> list[dict[str, Any]]:
     """Recompute from current laps so subsequent imports cannot stale the picture."""
-    ids = list(db.scalars(demo_filter(select(Activity.id).where(
+    ids = list(db.scalars(select(Activity.id).where(
         Activity.sport_type.in_(RUN_SPORTS),
         Activity.local_date >= bounds[0], Activity.local_date <= bounds[1],
-    )).order_by(Activity.local_date, Activity.id)))
+    ).order_by(Activity.local_date, Activity.id)))
     items = compute_many(db, ids)['items']
     db.commit()
     return items
@@ -64,7 +64,7 @@ def fingerprints(bounds: tuple[str, str] = Depends(date_range), db: Session = De
 
 @fitness_router.get('/activity/{id}')
 def activity_fingerprint(id: int, db: Session = Depends(get_db)) -> dict[str, Any]:
-    activity = db.scalar(demo_filter(select(Activity).where(Activity.id == id)))
+    activity = db.scalar(select(Activity).where(Activity.id == id))
     if activity is None:
         raise HTTPException(status_code=404, detail='Activity not found')
     item = compute_fingerprint(db, id)

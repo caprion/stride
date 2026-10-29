@@ -1,14 +1,14 @@
 """Canonical activity shape + shared helpers.
 
 Every ingest adapter produces the same dictionary. That is the whole point: the
-Garmin OAuth path, the Garmin account path, the FIT importer and the demo seeder
+Garmin OAuth path, the Garmin account path and the FIT importer
 all emit identical structures, so the persistence layer and every analytic
 downstream of it are written exactly once.
 
 Field contract (``NormalizedActivity``)::
 
     external_id: str
-    source: str                     # garmin | garmin_fit | demo
+    source: str                     # garmin | garmin_fit | garmin_personal
     name: str
     sport_type: str
     start_time: str                 # ISO-8601 with offset
