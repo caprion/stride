@@ -359,14 +359,12 @@ pub fn convert_plaintext_to_encrypted(
             // lock, and a second connection would be told the database is
             // locked.
             trace(format!(
-                "the staged file: {:?} exists={} size={:?} wal={} dir={:?}",
-                staged.display(),
-                staged.exists(),
-                std::fs::metadata(staged).map(|m| m.len()),
+                "the staged file: {} bytes, a log: {}, files in the directory: {}",
+                std::fs::metadata(&staged).map(|m| m.len()).unwrap_or(0),
                 sidecar(&staged, "-wal").exists(),
-                staged
-                    .parent()
-                    .map(|p| p.read_dir().map(|d| d.count()).unwrap_or(0))
+                std::fs::read_dir(staged.parent().unwrap_or(Path::new("/")))
+                    .map(|d| d.count())
+                    .unwrap_or(0)
             ));
             conn.execute_batch("PRAGMA wal_checkpoint(TRUNCATE); PRAGMA journal_mode=DELETE;")
                 .map_err(|source| StoreError::query("wal_checkpoint".to_string(), source))?;
