@@ -92,7 +92,8 @@ export default function App() {
                 <Route path="/physiology" element={<PhysiologyPage />} />
                 <Route path="/fitness" element={<FitnessPage />} />
                 <Route path="/settings" element={<SettingsPage />} />
-                {/* The three the phone cuts. The desktop keeps them. */}
+                <Route path="/stats" element={<StatsPage />} />
+                {/* The two the phone cuts. The desktop keeps them. */}
                 <Route
                   path="/training"
                   element={
@@ -106,14 +107,6 @@ export default function App() {
                   element={
                     <PhoneCut>
                       <ComparePage />
-                    </PhoneCut>
-                  }
-                />
-                <Route
-                  path="/stats"
-                  element={
-                    <PhoneCut>
-                      <StatsPage />
                     </PhoneCut>
                   }
                 />

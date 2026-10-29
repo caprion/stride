@@ -36,11 +36,15 @@ export interface Destination {
 }
 
 /**
- * The phone's five destinations.
+ * The phone's six destinations.
  *
  * What the phone keeps: what to do now, the plan against what was done, the
- * activity list, the body, and the running fingerprint. What it cuts is a
- * laptop activity — two runs side by side, the year heatmap, the calendar.
+ * activity list, the body, the running fingerprint, and the statistics — the
+ * personal records and the year in one screen, which is the thing an
+ * athlete looks at after a good month.
+ *
+ * What it cuts is a laptop activity: two runs side by side, and the
+ * calendar, which the Plan screen already carries.
  */
 export const PHONE_DESTINATIONS: Destination[] = [
   { to: '/', label: 'Today', icon: LayoutDashboard, end: true },
@@ -48,6 +52,7 @@ export const PHONE_DESTINATIONS: Destination[] = [
   { to: '/feed', label: 'Runs', icon: Activity },
   { to: '/physiology', label: 'Body', icon: HeartPulse },
   { to: '/fitness', label: 'Form', icon: Gauge },
+  { to: '/stats', label: 'Stats', icon: BarChart3 },
 ]
 
 /**
@@ -71,14 +76,13 @@ export const DESKTOP_DESTINATIONS: Destination[] = [
  * The routes the phone does not have.
  *
  * * **Compare** — two runs side by side is a laptop activity.
- * * **Stats** — totals, records and the year heatmap are a laptop activity.
  * * **Training calendar** — the Plan screen carries the schedule.
  *
  * The Garmin forms, the network route and the history windows are not
  * routes: they are parts of the settings screen, and the phone's settings
  * screen does not carry them.
  */
-export const PHONE_CUT_ROUTES = ['/compare', '/stats', '/training']
+export const PHONE_CUT_ROUTES = ['/compare', '/training']
 
 /** Is this path one the phone does not have? */
 export function isCutOnPhone(pathname: string): boolean {

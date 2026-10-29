@@ -29,6 +29,43 @@ succeeding and the app has no way to say so.
 
 ---
 
+## 1b. What v1 is
+
+**v1 views data. It does not manage it.**
+
+That is the whole scope, and it is a deliberate one: the phone is a *reader*
+for the athlete's own history and for the intent behind it. Everything that
+authors or edits is later, and later is fine.
+
+What v1 does:
+
+| | |
+|---|---|
+| **connect** | one Garmin key, entered once, on a native screen |
+| **sync** | it follows the key, on its own |
+| **view** | Today, Plan, Runs, Body, Form, Stats, and an activity |
+| **forget** | the one destructive action, on the settings screen |
+
+What v1 does **not** do:
+
+- **no plan authoring.** No manual editor, no plan templates, no editing a
+  session.
+- **no editing anything else.** No renaming a run, no notes.
+- **no server settings.** It has no server.
+- **no Garmin account forms.** One native screen, already built.
+
+The plan *sources* are still v1, because they are a **view of intent** and
+not the management of it:
+
+- the plan **inferred from the athlete's own history** — computed, shown,
+  never edited;
+- **Garmin's scheduled workouts** — read from Garmin, shown as the plan.
+
+Managing a plan — typing a week in, editing one — is the next iteration, and
+it is deliberately not designed yet.
+
+---
+
 ## 2. What the onboarding must be
 
 **One screen. Add the key. The sync follows. It says connected.**

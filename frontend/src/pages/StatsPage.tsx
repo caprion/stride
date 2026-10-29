@@ -535,14 +535,17 @@ export function StatsPage() {
                 description="Your sport breakdown appears after the first synced activity."
               />
             ) : (
-              <table className="w-full text-left">
-                <thead>
-                  <tr className="border-b border-edge text-[11px] font-semibold uppercase tracking-[0.07em] text-ink-muted">
-                    <th className="px-5 py-2 font-semibold">Sport</th>
-                    <th className="px-3 py-2 text-right font-semibold">Activities</th>
-                    <th className="px-3 py-2 text-right font-semibold">Distance</th>
-                    <th className="px-3 py-2 text-right font-semibold">Elevation</th>
-                    <th className="px-5 py-2 text-right font-semibold">Moving time</th>
+              /* The table has five columns. On a phone it scrolls sideways
+                 rather than pushing the page off the edge. */
+              <div className="overflow-x-auto">
+                <table className="w-full min-w-[520px] text-left">
+                  <thead>
+                    <tr className="border-b border-edge text-[11px] font-semibold uppercase tracking-[0.07em] text-ink-muted">
+                      <th className="px-5 py-2 font-semibold">Sport</th>
+                      <th className="px-3 py-2 text-right font-semibold">Activities</th>
+                      <th className="px-3 py-2 text-right font-semibold">Distance</th>
+                      <th className="px-3 py-2 text-right font-semibold">Elevation</th>
+                      <th className="px-5 py-2 text-right font-semibold">Moving time</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -573,6 +576,7 @@ export function StatsPage() {
                   ))}
                 </tbody>
               </table>
+              </div>
             )}
           </Card>
 
