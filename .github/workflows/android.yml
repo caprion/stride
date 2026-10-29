@@ -184,6 +184,14 @@ jobs:
           cp android/app/build/outputs/apk/release/app-release.apk dist/stride.apk
           ls -la dist/
 
+      # The APK is only the app if the Rust core is inside it. A build that
+      # quietly loses the cross-compiled library still succeeds - the Gradle
+      # packaging task skips what it cannot find - and ships a WebView with
+      # nothing behind it. That happened once, and this is the check that
+      # catches it.
+      - name: The APK must carry the Rust core
+        run: python3 scripts/check_apk.py dist/*.apk
+
       - uses: actions/upload-artifact@v4
         with:
           name: apk

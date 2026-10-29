@@ -53,9 +53,28 @@ def rustTriple = { abi ->
     }
 }
 
-/** Where `cargo-ndk` leaves the cross-compiled artefacts. */
-def rustTargetDir = file(
-        "src/main/rust/stride-ffi/target/${rustTriple(targetAbis[0])}/release")
+/**
+ * Where `cargo-ndk` leaves the cross-compiled artefacts.
+ *
+ * The phone's crate is a member of the root workspace, so cargo builds into
+ * the *workspace's* target directory, not the crate's own. The crate's own
+ * directory is still checked first, because a crate built on its own - with
+ * `cargo ndk` run from inside it - leaves the artefacts there instead.
+ */
+def rustTargetDir = {
+    def triple = rustTriple(targetAbis[0])
+    def candidates = [
+            file("src/main/rust/stride-ffi/target/${triple}/release"),
+            file("${rootProject.projectDir}/target/${triple}/release"),
+    ]
+    def found = candidates.find { it.exists() }
+    if (!found) {
+        throw new GradleException(
+                "cargo-ndk has not built ${triple}. Looked in:\n  " +
+                candidates.collect { it.absolutePath }.join("\n  "))
+    }
+    return found
+}()
 
 /** The Android SDK, from `local.properties` or the environment. */
 def androidSdkDir = {
