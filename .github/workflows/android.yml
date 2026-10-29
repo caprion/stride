@@ -103,13 +103,17 @@ jobs:
         run: |
           rustup toolchain install stable --profile minimal
           rustup target add aarch64-linux-android
-          # The prebuilt binary. `cargo install cargo-ndk` works too, but it
-          # spends minutes compiling a build script that the runner does not
-          # need to compile.
-          uses: taiki-e/install-action@v2
-          with:
-            tool: cargo-ndk
-          cargo ndk --version
+
+      # The prebuilt cargo-ndk. `cargo install cargo-ndk` works too, but it
+      # spends minutes compiling a build script the runner does not need to
+      # compile.
+      - name: Install cargo-ndk
+        uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-ndk
+
+      - name: Check the toolchain
+        run: cargo ndk --version && rustup target list --installed
 
       - name: Install the node modules
         run: |
