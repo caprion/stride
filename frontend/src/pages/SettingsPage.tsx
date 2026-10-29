@@ -1,6 +1,15 @@
 /**
  * Settings — connect Garmin, choose the network route, tune syncing.
  *
+ * **The desktop's screen is the whole thing.** The network route, the
+ * history windows and the sync interval configure a server, and the desktop
+ * has one.
+ *
+ * **The phone's screen is two cards.** The phone has no server: it is the
+ * app. It says whether Garmin is connected, when it last synced, and it
+ * offers the two native calls the web app cannot make by itself — the sync
+ * now and the forgetting of the key.
+ *
  * Written for a non-engineer: every section explains what it does, why it
  * matters and what the user should click next. Errors coming back from the
  * backend are shown verbatim — they are already written for humans.
@@ -27,7 +36,7 @@ import {
 } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { api, isNativeApp } from '../lib/api'
-import { useGarminState } from '../lib/garmin'
+import { nativeForgetGarminKey, nativeSyncNow, useGarminState } from '../lib/garmin'
 import { isPhone, localDataLine } from '../lib/surface'
 import { ConnectGarmin } from '../components/GarminStatus'
 import type { AuthStatus, NetworkStatus, SyncRun } from '../types'
@@ -240,10 +249,10 @@ function PairedDevicesCard() {
 }
 
 export function SettingsPage() {
-  // The phone has four things to configure: whether Garmin is connected, a
-  // sync, the key itself, and what this app is. The desktop keeps the
-  // whole set — it has the room, and the network route and the history
-  // windows are its business.
+  // The phone has four things: whether Garmin is connected, a sync now, the
+  // key itself, and what this app is. The desktop keeps the whole set — it
+  // has the room, and the network route and the history windows are its
+  // business.
   if (isPhone()) return <PhoneSettings />
   return <DesktopSettings />
 }
@@ -328,15 +337,83 @@ function DesktopSettings() {
  * Two cards: the state of the Garmin connection, and what this app is.
  *
  * **The connection is a state, not a form.** The card says whether Garmin
- * is connected and when it last synced, and offers one button that opens
- * the native screen. There is no field to fill in, so there is nothing that
- * can be half-submitted, and the key never comes near the WebView.
+ * is connected and when it last synced. There is no field to fill in, so
+ * there is nothing that can be half-submitted, and the key never comes
+ * near the WebView.
+ *
+ * **The two buttons are native calls.** The pull is the phone's background
+ * job and the key is in the Keystore, so neither belongs in the web app:
+ * `syncNow` enqueues the pull and `forgetGarminKey` clears the envelope.
+ * Both are asked of the shell when it is there; when it is not — the
+ * desktop has no shell at all — the ordinary API route answers instead.
  *
  * v1 views the data. The phone does not author a plan, edit a run, write
  * notes, or configure a server it does not have.
  */
 function PhoneSettings() {
+  const queryClient = useQueryClient()
   const { connected, syncing, lastSyncAt } = useGarminState()
+
+  const [notice, setNotice] = useState<Notice | null>(null)
+  const [queued, setQueued] = useState(false)
+  const [confirmForget, setConfirmForget] = useState(false)
+  // The sync timestamp the pull started from, so the phone knows the pull
+  // has landed when the timestamp moves.
+  const queuedFrom = useRef<string | null>(null)
+
+  useEffect(() => {
+    if (!queued) return
+    if (lastSyncAt && lastSyncAt !== queuedFrom.current) setQueued(false)
+  }, [lastSyncAt, queued])
+
+  // The pull is queued, not awaited: the count arrives by itself, through
+  // the next sync status.
+  useEffect(() => {
+    if (!queued) return
+    const timer = window.setTimeout(() => setQueued(false), 120_000)
+    return () => window.clearTimeout(timer)
+  }, [queued])
+
+  const syncNow = useMutation({
+    mutationFn: async () => {
+      const queuedNatively = await nativeSyncNow()
+      if (!queuedNatively) await api.runSync()
+    },
+    onSuccess: async () => {
+      queuedFrom.current = lastSyncAt
+      setQueued(true)
+      setNotice({ tone: 'info', text: 'Syncing…' })
+      await queryClient.invalidateQueries({ queryKey: ['sync-status'] })
+    },
+    onError: (error) =>
+      setNotice({ tone: 'negative', text: messageOf(error, 'Could not start the sync.') }),
+  })
+
+  const forget = useMutation({
+    mutationFn: async () => {
+      const forgottenNatively = await nativeForgetGarminKey()
+      // The desktop's route does the same thing on the phone: the shell
+      // clears the Keystore envelope and cancels the scheduled pull when
+      // it sees the logout.
+      if (!forgottenNatively) await api.logout()
+    },
+    onSuccess: async () => {
+      setConfirmForget(false)
+      setQueued(false)
+      setNotice({
+        tone: 'positive',
+        text: 'The key is forgotten. Your imported activities stay on this phone.',
+      })
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['auth-status'] }),
+        queryClient.invalidateQueries({ queryKey: ['sync-status'] }),
+      ])
+    },
+    onError: (error) =>
+      setNotice({ tone: 'negative', text: messageOf(error, 'Could not forget the key.') }),
+  })
+
+  const pulling = syncing || queued
 
   return (
     <div className="mx-auto max-w-[560px]">
@@ -360,23 +437,88 @@ function PhoneSettings() {
               </p>
             </div>
             <p className="mt-1 text-[13px] text-ink-muted">
-              {syncing
+              {pulling
                 ? 'Syncing…'
                 : lastSyncAt
                   ? `Synced ${formatRelative(lastSyncAt)}`
                   : 'Not synced yet'}
             </p>
 
-            <div className="mt-4">
-              <ConnectGarmin />
-            </div>
+            {connected ? (
+              <div className="mt-4 flex flex-wrap items-center gap-3">
+                <Button
+                  size="md"
+                  disabled={syncNow.isPending || pulling}
+                  onClick={() => syncNow.mutate()}
+                >
+                  {syncNow.isPending || pulling ? (
+                    <Loader2 size={14} strokeWidth={2} className="animate-spin" />
+                  ) : (
+                    <RefreshCw size={14} strokeWidth={2} />
+                  )}
+                  {syncNow.isPending ? 'Starting…' : 'Sync now'}
+                </Button>
+                <Button
+                  variant="secondary"
+                  size="md"
+                  disabled={forget.isPending}
+                  onClick={() => setConfirmForget(true)}
+                >
+                  <KeyRound size={14} strokeWidth={2} />
+                  Forget the key
+                </Button>
+              </div>
+            ) : (
+              <div className="mt-4">
+                <ConnectGarmin />
+              </div>
+            )}
+
+            {confirmForget ? (
+              <div className="mt-4">
+                <Alert tone="warn" title="Forget the Garmin key?">
+                  Stride stops importing new activities. The activities already imported stay on
+                  this phone — forgetting the key is not forgetting the data.
+                </Alert>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => setConfirmForget(false)}
+                    disabled={forget.isPending}
+                  >
+                    Keep the key
+                  </Button>
+                  <Button
+                    variant="danger"
+                    size="sm"
+                    onClick={() => forget.mutate()}
+                    disabled={forget.isPending}
+                  >
+                    {forget.isPending ? (
+                      <Loader2 size={14} strokeWidth={2} className="animate-spin" />
+                    ) : null}
+                    Forget the key
+                  </Button>
+                </div>
+              </div>
+            ) : null}
+
+            {notice ? (
+              <div className="mt-3">
+                <Toast notice={notice} />
+              </div>
+            ) : null}
           </div>
         </Card>
 
         <Card>
           <CardHeader title="About" />
           <div className="px-5 pb-5">
-            <p className="text-[13px] leading-relaxed text-ink-soft">{localDataLine()}</p>
+            <p className="text-[13px] leading-relaxed text-ink-soft">
+              Stride is a private running log for your Garmin watch.
+            </p>
+            <p className="mt-3 text-[13px] leading-relaxed text-ink-soft">{localDataLine()}</p>
           </div>
         </Card>
       </div>

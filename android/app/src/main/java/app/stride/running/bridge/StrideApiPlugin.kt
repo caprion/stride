@@ -15,6 +15,7 @@ import app.stride.running.security.CredentialUnreadable
 import app.stride.running.security.DeviceCredential
 import app.stride.running.security.Secrets
 import app.stride.running.settings.AppSettings
+import app.stride.running.sync.ForgetGarminKey
 import app.stride.running.sync.SyncScheduler
 import org.json.JSONObject
 import java.util.concurrent.Executors
@@ -65,6 +66,34 @@ class StrideApiPlugin : Plugin() {
 
         worker.execute {
             try {
+                // What the phone does with this request. The decisions live
+                // in PhoneRoutes, which has no Android in it and is unit
+                // tested; the side effects live here.
+                val decision = PhoneRoutes.decide(method, path)
+
+                if (decision == PhoneRoutes.Decision.GarminKeyEntry) {
+                    // The Garmin key never enters the WebView.
+                    //
+                    // The settings screen has a key field, because the
+                    // desktop needs one: the desktop's key goes to the
+                    // desktop's server. On the phone there is no server,
+                    // so the route is answered with the native setup
+                    // screen instead, where the key is typed into the app
+                    // and straight into the Keystore.
+                    //
+                    // The screen opens **before** the core is asked for
+                    // anything: the core's database needs the phone to be
+                    // unlocked, and the screen is where the athlete unlocks
+                    // it. A locked phone must still get the one screen that
+                    // has the key field in it.
+                    openNativeSetup(context)
+                    call.reject(
+                        context.getString(R.string.garmin_key_not_in_browser),
+                        "400",
+                    )
+                    return@execute
+                }
+
                 val problem = StrideCore.ensureOpen(context)
                 if (problem != null) {
                     call.reject(problem, "503")
@@ -75,25 +104,9 @@ class StrideApiPlugin : Plugin() {
                 // The Kotlin side unwraps it from the Keystore for the length
                 // of the call and hands it over; the core drops it again as
                 // soon as the call is over.
-                // What the phone does with this request. The decisions live
-                // in PhoneRoutes, which has no Android in it and is unit
-                // tested; the side effects live here.
-                when (PhoneRoutes.decide(method, path)) {
+                when (decision) {
                     PhoneRoutes.Decision.GarminKeyEntry -> {
-                        // The Garmin key never enters the WebView.
-                        //
-                        // The settings screen has a key field, because the
-                        // desktop needs one: the desktop's key goes to the
-                        // desktop's server. On the phone there is no server,
-                        // so the route is answered with the native setup
-                        // screen instead, where the key is typed into the app
-                        // and straight into the Keystore.
-                        openNativeSetup(context)
-                        call.reject(
-                            context.getString(R.string.garmin_key_not_in_browser),
-                            "400",
-                        )
-                        return@execute
+                        // Handled above, before the core was opened.
                     }
 
                     PhoneRoutes.Decision.GarminLogin -> {
@@ -160,7 +173,7 @@ class StrideApiPlugin : Plugin() {
                 // Real data — pulled runs, imported files — does not land on
                 // one.
                 val writesRealData =
-                    PhoneRoutes.decide(method, path) == PhoneRoutes.Decision.GarminPull ||
+                    decision == PhoneRoutes.Decision.GarminPull ||
                         path == "/api/v1/auth/garmin/fit-import"
                 if (writesRealData && !DeviceCredential.hasCredential(context)) {
                     call.reject(context.getString(R.string.screen_lock_required), "403")
@@ -177,9 +190,15 @@ class StrideApiPlugin : Plugin() {
                         // The credential lives in the Keystore, so the
                         // shell is what forgets it. The core's copy goes
                         // with it, and the scheduled pull stops.
-                        StrideCore.setGarminKey("")
-                        Secrets.forgetGarminKey(context)
-                        SyncScheduler.cancel(context)
+                        //
+                        // It is the same three steps as the "Forget the
+                        // key" method, in the same place: one place decides
+                        // what happens to the Garmin key.
+                        try {
+                            ForgetGarminKey.onPhone(context)
+                        } catch (error: Throwable) {
+                            Log.w("StrideApi", "the key could not be forgotten: ${error.message}")
+                        }
                     }
                 }
             } catch (error: Throwable) {
@@ -190,6 +209,81 @@ class StrideApiPlugin : Plugin() {
     }
 
 
+
+    /**
+     * **Sync now.**
+     *
+     * The phone's Settings has a "Sync now" button, and the pull it asks
+     * for is the phone's own background job: the key is in the Keystore and
+     * the worker unwraps it there. So the page needs nothing for this — not
+     * the key, not a server, not a route.
+     *
+     * It enqueues a **one-time** request — not the periodic one — and
+     * resolves as soon as the work is **queued**: the app says "Syncing…"
+     * and the count of runs arrives by itself, when the pull has landed
+     * them. The promise is "queued", not "done".
+     *
+     * The answer is about the work, never about the key: the key is not
+     * read here, not logged here and not sent back.
+     */
+    @PluginMethod
+    fun syncNow(call: PluginCall) {
+        val context = context
+        if (context == null) {
+            call.reject("the app has no context", "500")
+            return
+        }
+        worker.execute {
+            try {
+                SyncScheduler.pullNow(context, AppSettings(context).syncDays)
+                call.resolve(JSObject().put("queued", true))
+            } catch (error: Throwable) {
+                Log.w("StrideApi", "the pull could not be queued: ${error.message}")
+                call.reject(
+                    error.message ?: "the pull could not be queued",
+                    "500",
+                )
+            }
+        }
+    }
+
+    /**
+     * **Forget the key.**
+     *
+     * The other half of the phone's Settings, and the one destructive
+     * action it has.
+     *
+     * It clears the Keystore-wrapped envelope, stops the scheduled and the
+     * queued work, and clears the core's in-memory copy of the key — so the
+     * next call cannot use it.
+     *
+     * **The imported runs stay on the phone.** Forgetting the key is not
+     * forgetting the data: the activities are in the phone's own database
+     * and nothing here deletes one.
+     *
+     * It never returns, logs or transmits the key. It is about the key's
+     * *existence*, and nothing more.
+     */
+    @PluginMethod
+    fun forgetGarminKey(call: PluginCall) {
+        val context = context
+        if (context == null) {
+            call.reject("the app has no context", "500")
+            return
+        }
+        worker.execute {
+            try {
+                ForgetGarminKey.onPhone(context)
+                call.resolve(JSObject().put("forgotten", true))
+            } catch (error: Throwable) {
+                Log.w("StrideApi", "the key could not be forgotten: ${error.message}")
+                call.reject(
+                    error.message ?: "the key could not be forgotten",
+                    "500",
+                )
+            }
+        }
+    }
 
     /** Open the native setup screen. */
     private fun openNativeSetup(context: android.content.Context) {

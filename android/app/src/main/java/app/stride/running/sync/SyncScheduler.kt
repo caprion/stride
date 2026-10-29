@@ -5,8 +5,10 @@ import androidx.work.BackoffPolicy
 import androidx.work.Constraints
 import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.ExistingWorkPolicy
+import androidx.work.OneTimeWorkRequest
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.OutOfQuotaPolicy
+import androidx.work.PeriodicWorkRequest
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import app.stride.running.settings.AppSettings
@@ -37,6 +39,57 @@ object SyncScheduler {
     /** The work data key for the window. A number of days; not a secret. */
     const val KEY_DAYS = "days"
 
+    /**
+     * The periodic request: the pull that follows the key on its own.
+     *
+     * It carries [PERIODIC_NAME], which is the tag every Garmin pull
+     * carries: a query for that tag answers "is a pull scheduled".
+     */
+    fun periodicRequest(intervalHours: Long): PeriodicWorkRequest {
+        val constraints = Constraints.Builder()
+            .setRequiredNetworkType(androidx.work.NetworkType.CONNECTED)
+            .setRequiresBatteryNotLow(true)
+            .build()
+
+        return PeriodicWorkRequestBuilder<GarminSyncWorker>(
+            intervalHours.coerceAtLeast(1),
+            TimeUnit.HOURS,
+        )
+            .setConstraints(constraints)
+            .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 30, TimeUnit.MINUTES)
+            .addTag(PERIODIC_NAME)
+            .build()
+    }
+
+    /**
+     * The one-time request: the pull the athlete asks for now.
+     *
+     * **The tags are the contract with the app.** Every pull carries
+     * [PERIODIC_NAME] — "a Garmin pull" — and the one-time one carries
+     * [ONESHOT_NAME] as well, so a query for either name finds it. The app's
+     * "is a pull running" answer comes from the tags, and a pull that only
+     * carried one of them would be invisible to half of those queries.
+     *
+     * The window travels as work data: a number of days is not a secret.
+     * The Garmin key does **not** travel — the worker unwraps it from the
+     * Keystore itself, so nothing about the credential is in WorkManager's
+     * database.
+     */
+    fun oneTimeRequest(days: Int): OneTimeWorkRequest {
+        val constraints = Constraints.Builder()
+            .setRequiredNetworkType(androidx.work.NetworkType.CONNECTED)
+            .build()
+
+        return OneTimeWorkRequestBuilder<GarminSyncWorker>()
+            .setConstraints(constraints)
+            .setInputData(workDataOf(KEY_DAYS to days.coerceIn(1, 90)))
+            .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 15, TimeUnit.MINUTES)
+            .setExpedited(OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST)
+            .addTag(PERIODIC_NAME)
+            .addTag(ONESHOT_NAME)
+            .build()
+    }
+
     /** Schedule the periodic pull, replacing whatever was there. */
     fun schedule(context: Context) {
         val settings = AppSettings(context)
@@ -45,19 +98,7 @@ object SyncScheduler {
             return
         }
 
-        val constraints = Constraints.Builder()
-            .setRequiredNetworkType(androidx.work.NetworkType.CONNECTED)
-            .setRequiresBatteryNotLow(true)
-            .build()
-
-        val request = PeriodicWorkRequestBuilder<GarminSyncWorker>(
-            settings.syncIntervalHours.toLong().coerceAtLeast(1),
-            TimeUnit.HOURS,
-        )
-            .setConstraints(constraints)
-            .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 30, TimeUnit.MINUTES)
-            .addTag(PERIODIC_NAME)
-            .build()
+        val request = periodicRequest(settings.syncIntervalHours.toLong())
 
         WorkManager.getInstance(context).enqueueUniquePeriodicWork(
             PERIODIC_NAME,
@@ -69,23 +110,12 @@ object SyncScheduler {
     /**
      * Pull now, in the background.
      *
-     * The window travels as work data: a number of days is not a secret.
-     * The Garmin key does **not** travel — the worker unwraps it from the
-     * Keystore itself, so nothing about the credential is in WorkManager's
-     * database.
+     * **One** unique one-shot work, so a second "Sync now" replaces the
+     * first rather than running beside it. The request is [oneTimeRequest]:
+     * a one-time request, never the periodic one.
      */
     fun pullNow(context: Context, days: Int = AppSettings(context).syncDays) {
-        val constraints = Constraints.Builder()
-            .setRequiredNetworkType(androidx.work.NetworkType.CONNECTED)
-            .build()
-
-        val request = OneTimeWorkRequestBuilder<GarminSyncWorker>()
-            .setConstraints(constraints)
-            .setInputData(workDataOf(KEY_DAYS to days.coerceIn(1, 90)))
-            .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 15, TimeUnit.MINUTES)
-            .setExpedited(OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST)
-            .addTag(ONESHOT_NAME)
-            .build()
+        val request = oneTimeRequest(days)
 
         WorkManager.getInstance(context).enqueueUniqueWork(
             ONESHOT_NAME,

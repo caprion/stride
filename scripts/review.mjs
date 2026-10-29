@@ -48,6 +48,20 @@ for (const [host, viewport, label] of [
   ['phone', { ...PHONE, isMobile: true, hasTouch: true }, 'Phone'],
 ]) {
   const context = await browser.newContext({ viewport, deviceScaleFactor: 1 })
+  if (host === 'phone') {
+    // The phone's surfaces only exist inside the WebView, where Capacitor
+    // injects `window.Capacitor`. Without this the phone capture is the
+    // desktop's web app at a phone's width - which is not what ships, and
+    // is how a phone-only change can look like it landed when it has not.
+    await context.addInitScript(() => {
+      window.Capacitor = {
+        isNativePlatform: () => true,
+        isNative: () => true,
+        getPlatform: () => 'android',
+        Plugins: {},
+      }
+    })
+  }
   const page = await context.newPage()
   page.on('console', (msg) => {
     if (msg.type() === 'error') problems.push(`[${host}] ${msg.text()}`)

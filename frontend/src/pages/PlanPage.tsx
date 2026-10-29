@@ -220,30 +220,48 @@ export default function PlanPage() {
 
   // The window the screen talks about.
   //
-  // The phone shows this week and the next fortnight — the near future and
-  // the recent past. The desktop keeps the whole block: it has the room,
-  // and the block's history is worth reading there.
+  // The phone shows the near future and the recent past — the week before,
+  // this week and the week after. The desktop keeps the whole block: it has
+  // the room, and the block's history is worth reading there.
   const phone = isPhone()
   const todayIso = todayKey()
   const rangeStart = startOfWeek(effectiveWeekDate)
-  const rangeEnd = addDays(rangeStart, 20)
+  // The three weeks the phone lists: twenty-one days, Monday to Sunday.
+  const windowStart = addDays(rangeStart, -7)
+  const windowEnd = addDays(rangeStart, 13)
   const week = useQuery({
-    queryKey: ['plan-week', effectiveWeekDate],
-    queryFn: () => api.planWeek(effectiveWeekDate),
+    queryKey: ['plan-week', rangeStart],
+    queryFn: () => api.planWeek(rangeStart),
     retry: false,
   })
 
-  // The two weeks after this one, for the phone's list of sessions.
+  // The week before, for the phone's list of sessions.
+  const previousWeek = useQuery({
+    queryKey: ['plan-week', addDays(rangeStart, -7)],
+    queryFn: () => api.planWeek(addDays(rangeStart, -7)),
+    enabled: phone,
+    retry: false,
+  })
+
+  // The week after, for the phone's list of sessions.
   const nextWeek = useQuery({
     queryKey: ['plan-week', addDays(rangeStart, 7)],
     queryFn: () => api.planWeek(addDays(rangeStart, 7)),
     enabled: phone,
     retry: false,
   })
-  const weekAfter = useQuery({
-    queryKey: ['plan-week', addDays(rangeStart, 14)],
-    queryFn: () => api.planWeek(addDays(rangeStart, 14)),
-    enabled: phone,
+
+  /**
+   * The whole block, every session of it.
+   *
+   * The desktop keeps the full list — the block's history, with the reason
+   * behind every session. The phone does not ask for it: it has three weeks
+   * and no more, so it reads the trimmed summary of the block instead.
+   */
+  const fullPlan = useQuery({
+    queryKey: ['plan-full'],
+    queryFn: api.planCurrent,
+    enabled: !phone,
     retry: false,
   })
 
@@ -251,9 +269,9 @@ export default function PlanPage() {
   // already have. The route is new, so a failure here is not an error the
   // athlete sees — the screen falls back to the plan in the database.
   const sourcesQuery = useQuery({
-    queryKey: ['plan-sources', phone ? rangeStart : 'all', phone ? rangeEnd : 'all'],
+    queryKey: ['plan-sources', phone ? windowStart : 'all', phone ? windowEnd : 'all'],
     queryFn: () =>
-      api.planSources(phone ? rangeStart : undefined, phone ? rangeEnd : undefined),
+      api.planSources(phone ? windowStart : undefined, phone ? windowEnd : undefined),
     retry: false,
   })
   const sources = sourcesQuery.data ?? []
@@ -276,9 +294,9 @@ export default function PlanPage() {
   const garminReason =
     garminSource && garminSource.available === false ? garminSource.reason : null
   const adherence = useQuery({
-    queryKey: ['plan-adherence', phone ? rangeStart : 'all', phone ? rangeEnd : 'all'],
+    queryKey: ['plan-adherence', phone ? windowStart : 'all', phone ? windowEnd : 'all'],
     queryFn: () =>
-      api.planAdherence(phone ? rangeStart : undefined, phone ? rangeEnd : undefined),
+      api.planAdherence(phone ? windowStart : undefined, phone ? windowEnd : undefined),
     retry: false,
   })
   const importing = useMutation({
@@ -293,30 +311,64 @@ export default function PlanPage() {
   })
   const detail = week.data
   const weekSessions = detail?.sessions ?? []
+  // Every session of the block, for the desktop's full list.
+  const blockSessions: DisplaySession[] = (fullPlan.data?.block?.phases ?? []).flatMap(
+    (phase) => (phase.weeks ?? []).flatMap((w) => (w.sessions ?? []).map(displaySession)),
+  )
 
   /**
    * The sessions the screen lists.
    *
-   * The phone lists this week and the next fortnight — the near future and
-   * the recent past. The desktop keeps the whole list. When the plan is
-   * inferred, the sessions are the athlete's own usual week, which the
-   * source carries.
+   * The phone lists the week before, this week and the week after — the near
+   * future and the recent past, twenty-one days. The desktop keeps the
+   * whole list.
+   *
+   * The list carries one plan's words and one plan's ruler, never two:
+   *
+   * * a **prescription** — a plan somebody wrote down, or Garmin's
+   *   scheduled workouts — judged *hit*, *missed*, *not yet*;
+   * * a **baseline** — the athlete's own usual week, inferred from their
+   *   history — judged *less than usual*, and never *missed*, because
+   *   nobody wrote it down.
    */
-  const listedSessions: DisplaySession[] = baseline
-    ? (baseline.sessions ?? []).map(displaySourceSession)
-    : phone
-      ? [
-          ...weekSessions.map(displaySession),
-          ...(nextWeek.data?.sessions ?? []).map(displaySession),
-          ...(weekAfter.data?.sessions ?? []).map(displaySession),
-        ]
-      : weekSessions.map(displaySession)
+  const listedSessions: DisplaySession[] = (
+    baseline
+      ? (baseline.sessions ?? []).map(displaySourceSession)
+      : hasImportedPlan
+        ? phone
+          ? [
+              ...(previousWeek.data?.sessions ?? []).map(displaySession),
+              ...weekSessions.map(displaySession),
+              ...(nextWeek.data?.sessions ?? []).map(displaySession),
+            ]
+          : // The desktop keeps the full list: the whole block. Until it has
+            // arrived, the week on screen stands in for it.
+            blockSessions.length
+            ? blockSessions
+            : weekSessions.map(displaySession)
+        : // No plan was written down: Garmin's scheduled workouts are the
+          // prescription, and they are what the phone lists.
+          (prescribed?.sessions ?? []).map(displaySourceSession)
+  )
+    .slice()
+    .sort((a, b) => a.date.localeCompare(b.date))
   const sessionsByDate = new Map(listedSessions.map((s) => [s.date, s]))
   // Today's session of the inferred plan, when the plan is inferred.
   const baselineToday = baseline
     ? (listedSessions.find((s) => s.date === todayIso) ?? null)
     : null
-  const start = detail?.week?.start_date ?? detail?.sessions?.[0]?.date
+  // Whether the screen is judging Garmin's scheduled workouts rather than
+  // the plan in the database. When it is, the Today card must speak about
+  // those workouts and not about the plan in the database: one screen, one
+  // comparison.
+  const prescribedPlan = Boolean(prescribed) && !hasImportedPlan
+  // Today's session of that prescription.
+  const prescribedToday = prescribedPlan
+    ? (listedSessions.find((s) => s.date === todayIso) ?? null)
+    : null
+  // The week the grid draws: the plan's week, or the calendar week the
+  // screen is looking at when the plan has no week to offer.
+  const start = detail?.week?.start_date ?? rangeStart
   const weekDays = start
     ? Array.from({ length: 7 }, (_, i) => {
         const d = new Date(`${start}T12:00:00`)
@@ -325,9 +377,43 @@ export default function PlanPage() {
       })
     : []
   const summary = adherence.data
-  // "No plan" means no training block exists. A block that schedules nothing
-  // for today is a rest day, not a missing plan.
-  const noPlan = !current.isLoading && !current.data?.block && !current.error && !baseline
+  /**
+   * The verdicts the panel draws.
+   *
+   * A session that has not happened yet is neither a hit nor a miss: it is
+   * grey, and it is not in the adherence denominator. The bar is drawn
+   * against the sessions that were due, so the grey never runs off the end
+   * of it.
+   */
+  const dueVerdicts = (Object.keys(verdictNames) as Verdict[]).filter((v) => v !== 'not_yet')
+  const dueRows = summary
+    ? dueVerdicts.map((verdict) => ({ verdict, count: summary.by_verdict?.[verdict] ?? 0 }))
+    : []
+  const dueTotal = dueRows.reduce((sum, row) => sum + row.count, 0)
+  // The sessions that have not happened yet, counted from the list the
+  // screen shows. They are grey, and they do not count in the denominator.
+  const notYetCount = listedSessions.filter(
+    (s) => s.result?.verdict === 'not_yet' || (!s.result && isFutureSession(s.date, todayIso)),
+  ).length
+  // Whether the adherence has anything to say: a plan that was written down
+  // and came due. A baseline has no missed sessions to count.
+  const hasAdherence = Boolean(
+    summary && (summary.planned_sessions > 0 || summary.extra_sessions > 0),
+  )
+  /**
+   * Whether the adherence panel belongs on this screen at all.
+   *
+   * The adherence is measured against the plan in the database — a plan
+   * somebody wrote down. When the screen is judging something else (the
+   * athlete's usual week, or Garmin's scheduled workouts), those numbers
+   * are about a different comparison, and two vocabularies on one screen
+   * say something false.
+   */
+  const showsAdherence = hasImportedPlan
+  // "No plan" means no plan at all: no block, and no source that could
+  // offer one. A block that schedules nothing for today is a rest day, not
+  // a missing plan.
+  const noPlan = !current.isLoading && !current.data?.block && !current.error && !active
   // A plan that schedules nothing for today is a rest day, not a gap.
   const noSessionToday = Boolean(today.data?.has_plan) && !today.data?.has_session
   return (
@@ -403,7 +489,7 @@ export default function PlanPage() {
             title="No plan yet"
             description={
               isPhone()
-                ? 'A plan shows up here once it is imported.'
+                ? 'Your Garmin workouts show up here once they sync.'
                 : 'Import your training plan to compare planned sessions with your runs and understand what changed.'
             }
           />
@@ -492,16 +578,41 @@ export default function PlanPage() {
         <div className="space-y-4">
           <Card>
             <CardHeader title="Today" />
-            {baselineToday ? (
-              <div className="space-y-3 p-4">
-                <div className="flex items-center justify-between gap-3">
-                  <span className="font-semibold capitalize">{baselineToday.label}</span>
-                  <VerdictBadge date={baselineToday.date} result={baselineToday.result} />
+            {baseline ? (
+              baselineToday ? (
+                <div className="space-y-3 p-4">
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="font-semibold capitalize">{baselineToday.label}</span>
+                    <VerdictBadge date={baselineToday.date} result={baselineToday.result} />
+                  </div>
+                  <p className="text-sm text-ink-soft">
+                    {baselineToday.result?.message ?? 'Your usual session for today.'}
+                  </p>
                 </div>
-                <p className="text-sm text-ink-soft">
-                  {baselineToday.result?.message ?? 'Your usual session for today.'}
-                </p>
-              </div>
+              ) : (
+                /* The baseline's own words: a day with no usual session is
+                 * not a missed session. */
+                <div className="space-y-3 p-4">
+                  <span className="font-semibold">No usual session today</span>
+                </div>
+              )
+            ) : prescribedPlan ? (
+              /* Garmin's own words: the scheduled workout, and how it went. */
+              prescribedToday ? (
+                <div className="space-y-3 p-4">
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="font-semibold capitalize">{prescribedToday.label}</span>
+                    <VerdictBadge date={prescribedToday.date} result={prescribedToday.result} />
+                  </div>
+                  {prescribedToday.result?.message ? (
+                    <p className="text-sm text-ink-soft">{prescribedToday.result.message}</p>
+                  ) : null}
+                </div>
+              ) : (
+                <div className="space-y-3 p-4">
+                  <span className="font-semibold">Nothing scheduled today</span>
+                </div>
+              )
             ) : today.isLoading ? (
               <div className="space-y-3 p-4">
                 <Skeleton className="h-8 w-1/2" />
@@ -605,7 +716,13 @@ export default function PlanPage() {
         </div>
       </div>
       <div className="mt-4 grid gap-4 md:grid-cols-4">
-        {summary ? (
+        {/*
+          The tiles are the prescription's numbers: *missed*, *extra*, the
+          adherence against a plan somebody wrote down. A baseline has none
+          of those words, so on a baseline screen they are not shown — and
+          with no plan written down they would be four zeros anyway.
+        */}
+        {summary && showsAdherence && hasAdherence ? (
           <>
             <StatTile
               label="Adherence"
@@ -629,7 +746,7 @@ export default function PlanPage() {
         ) : null}
       </div>
       <div className="mt-4 grid gap-4 xl:grid-cols-[1.6fr_1fr]">
-        {!baseline && summary && (
+        {showsAdherence && summary && (
           <>
             <ChartFrame title="Planned vs actual by week" subtitle="Kilometres per week">
               <ResponsiveContainer width="100%" height="100%">
@@ -649,18 +766,24 @@ export default function PlanPage() {
             <Card>
               <CardHeader title="Session verdicts" />
               <div className="p-4">
-                {Object.entries(summary.by_verdict).every(([, v]) => !v) ? (
+                {dueTotal === 0 && notYetCount === 0 ? (
                   <EmptyState title="No session results yet" />
                 ) : (
                   <>
+                    {/*
+                      The bar is the adherence: the sessions that were due.
+                      A session that has not happened yet is not in it — it is
+                      grey, it is counted in the legend, and it is not a
+                      failure.
+                    */}
                     <div className="flex h-4 overflow-hidden rounded-full">
-                      {(Object.keys(verdictNames) as Verdict[]).map((v) => (
+                      {dueRows.map((row) => (
                         <div
-                          key={v}
-                          title={`${verdictNames[v]}: ${summary.by_verdict[v]}`}
+                          key={row.verdict}
+                          title={`${verdictNames[row.verdict]}: ${row.count}`}
                           style={{
-                            width: `${summary.planned_sessions ? (summary.by_verdict[v] / summary.planned_sessions) * 100 : 0}%`,
-                            background: verdictColors[v],
+                            width: `${dueTotal ? (row.count / dueTotal) * 100 : 0}%`,
+                            background: verdictColors[row.verdict],
                           }}
                         />
                       ))}
@@ -672,7 +795,10 @@ export default function PlanPage() {
                             className="h-2 w-2 rounded-full"
                             style={{ background: verdictColors[v] }}
                           />
-                          {verdictNames[v]} <b>{summary.by_verdict[v]}</b>
+                          {verdictNames[v]}{' '}
+                          <b>
+                            {v === 'not_yet' ? notYetCount : (summary.by_verdict?.[v] ?? 0)}
+                          </b>
                         </div>
                       ))}
                     </div>
@@ -684,7 +810,14 @@ export default function PlanPage() {
         )}
       </div>
       <Card className="mt-4">
-        <CardHeader title="Sessions" subtitle="Every result, with the reason behind it." />
+        <CardHeader
+          title="Sessions"
+          subtitle={
+            isPhone()
+              ? 'Last week, this week and next week.'
+              : 'Every result, with the reason behind it.'
+          }
+        />
         {week.isLoading ? (
           <div className="space-y-2 p-4">
             {[1, 2, 3].map((x) => (
@@ -695,6 +828,10 @@ export default function PlanPage() {
           <div className="divide-y divide-edge">
             {listedSessions.map((s) => {
               const r = s.result
+              // A session that has not happened yet is neither a hit nor a
+              // miss: it reads "Not yet", in grey, whatever the payload says.
+              const notYet =
+                r?.verdict === 'not_yet' || (!r && isFutureSession(s.date, todayIso))
               return (
                 <div
                   key={s.key}
@@ -728,7 +865,9 @@ export default function PlanPage() {
                     )}
                   </div>
                   <div>
-                    {r?.message ? (
+                    {notYet ? (
+                      <span className="text-xs text-ink-faint">Has not happened yet.</span>
+                    ) : r?.message ? (
                       <p className="text-xs text-ink-soft">{r.message}</p>
                     ) : r?.cause ? (
                       <>
@@ -758,8 +897,12 @@ export default function PlanPage() {
           </div>
         ) : (
           <EmptyState
-            title="No sessions for this week"
-            description="Choose another week or import your plan."
+            title={isPhone() ? 'No sessions around this week' : 'No sessions for this week'}
+            description={
+              isPhone()
+                ? 'Nothing planned around this week.'
+                : 'Choose another week or import your plan.'
+            }
           />
         )}
       </Card>

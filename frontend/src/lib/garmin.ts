@@ -38,6 +38,59 @@ export interface GarminState {
   error: string | null
 }
 
+/**
+ * The phone's native shell.
+ *
+ * Two things the web app cannot do by itself:
+ *
+ * * **`syncNow`** — the pull is the phone's background job, so the shell
+ *   enqueues it and the count arrives by itself.
+ * * **`forgetGarminKey`** — the key is in the Keystore, out of the WebView's
+ *   reach, so only the shell can forget it.
+ *
+ * Both are optional. The desktop has no plugin at all, and a phone whose
+ * shell predates them must not break: each helper answers `false` when
+ * there is nothing to ask, and the caller falls back to the ordinary API
+ * route.
+ */
+interface StrideNativePlugin {
+  syncNow?: () => Promise<{ queued?: boolean }>
+  forgetGarminKey?: () => Promise<{ forgotten?: boolean }>
+}
+
+/** The plugin, if the phone's shell is there. */
+function nativePlugin(): StrideNativePlugin | null {
+  const capacitor = (globalThis as any)?.Capacitor
+  const plugin = capacitor?.Plugins?.StrideApi
+  return plugin && typeof plugin === 'object' ? (plugin as StrideNativePlugin) : null
+}
+
+/**
+ * Ask the phone to pull from Garmin now.
+ *
+ * `true` when the pull was queued. `false` when there is no native shell
+ * to ask — the caller falls back to the API route.
+ */
+export async function nativeSyncNow(): Promise<boolean> {
+  const plugin = nativePlugin()
+  if (!plugin || typeof plugin.syncNow !== 'function') return false
+  await plugin.syncNow()
+  return true
+}
+
+/**
+ * Ask the phone to forget the Garmin key.
+ *
+ * `true` when the key was forgotten. `false` when there is no native shell
+ * to ask — the caller falls back to the API route.
+ */
+export async function nativeForgetGarminKey(): Promise<boolean> {
+  const plugin = nativePlugin()
+  if (!plugin || typeof plugin.forgetGarminKey !== 'function') return false
+  await plugin.forgetGarminKey()
+  return true
+}
+
 export function useGarminState(): GarminState {
   const auth = useQuery({
     queryKey: ['auth-status'],

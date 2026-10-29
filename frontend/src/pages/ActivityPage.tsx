@@ -9,7 +9,7 @@
  * `api.patchActivity`); every visual comes from the shared kit in `components/`.
  */
 
-import { useMemo, useState } from 'react'
+import { useMemo, useState, type ReactNode } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { CircleMarker, MapContainer, Polyline, TileLayer } from 'react-leaflet'
 import { latLngBounds, type LatLngBounds } from 'leaflet'
@@ -80,7 +80,19 @@ const TILE_URL = '/api/v1/tiles/{z}/{x}/{y}.png'
 const TILE_ATTRIBUTION =
   '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
 
-const MAP_HEIGHT = 'h-[360px] sm:h-[400px] lg:h-[420px]'
+/**
+ * The map is the hero of an activity, so it gets a band of its own on a
+ * phone and a tall panel on a desktop. It keeps its controls, and it keeps
+ * its place at the top of the page: it is the first thing an athlete sees,
+ * and the title and the headline numbers sit next to it (desktop) or
+ * directly under it (phone) so that the route and what the run was are
+ * read in the same glance.
+ *
+ * The phone and the tablet heights are the ones the map already had: the
+ * map moves up, it does not shrink. The desktop panel grows, because the
+ * desktop has the room for it.
+ */
+const MAP_HEIGHT = 'h-[360px] sm:h-[400px] lg:h-[520px]'
 
 /* ------------------------------------------------------------------ helpers */
 
@@ -247,7 +259,7 @@ function TitleBlock({
   }
 
   return (
-    <Card className="px-5 py-5">
+    <Card className="px-5 py-4 sm:py-5">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
           {editing ? (
@@ -340,6 +352,71 @@ function TitleBlock({
   )
 }
 
+/* --------------------------------------------------------------- headline */
+
+/**
+ * One headline number.
+ *
+ * The three that say what the run was: how far, how fast, how long. They
+ * are the numbers that follow the title, and they are set smaller than the
+ * stat tiles so that three of them fit across a phone without wrapping.
+ */
+function HeadlineStat({
+  label,
+  value,
+  unit,
+  hint,
+  tone = 'default',
+}: {
+  label: string
+  value: ReactNode
+  unit?: string
+  hint?: string
+  tone?: 'default' | 'brand'
+}) {
+  return (
+    <div className="min-w-0">
+      <span className="whitespace-nowrap text-[10px] font-semibold uppercase tracking-[0.04em] text-ink-muted sm:text-[11px] sm:tracking-[0.07em]">
+        {label}
+      </span>
+      <span
+        className={cn(
+          'mt-1 block text-[21px] font-semibold leading-none tracking-tight sm:text-[26px]',
+          tone === 'brand' ? 'text-brand-600' : 'text-ink',
+        )}
+      >
+        {value}
+        {unit ? (
+          <span className="ml-1 text-[12px] font-medium text-ink-muted">{unit}</span>
+        ) : null}
+      </span>
+      {/* The exact figure, where there is room for it. */}
+      {hint ? (
+        <span className="mt-1 hidden text-[11px] text-ink-muted sm:block">{hint}</span>
+      ) : null}
+    </div>
+  )
+}
+
+/** The three numbers that follow the title, straight after the map. */
+function HeadlineStats({ activity }: { activity: ActivityDetail }) {
+  return (
+    <Card className="px-5 py-4">
+      <div className="grid grid-cols-3 gap-3">
+        <HeadlineStat
+          label="Distance"
+          value={formatDistanceShort(activity.distance_m)}
+          unit="km"
+          hint={formatDistance(activity.distance_m)}
+          tone="brand"
+        />
+        <HeadlineStat label="Pace" value={formatPace(activity.pace_s_per_km)} unit="/km" />
+        <HeadlineStat label="Moving time" value={formatDuration(activity.moving_time_s)} />
+      </div>
+    </Card>
+  )
+}
+
 /* ---------------------------------------------------------------- stat strip */
 
 function StatStrip({
@@ -354,33 +431,12 @@ function StatStrip({
   const signed = (value: number) => `${value > 0 ? '+' : ''}${formatNumber(value, 0)}`
   return (
     <Card className="px-5 py-4">
-      <div className="grid grid-cols-2 gap-x-5 gap-y-5 sm:grid-cols-4 lg:grid-cols-8">
-        <StatTile
-          label="Distance"
-          value={formatDistanceShort(activity.distance_m)}
-          unit="km"
-          tone="brand"
-          icon={<RouteIcon size={12} strokeWidth={2} className="text-ink-faint" />}
-          hint={formatDistance(activity.distance_m)}
-        />
-        <StatTile
-          label="Pace"
-          value={formatPace(activity.pace_s_per_km)}
-          unit="/km"
-          icon={<Gauge size={12} strokeWidth={2} className="text-ink-faint" />}
-          hint={`${formatNumber(activity.avg_speed_ms ? activity.avg_speed_ms * 3.6 : null, 1)} km/h`}
-        />
+      <div className="grid grid-cols-2 gap-x-5 gap-y-5 sm:grid-cols-3 xl:grid-cols-5">
         <StatTile
           label="Elevation"
           value={formatElevation(activity.elevation_gain_m)}
           icon={<Mountain size={12} strokeWidth={2} className="text-ink-faint" />}
           hint="climb"
-        />
-        <StatTile
-          label="Moving time"
-          value={formatDuration(activity.moving_time_s)}
-          icon={<Timer size={12} strokeWidth={2} className="text-ink-faint" />}
-          hint={`elapsed ${formatDuration(activity.elapsed_time_s)}`}
         />
         <StatTile
           label="HR drift"
@@ -717,16 +773,25 @@ function NeighbourLink({
 function ActivitySkeleton() {
   return (
     <div className="space-y-4">
-      <Skeleton className={cn('w-full rounded-card', MAP_HEIGHT)} />
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_340px] lg:items-start">
+        <Skeleton className={cn('w-full rounded-card', MAP_HEIGHT)} />
         <Card className="space-y-3 px-5 py-5">
           <Skeleton className="h-7 w-2/3" />
           <Skeleton className="h-4 w-1/2" />
           <Skeleton className="h-4 w-1/3" />
           <Divider className="my-3" />
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-            {Array.from({ length: 4 }).map((_, index) => (
-              <Skeleton key={index} className="h-12 w-full" />
+          <div className="grid grid-cols-3 gap-4">
+            {Array.from({ length: 3 }).map((_, index) => (
+              <Skeleton key={index} className="h-10 w-full" />
+            ))}
+          </div>
+        </Card>
+      </div>
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_340px] lg:items-start">
+        <Card className="space-y-3 px-5 py-5">
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 xl:grid-cols-5">
+            {Array.from({ length: 5 }).map((_, index) => (
+              <Skeleton key={index} className="h-10 w-full" />
             ))}
           </div>
         </Card>
@@ -878,17 +943,26 @@ export function ActivityPage() {
 
   return (
     <div className="space-y-4">
-      {/* ------------------------------------------------- 1. route map */}
-      <RouteHero points={activity.geo_points} activityKey={activity.id} />
+      {/* ------------------------------------------- 1. the route map, and
+          the title and the headline numbers beside it. On a phone the grid
+          stacks: the map is a band across the top, and the title and the
+          three numbers follow immediately under it. */}
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_340px] lg:items-start">
+        <RouteHero points={activity.geo_points} activityKey={activity.id} />
 
-      {/* ------------------------------------------ 2 + 3. title & stats */}
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
         <div className="space-y-4">
           <TitleBlock
             activity={activity}
             saving={patchMutation.isPending}
             onSaveName={(name) => patchMutation.mutate({ name })}
           />
+          <HeadlineStats activity={activity} />
+        </div>
+      </div>
+
+      {/* -------------------------------------- 2. the rest of the numbers */}
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_340px] lg:items-start">
+        <div className="space-y-4">
           <StatStrip activity={activity} fingerprint={fingerprint} />
           {hasExclusions ? (
             <p className="px-1 text-[12px] text-ink-muted">
