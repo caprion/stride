@@ -388,7 +388,7 @@ pub fn convert_plaintext_to_encrypted(
         let store = Store::open(&staged, key)?;
         store
             .with_connection(|conn| {
-                conn.execute_batch("PRAGMA wal_checkpoint(TRUNCATE); PRAGMA journal_mode=DELETE;")
+                conn.execute_batch("PRAGMA wal_checkpoint(TRUNCATE);")
                     .map_err(|source| StoreError::query("wal_checkpoint".to_string(), source))
             })
             .map_err(|error| DbError::Conversion(error.to_string()))?;
