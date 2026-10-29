@@ -578,6 +578,37 @@ fn the_golden_envelope_edge_cases_match_the_reference() {
 }
 
 #[test]
+fn the_golden_canonical_activity_falls_back_to_the_list_item_the_way_the_sync_does() {
+    // The sync walks the activity list and then asks for each activity's
+    // detail. The reference canonicalises from the detail payload and falls
+    // back to the list item for the id, the name and the start time; the
+    // client keeps the list items it has seen, so the fallback happens by
+    // itself and the caller does not have to hand the item back.
+    let stub = stub_with(&[
+        ("GET", ACTIVITIES_PATH, "activity_list.json"),
+        ("GET", DETAIL_FALLBACK_PATH, "activity_detail_fallback.json"),
+    ]);
+    let client = client_for(&stub);
+
+    let to = chrono::Utc::now();
+    let summaries = client
+        .activities(to - chrono::Duration::days(7), to)
+        .expect("the activity list succeeds");
+    assert_eq!(summaries.len(), 2);
+
+    let canonical = client
+        .activity_detail_canonical("19012999001")
+        .expect("the detail succeeds");
+    let expected = expected();
+
+    assert_close(
+        &canonical_value(&canonical),
+        &expected["activity_detail_fallback"],
+        "activity_detail_fallback",
+    );
+}
+
+#[test]
 fn the_golden_canonical_activity_falls_back_to_the_list_item_the_way_the_phone_does() {
     // The phone builds its fallback list item from `summary.raw`, so `raw`
     // has to keep the keys the fallback reads: the id, the name and the local

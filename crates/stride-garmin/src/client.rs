@@ -25,7 +25,7 @@
 //!
 //! The reference implementation is `backend/app/ingest/garmin_personal.py`.
 
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::{BTreeMap, BTreeSet, VecDeque};
 use std::fmt;
 use std::io::Read;
 use std::sync::Mutex;
@@ -109,6 +109,13 @@ struct TokenCache {
 struct State {
     token: Option<TokenCache>,
     seen: BTreeSet<String>,
+    /// The activity-list items the client has seen, oldest first.
+    ///
+    /// The reference canonicalises an activity from its detail payload and
+    /// falls back to the list item for the id, the name and the start time.
+    /// The list item is what carries those, so the client keeps them: the
+    /// caller that walks the list does not have to hand them back.
+    list_items: VecDeque<(String, Value)>,
 }
 
 /// The Garmin Connect Personal API client.
@@ -288,14 +295,18 @@ impl GarminClient {
             params.push(("endDate".to_owned(), end_day.to_string()));
         }
         let payload = self.get_json(ACTIVITIES_PATH, &params)?;
-        Ok(as_list(
+        let items = as_list(
             &payload,
             &["activityList", "activities", "activitySummaries"],
-        )
-        .into_iter()
-        .filter_map(|item| ActivitySummary::from_value(&item))
-        .take(limit as usize)
-        .collect())
+        );
+        let mut summaries = Vec::new();
+        for item in items.into_iter().take(limit as usize) {
+            if let Some(summary) = ActivitySummary::from_value(&item) {
+                self.remember_list_item(&summary.external_id, &item);
+                summaries.push(summary);
+            }
+        }
+        Ok(summaries)
     }
 
     /// One activity's detail, with its summary and its splits.
@@ -315,7 +326,27 @@ impl GarminClient {
         activity_id: &str,
     ) -> Result<ActivityDetail, GarminError> {
         let payload = self.activity_detail(activity_id)?;
-        ActivityDetail::from_value(&payload, None).ok_or_else(|| GarminError::Decode {
+        let list_item = self.list_item(activity_id);
+        ActivityDetail::from_value(&payload, list_item.as_ref()).ok_or_else(|| {
+            GarminError::Decode {
+                path: format!("{ACTIVITY_PATH}/{activity_id}"),
+                reason: "the activity detail is not an object".to_owned(),
+            }
+        })
+    }
+
+    /// One activity's detail, canonicalised against a list item the caller
+    /// holds.
+    ///
+    /// The same as [`GarminClient::activity_detail_canonical`], for a caller
+    /// that has the list item and wants to be explicit about it.
+    pub fn activity_detail_canonical_with(
+        &self,
+        activity_id: &str,
+        list_item: Option<&Value>,
+    ) -> Result<ActivityDetail, GarminError> {
+        let payload = self.activity_detail(activity_id)?;
+        ActivityDetail::from_value(&payload, list_item).ok_or_else(|| GarminError::Decode {
             path: format!("{ACTIVITY_PATH}/{activity_id}"),
             reason: "the activity detail is not an object".to_owned(),
         })
@@ -752,6 +783,36 @@ impl GarminClient {
             }
         }
         Ok(url)
+    }
+
+    /// Remembers an activity-list item, so a later detail read can fall back
+    /// to it the way the reference falls back to the list item.
+    fn remember_list_item(&self, activity_id: &str, item: &Value) {
+        let mut state = self.lock();
+        if let Some(entry) = state
+            .list_items
+            .iter_mut()
+            .find(|(id, _)| id == activity_id)
+        {
+            entry.1 = item.clone();
+            return;
+        }
+        if state.list_items.len() >= MAX_ACTIVITIES {
+            state.list_items.pop_front();
+        }
+        state
+            .list_items
+            .push_back((activity_id.to_owned(), item.clone()));
+    }
+
+    /// The list item for an activity, when the client has seen one.
+    fn list_item(&self, activity_id: &str) -> Option<Value> {
+        let state = self.lock();
+        state
+            .list_items
+            .iter()
+            .find(|(id, _)| id == activity_id)
+            .map(|(_, item)| item.clone())
     }
 
     fn mark_seen(&self, path: &str) {

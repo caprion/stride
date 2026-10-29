@@ -256,3 +256,123 @@ fn no_test_points_a_client_at_garmin() {
     }
     assert!(checked >= 3, "every test file has to be checked");
 }
+
+/// The shared sync, `crates/stride-api/src/sync.rs`, which is what the phone
+/// and the desktop both run.
+#[test]
+fn the_shared_sync_calls_still_work() {
+    let stub = StubServer::start();
+    stub.push(
+        "POST",
+        stride_garmin::TOKEN_PATH,
+        Reply::text("eyJhbGciOiJIUzI1NiJ9.compat-jwt.compat"),
+    );
+    stub.push(
+        "GET",
+        ACTIVITIES_PATH,
+        Reply::json(json!({
+            "activityList": [{
+                "activityId": 19012837465u64,
+                "activityName": "Morning Run",
+                "startTimeLocal": "2026-03-07T06:15:00",
+                "activityTypeDTO": { "typeKey": "running" },
+                "summaryDTO": { "distance": 4993.22, "movingDuration": 2986.12 }
+            }]
+        })),
+    );
+    stub.push(
+        "GET",
+        "/activity-service/activity/19012837465",
+        Reply::json(json!({
+            "activityId": 19012837465u64,
+            "activityName": "Morning Run",
+            "activityTypeDTO": { "typeKey": "running" },
+            "summaryDTO": {
+                "startTimeLocal": "2026-03-07T06:15:00",
+                "distance": 4993.22,
+                "movingDuration": 2986.12,
+                "elapsedDuration": 3125.44
+            }
+        })),
+    );
+    stub.push(
+        "GET",
+        "/download-service/files/activity/19012837465",
+        Reply::bytes(vec![0x0e, 0x10, 0x00, 0x01]),
+    );
+    stub.push(
+        "GET",
+        "/usersummary-service/usersummary/daily",
+        Reply::json(json!({ "summaryDTO": {} })),
+    );
+    stub.push(
+        "GET",
+        "/sleep-service/sleep/dailySleep",
+        Reply::json(json!({ "dailySleep": {} })),
+    );
+    stub.push(
+        "GET",
+        "/hrv-service/hrv/2026-03-07",
+        Reply::json(json!({ "hrvSummary": {} })),
+    );
+    stub.push(
+        "GET",
+        "/wellness-service/wellness/dailyHeartRate",
+        Reply::json(json!({ "heartRateSummary": {} })),
+    );
+
+    let client = GarminClient::with_base_url("the-key".to_string(), &stub.base_url())
+        .expect("the stub is a loopback host");
+
+    // The sync's window: local midnight, as UTC.
+    let end = Utc::now();
+    let start = end - Duration::days(7);
+    let activities = client
+        .activities(start, end)
+        .expect("the activity list succeeds");
+    assert_eq!(activities.len(), 1);
+
+    for summary in activities.iter().take(300) {
+        let id = summary.external_id.as_str();
+        assert!(!id.is_empty(), "the sync skips an empty id");
+
+        let canonical = client
+            .activity_detail_canonical(id)
+            .expect("the detail succeeds");
+        let row = json!({
+            "external_id": canonical.external_id,
+            "name": canonical.name,
+            "sport_type": canonical.sport_type,
+            "start_time": canonical.start_time,
+            "local_date": canonical.local_date,
+            "day_of_week": canonical.day_of_week,
+            "distance_m": canonical.distance_m,
+            "moving_time_s": canonical.moving_time_s,
+            "elapsed_time_s": canonical.elapsed_time_s,
+            "elevation_gain_m": canonical.elevation_gain_m,
+            "avg_hr": canonical.avg_hr,
+            "max_hr": canonical.max_hr,
+            "calories": canonical.calories,
+            "avg_cadence": canonical.avg_cadence,
+            "max_cadence": canonical.max_cadence,
+            "avg_speed_ms": canonical.avg_speed_ms,
+            "max_speed_ms": canonical.max_speed_ms,
+            "device": canonical.device,
+        });
+        assert_eq!(row["external_id"], "19012837465");
+        assert_eq!(row["distance_m"], 4993.22);
+        assert_eq!(row["moving_time_s"], 2986.12);
+        assert_eq!(row["elapsed_time_s"], 3125.44);
+
+        // The FIT file, where the account has one.
+        let bytes = client.activity_fit(id).expect("the FIT file is downloaded");
+        assert_eq!(bytes.first(), Some(&0x0e), "the FIT header");
+    }
+
+    // The wellness pull, one day at a time.
+    let key = "2026-03-07";
+    let _ = client.daily_summary(key);
+    let _ = client.sleep(key);
+    let _ = client.hrv(key);
+    let _ = client.daily_heart_rate(key);
+}
