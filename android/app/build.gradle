@@ -61,7 +61,11 @@ def rustTriple = { abi ->
  * directory is still checked first, because a crate built on its own - with
  * `cargo ndk` run from inside it - leaves the artefacts there instead.
  */
-def rustTargetDir = {
+// The same lookup, but resolved when the task *runs* rather than when the
+// project is configured. cargo-ndk has not built anything at configuration
+// time, so a lookup that insists on finding the directory there fails on a
+// clean build - and, worse, would have shipped an APK with no core in it.
+def rustTargetDirLazy = { ->
     def triple = rustTriple(targetAbis[0])
     def candidates = [
             file("src/main/rust/stride-ffi/target/${triple}/release"),
@@ -74,7 +78,7 @@ def rustTargetDir = {
                 candidates.collect { it.absolutePath }.join("\n  "))
     }
     return found
-}()
+}
 
 /** The Android SDK, from `local.properties` or the environment. */
 def androidSdkDir = {
@@ -137,7 +141,7 @@ tasks.register('cargoNdkBuild', Exec) {
     }
     inputs.dir file('src/main/rust/stride-ffi/src')
     inputs.file file('src/main/rust/stride-ffi/Cargo.toml')
-    outputs.dir rustTargetDir
+    outputs.dir file("${rootProject.projectDir}/target/${rustTriple(targetAbis[0])}/release")
 }
 
 /** Put the core's shared object where the APK picks it up. */
@@ -145,7 +149,7 @@ tasks.register('copyRustLibrary', Copy) {
     group = 'stride'
     description = 'Packages the Rust core as lib/arm64-v8a/libuniffi_stride.so.'
     dependsOn 'cargoNdkBuild'
-    from(new File(rustTargetDir, 'libuniffi_stride.so'))
+    from({ new File(rustTargetDirLazy.call(), 'libuniffi_stride.so') })
     into(new File(rustJniLibsDir.get().asFile, targetAbis[0]))
     doFirst {
         // Only the core's own library ships. A shared object left over from

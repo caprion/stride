@@ -163,6 +163,35 @@ fn a_traversal_returns_nothing_outside_the_directory() {
 }
 
 #[test]
+fn a_symlink_out_of_the_directory_serves_nothing() {
+    let dist = dist("a_symlink_out_of_the_directory_serves_nothing");
+    // The secret sits next to the app, not inside it.
+    let outside = dist
+        .parent()
+        .expect("a parent")
+        .join("stride-desktop-secret.txt");
+    std::fs::write(&outside, "the Garmin key").expect("the secret");
+    // And a symlink inside the app points at it.
+    let link = dist.join("assets").join("secret-link.txt");
+    std::os::unix::fs::symlink(&outside, &link).expect("the symlink");
+
+    let app = app(&dist);
+    let response = app.handle(&request("GET", "/assets/secret-link.txt"));
+    let text = body(&response);
+    assert!(
+        !text.contains("the Garmin key"),
+        "the symlink served the file outside the directory"
+    );
+    // The reference's static mount does not follow symlinks at all
+    // (`follow_symlink` is false), and its file resolver refuses anything
+    // that is not inside the directory. Both answer a 404, and so does the
+    // desktop.
+    assert_eq!(response.status, 404, "the symlink was followed");
+    assert!(!text.contains("the Garmin key"));
+    std::fs::remove_file(&outside).ok();
+}
+
+#[test]
 fn an_unknown_api_path_is_a_json_404() {
     let dist = dist("an_unknown_api_path_is_a_json_404");
     let app = app(&dist);

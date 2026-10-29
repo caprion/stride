@@ -17,7 +17,18 @@ use crate::error::McpError;
 use crate::tools::Tools;
 
 /// The protocol version this server speaks.
-pub const PROTOCOL_VERSION: &str = "2024-11-05";
+/// The protocol version this server speaks when the client names none.
+///
+/// The newest version the server implements.
+pub const PROTOCOL_VERSION: &str = "2025-06-18";
+
+/// The protocol versions this server implements, newest first.
+///
+/// The client names the version it wants in `initialize`; the server answers
+/// with that version when it implements it, and with its own when it does
+/// not. A client that asked for an older version still gets a working
+/// server — it just does not get the fields that version does not define.
+pub const SUPPORTED_VERSIONS: &[&str] = &["2025-06-18", "2024-11-05"];
 
 /// The name the server answers with.
 pub const SERVER_NAME: &str = "stride";
@@ -43,7 +54,7 @@ pub fn handle(tools: &Tools, request: &Value) -> Option<Value> {
 
     let result = match method {
         "initialize" => Ok(json!({
-            "protocolVersion": PROTOCOL_VERSION,
+            "protocolVersion": negotiated_version(&params),
             "capabilities": { "tools": { "listChanged": false } },
             "serverInfo": { "name": SERVER_NAME, "version": SERVER_VERSION },
             "instructions": "Stride answers questions about the athlete's own runs, plan and \
@@ -76,6 +87,22 @@ pub fn handle(tools: &Tools, request: &Value) -> Option<Value> {
             }
         }),
     })
+}
+
+/// The protocol version to answer with.
+///
+/// The client asks for one; the server answers with that one when it
+/// implements it, and with the newest it does when it does not.
+fn negotiated_version(params: &Value) -> &'static str {
+    let asked = params
+        .get("protocolVersion")
+        .and_then(Value::as_str)
+        .unwrap_or_default();
+    SUPPORTED_VERSIONS
+        .iter()
+        .find(|version| **version == asked)
+        .copied()
+        .unwrap_or(PROTOCOL_VERSION)
 }
 
 /// Call a tool and wrap its answer the way MCP expects.
@@ -187,6 +214,32 @@ mod tests {
         let request = json!({ "jsonrpc": "2.0", "id": 7, "method": "shell" });
         let response = handle(&tools(), &request).expect("a response");
         assert_eq!(response["error"]["code"], json!(-32602));
+    }
+
+    #[test]
+    fn the_handshake_answers_with_the_version_the_client_asked_for() {
+        let tools = tools();
+        let request = json!({
+            "jsonrpc": "2.0",
+            "id": 1,
+            "method": "initialize",
+            "params": { "protocolVersion": "2024-11-05" },
+        });
+        let response = handle(&tools, &request).expect("a response");
+        assert_eq!(response["result"]["protocolVersion"], json!("2024-11-05"));
+
+        // A version the server does not implement gets the server's own.
+        let request = json!({
+            "jsonrpc": "2.0",
+            "id": 2,
+            "method": "initialize",
+            "params": { "protocolVersion": "1999-01-01" },
+        });
+        let response = handle(&tools, &request).expect("a response");
+        assert_eq!(
+            response["result"]["protocolVersion"],
+            json!(PROTOCOL_VERSION)
+        );
     }
 
     #[test]

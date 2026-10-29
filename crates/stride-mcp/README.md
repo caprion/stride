@@ -81,6 +81,14 @@ let tools = Tools::new(Arc::new(api));          // or Tools::with_today(api, day
 answer. A tool that fails answers with `isError: true` and the message; an
 unknown tool is a protocol error.
 
+**Nothing but protocol messages may be written to stdout** — the harness
+reads that stream. Diagnostics go to stderr.
+
+The `initialize` handshake negotiates the protocol version: the server
+answers with the version the client asked for when it implements it
+(`2025-06-18` and `2024-11-05` today), and with its own when it does not.
+A tool's answer is returned both as text and as `structuredContent`.
+
 A host that reaches Stride over a socket rather than in process implements
 `stride_mcp::StrideApi` and hands that to `Tools::new` instead.
 

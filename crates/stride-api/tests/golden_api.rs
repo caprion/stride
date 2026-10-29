@@ -586,6 +586,165 @@ fn the_fields_parameter_trims_the_answer_and_nothing_else() {
     assert_eq!(keys, ["week"]);
 }
 
+/// `?fields=` trims every route that offers it, at the level that route
+/// documents.
+///
+/// Seventeen handlers read the parameter; three of them were covered by the
+/// test above. This one walks the rest, and checks two things for each: the
+/// named fields survive, and the unnamed ones are gone — while the
+/// untrimmed answer still has them.
+#[test]
+fn the_fields_parameter_works_on_every_route_that_offers_it() {
+    let golden: Value = serde_json::from_str(GOLDEN).expect("the golden file parses");
+    let api = api(&golden);
+
+    // A route, the fields to keep, and where the filter applies:
+    // `items`, `object`, `sessions` or `cards`.
+    let cases: [(&str, &str, &str); 17] = [
+        ("/api/v1/activities", "id,name", "items"),
+        ("/api/v1/activities/1", "id,name", "object"),
+        (
+            "/api/v1/fitness/fingerprint",
+            "activity_id,cadence_avg",
+            "items",
+        ),
+        ("/api/v1/fitness/activity/1", "activity_id", "object"),
+        ("/api/v1/plan/blocks", "id,name", "items"),
+        ("/api/v1/plan/current", "week", "object"),
+        ("/api/v1/plan/week?date=2026-03-04", "id,date", "sessions"),
+        ("/api/v1/plan/today", "date,has_session", "object"),
+        ("/api/v1/stats/weekly", "week_key,distance_m", "items"),
+        ("/api/v1/stats/monthly", "month_key,distance_m", "items"),
+        ("/api/v1/stats/pace-trends", "week_key,run_count", "items"),
+        ("/api/v1/stats/personal-records", "label,value", "items"),
+        (
+            "/api/v1/calendar?year=2026&month=3",
+            "name,distance_m",
+            "cards",
+        ),
+        ("/api/v1/compare?ids=1,2", "id,name", "runs"),
+        ("/api/v1/physiology/daily", "date,sleep_s", "items"),
+        ("/api/v1/physiology/hrv", "date,hrv_ms", "items"),
+        (
+            "/api/v1/physiology/readiness?from=2026-03-01&to=2026-03-10",
+            "date,score",
+            "items",
+        ),
+    ];
+
+    for (path, fields, level) in cases {
+        let separator = if path.contains('?') { '&' } else { '?' };
+        let whole = api.call("GET", path, None).expect("the route answers");
+        let trimmed = api
+            .call("GET", &format!("{path}{separator}fields={fields}"), None)
+            .expect("the route answers");
+
+        // The named fields survive, and the unnamed ones are gone.
+        let wanted: Vec<&str> = fields.split(',').collect();
+        let named = |value: &Value| -> Vec<String> {
+            value
+                .as_object()
+                .map(|object| object.keys().cloned().collect())
+                .unwrap_or_default()
+        };
+        match level {
+            "items" => {
+                let items = trimmed["items"].as_array().expect("the items");
+                for item in items {
+                    let keys = named(item);
+                    for name in &wanted {
+                        assert!(
+                            keys.contains(&name.to_string()),
+                            "{path}: the field {name} was dropped"
+                        );
+                    }
+                    assert!(
+                        keys.iter().all(|key| wanted.contains(&key.as_str())),
+                        "{path}: an item kept {keys:?}, which was not asked for"
+                    );
+                }
+                // The untrimmed answer has more.
+                let whole_items = whole["items"].as_array().expect("the items");
+                if let (Some(first), Some(trimmed_first)) = (whole_items.first(), items.first()) {
+                    assert!(
+                        named(first).len() >= named(trimmed_first).len(),
+                        "{path}: the trimmed item is not smaller"
+                    );
+                }
+            }
+            "object" => {
+                let keys = named(&trimmed);
+                for name in &wanted {
+                    assert!(
+                        keys.contains(&name.to_string()),
+                        "{path}: the field {name} was dropped"
+                    );
+                }
+                assert!(
+                    keys.iter().all(|key| wanted.contains(&key.as_str())),
+                    "{path}: the answer kept {keys:?}, which was not asked for"
+                );
+                assert!(
+                    named(&whole).len() >= keys.len(),
+                    "{path}: the trimmed answer is not smaller"
+                );
+            }
+            "sessions" => {
+                let sessions = trimmed["sessions"].as_array().expect("the sessions");
+                for session in sessions {
+                    let keys = named(session);
+                    for name in &wanted {
+                        assert!(
+                            keys.contains(&name.to_string()),
+                            "{path}: the field {name} was dropped"
+                        );
+                    }
+                    assert!(
+                        keys.iter().all(|key| wanted.contains(&key.as_str())),
+                        "{path}: a session kept {keys:?}, which was not asked for"
+                    );
+                }
+            }
+            "cards" => {
+                let days = trimmed["days"].as_array().expect("the days");
+                for day in days {
+                    let cards = day["activities"].as_array().expect("the cards");
+                    for card in cards {
+                        let keys = named(card);
+                        for name in &wanted {
+                            assert!(
+                                keys.contains(&name.to_string()),
+                                "{path}: the field {name} was dropped"
+                            );
+                        }
+                        assert!(
+                            keys.iter().all(|key| wanted.contains(&key.as_str())),
+                            "{path}: a card kept {keys:?}, which was not asked for"
+                        );
+                    }
+                }
+            }
+            "runs" => {
+                let runs = trimmed["runs"].as_array().expect("the runs");
+                for run in runs {
+                    let keys = named(run);
+                    for name in &wanted {
+                        assert!(
+                            keys.contains(&name.to_string()),
+                            "{path}: the field {name} was dropped"
+                        );
+                    }
+                    assert!(
+                        keys.iter().all(|key| wanted.contains(&key.as_str())),
+                        "{path}: a run kept {keys:?}, which was not asked for"
+                    );
+                }
+            }
+            other => panic!("the test does not know the level {other}"),
+        }
+    }
+}
+
 /// The OpenAPI document lists 62 paths and 65 operations. Every one of them
 /// is in the route table, with the same parameter names.
 #[test]

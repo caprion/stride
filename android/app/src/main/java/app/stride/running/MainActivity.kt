@@ -1,6 +1,9 @@
 package app.stride.running
 
+import android.content.BroadcastReceiver
 import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
 import android.os.Bundle
 import android.util.Log
 import app.stride.running.bridge.StrideApiPlugin
@@ -9,6 +12,7 @@ import app.stride.running.security.AppGate
 import app.stride.running.settings.AppSettings
 import app.stride.running.sync.SyncNotifications
 import app.stride.running.sync.SyncScheduler
+import androidx.core.content.ContextCompat
 import com.getcapacitor.BridgeActivity
 import com.getcapacitor.CapConfig
 import org.json.JSONObject
@@ -36,6 +40,19 @@ class MainActivity : BridgeActivity() {
      */
     private val gate by lazy { AppGate(this) }
 
+    /**
+     * The screen turning off closes the gate at once.
+     *
+     * The design says the app re-locks after a minute in the background, and
+     * *immediately* when the device locks. A phone that goes to sleep in a
+     * bag must not come back with the athlete's history on the screen.
+     */
+    private val screenOff = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            if (intent?.action == Intent.ACTION_SCREEN_OFF) gate.lock()
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         // The plugin has to be registered before the bridge is built.
         registerPlugin(StrideApiPlugin::class.java)
@@ -53,6 +70,13 @@ class MainActivity : BridgeActivity() {
 
         // The gate goes up before anything is shown.
         gate.lock()
+
+        ContextCompat.registerReceiver(
+            this,
+            screenOff,
+            IntentFilter(Intent.ACTION_SCREEN_OFF),
+            ContextCompat.RECEIVER_NOT_EXPORTED,
+        )
 
         // The core is opened in the background: the Keystore needs the phone
         // to be unlocked, and the WebView must not wait for it.
