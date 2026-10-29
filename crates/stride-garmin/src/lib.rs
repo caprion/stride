@@ -25,6 +25,7 @@ mod client;
 mod error;
 mod fit;
 mod types;
+mod workouts;
 
 pub use client::{
     GarminClient, ACTIVITIES_PATH, ACTIVITY_PATH, DEFAULT_BASE_URL, DOWNLOAD_PATH,
@@ -32,4 +33,7 @@ pub use client::{
 };
 pub use error::GarminError;
 pub use fit::{extract_fit, MAX_FIT_BYTES, MAX_FIT_MEMBER_BYTES, MAX_ZIP_ENTRIES};
-pub use types::{ActivityDetail, ActivitySummary, Profile, Zone, ZoneModel};
+pub use types::{
+    ActivityDetail, ActivitySummary, Profile, ScheduledWorkout, WorkoutDetail, Zone, ZoneModel,
+};
+pub use workouts::{scheduled_workouts, workout_detail};

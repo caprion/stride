@@ -1626,6 +1626,225 @@ fn plan_date_range(ctx: &Ctx<'_>, query: &Query) -> Result<(String, String), Api
     Ok((start, end))
 }
 
+/// `GET /api/v1/plan/sources` — the plans Stride can offer.
+///
+/// Two kinds of plan, and they are not the same kind of thing: the plan the
+/// athlete wrote down (a *prescription*) and the plan they already have (a
+/// *baseline*, inferred from their own history). Each is judged by its own
+/// ruler, chosen by the source's `prescribed` flag, so a baseline never says
+/// "missed": nobody wrote it down.
+///
+/// The reference: `api/plan.plan_sources_route`.
+pub fn plan_sources(ctx: &Ctx<'_>, query: &Query) -> Result<Value, ApiError> {
+    let (from, to) = plan_date_range(ctx, query)?;
+    let demo_visible = ctx.backend.public_status()?.demo_visible;
+    let rows = ctx.backend.activities(&ActivityFilter {
+        sport: None,
+        date_from: Some(from.clone()),
+        date_to: Some(to.clone()),
+        query: None,
+        sort: "date".to_string(),
+        page: 1,
+        per_page: 5_000,
+        demo_visible,
+        all_sports: true,
+    })?;
+    let activities: Vec<stride_core::Activity> = rows.iter().map(core_fact).collect();
+
+    let inferred = stride_core::plan_sources::infer_plan(&activities, &from, &to);
+    let inferred = serde_json::to_value(&inferred)
+        .map_err(|err| ApiError::internal(format!("the inferred plan did not render: {err}")))?;
+    let garmin = garmin_source(ctx, &from, &to)?;
+
+    let today = ctx.today.format("%Y-%m-%d").to_string();
+    Ok(json!({
+        "inferred": source_with_verdicts(&inferred, &activities, &today),
+        "garmin": source_with_verdicts(&garmin, &activities, &today),
+    }))
+}
+
+/// A plan a source produced, with the verdict on each of its sessions.
+///
+/// The verdict function is chosen by the source's own `prescribed` flag: a
+/// prescription is judged hit/missed, a baseline is judged less than usual
+/// and never says "missed".
+fn source_with_verdicts(
+    payload: &Value,
+    activities: &[stride_core::Activity],
+    today: &str,
+) -> Value {
+    let prescribed = payload
+        .get("prescribed")
+        .and_then(Value::as_bool)
+        .unwrap_or(false);
+    let sessions = payload
+        .get("sessions")
+        .and_then(Value::as_array)
+        .cloned()
+        .unwrap_or_default();
+    let judged: Vec<Value> = sessions
+        .iter()
+        .filter_map(|session| {
+            let parsed: stride_core::PlanSession = serde_json::from_value(session.clone()).ok()?;
+            let day = parsed.date.clone();
+            let activity = activity_on(activities, &day);
+            let verdict = stride_core::verdict_for_source(&parsed, activity, today, prescribed);
+            let mut value = session.clone();
+            if let Some(object) = value.as_object_mut() {
+                let rendered = serde_json::to_value(&verdict).unwrap_or(Value::Null);
+                if let Some(fields) = rendered.as_object() {
+                    for (name, field) in fields {
+                        object.insert(name.clone(), field.clone());
+                    }
+                }
+            }
+            // The words the screen shows.
+            let (label, message) = if prescribed {
+                (verdict_label(&verdict.verdict), String::new())
+            } else {
+                let baseline = stride_core::plan_sources::baseline_verdict(&parsed, activity);
+                (baseline.verdict_label, baseline.message)
+            };
+            if let Some(object) = value.as_object_mut() {
+                object.insert("verdict_label".to_string(), json!(label));
+                object.insert("message".to_string(), json!(message));
+            }
+            Some(value)
+        })
+        .collect();
+    let mut payload = payload.clone();
+    if let Some(object) = payload.as_object_mut() {
+        object.insert("sessions".to_string(), Value::Array(judged));
+    }
+    payload
+}
+
+/// The words a prescribed verdict gets.
+fn verdict_label(verdict: &str) -> String {
+    match verdict {
+        "missed_pace" => "missed pace".to_string(),
+        "not_yet" => "not yet due".to_string(),
+        other => other.to_string(),
+    }
+}
+
+/// The run that answered a session on that day, if there was one.
+fn activity_on<'a>(
+    activities: &'a [stride_core::Activity],
+    day: &str,
+) -> Option<&'a stride_core::Activity> {
+    activities.iter().find(|activity| {
+        activity.local_date == day
+            && matches!(
+                activity.sport_type.as_str(),
+                "running" | "trail_running" | "treadmill_running"
+            )
+    })
+}
+
+/// The run, as the plan sources want it: the date, the sport and the distance.
+fn core_fact(row: &ActivityRow) -> stride_core::Activity {
+    stride_core::Activity {
+        id: row.id,
+        name: row.name.clone(),
+        local_date: row.local_date.clone(),
+        start_date: row.local_date.clone(),
+        day_of_week: row.day_of_week.clone(),
+        sport_type: row.sport_type.clone(),
+        source: row.source.clone(),
+        distance_m: row.distance_m,
+        moving_time_s: Some(row.moving_time_s),
+        elapsed_time_s: Some(row.elapsed_time_s),
+        ..stride_core::Activity::default()
+    }
+}
+
+/// The plan the athlete wrote down, as Garmin's scheduled workouts.
+///
+/// With no Garmin key the source says so instead of pretending to be empty.
+fn garmin_source(ctx: &Ctx<'_>, from: &str, to: &str) -> Result<Value, ApiError> {
+    let unavailable = |reason: String| {
+        json!({
+            "source": "garmin",
+            "prescribed": true,
+            "description": stride_core::plan_sources::GARMIN_DESCRIPTION,
+            "available": false,
+            "reason": reason,
+            "sessions": [],
+        })
+    };
+    let Some(key) = ctx.backend.garmin_personal_key()? else {
+        return Ok(unavailable(
+            "No Garmin key is configured, so the scheduled workouts cannot be read.".to_string(),
+        ));
+    };
+    let client = stride_garmin::GarminClient::new(key);
+    let mut scheduled: Vec<serde_json::Value> = Vec::new();
+    for (year, month) in months(from, to) {
+        match client.scheduled_workouts(year, month) {
+            Ok(rows) => {
+                for row in rows {
+                    scheduled.push(serde_json::to_value(row).unwrap_or(Value::Null));
+                }
+            }
+            Err(err) => {
+                return Ok(unavailable(format!(
+                    "The scheduled workouts could not be read: {err}"
+                )));
+            }
+        }
+    }
+    let mut details: Vec<serde_json::Value> = Vec::new();
+    for row in &scheduled {
+        let Some(id) = row.get("workout_id").and_then(Value::as_str) else {
+            continue;
+        };
+        if let Ok(detail) = client.workout_detail(id) {
+            details.push(serde_json::to_value(detail).unwrap_or(Value::Null));
+        }
+    }
+    let scheduled: Vec<stride_core::plan_sources::ScheduledWorkout> = scheduled
+        .iter()
+        .filter_map(|row| serde_json::from_value(row.clone()).ok())
+        .collect();
+    let details: Vec<stride_core::plan_sources::WorkoutDetail> = details
+        .iter()
+        .filter_map(|row| serde_json::from_value(row.clone()).ok())
+        .collect();
+    let plan = stride_core::plan_sources::workouts_plan(&scheduled, &details);
+    let mut payload = serde_json::to_value(&plan)
+        .map_err(|err| ApiError::internal(format!("the Garmin plan did not render: {err}")))?;
+    if let Some(object) = payload.as_object_mut() {
+        object.insert("available".to_string(), json!(true));
+        object.insert("reason".to_string(), Value::Null);
+    }
+    Ok(payload)
+}
+
+/// The months a range covers.
+fn months(from: &str, to: &str) -> Vec<(i64, i64)> {
+    use chrono::Datelike;
+    let Ok(first) = chrono::NaiveDate::parse_from_str(&from[..from.len().min(10)], "%Y-%m-%d")
+    else {
+        return Vec::new();
+    };
+    let Ok(last) = chrono::NaiveDate::parse_from_str(&to[..to.len().min(10)], "%Y-%m-%d") else {
+        return Vec::new();
+    };
+    let mut out = Vec::new();
+    let mut year = first.year();
+    let mut month = first.month();
+    while (year, month) <= (last.year(), last.month()) {
+        out.push((year as i64, month as i64));
+        month += 1;
+        if month > 12 {
+            year += 1;
+            month = 1;
+        }
+    }
+    out
+}
+
 /// `GET /api/v1/plan/adherence` — how much of the plan was kept.
 ///
 /// The reference: `api/plan.get_adherence`.

@@ -79,6 +79,7 @@ pub enum RouteId {
     PlanWeek,
     PlanResults,
     PlanAdherence,
+    PlanSources,
     PlanToday,
     PhysiologyDaily,
     PhysiologyLatest,
@@ -378,6 +379,11 @@ pub const ROUTES: &[Route] = &[
     },
     Route {
         method: "GET",
+        pattern: "/api/v1/plan/sources",
+        id: RouteId::PlanSources,
+    },
+    Route {
+        method: "GET",
         pattern: "/api/v1/plan/today",
         id: RouteId::PlanToday,
     },
@@ -621,6 +627,7 @@ pub fn dispatch(
         RouteId::PlanWeek => json(routes::plan_week(ctx, query)),
         RouteId::PlanResults => json(routes::plan_results(ctx, query)),
         RouteId::PlanAdherence => json(routes::plan_adherence(ctx, query)),
+        RouteId::PlanSources => json(routes::plan_sources(ctx, query)),
         RouteId::PlanToday => json(routes::plan_today(ctx, query)),
         RouteId::PhysiologyDaily => json(routes::physiology_daily(ctx, query)),
         RouteId::PhysiologyLatest => json(routes::physiology_latest(ctx)),

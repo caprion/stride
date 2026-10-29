@@ -998,10 +998,7 @@ pub fn adherence(matches: &[SessionMatch], extra_sessions: usize) -> Adherence {
     }
 
     Adherence {
-        overall_pct: Some(round_to(
-            hit_or_missed_pace as f64 / due as f64 * 100.0,
-            1,
-        )),
+        overall_pct: Some(round_to(hit_or_missed_pace as f64 / due as f64 * 100.0, 1)),
         planned_km: round_to(
             sum(&rows.iter().map(|row| row.planned_km).collect::<Vec<_>>()),
             2,
@@ -1063,6 +1060,79 @@ mod tests {
             moving_time_s: Some(distance / 3.0),
             ..Activity::default()
         }
+    }
+
+    /// A session that has not happened yet is neither a hit nor a miss.
+    #[test]
+    fn a_session_that_has_not_happened_yet_is_not_yet() {
+        let mut session = session("easy", Some(1000.0));
+        session.date = "2026-03-20".to_string();
+
+        let verdict = verdict_for(&session, None, "2026-03-19");
+        assert_eq!(verdict.verdict, NOT_YET_DUE);
+        assert!(verdict.verdict != "hit");
+        assert!(verdict.verdict != "missed");
+        assert!(!verdict.distance_hit);
+        assert_eq!(verdict.pace_band_hit, None);
+        assert_eq!(verdict.distance_delta_m, None);
+        assert_eq!(verdict.pace_delta_s_km, None);
+        assert_eq!(verdict.adherence_score, None);
+        assert_eq!(verdict.cause, None);
+
+        // The same session on the day itself is due, and it is missed.
+        let due = verdict_for(&session, None, "2026-03-20");
+        assert_eq!(due.verdict, "missed");
+    }
+
+    /// The adherence does not count a session that has not happened yet.
+    #[test]
+    fn the_adherence_does_not_count_a_session_that_has_not_happened_yet() {
+        let mut past = session("easy", Some(1000.0));
+        past.date = "2026-03-02".to_string();
+        let mut future = session("easy", Some(1000.0));
+        future.id = 2;
+        future.date = "2026-03-20".to_string();
+        let sessions = vec![past, future];
+        let activities = vec![activity(1, "running", 1000.0, "2026-03-02")];
+        let inputs = PlanInputs {
+            today: "2026-03-10",
+            from: "2026-03-01",
+            to: "2026-03-21",
+            sessions: &sessions,
+            activities: &activities,
+            physiology: &[],
+        };
+
+        let matches = match_sessions(&inputs);
+        assert_eq!(matches.len(), 2);
+        assert_eq!(matches[0].verdict.verdict, "hit");
+        assert_eq!(matches[1].verdict.verdict, NOT_YET_DUE);
+
+        let adherence = adherence_for(&inputs);
+        assert_eq!(
+            adherence.planned_sessions, 1,
+            "the session that has not happened is not a planned session yet"
+        );
+        assert_eq!(adherence.hit_sessions, 1);
+        assert_eq!(adherence.missed_sessions, 0);
+        assert_eq!(
+            adherence.overall_pct,
+            Some(100.0),
+            "the percentage is of the sessions that were due"
+        );
+    }
+
+    /// A baseline never says "missed": nobody wrote it down.
+    #[test]
+    fn a_baseline_never_says_missed() {
+        let mut session = session("easy", Some(1000.0));
+        session.date = "2026-03-02".to_string();
+        let verdict = verdict_for_source(&session, None, "2026-03-10", false);
+        assert_eq!(verdict.verdict, "less_than_usual");
+        assert!(verdict.verdict != "missed");
+        // A prescribed plan, on the same session, says "missed".
+        let prescribed = verdict_for_source(&session, None, "2026-03-10", true);
+        assert_eq!(prescribed.verdict, "missed");
     }
 
     #[test]

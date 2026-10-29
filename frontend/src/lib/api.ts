@@ -58,6 +58,7 @@ import type {
   SleepPoint,
   ZoneShare,
 } from '../types_phase2'
+import { readPlanSources } from './planSources'
 
 const BASE = '/api/v1'
 
@@ -526,6 +527,19 @@ export const api = {
   planAdherence: (from?: string, to?: string) =>
     request<AdherenceSummary>(`/plan/adherence${qs({ from, to })}`),
   planToday: () => request<PlanToday>('/plan/today'),
+
+  /**
+   * The plan sources: where the plan came from.
+   *
+   * `prescribed: false` is the athlete's own usual week, inferred from
+   * their history; `prescribed: true` is the plan they wrote down. The
+   * route is new, so the answer is read tolerantly — a list, an `items`
+   * list or a single source all mean the same thing to the screen.
+   */
+  planSources: async (from?: string, to?: string) => {
+    const data = await request<unknown>(`/plan/sources${qs({ from, to })}`)
+    return readPlanSources(data)
+  },
 
   // ------------------------------------------------------------ physiology
   // The physiology endpoints answer for a year of days. The full rows carry

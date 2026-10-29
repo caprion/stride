@@ -62,6 +62,12 @@ pub const PROFILE_PATH: &str = "/userprofile-service/userprofile/settings";
 /// The heart-rate zone endpoint.
 pub const HEART_RATE_ZONES_PATH: &str = "/biometric-service/heartRateZones/v2";
 
+/// The scheduled-workouts endpoint.
+pub const SCHEDULED_WORKOUTS_PATH: &str = "/workout-service/schedule";
+
+/// The workout-detail endpoint.
+pub const WORKOUT_PATH: &str = "/workout-service/workouts";
+
 /// The hosts Garmin's credentials may be sent to.
 const GARMIN_HOSTS: [&str; 3] = [
     "personal.connectapi.garmin.com",
@@ -360,6 +366,29 @@ impl GarminClient {
             &payload,
             &["workouts", "activityWorkouts", "workoutSummaries"],
         ))
+    }
+
+    /// The workouts scheduled in a calendar month.
+    ///
+    /// The month is the one the calendar uses: January is 1.
+    pub fn scheduled_workouts(
+        &self,
+        year: i64,
+        month: i64,
+    ) -> Result<Vec<crate::types::ScheduledWorkout>, GarminError> {
+        let path = format!("{SCHEDULED_WORKOUTS_PATH}/{year}/{month}");
+        let payload = self.get_json(&path, &[])?;
+        Ok(crate::workouts::scheduled_workouts(&payload))
+    }
+
+    /// One workout's detail: its steps, and what they imply.
+    pub fn workout_detail(
+        &self,
+        workout_id: &str,
+    ) -> Result<crate::types::WorkoutDetail, GarminError> {
+        let id = check_workout_id(workout_id)?;
+        let payload = self.get_json(&format!("{WORKOUT_PATH}/{id}"), &[])?;
+        Ok(crate::workouts::workout_detail(&payload))
     }
 
     /// The activity's original FIT file.
@@ -965,6 +994,20 @@ fn check_activity_id(activity_id: &str) -> Result<String, GarminError> {
         Ok(activity_id.to_owned())
     } else {
         Err(GarminError::InvalidActivityId(activity_id.to_owned()))
+    }
+}
+
+/// A workout id, checked.
+///
+/// A workout id is a number, like an activity's, and it goes into a URL.
+fn check_workout_id(workout_id: &str) -> Result<String, GarminError> {
+    let valid = !workout_id.is_empty()
+        && workout_id.len() <= 20
+        && workout_id.bytes().all(|byte| byte.is_ascii_digit());
+    if valid {
+        Ok(workout_id.to_owned())
+    } else {
+        Err(GarminError::InvalidActivityId(workout_id.to_owned()))
     }
 }
 

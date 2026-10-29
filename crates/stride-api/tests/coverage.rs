@@ -2,7 +2,7 @@
 //!
 //! The stack the desktop and the phone build is
 //! `Api → CoreBackend → TileBackend → NetworkBackend → StateBackend → Store`.
-//! This test drives **all 65 routes** through it and checks that none of
+//! This test drives **all 66 routes** through it and checks that none of
 //! them answers "not implemented" — the failure mode that hides a missing
 //! piece of the app behind a 501 nobody looks at.
 //!

@@ -8,7 +8,14 @@ import type { ActivitySummary } from './types'
 export type SessionType =
   'easy' | 'long' | 'tempo' | 'interval' | 'race' | 'recovery' | 'strength' | 'rest'
 
-export type Verdict = 'hit' | 'missed_pace' | 'short' | 'missed' | 'substituted' | 'bonus'
+/**
+ * The verdicts of a prescribed plan.
+ *
+ * `not_yet` is a verdict of its own: a session that has not happened yet is
+ * not a failure, and it is never red.
+ */
+export type Verdict =
+  'hit' | 'missed_pace' | 'short' | 'missed' | 'substituted' | 'bonus' | 'not_yet'
 
 export interface PlanBlock {
   id: number
@@ -475,6 +482,8 @@ export interface PlanSource {
   description: string
   /** Whether there was enough history to infer a pattern. */
   sufficient?: boolean
+  /** Whether the source could answer at all — the Garmin one needs an account. */
+  available?: boolean
   /** Why it declined, when it declined. A sentence, not an error. */
   reason?: string | null
   /** Weeks of history the inference saw. */
@@ -512,6 +521,12 @@ export interface PlanSourceSession {
   target_distance_m: number | null
   pace_low_s_km: number | null
   pace_high_s_km: number | null
+  /** The verdict of this session, judged by its source's own ruler. */
+  verdict?: string | null
+  /** The words the athlete reads. */
+  verdict_label?: string | null
+  /** The sentence the baseline produces. */
+  message?: string | null
   result?: PlanSourceResult | null
   activity?: PlanSourceActivity | null
 }

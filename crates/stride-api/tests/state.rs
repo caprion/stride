@@ -283,3 +283,32 @@ fn the_trust_configuration_is_the_deployments() {
     assert!(backend.trusts(&inside));
     assert!(!backend.trusts(&outside));
 }
+
+/// The plan sources: a baseline and a prescription, each with its own ruler.
+///
+/// The route is new, and the existing shapes do not change: it is a route of
+/// its own, and it carries the two plans the screen offers.
+#[test]
+fn the_plan_sources_answer_with_both_plans() {
+    let api = api();
+    let sources = api
+        .call("GET", "/api/v1/plan/sources", None)
+        .expect("the sources answer");
+    for key in ["inferred", "garmin"] {
+        let source = sources
+            .get(key)
+            .unwrap_or_else(|| panic!("the sources are missing {key}"));
+        assert!(source.get("source").is_some(), "{key} has no source");
+        assert!(
+            source.get("prescribed").is_some(),
+            "{key} does not say whether it is a prescription"
+        );
+        assert!(source.get("sessions").is_some(), "{key} has no sessions");
+    }
+    // The Garmin source needs a key; without one it says so rather than
+    // pretending to be empty.
+    assert_eq!(sources["garmin"]["available"], false);
+    assert!(sources["garmin"]["reason"].is_string());
+    // The inferred plan is a baseline: it is never a prescription.
+    assert_eq!(sources["inferred"]["prescribed"], false);
+}

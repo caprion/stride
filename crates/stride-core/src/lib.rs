@@ -70,8 +70,8 @@ pub use ordered::OrderedMap;
 pub use plan::{
     adherence, explain_cause, is_run_sport, match_sessions, today_plan, verdict_for,
     verdict_for_source, week_plan, Adherence, AdherenceRow, CauseInputs, PlanInputs, SessionMatch,
-    SessionRow, TodayInput, TodayPlan, Verdict, WeekPlan, WeekSummary, WeekTarget,
-    NOT_YET_DUE, RUN_SPORTS as PLAN_RUN_SPORTS,
+    SessionRow, TodayInput, TodayPlan, Verdict, WeekPlan, WeekSummary, WeekTarget, NOT_YET_DUE,
+    RUN_SPORTS as PLAN_RUN_SPORTS,
 };
 pub use plan_sources::{
     baseline_verdict, infer_plan, normalise_date, session_from_workout, sessions_from_workouts,

@@ -22,11 +22,11 @@ pointed at a server; it is the server.
 
 | | measured |
 |---|---|
-| the APK | **8.6 MB** (8,609,784 bytes), arm64-v8a |
-| the Rust core inside it | **8.58 MiB** — SQLCipher and OpenSSL vendored |
-| the desktop binary | **9.1 MB** |
-| the Rust gate | **355 tests passed, 38 golden assertions**, 9 of 9 checks green |
-| the route parity | **38 of 38 routes** answer with the same shape as the reference |
+| the APK | **8.7 MB** (8,670,620 bytes), arm64-v8a |
+| the Rust core inside it | **8.69 MiB** — SQLCipher and OpenSSL vendored |
+| the desktop binary | **9.2 MB** |
+| the Rust gate | **368 tests passed, 38 golden assertions**, 9 of 9 checks green |
+| the route parity | **37 of 38 routes** answer with the same shape as the reference |
 
 ---
 

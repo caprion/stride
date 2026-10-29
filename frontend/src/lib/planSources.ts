@@ -29,6 +29,8 @@ const TONES: Record<string, VerdictTone> = {
   missed: 'negative',
   substituted: 'info',
   bonus: 'brand',
+  // A session that has not happened yet. Grey: it is not a failure.
+  not_yet: 'neutral',
   // A baseline: nobody prescribed this, so nothing is a failure.
   less_than_usual: 'info',
   more_than_usual: 'brand',
@@ -39,6 +41,7 @@ const TONES: Record<string, VerdictTone> = {
 /** The words each verdict is shown with, when the payload has none. */
 const LABELS: Record<string, string> = {
   hit: 'Hit',
+  not_yet: 'Not yet',
   missed_pace: 'Missed pace',
   short: 'Short',
   missed: 'Missed',
@@ -66,9 +69,12 @@ export function verdictTone(verdict: string | null | undefined): VerdictTone {
 export function verdictLabel(
   result: { verdict?: string | null; verdict_label?: string | null } | null | undefined,
 ): string {
+  const verdict = result?.verdict ?? ''
+  // A session that has not happened yet reads "Not yet", whatever the
+  // payload calls it.
+  if (verdict === 'not_yet') return LABELS.not_yet
   const label = result?.verdict_label?.trim()
   if (label) return label
-  const verdict = result?.verdict ?? ''
   return LABELS[verdict] ?? (verdict ? verdict.replace(/_/g, ' ') : '—')
 }
 
@@ -90,6 +96,11 @@ export function readPlanSources(payload: unknown): PlanSource[] {
   if (Array.isArray(payload)) return payload.filter(isSource)
   if (!payload || typeof payload !== 'object') return []
   const record = payload as Record<string, unknown>
+  // The route answers with the two sources by name: `inferred` and `garmin`.
+  const named = ['inferred', 'garmin', 'imported', 'prescribed']
+    .map((key) => record[key])
+    .filter(isSource)
+  if (named.length) return named
   for (const key of ['items', 'sources', 'plans']) {
     const value = record[key]
     if (Array.isArray(value)) return value.filter(isSource)
@@ -104,13 +115,15 @@ function isSource(value: unknown): value is PlanSource {
   return typeof record.prescribed === 'boolean'
 }
 
-/** The prescribed source — the plan the athlete wrote down. */
+/**
+ * The prescribed source — the plan the athlete wrote down.
+ *
+ * A source that could not answer is not a source: the Garmin one needs an
+ * account, and without one it says so instead of pretending to be empty.
+ */
 export function prescribedSource(sources: PlanSource[]): PlanSource | null {
-  return (
-    sources.find((source) => source.prescribed && (source.sessions?.length ?? 0) > 0) ??
-    sources.find((source) => source.prescribed) ??
-    null
-  )
+  const usable = sources.filter((source) => source.prescribed && source.available !== false)
+  return usable.find((source) => (source.sessions?.length ?? 0) > 0) ?? null
 }
 
 /** The inferred source — the athlete's own usual week. */

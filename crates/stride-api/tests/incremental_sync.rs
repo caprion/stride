@@ -31,7 +31,9 @@ use stride_garmin::{ActivityDetail, ActivitySummary, GarminError};
 const FIT: &[u8] = include_bytes!("../../../backend/tests/golden/fixtures/real_garmin_run.fit");
 
 /// The day the pull is made on.
-const TODAY: chrono::NaiveDate = chrono::NaiveDate::from_ymd_opt(2026, 10, 29).expect("a date");
+fn today() -> chrono::NaiveDate {
+    chrono::NaiveDate::from_ymd_opt(2026, 10, 29).expect("a date")
+}
 
 /// A Garmin client that counts what it is asked for.
 struct CountingClient {
@@ -164,11 +166,8 @@ fn store(name: &str) -> Arc<dyn Backend> {
     for suffix in ["", "-wal", "-shm"] {
         let _ = std::fs::remove_file(format!("{}{suffix}", path.display()));
     }
-    let store = stride_store::Store::open_and_migrate(
-        &path,
-        b"0123456789abcdef0123456789abcdef",
-    )
-    .expect("the store opens");
+    let store = stride_store::Store::open_and_migrate(&path, b"0123456789abcdef0123456789abcdef")
+        .expect("the store opens");
     stride_api::store::backend(Arc::new(store))
 }
 
@@ -182,18 +181,21 @@ fn the_second_pull_costs_nothing() {
     let client = CountingClient::new();
 
     // The first pull: everything is fetched, because nothing is here yet.
-    let first = run_with(backend.as_ref(), &client, Some(90), Some(3), TODAY)
+    let first = run_with(backend.as_ref(), &client, Some(90), Some(3), today())
         .expect("the first pull works");
     assert_eq!(first.activities_found, 1);
     assert_eq!(first.activities_new, 1);
     assert_eq!(first.detail_calls, 1, "the first pull fetches the detail");
     assert_eq!(first.fit_downloads, 1, "the first pull downloads the FIT");
-    assert_eq!(first.health_days_fetched, 3, "the first pull fetches the days");
+    assert_eq!(
+        first.health_days_fetched, 3,
+        "the first pull fetches the days"
+    );
     assert_eq!(first.health_days_skipped, 0);
 
     // The second pull: the activity is already here, rebuilt from its FIT,
     // and the days of wellness are already here too.
-    let second = run_with(backend.as_ref(), &client, Some(90), Some(3), TODAY)
+    let second = run_with(backend.as_ref(), &client, Some(90), Some(3), today())
         .expect("the second pull works");
     assert_eq!(second.activities_found, 1);
     assert_eq!(second.activities_new, 0);
@@ -213,7 +215,11 @@ fn the_second_pull_costs_nothing() {
     assert_eq!(second.health_days_skipped, 3);
     assert_eq!(client.details(), 1, "one detail call in total");
     assert_eq!(client.fits(), 1, "one FIT download in total");
-    assert_eq!(client.wellness(), 12, "four calls for each of the three days");
+    assert_eq!(
+        client.wellness(),
+        12,
+        "four calls for each of the three days"
+    );
 }
 
 /// The activity keeps its track, its splits and its per-second series.
@@ -225,7 +231,7 @@ fn the_second_pull_costs_nothing() {
 fn the_second_pull_keeps_the_streams() {
     let backend = store("streams");
     let client = CountingClient::new();
-    run_with(backend.as_ref(), &client, Some(90), Some(3), TODAY).expect("the first pull works");
+    run_with(backend.as_ref(), &client, Some(90), Some(3), today()).expect("the first pull works");
 
     let activity = backend
         .activity_by_external("garmin_personal", ACTIVITY_ID)
@@ -244,7 +250,7 @@ fn the_second_pull_keeps_the_streams() {
     assert!(!laps.is_empty(), "the FIT's splits were written");
 
     // And they are still there after the second pull.
-    run_with(backend.as_ref(), &client, Some(90), Some(3), TODAY).expect("the second pull works");
+    run_with(backend.as_ref(), &client, Some(90), Some(3), today()).expect("the second pull works");
     let again = backend
         .activity_streams(activity.id)
         .expect("the streams are readable");

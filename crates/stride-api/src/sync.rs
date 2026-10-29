@@ -484,18 +484,15 @@ pub fn run_with<S: GarminSource + ?Sized>(
         // The FIT file, where the account has one — and only where the
         // activity has not been rebuilt from it already.
         if !imported {
-            match source.activity_fit(id) {
-                Ok(bytes) => {
-                    outcome.fit_downloads += 1;
-                    if let Ok(parsed) = stride_fit::parse_fit(&bytes, &format!("{id}.fit")) {
-                        laps = fit_laps(&parsed);
-                        streams = fit_streams(&parsed);
-                        merge_fit(&mut activity, &laps, &streams, &parsed);
-                    }
+            // The reference logs the failure and carries on: an activity
+            // without its FIT is still an activity.
+            if let Ok(bytes) = source.activity_fit(id) {
+                outcome.fit_downloads += 1;
+                if let Ok(parsed) = stride_fit::parse_fit(&bytes, &format!("{id}.fit")) {
+                    laps = fit_laps(&parsed);
+                    streams = fit_streams(&parsed);
+                    merge_fit(&mut activity, &laps, &streams, &parsed);
                 }
-                // The reference logs the failure and carries on: an activity
-                // without its FIT is still an activity.
-                Err(_) => {}
             }
         }
         if was_there {
@@ -622,8 +619,5 @@ pub fn has_fit_records(existing: Option<&ActivityRow>, backend: &dyn Backend) ->
 /// A day with nothing in it is a day that was never pulled; a day with sleep
 /// or a heart rate in it is a day that is already here.
 fn has_wellness(row: &crate::backend::PhysiologyRow) -> bool {
-    row.sleep_s.is_some()
-        || row.hrv_ms.is_some()
-        || row.resting_hr.is_some()
-        || row.steps.is_some()
+    row.sleep_s.is_some() || row.hrv_ms.is_some() || row.resting_hr.is_some() || row.steps.is_some()
 }

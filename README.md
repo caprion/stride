@@ -51,9 +51,9 @@ card says it, and the screenshots say it:
 
 | | |
 |---|---|
-| the APK | **8.6 MB** (8,609,784 bytes), arm64-v8a |
-| the Rust core inside it | **8.58 MiB** — SQLCipher and OpenSSL vendored |
-| the desktop binary | **9.1 MB** (9,478,400 bytes, `target/release/stride`) |
+| the APK | **8.7 MB** (8,670,620 bytes), arm64-v8a |
+| the Rust core inside it | **8.69 MiB** — SQLCipher and OpenSSL vendored |
+| the desktop binary | **9.2 MB** (9,582,368 bytes, `target/release/stride`) |
 
 The app is built in CI and signed with a key whose certificate is committed in
 `backend/app/assetlinks.json`; the key itself is only in the repository
@@ -135,13 +135,15 @@ call.
 
 | gate | what it says | result |
 |---|---|---|
-| `./scripts/rust_gate.sh` | format, clippy, release build, tests, golden fixtures, panics, dependency set, size | **9 passed, 0 failed, 0 warnings** — 355 tests, 38 golden assertions |
+| `./scripts/rust_gate.sh` | format, clippy, release build, tests, golden fixtures, panics, dependency set, size | **9 passed, 0 failed, 0 warnings** — 368 tests, 38 golden assertions |
 | `./scripts/security_check.sh` | the Python side: permissions, configuration, dependencies, tests, the live service | **26 passed, 0 failed, 1 warning** |
 | `python3 scripts/check_apk.py <apk>` | the APK carries the Rust core and points at nothing | **the APK carries the Rust core and points at nothing** |
-| `python3 scripts/api_parity.py` | the Rust router and the Python reference, route by route | **38 of 38 routes answer with the same shape** |
+| `python3 scripts/api_parity.py` | the Rust router and the Python reference, route by route | **37 of 38 routes answer with the same shape** |
 
-The Rust router and the Python reference now answer **all 38 routes** with
-the same shape: the same keys, the same types, the same nesting.
+The one difference is `GET /api/v1/health`: the Rust desktop reports
+`garmin.method: null` and the reference reports `"personal"`. It is the
+nullability of one field — the desktop copy in that measurement had no
+Garmin key configured — and it is open.
 
 ---
 

@@ -54,8 +54,8 @@ against. It is not what the athlete runs.
 
 | | |
 |---|---|
-| the Rust core runs inside the APK | `libuniffi_stride.so`, **8.58 MiB**, SQLCipher and OpenSSL vendored |
-| the APK | **8.6 MB** (8,609,784 bytes), arm64-v8a |
+| the Rust core runs inside the APK | `libuniffi_stride.so`, **8.69 MiB**, SQLCipher and OpenSSL vendored |
+| the APK | **8.7 MB** (8,670,620 bytes), arm64-v8a |
 | the Garmin key | a non-exportable Keystore key wraps it; it never enters the WebView |
 | the database | the phone's own, encrypted, in the app's private storage |
 | the onboarding | **one screen**: the key, then `Checking…` → `Syncing…` → `Connected · 160 runs` |
@@ -85,12 +85,12 @@ good there.
 
 | gate | result |
 |---|---|
-| `./scripts/rust_gate.sh` | **9 passed, 0 failed, 0 warnings** — 355 tests, 38 golden assertions |
+| `./scripts/rust_gate.sh` | **9 passed, 0 failed, 0 warnings** — 368 tests, 38 golden assertions |
 | `./scripts/security_check.sh` | **26 passed, 0 failed, 1 warning** |
 | `python3 scripts/check_apk.py <apk>` | the APK carries the Rust core and points at nothing |
-| `python3 scripts/api_parity.py` | **38 of 38 routes** answer with the same shape as the Python reference |
+| `python3 scripts/api_parity.py` | **37 of 38 routes** answer with the same shape as the Python reference |
 | `backend/.venv/bin/python -m pytest -q` | **178 passed**, 2 skipped, 2 xfailed, 1 xpassed |
-| the desktop binary | **9.1 MB** |
+| the desktop binary | **9.2 MB** |
 
 ### The contracts that are frozen
 
@@ -124,14 +124,17 @@ Ranked by what it costs the athlete.
    `/network/route` answer **501** on the desktop ("the network status is
    read from the machine, not from the database"). The reference app
    implements the egress switch; the Rust desktop does not.
-4. **The FIT is not yet the phone's storage format.** The design review
+4. **One route differs in shape.** `GET /api/v1/health` reports
+   `garmin.method: null` where the reference reports `"personal"` — the
+   nullability of one field. **37 of 38 routes** agree.
+5. **The FIT is not yet the phone's storage format.** The design review
    measured the exploded per-second series at **115 KB per activity** against
    **20 KB** for the original file. The phone should keep the FIT and derive
    from it; that is not done.
-5. **The renderer costs about 100 MB on the phone.** Measured by the memory
+6. **The renderer costs about 100 MB on the phone.** Measured by the memory
    workstream. A native UI is the answer if it matters; it is not yet a
    decision.
-6. **Two smaller design items are open**: the readiness grade is still not
+7. **Two smaller design items are open**: the readiness grade is still not
    one traffic light everywhere, and the fingerprint page is still 14.8
    screens. See `docs/design-review.md` §6.
 

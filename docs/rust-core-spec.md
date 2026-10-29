@@ -236,12 +236,12 @@ pub fn call(&self, method: &str, path: &str, body: Option<&str>)
 ```
 
 `method` and `path` are the HTTP method and the path. The router matches the
-**65 routes over 62 paths** of the table below, parses the query string and
+**66 routes over 63 paths** of the table below, parses the query string and
 the body, calls the store and the core, and returns JSON. The table is the
 router's own list (`crates/stride-api/src/router.rs`), so it cannot drift
 from it without the test in `desktop/tests/openapi.rs` failing: that test
 compares the router with the OpenAPI document the Python app generates, and
-it asserts the same 62 paths, the same methods and the same path
+it asserts the same 63 paths, the same methods and the same path
 parameters.
 
 **The response shapes do not change.** The React app is a consumer of them
@@ -273,16 +273,16 @@ in the same commit.
 | GET | `/api/v1/plan/blocks/{block_id}` | POST | `/api/v1/plan/blocks/{block_id}/phases` |
 | GET | `/api/v1/plan/current` | POST | `/api/v1/plan/import` |
 | POST | `/api/v1/plan/phases/{phase_id}/weeks` | GET | `/api/v1/plan/results` |
-| GET | `/api/v1/plan/today` | GET | `/api/v1/plan/week` |
-| POST | `/api/v1/plan/weeks/{week_id}/sessions` | GET | `/api/v1/stats/elevation` |
-| GET | `/api/v1/stats/heatmap` | GET | `/api/v1/stats/hr-zones` |
-| GET | `/api/v1/stats/monthly` | GET | `/api/v1/stats/pace-trends` |
-| GET | `/api/v1/stats/personal-records` | GET | `/api/v1/stats/summary` |
-| GET | `/api/v1/stats/weekly` | GET | `/api/v1/sync/history` |
-| POST | `/api/v1/sync/history` | POST | `/api/v1/sync/run` |
-| GET | `/api/v1/sync/runs` | PATCH | `/api/v1/sync/settings` |
-| GET | `/api/v1/sync/status` | GET | `/api/v1/tiles/policy` |
-| GET | `/api/v1/tiles/{z}/{x}/{y}.png` |  | `` |
+| GET | `/api/v1/plan/sources` | GET | `/api/v1/plan/today` |
+| GET | `/api/v1/plan/week` | POST | `/api/v1/plan/weeks/{week_id}/sessions` |
+| GET | `/api/v1/stats/elevation` | GET | `/api/v1/stats/heatmap` |
+| GET | `/api/v1/stats/hr-zones` | GET | `/api/v1/stats/monthly` |
+| GET | `/api/v1/stats/pace-trends` | GET | `/api/v1/stats/personal-records` |
+| GET | `/api/v1/stats/summary` | GET | `/api/v1/stats/weekly` |
+| GET | `/api/v1/sync/history` | POST | `/api/v1/sync/history` |
+| POST | `/api/v1/sync/run` | GET | `/api/v1/sync/runs` |
+| PATCH | `/api/v1/sync/settings` | GET | `/api/v1/sync/status` |
+| GET | `/api/v1/tiles/policy` | GET | `/api/v1/tiles/{z}/{x}/{y}.png` |
 
 The authoritative list, with every parameter and response schema, is the
 OpenAPI document the Python app generates: `app.openapi()`. **Read it, do not
@@ -392,7 +392,7 @@ against a golden file, say so in your report and say why — that is a gap in
 the fixtures, and it should be fixed rather than papered over.
 
 **As built, all six crates have a golden test**, and the gate measures
-**355 tests passed, 38 golden assertions**:
+**368 tests passed, 38 golden assertions**:
 
 | crate | the golden test |
 |---|---|

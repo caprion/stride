@@ -516,6 +516,23 @@
     ]
    }
   },
+  "/api/v1/plan/sources": {
+   "get": {
+    "operationId": "plan_sources_route_api_v1_plan_sources_get",
+    "parameters": [
+     {
+      "in": "query",
+      "name": "from",
+      "required": false
+     },
+     {
+      "in": "query",
+      "name": "to",
+      "required": false
+     }
+    ]
+   }
+  },
   "/api/v1/plan/today": {
    "get": {
     "operationId": "get_today_api_v1_plan_today_get",

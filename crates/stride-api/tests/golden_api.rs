@@ -852,14 +852,14 @@ fn a_broken_fit_file_is_answered_not_thrown() {
     );
 }
 
-/// The OpenAPI document lists 62 paths and 65 operations. Every one of them
+/// The OpenAPI document lists 63 paths and 66 operations. Every one of them
 /// is in the route table, with the same parameter names.
 #[test]
 fn the_route_table_covers_the_openapi_document() {
     let document: Value = serde_json::from_str(include_str!("fixtures/openapi_paths.json"))
         .expect("the document parses");
     let paths = document["paths"].as_object().expect("the paths");
-    assert_eq!(paths.len(), 62, "the reference has 62 paths");
+    assert_eq!(paths.len(), 63, "the reference has 63 paths");
 
     let routes = stride_api::router::ROUTES;
     for (path, operations) in paths {

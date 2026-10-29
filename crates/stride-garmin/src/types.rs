@@ -558,3 +558,56 @@ fn number(value: Option<&Value>, positive: bool) -> Option<f64> {
         None
     }
 }
+
+/// One scheduled Garmin workout, as Garmin's calendar sends it.
+///
+/// The field names are the ones Garmin sends, read leniently: a workout's
+/// id may be `workoutId`, `id` or `scheduledWorkoutId`, and its day may be
+/// `date`, `scheduledDate` or `calendarDate`.
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
+pub struct ScheduledWorkout {
+    /// Garmin's id for the workout.
+    #[serde(default)]
+    pub workout_id: Option<String>,
+    /// The workout's name.
+    #[serde(default)]
+    pub name: Option<String>,
+    /// The day the workout is scheduled for, as Garmin sent it.
+    #[serde(default)]
+    pub date: Option<String>,
+    /// The sport the workout is for.
+    #[serde(default)]
+    pub sport: Option<String>,
+    /// The workout's status.
+    #[serde(default)]
+    pub status: Option<String>,
+}
+
+/// The detail of one Garmin workout.
+///
+/// The session type, the target distance and the pace band, all read out of
+/// the workout's steps.
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
+pub struct WorkoutDetail {
+    /// The session type the workout implies.
+    #[serde(default)]
+    pub session_type: Option<String>,
+    /// The target distance, in metres.
+    #[serde(default)]
+    pub target_distance_m: Option<f64>,
+    /// The lower bound of the pace band, in seconds per kilometre.
+    #[serde(default)]
+    pub target_pace_low_s_km: Option<f64>,
+    /// The upper bound of the pace band, in seconds per kilometre.
+    #[serde(default)]
+    pub target_pace_high_s_km: Option<f64>,
+    /// The heart-rate zone the workout targets.
+    #[serde(default)]
+    pub hr_zone_target: Option<f64>,
+    /// The workout's title.
+    #[serde(default)]
+    pub title: Option<String>,
+    /// The workout's steps, as text.
+    #[serde(default)]
+    pub details: Option<String>,
+}

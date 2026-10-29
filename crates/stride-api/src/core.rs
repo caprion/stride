@@ -414,6 +414,7 @@ impl Backend for CoreBackend {
     fn plan_adherence(&self, from: &str, to: &str) -> Result<Value, BackendError> {
         let data = self.plan_inputs(from, to)?;
         let inputs = PlanInputs {
+            today: &today(),
             from,
             to,
             sessions: &data.sessions,
@@ -775,6 +776,7 @@ impl CoreBackend {
     > {
         let data = self.plan_inputs(from, to)?;
         let inputs = PlanInputs {
+            today: &today(),
             from,
             to,
             sessions: &data.sessions,
@@ -879,6 +881,17 @@ fn session_row_from(session: &stride_core::PlanSession) -> PlanSessionRow {
 }
 
 /// Round a number the way the reference does, for the callers that need it.
+/// The day the plan is judged against.
+///
+/// A session dated after it has not happened yet: it is neither a hit nor a
+/// miss, and it does not count in the adherence denominator.
+fn today() -> String {
+    chrono::Utc::now()
+        .date_naive()
+        .format("%Y-%m-%d")
+        .to_string()
+}
+
 pub fn round(value: Option<f64>, digits: usize) -> Option<f64> {
     value.map(|value| round_to(value, digits))
 }
