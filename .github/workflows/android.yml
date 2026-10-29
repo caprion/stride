@@ -103,11 +103,12 @@ jobs:
         run: |
           rustup toolchain install stable --profile minimal
           rustup target add aarch64-linux-android
-          # The prebuilt binary, rather than `cargo install`, which takes
-          # minutes to compile a build script.
-          curl -L --fail --silent --show-error \
-            https://github.com/rust-lang/cargo-ndk/releases/latest/download/cargo-ndk-x86_64-unknown-linux-gnu.tar.gz \
-            | tar xz -C "$HOME/.cargo/bin"
+          # The prebuilt binary. `cargo install cargo-ndk` works too, but it
+          # spends minutes compiling a build script that the runner does not
+          # need to compile.
+          uses: taiki-e/install-action@v2
+          with:
+            tool: cargo-ndk
           cargo ndk --version
 
       - name: Install the node modules
