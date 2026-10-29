@@ -13,13 +13,15 @@
 //!
 //! ```no_run
 //! # use std::sync::Arc;
-//! # use stride_api::{Api, CoreBackend, StateBackend};
-//! # fn run(store: Arc<stride_store::Store>) {
-//! let backend = stride_api::store::backend(store);
-//! let state = StateBackend::new(backend);
+//! # use stride_api::{Api, Backend, CoreBackend, StateBackend};
+//! # fn run(store: Arc<dyn Backend>) {
+//! let state = StateBackend::new(store);
 //! let api = Api::new(Arc::new(CoreBackend::new(Arc::new(state))));
 //! # }
 //! ```
+//!
+//! The example takes a [`Backend`] and not a store, so that it does not
+//! depend on which copy of the store crate the graph happens to hold.
 
 use std::sync::{Arc, Mutex};
 

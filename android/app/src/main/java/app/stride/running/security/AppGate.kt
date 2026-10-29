@@ -1,5 +1,7 @@
 package app.stride.running.security
 
+import android.app.KeyguardManager
+import android.content.Context
 import android.graphics.Color
 import android.os.SystemClock
 import android.view.Gravity
@@ -41,6 +43,17 @@ class AppGate(private val activity: FragmentActivity) {
     private var unlocked = false
     private var backgroundedAt = 0L
 
+    /**
+     * Whether the phone was locked when the app went away.
+     *
+     * The design says the gate closes *immediately* when the device locks.
+     * The keyguard's own state is the signal: when the screen goes off the
+     * phone is locked, and the app is sent to the background at the same
+     * moment. So the app remembers that it was locked, and asks again when it
+     * comes back.
+     */
+    private var backgroundedWhileLocked = false
+
     /** The system's credential screen, and its answer. */
     private val credentialLauncher: ActivityResultLauncher<android.content.Intent> =
         activity.registerForActivityResult(
@@ -52,7 +65,7 @@ class AppGate(private val activity: FragmentActivity) {
     /** The app came to the foreground. */
     fun onForeground() {
         val away = SystemClock.elapsedRealtime() - backgroundedAt
-        if (!unlocked || away > graceMillis) {
+        if (!unlocked || away > graceMillis || backgroundedWhileLocked) {
             lock()
         }
     }
@@ -60,6 +73,13 @@ class AppGate(private val activity: FragmentActivity) {
     /** The app went to the background. */
     fun onBackground() {
         backgroundedAt = SystemClock.elapsedRealtime()
+        backgroundedWhileLocked = deviceLocked()
+    }
+
+    /** Whether the phone is locked and wants the athlete to authenticate. */
+    private fun deviceLocked(): Boolean {
+        val keyguard = activity.getSystemService(Context.KEYGUARD_SERVICE) as? KeyguardManager
+        return keyguard?.isDeviceLocked == true
     }
 
     /** Close the gate and show the app. */

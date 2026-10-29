@@ -13,36 +13,37 @@
 //!
 //! The file is not in the repository — `backend/data/` is ignored — so the
 //! test says so and does nothing when it is not there.
+//!
+//! **One conversion, shared.** A conversion copies a database of a few
+//! megabytes and encrypts it, and six of them at once is a few hundred
+//! megabytes of page cache and a hundred megabytes of disk. On a machine
+//! that is busy with other work that is enough to make the *machine* the
+//! reason a test fails, and a test that fails for that reason says nothing
+//! about the code. So the conversion happens once, and the tests read what
+//! it produced.
 
 use std::path::{Path, PathBuf};
-use std::sync::{Arc, Mutex, OnceLock};
+use std::sync::{Arc, OnceLock};
 use std::time::Duration;
 
 use rusqlite::Connection;
 use stride_api::{Api, CoreBackend};
-use stride_desktop::db::{self, Format};
 use stride_store::Store;
+
+use stride_desktop::db::{self, ConversionReport, Format};
 
 /// The key the test encrypts with.
 const KEY: &[u8] = b"0123456789abcdef0123456789abcdef";
 
-/// The conversions run one at a time.
-///
-/// A conversion copies a database of a few megabytes and encrypts it, and
-/// six of them at once is a few hundred megabytes of page cache and a
-/// hundred megabytes of disk. On a machine that is busy with other work
-/// that is enough to make the *machine* the reason a test fails, and a test
-/// that fails for that reason says nothing about the code.
-fn serialise<T>(body: impl FnOnce() -> T) -> T {
-    static LOCK: OnceLock<Mutex<()>> = OnceLock::new();
-    let guard = LOCK
-        .get_or_init(|| Mutex::new(()))
-        .lock()
-        .unwrap_or_else(|poisoned| poisoned.into_inner());
-    let answer = body();
-    drop(guard);
-    answer
-}
+/// The tables the test counts.
+const TABLES: [&str; 6] = [
+    "activity",
+    "activity_lap",
+    "activity_stream",
+    "daily_physiology",
+    "plan_session",
+    "run_fingerprint",
+];
 
 /// The real database.
 fn real_database() -> PathBuf {
@@ -53,13 +54,13 @@ fn real_database() -> PathBuf {
         .join("stride.db")
 }
 
-/// One snapshot of the real database, taken once for the whole test run.
+/// One copy of the real database, taken once for the whole run.
 ///
-/// The database is **live**: the reference app is running and writing to it.
-/// Copying the files one by one would copy a database that is being written
-/// under the copy — the main file at one moment and the write-ahead log at
-/// another — and the copy would be a mixture of two states. SQLite's own
-/// backup API takes a snapshot instead.
+/// The database is **live**: the reference app is running and writing to
+/// it. Copying the files one by one would copy a database that is being
+/// written under the copy — the main file at one moment and the write-ahead
+/// log at another — and the copy would be a mixture of two states. SQLite's
+/// own backup API takes a snapshot instead.
 ///
 /// The snapshot is taken once and shared: two backups of a database that is
 /// being written to, at the same time, is two chances to read it while it
@@ -80,7 +81,7 @@ fn snapshot_of_the_real_database() -> Option<PathBuf> {
             // snapshot can fail. A few tries, and then the test does
             // nothing.
             for _ in 0..5 {
-                if stride_desktop::db::take_snapshot(&source, &target).is_ok() {
+                if db::take_snapshot(&source, &target).is_ok() {
                     return Some(target);
                 }
                 std::thread::sleep(Duration::from_millis(250));
@@ -121,48 +122,72 @@ fn scratch(name: &str) -> PathBuf {
     dir
 }
 
+/// One conversion of the real database, shared by the tests.
+struct Converted {
+    /// Where it happened.
+    directory: PathBuf,
+    /// The encrypted database it produced.
+    database: PathBuf,
+    /// The plain copy it kept.
+    backup: PathBuf,
+    /// What the conversion reported.
+    report: ConversionReport,
+    /// The row counts before the conversion.
+    before: Vec<(String, i64)>,
+}
+
+/// Convert the real database, once.
+fn converted() -> Option<&'static Converted> {
+    static CONVERTED: OnceLock<Option<Converted>> = OnceLock::new();
+    CONVERTED
+        .get_or_init(|| {
+            let directory = scratch("converted");
+            let Some(copy) = copy_of_the_real_database(&directory) else {
+                eprintln!(
+                    "stride: {} is not there; the test does nothing",
+                    real_database().display()
+                );
+                return None;
+            };
+            let before: Vec<(String, i64)> = TABLES
+                .iter()
+                .map(|table| (table.to_string(), count(&copy, table)))
+                .collect();
+            let report = db::convert_plaintext_to_encrypted(&copy, KEY).expect("the conversion");
+            let backup = copy.with_file_name(format!(
+                "{}.plaintext-backup",
+                copy.file_name().unwrap_or_default().to_string_lossy()
+            ));
+            Some(Converted {
+                database: copy,
+                backup,
+                directory,
+                report,
+                before,
+            })
+        })
+        .as_ref()
+}
+
 /// The real database opens, and every row is still there.
 #[test]
 fn the_real_database_opens_and_keeps_its_rows() {
-    let directory = scratch("real");
-    let Some(copy) = copy_of_the_real_database(&directory) else {
-        eprintln!(
-            "stride: {} is not there; the test does nothing",
-            real_database().display()
-        );
+    let Some(converted) = converted() else {
         return;
     };
 
-    // The file the Python app writes is not encrypted. That is the first
-    // thing the desktop has to deal with.
-    assert_eq!(
-        db::detect_format(&copy).expect("the format"),
-        Format::Plaintext,
-        "the database on disk is expected to be the plain one"
-    );
-
-    let before: Vec<(String, i64)> = [
-        "activity",
-        "activity_lap",
-        "activity_stream",
-        "daily_physiology",
-        "plan_session",
-        "run_fingerprint",
-    ]
-    .iter()
-    .map(|table| (table.to_string(), count(&copy, table)))
-    .collect();
-    let activities = before
+    let activities = converted
+        .before
         .iter()
         .find(|(table, _)| table == "activity")
         .map(|(_, rows)| *rows)
         .unwrap_or_default();
     assert!(activities > 0, "the real database has no activities at all");
 
-    // Convert it, the way the desktop does on the first run.
-    let report = db::convert_plaintext_to_encrypted(&copy, KEY).expect("the conversion");
-    for (table, rows) in &before {
-        let copied = report
+    // Every row that was there is there now.
+    for (table, rows) in &converted.before {
+        let copied = converted
+            .report
             .tables
             .iter()
             .find(|(name, _)| name == table)
@@ -171,28 +196,21 @@ fn the_real_database_opens_and_keeps_its_rows() {
         assert_eq!(copied, *rows, "the table {table} lost rows");
     }
     assert!(
-        report.drift.is_empty(),
+        converted.report.drift.is_empty(),
         "the schema drifted: {:?}",
-        report.drift
+        converted.report.drift
     );
 
     // It is encrypted now, and it opens.
     assert_eq!(
-        db::detect_format(&copy).expect("the format"),
+        db::detect_format(&converted.database).expect("the format"),
         Format::Encrypted
     );
-    let store = Store::open(&copy, KEY).expect("the store opens the converted database");
+    let store = Store::open(&converted.database, KEY).expect("the store opens");
     let after = store
         .with_connection(|connection| {
             let mut rows = Vec::new();
-            for table in [
-                "activity",
-                "activity_lap",
-                "activity_stream",
-                "daily_physiology",
-                "plan_session",
-                "run_fingerprint",
-            ] {
+            for table in TABLES {
                 let mut statement = connection
                     .prepare(&format!("SELECT count(*) FROM {table}"))
                     .map_err(|source| stride_store::StoreError::query(table.to_string(), source))?;
@@ -204,29 +222,44 @@ fn the_real_database_opens_and_keeps_its_rows() {
             Ok(rows)
         })
         .expect("the counts");
-    assert_eq!(after, before, "the conversion changed the number of rows");
+    assert_eq!(after, converted.before, "the conversion changed the rows");
 
     eprintln!(
         "stride: the real database has {activities} activities, {} laps, {} streams",
-        before[1].1, before[2].1
+        converted.before[1].1, converted.before[2].1
+    );
+}
+
+/// The file the Python app writes is not encrypted, and the desktop deals
+/// with it.
+#[test]
+fn the_database_on_disk_is_the_plain_one() {
+    let Some(converted) = converted() else {
+        return;
+    };
+    let source = real_database();
+    if !source.is_file() {
+        return;
+    }
+    assert_eq!(
+        db::detect_format(&source).expect("the format"),
+        Format::Plaintext,
+        "the database on disk is expected to be the plain one"
+    );
+    assert_eq!(
+        db::detect_format(&converted.database).expect("the format"),
+        Format::Encrypted,
+        "the converted database is expected to be the encrypted one"
     );
 }
 
 /// The plain file is kept, so nothing is lost if the conversion is wrong.
 #[test]
 fn the_conversion_keeps_the_plain_file() {
-    let directory = scratch("backup");
-    let Some(copy) = copy_of_the_real_database(&directory) else {
-        eprintln!("stride: the real database is not there; the test does nothing");
+    let Some(converted) = converted() else {
         return;
     };
-    let before = count(&copy, "activity");
-    serialise(|| db::convert_plaintext_to_encrypted(&copy, KEY)).expect("the conversion");
-    let backup = copy.with_file_name(format!(
-        "{}.plaintext-backup",
-        copy.file_name().unwrap_or_default().to_string_lossy()
-    ));
-    let listing: Vec<String> = std::fs::read_dir(directory)
+    let listing: Vec<String> = std::fs::read_dir(&converted.directory)
         .map(|entries| {
             entries
                 .flatten()
@@ -239,27 +272,31 @@ fn the_conversion_keeps_the_plain_file() {
         })
         .unwrap_or_default();
     assert!(
-        backup.is_file(),
-        "the plain file was not kept; the directory holds {listing:?}; the trace holds {:?}",
-        stride_desktop::db::TRACE
-            .lock()
-            .map(|t| t.clone())
-            .unwrap_or_default()
+        converted.backup.is_file(),
+        "the plain file was not kept; the directory holds {listing:?}"
     );
-    assert_eq!(count(&backup, "activity"), before, "the backup lost rows");
+    let before = converted
+        .before
+        .iter()
+        .find(|(table, _)| table == "activity")
+        .map(|(_, rows)| *rows)
+        .unwrap_or_default();
+    assert_eq!(
+        count(&converted.backup, "activity"),
+        before,
+        "the backup lost rows"
+    );
 }
 
 /// The wrong key does not open the database.
 #[test]
 fn the_wrong_key_is_refused() {
-    let directory = scratch("wrongkey");
-    let Some(copy) = copy_of_the_real_database(&directory) else {
-        eprintln!("stride: the real database is not there; the test does nothing");
+    let Some(converted) = converted() else {
         return;
     };
-    serialise(|| db::convert_plaintext_to_encrypted(&copy, KEY)).expect("the conversion");
     let wrong = b"ffffffffffffffffffffffffffffffff";
-    let error = Store::open(&copy, wrong).expect_err("the wrong key opens the database");
+    let error =
+        Store::open(&converted.database, wrong).expect_err("the wrong key opens the database");
     assert!(
         error.to_string().contains("key"),
         "the error does not say the key is wrong: {error}"
@@ -276,16 +313,11 @@ fn the_wrong_key_is_refused() {
 fn the_database_and_the_plain_file_are_owner_only() {
     use std::os::unix::fs::PermissionsExt;
 
-    let directory = scratch("modes");
-    let Some(copy) = copy_of_the_real_database(&directory) else {
-        eprintln!("stride: the real database is not there; the test does nothing");
+    let Some(converted) = converted() else {
         return;
     };
-    serialise(|| db::convert_plaintext_to_encrypted(&copy, KEY)).expect("the conversion");
-
-    for name in ["stride.db", "stride.db.plaintext-backup"] {
-        let path = directory.join(name);
-        let mode = std::fs::metadata(&path)
+    for path in [&converted.database, &converted.backup] {
+        let mode = std::fs::metadata(path)
             .expect("the file")
             .permissions()
             .mode();
@@ -302,8 +334,7 @@ fn a_new_database_is_created_encrypted() {
         db::detect_format(&path).expect("the format"),
         Format::Missing
     );
-    let (store, conversion) =
-        serialise(|| db::open_database(&path, KEY)).expect("the database opens");
+    let (store, conversion) = db::open_database(&path, KEY).expect("the database opens");
     assert!(conversion.is_none(), "nothing had to be converted");
     assert_eq!(
         db::detect_format(&path).expect("the format"),
@@ -329,13 +360,10 @@ fn a_new_database_is_created_encrypted() {
 /// The router reads the converted database: the whole path, end to end.
 #[test]
 fn the_router_reads_the_converted_database() {
-    let directory = scratch("router");
-    let Some(copy) = copy_of_the_real_database(&directory) else {
-        eprintln!("stride: the real database is not there; the test does nothing");
+    let Some(converted) = converted() else {
         return;
     };
-    serialise(|| db::convert_plaintext_to_encrypted(&copy, KEY)).expect("the conversion");
-    let store = Arc::new(Store::open(&copy, KEY).expect("the store opens"));
+    let store = Arc::new(Store::open(&converted.database, KEY).expect("the store opens"));
     let backend = stride_api::store::backend(Arc::clone(&store));
     let api = Api::new(Arc::new(CoreBackend::new(backend)));
 

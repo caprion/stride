@@ -1,6 +1,7 @@
 package app.stride.running.security
 
 import android.content.Context
+import android.security.keystore.KeyPermanentlyInvalidatedException
 import java.io.File
 import java.io.IOException
 
@@ -60,18 +61,35 @@ class EnvelopeFile(
     /**
      * Read the secret, or `null` when there is none.
      *
-     * A file that cannot be decrypted — a restored backup, a key that was
-     * invalidated — is reported as `null` and removed: it is unreadable
-     * anyway, and leaving it would only produce the same failure again.
+     * **A file that cannot be read is never deleted.** There are two very
+     * different reasons, and they are not the same thing:
+     *
+     * * the wrapping key cannot be used *right now* — the phone is locked —
+     *   and the file is perfectly good;
+     * * the wrapping key was *invalidated* — the device was wiped, or the
+     *   key was invalidated with the lock state — and the file is unreadable
+     *   for good.
+     *
+     * The first is temporary and the second is a loss, and the app has to
+     * tell them apart: deleting the file on the first would throw away the
+     * credential, and writing a new one over it would orphan the database
+     * the key opens.
      */
     fun read(): ByteArray? {
         val target = file()
         if (!target.exists()) return null
         return try {
             KeystoreKeys.decrypt(alias, target.readBytes())
-        } catch (_: Exception) {
-            target.delete()
-            null
+        } catch (error: KeyPermanentlyInvalidatedException) {
+            throw CredentialUnreadable(
+                "the key that protected this file is gone; it cannot be read again",
+                error,
+            )
+        } catch (error: Exception) {
+            throw CredentialUnavailable(
+                "the key that protects this file cannot be used right now",
+                error,
+            )
         }
     }
 

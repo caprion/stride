@@ -10,6 +10,8 @@ import com.getcapacitor.PluginMethod
 import com.getcapacitor.annotation.CapacitorPlugin
 import app.stride.running.core.StrideCore
 import app.stride.running.R
+import app.stride.running.security.CredentialUnavailable
+import app.stride.running.security.CredentialUnreadable
 import app.stride.running.security.DeviceCredential
 import app.stride.running.security.Secrets
 import app.stride.running.settings.AppSettings
@@ -115,7 +117,21 @@ class StrideApiPlugin : Plugin() {
                     PhoneRoutes.Decision.GarminPull -> {
                         // A pull needs the Garmin key, and the key comes
                         // from the Keystore — never from the page.
-                        val key = Secrets.garminKey(context)
+                        val key = try {
+                            Secrets.garminKey(context)
+                        } catch (error: CredentialUnavailable) {
+                            call.reject(
+                                context.getString(R.string.garmin_key_locked),
+                                "503",
+                            )
+                            return@execute
+                        } catch (error: CredentialUnreadable) {
+                            call.reject(
+                                context.getString(R.string.garmin_key_gone),
+                                "403",
+                            )
+                            return@execute
+                        }
                         if (key == null) {
                             call.reject(
                                 context.getString(R.string.garmin_not_connected_error),

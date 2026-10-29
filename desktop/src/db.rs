@@ -351,17 +351,36 @@ pub fn convert_plaintext_to_encrypted(
             let outcome = copy_tables(conn, &source);
             // The transaction is a read: it is rolled back, not committed.
             let _ = source.execute_batch("ROLLBACK;");
-            outcome
+            let report = outcome?;
+            // Fold the write-ahead log back into the file and turn the log
+            // off, so that the file that is renamed into place is complete
+            // on its own: one file, with the rows in it. The connection that
+            // wrote the rows is the one that folds them back — it holds the
+            // lock, and a second connection would be told the database is
+            // locked.
+            trace(format!(
+                "the staged file: {:?} exists={} size={:?} wal={} dir={:?}",
+                staged.display(),
+                staged.exists(),
+                std::fs::metadata(staged).map(|m| m.len()),
+                sidecar(&staged, "-wal").exists(),
+                staged
+                    .parent()
+                    .map(|p| p.read_dir().map(|d| d.count()).unwrap_or(0))
+            ));
+            conn.execute_batch("PRAGMA wal_checkpoint(TRUNCATE); PRAGMA journal_mode=DELETE;")
+                .map_err(|source| StoreError::query("wal_checkpoint".to_string(), source))?;
+            Ok(report)
         })
         .map_err(|error| DbError::Conversion(error.to_string()))?;
     drop(store);
 
-    // Fold the write-ahead log back into the file and turn the log off, so
-    // that the file that is renamed into place is complete on its own: one
-    // file, with the rows in it.
-    {
-        let connection = Store::open(&staged, key)?;
-        connection
+    // The write-ahead log is gone if the connection closed. If it is still
+    // there, the rows are in it and it is not deleted: the file is opened
+    // again and the log is folded back in.
+    if sidecar(&staged, "-wal").exists() {
+        let store = Store::open(&staged, key)?;
+        store
             .with_connection(|conn| {
                 conn.execute_batch("PRAGMA wal_checkpoint(TRUNCATE); PRAGMA journal_mode=DELETE;")
                     .map_err(|source| StoreError::query("wal_checkpoint".to_string(), source))
