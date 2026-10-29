@@ -68,13 +68,6 @@ impl Headers {
             .find(|(key, _)| key.eq_ignore_ascii_case(name))
             .map(|(_, value)| value.as_str())
     }
-
-    /// Every header, in the order they arrived.
-    pub fn iter(&self) -> impl Iterator<Item = (&str, &str)> {
-        self.entries
-            .iter()
-            .map(|(name, value)| (name.as_str(), value.as_str()))
-    }
 }
 
 /// One request.

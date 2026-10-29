@@ -13,7 +13,7 @@
 //! than warned about: the reference server has a tailnet listener, and this
 //! binary has no business being one.
 
-use std::net::{IpAddr, Ipv4Addr, SocketAddr};
+use std::net::{IpAddr, SocketAddr};
 use std::path::{Path, PathBuf};
 
 /// The root of the repository, as the build saw it.
@@ -113,16 +113,7 @@ pub fn from_env() -> Result<Config, ConfigError> {
         .ok()
         .filter(|value| !value.trim().is_empty())
         .unwrap_or_else(|| "127.0.0.1".to_string());
-    let bind = bind.trim().trim_start_matches('[').trim_end_matches(']');
-    let address: IpAddr = bind.parse().map_err(|error| ConfigError::Invalid {
-        name: "STRIDE_BIND",
-        reason: format!("{error}"),
-    })?;
-    if !is_loopback(&address) {
-        return Err(ConfigError::NotLoopback {
-            address: bind.to_string(),
-        });
-    }
+    let address = bind_address(&bind)?;
     let port: u16 = match std::env::var("STRIDE_PORT") {
         Ok(raw) if !raw.trim().is_empty() => {
             raw.trim().parse().map_err(|error| ConfigError::Invalid {
@@ -174,6 +165,26 @@ pub fn from_env() -> Result<Config, ConfigError> {
     })
 }
 
+/// The address to bind, and the check that it is loopback.
+///
+/// The desktop binds the loopback interface and nothing else: the browser
+/// that talks to it is on this machine, and the phone has its own process
+/// and its own database. A name that is not an address is a mistake and a
+/// message; an address that is not loopback is refused.
+pub fn bind_address(raw: &str) -> Result<IpAddr, ConfigError> {
+    let value = raw.trim().trim_start_matches('[').trim_end_matches(']');
+    let address: IpAddr = value.parse().map_err(|error| ConfigError::Invalid {
+        name: "STRIDE_BIND",
+        reason: format!("{error}"),
+    })?;
+    if !is_loopback(&address) {
+        return Err(ConfigError::NotLoopback {
+            address: value.to_string(),
+        });
+    }
+    Ok(address)
+}
+
 /// Is this address on the loopback interface?
 pub fn is_loopback(address: &IpAddr) -> bool {
     match address {
@@ -182,14 +193,10 @@ pub fn is_loopback(address: &IpAddr) -> bool {
     }
 }
 
-/// The default address, for the tests and for the log.
-pub fn default_bind() -> SocketAddr {
-    SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), 8000)
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::net::Ipv4Addr;
 
     #[test]
     fn a_loopback_address_is_accepted() {
@@ -204,5 +211,28 @@ mod tests {
         assert!(!is_loopback(
             &"0.0.0.0".parse().unwrap_or(IpAddr::V4(Ipv4Addr::LOCALHOST))
         ));
+    }
+
+    #[test]
+    fn the_desktop_binds_the_loopback_interface_and_nothing_else() {
+        assert!(bind_address("127.0.0.1").is_ok());
+        assert!(bind_address(" 127.0.0.1 ").is_ok());
+        assert!(bind_address("::1").is_ok());
+        assert!(
+            bind_address("localhost").is_err(),
+            "a name is not an address"
+        );
+        assert!(
+            bind_address("0.0.0.0").is_err(),
+            "every interface is not loopback"
+        );
+        assert!(
+            bind_address("100.89.222.50").is_err(),
+            "the tailnet is not loopback"
+        );
+        assert!(
+            bind_address("::").is_err(),
+            "every interface is not loopback"
+        );
     }
 }

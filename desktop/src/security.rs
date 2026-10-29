@@ -65,11 +65,6 @@ impl Security {
         }
     }
 
-    /// The capability.
-    pub fn token(&self) -> &str {
-        &self.token
-    }
-
     /// Whether the gate is closed.
     pub fn enabled(&self) -> bool {
         self.enabled
@@ -164,8 +159,6 @@ impl Security {
 pub enum GateError {
     /// The request carries no capability.
     Unauthenticated,
-    /// The request changes something and does not come from this origin.
-    CrossOrigin,
 }
 
 impl GateError {
@@ -173,7 +166,6 @@ impl GateError {
     pub fn status(&self) -> u16 {
         match self {
             GateError::Unauthenticated => 401,
-            GateError::CrossOrigin => 403,
         }
     }
 
@@ -181,7 +173,6 @@ impl GateError {
     pub fn detail(&self) -> &'static str {
         match self {
             GateError::Unauthenticated => "Capability token required.",
-            GateError::CrossOrigin => "Same-origin request required.",
         }
     }
 }

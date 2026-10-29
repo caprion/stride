@@ -180,7 +180,17 @@ routes — the activity list, the physiology, the statistics summary, the plan
 adherence, the fitness trends, the comparison candidates, the gear and the
 calendar — with the same keys and the same values.
 
-Two differences, and neither is the desktop's:
+The comparison is a tool, so it can be run again:
+
+```bash
+python -m app.serve                                     # the reference, :8000
+STRIDE_DATA_DIR=/tmp/stride-cmp/data STRIDE_PORT=8131 \\
+    cargo run --release -p stride-desktop               # the desktop, :8131
+python3 desktop/tools/compare_with_reference.py
+```
+
+It exits non-zero when the two disagree, and it knows about the two answers
+that differ for somebody else's reason:
 
 * `/api/v1/health` answers the same keys in a different **order**: the
   reference renders its dictionaries in the order it builds them, and
