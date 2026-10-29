@@ -18,6 +18,7 @@
 
 import { Plug } from 'lucide-react'
 import { useGarminState } from '../lib/garmin'
+import { localDataLine } from '../lib/surface'
 import { EmptyState } from './ui'
 import { ConnectGarmin } from './GarminStatus'
 
@@ -46,7 +47,7 @@ export function ConnectPrompt({
     <EmptyState
       icon={<Plug size={22} strokeWidth={1.8} />}
       title={`Connect Garmin to see ${what}`}
-      description="Add your Garmin key. Your data arrives on its own."
+      description={`Add your Garmin key. ${localDataLine()}`}
       action={<ConnectGarmin />}
     />
   )
