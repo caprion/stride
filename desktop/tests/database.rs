@@ -15,7 +15,7 @@
 //! test says so and does nothing when it is not there.
 
 use std::path::{Path, PathBuf};
-use std::sync::{Arc, OnceLock};
+use std::sync::{Arc, Mutex, OnceLock};
 use std::time::Duration;
 
 use rusqlite::Connection;
@@ -25,6 +25,24 @@ use stride_store::Store;
 
 /// The key the test encrypts with.
 const KEY: &[u8] = b"0123456789abcdef0123456789abcdef";
+
+/// The conversions run one at a time.
+///
+/// A conversion copies a database of a few megabytes and encrypts it, and
+/// six of them at once is a few hundred megabytes of page cache and a
+/// hundred megabytes of disk. On a machine that is busy with other work
+/// that is enough to make the *machine* the reason a test fails, and a test
+/// that fails for that reason says nothing about the code.
+fn serialise<T>(body: impl FnOnce() -> T) -> T {
+    static LOCK: OnceLock<Mutex<()>> = OnceLock::new();
+    let guard = LOCK
+        .get_or_init(|| Mutex::new(()))
+        .lock()
+        .unwrap_or_else(|poisoned| poisoned.into_inner());
+    let answer = body();
+    drop(guard);
+    answer
+}
 
 /// The real database.
 fn real_database() -> PathBuf {
@@ -203,7 +221,7 @@ fn the_conversion_keeps_the_plain_file() {
         return;
     };
     let before = count(&copy, "activity");
-    db::convert_plaintext_to_encrypted(&copy, KEY).expect("the conversion");
+    serialise(|| db::convert_plaintext_to_encrypted(&copy, KEY)).expect("the conversion");
     let backup = copy.with_file_name(format!(
         "{}.plaintext-backup",
         copy.file_name().unwrap_or_default().to_string_lossy()
@@ -239,7 +257,7 @@ fn the_wrong_key_is_refused() {
         eprintln!("stride: the real database is not there; the test does nothing");
         return;
     };
-    db::convert_plaintext_to_encrypted(&copy, KEY).expect("the conversion");
+    serialise(|| db::convert_plaintext_to_encrypted(&copy, KEY)).expect("the conversion");
     let wrong = b"ffffffffffffffffffffffffffffffff";
     let error = Store::open(&copy, wrong).expect_err("the wrong key opens the database");
     assert!(
@@ -263,7 +281,7 @@ fn the_database_and_the_plain_file_are_owner_only() {
         eprintln!("stride: the real database is not there; the test does nothing");
         return;
     };
-    db::convert_plaintext_to_encrypted(&copy, KEY).expect("the conversion");
+    serialise(|| db::convert_plaintext_to_encrypted(&copy, KEY)).expect("the conversion");
 
     for name in ["stride.db", "stride.db.plaintext-backup"] {
         let path = directory.join(name);
@@ -284,7 +302,8 @@ fn a_new_database_is_created_encrypted() {
         db::detect_format(&path).expect("the format"),
         Format::Missing
     );
-    let (store, conversion) = db::open_database(&path, KEY).expect("the database opens");
+    let (store, conversion) =
+        serialise(|| db::open_database(&path, KEY)).expect("the database opens");
     assert!(conversion.is_none(), "nothing had to be converted");
     assert_eq!(
         db::detect_format(&path).expect("the format"),
@@ -315,7 +334,7 @@ fn the_router_reads_the_converted_database() {
         eprintln!("stride: the real database is not there; the test does nothing");
         return;
     };
-    db::convert_plaintext_to_encrypted(&copy, KEY).expect("the conversion");
+    serialise(|| db::convert_plaintext_to_encrypted(&copy, KEY)).expect("the conversion");
     let store = Arc::new(Store::open(&copy, KEY).expect("the store opens"));
     let backend = stride_api::store::backend(Arc::clone(&store));
     let api = Api::new(Arc::new(CoreBackend::new(backend)));

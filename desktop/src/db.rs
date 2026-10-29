@@ -488,6 +488,14 @@ pub fn take_snapshot(source: &Path, target: &Path) -> Result<(), DbError> {
 fn snapshot_matches(source: &Path, snapshot: &Path) -> Result<bool, DbError> {
     let origin = table_counts(source)?;
     let copy = table_counts(snapshot)?;
+    if origin.is_empty() {
+        // A database with no tables is not the athlete's history, and it is
+        // not a copy of anything either. Two empty lists are not a match.
+        return Err(DbError::Conversion(format!(
+            "the database at {} has no tables in it",
+            source.display()
+        )));
+    }
     Ok(origin == copy)
 }
 
@@ -506,14 +514,22 @@ fn table_counts(path: &Path) -> Result<Vec<(String, i64)>, DbError> {
             path: path.to_path_buf(),
             source: error,
         })?;
-    let tables = statement
+    let mut tables = Vec::new();
+    for table in statement
         .query_map([], |row| row.get::<_, String>(0))
         .map_err(|error| DbError::Legacy {
             path: path.to_path_buf(),
             source: error,
         })?
-        .filter_map(|row| row.ok())
-        .collect::<Vec<String>>();
+    {
+        // A row that cannot be read is an error, not a table that is not
+        // there: swallowing it would make an empty database look like a
+        // database with tables in it.
+        tables.push(table.map_err(|error| DbError::Legacy {
+            path: path.to_path_buf(),
+            source: error,
+        })?);
+    }
     let mut counts = Vec::with_capacity(tables.len());
     for table in tables {
         let count: i64 = connection
@@ -765,6 +781,12 @@ fn strings(
             Ok(value) => values.push(value),
             Err(error) => return Err(StoreError::query(sql.to_string(), error)),
         }
+    }
+    if values.is_empty() {
+        return Err(StoreError::query(
+            sql.to_string(),
+            rusqlite::Error::InvalidQuery,
+        ));
     }
     Ok(values)
 }

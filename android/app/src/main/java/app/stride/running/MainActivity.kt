@@ -49,7 +49,10 @@ class MainActivity : BridgeActivity() {
      */
     private val screenOff = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
-            if (intent?.action == Intent.ACTION_SCREEN_OFF) gate.lock()
+            if (intent?.action == Intent.ACTION_SCREEN_OFF) {
+                Log.i("Stride", "the screen went off; the gate closes")
+                gate.lock()
+            }
         }
     }
 

@@ -61,24 +61,7 @@ def rustTriple = { abi ->
  * directory is still checked first, because a crate built on its own - with
  * `cargo ndk` run from inside it - leaves the artefacts there instead.
  */
-// The same lookup, but resolved when the task *runs* rather than when the
-// project is configured. cargo-ndk has not built anything at configuration
-// time, so a lookup that insists on finding the directory there fails on a
-// clean build - and, worse, would have shipped an APK with no core in it.
-def rustTargetDirLazy = { ->
-    def triple = rustTriple(targetAbis[0])
-    def candidates = [
-            file("src/main/rust/stride-ffi/target/${triple}/release"),
-            file("${rootProject.projectDir}/target/${triple}/release"),
-    ]
-    def found = candidates.find { it.exists() }
-    if (!found) {
-        throw new GradleException(
-                "cargo-ndk has not built ${triple}. Looked in:\n  " +
-                candidates.collect { it.absolutePath }.join("\n  "))
-    }
-    return found
-}
+
 
 /** The Android SDK, from `local.properties` or the environment. */
 def androidSdkDir = {
@@ -144,18 +127,42 @@ tasks.register('cargoNdkBuild', Exec) {
     outputs.dir file("${rootProject.projectDir}/target/${rustTriple(targetAbis[0])}/release")
 }
 
-/** Put the core's shared object where the APK picks it up. */
-tasks.register('copyRustLibrary', Copy) {
+/**
+ * Put the core's shared object where the APK picks it up.
+ *
+ * This is a plain task with the copy in its action, not a `Copy` task with a
+ * `from(...)`: Gradle resolves a Copy task's sources while it works out the
+ * task graph, which is *before* cargo-ndk has built anything. The lookup has
+ * to happen inside the action, where the library exists.
+ */
+tasks.register('copyRustLibrary') {
     group = 'stride'
     description = 'Packages the Rust core as lib/arm64-v8a/libuniffi_stride.so.'
     dependsOn 'cargoNdkBuild'
-    from({ new File(rustTargetDirLazy.call(), 'libuniffi_stride.so') })
-    into(new File(rustJniLibsDir.get().asFile, targetAbis[0]))
-    doFirst {
+    outputs.dir rustJniLibsDir
+    doLast {
+        def triple = rustTriple(targetAbis[0])
+        def candidates = [
+                file("src/main/rust/stride-ffi/target/${triple}/release"),
+                file("${rootProject.projectDir}/target/${triple}/release"),
+        ]
+        def source = candidates.find { new File(it, 'libuniffi_stride.so').exists() }
+        if (!source) {
+            throw new GradleException(
+                    "cargo-ndk has not built ${triple}. Looked in:\n  " +
+                    candidates.collect { it.absolutePath }.join("\n  "))
+        }
         // Only the core's own library ships. A shared object left over from
         // an earlier build — `libstride_api.so`, say — would be packaged
         // beside it and the app would carry a megabyte it never loads.
         delete rustJniLibsDir
+        def destination = new File(rustJniLibsDir.get().asFile, targetAbis[0])
+        destination.mkdirs()
+        copy {
+            from new File(source, 'libuniffi_stride.so')
+            into destination
+        }
+        logger.lifecycle("packaged the Rust core: ${source}/libuniffi_stride.so")
     }
 }
 
