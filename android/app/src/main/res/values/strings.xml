@@ -38,6 +38,7 @@
     <string name="garmin_password_not_supported">This phone connects with a Personal API key. It never asks for, and never stores, your Garmin password.</string>
     <string name="garmin_developer_key_not_supported">The phone connects with a Personal API key. There is no developer key here, and no OAuth client to use one with.</string>
     <string name="garmin_not_connected_error">Garmin is not connected on this phone.</string>
+    <string name="garmin_credential_refused">Your phone\'s credential was not given, so nothing was changed.</string>
     <string name="garmin_key_locked">The phone is locked, so the key cannot be read. Unlock it and try again — your runs are still here.</string>
     <string name="garmin_key_gone">This phone\'s key store was reset, so the saved Garmin key cannot be read. Connect Garmin again.</string>
     <string name="screen_lock_required">Set a screen lock on this phone first. Stride will not keep your runs and your health data on a phone anyone can pick up.</string>

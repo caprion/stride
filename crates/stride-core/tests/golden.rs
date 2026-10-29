@@ -209,6 +209,14 @@ fn fingerprints_match_the_golden_files() {
             &format!("{name}.fingerprint"),
         );
 
+        // A case that produced nothing would compare equal to a fixture of
+        // nulls, so every case has to derive something.
+        let derived = computed.cadence_avg.is_some()
+            || computed.hr_avg.is_some()
+            || computed.hr_max.is_some()
+            || computed.zone_distribution.is_some();
+        assert!(derived, "{name}: the fingerprint derived nothing");
+
         // The recorded inputs are the ones the function was given.
         assert_eq!(
             inputs["lap_count"].as_i64().unwrap_or_default(),

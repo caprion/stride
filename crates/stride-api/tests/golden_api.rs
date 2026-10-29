@@ -745,6 +745,113 @@ fn the_fields_parameter_works_on_every_route_that_offers_it() {
     }
 }
 
+/// The rejected requests answer the way the reference rejects them.
+///
+/// The reference is FastAPI, so a query parameter that is out of range or
+/// not a number is a 422 with a `detail` array — and the array carries the
+/// value that was sent and the bound it broke.
+#[test]
+fn a_rejected_request_answers_like_fastapi() {
+    let golden: Value = serde_json::from_str(GOLDEN).expect("the golden file parses");
+    let api = api(&golden);
+
+    // Out of range.
+    let err = api
+        .call("GET", "/api/v1/activities?per_page=0", None)
+        .expect_err("422");
+    assert_eq!(err.status, 422);
+    assert_eq!(
+        err.detail,
+        json!([{
+            "type": "greater_than_equal",
+            "loc": ["query", "per_page"],
+            "msg": "Input should be greater than or equal to 1",
+            "input": "0",
+            "ctx": {"ge": 1},
+        }])
+    );
+
+    // Not a number.
+    let err = api
+        .call("GET", "/api/v1/activities?page=abc", None)
+        .expect_err("422");
+    assert_eq!(err.status, 422);
+    assert_eq!(
+        err.detail,
+        json!([{
+            "type": "int_parsing",
+            "loc": ["query", "page"],
+            "msg": "Input should be a valid integer, unable to parse string as an integer",
+            "input": "abc",
+        }])
+    );
+
+    // Missing a required parameter.
+    let err = api.call("GET", "/api/v1/compare", None).expect_err("422");
+    assert_eq!(err.status, 422);
+    assert_eq!(
+        err.detail,
+        json!([{
+            "type": "missing",
+            "loc": ["query", "ids"],
+            "msg": "Field required",
+            "input": Value::Null,
+        }])
+    );
+}
+
+/// A document that cannot be read is an answer, not a crash.
+#[test]
+fn a_broken_plan_document_is_answered_not_thrown() {
+    let golden: Value = serde_json::from_str(GOLDEN).expect("the golden file parses");
+    let api = api(&golden);
+    let body = json!({
+        "format": "yaml",
+        "content": "not a plan at all",
+    })
+    .to_string();
+    let answer = api
+        .call("POST", "/api/v1/plan/import", Some(&body))
+        .expect("the import answers");
+    assert_eq!(answer["ok"], false);
+    assert_eq!(answer["block_id"], Value::Null);
+    assert_eq!(answer["phases"], 0);
+    assert_eq!(answer["weeks"], 0);
+    assert_eq!(answer["sessions"], 0);
+    assert_eq!(answer["warnings"], json!([]));
+    assert_eq!(answer["error"], "format must be markdown, csv, or json");
+}
+
+/// A file that cannot be parsed is an answer, not a crash.
+#[test]
+fn a_broken_fit_file_is_answered_not_thrown() {
+    let golden: Value = serde_json::from_str(GOLDEN).expect("the golden file parses");
+    let api = api(&golden);
+    let body = json!({
+        "files": [{
+            "filename": "broken.fit",
+            "content_base64": "bm90IGEgZml0IGZpbGU=",
+        }],
+    })
+    .to_string();
+    let answer = api
+        .call("POST", "/api/v1/auth/garmin/fit-import", Some(&body))
+        .expect("the import answers");
+    assert_eq!(answer["imported"], 0);
+    assert_eq!(answer["activities"], json!([]));
+    let errors = answer["errors"].as_array().expect("the errors");
+    assert_eq!(errors.len(), 1);
+    assert_eq!(errors[0]["filename"], "broken.fit");
+    assert!(
+        errors[0]["error"]
+            .as_str()
+            .expect("a message")
+            .contains("could not be parsed"),
+        "the error is {:?}",
+        errors[0]["error"]
+    );
+}
+
 /// The OpenAPI document lists 62 paths and 65 operations. Every one of them
 /// is in the route table, with the same parameter names.
 #[test]

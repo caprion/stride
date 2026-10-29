@@ -722,9 +722,29 @@ impl Backend for MemBackend {
         if let Some(value) = self.derived(&key) {
             return Ok(value);
         }
-        Err(BackendError::Unsupported(
-            "plan import is not implemented by this backend".to_string(),
-        ))
+        // The document is parsed by the importer and written by the backend.
+        let year = chrono::Datelike::year(&chrono::Utc::now());
+        let plan = match crate::plan_import::parse_plan(
+            &request.content,
+            &request.format,
+            request.name.as_deref(),
+            year,
+        ) {
+            Ok(plan) => plan,
+            Err(message) => {
+                return Ok(json!({
+                    "ok": false,
+                    "block_id": Value::Null,
+                    "name": request.name,
+                    "phases": 0,
+                    "weeks": 0,
+                    "sessions": 0,
+                    "warnings": [],
+                    "error": message,
+                }));
+            }
+        };
+        crate::plan_import::write_plan(self, &plan)
     }
 
     fn fingerprint(&self, activity_id: i64) -> Result<Value, BackendError> {

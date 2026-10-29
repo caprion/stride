@@ -213,6 +213,10 @@ history. The page is taken from each sport separately, so the cursor moves withi
         })
         .collect();
 
+    limitations.push(
+        "the cursor is a page number: a page moves if the history changes between the calls"
+            .to_string(),
+    );
     if min_distance.is_some() || max_distance.is_some() {
         limitations.push(
             "the distance filters are applied to the page the API returned, so total_estimate \

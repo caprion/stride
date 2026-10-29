@@ -153,13 +153,29 @@ impl From<BackendError> for ApiError {
 
 /// The FastAPI validation error body, for the cases FastAPI itself rejects.
 ///
-/// The shape is FastAPI's: a list of objects, each naming the location and
-/// the message. The frontend only looks at `detail`, but a client that wants
-/// to show *why* a request was rejected reads `loc` and `msg`.
+/// The shape is FastAPI's: a list of objects, each naming the location, the
+/// message, the kind of error, the value that was sent and — for a bound —
+/// the bound it broke. The frontend only looks at `detail`, but a client that
+/// wants to show *why* a request was rejected reads the rest.
 pub fn validation_error(loc: Vec<&str>, msg: &str, kind: &str) -> ApiError {
-    ApiError::unprocessable(json!([{
-        "loc": loc,
-        "msg": msg,
-        "type": kind,
-    }]))
+    validation_error_with(loc, msg, kind, Value::Null, Value::Null)
+}
+
+/// The validation error body, with the value that was sent and the bound.
+pub fn validation_error_with(
+    loc: Vec<&str>,
+    msg: &str,
+    kind: &str,
+    input: Value,
+    ctx: Value,
+) -> ApiError {
+    let mut error = serde_json::Map::new();
+    error.insert("type".into(), json!(kind));
+    error.insert("loc".into(), json!(loc));
+    error.insert("msg".into(), json!(msg));
+    error.insert("input".into(), input);
+    if !ctx.is_null() {
+        error.insert("ctx".into(), ctx);
+    }
+    ApiError::unprocessable(Value::Array(vec![Value::Object(error)]))
 }

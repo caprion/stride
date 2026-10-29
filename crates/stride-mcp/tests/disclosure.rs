@@ -316,6 +316,125 @@ fn a_year_of_runs_is_still_a_bounded_series() {
     assert!(serde_json::to_string(&answer).expect("json").len() <= MAX_OUTPUT_BYTES);
 }
 
+/// A store with the largest comparison a caller can ask for: five runs,
+/// each with a 240-point profile.
+fn compare_store() -> MemBackend {
+    let store = MemBackend::new();
+    for id in 1..=5_i64 {
+        store.add_activity(ActivityRow {
+            id,
+            source: "garmin_personal".into(),
+            name: format!("Run {id}"),
+            sport_type: "running".into(),
+            local_date: "2026-10-27".into(),
+            distance_m: 10_000.0,
+            moving_time_s: 3_000.0,
+            avg_hr: Some(150.0),
+            ..Default::default()
+        });
+    }
+    let profile = |id: i64| {
+        let mut points: Vec<Value> = Vec::new();
+        for index in 0..240 {
+            let fraction = index as f64 / 239.0;
+            points.push(json!({
+                "distance_m": 10_000.0 * fraction,
+                "pct": fraction * 100.0,
+                "hr": 145.0 + fraction * 12.0,
+                "cadence": 85.0,
+                "pace_s_per_km": 300.0 - fraction * 5.0,
+                "elevation": 100.0 + fraction * 40.0,
+            }));
+        }
+        json!({
+            "id": id,
+            "name": format!("Run {id}"),
+            "local_date": "2026-10-27",
+            "distance_m": 10_000.0,
+            "moving_time_s": 3_000.0,
+            "pace_s_per_km": 300.0,
+            "avg_hr": 150.0,
+            "elevation_gain_m": 52.0,
+            "has_geo": false,
+            "values": { "distance_m": 10_000.0, "pace_s_per_km": 300.0, "avg_hr": 150.0 },
+            "profile": points,
+        })
+    };
+    store.set_derived(
+        "compare:1,2,3,4,5",
+        json!({
+            "runs": (1..=5).map(profile).collect::<Vec<Value>>(),
+            "missing": [],
+        }),
+    );
+    store
+}
+
+#[test]
+fn the_largest_comparison_the_tool_can_be_asked_for_is_inside_the_bound() {
+    let api: Arc<dyn StrideApi> = Arc::new(stride_api::Api::with_today(
+        Arc::new(compare_store()),
+        chrono::NaiveDate::parse_from_str(common::TODAY, "%Y-%m-%d").expect("the day"),
+    ));
+    let tools = Tools::with_today(
+        api,
+        chrono::NaiveDate::parse_from_str(common::TODAY, "%Y-%m-%d").expect("the day"),
+    );
+    let answer = tools
+        .call(
+            "compare_runs",
+            &json!({ "activity_ids": [1, 2, 3, 4, 5], "points": 240 }),
+        )
+        .expect("the comparison");
+    let size = serde_json::to_string(&answer).expect("json").len();
+    assert!(
+        size <= MAX_OUTPUT_BYTES,
+        "the largest comparison answered {size} bytes, over the {MAX_OUTPUT_BYTES} bound"
+    );
+
+    // Either the profile is whole, or the answer says it was trimmed.
+    let trimmed = answer["limitations"]
+        .as_array()
+        .expect("limitations")
+        .iter()
+        .any(|text| text.as_str().expect("text").contains("trimmed"));
+    let points = answer["data"]["runs"][0]["profile"]
+        .as_array()
+        .expect("profile")
+        .len();
+    let lengths: Vec<usize> = answer["data"]["runs"]
+        .as_array()
+        .expect("runs")
+        .iter()
+        .map(|run| run["profile"].as_array().expect("profile").len())
+        .collect();
+    // Every run carries the same number of points: the point of the
+    // comparison is that the runs sit on one distance axis.
+    assert!(
+        lengths.windows(2).all(|pair| pair[0] == pair[1]),
+        "the runs carry the same number of points: {lengths:?}"
+    );
+    // And if there are fewer points than the caller asked for, the answer
+    // says so.
+    let disclosed = answer["limitations"]
+        .as_array()
+        .expect("limitations")
+        .iter()
+        .any(|text| {
+            text.as_str()
+                .expect("text")
+                .contains("points each rather than")
+        });
+    assert!(
+        disclosed || lengths[0] == 240,
+        "the profiles are whole ({points} points) or the answer says they were shortened"
+    );
+    assert!(
+        !trimmed,
+        "the tool shortened the profiles itself, so the backstop did not have to"
+    );
+}
+
 #[test]
 fn the_tool_that_answers_a_year_of_history_is_still_a_page() {
     let tools = big_tools();

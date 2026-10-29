@@ -905,13 +905,13 @@ impl Backend for Store {
     fn import_plan(&self, request: &ImportRequest) -> Result<Value, BackendError> {
         // The document is parsed by the importer and written by the store.
         let year = chrono::Datelike::year(&chrono::Utc::now());
-        let parsed = match crate::plan_import::import_plan(
+        let plan = match crate::plan_import::parse_plan(
             &request.content,
             &request.format,
             request.name.as_deref(),
             year,
         ) {
-            Ok(parsed) => parsed,
+            Ok(plan) => plan,
             Err(message) => {
                 // A document that cannot be read is an answer, not a crash.
                 return Ok(json!({
@@ -926,150 +926,15 @@ impl Backend for Store {
                 }));
             }
         };
-
-        let today = chrono::Utc::now()
-            .date_naive()
-            .format("%Y-%m-%d")
-            .to_string();
-        let block_name = parsed["block"]["name"]
-            .as_str()
-            .unwrap_or("Imported plan")
-            .to_string();
-        let block = self.create_plan_block(&PlanBlockFields {
-            name: block_name.clone(),
-            start_date: parsed["block"]["start_date"]
-                .as_str()
-                .unwrap_or(&today)
-                .to_string(),
-            end_date: parsed["block"]["end_date"].as_str().map(str::to_string),
-            goal: parsed["block"]["goal"].as_str().map(str::to_string),
-            status: Some("active".to_string()),
-            source: Some("imported".to_string()),
-            notes: None,
-        })?;
-
-        // The phases.
-        let mut phase_ids: Vec<i64> = Vec::new();
-        for phase in parsed["phases"].as_array().cloned().unwrap_or_default() {
-            let fields = PlanPhaseFields {
-                name: phase["name"].as_str().unwrap_or("Phase").to_string(),
-                start_date: phase["start_date"].as_str().map(str::to_string),
-                end_date: phase["end_date"].as_str().map(str::to_string),
-                target_weekly_km_min: phase["target_weekly_km_min"].as_f64(),
-                target_weekly_km_max: phase["target_weekly_km_max"].as_f64(),
-                target_sessions: phase["target_sessions"].as_i64(),
-                pace_easy_low: phase["pace_easy_low"].as_i64().map(|value| value as f64),
-                pace_easy_high: phase["pace_easy_high"].as_i64().map(|value| value as f64),
-                pace_tempo_low: phase["pace_tempo_low"].as_i64().map(|value| value as f64),
-                pace_tempo_high: phase["pace_tempo_high"].as_i64().map(|value| value as f64),
-                pace_interval_low: phase["pace_interval_low"]
-                    .as_i64()
-                    .map(|value| value as f64),
-                pace_interval_high: phase["pace_interval_high"]
-                    .as_i64()
-                    .map(|value| value as f64),
-                pace_long_low: phase["pace_long_low"].as_i64().map(|value| value as f64),
-                pace_long_high: phase["pace_long_high"].as_i64().map(|value| value as f64),
-                hr_zone_target: phase["hr_zone_target"].as_i64(),
-                notes: None,
-            };
-            let written = self.create_plan_phase(block.id, &fields)?;
-            phase_ids.push(written.id);
-        }
-
-        // The weeks, each under its phase.
-        let mut week_ids: Vec<(i64, String, String)> = Vec::new();
-        for week in parsed["weeks"].as_array().cloned().unwrap_or_default() {
-            let index = week["phase_index"].as_i64().unwrap_or(0);
-            let phase_id = match phase_ids
-                .get(index.max(0) as usize)
-                .copied()
-                .or_else(|| phase_ids.first().copied())
-            {
-                Some(phase_id) => phase_id,
-                None => {
-                    // A document with weeks but no phases still needs one to
-                    // hang them on.
-                    let written = self.create_plan_phase(
-                        block.id,
-                        &PlanPhaseFields {
-                            name: "Imported".to_string(),
-                            ..PlanPhaseFields::default()
-                        },
-                    )?;
-                    phase_ids.push(written.id);
-                    written.id
-                }
-            };
-            let fields = PlanWeekFields {
-                week_number: week["week_number"].as_i64().unwrap_or(1),
-                start_date: week["start_date"].as_str().map(str::to_string),
-                end_date: week["end_date"].as_str().map(str::to_string),
-                target_km: week["target_km"].as_f64(),
-                key_workout: week["key_workout"].as_str().map(str::to_string),
-                notes: None,
-            };
-            let written = self.create_plan_week(phase_id, &fields)?;
-            week_ids.push((
-                written.id,
-                written.start_date.clone().unwrap_or_default(),
-                written.end_date.clone().unwrap_or_default(),
-            ));
-        }
-
-        // The sessions, each under the week that holds its date.
-        let mut session_count = 0usize;
-        for session in parsed["sessions"].as_array().cloned().unwrap_or_default() {
-            let date = session["date"].as_str().unwrap_or_default().to_string();
-            let week_id = week_ids
-                .iter()
-                .find(|(_, start, end)| {
-                    !start.is_empty()
-                        && !end.is_empty()
-                        && date.as_str() >= start.as_str()
-                        && date.as_str() <= end.as_str()
-                })
-                .map(|(id, _, _)| *id);
-            let Some(week_id) = week_id else {
-                // A session with no week is not scheduled.
-                continue;
-            };
-            let fields = PlanSessionFields {
-                date,
-                session_type: session["session_type"]
-                    .as_str()
-                    .unwrap_or("easy")
-                    .to_string(),
-                title: session["title"].as_str().map(str::to_string),
-                details: session["details"].as_str().map(str::to_string),
-                target_distance_m: session["target_distance_m"].as_f64(),
-                pace_low_s_km: session["pace_low_s_km"].as_f64(),
-                pace_high_s_km: session["pace_high_s_km"].as_f64(),
-                hr_zone_target: session["hr_zone_target"].as_i64(),
-                status: session["status"].as_str().map(str::to_string),
-                source: session["source"].as_str().map(str::to_string),
-                notes: None,
-            };
-            self.create_plan_session(week_id, &fields)?;
-            session_count += 1;
-        }
-
+        let answer = crate::plan_import::write_plan(self, &plan)?;
         // The anchoring: a plan that does not overlap the runs it governs
         // reports every session as missed.
         if request.anchor == "activities" {
-            anchor_plan_to_history(self, block.id)?;
+            if let Some(block_id) = answer["block_id"].as_i64() {
+                anchor_plan_to_history(self, block_id)?;
+            }
         }
-
-        Ok(json!({
-            "ok": true,
-            "block_id": block.id,
-            "name": block.name,
-            "phases": phase_ids.len(),
-            "weeks": week_ids.len(),
-            "sessions": session_count,
-            "warnings": parsed["warnings"].clone(),
-            "error": Value::Null,
-        }))
+        Ok(answer)
     }
 
     fn fingerprint(&self, _activity_id: i64) -> Result<Value, BackendError> {

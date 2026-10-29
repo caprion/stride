@@ -2,6 +2,7 @@ package app.stride.running
 
 import android.content.Context
 import android.os.Bundle
+import android.view.WindowManager
 import android.util.Log
 import app.stride.running.bridge.StrideApiPlugin
 import app.stride.running.core.StrideCore
@@ -53,6 +54,17 @@ class MainActivity : BridgeActivity() {
 
         // The gate goes up before anything is shown.
         gate.lock()
+
+        // The recents surface must not be a picture of the athlete's health.
+        //
+        // Every screen of this app is health data — runs, splits, heart
+        // rates, sleep — so the window is secure: the task switcher shows a
+        // blank card, and a screenshot of the app is a blank image. The
+        // credential screen sets the same flag for the same reason.
+        window.setFlags(
+            WindowManager.LayoutParams.FLAG_SECURE,
+            WindowManager.LayoutParams.FLAG_SECURE,
+        )
 
         // The core is opened in the background: the Keystore needs the phone
         // to be unlocked, and the WebView must not wait for it.

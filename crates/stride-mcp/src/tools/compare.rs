@@ -15,7 +15,7 @@ use serde_json::{json, Value};
 use crate::api::StrideApi;
 use crate::args::Args;
 use crate::error::McpError;
-use crate::output::Envelope;
+use crate::output::{Envelope, MAX_OUTPUT_BYTES};
 use crate::schema;
 use crate::tools::common::{self};
 use crate::tools::Context;
@@ -134,31 +134,46 @@ pub fn run(api: &dyn StrideApi, _ctx: &Context, args: &Value) -> Result<Value, M
         .and_then(Value::as_array)
         .cloned()
         .unwrap_or_default();
-    let rendered: Vec<Value> = runs
-        .iter()
-        .map(|run| {
-            let mut item = json!({
-                "id": common::i64_of(run, "id"),
-                "name": common::str_of(run, "name"),
-                "local_date": common::str_of(run, "local_date"),
-                "distance_m": common::f64_of(run, "distance_m"),
-                "moving_time_s": common::f64_of(run, "moving_time_s"),
-                "pace_s_per_km": common::f64_of(run, "pace_s_per_km"),
-                "avg_hr": common::f64_of(run, "avg_hr"),
-                "elevation_gain_m": common::f64_of(run, "elevation_gain_m"),
-                "has_geo": common::bool_of(run, "has_geo"),
-                "values": values_of(run, &allowed, &metrics),
-                "profile": resample(
-                    run.get("profile").and_then(Value::as_array).cloned().unwrap_or_default(),
-                    points,
-                ),
-            });
-            if item["name"].is_null() {
-                item["name"] = json!("");
-            }
-            item
-        })
-        .collect();
+    // The runs are rendered at the number of points the caller asked for,
+    // and the number is reduced until the answer fits the bound. The points
+    // are the bulk of a comparison, and every run must carry the same
+    // number of them: the point of the comparison is that the runs sit on
+    // one distance axis.
+    let render = |points: usize| -> Vec<Value> {
+        runs.iter()
+            .map(|run| {
+                let mut item = json!({
+                    "id": common::i64_of(run, "id"),
+                    "name": common::str_of(run, "name"),
+                    "local_date": common::str_of(run, "local_date"),
+                    "distance_m": common::f64_of(run, "distance_m"),
+                    "moving_time_s": common::f64_of(run, "moving_time_s"),
+                    "pace_s_per_km": common::f64_of(run, "pace_s_per_km"),
+                    "avg_hr": common::f64_of(run, "avg_hr"),
+                    "elevation_gain_m": common::f64_of(run, "elevation_gain_m"),
+                    "has_geo": common::bool_of(run, "has_geo"),
+                    "values": values_of(run, &allowed, &metrics),
+                    "profile": resample(
+                        run.get("profile").and_then(Value::as_array).cloned().unwrap_or_default(),
+                        points,
+                    ),
+                });
+                if item["name"].is_null() {
+                    item["name"] = json!("");
+                }
+                item
+            })
+            .collect()
+    };
+
+    let requested_points = points;
+    let mut points = points;
+    let mut rendered = render(points);
+    while crate::output::size(&Value::Array(rendered.clone())) > MAX_OUTPUT_BYTES / 2 && points > 20
+    {
+        points /= 2;
+        rendered = render(points);
+    }
 
     let missing = value
         .get("missing")
@@ -246,11 +261,18 @@ share of each run's own distance, not on the same ground."
         "missing": missing,
         "profile_points": points,
     });
+    if points < requested_points {
+        limitations.push(format!(
+            "the profiles carry {points} points each rather than the {requested_points} asked \
+for, so that the answer stays inside the harness's budget."
+        ));
+    }
 
     let mut envelope = Envelope::new(data)
         .coverage("runs_requested", unique.len())
         .coverage("runs_returned", rendered.len())
         .coverage("profile_points", points)
+        .coverage("profile_points_requested", requested_points)
         .coverage("source_profile_points", source_points)
         .coverage("distance_spread_m", spread)
         .coverage("attributed_to", "the runs named in activity_ids");

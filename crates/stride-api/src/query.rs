@@ -6,7 +6,7 @@
 
 use serde_json::{json, Value};
 
-use crate::error::{validation_error, ApiError};
+use crate::error::{validation_error_with, ApiError};
 
 /// The parsed query string of a request.
 #[derive(Debug, Clone, Default)]
@@ -64,27 +64,33 @@ impl Query {
             return Ok(default);
         };
         let parsed: i64 = raw.trim().parse().map_err(|_| {
-            validation_error(
+            validation_error_with(
                 vec!["query", key],
                 "Input should be a valid integer, unable to parse string as an integer",
                 "int_parsing",
+                Value::String(raw.to_string()),
+                Value::Null,
             )
         })?;
         if let Some(min) = min {
             if parsed < min {
-                return Err(validation_error(
+                return Err(validation_error_with(
                     vec!["query", key],
                     &format!("Input should be greater than or equal to {min}"),
                     "greater_than_equal",
+                    Value::String(raw.to_string()),
+                    json!({ "ge": min }),
                 ));
             }
         }
         if let Some(max) = max {
             if parsed > max {
-                return Err(validation_error(
+                return Err(validation_error_with(
                     vec!["query", key],
                     &format!("Input should be less than or equal to {max}"),
                     "less_than_equal",
+                    Value::String(raw.to_string()),
+                    json!({ "le": max }),
                 ));
             }
         }
@@ -93,8 +99,15 @@ impl Query {
 
     /// A required string parameter. A missing one is FastAPI's 422.
     pub fn required(&self, key: &str) -> Result<&str, ApiError> {
-        self.get(key)
-            .ok_or_else(|| validation_error(vec!["query", key], "Field required", "missing"))
+        self.get(key).ok_or_else(|| {
+            validation_error_with(
+                vec!["query", key],
+                "Field required",
+                "missing",
+                Value::Null,
+                Value::Null,
+            )
+        })
     }
 
     /// An optional string parameter; an empty string counts as absent, the
@@ -164,10 +177,12 @@ pub fn parse_body(body: Option<&str>) -> Result<Value, ApiError> {
         return Ok(Value::Null);
     }
     serde_json::from_str(raw).map_err(|err| {
-        validation_error(
+        validation_error_with(
             vec!["body"],
             &format!("JSON decode error: {err}"),
             "json_invalid",
+            Value::String(raw.to_string()),
+            Value::Null,
         )
     })
 }
@@ -181,10 +196,12 @@ pub fn body_object(body: Option<&str>) -> Result<Value, ApiError> {
     match parsed {
         Value::Null => Ok(json!({})),
         Value::Object(_) => Ok(parsed),
-        _ => Err(validation_error(
+        _ => Err(validation_error_with(
             vec!["body"],
             "Input should be a valid dictionary or object to extract fields from",
             "dict_type",
+            parsed.clone(),
+            Value::Null,
         )),
     }
 }

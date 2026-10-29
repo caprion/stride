@@ -164,6 +164,23 @@ fn the_activity_detail_holds_the_splits_and_the_zones() {
 }
 
 #[test]
+fn the_activity_detail_only_carries_the_sections_that_were_asked_for() {
+    let tools = common::tools();
+    let answer = tools
+        .call(
+            "get_activity",
+            &json!({ "activity_id": 1, "include": ["zones"] }),
+        )
+        .expect("the activity");
+    // A section that was not asked for is absent, not empty: the harness can
+    // tell "not included" from "there was nothing there".
+    assert!(answer["data"].get("laps").is_none());
+    assert!(answer["data"].get("streams").is_none());
+    assert!(answer["data"].get("route").is_none());
+    assert_eq!(answer["data"]["zones"].as_array().expect("zones").len(), 5);
+}
+
+#[test]
 fn the_activity_detail_gives_the_streams_and_the_route_when_they_are_asked_for() {
     let tools = common::tools();
     let answer = tools
@@ -453,7 +470,10 @@ fn the_comparison_puts_two_runs_on_one_axis() {
     assert_eq!(runs[1]["id"], json!(5));
     assert_eq!(runs[0]["values"]["decoupling_pct"], json!(4.1));
 
-    // The profile has the default number of points, on a percentage axis.
+    // The profile has the default number of points, on a percentage axis, and
+    // it is the number that was asked for.
+    assert_eq!(answer["coverage"]["profile_points"], json!(120));
+    assert_eq!(answer["coverage"]["profile_points_requested"], json!(120));
     let profile = runs[0]["profile"].as_array().expect("profile");
     assert_eq!(profile.len(), 120);
     assert_eq!(profile[0]["pct"], json!(0.0));

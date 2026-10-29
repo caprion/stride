@@ -22,6 +22,11 @@
 
 use serde_json::{json, Map, Value};
 
+use crate::backend::{
+    Backend, PlanBlockFields, PlanPhaseFields, PlanSessionFields, PlanWeekFields,
+};
+use crate::error::BackendError;
+
 /// The months the reference knows, by their full names.
 const MONTHS: [&str; 12] = [
     "january",
@@ -1283,4 +1288,201 @@ fn week_heading_of(line: &str) -> Option<i64> {
         return None;
     }
     digits.parse().ok()
+}
+
+/// The plan a document describes, in the terms the store holds.
+#[derive(Debug, Clone)]
+pub struct PlanImport {
+    /// The block.
+    pub block: PlanBlockFields,
+    /// The phases.
+    pub phases: Vec<PlanPhaseFields>,
+    /// The weeks, each with the phase it hangs on.
+    pub weeks: Vec<(usize, PlanWeekFields)>,
+    /// The sessions, each with the week it hangs on (by its date).
+    pub sessions: Vec<PlanSessionFields>,
+    /// What the document did not say, in words.
+    pub warnings: Vec<String>,
+}
+
+/// The plan a document describes.
+///
+/// The reference: `personal_sync`-free — this is `plan_importer.import_plan`
+/// turned into the rows the store holds.
+pub fn parse_plan(
+    content: &str,
+    format: &str,
+    name: Option<&str>,
+    year: i32,
+) -> Result<PlanImport, String> {
+    let document = import_plan(content, format, name, year)?;
+    let today = format!("{year}-01-01");
+    let block_name = document["block"]["name"]
+        .as_str()
+        .unwrap_or("Imported plan")
+        .to_string();
+    let block = PlanBlockFields {
+        name: block_name,
+        start_date: document["block"]["start_date"]
+            .as_str()
+            .unwrap_or(&today)
+            .to_string(),
+        end_date: document["block"]["end_date"].as_str().map(str::to_string),
+        goal: document["block"]["goal"].as_str().map(str::to_string),
+        status: Some("active".to_string()),
+        source: Some("imported".to_string()),
+        notes: None,
+    };
+    let phases: Vec<PlanPhaseFields> = document["phases"]
+        .as_array()
+        .cloned()
+        .unwrap_or_default()
+        .iter()
+        .map(|phase| PlanPhaseFields {
+            name: phase["name"].as_str().unwrap_or("Phase").to_string(),
+            start_date: phase["start_date"].as_str().map(str::to_string),
+            end_date: phase["end_date"].as_str().map(str::to_string),
+            target_weekly_km_min: phase["target_weekly_km_min"].as_f64(),
+            target_weekly_km_max: phase["target_weekly_km_max"].as_f64(),
+            target_sessions: phase["target_sessions"].as_i64(),
+            pace_easy_low: phase["pace_easy_low"].as_i64().map(|value| value as f64),
+            pace_easy_high: phase["pace_easy_high"].as_i64().map(|value| value as f64),
+            pace_tempo_low: phase["pace_tempo_low"].as_i64().map(|value| value as f64),
+            pace_tempo_high: phase["pace_tempo_high"].as_i64().map(|value| value as f64),
+            pace_interval_low: phase["pace_interval_low"]
+                .as_i64()
+                .map(|value| value as f64),
+            pace_interval_high: phase["pace_interval_high"]
+                .as_i64()
+                .map(|value| value as f64),
+            pace_long_low: phase["pace_long_low"].as_i64().map(|value| value as f64),
+            pace_long_high: phase["pace_long_high"].as_i64().map(|value| value as f64),
+            hr_zone_target: phase["hr_zone_target"].as_i64(),
+            notes: None,
+        })
+        .collect();
+    let weeks: Vec<(usize, PlanWeekFields)> = document["weeks"]
+        .as_array()
+        .cloned()
+        .unwrap_or_default()
+        .iter()
+        .map(|week| {
+            (
+                week["phase_index"].as_i64().unwrap_or(0).max(0) as usize,
+                PlanWeekFields {
+                    week_number: week["week_number"].as_i64().unwrap_or(1),
+                    start_date: week["start_date"].as_str().map(str::to_string),
+                    end_date: week["end_date"].as_str().map(str::to_string),
+                    target_km: week["target_km"].as_f64(),
+                    key_workout: week["key_workout"].as_str().map(str::to_string),
+                    notes: None,
+                },
+            )
+        })
+        .collect();
+    let sessions: Vec<PlanSessionFields> = document["sessions"]
+        .as_array()
+        .cloned()
+        .unwrap_or_default()
+        .iter()
+        .map(|session| PlanSessionFields {
+            date: session["date"].as_str().unwrap_or_default().to_string(),
+            session_type: session["session_type"]
+                .as_str()
+                .unwrap_or("easy")
+                .to_string(),
+            title: session["title"].as_str().map(str::to_string),
+            details: session["details"].as_str().map(str::to_string),
+            target_distance_m: session["target_distance_m"].as_f64(),
+            pace_low_s_km: session["pace_low_s_km"].as_f64(),
+            pace_high_s_km: session["pace_high_s_km"].as_f64(),
+            hr_zone_target: session["hr_zone_target"].as_i64(),
+            status: session["status"].as_str().map(str::to_string),
+            source: session["source"].as_str().map(str::to_string),
+            notes: None,
+        })
+        .collect();
+    let warnings = document["warnings"]
+        .as_array()
+        .cloned()
+        .unwrap_or_default()
+        .iter()
+        .filter_map(|warning| warning.as_str().map(str::to_string))
+        .collect();
+    Ok(PlanImport {
+        block,
+        phases,
+        weeks,
+        sessions,
+        warnings,
+    })
+}
+
+/// Write a plan into a backend, and answer the way the reference does.
+///
+/// The reference: `api/plan.import_document`.
+pub fn write_plan(backend: &dyn Backend, plan: &PlanImport) -> Result<Value, BackendError> {
+    let block = backend.create_plan_block(&plan.block)?;
+    let mut phase_ids: Vec<i64> = Vec::new();
+    for phase in &plan.phases {
+        phase_ids.push(backend.create_plan_phase(block.id, phase)?.id);
+    }
+    // The weeks, each under its phase. A document with weeks but no phases
+    // still needs one to hang them on.
+    let mut week_ids: Vec<(i64, String, String)> = Vec::new();
+    for (index, week) in &plan.weeks {
+        let phase_id = match phase_ids
+            .get(*index)
+            .copied()
+            .or_else(|| phase_ids.first().copied())
+        {
+            Some(phase_id) => phase_id,
+            None => {
+                let written = backend.create_plan_phase(
+                    block.id,
+                    &PlanPhaseFields {
+                        name: "Imported".to_string(),
+                        ..PlanPhaseFields::default()
+                    },
+                )?;
+                phase_ids.push(written.id);
+                written.id
+            }
+        };
+        let written = backend.create_plan_week(phase_id, week)?;
+        week_ids.push((
+            written.id,
+            written.start_date.clone().unwrap_or_default(),
+            written.end_date.clone().unwrap_or_default(),
+        ));
+    }
+    // The sessions, each under the week that holds its date.
+    let mut session_count = 0usize;
+    for session in &plan.sessions {
+        let Some(week_id) = week_ids
+            .iter()
+            .find(|(_, start, end)| {
+                !start.is_empty()
+                    && !end.is_empty()
+                    && session.date.as_str() >= start.as_str()
+                    && session.date.as_str() <= end.as_str()
+            })
+            .map(|(id, _, _)| *id)
+        else {
+            // A session with no week is not scheduled.
+            continue;
+        };
+        backend.create_plan_session(week_id, session)?;
+        session_count += 1;
+    }
+    Ok(json!({
+        "ok": true,
+        "block_id": block.id,
+        "name": block.name,
+        "phases": phase_ids.len(),
+        "weeks": week_ids.len(),
+        "sessions": session_count,
+        "warnings": plan.warnings,
+        "error": Value::Null,
+    }))
 }

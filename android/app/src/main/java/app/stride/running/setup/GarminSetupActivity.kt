@@ -6,6 +6,9 @@ import android.os.Bundle
 import android.text.method.PasswordTransformationMethod
 import android.view.View
 import android.view.WindowManager
+import androidx.activity.result.ActivityResultLauncher
+import androidx.activity.result.contract.ActivityResultContracts
+import app.stride.running.security.DeviceCredential
 import android.widget.Button
 import android.widget.EditText
 import android.widget.TextView
@@ -43,6 +46,19 @@ class GarminSetupActivity : AppCompatActivity() {
     private lateinit var disconnect: Button
     private lateinit var serverField: EditText
 
+    /**
+     * The device's credential, asked for again before the credential changes.
+     *
+     * Replacing the Garmin key or disconnecting it is not something that
+     * should happen because somebody picked up an unlocked phone. So the
+     * device is asked to vouch for the athlete once more — the same
+     * credential the app gate asks for.
+     */
+    private val credential: ActivityResultLauncher<Intent> =
+        registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+            DeviceCredential.credentialAnswered(result.resultCode)
+        }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         // The screen holds a credential: no screenshots, no recents
@@ -71,11 +87,29 @@ class GarminSetupActivity : AppCompatActivity() {
                 if (shown) PasswordTransformationMethod.getInstance() else null
             keyField.setSelection(keyField.text?.length ?: 0)
         }
-        connect.setOnClickListener { connect() }
-        disconnect.setOnClickListener { disconnect() }
+        connect.setOnClickListener { withCredential { connect() } }
+        disconnect.setOnClickListener { withCredential { disconnect() } }
         findViewById<Button>(R.id.server_save).setOnClickListener { saveServerUrl() }
 
         refresh()
+    }
+
+    /**
+     * Ask the device for its credential, and do the thing only if it says yes.
+     *
+     * A phone with no screen lock has nothing to ask for; the credential is
+     * then simply absent and the action goes ahead — the gate has already
+     * decided what that phone may keep.
+     */
+    private fun withCredential(action: () -> Unit) {
+        DeviceCredential.prompt(
+            this,
+            credential,
+            onGranted = { action() },
+            onRefused = {
+                status.text = getString(R.string.garmin_credential_refused)
+            },
+        )
     }
 
     /** What the screen shows when it opens. */
