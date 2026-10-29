@@ -387,6 +387,17 @@ dependencies {
     // the prompt is AndroidX's — which is what the platform API turned into.
     implementation "androidx.biometric:biometric:1.1.0"
 
+    // The Garmin key page opens in a **Custom Tab**: a browser tab that is
+    // part of this app's task, so the athlete closes it and comes straight
+    // back to the field they were filling in.
+    //
+    // There is no platform API for this: the Custom Tabs protocol is a set
+    // of extras on an intent, and the only supported way to use it is this
+    // library. Without it the screen would have to use a plain ACTION_VIEW,
+    // which sends the athlete out to a browser they then have to find their
+    // way back from — and the field is empty when they get there.
+    implementation "androidx.browser:browser:1.8.0"
+
     // UniFFI's Kotlin bindings call the Rust core through JNA. The AAR is
     // the Android build of JNA; it adds about a megabyte to the APK, which
     // is the price of not hand-writing a JNI layer.

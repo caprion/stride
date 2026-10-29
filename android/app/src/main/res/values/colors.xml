@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!--
+        The app's surface, so the native screens are the same colour as the
+        web app around them.
+
+        These are the two colours of the design: `surface-soft` is the page
+        background and `ink` is the text on it. They are the values in
+        `frontend/tailwind.config.js`.
+    -->
+    <color name="stride_surface">#F4F7FA</color>
+    <color name="stride_ink">#0B1B27</color>
+
+    <!-- The brand, so the native screens are the same blue as the app.
+         These are `brand-500` and `brand-600`. -->
+    <color name="stride_brand">#1E5E96</color>
+    <color name="stride_brand_dark">#124A7C</color>
+
+</resources>

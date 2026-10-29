@@ -15,9 +15,19 @@
     <string name="garmin_title">Connect Garmin</string>
     <string name="garmin_key_hint">Paste the key Garmin showed you</string>
     <string name="garmin_show_key">Show the key</string>
-    <string name="garmin_open_garmin">Get a key from Garmin</string>
+    <!--
+        The one link on the screen.
+
+        The label carries the one instruction that matters: Garmin offers 30,
+        90 and 180 days as well as a year, and a 30-day key means the app
+        stops working every month and the athlete has to come back and paste
+        a new one. The link is where they read it, so the advice is in it.
+    -->
+    <string name="garmin_open_garmin">Get a key from Garmin — pick the one-year expiry</string>
     <string name="garmin_connect">Connect</string>
-    <string name="garmin_replace_key">Replace key</string>
+    <!-- "Save", not "replace": the athlete is saving a key, not replacing
+         one, and "replace" reads as destructive. -->
+    <string name="garmin_save_key">Save key</string>
     <string name="garmin_forget_key">Forget the key</string>
     <string name="garmin_not_now">Not now</string>
 

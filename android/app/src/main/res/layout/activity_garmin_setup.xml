@@ -11,6 +11,11 @@
     has no server, it *is* the app - and no paragraph about what local-first
     means. The status line says what is happening, and the line underneath
     says how many runs have arrived.
+
+    **One link**, directly under the key field: Garmin's key page. It is a
+    link and not a button, because it goes somewhere, and it is on its own
+    line and not in a row with another button, because a row of two buttons
+    is a choice and this is not one.
 -->
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
@@ -42,28 +47,37 @@
             android:maxLines="1"
             android:minHeight="48dp" />
 
-        <LinearLayout
+        <!--
+            The one link, directly under the field.
+
+            It goes to Garmin's key page, in a Custom Tab, so the athlete
+            comes back to the field they were filling in.
+        -->
+        <TextView
+            android:id="@+id/garmin_open_garmin"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:orientation="horizontal">
+            android:layout_marginTop="4dp"
+            android:clickable="true"
+            android:focusable="true"
+            android:gravity="center_vertical"
+            android:minHeight="48dp"
+            android:text="@string/garmin_open_garmin"
+            android:textColor="@color/stride_brand"
+            android:textSize="14sp" />
 
-            <Button
-                android:id="@+id/garmin_show"
-                style="?android:attr/borderlessButtonStyle"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:minHeight="48dp"
-                android:text="@string/garmin_show_key" />
-
-            <Button
-                android:id="@+id/garmin_open_garmin"
-                style="?android:attr/borderlessButtonStyle"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:minHeight="48dp"
-                android:text="@string/garmin_open_garmin" />
-        </LinearLayout>
+        <!--
+            The toggle for the field itself: it shows the key that was
+            pasted, so a half-copied key can be seen before it is saved.
+        -->
+        <Button
+            android:id="@+id/garmin_show"
+            style="?android:attr/borderlessButtonStyle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:minHeight="48dp"
+            android:text="@string/garmin_show_key"
+            android:textSize="13sp" />
 
         <!--
             The state. One line, and the words are the words: checking,

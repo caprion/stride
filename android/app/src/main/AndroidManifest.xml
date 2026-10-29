@@ -36,6 +36,12 @@
             key is typed, which is what keeps the credential out of the
             WebView.
 
+            **Its own theme.** The activity used to take the application's
+            theme, and on Android 12 and later the system splash is drawn for
+            every activity launch: an overlay over the screen the athlete is
+            trying to read. `AppTheme.GarminSetup` is a plain AppCompat theme
+            with the app's surface colour and no splash in it.
+
             The screen keeps its layout when the phone is turned: a pull can
             take a while, and the athlete should not lose the count by
             turning the phone.
@@ -44,6 +50,7 @@
             android:name=".setup.GarminSetupActivity"
             android:configChanges="orientation|keyboardHidden|keyboard|screenSize|screenLayout|smallestScreenSize|uiMode|density"
             android:label="@string/garmin_title"
+            android:theme="@style/AppTheme.GarminSetup"
             android:exported="false"
             android:excludeFromRecents="false" />
 

@@ -64,7 +64,7 @@ class SetupResourcesTest {
             "garmin_show_key",
             "garmin_open_garmin",
             "garmin_connect",
-            "garmin_replace_key",
+            "garmin_save_key",
             "garmin_forget_key",
             "garmin_not_now",
             "garmin_not_connected",

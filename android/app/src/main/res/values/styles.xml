@@ -19,4 +19,32 @@
     <style name="AppTheme.NoActionBarLaunch" parent="Theme.SplashScreen">
         <item name="android:background">@drawable/splash</item>
     </style>
+
+    <!--
+        The Garmin setup screen's own theme.
+
+        **Its own theme, and no splash.** The activity used to take the
+        application's theme, which carried the launch splash with it, and on
+        Android 12 and later the splash is drawn for every activity launch:
+        an overlay over the one screen the athlete is trying to read.
+
+        So this is a plain AppCompat theme - the app's surface colour, no
+        action bar of its own (the screen has its own title), and no splash
+        in it. The splash is taken down in the activity as well; see
+        `GarminSetupActivity.dismissSplash`.
+    -->
+    <style name="AppTheme.GarminSetup" parent="Theme.AppCompat.Light.NoActionBar">
+        <item name="colorPrimary">@color/stride_brand</item>
+        <item name="colorPrimaryDark">@color/stride_brand_dark</item>
+        <!-- The accent is the link colour: AppCompat takes `textColorLink`
+             from it, and the link is the one thing on the screen that goes
+             somewhere. -->
+        <item name="colorAccent">@color/stride_brand</item>
+        <item name="android:colorBackground">@color/stride_surface</item>
+        <item name="android:windowBackground">@color/stride_surface</item>
+        <item name="android:textColorPrimary">@color/stride_ink</item>
+        <item name="android:statusBarColor">@color/stride_surface</item>
+        <item name="android:navigationBarColor">@color/stride_surface</item>
+        <item name="android:windowLightStatusBar">true</item>
+    </style>
 </resources>

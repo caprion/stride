@@ -1,8 +1,10 @@
 package app.stride.running.setup
 
 import android.app.Application
+import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.text.method.PasswordTransformationMethod
 import android.view.View
@@ -10,11 +12,12 @@ import android.view.WindowManager
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.appcompat.app.AppCompatActivity
+import androidx.browser.customtabs.CustomTabsIntent
 import android.widget.Button
 import android.widget.EditText
 import android.widget.TextView
 import android.widget.Toast
-import androidx.appcompat.app.AppCompatActivity
 import app.stride.running.R
 import app.stride.running.security.DeviceCredential
 import app.stride.running.security.Secrets
@@ -41,6 +44,17 @@ import app.stride.running.sync.SyncEngine
  * There is no second screen and no second button.
  *
  * There is no server field. The phone has no server: it *is* the app.
+ *
+ * **Its own theme, and no splash over it.** The screen is a plain AppCompat
+ * theme with the app's surface colour, and the splash is taken down in
+ * `onCreate`: on Android 12 and later the system draws a splash for every
+ * activity launch, and it must not sit over the field the athlete is
+ * pasting a key into.
+ *
+ * **One link, under the field.** It goes to Garmin's key page in a Custom
+ * Tab, so the athlete comes back to the field with what they pasted still in
+ * it. The label carries the one instruction that matters — pick the one-year
+ * expiry — because a 30-day key means the app stops working every month.
  */
 class GarminSetupActivity : AppCompatActivity(), SetupRunner.Listener {
 
@@ -71,6 +85,9 @@ class GarminSetupActivity : AppCompatActivity(), SetupRunner.Listener {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // The splash must not be left over the screen the athlete is
+        // reading. See `dismissSplash`.
+        dismissSplash()
         // The screen holds a credential: no screenshots, no recents
         // thumbnail, no screen recording of the key being pasted.
         window.setFlags(
@@ -97,7 +114,7 @@ class GarminSetupActivity : AppCompatActivity(), SetupRunner.Listener {
                 if (shown) PasswordTransformationMethod.getInstance() else null
             keyField.setSelection(keyField.text?.length ?: 0)
         }
-        findViewById<Button>(R.id.garmin_open_garmin).setOnClickListener {
+        findViewById<TextView>(R.id.garmin_open_garmin).setOnClickListener {
             openGarmin()
         }
         connect.setOnClickListener { withCredential { connect() } }
@@ -166,14 +183,51 @@ class GarminSetupActivity : AppCompatActivity(), SetupRunner.Listener {
         false
     }
 
-    /** Open Garmin's key page in the browser. */
+    /**
+     * Take the splash down.
+     *
+     * The activity has its own theme — a plain AppCompat theme, with the
+     * app's surface colour and no splash in it — so there is no splash
+     * theme for the compat library to have left up.
+     *
+     * On Android 12 and later the platform draws a splash for an activity
+     * launch anyway. It is taken down here rather than left to the first
+     * frame, because the first thing the athlete has to read is the field
+     * they are pasting a key into.
+     */
+    private fun dismissSplash() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) return
+        splashScreen.setOnExitAnimationListener { view -> view.remove() }
+    }
+
+    /**
+     * Open Garmin's key page.
+     *
+     * **In a Custom Tab.** A Custom Tab is a page *over* the app: the
+     * athlete closes it and comes straight back to the field they were
+     * filling in, with what they had pasted still in it. A plain browser
+     * takes them out to a browser they then have to find their way back
+     * from, and the field is empty when they get there.
+     *
+     * A phone with no browser that can host a Custom Tab gets the plain
+     * view instead: it is worse, and it is better than nothing.
+     */
     private fun openGarmin() {
-        val intent = Intent(
-            Intent.ACTION_VIEW,
-            Uri.parse("https://connect.garmin.com/app/settings/personalApiToken"),
-        )
+        val url = Uri.parse(GarminKeyPage.URL)
         try {
-            startActivity(intent)
+            CustomTabsIntent.Builder()
+                .setShowTitle(true)
+                .build()
+                .launchUrl(this, url)
+        } catch (_: ActivityNotFoundException) {
+            openInBrowser(url)
+        }
+    }
+
+    /** Open the key page in whatever browser the phone has. */
+    private fun openInBrowser(url: Uri) {
+        try {
+            startActivity(Intent(Intent.ACTION_VIEW, url))
         } catch (_: Exception) {
             Toast.makeText(this, R.string.garmin_no_browser, Toast.LENGTH_LONG).show()
         }
@@ -254,7 +308,7 @@ class GarminSetupActivity : AppCompatActivity(), SetupRunner.Listener {
         keyField.isEnabled = !working
         forget.visibility = if (connected) View.VISIBLE else View.GONE
         notNow.visibility = if (connected || working) View.GONE else View.VISIBLE
-        connect.setText(if (connected) R.string.garmin_replace_key else R.string.garmin_connect)
+        connect.setText(if (connected) R.string.garmin_save_key else R.string.garmin_connect)
     }
 
     /** A line of the screen: the words, and the number they count. */
