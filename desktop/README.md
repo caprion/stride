@@ -31,8 +31,13 @@ stride --help          the environment variables
 
 | variable | default | what it does |
 |---|---|---|
-| `STRIDE_BIND` | `127.0.0.1` | the address to bind. A non-loopback address is **refused**, not warned about. |
-| `STRIDE_PORT` | `8000` | the port to bind. |
+| `STRIDE_BIND` | `127.0.0.1` | the address the plain listener binds. A non-loopback address is **refused**, not warned about. |
+| `STRIDE_PORT` | `8000` | the port the plain listener binds. |
+| `STRIDE_TLS_HOST` | `0.0.0.0` | the address the HTTPS listener binds. It is what it is told: nothing is detected. |
+| `STRIDE_TLS_PORT` | `8443` | the port the HTTPS listener binds. |
+| `STRIDE_TLS_DIR` | `<data dir>/tls` | where `stride.crt` and `stride.key` live. With no certificate there is no HTTPS listener. |
+| `STRIDE_TRUST_REMOTE` | `false` | set it to trust the clients from the trusted networks without a pairing code. |
+| `STRIDE_TRUSTED_NETWORKS` | empty | the CIDRs those clients come from. Empty means nothing extra is trusted: there is no hard-coded range. |
 | `STRIDE_DATA_DIR` | `backend/data` | where the database and the state file live. |
 | `STRIDE_DB_PATH` | `<data dir>/stride.db` | the database. |
 | `STRIDE_STATE_PATH` | `<data dir>/state.json` | the state file — the capability token lives there. |
@@ -134,13 +139,22 @@ connections (64) and the time a connection may stay silent (30 s).
 ## The dependencies
 
 `serde`, `serde_json`, `chrono`, `anyhow`, `thiserror`, `stride-api` and
-`stride-store` are the workspace's. The one addition is **`rusqlite`**,
-which is already in the approved set and already in the workspace: it is the
-plain SQLite connection that reads the reference app's database while it is
-being converted — `VACUUM INTO` for the backup, `PRAGMA quick_check` for
-the soundness check. It is the same crate `stride-store` is built on, with
-the same vendored SQLCipher, so the binary carries one SQLite library and
-not two.
+`stride-store` are the workspace's. The additions are:
+
+* **`rusqlite`** — already in the approved set and already in the workspace:
+  the plain SQLite connection that reads the reference app's database while it
+  is being converted — `VACUUM INTO` for the backup, `PRAGMA quick_check` for
+  the soundness check. It is the same crate `stride-store` is built on, with
+  the same vendored SQLCipher, so the binary carries one SQLite library and
+  not two.
+* **`rustls`** — the HTTPS listener for a phone's browser. `rustls` and
+  `ring` are already in the binary: `reqwest` (the Garmin client) is built
+  on `rustls-tls`, so the TLS stack is in the graph and in the binary
+  already. Naming it here turns on the *server* half of a library that is
+  already linked; it adds no new crate to the graph.
+* **`rustls-pemfile`** — rustls's own PEM reader, for the certificate and
+  the key. It adds two small crates (`rustls-pemfile` and `pem`), and
+  `base64`, which is in the lock already.
 
 ## The traversal hole
 
@@ -203,14 +217,17 @@ STRIDE_DATA_DIR=/tmp/stride-cmp/data STRIDE_PORT=8131 \\
 python3 desktop/tools/compare_with_reference.py
 ```
 
-It exits non-zero when the two disagree, and it knows about the two answers
-that differ for somebody else's reason:
+It exits non-zero when the two disagree, and it knows about the one answer
+that differs for somebody else's reason:
 
 * `/api/v1/health` answers the same keys in a different **order**: the
   reference renders its dictionaries in the order it builds them, and
   `serde_json`'s map is sorted. The shape is the same.
-* `/api/v1/sync/status` answers 501: `impl Backend for Store` in
-  `crates/stride-api/src/store.rs` says the sync state is not in the
-  database. The desktop serves whatever the one router says, and the router
-  does not know about the sync yet.
+
+`/api/v1/sync/status` answers the same six keys as the reference —
+`connected`, `last_sync_at`, `message`, `method`, `running`, `started_at` —
+and the same values: `connected` and `method` come from the state file, and
+`running`, `started_at` and `message` come from the sync log, which is where
+the reference keeps them too (its own copy of the last run survives a
+restart; the reference's in-memory copy does not).
 

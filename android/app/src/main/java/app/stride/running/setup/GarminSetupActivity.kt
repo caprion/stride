@@ -48,7 +48,7 @@ class GarminSetupActivity : AppCompatActivity(), SetupRunner.Listener {
     private lateinit var status: TextView
     private lateinit var progress: TextView
     private lateinit var connect: Button
-    private lateinit var disconnect: Button
+    private lateinit var forget: Button
     private lateinit var notNow: Button
 
     private lateinit var runner: SetupRunner
@@ -83,7 +83,7 @@ class GarminSetupActivity : AppCompatActivity(), SetupRunner.Listener {
         status = findViewById(R.id.garmin_status)
         progress = findViewById(R.id.garmin_progress)
         connect = findViewById(R.id.garmin_connect)
-        disconnect = findViewById(R.id.garmin_disconnect)
+        forget = findViewById(R.id.garmin_forget)
         notNow = findViewById(R.id.garmin_not_now)
 
         runner = SetupRunner(application as Application, this)
@@ -101,7 +101,7 @@ class GarminSetupActivity : AppCompatActivity(), SetupRunner.Listener {
             openGarmin()
         }
         connect.setOnClickListener { withCredential { connect() } }
-        disconnect.setOnClickListener { withCredential { disconnect() } }
+        forget.setOnClickListener { withCredential { forget() } }
         notNow.setOnClickListener { dismissSetup() }
 
         // Leaving the screen without connecting is a dismissal: the screen
@@ -194,7 +194,7 @@ class GarminSetupActivity : AppCompatActivity(), SetupRunner.Listener {
     }
 
     /** Forget the key. The imported runs stay on the phone. */
-    private fun disconnect() {
+    private fun forget() {
         runner.forget()
         connected = false
         show(SetupUi(SetupPhase.Idle))
@@ -252,7 +252,7 @@ class GarminSetupActivity : AppCompatActivity(), SetupRunner.Listener {
         val working = ui.phase == SetupPhase.Checking || ui.phase == SetupPhase.Syncing
         connect.isEnabled = !working
         keyField.isEnabled = !working
-        disconnect.visibility = if (connected) View.VISIBLE else View.GONE
+        forget.visibility = if (connected) View.VISIBLE else View.GONE
         notNow.visibility = if (connected || working) View.GONE else View.VISIBLE
         connect.setText(if (connected) R.string.garmin_replace_key else R.string.garmin_connect)
     }

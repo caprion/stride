@@ -1,0 +1,725 @@
+{
+  "inferred": {
+    "from": "2026-03-02",
+    "to": "2026-03-08",
+    "activities": [
+      {
+        "local_date": "2025-11-20",
+        "sport_type": "running",
+        "distance_m": 9000.0,
+        "moving_time_s": 2790.0,
+        "name": "Too old"
+      },
+      {
+        "local_date": "2025-12-09",
+        "sport_type": "running",
+        "distance_m": 9500.0,
+        "moving_time_s": 2802.5,
+        "name": "Tuesday tempo"
+      },
+      {
+        "local_date": "2025-12-10",
+        "sport_type": "walking",
+        "distance_m": 4000.0,
+        "moving_time_s": 1600.0,
+        "name": "Wednesday walk"
+      },
+      {
+        "local_date": "2025-12-11",
+        "sport_type": "running",
+        "distance_m": 7500.0,
+        "moving_time_s": 2400.0,
+        "name": "Thursday easy"
+      },
+      {
+        "local_date": "2025-12-12",
+        "sport_type": "running",
+        "distance_m": 0.0,
+        "moving_time_s": 0.0,
+        "name": "Empty Friday"
+      },
+      {
+        "local_date": "2025-12-14",
+        "sport_type": "running",
+        "distance_m": 13000.0,
+        "moving_time_s": 4030.0,
+        "name": "Sunday long"
+      },
+      {
+        "local_date": "2025-12-16",
+        "sport_type": "running",
+        "distance_m": 10500.0,
+        "moving_time_s": 3255.0,
+        "name": "Tuesday tempo"
+      },
+      {
+        "local_date": "2025-12-17",
+        "sport_type": "walking",
+        "distance_m": 4000.0,
+        "moving_time_s": 1600.0,
+        "name": "Wednesday walk"
+      },
+      {
+        "local_date": "2025-12-18",
+        "sport_type": "running",
+        "distance_m": 8750.0,
+        "moving_time_s": 2887.5,
+        "name": "Thursday easy"
+      },
+      {
+        "local_date": "2025-12-19",
+        "sport_type": "running",
+        "distance_m": 0.0,
+        "moving_time_s": 0.0,
+        "name": "Empty Friday"
+      },
+      {
+        "local_date": "2025-12-21",
+        "sport_type": "running",
+        "distance_m": 18000.0,
+        "moving_time_s": 5940.0,
+        "name": "Sunday long"
+      },
+      {
+        "local_date": "2025-12-23",
+        "sport_type": "running",
+        "distance_m": 11500.0,
+        "moving_time_s": 3507.5,
+        "name": "Tuesday tempo"
+      },
+      {
+        "local_date": "2025-12-24",
+        "sport_type": "walking",
+        "distance_m": 4000.0,
+        "moving_time_s": 1600.0,
+        "name": "Wednesday walk"
+      },
+      {
+        "local_date": "2025-12-25",
+        "sport_type": "running",
+        "distance_m": 8250.0,
+        "moving_time_s": 2640.0,
+        "name": "Thursday easy"
+      },
+      {
+        "local_date": "2025-12-26",
+        "sport_type": "running",
+        "distance_m": 0.0,
+        "moving_time_s": 0.0,
+        "name": "Empty Friday"
+      },
+      {
+        "local_date": "2025-12-27",
+        "sport_type": "running",
+        "distance_m": 5000.0,
+        "moving_time_s": 1700.0,
+        "name": "Saturday shakeout"
+      },
+      {
+        "local_date": "2025-12-28",
+        "sport_type": "running",
+        "distance_m": 17000.0,
+        "moving_time_s": 5525.0,
+        "name": "Sunday long"
+      },
+      {
+        "local_date": "2025-12-29",
+        "sport_type": "running",
+        "distance_m": 6000.0,
+        "moving_time_s": 1980.0,
+        "name": "One-off Monday"
+      },
+      {
+        "local_date": "2025-12-30",
+        "sport_type": "running",
+        "distance_m": 10000.0,
+        "moving_time_s": 3000.0,
+        "name": "Tuesday tempo"
+      },
+      {
+        "local_date": "2025-12-31",
+        "sport_type": "walking",
+        "distance_m": 4000.0,
+        "moving_time_s": 1600.0,
+        "name": "Wednesday walk"
+      },
+      {
+        "local_date": "2026-01-01",
+        "sport_type": "running",
+        "distance_m": 7750.0,
+        "moving_time_s": 2557.5,
+        "name": "Thursday easy"
+      },
+      {
+        "local_date": "2026-01-02",
+        "sport_type": "running",
+        "distance_m": 0.0,
+        "moving_time_s": 0.0,
+        "name": "Empty Friday"
+      },
+      {
+        "local_date": "2026-01-04",
+        "sport_type": "running",
+        "distance_m": 16000.0,
+        "moving_time_s": 5120.0,
+        "name": "Sunday long"
+      },
+      {
+        "local_date": "2026-01-06",
+        "sport_type": "running",
+        "distance_m": 11000.0,
+        "moving_time_s": 3245.0,
+        "name": "Tuesday tempo"
+      },
+      {
+        "local_date": "2026-01-07",
+        "sport_type": "walking",
+        "distance_m": 4000.0,
+        "moving_time_s": 1600.0,
+        "name": "Wednesday walk"
+      },
+      {
+        "local_date": "2026-01-08",
+        "sport_type": "running",
+        "distance_m": 9000.0,
+        "moving_time_s": 2880.0,
+        "name": "Thursday easy"
+      },
+      {
+        "local_date": "2026-01-09",
+        "sport_type": "running",
+        "distance_m": 0.0,
+        "moving_time_s": 0.0,
+        "name": "Empty Friday"
+      },
+      {
+        "local_date": "2026-01-11",
+        "sport_type": "running",
+        "distance_m": 15000.0,
+        "moving_time_s": 4725.0,
+        "name": "Sunday long"
+      },
+      {
+        "local_date": "2026-01-13",
+        "sport_type": "running",
+        "distance_m": 9500.0,
+        "moving_time_s": 2945.0,
+        "name": "Tuesday tempo"
+      },
+      {
+        "local_date": "2026-01-14",
+        "sport_type": "walking",
+        "distance_m": 4000.0,
+        "moving_time_s": 1600.0,
+        "name": "Wednesday walk"
+      },
+      {
+        "local_date": "2026-01-15",
+        "sport_type": "running",
+        "distance_m": 8500.0,
+        "moving_time_s": 2805.0,
+        "name": "Thursday easy"
+      },
+      {
+        "local_date": "2026-01-16",
+        "sport_type": "running",
+        "distance_m": 0.0,
+        "moving_time_s": 0.0,
+        "name": "Empty Friday"
+      },
+      {
+        "local_date": "2026-01-18",
+        "sport_type": "running",
+        "distance_m": 14000.0,
+        "moving_time_s": 4340.0,
+        "name": "Sunday long"
+      },
+      {
+        "local_date": "2026-01-20",
+        "sport_type": "running",
+        "distance_m": 10500.0,
+        "moving_time_s": 3202.5,
+        "name": "Tuesday tempo"
+      },
+      {
+        "local_date": "2026-01-21",
+        "sport_type": "walking",
+        "distance_m": 4000.0,
+        "moving_time_s": 1600.0,
+        "name": "Wednesday walk"
+      },
+      {
+        "local_date": "2026-01-22",
+        "sport_type": "running",
+        "distance_m": 8000.0,
+        "moving_time_s": 2560.0,
+        "name": "Thursday easy"
+      },
+      {
+        "local_date": "2026-01-23",
+        "sport_type": "running",
+        "distance_m": 0.0,
+        "moving_time_s": 0.0,
+        "name": "Empty Friday"
+      },
+      {
+        "local_date": "2026-01-25",
+        "sport_type": "running",
+        "distance_m": 13000.0,
+        "moving_time_s": 4290.0,
+        "name": "Sunday long"
+      },
+      {
+        "local_date": "2026-01-27",
+        "sport_type": "running",
+        "distance_m": 11500.0,
+        "moving_time_s": 3450.0,
+        "name": "Tuesday tempo"
+      },
+      {
+        "local_date": "2026-01-28",
+        "sport_type": "walking",
+        "distance_m": 4000.0,
+        "moving_time_s": 1600.0,
+        "name": "Wednesday walk"
+      },
+      {
+        "local_date": "2026-01-29",
+        "sport_type": "running",
+        "distance_m": 7500.0,
+        "moving_time_s": 2475.0,
+        "name": "Thursday easy"
+      },
+      {
+        "local_date": "2026-01-30",
+        "sport_type": "running",
+        "distance_m": 0.0,
+        "moving_time_s": 0.0,
+        "name": "Empty Friday"
+      },
+      {
+        "local_date": "2026-01-31",
+        "sport_type": "running",
+        "distance_m": 5000.0,
+        "moving_time_s": 1700.0,
+        "name": "Saturday shakeout"
+      },
+      {
+        "local_date": "2026-02-01",
+        "sport_type": "running",
+        "distance_m": 18000.0,
+        "moving_time_s": 5850.0,
+        "name": "Sunday long"
+      },
+      {
+        "local_date": "2026-02-03",
+        "sport_type": "running",
+        "distance_m": 10000.0,
+        "moving_time_s": 2950.0,
+        "name": "Tuesday tempo"
+      },
+      {
+        "local_date": "2026-02-04",
+        "sport_type": "walking",
+        "distance_m": 4000.0,
+        "moving_time_s": 1600.0,
+        "name": "Wednesday walk"
+      },
+      {
+        "local_date": "2026-02-05",
+        "sport_type": "running",
+        "distance_m": 8750.0,
+        "moving_time_s": 2800.0,
+        "name": "Thursday easy"
+      },
+      {
+        "local_date": "2026-02-06",
+        "sport_type": "running",
+        "distance_m": 0.0,
+        "moving_time_s": 0.0,
+        "name": "Empty Friday"
+      },
+      {
+        "local_date": "2026-02-08",
+        "sport_type": "running",
+        "distance_m": 17000.0,
+        "moving_time_s": 5440.0,
+        "name": "Sunday long"
+      },
+      {
+        "local_date": "2026-02-10",
+        "sport_type": "running",
+        "distance_m": 11000.0,
+        "moving_time_s": 3410.0,
+        "name": "Tuesday tempo"
+      },
+      {
+        "local_date": "2026-02-11",
+        "sport_type": "walking",
+        "distance_m": 4000.0,
+        "moving_time_s": 1600.0,
+        "name": "Wednesday walk"
+      },
+      {
+        "local_date": "2026-02-12",
+        "sport_type": "running",
+        "distance_m": 8250.0,
+        "moving_time_s": 2722.5,
+        "name": "Thursday easy"
+      },
+      {
+        "local_date": "2026-02-13",
+        "sport_type": "running",
+        "distance_m": 0.0,
+        "moving_time_s": 0.0,
+        "name": "Empty Friday"
+      },
+      {
+        "local_date": "2026-02-15",
+        "sport_type": "running",
+        "distance_m": 16000.0,
+        "moving_time_s": 5040.0,
+        "name": "Sunday long"
+      },
+      {
+        "local_date": "2026-02-17",
+        "sport_type": "running",
+        "distance_m": 9500.0,
+        "moving_time_s": 2897.5,
+        "name": "Tuesday tempo"
+      },
+      {
+        "local_date": "2026-02-18",
+        "sport_type": "walking",
+        "distance_m": 4000.0,
+        "moving_time_s": 1600.0,
+        "name": "Wednesday walk"
+      },
+      {
+        "local_date": "2026-02-19",
+        "sport_type": "running",
+        "distance_m": 7750.0,
+        "moving_time_s": 2480.0,
+        "name": "Thursday easy"
+      },
+      {
+        "local_date": "2026-02-20",
+        "sport_type": "running",
+        "distance_m": 0.0,
+        "moving_time_s": 0.0,
+        "name": "Empty Friday"
+      },
+      {
+        "local_date": "2026-02-22",
+        "sport_type": "running",
+        "distance_m": 15000.0,
+        "moving_time_s": 4650.0,
+        "name": "Sunday long"
+      },
+      {
+        "local_date": "2026-02-24",
+        "sport_type": "running",
+        "distance_m": 10500.0,
+        "moving_time_s": 3150.0,
+        "name": "Tuesday tempo"
+      },
+      {
+        "local_date": "2026-02-25",
+        "sport_type": "walking",
+        "distance_m": 4000.0,
+        "moving_time_s": 1600.0,
+        "name": "Wednesday walk"
+      },
+      {
+        "local_date": "2026-02-26",
+        "sport_type": "running",
+        "distance_m": 9000.0,
+        "moving_time_s": 2970.0,
+        "name": "Thursday easy"
+      },
+      {
+        "local_date": "2026-02-27",
+        "sport_type": "running",
+        "distance_m": 0.0,
+        "moving_time_s": 0.0,
+        "name": "Empty Friday"
+      },
+      {
+        "local_date": "2026-03-01",
+        "sport_type": "running",
+        "distance_m": 14000.0,
+        "moving_time_s": 4620.0,
+        "name": "Sunday long"
+      },
+      {
+        "local_date": "2026-03-04",
+        "sport_type": "running",
+        "distance_m": 11000.0,
+        "moving_time_s": 3300.0,
+        "name": "Inside the range"
+      }
+    ]
+  },
+  "inferred_thin": {
+    "from": "2026-03-02",
+    "to": "2026-03-08",
+    "activities": [
+      {
+        "local_date": "2025-12-09",
+        "sport_type": "running",
+        "distance_m": 9500.0,
+        "moving_time_s": 2802.5,
+        "name": "Tuesday tempo"
+      },
+      {
+        "local_date": "2025-12-10",
+        "sport_type": "walking",
+        "distance_m": 4000.0,
+        "moving_time_s": 1600.0,
+        "name": "Wednesday walk"
+      },
+      {
+        "local_date": "2025-12-11",
+        "sport_type": "running",
+        "distance_m": 7500.0,
+        "moving_time_s": 2400.0,
+        "name": "Thursday easy"
+      },
+      {
+        "local_date": "2025-12-12",
+        "sport_type": "running",
+        "distance_m": 0.0,
+        "moving_time_s": 0.0,
+        "name": "Empty Friday"
+      },
+      {
+        "local_date": "2025-12-14",
+        "sport_type": "running",
+        "distance_m": 13000.0,
+        "moving_time_s": 4030.0,
+        "name": "Sunday long"
+      },
+      {
+        "local_date": "2025-12-16",
+        "sport_type": "running",
+        "distance_m": 10500.0,
+        "moving_time_s": 3255.0,
+        "name": "Tuesday tempo"
+      },
+      {
+        "local_date": "2025-12-17",
+        "sport_type": "walking",
+        "distance_m": 4000.0,
+        "moving_time_s": 1600.0,
+        "name": "Wednesday walk"
+      },
+      {
+        "local_date": "2025-12-18",
+        "sport_type": "running",
+        "distance_m": 8750.0,
+        "moving_time_s": 2887.5,
+        "name": "Thursday easy"
+      },
+      {
+        "local_date": "2025-12-19",
+        "sport_type": "running",
+        "distance_m": 0.0,
+        "moving_time_s": 0.0,
+        "name": "Empty Friday"
+      },
+      {
+        "local_date": "2025-12-21",
+        "sport_type": "running",
+        "distance_m": 18000.0,
+        "moving_time_s": 5940.0,
+        "name": "Sunday long"
+      },
+      {
+        "local_date": "2025-12-23",
+        "sport_type": "running",
+        "distance_m": 11500.0,
+        "moving_time_s": 3507.5,
+        "name": "Tuesday tempo"
+      },
+      {
+        "local_date": "2025-12-24",
+        "sport_type": "walking",
+        "distance_m": 4000.0,
+        "moving_time_s": 1600.0,
+        "name": "Wednesday walk"
+      },
+      {
+        "local_date": "2025-12-25",
+        "sport_type": "running",
+        "distance_m": 8250.0,
+        "moving_time_s": 2640.0,
+        "name": "Thursday easy"
+      },
+      {
+        "local_date": "2025-12-26",
+        "sport_type": "running",
+        "distance_m": 0.0,
+        "moving_time_s": 0.0,
+        "name": "Empty Friday"
+      },
+      {
+        "local_date": "2025-12-27",
+        "sport_type": "running",
+        "distance_m": 5000.0,
+        "moving_time_s": 1700.0,
+        "name": "Saturday shakeout"
+      },
+      {
+        "local_date": "2025-12-28",
+        "sport_type": "running",
+        "distance_m": 17000.0,
+        "moving_time_s": 5525.0,
+        "name": "Sunday long"
+      },
+      {
+        "local_date": "2025-12-29",
+        "sport_type": "running",
+        "distance_m": 6000.0,
+        "moving_time_s": 1980.0,
+        "name": "One-off Monday"
+      },
+      {
+        "local_date": "2025-12-30",
+        "sport_type": "running",
+        "distance_m": 10000.0,
+        "moving_time_s": 3000.0,
+        "name": "Tuesday tempo"
+      },
+      {
+        "local_date": "2025-12-31",
+        "sport_type": "walking",
+        "distance_m": 4000.0,
+        "moving_time_s": 1600.0,
+        "name": "Wednesday walk"
+      },
+      {
+        "local_date": "2026-01-01",
+        "sport_type": "running",
+        "distance_m": 7750.0,
+        "moving_time_s": 2557.5,
+        "name": "Thursday easy"
+      },
+      {
+        "local_date": "2026-01-02",
+        "sport_type": "running",
+        "distance_m": 0.0,
+        "moving_time_s": 0.0,
+        "name": "Empty Friday"
+      },
+      {
+        "local_date": "2026-01-04",
+        "sport_type": "running",
+        "distance_m": 16000.0,
+        "moving_time_s": 5120.0,
+        "name": "Sunday long"
+      }
+    ]
+  },
+  "workouts": {
+    "scheduled": [
+      {
+        "workout_id": 101,
+        "name": "Easy 5K",
+        "date": "2026-03-02",
+        "sport": "running",
+        "steps": [],
+        "status": "scheduled"
+      },
+      {
+        "workout_id": 102,
+        "name": "Threshold 6x1K",
+        "date": "2026-03-04",
+        "sport": "running",
+        "steps": [],
+        "status": "scheduled"
+      },
+      {
+        "workout_id": 103,
+        "name": "Long run",
+        "date": "2026-03-08",
+        "sport": "running",
+        "steps": [],
+        "status": "scheduled"
+      },
+      {
+        "workout_id": 104,
+        "name": "Ride",
+        "date": "2026-03-03",
+        "sport": "cycling",
+        "steps": [],
+        "status": "scheduled"
+      },
+      {
+        "workout_id": 105,
+        "name": "Cancelled run",
+        "date": "2026-03-05",
+        "sport": "running",
+        "steps": [],
+        "status": "cancelled"
+      },
+      {
+        "workout_id": 106,
+        "name": "Trail run",
+        "date": "2026-03-07T00:00:00.0",
+        "sport": "trail_running",
+        "steps": [],
+        "status": "scheduled"
+      },
+      {
+        "workout_id": 107,
+        "name": "No date",
+        "date": null,
+        "sport": "running",
+        "steps": [],
+        "status": "scheduled"
+      }
+    ],
+    "details": [
+      {
+        "workout_id": 101,
+        "session_type": "easy",
+        "target_distance_m": 5000.0,
+        "target_pace_low_s_km": 330.0,
+        "target_pace_high_s_km": 360.0,
+        "hr_zone_target": null,
+        "title": "Easy 5K",
+        "details": "Run easy, stay relaxed"
+      },
+      {
+        "workout_id": 102,
+        "session_type": "interval",
+        "target_distance_m": 8000.0,
+        "target_pace_low_s_km": 250.0,
+        "target_pace_high_s_km": 270.0,
+        "hr_zone_target": 4,
+        "title": "Threshold 6x1K",
+        "details": "6 x 1km at threshold"
+      },
+      {
+        "workout_id": 103,
+        "session_type": "long",
+        "target_distance_m": 18000.0,
+        "target_pace_low_s_km": 330.0,
+        "target_pace_high_s_km": 370.0,
+        "hr_zone_target": 2,
+        "title": "Long run",
+        "details": null
+      },
+      {
+        "workout_id": 106,
+        "session_type": "easy",
+        "target_distance_m": null,
+        "target_pace_low_s_km": null,
+        "target_pace_high_s_km": null,
+        "hr_zone_target": null,
+        "title": null,
+        "details": null
+      }
+    ]
+  }
+}

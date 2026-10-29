@@ -14,6 +14,10 @@ tells you what to do today.
 A social running app is a **social activity log**: it has no concept of
 intent, no physiology and no causality. That is the gap this fills.
 
+**v1 reads the data. It does not author it.** You connect a key, it syncs,
+and you read your own history and the intent behind it. See
+[what v1 is](#what-v1-is) below.
+
 ---
 
 ## The app is the app
@@ -40,6 +44,11 @@ runs**, and it goes away. The key never enters the WebView: it is typed into
 a native field, wrapped by a non-exportable Keystore key, and written to
 `noBackupFilesDir`.
 
+**The promise is one line, everywhere.** The setup screen says it, the About
+card says it, and the screenshots say it:
+
+> **Your data stays on this phone.**
+
 | | |
 |---|---|
 | the APK | **8.6 MB** (8,609,784 bytes), arm64-v8a |
@@ -59,10 +68,51 @@ React app and the same API, out of the same crate, against the same
 database. There is no second implementation of the domain logic and no
 process to keep alive.
 
-The desktop is the same product with more room: it keeps the comparison, the
-statistics and the training calendar. The phone shows five surfaces — Today,
-Plan, Runs, Body and Form — because the cut is the phone's, not the
-product's.
+The desktop is the same product with more room. The phone keeps **six
+destinations** — Today, Plan, Runs, Body, Form and Stats — and cuts what is
+a laptop activity: **Compare** (two runs side by side), the **training
+calendar** (the Plan screen carries the schedule), and the **server
+settings**. The desktop keeps all of them.
+
+The desktop says the same promise in its own words: **"Your data stays on
+this machine."**
+
+### What v1 is
+
+**v1 VIEWS DATA. It does not manage it.**
+
+The phone is a reader for the athlete's own history and for the intent
+behind it.
+
+| what v1 does | what v1 does not do |
+|---|---|
+| connect a Garmin key, in one native screen | write a plan by hand |
+| sync: activities, wellness, and the plan it finds | edit a run, rename it, describe it |
+| show the plan against what was actually done | keep notes on a run |
+| show readiness, with its drivers | author anything at all |
+
+Everything that **authors or edits** — a manual plan editor, editing a run,
+notes — is the next iteration, and it is deliberately not designed yet.
+
+**The Plan screen is the reason the app exists, and it does not need a
+document.** A plan comes from somewhere, and there are two kinds, and the
+screen never mixes them:
+
+- **the plan you already have** — inferred from the athlete's own history:
+  the weekly volume, the rest days, the long-run day, the quality day. It is
+  a **baseline**, not a prescription, and it says so in every sentence.
+- **the plan you wrote down** — Garmin's scheduled workouts. It is a
+  **prescription**, because the athlete wrote it in Garmin Connect.
+
+A baseline is compared with *less than usual*, *more than usual* and *on a
+usual day*; a prescription is compared with *hit* and *missed*. Mixing them
+would mean "missed" — a judgement about a plan somebody else wrote — being
+applied to a plan nobody wrote at all.
+
+> **Work in flight.** The plan sources are being built now: the reference is
+> `backend/app/services/plan_sources.py` and the port is
+> `crates/stride-core/src/plan_sources.rs`. They are not in the published
+> build yet.
 
 ### The Python app is the reference, not the product
 

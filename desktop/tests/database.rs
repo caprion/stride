@@ -11,19 +11,19 @@
 //! desktop uses. The count it asserts is the count in the original file, so
 //! a conversion that drops rows fails the test.
 //!
-//! The file is not in the repository — `backend/data/` is ignored — so the
-//! test says so and does nothing when it is not there.
+//! The live-data check is opt-in. Routine agent runs use the small synthetic
+//! fixtures elsewhere in the suite, not a copy of the athlete's full history.
 //!
 //! **One conversion, shared.** A conversion copies a database of a few
 //! megabytes and encrypts it, and six of them at once is a few hundred
 //! megabytes of page cache and a hundred megabytes of disk. On a machine
 //! that is busy with other work that is enough to make the *machine* the
 //! reason a test fails, and a test that fails for that reason says nothing
-//! about the code. So the conversion happens once, and the tests read what
-//! it produced.
+//! about the code. One test owns the conversion and runs all the real-data
+//! assertions against it. Its temporary files are removed on return or panic.
 
 use std::path::{Path, PathBuf};
-use std::sync::{Arc, OnceLock};
+use std::sync::Arc;
 use std::time::Duration;
 
 use rusqlite::Connection;
@@ -65,41 +65,20 @@ fn real_database() -> PathBuf {
 /// The snapshot is taken once and shared: two backups of a database that is
 /// being written to, at the same time, is two chances to read it while it
 /// changes.
-fn snapshot_of_the_real_database() -> Option<PathBuf> {
-    static SNAPSHOT: OnceLock<Option<PathBuf>> = OnceLock::new();
-    SNAPSHOT
-        .get_or_init(|| {
-            let source = real_database();
-            if !source.is_file() {
-                return None;
-            }
-            let directory = scratch("snapshot");
-            let target = directory.join("stride.db");
-            // The reference app writes to the database while it syncs, so a
-            // snapshot can fail. A few tries, and then the test does
-            // nothing.
-            for _ in 0..5 {
-                if db::take_snapshot(&source, &target).is_ok() {
-                    return Some(target);
-                }
+fn snapshot_of_the_real_database(directory: &Path) -> PathBuf {
+    let source = real_database();
+    let target = directory.join("stride.db");
+    for attempt in 0..5 {
+        match db::take_snapshot(&source, &target) {
+            Ok(()) => return target,
+            Err(error) if attempt == 4 => panic!("the database snapshot failed: {error}"),
+            Err(error) => {
+                eprintln!("stride: retrying the database snapshot: {error}");
                 std::thread::sleep(Duration::from_millis(250));
             }
-            None
-        })
-        .clone()
-}
-
-/// A copy of the snapshot of the real database.
-///
-/// The snapshot is a static file, so copying it is copying a file and not a
-/// database that is being written to.
-fn copy_of_the_real_database(directory: &Path) -> Option<PathBuf> {
-    let source = snapshot_of_the_real_database()?;
-    std::fs::create_dir_all(directory).ok()?;
-    let target = directory.join("stride.db");
-    let _ = std::fs::remove_file(&target);
-    std::fs::copy(&source, &target).ok()?;
-    Some(target)
+        }
+    }
+    unreachable!("the final snapshot attempt returns or panics")
 }
 
 /// The number of rows in a table of a plain database.
@@ -119,23 +98,48 @@ fn count(path: &Path, table: &str) -> i64 {
 /// cleaned up by the next one: the next one would delete the files under a
 /// conversion that is still running, and the symptom of that is a database
 /// that is suddenly not there.
-fn scratch(name: &str) -> PathBuf {
+struct FixtureDirectory {
+    path: PathBuf,
+}
+
+impl Drop for FixtureDirectory {
+    fn drop(&mut self) {
+        if let Err(error) = std::fs::remove_dir_all(&self.path) {
+            eprintln!(
+                "stride: could not remove test fixture {}: {error}",
+                self.path.display()
+            );
+        }
+    }
+}
+
+fn scratch(name: &str) -> FixtureDirectory {
     use std::sync::atomic::{AtomicU64, Ordering};
     static COUNTER: AtomicU64 = AtomicU64::new(0);
-    let serial = COUNTER.fetch_add(1, Ordering::SeqCst);
-    let dir = std::env::temp_dir().join(format!(
-        "stride-desktop-db-{name}-{}-{serial}",
-        std::process::id()
-    ));
-    let _ = std::fs::remove_dir_all(&dir);
-    std::fs::create_dir_all(&dir).expect("the directory");
-    dir
+    loop {
+        let serial = COUNTER.fetch_add(1, Ordering::SeqCst);
+        let path = std::env::temp_dir().join(format!(
+            "stride-desktop-db-{name}-{}-{serial}",
+            std::process::id()
+        ));
+        let mut builder = std::fs::DirBuilder::new();
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::DirBuilderExt;
+            builder.mode(0o700);
+        }
+        match builder.create(&path) {
+            Ok(()) => return FixtureDirectory { path },
+            Err(error) if error.kind() == std::io::ErrorKind::AlreadyExists => continue,
+            Err(error) => panic!("could not create fixture {}: {error}", path.display()),
+        }
+    }
 }
 
 /// One conversion of the real database, shared by the tests.
 struct Converted {
     /// Where it happened.
-    directory: PathBuf,
+    directory: FixtureDirectory,
     /// The encrypted database it produced.
     database: PathBuf,
     /// The plain copy it kept.
@@ -147,53 +151,36 @@ struct Converted {
 }
 
 /// Convert the real database, once.
-fn converted() -> Option<&'static Converted> {
-    static CONVERTED: OnceLock<Option<Converted>> = OnceLock::new();
-    CONVERTED
-        .get_or_init(|| {
-            let directory = scratch("converted");
-            let Some(copy) = copy_of_the_real_database(&directory) else {
-                eprintln!(
-                    "stride: {} is not there; the test does nothing",
-                    real_database().display()
-                );
-                return None;
-            };
-            let before: Vec<(String, i64)> = TABLES
-                .iter()
-                .map(|table| (table.to_string(), count(&copy, table)))
-                .collect();
-            // The initializer must not panic: a panic here would make the
-            // next test run it again, and the second attempt would delete
-            // the directory of the first one.
-            let report = match db::convert_plaintext_to_encrypted(&copy, KEY) {
-                Ok(report) => report,
-                Err(error) => {
-                    eprintln!("stride: the conversion failed: {error}");
-                    return None;
-                }
-            };
-            let backup = copy.with_file_name(format!(
-                "{}.plaintext-backup",
-                copy.file_name().unwrap_or_default().to_string_lossy()
-            ));
-            Some(Converted {
-                database: copy,
-                backup,
-                directory,
-                report,
-                before,
-            })
-        })
-        .as_ref()
+fn converted() -> Converted {
+    assert!(
+        real_database().is_file(),
+        "the opt-in real database is missing"
+    );
+    let directory = scratch("converted");
+    let copy = snapshot_of_the_real_database(&directory.path);
+    let before = TABLES
+        .iter()
+        .map(|table| (table.to_string(), count(&copy, table)))
+        .collect();
+    let report = db::convert_plaintext_to_encrypted(&copy, KEY).expect("the snapshot converts");
+    let backup = copy.with_file_name(format!(
+        "{}.plaintext-backup",
+        copy.file_name().unwrap_or_default().to_string_lossy()
+    ));
+    Converted {
+        database: copy,
+        backup,
+        directory,
+        report,
+        before,
+    }
 }
 
 /// The real database opens, and every row is still there.
 #[test]
+#[ignore = "reads a live-data snapshot; run explicitly with --ignored"]
 fn the_real_database_opens_and_keeps_its_rows() {
-    let Some(converted) = converted() else {
-        return;
-    };
+    let converted = converted();
 
     let activities = converted
         .before
@@ -247,15 +234,18 @@ fn the_real_database_opens_and_keeps_its_rows() {
         "stride: the real database has {activities} activities, {} laps, {} streams",
         converted.before[1].1, converted.before[2].1
     );
+
+    the_database_on_disk_is_the_plain_one(&converted);
+    the_conversion_keeps_the_plain_file(&converted);
+    the_wrong_key_is_refused(&converted);
+    #[cfg(unix)]
+    the_database_and_the_plain_file_are_owner_only(&converted);
+    the_router_reads_the_converted_database(&converted);
 }
 
 /// The file the Python app writes is not encrypted, and the desktop deals
 /// with it.
-#[test]
-fn the_database_on_disk_is_the_plain_one() {
-    let Some(converted) = converted() else {
-        return;
-    };
+fn the_database_on_disk_is_the_plain_one(converted: &Converted) {
     let source = real_database();
     if !source.is_file() {
         return;
@@ -273,12 +263,8 @@ fn the_database_on_disk_is_the_plain_one() {
 }
 
 /// The plain file is kept, so nothing is lost if the conversion is wrong.
-#[test]
-fn the_conversion_keeps_the_plain_file() {
-    let Some(converted) = converted() else {
-        return;
-    };
-    let listing: Vec<String> = std::fs::read_dir(&converted.directory)
+fn the_conversion_keeps_the_plain_file(converted: &Converted) {
+    let listing: Vec<String> = std::fs::read_dir(&converted.directory.path)
         .map(|entries| {
             entries
                 .flatten()
@@ -308,11 +294,7 @@ fn the_conversion_keeps_the_plain_file() {
 }
 
 /// The wrong key does not open the database.
-#[test]
-fn the_wrong_key_is_refused() {
-    let Some(converted) = converted() else {
-        return;
-    };
+fn the_wrong_key_is_refused(converted: &Converted) {
     let wrong = b"ffffffffffffffffffffffffffffffff";
     let error =
         Store::open(&converted.database, wrong).expect_err("the wrong key opens the database");
@@ -328,13 +310,9 @@ fn the_wrong_key_is_refused() {
 /// of heart rate, sleep and GPS routes is not a file other processes on this
 /// machine should be able to read.
 #[cfg(unix)]
-#[test]
-fn the_database_and_the_plain_file_are_owner_only() {
+fn the_database_and_the_plain_file_are_owner_only(converted: &Converted) {
     use std::os::unix::fs::PermissionsExt;
 
-    let Some(converted) = converted() else {
-        return;
-    };
     for path in [&converted.database, &converted.backup] {
         let mode = std::fs::metadata(path)
             .expect("the file")
@@ -348,7 +326,7 @@ fn the_database_and_the_plain_file_are_owner_only() {
 #[test]
 fn a_new_database_is_created_encrypted() {
     let directory = scratch("new");
-    let path = directory.join("stride.db");
+    let path = directory.path.join("stride.db");
     assert_eq!(
         db::detect_format(&path).expect("the format"),
         Format::Missing
@@ -377,11 +355,7 @@ fn a_new_database_is_created_encrypted() {
 }
 
 /// The router reads the converted database: the whole path, end to end.
-#[test]
-fn the_router_reads_the_converted_database() {
-    let Some(converted) = converted() else {
-        return;
-    };
+fn the_router_reads_the_converted_database(converted: &Converted) {
     let store = Arc::new(Store::open(&converted.database, KEY).expect("the store opens"));
     let backend = stride_api::store::backend(Arc::clone(&store));
     let api = Api::new(Arc::new(CoreBackend::new(backend)));
@@ -402,4 +376,26 @@ fn the_router_reads_the_converted_database() {
         .expect("the activity answers");
     assert_eq!(activity["id"].as_i64(), Some(id));
     assert!(activity["distance_m"].as_f64().is_some());
+}
+
+#[test]
+fn temporary_database_files_are_removed_after_success() {
+    let path = {
+        let directory = scratch("cleanup");
+        std::fs::write(directory.path.join("stride.db"), b"fixture").expect("the fixture");
+        directory.path.clone()
+    };
+    assert!(!path.exists(), "the test fixture was left behind");
+}
+
+#[test]
+fn temporary_database_files_are_removed_after_panic() {
+    let directory = scratch("cleanup-panic");
+    let path = directory.path.clone();
+    let result = std::panic::catch_unwind(move || {
+        let _directory = directory;
+        panic!("a failed database test");
+    });
+    assert!(result.is_err());
+    assert!(!path.exists(), "the failed test left its fixture behind");
 }

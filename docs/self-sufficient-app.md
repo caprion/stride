@@ -157,7 +157,54 @@ The full contract is `docs/phone-simplification.md`.
 
 ---
 
-## 4. What is missing
+## 4. What the phone shows
+
+**Six destinations.** Today, Plan, Runs, Body, Form and Stats. The cut is
+Compare, the training calendar and the server settings — a phone cut, not a
+product cut. The desktop keeps all of them.
+
+### v1 reads the data; it does not author it
+
+The phone is a **reader** for the athlete's own history and for the intent
+behind it.
+
+| what v1 does | what v1 does not do |
+|---|---|
+| connect a key, in one native screen | write a plan by hand |
+| sync activities, wellness, and the plan it finds | edit a run, rename it, describe it |
+| show the plan against what was actually done | keep notes on a run |
+| show readiness, with its drivers | author anything at all |
+
+Everything that **authors or edits** — a manual plan editor, editing a run,
+notes — is the next iteration, and it is deliberately not designed yet.
+
+### The Plan screen does not need a document
+
+The Plan screen is the reason the app exists, and it must not be empty for
+anyone who does not write their plan in a markdown file. A plan comes from
+somewhere, and there are **two kinds**, and the screen never mixes them:
+
+- **the plan you already have** — inferred from the athlete's own history:
+  the weekly volume, the rest days, the long-run day, the quality day. It is
+  a **baseline**, not a prescription, and it says so in every sentence it
+  produces.
+- **the plan you wrote down** — Garmin's scheduled workouts. It is a
+  **prescription**, because the athlete wrote it in Garmin Connect.
+
+A baseline is compared with *less than usual*, *more than usual* and *on a
+usual day*; a prescription is compared with *hit* and *missed*. The
+distinction is not cosmetic: mixing them would apply "missed" — a judgement
+about a plan somebody else wrote — to a plan nobody wrote at all.
+
+**Work in flight.** The reference implementation is
+`backend/app/services/plan_sources.py`; the port is
+`crates/stride-core/src/plan_sources.rs`, with the golden fixtures in
+`crates/stride-core/tests/fixtures/plan_sources/`. They are being built now
+and are not in the published build yet.
+
+---
+
+## 5. What is missing
 
 1. **The MCP server is not started by either host.** The nine tools exist;
    the socket does not.

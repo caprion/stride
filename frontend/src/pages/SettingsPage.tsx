@@ -27,7 +27,7 @@ import {
 } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { api, isNativeApp } from '../lib/api'
-import { useGarminActions, useGarminState } from '../lib/garmin'
+import { useGarminState } from '../lib/garmin'
 import { isPhone, localDataLine } from '../lib/surface'
 import { ConnectGarmin } from '../components/GarminStatus'
 import type { AuthStatus, NetworkStatus, SyncRun } from '../types'
@@ -323,22 +323,20 @@ function DesktopSettings() {
 /* ---------------------------------------------------- the phone's screen */
 
 /**
- * The phone's settings screen: four things.
+ * The phone's settings screen.
  *
- * * whether Garmin is connected,
- * * a sync,
- * * forgetting the key,
- * * and what this app is.
+ * Two cards: the state of the Garmin connection, and what this app is.
  *
- * There is no Garmin form here: the key is typed in the native screen, and
- * the native screen is the only place it is typed. There is no network route
- * either: the phone has no server to route to.
+ * **The connection is a state, not a form.** The card says whether Garmin
+ * is connected and when it last synced, and offers one button that opens
+ * the native screen. There is no field to fill in, so there is nothing that
+ * can be half-submitted, and the key never comes near the WebView.
+ *
+ * v1 views the data. The phone does not author a plan, edit a run, write
+ * notes, or configure a server it does not have.
  */
 function PhoneSettings() {
-  const { connected, syncing, lastSyncAt, runs } = useGarminState()
-  const { syncNow, forgetKey } = useGarminActions()
-  const [notice, setNotice] = useState<Notice | null>(null)
-  const [confirmForget, setConfirmForget] = useState(false)
+  const { connected, syncing, lastSyncAt } = useGarminState()
 
   return (
     <div className="mx-auto max-w-[560px]">
@@ -362,70 +360,15 @@ function PhoneSettings() {
               </p>
             </div>
             <p className="mt-1 text-[13px] text-ink-muted">
-              {runs > 0
-                ? `${formatNumber(runs)} ${runs === 1 ? 'run' : 'runs'} on this phone`
-                : 'No runs on this phone yet'}
-              {lastSyncAt ? ` · synced ${formatRelative(lastSyncAt)}` : ''}
+              {syncing
+                ? 'Syncing…'
+                : lastSyncAt
+                  ? `Synced ${formatRelative(lastSyncAt)}`
+                  : 'Not synced yet'}
             </p>
 
-            <div className="mt-4 flex flex-wrap items-center gap-2">
+            <div className="mt-4">
               <ConnectGarmin />
-              <Button
-                variant="secondary"
-                onClick={() => syncNow.mutate()}
-                disabled={syncNow.isPending || syncing}
-              >
-                {syncNow.isPending || syncing ? (
-                  <Loader2 size={14} strokeWidth={2} className="animate-spin" />
-                ) : (
-                  <RefreshCw size={14} strokeWidth={2} />
-                )}
-                {syncing ? 'Syncing…' : 'Sync now'}
-              </Button>
-              {connected ? (
-                <Button variant="ghost" onClick={() => setConfirmForget(true)}>
-                  Forget the key
-                </Button>
-              ) : null}
-            </div>
-
-            {confirmForget ? (
-              <div className="mt-4">
-                <Alert tone="warn" title="Forget the key on this phone?">
-                  Stride stops pulling new runs. The runs already here stay.
-                </Alert>
-                <div className="mt-2 flex gap-2">
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    onClick={() => setConfirmForget(false)}
-                    disabled={forgetKey.isPending}
-                  >
-                    Keep it
-                  </Button>
-                  <Button
-                    variant="danger"
-                    size="sm"
-                    onClick={() =>
-                      forgetKey.mutate(undefined, {
-                        onSuccess: () => {
-                          setNotice({ tone: 'positive', text: 'The key is forgotten.' })
-                          setConfirmForget(false)
-                        },
-                        onError: (error) =>
-                          setNotice({ tone: 'negative', text: messageOf(error) }),
-                      })
-                    }
-                    disabled={forgetKey.isPending}
-                  >
-                    Forget it
-                  </Button>
-                </div>
-              </div>
-            ) : null}
-
-            <div className="mt-3">
-              <Toast notice={notice} />
             </div>
           </div>
         </Card>

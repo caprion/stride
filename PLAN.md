@@ -59,10 +59,26 @@ against. It is not what the athlete runs.
 | the Garmin key | a non-exportable Keystore key wraps it; it never enters the WebView |
 | the database | the phone's own, encrypted, in the app's private storage |
 | the onboarding | **one screen**: the key, then `Checking…` → `Syncing…` → `Connected · 160 runs` |
-| the surfaces | five — Today, Plan, Runs, Body, Form |
+| the surfaces | **six** — Today, Plan, Runs, Body, Form, Stats |
 
-The desktop keeps Compare, Stats and the training calendar. The cut is the
-phone's, not the product's.
+The cut is the phone's: Compare, the training calendar, the server settings.
+
+**v1 reads the data; it does not author it.** Connect a key, it syncs, and
+you read your own history and the intent behind it. A manual plan editor,
+editing a run and notes are the next iteration, and they are deliberately
+not designed yet.
+
+The Plan screen does not need a document: a plan comes from somewhere — the
+plan the athlete already has, inferred from their own history, or the plan
+they wrote down, Garmin's scheduled workouts. The first is a **baseline**,
+the second a **prescription**, and the screen never mixes them. The plan
+sources are being built now: the reference is
+`backend/app/services/plan_sources.py` and the port is
+`crates/stride-core/src/plan_sources.rs`.
+
+The desktop keeps Compare and the training calendar. The cut is the
+phone's, not the product's: the desktop has the room, and those screens are
+good there.
 
 ### The gates
 

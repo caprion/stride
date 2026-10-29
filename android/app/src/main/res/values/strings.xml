@@ -18,7 +18,7 @@
     <string name="garmin_open_garmin">Get a key from Garmin</string>
     <string name="garmin_connect">Connect</string>
     <string name="garmin_replace_key">Replace key</string>
-    <string name="garmin_disconnect">Disconnect Garmin</string>
+    <string name="garmin_forget_key">Forget the key</string>
     <string name="garmin_not_now">Not now</string>
 
     <!-- The states. These are the words the athlete reads. -->

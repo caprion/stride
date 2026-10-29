@@ -142,10 +142,11 @@ Screens are counted in phone viewports (844 px tall).
 | stats | 5.8 | good. |
 | settings | 8.2 | good. |
 
-**The phone shows five of them.** Today, Plan, Runs, Body and Form. Compare,
-Stats and the training calendar are cut from the phone and kept on the
-desktop — the desktop has the room, and they are good there. The cut is the
-phone's, not the product's; the contract is `docs/phone-simplification.md`.
+**The phone shows six of them.** Today, Plan, Runs, Body, Form and Stats.
+**Compare** and the **training calendar** are cut from the phone and kept on
+the desktop — the desktop has the room, and they are good there — along with
+the server settings. The cut is the phone's, not the product's; the contract
+is `docs/phone-simplification.md`.
 
 ### The bug that was hiding
 

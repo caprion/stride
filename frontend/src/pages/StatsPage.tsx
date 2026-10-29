@@ -546,36 +546,36 @@ export function StatsPage() {
                       <th className="px-3 py-2 text-right font-semibold">Distance</th>
                       <th className="px-3 py-2 text-right font-semibold">Elevation</th>
                       <th className="px-5 py-2 text-right font-semibold">Moving time</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {sports.map((row) => (
-                    <tr key={row.sport_type} className="border-b border-edge last:border-0">
-                      <td className="px-5 py-2.5">
-                        <span className="inline-flex items-center gap-2 text-[13px] font-medium text-ink">
-                          <span
-                            className="h-2.5 w-2.5 rounded-full"
-                            style={{ background: SPORT_COLOR[row.sport_type] ?? ACCENT_DATA }}
-                          />
-                          {sportLabel(row.sport_type)}
-                        </span>
-                      </td>
-                      <td className="px-3 py-2.5 text-right text-[13px] text-ink-soft">
-                        {formatNumber(row.activity_count)}
-                      </td>
-                      <td className="px-3 py-2.5 text-right text-[13px] font-semibold text-ink">
-                        {formatDistance(row.distance_m)}
-                      </td>
-                      <td className="px-3 py-2.5 text-right text-[13px] text-ink-soft">
-                        {formatElevation(row.elevation_gain_m)}
-                      </td>
-                      <td className="px-5 py-2.5 text-right text-[13px] text-ink-soft">
-                        {formatMovingTime(row.moving_time_s)}
-                      </td>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {sports.map((row) => (
+                      <tr key={row.sport_type} className="border-b border-edge last:border-0">
+                        <td className="px-5 py-2.5">
+                          <span className="inline-flex items-center gap-2 text-[13px] font-medium text-ink">
+                            <span
+                              className="h-2.5 w-2.5 rounded-full"
+                              style={{ background: SPORT_COLOR[row.sport_type] ?? ACCENT_DATA }}
+                            />
+                            {sportLabel(row.sport_type)}
+                          </span>
+                        </td>
+                        <td className="px-3 py-2.5 text-right text-[13px] text-ink-soft">
+                          {formatNumber(row.activity_count)}
+                        </td>
+                        <td className="px-3 py-2.5 text-right text-[13px] font-semibold text-ink">
+                          {formatDistance(row.distance_m)}
+                        </td>
+                        <td className="px-3 py-2.5 text-right text-[13px] text-ink-soft">
+                          {formatElevation(row.elevation_gain_m)}
+                        </td>
+                        <td className="px-5 py-2.5 text-right text-[13px] text-ink-soft">
+                          {formatMovingTime(row.moving_time_s)}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             )}
           </Card>

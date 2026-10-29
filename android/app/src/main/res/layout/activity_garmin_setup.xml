@@ -104,13 +104,13 @@
             android:visibility="gone" />
 
         <Button
-            android:id="@+id/garmin_disconnect"
+            android:id="@+id/garmin_forget"
             style="?android:attr/borderlessButtonStyle"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
             android:minHeight="48dp"
-            android:text="@string/garmin_disconnect"
+            android:text="@string/garmin_forget_key"
             android:visibility="gone" />
 
         <!-- The one line about privacy. -->

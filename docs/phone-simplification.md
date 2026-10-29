@@ -116,7 +116,12 @@ After **Connect**:
 
 ## 3. Half as much
 
-The app has ten surfaces. **On the phone, five.**
+The app has ten surfaces. **On the phone, six.**
+
+> **Amended.** Stats was on the cut list and is not any more: the personal
+> records and the year in one screen are the thing an athlete looks at after a
+> good month. The cut is **Compare**, the **training calendar** and the
+> **server settings**.
 
 | keep | why |
 |---|---|
@@ -145,7 +150,7 @@ and the calendar — it has the room, and they are good there.
 So the SPA needs to know which host it is on. `isNativeApp()` already exists
 in `frontend/src/lib/api.ts` and is the answer:
 
-- the phone shows five tabs; the desktop shows its full rail;
+- the phone shows six tabs; the desktop shows its full rail;
 - a phone that is somehow navigated to a cut route lands on Today rather
   than a screen that does not belong there.
 

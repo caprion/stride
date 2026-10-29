@@ -164,8 +164,12 @@ export default function PlanPage() {
       {noPlan && (
         <Card className="mb-5">
           <EmptyState
-            title="No plan imported yet"
-            description="Import your training plan to compare planned sessions with your runs and understand what changed."
+            title="No plan yet"
+            description={
+              isPhone()
+                ? 'A plan shows up here once it is imported.'
+                : 'Import your training plan to compare planned sessions with your runs and understand what changed.'
+            }
           />
         </Card>
       )}
@@ -247,7 +251,11 @@ export default function PlanPage() {
           ) : (
             <EmptyState
               title="No week available"
-              description="Choose a week with a plan, or import a plan below."
+              description={
+                isPhone()
+                  ? 'Choose a week with a plan.'
+                  : 'Choose a week with a plan, or import a plan below.'
+              }
             />
           )}
         </Card>
@@ -283,67 +291,77 @@ export default function PlanPage() {
               </div>
             ) : (
               <EmptyState
-                title={today.error ? 'Today’s plan is unavailable' : 'No plan imported yet'}
-                description="Import a training plan to get a session recommendation here."
+                title={today.error ? 'Today’s plan is unavailable' : 'No plan yet'}
+                description={
+                  isPhone()
+                    ? ''
+                    : 'Import a training plan to get a session recommendation here.'
+                }
               />
             )}
           </Card>
-          <Card>
-            <CardHeader
-              title="Import a plan"
-              subtitle="Paste a training plan document to create a block."
-            />
-            <div className="space-y-3 p-4">
-              <div className="flex gap-2">
-                <select
-                  aria-label="Plan format"
-                  className={inputClass}
-                  value={format}
-                  onChange={(e) => setFormat(e.target.value)}
-                >
-                  <option value="markdown">Markdown</option>
-                  <option value="csv">CSV</option>
-                  <option value="json">JSON</option>
-                </select>
-                <Button
-                  disabled={!content.trim() || importing.isPending}
-                  onClick={() => importing.mutate()}
-                >
-                  {importing.isPending ? 'Importing…' : 'Import'}
-                </Button>
-              </div>
-              <textarea
-                className={`${inputClass} min-h-32`}
-                value={content}
-                onChange={(e) => setContent(e.target.value)}
-                placeholder="Paste your plan here"
+          {/*
+            v1 views the data. The phone does not author a plan: the import
+            is the desktop's job, and the phone reads what it finds.
+          */}
+          {isPhone() ? null : (
+            <Card>
+              <CardHeader
+                title="Import a plan"
+                subtitle="Paste a training plan document to create a block."
               />
-              <p className="text-xs text-ink-muted">
-                Supports Markdown week sections, CSV rows, or structured JSON.
-              </p>
-              {importMessage && (
-                <div className="rounded-md bg-surface-soft p-3 text-sm">
-                  {importMessage.name && (
-                    <p className="font-semibold">Imported {importMessage.name}</p>
-                  )}
-                  {importMessage.error && (
-                    <p className="text-negative">{importMessage.error}</p>
-                  )}
-                  {importMessage.warnings.map((w, i) => (
-                    <p key={i} className="text-amber-700">
-                      {w}
-                    </p>
-                  ))}
+              <div className="space-y-3 p-4">
+                <div className="flex gap-2">
+                  <select
+                    aria-label="Plan format"
+                    className={inputClass}
+                    value={format}
+                    onChange={(e) => setFormat(e.target.value)}
+                  >
+                    <option value="markdown">Markdown</option>
+                    <option value="csv">CSV</option>
+                    <option value="json">JSON</option>
+                  </select>
+                  <Button
+                    disabled={!content.trim() || importing.isPending}
+                    onClick={() => importing.mutate()}
+                  >
+                    {importing.isPending ? 'Importing…' : 'Import'}
+                  </Button>
                 </div>
-              )}
-              {importing.isError && (
-                <p className="text-sm text-negative">
-                  Plan import is temporarily unavailable. Your text is still here; try again
-                  shortly.
+                <textarea
+                  className={`${inputClass} min-h-32`}
+                  value={content}
+                  onChange={(e) => setContent(e.target.value)}
+                  placeholder="Paste your plan here"
+                />
+                <p className="text-xs text-ink-muted">
+                  Supports Markdown week sections, CSV rows, or structured JSON.
                 </p>
-              )}
-            </div>
-          </Card>
+                {importMessage && (
+                  <div className="rounded-md bg-surface-soft p-3 text-sm">
+                    {importMessage.name && (
+                      <p className="font-semibold">Imported {importMessage.name}</p>
+                    )}
+                    {importMessage.error && (
+                      <p className="text-negative">{importMessage.error}</p>
+                    )}
+                    {importMessage.warnings.map((w, i) => (
+                      <p key={i} className="text-amber-700">
+                        {w}
+                      </p>
+                    ))}
+                  </div>
+                )}
+                {importing.isError && (
+                  <p className="text-sm text-negative">
+                    Plan import is temporarily unavailable. Your text is still here; try again
+                    shortly.
+                  </p>
+                )}
+              </div>
+            </Card>
+          )}
         </div>
       </div>
       <div className="mt-4 grid gap-4 md:grid-cols-4">

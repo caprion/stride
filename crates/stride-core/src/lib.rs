@@ -48,6 +48,7 @@ pub mod model;
 pub mod numeric;
 pub mod ordered;
 pub mod plan;
+pub mod plan_sources;
 pub mod readiness;
 
 pub use comparison::{
@@ -70,6 +71,11 @@ pub use plan::{
     adherence, explain_cause, is_run_sport, match_sessions, today_plan, verdict_for, week_plan,
     Adherence, AdherenceRow, CauseInputs, PlanInputs, SessionMatch, SessionRow, TodayInput,
     TodayPlan, Verdict, WeekPlan, WeekSummary, WeekTarget, RUN_SPORTS as PLAN_RUN_SPORTS,
+};
+pub use plan_sources::{
+    baseline_verdict, infer_plan, normalise_date, session_from_workout, sessions_from_workouts,
+    weekday_index, weekday_name, workouts_plan, BaselineVerdict, InferredPlan, ScheduledWorkout,
+    WorkoutDetail, WorkoutsPlan,
 };
 pub use readiness::{
     baselines, readiness, readiness_range, Baselines, CoreError, Readiness, ReadinessDriver,

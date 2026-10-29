@@ -18,7 +18,7 @@ import { Link } from 'react-router-dom'
 import { api, openNativeGarminSetup } from '../lib/api'
 import { useGarminState } from '../lib/garmin'
 import { isPhone } from '../lib/surface'
-import { formatNumber, formatRelative } from '../lib/format'
+import { formatRelative } from '../lib/format'
 import { Badge, Button, cn } from './ui'
 /**
  * The indicator in the top bar.
@@ -27,7 +27,7 @@ import { Badge, Button, cn } from './ui'
  * the same hook, so the app has one answer and not three that can disagree.
  */
 export function GarminPill() {
-  const { connected, syncing, lastSyncAt, runs } = useGarminState()
+  const { connected, syncing, lastSyncAt } = useGarminState()
   const phone = isPhone()
 
   // The exit node is the desktop's business: the phone has no server and no
@@ -39,6 +39,10 @@ export function GarminPill() {
   })
 
   const syncNow = useMutation({ mutationFn: () => api.runSync() })
+
+  // On the phone the pill opens the native screen: the same one place the
+  // key is typed, and the same one place the sync is started.
+  const open = useMutation({ mutationFn: () => openNativeGarminSetup() })
 
   if (syncing) {
     return (
@@ -53,17 +57,12 @@ export function GarminPill() {
     return <ConnectGarmin small />
   }
 
-  const label = phone
-    ? // The same words the native screen uses, from the same number.
-      `Connected · ${formatNumber(runs)} ${runs === 1 ? 'run' : 'runs'}`
-    : lastSyncAt
-      ? `Connected · ${formatRelative(lastSyncAt)}`
-      : 'Connected'
+  const label = lastSyncAt ? `Connected · ${formatRelative(lastSyncAt)}` : 'Connected'
 
   return (
     <button
-      onClick={() => (phone ? undefined : syncNow.mutate())}
-      disabled={phone || syncNow.isPending}
+      onClick={() => (phone ? open.mutate() : syncNow.mutate())}
+      disabled={phone ? open.isPending : syncNow.isPending}
       className="inline-flex items-center gap-2 rounded-full border border-edge bg-surface px-3 py-1.5 text-[12px] text-ink-soft transition-colors enabled:hover:bg-surface-soft"
       title={phone ? 'Garmin' : 'Sync now'}
     >

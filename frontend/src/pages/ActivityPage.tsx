@@ -34,6 +34,7 @@ import {
   Zap,
 } from 'lucide-react'
 import { api } from '../lib/api'
+import { isPhone } from '../lib/surface'
 import { ACCENT_DATA, INK_FAINT, SERIES, ZONE_COLORS } from '../lib/palette'
 import type { ActivityDetail, ActivitySummary, Lap, Stream } from '../types'
 import type { Fingerprint } from '../types_phase2'
@@ -231,6 +232,9 @@ function TitleBlock({
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState(activity.name)
 
+  // v1 views the data. The phone does not edit a run.
+  const editable = !isPhone()
+
   const startEditing = () => {
     setDraft(activity.name)
     setEditing(true)
@@ -273,15 +277,17 @@ function TitleBlock({
               <h1 className="min-w-0 text-[26px] font-bold leading-tight tracking-tight text-ink">
                 {activity.name}
               </h1>
-              <button
-                type="button"
-                onClick={startEditing}
-                aria-label="Rename activity"
-                title="Rename activity"
-                className="mt-1 shrink-0 rounded p-1 text-ink-faint transition-colors hover:bg-surface-sunken hover:text-ink-soft"
-              >
-                <Pencil size={14} strokeWidth={2} />
-              </button>
+              {editable ? (
+                <button
+                  type="button"
+                  onClick={startEditing}
+                  aria-label="Rename activity"
+                  title="Rename activity"
+                  className="mt-1 shrink-0 rounded p-1 text-ink-faint transition-colors hover:bg-surface-sunken hover:text-ink-soft"
+                >
+                  <Pencil size={14} strokeWidth={2} />
+                </button>
+              ) : null}
             </div>
           )}
 
@@ -602,6 +608,9 @@ function NotesSection({
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState(activity.description ?? '')
 
+  // v1 views the data. The phone does not write notes.
+  const editable = !isPhone()
+
   const start = () => {
     setDraft(activity.description ?? '')
     setEditing(true)
@@ -621,7 +630,7 @@ function NotesSection({
             How it felt, the route, the weather — the details you will want later.
           </p>
         </div>
-        {!editing ? (
+        {!editing && editable ? (
           <Button variant="secondary" size="sm" onClick={start}>
             <Pencil size={14} strokeWidth={2} />
             {activity.description ? 'Edit' : 'Add notes'}
@@ -1043,13 +1052,15 @@ export function ActivityPage() {
       ) : null}
 
       {/* ------------------------------------------------- 7. description */}
-      <section>
-        <NotesSection
-          activity={activity}
-          saving={patchMutation.isPending}
-          onSave={(description) => patchMutation.mutate({ description })}
-        />
-      </section>
+      {isPhone() && !activity.description ? null : (
+        <section>
+          <NotesSection
+            activity={activity}
+            saving={patchMutation.isPending}
+            onSave={(description) => patchMutation.mutate({ description })}
+          />
+        </section>
+      )}
 
       {/* --------------------------------------------- 8. prev / next nav */}
       {neighbours.previous || neighbours.next ? (
