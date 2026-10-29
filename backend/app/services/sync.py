@@ -231,7 +231,9 @@ def _run_sync_blocking(days: int | None = None, history: dict[str, Any] | None =
                 run.message = (
                     f"Synced {result['activities_new']} new and "
                     f"{result['activities_updated']} updated activities, plus "
-                    f"{result['wellness_days']} days of health data."
+                    f"{result['wellness_days']} days of health data "
+                    f"({result.get('wellness_days_skipped', 0)} days already held, "
+                    f"{result.get('wellness_requests', 0)} requests)."
                 )
                 state.update(last_sync_at=datetime.now(timezone.utc).isoformat())
                 if result["activities_new"] and state.demo_visible:
@@ -307,7 +309,13 @@ def _sync_health_in_background() -> None:
             from .health_sync import sync_health
 
             result = sync_health(days=30)
-            log.info("Health sync: %s", result)
+            log.info(
+                "Health sync: %s days written, %s days already held, %s requests, %s errors",
+                result.get("days_written"),
+                result.get("days_skipped"),
+                result.get("requests"),
+                result.get("errors"),
+            )
         except Exception as exc:
             log.warning("Health sync failed: %s", exc)
 

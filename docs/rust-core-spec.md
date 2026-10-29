@@ -392,7 +392,7 @@ against a golden file, say so in your report and say why — that is a gap in
 the fixtures, and it should be fixed rather than papered over.
 
 **As built, all six crates have a golden test**, and the gate measures
-**331 tests passed, 36 golden assertions**:
+**355 tests passed, 38 golden assertions**:
 
 | crate | the golden test |
 |---|---|

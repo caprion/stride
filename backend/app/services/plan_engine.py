@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import statistics
 from datetime import date, timedelta
-from typing import Any
+from typing import Any, Mapping
 
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
@@ -12,9 +12,64 @@ from ..models import Activity
 from ..models_phase2 import DailyPhysiology, PlanPhase, PlanResult, PlanSession, PlanWeek, RunFingerprint
 from ..services.analytics import RUN_SPORTS, demo_filter
 
+#: A session that has not happened yet. It is neither a hit nor a miss: it is
+#: not evidence of anything, and it does not count in the adherence
+#: denominator. A session dated in the future used to be reported as
+#: "missed", which made the headline number wrong — and a future rest day
+#: was reported as "hit", which was worse.
+#:
+#: The name is the same in the Rust core (``crates/stride-core/src/plan.rs``)
+#: so the two implementations agree on the wire.
+NOT_YET_DUE = "not_yet"
+
+#: The verdicts a *prescribed* plan can produce. A baseline (an inferred
+#: plan) never says "missed": nobody wrote it down, so nothing was missed.
+PRESCRIBED_VERDICTS = ("hit", "missed_pace", "short", "missed", "substituted")
+BASELINE_VERDICTS = ("less_than_usual", "more_than_usual", "on_a_usual_day", "no_usual_session")
+
 
 def _date(s: str) -> date: return date.fromisoformat(s[:10])
 def _pace(a: Activity) -> float | None: return a.moving_time_s/(a.distance_m/1000) if a.distance_m and a.moving_time_s else None
+
+
+def _today(today: date | str | None) -> date:
+    """The day the plan is judged against.
+
+    It is an argument, not a reading of the clock, so a test — and the
+    golden fixtures — can say which day they mean.
+    """
+    if today is None:
+        return date.today()
+    if isinstance(today, date):
+        return today
+    return _date(str(today))
+
+
+def _field(obj: Any, name: str, default: Any = None) -> Any:
+    """Read a field from a row or from a plain dictionary."""
+    if isinstance(obj, Mapping):
+        value = obj.get(name, default)
+    else:
+        value = getattr(obj, name, default)
+    return default if value is None else value
+
+
+def _session_date(session: Any) -> date:
+    return _date(str(_field(session, "date", "")))
+
+
+def _not_yet_due() -> dict[str, Any]:
+    """The verdict of a session that has not happened yet."""
+    return {
+        "verdict": NOT_YET_DUE,
+        "distance_hit": False,
+        "pace_band_hit": None,
+        "distance_delta_m": None,
+        "pace_delta_s_km": None,
+        "adherence_score": None,
+        "cause": None,
+        "cause_confidence": None,
+    }
 
 
 def active_block_id(db: Session) -> int | None:
@@ -51,7 +106,19 @@ def _planned(db: Session, start: str, end: str) -> list[PlanSession]:
     return list(db.execute(stmt.order_by(PlanSession.date, PlanSession.id)).scalars())
 
 
-def match_sessions(db: Session, from_date: str, to_date: str) -> list[dict[str, Any]]:
+def match_sessions(db: Session, from_date: str, to_date: str, today: date | str | None = None, prescribed: bool = True) -> list[dict[str, Any]]:
+    """The sessions of a range, with the verdict on each.
+
+    ``today`` is the day the plan is judged against. A session dated after it
+    has not happened yet: it is neither a hit nor a miss, and it is not
+    evidence of anything.
+
+    ``prescribed`` says what kind of plan this is. A prescribed plan is
+    judged ``hit``/``missed``; a baseline — a plan inferred from the
+    athlete's own habits — is judged ``less than usual`` and never says
+    ``missed``.
+    """
+    today = _today(today)
     planned = _planned(db, from_date, to_date)
     acts = list(db.execute(demo_filter(select(Activity).where(Activity.local_date >= (date.fromisoformat(from_date)-timedelta(days=2)).isoformat(), Activity.local_date <= (date.fromisoformat(to_date)+timedelta(days=2)).isoformat()))).scalars())
     claimed: set[int] = set(); out=[]
@@ -66,8 +133,8 @@ def match_sessions(db: Session, from_date: str, to_date: str) -> list[dict[str, 
             near = [a for a in candidates if a.sport_type in RUN_SPORTS and abs((_date(a.local_date)-target).days)<=2]
             if near: chosen=min(near,key=lambda a:(abs((_date(a.local_date)-target).days), abs((a.distance_m or 0)-(s.target_distance_m or a.distance_m))))
         if chosen: claimed.add(chosen.id)
-        verdict = verdict_for(s, chosen)
-        if s.session_type == "rest" and chosen is None:
+        verdict = verdict_for_source(s, chosen, today=today, prescribed=prescribed)
+        if s.session_type == "rest" and chosen is None and verdict["verdict"] != NOT_YET_DUE:
             # A logged absence is the intended outcome of a rest prescription.
             verdict = {"verdict":"hit","distance_hit":True,"pace_band_hit":None,"distance_delta_m":None,"pace_delta_s_km":None,"adherence_score":100.0,"cause":None,"cause_confidence":None}
         phys = db.get(DailyPhysiology, s.date)
@@ -93,25 +160,71 @@ def _activity_dict(a):
     return {"id":a.id,"date":a.local_date,"name":a.name,"sport_type":a.sport_type,"distance_m":a.distance_m,"pace_s_km":_pace(a)}
 
 
-def verdict_for(session: PlanSession, activity: Activity | None) -> dict[str, Any]:
-    target=session.target_distance_m or 0; actual=activity.distance_m if activity else None
+def verdict_for(session: PlanSession, activity: Activity | None, today: date | str | None = None) -> dict[str, Any]:
+    """The verdict on one session of a prescribed plan.
+
+    A session that has not happened yet is ``not_yet``: it is neither a hit
+    nor a miss, it does not count in the adherence denominator, and it is not
+    evidence of anything. Reporting it as ``missed`` says the athlete failed
+    to do something they have not been given the chance to do yet.
+
+    The session may be a row or a plain dictionary, so the same function
+    judges a stored plan and a plan a source produced.
+    """
+    today = _today(today)
+    if _session_date(session) > today:
+        return _not_yet_due()
+    target=_field(session,"target_distance_m") or 0; actual=activity.distance_m if activity else None
     delta=(actual-target) if actual is not None and target else None
     pace=_pace(activity) if activity else None
-    band=bool(pace is not None and (session.pace_low_s_km is None or pace>=session.pace_low_s_km) and (session.pace_high_s_km is None or pace<=session.pace_high_s_km)) if session.pace_low_s_km is not None or session.pace_high_s_km is not None else None
+    low=_field(session,"pace_low_s_km"); high=_field(session,"pace_high_s_km")
+    band=bool(pace is not None and (low is None or pace>=low) and (high is None or pace<=high)) if low is not None or high is not None else None
     distance_hit=bool(actual is not None and (not target or actual>=target*.95 or abs(actual-target)<=actual*.05))
+    session_type=_field(session,"session_type")
     if not activity: verdict="missed"
-    elif session.session_type in ("rest","strength") and activity.sport_type in RUN_SPORTS: verdict="substituted"
-    elif session.session_type=="tempo" and _looks_interval(activity): verdict="substituted"
-    elif session.session_type=="interval" and _looks_long(activity, target): verdict="substituted"
+    elif session_type in ("rest","strength") and activity.sport_type in RUN_SPORTS: verdict="substituted"
+    elif session_type=="tempo" and _looks_interval(activity): verdict="substituted"
+    elif session_type=="interval" and _looks_long(activity, target): verdict="substituted"
     elif target and actual < target*.8: verdict="short"
     elif distance_hit and band is False: verdict="missed_pace"
     elif distance_hit and band is not False: verdict="hit"
     else: verdict="short"
     dist_score=100 if not target or actual is None else max(0,min(100,actual/target*100))
-    pace_score=100 if band is None else (100 if band else max(0,100-min(abs((pace or 0)-(session.pace_low_s_km or session.pace_high_s_km or 0))/60*10,100)))
+    pace_score=100 if band is None else (100 if band else max(0,100-min(abs((pace or 0)-(low or high or 0))/60*10,100)))
     type_score=0 if verdict=="substituted" else 100
     score=None if not activity else round(.5*dist_score+.4*pace_score+.1*type_score,1)
-    return {"verdict":verdict,"distance_hit":distance_hit if activity else False,"pace_band_hit":band,"distance_delta_m":delta,"pace_delta_s_km":(pace-statistics.mean([x for x in (session.pace_low_s_km,session.pace_high_s_km) if x is not None])) if pace is not None and (session.pace_low_s_km is not None or session.pace_high_s_km is not None) else None,"adherence_score":score,"cause":None,"cause_confidence":None}
+    return {"verdict":verdict,"distance_hit":distance_hit if activity else False,"pace_band_hit":band,"distance_delta_m":delta,"pace_delta_s_km":(pace-statistics.mean([x for x in (low,high) if x is not None])) if pace is not None and (low is not None or high is not None) else None,"adherence_score":score,"cause":None,"cause_confidence":None}
+
+
+def verdict_for_source(session: Any, activity: Activity | None, today: date | str | None = None, prescribed: bool = True) -> dict[str, Any]:
+    """The verdict on one session, chosen by the kind of plan it belongs to.
+
+    A **prescribed** plan — one somebody wrote down — is judged ``hit``,
+    ``missed`` and the rest. A **baseline** — a plan inferred from the
+    athlete's own habits — is judged ``less than usual``,
+    ``more than usual`` and ``on a usual day``, and it never says
+    ``missed``: nobody wrote it down, so nothing was missed.
+
+    A session that has not happened yet is ``not_yet`` either way.
+    """
+    if _session_date(session) > _today(today):
+        return _not_yet_due()
+    if prescribed:
+        return verdict_for(session, activity, today=today)
+    from . import plan_sources
+
+    session_dict = session if isinstance(session, Mapping) else _session_dict(session)
+    baseline = plan_sources.baseline_verdict(session_dict, activity)
+    return {
+        "verdict": baseline.get("verdict", "on_a_usual_day"),
+        "distance_hit": None,
+        "pace_band_hit": None,
+        "distance_delta_m": baseline.get("delta_m"),
+        "pace_delta_s_km": baseline.get("pace_delta_s_km"),
+        "adherence_score": None,
+        "cause": None,
+        "cause_confidence": None,
+    }
 
 
 def _looks_interval(a):
@@ -126,7 +239,9 @@ def explain_cause(session: PlanSession, activity: Activity | None, physiology: D
     "short sleep" to a session that was hit exactly would be noise, so a
     clean result carries no cause at all.
     """
-    if verdict == "hit":
+    if verdict in ("hit", "not_yet"):
+        # A hit needs no explanation, and a session that has not happened yet
+        # has nothing to explain: it is not evidence of anything.
         return None, None
     if not activity: return ("No activity was logged for the planned session.",0.0)
     if not physiology: return ("Physiology data is unavailable, so the reason for this result is unknown.",0.0)
@@ -158,9 +273,13 @@ def explain_cause(session: PlanSession, activity: Activity | None, physiology: D
     return ("Physiology data is unavailable, so the result is unexplained and may reflect fitness or an off-plan effort.",.1)
 
 
-def adherence(db: Session, from_date: str, to_date: str) -> dict[str, Any]:
-    matches=match_sessions(db,from_date,to_date); weeks={}
+def adherence(db: Session, from_date: str, to_date: str, today: date | str | None = None, prescribed: bool = True) -> dict[str, Any]:
+    today = _today(today)
+    matches=match_sessions(db,from_date,to_date,today,prescribed); weeks={}
     for row in matches:
+        # A session that has not happened yet is not evidence of anything: it
+        # does not count as planned, as completed, as missed or as hit.
+        if row["verdict"] == NOT_YET_DUE: continue
         s=row["session"]; key=_date(s["date"]).isocalendar(); wk=f"{key.year}-W{key.week:02d}"
         w=weeks.setdefault(wk,{"week_key":wk,"start_date":(date.fromisocalendar(key.year,key.week,1)).isoformat(),"phase":None,"planned_km":0.,"actual_km":0.,"planned_sessions":0,"completed_sessions":0,"missed_sessions":0,"hit_sessions":0})
         w["planned_sessions"]+=1
@@ -171,9 +290,10 @@ def adherence(db: Session, from_date: str, to_date: str) -> dict[str, Any]:
         if row["verdict"] in ("hit","missed_pace"): w["hit_sessions"]+=1
     rows=list(weeks.values())
     for w in rows: w["delta_km"]=round(w["actual_km"]-w["planned_km"],2); w["adherence_pct"]=round(w["hit_sessions"]/w["planned_sessions"]*100,1) if w["planned_sessions"] else None
-    if not matches: return {"overall_pct":None,"planned_km":0,"actual_km":0,"planned_sessions":0,"completed_sessions":0,"hit_sessions":0,"missed_sessions":0,"extra_sessions":0,"by_verdict":{},"rows":[]}
-    counts={k:sum(1 for r in matches if r["verdict"]==k) for k in ("hit","missed_pace","short","missed","substituted")}
-    return {"overall_pct":round(sum(r["verdict"] in ("hit","missed_pace") for r in matches)/len(matches)*100,1),"planned_km":round(sum(w["planned_km"] for w in rows),2),"actual_km":round(sum(w["actual_km"] for w in rows),2),"planned_sessions":len(matches),"completed_sessions":sum(bool(r["activity"]) for r in matches),"hit_sessions":counts["hit"]+counts["missed_pace"],"missed_sessions":counts["missed"],"extra_sessions":len(extra_activities(db,from_date,to_date)),"by_verdict":counts,"rows":rows}
+    due=[r for r in matches if r["verdict"] != NOT_YET_DUE]
+    if not due: return {"overall_pct":None,"planned_km":0,"actual_km":0,"planned_sessions":0,"completed_sessions":0,"hit_sessions":0,"missed_sessions":0,"extra_sessions":0,"by_verdict":{},"rows":[]}
+    counts={k:sum(1 for r in due if r["verdict"]==k) for k in ("hit","missed_pace","short","missed","substituted")}
+    return {"overall_pct":round(sum(r["verdict"] in ("hit","missed_pace") for r in due)/len(due)*100,1),"planned_km":round(sum(w["planned_km"] for w in rows),2),"actual_km":round(sum(w["actual_km"] for w in rows),2),"planned_sessions":len(due),"completed_sessions":sum(bool(r["activity"]) for r in due),"hit_sessions":counts["hit"]+counts["missed_pace"],"missed_sessions":counts["missed"],"extra_sessions":len(extra_activities(db,from_date,to_date)),"by_verdict":counts,"rows":rows}
 
 
 def extra_activities(db: Session, from_date: str, to_date: str) -> list[dict[str, Any]]:

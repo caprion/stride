@@ -24,9 +24,9 @@ pointed at a server; it is the server.
 |---|---|
 | the APK | **8.6 MB** (8,609,784 bytes), arm64-v8a |
 | the Rust core inside it | **8.58 MiB** — SQLCipher and OpenSSL vendored |
-| the desktop binary | **7.0 MB** |
-| the Rust gate | **331 tests passed, 36 golden assertions**, 9 of 9 checks green |
-| the route parity | **37 of 38 routes** answer with the same shape as the reference |
+| the desktop binary | **9.1 MB** |
+| the Rust gate | **355 tests passed, 38 golden assertions**, 9 of 9 checks green |
+| the route parity | **38 of 38 routes** answer with the same shape as the reference |
 
 ---
 
@@ -181,20 +181,26 @@ notes — is the next iteration, and it is deliberately not designed yet.
 ### The Plan screen does not need a document
 
 The Plan screen is the reason the app exists, and it must not be empty for
-anyone who does not write their plan in a markdown file. A plan comes from
-somewhere, and there are **two kinds**, and the screen never mixes them:
+anyone who does not write their plan in a markdown file. A plan is *intent*:
+a dated list of sessions with a target. Three sources, and the order
+matters:
 
-- **the plan you already have** — inferred from the athlete's own history:
-  the weekly volume, the rest days, the long-run day, the quality day. It is
-  a **baseline**, not a prescription, and it says so in every sentence it
-  produces.
-- **the plan you wrote down** — Garmin's scheduled workouts. It is a
-  **prescription**, because the athlete wrote it in Garmin Connect.
+1. **The plan you already have — inferred from the athlete's own history.**
+   Their weekly volume, their rest days, their long-run day, their usual
+   session length per weekday; twelve weeks of history gives all of it.
+   **Zero setup, and it works for everybody.**
 
-A baseline is compared with *less than usual*, *more than usual* and *on a
-usual day*; a prescription is compared with *hit* and *missed*. The
-distinction is not cosmetic: mixing them would apply "missed" — a judgement
-about a plan somebody else wrote — to a plan nobody wrote at all.
+   And it is not a prescription, so the words must not pretend it is. An
+   inferred plan is a *baseline*: **"less than usual"**, **"more than
+   usual"**, **"a usual day"** — not "missed" and "hit".
+2. **The plan you wrote down — Garmin's scheduled workouts.** A
+   *prescription*: the athlete wrote them down.
+3. **The plan you type in — a manual week.** Real, and a separate piece of
+   work: an editor, an API and the storage for it. **Not v1.**
+
+The distinction between the first two is not cosmetic: mixing them would
+apply "missed" — a judgement about a plan somebody else wrote — to a plan
+nobody wrote at all.
 
 **Work in flight.** The reference implementation is
 `backend/app/services/plan_sources.py`; the port is

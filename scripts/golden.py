@@ -25,6 +25,7 @@ import subprocess
 import sys
 import tempfile
 import time
+from datetime import date
 from pathlib import Path
 from typing import Any
 
@@ -380,11 +381,15 @@ def plan_section(app, parsed_cases: dict[str, Any]) -> dict[str, Any]:
                     pass
         session.flush()
 
+        # The day the plan is judged against is fixed in the scenario, so a
+        # session dated after it is *not yet* — the golden file does not move
+        # with the wall clock.
+        today = date.fromisoformat(scenario["today"])
         matches = app["plan_engine"].match_sessions(
-            session, scenario["range"][0], scenario["range"][1]
+            session, scenario["range"][0], scenario["range"][1], today
         )
         adherence = app["plan_engine"].adherence(
-            session, scenario["range"][0], scenario["range"][1]
+            session, scenario["range"][0], scenario["range"][1], today
         )
     finally:
         session.close()
@@ -404,7 +409,13 @@ def plan_section(app, parsed_cases: dict[str, Any]) -> dict[str, Any]:
             "cause": match["cause"],
             "cause_confidence": match["cause_confidence"],
         })
-    return {"scenario": scenario["id"], "range": scenario["range"], "sessions": rows, "adherence": adherence}
+    return {
+        "scenario": scenario["id"],
+        "range": scenario["range"],
+        "today": scenario["today"],
+        "sessions": rows,
+        "adherence": adherence,
+    }
 
 
 # ------------------------------------------------------------- the pipeline

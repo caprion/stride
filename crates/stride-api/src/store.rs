@@ -414,12 +414,39 @@ impl Backend for Store {
         Ok(Some(activity_row(&activity)))
     }
 
+    fn activity_raw(&self, id: i64) -> Result<Option<Value>, BackendError> {
+        Ok(self
+            .activity(id)
+            .map_err(|err| store_error("could not read the activity", err))?
+            .and_then(|activity| activity.raw))
+    }
+
     fn upsert_synced_activity(
         &self,
         activity: &ActivityRow,
         laps: &[LapRow],
         streams: &[StreamRow],
     ) -> Result<i64, BackendError> {
+        // The marker: an activity that has been rebuilt from its original FIT
+        // file cannot change, so the next sync must not download it again.
+        // The marker is the reference's `raw["fit_imported"]`.
+        let existing_raw = self
+            .activity_by_external(&activity.source, &activity.external_id)
+            .ok()
+            .flatten()
+            .and_then(|row| row.raw);
+        let raw = if laps.is_empty() && streams.is_empty() {
+            // Nothing came from a FIT file, so the marker is left as it was.
+            existing_raw
+        } else {
+            let mut object = existing_raw
+                .as_ref()
+                .and_then(Value::as_object)
+                .cloned()
+                .unwrap_or_default();
+            object.insert("fit_imported".to_string(), json!(true));
+            Some(Value::Object(object))
+        };
         let row = stride_store::Activity {
             id: None,
             athlete_id: activity.athlete_id,
@@ -457,6 +484,7 @@ impl Backend for Store {
             is_trail: activity.is_trail,
             is_commute: activity.is_commute,
             geo_points: activity.geo_points.as_ref().map(|points| json!(points)),
+            raw,
             ..stride_store::Activity::default()
         };
         let id = self

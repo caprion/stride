@@ -28,6 +28,78 @@ use crate::error::BackendError as Error;
 /// The Garmin Personal API client.
 type Client = stride_garmin::GarminClient;
 
+/// What the sync needs from Garmin.
+///
+/// The client is behind a trait so that the pull can be *measured*: the
+/// property that matters is how many calls a sync makes, and only a client
+/// that counts them can prove that a second sync makes none.
+pub trait GarminSource {
+    /// The activities in a window.
+    fn activities(
+        &self,
+        from: chrono::DateTime<chrono::Utc>,
+        to: chrono::DateTime<chrono::Utc>,
+    ) -> Result<Vec<stride_garmin::ActivitySummary>, stride_garmin::GarminError>;
+
+    /// One activity's detail.
+    fn activity_detail_canonical(
+        &self,
+        id: &str,
+    ) -> Result<stride_garmin::ActivityDetail, stride_garmin::GarminError>;
+
+    /// The original FIT file.
+    fn activity_fit(&self, id: &str) -> Result<Vec<u8>, stride_garmin::GarminError>;
+
+    /// A day of daily metrics.
+    fn daily_summary(&self, day: &str) -> Result<Value, stride_garmin::GarminError>;
+
+    /// A night of sleep.
+    fn sleep(&self, day: &str) -> Result<Value, stride_garmin::GarminError>;
+
+    /// A morning's heart-rate variability.
+    fn hrv(&self, day: &str) -> Result<Value, stride_garmin::GarminError>;
+
+    /// A day of heart rate.
+    fn daily_heart_rate(&self, day: &str) -> Result<Value, stride_garmin::GarminError>;
+}
+
+impl GarminSource for Client {
+    fn activities(
+        &self,
+        from: chrono::DateTime<chrono::Utc>,
+        to: chrono::DateTime<chrono::Utc>,
+    ) -> Result<Vec<stride_garmin::ActivitySummary>, stride_garmin::GarminError> {
+        Client::activities(self, from, to)
+    }
+
+    fn activity_detail_canonical(
+        &self,
+        id: &str,
+    ) -> Result<stride_garmin::ActivityDetail, stride_garmin::GarminError> {
+        Client::activity_detail_canonical(self, id)
+    }
+
+    fn activity_fit(&self, id: &str) -> Result<Vec<u8>, stride_garmin::GarminError> {
+        Client::activity_fit(self, id)
+    }
+
+    fn daily_summary(&self, day: &str) -> Result<Value, stride_garmin::GarminError> {
+        Client::daily_summary(self, day)
+    }
+
+    fn sleep(&self, day: &str) -> Result<Value, stride_garmin::GarminError> {
+        Client::sleep(self, day)
+    }
+
+    fn hrv(&self, day: &str) -> Result<Value, stride_garmin::GarminError> {
+        Client::hrv(self, day)
+    }
+
+    fn daily_heart_rate(&self, day: &str) -> Result<Value, stride_garmin::GarminError> {
+        Client::daily_heart_rate(self, day)
+    }
+}
+
 /// The most days a sync may look back.
 const MAX_ACTIVITY_DAYS: i64 = 3650;
 
@@ -37,11 +109,20 @@ const MAX_ACTIVITIES: usize = 300;
 /// What a sync did.
 #[derive(Debug, Clone, Default)]
 pub struct SyncOutcome {
+    /// How many days of health data the pull covers.
     pub days: usize,
     pub activities_found: usize,
     pub activities_new: usize,
     pub activities_updated: usize,
     pub errors: Vec<String>,
+    /// How many detail calls the pull made.
+    pub detail_calls: usize,
+    /// How many FIT files the pull downloaded.
+    pub fit_downloads: usize,
+    /// How many days of wellness the pull fetched.
+    pub health_days_fetched: usize,
+    /// How many days it skipped because they were already here.
+    pub health_days_skipped: usize,
 }
 
 impl SyncOutcome {
@@ -329,6 +410,22 @@ pub fn run(
     today: chrono::NaiveDate,
 ) -> Result<SyncOutcome, Error> {
     let client = Client::new(key.to_string());
+    run_with(backend, &client, days, health_days, today)
+}
+
+/// The pull, against any client.
+///
+/// The client is a parameter so that the pull can be measured: what matters
+/// is not that it works but **how many calls it makes**. A pull that fetches
+/// every activity's detail and downloads every FIT file again, on every
+/// sync, is 16 MB of mobile data a day for nothing.
+pub fn run_with<S: GarminSource + ?Sized>(
+    backend: &dyn Backend,
+    source: &S,
+    days: Option<i64>,
+    health_days: Option<i64>,
+    today: chrono::NaiveDate,
+) -> Result<SyncOutcome, Error> {
     let mut outcome = SyncOutcome::default();
 
     // The runs.
@@ -339,7 +436,7 @@ pub fn run(
         .and_hms_opt(0, 0, 0)
         .unwrap_or_else(|| today.and_hms_opt(12, 0, 0).unwrap_or_default());
     let start = end - chrono::Duration::days(window - 1);
-    let activities = client
+    let activities = source
         .activities(start.and_utc(), end.and_utc())
         .map_err(|err| Error::Domain(format!("Garmin would not answer: {err}")))?;
     outcome.activities_found = activities.len();
@@ -348,28 +445,60 @@ pub fn run(
         if id.is_empty() {
             continue;
         }
-        let canonical = match client.activity_detail_canonical(id) {
-            Ok(canonical) => canonical,
-            Err(err) => {
-                outcome.errors.push(format!("{id}: {err}"));
-                continue;
-            }
-        };
-        let mut activity = canonical_activity(&canonical);
-        let existing = backend
-            .activity_by_external("garmin_personal", &activity.external_id)
+        let mut existing = backend
+            .activity_by_external("garmin_personal", id)
             .unwrap_or(None);
+        let was_there = existing.is_some();
+
+        // Has this activity already been rebuilt from its original FIT file?
+        //
+        // The FIT file is the source of truth. If this activity has already
+        // been rebuilt from its FIT, its track and streams cannot have
+        // changed, so the download is skipped and nothing is fetched for it
+        // at all. An activity that only has the API's downsampled chart
+        // series has *not* been imported — it gets its FIT downloaded.
+        let imported = has_fit_records(existing.as_ref(), backend);
+
+        let mut activity = if imported {
+            // The stored row is the truth: it already holds the track, the
+            // splits and the per-second series. Without this the canonical
+            // `None` would overwrite the stored track and the streams.
+            match existing.take() {
+                Some(row) => row,
+                None => continue,
+            }
+        } else {
+            let canonical = match source.activity_detail_canonical(id) {
+                Ok(canonical) => canonical,
+                Err(err) => {
+                    outcome.errors.push(format!("{id}: {err}"));
+                    continue;
+                }
+            };
+            outcome.detail_calls += 1;
+            canonical_activity(&canonical)
+        };
+
         let mut laps = Vec::new();
         let mut streams = Vec::new();
-        // The FIT file, where the account has one.
-        if let Ok(bytes) = client.activity_fit(id) {
-            if let Ok(parsed) = stride_fit::parse_fit(&bytes, &format!("{id}.fit")) {
-                laps = fit_laps(&parsed);
-                streams = fit_streams(&parsed);
-                merge_fit(&mut activity, &laps, &streams, &parsed);
+        // The FIT file, where the account has one — and only where the
+        // activity has not been rebuilt from it already.
+        if !imported {
+            match source.activity_fit(id) {
+                Ok(bytes) => {
+                    outcome.fit_downloads += 1;
+                    if let Ok(parsed) = stride_fit::parse_fit(&bytes, &format!("{id}.fit")) {
+                        laps = fit_laps(&parsed);
+                        streams = fit_streams(&parsed);
+                        merge_fit(&mut activity, &laps, &streams, &parsed);
+                    }
+                }
+                // The reference logs the failure and carries on: an activity
+                // without its FIT is still an activity.
+                Err(_) => {}
             }
         }
-        if existing.is_some() {
+        if was_there {
             outcome.activities_updated += 1;
         } else {
             outcome.activities_new += 1;
@@ -386,27 +515,36 @@ pub fn run(
     let mut day = wellness_start;
     while day <= wellness_end {
         let key = day.format("%Y-%m-%d").to_string();
-        let mut row = backend
+        let existing = backend
             .physiology(&key, &key)
             .unwrap_or_default()
             .into_iter()
-            .next()
-            .unwrap_or_else(|| crate::backend::PhysiologyRow {
-                date: key.clone(),
-                source: Some("garmin_personal".to_string()),
-                ..crate::backend::PhysiologyRow::default()
-            });
+            .next();
+        if existing.as_ref().is_some_and(has_wellness) {
+            // The day is already here. Pulling it again costs four calls and
+            // changes nothing, so it is skipped — and the cost is reported,
+            // because a floor of zero calls a day is the whole point.
+            outcome.health_days_skipped += 1;
+            outcome.days += 1;
+            day += chrono::Duration::days(1);
+            continue;
+        }
+        let mut row = existing.unwrap_or_else(|| crate::backend::PhysiologyRow {
+            date: key.clone(),
+            source: Some("garmin_personal".to_string()),
+            ..crate::backend::PhysiologyRow::default()
+        });
         let mut failed = false;
-        if let Ok(payload) = client.daily_summary(&key) {
+        if let Ok(payload) = source.daily_summary(&key) {
             apply_daily_summary(&mut row, &payload);
         }
-        if let Ok(payload) = client.sleep(&key) {
+        if let Ok(payload) = source.sleep(&key) {
             apply_sleep(&mut row, &payload);
         }
-        if let Ok(payload) = client.hrv(&key) {
+        if let Ok(payload) = source.hrv(&key) {
             apply_hrv(&mut row, &payload);
         }
-        if let Ok(payload) = client.daily_heart_rate(&key) {
+        if let Ok(payload) = source.daily_heart_rate(&key) {
             apply_heart_rate(&mut row, &payload);
         }
         if let Err(err) = backend.upsert_physiology(&row) {
@@ -415,9 +553,77 @@ pub fn run(
         }
         if !failed {
             let _ = backend.upsert_daily_metric(&mirror_daily_metric(&row));
+            outcome.health_days_fetched += 1;
             outcome.days += 1;
         }
         day += chrono::Duration::days(1);
     }
+    // The cost of the pull, in the reference's own words. This is the line
+    // that says whether a sync was worth making.
+    eprintln!(
+        "Personal API pull: {} activities, {} detail calls, {} FIT downloads",
+        outcome.activities_found, outcome.detail_calls, outcome.fit_downloads
+    );
+    eprintln!(
+        "wellness: {} days fetched, {} days skipped",
+        outcome.health_days_fetched, outcome.health_days_skipped
+    );
     Ok(outcome)
+}
+
+/// Has this activity already been rebuilt from its original FIT file?
+///
+/// The Activity API returns a *chart* series — a few hundred points that
+/// Garmin downsamples for the web page. The FIT file carries the original
+/// per-second record stream, which is what the segmentation, the fingerprint
+/// and the drift metrics are computed from.
+///
+/// The two are easy to confuse and expensive to get wrong: an activity with a
+/// chart series looks imported, so the FIT is never downloaded, and the
+/// fingerprint silently never appears for it. So this checks the *resolution*
+/// of the series, not merely its presence.
+///
+/// Activities imported with the marker carry it in their raw payload; older
+/// ones are recognised by their per-second resolution.
+///
+/// The reference: `personal_sync._has_fit_records`.
+pub fn has_fit_records(existing: Option<&ActivityRow>, backend: &dyn Backend) -> bool {
+    let Some(existing) = existing else {
+        return false;
+    };
+    // The explicit marker.
+    if let Ok(Some(raw)) = backend.activity_raw(existing.id) {
+        if raw
+            .get("fit_imported")
+            .and_then(Value::as_bool)
+            .unwrap_or(false)
+        {
+            return true;
+        }
+    }
+    // The resolution of the series: per-second, not the chart's samples.
+    let Ok(streams) = backend.activity_streams(existing.id) else {
+        return false;
+    };
+    let longest = streams
+        .iter()
+        .map(|stream| stream.values.len())
+        .max()
+        .unwrap_or(0) as f64;
+    let elapsed = existing.elapsed_time_s;
+    if elapsed <= 0.0 {
+        return false;
+    }
+    longest >= 0.8 * elapsed
+}
+
+/// Does this day already hold wellness data?
+///
+/// A day with nothing in it is a day that was never pulled; a day with sleep
+/// or a heart rate in it is a day that is already here.
+fn has_wellness(row: &crate::backend::PhysiologyRow) -> bool {
+    row.sleep_s.is_some()
+        || row.hrv_ms.is_some()
+        || row.resting_hr.is_some()
+        || row.steps.is_some()
 }

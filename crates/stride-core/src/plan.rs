@@ -94,6 +94,11 @@ pub struct SessionMatch {
 /// Everything the plan engine needs, as plain data.
 #[derive(Clone, Debug)]
 pub struct PlanInputs<'a> {
+    /// The day the plan is judged against, `YYYY-MM-DD`.
+    ///
+    /// A session dated after it has not happened yet: it is neither a hit
+    /// nor a miss, and it is not evidence of anything.
+    pub today: &'a str,
     /// The first day of the range.
     pub from: &'a str,
     /// The last day of the range.
@@ -259,13 +264,50 @@ fn looks_interval(activity: &Activity) -> bool {
         .any(|needle| name.contains(needle))
 }
 
+/// Has this session not happened yet?
+///
+/// The reference: the session's date against the day the plan is judged
+/// against.
+fn is_future(session: &PlanSession, today: &str) -> bool {
+    match (Date::parse(&session.date), Date::parse(today)) {
+        (Some(date), Some(today)) => date > today,
+        // An unparseable day is not evidence of anything: it is treated as
+        // due, exactly as the reference treats a date it cannot read.
+        _ => false,
+    }
+}
+
 /// Whether the activity is much longer than the session targeted.
 fn looks_long(activity: &Activity, target: f64) -> bool {
     target != 0.0 && activity.distance_m > 14_000.0 && activity.distance_m > target * 1.25
 }
 
+/// The verdict of a session that has not happened yet.
+///
+/// It is neither a hit nor a miss, it does not count in the adherence
+/// denominator, and it is not evidence of anything.
+pub const NOT_YET_DUE: &str = "not_yet";
+
 /// The verdict on one session.
-pub fn verdict_for(session: &PlanSession, activity: Option<&Activity>) -> Verdict {
+///
+/// `today` is the day the plan is judged against. A session dated after it
+/// has not happened yet: it is neither a hit nor a miss, it does not count in
+/// the adherence denominator, and it is not evidence of anything. Reporting it
+/// as `missed` says the athlete failed to do something they have not been
+/// given the chance to do yet.
+pub fn verdict_for(session: &PlanSession, activity: Option<&Activity>, today: &str) -> Verdict {
+    if is_future(session, today) {
+        return Verdict {
+            verdict: NOT_YET_DUE.to_string(),
+            distance_hit: false,
+            pace_band_hit: None,
+            distance_delta_m: None,
+            pace_delta_s_km: None,
+            adherence_score: None,
+            cause: None,
+            cause_confidence: None,
+        };
+    }
     let target = session
         .target_distance_m
         .filter(|value| *value != 0.0)
@@ -366,6 +408,40 @@ pub fn verdict_for(session: &PlanSession, activity: Option<&Activity>) -> Verdic
     }
 }
 
+/// The verdict on one session, chosen by the kind of plan it belongs to.
+///
+/// A **prescribed** plan — one somebody wrote down — is judged `hit`,
+/// `missed` and the rest. A **baseline** — a plan inferred from the
+/// athlete's own habits — is judged `less_than_usual`, `more_than_usual` and
+/// `on_a_usual_day`, and it never says `missed`: nobody wrote it down, so
+/// nothing was missed.
+///
+/// A session that has not happened yet is `not_yet` either way.
+pub fn verdict_for_source(
+    session: &PlanSession,
+    activity: Option<&Activity>,
+    today: &str,
+    prescribed: bool,
+) -> Verdict {
+    if is_future(session, today) {
+        return verdict_for(session, activity, today);
+    }
+    if prescribed {
+        return verdict_for(session, activity, today);
+    }
+    let baseline = crate::plan_sources::baseline_verdict(session, activity);
+    Verdict {
+        verdict: baseline.verdict,
+        distance_hit: false,
+        pace_band_hit: None,
+        distance_delta_m: baseline.delta_m,
+        pace_delta_s_km: baseline.pace_delta_s_km,
+        adherence_score: None,
+        cause: None,
+        cause_confidence: None,
+    }
+}
+
 /// Why a session went the way it did.
 ///
 /// A cause is only produced for a session that did not go to plan; a `hit` has
@@ -376,7 +452,9 @@ pub fn explain_cause(
     physiology: Option<&CauseInputs>,
     verdict: &str,
 ) -> (Option<String>, Option<f64>) {
-    if verdict == "hit" {
+    if verdict == "hit" || verdict == "not_yet" {
+        // A hit needs no explanation, and a session that has not happened yet
+        // has nothing to explain: it is not evidence of anything.
         return (None, None);
     }
     let activity = match activity {
@@ -627,8 +705,8 @@ pub fn match_sessions(inputs: &PlanInputs<'_>) -> Vec<SessionMatch> {
             claimed.push(activity.id);
         }
 
-        let mut verdict = verdict_for(session, chosen);
-        if session.session_type == "rest" && chosen.is_none() {
+        let mut verdict = verdict_for(session, chosen, inputs.today);
+        if session.session_type == "rest" && chosen.is_none() && verdict.verdict != "not_yet" {
             // A logged absence is the intended outcome of a rest prescription.
             verdict = Verdict {
                 verdict: "hit".to_string(),
@@ -805,7 +883,9 @@ pub fn adherence(matches: &[SessionMatch], extra_sessions: usize) -> Adherence {
             completed_sessions: 0,
             hit_sessions: 0,
             missed_sessions: 0,
-            extra_sessions,
+            // The reference answers an empty range with no extra sessions
+            // either, and the two must agree.
+            extra_sessions: 0,
             by_verdict: OrderedMap::new(),
             rows: Vec::new(),
         };
@@ -813,6 +893,11 @@ pub fn adherence(matches: &[SessionMatch], extra_sessions: usize) -> Adherence {
 
     let mut weeks: Vec<(String, AdherenceRow)> = Vec::new();
     for entry in matches {
+        // A session that has not happened yet is not evidence of anything: it
+        // does not count as planned, as completed, as missed or as hit.
+        if entry.verdict.verdict == "not_yet" {
+            continue;
+        }
         let session = &entry.session;
         let date = match Date::parse(&session.date) {
             Some(date) => date,
@@ -889,10 +974,32 @@ pub fn adherence(matches: &[SessionMatch], extra_sessions: usize) -> Adherence {
         .iter()
         .filter(|entry| entry.verdict.verdict == "hit" || entry.verdict.verdict == "missed_pace")
         .count();
+    // The sessions that were due: the ones that have happened, or should
+    // have. A session that has not happened yet is not in the denominator.
+    let due = matches
+        .iter()
+        .filter(|entry| entry.verdict.verdict != "not_yet")
+        .count();
+    if due == 0 {
+        // Nothing was due: there is no adherence to report, and a percentage
+        // of nothing is not a number.
+        return Adherence {
+            overall_pct: None,
+            planned_km: 0.0,
+            actual_km: 0.0,
+            planned_sessions: 0,
+            completed_sessions: 0,
+            hit_sessions: 0,
+            missed_sessions: 0,
+            extra_sessions: 0,
+            by_verdict: OrderedMap::new(),
+            rows: Vec::new(),
+        };
+    }
 
     Adherence {
         overall_pct: Some(round_to(
-            hit_or_missed_pace as f64 / matches.len() as f64 * 100.0,
+            hit_or_missed_pace as f64 / due as f64 * 100.0,
             1,
         )),
         planned_km: round_to(
@@ -903,7 +1010,7 @@ pub fn adherence(matches: &[SessionMatch], extra_sessions: usize) -> Adherence {
             sum(&rows.iter().map(|row| row.actual_km).collect::<Vec<_>>()),
             2,
         ),
-        planned_sessions: matches.len(),
+        planned_sessions: due,
         completed_sessions: matches
             .iter()
             .filter(|entry| entry.activity.is_some())
@@ -974,6 +1081,7 @@ mod tests {
         let sessions = vec![session("easy", Some(1000.0))];
         let activities = vec![activity(1, "walking", 1000.0, "2026-03-02")];
         let inputs = PlanInputs {
+            today: "2026-03-20",
             from: "2026-03-01",
             to: "2026-03-03",
             sessions: &sessions,
@@ -990,6 +1098,7 @@ mod tests {
     fn a_rest_session_with_no_activity_is_a_hit() {
         let sessions = vec![session("rest", None)];
         let inputs = PlanInputs {
+            today: "2026-03-20",
             from: "2026-03-01",
             to: "2026-03-03",
             sessions: &sessions,
@@ -1008,6 +1117,7 @@ mod tests {
         let sessions = vec![session("rest", None)];
         let activities = vec![activity(1, "running", 1000.0, "2026-03-02")];
         let inputs = PlanInputs {
+            today: "2026-03-20",
             from: "2026-03-01",
             to: "2026-03-03",
             sessions: &sessions,
@@ -1034,6 +1144,7 @@ mod tests {
             })
             .collect();
         let inputs = PlanInputs {
+            today: "2026-03-20",
             from: "2026-03-01",
             to: "2026-03-03",
             sessions: &[planned],
@@ -1056,6 +1167,7 @@ mod tests {
         ];
         let activities = vec![activity(1, "running", 1000.0, "2026-03-02")];
         let inputs = PlanInputs {
+            today: "2026-03-20",
             from: "2026-03-01",
             to: "2026-03-05",
             sessions: &sessions,

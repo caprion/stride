@@ -30,7 +30,7 @@ from ..ingest.garmin_personal import GarminPersonalClient
 from ..ingest.normalize import blank_activity, safe_float, safe_int
 from ..models import Activity
 from ..models_phase2 import DailyPhysiology, Gear
-from .persistence import store_activity
+from .persistence import physiology_day_is_held, store_activity
 
 log = logging.getLogger(__name__)
 
@@ -403,8 +403,26 @@ def _merge_fit(activity: dict[str, Any], parsed: dict[str, Any]) -> dict[str, An
 # --------------------------------------------------------------- wellness
 
 
-def sync_wellness(days: int = 30) -> dict[str, Any]:
-    """Pull sleep, HRV, resting HR, stress, body battery and steps per day."""
+def sync_wellness(days: int = 30, force: bool = False) -> dict[str, Any]:
+    """Pull sleep, HRV, resting HR, stress, body battery and steps per day.
+
+    The pull is incremental. A day we already hold is not fetched again:
+    the wellness pull is four API calls per day, so a 30-day window is 120
+    requests, and repeating all of them on every sync is 120 requests a day,
+    forever. On a phone over mobile data that is the difference between a
+    sync and a bill.
+
+    Two days are exceptions:
+
+    - **Today.** It is not over, so its body battery, stress and steps are
+      still moving. It is pulled every time.
+    - **A day with no measurements in it.** Nothing was written for it —
+      either Garmin has nothing for it or its pull failed — so there is
+      nothing to reuse.
+
+    ``force`` re-pulls everything. It is not on the API: it is for an
+    operator who wants the whole window again.
+    """
     client = _client()
     days = _bounded_days(days, 30, MAX_WELLNESS_DAYS)
     end = date.today()
@@ -412,6 +430,7 @@ def sync_wellness(days: int = 30) -> dict[str, Any]:
 
     db = SessionLocal()
     written = 0
+    skipped = 0
     errors: list[str] = []
     try:
         # ``usersummary-service/usersummary/daily`` carries nearly everything a
@@ -422,6 +441,11 @@ def sync_wellness(days: int = 30) -> dict[str, Any]:
         while day <= end:
             key = day.isoformat()
             row = db.get(DailyPhysiology, key)
+            # Today is always pulled: the day is not over.
+            if not force and key != end.isoformat() and physiology_day_is_held(row):
+                skipped += 1
+                day += timedelta(days=1)
+                continue
             if row is None:
                 row = DailyPhysiology(date=key, source="garmin_personal")
                 db.add(row)
@@ -444,7 +468,12 @@ def sync_wellness(days: int = 30) -> dict[str, Any]:
     finally:
         db.close()
 
-    return {"days": written, "errors": errors[:10]}
+    return {
+        "days": written,
+        "days_skipped": skipped,
+        "requests": client.calls,
+        "errors": errors[:10],
+    }
 
 
 def _apply_sleep(client: GarminPersonalClient, row: DailyPhysiology, key: str) -> None:
@@ -628,7 +657,7 @@ def run(days: int = 90, history: dict[str, Any] | None = None, progress: Any = N
     except Exception as exc:
         # Health data is a bonus: losing it must not lose the activities.
         log.warning("Wellness pull failed: %s", exc)
-        wellness = {"days": 0, "errors": [str(exc)]}
+        wellness = {"days": 0, "days_skipped": 0, "requests": 0, "errors": [str(exc)]}
 
     # Stamp the sync here, not only in the API wrapper: this function is also
     # called from the production tool, and a sync that does not update the
@@ -640,6 +669,8 @@ def run(days: int = 90, history: dict[str, Any] | None = None, progress: Any = N
         "activities_new": created,
         "activities_updated": updated,
         "wellness_days": wellness.get("days", 0),
+        "wellness_days_skipped": wellness.get("days_skipped", 0),
+        "wellness_requests": wellness.get("requests", 0),
         "wellness_errors": wellness.get("errors", []),
     }
 

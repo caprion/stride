@@ -434,7 +434,12 @@ fn the_plan_matches_the_golden_file() {
 
     let from = scenario["range"][0].as_str().unwrap_or_default();
     let to = scenario["range"][1].as_str().unwrap_or_default();
+    // The day the plan is judged against. The scenario fixes it, so the
+    // golden file does not move with the wall clock: a session dated after
+    // it is *not yet*.
+    let today = scenario["today"].as_str().unwrap_or_default();
     let inputs = PlanInputs {
+        today,
         from,
         to,
         sessions: &sessions,

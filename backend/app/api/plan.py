@@ -29,14 +29,35 @@ from ..db import get_db
 from ..models import Activity
 from ..models_phase2 import PlanBlock, PlanPhase, PlanResult, PlanSession, PlanWeek
 from ..ingest.plan_importer import import_plan
-from ..services import plan_engine
+from ..services import plan_engine, plan_sources
 from ..services.analytics import _duration_label, _pace_s_per_km, demo_filter
 
 log = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/plan", tags=["plan"])
 
-ALL_VERDICTS = ("hit", "missed_pace", "short", "missed", "substituted", "bonus")
+# Every verdict the plan can report. ``not_yet`` is a session that has not
+# happened yet: it is neither a hit nor a miss and it does not count in the
+# adherence denominator. ``bonus`` is an activity that was not planned.
+ALL_VERDICTS = (
+    "hit",
+    "missed_pace",
+    "short",
+    "missed",
+    "substituted",
+    "bonus",
+    plan_engine.NOT_YET_DUE,
+)
+
+#: A human label for each verdict of a *prescribed* plan.
+VERDICT_LABELS = {
+    "hit": "hit",
+    "missed_pace": "missed pace",
+    "short": "short",
+    "missed": "missed",
+    "substituted": "substituted",
+    plan_engine.NOT_YET_DUE: "not yet due",
+}
 
 
 # ------------------------------------------------------------------ shapes
@@ -272,6 +293,122 @@ def _plan_date_range(db: Session) -> tuple[str, str]:
     start = block.start_date or date.today().isoformat()
     end = block.end_date or date.today().isoformat()
     return start, end
+
+
+# ----------------------------------------------------------------- sources
+#
+# Two kinds of plan, and they are not the same kind of thing:
+#
+# * **The plan the athlete wrote down** — Garmin's scheduled workouts, or a
+#   document they imported. It is a *prescription*.
+# * **The plan they already have** — inferred from their own history. It is
+#   a *baseline*, and it never says "missed".
+#
+# The verdict is chosen by the source's own ``prescribed`` flag, so the two
+# kinds are never judged by the same ruler.
+
+
+def _activity_on(activities: list[Activity], day: str | None) -> Activity | None:
+    """The run that answered a session on that day, if there was one."""
+    if not day:
+        return None
+    same = [a for a in activities if a.local_date == day and a.sport_type in ("running", "trail_running")]
+    return same[0] if same else None
+
+
+def _months(from_date: str, to_date: str) -> list[tuple[int, int]]:
+    """The months a range covers."""
+    try:
+        first = date.fromisoformat(from_date[:10])
+        last = date.fromisoformat(to_date[:10])
+    except ValueError:
+        return []
+    months: list[tuple[int, int]] = []
+    year, month = first.year, first.month
+    while (year, month) <= (last.year, last.month):
+        months.append((year, month))
+        month += 1
+        if month > 12:
+            year, month = year + 1, 1
+    return months
+
+
+def _garmin_source(from_date: str, to_date: str) -> dict[str, Any]:
+    """The plan the athlete wrote down in Garmin.
+
+    It needs a Garmin *account* session: the Personal API has no scheduled
+    workouts. When there is no session, the source says so instead of
+    pretending to be empty.
+    """
+    unavailable = {
+        "source": "garmin",
+        "prescribed": True,
+        "description": plan_sources.GARMIN_DESCRIPTION,
+        "available": False,
+        "reason": "No Garmin account session is configured, so the scheduled workouts cannot be read.",
+        "sessions": [],
+    }
+    if not (state.garmin_email and state.garmin_password):
+        return unavailable
+    try:
+        from ..ingest.garmin_account import GarminAccountClient
+        from ..ingest.garmin_workouts import GarminWorkoutClient
+
+        account = GarminAccountClient(
+            state.garmin_email, state.garmin_password, state.garmin_tokenstore
+        )
+        account.login()
+        client = GarminWorkoutClient(account._client)
+        scheduled: list[dict[str, Any]] = []
+        for year, month in _months(from_date, to_date):
+            scheduled.extend(client.scheduled_workouts(year, month))
+        details: list[dict[str, Any]] = []
+        for row in scheduled:
+            identifier = row.get("workout_id")
+            if identifier is None:
+                continue
+            detail = client.workout_detail(identifier)
+            if detail:
+                details.append(detail)
+        payload = plan_sources.workouts_plan(scheduled, details)
+        payload["available"] = True
+        payload["reason"] = None
+        return payload
+    except Exception as exc:  # pragma: no cover - the network
+        unavailable["reason"] = f"The scheduled workouts could not be read: {exc}"[:200]
+        return unavailable
+
+
+def _source_with_verdicts(
+    payload: dict[str, Any], activities: list[Activity]
+) -> dict[str, Any]:
+    """A plan a source produced, with the verdict on each of its sessions.
+
+    The verdict function is chosen by the source's own ``prescribed`` flag:
+    a prescription is judged hit/missed, a baseline is judged less than
+    usual and never says "missed".
+    """
+    prescribed = bool(payload.get("prescribed"))
+    sessions: list[dict[str, Any]] = []
+    for session in payload.get("sessions") or []:
+        activity = _activity_on(activities, session.get("date"))
+        verdict = plan_engine.verdict_for_source(session, activity, prescribed=prescribed)
+        if prescribed:
+            label = VERDICT_LABELS.get(verdict["verdict"], verdict["verdict"])
+            message = ""
+        else:
+            baseline = plan_sources.baseline_verdict(session, activity)
+            label = baseline.get("verdict_label") or verdict["verdict"]
+            message = baseline.get("message") or ""
+        sessions.append(
+            {
+                **session,
+                **verdict,
+                "verdict_label": label,
+                "message": message,
+            }
+        )
+    return {**payload, "sessions": sessions}
 
 
 # ----------------------------------------------------------------- routes
@@ -654,6 +791,38 @@ def results(
         db, date_from or start, date_to or end
     )
     return {"items": [_result(row) for row in rows]}
+
+
+@router.get("/sources")
+def plan_sources_route(
+    date_from: str | None = Query(None, alias="from"),
+    date_to: str | None = Query(None, alias="to"),
+    db: Session = Depends(get_db),
+) -> dict[str, Any]:
+    """The plans Stride can offer, each judged by its own ruler.
+
+    ``inferred`` is the baseline: the athlete's own usual week, derived
+    from their history, and never reported as missed. ``garmin`` is the
+    prescription: the scheduled workouts they wrote down.
+    """
+    start, end = _plan_date_range(db)
+    first = date_from or start
+    last = date_to or end
+    activities = list(
+        db.execute(
+            demo_filter(
+                select(Activity).where(
+                    Activity.local_date >= first, Activity.local_date <= last
+                )
+            )
+        ).scalars()
+    )
+    inferred = plan_sources.infer_plan(activities, first, last)
+    garmin = _garmin_source(first, last)
+    return {
+        "inferred": _source_with_verdicts(inferred, activities),
+        "garmin": _source_with_verdicts(garmin, activities),
+    }
 
 
 @router.get("/adherence")

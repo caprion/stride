@@ -12,6 +12,10 @@ chose the colours.
 - **`collage.html`** — the source of the collage. Open it in a browser to read
   it as a page, or print it to PDF.
 - **`shots/`** — the individual screenshots, captured from the running app.
+- **`review/`** — every screen on **both** hosts, 18 of them, against the real
+  data: ten desktop and eight phone. The phone set is the six destinations
+  plus an activity and the settings, so **Compare** and the **training
+  calendar** are absent — that is the cut, and the sheet says so.
 - **`palette-lab/`** — the five candidate palettes, side by side.
 
 **The promise is on the collage**, in the tagline, in one line:

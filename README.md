@@ -53,7 +53,7 @@ card says it, and the screenshots say it:
 |---|---|
 | the APK | **8.6 MB** (8,609,784 bytes), arm64-v8a |
 | the Rust core inside it | **8.58 MiB** — SQLCipher and OpenSSL vendored |
-| the desktop binary | **7.0 MB** (`target/release/stride`) |
+| the desktop binary | **9.1 MB** (9,478,400 bytes, `target/release/stride`) |
 
 The app is built in CI and signed with a key whose certificate is committed in
 `backend/app/assetlinks.json`; the key itself is only in the repository
@@ -95,19 +95,23 @@ Everything that **authors or edits** — a manual plan editor, editing a run,
 notes — is the next iteration, and it is deliberately not designed yet.
 
 **The Plan screen is the reason the app exists, and it does not need a
-document.** A plan comes from somewhere, and there are two kinds, and the
-screen never mixes them:
+document.** A plan is *intent*: a dated list of sessions with a target. The
+screen compares the intent with what happened and says why it did not match.
+Three sources, and the order matters:
 
-- **the plan you already have** — inferred from the athlete's own history:
-  the weekly volume, the rest days, the long-run day, the quality day. It is
-  a **baseline**, not a prescription, and it says so in every sentence.
-- **the plan you wrote down** — Garmin's scheduled workouts. It is a
-  **prescription**, because the athlete wrote it in Garmin Connect.
+1. **The plan you already have — inferred from your own history.** Every
+   runner has an implicit plan: their weekly volume, their rest days, their
+   long-run day, their usual session length per weekday. Twelve weeks of
+   history gives all of it. **Zero setup, and it works for everybody.**
 
-A baseline is compared with *less than usual*, *more than usual* and *on a
-usual day*; a prescription is compared with *hit* and *missed*. Mixing them
-would mean "missed" — a judgement about a plan somebody else wrote — being
-applied to a plan nobody wrote at all.
+   And it is not a prescription, so the words must not pretend it is. An
+   inferred plan is a *baseline*: **"less than usual"**, **"more than
+   usual"**, **"a usual day"** — not "missed" and "hit".
+2. **The plan you wrote down — Garmin's scheduled workouts.** If you schedule
+   workouts in Garmin Connect, those are your plan, and they are a
+   *prescription*: the athlete wrote them down.
+3. **The plan you type in — a manual week.** Real, and a separate piece of
+   work: an editor, an API and the storage for it. **Not v1.**
 
 > **Work in flight.** The plan sources are being built now: the reference is
 > `backend/app/services/plan_sources.py` and the port is
@@ -131,20 +135,24 @@ call.
 
 | gate | what it says | result |
 |---|---|---|
-| `./scripts/rust_gate.sh` | format, clippy, release build, tests, golden fixtures, panics, dependency set, size | **9 passed, 0 failed, 0 warnings** — 331 tests, 36 golden assertions |
+| `./scripts/rust_gate.sh` | format, clippy, release build, tests, golden fixtures, panics, dependency set, size | **9 passed, 0 failed, 0 warnings** — 355 tests, 38 golden assertions |
 | `./scripts/security_check.sh` | the Python side: permissions, configuration, dependencies, tests, the live service | **26 passed, 0 failed, 1 warning** |
 | `python3 scripts/check_apk.py <apk>` | the APK carries the Rust core and points at nothing | **the APK carries the Rust core and points at nothing** |
-| `python3 scripts/api_parity.py` | the Rust router and the Python reference, route by route | **37 of 38 routes answer with the same shape** |
+| `python3 scripts/api_parity.py` | the Rust router and the Python reference, route by route | **38 of 38 routes answer with the same shape** |
 
-The one parity difference is `GET /api/v1/health`: the Rust core reports
-`garmin.method: null` where the reference reports `"personal"`. It is a
-nullability difference in one field, and it is open.
+The Rust router and the Python reference now answer **all 38 routes** with
+the same shape: the same keys, the same types, the same nesting.
 
 ---
 
 ## Showcase
 
-A one-page collage of every surface: **[`showcase/stride-collage.png`](showcase/stride-collage.png)**.
+A one-page collage of every surface: **[`showcase/stride-collage.png`](showcase/stride-collage.png)** — the app as it is now, with the promise on it:
+
+> **Your data stays on this phone.**
+
+The individual screenshots are in [`showcase/shots/`](showcase/shots/), and
+[`showcase/README.md`](showcase/README.md) says how they are captured.
 
 ---
 
@@ -262,6 +270,11 @@ The app also detects a `429` or a bot challenge mid-sync and retries once
 through the other route automatically. The switch changes the **whole
 machine's** egress, not just Stride's traffic — switch it back to `direct`
 when other traffic needs the machine's own address.
+
+**The gap:** `/network/status` and `/network/route` answer **501** in the
+Rust core — "the network status is read from the machine, not from the
+database". The egress switch is the reference application's; the Rust
+desktop does not have it yet.
 
 ---
 

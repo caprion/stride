@@ -4,6 +4,7 @@
     "2026-03-02",
     "2026-03-20"
   ],
+  "today": "2026-03-13",
   "sessions": [
     {
       "session": {
@@ -296,6 +297,48 @@
       "distance_delta_m": null,
       "pace_delta_s_km": null,
       "adherence_score": 100.0,
+      "cause": null,
+      "cause_confidence": null
+    },
+    {
+      "session": {
+        "id": 12,
+        "date": "2026-03-14",
+        "session_type": "easy",
+        "title": "Easy 600",
+        "details": null,
+        "target_distance_m": 600.0,
+        "pace_low_s_km": 320.0,
+        "pace_high_s_km": 400.0
+      },
+      "activity": null,
+      "verdict": "not_yet",
+      "distance_hit": false,
+      "pace_band_hit": null,
+      "distance_delta_m": null,
+      "pace_delta_s_km": null,
+      "adherence_score": null,
+      "cause": null,
+      "cause_confidence": null
+    },
+    {
+      "session": {
+        "id": 13,
+        "date": "2026-03-15",
+        "session_type": "rest",
+        "title": "Rest day",
+        "details": null,
+        "target_distance_m": null,
+        "pace_low_s_km": null,
+        "pace_high_s_km": null
+      },
+      "activity": null,
+      "verdict": "not_yet",
+      "distance_hit": false,
+      "pace_band_hit": null,
+      "distance_delta_m": null,
+      "pace_delta_s_km": null,
+      "adherence_score": null,
       "cause": null,
       "cause_confidence": null
     }

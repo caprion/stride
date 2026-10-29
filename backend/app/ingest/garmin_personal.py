@@ -87,6 +87,10 @@ class GarminPersonalClient:
         self._token: str | None = None
         self._token_expires_at: float = 0.0
         self._seen: set[str] = set()
+        #: How many API calls this client has made, token exchange included.
+        #: A sync reports it, so the cost of a pull is a number rather than a
+        #: guess — and a phone can show it.
+        self.calls = 0
 
     @staticmethod
     def _request(method: str, url: str, headers: dict[str, str], params: Any = None) -> requests.Response:
@@ -148,6 +152,7 @@ class GarminPersonalClient:
         if not force and self._token and time.time() < self._token_expires_at - 60:
             return self._token
         try:
+            self.calls += 1
             response = self._request("POST", f"{BASE}{TOKEN_PATH}", {"Authorization": f"ApiKey {self.api_key}"})
         except requests.RequestException as exc:
             raise PersonalApiError(f"Could not reach Garmin: {exc}") from exc
@@ -176,6 +181,7 @@ class GarminPersonalClient:
             raise PersonalApiError("No access token.")
         url = f"{BASE}{path}"
         try:
+            self.calls += 1
             response = self._request("GET", url, {"Authorization": f"Bearer {token}"}, params=params)
         except requests.RequestException as exc:
             raise PersonalApiError(f"Request to {path} failed: {exc}") from exc
@@ -202,6 +208,7 @@ class GarminPersonalClient:
         token = self.access_token()
         if not token:
             return None
+        self.calls += 1
         response = self._request("GET", f"{BASE}{path}", {"Authorization": f"Bearer {token}"})
         if response.status_code >= 400:
             return None

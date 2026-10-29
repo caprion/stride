@@ -39,6 +39,9 @@ class GarminHealthClient:
     def __init__(self, client: Any = None) -> None:
         self.client = client
         self._seen: set[str] = set()
+        #: How many API calls this client has made. A sync reports it, so the
+        #: cost of a pull is a number rather than a guess.
+        self.calls = 0
 
     def _get(self, method: str, *args: Any) -> Any:
         """Call one installed Garmin endpoint and remember non-empty replies."""
@@ -47,6 +50,7 @@ class GarminHealthClient:
             payload = getter(*args) if callable(getter) else None
         except Exception:
             return None
+        self.calls += 1
         if payload:
             self._seen.add(method)
         return payload

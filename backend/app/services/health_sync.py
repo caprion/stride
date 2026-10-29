@@ -10,6 +10,7 @@ from ..ingest.garmin_account import GarminAccountClient
 from ..ingest.garmin_health import GarminHealthClient
 from ..ingest.garmin_workouts import GarminWorkoutClient
 from ..models_phase2 import ActivityFact, DailyPhysiology, Gear
+from .persistence import physiology_day_is_held
 
 __all__ = ["sync_health", "sync_activity_facts", "sync_scheduled_workouts", "sources"]
 
@@ -59,8 +60,21 @@ def _date_index(payload: Any) -> dict[str, dict[str, Any]]:
     return indexed
 
 
-def sync_health(days: int = 30) -> dict[str, Any]:
-    """Pull recent physiology and upsert DailyPhysiology and Gear rows."""
+def sync_health(days: int = 30, force: bool = False) -> dict[str, Any]:
+    """Pull recent physiology and upsert DailyPhysiology and Gear rows.
+
+    The pull is incremental: a day we already hold is not fetched again.
+    The Health API costs six or seven calls per day, so a 30-day window is
+    roughly 200 requests — repeating all of them on every sync is 200
+    requests a day, forever.
+
+    Two days are exceptions:
+
+    - **Today.** It is not over, so its body battery, stress and steps are
+      still moving. It is pulled every time.
+    - **A day with no measurements in it.** Nothing was written for it, so
+      there is nothing to reuse.
+    """
     account = _account()
     if account is None:
         return {"days": days, "days_written": 0, "errors": ["Garmin account unavailable"]}
@@ -70,6 +84,7 @@ def sync_health(days: int = 30) -> dict[str, Any]:
     workouts = GarminWorkoutClient(client)
     errors: list[str] = []
     written = 0
+    skipped = 0
     day_count = max(0, int(days))
     end_date = date.today()
     start_date = end_date - timedelta(days=max(0, day_count - 1))
@@ -84,6 +99,11 @@ def sync_health(days: int = 30) -> dict[str, Any]:
     try:
         for offset in range(day_count):
             day = (end_date - timedelta(days=offset)).isoformat()
+            row = db.get(DailyPhysiology, day)
+            # Today is always pulled: the day is not over.
+            if not force and day != end_date.isoformat() and physiology_day_is_held(row):
+                skipped += 1
+                continue
             try:
                 sleep = health.sleep_for(day) if day not in sleep_rows else _normalise_sleep_row(sleep_rows[day])
                 hrv = health.hrv(day) if day not in hrv_rows else _normalise_hrv_row(hrv_rows[day])
@@ -118,7 +138,6 @@ def sync_health(days: int = 30) -> dict[str, Any]:
                 values = {key: value for key, value in values.items() if value is not None}
                 if not values:
                     continue
-                row = db.get(DailyPhysiology, day)
                 if row is None:
                     row = DailyPhysiology(date=day, source="garmin")
                     db.add(row)
@@ -149,7 +168,13 @@ def sync_health(days: int = 30) -> dict[str, Any]:
         errors.append(str(exc))
     finally:
         db.close()
-    return {"days": days, "days_written": written, "errors": errors}
+    return {
+        "days": days,
+        "days_written": written,
+        "days_skipped": skipped,
+        "requests": health.calls,
+        "errors": errors,
+    }
 
 
 def _normalise_sleep_row(row: dict[str, Any]) -> dict[str, Any]:

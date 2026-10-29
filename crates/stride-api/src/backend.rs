@@ -763,6 +763,19 @@ pub trait Backend: Send + Sync {
     /// Revoke a device.
     fn revoke_device(&self, device_id: &str) -> Result<Value, BackendError>;
 
+    /// The raw provider payload of an activity, when it has one.
+    ///
+    /// The `fit_imported` marker lives in here: it says the activity has
+    /// already been rebuilt from its original FIT file, so nothing about the
+    /// file can have changed and it does not have to be fetched again.
+    ///
+    /// The default is `None`. A backend that keeps the payload elsewhere —
+    /// the phone's preferences, for instance — has no marker to offer, and
+    /// the sync falls back to the resolution of the series.
+    fn activity_raw(&self, _id: i64) -> Result<Option<Value>, BackendError> {
+        Ok(None)
+    }
+
     /// Store a Garmin Personal API key after validating it.
     fn connect_personal_key(&self, api_key: &str) -> Result<Value, BackendError>;
 

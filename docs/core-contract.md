@@ -26,7 +26,7 @@ cargo test --workspace        # the golden tests are part of it
 ```
 
 Each crate's golden test reads `backend/tests/golden/golden/<case_id>.json`
-and compares against it under the rules in §8. **36 golden assertions** run
+and compares against it under the rules in §8. **38 golden assertions** run
 in the gate; `cargo test` exits non-zero if any of them moves.
 
 > There was a plan for a `stride-port-check --case <case_id> --out out.json`

@@ -236,6 +236,12 @@ if curl -fsS -m 4 -o /dev/null "$BASE/api/v1/health" 2>/dev/null; then
     else
       warn "could not identify the device it paired to revoke it"
     fi
+    # Clean up after itself. A gate that leaves a paired device behind turns
+    # the Settings screen into a list of its own test runs.
+    if [[ -n "$device_id" ]]; then
+      curl -s -b "$master_jar" -o /dev/null -m 6 -X DELETE -H "Origin: $BASE" \
+        "$BASE/api/v1/auth/devices/$device_id"
+    fi
     rm -f "$jar" "$master_jar"
   else
     warn "could not mint a pairing code — the device checks were skipped"

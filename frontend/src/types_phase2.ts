@@ -447,3 +447,98 @@ export interface HistoryLoadResult {
   health_days: number | null
   reason?: string
 }
+
+/* ---------------------------------------------------------- plan sources */
+
+/**
+ * Where a plan came from.
+ *
+ * Two kinds, and they are not the same kind of thing:
+ *
+ * * `prescribed: false` — the **inferred** plan, derived from the athlete's
+ *   own history: their weekly volume, their rest days, their long-run day,
+ *   their quality day and their usual session per weekday. It is a
+ *   *baseline*, not a prescription, and it is compared with *less than
+ *   usual*, *more than usual* and *on a usual day*.
+ * * `prescribed: true` — the plan the athlete wrote down: Garmin's
+ *   scheduled workouts or an imported document. It is compared with *hit*
+ *   and *missed*.
+ *
+ * The two vocabularies are never mixed on one screen.
+ */
+export interface PlanSource {
+  /** Which source: `inferred`, `garmin`, `imported`, … */
+  source: string
+  /** Whether the plan was written down by the athlete. */
+  prescribed: boolean
+  /** What the source says about itself. */
+  description: string
+  /** Whether there was enough history to infer a pattern. */
+  sufficient?: boolean
+  /** Why it declined, when it declined. A sentence, not an error. */
+  reason?: string | null
+  /** Weeks of history the inference saw. */
+  history_weeks?: number | null
+  /** Runs the inference saw. */
+  history_runs?: number | null
+  /** The window the inference looked at. */
+  window_start?: string | null
+  window_end?: string | null
+  /** The usual weekly volume, in metres. */
+  weekly_volume_m?: number | null
+  /** The lightest week in the window. */
+  weekly_volume_low_m?: number | null
+  /** The heaviest week in the window. */
+  weekly_volume_high_m?: number | null
+  /** The weekdays the athlete does not run. */
+  rest_days?: string[]
+  /** The weekday of the usual long run. */
+  long_run_day?: string | null
+  /** The weekday of the usual quality run. */
+  quality_day?: string | null
+  /** The usual distance per weekday, in metres. */
+  usual_by_weekday?: Record<string, number | null>
+  /** The sessions of the plan. */
+  sessions?: PlanSourceSession[]
+}
+
+/** One session of a plan source. */
+export interface PlanSourceSession {
+  id?: number | null
+  date: string
+  session_type: string
+  title: string | null
+  details?: string | null
+  target_distance_m: number | null
+  pace_low_s_km: number | null
+  pace_high_s_km: number | null
+  result?: PlanSourceResult | null
+  activity?: PlanSourceActivity | null
+}
+
+/**
+ * The verdict of one session.
+ *
+ * The words are in the payload: `verdict_label` is what the athlete reads,
+ * and for an inferred plan it is *less than usual* and never *missed*.
+ */
+export interface PlanSourceResult {
+  verdict: string
+  verdict_label?: string | null
+  message?: string | null
+  cause?: string | null
+  cause_confidence?: number | null
+  usual_distance_m?: number | null
+  actual_distance_m?: number | null
+  delta_m?: number | null
+  pace_delta_s_km?: number | null
+  activity_id?: number | null
+}
+
+/** The run a session was matched with. */
+export interface PlanSourceActivity {
+  id: number
+  name: string
+  distance_m: number
+  pace_s_per_km: number | null
+}

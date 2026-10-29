@@ -16,8 +16,34 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from ..models import Activity, ActivityLap, ActivityStream, HrZone
+from ..models_phase2 import DailyPhysiology
 
 log = logging.getLogger(__name__)
+
+# The columns that hold a day's measurements. ``date``, ``source`` and
+# ``updated_at`` are bookkeeping; every other column is a measurement.
+_MEASUREMENT_COLUMNS = tuple(
+    column.name
+    for column in DailyPhysiology.__table__.columns
+    if column.name not in ("date", "source", "updated_at")
+)
+
+
+def physiology_day_is_held(row: DailyPhysiology | None) -> bool:
+    """Do we already hold this day's measurements?
+
+    The rule is the one the activity pull uses: **do not fetch what you
+    already hold.** A row that carries a measurement is the marker — the day
+    was pulled and the pull ran to the end, because a day that fails is
+    rolled back and leaves nothing behind.
+
+    A row with no measurement in it is *not* held: that is either a day
+    Garmin has nothing for, or a day whose pull failed. Either way there is
+    nothing to reuse, so it is fetched again.
+    """
+    if row is None:
+        return False
+    return any(getattr(row, name, None) is not None for name in _MEASUREMENT_COLUMNS)
 
 _ACTIVITY_FIELDS = (
     "name",

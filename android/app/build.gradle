@@ -133,6 +133,13 @@ tasks.register('cargoNdkBuild', Exec) {
     }
     inputs.dir file('src/main/rust/stride-ffi/src')
     inputs.file file('src/main/rust/stride-ffi/Cargo.toml')
+    // The shared crates are inputs too. The phone's crate is a member of
+    // the root workspace, so a change in `crates/` changes the library that
+    // goes into the APK - and Gradle hashes what a task declares, not what
+    // the shell it happens to run reads. Without these the build packages
+    // a core that is a version behind the one the tests ran against.
+    inputs.dir file("${rustWorkspaceDir}/crates")
+    inputs.file file("${rustWorkspaceDir}/Cargo.lock")
     inputs.property('abi', targetAbis[0])
     // The stamp lives in the build directory, **not** in the cargo target
     // directory: Gradle deletes a task's previous outputs when it re-runs

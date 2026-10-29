@@ -68,12 +68,13 @@ you read your own history and the intent behind it. A manual plan editor,
 editing a run and notes are the next iteration, and they are deliberately
 not designed yet.
 
-The Plan screen does not need a document: a plan comes from somewhere — the
-plan the athlete already has, inferred from their own history, or the plan
-they wrote down, Garmin's scheduled workouts. The first is a **baseline**,
-the second a **prescription**, and the screen never mixes them. The plan
-sources are being built now: the reference is
-`backend/app/services/plan_sources.py` and the port is
+The Plan screen does not need a document. A plan comes from one of three
+sources, and the order matters: the plan the athlete **already has**,
+inferred from their own history (a **baseline**: "less than usual", not
+"missed"); the plan they **wrote down**, Garmin's scheduled workouts (a
+**prescription**); and the plan they **type in**, a manual week — real, and
+separate work, and not v1. The plan sources are being built now: the
+reference is `backend/app/services/plan_sources.py` and the port is
 `crates/stride-core/src/plan_sources.rs`.
 
 The desktop keeps Compare and the training calendar. The cut is the
@@ -84,12 +85,12 @@ good there.
 
 | gate | result |
 |---|---|
-| `./scripts/rust_gate.sh` | **9 passed, 0 failed, 0 warnings** — 331 tests, 36 golden assertions |
+| `./scripts/rust_gate.sh` | **9 passed, 0 failed, 0 warnings** — 355 tests, 38 golden assertions |
 | `./scripts/security_check.sh` | **26 passed, 0 failed, 1 warning** |
 | `python3 scripts/check_apk.py <apk>` | the APK carries the Rust core and points at nothing |
-| `python3 scripts/api_parity.py` | **37 of 38 routes** answer with the same shape as the Python reference |
-| `backend/.venv/bin/python -m pytest -q` | **171 passed**, 2 skipped, 2 xfailed, 1 xpassed |
-| the desktop binary | **7.0 MB** |
+| `python3 scripts/api_parity.py` | **38 of 38 routes** answer with the same shape as the Python reference |
+| `backend/.venv/bin/python -m pytest -q` | **178 passed**, 2 skipped, 2 xfailed, 1 xpassed |
+| the desktop binary | **9.1 MB** |
 
 ### The contracts that are frozen
 
@@ -123,20 +124,22 @@ Ranked by what it costs the athlete.
    `/network/route` answer **501** on the desktop ("the network status is
    read from the machine, not from the database"). The reference app
    implements the egress switch; the Rust desktop does not.
-4. **One route differs in shape.** `GET /api/v1/health` reports
-   `garmin.method: null` where the reference reports `"personal"`. It is a
-   nullability difference in one field.
-5. **The design review's open items** — the fingerprint table as cards on a
-   phone, units on every driver number, volume bars coloured by tier, range
-   selectors on the remaining trend charts, the map as the hero of the
-   activity page. See `docs/design-review.md`.
-6. **The renderer costs about 100 MB on the phone.** Measured by the memory
-   workstream. A native UI is the answer if it matters; it is not yet a
-   decision.
-7. **The FIT is not yet the phone's storage format.** The design review
+4. **The FIT is not yet the phone's storage format.** The design review
    measured the exploded per-second series at **115 KB per activity** against
    **20 KB** for the original file. The phone should keep the FIT and derive
    from it; that is not done.
+5. **The renderer costs about 100 MB on the phone.** Measured by the memory
+   workstream. A native UI is the answer if it matters; it is not yet a
+   decision.
+6. **Two smaller design items are open**: the readiness grade is still not
+   one traffic light everywhere, and the fingerprint page is still 14.8
+   screens. See `docs/design-review.md` §6.
+
+> The design review's other five items — the fingerprint table as cards on a
+> phone, units on every driver number, volume bars coloured by tier, range
+> selectors on the trend charts and the map as the hero of the activity page
+> — **are done**, with the file and the mechanism in `docs/design-review.md`
+> §5.
 
 ---
 
