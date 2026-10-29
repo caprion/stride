@@ -29,6 +29,42 @@ REQUIRED = [
 MIN_CORE_BYTES = 1_000_000
 
 
+def _stale_core(apk: str) -> str | None:
+    """Is the core in the APK the one cargo just built?
+
+    Gradle's copy task used to ask only whether the ABI had changed, so a
+    cargo rebuild was invisible to it and the APK shipped the core from an
+    earlier build. The build succeeded, the app ran, and it was the wrong
+    code.
+    """
+    import glob
+    import hashlib
+    import os
+
+    built = []
+    for pattern in (
+        "target/aarch64-linux-android/release/libuniffi_stride.so",
+        "target/x86_64-linux-android/release/libuniffi_stride.so",
+        "android/app/src/main/rust/stride-ffi/target/*/release/libuniffi_stride.so",
+    ):
+        built.extend(glob.glob(pattern))
+    if not built:
+        return None
+    newest = max(built, key=os.path.getmtime)
+    with open(newest, "rb") as handle:
+        expected = hashlib.md5(handle.read()).hexdigest()
+    with zipfile.ZipFile(apk) as archive:
+        for name in archive.namelist():
+            if name.endswith("libuniffi_stride.so"):
+                actual = hashlib.md5(archive.read(name)).hexdigest()
+                if actual != expected:
+                    return (
+                        f"the APK carries {actual[:12]} but cargo built "
+                        f"{expected[:12]} ({newest})"
+                    )
+    return None
+
+
 def main(argv: list[str]) -> int:
     paths = argv[1:] or sorted(glob.glob("dist/*.apk")) or sorted(
         glob.glob("android/app/build/outputs/apk/release/*.apk")
@@ -39,6 +75,15 @@ def main(argv: list[str]) -> int:
 
     failures = 0
     for path in paths:
+        # A stale core is the failure this check exists for: the APK would
+        # run yesterday's code and the build would say nothing. The core in
+        # the APK has to be the core cargo just built.
+        stale = _stale_core(path)
+        if stale:
+            print(f"\n  {path}")
+            print(f"    STALE: {stale}")
+            failures += 1
+            continue
         with zipfile.ZipFile(path) as archive:
             names = archive.namelist()
             missing = [name for name in REQUIRED if name not in names]

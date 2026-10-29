@@ -630,7 +630,7 @@ pub fn dispatch(
         RouteId::PlanSources => json(routes::plan_sources(ctx, query)),
         RouteId::PlanToday => json(routes::plan_today(ctx, query)),
         RouteId::PhysiologyDaily => json(routes::physiology_daily(ctx, query)),
-        RouteId::PhysiologyLatest => json(routes::physiology_latest(ctx)),
+        RouteId::PhysiologyLatest => json(routes::physiology_latest(ctx, query)),
         RouteId::PhysiologySleep => json(routes::physiology_sleep(ctx, query)),
         RouteId::PhysiologyHrv => json(routes::physiology_hrv(ctx, query)),
         RouteId::PhysiologyReadiness => json(routes::physiology_readiness(ctx, query)),

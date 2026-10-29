@@ -32,7 +32,9 @@ fn the_status_carries_the_defaults() {
     assert_eq!(status["sync_days"], 90);
     assert_eq!(status["history_months"], 12);
     assert_eq!(status["auto_sync"], true);
-    assert_eq!(status["demo_visible"], true);
+    // The demo flag is gone with the demo dataset: the status does not
+    // carry it, and the reference does not answer it.
+    assert_eq!(status.get("demo_visible"), None);
 }
 
 /// A pairing code is minted, used once, and the device is listed.
@@ -137,9 +139,9 @@ fn the_settings_change() {
     assert_eq!(refused.detail, "Unknown network route.");
 }
 
-/// The state and the router agree about the demo data.
+/// The demo data is gone, and so is the flag that hid it.
 #[test]
-fn the_demo_data_can_be_hidden() {
+fn the_demo_flag_is_gone() {
     let api = api();
     let status = api
         .call(
@@ -148,11 +150,11 @@ fn the_demo_data_can_be_hidden() {
             Some(r#"{"demo_visible": false}"#),
         )
         .expect("the settings answer");
-    assert_eq!(status["demo_visible"], false);
+    assert_eq!(status.get("demo_visible"), None);
     let fresh = api
         .call("GET", "/api/v1/auth/status", None)
         .expect("the status answers");
-    assert_eq!(fresh["demo_visible"], false);
+    assert_eq!(fresh.get("demo_visible"), None);
 }
 
 /// The network route is read from the machine, and the route is validated

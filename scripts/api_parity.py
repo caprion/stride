@@ -69,9 +69,25 @@ ROUTES: list[tuple[str, str]] = [
 ]
 
 
-def get(base: str, path: str) -> tuple[int, object]:
+def bootstrap(base: str) -> str:
+    """The capability the server mints for a loopback browser.
+
+    The Rust core enforces the capability on every route, so a comparison
+    that does not have one is comparing 401s with 200s.
+    """
+    try:
+        with urllib.request.urlopen(f"{base.rstrip('/')}/api/v1/bootstrap", timeout=10) as response:
+            cookie = response.headers.get("set-cookie", "")
+    except Exception:
+        return ""
+    return cookie.split(";")[0]
+
+
+def get(base: str, path: str, cookie: str = "") -> tuple[int, object]:
     url = f"{base.rstrip('/')}{path}"
     request = urllib.request.Request(url, method="GET")
+    if cookie:
+        request.add_header("Cookie", cookie)
     try:
         with urllib.request.urlopen(request, timeout=10) as response:
             body = response.read().decode("utf-8", "replace")
@@ -117,9 +133,12 @@ def main(argv: list[str] | None = None) -> int:
     different: list[str] = []
     unreachable: list[str] = []
 
+    py_cookie = bootstrap(args.python)
+    rs_cookie = bootstrap(args.rust)
+
     for method, path in ROUTES:
-        py_status, py_body = get(args.python, path)
-        rs_status, rs_body = get(args.rust, path)
+        py_status, py_body = get(args.python, path, py_cookie)
+        rs_status, rs_body = get(args.rust, path, rs_cookie)
 
         if rs_status == 0:
             unreachable.append(f"{method} {path}: {rs_body}")

@@ -28,6 +28,7 @@ import {
 import { formatDate } from '../lib/format'
 import { Card, CardHeader, EmptyState, PageHeader, Skeleton, Badge } from '../components/ui'
 import { isPhone } from '../lib/surface'
+import { ConnectPrompt } from '../components/ConnectPrompt'
 import { ChartFrame } from '../components/charts'
 import { RangeSelector, sinceDate } from '../components/RangeSelector'
 
@@ -45,9 +46,21 @@ const num = (v: number | null | undefined, suffix = '') =>
 // 180 KB of JSON, and a year of readiness rows with their drivers is 210 KB
 // — none of it drawn. The drivers are still shown for today, which comes
 // from the latest endpoint.
+//
+// The daily rows are the desktop's: the table of Garmin's own metrics. The
+// phone does not draw them, so the phone does not ask for them.
 const DAILY_FIELDS = 'date,body_battery_avg,stress_avg,acute_load,chronic_load,steps'
 const READINESS_FIELDS = 'date,score,grade'
 const HRV_FIELDS = 'date,hrv_ms,baseline,resting_hr,rhr_baseline'
+
+// The readiness drivers the Body screen draws.
+//
+// The score is computed over seven — the stress, the body battery and the
+// load count too, and the score does not change. Three of the seven are
+// Garmin's own metrics, and they come off the phone's screen.
+//
+// The reference: `services.readiness.SHOWN_DRIVERS`.
+const SHOWN_DRIVERS = ['sleep', 'sleep_score', 'hrv', 'resting_hr']
 const NoRows = ({ loading, title }: { loading: boolean; title: string }) =>
   loading ? (
     <div className="p-4">
@@ -116,6 +129,7 @@ function ReadinessStrip({ items }: { items: { date: string; grade: string }[] })
 export default function PhysiologyPage() {
   const [days, setDays] = useState(90)
   const since = useMemo(() => sinceDate(days), [days])
+  const phone = isPhone()
 
   const sources = useQuery({
     queryKey: ['physiology-sources'],
@@ -147,20 +161,30 @@ export default function PhysiologyPage() {
     enabled,
     retry: false,
   })
+  // The daily rows are the desktop's table. The phone does not draw it, so
+  // the phone does not pay for it.
   const daily = useQuery({
     queryKey: ['physiology-daily'],
     queryFn: () => api.physiologyDaily(DAILY_FIELDS),
-    enabled,
+    enabled: enabled && !phone,
     retry: false,
   })
   const available = sources.data?.available === true
   const current = latest.data?.readiness
-  const drivers = current?.drivers ?? []
+  const drivers = useMemo(() => {
+    const all = current?.drivers ?? []
+    // The score counts seven drivers; the phone draws four of them.
+    return phone ? all.filter((driver) => SHOWN_DRIVERS.includes(driver.key)) : all
+  }, [current, phone])
   return (
     <div className="mx-auto max-w-7xl p-5">
       <PageHeader
-        title={isPhone() ? 'Body' : 'Physiology'}
-        description="Your recovery state, the signals behind it, and how they are moving."
+        title={phone ? 'Body' : 'Physiology'}
+        description={
+          phone
+            ? 'Your readiness, your sleep, and your resting heart rate.'
+            : 'Your recovery state, the signals behind it, and how they are moving.'
+        }
       />
       {sources.isLoading ? (
         <Card>
@@ -170,67 +194,76 @@ export default function PhysiologyPage() {
           </div>
         </Card>
       ) : !available ? (
-        <Card className="mb-4">
-          <CardHeader
-            title="Health data isn’t connected"
-            subtitle={
-              sources.data?.reason ||
-              (sources.error
-                ? 'The physiology source could not be reached.'
-                : 'Stride cannot reach the health endpoints yet.')
-            }
-          />
-          <div className="px-5 pb-5">
-            <p className="mb-3 text-sm text-ink-soft">
-              Connect Garmin with the account health access enabled, then sync again. Readiness,
-              sleep, HRV and resting heart rate require this connection.
-            </p>
-            {sources.data?.auth_method && (
-              <p className="mb-3 text-xs text-ink-muted">
-                Current connection: {sources.data.auth_method}
+        phone ? (
+          // The phone says one thing: connect, and the data follows. The
+          // Plan tab is not on the phone, so there is nothing to promise
+          // here about it.
+          <Card className="mb-4">
+            <ConnectPrompt what="your health data" />
+          </Card>
+        ) : (
+          <Card className="mb-4">
+            <CardHeader
+              title="Health data isn’t connected"
+              subtitle={
+                sources.data?.reason ||
+                (sources.error
+                  ? 'The physiology source could not be reached.'
+                  : 'Stride cannot reach the health endpoints yet.')
+              }
+            />
+            <div className="px-5 pb-5">
+              <p className="mb-3 text-sm text-ink-soft">
+                Connect Garmin with the account health access enabled, then sync again. Readiness,
+                sleep, HRV and resting heart rate require this connection.
               </p>
-            )}
-            {sources.data?.endpoints.length ? (
-              <div className="space-y-2">
-                {sources.data.endpoints.map((e) => (
-                  <div
-                    key={e.name}
-                    className="flex items-center justify-between rounded-md bg-surface-soft px-3 py-2 text-sm"
-                  >
-                    <span>{e.name.replace(/_/g, ' ')}</span>
-                    <span className="text-xs font-medium text-ink-muted">
-                      {e.available ? 'Available' : 'Not connected'}
-                    </span>
-                  </div>
-                ))}
+              {sources.data?.auth_method && (
+                <p className="mb-3 text-xs text-ink-muted">
+                  Current connection: {sources.data.auth_method}
+                </p>
+              )}
+              {sources.data?.endpoints?.length ? (
+                <div className="space-y-2">
+                  {sources.data.endpoints.map((e) => (
+                    <div
+                      key={e.name}
+                      className="flex items-center justify-between rounded-md bg-surface-soft px-3 py-2 text-sm"
+                    >
+                      <span>{e.name.replace(/_/g, ' ')}</span>
+                      <span className="text-xs font-medium text-ink-muted">
+                        {e.available ? 'Available' : 'Not connected'}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              ) : null}
+              {!sources.data && (
+                <p className="text-sm text-ink-muted">
+                  The source status endpoint is unavailable. No health charts are shown until
+                  availability can be confirmed.
+                </p>
+              )}
+              <div className="mt-4 flex flex-wrap items-center gap-3 border-t border-edge pt-4">
+                <Link
+                  to="/settings"
+                  className="inline-flex h-9 items-center rounded-md bg-brand-500 px-4 text-[14px] font-semibold text-white hover:bg-brand-600"
+                >
+                  Connect Garmin
+                </Link>
+                <Link
+                  to="/plan"
+                  className="text-[13px] font-medium text-brand-600 hover:underline"
+                >
+                  Plan vs actual works without it &rarr;
+                </Link>
               </div>
-            ) : null}
-            {!sources.data && (
-              <p className="text-sm text-ink-muted">
-                The source status endpoint is unavailable. No health charts are shown until
-                availability can be confirmed.
+              <p className="mt-3 text-xs text-ink-muted">
+                Once connected, this page will show your readiness score with the drivers behind
+                it, sleep stages, and HRV against your 30-day baseline.
               </p>
-            )}
-            <div className="mt-4 flex flex-wrap items-center gap-3 border-t border-edge pt-4">
-              <Link
-                to="/settings"
-                className="inline-flex h-9 items-center rounded-md bg-brand-500 px-4 text-[14px] font-semibold text-white hover:bg-brand-600"
-              >
-                Connect Garmin
-              </Link>
-              <Link
-                to="/plan"
-                className="text-[13px] font-medium text-brand-600 hover:underline"
-              >
-                Plan vs actual works without it &rarr;
-              </Link>
             </div>
-            <p className="mt-3 text-xs text-ink-muted">
-              Once connected, this page will show your readiness score with the drivers behind
-              it, sleep stages, and HRV against your 30-day baseline.
-            </p>
-          </div>
-        </Card>
+          </Card>
+        )
       ) : (
         <>
           <Card className="mb-4">
@@ -239,7 +272,7 @@ export default function PhysiologyPage() {
               subtitle={
                 current
                   ? `Updated for ${formatDate(current.date)}`
-                  : 'The score with its drivers exposed.'
+                  : 'The score, and the signals behind it.'
               }
             />
             {latest.isLoading ? (
@@ -524,55 +557,57 @@ export default function PhysiologyPage() {
                 />
               ) : null}
             </ChartFrame>
-            <Card>
-              <CardHeader
-                title="Body battery, stress and load"
-                subtitle="Daily context from Garmin"
-              />
-              {daily.isLoading ? (
-                <div className="space-y-2 p-4">
-                  {[1, 2, 3, 4].map((x) => (
-                    <Skeleton key={x} className="h-8" />
-                  ))}
-                </div>
-              ) : daily.data?.items.length ? (
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left text-xs">
-                    <thead className="bg-surface-soft text-[10px] uppercase text-ink-muted">
-                      <tr>
-                        {['Date', 'Battery avg', 'Stress avg', 'Acute / chronic', 'Steps'].map(
-                          (h) => (
-                            <th key={h} className="px-3 py-2">
-                              {h}
-                            </th>
-                          ),
-                        )}
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-edge">
-                      {daily.data.items
-                        .slice(-10)
-                        .reverse()
-                        .map((d) => (
-                          <tr key={d.date}>
-                            <td className="px-3 py-2">{formatDate(d.date)}</td>
-                            <td className="px-3 py-2">{num(d.body_battery_avg)}</td>
-                            <td className="px-3 py-2">{num(d.stress_avg)}</td>
-                            <td className="px-3 py-2">
-                              {num(d.acute_load)} / {num(d.chronic_load)}
-                            </td>
-                            <td className="px-3 py-2">
-                              {d.steps == null ? '—' : d.steps.toLocaleString()}
-                            </td>
-                          </tr>
-                        ))}
-                    </tbody>
-                  </table>
-                </div>
-              ) : (
-                <EmptyState title="No daily physiology recorded" />
-              )}
-            </Card>
+            {phone ? null : (
+              <Card>
+                <CardHeader
+                  title="Body battery, stress and load"
+                  subtitle="Daily context from Garmin"
+                />
+                {daily.isLoading ? (
+                  <div className="space-y-2 p-4">
+                    {[1, 2, 3, 4].map((x) => (
+                      <Skeleton key={x} className="h-8" />
+                    ))}
+                  </div>
+                ) : daily.data?.items.length ? (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left text-xs">
+                      <thead className="bg-surface-soft text-[10px] uppercase text-ink-muted">
+                        <tr>
+                          {['Date', 'Battery avg', 'Stress avg', 'Acute / chronic', 'Steps'].map(
+                            (h) => (
+                              <th key={h} className="px-3 py-2">
+                                {h}
+                              </th>
+                            ),
+                          )}
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-edge">
+                        {daily.data.items
+                          .slice(-10)
+                          .reverse()
+                          .map((d) => (
+                            <tr key={d.date}>
+                              <td className="px-3 py-2">{formatDate(d.date)}</td>
+                              <td className="px-3 py-2">{num(d.body_battery_avg)}</td>
+                              <td className="px-3 py-2">{num(d.stress_avg)}</td>
+                              <td className="px-3 py-2">
+                                {num(d.acute_load)} / {num(d.chronic_load)}
+                              </td>
+                              <td className="px-3 py-2">
+                                {d.steps == null ? '—' : d.steps.toLocaleString()}
+                              </td>
+                            </tr>
+                          ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <EmptyState title="No daily physiology recorded" />
+                )}
+              </Card>
+            )}
           </div>
         </>
       )}

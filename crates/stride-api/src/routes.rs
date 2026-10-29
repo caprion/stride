@@ -104,13 +104,14 @@ pub const PARAMETERS: [(&str, &str, &str, &str, &str); 15] = [
 /// The verdicts the plan engine can return.
 ///
 /// The reference: `api/plan.ALL_VERDICTS`.
-pub const ALL_VERDICTS: [&str; 6] = [
+pub const ALL_VERDICTS: [&str; 7] = [
     "hit",
     "missed_pace",
     "short",
     "missed",
     "substituted",
     "bonus",
+    "not_yet",
 ];
 
 /// The families of measurement the physiology sources endpoint reports.
@@ -246,9 +247,21 @@ pub fn auth_status(ctx: &Ctx<'_>) -> Result<Value, ApiError> {
     let mut payload = serde_json::to_value(&status)
         .map_err(|err| ApiError::internal(format!("could not render the status: {err}")))?;
     if let Some(object) = payload.as_object_mut() {
+        object.remove("demo_visible");
         object.insert("network".into(), network);
     }
     Ok(payload)
+}
+
+/// Drop the demo flag from a status.
+///
+/// The sample dataset is gone, and the flag that announced it goes with it:
+/// the reference no longer answers it, and a phone that still answered it
+/// would be telling the athlete it is showing them runs that are not theirs.
+fn without_demo_flag(payload: &mut Value) {
+    if let Some(object) = payload.as_object_mut() {
+        object.remove("demo_visible");
+    }
 }
 
 /// `GET /api/v1/auth/pair-code` — mint a pairing code.
@@ -510,7 +523,7 @@ pub fn list_activities(ctx: &Ctx<'_>, query: &Query) -> Result<Value, ApiError> 
     let items: Vec<Value> = rows
         .iter()
         .map(shapes::activity_summary)
-        .map(|item| shapes::pick(&item, wanted.as_ref()))
+        .map(|item| shapes::pick(&item, wanted.as_ref(), None))
         .collect();
     Ok(json!({
         "items": items,
@@ -574,7 +587,7 @@ pub fn get_activity(ctx: &Ctx<'_>, activity_id: i64, query: &Query) -> Result<Va
             ),
         );
     }
-    Ok(shapes::pick(&payload, wanted.as_ref()))
+    Ok(shapes::pick(&payload, wanted.as_ref(), None))
 }
 
 /// `PATCH /api/v1/activities/{activity_id}` — change the editable fields.
@@ -1011,12 +1024,13 @@ pub fn patch_settings(ctx: &Ctx<'_>, body: Option<&str>) -> Result<Value, ApiErr
     if let Some(node) = parsed.get("exit_node").and_then(Value::as_str) {
         patch.exit_node = Some(node.to_string());
     }
-    if let Some(demo) = parsed.get("demo_visible").and_then(Value::as_bool) {
-        patch.demo_visible = Some(demo);
-    }
+    // The demo flag is not a setting: the sample dataset is gone, and a
+    // request that names it is ignored, the way the reference ignores it.
     let status = ctx.backend.update_settings(&patch)?;
-    serde_json::to_value(&status)
-        .map_err(|err| ApiError::internal(format!("could not render the status: {err}")))
+    let mut payload = serde_json::to_value(&status)
+        .map_err(|err| ApiError::internal(format!("could not render the status: {err}")))?;
+    without_demo_flag(&mut payload);
+    Ok(payload)
 }
 
 // ---------------------------------------------------------------- network
@@ -1089,6 +1103,7 @@ pub fn plan_blocks(ctx: &Ctx<'_>, query: &Query) -> Result<Value, ApiError> {
         items.push(shapes::pick(
             &shapes::plan_block_payload(block, phases, weeks, sessions),
             wanted.as_ref(),
+            None,
         ));
     }
     Ok(json!({ "items": items }))
@@ -1428,6 +1443,7 @@ pub fn plan_current(ctx: &Ctx<'_>, query: &Query) -> Result<Value, ApiError> {
     Ok(shapes::pick(
         &json!({ "block": detail, "week": week }),
         wanted.as_ref(),
+        None,
     ))
 }
 
@@ -1563,7 +1579,7 @@ fn trim_items(items: Value, wanted: Option<&Vec<String>>) -> Value {
     Value::Array(
         items
             .iter()
-            .map(|item| shapes::pick(item, wanted))
+            .map(|item| shapes::pick(item, wanted, None))
             .collect(),
     )
 }
@@ -1576,7 +1592,7 @@ fn trim_sessions(sessions: Value, wanted: Option<&Vec<String>>) -> Value {
     Value::Array(
         items
             .iter()
-            .map(|session| shapes::pick(session, wanted))
+            .map(|session| shapes::pick(session, wanted, None))
             .collect(),
     )
 }
@@ -1945,6 +1961,7 @@ pub fn plan_today(ctx: &Ctx<'_>, query: &Query) -> Result<Value, ApiError> {
                 "has_session": false,
             }),
             wanted.as_ref(),
+            None,
         ));
     }
 
@@ -1962,6 +1979,7 @@ pub fn plan_today(ctx: &Ctx<'_>, query: &Query) -> Result<Value, ApiError> {
             "has_session": true,
         }),
         wanted.as_ref(),
+        None,
     ))
 }
 
@@ -2092,13 +2110,28 @@ fn date_range(ctx: &Ctx<'_>, query: &Query) -> Result<(String, String), ApiError
 /// `GET /api/v1/physiology/daily` — the daily rows, optionally narrowed.
 ///
 /// The reference: `api/physiology.daily`.
+///
+/// The default answer is the ten fields the Body screen draws — the sleep,
+/// the HRV and the resting heart rate, and nothing else. A year of every
+/// Garmin column is 189,811 bytes and a year of those ten is 70,091, and
+/// the phone is the one that pays for the difference.
+///
+/// A caller that names its own fields still gets them, including the ones
+/// the default leaves out: the desktop keeps its table, and the harness
+/// tool reads the source of a day.
 pub fn physiology_daily(ctx: &Ctx<'_>, query: &Query) -> Result<Value, ApiError> {
     let wanted = query.field_list("fields");
     let (from, to) = date_range(ctx, query)?;
     let rows = ctx.backend.physiology(&from, &to)?;
     let items: Vec<Value> = rows
         .iter()
-        .map(|row| shapes::pick(&shapes::physiology_payload(row), wanted.as_ref()))
+        .map(|row| {
+            shapes::pick(
+                &shapes::physiology_payload(row),
+                wanted.as_ref(),
+                Some(shapes::BODY_FIELDS.as_slice()),
+            )
+        })
         .collect();
     Ok(json!({ "items": items }))
 }
@@ -2106,13 +2139,21 @@ pub fn physiology_daily(ctx: &Ctx<'_>, query: &Query) -> Result<Value, ApiError>
 /// `GET /api/v1/physiology/latest` — the most recent day and its readiness.
 ///
 /// The reference: `api/physiology.latest`.
-pub fn physiology_latest(ctx: &Ctx<'_>) -> Result<Value, ApiError> {
+///
+/// The day is trimmed to [`shapes::BODY_FIELDS`], the same ten fields the
+/// daily rows answer with by default.
+pub fn physiology_latest(ctx: &Ctx<'_>, query: &Query) -> Result<Value, ApiError> {
+    let wanted = query.field_list("fields");
     let Some(row) = ctx.backend.physiology_latest()? else {
         return Ok(json!({ "day": Value::Null, "readiness": Value::Null }));
     };
     let readiness = ctx.backend.readiness(&row.date).unwrap_or(Value::Null);
     Ok(json!({
-        "day": shapes::physiology_payload(&row),
+        "day": shapes::pick(
+            &shapes::physiology_payload(&row),
+            wanted.as_ref(),
+            Some(shapes::BODY_FIELDS.as_slice()),
+        ),
         "readiness": readiness,
     }))
 }
@@ -2170,7 +2211,7 @@ pub fn physiology_hrv(ctx: &Ctx<'_>, query: &Query) -> Result<Value, ApiError> {
             "resting_hr": row.resting_hr,
             "rhr_baseline": rhr_baseline,
         });
-        items.push(shapes::pick(&item, wanted.as_ref()));
+        items.push(shapes::pick(&item, wanted.as_ref(), None));
     }
     Ok(json!({ "items": items, "baseline": latest_baseline }))
 }
@@ -2184,7 +2225,7 @@ pub fn physiology_readiness(ctx: &Ctx<'_>, query: &Query) -> Result<Value, ApiEr
     let rows = ctx.backend.readiness_range(&from, &to)?;
     let items: Vec<Value> = rows
         .iter()
-        .map(|item| shapes::pick(item, wanted.as_ref()))
+        .map(|item| shapes::pick(item, wanted.as_ref(), None))
         .collect();
     Ok(json!({ "items": items }))
 }
@@ -2267,7 +2308,7 @@ pub fn fitness_fingerprint(ctx: &Ctx<'_>, query: &Query) -> Result<Value, ApiErr
         .backend
         .fingerprints(&from, &to)?
         .iter()
-        .map(|item| shapes::pick(item, wanted.as_ref()))
+        .map(|item| shapes::pick(item, wanted.as_ref(), None))
         .collect();
     Ok(json!({ "items": items }))
 }
@@ -2285,7 +2326,11 @@ pub fn fitness_activity(ctx: &Ctx<'_>, id: i64, query: &Query) -> Result<Value, 
     if let Some(object) = payload.as_object_mut() {
         object.insert("zones".into(), Value::Array(zones));
     }
-    Ok(shapes::pick(&payload, query.field_list("fields").as_ref()))
+    Ok(shapes::pick(
+        &payload,
+        query.field_list("fields").as_ref(),
+        None,
+    ))
 }
 
 /// The share of the run spent in each heart-rate zone.

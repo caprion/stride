@@ -166,6 +166,17 @@ tasks.register('copyRustLibrary') {
     // packaging. Without this the copy is considered up to date after the
     // ABI changes, and the APK ships without the core in it.
     inputs.property('abi', targetAbis[0])
+    // **The library itself is an input.** Without this Gradle asks only
+    // whether the ABI changed, finds that it did not, and considers the copy
+    // up to date - so a cargo rebuild is invisible to it and the APK ships
+    // the core from an earlier build. The build succeeds, the app runs, and
+    // it is the wrong code.
+    inputs.files(fileTree(rustWorkspaceDir) {
+        include "target/${rustTriple(targetAbis[0])}/release/libuniffi_stride.so"
+    })
+    inputs.files(fileTree("src/main/rust/stride-ffi") {
+        include "target/${rustTriple(targetAbis[0])}/release/libuniffi_stride.so"
+    })
     outputs.dir new File(rustJniLibsDir.get().asFile, targetAbis[0])
     doLast {
         def triple = rustTriple(targetAbis[0])

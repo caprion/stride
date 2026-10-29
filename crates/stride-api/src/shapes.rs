@@ -356,21 +356,52 @@ pub fn physiology_payload(row: &PhysiologyRow) -> Value {
     })
 }
 
+/// The fields of a day that the Body screen draws.
+///
+/// The reference: `api/physiology.BODY_FIELDS`. Today's readiness, the sleep,
+/// and the resting heart rate with its HRV — ten fields, in the column order
+/// of the table.
+///
+/// The other Garmin columns — the body battery, the stress, the load, the
+/// training status, the step count — are not among them. Nothing draws
+/// them, and the plan engine does not read them.
+pub const BODY_FIELDS: [&str; 10] = [
+    "date",
+    "sleep_s",
+    "sleep_score",
+    "deep_sleep_s",
+    "rem_s",
+    "light_sleep_s",
+    "awake_s",
+    "hrv_ms",
+    "hrv_status",
+    "resting_hr",
+];
+
 /// Keep only the requested fields of an item.
 ///
 /// The reference: `api/physiology._pick`. Unknown names are ignored rather
 /// than rejected, so a client asking for a field this version does not have
 /// gets the rest of the row instead of an error.
-pub fn pick(item: &Value, wanted: Option<&Vec<String>>) -> Value {
-    let Some(wanted) = wanted else {
-        return item.clone();
+///
+/// `wanted` is the caller's list. `default` is the list to use when the
+/// caller names none: `None` means the whole item, which is what the routes
+/// that always answer in full do — and what the Body screen's routes do
+/// not, because their default is [`BODY_FIELDS`].
+pub fn pick(item: &Value, wanted: Option<&Vec<String>>, default: Option<&[&str]>) -> Value {
+    let names: Vec<&str> = match wanted {
+        Some(wanted) => wanted.iter().map(String::as_str).collect(),
+        None => match default {
+            Some(default) => default.to_vec(),
+            None => return item.clone(),
+        },
     };
     let Some(object) = item.as_object() else {
         return item.clone();
     };
     let mut out = Map::new();
     for (key, value) in object {
-        if wanted.iter().any(|name| name == key) {
+        if names.contains(&key.as_str()) {
             out.insert(key.clone(), value.clone());
         }
     }
