@@ -366,8 +366,25 @@ pub fn convert_plaintext_to_encrypted(
                     .map(|d| d.count())
                     .unwrap_or(0)
             ));
-            conn.execute_batch("PRAGMA wal_checkpoint(TRUNCATE); PRAGMA journal_mode=DELETE;")
+            conn.execute_batch("PRAGMA wal_checkpoint(TRUNCATE);")
                 .map_err(|source| StoreError::query("wal_checkpoint".to_string(), source))?;
+            conn.execute_batch("PRAGMA journal_mode=DELETE;")
+                .map_err(|source| {
+                    trace(format!(
+                        "the staged file is {} {:?}; the directory is {:?}; the log is there: {}",
+                        staged.display(),
+                        std::fs::metadata(&staged).map(|m| {
+                            use std::os::unix::fs::PermissionsExt;
+                            format!("{:o}", m.permissions().mode())
+                        }),
+                        std::fs::metadata(staged.parent().unwrap_or(Path::new("/"))).map(|m| {
+                            use std::os::unix::fs::PermissionsExt;
+                            format!("{:o}", m.permissions().mode())
+                        }),
+                        sidecar(&staged, "-wal").exists(),
+                    ));
+                    StoreError::query("journal_mode=DELETE".to_string(), source)
+                })?;
             Ok(report)
         })
         .map_err(|error| DbError::Conversion(error.to_string()))?;

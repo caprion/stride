@@ -36,6 +36,12 @@ use stride_api::backend::Backend;
 use stride_api::{Api, Response};
 use stride_api::{CoreBackend, StateBackend};
 
+// The UniFFI scaffolding, generated from the UDL by the build script.
+//
+// It is the FFI boundary: the `#[no_mangle]` symbols it declares are the ones
+// the Kotlin bindings call. The build script gives the generated items the
+// `unsafe_code` allowance they need, so the lint stays armed for the rest of
+// the crate.
 uniffi::include_scaffolding!("stride");
 
 /// The backends the phone runs, and the state they share.

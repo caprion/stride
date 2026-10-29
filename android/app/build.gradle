@@ -133,7 +133,13 @@ tasks.register('cargoNdkBuild', Exec) {
     }
     inputs.dir file('src/main/rust/stride-ffi/src')
     inputs.file file('src/main/rust/stride-ffi/Cargo.toml')
-    outputs.dir file("${rustWorkspaceDir}/target/${rustTriple(targetAbis[0])}/release")
+    inputs.property('abi', targetAbis[0])
+    // The stamp lives in the build directory, **not** in the cargo target
+    // directory: Gradle deletes a task's previous outputs when it re-runs
+    // the task, and the cargo target directory belongs to cargo. Declaring it
+    // as an output once wiped the phone's own build when the emulator
+    // variant was built.
+    outputs.file layout.buildDirectory.file("rust/cargo-ndk-${targetAbis[0]}.stamp")
 }
 
 /**
@@ -148,7 +154,12 @@ tasks.register('copyRustLibrary') {
     group = 'stride'
     description = 'Packages the Rust core as lib/arm64-v8a/libuniffi_stride.so.'
     dependsOn 'cargoNdkBuild'
-    outputs.dir rustJniLibsDir
+    // The ABI is an input: a build for the emulator and a build for a phone
+    // are different packages, and the task has to know which one it is
+    // packaging. Without this the copy is considered up to date after the
+    // ABI changes, and the APK ships without the core in it.
+    inputs.property('abi', targetAbis[0])
+    outputs.dir new File(rustJniLibsDir.get().asFile, targetAbis[0])
     doLast {
         def triple = rustTriple(targetAbis[0])
         def candidates = [

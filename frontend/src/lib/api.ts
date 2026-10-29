@@ -255,7 +255,6 @@ export function isNativeApp(): boolean {
     | { isNativePlatform?: () => boolean }
     | undefined
   return Boolean(capacitor?.isNativePlatform?.())
-  return Boolean(capacitor?.isNativePlatform?.())
 }
 
 export interface PairedDevice {

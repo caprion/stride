@@ -1,16 +1,12 @@
 # The phone's Rust core, behind UniFFI.
 #
-# This crate is deliberately **not** a member of the root workspace: the root
-# `Cargo.toml` belongs to the orchestrator, and the Android build needs a
-# `cdylib` with its own lock file and its own release profile (see below).
-# It is a standalone workspace that path-depends on the shared crates.
+# It is a member of the root workspace, so `cargo test --workspace` and the
+# gate cover it: one command, one answer about the whole system.
 #
-# The orchestrator's request: add `android/app/src/main/rust/stride-ffi` to the
-# root `members` and delete the `[workspace]` table below, if the phone's
-# crate should be built by the same `cargo test --workspace` as everything
-# else. Until then, build and test it with:
-#
-#     cargo test --manifest-path android/app/src/main/rust/stride-ffi/Cargo.toml
+# The Android build needs a `cdylib` for `aarch64-linux-android`, and the
+# release profile comes from the root manifest (`opt-level = "z"`, `lto`,
+# `codegen-units = 1`, `strip = true`, and `panic = "unwind"`, so a panic in
+# the library is an error the app can show rather than a process kill).
 #
 # The dependencies are the ones the contract approves (`serde_json`,
 # `uniffi`) plus the shared crates, and `chrono` for the tests. No new
@@ -48,15 +44,8 @@ uniffi = { version = "0.29", features = ["build"] }
 stride-api = { path = "../../../../../../crates/stride-api" }
 stride-store = { path = "../../../../../../crates/stride-store" }
 
-# The same lints the workspace denies, so the phone's crate is held to the
-# same standard: no unwrap, no expect, no panic.
-#
-# `unsafe` is not enabled here: the crate has none. The FFI boundary that
-# does is `crates/stride-api/src/ffi.rs`, and the phone's crate calls the
-# safe Rust API above it.
-[lints.clippy]
-unwrap_used = "deny"
-expect_used = "deny"
-panic = "deny"
-todo = "deny"
-unimplemented = "deny"
+# The workspace's lints: no unwrap, no expect, no panic, and `unsafe` only
+# where the FFI needs it — which, here, is nowhere. The phone's crate calls
+# the safe Rust API above `crates/stride-api/src/ffi.rs`.
+[lints]
+workspace = true
