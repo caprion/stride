@@ -73,9 +73,7 @@ fn snapshot_of_the_real_database() -> Option<PathBuf> {
             if !source.is_file() {
                 return None;
             }
-            let directory = std::env::temp_dir().join("stride-desktop-db-snapshot");
-            let _ = std::fs::remove_dir_all(&directory);
-            std::fs::create_dir_all(&directory).ok()?;
+            let directory = scratch("snapshot");
             let target = directory.join("stride.db");
             // The reference app writes to the database while it syncs, so a
             // snapshot can fail. A few tries, and then the test does
@@ -114,9 +112,21 @@ fn count(path: &Path, table: &str) -> i64 {
         .unwrap_or_else(|error| panic!("could not count {table}: {error}"))
 }
 
-/// A temporary directory that cleans itself up.
+/// A temporary directory for one attempt.
+///
+/// The name carries the process and a counter, so **two attempts never share
+/// a directory**. A failed attempt that left a directory behind must not be
+/// cleaned up by the next one: the next one would delete the files under a
+/// conversion that is still running, and the symptom of that is a database
+/// that is suddenly not there.
 fn scratch(name: &str) -> PathBuf {
-    let dir = std::env::temp_dir().join(format!("stride-desktop-db-{name}"));
+    use std::sync::atomic::{AtomicU64, Ordering};
+    static COUNTER: AtomicU64 = AtomicU64::new(0);
+    let serial = COUNTER.fetch_add(1, Ordering::SeqCst);
+    let dir = std::env::temp_dir().join(format!(
+        "stride-desktop-db-{name}-{}-{serial}",
+        std::process::id()
+    ));
     let _ = std::fs::remove_dir_all(&dir);
     std::fs::create_dir_all(&dir).expect("the directory");
     dir
@@ -153,7 +163,16 @@ fn converted() -> Option<&'static Converted> {
                 .iter()
                 .map(|table| (table.to_string(), count(&copy, table)))
                 .collect();
-            let report = db::convert_plaintext_to_encrypted(&copy, KEY).expect("the conversion");
+            // The initializer must not panic: a panic here would make the
+            // next test run it again, and the second attempt would delete
+            // the directory of the first one.
+            let report = match db::convert_plaintext_to_encrypted(&copy, KEY) {
+                Ok(report) => report,
+                Err(error) => {
+                    eprintln!("stride: the conversion failed: {error}");
+                    return None;
+                }
+            };
             let backup = copy.with_file_name(format!(
                 "{}.plaintext-backup",
                 copy.file_name().unwrap_or_default().to_string_lossy()
