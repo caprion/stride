@@ -2,7 +2,7 @@
   "case_id": "real_garmin_nulls",
   "fixture": {
     "file": "backend/tests/golden/fixtures/real_garmin_nulls.fit",
-    "sha256": "9713cfb9bef56048590ccc63c7503020055b66f5a7f96a82b49a024637fd5350",
+    "sha256": "2084ae947bbc267f095838afeefa5e467ec4728b5f68a8f19085883f21c832ee",
     "bytes": 10885,
     "sport": "running",
     "device": "Forerunner 965",
@@ -12,7 +12,7 @@
   },
   "import": {
     "activity": {
-      "external_id": "3117012",
+      "external_id": "serial_number: None",
       "source": "garmin_fit",
       "name": "real garmin nulls",
       "sport_type": "running",

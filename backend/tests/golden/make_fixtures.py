@@ -628,7 +628,11 @@ LOCAL_UNKNOWN_326 = 12
 
 
 def _real_preamble(writer: FitWriter, date: str, serial: int) -> None:
-    """The preamble every real file has, in the order it has it."""
+    """The preamble every real file has, in the order it has it.
+
+    A `serial` of zero is the `uint32z` null value — the reserved "no
+    value" of the `z` types — so the file has no serial number at all.
+    """
     writer.message("file_id", {
         "type": "activity",
         "manufacturer": GARMIN_MANUFACTURER,
@@ -1121,7 +1125,9 @@ def build_real_garmin_nulls() -> tuple[FitWriter, dict[str, Any]]:
     only way to keep the rule under test once the real files are gone.
     """
     date = "2026-04-22T05:45:00Z"
-    serial = 3117012
+    # The `uint32z` null: the file has no serial number, so the reference
+    # falls back to the file name for the activity's external id.
+    serial = 0
     records: list[Record] = []
     elapsed = 0
     distance = 0.0
@@ -1200,10 +1206,14 @@ def build_real_garmin_nulls() -> tuple[FitWriter, dict[str, Any]]:
                  "importer reads: the classic speed and altitude are 0xFFFF in the first half of "
                  "the file and the enhanced pair is 0xFFFFFFFF in the second, the heart rate and "
                  "the cadence are 0xFF, one distance is 0xFFFFFFFF and one position is "
-                 "0x7FFFFFFF. A sentinel is an absent field, and it is absent before any range "
-                 "check: 0xFFFF as a speed is 65.535 m/s, which is inside the range and would pass "
-                 "every check, and 0xFF as a heart rate is 255 bpm, which is inside 0-300. Twelve "
-                 "laps, as the real files have.",
+                 "0x7FFFFFFF, and the file's serial number is the uint32z null of 0. A sentinel is "
+                 "an absent field, and it is absent before any range check: 0xFFFF as a speed is "
+                 "65.535 m/s, which is inside the range and would pass every check, and 0xFF as a "
+                 "heart rate is 255 bpm, which is inside 0-300. Twelve laps, as the real files "
+                 "have. Note the external id: the reference reads a null serial number as the "
+                 "field wrapper rather than as an absent field, so the id is the literal string "
+                 "'serial_number: None'. That is the reference's behaviour today and it looks "
+                 "like a bug in value_of; the golden freezes it as it is.",
     }
 
 

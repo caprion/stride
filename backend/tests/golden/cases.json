@@ -102,8 +102,8 @@
       "date": "2026-04-22",
       "device": "Forerunner 965",
       "file": "backend/tests/golden/fixtures/real_garmin_nulls.fit",
-      "notes": "The real-watch format, with the reserved 'no value' sentinels in the fields the importer reads: the classic speed and altitude are 0xFFFF in the first half of the file and the enhanced pair is 0xFFFFFFFF in the second, the heart rate and the cadence are 0xFF, one distance is 0xFFFFFFFF and one position is 0x7FFFFFFF. A sentinel is an absent field, and it is absent before any range check: 0xFFFF as a speed is 65.535 m/s, which is inside the range and would pass every check, and 0xFF as a heart rate is 255 bpm, which is inside 0-300. Twelve laps, as the real files have.",
-      "sha256": "9713cfb9bef56048590ccc63c7503020055b66f5a7f96a82b49a024637fd5350",
+      "notes": "The real-watch format, with the reserved 'no value' sentinels in the fields the importer reads: the classic speed and altitude are 0xFFFF in the first half of the file and the enhanced pair is 0xFFFFFFFF in the second, the heart rate and the cadence are 0xFF, one distance is 0xFFFFFFFF and one position is 0x7FFFFFFF, and the file's serial number is the uint32z null of 0. A sentinel is an absent field, and it is absent before any range check: 0xFFFF as a speed is 65.535 m/s, which is inside the range and would pass every check, and 0xFF as a heart rate is 255 bpm, which is inside 0-300. Twelve laps, as the real files have. Note the external id: the reference reads a null serial number as the field wrapper rather than as an absent field, so the id is the literal string 'serial_number: None'. That is the reference's behaviour today and it looks like a bug in value_of; the golden freezes it as it is.",
+      "sha256": "2084ae947bbc267f095838afeefa5e467ec4728b5f68a8f19085883f21c832ee",
       "sport": "running",
       "start": "2026-04-22T05:45:00Z",
       "watch": "records irregularly, with a block of absent values"

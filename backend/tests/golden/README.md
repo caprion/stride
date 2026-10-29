@@ -103,19 +103,29 @@ reused, or redefined mid-file).
 `real_garmin_nulls` adds one more thing the real files contain: the
 reserved "no value" sentinel. Every FIT base type has one — `0xFF` for
 uint8, `0xFFFF` for uint16, `0xFFFFFFFF` for uint32, `0x7FFFFFFF` for
-sint32 — and the reference turns a sentinel into an absent field *before* any
-range check. The real lap and session messages carry `avg_speed` and
-`max_speed` as `0xFFFF`, so a decoder that reads them as numbers reports a
-missing average speed of 65.535 m/s: a plausible number that is not the
-athlete's, and one that no range check catches, because 65.535 is inside the
-range. `real_garmin_nulls` writes the sentinels into the fields the importer
-reads — the speed, the altitude, the heart rate, the cadence, the distance,
-the position, the lap and session averages, and the session's total distance
-— so the rule stays frozen once the real files are gone. It has two record
+sint32, and `0x00` for the `z` types — and the reference turns a sentinel
+into an absent field *before* any range check. The real lap and session
+messages carry `avg_speed` and `max_speed` as `0xFFFF`, so a decoder that
+reads them as numbers reports a missing average speed of 65.535 m/s: a
+plausible number that is not the athlete's, and one that no range check
+catches, because 65.535 is inside the range. `real_garmin_nulls` writes the
+sentinels into the fields the importer reads — the speed, the altitude, the
+heart rate, the cadence, the distance, the position, the lap and session
+averages, the session's total distance, and the file's serial number — so
+the rule stays frozen once the real files are gone. It has two record
 layouts, like the real files do: the classic `speed`/`altitude` pair in the
 first half and the enhanced pair in the second, because the reference decoder
 expands `speed` into a component and a message carrying both would have its
 enhanced value shadowed.
+
+One of those sentinels exposes a difference between the reference and the
+port, and the golden freezes the reference's behaviour as it is today: a null
+serial number makes the reference's `external_id` the literal string
+`"serial_number: None"`, because `value_of` returns the field wrapper when
+the field's value is absent and the wrapper is truthy. The port falls back to
+the file name instead. It looks like a bug in `value_of` — one line in
+`backend/app/ingest/fit_importer.py` — and the contract does not define the
+case at all.
 
 ## Regenerating a fixture
 
