@@ -274,6 +274,30 @@ fn validate_exchanges_the_key_and_reads_the_profile_before_it_returns() {
 }
 
 #[test]
+fn validate_always_exchanges_the_key_again() {
+    // The reference's `validate()` calls `access_token(force=True)`: a fresh
+    // exchange every time, even with a usable token in hand. The phone
+    // relies on that when it re-checks the connection on resume.
+    let stub = StubServer::start();
+    stub.push("POST", TOKEN_PATH, token_reply());
+    stub.push("GET", PROFILE_PATH, profile_reply());
+    stub.push("POST", TOKEN_PATH, token_reply());
+    stub.push("GET", PROFILE_PATH, profile_reply());
+
+    let client = client_for(&stub);
+    client.profile().expect("the profile read succeeds");
+    assert_eq!(stub.count("POST", TOKEN_PATH), 1);
+
+    client.validate().expect("validate succeeds");
+    assert_eq!(
+        stub.count("POST", TOKEN_PATH),
+        2,
+        "validate exchanges the key again, whatever is cached"
+    );
+    assert_eq!(stub.count("GET", PROFILE_PATH), 2);
+}
+
+#[test]
 fn validate_fails_when_the_profile_read_fails_after_the_token_exchange() {
     let stub = StubServer::start();
     stub.push("POST", TOKEN_PATH, token_reply());
