@@ -1280,25 +1280,25 @@ function FitImportSection() {
           </div>
         )}
         <div className="mt-3 flex flex-wrap items-center gap-3">
-            <Button
-              variant="secondary"
-              onClick={() => inputRef.current?.click()}
-              disabled={importFiles.isPending}
-            >
-              {importFiles.isPending ? (
-                <Loader2 size={15} strokeWidth={2} className="animate-spin" />
-              ) : (
-                <Upload size={15} strokeWidth={2} />
-              )}
-              {importFiles.isPending ? 'Importing…' : 'Choose FIT files'}
-            </Button>
-            {fileNames.length > 0 ? (
-              <span className="text-[12px] text-ink-muted">
-                {fileNames.length} file{fileNames.length === 1 ? '' : 's'} selected:{' '}
-                {fileNames.slice(0, 3).join(', ')}
-                {fileNames.length > 3 ? '…' : ''}
-              </span>
-            ) : null}
+          <Button
+            variant="secondary"
+            onClick={() => inputRef.current?.click()}
+            disabled={importFiles.isPending}
+          >
+            {importFiles.isPending ? (
+              <Loader2 size={15} strokeWidth={2} className="animate-spin" />
+            ) : (
+              <Upload size={15} strokeWidth={2} />
+            )}
+            {importFiles.isPending ? 'Importing…' : 'Choose FIT files'}
+          </Button>
+          {fileNames.length > 0 ? (
+            <span className="text-[12px] text-ink-muted">
+              {fileNames.length} file{fileNames.length === 1 ? '' : 's'} selected:{' '}
+              {fileNames.slice(0, 3).join(', ')}
+              {fileNames.length > 3 ? '…' : ''}
+            </span>
+          ) : null}
         </div>
       </div>
 
