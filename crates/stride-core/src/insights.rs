@@ -312,42 +312,37 @@ pub fn run_story(run: &Run, runs: &[Run], recovery: Option<&RecoveryRead>) -> Ru
                 // it is not shown as one — and when the readings cannot
                 // carry a percentage, the story says nothing about effort
                 // rather than claiming the run was "in line".
-                match efficiency_change(eff, usual) {
-                    Some(delta) => {
-                        efficiency_delta_pct = Some(round_to(delta, 1));
-                        if delta >= 4.0 {
-                            story.push(format!(
-                                "More speed per heartbeat than your usual run of this length ({:+.0}%): {}.",
-                                delta,
-                                pace_hr_phrase(pace_delta_s_km, hr_delta_bpm)
-                            ));
-                            if chip.is_none() {
-                                chip = Some(("Fitter than usual".to_string(), "good"));
-                            }
-                        } else if delta <= -5.0 {
-                            let why = recovery.and_then(RecoveryRead::likely_cause);
-                            story.push(format!(
-                                "Harder than your usual run of this length ({:+.0}%): {}.{}",
-                                delta,
-                                pace_hr_phrase(pace_delta_s_km, hr_delta_bpm),
-                                why.map(|why| format!(" {why}")).unwrap_or_else(|| {
-                                    " Heat, hills or a noisy wrist reading move this too, so one run says little."
-                                        .to_string()
-                                })
-                            ));
-                            if chip.is_none() {
-                                chip = Some(("Harder than usual".to_string(), "neutral"));
-                            }
-                        } else {
-                            // Pace and heart rate are medians of their own, so
-                            // quoting them here can read "in line" next to "10 s/km
-                            // faster"; the efficiency is the one honest number.
-                            story.push(
-                                "In line with your usual effort for this distance.".to_string(),
-                            );
+                if let Some(delta) = efficiency_change(eff, usual) {
+                    efficiency_delta_pct = Some(round_to(delta, 1));
+                    if delta >= 4.0 {
+                        story.push(format!(
+                            "More speed per heartbeat than your usual run of this length ({:+.0}%): {}.",
+                            delta,
+                            pace_hr_phrase(pace_delta_s_km, hr_delta_bpm)
+                        ));
+                        if chip.is_none() {
+                            chip = Some(("Fitter than usual".to_string(), "good"));
                         }
+                    } else if delta <= -5.0 {
+                        let why = recovery.and_then(RecoveryRead::likely_cause);
+                        story.push(format!(
+                            "Harder than your usual run of this length ({:+.0}%): {}.{}",
+                            delta,
+                            pace_hr_phrase(pace_delta_s_km, hr_delta_bpm),
+                            why.map(|why| format!(" {why}")).unwrap_or_else(|| {
+                                " Heat, hills or a noisy wrist reading move this too, so one run says little."
+                                    .to_string()
+                            })
+                        ));
+                        if chip.is_none() {
+                            chip = Some(("Harder than usual".to_string(), "neutral"));
+                        }
+                    } else {
+                        // Pace and heart rate are medians of their own, so
+                        // quoting them here can read "in line" next to "10 s/km
+                        // faster"; the efficiency is the one honest number.
+                        story.push("In line with your usual effort for this distance.".to_string());
                     }
-                    None => {}
                 }
             }
         }
@@ -938,8 +933,7 @@ pub fn today(
         .map(|t| (t * 0.6).clamp(3000.0, 6000.0))
         .unwrap_or(5000.0);
     let nudged = gap.is_some_and(|days| usual.is_some_and(|u| days >= 3 && days as f64 >= u * 2.0));
-    let call_distance_m =
-        planned_distance_m.or_else(|| if nudged { Some(nudge_m) } else { typical });
+    let call_distance_m = planned_distance_m.or(if nudged { Some(nudge_m) } else { typical });
 
     let guardrail_text = match (spike_limit, call_distance_m) {
         (Some(limit), Some(distance)) if distance >= limit * GUARDRAIL_NEAR_RATIO => Some(
