@@ -5,7 +5,6 @@
 #   ./scripts/prod.sh start    harden permissions, start, health-check
 #   ./scripts/prod.sh status   what is running and what is in the database
 #   ./scripts/prod.sh doctor   the full pre-flight before you trust it
-#   ./scripts/prod.sh pair     mint a one-time code to connect another device
 #   ./scripts/prod.sh stop     stop the instance
 #
 # The production instance is the one at backend/data on :8000. It holds the
@@ -51,53 +50,6 @@ case "${1:-status}" in
     harden_permissions
     log "health:"
     health | "$PY" -m json.tool 2>/dev/null || health
-    ;;
-
-  pair)
-    # Mint a single-use pairing code for a browser on another machine — a
-    # phone reaching this instance over the network, typically. The code is
-    # printed here, exchanged once for the session cookie, and expires in 10
-    # minutes.
-    #
-    # Note this is for the *browser*. The Android app does not pair: it is
-    # the whole thing, and it talks to Garmin itself.
-    if ! curl -fsS -m 5 "http://127.0.0.1:$PORT/api/v1/health" > /dev/null 2>&1; then
-      bad "Stride is not answering on :$PORT — start it with scripts/prod.sh start"
-      exit 1
-    fi
-    code="$(curl -fsS -m 10 "http://127.0.0.1:$PORT/api/v1/auth/pair-code" \
-      | "$PY" -c 'import json,sys; print(json.load(sys.stdin)["code"])' 2>/dev/null || true)"
-    if [[ -z "$code" ]]; then
-      bad "could not mint a pairing code"
-      exit 1
-    fi
-
-    # The address the other device will use. It is the operator's to say:
-    # the repository does not know, and does not guess.
-    #
-    # HTTPS is preferred because a phone can only *install* a web app from a
-    # secure context - pairing over plain HTTP would leave the athlete with
-    # a browser tab forever.
-    tls_port="${STRIDE_TLS_PORT:-8443}"
-    reach="${STRIDE_TLS_HOST:-}"
-    if [[ -n "$reach" && "$reach" != "0.0.0.0" && "$reach" != "::" ]]; then
-      url="https://$reach:$tls_port/#pair=$code"
-    else
-      warn "set STRIDE_TLS_HOST to the address other devices reach this machine on"
-      warn "so the link below points somewhere they can open."
-      reach="127.0.0.1"
-      url="http://$reach:$PORT/#pair=$code"
-    fi
-    echo
-    if (cd "$ROOT/backend" && "$PY" -m tools.pair_qr "$url" 2>/dev/null); then
-      echo
-    fi
-    printf '    \033[1;38;5;208m%s\033[0m\n' "$code"
-    printf '    \033[2m%s\033[0m\n' "$url"
-    echo
-    log "Open that link in the browser you want to pair."
-    log "It works once and expires in 10 minutes."
-    log "The phone app does not need this: it has its own database and its own Garmin key."
     ;;
 
   stop)
@@ -223,7 +175,7 @@ PY
     ;;
 
   *)
-    echo "usage: $0 {setup|start|stop|status|doctor|pair}" >&2
+    echo "usage: $0 {setup|start|stop|status|doctor}" >&2
     exit 2
     ;;
 esac

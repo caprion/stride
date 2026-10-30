@@ -211,9 +211,9 @@ function PairedDevicesCard() {
           <p className="text-[13px] text-ink-muted">Loading…</p>
         ) : devices.length === 0 ? (
           <p className="text-[13px] leading-relaxed text-ink-muted">
-            Nothing is paired. A browser on this machine connects by itself; any other device
-            needs a pairing code from{' '}
-            <span className="font-mono text-[12px]">scripts/prod.sh pair</span>.
+            Nothing is paired, and V1 does not pair. A browser on this machine connects by
+            itself, and the phone app is signed in from the first pixel. The capability is kept
+            in the code for somebody who wants it on purpose.
           </p>
         ) : (
           <ul className="divide-y divide-edge">

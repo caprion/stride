@@ -111,11 +111,12 @@ on the phone), and **no new dependency** without saying so and justifying it.
 
 Ranked by what it costs the athlete.
 
-1. **The Rust desktop cannot pair a second device.** `GET
-   /api/v1/auth/pair-code` answers **501** — "the pairing code is minted by
-   the application state", and the application state is not wired to it. The
-   reference app still mints one (`./scripts/prod.sh pair`); the Rust
-   desktop serves the browser on its own machine and nothing else.
+1. **The Rust desktop does not pair a second device, and does not try.**
+   The capability is kept in the code — the route, the state, the gate's
+   rules — and the security gate still checks that a caller on the network
+   cannot mint one. What V1 does not do is offer it: the phone app is the
+   whole thing, the desktop's own browser is signed in automatically, and
+   the ceremony (the command, the QR code, the form) is gone.
 2. **The developer-key and account-login flows are not in the Rust core.**
    `/auth/garmin/developer-key`, `/auth/garmin/login` and `/auth/garmin/mfa`
    answer **501**. The phone does not care — it uses the Personal API key

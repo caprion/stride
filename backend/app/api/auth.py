@@ -419,9 +419,10 @@ async def fit_import(files: list[UploadFile] = File(...), db: Session = Depends(
 # network can read my health data" is not a property anyone wants. The
 # missing half was a way for the athlete to *pair* a device deliberately.
 #
-# The operator runs ``scripts/prod.sh pair`` on the machine, which asks the
-# server for a fresh code over loopback. The code is short, short-lived and
-# single-use. It is exchanged for the same HttpOnly, SameSite=Strict cookie
+# The operator asks the server for a fresh code over loopback. The code is
+# short, short-lived and single-use. V1 does not offer this to anybody —
+# the phone app is the whole thing — but the capability stays, so somebody
+# who wants it on purpose can have it. It is exchanged for the same HttpOnly, SameSite=Strict cookie
 # that a loopback browser receives — so the device ends up with exactly the
 # same authority, and the code itself never becomes a long-lived secret that
 # JavaScript has to hold.

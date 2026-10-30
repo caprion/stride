@@ -103,8 +103,10 @@ export function ConnectGarmin({
   })
 
   if (!isPhone()) {
+    // The desktop's version of the phone's native screen: the key, in
+    // front, instead of a link to the settings page that has it.
     return (
-      <Link to="/settings" className={className}>
+      <Link to="/connect" className={className}>
         <Button size={small ? 'sm' : 'md'}>
           <Plug size={14} strokeWidth={2} />
           {label}

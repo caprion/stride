@@ -74,8 +74,15 @@ echo "$PORT" > "$DIR/port"
 
 if [[ $CLONE -eq 1 ]]; then
   log "cloning the current data into $DATA"
-  if [[ -f "$ROOT/backend/data/stride.db" ]]; then
-    cp -p "$ROOT/backend/data/stride.db"* "$DATA/" 2>/dev/null || true
+  # The desktop encrypts the database it opens and keeps the plain one
+  # beside it, and this is the *Python* instance: it needs a file SQLite
+  # can read, so the plain one is the one to clone.
+  live_db="$ROOT/backend/data/stride.db"
+  if [[ ! -f "$live_db" ]] || ! head -c 16 "$live_db" 2>/dev/null | grep -q "SQLite format 3"; then
+    live_db="$ROOT/backend/data/stride.db.plaintext-backup"
+  fi
+  if [[ -f "$live_db" ]]; then
+    cp -p "$live_db" "$DATA/stride.db" 2>/dev/null || true
     cp -p "$ROOT/backend/data/state.json" "$DATA/" 2>/dev/null || true
     chmod 600 "$DATA"/* 2>/dev/null || true
   else

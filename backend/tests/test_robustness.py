@@ -190,9 +190,9 @@ def test_every_activity_in_the_live_history_extracts_without_error():
             Path(__file__).resolve().parents[1] / "data",
         )
     )
-    live_db = live_dir / "stride.db"
-    if not live_db.exists():
-        pytest.skip("the live database does not exist yet")
+    live_db = _readable_database(live_dir)
+    if live_db is None:
+        pytest.skip("the live database does not exist yet, or is not one SQLite can read")
 
     engine = create_engine(f"sqlite:///{live_db}")
     try:
@@ -203,6 +203,27 @@ def test_every_activity_in_the_live_history_extracts_without_error():
             _assert_all_activities_extract(activities)
     finally:
         engine.dispose()
+
+
+def _readable_database(live_dir: Path):
+    """The live database, in a form SQLite can read.
+
+    **The desktop encrypts the database it opens** and keeps the plain one
+    beside it as ``stride.db.plaintext-backup``. The reference is a plain
+    SQLite reader, so when the live file is the encrypted one, the backup
+    is the file it can read — and the backup holds the same rows.
+    """
+    for name in ("stride.db", "stride.db.plaintext-backup"):
+        candidate = live_dir / name
+        if not candidate.exists():
+            continue
+        try:
+            with open(candidate, "rb") as handle:
+                if handle.read(16) == b"SQLite format 3\x00":
+                    return candidate
+        except OSError:
+            continue
+    return None
 
 
 def _assert_all_activities_extract(activities) -> None:

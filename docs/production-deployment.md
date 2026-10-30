@@ -217,18 +217,24 @@ mint that cookie, and it should not be able to: if every device on the
 network could, then the network *is* the trust boundary, and that is a much
 bigger group than "the athlete's own devices".
 
-So the athlete pairs the device on purpose:
+**V1 does not use this.** The phone app is the whole thing — its own
+database, its own Garmin key, signed in from the first pixel — and the
+desktop's own browser is the machine Stride runs on, so it is signed in
+automatically. The capability is **kept in the code and not used by the
+product**: the route, the state, the gate's rules and the security gate's
+checks are all still there, and what is gone is the ceremony — the
+`prod.sh pair` command, the QR code, and the form that asked a browser to
+type a code in.
 
-```bash
-./scripts/prod.sh pair
-```
+A browser that reaches the desktop from another machine is told what is
+true — this is the operator's own machine — rather than being handed a
+credential the product does not use.
 
-That prints a QR code. **Point the camera at the screen.** That is the whole
-flow: one action, once, and the phone is connected for good.
-
-The code is carried in the URL *fragment*, never the query string. A fragment
-is not sent to the server, so it never lands in an access log, and the app
-clears it from the address bar the moment it is used.
+If somebody wants it on purpose, the flow is: mint a code with
+`GET /api/v1/auth/pair-code` on the machine, and exchange it with
+`POST /api/v1/auth/pair`. The code is carried in the URL *fragment*, never
+the query string. A fragment is not sent to the server, so it never lands
+in an access log.
 
 ### The device gets its own credential
 
@@ -258,9 +264,11 @@ The security gate checks four of these on the live service: a wrong code is
 refused, a remote client cannot mint one, a paired device can read the API,
 and a revoked device is signed out.
 
-> **The Rust desktop does not mint pairing codes yet.** `GET
-> /api/v1/auth/pair-code` answers `501` there. This section is about the
-> reference instance.
+> **The Rust desktop mints a pairing code only for a caller on the
+> machine.** The peer address *and* the `Host` header have to say loopback:
+> a page the athlete happens to have open can point a name it controls at
+> 127.0.0.1 and then talk to Stride as the origin it came from. A caller on
+> the network is refused, and the security gate checks that over TLS.
 
 ---
 

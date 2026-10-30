@@ -264,25 +264,16 @@ With the listener up and the certificate trusted, a browser reaches the
 desktop at `https://<STRIDE_TLS_HOST>:<STRIDE_TLS_PORT>`.
 
 A browser on the same machine as the desktop is given a session cookie
-automatically. A browser on another device is not, so signing one in is a
-deliberate act by the operator:
+automatically. A browser on another device is not, and **V1 does not ask
+it to be**: the phone app is the whole thing — its own database, its own
+Garmin key, signed in from the first pixel — and the desktop's own browser
+is the machine Stride runs on.
 
-```bash
-./scripts/prod.sh pair
-```
-
-That prints a **QR code**. Open it in the browser you want to sign in — one
-action, once, and it stays connected. The device gets its **own**
-credential, so it can be revoked on its own in **Settings → Connected
-devices** without touching the machine. The code is carried in the URL
-*fragment*, never the query string, so it never lands in an access log; it
-works **once** and expires in **10 minutes**.
-
-**The phone app never needs any of this.** It has its own database and its
-own Garmin key, and it is signed in from the first pixel: you paste the key
-into one native screen and the data stays on the phone. The pairing code is
-for a *second browser*, on another machine, that wants to read the
-desktop's data — and nothing in the phone's setup asks for one.
+The **pairing capability is kept in the code and not used by the product**:
+the route, the state, the gate's rules and the security gate's checks are
+all still there, so it stays safe if somebody wires it up on purpose. What
+is gone is the ceremony — the `prod.sh pair` command, the QR code, and the
+form that asked a browser to type a code in.
 
 Two rules, and the security gate checks both:
 

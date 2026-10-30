@@ -84,12 +84,14 @@ export const DESKTOP_DESTINATIONS: Destination[] = [
  * * **Compare** — two runs side by side is a laptop activity.
  * * **Training calendar** — the Plan screen carries the schedule.
  * * **Plan** — the tab comes off the phone for v1; the work stays.
+ * * **Connect** — the phone has a *native* screen for the Garmin key, so
+ *   the desktop's web one is not for the phone.
  *
  * The Garmin forms, the network route and the history windows are not
  * routes: they are parts of the settings screen, and the phone's settings
  * screen does not carry them.
  */
-export const PHONE_CUT_ROUTES = ['/compare', '/training', '/plan']
+export const PHONE_CUT_ROUTES = ['/compare', '/training', '/plan', '/connect']
 
 /** Is this path one the phone does not have? */
 export function isCutOnPhone(pathname: string): boolean {

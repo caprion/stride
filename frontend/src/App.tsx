@@ -14,6 +14,9 @@ import { isPhone } from './lib/surface'
 const DashboardPage = lazy(() =>
   import('./pages/DashboardPage').then((m) => ({ default: m.DashboardPage })),
 )
+const ConnectPage = lazy(() =>
+  import('./pages/ConnectPage').then((m) => ({ default: m.ConnectPage })),
+)
 const FeedPage = lazy(() => import('./pages/FeedPage').then((m) => ({ default: m.FeedPage })))
 const ActivityPage = lazy(() =>
   import('./pages/ActivityPage').then((m) => ({ default: m.ActivityPage })),
@@ -89,6 +92,7 @@ export default function App() {
             <Suspense fallback={<RouteFallback />}>
               <Routes>
                 <Route path="/" element={<DashboardPage />} />
+                <Route path="/connect" element={<ConnectPage />} />
                 <Route path="/plan" element={<PlanPage />} />
                 <Route path="/feed" element={<FeedPage />} />
                 <Route path="/activities/:id" element={<ActivityPage />} />
