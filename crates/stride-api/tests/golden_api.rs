@@ -417,8 +417,8 @@ fn the_activity_list_matches_the_reference_number_for_number() {
         .expect("the list answers");
     assert_same_value("activities", expected, &actual);
     assert_eq!(
-        actual["total"], 11,
-        "the FIT fixtures hold eleven runs and one ride"
+        actual["total"], 14,
+        "the FIT fixtures hold fourteen runs and one ride"
     );
 }
 

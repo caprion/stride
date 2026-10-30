@@ -35,6 +35,27 @@ fn check_case(case: &str) {
     );
 }
 
+/// A run in the shape a COROS export has.
+///
+/// The file names COROS, in the `file_id` message and in the
+/// `device_info` message, and the `device_info` message carries the product
+/// name of the watch. The run is attributed to that watch — not to the
+/// manufacturer the importer was written against.
+#[test]
+fn golden_vendor_coros_export() {
+    check_case("vendor_coros_export");
+    let activity = parse("vendor_coros_export");
+    assert_eq!(activity.distance_m, 1266.0);
+    assert_eq!(activity.moving_time_s, 420.0);
+    assert_eq!(activity.elapsed_time_s, 420.0);
+    assert_eq!(activity.avg_hr, Some(135.0));
+    assert_eq!(activity.max_hr, Some(141.0));
+    // The walking warm-up is a walk, and it is not running time.
+    assert_eq!(activity.walking_time_s, Some(60.0));
+    assert_eq!(activity.running_time_s, Some(359.0));
+    assert_eq!(activity.device.as_deref(), Some("COROS DURA"));
+}
+
 #[test]
 fn golden_cycling() {
     check_case("cycling");
@@ -78,6 +99,41 @@ fn golden_short_effort() {
 #[test]
 fn golden_treadmill() {
     check_case("treadmill");
+}
+
+/// A run in the shape a Strava export has.
+///
+/// Strava re-encodes the file it serves: its own manufacturer is in the
+/// `file_id` message, and the watch that recorded the run is not in the
+/// file at all. So the run has no watch to name, and it must not borrow the
+/// name of a watch that is not in the file.
+#[test]
+fn golden_vendor_strava_export() {
+    check_case("vendor_strava_export");
+    let activity = parse("vendor_strava_export");
+    assert_eq!(activity.distance_m, 2040.0);
+    assert_eq!(activity.moving_time_s, 600.0);
+    assert_eq!(activity.elapsed_time_s, 600.0);
+    assert_eq!(activity.avg_hr, Some(142.0));
+    assert_eq!(activity.max_hr, Some(147.0));
+    assert_eq!(activity.device, None);
+}
+
+/// A run in the shape a Wahoo export has.
+///
+/// Wahoo writes the manufacturer and no product name, so the watch is named
+/// by its manufacturer alone — and it must be named the way the reference
+/// decoder names it.
+#[test]
+fn golden_vendor_wahoo_export() {
+    check_case("vendor_wahoo_export");
+    let activity = parse("vendor_wahoo_export");
+    assert_eq!(activity.distance_m, 1920.0);
+    assert_eq!(activity.moving_time_s, 600.0);
+    assert_eq!(activity.elapsed_time_s, 600.0);
+    assert_eq!(activity.avg_hr, Some(147.0));
+    assert_eq!(activity.max_hr, Some(152.0));
+    assert_eq!(activity.device.as_deref(), Some("wahoo_fitness"));
 }
 
 /// The numbers the report quotes, asserted so they cannot drift silently.

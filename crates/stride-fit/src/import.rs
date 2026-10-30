@@ -1024,9 +1024,16 @@ fn text<'a>(message: &'a Message, mesg_num: u16, name: &str) -> Option<&'a str> 
 }
 
 /// Read an enumeration field's raw value.
-fn enum_number(message: &Message, mesg_num: u16, name: &str) -> Option<u8> {
+///
+/// The value is kept at the field's own width: the manufacturer is a
+/// `uint16`, and a manufacturer above 255 (the profile knows one) must not
+/// be truncated into the name of another watch.
+fn enum_number(message: &Message, mesg_num: u16, name: &str) -> Option<u16> {
     let spec = profile::spec(mesg_num, name)?;
-    message.number(spec.def_num).map(|raw| raw as u8)
+    message
+        .number(spec.def_num)
+        .filter(|raw| *raw >= 0.0 && *raw <= f64::from(u16::MAX))
+        .map(|raw| raw as u16)
 }
 
 /// `value` when it is inside `low..=high`, otherwise `None`.

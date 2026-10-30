@@ -375,10 +375,12 @@ export const api = {
   importFit: (files: File[]) => {
     const form = new FormData()
     files.forEach((file) => form.append('files', file))
-    return request<{ imported: number; activities: any[]; errors: any[] }>(
-      '/auth/garmin/fit-import',
-      { method: 'POST', body: form },
-    )
+    return request<{
+      imported: number
+      activities: any[]
+      duplicates: { filename: string; id: number; name: string; date: string }[]
+      errors: any[]
+    }>('/auth/garmin/fit-import', { method: 'POST', body: form })
   },
 
   // ------------------------------------------------------------ activities
