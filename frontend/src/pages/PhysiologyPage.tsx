@@ -79,7 +79,13 @@ const num = (v: number | null | undefined, suffix = '') =>
 //
 // The daily rows are the desktop's: the table of Garmin's own metrics. The
 // phone does not draw them, so the phone does not ask for them.
-const DAILY_FIELDS = 'date,body_battery_avg,stress_avg,acute_load,chronic_load,steps'
+// The acute/chronic load ratio is deliberately not asked for.
+//
+// `docs/philosophy.md` says the ratio did not predict injury in the 2025
+// Garmin-RUNSAFE cohort, and that Stride shows nothing that pretends to
+// be an injury score. The column still exists in the store — Garmin sends
+// it — but the screen does not present it, so it is not fetched either.
+const DAILY_FIELDS = 'date,body_battery_avg,stress_avg,steps'
 const READINESS_FIELDS = 'date,score,grade'
 const HRV_FIELDS = 'date,hrv_ms,baseline,resting_hr,rhr_baseline'
 
@@ -600,7 +606,7 @@ export default function PhysiologyPage() {
             {phone ? null : (
               <Card>
                 <CardHeader
-                  title="Body battery, stress and load"
+                  title="Body battery, stress and steps"
                   subtitle="Daily context from Garmin"
                 />
                 {daily.isLoading ? (
@@ -614,13 +620,7 @@ export default function PhysiologyPage() {
                     <table className="w-full text-left text-xs">
                       <thead className="bg-surface-soft text-[10px] uppercase text-ink-muted">
                         <tr>
-                          {[
-                            'Date',
-                            'Battery avg',
-                            'Stress avg',
-                            'Acute / chronic',
-                            'Steps',
-                          ].map((h) => (
+                          {['Date', 'Battery avg', 'Stress avg', 'Steps'].map((h) => (
                             <th key={h} className="px-3 py-2">
                               {h}
                             </th>
@@ -636,9 +636,6 @@ export default function PhysiologyPage() {
                               <td className="px-3 py-2">{formatDate(d.date)}</td>
                               <td className="px-3 py-2">{num(d.body_battery_avg)}</td>
                               <td className="px-3 py-2">{num(d.stress_avg)}</td>
-                              <td className="px-3 py-2">
-                                {num(d.acute_load)} / {num(d.chronic_load)}
-                              </td>
                               <td className="px-3 py-2">
                                 {d.steps == null ? '—' : d.steps.toLocaleString()}
                               </td>
