@@ -42,6 +42,39 @@ use crate::numeric::{median, round_to};
 /// longest run of the previous 30 days is a spike.
 pub const SPIKE_RATIO: f64 = 1.1;
 
+/// The smallest efficiency a percentage change may be computed against.
+///
+/// Efficiency is metres per minute per beat: about 1.2 for an easy run at
+/// 150 bpm. A number far below that is not a run — it is a run with missing
+/// data, a walk, or a division that went wrong — and a percentage against
+/// it is an artefact of the denominator, not a change in the athlete.
+pub const EFFICIENCY_FLOOR: f64 = 0.5;
+
+/// The largest efficiency change worth showing as a percentage.
+///
+/// The trends the app reads are a few per cent; a change of half the
+/// number is a data problem, not a fitness one.
+pub const MAX_EFFICIENCY_CHANGE_PCT: f64 = 50.0;
+
+/// The percentage change between two efficiency readings, when it means
+/// something.
+///
+/// A percentage against a denominator that is nearly zero is not a change
+/// in the athlete, it is an artefact of the division — and it is the kind
+/// of number that reaches a runner as "1,847% more efficient". So the
+/// baseline has to be a real run's worth of efficiency, and the change
+/// has to be a change a body makes.
+fn efficiency_change(now: f64, then: f64) -> Option<f64> {
+    if then < EFFICIENCY_FLOOR || now <= 0.0 {
+        return None;
+    }
+    let delta = (now / then - 1.0) * 100.0;
+    if !delta.is_finite() || delta.abs() > MAX_EFFICIENCY_CHANGE_PCT {
+        return None;
+    }
+    Some(delta)
+}
+
 /// A gap this many days long makes the next run a comeback.
 pub const COMEBACK_DAYS: i64 = 14;
 
@@ -265,37 +298,46 @@ pub fn run_story(run: &Run, runs: &[Run], recovery: Option<&RecoveryRead>) -> Ru
             .filter_map(|other| other.efficiency())
             .collect();
         if let (Some(eff), Some(usual)) = (run.efficiency(), median(&effs)) {
-            if effs.len() >= 3 && usual > 0.0 {
-                let delta = (eff / usual - 1.0) * 100.0;
-                efficiency_delta_pct = Some(round_to(delta, 1));
-                if delta >= 4.0 {
-                    story.push(format!(
-                        "More speed per heartbeat than your usual run of this length ({:+.0}%): {}.",
-                        delta,
-                        pace_hr_phrase(pace_delta_s_km, hr_delta_bpm)
-                    ));
-                    if chip.is_none() {
-                        chip = Some(("Fitter than usual".to_string(), "good"));
+            if effs.len() >= 3 {
+                // A percentage against a baseline that is nearly zero is an
+                // artefact of the division, not a change in the athlete, so
+                // it is not shown as one — and when the readings cannot
+                // carry a percentage, the story says nothing about effort
+                // rather than claiming the run was "in line".
+                match efficiency_change(eff, usual) {
+                    Some(delta) => {
+                        efficiency_delta_pct = Some(round_to(delta, 1));
+                        if delta >= 4.0 {
+                            story.push(format!(
+                                "More speed per heartbeat than your usual run of this length ({:+.0}%): {}.",
+                                delta,
+                                pace_hr_phrase(pace_delta_s_km, hr_delta_bpm)
+                            ));
+                            if chip.is_none() {
+                                chip = Some(("Fitter than usual".to_string(), "good"));
+                            }
+                        } else if delta <= -5.0 {
+                            let why = recovery.and_then(RecoveryRead::likely_cause);
+                            story.push(format!(
+                                "Harder than your usual run of this length ({:+.0}%): {}.{}",
+                                delta,
+                                pace_hr_phrase(pace_delta_s_km, hr_delta_bpm),
+                                why.map(|why| format!(" {why}")).unwrap_or_else(|| {
+                                    " Heat, hills or a noisy wrist reading move this too, so one run says little."
+                                        .to_string()
+                                })
+                            ));
+                            if chip.is_none() {
+                                chip = Some(("Harder than usual".to_string(), "neutral"));
+                            }
+                        } else {
+                            // Pace and heart rate are medians of their own, so
+                            // quoting them here can read "in line" next to "10 s/km
+                            // faster"; the efficiency is the one honest number.
+                            story.push("In line with your usual effort for this distance.".to_string());
+                        }
                     }
-                } else if delta <= -5.0 {
-                    let why = recovery.and_then(RecoveryRead::likely_cause);
-                    story.push(format!(
-                        "Harder than your usual run of this length ({:+.0}%): {}.{}",
-                        delta,
-                        pace_hr_phrase(pace_delta_s_km, hr_delta_bpm),
-                        why.map(|why| format!(" {why}")).unwrap_or_else(|| {
-                            " Heat, hills or a noisy wrist reading move this too, so one run says little."
-                                .to_string()
-                        })
-                    ));
-                    if chip.is_none() {
-                        chip = Some(("Harder than usual".to_string(), "neutral"));
-                    }
-                } else {
-                    // Pace and heart rate are medians of their own, so
-                    // quoting them here can read "in line" next to "10 s/km
-                    // faster"; the efficiency is the one honest number.
-                    story.push("In line with your usual effort for this distance.".to_string());
+                    None => {}
                 }
             }
         }
@@ -908,8 +950,12 @@ fn go_state(
 pub struct Fitness {
     /// The headline sentence.
     pub headline: String,
-    /// The change in efficiency, as a percentage (+ is fitter).
-    pub delta_pct: f64,
+    /// The change in efficiency, as a percentage, when it means something.
+    ///
+    /// `None` when the readings cannot carry a percentage — the baseline
+    /// was not a real run's worth of efficiency, or the change is far
+    /// outside anything a body does.
+    pub delta_pct: Option<f64>,
     /// The runs in the recent window.
     pub recent_runs: usize,
     /// The runs in the earlier window.
@@ -1040,10 +1086,14 @@ pub fn fitness(runs: &[Run], today: &str) -> Option<Fitness> {
     }
     let now_m = median(&now)?;
     let then_m = median(&then)?;
-    if then_m <= 0.0 {
+    // The earlier stretch is the baseline, so it has to be a run's worth of
+    // efficiency for the comparison to mean anything. A baseline that is
+    // nearly zero is not a slow runner; it is missing data, and a pace or
+    // a percentage read against it would be a number with no runner in it.
+    if then_m < EFFICIENCY_FLOOR {
         return None;
     }
-    let delta = (now_m / then_m - 1.0) * 100.0;
+    let delta = efficiency_change(now_m, then_m);
     let hrs: Vec<f64> = recent
         .iter()
         .chain(earlier.iter())
@@ -1073,7 +1123,7 @@ pub fn fitness(runs: &[Run], today: &str) -> Option<Fitness> {
     };
     Some(Fitness {
         headline,
-        delta_pct: round_to(delta, 1),
+        delta_pct: delta.map(|value| round_to(value, 1)),
         recent_runs: now.len(),
         earlier_runs: then.len(),
         pace_now_s_km: pace_now,
@@ -1411,6 +1461,82 @@ mod tests {
         let call = today("2026-10-30", &runs, Some(&night), None);
         assert_eq!(call.state, "easy");
         assert!(call.guardrail.unwrap().contains("8.8 km"));
+    }
+
+    #[test]
+    fn a_percentage_against_a_near_zero_baseline_is_not_a_fitness_change() {
+        // The denominator is nearly zero: the percentage would be enormous
+        // and would mean nothing.
+        assert_eq!(efficiency_change(1.0, 0.01), None);
+        assert_eq!(efficiency_change(1.0, 0.0), None);
+        // A change a body makes.
+        let change = efficiency_change(1.2, 1.0).expect("a real change is a change");
+        assert!((change - 20.0).abs() < 1e-9, "the change is 20%: {change}");
+        // A change no body makes: the readings are wrong, not the athlete.
+        assert_eq!(efficiency_change(10.0, 0.5), None);
+    }
+
+    #[test]
+    fn a_fitness_trend_against_a_near_zero_baseline_is_not_read() {
+        let mut runs = Vec::new();
+        // The earlier stretch: the same pace with a heart rate that makes
+        // the efficiency unreadable.
+        for index in 1..=6 {
+            runs.push(run(
+                index,
+                &Date::parse("2026-10-30")
+                    .unwrap()
+                    .add_days(-42 * index)
+                    .to_string(),
+                8.0,
+                3600.0,
+                Some(145.0),
+            ));
+        }
+        // The recent stretch: a normal run.
+        for index in 1..=6 {
+            runs.push(run(
+                100 + index,
+                &Date::parse("2026-10-30")
+                    .unwrap()
+                    .add_days(-2 * index)
+                    .to_string(),
+                8.0,
+                360.0,
+                Some(145.0),
+            ));
+        }
+        assert!(fitness(&runs, "2026-10-30").is_none());
+    }
+
+    #[test]
+    fn the_run_story_does_not_claim_a_percentage_it_cannot_carry() {
+        let mut runs = history("2026-10-30", 8, 3, 8.0);
+        // The usual runs of this length have an efficiency that cannot
+        // carry a percentage.
+        for run in runs.iter_mut() {
+            run.moving_time_s = 8.0 * 3600.0;
+        }
+        let quick = run(100, "2026-10-30", 8.0, 340.0, Some(145.0));
+        runs.push(quick.clone());
+        let story = run_story(&quick, &runs, None);
+        assert_eq!(story.efficiency_delta_pct, None);
+        assert!(
+            !story
+                .story
+                .iter()
+                .any(|line| line.contains("speed per heartbeat")),
+            "the story must not quote a percentage it cannot carry: {:?}",
+            story.story
+        );
+        assert!(
+            !story
+                .story
+                .iter()
+                .any(|line| line.contains("In line with your usual effort")),
+            "an unreadable comparison is not 'in line': {:?}",
+            story.story
+        );
     }
 
     #[test]
