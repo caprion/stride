@@ -1,6 +1,6 @@
 import { Suspense, lazy, type ReactNode } from 'react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
+import { BrowserRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import { AppLayout } from './components/AppLayout'
 import { AuthGate } from './components/AuthGate'
 import { isPhone } from './lib/surface'
@@ -88,42 +88,66 @@ export default function App() {
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
         <AuthGate>
-          <AppLayout>
-            <Suspense fallback={<RouteFallback />}>
-              <Routes>
-                <Route path="/" element={<DashboardPage />} />
-                <Route path="/connect" element={<ConnectPage />} />
-                <Route path="/plan" element={<PlanPage />} />
-                <Route path="/feed" element={<FeedPage />} />
-                <Route path="/activities/:id" element={<ActivityPage />} />
-                <Route path="/physiology" element={<PhysiologyPage />} />
-                <Route path="/fitness" element={<FitnessPage />} />
-                <Route path="/settings" element={<SettingsPage />} />
-                <Route path="/stats" element={<StatsPage />} />
-                <Route path="/progress" element={<ProgressPage />} />
-                {/* The two the phone cuts. The desktop keeps them. */}
-                <Route
-                  path="/training"
-                  element={
-                    <PhoneCut>
-                      <TrainingPage />
-                    </PhoneCut>
-                  }
-                />
-                <Route
-                  path="/compare"
-                  element={
-                    <PhoneCut>
-                      <ComparePage />
-                    </PhoneCut>
-                  }
-                />
-                <Route path="*" element={<Navigate to="/" replace />} />
-              </Routes>
-            </Suspense>
-          </AppLayout>
+          <AppFrame />
         </AuthGate>
       </BrowserRouter>
     </QueryClientProvider>
+  )
+}
+
+/**
+ * The app, or the screen in front of it.
+ *
+ * **The connect screen stands on its own.** It is the desktop's front door
+ * — one screen, the Garmin key, nothing else — and the phone's native
+ * setup screen has no app around it either. So the chrome is not drawn
+ * around it, and the only way out of it is "Not now".
+ */
+function AppFrame() {
+  const location = useLocation()
+  if (location.pathname === '/connect') {
+    return (
+      <Suspense fallback={<RouteFallback />}>
+        <Routes>
+          <Route path="/connect" element={<ConnectPage />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </Suspense>
+    )
+  }
+  return (
+    <AppLayout>
+      <Suspense fallback={<RouteFallback />}>
+        <Routes>
+          <Route path="/" element={<DashboardPage />} />
+          <Route path="/plan" element={<PlanPage />} />
+          <Route path="/feed" element={<FeedPage />} />
+          <Route path="/activities/:id" element={<ActivityPage />} />
+          <Route path="/physiology" element={<PhysiologyPage />} />
+          <Route path="/fitness" element={<FitnessPage />} />
+          <Route path="/settings" element={<SettingsPage />} />
+          <Route path="/stats" element={<StatsPage />} />
+          <Route path="/progress" element={<ProgressPage />} />
+          {/* The two the phone cuts. The desktop keeps them. */}
+          <Route
+            path="/training"
+            element={
+              <PhoneCut>
+                <TrainingPage />
+              </PhoneCut>
+            }
+          />
+          <Route
+            path="/compare"
+            element={
+              <PhoneCut>
+                <ComparePage />
+              </PhoneCut>
+            }
+          />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </Suspense>
+    </AppLayout>
   )
 }
