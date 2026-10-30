@@ -787,7 +787,7 @@ function DeveloperKeySection({ onRefresh }: { onRefresh: () => Promise<void> }) 
         A developer key covers <strong>activities only</strong>. Sleep, HRV, body battery and
         readiness live on Garmin&rsquo;s separate Health API, so the{' '}
         <Link to="/physiology" className="font-semibold underline">
-          physiology page
+          Body page
         </Link>{' '}
         needs the account connection below.
       </p>

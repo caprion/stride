@@ -43,7 +43,7 @@ const SECONDARY_NAV = [
 ]
 
 const ATHLETE_NAV = [
-  { to: '/physiology', label: 'Physiology', icon: HeartPulse },
+  { to: '/physiology', label: 'Body', icon: HeartPulse },
   { to: '/fitness', label: 'Running form', icon: Gauge },
 ]
 
