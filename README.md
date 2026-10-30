@@ -33,18 +33,18 @@ score, the plan engine, the Garmin client and the encrypted database — runs
 *inside* the phone. The Garmin Personal API key lives in the phone's
 Keystore. The phone has its own database and talks to Garmin directly.
 
-There is no server to reach, no pairing code to type and no account to
-create. It works on a plane, with the VM switched off.
+There is no server to reach, no account to create and nothing to sign up for.
+It works on a plane, with the VM switched off.
 
 ```bash
-gh release download v0.4.2 --repo caprion/stride
+gh release download v0.8.0 --repo caprion/stride --pattern '*.apk'
 ```
 
 Install the APK on the phone (allow installs from that source), open it, and
 paste your Garmin Personal API key into the one native screen that asks for
-it. The screen says **Checking…**, then **Syncing…**, then **Connected · 160
-runs**, and it goes away. The key never enters the WebView: it is typed into
-a native field, wrapped by a non-exportable Keystore key, and written to
+it. The screen says **Checking…**, then **Syncing…**, then **Connected**, and
+it goes away. The key never enters the WebView: it is typed into a native
+field, wrapped by a non-exportable Keystore key, and written to
 `noBackupFilesDir`.
 
 **The promise is one line, everywhere.** The setup screen says it, the About
@@ -54,15 +54,10 @@ card says it, and the screenshots say it:
 
 | | |
 |---|---|
-| the APK | **8.7 MB** (8,670,620 bytes), arm64-v8a |
-| the Rust core inside it | **8.69 MiB** — SQLCipher and OpenSSL vendored |
-| the desktop binary | **9.2 MB** (9,582,368 bytes, `target/release/stride`) |
-
-The app is built in CI and signed with a key whose certificate is committed in
-`backend/app/assetlinks.json`; the key itself is only in the repository
-secrets. `scripts/check_apk.py` asserts that the published APK really carries
-the core and points at nothing — a build that quietly loses it still
-succeeds otherwise, and that happened once.
+| the APK | **8.4 MB** (`stride-v0.8.0.apk`, arm64-v8a) |
+| the desktop binary | **9.3 MB** (`target/release/stride`) |
+| the phone's destinations | **four** — Today · Runs · Progress · Body |
+| the desktop's | all nine, plus the settings |
 
 ### The desktop is the same core
 
@@ -71,11 +66,11 @@ React app and the same API, out of the same crate, against the same
 database. There is no second implementation of the domain logic and no
 process to keep alive.
 
-The desktop is the same product with more room. The phone keeps **six
-destinations** — Today, Plan, Runs, Body, Form and Stats — and cuts what is
-a laptop activity: **Compare** (two runs side by side), the **training
-calendar** (the Plan screen carries the schedule), and the **server
-settings**. The desktop keeps all of them.
+The desktop is the same product with more room. The phone keeps **four
+destinations** — Today, Runs, Progress and Body — and cuts what is a laptop
+activity: **Compare** (two runs side by side), the **training calendar** (the
+Plan screen carries the schedule), the **server settings** and the plan
+editor. The desktop keeps all of them.
 
 The desktop says the same promise in its own words: **"Your data stays on
 this machine."**
@@ -91,17 +86,32 @@ behind it.
 |---|---|
 | connect a Garmin key, in one native screen | write a plan by hand on the phone |
 | sync: activities, wellness, and the plan it finds | edit a run's data (distance, time, HR) |
-| **Today**: one call, one reason, one guardrail (the 30-day spike limit) | score you against other people |
-| **Runs**: a chip and a short story for every run | show a red "missed" anywhere |
-| **Progress**: pace at the same HR, forgiving consistency, bests, milestones | use Garmin's own scores, which need a password |
-| **Body**: sleep, HRV and resting HR against your own normal | |
-| rename a run and keep a note on it | |
+| import `.FIT` files from **any** watch, and not add the same run twice | score you against other people |
+| **Today**: one call, one reason, and a distance warning only when the run is near the line | show a red "missed" anywhere |
+| **Runs**: a chip and a short story for every run | use Garmin's own scores, which need a password |
+| **Progress**: pace at the same HR, forgiving consistency, bests, milestones | quote a trend a near-zero reading cannot carry |
+| **Body**: sleep, HRV and resting HR against your own normal | show a 0-100 readiness score |
 | an optional weekly goal and a pause (travel, sick, injured), on the device | |
 
-The three small inputs (a run's name and note, a weekly goal, a pause) are
-there because they change what the app should say. Everything else that
-authors or edits (a plan editor on the phone, editing a run's numbers) is
-the next iteration.
+The three small inputs (a weekly goal, a pause, and a run's note) are there
+because they change what the app should say. Everything else that authors
+or edits (a plan editor on the phone, editing a run's numbers) is the next
+iteration.
+
+**The advice is graded, and it is one sentence.** One recovery signal that is
+just outside its normal range is not three, and a mild one is not a marked
+one — so the call says so, and the two screens that show recovery (Today and
+Body) read the *same* sentence from the core:
+
+| last night | the call |
+|---|---|
+| one signal, just outside its range | "Keep it easy today." — *if you feel off too, take the day* |
+| one signal, well outside its range | "Go easy today, or take the day." — *how you feel has the last word* |
+| several signals | "Take the day, or make it very easy." — *if you feel fine, an easy run is enough* |
+
+And the card never contradicts itself: the headline quotes the distance the
+runner will actually do (the plan's, when there is one), and the plan line
+under it says the same thing the call says.
 
 **The Plan screen is the reason the app exists, and it does not need a
 document.** A plan is *intent*: a dated list of sessions with a target. The
@@ -119,13 +129,10 @@ Three sources, and the order matters:
 2. **The plan you wrote down — Garmin's scheduled workouts.** If you schedule
    workouts in Garmin Connect, those are your plan, and they are a
    *prescription*: the athlete wrote them down.
-3. **The plan you type in — a manual week.** Real, and a separate piece of
-   work: an editor, an API and the storage for it. **Not v1.**
-
-> **Work in flight.** The plan sources are being built now: the reference is
-> `backend/app/services/plan_sources.py` and the port is
-> `crates/stride-core/src/plan_sources.rs`. They are not in the published
-> build yet.
+3. **The plan you imported.** A `.FIT` file, a CSV or a markdown week. The
+   importer reads what it can and says what it cannot: a session whose kind
+   it does not recognise stays **unknown**, and nothing downstream pretends
+   it is an easy run.
 
 ### The Python app is the reference, not the product
 
@@ -134,6 +141,10 @@ core can be proved equal to it rather than believed equal to it. It answers
 the same routes with the same shapes, and the golden fixtures under
 `backend/tests/golden/` are what say which of the two is right. It is not
 what the athlete runs.
+
+The insight engines — Today, the run stories, Progress — are **Rust-native**:
+they have no Python counterpart to be measured against, and the port says so
+rather than pretending.
 
 ---
 
@@ -144,15 +155,21 @@ call.
 
 | gate | what it says | result |
 |---|---|---|
-| `./scripts/rust_gate.sh` | format, clippy, release build, tests, golden fixtures, panics, dependency set, size | **9 passed, 0 failed, 0 warnings** — 368 tests, 38 golden assertions |
-| `./scripts/security_check.sh` | the Python side: permissions, configuration, dependencies, tests, the live service | **26 passed, 0 failed, 1 warning** |
+| `./scripts/rust_gate.sh` | format, clippy, release build, tests, golden fixtures, panics, dependency set, size | **9 passed, 0 failed, 0 warnings** — 423 tests, 41 golden assertions |
+| `./scripts/security_check.sh` | secrets, permissions, configuration, dependencies, tests, and **the live service** | **26 passed, 0 failed, 1 warning** |
 | `python3 scripts/check_apk.py <apk>` | the APK carries the Rust core and points at nothing | **the APK carries the Rust core and points at nothing** |
 | `python3 scripts/api_parity.py` | the Rust router and the Python reference, route by route | **37 of 38 routes answer with the same shape** |
+| `node scripts/phone_smoke.mjs` | the four phone surfaces at 390 px, on synthetic data | **29 of 29 checks pass** |
 
-The one difference is `GET /api/v1/health`: the Rust desktop reports
-`garmin.method: null` and the reference reports `"personal"`. It is the
-nullability of one field — the desktop copy in that measurement had no
-Garmin key configured — and it is open.
+The security gate's live section is not a formality: with the app running it
+mints a pairing code on the machine, pairs a throwaway device, reads the API
+with it, revokes it, and watches it be signed out — and it checks that a
+caller on the network cannot mint a code at all.
+
+The one difference in the parity check is `GET /api/v1/health`: the Rust
+desktop reports `garmin.method: null` and the reference reports `"personal"`.
+It is the nullability of one field — the desktop copy in that measurement
+had no Garmin key configured — and it is open.
 
 ---
 
@@ -162,7 +179,8 @@ A one-page collage of every surface: **[`showcase/stride-collage.png`](showcase/
 
 > **Your data stays on this phone.**
 
-The individual screenshots are in [`showcase/shots/`](showcase/shots/), and
+The individual screenshots are in [`showcase/shots/`](showcase/shots/), every
+screen on both hosts is in [`showcase/review/`](showcase/review/), and
 [`showcase/README.md`](showcase/README.md) says how they are captured.
 
 ---
@@ -189,14 +207,22 @@ Two steps happen behind the scenes:
 The original `.FIT` file is downloaded per activity, so each run keeps its full
 GPS track, per-second heart rate and kilometre splits — not just a summary.
 
-The desktop also imports `.FIT` files — the parser is the same
-`stride-fit` crate the phone uses — and the reference application still
-accepts a developer key and an account login with MFA.
+### Files from any watch
+
+A `.FIT` file is a `.FIT` file, whoever wrote it. The importer reads **Strava
+exports, COROS, Wahoo, Polar and Garmin** — the file says what it is, and
+the watch it came from is part of the run's story, not a reason to refuse it.
+
+A run that is already in the history is not added twice. The run itself is
+the key: two rows are the same run when they start within two minutes of
+each other and their distances are within two per cent. So the run synced
+from Garmin and the file exported from the watch are **one** run, and
+re-importing the same file is not a second one.
 
 **The gap:** the Rust desktop answers `501 Not Implemented` to the developer
 key and the account login ("the Garmin account flow is driven by the Garmin
-client"). The phone is not affected: it uses the Personal API key and nothing
-else, and never asks for, and never stores, a Garmin password.
+client"). The phone is not affected: it uses the Personal API key and
+nothing else, and never asks for, and never stores, a Garmin password.
 
 ---
 
@@ -243,9 +269,6 @@ purpose. **The phone app does not need this** — it has its own database and
 its own Garmin key — but a second browser, or a browser on another machine,
 does.
 
-**Today the pairing code is minted by the reference application**, not by the
-Rust desktop:
-
 ```bash
 ./scripts/prod.sh pair
 ```
@@ -257,11 +280,14 @@ connected — one action, once, and it stays connected. The device gets its
 carried in the URL *fragment*, never the query string, so it never lands in
 an access log; it works **once** and expires in **10 minutes**.
 
-**The gap:** the Rust desktop answers `501 Not Implemented` to
-`GET /api/v1/auth/pair-code` — the store backend says "the pairing code is
-minted by the application state" and the application state has not been wired
-to it. Until that is done, the Rust desktop serves the browser on its own
-machine and nothing else.
+Two rules, and the security gate checks both:
+
+- **only a caller on the machine can mint a code.** The peer address *and*
+  the `Host` header have to say loopback: a page the athlete happens to have
+  open can point a name it controls at 127.0.0.1 and then talk to Stride as
+  the origin it came from.
+- **the device's credential is stored as a hash, never as the token**, so
+  the state file does not hold a credential that works.
 
 ---
 
@@ -305,8 +331,9 @@ desktop does not have it yet.
 | [`docs/android-packaging.md`](docs/android-packaging.md) | how the APK is packaged, signed, built in CI |
 | [`docs/garmin-on-device.md`](docs/garmin-on-device.md) | key entry, Keystore storage, pull cadence |
 | [`docs/harness-integration.md`](docs/harness-integration.md) | the MCP sidecar, so your own agent can query your data |
-| [`docs/security/AUDIT.md`](docs/security/AUDIT.md) | the security audit and what it found |
+| [`docs/security/AUDIT.md`](docs/security/AUDIT.md) | the security audits and what they found |
 | [`docs/working-agreement.md`](docs/working-agreement.md) | how we run big changes with parallel agents |
+| [`docs/agent-review-loop.md`](docs/agent-review-loop.md) | the review loop: how the work is checked before it ships |
 
 ---
 
@@ -325,7 +352,7 @@ publishes, never mirrors and never asks for an account.
 ```
 stride/
 ├── crates/
-│   ├── stride-core/         fingerprint, readiness, plan engine, comparison
+│   ├── stride-core/         fingerprint, readiness, plan engine, comparison, insights
 │   ├── stride-fit/          the FIT parser and the segmentation
 │   ├── stride-garmin/       the Garmin Personal API client
 │   ├── stride-store/        the schema, the migrations, the repositories
@@ -363,9 +390,10 @@ daily_physiology date, resting_hr, sleep_s, hrv_ms, stress, steps, body_battery,
 sync_run         started_at, finished_at, status, days, activities_found/new/updated, error
 ```
 
-`unique(source, external_id)` makes re-syncing idempotent. Derived numbers
-(pace, weekly volume, HR-zone distribution, personal records, streaks) are
-computed on read, so there are no stale aggregates.
+`unique(source, external_id)` makes re-syncing idempotent, and the import
+dedupe is the same idea one level up: the *run* is the key, not the file it
+came in. Derived numbers (pace, weekly volume, HR-zone distribution, personal
+records, streaks) are computed on read, so there are no stale aggregates.
 
 ---
 
@@ -392,9 +420,10 @@ cd backend && .venv/bin/python -m app.serve      # the Python app, :8000
 
 ```bash
 ./scripts/rust_gate.sh          # the Rust workspace
-./scripts/security_check.sh      # the Python side
+./scripts/security_check.sh      # the Python side and the live service
 cd backend && .venv/bin/python -m pytest -q
 cd frontend && npm run typecheck
+node scripts/phone_smoke.mjs     # the phone surfaces at 390 px, on synthetic data
 ```
 
 ---

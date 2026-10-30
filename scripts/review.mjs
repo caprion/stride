@@ -70,7 +70,11 @@ for (const [host, viewport, label] of [
 
   for (const [name, route, title, where] of SURFACES) {
     if (where !== 'both' && where !== host) continue
-    await page.goto(BASE + route, { waitUntil: 'networkidle', timeout: 45_000 })
+    // The map tiles come through the server's proxy and the first fetch of
+    // one is a round trip to the tile host, so "the network is idle" can
+    // wait a long time for a page that has a map on it. The page is ready
+    // when its DOM is.
+    await page.goto(BASE + route, { waitUntil: 'domcontentloaded', timeout: 60_000 })
     await page.waitForTimeout(900)
     const heading = await page.locator('h1, h2').first().innerText().catch(() => '')
     const file = `${host}-${name}.png`

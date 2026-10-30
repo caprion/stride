@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8" />
-<title>Stride — the training intelligence layer for Garmin</title>
+<title>Stride — a private training log that tells you what to do next</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -74,8 +74,8 @@ body {
         <div class="wordmark">STRIDE</div>
       </div>
       <div class="chips">
-      <div class="chip"><b>160</b><span>real activities synced</span></div>
-      <div class="chip"><b>8.7 MB</b><span>the whole app, as an APK</span></div>
+      <div class="chip"><b>161</b><span>real activities synced</span></div>
+      <div class="chip"><b>8.4 MB</b><span>the whole app, as an APK</span></div>
       <div class="chip"><b>0</b><span>bytes to a cloud you don't own</span></div>
       <div class="chip"><b>24 h</b><span>access token, re-fetched for you</span></div>
       </div>
@@ -93,10 +93,10 @@ body {
 
     <div class="grid">
       <figure class="panel wide">
-        <img class="shot" src="shots/01-dashboard.png" alt="Today" />
+        <img class="shot" src="shots/01-today.png" alt="Today" />
         <figcaption class="cap">
           <h3>Today</h3>
-          <p>The plan, the readiness and one recommendation — before you lace up.</p>
+          <p>One call, one reason, one warning — and the week as seven dots. Before you lace up.</p>
         </figcaption>
       </figure>
       <figure class="panel wide">
@@ -110,18 +110,25 @@ body {
         <img class="shot" src="shots/02-plan.png" alt="Plan vs actual" />
         <figcaption class="cap">
           <h3>Plan vs actual</h3>
-          <p>Your 20-week plan against your real runs — every session scored, with a reason for every miss.</p>
+          <p>Your plan against your real runs — every session scored, with a reason for every miss.</p>
         </figcaption>
       </figure>
       <figure class="panel ">
-        <img class="shot" src="shots/04-physiology.png" alt="The physiological picture" />
+        <img class="shot" src="shots/10-progress.png" alt="Progress, with proof" />
         <figcaption class="cap">
-          <h3>The physiological picture</h3>
-          <p>Sleep, resting heart rate, stress and body battery, rolled into a readiness score you can see the drivers of.</p>
+          <h3>Progress, with proof</h3>
+          <p>Pace at the same heart rate now and six weeks ago, forgiving consistency, bests and milestones.</p>
         </figcaption>
       </figure>
       <figure class="panel ">
-        <img class="shot" src="shots/05-fingerprint.png" alt="Your running fingerprint" />
+        <img class="shot" src="shots/04-body.png" alt="Body, against your own normal" />
+        <figcaption class="cap">
+          <h3>Body, against your own normal</h3>
+          <p>Sleep, HRV and resting heart rate, read against your own thirty days — not a score out of a hundred.</p>
+        </figcaption>
+      </figure>
+      <figure class="panel ">
+        <img class="shot" src="shots/05-form.png" alt="Your running fingerprint" />
         <figcaption class="cap">
           <h3>Your running fingerprint</h3>
           <p>Cadence stability, heart-rate drift, aerobic decoupling and form — across every run you have done.</p>
@@ -131,21 +138,14 @@ body {
         <img class="shot" src="shots/08-compare.png" alt="Compare any two runs" />
         <figcaption class="cap">
           <h3>Compare any two runs</h3>
-          <p>Both resampled onto one distance axis, so you can see whether you actually got fitter.</p>
+          <p>Both resampled onto one distance axis — and compared like with like, when the plan says what each run was for.</p>
         </figcaption>
       </figure>
       <figure class="panel ">
-        <img class="shot" src="shots/06-training.png" alt="Training log" />
-        <figcaption class="cap">
-          <h3>Training log</h3>
-          <p>Volume, streaks and the plan, week by week.</p>
-        </figcaption>
-      </figure>
-      <figure class="panel ">
-        <img class="shot" src="shots/07-feed.png" alt="Your history" />
+        <img class="shot" src="shots/07-runs.png" alt="Your history" />
         <figcaption class="cap">
           <h3>Your history</h3>
-          <p>Every run, with its route.</p>
+          <p>Every run, with a sentence on what it meant.</p>
         </figcaption>
       </figure>
     </div>
@@ -153,12 +153,12 @@ body {
     <footer class="foot">
       <div class="stack">
         <b>Stack</b> — a <b>Rust core</b> that runs inside the phone · React + TypeScript
-        + Tailwind + Recharts + Leaflet · Garmin Connect <b>Personal API</b> (OAuth-free,
-        one key) · Azure Key Vault for secrets
+        + Tailwind + Recharts + Leaflet · SQLCipher · Garmin Connect <b>Personal API</b>
+        (OAuth-free, one key)
       </div>
       <div class="note">
         Plan → Execute → Understand → Adapt<br />
-        Local-first · private
+        Local-first · nothing to sign up for · your data stays yours
       </div>
     </footer>
   </div>

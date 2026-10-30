@@ -1693,9 +1693,16 @@ fn plan_date_range(ctx: &Ctx<'_>, query: &Query) -> Result<(String, String), Api
 pub fn plan_sources(ctx: &Ctx<'_>, query: &Query) -> Result<Value, ApiError> {
     let (from, to) = plan_date_range(ctx, query)?;
     let demo_visible = ctx.backend.public_status()?.demo_visible;
+    // The baseline is inferred from the twelve weeks *before* the range, so
+    // the history has to be fetched with it: asking only for the range's
+    // own activities leaves the inference with nothing to read, and the
+    // usual week comes out empty.
+    let history_from = stride_core::plan_sources::history_window(&from)
+        .map(|(start, _)| start)
+        .unwrap_or_else(|| from.clone());
     let rows = ctx.backend.activities(&ActivityFilter {
         sport: None,
-        date_from: Some(from.clone()),
+        date_from: Some(history_from),
         date_to: Some(to.clone()),
         query: None,
         sort: "date".to_string(),

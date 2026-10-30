@@ -75,9 +75,9 @@ pub use plan::{
     WeekTarget, NOT_YET_DUE, RUN_SPORTS as PLAN_RUN_SPORTS,
 };
 pub use plan_sources::{
-    baseline_verdict, infer_plan, normalise_date, session_from_workout, sessions_from_workouts,
-    weekday_index, weekday_name, workouts_plan, BaselineVerdict, InferredPlan, ScheduledWorkout,
-    WorkoutDetail, WorkoutsPlan,
+    baseline_verdict, history_window, infer_plan, normalise_date, session_from_workout,
+    sessions_from_workouts, weekday_index, weekday_name, workouts_plan, BaselineVerdict,
+    InferredPlan, ScheduledWorkout, WorkoutDetail, WorkoutsPlan,
 };
 pub use readiness::{
     baselines, readiness, readiness_range, Baselines, CoreError, Readiness, ReadinessDriver,

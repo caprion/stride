@@ -17,9 +17,9 @@ OUT = ROOT / "showcase" / "collage.html"
 
 PANELS = [
     {
-        "file": "01-dashboard.png",
+        "file": "01-today.png",
         "title": "Today",
-        "caption": "The plan, the readiness and one recommendation — before you lace up.",
+        "caption": "One call, one reason, one warning — and the week as seven dots. Before you lace up.",
         "span": "wide",
     },
     {
@@ -31,40 +31,40 @@ PANELS = [
     {
         "file": "02-plan.png",
         "title": "Plan vs actual",
-        "caption": "Your 20-week plan against your real runs — every session scored, with a reason for every miss.",
+        "caption": "Your plan against your real runs — every session scored, with a reason for every miss.",
     },
     {
-        "file": "04-physiology.png",
-        "title": "The physiological picture",
-        "caption": "Sleep, resting heart rate, stress and body battery, rolled into a readiness score you can see the drivers of.",
+        "file": "10-progress.png",
+        "title": "Progress, with proof",
+        "caption": "Pace at the same heart rate now and six weeks ago, forgiving consistency, bests and milestones.",
     },
     {
-        "file": "05-fingerprint.png",
+        "file": "04-body.png",
+        "title": "Body, against your own normal",
+        "caption": "Sleep, HRV and resting heart rate, read against your own thirty days — not a score out of a hundred.",
+    },
+    {
+        "file": "05-form.png",
         "title": "Your running fingerprint",
         "caption": "Cadence stability, heart-rate drift, aerobic decoupling and form — across every run you have done.",
     },
     {
         "file": "08-compare.png",
         "title": "Compare any two runs",
-        "caption": "Both resampled onto one distance axis, so you can see whether you actually got fitter.",
+        "caption": "Both resampled onto one distance axis — and compared like with like, when the plan says what each run was for.",
     },
     {
-        "file": "06-training.png",
-        "title": "Training log",
-        "caption": "Volume, streaks and the plan, week by week.",
-    },
-    {
-        "file": "07-feed.png",
+        "file": "07-runs.png",
         "title": "Your history",
-        "caption": "Every run, with its route.",
+        "caption": "Every run, with a sentence on what it meant.",
     },
 ]
 
 CHIPS = [
-    ("103", "real activities synced"),
-    ("15", "parameters per run"),
+    ("161", "real activities synced"),
+    ("8.4 MB", "the whole app, as an APK"),
     ("0", "bytes to a cloud you don't own"),
-    ("24 h", "access token, auto-refreshed"),
+    ("24 h", "access token, re-fetched for you"),
 ]
 
 CSS = """
@@ -153,7 +153,7 @@ def main() -> None:
 
     html = f"""<!doctype html>
 <html lang="en"><head><meta charset="utf-8" />
-<title>Stride — the training intelligence layer for Garmin</title>
+<title>Stride — a private training log that tells you what to do next</title>
 <style>{CSS}</style></head>
 <body>
   <div class="sheet">
@@ -173,7 +173,7 @@ def main() -> None:
 
     <p class="tagline">
       A private training log for runners who want to know <b>what to do next</b> — not
-      just what they did. Your Garmin watch writes to your own database. Nothing else.
+      just what they did. <b>Your data stays on this phone.</b>
     </p>
 
     <h1 class="pitch">
@@ -187,13 +187,13 @@ def main() -> None:
 
     <footer class="foot">
       <div class="stack">
-        <b>Stack</b> — React + TypeScript + Tailwind + Recharts + Leaflet · FastAPI +
-        SQLAlchemy + SQLite · Garmin Connect <b>Personal API</b> (OAuth-free, one key)
-        · Azure Key Vault for secrets
+        <b>Stack</b> — a <b>Rust core</b> that runs inside the phone · React + TypeScript
+        + Tailwind + Recharts + Leaflet · SQLCipher · Garmin Connect <b>Personal API</b>
+        (OAuth-free, one key)
       </div>
       <div class="note">
         Plan → Execute → Understand → Adapt<br />
-        Self-hosted · local-first · your data stays yours
+        Local-first · nothing to sign up for · your data stays yours
       </div>
     </footer>
   </div>

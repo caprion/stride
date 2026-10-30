@@ -814,10 +814,16 @@ def plan_sources_route(
     start, end = _plan_date_range(db)
     first = date_from or start
     last = date_to or end
+    # The baseline is inferred from the twelve weeks *before* the range, so
+    # the history has to be fetched with it: asking only for the range's
+    # own activities leaves the inference with nothing to read, and the
+    # usual week comes out empty.
+    history = plan_sources.history_window(first)
+    earliest = history[0].isoformat() if history else first
     activities = list(
         db.execute(
             select(Activity).where(
-                Activity.local_date >= first, Activity.local_date <= last
+                Activity.local_date >= earliest, Activity.local_date <= last
             )
         ).scalars()
     )

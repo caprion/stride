@@ -293,6 +293,19 @@ def facts(activities: Iterable[Any]) -> list[dict[str, Any]]:
 # ------------------------------------------------------------ inferred plan
 
 
+def history_window(from_date: str | date) -> tuple[date, date] | None:
+    """The twelve whole weeks that end before the range starts.
+
+    The baseline is read from the athlete's history *before* the range it
+    is compared against, so a caller that wants the baseline has to fetch
+    that history with it. This is where that history starts.
+    """
+    start = _parse_date(from_date) if isinstance(from_date, str) else from_date
+    if start is None:
+        return None
+    return _window(start)
+
+
 def _window(from_date: date) -> tuple[date, date]:
     """The twelve whole weeks that end before the range starts.
 

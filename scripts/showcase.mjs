@@ -28,7 +28,11 @@ const settle = async (ms = 3200) => {
 
 /** Open a route and capture the top of the page. */
 async function shot(name, route, { scroll = 0, wait = 3200 } = {}) {
-  await page.goto(`${BASE}${route}`, { waitUntil: 'networkidle' })
+  // The map tiles come through the server's proxy and the first fetch of
+  // one is a round trip to the tile host, so "the network is idle" can wait
+  // a long time for a page that has a map on it. The page is ready when
+  // its DOM is; the wait below is for the charts to draw.
+  await page.goto(`${BASE}${route}`, { waitUntil: 'domcontentloaded', timeout: 60_000 })
   await settle(wait)
   if (scroll) {
     await page.evaluate((y) => window.scrollTo(0, y), scroll)
@@ -41,16 +45,18 @@ async function shot(name, route, { scroll = 0, wait = 3200 } = {}) {
 
 console.log('Capturing showcase screenshots...')
 
-await shot('01-dashboard', '/')
+// The V1 surfaces, in the order the collage tells them.
+await shot('01-today', '/')
 await shot('02-plan', '/plan', { scroll: 120 })
 await shot('03-activity', '/activities/162')
-await shot('04-physiology', '/physiology')
-await shot('05-fingerprint', '/fitness')
+await shot('04-body', '/physiology')
+await shot('05-form', '/fitness')
 await shot('06-training', '/training')
-await shot('07-feed', '/feed')
+await shot('07-runs', '/feed')
+await shot('10-progress', '/progress')
 
 // The comparison page needs runs selected before it shows anything.
-await page.goto(`${BASE}/compare`, { waitUntil: 'networkidle' })
+await page.goto(`${BASE}/compare`, { waitUntil: 'domcontentloaded', timeout: 60_000 })
 await settle(2500)
 const addButtons = page.locator('button:has-text("Add")')
 const count = await addButtons.count()
@@ -61,12 +67,15 @@ if (count >= 3) {
   await page.waitForTimeout(600)
   await addButtons.nth(2).click()
 }
-await settle(3000)
+// The comparison is computed when the last run is added, and the page
+// says "Building comparison" until it is: a shot taken too early is a
+// skeleton, not the screen.
+await settle(8000)
 await page.screenshot({ path: `${OUT}/08-compare.png` })
 console.log('  ✓ 08-compare      /compare (3 runs selected)')
 
 // The activity page's splits and charts live below the fold.
-await page.goto(`${BASE}/activities/162`, { waitUntil: 'networkidle' })
+await page.goto(`${BASE}/activities/162`, { waitUntil: 'domcontentloaded', timeout: 60_000 })
 await settle(3000)
 await page.evaluate(() => window.scrollTo(0, 1150))
 await page.waitForTimeout(900)

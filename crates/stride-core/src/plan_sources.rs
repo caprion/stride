@@ -345,6 +345,17 @@ fn iso_week_start(date: Date) -> Date {
 }
 
 /// The twelve whole weeks that end before the range starts.
+/// The twelve whole weeks that end before the range starts.
+///
+/// The baseline is read from the athlete's history *before* the range it
+/// is compared against, so a caller that wants the baseline has to fetch
+/// that history with it. This is where that history starts.
+pub fn history_window(from_date: &str) -> Option<(String, String)> {
+    let start = Date::parse(from_date)?;
+    let (from, to) = window(start);
+    Some((from.to_string(), to.to_string()))
+}
+
 fn window(from_date: Date) -> (Date, Date) {
     let start = iso_week_start(from_date).add_days(-7 * HISTORY_WEEKS as i64);
     let end = iso_week_start(from_date).add_days(-1);
