@@ -219,6 +219,44 @@ export default function PhysiologyPage() {
     // The score counts seven drivers; the phone draws four of them.
     return phone ? all.filter((driver) => SHOWN_DRIVERS.includes(driver.key)) : all
   }, [current, phone])
+  /**
+   * The sleep chart draws what the data has.
+   *
+   * Garmin sends a stage breakdown on some nights and only a duration on
+   * others. The stacked bars are the stages, so on a night without them
+   * they were four zeros and the chart showed a lone score line under a
+   * subtitle that promised stages. The subtitle follows the data, and so
+   * does the chart: duration when there are no stages, stages when there
+   * are.
+   */
+  const sleepChartData = useMemo(
+    () =>
+      (sleep.data?.items ?? [])
+        .filter((p) => p.date >= since)
+        .map((p) => ({
+          ...p,
+          label: formatDate(p.date).slice(0, 6),
+          duration: (p.sleep_s ?? 0) / 3600,
+          deep: (p.deep_sleep_s ?? 0) / 3600,
+          rem: (p.rem_s ?? 0) / 3600,
+          light: (p.light_sleep_s ?? 0) / 3600,
+          awake: (p.awake_s ?? 0) / 3600,
+        })),
+    [sleep.data, since],
+  )
+  const sleepHasStages = useMemo(
+    () =>
+      (sleep.data?.items ?? [])
+        .filter((p) => p.date >= since)
+        .some(
+          (p) =>
+            p.deep_sleep_s != null ||
+            p.rem_s != null ||
+            p.light_sleep_s != null ||
+            p.awake_s != null,
+        ),
+    [sleep.data, since],
+  )
   return (
     <div className="mx-auto max-w-7xl p-5">
       {/*
@@ -358,8 +396,19 @@ export default function PhysiologyPage() {
                         const ok = inNormal(signals, d.key)
                         return (
                           <div key={d.key}>
-                            <div className="flex items-center justify-between gap-3 text-sm">
-                              <span className="flex items-center gap-1.5 font-semibold">
+                            {/*
+                              One signal, one row.
+
+                              At 390px the label and the value were on one
+                              flex line, so "Resting HR" broke into two
+                              lines and the delta was pushed onto a third.
+                              Below the small breakpoint the row stacks:
+                              the label is a line of its own, and the value
+                              — the number, its unit, the baseline and the
+                              delta — reads as one line under it.
+                            */}
+                            <div className="flex flex-col gap-0.5 text-sm sm:flex-row sm:items-center sm:justify-between sm:gap-3">
+                              <span className="flex items-center gap-1.5 font-semibold whitespace-nowrap">
                                 {ok != null ? (
                                   <span
                                     className={`h-2 w-2 rounded-full ${ok ? 'bg-positive' : 'bg-warn'}`}
@@ -379,7 +428,12 @@ export default function PhysiologyPage() {
                                   <span className="text-ink-faint">
                                     {' '}
                                     · baseline {num(d.baseline)}
-                                    {d.delta != null && ` · Δ ${num(d.delta)}`}
+                                    {d.delta != null && (
+                                      <span className="whitespace-nowrap">
+                                        {' '}
+                                        · Δ {num(d.delta)}
+                                      </span>
+                                    )}
                                   </span>
                                 )}
                               </span>
@@ -409,7 +463,7 @@ export default function PhysiologyPage() {
           <div className="grid gap-4 xl:grid-cols-2">
             <ChartFrame
               title="Sleep"
-              subtitle={`Sleep stages by night · baseline ${sleep.data?.items.length ? `${Math.round((sleep.data.items.reduce((n, p) => n + (p.sleep_s ?? 0), 0) / sleep.data.items.length / 3600) * 10) / 10} h average` : '—'}`}
+              subtitle={`${sleepHasStages ? 'Sleep stages by night' : 'Sleep duration by night'} · baseline ${sleep.data?.items.length ? `${Math.round((sleep.data.items.reduce((n, p) => n + (p.sleep_s ?? 0), 0) / sleep.data.items.length / 3600) * 10) / 10} h average` : '—'}`}
               height={280}
               action={<RangeSelector value={days} onChange={setDays} className="self-start" />}
             >
@@ -419,18 +473,7 @@ export default function PhysiologyPage() {
                 </div>
               ) : sleep.data?.items.length ? (
                 <ResponsiveContainer width="100%" height="100%">
-                  <ComposedChart
-                    data={sleep.data.items
-                      .filter((p) => p.date >= since)
-                      .map((p) => ({
-                        ...p,
-                        label: formatDate(p.date).slice(0, 6),
-                        deep: (p.deep_sleep_s ?? 0) / 3600,
-                        rem: (p.rem_s ?? 0) / 3600,
-                        light: (p.light_sleep_s ?? 0) / 3600,
-                        awake: (p.awake_s ?? 0) / 3600,
-                      }))}
-                  >
+                  <ComposedChart data={sleepChartData}>
                     <CartesianGrid stroke={GRID} vertical={false} />
                     <XAxis dataKey="label" tick={{ fontSize: 10, fill: INK_MUTED }} />
                     <YAxis yAxisId="sleep" tick={{ fontSize: 10, fill: INK_MUTED }} unit=" h" />
@@ -441,39 +484,62 @@ export default function PhysiologyPage() {
                       tick={{ fontSize: 10, fill: INK_MUTED }}
                     />
                     <Tooltip />
-                    <Bar
-                      yAxisId="sleep"
-                      stackId="sleep"
-                      dataKey="deep"
-                      name="Deep"
-                      fill={RAMP[4]}
-                    />
-                    <Bar
-                      yAxisId="sleep"
-                      stackId="sleep"
-                      dataKey="rem"
-                      name="REM"
-                      fill={RAMP[3]}
-                    />
-                    <Bar
-                      yAxisId="sleep"
-                      stackId="sleep"
-                      dataKey="light"
-                      name="Light"
-                      fill={BRAND[300]}
-                    />
-                    <Bar
-                      yAxisId="sleep"
-                      stackId="sleep"
-                      dataKey="awake"
-                      name="Awake"
-                      fill={BRAND[100]}
-                    />
+                    {sleepHasStages ? (
+                      <>
+                        <Bar
+                          yAxisId="sleep"
+                          stackId="sleep"
+                          dataKey="deep"
+                          name="Deep"
+                          fill={RAMP[4]}
+                        />
+                        <Bar
+                          yAxisId="sleep"
+                          stackId="sleep"
+                          dataKey="rem"
+                          name="REM"
+                          fill={RAMP[3]}
+                        />
+                        <Bar
+                          yAxisId="sleep"
+                          stackId="sleep"
+                          dataKey="light"
+                          name="Light"
+                          fill={BRAND[300]}
+                        />
+                        <Bar
+                          yAxisId="sleep"
+                          stackId="sleep"
+                          dataKey="awake"
+                          name="Awake"
+                          fill={BRAND[100]}
+                        />
+                      </>
+                    ) : (
+                      <>
+                        {/*
+                          No stage breakdown in this range. The stacked bars
+                          would be four zeros, so the chart drew nothing but
+                          the score line under a subtitle promising stages.
+                          The line is the sleep duration, and the subtitle
+                          says duration.
+                        */}
+                        <Line
+                          yAxisId="sleep"
+                          dataKey="duration"
+                          name="Sleep"
+                          stroke={ACCENT_DATA}
+                          strokeWidth={2}
+                          dot={false}
+                        />
+                      </>
+                    )}
                     <Line
                       yAxisId="score"
                       dataKey="sleep_score"
                       name="Sleep score"
-                      stroke={ACCENT_DATA}
+                      stroke={INK_FAINT}
+                      strokeDasharray="4 3"
                       dot={false}
                     />
                   </ComposedChart>
