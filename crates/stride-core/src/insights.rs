@@ -42,6 +42,14 @@ use crate::numeric::{median, round_to};
 /// longest run of the previous 30 days is a spike.
 pub const SPIKE_RATIO: f64 = 1.1;
 
+/// How close a run has to be to the spike limit for the distance guardrail
+/// to be worth showing.
+///
+/// The guardrail exists because a jump in distance is the one thing the
+/// studies link to overuse injury. A run at 40% of the limit is not a
+/// jump, and a warning about it is noise on the runner's first screen.
+pub const GUARDRAIL_NEAR_RATIO: f64 = 0.9;
+
 /// The smallest efficiency a percentage change may be computed against.
 ///
 /// Efficiency is metres per minute per beat: about 1.2 for an easy run at
@@ -418,6 +426,42 @@ pub struct RecoverySignal {
     pub normal: bool,
 }
 
+/// How far outside its normal range a signal is.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum Concern {
+    /// Just outside the range: worth easing for, not worth a day off.
+    Mild,
+    /// Well outside the range: worth taking seriously.
+    Marked,
+}
+
+/// One recovery signal that is outside its normal range, and by how much.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct RecoveryConcern {
+    /// `sleep`, `hrv` or `resting_hr`.
+    pub key: String,
+    /// The sentence the runner reads: "HRV 54 ms vs your usual 61".
+    pub detail: String,
+    /// How far outside the normal range it is.
+    pub concern: Concern,
+}
+
+/// How far below the baseline sleep has to be before the night counts as off.
+const SLEEP_OFF_SECONDS: f64 = 3600.0;
+/// How far below the baseline sleep makes it marked rather than mild.
+const SLEEP_MARKED_SECONDS: f64 = 7200.0;
+/// How far below the baseline HRV has to be before the night counts as off.
+const HRV_OFF_RATIO: f64 = 0.85;
+/// How far below the baseline HRV makes it marked rather than mild.
+const HRV_MARKED_RATIO: f64 = 0.75;
+/// How far above the baseline resting heart rate has to be before the night
+/// counts as off.
+const RHR_OFF_BPM: f64 = 5.0;
+/// How far above the baseline resting heart rate makes it marked rather than
+/// mild.
+const RHR_MARKED_BPM: f64 = 10.0;
+
 /// A night of recovery read against the athlete's 30-day baselines.
 #[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
 pub struct RecoveryRead {
@@ -479,30 +523,62 @@ impl RecoveryRead {
 
     /// The signals that are off, as short phrases, most telling first.
     pub fn flags(&self) -> Vec<String> {
-        let mut flags = Vec::new();
+        self.concerns()
+            .into_iter()
+            .map(|concern| concern.detail)
+            .collect()
+    }
+
+    /// The signals that are outside their normal range, and by how much.
+    ///
+    /// The thresholds that decide *whether* a signal is off are the ones
+    /// the app has always used. What is new is the grade: a signal that is
+    /// a little outside its range is a different thing from one that is
+    /// well outside it, and the advice cannot be the same for both.
+    pub fn concerns(&self) -> Vec<RecoveryConcern> {
+        let mut out = Vec::new();
         if let (Some(rhr), Some(base)) = (self.resting_hr, self.resting_hr_baseline) {
-            if rhr >= base + 5.0 {
-                flags.push(format!(
-                    "resting heart rate {:.0} vs your usual {:.0}",
-                    rhr, base
-                ));
+            let over = rhr - base;
+            if over >= RHR_OFF_BPM {
+                out.push(RecoveryConcern {
+                    key: "resting_hr".to_string(),
+                    detail: format!("resting heart rate {:.0} vs your usual {:.0}", rhr, base),
+                    concern: if over >= RHR_MARKED_BPM {
+                        Concern::Marked
+                    } else {
+                        Concern::Mild
+                    },
+                });
             }
         }
         if let (Some(sleep), Some(base)) = (self.sleep_s, self.sleep_baseline_s) {
-            if sleep < base - 3600.0 {
-                flags.push(format!(
-                    "slept {} vs your usual {}",
-                    hours(sleep),
-                    hours(base)
-                ));
+            let short = base - sleep;
+            if short >= SLEEP_OFF_SECONDS {
+                out.push(RecoveryConcern {
+                    key: "sleep".to_string(),
+                    detail: format!("slept {} vs your usual {}", hours(sleep), hours(base)),
+                    concern: if short >= SLEEP_MARKED_SECONDS {
+                        Concern::Marked
+                    } else {
+                        Concern::Mild
+                    },
+                });
             }
         }
         if let (Some(hrv), Some(base)) = (self.hrv_ms, self.hrv_baseline_ms) {
-            if hrv < base * 0.85 {
-                flags.push(format!("HRV {:.0} ms vs your usual {:.0}", hrv, base));
+            if hrv < base * HRV_OFF_RATIO {
+                out.push(RecoveryConcern {
+                    key: "hrv".to_string(),
+                    detail: format!("HRV {:.0} ms vs your usual {:.0}", hrv, base),
+                    concern: if hrv < base * HRV_MARKED_RATIO {
+                        Concern::Marked
+                    } else {
+                        Concern::Mild
+                    },
+                });
             }
         }
-        flags
+        out
     }
 
     /// Each readable signal and whether it is inside its normal range. The
@@ -835,14 +911,37 @@ pub fn today(
         .map(|run| run.distance_m)
         .collect();
     let typical = median(&recent);
-    let flags = recovery.map(RecoveryRead::flags).unwrap_or_default();
+    let concerns = recovery.map(RecoveryRead::concerns).unwrap_or_default();
 
-    let guardrail_text = spike_limit.map(|limit| {
-        format!(
-            "Runs past {} (your longest in 30 days, plus 10%) were linked to more overuse injuries in a large study. Under it is not proven safe, and nudging up run after run adds up.",
-            km(limit)
-        )
+    // The distance this call is about: what the plan says, or what the
+    // nudge suggests, or the athlete's usual run when there is no plan.
+    //
+    // The distance guardrail is only worth the runner's attention when the
+    // run is near the line. A warning about a distance that is nowhere near
+    // the limit is noise, and noise on the first screen is noise the runner
+    // learns to skip.
+    let planned_distance_m = planned
+        .and_then(|session| session.target_distance_m)
+        .filter(|distance| *distance > 0.0);
+    let nudge_m = typical.map(|t| (t * 0.6).clamp(3000.0, 6000.0)).unwrap_or(5000.0);
+    let nudged = gap.is_some_and(|days| usual.is_some_and(|u| days >= 3 && days as f64 >= u * 2.0));
+    let call_distance_m = planned_distance_m.or_else(|| {
+        if nudged {
+            Some(nudge_m)
+        } else {
+            typical
+        }
     });
+
+    let guardrail_text = match (spike_limit, call_distance_m) {
+        (Some(limit), Some(distance)) if distance >= limit * GUARDRAIL_NEAR_RATIO => Some(
+            format!(
+                "Runs past {} (your longest in 30 days, plus 10%) were linked to more overuse injuries in a large study. Under it is not proven safe, and nudging up run after run adds up.",
+                km(limit)
+            ),
+        ),
+        _ => None,
+    };
 
     let (state, headline, reason, guardrail) = if gap == Some(0) {
         let ran: f64 = runs
@@ -850,8 +949,10 @@ pub fn today(
             .filter(|run| run.date == today)
             .map(|run| run.distance_m)
             .fold(0.0, |a, b| a + b);
-        let tomorrow = if story.spike || story.tone == "warn" || !flags.is_empty() {
+        let tomorrow = if story.spike || story.tone == "warn" || concerns.iter().any(|c| c.concern == Concern::Marked) {
             "Tomorrow: rest or 30 minutes very easy."
+        } else if !concerns.is_empty() {
+            "Tomorrow: keep it easy."
         } else {
             "Tomorrow: whatever's next. There's nothing to make up."
         };
@@ -877,21 +978,14 @@ pub fn today(
                 km(cap)
             )),
         )
-    } else if !flags.is_empty() {
-        (
-            "easy",
-            "Go easy today, or take the day.".to_string(),
-            Some(format!("Last night: {}.", flags.join("; "))),
-            guardrail_text,
-        )
+    } else if !concerns.is_empty() {
+        let (headline, reason) = recovery_advice(&concerns);
+        ("easy", headline, Some(reason), guardrail_text)
     } else if let (Some(days), Some(usual)) = (gap, usual) {
-        if days >= 3 && days as f64 >= usual * 2.0 {
-            let suggest = typical
-                .map(|t| (t * 0.6).clamp(3000.0, 6000.0))
-                .unwrap_or(5000.0);
+        if nudged {
             (
                 "nudge",
-                format!("A short easy {} today keeps the rhythm going.", km(suggest)),
+                format!("A short easy {} today keeps the rhythm going.", km(nudge_m)),
                 Some(format!(
                     "{days} days since your last run; you usually run every {} days. No catching up needed.",
                     usual.round()
@@ -924,6 +1018,47 @@ pub fn today(
             line: plan_line(state, session, spike_limit),
         }),
     }
+}
+
+/// The advice for a night whose signals are outside their normal range.
+///
+/// The advice is graded, because the signals are not the same thing: one
+/// signal that is just outside its range is not several that are well
+/// outside theirs. And it is not the athlete's recovery data that decides
+/// whether they run — they are. So a mild signal eases the plan and leaves
+/// the day to them; a marked one asks for an easy run or a day off; several
+/// say take the day, with the athlete's own feeling able to call it down
+/// to an easy run.
+fn recovery_advice(concerns: &[RecoveryConcern]) -> (String, String) {
+    let details: Vec<String> = concerns.iter().map(|concern| concern.detail.clone()).collect();
+    let joined = details.join("; ");
+    let marked = concerns
+        .iter()
+        .filter(|concern| concern.concern == Concern::Marked)
+        .count();
+    if concerns.len() >= 2 {
+        return (
+            "Take the day, or make it very easy.".to_string(),
+            format!(
+                "Last night: {joined}. {} signals outside your normal range — if you feel fine, an easy run is enough.",
+                concerns.len()
+            ),
+        );
+    }
+    if marked == 1 {
+        return (
+            "Go easy today, or take the day.".to_string(),
+            format!(
+                "Last night: {joined}. Well outside your normal range — and how you feel has the last word."
+            ),
+        );
+    }
+    (
+        "Keep it easy today.".to_string(),
+        format!(
+            "Last night: {joined}. Just outside your normal range — if you feel off too, take the day."
+        ),
+    )
 }
 
 fn go_state(
@@ -1461,6 +1596,114 @@ mod tests {
         let call = today("2026-10-30", &runs, Some(&night), None);
         assert_eq!(call.state, "easy");
         assert!(call.guardrail.unwrap().contains("8.8 km"));
+    }
+
+    /// A history of short runs with one long one in it: the usual run is
+    /// 5 km and the spike limit is 22 km.
+    fn short_runs_with_one_long_one() -> Vec<Run> {
+        let mut runs = history("2026-10-29", 10, 2, 5.0);
+        runs.push(run(100, "2026-10-20", 20.0, 360.0, Some(145.0)));
+        runs
+    }
+
+    #[test]
+    fn the_distance_guardrail_is_silent_when_the_run_is_nowhere_near_the_line() {
+        let runs = short_runs_with_one_long_one();
+        let short = Planned {
+            label: "Easy 5".to_string(),
+            session_type: "easy".to_string(),
+            target_distance_m: Some(5000.0),
+        };
+        let call = today("2026-10-30", &runs, None, Some(&short));
+        assert!(
+            call.guardrail.is_none(),
+            "a 5 km run is not a distance risk: {:?}",
+            call.guardrail
+        );
+
+        // The same history, with a run near the line.
+        let near = Planned {
+            label: "Long 21".to_string(),
+            session_type: "long".to_string(),
+            target_distance_m: Some(21_000.0),
+        };
+        let call = today("2026-10-30", &runs, None, Some(&near));
+        assert!(call.guardrail.unwrap().contains("22.0 km"));
+    }
+
+    #[test]
+    fn the_distance_guardrail_stays_silent_with_no_plan_and_a_short_usual_run() {
+        let runs = short_runs_with_one_long_one();
+        let call = today("2026-10-30", &runs, None, None);
+        assert!(call.guardrail.is_none());
+    }
+
+    #[test]
+    fn one_mild_signal_eases_the_plan_and_leaves_the_day_to_the_runner() {
+        let runs = history("2026-10-29", 10, 2, 8.0);
+        let night = RecoveryRead {
+            date: "2026-10-30".into(),
+            resting_hr: Some(57.0),
+            resting_hr_baseline: Some(51.0),
+            ..RecoveryRead::default()
+        };
+        let call = today("2026-10-30", &runs, Some(&night), None);
+        assert_eq!(call.state, "easy");
+        assert_eq!(call.headline, "Keep it easy today.");
+        let reason = call.reason.unwrap();
+        assert!(reason.contains("resting heart rate 57 vs your usual 51"));
+        assert!(reason.contains("if you feel off too"));
+    }
+
+    #[test]
+    fn one_marked_signal_asks_for_an_easy_run_or_a_day_off() {
+        let runs = history("2026-10-29", 10, 2, 8.0);
+        let night = RecoveryRead {
+            date: "2026-10-30".into(),
+            resting_hr: Some(62.0),
+            resting_hr_baseline: Some(51.0),
+            ..RecoveryRead::default()
+        };
+        let call = today("2026-10-30", &runs, Some(&night), None);
+        assert_eq!(call.state, "easy");
+        assert_eq!(call.headline, "Go easy today, or take the day.");
+        let reason = call.reason.unwrap();
+        assert!(reason.contains("Well outside your normal range"));
+        assert!(reason.contains("how you feel has the last word"));
+    }
+
+    #[test]
+    fn several_signals_say_take_the_day() {
+        let runs = history("2026-10-29", 10, 2, 8.0);
+        let night = RecoveryRead {
+            date: "2026-10-30".into(),
+            resting_hr: Some(62.0),
+            resting_hr_baseline: Some(51.0),
+            sleep_s: Some(4.0 * 3600.0),
+            sleep_baseline_s: Some(7.5 * 3600.0),
+            ..RecoveryRead::default()
+        };
+        let call = today("2026-10-30", &runs, Some(&night), None);
+        assert_eq!(call.state, "easy");
+        assert_eq!(call.headline, "Take the day, or make it very easy.");
+        let reason = call.reason.unwrap();
+        assert!(reason.contains("2 signals outside your normal range"));
+        assert!(reason.contains("if you feel fine"));
+    }
+
+    #[test]
+    fn a_tomorrow_after_a_mild_signal_is_only_easy() {
+        let mut runs = history("2026-10-30", 10, 2, 8.0);
+        runs.push(run(100, "2026-10-30", 8.0, 360.0, Some(145.0)));
+        let night = RecoveryRead {
+            date: "2026-10-30".into(),
+            resting_hr: Some(57.0),
+            resting_hr_baseline: Some(51.0),
+            ..RecoveryRead::default()
+        };
+        let call = today("2026-10-30", &runs, Some(&night), None);
+        assert_eq!(call.state, "done");
+        assert!(call.guardrail.unwrap().contains("keep it easy"));
     }
 
     #[test]
