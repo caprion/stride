@@ -39,11 +39,8 @@ const GOLDEN: &str = include_str!("fixtures/api_golden.json");
 
 /// The day the recording was made.
 fn recorded_today(golden: &Value) -> chrono::NaiveDate {
-    chrono::NaiveDate::parse_from_str(
-        golden["today"].as_str().unwrap_or("2026-01-01"),
-        "%Y-%m-%d",
-    )
-    .unwrap_or_else(|_| chrono::NaiveDate::from_ymd_opt(2026, 1, 1).unwrap_or_default())
+    chrono::NaiveDate::parse_from_str(golden["today"].as_str().unwrap_or("2026-01-01"), "%Y-%m-%d")
+        .unwrap_or_else(|_| chrono::NaiveDate::from_ymd_opt(2026, 1, 1).unwrap_or_default())
 }
 
 /// The backend the recording used, with the same rows.
@@ -177,13 +174,11 @@ fn the_plan_verdicts_are_the_same_in_both_implementations() {
     );
     for (index, (expected, actual)) in expected_items.iter().zip(actual_items.iter()).enumerate() {
         assert_eq!(
-            actual["verdict"],
-            expected["verdict"],
+            actual["verdict"], expected["verdict"],
             "verdict {index} differs: {actual} against {expected}"
         );
         assert_eq!(
-            actual["adherence_score"],
-            expected["adherence_score"],
+            actual["adherence_score"], expected["adherence_score"],
             "the adherence score of verdict {index} differs"
         );
     }

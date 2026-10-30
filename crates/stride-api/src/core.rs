@@ -766,10 +766,7 @@ impl CoreBackend {
     ///
     /// The plan is matched over the range the runs fall in, so a run from
     /// last year is matched against the session it was planned for.
-    fn plan_intents(
-        &self,
-        rows: &[ActivityRow],
-    ) -> Result<BTreeMap<i64, String>, BackendError> {
+    fn plan_intents(&self, rows: &[ActivityRow]) -> Result<BTreeMap<i64, String>, BackendError> {
         let mut intents: BTreeMap<i64, String> = BTreeMap::new();
         let dates: Vec<&str> = rows
             .iter()

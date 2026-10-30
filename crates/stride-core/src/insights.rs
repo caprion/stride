@@ -342,7 +342,9 @@ pub fn run_story(run: &Run, runs: &[Run], recovery: Option<&RecoveryRead>) -> Ru
                             // Pace and heart rate are medians of their own, so
                             // quoting them here can read "in line" next to "10 s/km
                             // faster"; the efficiency is the one honest number.
-                            story.push("In line with your usual effort for this distance.".to_string());
+                            story.push(
+                                "In line with your usual effort for this distance.".to_string(),
+                            );
                         }
                     }
                     None => {}
@@ -923,15 +925,12 @@ pub fn today(
     let planned_distance_m = planned
         .and_then(|session| session.target_distance_m)
         .filter(|distance| *distance > 0.0);
-    let nudge_m = typical.map(|t| (t * 0.6).clamp(3000.0, 6000.0)).unwrap_or(5000.0);
+    let nudge_m = typical
+        .map(|t| (t * 0.6).clamp(3000.0, 6000.0))
+        .unwrap_or(5000.0);
     let nudged = gap.is_some_and(|days| usual.is_some_and(|u| days >= 3 && days as f64 >= u * 2.0));
-    let call_distance_m = planned_distance_m.or_else(|| {
-        if nudged {
-            Some(nudge_m)
-        } else {
-            typical
-        }
-    });
+    let call_distance_m =
+        planned_distance_m.or_else(|| if nudged { Some(nudge_m) } else { typical });
 
     let guardrail_text = match (spike_limit, call_distance_m) {
         (Some(limit), Some(distance)) if distance >= limit * GUARDRAIL_NEAR_RATIO => Some(
@@ -949,7 +948,10 @@ pub fn today(
             .filter(|run| run.date == today)
             .map(|run| run.distance_m)
             .fold(0.0, |a, b| a + b);
-        let tomorrow = if story.spike || story.tone == "warn" || concerns.iter().any(|c| c.concern == Concern::Marked) {
+        let tomorrow = if story.spike
+            || story.tone == "warn"
+            || concerns.iter().any(|c| c.concern == Concern::Marked)
+        {
             "Tomorrow: rest or 30 minutes very easy."
         } else if !concerns.is_empty() {
             "Tomorrow: keep it easy."
@@ -1030,7 +1032,10 @@ pub fn today(
 /// say take the day, with the athlete's own feeling able to call it down
 /// to an easy run.
 fn recovery_advice(concerns: &[RecoveryConcern]) -> (String, String) {
-    let details: Vec<String> = concerns.iter().map(|concern| concern.detail.clone()).collect();
+    let details: Vec<String> = concerns
+        .iter()
+        .map(|concern| concern.detail.clone())
+        .collect();
     let joined = details.join("; ");
     let marked = concerns
         .iter()

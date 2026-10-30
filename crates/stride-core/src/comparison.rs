@@ -203,9 +203,7 @@ pub struct ParameterComparison {
 ///
 /// `rest` and `strength` are not in the list: a run is never one of them,
 /// so a session of that type gives a run no intent.
-pub const RUN_INTENT_TYPES: [&str; 6] = [
-    "easy", "long", "tempo", "interval", "race", "recovery",
-];
+pub const RUN_INTENT_TYPES: [&str; 6] = ["easy", "long", "tempo", "interval", "race", "recovery"];
 
 /// The basis of a comparison: what makes the runs comparable at all.
 ///
