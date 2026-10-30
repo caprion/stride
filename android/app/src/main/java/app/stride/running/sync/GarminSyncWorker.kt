@@ -7,6 +7,7 @@ import androidx.work.ForegroundInfo
 import androidx.work.Worker
 import androidx.work.WorkerParameters
 import app.stride.running.core.StrideCore
+import app.stride.running.security.DeviceCredential
 import app.stride.running.settings.AppSettings
 
 /**
@@ -42,6 +43,20 @@ class GarminSyncWorker(
         // do but come back later.
         if (SyncEngine.isLocked(context)) {
             return Result.retry()
+        }
+
+        // A phone with **no screen lock** is a different case from a locked
+        // one: it is a phone that anybody can pick up, and a pull would put
+        // real runs on it. The foreground refuses the same pull; the
+        // background has to refuse it too, or the rule only holds while
+        // somebody is watching.
+        if (!DeviceCredential.hasCredential(context)) {
+            val message = "This phone has no screen lock, so real runs are not pulled."
+            SyncNotifications.finished(
+                context,
+                SyncOutcome(ok = false, message = message, error = "no screen lock"),
+            )
+            return Result.failure()
         }
 
         val problem = StrideCore.ensureOpen(context)
