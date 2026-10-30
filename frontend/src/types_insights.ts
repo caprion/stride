@@ -60,6 +60,15 @@ export interface TodayInsight {
   recovery_normal: [number, number] | null
   /** The one definition of "normal": the Body screen reads this. */
   recovery_signals: RecoverySignal[]
+  /**
+   * The graded advice about last night, when a signal is outside its normal
+   * range.
+   *
+   * **One sentence, one source.** Today shows it as the reason and Body
+   * shows it under the count, so the two screens cannot disagree about how
+   * serious the night was.
+   */
+  recovery_advice: string | null
   /** Today's session on a written plan, reconciled with the call. */
   plan: {
     session: { label: string; session_type: string; target_distance_m: number | null }

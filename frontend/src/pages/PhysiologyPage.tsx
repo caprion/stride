@@ -55,18 +55,21 @@ function normalHeadline(signals: RecoverySignal[]): string {
   return `${normal} of ${signals.length} signals in your normal range`
 }
 
-const SIGNAL_NAME: Record<string, string> = {
-  sleep: 'sleep',
-  hrv: 'HRV',
-  resting_hr: 'resting HR',
-}
-
-function normalAdvice(signals: RecoverySignal[]): string | null {
+/**
+ * The advice, from the core.
+ *
+ * **One sentence, one source.** The core grades the recovery concern and
+ * writes the sentence; Today shows it as the reason and Body shows it here.
+ * Two screens that each wrote their own advice would say different things
+ * about the same night — one signal off is not three, and a mild signal is
+ * not a marked one.
+ */
+function recoveryAdvice(signals: RecoverySignal[], advice: string | null): string | null {
   if (!signals.length) return null
+  if (advice) return advice
   const off = signals.filter((s) => !s.normal)
   if (!off.length) return 'Recovery looks normal. Train as you planned.'
-  const sentence = `${off.map((s) => SIGNAL_NAME[s.key] ?? s.key).join(' and ')} outside your normal range: go easy today, or take the day.`
-  return sentence.charAt(0).toUpperCase() + sentence.slice(1)
+  return 'Some signals are outside your normal range.'
 }
 
 const num = (v: number | null | undefined, suffix = '') =>
@@ -381,7 +384,7 @@ export default function PhysiologyPage() {
                     {normalHeadline(signals)}
                   </strong>
                   <p className="mt-3 text-sm text-ink-soft">
-                    {normalAdvice(signals) ??
+                    {recoveryAdvice(signals, todayInsight.data?.recovery_advice ?? null) ??
                       current.rationale ??
                       'Readiness reflects your recent recovery signals.'}
                   </p>

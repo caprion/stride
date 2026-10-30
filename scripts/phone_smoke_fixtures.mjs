@@ -125,6 +125,8 @@ const TODAY_INSIGHT = {
   headline: 'Keep it easy today.',
   reason:
     'Last night: resting heart rate 57 vs your usual 51. Just outside your normal range — if you feel off too, take the day.',
+  recovery_advice:
+    'resting heart rate 57 vs your usual 51. Just outside your normal range — if you feel off too, take the day.',
   guardrail: null,
   longest_30d_m: 18000,
   spike_limit_m: 19800,
@@ -150,7 +152,9 @@ const TODAY_INSIGHT = {
   ],
   plan: {
     session: { label: 'Easy', session_type: 'easy', target_distance_m: 8000 },
-    line: 'Your plan says Easy, 8 km. Nothing says otherwise: run it as written.',
+    // The plan line is the engine's own sentence for this state: the card
+    // says ease off, so the line below it has to agree.
+    line: 'Your plan says Easy, 8 km. Keep it easy, and shorter if you feel flat.',
   },
 }
 

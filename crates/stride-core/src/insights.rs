@@ -699,6 +699,13 @@ pub struct Today {
     pub recovery_normal: Option<(usize, usize)>,
     /// Each recovery signal read last night, normal or not.
     pub recovery_signals: Vec<RecoverySignal>,
+    /// The graded advice about last night, when a signal is outside its
+    /// normal range.
+    ///
+    /// **One sentence, one source.** Today shows it as the reason and Body
+    /// shows it under the count, so the two screens cannot disagree about
+    /// how serious the night was.
+    pub recovery_advice: Option<String>,
     /// Today's session on a written plan, reconciled with the call.
     pub plan: Option<PlanLine>,
 }
@@ -727,7 +734,12 @@ pub struct PlanLine {
 /// says *how hard* (recovery and load); the plan says *what*. They never
 /// disagree silently: on an easy day a hard session is softened or moved,
 /// and a planned distance past the spike limit is capped.
-pub fn plan_line(state: &str, planned: &Planned, spike_limit_m: Option<f64>) -> String {
+pub fn plan_line(
+    state: &str,
+    planned: &Planned,
+    spike_limit_m: Option<f64>,
+    call_distance_m: Option<f64>,
+) -> String {
     let what = match planned.target_distance_m {
         Some(distance) if distance > 0.0 => format!("{}, {}", planned.label, km(distance)),
         _ => planned.label.clone(),
@@ -761,6 +773,15 @@ pub fn plan_line(state: &str, planned: &Planned, spike_limit_m: Option<f64>) -> 
         "comeback" => format!(
             "Your plan says {what}. After the break, run the short easy run above instead."
         ),
+        // The call is a short one, so the line must not say "run it as
+        // written": the two have to agree about what today is.
+        "nudge" => match call_distance_m {
+            Some(distance) => format!(
+                "Your plan says {what}. Today is a short one — {} is enough.",
+                km(distance)
+            ),
+            None => format!("Your plan says {what}. Today is a short one."),
+        },
         _ => match (planned.target_distance_m, spike_limit_m) {
             (Some(target), Some(limit)) if target > limit => format!(
                 "Your plan says {what}. That is past your spike limit: cap it at {}.",
@@ -890,6 +911,7 @@ pub fn today(
             week,
             recovery_normal,
             recovery_signals,
+            recovery_advice: None,
             plan: None,
         };
     };
@@ -984,8 +1006,13 @@ pub fn today(
             )),
         )
     } else if !concerns.is_empty() {
-        let (headline, reason) = recovery_advice(&concerns);
-        ("easy", headline, Some(reason), guardrail_text)
+        let (headline, advice) = recovery_advice(&concerns);
+        (
+            "easy",
+            headline,
+            Some(format!("Last night: {advice}")),
+            guardrail_text,
+        )
     } else if let (Some(days), Some(usual)) = (gap, usual) {
         if nudged {
             (
@@ -998,10 +1025,10 @@ pub fn today(
                 guardrail_text,
             )
         } else {
-            go_state(typical, recovery_normal, guardrail_text)
+            go_state(typical, recovery_normal, guardrail_text, planned_distance_m)
         }
     } else {
-        go_state(typical, recovery_normal, guardrail_text)
+        go_state(typical, recovery_normal, guardrail_text, planned_distance_m)
     };
 
     Today {
@@ -1018,9 +1045,10 @@ pub fn today(
         week,
         recovery_normal,
         recovery_signals,
+        recovery_advice: (!concerns.is_empty()).then(|| recovery_note(&concerns)),
         plan: planned.map(|session| PlanLine {
             session: session.clone(),
-            line: plan_line(state, session, spike_limit),
+            line: plan_line(state, session, spike_limit, call_distance_m),
         }),
     }
 }
@@ -1035,6 +1063,26 @@ pub fn today(
 /// say take the day, with the athlete's own feeling able to call it down
 /// to an easy run.
 fn recovery_advice(concerns: &[RecoveryConcern]) -> (String, String) {
+    let advice = recovery_note(concerns);
+    let headline = if concerns.len() >= 2 {
+        "Take the day, or make it very easy."
+    } else if concerns
+        .iter()
+        .any(|concern| concern.concern == Concern::Marked)
+    {
+        "Go easy today, or take the day."
+    } else {
+        "Keep it easy today."
+    };
+    (headline.to_string(), advice)
+}
+
+/// The graded advice, in one sentence.
+///
+/// **One sentence, one source.** Today and Body both show it, so the two
+/// screens cannot say different things about the same night: the advice is
+/// written here, once, and both read it.
+fn recovery_note(concerns: &[RecoveryConcern]) -> String {
     let details: Vec<String> = concerns
         .iter()
         .map(|concern| concern.detail.clone())
@@ -1045,38 +1093,35 @@ fn recovery_advice(concerns: &[RecoveryConcern]) -> (String, String) {
         .filter(|concern| concern.concern == Concern::Marked)
         .count();
     if concerns.len() >= 2 {
-        return (
-            "Take the day, or make it very easy.".to_string(),
-            format!(
-                "Last night: {joined}. {} signals outside your normal range — if you feel fine, an easy run is enough.",
-                concerns.len()
-            ),
+        return format!(
+            "{joined}. {} signals outside your normal range — if you feel fine, an easy run is enough.",
+            concerns.len()
         );
     }
     if marked == 1 {
-        return (
-            "Go easy today, or take the day.".to_string(),
-            format!(
-                "Last night: {joined}. Well outside your normal range — and how you feel has the last word."
-            ),
+        return format!(
+            "{joined}. Well outside your normal range — and how you feel has the last word."
         );
     }
-    (
-        "Keep it easy today.".to_string(),
-        format!(
-            "Last night: {joined}. Just outside your normal range — if you feel off too, take the day."
-        ),
-    )
+    format!("{joined}. Just outside your normal range — if you feel off too, take the day.")
 }
 
 fn go_state(
     typical: Option<f64>,
     normal: Option<(usize, usize)>,
     guardrail: Option<String>,
+    planned_distance_m: Option<f64>,
 ) -> (&'static str, String, Option<String>, Option<String>) {
-    let headline = match typical {
-        Some(typical) => format!("Good day for a run. Your usual is about {}.", km(typical)),
-        None => "Good day for a run.".to_string(),
+    // The headline quotes the distance the runner will actually do. With a
+    // plan on the sheet, that is the plan's distance: quoting the usual
+    // next to a plan that says otherwise is two numbers, and the runner
+    // has to guess which one the card means.
+    let headline = match (planned_distance_m, typical) {
+        (Some(planned), _) => format!("Good day for a run. Your plan says {}.", km(planned)),
+        (None, Some(typical)) => {
+            format!("Good day for a run. Your usual is about {}.", km(typical))
+        }
+        (None, None) => "Good day for a run.".to_string(),
     };
     let reason = normal.map(|(normal, read)| {
         if normal == read {
@@ -1791,6 +1836,72 @@ mod tests {
     }
 
     #[test]
+    fn the_headline_quotes_the_plan_when_the_plan_says_otherwise() {
+        // The usual run is 8 km and the plan says 10: the card must not
+        // quote both, or the runner has to guess which one it means.
+        let runs = history("2026-10-29", 10, 2, 8.0);
+        let planned = Planned {
+            label: "Easy".to_string(),
+            session_type: "easy".to_string(),
+            target_distance_m: Some(10_000.0),
+        };
+        let call = today("2026-10-30", &runs, None, Some(&planned));
+        assert!(
+            call.headline.contains("Your plan says 10.0 km"),
+            "the headline was {}",
+            call.headline
+        );
+        assert!(
+            !call.headline.contains("usual"),
+            "the headline quoted the usual too: {}",
+            call.headline
+        );
+
+        // With no plan, the usual is what the runner will do.
+        let call = today("2026-10-30", &runs, None, None);
+        assert!(call.headline.contains("Your usual is about 8.0 km"));
+    }
+
+    #[test]
+    fn the_plan_line_agrees_with_a_short_call() {
+        // The nudge says "a short easy 4.8 km today"; the line below it
+        // must not say "run it as written".
+        let runs = history("2026-10-25", 10, 2, 8.0);
+        let planned = Planned {
+            label: "Easy".to_string(),
+            session_type: "easy".to_string(),
+            target_distance_m: Some(8000.0),
+        };
+        let call = today("2026-10-30", &runs, None, Some(&planned));
+        assert_eq!(call.state, "nudge");
+        let line = call.plan.unwrap().line;
+        assert!(line.contains("Today is a short one"), "{line}");
+        assert!(!line.contains("run it as written"), "{line}");
+    }
+
+    #[test]
+    fn the_advice_is_one_sentence_for_both_screens() {
+        // Today and Body read the same sentence, so they cannot disagree.
+        let runs = history("2026-10-29", 10, 2, 8.0);
+        let night = RecoveryRead {
+            date: "2026-10-30".into(),
+            resting_hr: Some(57.0),
+            resting_hr_baseline: Some(51.0),
+            ..RecoveryRead::default()
+        };
+        let call = today("2026-10-30", &runs, Some(&night), None);
+        let advice = call.recovery_advice.expect("there is advice");
+        assert!(
+            call.reason
+                .as_deref()
+                .unwrap_or_default()
+                .ends_with(&advice),
+            "the reason and the advice are different sentences: {:?} / {advice}",
+            call.reason
+        );
+    }
+
+    #[test]
     fn one_quiet_week_is_grace_not_a_reset() {
         // Two runs a week for eight weeks, then a quiet week, then two more.
         let mut runs = Vec::new();
@@ -1871,16 +1982,16 @@ mod tests {
             session_type: "interval".to_string(),
             target_distance_m: Some(8000.0),
         };
-        let easy = plan_line("easy", &intervals, Some(17600.0));
+        let easy = plan_line("easy", &intervals, Some(17600.0), None);
         assert!(easy.contains("swap it for an easy run"), "{easy}");
-        let go = plan_line("go", &intervals, Some(17600.0));
+        let go = plan_line("go", &intervals, Some(17600.0), None);
         assert!(go.contains("run it as written"), "{go}");
         let long = Planned {
             label: "Long run".to_string(),
             session_type: "long".to_string(),
             target_distance_m: Some(22000.0),
         };
-        let capped = plan_line("go", &long, Some(17600.0));
+        let capped = plan_line("go", &long, Some(17600.0), None);
         assert!(capped.contains("cap it at 17.6 km"), "{capped}");
     }
 
@@ -1891,7 +2002,7 @@ mod tests {
             session_type: "unknown".to_string(),
             target_distance_m: Some(8000.0),
         };
-        let line = plan_line("easy", &unknown, Some(17_600.0));
+        let line = plan_line("easy", &unknown, Some(17_600.0), None);
         assert!(
             !line.contains("Keep it easy"),
             "an unknown kind is not an easy session: {line}"
@@ -1900,7 +2011,7 @@ mod tests {
             line.contains("does not say what kind of session it is"),
             "{line}"
         );
-        let done = plan_line("done", &unknown, Some(17_600.0));
+        let done = plan_line("done", &unknown, Some(17_600.0), None);
         assert!(
             done.contains("Your plan had Zona 3, 8.0 km today."),
             "{done}"
@@ -1939,7 +2050,7 @@ mod tests {
                 session_type: raw.to_string(),
                 target_distance_m: Some(9000.0),
             };
-            let line = plan_line("easy", &planned, Some(17_600.0));
+            let line = plan_line("easy", &planned, Some(17_600.0), None);
             assert!(line.contains("swap it for an easy run"), "{raw}: {line}");
         }
     }
