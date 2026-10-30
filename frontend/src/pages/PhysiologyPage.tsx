@@ -332,9 +332,6 @@ export default function PhysiologyPage() {
                       current.rationale ??
                       'Readiness reflects your recent recovery signals.'}
                   </p>
-                  <p className="mt-2 text-xs text-ink-muted">
-                    Readiness score {Math.round(current.score)}/100 · {current.grade}
-                  </p>
                 </div>
                 <div>
                   <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-ink-muted">

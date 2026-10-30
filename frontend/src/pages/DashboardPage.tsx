@@ -47,11 +47,11 @@ const VERDICT_WORDS: Record<string, string> = {
  * The planned session, when a written plan has one today. Desktop only: the
  * phone has no plan, and its call already says what to do.
  */
-function PlannedSession({ data }: { data: PlanToday }) {
+function PlannedSession({ data, reconciled }: { data: PlanToday; reconciled: boolean }) {
   const session = data.session
   if (!session) return null
   const result = session.result
-  const label = session.title || session.session_type
+  const label = session.title || session.session_type.replace(/_/g, ' ')
   return (
     <Card className="mb-5 p-5">
       <div className="flex flex-wrap items-start justify-between gap-4">
@@ -59,7 +59,7 @@ function PlannedSession({ data }: { data: PlanToday }) {
           <p className="text-[11px] font-semibold uppercase tracking-[0.07em] text-ink-muted">
             On your plan
           </p>
-          <p className="mt-1 flex flex-wrap items-center gap-2 text-[17px] font-semibold capitalize text-ink">
+          <p className="mt-1 flex flex-wrap items-center gap-2 text-[17px] font-semibold text-ink first-letter:uppercase">
             {label}
             {result ? (
               <Badge
@@ -78,7 +78,11 @@ function PlannedSession({ data }: { data: PlanToday }) {
               ? ` · ${formatPace(session.pace_low_s_km)}–${formatPace(session.pace_high_s_km)}/km`
               : ''}
           </p>
-          <p className="mt-2 text-[14px] text-ink">{data.recommendation}</p>
+          {/* Today's call already reconciles the plan with recovery; a second,
+              plan-only instruction here would contradict it. */}
+          {reconciled ? null : (
+            <p className="mt-2 text-[14px] text-ink">{data.recommendation}</p>
+          )}
         </div>
         <Link
           to="/plan"
@@ -151,7 +155,7 @@ export function DashboardPage() {
       ) : null}
 
       {!phone && planTodayQuery.data?.has_session ? (
-        <PlannedSession data={planTodayQuery.data} />
+        <PlannedSession data={planTodayQuery.data} reconciled={Boolean(today?.plan)} />
       ) : null}
 
       {normal ? (
