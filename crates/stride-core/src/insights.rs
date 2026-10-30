@@ -1119,7 +1119,10 @@ pub fn milestones(runs: &[Run], today: &str) -> Milestones {
             .iter()
             .copied()
             .find(|tier| total_km < *tier),
-        this_year_m: this_year.iter().map(|r| r.distance_m).fold(0.0, |a, b| a + b),
+        this_year_m: this_year
+            .iter()
+            .map(|r| r.distance_m)
+            .fold(0.0, |a, b| a + b),
         this_year_runs: this_year.len(),
     }
 }

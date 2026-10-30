@@ -7,9 +7,11 @@ A private, local-first running log, built around one loop:
 
 **Plan → Execute → Understand → Adapt.**
 
-The plan exists as a first-class object. Every session gets a verdict *and* a
-cause. The athlete's physiology and running mechanics are modelled. The app
-tells you what to do today.
+Three jobs, in this order: **decide** what to do today (Today), **understand**
+what each run meant (Runs), and **stay motivated** with proof you are getting
+fitter (Progress). Body is the evidence: sleep, HRV and resting HR against your
+own normal. The why behind every choice is in
+[docs/philosophy.md](docs/philosophy.md).
 
 A social running app is a **social activity log**: it has no concept of
 intent, no physiology and no causality. That is the gap this fills.
@@ -291,6 +293,7 @@ desktop does not have it yet.
 
 | Document | What it decides |
 |---|---|
+| [`docs/philosophy.md`](docs/philosophy.md) | the thesis, the principles, and what v1 is and is not |
 | [`DESIGN.md`](DESIGN.md) | the product: plan-vs-actual, physiology, fingerprint, comparison |
 | [`docs/rust-core-spec.md`](docs/rust-core-spec.md) | the crates, the data model and the route table |
 | [`docs/core-contract.md`](docs/core-contract.md) | the byte-level contract: units, rounding, `None` |
