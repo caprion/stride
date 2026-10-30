@@ -249,6 +249,15 @@ for (const surface of SURFACES) {
       return strip ? strip.querySelectorAll('span[title]').length : 0
     })
     check('today', 'seven week dots', dots === 7, `${dots} dots`)
+
+    // The desktop's plan card is not on the phone: the phone's call carries
+    // the plan line, and the card behind it is the desktop's.
+    check(
+      'today',
+      "the desktop's plan card is not on the phone",
+      !text.includes('On your plan'),
+      '',
+    )
   }
 
   if (surface.name === 'runs') {
@@ -351,6 +360,12 @@ for (const surface of SURFACES) {
 }
 
 check('app', 'no console errors', consoleErrors.length === 0, consoleErrors.slice(0, 3).join(' | '))
+
+// The phone's cut: a route the phone does not have lands on Today.
+await page.goto(`${base}/plan`, { waitUntil: 'networkidle', timeout: 45_000 })
+await page.waitForTimeout(900)
+const landed = await page.evaluate(() => window.location.pathname)
+check('phone', 'a route the phone does not have lands on Today', landed === '/', landed)
 
 await browser.close()
 server.close()

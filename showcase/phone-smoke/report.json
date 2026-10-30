@@ -33,6 +33,12 @@
     },
     {
       "surface": "today",
+      "name": "the desktop's plan card is not on the phone",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "surface": "today",
       "name": "nothing clips at 390px",
       "ok": true,
       "detail": ""
@@ -156,6 +162,12 @@
       "name": "no console errors",
       "ok": true,
       "detail": ""
+    },
+    {
+      "surface": "phone",
+      "name": "a route the phone does not have lands on Today",
+      "ok": true,
+      "detail": "/"
     }
   ],
   "consoleErrors": []
