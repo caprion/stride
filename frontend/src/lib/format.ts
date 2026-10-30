@@ -169,3 +169,15 @@ export function sportLabel(sport: string): string {
 }
 
 export const SPORT_COLOR: Record<string, string> = SPORT_COLORS
+
+/**
+ * The words a session's kind is read as.
+ *
+ * A session whose kind is not known reads "Unknown": the plan never said it
+ * was an easy run, so the app does not say so either.
+ */
+export function sessionTypeLabel(kind: string | null | undefined): string {
+  if (!kind) return 'Unknown'
+  if (kind === 'unknown') return 'Unknown'
+  return kind.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
+}

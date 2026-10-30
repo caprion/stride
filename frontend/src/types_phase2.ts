@@ -5,8 +5,31 @@
 
 import type { ActivitySummary } from './types'
 
-export type SessionType =
-  'easy' | 'long' | 'tempo' | 'interval' | 'race' | 'recovery' | 'strength' | 'rest'
+/**
+ * The kinds of session a plan may prescribe.
+ *
+ * `unknown` is not one of them: it is the *absence* of a kind, and it is
+ * what an imported row that names no kind of session carries.
+ */
+export const SESSION_TYPES = [
+  'easy',
+  'long',
+  'tempo',
+  'interval',
+  'race',
+  'recovery',
+  'strength',
+  'rest',
+] as const
+
+/** A kind of session a plan may prescribe. */
+export type SessionType = (typeof SESSION_TYPES)[number]
+
+/**
+ * A session type as it is stored: a kind a plan prescribed, or `unknown`
+ * when nothing said which kind it was.
+ */
+export type StoredSessionType = SessionType | 'unknown'
 
 /**
  * The verdicts of a prescribed plan.
@@ -68,7 +91,7 @@ export interface PlanSession {
   week_id: number | null
   block_id: number | null
   date: string
-  session_type: SessionType
+  session_type: StoredSessionType
   title: string | null
   details: string | null
   target_distance_m: number | null
