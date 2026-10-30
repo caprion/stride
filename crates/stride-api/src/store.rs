@@ -1269,6 +1269,28 @@ impl Backend for Store {
             .map_err(|err| store_error("could not read the activity", err))?
             .is_some();
 
+        // A run that is already in the history is not written twice.
+        //
+        // `(source, external_id)` makes the write idempotent, so the same
+        // file imported twice updates the run it wrote the first time. It
+        // does not stop the *same run* arriving under two identities: a run
+        // synced from Garmin and the same run exported from the watch have
+        // different external ids.
+        //
+        // So the run itself is the key: two rows are the same run when they
+        // start within two minutes of each other and their distances are
+        // within two per cent.
+        if let Some(existing) = self.find_duplicate(&parsed)? {
+            return Ok(json!({
+                "id": existing.id,
+                "name": existing.name,
+                "date": existing.local_date,
+                "distance_m": existing.distance_m,
+                "created": false,
+                "duplicate": true,
+            }));
+        }
+
         let activity = stride_store::Activity {
             source: parsed.source.clone(),
             external_id: parsed.external_id.clone(),
@@ -1353,8 +1375,58 @@ impl Backend for Store {
             "date": activity.local_date,
             "distance_m": activity.distance_m,
             "created": !existed,
+            "duplicate": false,
         }))
     }
+}
+
+/// How close two runs have to be to be the same run: the start time within
+/// two minutes, and the distance within two per cent.
+const DUPLICATE_WINDOW_SECONDS: i64 = 120;
+const DUPLICATE_DISTANCE_RATIO: f64 = 0.02;
+
+/// The activity already in the store that is the same run.
+///
+/// `(source, external_id)` makes a write idempotent, so the same file
+/// imported twice updates the run it wrote the first time. It does not stop
+/// the *same run* arriving under two identities: a run synced from Garmin
+/// and the same run exported from the watch have different external ids.
+///
+/// So the run itself is the key: two rows are the same run when they start
+/// within two minutes of each other and their distances are within two per
+/// cent. Anything looser would merge two runs of the same evening.
+fn find_duplicate(
+    store: &Store,
+    parsed: &stride_fit::ParsedActivity,
+) -> Result<Option<stride_store::Activity>, BackendError> {
+    if parsed.distance_m <= 0.0 {
+        return Ok(None);
+    }
+    let day = parsed.local_date.get(..10).unwrap_or("").to_string();
+    let Some(date) = chrono::NaiveDate::parse_from_str(&day, "%Y-%m-%d").ok() else {
+        return Ok(None);
+    };
+    // The window is two minutes, so the day either side of the run's own
+    // date covers every candidate.
+    let mut filter = StoreFilter::default();
+    filter.from = Some((date - chrono::Duration::days(1)).format("%Y-%m-%d").to_string());
+    filter.to = Some((date + chrono::Duration::days(1)).format("%Y-%m-%d").to_string());
+    let candidates = store
+        .activities_filtered(&filter)
+        .map_err(|err| store_error("could not read the activities", err))?;
+    Ok(candidates.into_iter().find(|row| is_same_run(row, parsed)))
+}
+
+/// Whether a stored run and a parsed run are the same run.
+fn is_same_run(row: &stride_store::Activity, parsed: &stride_fit::ParsedActivity) -> bool {
+    if row.distance_m <= 0.0 {
+        return false;
+    }
+    let seconds = (row.start_time - parsed.start_time).num_seconds().abs();
+    if seconds > DUPLICATE_WINDOW_SECONDS {
+        return false;
+    }
+    (row.distance_m - parsed.distance_m).abs() <= parsed.distance_m * DUPLICATE_DISTANCE_RATIO
 }
 
 /// One store session, as the router reads it.

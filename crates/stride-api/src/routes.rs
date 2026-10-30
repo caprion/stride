@@ -386,13 +386,29 @@ pub fn garmin_logout(ctx: &Ctx<'_>) -> Result<Value, ApiError> {
 /// `POST /api/v1/auth/garmin/fit-import` — import one or more FIT files.
 ///
 /// The reference: `api/auth.fit_import`.
+///
+/// The files may come from any watch — a Strava export, a COROS or Wahoo
+/// download, a Garmin Connect export. A run that is already in the history
+/// is reported as a duplicate instead of being written twice.
 pub fn fit_import(ctx: &Ctx<'_>, body: Option<&str>) -> Result<Value, ApiError> {
     let files = parse_uploads(body)?;
     let mut imported = Vec::new();
+    let mut duplicates = Vec::new();
     let mut errors = Vec::new();
     for (filename, bytes) in files {
         match ctx.backend.import_fit(&filename, &bytes) {
-            Ok(value) => imported.push(value),
+            Ok(value) => {
+                if value.get("duplicate").and_then(Value::as_bool) == Some(true) {
+                    duplicates.push(json!({
+                        "filename": filename,
+                        "id": value.get("id").cloned().unwrap_or(Value::Null),
+                        "name": value.get("name").cloned().unwrap_or(Value::Null),
+                        "date": value.get("date").cloned().unwrap_or(Value::Null),
+                    }));
+                } else {
+                    imported.push(value);
+                }
+            }
             Err(err) => errors.push(json!({
                 "filename": filename,
                 "error": err.to_string().chars().take(300).collect::<String>(),
@@ -402,6 +418,7 @@ pub fn fit_import(ctx: &Ctx<'_>, body: Option<&str>) -> Result<Value, ApiError> 
     Ok(json!({
         "imported": imported.len(),
         "activities": imported,
+        "duplicates": duplicates,
         "errors": errors,
     }))
 }

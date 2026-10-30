@@ -517,6 +517,13 @@ function PhoneSettings() {
 
         <GoalPauseCard />
 
+        {/*
+          The phone can take a file too. A watch that is not a Garmin watch
+          — a COROS, a Wahoo, a Polar — has no account connected here at
+          all, and the file is the only way its runs get in.
+        */}
+        <FitImportSection />
+
         <Card>
           <CardHeader title="About" />
           <div className="px-5 pb-5">
@@ -1172,12 +1179,21 @@ interface FitError {
   error?: string
 }
 
+interface FitDuplicate {
+  filename?: string
+  id?: number
+  name?: string
+  date?: string
+}
+
 function FitImportSection() {
   const inputRef = useRef<HTMLInputElement>(null)
   const [fileNames, setFileNames] = useState<string[]>([])
+  const [dragging, setDragging] = useState(false)
   const [result, setResult] = useState<{
     imported: number
     activities: FitActivity[]
+    duplicates: FitDuplicate[]
     errors: FitError[]
   } | null>(null)
   const [notice, setNotice] = useState<Notice | null>(null)
@@ -1186,17 +1202,26 @@ function FitImportSection() {
     mutationFn: (files: File[]) => api.importFit(files),
     onSuccess: (data) => {
       const activities = (data.activities ?? []) as FitActivity[]
+      const duplicates = (data.duplicates ?? []) as FitDuplicate[]
       const errors = (data.errors ?? []) as FitError[]
-      setResult({ imported: data.imported ?? 0, activities, errors })
-      setNotice({
-        tone: (data.imported ?? 0) > 0 ? 'positive' : 'info',
-        text:
-          (data.imported ?? 0) > 0
-            ? `Imported ${formatNumber(data.imported ?? 0)} activit${
-                (data.imported ?? 0) === 1 ? 'y' : 'ies'
-              }.`
-            : 'No activities were imported. Check the messages below.',
-      })
+      setResult({ imported: data.imported ?? 0, activities, duplicates, errors })
+      const imported = data.imported ?? 0
+      if (imported > 0) {
+        setNotice({
+          tone: 'positive',
+          text: `Imported ${formatNumber(imported)} activit${imported === 1 ? 'y' : 'ies'}.`,
+        })
+      } else if (duplicates.length > 0) {
+        setNotice({
+          tone: 'info',
+          text: `Those ${formatNumber(duplicates.length)} run${duplicates.length === 1 ? ' is' : 's are'} already in your history.`,
+        })
+      } else {
+        setNotice({
+          tone: 'info',
+          text: 'No activities were imported. Check the messages below.',
+        })
+      }
     },
     onError: (error) => setNotice({ tone: 'negative', text: messageOf(error) }),
   })
@@ -1211,12 +1236,13 @@ function FitImportSection() {
   return (
     <section>
       <SectionIntro title="Import FIT files" badge="No account needed" badgeTone="info">
-        Already have files from Garmin Connect? Drop them in and they show up immediately.
+        Already have files from your watch? Drop them in and they show up immediately.
       </SectionIntro>
 
       <HowItWorks>
-        Export <span className="font-semibold text-ink-soft">.FIT</span> files from Garmin
-        Connect (Activities → ⋯ → Download FIT) and choose them below.
+        Export <span className="font-semibold text-ink-soft">.FIT</span> files from your watch —
+        Garmin Connect (Activities → ⋯ → Download FIT), a Strava export, COROS, Wahoo or Polar —
+        and choose them below. A run that is already in your history is not added twice.
       </HowItWorks>
 
       <div className="mt-3">
@@ -1228,26 +1254,51 @@ function FitImportSection() {
           className="hidden"
           onChange={(event) => handleFiles(event.target.files)}
         />
-        <div className="flex flex-wrap items-center gap-3">
-          <Button
-            variant="secondary"
-            onClick={() => inputRef.current?.click()}
-            disabled={importFiles.isPending}
+        {/*
+          The drop zone is the desktop's way in; the button is the phone's.
+          A phone cannot be dragged onto, so the picker is always there.
+        */}
+        {isPhone() ? null : (
+          <div
+            onDragOver={(event) => {
+              event.preventDefault()
+              setDragging(true)
+            }}
+            onDragLeave={() => setDragging(false)}
+            onDrop={(event) => {
+              event.preventDefault()
+              setDragging(false)
+              handleFiles(event.dataTransfer?.files ?? null)
+            }}
+            className={`rounded-md border border-dashed px-4 py-5 text-center transition-colors ${
+              dragging ? 'border-brand-500 bg-brand-50' : 'border-edge'
+            }`}
           >
-            {importFiles.isPending ? (
-              <Loader2 size={15} strokeWidth={2} className="animate-spin" />
-            ) : (
-              <Upload size={15} strokeWidth={2} />
-            )}
-            {importFiles.isPending ? 'Importing…' : 'Choose FIT files'}
-          </Button>
-          {fileNames.length > 0 ? (
-            <span className="text-[12px] text-ink-muted">
-              {fileNames.length} file{fileNames.length === 1 ? '' : 's'} selected:{' '}
-              {fileNames.slice(0, 3).join(', ')}
-              {fileNames.length > 3 ? '…' : ''}
-            </span>
-          ) : null}
+            <p className="text-[13px] text-ink-muted">
+              Drop <span className="font-semibold text-ink-soft">.FIT</span> files here
+            </p>
+          </div>
+        )}
+        <div className="mt-3 flex flex-wrap items-center gap-3">
+            <Button
+              variant="secondary"
+              onClick={() => inputRef.current?.click()}
+              disabled={importFiles.isPending}
+            >
+              {importFiles.isPending ? (
+                <Loader2 size={15} strokeWidth={2} className="animate-spin" />
+              ) : (
+                <Upload size={15} strokeWidth={2} />
+              )}
+              {importFiles.isPending ? 'Importing…' : 'Choose FIT files'}
+            </Button>
+            {fileNames.length > 0 ? (
+              <span className="text-[12px] text-ink-muted">
+                {fileNames.length} file{fileNames.length === 1 ? '' : 's'} selected:{' '}
+                {fileNames.slice(0, 3).join(', ')}
+                {fileNames.length > 3 ? '…' : ''}
+              </span>
+            ) : null}
         </div>
       </div>
 
@@ -1268,6 +1319,12 @@ function FitImportSection() {
               <Badge tone="negative">
                 <CircleAlert size={11} strokeWidth={2} />
                 {formatNumber(result.errors.length)} failed
+              </Badge>
+            ) : null}
+            {result.duplicates.length > 0 ? (
+              <Badge tone="info">
+                <FileUp size={11} strokeWidth={2} />
+                {formatNumber(result.duplicates.length)} already in your history
               </Badge>
             ) : null}
           </div>
@@ -1296,6 +1353,21 @@ function FitImportSection() {
                 </li>
               ) : null}
             </ul>
+          ) : null}
+
+          {result.duplicates.length > 0 ? (
+            <div className="rounded-md border border-edge bg-surface-soft px-3 py-2.5">
+              <p className="text-[13px] font-semibold text-ink">Already in your history</p>
+              <ul className="mt-1 space-y-1">
+                {result.duplicates.map((item, index) => (
+                  <li key={index} className="text-[12px] leading-snug text-ink-muted">
+                    <span className="font-semibold">{item.filename ?? 'Unnamed file'}:</span>{' '}
+                    {item.name ?? 'a run you already have'}
+                    {item.date ? ` (${formatDateTime(item.date)})` : ''}
+                  </li>
+                ))}
+              </ul>
+            </div>
           ) : null}
 
           {result.errors.length > 0 ? (
