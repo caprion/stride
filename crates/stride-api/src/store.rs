@@ -19,10 +19,10 @@ use stride_store::repo::activity::{ActivityFilter as StoreFilter, ActivityOrder}
 use stride_store::{Store, StoreError};
 
 use crate::backend::{
-    ActivityFilter, ActivityPatch, ActivityRow, Backend, Counts, DailyMetricRow, ImportRequest,
-    LapRow, PhysiologyRow, PlanBlockFields, PlanBlockRow, PlanPhaseFields, PlanPhaseRow,
-    PlanSessionFields, PlanSessionRow, PlanWeekFields, PlanWeekRow, SettingsPatch, StatusView,
-    StreamRow, SyncRunRow, Tile, ZoneRow,
+    ActivityFilter, ActivityPatch, ActivityRow, Backend, Caller, Counts, DailyMetricRow,
+    ImportRequest, LapRow, PhysiologyRow, PlanBlockFields, PlanBlockRow, PlanPhaseFields,
+    PlanPhaseRow, PlanSessionFields, PlanSessionRow, PlanWeekFields, PlanWeekRow, SettingsPatch,
+    StatusView, StreamRow, SyncRunRow, Tile, ZoneRow,
 };
 use crate::error::BackendError;
 
@@ -1206,6 +1206,17 @@ impl Backend for Store {
         Err(BackendError::Unsupported(
             "the pairing code is minted by the application state".to_string(),
         ))
+    }
+
+    /// Whether this deployment may mint a pairing code for this caller.
+    ///
+    /// The desktop is the operator's machine, and the only way in is a
+    /// listener on it — so the question "is the caller on this machine?" is
+    /// the question the caller answers: a loopback peer address and a `Host`
+    /// header that names a loopback host. A caller on the network answers
+    /// no, and no code is minted.
+    fn may_mint_pairing_code(&self, caller: &Caller) -> bool {
+        crate::network::caller_is_local(caller)
     }
 
     fn pair(&self, _code: &str) -> Result<Option<Value>, BackendError> {

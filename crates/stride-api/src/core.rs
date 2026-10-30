@@ -17,8 +17,8 @@ use serde_json::{json, Value};
 use stride_core::{FingerprintInput, PlanInputs};
 
 use crate::backend::{
-    ActivityRow, Backend, LapRow, PhysiologyRow, PlanSessionRow, SessionWithResult, StreamRow,
-    ZoneRow,
+    ActivityRow, Backend, Caller, LapRow, PhysiologyRow, PlanSessionRow, SessionWithResult,
+    StreamRow, ZoneRow,
 };
 use crate::error::BackendError;
 use crate::num::{duration_label, pace_s_per_km, round_to};
@@ -718,8 +718,8 @@ impl Backend for CoreBackend {
         self.inner.pair_code()
     }
 
-    fn may_mint_pairing_code(&self) -> bool {
-        self.inner.may_mint_pairing_code()
+    fn may_mint_pairing_code(&self, caller: &Caller) -> bool {
+        self.inner.may_mint_pairing_code(caller)
     }
 
     fn pair(&self, code: &str) -> Result<Option<Value>, BackendError> {

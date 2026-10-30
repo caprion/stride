@@ -12,7 +12,7 @@ use serde_json::{json, Map, Value};
 
 use crate::analytics;
 use crate::backend::{
-    ActivityFilter, ActivityPatch, ActivityRow, Backend, ImportRequest, PlanBlockFields,
+    ActivityFilter, ActivityPatch, ActivityRow, Backend, Caller, ImportRequest, PlanBlockFields,
     PlanPhaseFields, PlanSessionFields, PlanWeekFields, SettingsPatch,
 };
 use crate::error::{validation_error, ApiError, BackendError};
@@ -25,6 +25,12 @@ pub struct Ctx<'a> {
     pub backend: &'a dyn Backend,
     /// The day the date-dependent routes count from.
     pub today: chrono::NaiveDate,
+    /// Who is asking.
+    ///
+    /// The router does not know the caller's address or the name it used;
+    /// the host does, and it passes them here so that the routes which
+    /// depend on them — the pairing code — can ask the host.
+    pub caller: &'a Caller,
 }
 
 /// The metrics the fitness trend can chart.
@@ -279,7 +285,7 @@ fn without_demo_flag(payload: &mut Value) {
 /// host has them. So the host answers the question, and a host that cannot
 /// answer it does not mint a code at all.
 pub fn pair_code(ctx: &Ctx<'_>) -> Result<Value, ApiError> {
-    if !ctx.backend.may_mint_pairing_code() {
+    if !ctx.backend.may_mint_pairing_code(ctx.caller) {
         return Err(ApiError::forbidden(
             "A pairing code can only be requested on the machine running Stride.",
         ));

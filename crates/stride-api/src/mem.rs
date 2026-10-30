@@ -16,10 +16,10 @@ use std::sync::Mutex;
 use serde_json::{json, Value};
 
 use crate::backend::{
-    ActivityFilter, ActivityPatch, ActivityRow, Backend, Counts, DailyMetricRow, ImportRequest,
-    LapRow, PhysiologyRow, PlanBlockFields, PlanBlockRow, PlanPhaseFields, PlanPhaseRow,
-    PlanSessionFields, PlanSessionRow, PlanWeekFields, PlanWeekRow, SessionWithResult,
-    SettingsPatch, StatusView, StreamRow, SyncRunRow, Tile, ZoneRow,
+    ActivityFilter, ActivityPatch, ActivityRow, Backend, Caller, Counts, DailyMetricRow,
+    ImportRequest, LapRow, PhysiologyRow, PlanBlockFields, PlanBlockRow, PlanPhaseFields,
+    PlanPhaseRow, PlanSessionFields, PlanSessionRow, PlanWeekFields, PlanWeekRow,
+    SessionWithResult, SettingsPatch, StatusView, StreamRow, SyncRunRow, Tile, ZoneRow,
 };
 use crate::error::BackendError;
 
@@ -1015,8 +1015,9 @@ impl Backend for MemBackend {
     /// that asks.
     ///
     /// It is what the tests and the local tools drive, and it is the one
-    /// backend that can answer the question without a peer address.
-    fn may_mint_pairing_code(&self) -> bool {
+    /// backend that can answer the question without a peer address: it has
+    /// no network in front of it, so every caller is on this machine.
+    fn may_mint_pairing_code(&self, _caller: &Caller) -> bool {
         true
     }
 

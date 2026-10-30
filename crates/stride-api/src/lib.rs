@@ -61,7 +61,7 @@ use std::sync::Arc;
 
 use serde_json::Value;
 
-pub use crate::backend::Backend;
+pub use crate::backend::{Backend, Caller};
 use crate::error::ApiError;
 use crate::query::Query;
 use crate::routes::Ctx;
@@ -251,6 +251,21 @@ impl Api {
         path: &str,
         body: Option<&str>,
     ) -> Result<Response, ApiError> {
+        self.call_response_from(&Caller::default(), method, path, body)
+    }
+
+    /// Call a route on behalf of a caller.
+    ///
+    /// The caller is who the host says is asking: the address the
+    /// connection came from and the name it used. The routes that depend on
+    /// that — the pairing code — read it from here.
+    pub fn call_response_from(
+        &self,
+        caller: &Caller,
+        method: &str,
+        path: &str,
+        body: Option<&str>,
+    ) -> Result<Response, ApiError> {
         let (path, query_string) = match path.split_once('?') {
             Some((path, query)) => (path, Some(query)),
             None => (path, None),
@@ -260,6 +275,7 @@ impl Api {
         let ctx = Ctx {
             backend: self.backend.as_ref(),
             today: self.today,
+            caller,
         };
         router::dispatch(&ctx, id, &params, &query, body)
     }

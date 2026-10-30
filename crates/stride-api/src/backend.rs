@@ -767,7 +767,7 @@ pub trait Backend: Send + Sync {
     /// A host that *can* tell a caller on the machine from a caller on the
     /// network — the desktop can, with the peer address and the `Host`
     /// header — says so and mints the code for the local caller only.
-    fn may_mint_pairing_code(&self) -> bool {
+    fn may_mint_pairing_code(&self, _caller: &Caller) -> bool {
         false
     }
 
@@ -820,6 +820,20 @@ pub trait Backend: Send + Sync {
     /// The answer is the shape `api/auth.fit_import` puts in `activities`:
     /// `{"id", "name", "date", "distance_m", "created"}`.
     fn import_fit(&self, filename: &str, bytes: &[u8]) -> Result<Value, BackendError>;
+}
+
+/// Who is asking.
+///
+/// The router does not know the caller's address, and it does not know the
+/// name the caller used: only the host does. So the host is the one that
+/// answers "is this caller on this machine?", and it answers with what it
+/// knows about the call.
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub struct Caller {
+    /// The address the connection came from.
+    pub peer: Option<std::net::IpAddr>,
+    /// The `Host` header the request carried.
+    pub host: Option<String>,
 }
 
 /// The filter the activity list applies.

@@ -31,7 +31,7 @@ use std::time::{Duration, SystemTime};
 
 use serde_json::{json, Value};
 
-use crate::backend::{Backend, Tile};
+use crate::backend::{Backend, Caller, Tile};
 use crate::error::BackendError as Error;
 
 /// Where the tiles come from.
@@ -451,8 +451,8 @@ impl Backend for TileBackend {
         self.inner.pair_code()
     }
 
-    fn may_mint_pairing_code(&self) -> bool {
-        self.inner.may_mint_pairing_code()
+    fn may_mint_pairing_code(&self, caller: &Caller) -> bool {
+        self.inner.may_mint_pairing_code(caller)
     }
 
     fn pair(&self, code: &str) -> Result<Option<Value>, Error> {

@@ -199,7 +199,17 @@ impl App {
 
         let target = api_target(request);
         let body = request.body_text();
-        match self.api.call_response(&request.method, &target, body) {
+        // The router does not know who is asking; the host does. The
+        // pairing code is the one route that depends on it, so the caller's
+        // address and the name it used travel with the request.
+        let caller = stride_api::Caller {
+            peer: Some(request.peer),
+            host: Some(request.host().to_string()),
+        };
+        match self
+            .api
+            .call_response_from(&caller, &request.method, &target, body)
+        {
             Ok(ApiResponse::Json(value)) => json_response(200, &value),
             Ok(ApiResponse::Binary {
                 content_type,

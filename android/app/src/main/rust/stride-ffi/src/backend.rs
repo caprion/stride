@@ -30,10 +30,10 @@ use std::sync::Arc;
 use serde_json::Value;
 
 use stride_api::backend::{
-    ActivityFilter, ActivityPatch, ActivityRow, Backend, Counts, DailyMetricRow, ImportRequest,
-    LapRow, PhysiologyRow, PlanBlockFields, PlanBlockRow, PlanPhaseFields, PlanPhaseRow,
-    PlanSessionFields, PlanSessionRow, PlanWeekFields, PlanWeekRow, SessionWithResult,
-    SettingsPatch, StatusView, StreamRow, SyncRunRow, Tile, ZoneRow,
+    ActivityFilter, ActivityPatch, ActivityRow, Backend, Caller, Counts, DailyMetricRow,
+    ImportRequest, LapRow, PhysiologyRow, PlanBlockFields, PlanBlockRow, PlanPhaseFields,
+    PlanPhaseRow, PlanSessionFields, PlanSessionRow, PlanWeekFields, PlanWeekRow,
+    SessionWithResult, SettingsPatch, StatusView, StreamRow, SyncRunRow, Tile, ZoneRow,
 };
 use stride_api::error::BackendError;
 use stride_store::Store;
@@ -99,7 +99,7 @@ impl Backend for PhoneSync {
     /// caller on this machine?" has the answer "yes" here, and the route
     /// goes on to say the thing that is actually true: the phone has no
     /// server to pair with.
-    fn may_mint_pairing_code(&self) -> bool {
+    fn may_mint_pairing_code(&self, _caller: &Caller) -> bool {
         true
     }
 

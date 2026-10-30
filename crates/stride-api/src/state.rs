@@ -28,7 +28,7 @@ use std::sync::{Arc, Mutex};
 
 use serde_json::{json, Value};
 
-use crate::backend::{Backend, SettingsPatch, StatusView, SyncRunRow};
+use crate::backend::{Backend, Caller, SettingsPatch, StatusView, SyncRunRow};
 use crate::error::BackendError as Error;
 use crate::network::TrustConfig;
 
@@ -425,8 +425,8 @@ impl Backend for StateBackend {
     /// The state owns the pairing, and the host owns the answer to "is the
     /// caller on this machine?". The answer is the host's: it has the peer
     /// address and the `Host` header, and the state has neither.
-    fn may_mint_pairing_code(&self) -> bool {
-        self.inner.may_mint_pairing_code()
+    fn may_mint_pairing_code(&self, caller: &Caller) -> bool {
+        self.inner.may_mint_pairing_code(caller)
     }
 
     fn pair(&self, code: &str) -> Result<Option<Value>, Error> {

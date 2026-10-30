@@ -51,7 +51,7 @@ use std::time::{Duration, Instant};
 
 use serde_json::{json, Value};
 
-use crate::backend::{Backend, SettingsPatch};
+use crate::backend::{Backend, Caller, SettingsPatch};
 use crate::error::BackendError as Error;
 
 /// The environment variable that names the exit-node tool.
@@ -85,6 +85,42 @@ impl NetworkBackend {
     pub fn inner(&self) -> &Arc<dyn Backend> {
         &self.inner
     }
+}
+
+/// Is this caller on this machine?
+///
+/// Both have to say so: the address the connection came from **and** the
+/// name the caller used. The peer address alone is not enough — a page the
+/// athlete happens to have open can point a name it controls at 127.0.0.1
+/// and then talk to Stride as the origin it came from, and the `Host`
+/// header is what tells the two apart.
+pub fn caller_is_local(caller: &Caller) -> bool {
+    let peer = caller.peer.is_some_and(|peer| peer.is_loopback());
+    let host = caller.host.as_deref().is_some_and(host_is_loopback);
+    peer && host
+}
+
+/// Does the `Host` header name a loopback host?
+pub fn host_is_loopback(host: &str) -> bool {
+    let host = host.trim();
+    if host.is_empty() {
+        return false;
+    }
+    let name = if let Some(rest) = host.strip_prefix('[') {
+        rest.split(']').next().unwrap_or("")
+    } else if host.matches(':').count() > 1 {
+        host
+    } else {
+        host.split(':').next().unwrap_or("")
+    };
+    if name.is_empty() {
+        return false;
+    }
+    if name.eq_ignore_ascii_case("localhost") {
+        return true;
+    }
+    name.parse::<IpAddr>()
+        .is_ok_and(|address| address.is_loopback())
 }
 
 /// The executable that performs the switch, if one is configured.
@@ -736,8 +772,8 @@ impl Backend for NetworkBackend {
         self.inner.pair_code()
     }
 
-    fn may_mint_pairing_code(&self) -> bool {
-        self.inner.may_mint_pairing_code()
+    fn may_mint_pairing_code(&self, caller: &Caller) -> bool {
+        self.inner.may_mint_pairing_code(caller)
     }
 
     fn pair(&self, code: &str) -> Result<Option<Value>, Error> {

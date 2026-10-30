@@ -14,24 +14,16 @@ use stride_api::{Api, MemBackend, StateBackend};
 /// A pairing code is the operator's console secret, and it is minted on the
 /// machine that runs Stride.
 ///
-/// The reference refuses anybody who is not on that machine, and the
+/// The reference refuses anybody who is not on the machine, and the
 /// security gate checks exactly that over the TLS listener, which is bound
-/// to the operator's address and not to loopback. The router has neither the
-/// peer address nor the `Host` header, so the host answers the question —
-/// and a host that cannot answer it mints nothing.
+/// to the operator's address and not to loopback. The router does not know
+/// who is asking: the host does, and it passes the caller's address and
+/// the name it used with the request. A caller that does not say where it
+/// is gets no code at all.
 #[test]
-fn a_host_that_cannot_tell_who_is_asking_mints_no_pairing_code() {
-    // The desktop's stack: the rows, the state, the network, the domain. The
-    // rows are the bottom layer, and the bottom layer is the one that cannot
-    // tell a caller on the machine from a caller on the network — so it
-    // mints no pairing code at all.
-    let directory = tempdir::TempDir::new("stride-api-pairing").expect("a temporary directory");
-    let path = directory.path().join("stride.db");
-    let store = stride_store::Store::open_and_migrate(&path, b"0123456789abcdef0123456789abcdef")
-        .expect("the store opens");
-    let rows = stride_api::store::backend(Arc::new(store));
-    let state = StateBackend::new(rows);
-    let api = Api::new(Arc::new(state));
+fn a_caller_that_does_not_say_where_it_is_gets_no_pairing_code() {
+    // The desktop's stack: the rows, the state, the network, the domain.
+    let api = desktop_api();
 
     let refused = api
         .call("GET", "/api/v1/auth/pair-code", None)
@@ -43,7 +35,64 @@ fn a_host_that_cannot_tell_who_is_asking_mints_no_pairing_code() {
     );
 }
 
-/// The console — the in-memory backend — mints one, because it holds
+/// The desktop's answer: a caller on the machine may mint a code, and a
+/// caller on the network may not.
+///
+/// The desktop is the host: it has the caller's address and the name it
+/// used. The rule is the one the security gate checks over the TLS
+/// listener — a pairing code cannot be minted from another device — and
+/// the one the operator's console needs: a code can be minted here, on the
+/// machine, for the phone to pair with.
+#[test]
+fn a_caller_on_the_machine_may_mint_a_pairing_code() {
+    let api = desktop_api();
+    let caller = stride_api::Caller {
+        peer: Some("127.0.0.1".parse().expect("an address")),
+        host: Some("127.0.0.1:8000".to_string()),
+    };
+    let minted = api
+        .call_response_from(&caller, "GET", "/api/v1/auth/pair-code", None)
+        .expect("the code answers");
+    assert!(
+        minted.to_value()["code"]
+            .as_str()
+            .is_some_and(|code| code.len() == 9),
+        "the code was minted"
+    );
+}
+
+/// A caller on the network is refused, whatever it calls itself.
+#[test]
+fn a_caller_on_the_network_may_not_mint_a_pairing_code() {
+    let api = desktop_api();
+    for (peer, host) in [
+        ("100.89.222.50", "100.89.222.50:8443"),
+        ("127.0.0.1", "stride.example.com"),
+        ("100.89.222.50", "localhost:8000"),
+    ] {
+        let caller = stride_api::Caller {
+            peer: Some(peer.parse().expect("an address")),
+            host: Some(host.to_string()),
+        };
+        let refused = api
+            .call_response_from(&caller, "GET", "/api/v1/auth/pair-code", None)
+            .expect_err("403");
+        assert_eq!(refused.status, 403, "{peer} / {host} was refused");
+    }
+}
+
+/// The desktop's stack, over a temporary database.
+fn desktop_api() -> Api {
+    let directory = tempdir::TempDir::new("stride-api-pairing").expect("a temporary directory");
+    let path = directory.path().join("stride.db");
+    let store = stride_store::Store::open_and_migrate(&path, b"0123456789abcdef0123456789abcdef")
+        .expect("the store opens");
+    let rows = stride_api::store::backend(Arc::new(store));
+    let state = StateBackend::new(rows);
+    Api::new(Arc::new(state))
+}
+
+/// The console \u2014 the in-memory backend \u2014 mints one, because it holds
 /// nothing that is not on this machine.
 #[test]
 fn the_console_may_mint_a_pairing_code() {
