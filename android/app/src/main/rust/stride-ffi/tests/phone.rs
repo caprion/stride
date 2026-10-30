@@ -516,7 +516,13 @@ fn the_phone_answers_the_four_screens_from_its_own_database() {
     );
     // The guardrail: the longest run in 30 days, plus ten per cent.
     assert_eq!(body["longest_30d_m"], 12_000.0, "the call was {today_call}");
-    assert_eq!(body["spike_limit_m"], 13_200.0, "the call was {today_call}");
+    // The ten per cent is a multiplication, so it is compared with a
+    // tolerance: 12 km * 1.1 is 13200.000000000002.
+    let spike = body["spike_limit_m"].as_f64().unwrap_or_default();
+    assert!(
+        (spike - 13_200.0).abs() < 0.001,
+        "the call was {today_call}"
+    );
     assert!(
         body["guardrail"].as_str().unwrap_or_default().len() > 10,
         "the guardrail was {today_call}"
