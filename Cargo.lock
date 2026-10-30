@@ -1303,6 +1303,7 @@ dependencies = [
  "chrono",
  "flate2",
  "reqwest",
+ "ring",
  "serde",
  "serde_json",
  "stride-core",

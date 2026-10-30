@@ -198,7 +198,7 @@ if curl -fsS -m 4 -o /dev/null "$BASE/api/v1/health" 2>/dev/null; then
   # A jar with the operator's own capability, so the device list is readable.
   master_jar=$(mktemp)
   curl -s -c "$master_jar" -o /dev/null -m 6 "$BASE/api/v1/bootstrap"
-  before=$(curl -s -b "$master_jar" -m 6 "$BASE/api/v1/auth/devices" 2>/dev/null | tr ',' '\n' | grep -o '"id":"[a-f0-9]*"' | sort)
+  before=$(curl -s -b "$master_jar" -m 6 "$BASE/api/v1/auth/devices" 2>/dev/null | tr ',' '\n' | grep -o '"id":"[^"]*"' | sort)
   pair_code=$(curl -s -m 6 "$BASE/api/v1/auth/pair-code" 2>/dev/null \
     | grep -o '"code":"[A-Z0-9-]*"' | head -1 | cut -d'"' -f4)
   if [[ -n "$pair_code" ]]; then
@@ -222,7 +222,7 @@ if curl -fsS -m 4 -o /dev/null "$BASE/api/v1/health" 2>/dev/null; then
     else
       bad "a paired device could not read the API ($code)"
     fi
-    after=$(curl -s -b "$master_jar" -m 6 "$BASE/api/v1/auth/devices" 2>/dev/null | tr ',' '\n' | grep -o '"id":"[a-f0-9]*"' | sort)
+    after=$(curl -s -b "$master_jar" -m 6 "$BASE/api/v1/auth/devices" 2>/dev/null | tr ',' '\n' | grep -o '"id":"[^"]*"' | sort)
     device_id=$(comm -13 <(echo "$before") <(echo "$after") | head -1 | cut -d'"' -f4)
     if [[ -n "$pair_code" && -n "$device_id" ]]; then
       curl -s -b "$master_jar" -o /dev/null -m 6 -X DELETE -H "Origin: $BASE" \

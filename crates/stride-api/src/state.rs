@@ -116,6 +116,14 @@ impl StateBackend {
         }
     }
 
+    /// Is this a live paired device's token?
+    ///
+    /// The gate asks the state, because the state holds the device list and
+    /// the hashes of their tokens.
+    pub fn device_token_is_live(&self, token: &str) -> bool {
+        <Self as Backend>::device_token_is_live(self, token)
+    }
+
     /// The state, for a caller that wants to look at it.
     pub fn state(&self) -> State {
         self.state
@@ -196,6 +204,20 @@ fn now_seconds() -> f64 {
 }
 
 /// Compare two secrets without leaking where they differ.
+/// The SHA-256 of a secret, as hex.
+///
+/// The reference hashes a device token with SHA-256 and compares the hex
+/// digests, so the two implementations agree about what a stored device
+/// credential looks like.
+fn sha256_hex(secret: &str) -> String {
+    let digest = ring::digest::digest(&ring::digest::SHA256, secret.as_bytes());
+    let mut out = String::with_capacity(digest.as_ref().len() * 2);
+    for byte in digest.as_ref() {
+        out.push_str(&format!("{byte:02x}"));
+    }
+    out
+}
+
 fn same_secret(left: &str, right: &str) -> bool {
     let left = left.trim().to_uppercase();
     let right = right.trim().to_uppercase();
@@ -453,6 +475,9 @@ impl Backend for StateBackend {
         let device = json!({
             "id": device_id,
             "name": "Device",
+            // The hash, not the token: the state file never holds a
+            // credential that works. The reference hashes it the same way.
+            "token_hash": sha256_hex(&token),
             "created_at": now,
             "last_seen_at": now,
         });
@@ -467,6 +492,25 @@ impl Backend for StateBackend {
             "device_id": device_id,
             "token": token,
         })))
+    }
+
+    /// Is this a live paired-device token?
+    ///
+    /// The stored form is a hash, so the state file never contains a
+    /// credential that works — the same property the Garmin key has, and
+    /// the same one the reference has.
+    fn device_token_is_live(&self, token: &str) -> bool {
+        if token.is_empty() {
+            return false;
+        }
+        let digest = sha256_hex(token);
+        let state = self.locked();
+        state.devices.iter().any(|device| {
+            device
+                .get("token_hash")
+                .and_then(Value::as_str)
+                .is_some_and(|hash| same_secret(hash, &digest))
+        })
     }
 
     fn devices(&self) -> Result<Vec<Value>, Error> {

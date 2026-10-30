@@ -771,6 +771,19 @@ pub trait Backend: Send + Sync {
         false
     }
 
+    /// Is this a live paired-device token?
+    ///
+    /// A paired device holds its own token, not the master capability, so
+    /// revoking one phone does not lock the athlete out of their laptop.
+    /// The state owns the device list and the hashes, so it is the state
+    /// that answers.
+    ///
+    /// **The default is no.** A backend that has not said otherwise
+    /// recognises no device token at all.
+    fn device_token_is_live(&self, _token: &str) -> bool {
+        false
+    }
+
     /// Exchange a pairing code for a device credential.
     ///
     /// `None` means "no body": the desktop puts the credential in a cookie

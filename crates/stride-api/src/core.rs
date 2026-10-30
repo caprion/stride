@@ -722,6 +722,10 @@ impl Backend for CoreBackend {
         self.inner.may_mint_pairing_code(caller)
     }
 
+    fn device_token_is_live(&self, token: &str) -> bool {
+        self.inner.device_token_is_live(token)
+    }
+
     fn pair(&self, code: &str) -> Result<Option<Value>, BackendError> {
         self.inner.pair(code)
     }

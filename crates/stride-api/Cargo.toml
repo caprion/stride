@@ -18,6 +18,11 @@ flate2 = { version = "1", default-features = false, features = ["rust_backend"] 
 # is already in the graph — `stride-garmin` uses it for the Garmin API — so
 # this adds no new crate and no new code to the binaries.
 reqwest = { workspace = true }
+# The SHA-256 that a device token's hash is made with. `ring` is already in
+# the workspace's lock file (rustls's TLS stack pulls it in), so this adds no
+# new crate to the graph — and the reference hashes the token with SHA-256
+# too, so the two agree.
+ring = "0.17"
 serde = { workspace = true }
 serde_json = { workspace = true }
 chrono = { workspace = true }

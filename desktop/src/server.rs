@@ -210,7 +210,20 @@ impl App {
             .api
             .call_response_from(&caller, &request.method, &target, body)
         {
-            Ok(ApiResponse::Json(value)) => json_response(200, &value),
+            Ok(ApiResponse::Json(value)) => {
+                // The pairing route hands over a device credential. The
+                // browser has a cookie jar and the phone does not, so the
+                // desktop puts the token in a cookie and answers with
+                // nothing — exactly as the reference does — and the phone's
+                // shell reads the token from the body.
+                if target == "/api/v1/auth/pair" {
+                    if let Some(token) = value.get("token").and_then(|t| t.as_str()) {
+                        return json_response(204, &serde_json::json!({}))
+                            .header("Set-Cookie", &self.security.device_cookie(token));
+                    }
+                }
+                json_response(200, &value)
+            }
             Ok(ApiResponse::Binary {
                 content_type,
                 bytes,

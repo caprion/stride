@@ -30,6 +30,7 @@
 
 use std::collections::HashMap;
 use std::net::IpAddr;
+use std::sync::Arc;
 use std::time::{Duration, Instant};
 
 use stride_api::network::TrustConfig;
@@ -38,6 +39,16 @@ use crate::http::Request;
 
 /// The cookie the capability travels in.
 pub const AUTH_COOKIE: &str = "stride_capability";
+
+/// Whether a presented token is a live paired device's.
+pub type DeviceTokenCheck = Arc<dyn Fn(&str) -> bool + Send + Sync>;
+
+/// The cookie a paired device holds.
+///
+/// A paired device gets its **own** token, not the master capability: that
+/// is what makes a lost phone a solved problem — revoke it, and the
+/// athlete's own machine is untouched.
+pub const DEVICE_COOKIE: &str = "stride_device";
 
 /// The prefix of the API.
 pub const API_PREFIX: &str = "/api/v1";
@@ -54,7 +65,7 @@ pub const CAPABILITY_FREE: [&str; 4] = [
 ];
 
 /// The gate.
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct Security {
     /// The capability the browser must present.
     token: String,
@@ -64,6 +75,22 @@ pub struct Security {
     cookie_secure: bool,
     /// Who may use the API without a pairing code.
     trust: TrustConfig,
+    /// Whether a token is a live paired device's.
+    ///
+    /// The state owns the device list and the hashes of the tokens, so it
+    /// is the state that can answer. The gate asks it.
+    device_tokens: Option<DeviceTokenCheck>,
+}
+
+impl std::fmt::Debug for Security {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Security")
+            .field("enabled", &self.enabled)
+            .field("cookie_secure", &self.cookie_secure)
+            .field("trust", &self.trust)
+            .field("device_tokens", &self.device_tokens.is_some())
+            .finish_non_exhaustive()
+    }
 }
 
 impl Security {
@@ -74,7 +101,14 @@ impl Security {
             enabled,
             cookie_secure,
             trust: TrustConfig::default(),
+            device_tokens: None,
         }
+    }
+
+    /// A gate that recognises the paired devices the state knows about.
+    pub fn with_device_tokens(mut self, checker: Arc<dyn Fn(&str) -> bool + Send + Sync>) -> Self {
+        self.device_tokens = Some(checker);
+        self
     }
 
     /// A gate with a capability and a trust configuration.
@@ -89,6 +123,7 @@ impl Security {
             enabled,
             cookie_secure,
             trust,
+            device_tokens: None,
         }
     }
 
@@ -108,6 +143,16 @@ impl Security {
             "{}={}; Path=/; HttpOnly; SameSite=Strict{}",
             AUTH_COOKIE,
             self.token,
+            if self.cookie_secure { "; Secure" } else { "" }
+        )
+    }
+
+    /// The `Set-Cookie` header that hands a paired device its own token.
+    pub fn device_cookie(&self, token: &str) -> String {
+        format!(
+            "{}={}; Path=/; HttpOnly; SameSite=Strict{}",
+            DEVICE_COOKIE,
+            token,
             if self.cookie_secure { "; Secure" } else { "" }
         )
     }
@@ -181,10 +226,27 @@ impl Security {
         let authorised = provided
             .as_ref()
             .is_some_and(|(token, _)| constant_time_eq(token, &self.token));
-        if !authorised {
-            return Err(GateError::Unauthenticated);
+        if authorised {
+            return Ok(true);
         }
-        Ok(true)
+        // A paired device holds its own token, and the state knows whether
+        // it is still live: revoking a phone in Settings takes it away at
+        // once, and the athlete's own machine is untouched.
+        if self.device_token_is_live(request) {
+            return Ok(true);
+        }
+        Err(GateError::Unauthenticated)
+    }
+
+    /// Is this request carrying a live paired device's token?
+    fn device_token_is_live(&self, request: &Request) -> bool {
+        let Some(checker) = &self.device_tokens else {
+            return false;
+        };
+        let Some(token) = request.cookie(DEVICE_COOKIE) else {
+            return false;
+        };
+        checker(token)
     }
 
     /// May this request change something?
