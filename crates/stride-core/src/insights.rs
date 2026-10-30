@@ -19,7 +19,11 @@
 //!   BJSM), a single run more than 10% longer than the longest run of the
 //!   previous 30 days raised the rate of overuse injury (HRR 1.64; more than
 //!   double, 2.28). Week-to-week change and the acute/chronic ratio did not.
-//!   So the guardrail is "the longest run of the last 30 days, plus 10%".
+//!   So the guardrail names "the longest run of the last 30 days, plus 10%"
+//!   as where the observed risk rose, never as a safe zone: the study is an
+//!   association, not a threshold, its authors float a lower cut-off, and a
+//!   rolling window lets runs ratchet up just under the line. The copy says
+//!   so.
 //! * **No cramming.** A missed week is never made up: catching up is how a
 //!   single run spikes.
 //! * **Forgiving consistency.** A broken streak that can be repaired keeps
@@ -363,6 +367,15 @@ fn pace_hr_phrase(pace: Option<f64>, hr: Option<f64>) -> String {
     }
 }
 
+/// One recovery signal against its normal range.
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
+pub struct RecoverySignal {
+    /// `sleep`, `hrv` or `resting_hr`.
+    pub key: String,
+    /// Inside the athlete's own normal range.
+    pub normal: bool,
+}
+
 /// A night of recovery read against the athlete's 30-day baselines.
 #[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
 pub struct RecoveryRead {
@@ -448,6 +461,32 @@ impl RecoveryRead {
             }
         }
         flags
+    }
+
+    /// Each readable signal and whether it is inside its normal range. The
+    /// one definition of "normal": Body reads it from the API instead of
+    /// re-deriving the thresholds, so Today and Body cannot drift apart.
+    pub fn signals(&self) -> Vec<RecoverySignal> {
+        let mut out = Vec::new();
+        if let (Some(sleep), Some(base)) = (self.sleep_s, self.sleep_baseline_s) {
+            out.push(RecoverySignal {
+                key: "sleep".to_string(),
+                normal: sleep >= base - 3600.0,
+            });
+        }
+        if let (Some(hrv), Some(base)) = (self.hrv_ms, self.hrv_baseline_ms) {
+            out.push(RecoverySignal {
+                key: "hrv".to_string(),
+                normal: hrv >= base * 0.85,
+            });
+        }
+        if let (Some(rhr), Some(base)) = (self.resting_hr, self.resting_hr_baseline) {
+            out.push(RecoverySignal {
+                key: "resting_hr".to_string(),
+                normal: rhr < base + 5.0,
+            });
+        }
+        out
     }
 
     /// How many of sleep, HRV and resting HR are inside their normal range,
@@ -543,6 +582,69 @@ pub struct Today {
     pub week: WeekSoFar,
     /// Last night against the 30-day baselines: normal signals, read signals.
     pub recovery_normal: Option<(usize, usize)>,
+    /// Each recovery signal read last night, normal or not.
+    pub recovery_signals: Vec<RecoverySignal>,
+    /// Today's session on a written plan, reconciled with the call.
+    pub plan: Option<PlanLine>,
+}
+
+/// The session a written plan has for today, as Today needs it.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct Planned {
+    /// The session's title, or its type.
+    pub label: String,
+    /// `easy`, `tempo`, `interval`, `long`, `race`, `recovery`, `rest`.
+    pub session_type: String,
+    /// The target distance, in metres.
+    pub target_distance_m: Option<f64>,
+}
+
+/// The plan, in one line under the call.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct PlanLine {
+    /// The planned session.
+    pub session: Planned,
+    /// What to do with it today.
+    pub line: String,
+}
+
+/// One line reconciling today's call with the planned session. The call
+/// says *how hard* (recovery and load); the plan says *what*. They never
+/// disagree silently: on an easy day a hard session is softened or moved,
+/// and a planned distance past the spike limit is capped.
+pub fn plan_line(state: &str, planned: &Planned, spike_limit_m: Option<f64>) -> String {
+    let what = match planned.target_distance_m {
+        Some(distance) if distance > 0.0 => format!("{}, {}", planned.label, km(distance)),
+        _ => planned.label.clone(),
+    };
+    if planned.session_type == "rest" {
+        return if state == "done" {
+            "Your plan said rest. Today's run was extra; keep tomorrow easy.".to_string()
+        } else {
+            "Your plan says rest. Take it.".to_string()
+        };
+    }
+    let hard = matches!(
+        planned.session_type.as_str(),
+        "tempo" | "interval" | "race" | "long"
+    );
+    match state {
+        "done" => format!("Your plan had {what} today."),
+        "easy" if hard => format!(
+            "Your plan says {what}. Recovery says go easy: keep it gentle, or swap it for an easy run."
+        ),
+        "easy" => format!("Your plan says {what}. Keep it easy, and shorter if you feel flat."),
+        "comeback" => format!(
+            "Your plan says {what}. After the break, run the short easy run above instead."
+        ),
+        _ => match (planned.target_distance_m, spike_limit_m) {
+            (Some(target), Some(limit)) if target > limit => format!(
+                "Your plan says {what}. That is past your spike limit: cap it at {}.",
+                km(limit)
+            ),
+            _ => format!("Your plan says {what}. Nothing says otherwise: run it as written."),
+        },
+    }
 }
 
 /// The latest run, with its story.
@@ -630,7 +732,13 @@ pub fn week_so_far(runs: &[Run], today: &str) -> WeekSoFar {
 /// Today's call: one headline, one reason, one guardrail.
 ///
 /// `recovery` is last night read against the 30-day baselines.
-pub fn today(today: &str, runs: &[Run], recovery: Option<&RecoveryRead>) -> Today {
+pub fn today(
+    today: &str,
+    runs: &[Run],
+    recovery: Option<&RecoveryRead>,
+    planned: Option<&Planned>,
+) -> Today {
+    let recovery_signals = recovery.map(RecoveryRead::signals).unwrap_or_default();
     let week = week_so_far(runs, today);
     let mut sorted: Vec<&Run> = runs.iter().collect();
     sorted.sort_by(|a, b| a.date.cmp(&b.date).then(a.id.cmp(&b.id)));
@@ -657,6 +765,8 @@ pub fn today(today: &str, runs: &[Run], recovery: Option<&RecoveryRead>) -> Toda
             last_run: None,
             week,
             recovery_normal,
+            recovery_signals,
+            plan: None,
         };
     };
 
@@ -687,7 +797,7 @@ pub fn today(today: &str, runs: &[Run], recovery: Option<&RecoveryRead>) -> Toda
 
     let guardrail_text = spike_limit.map(|limit| {
         format!(
-            "Keep any run under {}: your longest of the last 30 days plus 10%.",
+            "Runs past {} (your longest in 30 days, plus 10%) were linked to more overuse injuries in a large study. Under it is not proven safe, and nudging up run after run adds up.",
             km(limit)
         )
     });
@@ -766,6 +876,11 @@ pub fn today(today: &str, runs: &[Run], recovery: Option<&RecoveryRead>) -> Toda
         last_run,
         week,
         recovery_normal,
+        recovery_signals,
+        plan: planned.map(|session| PlanLine {
+            session: session.clone(),
+            line: plan_line(state, session, spike_limit),
+        }),
     }
 }
 
@@ -1261,7 +1376,7 @@ mod tests {
     fn today_after_a_run_is_done_not_complete_the_session() {
         let mut runs = history("2026-10-30", 10, 2, 8.0);
         runs.push(run(100, "2026-10-30", 8.0, 360.0, Some(145.0)));
-        let call = today("2026-10-30", &runs, None);
+        let call = today("2026-10-30", &runs, None, None);
         assert_eq!(call.state, "done");
         assert!(call.headline.starts_with("Done for today: 8.0 km"));
         assert!(call.guardrail.unwrap().contains("nothing to make up"));
@@ -1270,7 +1385,7 @@ mod tests {
     #[test]
     fn two_weeks_off_is_a_comeback_with_a_cap() {
         let runs = history("2026-10-16", 10, 2, 8.0);
-        let call = today("2026-10-30", &runs, None);
+        let call = today("2026-10-30", &runs, None, None);
         assert_eq!(call.state, "comeback");
         assert!(call.guardrail.unwrap().contains("4.0 km"));
     }
@@ -1278,7 +1393,7 @@ mod tests {
     #[test]
     fn a_long_gap_for_this_runner_is_a_gentle_nudge() {
         let runs = history("2026-10-25", 10, 2, 8.0);
-        let call = today("2026-10-30", &runs, None);
+        let call = today("2026-10-30", &runs, None, None);
         assert_eq!(call.state, "nudge");
         assert!(call.headline.contains("4.8 km"));
         assert!(call.reason.unwrap().contains("No catching up"));
@@ -1293,7 +1408,7 @@ mod tests {
             resting_hr_baseline: Some(51.0),
             ..RecoveryRead::default()
         };
-        let call = today("2026-10-30", &runs, Some(&night));
+        let call = today("2026-10-30", &runs, Some(&night), None);
         assert_eq!(call.state, "easy");
         assert!(call.guardrail.unwrap().contains("8.8 km"));
     }
@@ -1370,5 +1485,43 @@ mod tests {
             .find(|b| b.label == "5K" && b.scope == "all_time")
             .unwrap();
         assert_eq!(five.activity_id, 3);
+    }
+
+    #[test]
+    fn plan_line_reconciles_the_call_with_the_plan() {
+        let intervals = Planned {
+            label: "Intervals".to_string(),
+            session_type: "interval".to_string(),
+            target_distance_m: Some(8000.0),
+        };
+        let easy = plan_line("easy", &intervals, Some(17600.0));
+        assert!(easy.contains("swap it for an easy run"), "{easy}");
+        let go = plan_line("go", &intervals, Some(17600.0));
+        assert!(go.contains("run it as written"), "{go}");
+        let long = Planned {
+            label: "Long run".to_string(),
+            session_type: "long".to_string(),
+            target_distance_m: Some(22000.0),
+        };
+        let capped = plan_line("go", &long, Some(17600.0));
+        assert!(capped.contains("cap it at 17.6 km"), "{capped}");
+    }
+
+    #[test]
+    fn today_carries_the_plan_line() {
+        let runs = history("2026-10-30", 20, 2, 8.0);
+        let intervals = Planned {
+            label: "Intervals".to_string(),
+            session_type: "interval".to_string(),
+            target_distance_m: Some(8000.0),
+        };
+        let call = today("2026-10-30", &runs, None, Some(&intervals));
+        let plan = call.plan.unwrap();
+        assert!(
+            plan.line.starts_with("Your plan says Intervals, 8.0 km."),
+            "{}",
+            plan.line
+        );
+        assert!(today("2026-10-30", &runs, None, None).plan.is_none());
     }
 }

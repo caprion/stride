@@ -8,7 +8,7 @@
  */
 
 import { Link } from 'react-router-dom'
-import { ArrowRight, PauseCircle, ShieldCheck } from 'lucide-react'
+import { ArrowRight, ClipboardCheck, PauseCircle, ShieldCheck } from 'lucide-react'
 import type { TodayInsight, WeekSoFar } from '../types_insights'
 import { formatDistanceShort } from '../lib/format'
 import { PAUSE_LABEL, type Pause, weeklyTarget } from '../lib/goal'
@@ -68,6 +68,12 @@ export function TodayCall({
             </p>
             {data.reason ? (
               <p className="mt-2 text-[14px] leading-snug text-ink-soft">{data.reason}</p>
+            ) : null}
+            {data.plan ? (
+              <p className="mt-3 flex items-start gap-2 text-[13px] leading-snug text-ink">
+                <ClipboardCheck size={15} className="mt-0.5 shrink-0 text-ink-muted" />
+                {data.plan.line}
+              </p>
             ) : null}
             {data.guardrail ? (
               <p className="mt-3 flex items-start gap-2 rounded-md bg-surface-soft px-3 py-2 text-[13px] leading-snug text-ink">

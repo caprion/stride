@@ -1,3 +1,4 @@
+import type { RecoverySignal } from '../types_insights'
 import { useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import {
@@ -40,47 +41,31 @@ const gradeColor: Record<string, string> = {
   unknown: INK_FAINT,
 }
 /**
- * Whether a driver is inside the athlete's normal range: sleep within an
- * hour of their usual, HRV at least 85% of it, resting HR under 5 bpm above
- * it. `null` for a driver with no personal baseline.
+ * "Normal" comes from the core, through `/insights/today`: one definition,
+ * so Body and Today cannot disagree. Nothing here re-derives a threshold.
  */
-function inNormal(d: {
-  key: string
-  value: number | null
-  baseline?: number | null
-}): boolean | null {
-  if (d.baseline == null || d.value == null) return null
-  if (d.key === 'sleep') return d.value >= d.baseline - 1
-  if (d.key === 'hrv') return d.value >= d.baseline * 0.85
-  if (d.key === 'resting_hr') return d.value < d.baseline + 5
-  return null
+function inNormal(signals: RecoverySignal[], key: string): boolean | null {
+  const signal = signals.find((s) => s.key === key)
+  return signal ? signal.normal : null
 }
 
-function normalHeadline(
-  drivers: { key: string; value: number | null; baseline?: number | null }[],
-): string {
-  const read = drivers.filter((d) => inNormal(d) != null)
-  if (!read.length) return 'Building your baseline'
-  const normal = read.filter((d) => inNormal(d)).length
-  return `${normal} of ${read.length} signals in your normal range`
+function normalHeadline(signals: RecoverySignal[]): string {
+  if (!signals.length) return 'Building your baseline'
+  const normal = signals.filter((s) => s.normal).length
+  return `${normal} of ${signals.length} signals in your normal range`
 }
 
-/**
- * The advice, from the same thresholds Today uses, so the two screens never
- * disagree (a "peak, you're primed" score after a short night used to sit
- * beside "go easy" on Today).
- */
-function normalAdvice(
-  drivers: { key: string; value: number | null; baseline?: number | null }[],
-): string | null {
-  const read = drivers.filter((d) => inNormal(d) != null)
-  if (!read.length) return null
-  const off = read.filter((d) => !inNormal(d))
+const SIGNAL_NAME: Record<string, string> = {
+  sleep: 'sleep',
+  hrv: 'HRV',
+  resting_hr: 'resting HR',
+}
+
+function normalAdvice(signals: RecoverySignal[]): string | null {
+  if (!signals.length) return null
+  const off = signals.filter((s) => !s.normal)
   if (!off.length) return 'Recovery looks normal. Train as you planned.'
-  const names = off.map((d) =>
-    d.key === 'resting_hr' ? 'resting HR' : d.key === 'hrv' ? 'HRV' : d.key,
-  )
-  const sentence = `${names.join(' and ')} outside your normal range: go easy today, or take the day.`
+  const sentence = `${off.map((s) => SIGNAL_NAME[s.key] ?? s.key).join(' and ')} outside your normal range: go easy today, or take the day.`
   return sentence.charAt(0).toUpperCase() + sentence.slice(1)
 }
 
@@ -176,6 +161,13 @@ export default function PhysiologyPage() {
   const since = useMemo(() => sinceDate(days), [days])
   const phone = isPhone()
 
+  const todayInsight = useQuery({
+    queryKey: ['insights-today'],
+    queryFn: api.insightsToday,
+    retry: false,
+    staleTime: 60_000,
+  })
+  const signals = todayInsight.data?.recovery_signals ?? []
   const sources = useQuery({
     queryKey: ['physiology-sources'],
     queryFn: api.physiologySources,
@@ -333,10 +325,10 @@ export default function PhysiologyPage() {
                     score is still there, small, for whoever wants it.
                   */}
                   <strong className="text-2xl font-bold leading-tight text-ink">
-                    {normalHeadline(drivers)}
+                    {normalHeadline(signals)}
                   </strong>
                   <p className="mt-3 text-sm text-ink-soft">
-                    {normalAdvice(drivers) ??
+                    {normalAdvice(signals) ??
                       current.rationale ??
                       'Readiness reflects your recent recovery signals.'}
                   </p>
@@ -351,7 +343,7 @@ export default function PhysiologyPage() {
                   {drivers.length ? (
                     <div className="space-y-3">
                       {drivers.map((d) => {
-                        const ok = inNormal(d)
+                        const ok = inNormal(signals, d.key)
                         return (
                           <div key={d.key}>
                             <div className="flex items-center justify-between gap-3 text-sm">

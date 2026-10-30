@@ -6,7 +6,7 @@
 
 use serde_json::{json, Map, Value};
 
-use stride_core::insights::{self, Recovery, RecoveryRead, Run};
+use stride_core::insights::{self, Planned, Recovery, RecoveryRead, Run};
 
 use crate::analytics;
 use crate::backend::ActivityFilter;
@@ -74,7 +74,33 @@ pub fn today(ctx: &Ctx<'_>) -> Result<Value, ApiError> {
     let runs = load_runs(ctx)?;
     let recovery = load_recovery(ctx, &day);
     let read = RecoveryRead::from_history(&recovery, &day);
-    to_value(&insights::today(&day, &runs, read.as_ref()))
+    // The written plan's session for today, if any, so the call is
+    // reconciled with it. A plan read error is not an insight error: the
+    // call stands on its own.
+    let planned = ctx
+        .backend
+        .plan_sessions_with_results(&day, &day)
+        .ok()
+        .and_then(|rows| {
+            rows.into_iter()
+                .map(|row| row.session)
+                .find(|session| session.session_type != "strength")
+        })
+        .map(|session| Planned {
+            label: session
+                .title
+                .clone()
+                .filter(|title| !title.trim().is_empty())
+                .unwrap_or_else(|| session.session_type.replace('_', " ")),
+            session_type: session.session_type.clone(),
+            target_distance_m: session.target_distance_m,
+        });
+    to_value(&insights::today(
+        &day,
+        &runs,
+        read.as_ref(),
+        planned.as_ref(),
+    ))
 }
 
 /// `GET /api/v1/insights/activity/{id}` — what one run meant.

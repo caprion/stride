@@ -28,34 +28,50 @@ your own normal. Settings is short.
 
 ## Principles
 
-These come from the research behind v1 (injury epidemiology, recovery
-science, and what makes runners keep running). Each one rules something in
-or out.
+Each one rules something in or out, and each says what it rests on:
+**evidence** (a published study), **practice** (consensus in coaching and
+sports-science practice, not one decisive study), or **judgment** (a
+product decision we own). None comes from a survey of runners; the
+direction comes from the literature, app-store and forum complaints about
+running apps, and dogfooding.
 
 1. **A decision with a reason beats a score.** Today leads with a sentence
    ("Go easy today, or take the day.") and the reason ("Slept 5h36 vs your
    usual 7h12."), not a 0-100 number. Never two signals that disagree: Body
-   and Today use the same thresholds.
+   and Today read the same "normal" from the core, and when a written plan
+   has a session today, Today names it and says how the call relates to it
+   ("Your plan says Intervals. Recovery says go easy: keep it gentle, or
+   swap it for an easy run."). *Judgment.*
 2. **One guardrail, the one with evidence.** A single run more than 10%
    longer than your longest of the last 30 days is the spike that predicted
    injury in the 2025 Garmin-RUNSAFE cohort; weekly load ratios (ACWR) did
    not. Stride shows the spike limit and nothing that pretends to be an
-   injury score.
+   injury score. The limit is where observed risk rose, not a safe zone:
+   the study is observational, its authors suggest a lower cut-off may be
+   worth considering, and runs that creep up just under the line compound.
+   The screen says where the number comes from and that under it is not
+   proven safe. *Evidence:* Frandsen et al., BJSM 2025 (5,205 runners);
+   the framing is *judgment*.
 3. **Your normal, not a population's.** HRV, resting HR and sleep are read
    against your own recent range. Efficiency (speed per heartbeat) is
-   compared with your own runs of a similar distance.
+   compared with your own runs of a similar distance. *Practice:* HRV and
+   resting HR are read against individual baselines in the recovery
+   literature; population norms vary too widely to judge one person.
 4. **Compare only with your past self.** No leaderboards, no age grades.
    Progress is "faster at the same heart rate than six weeks ago".
+   *Judgment.*
 5. **Forgiving consistency.** Weeks, not days. One quiet week in six is a
    grace week. A pause (travel, sick, injured) freezes the streak instead
-   of breaking it. Nothing is red, nothing says "missed".
+   of breaking it. Nothing is red, nothing says "missed". *Judgment*,
+   informed by habit research on how broken streaks end habits.
 6. **Never make up a behind week.** A low-volume week never produces advice
-   to cram the difference into the weekend.
+   to cram the difference into the weekend. *Evidence:* the same spike
+   finding; cramming is how a single long run spikes.
 7. **Show what the watch records, hide what it does not.** A card whose
-   data is missing is not drawn; it does not show zeros.
+   data is missing is not drawn; it does not show zeros. *Judgment.*
 8. **Honest about confidence.** Single runs are noisy (heat, hills, wrist
    HR). Trends use medians over weeks; a run's story says "likely" when it
-   is inferred.
+   is inferred. *Practice.*
 
 ## Local-first, and why it is non-negotiable
 
@@ -91,7 +107,12 @@ In:
   Running form one tap away.
 - **Body**: sleep, HRV, resting HR against your own normal.
 - Three inputs that change what the app should say: a run's name and note,
-  an optional weekly goal, and a pause.
+  an optional weekly goal, and a pause. The goal and the pause live in the
+  app's own storage on the device, not in the encrypted database: the
+  database schema is shared with the desktop export and frozen for v1, and
+  neither is training data. They move into the database (and into the
+  core's advice) when the schema next changes; clearing the app's storage
+  clears them.
 - Desktop: the same, plus the Plan calendar, Compare and full Settings.
 
 Out of v1 (deliberately):
@@ -102,6 +123,10 @@ Out of v1 (deliberately):
 - Garmin's proprietary scores, and anything needing the Garmin password.
 - Social features, leaderboards, coaching chat, on-device AI.
 - Strava and COROS connectors (FIT import covers both for now).
+- Judging a run's purpose. Compare marks "strongest" only between runs of
+  a similar distance; a 10K easy run and a 10K time trial can still be
+  compared. Purpose will come from a written plan's session type when
+  there is one; guessing it from the run itself is not reliable enough.
 
 ## How we decide what to add
 

@@ -58,6 +58,18 @@ export interface TodayInsight {
   last_run: { run: InsightRun; story: RunStory } | null
   week: WeekSoFar
   recovery_normal: [number, number] | null
+  /** The one definition of "normal": the Body screen reads this. */
+  recovery_signals: RecoverySignal[]
+  /** Today's session on a written plan, reconciled with the call. */
+  plan: {
+    session: { label: string; session_type: string; target_distance_m: number | null }
+    line: string
+  } | null
+}
+
+export interface RecoverySignal {
+  key: 'sleep' | 'hrv' | 'resting_hr'
+  normal: boolean
 }
 
 export interface Chip {
