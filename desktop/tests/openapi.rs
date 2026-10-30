@@ -71,15 +71,35 @@ fn the_router_covers_the_openapi_golden_document() {
     }
 }
 
+/// The routes the Rust core has and the Python reference does not.
+///
+/// The insight engines are Rust-native: the reference implementation never
+/// had them, and the OpenAPI document — which is the reference's contract,
+/// recorded from `app.openapi()` — does not describe them. So the
+/// document is not regenerated for them; they are named here instead.
+///
+/// The point of naming them is that the list is closed. A route that is
+/// neither in the document nor on this list fails the test, so a new route
+/// cannot appear without someone saying where it comes from.
+const RUST_NATIVE_ROUTES: [(&str, &str); 4] = [
+    ("GET", "/api/v1/insights/today"),
+    ("GET", "/api/v1/insights/activity/{id}"),
+    ("GET", "/api/v1/insights/chips"),
+    ("GET", "/api/v1/insights/progress"),
+];
+
 /// Every route in the router is in the document.
 #[test]
 fn the_openapi_golden_document_covers_the_router() {
     let operations = document_operations();
     for route in stride_api::router::ROUTES {
         let key = (route.method.to_string(), route.pattern.to_string());
+        let rust_native = RUST_NATIVE_ROUTES
+            .iter()
+            .any(|(method, pattern)| *method == route.method && *pattern == route.pattern);
         assert!(
-            operations.contains(&key),
-            "the OpenAPI document is missing {} {}",
+            operations.contains(&key) || rust_native,
+            "the OpenAPI document is missing {} {}, and it is not one of the Rust-native routes",
             route.method,
             route.pattern
         );
