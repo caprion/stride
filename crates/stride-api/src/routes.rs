@@ -268,7 +268,22 @@ fn without_demo_flag(payload: &mut Value) {
 /// `GET /api/v1/auth/pair-code` — mint a pairing code.
 ///
 /// The reference: `api/auth.pair_code`.
+///
+/// **The code is the operator's console secret.** It is minted on the machine
+/// that runs Stride and typed into the other device, and the reference
+/// refuses anybody who is not on that machine — the check is on the peer
+/// address *and* on the `Host` header, so a rebound name cannot ask for one
+/// either.
+///
+/// The router has neither the peer address nor the `Host` header: only the
+/// host has them. So the host answers the question, and a host that cannot
+/// answer it does not mint a code at all.
 pub fn pair_code(ctx: &Ctx<'_>) -> Result<Value, ApiError> {
+    if !ctx.backend.may_mint_pairing_code() {
+        return Err(ApiError::forbidden(
+            "A pairing code can only be requested on the machine running Stride.",
+        ));
+    }
     Ok(ctx.backend.pair_code()?)
 }
 

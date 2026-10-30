@@ -1,3 +1,17 @@
+- [ ] The synthetic rows an older installation left behind are removed on
+      every open. The demo dataset is gone from the product, but the rows
+      it seeded are still in some databases, and they were seeded at the
+      athlete's own coordinates. `Store::migrate()` purges them, and both
+      the desktop and the phone migrate on every open.
+- [ ] The phone's bridge decides on the **route**, not on the raw path. The
+      router splits the path at the `?`, so a decision made on the raw
+      path is a decision made about a different route — and a query string
+      is enough to turn a guard off.
+- [ ] A host that **cannot** tell a caller on the machine from a caller on
+      the network mints no pairing code at all. The router has neither the
+      peer address nor the `Host` header, so the host answers the question
+      (`Backend::may_mint_pairing_code`), and the answer is "no" unless the
+      host says otherwise.
 # Security checklist
 
 Every change to Stride ends with a green `./scripts/security_check.sh` and a
@@ -149,7 +163,14 @@ A paired device holds **its own** token, not the master capability.
 - [ ] No `VITE_*` environment variable can carry a secret into the bundle.
 - [ ] The signing certificate in `backend/app/assetlinks.json` is the one
       the release APK is signed with: the release build checks it with
-      `keytool` and fails when they differ.
+      `keytool` and fails when they differ, and `scripts/check_apk.py`
+      checks the signature of the APK it is given as well.
+- [ ] The APK check compares the core with the build **tree**, not with the
+      path the APK happens to sit at. A check that only ran for one path
+      would not have run at all in CI, which publishes the APK it has just
+      built from `dist/`.
+- [ ] A build for one ABI does not delete the staged core of another. The
+      Gradle copy task clears its own ABI's directory, not the whole tree.
 - [ ] The Android app points its WebView at an `https://` URL, and the build
       refuses to produce an APK that does not.
 - [ ] The keystore and `keystore.properties` are gitignored wherever they

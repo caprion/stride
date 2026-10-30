@@ -1010,6 +1010,16 @@ impl Backend for MemBackend {
         ))
     }
 
+    /// The in-memory backend **is** the console: it holds nothing that is
+    /// not on this machine, so a pairing code may be minted for the caller
+    /// that asks.
+    ///
+    /// It is what the tests and the local tools drive, and it is the one
+    /// backend that can answer the question without a peer address.
+    fn may_mint_pairing_code(&self) -> bool {
+        true
+    }
+
     fn pair(&self, _code: &str) -> Result<Option<Value>, BackendError> {
         Ok(self.derived("pair"))
     }

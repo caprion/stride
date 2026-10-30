@@ -145,4 +145,44 @@ class PhoneRoutesTest {
             )
         }
     }
+
+    @Test
+    fun `a query string does not change the route`() {
+        assertEquals(
+            Decision.GarminKeyEntry,
+            PhoneRoutes.decide("POST", "/api/v1/auth/garmin/personal-key?x=1"),
+        )
+        assertEquals(
+            Decision.GarminKeyEntry,
+            PhoneRoutes.decide("POST", "/api/v1/auth/garmin/personal-key/test?x=1"),
+        )
+        assertEquals(
+            Decision.GarminLogin,
+            PhoneRoutes.decide("POST", "/api/v1/auth/garmin/login?x=1"),
+        )
+        assertEquals(
+            Decision.GarminDeveloperKey,
+            PhoneRoutes.decide("POST", "/api/v1/auth/garmin/developer-key?x=1"),
+        )
+        assertEquals(
+            Decision.GarminPull,
+            PhoneRoutes.decide("POST", "/api/v1/sync/run?background=false"),
+        )
+    }
+
+    @Test
+    fun `the route is the path without its query string`() {
+        assertEquals(
+            "/api/v1/auth/garmin/personal-key",
+            PhoneRoutes.routeOf("/api/v1/auth/garmin/personal-key?x=1"),
+        )
+        assertEquals(
+            "/api/v1/auth/garmin/fit-import",
+            PhoneRoutes.routeOf("/api/v1/auth/garmin/fit-import"),
+        )
+        assertEquals(
+            "/api/v1/sync/run",
+            PhoneRoutes.routeOf("/api/v1/sync/run?days=30&background=true"),
+        )
+    }
 }

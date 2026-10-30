@@ -356,7 +356,7 @@ fn decode_value(raw: &[u8], base_type: u8, little_endian: bool) -> Option<FieldV
         0x00 => number!(raw.first().copied(), 0xff), // enum
         0x01 => number!(raw.first().copied().map(|value| value as i8), 0x7f), // sint8
         0x02 => number!(raw.first().copied(), 0xff), // uint8
-        0x0a => number!(raw.first().copied(), 0x00), // uint8z
+        0x8a => number!(raw.first().copied(), 0x00), // uint8z
         0x83 => number!(read_i16(raw, little_endian), 0x7fff), // sint16
         0x84 => number!(read_u16(raw, little_endian), 0xffff), // uint16
         0x8b => number!(read_u16(raw, little_endian), 0x0000), // uint16z
@@ -592,7 +592,7 @@ mod tests {
         // speed into an average speed of 65.535 m/s.
         assert_eq!(decode_value(&[0xff], 0x02, true), None); // uint8
         assert_eq!(decode_value(&[0x7f], 0x01, true), None); // sint8
-        assert_eq!(decode_value(&[0x00], 0x0a, true), None); // uint8z
+        assert_eq!(decode_value(&[0x00], 0x8a, true), None); // uint8z
         assert_eq!(decode_value(&[0xff, 0xff], 0x84, true), None); // uint16
         assert_eq!(decode_value(&[0xff, 0x7f], 0x83, true), None); // sint16
         assert_eq!(decode_value(&[0x00, 0x00], 0x8b, true), None); // uint16z
@@ -609,6 +609,11 @@ mod tests {
         assert_eq!(
             decode_value(&[0x64], 0x02, true),
             Some(FieldValue::Number(100.0))
+        );
+        assert_eq!(
+            decode_value(&[0x64], 0x8a, true),
+            Some(FieldValue::Number(100.0)),
+            "a uint8z field is a number, not an absent field"
         );
     }
 

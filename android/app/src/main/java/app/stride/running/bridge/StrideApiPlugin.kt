@@ -117,6 +117,26 @@ class StrideApiPlugin : Plugin() {
                     return@execute
                 }
 
+                // A phone with no screen lock is a phone anyone can pick up.
+                // Real data — pulled runs, imported files — does not land on
+                // one.
+                //
+                // The route is the path without its query string, because
+                // that is what the router matches on: a guard that is
+                // decided on the raw path is a guard a `?` turns off.
+                //
+                // The check is **before** the credential is unwrapped, so a
+                // phone that must not write real data never has the key in
+                // memory at all.
+                val route = PhoneRoutes.routeOf(path)
+                val writesRealData =
+                    decision == PhoneRoutes.Decision.GarminPull ||
+                        route == "/api/v1/auth/garmin/fit-import"
+                if (writesRealData && !DeviceCredential.hasCredential(context)) {
+                    call.reject(context.getString(R.string.screen_lock_required), "403")
+                    return@execute
+                }
+
                 // The Garmin key is needed for a pull and for nothing else.
                 // The Kotlin side unwraps it from the Keystore for the length
                 // of the call and hands it over; the core drops it again as
@@ -186,17 +206,19 @@ class StrideApiPlugin : Plugin() {
                     PhoneRoutes.Decision.Forward -> Unit
                 }
 
-                // A phone with no screen lock is a phone anyone can pick up.
-                // Real data — pulled runs, imported files — does not land on
-                // one. The rule is checked above, before anything was
-                // queued or handed over.
                 val isLogout = method.equals("POST", ignoreCase = true) &&
-                    path == "/api/v1/auth/garmin/logout"
+                    route == "/api/v1/auth/garmin/logout"
 
                 try {
                     val answer = StrideCore.call(method, path, body)
                     call.resolve(JSObject().put("json", answer))
                 } finally {
+                    if (decision == PhoneRoutes.Decision.GarminPull) {
+                        // The key was in the core's memory for the pull and
+                        // no longer: the copy in the Keystore is the one
+                        // that lasts, and the phone is still connected.
+                        StrideCore.setGarminKey("")
+                    }
                     if (isLogout) {
                         // The credential lives in the Keystore, so the
                         // shell is what forgets it. The core's copy goes

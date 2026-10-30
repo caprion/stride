@@ -315,6 +315,11 @@ fn remember_connection(core: &PhoneCore, synced: bool) {
 ///
 /// The state is what the sync reads the key through, and what tells the
 /// browser that Garmin is connected.
+///
+/// **Taking the key out of the memory is not disconnecting.** The key lives
+/// in the Keystore; the copy here is there for the length of one pull.
+/// So clearing it leaves the connection alone, and the caller that really
+/// is disconnecting says so with [`set_connected`].
 fn set_key(core: &PhoneCore, api_key: &str) {
     let mut state = core.state.state();
     state.personal_api_key = if api_key.is_empty() {
@@ -323,8 +328,21 @@ fn set_key(core: &PhoneCore, api_key: &str) {
         Some(api_key.to_string())
     };
     state.status.has_personal_api_key = state.personal_api_key.is_some();
-    state.status.garmin_connected = state.personal_api_key.is_some();
-    state.status.garmin_method = if state.personal_api_key.is_some() {
+    if state.personal_api_key.is_some() {
+        state.status.garmin_connected = true;
+        state.status.garmin_method = Some(METHOD.to_string());
+    }
+    core.state.set_state(state);
+}
+
+/// Say whether the phone is connected to Garmin.
+///
+/// This is the *fact* of the connection, and it is separate from the key:
+/// the key is in the Keystore, and this says the app may use it.
+fn set_connected(core: &PhoneCore, connected: bool) {
+    let mut state = core.state.state();
+    state.status.garmin_connected = connected;
+    state.status.garmin_method = if connected {
         Some(METHOD.to_string())
     } else {
         None
@@ -361,14 +379,7 @@ pub fn stride_set_garmin_key(api_key: String) -> String {
 pub fn stride_set_garmin_connected(connected: bool) -> String {
     match installed() {
         Some(core) => {
-            let mut state = core.state.state();
-            state.status.garmin_connected = connected;
-            state.status.garmin_method = if connected {
-                Some(METHOD.to_string())
-            } else {
-                None
-            };
-            core.state.set_state(state);
+            set_connected(&core, connected);
             json!({
                 "ok": true,
                 "status": 200,

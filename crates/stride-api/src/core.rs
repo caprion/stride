@@ -718,6 +718,10 @@ impl Backend for CoreBackend {
         self.inner.pair_code()
     }
 
+    fn may_mint_pairing_code(&self) -> bool {
+        self.inner.may_mint_pairing_code()
+    }
+
     fn pair(&self, code: &str) -> Result<Option<Value>, BackendError> {
         self.inner.pair(code)
     }

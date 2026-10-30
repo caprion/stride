@@ -150,9 +150,23 @@ impl Store {
     /// Bring the database up to the current schema.
     ///
     /// Idempotent: running it twice changes nothing and does not fail.
+    ///
+    /// It also removes the synthetic activities an older installation left
+    /// behind. The demo dataset is gone from the product, but the rows it
+    /// seeded are still in some databases, and they were seeded at the
+    /// athlete's own coordinates — so they have to go, exactly once, on the
+    /// first open of the new build. The reference does the same thing at
+    /// every start-up (`services.persistence.purge_synthetic_activities`).
     pub fn migrate(&self) -> Result<()> {
         let conn = self.lock()?;
-        schema::migrate(&conn)
+        schema::migrate(&conn)?;
+        let removed = crate::repo::activity::purge_synthetic_activities(&conn)?;
+        if removed > 0 {
+            eprintln!(
+                "stride-store: removed {removed} synthetic activities left over from an older install"
+            );
+        }
+        Ok(())
     }
 
     /// The path of the database file.

@@ -420,6 +420,15 @@ impl Backend for StateBackend {
         }))
     }
 
+    /// Whether this host may mint a pairing code.
+    ///
+    /// The state owns the pairing, and the host owns the answer to "is the
+    /// caller on this machine?". The answer is the host's: it has the peer
+    /// address and the `Host` header, and the state has neither.
+    fn may_mint_pairing_code(&self) -> bool {
+        self.inner.may_mint_pairing_code()
+    }
+
     fn pair(&self, code: &str) -> Result<Option<Value>, Error> {
         let mut state = self.locked();
         let expected = state.pairing_code.clone().unwrap_or_default();

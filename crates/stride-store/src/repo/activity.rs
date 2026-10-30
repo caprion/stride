@@ -1,7 +1,7 @@
 //! `activity`, `activity_lap`, `activity_stream`, `hr_zone`, `activity_fact`
 //! and `run_fingerprint`.
 
-use rusqlite::{named_params, params, OptionalExtension, Row};
+use rusqlite::{named_params, params, Connection, OptionalExtension, Row};
 
 use crate::datetimes::DbDateTime;
 use crate::error::Result;
@@ -9,6 +9,18 @@ use crate::json::DbJson;
 use crate::model::{Activity, ActivityFact, ActivityLap, ActivityStream, HrZone, RunFingerprint};
 use crate::repo::helpers::collect;
 use crate::Store;
+
+/// The source of the synthetic activities an older installation seeded.
+pub const SYNTHETIC_SOURCE: &str = "demo";
+
+/// The tables whose rows hang off an activity.
+const ACTIVITY_CHILDREN: [&str; 5] = [
+    "activity_lap",
+    "activity_stream",
+    "hr_zone",
+    "activity_fact",
+    "run_fingerprint",
+];
 
 const ACTIVITY_COLUMNS: &str = "id, athlete_id, source, external_id, name, sport_type, \
     description, start_time, local_date, day_of_week, distance_m, moving_time_s, elapsed_time_s, \
@@ -838,4 +850,66 @@ impl Store {
         })?;
         Ok(())
     }
+}
+
+/// Remove the synthetic activities an older installation still holds.
+///
+/// The demo dataset is gone — it is not seeded, not filtered and not behind
+/// a flag — but an installation that was seeded before it was removed still
+/// has those rows in its database. They were seeded at the athlete's **own**
+/// coordinates and their own city, and they look exactly like the athlete's
+/// own runs, so they are removed once, on every open, and never come back.
+///
+/// The children go with them: the laps, the streams, the heart-rate zones,
+/// the facts and the fingerprint are all rows keyed on the activity. A plan
+/// result that pointed at one of them keeps its row and loses the pointer,
+/// which is what the schema's `ON DELETE SET NULL` says.
+///
+/// The reference is `backend/app/services/persistence.py::purge_synthetic_activities`.
+///
+/// It returns the number of activities it removed, so a caller can say so.
+pub fn purge_synthetic_activities(conn: &Connection) -> Result<i64> {
+    let ids = {
+        let mut statement = conn
+            .prepare("SELECT id FROM activity WHERE source = ?")
+            .map_err(|source| {
+                crate::error::StoreError::query("the synthetic activities".to_string(), source)
+            })?;
+        let rows = statement
+            .query_map(params![SYNTHETIC_SOURCE], |row| row.get::<_, i64>(0))
+            .map_err(|source| {
+                crate::error::StoreError::query("the synthetic activities".to_string(), source)
+            })?;
+        let mut ids = Vec::new();
+        for id in rows {
+            ids.push(id.map_err(|source| {
+                crate::error::StoreError::query("the synthetic activities".to_string(), source)
+            })?);
+        }
+        ids
+    };
+    if ids.is_empty() {
+        return Ok(0);
+    }
+
+    // The children go first, so the purge does not depend on the foreign
+    // keys being enforced: a database opened with the pragma off would
+    // otherwise keep the laps of a run that is not there.
+    let marks = vec!["?"; ids.len()].join(", ");
+    for table in ACTIVITY_CHILDREN {
+        let sql = format!("DELETE FROM {table} WHERE activity_id IN ({marks})");
+        conn.execute(&sql, rusqlite::params_from_iter(ids.iter()))
+            .map_err(|source| {
+                crate::error::StoreError::query(format!("the synthetic {table}"), source)
+            })?;
+    }
+    let removed = conn
+        .execute(
+            "DELETE FROM activity WHERE source = ?",
+            params![SYNTHETIC_SOURCE],
+        )
+        .map_err(|source| {
+            crate::error::StoreError::query("the synthetic activities".to_string(), source)
+        })?;
+    Ok(removed as i64)
 }

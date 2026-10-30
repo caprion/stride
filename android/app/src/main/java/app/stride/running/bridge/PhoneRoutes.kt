@@ -41,6 +41,25 @@ object PhoneRoutes {
     }
 
     /**
+     * The route a path names.
+     *
+     * **The query string is not part of the route.** The router splits the
+     * path at the `?` and matches what is left, so
+     * `/api/v1/auth/garmin/personal-key?x=1` is the
+     * `/api/v1/auth/garmin/personal-key` route. A decision made on the raw
+     * path would therefore be made on a *different* route from the one the
+     * router runs — and a decision that is wrong in that direction is a
+     * guard that a query string turns off.
+     *
+     * So the path is cut here, once, and every decision is made on the
+     * route.
+     */
+    fun routeOf(path: String): String {
+        val cut = path.indexOf('?')
+        return if (cut < 0) path else path.substring(0, cut)
+    }
+
+    /**
      * What the phone does with a request.
      *
      * The method matters: the same path read and written are different
@@ -50,7 +69,7 @@ object PhoneRoutes {
         val post = method.equals("POST", ignoreCase = true)
         if (!post) return Decision.Forward
 
-        return when (path) {
+        return when (routeOf(path)) {
             "/api/v1/auth/garmin/personal-key",
             "/api/v1/auth/garmin/personal-key/test" -> Decision.GarminKeyEntry
 
