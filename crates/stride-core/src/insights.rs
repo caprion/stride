@@ -617,17 +617,17 @@ pub fn plan_line(state: &str, planned: &Planned, spike_limit_m: Option<f64>) -> 
         Some(distance) if distance > 0.0 => format!("{}, {}", planned.label, km(distance)),
         _ => planned.label.clone(),
     };
-    if planned.session_type == "rest" {
+    // Normalise the stored type so a hand-written or third-party plan's
+    // "Intervals" or "long_run" reads the same as the canonical "interval".
+    let kind = normalize_session_type(&planned.session_type);
+    if kind == "rest" {
         return if state == "done" {
             "Your plan said rest. Today's run was extra; keep tomorrow easy.".to_string()
         } else {
             "Your plan says rest. Take it.".to_string()
         };
     }
-    let hard = matches!(
-        planned.session_type.as_str(),
-        "tempo" | "interval" | "race" | "long"
-    );
+    let hard = matches!(kind.as_str(), "tempo" | "interval" | "race" | "long");
     match state {
         "done" => format!("Your plan had {what} today."),
         "easy" if hard => format!(
@@ -645,6 +645,20 @@ pub fn plan_line(state: &str, planned: &Planned, spike_limit_m: Option<f64>) -> 
             _ => format!("Your plan says {what}. Nothing says otherwise: run it as written."),
         },
     }
+}
+
+/// The canonical session type for a stored one: lower case, trimmed, with
+/// common variants ("intervals", "long_run", "threshold") folded in.
+fn normalize_session_type(raw: &str) -> String {
+    let lower = raw.trim().to_ascii_lowercase().replace(['-', ' '], "_");
+    match lower.as_str() {
+        "intervals" | "interval_run" | "repeats" | "reps" | "track" => "interval",
+        "long_run" | "longrun" => "long",
+        "threshold" | "tempo_run" => "tempo",
+        "easy_run" => "easy",
+        other => return other.to_string(),
+    }
+    .to_string()
 }
 
 /// The latest run, with its story.
@@ -1523,5 +1537,24 @@ mod tests {
             plan.line
         );
         assert!(today("2026-10-30", &runs, None, None).plan.is_none());
+    }
+
+    #[test]
+    fn plan_line_reads_plural_and_variant_session_types_as_hard() {
+        for raw in [
+            "intervals",
+            "Intervals",
+            "interval",
+            "long_run",
+            "threshold",
+        ] {
+            let planned = Planned {
+                label: "6 x 800 m".to_string(),
+                session_type: raw.to_string(),
+                target_distance_m: Some(9000.0),
+            };
+            let line = plan_line("easy", &planned, Some(17_600.0));
+            assert!(line.contains("swap it for an easy run"), "{raw}: {line}");
+        }
     }
 }
