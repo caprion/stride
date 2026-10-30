@@ -748,6 +748,15 @@ pub fn plan_line(state: &str, planned: &Planned, spike_limit_m: Option<f64>) -> 
         };
     }
     let hard = matches!(kind.as_str(), "tempo" | "interval" | "race" | "long");
+    // A session whose kind is not known is not a kind of session. The
+    // line says what the plan says and stops there: it does not call it an
+    // easy run, and it does not call it hard.
+    if kind == "unknown" {
+        return match state {
+            "done" => format!("Your plan had {what} today."),
+            _ => format!("Your plan says {what}. It does not say what kind of session it is."),
+        };
+    }
     match state {
         "done" => format!("Your plan had {what} today."),
         "easy" if hard => format!(
@@ -1879,6 +1888,29 @@ mod tests {
         };
         let capped = plan_line("go", &long, Some(17600.0));
         assert!(capped.contains("cap it at 17.6 km"), "{capped}");
+    }
+
+    #[test]
+    fn a_session_with_an_unknown_kind_is_not_called_easy() {
+        let unknown = Planned {
+            label: "Zona 3".to_string(),
+            session_type: "unknown".to_string(),
+            target_distance_m: Some(8000.0),
+        };
+        let line = plan_line("easy", &unknown, Some(17_600.0));
+        assert!(
+            !line.contains("Keep it easy"),
+            "an unknown kind is not an easy session: {line}"
+        );
+        assert!(
+            line.contains("does not say what kind of session it is"),
+            "{line}"
+        );
+        let done = plan_line("done", &unknown, Some(17_600.0));
+        assert!(
+            done.contains("Your plan had Zona 3, 8.0 km today."),
+            "{done}"
+        );
     }
 
     #[test]
