@@ -104,10 +104,14 @@ function summarize(runs: CompareRun[], parameters: CompareParameter[]) {
     // a drift of 0.1 vs 0.4 bpm). State the absolute difference instead.
     const magnitude = Math.abs(b) >= 5 ? Math.abs((a - b) / b) * 100 : null
     const unit = parameter.unit ? ` ${parameter.unit}` : ''
+    // The detail is written from the winner's side. The first run's value
+    // is `a`, so a sentence about the *second* run that says "worse" is
+    // about the wrong run: "Evening run had the stronger average pace
+    // (2.5 /km worse than Morning run)" reads as a contradiction.
     const detail =
       magnitude !== null && magnitude >= 1
-        ? `${Math.round(magnitude)}% ${better ? 'better' : 'behind'}`
-        : `${round(difference, 1)}${unit} ${better ? 'better' : 'worse'}`
+        ? `${Math.round(magnitude)}% better`
+        : `${round(difference, 1)}${unit} better`
     const winner = better ? runNames[0] : runNames[1]
     const other = better ? runNames[1] : runNames[0]
     observations.push(
