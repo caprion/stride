@@ -199,6 +199,77 @@ pub struct ParameterComparison {
     pub winner: Option<Winner>,
 }
 
+/// The session types that say what a run was *for*.
+///
+/// `rest` and `strength` are not in the list: a run is never one of them,
+/// so a session of that type gives a run no intent.
+pub const RUN_INTENT_TYPES: [&str; 6] = [
+    "easy", "long", "tempo", "interval", "race", "recovery",
+];
+
+/// The basis of a comparison: what makes the runs comparable at all.
+///
+/// "Strongest" only means something between runs that had the same job. A
+/// time trial beats an easy run on pace by design; marking it teaches
+/// faster-is-better on the page a runner opens after easy weeks. So the
+/// basis is decided before anything is marked, and the page says which
+/// basis it used.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(tag = "kind", rename_all = "snake_case")]
+pub enum ComparisonBasis {
+    /// Every run was matched to a plan session of the same kind, so the
+    /// comparison is like for like.
+    PlanSession {
+        /// The canonical session type they share.
+        session_type: String,
+    },
+    /// The runs were matched to plan sessions of different kinds, so they
+    /// had different jobs and nothing is marked as strongest.
+    DifferentJobs,
+    /// At least one run has no plan intent, so distance is the proxy.
+    Distance,
+}
+
+/// The intent of one run: the canonical session type it was matched to.
+///
+/// `None` when the run was not matched to a plan session, or when the
+/// session it was matched to is not a run — a rest day or a strength
+/// session says nothing about what the run was for.
+pub fn plan_intent(session_type: Option<&str>) -> Option<String> {
+    let canonical = crate::plan::canonical_session_type(session_type?);
+    if RUN_INTENT_TYPES.contains(&canonical.as_str()) {
+        Some(canonical)
+    } else {
+        None
+    }
+}
+
+/// The basis of a comparison, from the plan intent of each run.
+///
+/// * every run has an intent and they are all the same — like for like;
+/// * every run has an intent and they differ — different jobs;
+/// * any run has no intent — distance is the proxy, and the page says so.
+pub fn comparison_basis(intents: &[Option<String>]) -> ComparisonBasis {
+    if intents.is_empty() {
+        return ComparisonBasis::Distance;
+    }
+    let mut kinds: Vec<&str> = Vec::with_capacity(intents.len());
+    for intent in intents {
+        match intent.as_deref() {
+            Some(kind) => kinds.push(kind),
+            None => return ComparisonBasis::Distance,
+        }
+    }
+    let first = kinds[0];
+    if kinds.iter().all(|kind| *kind == first) {
+        ComparisonBasis::PlanSession {
+            session_type: first.to_string(),
+        }
+    } else {
+        ComparisonBasis::DifferentJobs
+    }
+}
+
 /// One point of a resampled run.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -758,5 +829,42 @@ mod payload_tests {
         demo.source = "demo".to_string();
         assert_eq!(candidates(&[demo.clone()], 300, true).len(), 1);
         assert_eq!(candidates(&[demo], 300, false).len(), 0);
+    }
+
+    #[test]
+    fn two_runs_with_the_same_plan_intent_are_compared_like_for_like() {
+        let basis = comparison_basis(&[Some("easy".to_string()), Some("easy".to_string())]);
+        assert_eq!(
+            basis,
+            ComparisonBasis::PlanSession {
+                session_type: "easy".to_string()
+            }
+        );
+    }
+
+    #[test]
+    fn two_runs_with_different_plan_intents_had_different_jobs() {
+        let basis = comparison_basis(&[Some("easy".to_string()), Some("tempo".to_string())]);
+        assert_eq!(basis, ComparisonBasis::DifferentJobs);
+    }
+
+    #[test]
+    fn a_run_without_a_plan_intent_falls_back_to_distance() {
+        let basis = comparison_basis(&[Some("tempo".to_string()), None]);
+        assert_eq!(basis, ComparisonBasis::Distance);
+        let both = comparison_basis(&[None, None]);
+        assert_eq!(both, ComparisonBasis::Distance);
+        let none = comparison_basis(&[]);
+        assert_eq!(none, ComparisonBasis::Distance);
+    }
+
+    #[test]
+    fn a_rest_or_a_strength_session_gives_a_run_no_intent() {
+        assert_eq!(plan_intent(Some("easy")), Some("easy".to_string()));
+        assert_eq!(plan_intent(Some("Intervals")), Some("interval".to_string()));
+        assert_eq!(plan_intent(Some("long_run")), Some("long".to_string()));
+        assert_eq!(plan_intent(Some("rest")), None);
+        assert_eq!(plan_intent(Some("strength")), None);
+        assert_eq!(plan_intent(None), None);
     }
 }

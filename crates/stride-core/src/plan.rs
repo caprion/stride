@@ -49,6 +49,24 @@ pub const RUN_SPORTS: [&str; 6] = [
     "track_running",
 ];
 
+/// The canonical session type for a stored one: lower case, trimmed, with
+/// common variants ("intervals", "long_run", "threshold") folded in.
+///
+/// The canonical types that describe a run are `easy`, `long`, `tempo`,
+/// `interval`, `race` and `recovery`. `rest` and `strength` are canonical
+/// too, and describe the absence of a run.
+pub fn canonical_session_type(raw: &str) -> String {
+    let lower = raw.trim().to_ascii_lowercase().replace(['-', ' '], "_");
+    match lower.as_str() {
+        "intervals" | "interval_run" | "repeats" | "reps" | "track" => "interval",
+        "long_run" | "longrun" => "long",
+        "threshold" | "tempo_run" => "tempo",
+        "easy_run" => "easy",
+        other => other,
+    }
+    .to_string()
+}
+
 /// Whether a sport type counts as running for the plan engine.
 pub fn is_run_sport(sport_type: &str) -> bool {
     RUN_SPORTS.contains(&sport_type)
