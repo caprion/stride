@@ -1,0 +1,162 @@
+{
+  "width": 390,
+  "checks": [
+    {
+      "surface": "today",
+      "name": "the bottom bar reads Today · Runs · Progress · Body",
+      "ok": true,
+      "detail": "Today · Runs · Progress · Body"
+    },
+    {
+      "surface": "today",
+      "name": "exactly one call",
+      "ok": true,
+      "detail": "Run 8 km, easy."
+    },
+    {
+      "surface": "today",
+      "name": "one plan line when a plan session exists",
+      "ok": true,
+      "detail": "Your plan says Easy, 8 km. Nothing says otherwise: run it as written."
+    },
+    {
+      "surface": "today",
+      "name": "the guardrail copy is there",
+      "ok": true,
+      "detail": "Your longest run in 30 days was 18 km. Keep today under 20 km and stay conversational."
+    },
+    {
+      "surface": "today",
+      "name": "seven week dots",
+      "ok": true,
+      "detail": "7 dots"
+    },
+    {
+      "surface": "today",
+      "name": "nothing clips at 390px",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "surface": "today",
+      "name": "no chart label is cut off",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "surface": "runs",
+      "name": "the bottom bar reads Today · Runs · Progress · Body",
+      "ok": true,
+      "detail": "Today · Runs · Progress · Body"
+    },
+    {
+      "surface": "runs",
+      "name": "lists the runs",
+      "ok": true,
+      "detail": "8 run(s): Morning easy, Lunch run, Long run"
+    },
+    {
+      "surface": "runs",
+      "name": "says what a run meant",
+      "ok": true,
+      "detail": "the chip is on the card"
+    },
+    {
+      "surface": "runs",
+      "name": "nothing clips at 390px",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "surface": "runs",
+      "name": "no chart label is cut off",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "surface": "progress",
+      "name": "the bottom bar reads Today · Runs · Progress · Body",
+      "ok": true,
+      "detail": "Today · Runs · Progress · Body"
+    },
+    {
+      "surface": "progress",
+      "name": "shows Fitness",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "surface": "progress",
+      "name": "shows Consistency",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "surface": "progress",
+      "name": "shows Best runs",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "surface": "progress",
+      "name": "shows Race range today",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "surface": "progress",
+      "name": "shows Milestones",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "surface": "progress",
+      "name": "nothing clips at 390px",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "surface": "progress",
+      "name": "no chart label is cut off",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "surface": "body",
+      "name": "the bottom bar reads Today · Runs · Progress · Body",
+      "ok": true,
+      "detail": "Today · Runs · Progress · Body"
+    },
+    {
+      "surface": "body",
+      "name": "says \"N of 3 signals in your normal range\"",
+      "ok": true,
+      "detail": "2 of 3 signals in your normal range"
+    },
+    {
+      "surface": "body",
+      "name": "no 0-100 readiness score on the phone",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "surface": "body",
+      "name": "nothing clips at 390px",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "surface": "body",
+      "name": "no chart label is cut off",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "surface": "app",
+      "name": "no console errors",
+      "ok": true,
+      "detail": ""
+    }
+  ],
+  "consoleErrors": []
+}
