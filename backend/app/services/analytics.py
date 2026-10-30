@@ -301,10 +301,8 @@ def personal_records(db: Session) -> list[dict[str, Any]]:
         add("Biggest climb", biggest_climb.elevation_gain_m, biggest_climb, "m")
         longest_time = max(activities, key=lambda a: a.moving_time_s)
         add("Longest time", longest_time.moving_time_s, longest_time, "s")
-        with_hr = [a for a in activities if a.avg_hr]
-        if with_hr:
-            fastest_hr = max(with_hr, key=lambda a: a.avg_hr)
-            add("Fastest avg HR", fastest_hr.avg_hr, fastest_hr, "bpm", better="higher")
+        # No heart-rate "record": the highest average heart rate goes up when
+        # the athlete overheats or overreaches, and a record is an incentive.
         with_cal = [a for a in activities if a.calories]
         if with_cal:
             biggest = max(with_cal, key=lambda a: a.calories)

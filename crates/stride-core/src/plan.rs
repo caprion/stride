@@ -55,7 +55,14 @@ pub fn is_run_sport(sport_type: &str) -> bool {
 }
 
 /// The verdicts a session can get.
-pub const VERDICTS: [&str; 5] = ["hit", "missed_pace", "short", "missed", "substituted"];
+pub const VERDICTS: [&str; 6] = [
+    "hit",
+    "missed_pace",
+    "short",
+    "missed",
+    "substituted",
+    "long",
+];
 
 /// The verdict on one planned session.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -244,24 +251,48 @@ fn pace_of(activity: &Activity) -> Option<f64> {
 
 /// Whether the activity looks like an interval session.
 ///
-/// Either three laps of at least 400 metres with a positive duration, or a
-/// name that says so.
+/// Laps alone are not evidence: a watch's default auto-lap splits every
+/// steady run into kilometre laps. What marks intervals is the *pace*
+/// alternating. Over the laps of 200 metres or more, the spread between the
+/// fastest and slowest lap is at least 15% of the median lap, and splitting
+/// at the middle of that spread, there are at least two fast laps, two slow
+/// laps and three switches between them (a warm-up and a cool-down around a
+/// steady run make only two). A name that says so also counts.
 fn looks_interval(activity: &Activity) -> bool {
-    let long_laps = activity
-        .laps
-        .iter()
-        .filter(|lap| {
-            lap.distance_m.is_some_and(|distance| distance >= 400.0)
-                && lap.duration_s.is_some_and(|duration| duration > 0.0)
-        })
-        .count();
-    if long_laps >= 3 {
-        return true;
-    }
     let name = activity.name.to_lowercase();
-    ["interval", "repeats", "fartlek"]
+    if ["interval", "repeats", "fartlek"]
         .iter()
         .any(|needle| name.contains(needle))
+    {
+        return true;
+    }
+    let paces: Vec<f64> = activity
+        .laps
+        .iter()
+        .filter_map(|lap| match (lap.distance_m, lap.duration_s) {
+            (Some(distance), Some(duration)) if distance >= 200.0 && duration > 0.0 => {
+                Some(duration / (distance / 1000.0))
+            }
+            _ => None,
+        })
+        .collect();
+    if paces.len() < 4 {
+        return false;
+    }
+    let Some(mid) = crate::numeric::median(&paces) else {
+        return false;
+    };
+    let low = paces.iter().copied().fold(f64::INFINITY, f64::min);
+    let high = paces.iter().copied().fold(f64::NEG_INFINITY, f64::max);
+    if mid <= 0.0 || (high - low) / mid < 0.15 {
+        return false;
+    }
+    let split = (low + high) / 2.0;
+    let fast: Vec<bool> = paces.iter().map(|pace| *pace < split).collect();
+    let fast_laps = fast.iter().filter(|is_fast| **is_fast).count();
+    let slow_laps = fast.len() - fast_laps;
+    let switches = fast.windows(2).filter(|pair| pair[0] != pair[1]).count();
+    fast_laps >= 2 && slow_laps >= 2 && switches >= 3
 }
 
 /// Has this session not happened yet?
@@ -353,6 +384,15 @@ pub fn verdict_for(session: &PlanSession, activity: Option<&Activity>, today: &s
             "substituted"
         }
         Some(_) if target != 0.0 && actual.is_some_and(|value| value < target * 0.8) => "short",
+        // Far longer than planned is its own verdict, not a hit: a 9.6 km run
+        // against a 3 km shakeout did not answer the session.
+        Some(_)
+            if target != 0.0
+                && session.session_type != "long"
+                && actual.is_some_and(|value| value > target * 1.3 && value - target >= 2000.0) =>
+        {
+            "long"
+        }
         _ if distance_hit && band == Some(false) => "missed_pace",
         _ if distance_hit => "hit",
         _ => "short",
@@ -466,6 +506,14 @@ pub fn explain_cause(
             )
         }
     };
+    if verdict == "long" {
+        // Nothing physiological explains running further than planned; the
+        // point worth making is the distance itself.
+        return (
+            Some("Ran well past the planned distance; keep the next few days easy.".to_string()),
+            Some(0.0),
+        );
+    }
     let physiology = match physiology {
         Some(physiology) => physiology,
         None => {
@@ -551,10 +599,10 @@ pub fn explain_cause(
     {
         return (
             Some(
-                "No measured factor explains the result; it may reflect a fitness gap or an off-plan effort."
+                "No measured factor explains this one."
                     .to_string(),
             ),
-            Some(0.2),
+            Some(0.0),
         );
     }
 
@@ -953,7 +1001,7 @@ pub fn adherence(matches: &[SessionMatch], extra_sessions: usize) -> Adherence {
                 None
             } else {
                 Some(round_to(
-                    row.hit_sessions as f64 / row.planned_sessions as f64 * 100.0,
+                    row.completed_sessions as f64 / row.planned_sessions as f64 * 100.0,
                     1,
                 ))
             };
@@ -997,8 +1045,14 @@ pub fn adherence(matches: &[SessionMatch], extra_sessions: usize) -> Adherence {
         };
     }
 
+    // Adherence is showing up: the share of due sessions that got a run. How
+    // each run went is the verdict's job, not this percentage's.
+    let completed_due = matches
+        .iter()
+        .filter(|entry| entry.verdict.verdict != "not_yet" && entry.activity.is_some())
+        .count();
     Adherence {
-        overall_pct: Some(round_to(hit_or_missed_pace as f64 / due as f64 * 100.0, 1)),
+        overall_pct: Some(round_to(completed_due as f64 / due as f64 * 100.0, 1)),
         planned_km: round_to(
             sum(&rows.iter().map(|row| row.planned_km).collect::<Vec<_>>()),
             2,
@@ -1200,19 +1254,7 @@ mod tests {
         assert_eq!(matches[0].verdict.adherence_score, Some(90.0));
     }
 
-    #[test]
-    fn an_interval_session_with_three_long_laps_is_a_substitution() {
-        let mut planned = session("tempo", Some(1000.0));
-        planned.session_type = "tempo".to_string();
-        let mut activity = activity(1, "running", 1200.0, "2026-03-02");
-        activity.laps = (1..=3)
-            .map(|index| Lap {
-                lap_index: index,
-                distance_m: Some(400.0),
-                duration_s: Some(100.0),
-                ..Lap::default()
-            })
-            .collect();
+    fn judged(planned: PlanSession, activity: Activity) -> String {
         let inputs = PlanInputs {
             today: "2026-03-20",
             from: "2026-03-01",
@@ -1221,8 +1263,52 @@ mod tests {
             activities: &[activity],
             physiology: &[],
         };
-        let matches = match_sessions(&inputs);
-        assert_eq!(matches[0].verdict.verdict, "substituted");
+        match_sessions(&inputs)[0].verdict.verdict.clone()
+    }
+
+    fn laps(paces_s_km: &[f64]) -> Vec<Lap> {
+        paces_s_km
+            .iter()
+            .enumerate()
+            .map(|(index, pace)| Lap {
+                lap_index: index as i64 + 1,
+                distance_m: Some(1000.0),
+                duration_s: Some(*pace),
+                ..Lap::default()
+            })
+            .collect()
+    }
+
+    #[test]
+    fn a_steady_tempo_with_kilometre_auto_laps_is_a_hit() {
+        // Every steady run with a default 1 km auto-lap has three or more
+        // long laps. That alone must never read as intervals.
+        let planned = session("tempo", Some(8000.0));
+        let mut activity = activity(1, "running", 8000.0, "2026-03-02");
+        activity.laps = laps(&[361.0, 358.0, 359.0, 362.0, 360.0, 357.0, 360.0, 359.0]);
+        assert_eq!(judged(planned, activity), "hit");
+    }
+
+    #[test]
+    fn a_tempo_run_as_alternating_fast_and_slow_laps_is_a_substitution() {
+        let planned = session("tempo", Some(8000.0));
+        let mut activity = activity(1, "running", 8000.0, "2026-03-02");
+        activity.laps = laps(&[400.0, 300.0, 420.0, 300.0, 420.0, 300.0, 420.0, 400.0]);
+        assert_eq!(judged(planned, activity), "substituted");
+    }
+
+    #[test]
+    fn a_run_far_longer_than_a_short_session_is_long_not_hit() {
+        let planned = session("easy", Some(3000.0));
+        let activity = activity(1, "running", 9600.0, "2026-03-02");
+        assert_eq!(judged(planned, activity), "long");
+    }
+
+    #[test]
+    fn a_long_run_that_goes_further_is_still_a_hit() {
+        let planned = session("long", Some(16000.0));
+        let activity = activity(1, "running", 22000.0, "2026-03-02");
+        assert_eq!(judged(planned, activity), "hit");
     }
 
     #[test]

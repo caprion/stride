@@ -53305,16 +53305,6 @@
       "activity_date": "2026-03-09"
      },
      {
-      "label": "Fastest avg HR",
-      "value": 158.0,
-      "display": "158 bpm",
-      "unit": "bpm",
-      "better": "higher",
-      "activity_id": 11,
-      "activity_name": "short effort",
-      "activity_date": "2026-03-06"
-     },
-     {
       "label": "Fastest pace",
       "value": 222.2222222222222,
       "display": "3:42",
@@ -53712,16 +53702,6 @@
       "activity_id": 3,
       "activity_name": "hilly",
       "activity_date": "2026-03-09"
-     },
-     {
-      "label": "Fastest avg HR",
-      "value": 158.0,
-      "display": "158 bpm",
-      "unit": "bpm",
-      "better": "higher",
-      "activity_id": 11,
-      "activity_name": "short effort",
-      "activity_date": "2026-03-06"
      },
      {
       "label": "Fastest pace",
@@ -56406,6 +56386,7 @@
      "short": 1,
      "missed": 3,
      "substituted": 0,
+     "long": 0,
      "bonus": 0,
      "not_yet": 0
     },

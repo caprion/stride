@@ -104,12 +104,13 @@ pub const PARAMETERS: [(&str, &str, &str, &str, &str); 15] = [
 /// The verdicts the plan engine can return.
 ///
 /// The reference: `api/plan.ALL_VERDICTS`.
-pub const ALL_VERDICTS: [&str; 7] = [
+pub const ALL_VERDICTS: [&str; 8] = [
     "hit",
     "missed_pace",
     "short",
     "missed",
     "substituted",
+    "long",
     "bonus",
     "not_yet",
 ];
@@ -1740,6 +1741,7 @@ fn verdict_label(verdict: &str) -> String {
     match verdict {
         "missed_pace" => "missed pace".to_string(),
         "not_yet" => "not yet due".to_string(),
+        "long" => "longer than planned".to_string(),
         other => other.to_string(),
     }
 }
@@ -1985,57 +1987,21 @@ pub fn plan_today(ctx: &Ctx<'_>, query: &Query) -> Result<Value, ApiError> {
 
 /// One sentence of advice, with the reason behind it.
 ///
-/// The reference: `api/plan._recommend`.
+/// The reference: `api/plan._recommend`. Three rules the advice never breaks:
+///
+/// * a session already run today is done: the advice is to recover, not to
+///   "complete" what is behind the athlete;
+/// * a week behind its target is never a reason to run more later: missed
+///   kilometres are not made up, because cramming them is how a single long
+///   run spikes past what the legs are used to;
+/// * only a readiness dip adjusts a session, and it only ever makes it easier.
 fn recommend(
-    ctx: &Ctx<'_>,
+    _ctx: &Ctx<'_>,
     session: &Value,
-    week: Option<&crate::backend::PlanWeekRow>,
+    _week: Option<&crate::backend::PlanWeekRow>,
     today: &str,
     readiness: &Value,
 ) -> Result<(String, String), ApiError> {
-    let mut reasons: Vec<String> = Vec::new();
-
-    let score = readiness.get("score").and_then(Value::as_f64);
-    if let Some(score) = score {
-        if score < 50.0 {
-            let grade = readiness
-                .get("grade")
-                .and_then(Value::as_str)
-                .unwrap_or("unknown");
-            reasons.push(format!("readiness is {:.0}/100 ({grade})", score));
-        }
-    }
-
-    if let Some(week) = week {
-        if let (Some(target_km), Some(start)) = (week.target_km, week.start_date.as_deref()) {
-            let logged: f64 = ctx
-                .backend
-                .activities(&ActivityFilter {
-                    date_from: Some(start.to_string()),
-                    date_to: Some(today.to_string()),
-                    demo_visible: ctx.backend.public_status()?.demo_visible,
-                    ..ActivityFilter::default()
-                })?
-                .iter()
-                .filter(|row| crate::backend::is_run_sport(&row.sport_type))
-                .map(|row| row.distance_m)
-                .sum();
-            let start_date =
-                chrono::NaiveDate::parse_from_str(start, "%Y-%m-%d").unwrap_or(ctx.today);
-            let today_date =
-                chrono::NaiveDate::parse_from_str(today, "%Y-%m-%d").unwrap_or(ctx.today);
-            let elapsed = ((today_date - start_date).num_days() as f64 + 1.0).max(1.0);
-            let expected = target_km * (elapsed / 7.0).min(1.0);
-            if logged / 1000.0 < expected * 0.75 {
-                reasons.push(format!(
-                    "only {:.1} km of this week's {:.0} km is logged",
-                    logged / 1000.0,
-                    target_km
-                ));
-            }
-        }
-    }
-
     let title = session
         .get("title")
         .and_then(Value::as_str)
@@ -2047,6 +2013,29 @@ fn recommend(
         .get("session_type")
         .and_then(Value::as_str)
         .unwrap_or_default();
+
+    if let Some(done) = session.get("activity").filter(|value| !value.is_null()) {
+        if done.get("local_date").and_then(Value::as_str) == Some(today) {
+            let km = done.get("distance_m").and_then(Value::as_f64).unwrap_or(0.0) / 1000.0;
+            return Ok((
+                format!(
+                    "Done for today: {km:.1} km logged. Recover, and let tomorrow take care of itself."
+                ),
+                "Today's session already has a run against it.".to_string(),
+            ));
+        }
+    }
+
+    let mut reasons: Vec<String> = Vec::new();
+    if let Some(score) = readiness.get("score").and_then(Value::as_f64) {
+        if score < 50.0 {
+            let grade = readiness
+                .get("grade")
+                .and_then(Value::as_str)
+                .unwrap_or("unknown");
+            reasons.push(format!("readiness is {:.0}/100 ({grade})", score));
+        }
+    }
 
     if matches!(kind, "rest" | "strength") {
         if let Some(first) = reasons.first() {
@@ -2061,20 +2050,14 @@ fn recommend(
         ));
     }
     if let Some(first) = reasons.first() {
-        let second = reasons
-            .get(1)
-            .map(|reason| format!(" Also, {reason}."))
-            .unwrap_or_default();
         return Ok((
-            format!(
-                "Adjust today's {title} — {first}.{second} Keep it easy and make up the volume later in the week."
-            ),
+            format!("Keep today's {title} easy and on the short side — {first}."),
             format!("Adjusted because {}.", reasons.join("; and ")),
         ));
     }
     Ok((
         format!("Complete the planned {title} as written."),
-        "No readiness dip and the week's volume is on track.".to_string(),
+        "No readiness dip today.".to_string(),
     ))
 }
 

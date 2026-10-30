@@ -296,7 +296,9 @@ def test_adherence_totals_and_histogram(db):
     assert summary["planned_sessions"] == 5
     assert summary["completed_sessions"] == 4
     assert summary["missed_sessions"] == 1
-    assert summary["by_verdict"] == {"hit": 1, "missed_pace": 1, "short": 1, "missed": 1, "substituted": 1}
+    assert summary["by_verdict"] == {"hit": 1, "missed_pace": 1, "short": 1, "missed": 1, "substituted": 1, "long": 0}
+    # Adherence is showing up: four of the five due sessions got a run.
+    assert summary["overall_pct"] == 80.0
     assert sum(summary["by_verdict"].values()) == len(rows)
     for field in ("planned_km", "actual_km", "planned_sessions", "completed_sessions", "missed_sessions"):
         assert sum(row[field] for row in summary["rows"]) == summary[field]
@@ -475,16 +477,13 @@ def test_readiness_baseline_preceding_thirty_days(db):
 
 
 @pytest.mark.parametrize("stress,battery", [(0, 100), (100, 0), (40, 70)])
-def test_readiness_bounds_and_drivers(db, stress, battery):
-    """Protect score bounds and contributions that explain the returned score."""
+def test_stress_and_battery_no_longer_move_readiness(db, stress, battery):
+    """Garmin's stress and Body Battery are not readiness drivers since v1."""
     db.add(DailyPhysiology(date="2026-03-01", stress_avg=stress, body_battery_avg=battery))
     db.flush()
     result = readiness.compute_readiness(db, "2026-03-01")
-    assert 0 <= result["score"] <= 100
-    assert result["score"] == pytest.approx(((100 - stress) + battery) / 2)
-    assert {d["key"] for d in result["drivers"]} == {"stress", "body_battery"}
-    assert all(d["detail"] for d in result["drivers"])
-    assert sum(d["contribution"] for d in result["drivers"]) == pytest.approx(result["score"], abs=0.02)
+    assert result["score"] is None
+    assert result["drivers"] == []
 
 
 # ---------------------------------------------------------------- API shape
@@ -725,3 +724,40 @@ def test_adherence_counts_only_the_active_block(db):
     summary = adherence(db, "2026-06-01", "2026-10-31")
     assert summary["planned_sessions"] == 5
     assert summary["planned_km"] == 25.0
+
+
+# ------------------------------------------------- v1 verdict corrections
+
+
+def _with_laps(activity, paces):
+    from app.models import ActivityLap
+
+    activity.laps = [
+        ActivityLap(lap_index=i + 1, distance_m=1000, duration_s=p) for i, p in enumerate(paces)
+    ]
+    return activity
+
+
+def test_steady_tempo_with_kilometre_auto_laps_is_a_hit(db):
+    """A default 1 km auto-lap must never make a steady tempo read as intervals."""
+    db.add(_session("2026-03-02", kind="tempo", distance=8000))
+    db.add(_with_laps(_activity("2026-03-02", distance=8000, pace=360), [361, 358, 359, 362, 360, 357, 360, 359]))
+    db.flush()
+    assert plan_engine.match_sessions(db, "2026-03-01", "2026-03-03", today="2026-03-20")[0]["verdict"] == "hit"
+
+
+def test_alternating_laps_on_a_tempo_day_are_a_substitution(db):
+    db.add(_session("2026-03-02", kind="tempo", distance=8000))
+    db.add(_with_laps(_activity("2026-03-02", distance=8000, pace=370), [400, 300, 420, 300, 420, 300, 420, 400]))
+    db.flush()
+    assert plan_engine.match_sessions(db, "2026-03-01", "2026-03-03", today="2026-03-20")[0]["verdict"] == "substituted"
+
+
+def test_a_run_far_past_a_short_session_is_long(db):
+    """9.6 km against a 3 km shakeout did not answer the session."""
+    db.add(_session("2026-03-02", kind="easy", distance=3000))
+    db.add(_activity("2026-03-02", distance=9600))
+    db.flush()
+    row = plan_engine.match_sessions(db, "2026-03-01", "2026-03-03", today="2026-03-20")[0]
+    assert row["verdict"] == "long"
+    assert row["cause_confidence"] == 0.0

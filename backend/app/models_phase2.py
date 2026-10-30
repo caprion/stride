@@ -54,6 +54,7 @@ VERDICTS = (
     "short",
     "missed",
     "substituted",
+    "long",
     "bonus",
 )
 
