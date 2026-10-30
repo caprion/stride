@@ -264,21 +264,25 @@ With the listener up and the certificate trusted, a browser reaches the
 desktop at `https://<STRIDE_TLS_HOST>:<STRIDE_TLS_PORT>`.
 
 A browser on the same machine as the desktop is given a session cookie
-automatically. A browser on another device is not, so it has to be paired on
-purpose. **The phone app does not need this** — it has its own database and
-its own Garmin key — but a second browser, or a browser on another machine,
-does.
+automatically. A browser on another device is not, so signing one in is a
+deliberate act by the operator:
 
 ```bash
 ./scripts/prod.sh pair
 ```
 
-That prints a **QR code**. Point the phone's camera at it and the phone is
-connected — one action, once, and it stays connected. The device gets its
-**own** credential, so a lost phone can be revoked on its own in
-**Settings → Connected devices** without touching the machine. The code is
-carried in the URL *fragment*, never the query string, so it never lands in
-an access log; it works **once** and expires in **10 minutes**.
+That prints a **QR code**. Open it in the browser you want to sign in — one
+action, once, and it stays connected. The device gets its **own**
+credential, so it can be revoked on its own in **Settings → Connected
+devices** without touching the machine. The code is carried in the URL
+*fragment*, never the query string, so it never lands in an access log; it
+works **once** and expires in **10 minutes**.
+
+**The phone app never needs any of this.** It has its own database and its
+own Garmin key, and it is signed in from the first pixel: you paste the key
+into one native screen and the data stays on the phone. The pairing code is
+for a *second browser*, on another machine, that wants to read the
+desktop's data — and nothing in the phone's setup asks for one.
 
 Two rules, and the security gate checks both:
 

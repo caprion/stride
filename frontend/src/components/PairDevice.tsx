@@ -118,6 +118,11 @@ export function PairDevice({ initialError = null }: { initialError?: string | nu
               It prints a QR code and the same code in text. It works once and expires in 10
               minutes.
             </p>
+            <p className="mt-2 text-[12px] leading-relaxed text-ink-muted">
+              **The phone app never needs this.** It has its own database and its own Garmin
+              key, and it is signed in from the first pixel. This is for a second browser, on
+              another machine, that wants to read this machine's data.
+            </p>
           </div>
         </div>
 

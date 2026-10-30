@@ -1,8 +1,12 @@
 """Render a pairing code as a QR code in the terminal.
 
-The athlete is looking at the desktop and holding the phone. A QR code
-turns "read this off the screen and type it" into "point the camera at the
-screen" — the difference between a chore and a moment.
+The operator is at the desktop and wants another browser signed in. A QR
+code turns "read this off the screen and type it" into "point the camera
+at the screen" — the difference between a chore and a moment.
+
+**The phone app never needs this.** It has its own database and its own
+Garmin key; it is signed in from the first pixel. This is for a second
+browser, on another machine, that wants to read the desktop's data.
 
 The code is carried in the URL *fragment*, not the query string: a fragment
 is never sent to the server, so it does not land in an access log, and the

@@ -95,8 +95,9 @@ case "${1:-status}" in
     printf '    \033[1;38;5;208m%s\033[0m\n' "$code"
     printf '    \033[2m%s\033[0m\n' "$url"
     echo
-    log "Point the phone's camera at the code, or open that link."
+    log "Open that link in the browser you want to pair."
     log "It works once and expires in 10 minutes."
+    log "The phone app does not need this: it has its own database and its own Garmin key."
     ;;
 
   stop)
