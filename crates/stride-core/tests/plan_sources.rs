@@ -171,7 +171,13 @@ fn the_garmin_plan_matches_the_golden_file() {
         .collect();
     assert_eq!(
         dates,
-        vec!["2026-03-02", "2026-03-04", "2026-03-07", "2026-03-08"]
+        vec![
+            "2026-03-02",
+            "2026-03-04",
+            "2026-03-07",
+            "2026-03-08",
+            "2026-03-09"
+        ]
     );
 }
 
@@ -338,7 +344,10 @@ fn a_workout_without_a_detail_still_becomes_a_session() {
     let sessions = sessions_from_workouts(&scheduled, &[]);
     assert_eq!(sessions.len(), 1);
     assert_eq!(sessions[0].date, "2026-03-07");
-    assert_eq!(sessions[0].session_type, "easy");
+    // The workout says nothing about the kind of session it is, so the kind
+    // is unknown. It is not easy: nobody wrote "easy" down.
+    assert_eq!(sessions[0].session_type, "unknown");
+    assert_ne!(sessions[0].session_type, "easy");
     assert_eq!(sessions[0].title.as_deref(), Some("Trail run"));
     assert_eq!(sessions[0].target_distance_m, None);
 }

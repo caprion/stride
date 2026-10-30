@@ -108,6 +108,11 @@ RUN_SPORTS = (
 )
 
 #: The session types the ``plan_session`` table already knows.
+#:
+#: These are the kinds a plan may *prescribe*. ``unknown`` is not one of
+#: them: it is the absence of a kind, and it is what an imported row that
+#: names no kind of session carries. It is accepted on the import paths and
+#: read as "not known" everywhere else.
 SESSION_TYPES = (
     "easy",
     "long",
@@ -654,9 +659,12 @@ def session_from_workout(
     if "cancel" in status or "delete" in status:
         return None
 
-    session_type = str(detail.get("session_type") or "easy").strip().lower()
+    # A workout that names no kind of session is unknown, not easy. The
+    # scheduled workouts are a prescription, so a kind nobody wrote down
+    # cannot be filled in with a guess.
+    session_type = str(detail.get("session_type") or "unknown").strip().lower()
     if session_type not in SESSION_TYPES:
-        session_type = "easy"
+        session_type = "unknown"
 
     title = detail.get("title") or scheduled.get("name") or None
     return {

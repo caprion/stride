@@ -677,6 +677,14 @@
         "sport": "running",
         "steps": [],
         "status": "scheduled"
+      },
+      {
+        "workout_id": 108,
+        "name": "Unnamed session",
+        "date": "2026-03-09",
+        "sport": "running",
+        "steps": [],
+        "status": "scheduled"
       }
     ],
     "details": [
