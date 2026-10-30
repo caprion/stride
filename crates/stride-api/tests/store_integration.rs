@@ -370,6 +370,47 @@ fn a_different_run_is_still_imported() {
     assert_eq!(list["total"], 2);
 }
 
+/// A run that came in as a file feeds the insights exactly like a run that
+/// was synced: the two answers are the same answer.
+#[test]
+fn an_imported_run_feeds_the_insights() {
+    let today = chrono::NaiveDate::from_ymd_opt(2026, 3, 2).unwrap();
+
+    // The run as it arrives through the import route.
+    let (imported_store, _imported_directory) = store();
+    let imported_store = Arc::new(imported_store);
+    let backend = stride_api::store::backend(imported_store.clone());
+    let api = Api::with_today(Arc::new(CoreBackend::new(backend)), today);
+    let imported = import_file(&api, "mixed_run.fit", &fixture_bytes("mixed_run.fit"));
+    assert_eq!(imported["imported"], 1);
+    let id = imported["activities"][0]["id"].as_i64().expect("an id");
+    let from_file = api
+        .call("GET", "/api/v1/insights/today", None)
+        .expect("the insight answers");
+
+    // The same run as Garmin delivers it.
+    let (synced_store, _synced_directory) = store();
+    let synced_id = synced_run(&synced_store);
+    let synced_store = Arc::new(synced_store);
+    let backend = stride_api::store::backend(synced_store.clone());
+    let api = Api::with_today(Arc::new(CoreBackend::new(backend)), today);
+    let from_sync = api
+        .call("GET", "/api/v1/insights/today", None)
+        .expect("the insight answers");
+
+    // The two runs are the same run, so the two answers are the same answer.
+    assert_eq!(id, synced_id);
+    assert_eq!(from_file, from_sync);
+
+    // And the run is in it: the call is about today, and the run is today's.
+    assert_eq!(from_file["date"], "2026-03-02");
+    assert_eq!(from_file["state"], "done");
+    assert_eq!(from_file["last_run"]["run"]["id"], id);
+    assert_eq!(from_file["last_run"]["run"]["distance_m"], 443.0);
+    assert_eq!(from_file["week"]["runs"], 1);
+    assert_eq!(from_file["week"]["distance_m"], 443.0);
+}
+
 /// A plan document goes in, and the plan tables hold it.
 #[test]
 fn a_plan_document_goes_in_and_comes_out() {
