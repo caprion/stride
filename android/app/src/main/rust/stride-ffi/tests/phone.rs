@@ -523,8 +523,12 @@ fn the_phone_answers_the_four_screens_from_its_own_database() {
         (spike - 13_200.0).abs() < 0.001,
         "the call was {today_call}"
     );
+    // The guardrail is not on every card: it speaks when the distance the
+    // call is about is near the line. This athlete's usual run is 10 km
+    // against a 13.2 km line, so there is nothing to warn about and the
+    // card says nothing.
     assert!(
-        body["guardrail"].as_str().unwrap_or_default().len() > 10,
+        body["guardrail"].is_null(),
         "the guardrail was {today_call}"
     );
     // Body's headline comes from here: the signals and their normals, read
