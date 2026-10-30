@@ -19,6 +19,11 @@
 //! The importer is a pure function over the document: no clock, no
 //! randomness. The only thing it needs from the caller is the year, when
 //! the document does not name one.
+//!
+//! **A row that names no kind of session is unknown.** "Session 4" and
+//! "Zona 3" are not easy runs; the importer says `unknown`, and the plan
+//! engine, the comparison and the screens all read that as "not known"
+//! rather than as an easy run somebody prescribed.
 
 use serde_json::{json, Map, Value};
 
@@ -488,6 +493,12 @@ fn month_number(name: &str) -> Option<u32> {
 }
 
 /// The reference's `_classify`: what kind of session a row describes.
+///
+/// A row whose text names no kind of session at all — "Session 4", "Zona
+/// 3" — is **unknown**, not easy. The importer used to call it "easy",
+/// which is a guess: the plan then said the athlete had an easy run
+/// prescribed, and every verdict, every pace band and every comparison
+/// downstream treated that guess as the athlete's own words.
 fn classify(title: &str, details: &str) -> String {
     let haystack = format!("{title} {details}").to_lowercase();
     let lowered = title.to_lowercase();
@@ -531,7 +542,8 @@ fn classify(title: &str, details: &str) -> String {
     if haystack.contains("recovery") {
         return "recovery".to_string();
     }
-    "easy".to_string()
+    // Nothing in the row names a kind of session, so the kind is unknown.
+    "unknown".to_string()
 }
 
 /// Whether a text contains any of these words, whole.
@@ -636,16 +648,19 @@ fn session(
         parse_pace(Some(&pace_source))
     };
     let pace = if pace == (None, None) {
+        // The phase's pace bands belong to the kinds they were written for.
+        // An unknown session belongs to none of them, so it gets no band:
+        // the easy band would be the same guess, one step later.
         let group = match kind.as_str() {
-            "easy" | "recovery" => "easy",
-            "long" => "long",
-            "tempo" => "tempo",
-            "interval" => "interval",
-            _ => "easy",
+            "unknown" => None,
+            "easy" | "recovery" => Some("easy"),
+            "long" => Some("long"),
+            "tempo" => Some("tempo"),
+            "interval" => Some("interval"),
+            _ => Some("easy"),
         };
-        paces
-            .iter()
-            .find(|(name, _, _)| name == group)
+        group
+            .and_then(|group| paces.iter().find(|(name, _, _)| name == group))
             .map(|(_, low, high)| (*low, *high))
             .unwrap_or((None, None))
     } else {
@@ -1387,9 +1402,12 @@ pub fn parse_plan(
         .iter()
         .map(|session| PlanSessionFields {
             date: session["date"].as_str().unwrap_or_default().to_string(),
+            // A row that names no kind of session is unknown. It is not
+            // easy: nothing in the document said so.
             session_type: session["session_type"]
                 .as_str()
-                .unwrap_or("easy")
+                .filter(|value| !value.trim().is_empty())
+                .unwrap_or("unknown")
                 .to_string(),
             title: session["title"].as_str().map(str::to_string),
             details: session["details"].as_str().map(str::to_string),

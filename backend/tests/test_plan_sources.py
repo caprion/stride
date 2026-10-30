@@ -224,6 +224,31 @@ def test_a_garmin_workout_becomes_a_plan_session():
     assert "the plan you wrote down" in plan["description"]
 
 
+def test_a_workout_without_a_detail_is_a_session_of_an_unknown_kind():
+    """A workout that names no kind of session is unknown, not easy.
+
+    The scheduled workouts are a prescription, so a kind nobody wrote down
+    cannot be filled in with a guess.
+    """
+    scheduled = [
+        {
+            "workout_id": 900,
+            "name": "Trail run",
+            "date": "2026-03-07",
+            "sport": "trail_running",
+            "steps": [],
+            "status": "scheduled",
+        }
+    ]
+    sessions = sessions_from_workouts(scheduled, [])
+    assert len(sessions) == 1
+    assert sessions[0]["date"] == "2026-03-07"
+    assert sessions[0]["session_type"] == "unknown"
+    assert sessions[0]["session_type"] != "easy"
+    assert sessions[0]["title"] == "Trail run"
+    assert sessions[0]["target_distance_m"] is None
+
+
 def test_the_golden_file_is_not_stale():
     """The Rust port is measured against `expected.json`; it must be current."""
     inputs = json.loads((FIXTURES / "inputs.json").read_text())

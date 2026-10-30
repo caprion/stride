@@ -248,6 +248,95 @@
     "warnings": []
    },
    "error": null
+  },
+  {
+   "name": "markdown_unnamed_sessions",
+   "format": "markdown",
+   "content": "# 2026 Spring Block\n\n## Phase table\n\n| Phase | Weeks | Duration | Volume |\n|---|---|---|---|\n| Base | 1 - 4 | (March 2 - March 29) | 30-40 km |\n\n| Phase | Easy | Tempo | Interval | Long |\n|---|---|---|---|---|\n| Base | 6:45-7:15/km | 5:50/km | 3:50/km | 5:15/km |\n\n## Weekly running volume\n\n| Week | Phase | Running | Tuesday | Notes |\n|---|---|---|---|---|\n| 1 | Base | 25 km | Quality | easy |\n\n## Week 1 - Base (March 2 - March 8) 25 km\n\n| Day | Session | Details |\n|---|---|---|\n| Mon | Session 4 | |\n| Tue | Zona 3 | |\n| Wed | Easy 8km | 4:45-5:00/km |\n| Thu | Long 14km | 5:15/km |\n",
+   "expected": {
+    "block": {
+     "name": "Imported training plan",
+     "start_date": "2026-01-05",
+     "end_date": "2026-01-11",
+     "goal": null,
+     "status": "active",
+     "source": "imported"
+    },
+    "phases": [
+     {
+      "name": "Base",
+      "week_start": 1,
+      "week_end": 4,
+      "duration": "(March 2 - March 29)",
+      "target_weekly_km_min": 30.0,
+      "target_weekly_km_max": 40.0,
+      "pace_easy_low": 405,
+      "pace_easy_high": 435,
+      "pace_tempo_low": 350,
+      "pace_tempo_high": 350,
+      "pace_interval_low": 230,
+      "pace_interval_high": 230,
+      "pace_long_low": 315,
+      "pace_long_high": 315,
+      "start_date": null,
+      "end_date": null
+     }
+    ],
+    "weeks": [
+     {
+      "week_number": 1,
+      "start_date": "2026-01-05",
+      "end_date": "2026-01-11",
+      "target_km": 25.0,
+      "key_workout": "easy",
+      "phase_index": 0
+     }
+    ],
+    "sessions": [
+     {
+      "date": "2026-01-05",
+      "session_type": "unknown",
+      "title": "Session 4",
+      "details": null,
+      "target_distance_m": null,
+      "pace_low_s_km": null,
+      "pace_high_s_km": null,
+      "source": "imported"
+     },
+     {
+      "date": "2026-01-06",
+      "session_type": "unknown",
+      "title": "Zona 3",
+      "details": null,
+      "target_distance_m": null,
+      "pace_low_s_km": null,
+      "pace_high_s_km": null,
+      "source": "imported"
+     },
+     {
+      "date": "2026-01-07",
+      "session_type": "easy",
+      "title": "Easy 8km",
+      "details": "4:45-5:00/km",
+      "target_distance_m": 8000.0,
+      "pace_low_s_km": 285,
+      "pace_high_s_km": 300,
+      "source": "imported"
+     },
+     {
+      "date": "2026-01-08",
+      "session_type": "long",
+      "title": "Long 14km",
+      "details": "5:15/km",
+      "target_distance_m": 14000.0,
+      "pace_low_s_km": 315,
+      "pace_high_s_km": 315,
+      "source": "imported"
+     }
+    ],
+    "warnings": []
+   },
+   "error": null
   }
  ]
 }

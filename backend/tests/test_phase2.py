@@ -181,7 +181,9 @@ def test_real_plan_week_nine_weekdays(real_plan):
         ("2026-03-03", "easy"), ("2026-03-05", "interval"),
         ("2026-03-07", "long"), ("2026-03-08", "easy"),
     ]
-    allowed = {"easy", "long", "tempo", "interval", "race", "recovery", "strength", "rest"}
+    # "unknown" is not a kind a plan prescribes: it is what a row that
+    # names no kind of session carries.
+    allowed = {"easy", "long", "tempo", "interval", "race", "recovery", "strength", "rest", "unknown"}
     assert all(s["session_type"] in allowed for s in real_plan["sessions"])
     assert [date.fromisoformat(s["date"]).weekday() for s in sessions] == [1, 3, 5, 6]
 
@@ -255,6 +257,65 @@ def test_import_json():
     assert parsed["block"]["name"] == "JSON campaign"
     assert parsed["sessions"] == [session]
     assert parsed["warnings"] == []
+
+
+def test_a_row_that_names_no_kind_of_session_is_unknown():
+    """An imported row with no recognised keyword is unknown, not easy.
+
+    The importer used to call it "easy", which is a guess: the plan then
+    said the athlete had an easy run prescribed, and everything downstream
+    treated that guess as the athlete's own words.
+    """
+    parsed = import_plan(
+        TINY_PLAN.replace(
+            "| Tue | Easy 5km | 6:45-7:15/km |",
+            "| Tue | Session 4 | |\n| Wed | Zona 3 | |",
+        )
+    )
+    sessions = parsed["sessions"]
+    assert [s["session_type"] for s in sessions] == ["unknown", "unknown"]
+    assert all(s["session_type"] != "easy" for s in sessions)
+    # The phase's pace bands belong to the kinds they were written for, so
+    # a session of an unknown kind gets none of them.
+    assert all(s["pace_low_s_km"] is None for s in sessions)
+    assert all(s["pace_high_s_km"] is None for s in sessions)
+
+
+def test_the_kinds_that_are_named_are_still_named():
+    """The recognised keywords keep the kinds they always had."""
+    parsed = import_plan(
+        TINY_PLAN.replace(
+            "| Tue | Easy 5km | 6:45-7:15/km |",
+            "| Tue | Tempo 5km | 5:50/km |\n"
+            "| Wed | Intervals 5 x 1km | 5:20/km |\n"
+            "| Thu | Long 15km | 6:45/km |\n"
+            "| Fri | Rest | |\n"
+            "| Sat | Race 10km | 4:15/km |",
+        )
+    )
+    assert [s["session_type"] for s in parsed["sessions"]] == [
+        "tempo",
+        "interval",
+        "long",
+        "rest",
+        "race",
+    ]
+
+
+def test_an_imported_session_without_a_kind_is_stored_as_unknown(client, db):
+    """A row that names no kind of session is stored as unknown, not easy."""
+    document = TINY_PLAN.replace(
+        "| Tue | Easy 5km | 6:45-7:15/km |",
+        "| Tue | Session 4 | |",
+    )
+    response = client.post(
+        "/api/v1/plan/import",
+        json={"format": "markdown", "content": document, "name": "Unnamed campaign", "anchor": "none"},
+    )
+    assert response.status_code == 200, response.text
+    payload = response.json()
+    sessions = list(db.scalars(select(PlanSession).where(PlanSession.block_id == payload["block_id"])))
+    assert [s.session_type for s in sessions] == ["unknown"]
 
 
 # --------------------------------------------------------------- plan engine

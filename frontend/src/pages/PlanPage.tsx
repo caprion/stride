@@ -20,6 +20,7 @@ import {
   formatDistanceShort,
   formatPace,
   formatWeekKey,
+  sessionTypeLabel,
 } from '../lib/format'
 import {
   Card,
@@ -69,7 +70,7 @@ const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
 // The weekday names, in the order the week runs.
 const todayKey = () => new Date().toISOString().slice(0, 10)
 const pace = (v: number | null | undefined) => (v == null ? '—' : `${formatPace(v)}/km`)
-const sessionLabel = (s: PlanSessionWithResult) => s.title || s.session_type
+const sessionLabel = (s: PlanSessionWithResult) => s.title || sessionTypeLabel(s.session_type)
 
 /**
  * A date, shifted by days.
@@ -112,7 +113,7 @@ function displaySession(session: PlanSessionWithResult, index: number): DisplayS
   return {
     key: `db-${session.id}-${index}`,
     date: session.date,
-    label: session.title || session.session_type,
+    label: session.title || sessionTypeLabel(session.session_type),
     targetDistance: session.target_distance_m,
     paceLow: session.pace_low_s_km,
     paceHigh: session.pace_high_s_km,
@@ -136,7 +137,7 @@ function displaySourceSession(
   return {
     key: `src-${session.date}-${session.title ?? session.session_type}-${index}`,
     date: session.date,
-    label: session.title || session.session_type,
+    label: session.title || sessionTypeLabel(session.session_type),
     targetDistance: session.target_distance_m,
     paceLow: session.pace_low_s_km,
     paceHigh: session.pace_high_s_km,

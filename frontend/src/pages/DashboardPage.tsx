@@ -17,7 +17,7 @@ import { ArrowRight, HeartPulse, TrendingUp } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { api } from '../lib/api'
 import type { PlanToday } from '../types_phase2'
-import { formatDistance, formatPace } from '../lib/format'
+import { formatDistance, formatPace, sessionTypeLabel } from '../lib/format'
 import { ActivityCard } from '../components/ActivityCard'
 import { ConnectPrompt } from '../components/ConnectPrompt'
 import { TodayCall, TodayCallSkeleton } from '../components/TodayCall'
@@ -51,7 +51,7 @@ function PlannedSession({ data, reconciled }: { data: PlanToday; reconciled: boo
   const session = data.session
   if (!session) return null
   const result = session.result
-  const label = session.title || session.session_type.replace(/_/g, ' ')
+  const label = session.title || sessionTypeLabel(session.session_type)
   return (
     <Card className="mb-5 p-5">
       <div className="flex flex-wrap items-start justify-between gap-4">

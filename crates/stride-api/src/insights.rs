@@ -91,7 +91,15 @@ pub fn today(ctx: &Ctx<'_>) -> Result<Value, ApiError> {
                 .title
                 .clone()
                 .filter(|title| !title.trim().is_empty())
-                .unwrap_or_else(|| session.session_type.replace('_', " ")),
+                .unwrap_or_else(|| {
+                    // A session whose kind is not known has no kind to
+                    // name: "unknown" is not a kind of session.
+                    if session.session_type.trim().eq_ignore_ascii_case("unknown") {
+                        "an unspecified session".to_string()
+                    } else {
+                        session.session_type.replace('_', " ")
+                    }
+                }),
             session_type: session.session_type.clone(),
             target_distance_m: session.target_distance_m,
         });

@@ -2019,13 +2019,7 @@ fn recommend(
     today: &str,
     readiness: &Value,
 ) -> Result<(String, String), ApiError> {
-    let title = session
-        .get("title")
-        .and_then(Value::as_str)
-        .filter(|value| !value.is_empty())
-        .or_else(|| session.get("session_type").and_then(Value::as_str))
-        .unwrap_or("session")
-        .to_string();
+    let title = session_name(session);
     let kind = session
         .get("session_type")
         .and_then(Value::as_str)
@@ -2080,6 +2074,31 @@ fn recommend(
         format!("Complete the planned {title} as written."),
         "No readiness dip today.".to_string(),
     ))
+}
+
+/// The name of a session, for the words the recommendation reads.
+///
+/// A session whose kind is not known is named by its title, or by
+/// "session": "unknown" is not a kind of session, and a sentence that says
+/// "the planned unknown session" reads as one.
+fn session_name(session: &Value) -> String {
+    if let Some(title) = session
+        .get("title")
+        .and_then(Value::as_str)
+        .filter(|title| !title.trim().is_empty())
+    {
+        return title.to_string();
+    }
+    let kind = session
+        .get("session_type")
+        .and_then(Value::as_str)
+        .unwrap_or_default()
+        .trim();
+    if kind.is_empty() || kind.eq_ignore_ascii_case("unknown") {
+        "session".to_string()
+    } else {
+        kind.to_string()
+    }
 }
 
 // -------------------------------------------------------------- physiology

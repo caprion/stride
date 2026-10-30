@@ -612,6 +612,28 @@ no cause (`null`, `null`).
 
 ---
 
+### 7.5 A session whose kind is not known
+
+A session may carry the kind `unknown`: nothing in the imported document
+named a kind of session, so the importer says so rather than guessing
+`easy`.
+
+`unknown` is **not** one of the kinds a plan may prescribe — it is the
+absence of one — so:
+
+* it gives a run no plan intent, and a comparison that has one falls back
+  to distance and says so;
+* it is not `rest`, so a logged absence is not the `hit` a rest day earns;
+* it is not `tempo`, `interval`, `long` or `race`, so no substitution rule
+  and no cause applies to it;
+* the verdict is the distance verdict — `hit`, `missed_pace`, `short` or
+  `missed` — according to what was logged and what the session prescribed.
+
+The import paths accept `unknown`. The kinds a plan may prescribe are the
+eight of `SESSION_TYPES`.
+
+---
+
 ## 8. Comparison rules and tolerance
 
 A port's output is accepted when, for every path in the golden file:
