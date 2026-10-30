@@ -93,6 +93,16 @@ impl Backend for PhoneSync {
         ))
     }
 
+    /// Whether the phone may mint a pairing code.
+    ///
+    /// It may not — but the phone is the machine, so the question "is the
+    /// caller on this machine?" has the answer "yes" here, and the route
+    /// goes on to say the thing that is actually true: the phone has no
+    /// server to pair with.
+    fn may_mint_pairing_code(&self) -> bool {
+        true
+    }
+
     /// The paired devices.
     fn devices(&self) -> Result<Vec<Value>, BackendError> {
         Ok(Vec::new())

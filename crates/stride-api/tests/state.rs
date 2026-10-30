@@ -11,6 +11,49 @@ use std::sync::Arc;
 use serde_json::Value;
 use stride_api::{Api, MemBackend, StateBackend};
 
+/// A pairing code is the operator's console secret, and it is minted on the
+/// machine that runs Stride.
+///
+/// The reference refuses anybody who is not on that machine, and the
+/// security gate checks exactly that over the TLS listener, which is bound
+/// to the operator's address and not to loopback. The router has neither the
+/// peer address nor the `Host` header, so the host answers the question —
+/// and a host that cannot answer it mints nothing.
+#[test]
+fn a_host_that_cannot_tell_who_is_asking_mints_no_pairing_code() {
+    // The desktop's stack: the rows, the state, the network, the domain. The
+    // rows are the bottom layer, and the bottom layer is the one that cannot
+    // tell a caller on the machine from a caller on the network — so it
+    // mints no pairing code at all.
+    let directory = tempdir::TempDir::new("stride-api-pairing").expect("a temporary directory");
+    let path = directory.path().join("stride.db");
+    let store = stride_store::Store::open_and_migrate(&path, b"0123456789abcdef0123456789abcdef")
+        .expect("the store opens");
+    let rows = stride_api::store::backend(Arc::new(store));
+    let state = StateBackend::new(rows);
+    let api = Api::new(Arc::new(state));
+
+    let refused = api
+        .call("GET", "/api/v1/auth/pair-code", None)
+        .expect_err("403");
+    assert_eq!(refused.status, 403);
+    assert_eq!(
+        refused.detail,
+        "A pairing code can only be requested on the machine running Stride."
+    );
+}
+
+/// The console — the in-memory backend — mints one, because it holds
+/// nothing that is not on this machine.
+#[test]
+fn the_console_may_mint_a_pairing_code() {
+    let api = api();
+    let minted = api
+        .call("GET", "/api/v1/auth/pair-code", None)
+        .expect("the code answers");
+    assert!(minted["code"].as_str().is_some_and(|code| code.len() == 9));
+}
+
 /// The router, over an in-memory store and a fresh state.
 fn api() -> Api {
     let backend = StateBackend::new(Arc::new(MemBackend::new()));
@@ -313,4 +356,43 @@ fn the_plan_sources_answer_with_both_plans() {
     assert!(sources["garmin"]["reason"].is_string());
     // The inferred plan is a baseline: it is never a prescription.
     assert_eq!(sources["inferred"]["prescribed"], false);
+}
+
+/// A tiny temporary-directory helper, so the test does not need a crate.
+mod tempdir {
+    use std::path::{Path, PathBuf};
+
+    /// A directory that removes itself when it is dropped.
+    pub struct TempDir {
+        path: PathBuf,
+    }
+
+    impl TempDir {
+        /// Make a directory with a name nobody else is using.
+        pub fn new(prefix: &str) -> std::io::Result<Self> {
+            let mut path = std::env::temp_dir();
+            let unique = format!(
+                "{prefix}-{}-{}",
+                std::process::id(),
+                std::time::SystemTime::now()
+                    .duration_since(std::time::UNIX_EPOCH)
+                    .map(|since| since.as_nanos())
+                    .unwrap_or_default()
+            );
+            path.push(unique);
+            std::fs::create_dir_all(&path)?;
+            Ok(Self { path })
+        }
+
+        /// The directory itself.
+        pub fn path(&self) -> &Path {
+            &self.path
+        }
+    }
+
+    impl Drop for TempDir {
+        fn drop(&mut self) {
+            let _ = std::fs::remove_dir_all(&self.path);
+        }
+    }
 }

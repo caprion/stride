@@ -193,8 +193,14 @@ tasks.register('copyRustLibrary') {
         // Only the core's own library ships. A shared object left over from
         // an earlier build — `libstride_api.so`, say — would be packaged
         // beside it and the app would carry a megabyte it never loads.
-        delete rustJniLibsDir
+        //
+        // **This ABI's directory is cleared, not the whole tree.** The
+        // emulator variant stages its own ABI beside the phone's, and
+        // clearing the whole tree would take the phone's staged core with
+        // it — so a build for the emulator left the release APK with
+        // nothing to be compared against.
         def destination = new File(rustJniLibsDir.get().asFile, targetAbis[0])
+        delete destination
         destination.mkdirs()
         copy {
             from new File(source, 'libuniffi_stride.so')

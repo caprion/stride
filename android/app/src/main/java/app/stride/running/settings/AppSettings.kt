@@ -14,10 +14,27 @@ class AppSettings(context: Context) {
 
     private val preferences = context.getSharedPreferences(NAME, Context.MODE_PRIVATE)
 
-    /** The server URL the WebView loads. Empty means "the bundled app". */
+    /**
+     * The server URL the WebView loads. Empty means "the bundled app".
+     *
+     * **HTTPS only.** The WebView is the app's only surface, and the origin
+     * it loads is the origin the bridge is injected into — so a cleartext
+     * target would put the app's own origin on the wire in the clear. The
+     * build refuses a cleartext URL for the same reason; this is the
+     * runtime half of that rule.
+     */
     var serverUrl: String
         get() = preferences.getString(KEY_SERVER_URL, "") ?: ""
-        set(value) = preferences.edit().putString(KEY_SERVER_URL, value.trim()).apply()
+        set(value) {
+            val trimmed = value.trim()
+            if (trimmed.isNotEmpty() && !trimmed.startsWith("https://")) {
+                // Refused rather than stored: a setting that is not there is
+                // the bundled app, which is the whole app.
+                preferences.edit().remove(KEY_SERVER_URL).apply()
+                return
+            }
+            preferences.edit().putString(KEY_SERVER_URL, trimmed).apply()
+        }
 
     /** How many days a pull covers. */
     var syncDays: Int

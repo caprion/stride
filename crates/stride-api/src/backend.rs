@@ -750,6 +750,27 @@ pub trait Backend: Send + Sync {
     /// Mint a pairing code.
     fn pair_code(&self) -> Result<Value, BackendError>;
 
+    /// Whether this host may mint a pairing code for the caller that is
+    /// asking.
+    ///
+    /// A pairing code is the operator's console secret: it is minted **on
+    /// the machine that runs Stride** and typed into the other device. The
+    /// host is the only layer that knows who is asking — it has the peer
+    /// address and the `Host` header, and the router has neither — so the
+    /// host answers the question.
+    ///
+    /// **The default is no.** A host that has not said otherwise does not
+    /// mint a pairing code, because the alternative is handing a credential
+    /// to whoever asks for it: the reference answers `403` to anybody who is
+    /// not on the machine, and the security gate checks exactly that.
+    ///
+    /// A host that *can* tell a caller on the machine from a caller on the
+    /// network — the desktop can, with the peer address and the `Host`
+    /// header — says so and mints the code for the local caller only.
+    fn may_mint_pairing_code(&self) -> bool {
+        false
+    }
+
     /// Exchange a pairing code for a device credential.
     ///
     /// `None` means "no body": the desktop puts the credential in a cookie

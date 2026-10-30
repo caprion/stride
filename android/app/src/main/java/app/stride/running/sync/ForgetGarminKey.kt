@@ -38,7 +38,14 @@ object ForgetGarminKey {
         run(
             stopScheduledWork = { SyncScheduler.cancel(context) },
             clearEnvelope = { Secrets.forgetGarminKey(context) },
-            clearCoreKey = { StrideCore.setGarminKey("") },
+            clearCoreKey = {
+                // Two things: the copy in the core's memory goes, and the
+                // phone says it is not connected any more. Clearing the copy
+                // is not the same as disconnecting — that is what the key in
+                // the Keystore is for — so the fact is said separately.
+                StrideCore.setGarminKey("")
+                StrideCore.setGarminConnected(false)
+            },
         )
     }
 

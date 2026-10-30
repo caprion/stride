@@ -129,7 +129,8 @@ impl TileBackend {
         // The body is capped while it is read, not after: a hostile or
         // broken upstream cannot make the process buffer it all in memory.
         let mut body = Vec::new();
-        response
+        let mut capped = (&mut response).take(MAX_TILE_BYTES as u64 + 1);
+        capped
             .read_to_end(&mut body)
             .map_err(|_| Error::Unavailable("Map tile unavailable.".to_string()))?;
         if body.len() > MAX_TILE_BYTES {
@@ -448,6 +449,10 @@ impl Backend for TileBackend {
 
     fn pair_code(&self) -> Result<Value, Error> {
         self.inner.pair_code()
+    }
+
+    fn may_mint_pairing_code(&self) -> bool {
+        self.inner.may_mint_pairing_code()
     }
 
     fn pair(&self, code: &str) -> Result<Option<Value>, Error> {

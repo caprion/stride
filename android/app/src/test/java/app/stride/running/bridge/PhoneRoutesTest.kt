@@ -84,4 +84,50 @@ class PhoneRoutesTest {
             PhoneRoutes.decide("DELETE", "/api/v1/auth/garmin/personal-key"),
         )
     }
+
+    /**
+     * The router matches on the path without its query string, so the
+     * decision has to be made on the same thing. A decision made on the raw
+     * path is a decision made on a different route — and a guard that is
+     * wrong in that direction is a guard a `?` turns off.
+     */
+    @Test
+    fun `a query string does not change the route`() {
+        assertEquals(
+            Decision.GarminKeyEntry,
+            PhoneRoutes.decide("POST", "/api/v1/auth/garmin/personal-key?x=1"),
+        )
+        assertEquals(
+            Decision.GarminKeyEntry,
+            PhoneRoutes.decide("POST", "/api/v1/auth/garmin/personal-key/test?x=1"),
+        )
+        assertEquals(
+            Decision.GarminLogin,
+            PhoneRoutes.decide("POST", "/api/v1/auth/garmin/login?x=1"),
+        )
+        assertEquals(
+            Decision.GarminDeveloperKey,
+            PhoneRoutes.decide("POST", "/api/v1/auth/garmin/developer-key?x=1"),
+        )
+        assertEquals(
+            Decision.GarminPull,
+            PhoneRoutes.decide("POST", "/api/v1/sync/run?background=false"),
+        )
+    }
+
+    @Test
+    fun `the route is the path without its query string`() {
+        assertEquals(
+            "/api/v1/auth/garmin/personal-key",
+            PhoneRoutes.routeOf("/api/v1/auth/garmin/personal-key?x=1"),
+        )
+        assertEquals(
+            "/api/v1/auth/garmin/fit-import",
+            PhoneRoutes.routeOf("/api/v1/auth/garmin/fit-import"),
+        )
+        assertEquals(
+            "/api/v1/sync/run",
+            PhoneRoutes.routeOf("/api/v1/sync/run?days=30&background=true"),
+        )
+    }
 }

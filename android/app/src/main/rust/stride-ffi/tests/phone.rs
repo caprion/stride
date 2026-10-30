@@ -354,8 +354,28 @@ fn the_app_can_see_that_garmin_is_connected() {
         "the answer was {status}"
     );
 
-    // The key goes: so does the connection.
+    // The copy in the core's memory goes when the pull is over: the key is
+    // in memory for the length of one pull and no longer.
+    //
+    // **That is not the same as disconnecting.** The key itself lives in the
+    // Keystore, and the phone is still connected: the copy in the memory
+    // was only ever there for the pull. So the connection stays, and the
+    // test says so — a phone that said "not connected" after every pull
+    // would be telling the athlete a lie.
     uniffi_stride::stride_set_garmin_key(String::new());
+    let status = uniffi_stride::stride_call("GET".into(), "/api/v1/auth/status".into(), None);
+    let parsed: Value = serde_json::from_str(&status).expect("the answer is JSON");
+    assert_eq!(
+        parsed["body"]["garmin_connected"], true,
+        "the answer was {status}"
+    );
+    assert_eq!(
+        parsed["body"]["garmin_method"], "personal",
+        "the answer was {status}"
+    );
+
+    // Disconnecting is a separate fact, and it is said separately.
+    uniffi_stride::stride_set_garmin_connected(false);
     let status = uniffi_stride::stride_call("GET".into(), "/api/v1/auth/status".into(), None);
     let parsed: Value = serde_json::from_str(&status).expect("the answer is JSON");
     assert_eq!(

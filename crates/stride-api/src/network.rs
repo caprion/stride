@@ -736,6 +736,10 @@ impl Backend for NetworkBackend {
         self.inner.pair_code()
     }
 
+    fn may_mint_pairing_code(&self) -> bool {
+        self.inner.may_mint_pairing_code()
+    }
+
     fn pair(&self, code: &str) -> Result<Option<Value>, Error> {
         self.inner.pair(code)
     }

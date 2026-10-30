@@ -140,8 +140,10 @@ class SetupRunner(
         Secrets.forgetGarminKey(app)
         SyncScheduler.cancel(app)
         // The core forgets it too: the fact of the connection goes with
-        // the key.
+        // the key. Clearing the copy in the core's memory and saying the
+        // phone is not connected are two things, and both are needed here.
         StrideCore.setGarminKey("")
+        StrideCore.setGarminConnected(false)
         publish(SetupUi(SetupPhase.Idle))
     }
 

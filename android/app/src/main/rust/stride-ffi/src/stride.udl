@@ -35,6 +35,11 @@ namespace stride {
   // The key is in memory for the length of one pull and no longer: the
   // Kotlin shell unwraps it from the Keystore, hands it over for the pull,
   // and clears it again. An empty string clears it.
+  //
+  // **Clearing the key is not disconnecting.** The key lives in the
+  // Keystore; the copy in memory is there for the length of one pull. The
+  // connection is a separate fact, and `stride_set_garmin_connected` is
+  // what says it.
   string stride_set_garmin_key(string api_key);
 
   // Say whether the phone holds a Garmin key.
