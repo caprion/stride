@@ -59460,7 +59460,8 @@
         "pace_s_per_km": 120.04801920768307,
         "elevation": 45.0
        }
-      ]
+      ],
+      "plan_session_type": null
      },
      {
       "id": 2,
@@ -60456,7 +60457,8 @@
         "pace_s_per_km": 333.3333333333333,
         "elevation": 90.0
        }
-      ]
+      ],
+      "plan_session_type": "tempo"
      }
     ],
     "parameters": [
@@ -60566,7 +60568,10 @@
       "format": "duration"
      }
     ],
-    "missing": []
+    "missing": [],
+    "basis": {
+     "kind": "distance"
+    }
    }
   },
   {

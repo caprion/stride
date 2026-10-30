@@ -323,6 +323,11 @@ impl Backend for CoreBackend {
         }
         found.sort_by(|a, b| a.local_date.cmp(&b.local_date).then(a.id.cmp(&b.id)));
 
+        // The plan intent of each run: the canonical session type of the
+        // plan session it was matched to. It is what decides whether two
+        // runs may be compared like for like.
+        let intents = self.plan_intents(&found)?;
+
         let mut runs = Vec::with_capacity(found.len());
         for row in &found {
             let laps = self.inner.activity_laps(row.id)?;
@@ -348,11 +353,18 @@ impl Backend for CoreBackend {
                 "calories": row.calories,
                 "pace_s_per_km": pace_s_per_km(row.distance_m, row.moving_time_s),
                 "has_geo": row.has_geo(),
+                "plan_session_type": intents.get(&row.id).cloned(),
                 "values": values,
                 "profile": profile,
             }));
         }
-        Ok(json!({ "runs": runs, "missing": missing }))
+        let basis = stride_core::comparison_basis(
+            &found
+                .iter()
+                .map(|row| intents.get(&row.id).cloned())
+                .collect::<Vec<_>>(),
+        );
+        Ok(json!({ "runs": runs, "missing": missing, "basis": basis }))
     }
 
     fn compare_candidates(&self, limit: usize) -> Result<Vec<Value>, BackendError> {
@@ -744,6 +756,38 @@ impl Backend for CoreBackend {
 }
 
 impl CoreBackend {
+    /// The plan intent of each of these activities.
+    ///
+    /// A run's intent is the canonical session type of the plan session it
+    /// was matched to — `easy`, `long`, `tempo`, `interval`, `race` or
+    /// `recovery`. A run that was not matched to a session, or that was
+    /// matched to a rest or strength session, has no intent: nothing says
+    /// what the run was for.
+    ///
+    /// The plan is matched over the range the runs fall in, so a run from
+    /// last year is matched against the session it was planned for.
+    fn plan_intents(
+        &self,
+        rows: &[ActivityRow],
+    ) -> Result<BTreeMap<i64, String>, BackendError> {
+        let mut intents: BTreeMap<i64, String> = BTreeMap::new();
+        let dates: Vec<&str> = rows
+            .iter()
+            .map(|row| row.local_date.as_str())
+            .filter(|date| !date.is_empty())
+            .collect();
+        let (Some(from), Some(to)) = (dates.iter().min(), dates.iter().max()) else {
+            return Ok(intents);
+        };
+        for (session, activity, _) in self.plan_matches(from, to)? {
+            let Some(activity) = activity else { continue };
+            if let Some(intent) = stride_core::plan_intent(Some(&session.session_type)) {
+                intents.insert(activity.id, intent);
+            }
+        }
+        Ok(intents)
+    }
+
     /// The inputs of the plan engine, as owned data.
     fn plan_inputs(&self, from: &str, to: &str) -> Result<PlanData, BackendError> {
         let sessions: Vec<stride_core::PlanSession> = self

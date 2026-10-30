@@ -104,10 +104,14 @@ function summarize(runs: CompareRun[], parameters: CompareParameter[]) {
     // a drift of 0.1 vs 0.4 bpm). State the absolute difference instead.
     const magnitude = Math.abs(b) >= 5 ? Math.abs((a - b) / b) * 100 : null
     const unit = parameter.unit ? ` ${parameter.unit}` : ''
+    // The detail is written from the winner's side. The first run's value
+    // is `a`, so a sentence about the *second* run that says "worse" is
+    // about the wrong run: "Evening run had the stronger average pace
+    // (2.5 /km worse than Morning run)" reads as a contradiction.
     const detail =
       magnitude !== null && magnitude >= 1
-        ? `${Math.round(magnitude)}% ${better ? 'better' : 'behind'}`
-        : `${round(difference, 1)}${unit} ${better ? 'better' : 'worse'}`
+        ? `${Math.round(magnitude)}% better`
+        : `${round(difference, 1)}${unit} better`
     const winner = better ? runNames[0] : runNames[1]
     const other = better ? runNames[1] : runNames[0]
     observations.push(
@@ -178,12 +182,33 @@ export default function ComparePage() {
 
   // "Strongest" only means something between runs with the same purpose. A
   // time trial beats an easy run on pace by design; marking it teaches
-  // faster-is-better on the page a runner opens after easy weeks. Without
-  // knowing each run's intent, distance within 25% is the proxy: when the
-  // runs differ more than that, nothing is marked.
+  // faster-is-better on the page a runner opens after easy weeks.
+  //
+  // The plan says what each run was for, when the plan knows: two easy runs
+  // can be marked, an easy run and a time trial cannot. Without that, the
+  // distance is the proxy: within 25% of each other, the runs are close
+  // enough that the difference is the runner's, and nothing is marked when
+  // they are not.
+  const basis = comparison?.basis ?? { kind: 'distance' as const }
   const distances = runs.map((run) => run.distance_m).filter((d) => d > 0)
-  const comparable =
+  const similarDistance =
     distances.length >= 2 && Math.max(...distances) <= Math.min(...distances) * 1.25
+  const comparable =
+    basis.kind === 'plan_session'
+      ? true
+      : basis.kind === 'different_jobs'
+        ? false
+        : similarDistance
+  const basisNote = useMemo(() => {
+    switch (basis.kind) {
+      case 'plan_session':
+        return `Compared as ${basis.session_type} sessions: the same kind of run, so the stronger one is marked.`
+      case 'different_jobs':
+        return 'These runs were planned as different kinds of session, so nothing is marked as strongest: one of them was always going to be faster.'
+      default:
+        return 'Compared by distance; no plan intent for this run.'
+    }
+  }, [basis])
   const bestValues = (parameter: CompareParameter) => {
     if (!comparable || parameter.better === 'neutral') return new Set<number>()
     const values = runs
@@ -285,9 +310,7 @@ export default function ComparePage() {
                 <CardHeader
                   title="Run comparison"
                   subtitle={
-                    comparable
-                      ? 'Green marks the strongest value, between runs of a similar distance.'
-                      : 'These runs differ in distance, so nothing is marked as strongest: they had different jobs.'
+                    comparable ? `Green marks the strongest value. ${basisNote}` : basisNote
                   }
                 />
                 <div className="overflow-x-auto">
@@ -306,6 +329,11 @@ export default function ComparePage() {
                             <span className="mt-0.5 block max-w-[180px] truncate normal-case tracking-normal text-ink-soft">
                               {run.name}
                             </span>
+                            {run.plan_session_type ? (
+                              <span className="mt-0.5 block text-[10px] font-medium normal-case tracking-normal text-ink-faint">
+                                planned: {run.plan_session_type}
+                              </span>
+                            ) : null}
                           </th>
                         ))}
                       </tr>

@@ -619,7 +619,7 @@ pub fn plan_line(state: &str, planned: &Planned, spike_limit_m: Option<f64>) -> 
     };
     // Normalise the stored type so a hand-written or third-party plan's
     // "Intervals" or "long_run" reads the same as the canonical "interval".
-    let kind = normalize_session_type(&planned.session_type);
+    let kind = crate::plan::canonical_session_type(&planned.session_type);
     if kind == "rest" {
         return if state == "done" {
             "Your plan said rest. Today's run was extra; keep tomorrow easy.".to_string()
@@ -645,20 +645,6 @@ pub fn plan_line(state: &str, planned: &Planned, spike_limit_m: Option<f64>) -> 
             _ => format!("Your plan says {what}. Nothing says otherwise: run it as written."),
         },
     }
-}
-
-/// The canonical session type for a stored one: lower case, trimmed, with
-/// common variants ("intervals", "long_run", "threshold") folded in.
-fn normalize_session_type(raw: &str) -> String {
-    let lower = raw.trim().to_ascii_lowercase().replace(['-', ' '], "_");
-    match lower.as_str() {
-        "intervals" | "interval_run" | "repeats" | "reps" | "track" => "interval",
-        "long_run" | "longrun" => "long",
-        "threshold" | "tempo_run" => "tempo",
-        "easy_run" => "easy",
-        other => return other.to_string(),
-    }
-    .to_string()
 }
 
 /// The latest run, with its story.

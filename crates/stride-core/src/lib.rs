@@ -53,9 +53,9 @@ pub mod plan_sources;
 pub mod readiness;
 
 pub use comparison::{
-    candidates, compare, duration_label, profile_for, run_payload, value_for, values_for,
-    Candidate, Comparison, Parameter, ParameterComparison, ProfilePoint, RunPayload, Winner,
-    CANDIDATE_SPORTS, PROFILE_POINTS,
+    candidates, compare, comparison_basis, duration_label, plan_intent, profile_for, run_payload,
+    value_for, values_for, Candidate, Comparison, ComparisonBasis, Parameter, ParameterComparison,
+    ProfilePoint, RunPayload, Winner, CANDIDATE_SPORTS, PROFILE_POINTS, RUN_INTENT_TYPES,
 };
 pub use date::Date;
 pub use fingerprint::{
@@ -69,10 +69,10 @@ pub use model::{
 };
 pub use ordered::OrderedMap;
 pub use plan::{
-    adherence, explain_cause, is_run_sport, match_sessions, today_plan, verdict_for,
-    verdict_for_source, week_plan, Adherence, AdherenceRow, CauseInputs, PlanInputs, SessionMatch,
-    SessionRow, TodayInput, TodayPlan, Verdict, WeekPlan, WeekSummary, WeekTarget, NOT_YET_DUE,
-    RUN_SPORTS as PLAN_RUN_SPORTS,
+    adherence, canonical_session_type, explain_cause, is_run_sport, match_sessions, today_plan,
+    verdict_for, verdict_for_source, week_plan, Adherence, AdherenceRow, CauseInputs, PlanInputs,
+    SessionMatch, SessionRow, TodayInput, TodayPlan, Verdict, WeekPlan, WeekSummary, WeekTarget,
+    NOT_YET_DUE, RUN_SPORTS as PLAN_RUN_SPORTS,
 };
 pub use plan_sources::{
     baseline_verdict, infer_plan, normalise_date, session_from_workout, sessions_from_workouts,
