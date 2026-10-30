@@ -228,3 +228,117 @@ def test_compare_endpoint_caps_the_number_of_runs(client):
     response = client.get(f"/api/v1/compare?ids={ids}")
     assert response.status_code == 200
     assert len(response.json()["runs"]) <= 8
+
+
+# ------------------------------------------------------------------- basis
+
+
+def test_the_basis_of_a_comparison_follows_the_plan_intent():
+    """Protect the basis: like for like, different jobs, or distance."""
+    assert comparison.comparison_basis(["easy", "easy"]) == {
+        "kind": "plan_session",
+        "session_type": "easy",
+    }
+    assert comparison.comparison_basis(["easy", "tempo"]) == {"kind": "different_jobs"}
+    assert comparison.comparison_basis(["tempo", None]) == {"kind": "distance"}
+    assert comparison.comparison_basis([None, None]) == {"kind": "distance"}
+    assert comparison.comparison_basis([]) == {"kind": "distance"}
+
+
+def test_a_rest_or_a_strength_session_gives_a_run_no_intent():
+    """Protect the intent: only a run's session says what the run was for."""
+    assert comparison.plan_intent("easy") == "easy"
+    assert comparison.plan_intent("Intervals") == "interval"
+    assert comparison.plan_intent("long_run") == "long"
+    assert comparison.plan_intent("threshold") == "tempo"
+    assert comparison.plan_intent("rest") is None
+    assert comparison.plan_intent("strength") is None
+    assert comparison.plan_intent(None) is None
+
+
+def test_two_runs_planned_as_the_same_session_are_compared_like_for_like(db):
+    """Protect the plan-matched case: the basis is the session, not the distance."""
+    from app.models_phase2 import PlanBlock, PlanSession
+
+    first = _make_activity(db, activity_id=9201, when="2026-02-01")
+    second = _make_activity(db, activity_id=9202, when="2026-02-03")
+    db.add(
+        PlanBlock(
+            id=920,
+            name="Block",
+            status="active",
+            start_date="2026-02-01",
+            end_date="2026-02-28",
+        )
+    )
+    for index, when in enumerate(("2026-02-01", "2026-02-03"), start=1):
+        db.add(
+            PlanSession(
+                id=920 + index,
+                block_id=920,
+                date=when,
+                title="Easy",
+                session_type="easy",
+                target_distance_m=10000.0,
+            )
+        )
+    db.flush()
+    # The plan engine reads the start time as a timestamp, so the rows are
+    # read back rather than taken from the objects just built.
+    db.refresh(first)
+    db.refresh(second)
+
+    result = comparison.compare(db, [first.id, second.id])
+    assert result["basis"] == {"kind": "plan_session", "session_type": "easy"}
+    assert [run["plan_session_type"] for run in result["runs"]] == ["easy", "easy"]
+
+
+def test_two_runs_planned_as_different_sessions_are_not_compared(db):
+    """Protect the different-jobs case: nothing may be marked as strongest."""
+    from app.models_phase2 import PlanBlock, PlanSession
+
+    first = _make_activity(db, activity_id=9203, when="2026-02-01")
+    second = _make_activity(db, activity_id=9204, when="2026-02-03")
+    db.add(
+        PlanBlock(
+            id=921,
+            name="Block",
+            status="active",
+            start_date="2026-02-01",
+            end_date="2026-02-28",
+        )
+    )
+    db.add(
+        PlanSession(
+            id=921,
+            block_id=921,
+            date="2026-02-01",
+            title="Easy",
+            session_type="easy",
+            target_distance_m=10000.0,
+        )
+    )
+    db.add(
+        PlanSession(
+            id=922,
+            block_id=921,
+            date="2026-02-03",
+            title="Tempo",
+            session_type="tempo",
+            target_distance_m=10000.0,
+        )
+    )
+    db.flush()
+    db.refresh(first)
+    db.refresh(second)
+
+    result = comparison.compare(db, [first.id, second.id])
+    assert result["basis"] == {"kind": "different_jobs"}
+
+
+def test_a_run_without_a_plan_session_falls_back_to_distance(db):
+    """Protect the fallback: no plan intent means distance is the proxy."""
+    activity = _make_activity(db, activity_id=9205)
+    result = comparison.compare(db, [activity.id])
+    assert result["basis"] == {"kind": "distance"}
+    assert result["runs"][0]["plan_session_type"] is None

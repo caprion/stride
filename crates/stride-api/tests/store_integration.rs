@@ -228,6 +228,189 @@ fn a_fit_file_goes_in_and_comes_out() {
     assert_eq!(again["activities"][0]["created"], false);
 }
 
+// ------------------------------------------------------- the FIT import
+//
+// A run that is already in the history is not written twice, and a run that
+// came in as a file feeds the insights exactly like a run that was synced.
+
+/// The bytes of one golden fixture.
+fn fixture_bytes(name: &str) -> Vec<u8> {
+    let path = std::path::Path::new("../../backend/tests/golden/fixtures").join(name);
+    std::fs::read(&path).unwrap_or_else(|error| panic!("cannot read {}: {error}", path.display()))
+}
+
+/// Import one file through the route, and return the route's answer.
+fn import_file(api: &Api, name: &str, bytes: &[u8]) -> serde_json::Value {
+    api.call(
+        "POST",
+        "/api/v1/auth/garmin/fit-import",
+        Some(&format!(
+            r#"{{"files": [{{"filename": "{name}", "content_base64": "{}"}}]}}"#,
+            stride_api::util::base64_encode(bytes)
+        )),
+    )
+    .expect("the import answers")
+}
+
+/// The run as Garmin delivers it: the same run the file holds, under the
+/// identity Garmin gave it.
+fn synced_run(store: &Store) -> i64 {
+    let activity = Activity {
+        source: "garmin".to_string(),
+        external_id: "16786616153".to_string(),
+        name: "mixed run".to_string(),
+        sport_type: "running".to_string(),
+        start_time: Utc.with_ymd_and_hms(2026, 3, 2, 5, 30, 0).unwrap(),
+        local_date: "2026-03-02".to_string(),
+        day_of_week: Some("Monday".to_string()),
+        distance_m: 443.0,
+        moving_time_s: 150.0,
+        elapsed_time_s: 170.0,
+        elevation_gain_m: 0.0,
+        avg_hr: Some(142.0),
+        max_hr: Some(155.0),
+        calories: Some(210.0),
+        avg_cadence: Some(78.0),
+        max_cadence: Some(80.0),
+        running_time_s: Some(139.0),
+        walking_time_s: Some(10.0),
+        stopped_time_s: Some(20.0),
+        running_distance_m: Some(426.8),
+        device: Some("Forerunner 265".to_string()),
+        ..Activity::default()
+    };
+    store
+        .upsert_activity(&activity)
+        .expect("the run is written")
+}
+
+/// The same file imported twice is the same row, updated in place.
+#[test]
+fn the_same_file_twice_is_one_run() {
+    let (store, _directory) = store();
+    let store = Arc::new(store);
+    let backend = stride_api::store::backend(store.clone());
+    let api = Api::with_today(
+        Arc::new(CoreBackend::new(backend)),
+        chrono::NaiveDate::from_ymd_opt(2026, 3, 2).unwrap(),
+    );
+
+    let bytes = fixture_bytes("mixed_run.fit");
+    let first = import_file(&api, "mixed_run.fit", &bytes);
+    assert_eq!(first["imported"], 1);
+    assert_eq!(first["activities"][0]["created"], true);
+    assert_eq!(first["duplicates"].as_array().map(Vec::len), Some(0));
+
+    let second = import_file(&api, "mixed_run.fit", &bytes);
+    // The same run, updated in place: not a second run, and not a duplicate.
+    assert_eq!(second["imported"], 1);
+    assert_eq!(second["activities"][0]["id"], first["activities"][0]["id"]);
+    assert_eq!(second["activities"][0]["created"], false);
+    assert_eq!(second["duplicates"].as_array().map(Vec::len), Some(0));
+
+    let list = api
+        .call("GET", "/api/v1/activities", None)
+        .expect("the list answers");
+    assert_eq!(list["total"], 1);
+}
+
+/// The run that was synced from Garmin and the file exported from the watch
+/// are one run.
+#[test]
+fn a_synced_run_and_its_file_are_one_run() {
+    let (store, _directory) = store();
+    let id = synced_run(&store);
+    let store = Arc::new(store);
+    let backend = stride_api::store::backend(store.clone());
+    let api = Api::with_today(
+        Arc::new(CoreBackend::new(backend)),
+        chrono::NaiveDate::from_ymd_opt(2026, 3, 2).unwrap(),
+    );
+
+    let bytes = fixture_bytes("mixed_run.fit");
+    let imported = import_file(&api, "mixed_run.fit", &bytes);
+    assert_eq!(imported["imported"], 0);
+    assert_eq!(imported["activities"].as_array().map(Vec::len), Some(0));
+    let duplicates = imported["duplicates"].as_array().expect("the duplicates");
+    assert_eq!(duplicates.len(), 1);
+    assert_eq!(duplicates[0]["filename"], "mixed_run.fit");
+    assert_eq!(duplicates[0]["id"], id);
+    assert_eq!(duplicates[0]["name"], "mixed run");
+    assert_eq!(duplicates[0]["date"], "2026-03-02");
+
+    // One run in the history: the one Garmin delivered.
+    let list = api
+        .call("GET", "/api/v1/activities", None)
+        .expect("the list answers");
+    assert_eq!(list["total"], 1);
+    assert_eq!(list["items"][0]["id"], id);
+}
+
+/// Two runs of the same week are two runs.
+#[test]
+fn a_different_run_is_still_imported() {
+    let (store, _directory) = store();
+    let store = Arc::new(store);
+    let backend = stride_api::store::backend(store.clone());
+    let api = Api::with_today(
+        Arc::new(CoreBackend::new(backend)),
+        chrono::NaiveDate::from_ymd_opt(2026, 3, 3).unwrap(),
+    );
+
+    let first = import_file(&api, "mixed_run.fit", &fixture_bytes("mixed_run.fit"));
+    let second = import_file(&api, "hr_gps_run.fit", &fixture_bytes("hr_gps_run.fit"));
+    assert_eq!(first["imported"], 1);
+    assert_eq!(second["imported"], 1);
+    assert_eq!(second["duplicates"].as_array().map(Vec::len), Some(0));
+    assert_ne!(second["activities"][0]["id"], first["activities"][0]["id"]);
+
+    let list = api
+        .call("GET", "/api/v1/activities", None)
+        .expect("the list answers");
+    assert_eq!(list["total"], 2);
+}
+
+/// A run that came in as a file feeds the insights exactly like a run that
+/// was synced: the two answers are the same answer.
+#[test]
+fn an_imported_run_feeds_the_insights() {
+    let today = chrono::NaiveDate::from_ymd_opt(2026, 3, 2).unwrap();
+
+    // The run as it arrives through the import route.
+    let (imported_store, _imported_directory) = store();
+    let imported_store = Arc::new(imported_store);
+    let backend = stride_api::store::backend(imported_store.clone());
+    let api = Api::with_today(Arc::new(CoreBackend::new(backend)), today);
+    let imported = import_file(&api, "mixed_run.fit", &fixture_bytes("mixed_run.fit"));
+    assert_eq!(imported["imported"], 1);
+    let id = imported["activities"][0]["id"].as_i64().expect("an id");
+    let from_file = api
+        .call("GET", "/api/v1/insights/today", None)
+        .expect("the insight answers");
+
+    // The same run as Garmin delivers it.
+    let (synced_store, _synced_directory) = store();
+    let synced_id = synced_run(&synced_store);
+    let synced_store = Arc::new(synced_store);
+    let backend = stride_api::store::backend(synced_store.clone());
+    let api = Api::with_today(Arc::new(CoreBackend::new(backend)), today);
+    let from_sync = api
+        .call("GET", "/api/v1/insights/today", None)
+        .expect("the insight answers");
+
+    // The two runs are the same run, so the two answers are the same answer.
+    assert_eq!(id, synced_id);
+    assert_eq!(from_file, from_sync);
+
+    // And the run is in it: the call is about today, and the run is today's.
+    assert_eq!(from_file["date"], "2026-03-02");
+    assert_eq!(from_file["state"], "done");
+    assert_eq!(from_file["last_run"]["run"]["id"], id);
+    assert_eq!(from_file["last_run"]["run"]["distance_m"], 443.0);
+    assert_eq!(from_file["week"]["runs"], 1);
+    assert_eq!(from_file["week"]["distance_m"], 443.0);
+}
+
 /// A plan document goes in, and the plan tables hold it.
 #[test]
 fn a_plan_document_goes_in_and_comes_out() {

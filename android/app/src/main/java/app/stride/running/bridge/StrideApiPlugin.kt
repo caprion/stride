@@ -71,6 +71,23 @@ class StrideApiPlugin : Plugin() {
                 // tested; the side effects live here.
                 val decision = PhoneRoutes.decide(method, path)
 
+                // A phone with no screen lock is a phone anyone can pick up.
+                // Real data — pulled runs, imported files — does not land on
+                // one.
+                //
+                // The check is **here**, before the pull is queued and
+                // before the key is handed to the core. It used to sit
+                // further down, after both of those had happened, which
+                // made the refusal a formality: the pull was already in
+                // WorkManager's queue and the key was already in the
+                // core's memory by the time the request was turned away.
+                if (PhoneRoutes.writesRealData(decision, path) &&
+                    !DeviceCredential.hasCredential(context)
+                ) {
+                    call.reject(context.getString(R.string.screen_lock_required), "403")
+                    return@execute
+                }
+
                 if (decision == PhoneRoutes.Decision.GarminKeyEntry) {
                     // The Garmin key never enters the WebView.
                     //
@@ -171,14 +188,8 @@ class StrideApiPlugin : Plugin() {
 
                 // A phone with no screen lock is a phone anyone can pick up.
                 // Real data — pulled runs, imported files — does not land on
-                // one.
-                val writesRealData =
-                    decision == PhoneRoutes.Decision.GarminPull ||
-                        path == "/api/v1/auth/garmin/fit-import"
-                if (writesRealData && !DeviceCredential.hasCredential(context)) {
-                    call.reject(context.getString(R.string.screen_lock_required), "403")
-                    return@execute
-                }
+                // one. The rule is checked above, before anything was
+                // queued or handed over.
                 val isLogout = method.equals("POST", ignoreCase = true) &&
                     path == "/api/v1/auth/garmin/logout"
 

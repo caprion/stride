@@ -199,8 +199,8 @@
       "distance_delta_m": 32.1,
       "pace_delta_s_km": 2177.0077552779,
       "adherence_score": 60.0,
-      "cause": "No measured factor explains the result; it may reflect a fitness gap or an off-plan effort.",
-      "cause_confidence": 0.2
+      "cause": "No measured factor explains this one.",
+      "cause_confidence": 0.0
     },
     {
       "session": {
@@ -255,8 +255,8 @@
       "distance_delta_m": 17.0,
       "pace_delta_s_km": 263.6680613668,
       "adherence_score": 69.1,
-      "cause": "No measured factor explains the result; it may reflect a fitness gap or an off-plan effort.",
-      "cause_confidence": 0.2
+      "cause": "No measured factor explains this one.",
+      "cause_confidence": 0.0
     },
     {
       "session": {
@@ -344,7 +344,7 @@
     }
   ],
   "adherence": {
-    "overall_pct": 72.7,
+    "overall_pct": 81.8,
     "planned_km": 11.3,
     "actual_km": 6.49,
     "planned_sessions": 11,
@@ -357,7 +357,8 @@
       "missed_pace": 1,
       "short": 1,
       "missed": 1,
-      "substituted": 1
+      "substituted": 1,
+      "long": 0
     },
     "rows": [
       {
@@ -371,7 +372,7 @@
         "missed_sessions": 0,
         "hit_sessions": 6,
         "delta_km": 0.15,
-        "adherence_pct": 85.7
+        "adherence_pct": 100.0
       },
       {
         "week_key": "2026-W11",

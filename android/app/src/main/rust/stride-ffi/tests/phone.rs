@@ -427,3 +427,190 @@ fn the_time_of_the_last_pull_survives_in_the_phone_database() {
     assert_eq!(items[0]["activities_found"], 160, "the log was {runs}");
     assert_eq!(items[0]["status"], "ok", "the log was {runs}");
 }
+
+/// The four screens the phone has: Today, Runs, Progress, Body.
+///
+/// They read four routes, and all four are answered by the phone's own
+/// database — there is no server behind them. This test writes three
+/// synthetic runs and a month of synthetic recovery rows into that
+/// database, and then asks the core for them the way the WebView does.
+///
+/// It is the phone's end-to-end check: the data the screens draw comes out
+/// of the phone, not out of a fixture the WebView was handed.
+#[test]
+fn the_phone_answers_the_four_screens_from_its_own_database() {
+    let _guard = lock();
+    let dir = TempDir::new("screens");
+    let answer = uniffi_stride::stride_open(dir.db(), key_hex(23));
+    assert!(answer.contains("\"ok\":true"), "the answer was {answer}");
+
+    // The core counts the days from UTC, so the test does too.
+    let today = chrono::Utc::now().date_naive();
+    let day = |offset: i64| {
+        (today - chrono::Duration::days(offset))
+            .format("%Y-%m-%d")
+            .to_string()
+    };
+
+    {
+        let store = Store::open(std::path::Path::new(&dir.db()), &[23u8; 32])
+            .expect("the store could not be opened");
+
+        // Three runs: yesterday, three days ago and five days ago.
+        for (offset, distance) in [(1i64, 10_000.0), (3, 12_000.0), (5, 8_000.0)] {
+            let mut run = a_run();
+            run.external_id = format!("run-{offset}");
+            run.local_date = day(offset);
+            run.start_time = chrono::Utc::now() - chrono::Duration::days(offset);
+            run.distance_m = distance;
+            store
+                .upsert_activity(&run)
+                .expect("the run was not written");
+        }
+
+        // A month of nights, so last night has a baseline to be read
+        // against: seven readings are the least a baseline can be.
+        for offset in 0..31 {
+            let night = stride_store::model::DailyPhysiology {
+                date: day(offset),
+                sleep_s: Some(27_000.0),
+                hrv_ms: Some(60.0),
+                resting_hr: Some(48.0),
+                ..Default::default()
+            };
+            store
+                .upsert_physiology(&night)
+                .expect("the night was not written");
+        }
+    }
+
+    // ------------------------------------------------------------ Today
+    let today_call =
+        uniffi_stride::stride_call("GET".into(), "/api/v1/insights/today".into(), None);
+    let parsed: Value = serde_json::from_str(&today_call).expect("the answer is JSON");
+    assert_eq!(parsed["ok"], true, "the answer was {today_call}");
+    let body = &parsed["body"];
+
+    // One call: a headline, a state the screen knows, and no more.
+    assert!(
+        body["headline"].as_str().unwrap_or_default().len() > 10,
+        "the headline was {today_call}"
+    );
+    assert!(
+        ["go", "easy", "done", "nudge", "comeback"]
+            .iter()
+            .any(|state| state == &body["state"].as_str().unwrap_or_default()),
+        "the state was {today_call}"
+    );
+    // The last run is the one from yesterday.
+    assert_eq!(body["last_run"]["run"]["distance_m"], 10_000.0);
+    // The week: seven days, Monday to Sunday, and the runs in them.
+    // Which of the three runs falls inside this week depends on the day the
+    // test runs, so the count is not fixed — but there is always at least
+    // one, and there are always seven days.
+    let days = body["week"]["days"].as_array().expect("there are days");
+    assert_eq!(days.len(), 7, "the week was {today_call}");
+    assert!(
+        body["week"]["runs"].as_u64().unwrap_or_default() >= 1,
+        "the week was {today_call}"
+    );
+    // The guardrail: the longest run in 30 days, plus ten per cent.
+    assert_eq!(body["longest_30d_m"], 12_000.0, "the call was {today_call}");
+    // The ten per cent is a multiplication, so it is compared with a
+    // tolerance: 12 km * 1.1 is 13200.000000000002.
+    let spike = body["spike_limit_m"].as_f64().unwrap_or_default();
+    assert!(
+        (spike - 13_200.0).abs() < 0.001,
+        "the call was {today_call}"
+    );
+    // The guardrail is not on every card: it speaks when the distance the
+    // call is about is near the line. This athlete's usual run is 10 km
+    // against a 13.2 km line, so there is nothing to warn about and the
+    // card says nothing.
+    assert!(
+        body["guardrail"].is_null(),
+        "the guardrail was {today_call}"
+    );
+    // Body's headline comes from here: the signals and their normals, read
+    // by the core so Today and Body cannot drift apart.
+    let signals = body["recovery_signals"]
+        .as_array()
+        .expect("there are signals");
+    assert_eq!(signals.len(), 3, "the signals were {today_call}");
+    for signal in signals {
+        assert!(
+            ["sleep", "hrv", "resting_hr"].contains(&signal["key"].as_str().unwrap_or_default()),
+            "the signal was {signal}"
+        );
+        assert_eq!(signal["normal"], true, "the signal was {signal}");
+    }
+    assert_eq!(body["recovery_normal"][0], 3, "the call was {today_call}");
+    assert_eq!(body["recovery_normal"][1], 3, "the call was {today_call}");
+
+    // ---------------------------------------------------------- Progress
+    let progress_call =
+        uniffi_stride::stride_call("GET".into(), "/api/v1/insights/progress".into(), None);
+    let parsed: Value = serde_json::from_str(&progress_call).expect("the answer is JSON");
+    assert_eq!(parsed["ok"], true, "the answer was {progress_call}");
+    let body = &parsed["body"];
+    assert_eq!(
+        body["milestones"]["total_runs"], 3,
+        "the progress was {progress_call}"
+    );
+    assert_eq!(
+        body["milestones"]["total_m"], 30_000.0,
+        "the progress was {progress_call}"
+    );
+    // The bar: two runs a week, or one for an athlete whose usual is one.
+    // Which of the two depends on the weeks the test's runs fall in, so
+    // both are right and nothing else is.
+    let per_week = body["consistency"]["runs_per_week"]
+        .as_u64()
+        .unwrap_or_default();
+    assert!(
+        per_week == 1 || per_week == 2,
+        "the progress was {progress_call}"
+    );
+    assert!(
+        !body["consistency"]["weeks"]
+            .as_array()
+            .expect("there are weeks")
+            .is_empty(),
+        "the progress was {progress_call}"
+    );
+    assert!(
+        !body["bests"]
+            .as_array()
+            .expect("there are bests")
+            .is_empty(),
+        "the progress was {progress_call}"
+    );
+    assert!(
+        body["race_estimates"].is_array(),
+        "the progress was {progress_call}"
+    );
+
+    // -------------------------------------------------------------- Runs
+    let runs =
+        uniffi_stride::stride_call("GET".into(), "/api/v1/activities?per_page=10".into(), None);
+    let parsed: Value = serde_json::from_str(&runs).expect("the answer is JSON");
+    assert_eq!(parsed["ok"], true, "the answer was {runs}");
+    let items = parsed["body"]["items"].as_array().expect("there are items");
+    assert_eq!(items.len(), 3, "the list was {runs}");
+
+    // One chip per run, so the Runs screen has something to say.
+    let chips = uniffi_stride::stride_call(
+        "GET".into(),
+        "/api/v1/insights/chips?days=3650".into(),
+        None,
+    );
+    let parsed: Value = serde_json::from_str(&chips).expect("the answer is JSON");
+    assert_eq!(parsed["ok"], true, "the answer was {chips}");
+    assert!(
+        !parsed["body"]["items"]
+            .as_object()
+            .expect("there are chips")
+            .is_empty(),
+        "the chips were {chips}"
+    );
+}

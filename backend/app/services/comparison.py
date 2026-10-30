@@ -8,6 +8,12 @@ The trick is to compare on **distance-normalised profiles**. Two runs are
 resampled onto the same distance axis, so a 5 km and a 21 km run can be laid
 over each other and the heart-rate, cadence and pace curves can be read
 directly against one another.
+
+The comparison also says **what it is comparing**. Two runs of the same job
+— two easy runs, two tempo runs — can be marked: one of them was stronger.
+Two runs of different jobs cannot: a time trial beats an easy run on pace by
+design. So when the plan says what each run was for, that is the basis; and
+when it does not, distance is the proxy and the page says so.
 """
 
 from __future__ import annotations
@@ -25,6 +31,66 @@ log = logging.getLogger(__name__)
 
 # How many points each run's profile is resampled to.
 PROFILE_POINTS = 120
+
+# The session types that say what a run was *for*. `rest` and `strength` are
+# not in the list: a run is never one of them, so a session of that type
+# gives a run no intent.
+RUN_INTENT_TYPES = ("easy", "long", "tempo", "interval", "race", "recovery")
+
+
+def canonical_session_type(raw: str) -> str:
+    """The canonical session type for a stored one.
+
+    Lower case, trimmed, with the common variants ("intervals", "long_run",
+    "threshold") folded in. The reference for this is
+    ``crates/stride-core/src/plan.rs``.
+    """
+    lower = (raw or "").strip().lower().replace("-", "_").replace(" ", "_")
+    return {
+        "intervals": "interval",
+        "interval_run": "interval",
+        "repeats": "interval",
+        "reps": "interval",
+        "track": "interval",
+        "long_run": "long",
+        "longrun": "long",
+        "threshold": "tempo",
+        "tempo_run": "tempo",
+        "easy_run": "easy",
+    }.get(lower, lower)
+
+
+def plan_intent(session_type: str | None) -> str | None:
+    """The intent of one run: the canonical session type it was matched to.
+
+    ``None`` when the run was not matched to a plan session, or when the
+    session it was matched to is not a run — a rest day or a strength
+    session says nothing about what the run was for.
+    """
+    if session_type is None:
+        return None
+    canonical = canonical_session_type(session_type)
+    return canonical if canonical in RUN_INTENT_TYPES else None
+
+
+def comparison_basis(intents: list[str | None]) -> dict[str, Any]:
+    """The basis of a comparison, from the plan intent of each run.
+
+    * every run has an intent and they are all the same — like for like;
+    * every run has an intent and they differ — different jobs;
+    * any run has no intent — distance is the proxy, and the page says so.
+    """
+    if not intents:
+        return {"kind": "distance"}
+    kinds: list[str] = []
+    for intent in intents:
+        if intent is None:
+            return {"kind": "distance"}
+        kinds.append(intent)
+    first = kinds[0]
+    if all(kind == first for kind in kinds):
+        return {"kind": "plan_session", "session_type": first}
+    return {"kind": "different_jobs"}
 
 # The comparison matrix. `better` says which direction is good, so the UI can
 # highlight a winner without hard-coding the rule per row.
@@ -226,9 +292,43 @@ def compare(db: Session, activity_ids: list[int]) -> dict[str, Any]:
             found.append(activity)
 
     found.sort(key=lambda a: (a.local_date or "", a.id))
+    intents = plan_intents(db, found)
     runs = [run_payload(db, activity) for activity in found]
+    for run in runs:
+        run["plan_session_type"] = intents.get(run["id"])
     return {
         "runs": runs,
         "parameters": PARAMETERS,
         "missing": missing,
+        "basis": comparison_basis([intents.get(activity.id) for activity in found]),
     }
+
+
+def plan_intents(db: Session, activities: list[Activity]) -> dict[int, str]:
+    """The plan intent of each activity.
+
+    A run's intent is the canonical session type of the plan session it was
+    matched to — ``easy``, ``long``, ``tempo``, ``interval``, ``race`` or
+    ``recovery``. A run that was not matched to a session, or that was
+    matched to a rest or strength session, has no intent: nothing says what
+    the run was for.
+
+    The plan is matched over the range the runs fall in, so a run from last
+    year is matched against the session it was planned for.
+    """
+    from . import plan_engine
+
+    intents: dict[int, str] = {}
+    dates = [activity.local_date for activity in activities if activity.local_date]
+    if not dates:
+        return intents
+    matches = plan_engine.match_sessions(db, min(dates), max(dates))
+    for match in matches:
+        activity = match.get("activity")
+        session = match.get("session") or {}
+        if not activity:
+            continue
+        intent = plan_intent(session.get("session_type"))
+        if intent is not None:
+            intents[activity["id"]] = intent
+    return intents

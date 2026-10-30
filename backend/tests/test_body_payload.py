@@ -147,8 +147,8 @@ def test_a_year_of_days_is_seventy_kilobytes(client, db):
     assert len(body) < len(every.content) * 0.4
 
 
-def test_the_readiness_score_still_counts_the_garmin_metrics(db):
-    """The score is the golden one: the stress, the battery and the load count."""
+def test_the_readiness_score_counts_only_the_four_shown_drivers(db):
+    """Since v1 the score is the four drivers the screen draws, and nothing else."""
     from app.services import readiness
 
     scenario = next(
@@ -158,18 +158,10 @@ def test_the_readiness_score_still_counts_the_garmin_metrics(db):
         db.add(DailyPhysiology(date=row['date'], **{k: v for k, v in row.items() if k != 'date'}))
     db.flush()
     result = readiness.compute_readiness(db, scenario['day'])
-    assert result['score'] == pytest.approx(94.1)
+    assert result['score'] == pytest.approx(98.0)
     assert result['grade'] == 'peak'
     keys = {driver['key'] for driver in result['drivers']}
-    assert keys == {
-        'sleep',
-        'sleep_score',
-        'hrv',
-        'resting_hr',
-        'stress',
-        'body_battery',
-        'load',
-    }
+    assert keys == {'sleep', 'sleep_score', 'hrv', 'resting_hr'}
 
 
 def test_the_screen_shows_four_of_the_seven_drivers():

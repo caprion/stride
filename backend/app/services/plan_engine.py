@@ -24,7 +24,7 @@ NOT_YET_DUE = "not_yet"
 
 #: The verdicts a *prescribed* plan can produce. A baseline (an inferred
 #: plan) never says "missed": nobody wrote it down, so nothing was missed.
-PRESCRIBED_VERDICTS = ("hit", "missed_pace", "short", "missed", "substituted")
+PRESCRIBED_VERDICTS = ("hit", "missed_pace", "short", "missed", "substituted", "long")
 BASELINE_VERDICTS = ("less_than_usual", "more_than_usual", "on_a_usual_day", "no_usual_session")
 
 
@@ -186,6 +186,7 @@ def verdict_for(session: PlanSession, activity: Activity | None, today: date | s
     elif session_type=="tempo" and _looks_interval(activity): verdict="substituted"
     elif session_type=="interval" and _looks_long(activity, target): verdict="substituted"
     elif target and actual < target*.8: verdict="short"
+    elif target and session_type!="long" and actual>target*1.3 and actual-target>=2000: verdict="long"
     elif distance_hit and band is False: verdict="missed_pace"
     elif distance_hit and band is not False: verdict="hit"
     else: verdict="short"
@@ -228,7 +229,24 @@ def verdict_for_source(session: Any, activity: Activity | None, today: date | st
 
 
 def _looks_interval(a):
-    return bool(a.laps and sum(1 for l in a.laps if l.distance_m>=400 and l.duration_s>0)>=3) or any(x in (a.name or "").lower() for x in ("interval","repeats","fartlek"))
+    """Whether the activity looks like an interval session.
+
+    Laps alone are not evidence: a watch's default auto-lap splits every
+    steady run into kilometre laps. What marks intervals is the *pace*
+    alternating. Over the laps of 200 metres or more, the spread between the
+    fastest and slowest lap is at least 15% of the median lap, and splitting
+    at the middle of that spread, there are at least two fast laps, two slow
+    laps and three switches between them (a warm-up and a cool-down around a
+    steady run make only two). A name that says so also counts.
+    """
+    if any(x in (a.name or "").lower() for x in ("interval","repeats","fartlek")): return True
+    paces=[l.duration_s/(l.distance_m/1000) for l in (a.laps or []) if l.distance_m and l.distance_m>=200 and l.duration_s and l.duration_s>0]
+    if len(paces)<4: return False
+    mid=statistics.median(paces); low=min(paces); high=max(paces)
+    if mid<=0 or (high-low)/mid<.15: return False
+    split=(low+high)/2; fast=[p<split for p in paces]
+    switches=sum(1 for x,y in zip(fast,fast[1:]) if x!=y)
+    return sum(fast)>=2 and len(fast)-sum(fast)>=2 and switches>=3
 def _looks_long(a, target): return bool(a.distance_m>14000 and target and a.distance_m>target*1.25)
 
 
@@ -244,6 +262,10 @@ def explain_cause(session: PlanSession, activity: Activity | None, physiology: D
         # has nothing to explain: it is not evidence of anything.
         return None, None
     if not activity: return ("No activity was logged for the planned session.",0.0)
+    if verdict=="long":
+        # Nothing physiological explains running further than planned; the
+        # point worth making is the distance itself.
+        return ("Ran well past the planned distance; keep the next few days easy.",0.0)
     if not physiology: return ("Physiology data is unavailable, so the reason for this result is unknown.",0.0)
     factors=[]
     get = (lambda k: physiology.get(k)) if isinstance(physiology,dict) else (lambda k: getattr(physiology,k,None))
@@ -267,7 +289,7 @@ def explain_cause(session: PlanSession, activity: Activity | None, physiology: D
     factors.sort(key=lambda x:x[1],reverse=True)
     if factors: return ("Likely influenced by "+" and ".join(x[0] for x in factors[:2])+".",max(x[1] for x in factors[:2]))
     if any(get(k) is not None for k in ("sleep_baseline_s","hrv_baseline_ms","resting_hr_baseline","cadence_cv_baseline")):
-        return ("No measured factor explains the result; it may reflect a fitness gap or an off-plan effort.",.2)
+        return ("No measured factor explains this one.",0.0)
     if any(metric(k) is not None for k in ("sleep_s","hrv_ms","resting_hr")):
         return ("Physiology is available, but there is not enough baseline data to explain this result.",.1)
     return ("Physiology data is unavailable, so the result is unexplained and may reflect fitness or an off-plan effort.",.1)
@@ -289,11 +311,13 @@ def adherence(db: Session, from_date: str, to_date: str, today: date | str | Non
         else: w["missed_sessions"]+=1
         if row["verdict"] in ("hit","missed_pace"): w["hit_sessions"]+=1
     rows=list(weeks.values())
-    for w in rows: w["delta_km"]=round(w["actual_km"]-w["planned_km"],2); w["adherence_pct"]=round(w["hit_sessions"]/w["planned_sessions"]*100,1) if w["planned_sessions"] else None
+    for w in rows: w["delta_km"]=round(w["actual_km"]-w["planned_km"],2); w["adherence_pct"]=round(w["completed_sessions"]/w["planned_sessions"]*100,1) if w["planned_sessions"] else None
     due=[r for r in matches if r["verdict"] != NOT_YET_DUE]
     if not due: return {"overall_pct":None,"planned_km":0,"actual_km":0,"planned_sessions":0,"completed_sessions":0,"hit_sessions":0,"missed_sessions":0,"extra_sessions":0,"by_verdict":{},"rows":[]}
-    counts={k:sum(1 for r in due if r["verdict"]==k) for k in ("hit","missed_pace","short","missed","substituted")}
-    return {"overall_pct":round(sum(r["verdict"] in ("hit","missed_pace") for r in due)/len(due)*100,1),"planned_km":round(sum(w["planned_km"] for w in rows),2),"actual_km":round(sum(w["actual_km"] for w in rows),2),"planned_sessions":len(due),"completed_sessions":sum(bool(r["activity"]) for r in due),"hit_sessions":counts["hit"]+counts["missed_pace"],"missed_sessions":counts["missed"],"extra_sessions":len(extra_activities(db,from_date,to_date)),"by_verdict":counts,"rows":rows}
+    counts={k:sum(1 for r in due if r["verdict"]==k) for k in ("hit","missed_pace","short","missed","substituted","long")}
+    # Adherence is showing up: the share of due sessions that got a run. How
+    # each run went is the verdict's job, not this percentage's.
+    return {"overall_pct":round(sum(bool(r["activity"]) for r in due)/len(due)*100,1),"planned_km":round(sum(w["planned_km"] for w in rows),2),"actual_km":round(sum(w["actual_km"] for w in rows),2),"planned_sessions":len(due),"completed_sessions":sum(bool(r["activity"]) for r in due),"hit_sessions":counts["hit"]+counts["missed_pace"],"missed_sessions":counts["missed"],"extra_sessions":len(extra_activities(db,from_date,to_date)),"by_verdict":counts,"rows":rows}
 
 
 def extra_activities(db: Session, from_date: str, to_date: str) -> list[dict[str, Any]]:
@@ -303,6 +327,22 @@ def extra_activities(db: Session, from_date: str, to_date: str) -> list[dict[str
         options=[a for a in acts if a.id not in claimed and abs((_date(a.local_date)-_date(s.date)).days)<=2]
         if options: claimed.add(min(options,key=lambda a:abs((_date(a.local_date)-_date(s.date)).days)).id)
     return [{**_activity_dict(a),"verdict":"bonus"} for a in acts if a.id not in claimed]
+
+
+def _session_name(session: Any) -> str:
+    """The name of a session, for the words the screen reads.
+
+    A session whose kind is not known is named by its title, or by
+    "session": "unknown" is not a kind of session, and a sentence that says
+    "the planned unknown session" reads as one.
+    """
+    title = getattr(session, "title", None)
+    if title:
+        return str(title)
+    kind = str(getattr(session, "session_type", "") or "").strip()
+    if not kind or kind.lower() == "unknown":
+        return "session"
+    return kind
 
 
 def today(db: Session) -> dict[str, Any]:
@@ -316,7 +356,7 @@ def today(db: Session) -> dict[str, Any]:
         behind=(logged/1000) < week.target_km*min(elapsed/7,1)*.75
     adjust=low or behind
     why="readiness is low" if low else "this week's running volume is behind target"
-    rec=f"Shorten today's session or swap quality for an easy run because {why}." if adjust else f"Complete the planned {s.title or s.session_type} session."
+    rec=f"Shorten today's session or swap quality for an easy run because {why}." if adjust else f"Complete the planned {_session_name(s)} session."
     rationale="; ".join(x for x,yes in (("readiness is below 40",low),("week-to-date running volume is behind its target",behind)) if yes) or "No low-readiness or behind-volume signal was available."
     return {"date":d,"session":_session_dict(s),"week":{"id":week.id,"week_number":week.week_number,"target_km":week.target_km} if week else None,"readiness":readiness.training_readiness if readiness else None,"recommendation":rec,"rationale":rationale,"has_plan":True}
 

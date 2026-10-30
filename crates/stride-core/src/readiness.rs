@@ -1,14 +1,16 @@
-//! The readiness score: seven weighted drivers and what they say about today.
+//! The readiness score: four weighted drivers and what they say about today.
 //!
 //! The reference is `backend/app/services/readiness.py`. Two distinctions
 //! matter:
 //!
 //! * **Scale-based drivers are anchored to a fixed scale, not to the
-//!   athlete's baseline.** The sleep score is scored out of 100, stress out of
-//!   100, the body battery out of 100 and the acute/chronic load ratio against
-//!   1.3. Only sleep, HRV and resting heart rate are measured against the
-//!   athlete's own trailing baseline, and those three are the ones that carry
-//!   a `baseline` and a `delta` in the output.
+//!   athlete's baseline.** The sleep score is scored out of 100. Sleep, HRV
+//!   and resting heart rate are measured against the athlete's own trailing
+//!   baseline, and those three carry a `baseline` and a `delta`.
+//! * **Four drivers, not seven.** Stress, Body Battery and the acute/chronic
+//!   load ratio came out in v1: the ratio did not predict injury in the 2025
+//!   Garmin-RUNSAFE cohort, and stress and Body Battery are Garmin composites
+//!   built from the same HRV the score already reads.
 //! * **No baseline means no driver.** A missing personal baseline does not
 //!   become a score against a population default; the driver is unavailable
 //!   and the weights are renormalised over the drivers that remain.
@@ -36,8 +38,7 @@ pub struct Baselines {
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct ReadinessDriver {
-    /// The driver's key: `sleep`, `sleep_score`, `hrv`, `resting_hr`,
-    /// `stress`, `body_battery`, `load`.
+    /// The driver's key: `sleep`, `sleep_score`, `hrv`, `resting_hr`.
     pub key: String,
     /// The driver's label, as the UI shows it.
     pub label: String,
@@ -352,54 +353,6 @@ fn derive(day: &str, row: Option<&DailyPhysiology>, baseline: &Baselines) -> Rea
             rhr_detail,
             true,
             "bpm",
-        );
-
-        let stress_quality = row.stress_avg.map(|value| 1.0 - value / 100.0);
-        add(
-            &mut drivers,
-            "stress",
-            "Stress",
-            row.stress_avg,
-            Some(0.0),
-            10.0,
-            stress_quality,
-            "Average daily stress; lower is better".to_string(),
-            false,
-            "",
-        );
-
-        let battery_quality = row.body_battery_avg.map(|value| value / 100.0);
-        add(
-            &mut drivers,
-            "body_battery",
-            "Body battery",
-            row.body_battery_avg,
-            Some(100.0),
-            10.0,
-            battery_quality,
-            "Average daily body battery out of 100".to_string(),
-            false,
-            "",
-        );
-
-        let ratio = match (row.acute_load, row.chronic_load) {
-            (Some(acute), Some(chronic)) if is_number(acute) && is_positive(chronic) => {
-                Some(acute / chronic)
-            }
-            _ => None,
-        };
-        let load_quality = ratio.map(|ratio| 1.0 - (ratio - 1.3).max(0.0) / 1.3);
-        add(
-            &mut drivers,
-            "load",
-            "Load",
-            ratio,
-            Some(1.3),
-            5.0,
-            load_quality,
-            "Acute/chronic load; ratios above 1.3 reduce readiness".to_string(),
-            false,
-            "",
         );
     }
 

@@ -33,8 +33,8 @@ export function CardHeader({
   className?: string
 }) {
   return (
-    <div className={cn('flex items-start justify-between gap-4 px-5 pt-4 pb-3', className)}>
-      <div className="min-w-0">
+    <div className={cn('flex flex-wrap items-start justify-between gap-x-4 gap-y-2 px-5 pt-4 pb-3', className)}>
+      <div className="min-w-[10rem] flex-1">
         <h3 className="text-[15px] font-semibold leading-tight text-ink">{title}</h3>
         {subtitle ? <p className="mt-0.5 text-[13px] text-ink-muted">{subtitle}</p> : null}
       </div>
@@ -274,7 +274,8 @@ export function Toggle({
 }) {
   return (
     <label className="flex cursor-pointer items-start justify-between gap-4">
-      <span>
+      {/* min-w-0 lets a long description wrap instead of pushing the switch off-screen. */}
+      <span className="min-w-0 flex-1">
         <span className="block text-[14px] font-medium text-ink">{label}</span>
         {description ? (
           <span className="mt-0.5 block text-[13px] text-ink-muted">{description}</span>

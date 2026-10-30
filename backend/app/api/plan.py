@@ -45,6 +45,7 @@ ALL_VERDICTS = (
     "short",
     "missed",
     "substituted",
+    "long",
     "bonus",
     plan_engine.NOT_YET_DUE,
 )
@@ -56,6 +57,7 @@ VERDICT_LABELS = {
     "short": "short",
     "missed": "missed",
     "substituted": "substituted",
+    "long": "longer than planned",
     plan_engine.NOT_YET_DUE: "not yet due",
 }
 
@@ -599,13 +601,20 @@ def import_document(body: ImportBody, db: Session = Depends(get_db)) -> dict[str
             PlanSession(
                 week_id=week.id if week else None,
                 block_id=block.id,
+                # A row that names no kind of session is unknown. It is not
+                # easy: the document did not say so.
+                session_type=(
+                    payload["session_type"]
+                    if isinstance(payload.get("session_type"), str)
+                    and payload["session_type"].strip()
+                    else "unknown"
+                ),
                 **{
                     key: value
                     for key, value in payload.items()
                     if key
                     in {
                         "date",
-                        "session_type",
                         "title",
                         "details",
                         "target_distance_m",
@@ -903,6 +912,22 @@ def get_today(db: Session = Depends(get_db)) -> dict[str, Any]:
     }
 
 
+def _session_name(session: dict[str, Any]) -> str:
+    """The name of a session, for the words the recommendation reads.
+
+    A session whose kind is not known is named by its title, or by
+    "session": "unknown" is not a kind of session, and a sentence that says
+    "the planned unknown session" reads as one.
+    """
+    title = session.get("title")
+    if title:
+        return str(title)
+    kind = str(session.get("session_type") or "").strip()
+    if not kind or kind.lower() == "unknown":
+        return "session"
+    return kind
+
+
 def _recommend(
     db: Session,
     session: dict[str, Any],
@@ -910,38 +935,35 @@ def _recommend(
     today: str,
     readiness: dict[str, Any] | None,
 ) -> tuple[str, str]:
-    """One sentence of advice, with the reason behind it."""
-    reasons: list[str] = []
+    """One sentence of advice, with the reason behind it.
 
+    Three rules the advice never breaks:
+
+    * a session already run today is done: the advice is to recover, not to
+      "complete" what is behind the athlete;
+    * a week behind its target is never a reason to run more later: missed
+      kilometres are not made up, because cramming them is how a single long
+      run spikes past what the legs are used to;
+    * only a readiness dip adjusts a session, and it only ever makes it easier.
+    """
+    title = _session_name(session)
+    kind = session.get("session_type")
+
+    done = session.get("activity")
+    if done and done.get("local_date") == today:
+        km = (done.get("distance_m") or 0.0) / 1000.0
+        return (
+            f"Done for today: {km:.1f} km logged. Recover, and let tomorrow take care of itself.",
+            "Today's session already has a run against it.",
+        )
+
+    reasons: list[str] = []
     score = (readiness or {}).get("score")
     if score is not None and score < 50:
         reasons.append(
             f"readiness is {score:.0f}/100 ({readiness.get('grade')})"
         )
 
-    behind = False
-    if week is not None and week.target_km and week.start_date:
-        logged = (
-            db.execute(
-                select(func.coalesce(func.sum(Activity.distance_m), 0.0)).where(
-                    Activity.local_date >= week.start_date,
-                    Activity.local_date <= today,
-                    Activity.sport_type.in_(plan_engine.RUN_SPORTS),
-                )
-            )
-            .scalar_one()
-            or 0.0
-        )
-        elapsed = max(1, (date.fromisoformat(today) - date.fromisoformat(week.start_date)).days + 1)
-        expected = week.target_km * min(elapsed / 7.0, 1.0)
-        behind = logged / 1000.0 < expected * 0.75
-        if behind:
-            reasons.append(
-                f"only {logged / 1000.0:.1f} km of this week's {week.target_km:.0f} km is logged"
-            )
-
-    title = session.get("title") or session.get("session_type") or "session"
-    kind = session.get("session_type")
     if kind in ("rest", "strength"):
         # Rest and strength are prescriptions too, but "complete the planned
         # rest as written" is not advice anyone needs.
@@ -956,12 +978,10 @@ def _recommend(
         )
     if reasons:
         return (
-            f"Adjust today's {title} — {reasons[0]}."
-            + (f" Also, {reasons[1]}." if len(reasons) > 1 else "")
-            + " Keep it easy and make up the volume later in the week.",
+            f"Keep today's {title} easy and on the short side — {reasons[0]}.",
             "Adjusted because " + "; and ".join(reasons) + ".",
         )
     return (
         f"Complete the planned {title} as written.",
-        "No readiness dip and the week's volume is on track.",
+        "No readiness dip today.",
     )

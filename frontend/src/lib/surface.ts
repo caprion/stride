@@ -11,6 +11,7 @@
 
 import {
   Activity,
+  Award,
   BarChart3,
   CalendarDays,
   ClipboardCheck,
@@ -36,12 +37,15 @@ export interface Destination {
 }
 
 /**
- * The phone's five destinations.
+ * The phone's four destinations, one per job.
  *
- * What the phone keeps: what to do now, the activity list, the body, the
- * running fingerprint, and the statistics — the personal records and the
- * year in one screen, which is the thing an athlete looks at after a good
- * month.
+ * * **Today** decides: should I run, and how much.
+ * * **Runs** understands: what each run meant.
+ * * **Progress** motivates: proof of getting fitter, consistency, bests.
+ * * **Body** is recovery against the athlete's own normal.
+ *
+ * Form and Stats are still on the phone, one tap from Progress: they are
+ * the deep end, not destinations.
  *
  * **Plan is not one of them.** The plan was meant to be the reason the app
  * exists, and the inferred plan has just made it non-empty for everybody —
@@ -52,9 +56,8 @@ export interface Destination {
 export const PHONE_DESTINATIONS: Destination[] = [
   { to: '/', label: 'Today', icon: LayoutDashboard, end: true },
   { to: '/feed', label: 'Runs', icon: Activity },
+  { to: '/progress', label: 'Progress', icon: TrendingUp },
   { to: '/physiology', label: 'Body', icon: HeartPulse },
-  { to: '/fitness', label: 'Form', icon: Gauge },
-  { to: '/stats', label: 'Stats', icon: BarChart3 },
 ]
 
 /**
@@ -64,11 +67,12 @@ export const PHONE_DESTINATIONS: Destination[] = [
  * these screens are good there.
  */
 export const DESKTOP_DESTINATIONS: Destination[] = [
-  { to: '/', label: 'Dashboard', icon: LayoutDashboard, end: true },
+  { to: '/', label: 'Today', icon: LayoutDashboard, end: true },
+  { to: '/progress', label: 'Progress', icon: Award },
   { to: '/plan', label: 'Plan', icon: ClipboardCheck },
   { to: '/feed', label: 'Activity feed', icon: Activity },
   { to: '/training', label: 'Training', icon: CalendarDays },
-  { to: '/physiology', label: 'Physiology', icon: HeartPulse },
+  { to: '/physiology', label: 'Body', icon: HeartPulse },
   { to: '/fitness', label: 'Running form', icon: Gauge },
   { to: '/compare', label: 'Compare', icon: BarChart3 },
   { to: '/stats', label: 'Statistics', icon: TrendingUp },

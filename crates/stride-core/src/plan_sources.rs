@@ -74,6 +74,11 @@ pub const RUN_SPORTS: [&str; 6] = [
 ];
 
 /// The session types the `plan_session` table already knows.
+///
+/// These are the kinds a plan may *prescribe*. `unknown` is not one of
+/// them: it is the absence of a kind, and it is what an imported row that
+/// names no kind of session carries. It is accepted on the import paths
+/// and read as "not known" everywhere else.
 pub const SESSION_TYPES: [&str; 8] = [
     "easy", "long", "tempo", "interval", "race", "recovery", "strength", "rest",
 ];
@@ -761,14 +766,17 @@ pub fn session_from_workout(
     }
 
     let detail = detail.cloned().unwrap_or_default();
+    // A workout that names no kind of session is unknown, not easy. The
+    // scheduled workouts are a prescription, so a kind nobody wrote down
+    // cannot be filled in with a guess.
     let mut session_type = detail
         .session_type
         .as_deref()
-        .unwrap_or("easy")
+        .unwrap_or("unknown")
         .trim()
         .to_lowercase();
     if !SESSION_TYPES.contains(&session_type.as_str()) {
-        session_type = "easy".to_string();
+        session_type = "unknown".to_string();
     }
 
     let title = detail

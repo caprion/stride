@@ -58,6 +58,7 @@ import type {
   SleepPoint,
   ZoneShare,
 } from '../types_phase2'
+import type { Chip, ProgressInsight, RunStory, TodayInsight } from '../types_insights'
 import { readPlanSources } from './planSources'
 
 const BASE = '/api/v1'
@@ -374,10 +375,12 @@ export const api = {
   importFit: (files: File[]) => {
     const form = new FormData()
     files.forEach((file) => form.append('files', file))
-    return request<{ imported: number; activities: any[]; errors: any[] }>(
-      '/auth/garmin/fit-import',
-      { method: 'POST', body: form },
-    )
+    return request<{
+      imported: number
+      activities: any[]
+      duplicates: { filename: string; id: number; name: string; date: string }[]
+      errors: any[]
+    }>('/auth/garmin/fit-import', { method: 'POST', body: form })
   },
 
   // ------------------------------------------------------------ activities
@@ -527,6 +530,15 @@ export const api = {
   planAdherence: (from?: string, to?: string) =>
     request<AdherenceSummary>(`/plan/adherence${qs({ from, to })}`),
   planToday: () => request<PlanToday>('/plan/today'),
+
+  // -------------------------------------------------------------- insights
+  // Rust-native routes (no Python reference): the Python dev server answers
+  // 404 and the screens fall back to what they showed before.
+  insightsToday: () => request<TodayInsight>('/insights/today'),
+  insightsActivity: (id: number) => request<RunStory>(`/insights/activity/${id}`),
+  insightsChips: (days = 365) =>
+    request<{ items: Record<string, Chip> }>(`/insights/chips${qs({ days })}`),
+  insightsProgress: () => request<ProgressInsight>('/insights/progress'),
 
   /**
    * The plan sources: where the plan came from.

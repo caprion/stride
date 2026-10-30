@@ -20,6 +20,7 @@ import {
   formatDistanceShort,
   formatPace,
   formatWeekKey,
+  sessionTypeLabel,
 } from '../lib/format'
 import {
   Card,
@@ -47,8 +48,9 @@ const verdictNames: Record<Verdict, string> = {
   hit: 'Hit',
   missed_pace: 'Missed pace',
   short: 'Short',
-  missed: 'Missed',
+  missed: 'Not run',
   substituted: 'Substituted',
+  long: 'Longer than planned',
   bonus: 'Bonus',
   // A session that has not happened is not a failure, and it is not red.
   not_yet: 'Not yet',
@@ -57,8 +59,9 @@ const verdictColors: Record<Verdict, string> = {
   hit: ZONE_COLORS[1],
   missed_pace: ZONE_COLORS[3],
   short: ZONE_COLORS[3],
-  missed: ZONE_COLORS[4],
+  missed: ZONE_COLORS[0],
   substituted: RAMP[1],
+  long: ZONE_COLORS[3],
   bonus: ACCENT_DATA,
   // Grey: a session that has not happened yet.
   not_yet: ZONE_COLORS[0],
@@ -67,7 +70,7 @@ const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
 // The weekday names, in the order the week runs.
 const todayKey = () => new Date().toISOString().slice(0, 10)
 const pace = (v: number | null | undefined) => (v == null ? '—' : `${formatPace(v)}/km`)
-const sessionLabel = (s: PlanSessionWithResult) => s.title || s.session_type
+const sessionLabel = (s: PlanSessionWithResult) => s.title || sessionTypeLabel(s.session_type)
 
 /**
  * A date, shifted by days.
@@ -110,7 +113,7 @@ function displaySession(session: PlanSessionWithResult, index: number): DisplayS
   return {
     key: `db-${session.id}-${index}`,
     date: session.date,
-    label: session.title || session.session_type,
+    label: session.title || sessionTypeLabel(session.session_type),
     targetDistance: session.target_distance_m,
     paceLow: session.pace_low_s_km,
     paceHigh: session.pace_high_s_km,
@@ -134,7 +137,7 @@ function displaySourceSession(
   return {
     key: `src-${session.date}-${session.title ?? session.session_type}-${index}`,
     date: session.date,
-    label: session.title || session.session_type,
+    label: session.title || sessionTypeLabel(session.session_type),
     targetDistance: session.target_distance_m,
     paceLow: session.pace_low_s_km,
     paceHigh: session.pace_high_s_km,
@@ -151,21 +154,12 @@ function displaySourceSession(
   }
 }
 
-/**
- * Render an explanation with the right amount of confidence.
- *
- * A confidence of zero means the cause is a plain fact ("no activity was
- * logged") and must read as a statement. Only an *inferred* cause with low
- * confidence gets hedged.
- */
-const renderCause = (r: { cause?: string | null; cause_confidence?: number | null }) => {
-  const cause = r.cause
-  if (!cause) return ''
-  const confidence = r.cause_confidence ?? 0
-  if (confidence >= 0.66) return cause
-  if (confidence <= 0) return cause
-  return `Might be ${cause.charAt(0).toLowerCase()}${cause.slice(1)}?`
-}
+/** Render an explanation, as the engine wrote it. */
+const renderCause = (r: { cause?: string | null; cause_confidence?: number | null }) =>
+  // The engine's sentences already carry their own confidence ("Likely
+  // influenced by…", "No measured factor explains this one."), so they are
+  // shown as written. Wrapping them in "Might be …?" produced broken English.
+  r.cause ?? ''
 
 /**
  * The verdict of a session, as a badge.

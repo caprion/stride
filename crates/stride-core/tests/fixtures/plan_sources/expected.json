@@ -118,6 +118,16 @@
         "session_type": "long",
         "target_distance_m": 18000.0,
         "title": "Long run"
+      },
+      {
+        "date": "2026-03-09",
+        "details": null,
+        "id": 0,
+        "pace_high_s_km": null,
+        "pace_low_s_km": null,
+        "session_type": "unknown",
+        "target_distance_m": null,
+        "title": "Unnamed session"
       }
     ],
     "source": "garmin"

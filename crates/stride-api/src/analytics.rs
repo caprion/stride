@@ -423,24 +423,8 @@ pub fn personal_records(activities: &[&ActivityRow]) -> Value {
     }) {
         add("Longest time", longest.moving_time_s, longest, "s", "lower");
     }
-    let with_hr: Vec<&&ActivityRow> = activities
-        .iter()
-        .filter(|row| row.avg_hr.is_some_and(|hr| hr != 0.0))
-        .collect();
-    if let Some(fastest) = with_hr.iter().max_by(|a, b| {
-        a.avg_hr
-            .unwrap_or(0.0)
-            .partial_cmp(&b.avg_hr.unwrap_or(0.0))
-            .unwrap_or(std::cmp::Ordering::Equal)
-    }) {
-        add(
-            "Fastest avg HR",
-            fastest.avg_hr.unwrap_or(0.0),
-            fastest,
-            "bpm",
-            "higher",
-        );
-    }
+    // No heart-rate "record": the highest average heart rate goes up when the
+    // athlete overheats or overreaches, and a record is an incentive.
     let with_calories: Vec<&&ActivityRow> = activities
         .iter()
         .filter(|row| row.calories.is_some_and(|value| value != 0.0))

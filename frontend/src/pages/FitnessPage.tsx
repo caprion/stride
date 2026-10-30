@@ -12,7 +12,6 @@ import {
   YAxis,
 } from 'recharts'
 import { api } from '../lib/api'
-import { isPhone } from '../lib/surface'
 import { useMediaQuery } from '../lib/useMediaQuery'
 import { RangeSelector, sinceDate } from '../components/RangeSelector'
 import { ConnectPrompt } from '../components/ConnectPrompt'
@@ -38,6 +37,22 @@ type Metric =
   | 'efficiency_first'
   | 'pace_cv'
   | 'form_score'
+/**
+ * What usually moves each metric the wrong way: one sentence that turns a
+ * chart into something to do.
+ */
+const METRIC_WHY: Partial<Record<Metric, string>> = {
+  hr_drift_pct:
+    'Usually heat, dehydration, fatigue or easy runs creeping too fast. Slow the first half and check the weather.',
+  decoupling_pct:
+    'Usually heat, long runs past your current endurance, or starting too fast. More easy volume tends to fix it.',
+  cadence_cv:
+    'Usually fatigue, hilly or crowded routes, or a wrist reading locking on. Compare flat, quiet runs.',
+  efficiency_first:
+    'Usually heat, hills, illness or a training break. One run says little; watch the trend.',
+  pace_cv: 'Usually traffic, hills or stop-start routes rather than fitness.',
+}
+
 const metrics: { value: Metric; label: string; simple: string; color: string }[] = [
   { value: 'hr_drift_pct', label: 'HR drift', simple: 'HR drift', color: METRIC.heartRate },
   {
@@ -128,7 +143,7 @@ export default function FitnessPage() {
   return (
     <div className="mx-auto max-w-7xl p-5">
       <PageHeader
-        title={isPhone() ? 'Form' : 'Running fingerprint'}
+        title="Running form"
         description="The mechanics that make your running yours — and how they change over time."
       />
       <Card className="mb-4">
@@ -139,17 +154,22 @@ export default function FitnessPage() {
               ? `${data.label} · ${data.better === 'lower' ? 'lower is better' : 'higher is better'} · baseline ${display(data.baseline)} ${data.unit}`
               : 'Choose a metric to explore its recent trend.'
           }
-          action={
-            <div className="flex flex-col items-end gap-2">
-              <SegmentedControl
-                options={metrics.map((m) => ({ label: m.label, value: m.value }))}
-                value={metric}
-                onChange={setMetric}
-              />
-              <RangeSelector value={days} onChange={setDays} />
-            </div>
-          }
         />
+        {/*
+          The metric tabs sit on their own row and scroll sideways: there are
+          more of them than a phone is wide, and in the header's action slot
+          they ran over the title.
+        */}
+        <div className="flex flex-wrap items-center gap-2 px-5 pb-2">
+          <div className="max-w-full overflow-x-auto">
+            <SegmentedControl
+              options={metrics.map((m) => ({ label: m.label, value: m.value }))}
+              value={metric}
+              onChange={setMetric}
+            />
+          </div>
+          <RangeSelector value={days} onChange={setDays} />
+        </div>
         {trend.isLoading ? (
           <div className="p-4">
             <Skeleton className="h-64" />
@@ -201,6 +221,11 @@ export default function FitnessPage() {
                   ? 'Not enough activity data to calculate a trend.'
                   : `${metricLabel} is ${Math.abs(trendPct).toFixed(0)}% ${trendPct < 0 ? 'down' : 'up'} over the recent period — ${improving ? 'moving in a favorable direction.' : 'worth watching across your next runs.'}`}
               </p>
+              {trendPct != null && !improving && METRIC_WHY[metric] ? (
+                <p className="mt-2 text-[12px] leading-snug text-ink-muted">
+                  {METRIC_WHY[metric]}
+                </p>
+              ) : null}
               <Badge tone={improving ? 'positive' : 'warn'} className="mt-3 w-fit">
                 {data.better === 'lower' ? 'Good when low' : 'Good when high'}
               </Badge>

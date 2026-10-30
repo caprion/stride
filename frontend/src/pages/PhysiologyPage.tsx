@@ -1,3 +1,4 @@
+import type { RecoverySignal } from '../types_insights'
 import { useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import {
@@ -26,7 +27,7 @@ import {
   ZONE_COLORS,
 } from '../lib/palette'
 import { formatDate } from '../lib/format'
-import { Card, CardHeader, EmptyState, PageHeader, Skeleton, Badge } from '../components/ui'
+import { Card, CardHeader, EmptyState, PageHeader, Skeleton } from '../components/ui'
 import { isPhone } from '../lib/surface'
 import { ConnectPrompt } from '../components/ConnectPrompt'
 import { ChartFrame } from '../components/charts'
@@ -39,6 +40,35 @@ const gradeColor: Record<string, string> = {
   low: ZONE_COLORS[4],
   unknown: INK_FAINT,
 }
+/**
+ * "Normal" comes from the core, through `/insights/today`: one definition,
+ * so Body and Today cannot disagree. Nothing here re-derives a threshold.
+ */
+function inNormal(signals: RecoverySignal[], key: string): boolean | null {
+  const signal = signals.find((s) => s.key === key)
+  return signal ? signal.normal : null
+}
+
+function normalHeadline(signals: RecoverySignal[]): string {
+  if (!signals.length) return 'Building your baseline'
+  const normal = signals.filter((s) => s.normal).length
+  return `${normal} of ${signals.length} signals in your normal range`
+}
+
+const SIGNAL_NAME: Record<string, string> = {
+  sleep: 'sleep',
+  hrv: 'HRV',
+  resting_hr: 'resting HR',
+}
+
+function normalAdvice(signals: RecoverySignal[]): string | null {
+  if (!signals.length) return null
+  const off = signals.filter((s) => !s.normal)
+  if (!off.length) return 'Recovery looks normal. Train as you planned.'
+  const sentence = `${off.map((s) => SIGNAL_NAME[s.key] ?? s.key).join(' and ')} outside your normal range: go easy today, or take the day.`
+  return sentence.charAt(0).toUpperCase() + sentence.slice(1)
+}
+
 const num = (v: number | null | undefined, suffix = '') =>
   v == null ? '—' : `${Math.round(v * 10) / 10}${suffix}`
 
@@ -49,7 +79,13 @@ const num = (v: number | null | undefined, suffix = '') =>
 //
 // The daily rows are the desktop's: the table of Garmin's own metrics. The
 // phone does not draw them, so the phone does not ask for them.
-const DAILY_FIELDS = 'date,body_battery_avg,stress_avg,acute_load,chronic_load,steps'
+// The acute/chronic load ratio is deliberately not asked for.
+//
+// `docs/philosophy.md` says the ratio did not predict injury in the 2025
+// Garmin-RUNSAFE cohort, and that Stride shows nothing that pretends to
+// be an injury score. The column still exists in the store — Garmin sends
+// it — but the screen does not present it, so it is not fetched either.
+const DAILY_FIELDS = 'date,body_battery_avg,stress_avg,steps'
 const READINESS_FIELDS = 'date,score,grade'
 const HRV_FIELDS = 'date,hrv_ms,baseline,resting_hr,rhr_baseline'
 
@@ -131,6 +167,13 @@ export default function PhysiologyPage() {
   const since = useMemo(() => sinceDate(days), [days])
   const phone = isPhone()
 
+  const todayInsight = useQuery({
+    queryKey: ['insights-today'],
+    queryFn: api.insightsToday,
+    retry: false,
+    staleTime: 60_000,
+  })
+  const signals = todayInsight.data?.recovery_signals ?? []
   const sources = useQuery({
     queryKey: ['physiology-sources'],
     queryFn: api.physiologySources,
@@ -176,10 +219,57 @@ export default function PhysiologyPage() {
     // The score counts seven drivers; the phone draws four of them.
     return phone ? all.filter((driver) => SHOWN_DRIVERS.includes(driver.key)) : all
   }, [current, phone])
+  /**
+   * The sleep chart draws what the data has.
+   *
+   * Garmin sends a stage breakdown on some nights and only a duration on
+   * others. The stacked bars are the stages, so on a night without them
+   * they were four zeros and the chart showed a lone score line under a
+   * subtitle that promised stages. The subtitle follows the data, and so
+   * does the chart: duration when there are no stages, stages when there
+   * are.
+   */
+  const sleepChartData = useMemo(
+    () =>
+      (sleep.data?.items ?? [])
+        .filter((p) => p.date >= since)
+        .map((p) => ({
+          ...p,
+          label: formatDate(p.date).slice(0, 6),
+          duration: (p.sleep_s ?? 0) / 3600,
+          deep: (p.deep_sleep_s ?? 0) / 3600,
+          rem: (p.rem_s ?? 0) / 3600,
+          light: (p.light_sleep_s ?? 0) / 3600,
+          awake: (p.awake_s ?? 0) / 3600,
+        })),
+    [sleep.data, since],
+  )
+  const sleepHasStages = useMemo(
+    () =>
+      (sleep.data?.items ?? [])
+        .filter((p) => p.date >= since)
+        .some(
+          (p) =>
+            p.deep_sleep_s != null ||
+            p.rem_s != null ||
+            p.light_sleep_s != null ||
+            p.awake_s != null,
+        ),
+    [sleep.data, since],
+  )
   return (
     <div className="mx-auto max-w-7xl p-5">
+      {/*
+        One name everywhere: **Body**.
+
+        The phone tab was already called Body, and the desktop said
+        Physiology for the same screen. Two names for one screen is a bug
+        in the vocabulary, not a difference between the surfaces: the
+        route stays `/physiology`, but nobody has to learn a second word
+        for the page they already reach from Today.
+      */}
       <PageHeader
-        title={phone ? 'Body' : 'Physiology'}
+        title="Body"
         description={
           phone
             ? 'Your readiness, your sleep, and your resting heart rate.'
@@ -214,8 +304,8 @@ export default function PhysiologyPage() {
             />
             <div className="px-5 pb-5">
               <p className="mb-3 text-sm text-ink-soft">
-                Connect Garmin with the account health access enabled, then sync again. Readiness,
-                sleep, HRV and resting heart rate require this connection.
+                Connect Garmin with the account health access enabled, then sync again.
+                Readiness, sleep, HRV and resting heart rate require this connection.
               </p>
               {sources.data?.auth_method && (
                 <p className="mb-3 text-xs text-ink-muted">
@@ -282,27 +372,17 @@ export default function PhysiologyPage() {
             ) : current ? (
               <div className="grid gap-5 p-5 lg:grid-cols-[220px_1fr]">
                 <div className="flex flex-col justify-center rounded-xl bg-surface-soft p-5">
-                  <div className="flex items-baseline gap-2">
-                    <strong className="text-6xl font-bold text-ink">
-                      {Math.round(current.score)}
-                    </strong>
-                    <span className="text-sm text-ink-muted">/ 100</span>
-                  </div>
-                  <Badge
-                    className="mt-3 w-fit"
-                    tone={
-                      current.grade === 'peak' || current.grade === 'good'
-                        ? 'positive'
-                        : current.grade === 'low'
-                          ? 'negative'
-                          : 'warn'
-                    }
-                  >
-                    {current.grade}
-                  </Badge>
+                  {/*
+                    The headline is the athlete's normal, not a 0-100 number:
+                    which recovery signals are inside their own range. The
+                    score is still there, small, for whoever wants it.
+                  */}
+                  <strong className="text-2xl font-bold leading-tight text-ink">
+                    {normalHeadline(signals)}
+                  </strong>
                   <p className="mt-3 text-sm text-ink-soft">
-                    {current.recommendation ||
-                      current.rationale ||
+                    {normalAdvice(signals) ??
+                      current.rationale ??
                       'Readiness reflects your recent recovery signals.'}
                   </p>
                 </div>
@@ -313,11 +393,32 @@ export default function PhysiologyPage() {
                   {drivers.length ? (
                     <div className="space-y-3">
                       {drivers.map((d) => {
-                        const width = Math.max(0, Math.min(100, d.contribution * 100))
+                        const ok = inNormal(signals, d.key)
                         return (
                           <div key={d.key}>
-                            <div className="flex items-center justify-between gap-3 text-sm">
-                              <span className="font-semibold">{d.label}</span>
+                            {/*
+                              One signal, one row.
+
+                              At 390px the label and the value were on one
+                              flex line, so "Resting HR" broke into two
+                              lines and the delta was pushed onto a third.
+                              Below the small breakpoint the row stacks:
+                              the label is a line of its own, and the value
+                              — the number, its unit, the baseline and the
+                              delta — reads as one line under it.
+                            */}
+                            <div className="flex flex-col gap-0.5 text-sm sm:flex-row sm:items-center sm:justify-between sm:gap-3">
+                              <span className="flex items-center gap-1.5 font-semibold whitespace-nowrap">
+                                {ok != null ? (
+                                  <span
+                                    className={`h-2 w-2 rounded-full ${ok ? 'bg-positive' : 'bg-warn'}`}
+                                    title={
+                                      ok ? 'In your normal range' : 'Outside your normal range'
+                                    }
+                                  />
+                                ) : null}
+                                {d.label}
+                              </span>
                               <span className="text-ink-muted">
                                 {num(d.value)}
                                 {d.unit ? (
@@ -327,16 +428,15 @@ export default function PhysiologyPage() {
                                   <span className="text-ink-faint">
                                     {' '}
                                     · baseline {num(d.baseline)}
-                                    {d.delta != null && ` · Δ ${num(d.delta)}`}
+                                    {d.delta != null && (
+                                      <span className="whitespace-nowrap">
+                                        {' '}
+                                        · Δ {num(d.delta)}
+                                      </span>
+                                    )}
                                   </span>
                                 )}
                               </span>
-                            </div>
-                            <div className="mt-1 h-2 overflow-hidden rounded-full bg-surface-sunken">
-                              <div
-                                className="h-full rounded-full bg-brand-500"
-                                style={{ width: `${width}%` }}
-                              />
                             </div>
                             {d.detail && (
                               <p className="mt-1 text-xs text-ink-muted">{d.detail}</p>
@@ -363,7 +463,7 @@ export default function PhysiologyPage() {
           <div className="grid gap-4 xl:grid-cols-2">
             <ChartFrame
               title="Sleep"
-              subtitle={`Sleep stages by night · baseline ${sleep.data?.items.length ? `${Math.round((sleep.data.items.reduce((n, p) => n + (p.sleep_s ?? 0), 0) / sleep.data.items.length / 3600) * 10) / 10} h average` : '—'}`}
+              subtitle={`${sleepHasStages ? 'Sleep stages by night' : 'Sleep duration by night'} · baseline ${sleep.data?.items.length ? `${Math.round((sleep.data.items.reduce((n, p) => n + (p.sleep_s ?? 0), 0) / sleep.data.items.length / 3600) * 10) / 10} h average` : '—'}`}
               height={280}
               action={<RangeSelector value={days} onChange={setDays} className="self-start" />}
             >
@@ -373,18 +473,7 @@ export default function PhysiologyPage() {
                 </div>
               ) : sleep.data?.items.length ? (
                 <ResponsiveContainer width="100%" height="100%">
-                  <ComposedChart
-                    data={sleep.data.items
-                      .filter((p) => p.date >= since)
-                      .map((p) => ({
-                        ...p,
-                        label: formatDate(p.date).slice(0, 6),
-                        deep: (p.deep_sleep_s ?? 0) / 3600,
-                        rem: (p.rem_s ?? 0) / 3600,
-                        light: (p.light_sleep_s ?? 0) / 3600,
-                        awake: (p.awake_s ?? 0) / 3600,
-                      }))}
-                  >
+                  <ComposedChart data={sleepChartData}>
                     <CartesianGrid stroke={GRID} vertical={false} />
                     <XAxis dataKey="label" tick={{ fontSize: 10, fill: INK_MUTED }} />
                     <YAxis yAxisId="sleep" tick={{ fontSize: 10, fill: INK_MUTED }} unit=" h" />
@@ -395,39 +484,62 @@ export default function PhysiologyPage() {
                       tick={{ fontSize: 10, fill: INK_MUTED }}
                     />
                     <Tooltip />
-                    <Bar
-                      yAxisId="sleep"
-                      stackId="sleep"
-                      dataKey="deep"
-                      name="Deep"
-                      fill={RAMP[4]}
-                    />
-                    <Bar
-                      yAxisId="sleep"
-                      stackId="sleep"
-                      dataKey="rem"
-                      name="REM"
-                      fill={RAMP[3]}
-                    />
-                    <Bar
-                      yAxisId="sleep"
-                      stackId="sleep"
-                      dataKey="light"
-                      name="Light"
-                      fill={BRAND[300]}
-                    />
-                    <Bar
-                      yAxisId="sleep"
-                      stackId="sleep"
-                      dataKey="awake"
-                      name="Awake"
-                      fill={BRAND[100]}
-                    />
+                    {sleepHasStages ? (
+                      <>
+                        <Bar
+                          yAxisId="sleep"
+                          stackId="sleep"
+                          dataKey="deep"
+                          name="Deep"
+                          fill={RAMP[4]}
+                        />
+                        <Bar
+                          yAxisId="sleep"
+                          stackId="sleep"
+                          dataKey="rem"
+                          name="REM"
+                          fill={RAMP[3]}
+                        />
+                        <Bar
+                          yAxisId="sleep"
+                          stackId="sleep"
+                          dataKey="light"
+                          name="Light"
+                          fill={BRAND[300]}
+                        />
+                        <Bar
+                          yAxisId="sleep"
+                          stackId="sleep"
+                          dataKey="awake"
+                          name="Awake"
+                          fill={BRAND[100]}
+                        />
+                      </>
+                    ) : (
+                      <>
+                        {/*
+                          No stage breakdown in this range. The stacked bars
+                          would be four zeros, so the chart drew nothing but
+                          the score line under a subtitle promising stages.
+                          The line is the sleep duration, and the subtitle
+                          says duration.
+                        */}
+                        <Line
+                          yAxisId="sleep"
+                          dataKey="duration"
+                          name="Sleep"
+                          stroke={ACCENT_DATA}
+                          strokeWidth={2}
+                          dot={false}
+                        />
+                      </>
+                    )}
                     <Line
                       yAxisId="score"
                       dataKey="sleep_score"
                       name="Sleep score"
-                      stroke={ACCENT_DATA}
+                      stroke={INK_FAINT}
+                      strokeDasharray="4 3"
                       dot={false}
                     />
                   </ComposedChart>
@@ -560,7 +672,7 @@ export default function PhysiologyPage() {
             {phone ? null : (
               <Card>
                 <CardHeader
-                  title="Body battery, stress and load"
+                  title="Body battery, stress and steps"
                   subtitle="Daily context from Garmin"
                 />
                 {daily.isLoading ? (
@@ -574,13 +686,11 @@ export default function PhysiologyPage() {
                     <table className="w-full text-left text-xs">
                       <thead className="bg-surface-soft text-[10px] uppercase text-ink-muted">
                         <tr>
-                          {['Date', 'Battery avg', 'Stress avg', 'Acute / chronic', 'Steps'].map(
-                            (h) => (
-                              <th key={h} className="px-3 py-2">
-                                {h}
-                              </th>
-                            ),
-                          )}
+                          {['Date', 'Battery avg', 'Stress avg', 'Steps'].map((h) => (
+                            <th key={h} className="px-3 py-2">
+                              {h}
+                            </th>
+                          ))}
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-edge">
@@ -592,9 +702,6 @@ export default function PhysiologyPage() {
                               <td className="px-3 py-2">{formatDate(d.date)}</td>
                               <td className="px-3 py-2">{num(d.body_battery_avg)}</td>
                               <td className="px-3 py-2">{num(d.stress_avg)}</td>
-                              <td className="px-3 py-2">
-                                {num(d.acute_load)} / {num(d.chronic_load)}
-                              </td>
                               <td className="px-3 py-2">
                                 {d.steps == null ? '—' : d.steps.toLocaleString()}
                               </td>

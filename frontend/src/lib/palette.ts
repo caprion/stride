@@ -109,6 +109,7 @@ export const VERDICT_COLORS = {
   short: '#D99A0B',
   missed: '#C0392B',
   substituted: '#3F8FB8',
+  long: '#D99A0B',
   bonus: '#F2B01E',
 } as const
 

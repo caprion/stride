@@ -1,0 +1,91 @@
+{
+  "width": 391,
+  "checks": [
+    {
+      "name": "the viewport is 390px",
+      "ok": true,
+      "detail": "391px"
+    },
+    {
+      "name": "it is the phone",
+      "ok": true,
+      "detail": "Mozilla/5.0 (Linux; Android 15; sdk_gphone64_x86_64 Build/AE"
+    },
+    {
+      "name": "today: the bottom bar reads Today · Runs · Progress · Body",
+      "ok": true,
+      "detail": "Today · Runs · Progress · Body"
+    },
+    {
+      "name": "today: one call",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "today: the guardrail is there",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "today: the plan line is there",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "runs: the bottom bar reads Today · Runs · Progress · Body",
+      "ok": true,
+      "detail": "Today · Runs · Progress · Body"
+    },
+    {
+      "name": "progress: the bottom bar reads Today · Runs · Progress · Body",
+      "ok": true,
+      "detail": "Today · Runs · Progress · Body"
+    },
+    {
+      "name": "progress: shows fitness",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "progress: shows consistency",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "progress: shows best runs",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "progress: shows race range",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "progress: shows milestones",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "body: the bottom bar reads Today · Runs · Progress · Body",
+      "ok": true,
+      "detail": "Today · Runs · Progress · Body"
+    },
+    {
+      "name": "body: \"N of 3 signals in your normal range\"",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "body: no 0-100 score",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "no console errors",
+      "ok": true,
+      "detail": ""
+    }
+  ],
+  "errors": []
+}

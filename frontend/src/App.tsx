@@ -24,6 +24,9 @@ const TrainingPage = lazy(() =>
 const StatsPage = lazy(() =>
   import('./pages/StatsPage').then((m) => ({ default: m.StatsPage })),
 )
+const ProgressPage = lazy(() =>
+  import('./pages/ProgressPage').then((m) => ({ default: m.ProgressPage })),
+)
 const SettingsPage = lazy(() =>
   import('./pages/SettingsPage').then((m) => ({ default: m.SettingsPage })),
 )
@@ -93,6 +96,7 @@ export default function App() {
                 <Route path="/fitness" element={<FitnessPage />} />
                 <Route path="/settings" element={<SettingsPage />} />
                 <Route path="/stats" element={<StatsPage />} />
+                <Route path="/progress" element={<ProgressPage />} />
                 {/* The two the phone cuts. The desktop keeps them. */}
                 <Route
                   path="/training"

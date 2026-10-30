@@ -4,20 +4,21 @@ Baselines use only the preceding 30 calendar days: median sleep duration,
 mean HRV and mean resting HR. No personal baseline means that relative
 driver is unavailable, rather than inventing a population baseline.
 Qualities (clamped to [0,1]): sleep = hours/baseline; sleep score = score/100;
-HRV = HRV/baseline; RHR = 1-(RHR-baseline)/(0.2*baseline);
-stress = 1-stress/100; battery = battery/100;
-load = 1-max(0,acute/chronic-1.3)/1.3.
-Weights are 25/10/25/15/10/10/5. Contributions are renormalised to 100
-over available drivers. Unknown persists score 0 because the frozen column
-is nonnullable, but returns score None so clients cannot mistake it for low.
+HRV = HRV/baseline; RHR = 1-(RHR-baseline)/(0.2*baseline).
+Weights are 25/10/25/15. Contributions are renormalised to 100 over
+available drivers. Unknown persists score 0 because the frozen column is
+nonnullable, but returns score None so clients cannot mistake it for low.
 
-The score keeps all seven drivers, and it keeps them for now: Garmin's own
-metrics — the stress, the body battery and the acute/chronic load — come off
-the Body screen in v0.7.0, but a readiness number that quietly changes
-meaning between two versions of the app is worse than a screen with two
-extra series on it. The screen shows the drivers in ``SHOWN_DRIVERS`` and
-hides the rest; the score, the grade and the drivers this module returns do
-not change.
+Four drivers, not seven. Stress, Body Battery and the acute/chronic load
+ratio came out in v1:
+
+* the acute/chronic ratio did not predict injury in the 2025 Garmin-RUNSAFE
+  cohort (5,205 runners); a single run far longer than the longest of the
+  previous 30 days did, and that guard lives with the run, not in a morning
+  score;
+* stress and Body Battery are Garmin composites built largely from the same
+  HRV the score already reads, so they counted it twice, and v0.7 had already
+  taken them off the Body screen.
 """
 from __future__ import annotations
 
@@ -33,11 +34,7 @@ from .fingerprint import number
 
 #: The readiness drivers the Body screen shows.
 #:
-#: The calculation uses all seven (see the module docstring); these four are
-#: the ones the screen draws: the sleep, the sleep score, the HRV and the
-#: resting heart rate. The screen hides ``stress``, ``body_battery`` and
-#: ``load`` by key — the response still carries them, because they are part
-#: of the explanation of a score that is computed over them.
+#: Since v1 these are also every driver the score is computed over.
 SHOWN_DRIVERS = ('sleep', 'sleep_score', 'hrv', 'resting_hr')
 
 
@@ -108,10 +105,6 @@ def _derive(day: str, row: DailyPhysiology | None, baseline: dict[str, float | N
         hrv_base, rhr_base = baseline['hrv_ms'], baseline['resting_hr']
         add('hrv', 'HRV', row.hrv_ms, hrv_base, 25, row.hrv_ms / hrv_base if row.hrv_ms is not None and hrv_base else None, f'{_round(row.hrv_ms)} ms vs {_round(hrv_base)} ms baseline', unit='ms')
         add('resting_hr', 'Resting HR', row.resting_hr, rhr_base, 15, 1 - (row.resting_hr - rhr_base) / (.2 * rhr_base) if row.resting_hr is not None and rhr_base else None, f'{_round(row.resting_hr)} bpm vs {_round(rhr_base)} bpm baseline', unit='bpm')
-        add('stress', 'Stress', row.stress_avg, 0, 10, 1 - row.stress_avg / 100 if row.stress_avg is not None else None, 'Average daily stress; lower is better', personal=False)
-        add('body_battery', 'Body battery', row.body_battery_avg, 100, 10, row.body_battery_avg / 100 if row.body_battery_avg is not None else None, 'Average daily body battery out of 100', personal=False)
-        ratio = row.acute_load / row.chronic_load if number(row.acute_load) and row.acute_load is not None and number(row.chronic_load, True) and row.chronic_load is not None else None
-        add('load', 'Load', ratio, 1.3, 5, 1 - max(0, ratio - 1.3) / 1.3 if ratio is not None else None, 'Acute/chronic load; ratios above 1.3 reduce readiness', personal=False)
     total_weight = sum(weights)
     score = sum(driver['contribution'] for driver in drivers) / total_weight * 100 if total_weight else None
     costs = sorted(zip(drivers, weights), key=lambda pair: pair[1] - pair[0]['contribution'], reverse=True)

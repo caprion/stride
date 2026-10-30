@@ -37,7 +37,7 @@ from ..security import (
 from ..ingest.fit_importer import parse_fit
 from ..ingest.garmin_account import GarminAccountClient, GarminAccountError, MfaBroker
 from ..ingest.garmin_oauth import GarminAuthError, GarminOAuthClient
-from ..services.persistence import store_activity
+from ..services.persistence import find_duplicate, store_activity
 from .. import network
 
 log = logging.getLogger(__name__)
@@ -360,8 +360,18 @@ def logout() -> dict[str, Any]:
 
 @router.post("/garmin/fit-import")
 async def fit_import(files: list[UploadFile] = File(...), db: Session = Depends(get_db)) -> dict[str, Any]:
-    """Import one or more ``.FIT`` files. No Garmin credentials required."""
+    """Import one or more ``.FIT`` files. No Garmin credentials required.
+
+    The files may come from any watch — a Strava export, a COROS or Wahoo
+    download, a Garmin Connect export. What the file says about itself is
+    what it is read as.
+
+    A run that is already in the history is not added twice: the run that
+    was synced from Garmin and the file that was exported from the watch are
+    the same run, and the store must hold it once.
+    """
     imported: list[dict[str, Any]] = []
+    duplicates: list[dict[str, Any]] = []
     errors: list[dict[str, str]] = []
 
     for upload in files:
@@ -369,6 +379,17 @@ async def fit_import(files: list[UploadFile] = File(...), db: Session = Depends(
         try:
             data = await upload.read()
             activity = parse_fit(data, filename=filename)
+            existing = find_duplicate(db, activity)
+            if existing is not None:
+                duplicates.append(
+                    {
+                        "filename": filename,
+                        "id": existing.id,
+                        "name": existing.name,
+                        "date": existing.local_date,
+                    }
+                )
+                continue
             row, created = store_activity(db, activity)
             imported.append(
                 {
@@ -383,7 +404,12 @@ async def fit_import(files: list[UploadFile] = File(...), db: Session = Depends(
             log.warning("FIT import failed for %s: %s", filename, exc)
             errors.append({"filename": filename, "error": str(exc)[:300]})
     db.commit()
-    return {"imported": len(imported), "activities": imported, "errors": errors}
+    return {
+        "imported": len(imported),
+        "activities": imported,
+        "duplicates": duplicates,
+        "errors": errors,
+    }
 
 
 # --------------------------------------------------------------- pairing

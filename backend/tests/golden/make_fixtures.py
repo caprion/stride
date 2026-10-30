@@ -1,4 +1,4 @@
-"""The golden fixtures: twelve FIT files, each covering one thing that bites.
+"""The golden fixtures: fifteen FIT files, each covering one thing that bites.
 
 Every case is described in plain Python below and rendered into a FIT file by
 :mod:`fit_writer`. There is no randomness and no clock reading anywhere, so
@@ -21,12 +21,17 @@ The cases were chosen because each one breaks a plausible port:
 ``hilly``           an elevation profile that climbs and descends.
 ``gaps``            a paused watch: the record stream has holes in it.
 
-The last three cases are different in kind: they are not shaped by what a port
-might get wrong, they are shaped by what a *watch* actually writes. They were
+The last six cases are different in kind: they are not shaped by what a port
+might get wrong, they are shaped by what a *watch* actually writes. Three of
+them are the byte format a real Garmin Forerunner 965 writes; they were
 written after reading thirteen FIT files downloaded from the athlete's own
 Garmin account (March 2025 - October 2026), and they reproduce the byte
-layout of those files. The data is synthetic: every position is fabricated
-and the serial numbers are invented. See the section at the end of this file.
+layout of those files. The other three are the shape three other sources
+write: a Strava export, a COROS export and a Wahoo export. The data in every
+one of them is synthetic: every position is fabricated and describes the same
+point in the South Pacific, 15 500 km from the nearest point of the athlete's
+real routes, and the serial numbers are invented. See the sections at the end
+of this file.
 """
 
 from __future__ import annotations
@@ -1220,6 +1225,233 @@ def build_real_garmin_nulls() -> tuple[FitWriter, dict[str, Any]]:
     }
 
 
+# ---------------------------------------------------------------------------
+# The format a source that is not a Garmin watch writes
+#
+# A FIT file says who wrote it: the `file_id` message carries a manufacturer,
+# and the `device_info` message carries the watch. Stride was written against
+# a Garmin watch and read every file as one, so a run recorded by another
+# watch — and exported by a third party on the way in — arrived wearing
+# somebody else's name.
+#
+# Three sources, three shapes:
+#
+#   vendor_strava_export  Strava serves the file it re-encoded: its own
+#                  manufacturer in the `file_id` message, and the watch that
+#                  recorded the run is not in the file at all. There is no
+#                  `device_info` message, so the file names no watch.
+#   vendor_coros_export   COROS writes its own manufacturer (294) and its own
+#                  product name, so the file names the watch that recorded
+#                  the run.
+#   vendor_wahoo_export   Wahoo writes the manufacturer (32) and no product
+#                  name, so the file names the watch by its manufacturer
+#                  alone.
+#
+# The manufacturer ids are the ones the FIT profile gives these three; the
+# product ids and the serial numbers are invented, because the products of
+# these three makers are not in the profile's (Garmin's) product list.
+#
+# The data is synthetic, as everywhere else in this file: every position is
+# fabricated and describes the same point in the South Pacific, 15 500 km from
+# the nearest point of the athlete's real routes. No file from any of these
+# three was captured, and none of the three is a copy of anybody's run.
+
+STRAVA_MANUFACTURER = 265
+COROS_MANUFACTURER = 294
+WAHOO_MANUFACTURER = 32
+
+
+def _source_header(writer: FitWriter, date: str, serial: int, manufacturer: int,
+                   product_name: str | None) -> None:
+    """The header a non-Garmin source writes.
+
+    The `file_id` message names the maker, the `device_info` message names
+    the watch — when the source writes one at all.
+    """
+    writer.message("file_id", {
+        "type": "activity",
+        "manufacturer": manufacturer,
+        "product": 0,
+        "serial_number": serial,
+        "time_created": _timestamp(date, 0),
+    })
+    fields: dict[Any, Any] = {
+        "device_index": 0,
+        "device_type": 120,
+        "manufacturer": manufacturer,
+        "product": 0,
+        "serial_number": serial,
+    }
+    if product_name is not None:
+        fields["product_name"] = product_name
+    writer.message("device_info", fields)
+
+
+def build_strava_export() -> tuple[FitWriter, dict[str, Any]]:
+    """A run in the shape a Strava export has.
+
+    Strava re-encodes the file it serves: the `file_id` message carries
+    Strava's own manufacturer, and the watch that recorded the run is not in
+    the file. So there is no `device_info` message, and the run is read as
+    what the file says about it.
+    """
+    date = "2026-05-04T06:05:00Z"
+    records: list[Record] = []
+    for t in range(0, 600):
+        records.append(Record(
+            t,
+            speed=3.4,
+            cadence=80,
+            hr=138 + t // 60,
+            alt=24,
+            lat=SYNTHETIC_LAT + t * 0.00002,
+            lon=SYNTHETIC_LON + t * 0.000015,
+        ))
+    _cumulative(records)
+
+    writer = FitWriter()
+    writer.message("file_id", {
+        "type": "activity",
+        "manufacturer": STRAVA_MANUFACTURER,
+        "product": 0,
+        "serial_number": 9000001,
+        "time_created": _timestamp(date, 0),
+    })
+    # Strava names itself in the file's creator, too.
+    writer.message("file_creator", {"software_version": 1.0})
+    _write_records(writer, records, date)
+
+    avg_speed, max_speed = _stats([r.speed for r in records])
+    avg_hr, max_hr = _stats([r.hr for r in records])
+    avg_cadence, max_cadence = _stats([r.cadence for r in records])
+    for index in range(6):
+        start = index * 100
+        lap_records = records[start:start + 100]
+        _lap_message(writer, date, index + 1, 100.0, 100.0,
+                     lap_records[-1].distance - lap_records[0].distance,
+                     avg_speed, max_speed, avg_hr, max_hr, avg_cadence, max_cadence)
+    _session_message(writer, date, "running", 600.0, 600.0, records[-1].distance + records[-1].speed,
+                     avg_speed, max_speed, avg_hr, max_hr, avg_cadence, max_cadence, calories=580)
+    return writer, {
+        "date": date,
+        "sport": "running",
+        "device": "none",
+        "watch": "records every second",
+        "notes": "The shape of a Strava export: the file_id message carries Strava's own "
+                 "manufacturer (265) and there is no device_info message at all, because the "
+                 "watch that recorded the run is not in the file. So the run has no watch to "
+                 "name, and it must not borrow the name of one that is not in the file. The "
+                 "data is synthetic.",
+    }
+
+
+def build_coros_export() -> tuple[FitWriter, dict[str, Any]]:
+    """A run in the shape a COROS export has.
+
+    COROS names itself twice: the manufacturer in the `file_id` message and
+    the manufacturer in the `device_info` message, which also carries the
+    product name of the watch. The run has a walking warm-up, so the
+    segmentation has something to segment.
+    """
+    date = "2026-05-06T05:40:00Z"
+    records: list[Record] = []
+    # 0-59 s: walking warm-up.
+    for t in range(0, 60):
+        records.append(Record(t, speed=1.3, cadence=30, hr=118 + t // 10, alt=61))
+    # 60-419 s: running.
+    for t in range(60, 420):
+        records.append(Record(
+            t,
+            speed=3.3,
+            cadence=79,
+            hr=136 + (t - 60) // 60,
+            alt=61,
+            lat=SYNTHETIC_LAT + t * 0.00002,
+            lon=SYNTHETIC_LON + t * 0.000015,
+        ))
+    _cumulative(records)
+
+    writer = FitWriter()
+    _source_header(writer, date, serial=9000002, manufacturer=COROS_MANUFACTURER,
+                   product_name="COROS DURA")
+    _write_records(writer, records, date)
+
+    running = [r for r in records if r.speed >= 1.55]
+    avg_speed, max_speed = _stats([r.speed for r in running])
+    avg_hr, max_hr = _stats([r.hr for r in records])
+    avg_cadence, max_cadence = _stats([r.cadence for r in running])
+    for index in range(3):
+        start = index * 140
+        lap_records = records[start:start + 140]
+        _lap_message(writer, date, index + 1, 140.0, 140.0,
+                     lap_records[-1].distance - lap_records[0].distance,
+                     avg_speed, max_speed, avg_hr, max_hr, avg_cadence, max_cadence)
+    _session_message(writer, date, "running", 420.0, 420.0, records[-1].distance + records[-1].speed,
+                     avg_speed, max_speed, avg_hr, max_hr, avg_cadence, max_cadence, calories=430)
+    return writer, {
+        "date": date,
+        "sport": "running",
+        "device": "COROS DURA",
+        "watch": "records every second",
+        "notes": "The shape of a COROS export: the file names COROS (manufacturer 294) in the "
+                 "file_id message and in the device_info message, and the device_info message "
+                 "carries the product name of the watch. The importer reads the watch by its "
+                 "product name, so the run is attributed to the watch and not to a maker it "
+                 "does not belong to. A walking warm-up, so the segmentation has something to "
+                 "segment. The data is synthetic.",
+    }
+
+
+def build_wahoo_export() -> tuple[FitWriter, dict[str, Any]]:
+    """A run in the shape a Wahoo export has.
+
+    Wahoo writes the manufacturer and no product name, so the watch is named
+    by its manufacturer alone. The importer must fall back to the
+    manufacturer, and must render it the way the reference does.
+    """
+    date = "2026-05-09T07:00:00Z"
+    records: list[Record] = []
+    for t in range(0, 600):
+        records.append(Record(
+            t,
+            speed=3.2,
+            cadence=82,
+            hr=143 + t // 60,
+            alt=17,
+            lat=SYNTHETIC_LAT + t * 0.000015,
+            lon=SYNTHETIC_LON + t * 0.00002,
+        ))
+    _cumulative(records)
+
+    writer = FitWriter()
+    _source_header(writer, date, serial=9000003, manufacturer=WAHOO_MANUFACTURER,
+                   product_name=None)
+    _write_records(writer, records, date)
+
+    avg_speed, max_speed = _stats([r.speed for r in records])
+    avg_hr, max_hr = _stats([r.hr for r in records])
+    avg_cadence, max_cadence = _stats([r.cadence for r in records])
+    for index in range(3):
+        start = index * 200
+        lap_records = records[start:start + 200]
+        _lap_message(writer, date, index + 1, 200.0, 200.0,
+                     lap_records[-1].distance - lap_records[0].distance,
+                     avg_speed, max_speed, avg_hr, max_hr, avg_cadence, max_cadence)
+    _session_message(writer, date, "running", 600.0, 600.0, records[-1].distance + records[-1].speed,
+                     avg_speed, max_speed, avg_hr, max_hr, avg_cadence, max_cadence, calories=580)
+    return writer, {
+        "date": date,
+        "sport": "running",
+        "device": "wahoo_fitness",
+        "watch": "records every second",
+        "notes": "The shape of a Wahoo export: the device_info message carries the manufacturer "
+                 "(32, wahoo_fitness) and no product name, so the watch is named by its "
+                 "manufacturer alone. The reference decoder renders that manufacturer as "
+                 "'wahoo_fitness'; the port must render it the same way, or the two disagree "
+                 "about which watch recorded the run. The data is synthetic.",
+    }
+
+
 BUILDERS = (
     ("mixed_run", build_mixed_run),
     ("hr_gps_run", build_hr_gps_run),
@@ -1233,6 +1465,9 @@ BUILDERS = (
     ("real_garmin_run", build_real_garmin_run),
     ("real_garmin_gap", build_real_garmin_gap),
     ("real_garmin_nulls", build_real_garmin_nulls),
+    ("vendor_strava_export", build_strava_export),
+    ("vendor_coros_export", build_coros_export),
+    ("vendor_wahoo_export", build_wahoo_export),
 )
 
 

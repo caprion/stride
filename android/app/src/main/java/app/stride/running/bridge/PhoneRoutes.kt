@@ -19,6 +19,9 @@ package app.stride.running.bridge
  */
 object PhoneRoutes {
 
+    /** The route that brings a file in: `POST /api/v1/auth/garmin/fit-import`. */
+    const val FIT_IMPORT = "/api/v1/auth/garmin/fit-import"
+
     /** What the phone does with a request. */
     enum class Decision {
         /** Straight to the core. */
@@ -62,4 +65,20 @@ object PhoneRoutes {
             else -> Decision.Forward
         }
     }
+
+    /**
+     * Does this request write real data onto the phone?
+     *
+     * A pull brings the athlete's runs down; a FIT import brings a file in.
+     * Both are real data, and real data does not land on a phone with no
+     * screen lock: anyone who picks the phone up would see a year of
+     * health.
+     *
+     * The rule is here, with no Android in it, so it can be tested without
+     * a phone — and so that the caller cannot check it in the wrong place.
+     * A refusal that comes *after* the pull has been queued is a refusal
+     * that has already let the data in.
+     */
+    fun writesRealData(decision: Decision, path: String): Boolean =
+        decision == Decision.GarminPull || path == FIT_IMPORT
 }
