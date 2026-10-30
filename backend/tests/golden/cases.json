@@ -143,6 +143,42 @@
       "sport": "running",
       "start": "2026-03-04T18:45:00Z",
       "watch": "records every second"
+    },
+    "vendor_coros_export": {
+      "bytes": 9545,
+      "case_id": "vendor_coros_export",
+      "date": "2026-05-06",
+      "device": "COROS DURA",
+      "file": "backend/tests/golden/fixtures/vendor_coros_export.fit",
+      "notes": "The shape of a COROS export: the file names COROS (manufacturer 294) in the file_id message and in the device_info message, and the device_info message carries the product name of the watch. The importer reads the watch by its product name, so the run is attributed to the watch and not to a maker it does not belong to. A walking warm-up, so the segmentation has something to segment. The data is synthetic.",
+      "sha256": "b11c364a4e53181932a94cdcef442db3f6133812b2a95d46e5d8b49dc0daa744",
+      "sport": "running",
+      "start": "2026-05-06T05:40:00Z",
+      "watch": "records every second"
+    },
+    "vendor_strava_export": {
+      "bytes": 14189,
+      "case_id": "vendor_strava_export",
+      "date": "2026-05-04",
+      "device": "none",
+      "file": "backend/tests/golden/fixtures/vendor_strava_export.fit",
+      "notes": "The shape of a Strava export: the file_id message carries Strava's own manufacturer (265) and there is no device_info message at all, because the watch that recorded the run is not in the file. So the run has no watch to name, and it must not borrow the name of one that is not in the file. The data is synthetic.",
+      "sha256": "366de394cb091ab7fa6e647651c9291bf1f340b9691aafb561b37c304652f557",
+      "sport": "running",
+      "start": "2026-05-04T06:05:00Z",
+      "watch": "records every second"
+    },
+    "vendor_wahoo_export": {
+      "bytes": 14122,
+      "case_id": "vendor_wahoo_export",
+      "date": "2026-05-09",
+      "device": "wahoo_fitness",
+      "file": "backend/tests/golden/fixtures/vendor_wahoo_export.fit",
+      "notes": "The shape of a Wahoo export: the device_info message carries the manufacturer (32, wahoo_fitness) and no product name, so the watch is named by its manufacturer alone. The reference decoder renders that manufacturer as 'wahoo_fitness'; the port must render it the same way, or the two disagree about which watch recorded the run. The data is synthetic.",
+      "sha256": "0936bd25ddaa69d899e6f43ab352bda173ac94f80bb8ca959d6b84f35ebc991b",
+      "sport": "running",
+      "start": "2026-05-09T07:00:00Z",
+      "watch": "records every second"
     }
   },
   "command": "python3 scripts/golden.py --fixtures",
