@@ -216,18 +216,23 @@ def find_duplicate(db: Session, data: dict[str, Any]) -> Activity | None:
     """The activity already in the store that is the same run.
 
     ``(source, external_id)`` makes the write idempotent, so re-importing
-    the same file updates the run it wrote the first time. It does not stop
-    the *same run* arriving twice under two identities: a run synced from
-    Garmin and the same run exported as a file have different external ids,
-    and the file's id is the watch's, not Garmin's.
+    the same file updates the run it wrote the first time — that is not a
+    duplicate, it is the same row. It does not stop the *same run* arriving
+    twice under two identities: a run synced from Garmin and the same run
+    exported as a file have different external ids, and the file's id is the
+    watch's, not Garmin's.
 
     So the run itself is the key: two rows are the same run when they start
     within two minutes of each other and their distances are within two per
     cent. Anything looser would merge two runs of the same evening.
     """
-    start = data.get("start_time")
+    from ..ingest.normalize import parse_iso
+
+    source = data.get("source") or "garmin"
+    external_id = str(data.get("external_id"))
+    start = parse_iso(data.get("start_time"))
     distance = data.get("distance_m")
-    if not isinstance(start, datetime) or not distance:
+    if start is None or not distance:
         return None
     window = timedelta(seconds=DUPLICATE_WINDOW_S)
     rows = db.execute(
@@ -237,6 +242,10 @@ def find_duplicate(db: Session, data: dict[str, Any]) -> Activity | None:
         )
     ).scalars()
     for row in rows:
+        if row.source == source and row.external_id == external_id:
+            # The same file: the write is idempotent, so this row is updated
+            # in place rather than duplicated.
+            continue
         if not row.distance_m:
             continue
         if abs(row.distance_m - distance) <= distance * DUPLICATE_DISTANCE_RATIO:
