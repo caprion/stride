@@ -1204,6 +1204,59 @@ mod tests {
         assert_eq!(prescribed.verdict, "missed");
     }
 
+    /// A session whose kind is not known is judged on what happened.
+    ///
+    /// The kind is not a fact, so it may not make the verdict: an unknown
+    /// session is not a rest day, and nothing logged against it is not the
+    /// "hit" a rest day earns.
+    #[test]
+    fn a_session_with_an_unknown_kind_is_judged_on_what_happened() {
+        let mut unknown = session("unknown", Some(5000.0));
+        unknown.date = "2026-03-02".to_string();
+        let run = activity(1, "running", 5000.0, "2026-03-02");
+
+        // The run answered the session and met its distance target.
+        let hit = verdict_for(&unknown, Some(&run), "2026-03-10");
+        assert_eq!(hit.verdict, "hit");
+        // It is not "substituted": that verdict is for a session the athlete
+        // swapped out, and this one was answered.
+        assert_ne!(hit.verdict, "substituted");
+
+        // Nothing was logged, so the session was missed. An unknown kind is
+        // not a rest day, so the rest-day override does not make it a hit.
+        let missed = verdict_for(&unknown, None, "2026-03-10");
+        assert_eq!(missed.verdict, "missed");
+    }
+
+    /// An unknown session is answered by a run, like any other session.
+    #[test]
+    fn an_unknown_session_is_answered_by_a_run() {
+        let mut unknown = session("unknown", Some(5000.0));
+        unknown.date = "2026-03-02".to_string();
+        let mut answered = unknown.clone();
+        answered.date = "2026-03-05".to_string();
+        let sessions = vec![unknown, answered];
+        let activities = vec![activity(1, "running", 5000.0, "2026-03-05")];
+        let inputs = PlanInputs {
+            today: "2026-03-10",
+            from: "2026-03-01",
+            to: "2026-03-21",
+            sessions: &sessions,
+            activities: &activities,
+            physiology: &[],
+        };
+
+        let matches = match_sessions(&inputs);
+        assert_eq!(matches.len(), 2);
+        // The run of the 5th answers the session of the 5th.
+        assert!(matches[1].activity.is_some());
+        assert_eq!(matches[1].verdict.verdict, "hit");
+        // The session of the 2nd has nothing against it: missed, and never
+        // the "hit" a rest day earns for a logged absence.
+        assert!(matches[0].activity.is_none());
+        assert_eq!(matches[0].verdict.verdict, "missed");
+    }
+
     #[test]
     fn the_plan_uses_the_analytics_run_sports_not_the_model_ones() {
         // The reference has two sets and they disagree. The plan engine uses
@@ -1423,6 +1476,29 @@ pub struct TodayPlan {
     pub has_plan: bool,
 }
 
+/// The name of a session, for the words the screen reads.
+///
+/// A session whose kind is not known is named by its title, or by
+/// "session": "unknown" is not a kind of session, and a sentence that says
+/// "the planned unknown session" reads as one.
+pub fn session_name(session: &PlanSession) -> String {
+    session
+        .title
+        .clone()
+        .filter(|title| !title.trim().is_empty())
+        .unwrap_or_else(|| kind_name(&session.session_type))
+}
+
+/// The name of a session kind, or "session" when the kind is not known.
+fn kind_name(kind: &str) -> String {
+    let kind = kind.trim();
+    if kind.is_empty() || kind.eq_ignore_ascii_case("unknown") {
+        "session".to_string()
+    } else {
+        kind.to_string()
+    }
+}
+
 /// Today's recommendation.
 ///
 /// The reference reads the clock and the database; everything it then *decides*
@@ -1477,12 +1553,7 @@ pub fn today_plan(input: &TodayInput<'_>) -> TodayPlan {
     let recommendation = if adjust {
         format!("Shorten today's session or swap quality for an easy run because {why}.")
     } else {
-        let title = session
-            .title
-            .clone()
-            .filter(|title| !title.is_empty())
-            .unwrap_or_else(|| session.session_type.clone());
-        format!("Complete the planned {title} session.")
+        format!("Complete the planned {} session.", session_name(session))
     };
 
     let mut reasons: Vec<&str> = Vec::new();

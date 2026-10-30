@@ -329,6 +329,22 @@ def extra_activities(db: Session, from_date: str, to_date: str) -> list[dict[str
     return [{**_activity_dict(a),"verdict":"bonus"} for a in acts if a.id not in claimed]
 
 
+def _session_name(session: Any) -> str:
+    """The name of a session, for the words the screen reads.
+
+    A session whose kind is not known is named by its title, or by
+    "session": "unknown" is not a kind of session, and a sentence that says
+    "the planned unknown session" reads as one.
+    """
+    title = getattr(session, "title", None)
+    if title:
+        return str(title)
+    kind = str(getattr(session, "session_type", "") or "").strip()
+    if not kind or kind.lower() == "unknown":
+        return "session"
+    return kind
+
+
 def today(db: Session) -> dict[str, Any]:
     d=date.today().isoformat(); sessions=_planned(db,d,d); readiness=db.execute(select(DailyPhysiology).where(DailyPhysiology.date==d)).scalar_one_or_none()
     if not sessions: return {"date":d,"session":None,"week":None,"readiness":getattr(readiness,"training_readiness",None),"recommendation":"No plan is defined for today; add or import a plan to get a recommendation.","rationale":"There is no planned session to compare or adjust.","has_plan":False}
@@ -340,7 +356,7 @@ def today(db: Session) -> dict[str, Any]:
         behind=(logged/1000) < week.target_km*min(elapsed/7,1)*.75
     adjust=low or behind
     why="readiness is low" if low else "this week's running volume is behind target"
-    rec=f"Shorten today's session or swap quality for an easy run because {why}." if adjust else f"Complete the planned {s.title or s.session_type} session."
+    rec=f"Shorten today's session or swap quality for an easy run because {why}." if adjust else f"Complete the planned {_session_name(s)} session."
     rationale="; ".join(x for x,yes in (("readiness is below 40",low),("week-to-date running volume is behind its target",behind)) if yes) or "No low-readiness or behind-volume signal was available."
     return {"date":d,"session":_session_dict(s),"week":{"id":week.id,"week_number":week.week_number,"target_km":week.target_km} if week else None,"readiness":readiness.training_readiness if readiness else None,"recommendation":rec,"rationale":rationale,"has_plan":True}
 

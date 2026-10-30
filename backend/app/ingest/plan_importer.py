@@ -1,4 +1,9 @@
-"""Parse athlete-authored plans into a format-independent plan tree."""
+"""Parse athlete-authored plans into a format-independent plan tree.
+
+A row whose text names no kind of session is imported as ``unknown``: the
+document did not say what kind of session it was, and the importer does not
+say so either.
+"""
 from __future__ import annotations
 
 import csv
@@ -103,7 +108,12 @@ def _classify(title: str, details: str) -> str:
         return "tempo"
     if "recovery" in s:
         return "recovery"
-    return "easy"
+    # Nothing in the row names a kind of session — "Session 4", "Zona 3" —
+    # so the kind is unknown. It used to be "easy", which is a guess: the
+    # plan then said the athlete had an easy run prescribed, and every
+    # verdict, every pace band and every comparison downstream treated that
+    # guess as the athlete's own words.
+    return "unknown"
 
 
 def _session(title: str, details: str, day: date, paces: dict[str, tuple[int | None, int | None]]) -> dict[str, Any]:
@@ -115,8 +125,11 @@ def _session(title: str, details: str, day: date, paces: dict[str, tuple[int | N
     else:
         pace = parse_pace(race_pace.group(1) if race_pace else pace_source) if kind != "race" or race_pace else (None, None)
     if pace == (None, None):
-        group = "easy" if kind in ("easy", "recovery") else "long" if kind == "long" else "tempo" if kind == "tempo" else "interval" if kind == "interval" else "easy"
-        pace = paces.get(group, (None, None))
+        # The phase's pace bands belong to the kinds they were written for.
+        # An unknown session belongs to none of them, so it gets no band:
+        # the easy band would be the same guess, one step later.
+        group = None if kind == "unknown" else ("easy" if kind in ("easy", "recovery") else "long" if kind == "long" else "tempo" if kind == "tempo" else "interval" if kind == "interval" else "easy")
+        pace = paces.get(group, (None, None)) if group else (None, None)
     rep = re.search(r"(\d+)\s*[×x]\s*(\d+(?:\.\d+)?)\s*(km|m)\b", title, re.I) if kind == "interval" else None
     rep_distance = (int(rep.group(1))*float(rep.group(2))*(1000 if rep.group(3).lower()=="km" else 1)) if rep else None
     distance = (parse_distance(details) or rep_distance) if rep else None

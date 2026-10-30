@@ -865,4 +865,17 @@ mod payload_tests {
         assert_eq!(plan_intent(Some("strength")), None);
         assert_eq!(plan_intent(None), None);
     }
+
+    #[test]
+    fn an_unknown_session_type_gives_a_run_no_intent() {
+        // A row that names no kind of session says nothing about what the
+        // run was for, so the comparison has no basis and falls back to
+        // distance — and says so.
+        assert_eq!(plan_intent(Some("unknown")), None);
+        assert_eq!(plan_intent(Some("Unknown")), None);
+        assert_eq!(plan_intent(Some("unknown_session")), None);
+
+        let basis = comparison_basis(&[plan_intent(Some("unknown")), plan_intent(Some("easy"))]);
+        assert_eq!(basis, ComparisonBasis::Distance);
+    }
 }

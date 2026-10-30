@@ -601,13 +601,20 @@ def import_document(body: ImportBody, db: Session = Depends(get_db)) -> dict[str
             PlanSession(
                 week_id=week.id if week else None,
                 block_id=block.id,
+                # A row that names no kind of session is unknown. It is not
+                # easy: the document did not say so.
+                session_type=(
+                    payload["session_type"]
+                    if isinstance(payload.get("session_type"), str)
+                    and payload["session_type"].strip()
+                    else "unknown"
+                ),
                 **{
                     key: value
                     for key, value in payload.items()
                     if key
                     in {
                         "date",
-                        "session_type",
                         "title",
                         "details",
                         "target_distance_m",
@@ -905,6 +912,22 @@ def get_today(db: Session = Depends(get_db)) -> dict[str, Any]:
     }
 
 
+def _session_name(session: dict[str, Any]) -> str:
+    """The name of a session, for the words the recommendation reads.
+
+    A session whose kind is not known is named by its title, or by
+    "session": "unknown" is not a kind of session, and a sentence that says
+    "the planned unknown session" reads as one.
+    """
+    title = session.get("title")
+    if title:
+        return str(title)
+    kind = str(session.get("session_type") or "").strip()
+    if not kind or kind.lower() == "unknown":
+        return "session"
+    return kind
+
+
 def _recommend(
     db: Session,
     session: dict[str, Any],
@@ -923,7 +946,7 @@ def _recommend(
       run spikes past what the legs are used to;
     * only a readiness dip adjusts a session, and it only ever makes it easier.
     """
-    title = session.get("title") or session.get("session_type") or "session"
+    title = _session_name(session)
     kind = session.get("session_type")
 
     done = session.get("activity")
