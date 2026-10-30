@@ -463,7 +463,9 @@ fn the_phone_answers_the_four_screens_from_its_own_database() {
             run.local_date = day(offset);
             run.start_time = chrono::Utc::now() - chrono::Duration::days(offset);
             run.distance_m = distance;
-            store.upsert_activity(&run).expect("the run was not written");
+            store
+                .upsert_activity(&run)
+                .expect("the run was not written");
         }
 
         // A month of nights, so last night has a baseline to be read
@@ -483,7 +485,8 @@ fn the_phone_answers_the_four_screens_from_its_own_database() {
     }
 
     // ------------------------------------------------------------ Today
-    let today_call = uniffi_stride::stride_call("GET".into(), "/api/v1/insights/today".into(), None);
+    let today_call =
+        uniffi_stride::stride_call("GET".into(), "/api/v1/insights/today".into(), None);
     let parsed: Value = serde_json::from_str(&today_call).expect("the answer is JSON");
     assert_eq!(parsed["ok"], true, "the answer was {today_call}");
     let body = &parsed["body"];
@@ -540,7 +543,10 @@ fn the_phone_answers_the_four_screens_from_its_own_database() {
     let parsed: Value = serde_json::from_str(&progress_call).expect("the answer is JSON");
     assert_eq!(parsed["ok"], true, "the answer was {progress_call}");
     let body = &parsed["body"];
-    assert_eq!(body["milestones"]["total_runs"], 3, "the progress was {progress_call}");
+    assert_eq!(
+        body["milestones"]["total_runs"], 3,
+        "the progress was {progress_call}"
+    );
     assert_eq!(
         body["milestones"]["total_m"], 30_000.0,
         "the progress was {progress_call}"
@@ -556,11 +562,17 @@ fn the_phone_answers_the_four_screens_from_its_own_database() {
         "the progress was {progress_call}"
     );
     assert!(
-        !body["consistency"]["weeks"].as_array().expect("there are weeks").is_empty(),
+        !body["consistency"]["weeks"]
+            .as_array()
+            .expect("there are weeks")
+            .is_empty(),
         "the progress was {progress_call}"
     );
     assert!(
-        !body["bests"].as_array().expect("there are bests").is_empty(),
+        !body["bests"]
+            .as_array()
+            .expect("there are bests")
+            .is_empty(),
         "the progress was {progress_call}"
     );
     assert!(
@@ -569,7 +581,8 @@ fn the_phone_answers_the_four_screens_from_its_own_database() {
     );
 
     // -------------------------------------------------------------- Runs
-    let runs = uniffi_stride::stride_call("GET".into(), "/api/v1/activities?per_page=10".into(), None);
+    let runs =
+        uniffi_stride::stride_call("GET".into(), "/api/v1/activities?per_page=10".into(), None);
     let parsed: Value = serde_json::from_str(&runs).expect("the answer is JSON");
     assert_eq!(parsed["ok"], true, "the answer was {runs}");
     let items = parsed["body"]["items"].as_array().expect("there are items");
@@ -584,7 +597,10 @@ fn the_phone_answers_the_four_screens_from_its_own_database() {
     let parsed: Value = serde_json::from_str(&chips).expect("the answer is JSON");
     assert_eq!(parsed["ok"], true, "the answer was {chips}");
     assert!(
-        !parsed["body"]["items"].as_object().expect("there are chips").is_empty(),
+        !parsed["body"]["items"]
+            .as_object()
+            .expect("there are chips")
+            .is_empty(),
         "the chips were {chips}"
     );
 }
