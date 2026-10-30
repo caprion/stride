@@ -19,7 +19,10 @@ const STATE_LABEL: Record<TodayInsight['state'], string> = {
   empty: 'Today',
   done: 'Done today',
   go: 'Today',
-  easy: 'Take it easy',
+  // The eyebrow names why the call is what it is, and leaves the call
+  // itself to the headline: "Take it easy" above "Take the day, or make it
+  // very easy" would argue with itself.
+  easy: 'Recovery',
   nudge: 'Today',
   comeback: 'Comeback',
 }

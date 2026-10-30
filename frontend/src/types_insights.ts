@@ -79,7 +79,15 @@ export interface Chip {
 
 export interface Fitness {
   headline: string
-  delta_pct: number
+  /**
+   * The change in efficiency as a percentage, when it means something.
+   *
+   * `null` when the readings cannot carry a percentage — the baseline was
+   * not a real run's worth of efficiency, or the change is far outside
+   * anything a body does. A percentage against a near-zero baseline is an
+   * artefact of the division, not a fitness change.
+   */
+  delta_pct: number | null
   recent_runs: number
   earlier_runs: number
   pace_now_s_km: number | null
