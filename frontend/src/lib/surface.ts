@@ -72,7 +72,7 @@ export const DESKTOP_DESTINATIONS: Destination[] = [
   { to: '/plan', label: 'Plan', icon: ClipboardCheck },
   { to: '/feed', label: 'Activity feed', icon: Activity },
   { to: '/training', label: 'Training', icon: CalendarDays },
-  { to: '/physiology', label: 'Physiology', icon: HeartPulse },
+  { to: '/physiology', label: 'Body', icon: HeartPulse },
   { to: '/fitness', label: 'Running form', icon: Gauge },
   { to: '/compare', label: 'Compare', icon: BarChart3 },
   { to: '/stats', label: 'Statistics', icon: TrendingUp },

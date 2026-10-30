@@ -215,8 +215,17 @@ export default function PhysiologyPage() {
   }, [current, phone])
   return (
     <div className="mx-auto max-w-7xl p-5">
+      {/*
+        One name everywhere: **Body**.
+
+        The phone tab was already called Body, and the desktop said
+        Physiology for the same screen. Two names for one screen is a bug
+        in the vocabulary, not a difference between the surfaces: the
+        route stays `/physiology`, but nobody has to learn a second word
+        for the page they already reach from Today.
+      */}
       <PageHeader
-        title={phone ? 'Body' : 'Physiology'}
+        title="Body"
         description={
           phone
             ? 'Your readiness, your sleep, and your resting heart rate.'
