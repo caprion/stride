@@ -15,7 +15,7 @@ export type SessionType =
  * not a failure, and it is never red.
  */
 export type Verdict =
-  'hit' | 'missed_pace' | 'short' | 'missed' | 'substituted' | 'bonus' | 'not_yet'
+  'hit' | 'missed_pace' | 'short' | 'missed' | 'substituted' | 'long' | 'bonus' | 'not_yet'
 
 export interface PlanBlock {
   id: number

@@ -176,8 +176,16 @@ export default function ComparePage() {
     )
   }
 
+  // "Strongest" only means something between runs with the same purpose. A
+  // time trial beats an easy run on pace by design; marking it teaches
+  // faster-is-better on the page a runner opens after easy weeks. Without
+  // knowing each run's intent, distance within 25% is the proxy: when the
+  // runs differ more than that, nothing is marked.
+  const distances = runs.map((run) => run.distance_m).filter((d) => d > 0)
+  const comparable =
+    distances.length >= 2 && Math.max(...distances) <= Math.min(...distances) * 1.25
   const bestValues = (parameter: CompareParameter) => {
-    if (parameter.better === 'neutral') return new Set<number>()
+    if (!comparable || parameter.better === 'neutral') return new Set<number>()
     const values = runs
       .map((run) => run.values[parameter.key])
       .filter((value): value is number => value != null)
@@ -276,7 +284,11 @@ export default function ComparePage() {
               <Card className="overflow-hidden">
                 <CardHeader
                   title="Run comparison"
-                  subtitle="Rows with a green marker show the strongest value for that parameter."
+                  subtitle={
+                    comparable
+                      ? 'Green marks the strongest value, between runs of a similar distance.'
+                      : 'These runs differ in distance, so nothing is marked as strongest: they had different jobs.'
+                  }
                 />
                 <div className="overflow-x-auto">
                   <table className="w-full min-w-[620px] text-left text-xs">

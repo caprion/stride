@@ -26,7 +26,7 @@ import {
   ZONE_COLORS,
 } from '../lib/palette'
 import { formatDate } from '../lib/format'
-import { Card, CardHeader, EmptyState, PageHeader, Skeleton, Badge } from '../components/ui'
+import { Card, CardHeader, EmptyState, PageHeader, Skeleton } from '../components/ui'
 import { isPhone } from '../lib/surface'
 import { ConnectPrompt } from '../components/ConnectPrompt'
 import { ChartFrame } from '../components/charts'
@@ -39,6 +39,51 @@ const gradeColor: Record<string, string> = {
   low: ZONE_COLORS[4],
   unknown: INK_FAINT,
 }
+/**
+ * Whether a driver is inside the athlete's normal range: sleep within an
+ * hour of their usual, HRV at least 85% of it, resting HR under 5 bpm above
+ * it. `null` for a driver with no personal baseline.
+ */
+function inNormal(d: {
+  key: string
+  value: number | null
+  baseline?: number | null
+}): boolean | null {
+  if (d.baseline == null || d.value == null) return null
+  if (d.key === 'sleep') return d.value >= d.baseline - 1
+  if (d.key === 'hrv') return d.value >= d.baseline * 0.85
+  if (d.key === 'resting_hr') return d.value < d.baseline + 5
+  return null
+}
+
+function normalHeadline(
+  drivers: { key: string; value: number | null; baseline?: number | null }[],
+): string {
+  const read = drivers.filter((d) => inNormal(d) != null)
+  if (!read.length) return 'Building your baseline'
+  const normal = read.filter((d) => inNormal(d)).length
+  return `${normal} of ${read.length} signals in your normal range`
+}
+
+/**
+ * The advice, from the same thresholds Today uses, so the two screens never
+ * disagree (a "peak, you're primed" score after a short night used to sit
+ * beside "go easy" on Today).
+ */
+function normalAdvice(
+  drivers: { key: string; value: number | null; baseline?: number | null }[],
+): string | null {
+  const read = drivers.filter((d) => inNormal(d) != null)
+  if (!read.length) return null
+  const off = read.filter((d) => !inNormal(d))
+  if (!off.length) return 'Recovery looks normal. Train as you planned.'
+  const names = off.map((d) =>
+    d.key === 'resting_hr' ? 'resting HR' : d.key === 'hrv' ? 'HRV' : d.key,
+  )
+  const sentence = `${names.join(' and ')} outside your normal range: go easy today, or take the day.`
+  return sentence.charAt(0).toUpperCase() + sentence.slice(1)
+}
+
 const num = (v: number | null | undefined, suffix = '') =>
   v == null ? '—' : `${Math.round(v * 10) / 10}${suffix}`
 
@@ -214,8 +259,8 @@ export default function PhysiologyPage() {
             />
             <div className="px-5 pb-5">
               <p className="mb-3 text-sm text-ink-soft">
-                Connect Garmin with the account health access enabled, then sync again. Readiness,
-                sleep, HRV and resting heart rate require this connection.
+                Connect Garmin with the account health access enabled, then sync again.
+                Readiness, sleep, HRV and resting heart rate require this connection.
               </p>
               {sources.data?.auth_method && (
                 <p className="mb-3 text-xs text-ink-muted">
@@ -282,28 +327,21 @@ export default function PhysiologyPage() {
             ) : current ? (
               <div className="grid gap-5 p-5 lg:grid-cols-[220px_1fr]">
                 <div className="flex flex-col justify-center rounded-xl bg-surface-soft p-5">
-                  <div className="flex items-baseline gap-2">
-                    <strong className="text-6xl font-bold text-ink">
-                      {Math.round(current.score)}
-                    </strong>
-                    <span className="text-sm text-ink-muted">/ 100</span>
-                  </div>
-                  <Badge
-                    className="mt-3 w-fit"
-                    tone={
-                      current.grade === 'peak' || current.grade === 'good'
-                        ? 'positive'
-                        : current.grade === 'low'
-                          ? 'negative'
-                          : 'warn'
-                    }
-                  >
-                    {current.grade}
-                  </Badge>
+                  {/*
+                    The headline is the athlete's normal, not a 0-100 number:
+                    which recovery signals are inside their own range. The
+                    score is still there, small, for whoever wants it.
+                  */}
+                  <strong className="text-2xl font-bold leading-tight text-ink">
+                    {normalHeadline(drivers)}
+                  </strong>
                   <p className="mt-3 text-sm text-ink-soft">
-                    {current.recommendation ||
-                      current.rationale ||
+                    {normalAdvice(drivers) ??
+                      current.rationale ??
                       'Readiness reflects your recent recovery signals.'}
+                  </p>
+                  <p className="mt-2 text-xs text-ink-muted">
+                    Readiness score {Math.round(current.score)}/100 · {current.grade}
                   </p>
                 </div>
                 <div>
@@ -313,11 +351,21 @@ export default function PhysiologyPage() {
                   {drivers.length ? (
                     <div className="space-y-3">
                       {drivers.map((d) => {
-                        const width = Math.max(0, Math.min(100, d.contribution * 100))
+                        const ok = inNormal(d)
                         return (
                           <div key={d.key}>
                             <div className="flex items-center justify-between gap-3 text-sm">
-                              <span className="font-semibold">{d.label}</span>
+                              <span className="flex items-center gap-1.5 font-semibold">
+                                {ok != null ? (
+                                  <span
+                                    className={`h-2 w-2 rounded-full ${ok ? 'bg-positive' : 'bg-warn'}`}
+                                    title={
+                                      ok ? 'In your normal range' : 'Outside your normal range'
+                                    }
+                                  />
+                                ) : null}
+                                {d.label}
+                              </span>
                               <span className="text-ink-muted">
                                 {num(d.value)}
                                 {d.unit ? (
@@ -331,12 +379,6 @@ export default function PhysiologyPage() {
                                   </span>
                                 )}
                               </span>
-                            </div>
-                            <div className="mt-1 h-2 overflow-hidden rounded-full bg-surface-sunken">
-                              <div
-                                className="h-full rounded-full bg-brand-500"
-                                style={{ width: `${width}%` }}
-                              />
                             </div>
                             {d.detail && (
                               <p className="mt-1 text-xs text-ink-muted">{d.detail}</p>
@@ -574,13 +616,17 @@ export default function PhysiologyPage() {
                     <table className="w-full text-left text-xs">
                       <thead className="bg-surface-soft text-[10px] uppercase text-ink-muted">
                         <tr>
-                          {['Date', 'Battery avg', 'Stress avg', 'Acute / chronic', 'Steps'].map(
-                            (h) => (
-                              <th key={h} className="px-3 py-2">
-                                {h}
-                              </th>
-                            ),
-                          )}
+                          {[
+                            'Date',
+                            'Battery avg',
+                            'Stress avg',
+                            'Acute / chronic',
+                            'Steps',
+                          ].map((h) => (
+                            <th key={h} className="px-3 py-2">
+                              {h}
+                            </th>
+                          ))}
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-edge">

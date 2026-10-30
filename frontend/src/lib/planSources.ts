@@ -26,8 +26,10 @@ const TONES: Record<string, VerdictTone> = {
   hit: 'positive',
   missed_pace: 'warn',
   short: 'warn',
-  missed: 'negative',
+  // Not red: a session that did not happen is information, not a failure.
+  missed: 'neutral',
   substituted: 'info',
+  long: 'warn',
   bonus: 'brand',
   // A session that has not happened yet. Grey: it is not a failure.
   not_yet: 'neutral',
@@ -44,8 +46,9 @@ const LABELS: Record<string, string> = {
   not_yet: 'Not yet',
   missed_pace: 'Missed pace',
   short: 'Short',
-  missed: 'Missed',
+  missed: 'Not run',
   substituted: 'Substituted',
+  long: 'Longer than planned',
   bonus: 'Bonus',
   less_than_usual: 'less than usual',
   more_than_usual: 'more than usual',

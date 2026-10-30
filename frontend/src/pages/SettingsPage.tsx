@@ -15,6 +15,7 @@
  * backend are shown verbatim — they are already written for humans.
  */
 
+import { GoalPauseCard } from '../components/GoalPauseCard'
 import { useEffect, useRef, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
@@ -305,6 +306,8 @@ function DesktopSettings() {
           exitNode={auth?.exit_node ?? null}
         />
 
+        <GoalPauseCard />
+
         <SyncSettingsCard
           loading={authQuery.isLoading}
           auth={auth}
@@ -511,6 +514,8 @@ function PhoneSettings() {
             ) : null}
           </div>
         </Card>
+
+        <GoalPauseCard />
 
         <Card>
           <CardHeader title="About" />
@@ -950,9 +955,7 @@ function PersonalKeySection({ onRefresh }: { onRefresh: () => Promise<void> }) {
         sleep, resting heart rate and body battery as well as your activities.
       </SectionIntro>
 
-      <HowItWorks>
-        Garmin shows the key once — copy it and paste it below.
-      </HowItWorks>
+      <HowItWorks>Garmin shows the key once — copy it and paste it below.</HowItWorks>
 
       <Field label="Personal API key" hint={localDataLine()}>
         <input
@@ -1875,8 +1878,11 @@ function HistoryCard({ syncing }: { syncing: boolean }) {
 
         {history.data ? (
           <p className="mt-3 text-[12px] text-ink-muted">
-            Currently loading {history.data.history_months ?? 'all'} of runs and{' '}
-            {history.data.health_history_days ?? 0} days of health data.
+            Currently loading{' '}
+            {history.data.history_months != null
+              ? `${history.data.history_months} months`
+              : 'all'}{' '}
+            of runs and {history.data.health_history_days ?? 0} days of health data.
           </p>
         ) : null}
 

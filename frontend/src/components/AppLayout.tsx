@@ -21,18 +21,15 @@ import {
 import { Link, NavLink, Navigate, useLocation } from 'react-router-dom'
 import type { ReactNode } from 'react'
 import { api } from '../lib/api'
+import { useWeeklyGoal, weeklyTarget } from '../lib/goal'
 import { formatDistanceShort } from '../lib/format'
-import {
-  DESKTOP_DESTINATIONS,
-  PHONE_DESTINATIONS,
-  isCutOnPhone,
-  isPhone,
-} from '../lib/surface'
+import { PHONE_DESTINATIONS, isCutOnPhone, isPhone } from '../lib/surface'
 import { GarminPill } from './GarminStatus'
 import { cn } from './ui'
 
 const PRIMARY_NAV = [
-  { to: '/', label: 'Dashboard', icon: LayoutDashboard, end: true },
+  { to: '/', label: 'Today', icon: LayoutDashboard, end: true },
+  { to: '/progress', label: 'Progress', icon: TrendingUp, end: false },
   { to: '/plan', label: 'Plan', icon: ClipboardCheck, end: false },
   { to: '/training', label: 'Training', icon: CalendarDays, end: false },
   { to: '/stats', label: 'Stats', icon: BarChart3, end: false },
@@ -84,10 +81,9 @@ export function AppLayout({ children }: { children: ReactNode }) {
   const location = useLocation()
 
   // The phone and the desktop are the same app with a different amount of
-  // room. The phone shows five destinations; the desktop shows its full
+  // room. The phone shows four destinations; the desktop shows its full
   // set.
   const phone = isPhone()
-  const destinations = phone ? PHONE_DESTINATIONS : DESKTOP_DESTINATIONS
 
   /*
     A phone that lands on a route it does not have — Plan, Compare, the
@@ -107,6 +103,15 @@ export function AppLayout({ children }: { children: ReactNode }) {
     queryFn: api.summary,
     staleTime: 60_000,
   })
+
+  const [goalKm] = useWeeklyGoal()
+  const { data: todayInsight } = useQuery({
+    queryKey: ['insights-today'],
+    queryFn: api.insightsToday,
+    retry: false,
+    staleTime: 60_000,
+  })
+  const weekTarget = weeklyTarget(goalKm, todayInsight?.week.usual_distance_m)
 
   const athleteName =
     (auth?.athlete?.full_name as string | undefined) ||
@@ -201,15 +206,22 @@ export function AppLayout({ children }: { children: ReactNode }) {
                     ? ` · ${summary.streaks.current_weeks}w streak`
                     : ''}
                 </p>
-                <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-surface-sunken">
-                  <div
-                    className="h-full rounded-full bg-brand-500"
-                    style={{
-                      width: `${Math.min(100, (summary.this_week.distance_m / 50000) * 100)}%`,
-                    }}
-                  />
-                </div>
-                <p className="mt-1.5 text-[11px] text-ink-faint">50 km weekly goal</p>
+                {weekTarget ? (
+                  <>
+                    <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-surface-sunken">
+                      <div
+                        className="h-full rounded-full bg-brand-500"
+                        style={{
+                          width: `${Math.min(100, (summary.this_week.distance_m / 1000 / weekTarget.km) * 100)}%`,
+                        }}
+                      />
+                    </div>
+                    <p className="mt-1.5 text-[11px] text-ink-faint">
+                      {weekTarget.source === 'goal' ? 'Weekly goal' : 'Your usual week'}{' '}
+                      {weekTarget.km} km
+                    </p>
+                  </>
+                ) : null}
               </div>
             ) : null}
 
@@ -233,17 +245,19 @@ export function AppLayout({ children }: { children: ReactNode }) {
 
       {/* --------------------------------------------- mobile bottom bar */}
       {/*
-        The phone's navigation: five destinations, always at the bottom —
+        The phone's navigation: four destinations, always at the bottom —
         a phone turned sideways is still a phone. The desktop shows its
         full set in the same place.
       */}
       <nav
         className={cn(
           'fixed bottom-0 left-0 right-0 z-40 border-t border-edge bg-surface',
-          phone ? 'flex' : 'hidden md:flex',
+          // The desktop has its rail; the bottom bar is for narrow windows only.
+          phone ? 'flex' : 'flex md:hidden',
         )}
       >
-        {destinations.map((item) => (
+        {/* A narrow window gets the phone's four tabs: nine do not fit. */}
+        {PHONE_DESTINATIONS.map((item) => (
           <NavLink
             key={item.to}
             to={item.to}

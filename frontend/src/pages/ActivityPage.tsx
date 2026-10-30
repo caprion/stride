@@ -10,6 +10,7 @@
  */
 
 import { useMemo, useState, type ReactNode } from 'react'
+import { RunStoryCard } from '../components/RunStoryCard'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { CircleMarker, MapContainer, Polyline, TileLayer } from 'react-leaflet'
 import { latLngBounds, type LatLngBounds } from 'leaflet'
@@ -444,7 +445,7 @@ function StatStrip({
           unit={hrDrift == null ? undefined : 'bpm'}
           icon={<Flame size={12} strokeWidth={2} className="text-ink-faint" />}
           hint={
-            `${hrDrift == null ? '' : hrDrift > 0 ? 'Heart rate rose across the run' : hrDrift < 0 ? 'Heart rate fell across the run' : 'Heart rate held steady across the run'}${activity.avg_hr != null ? `${hrDrift == null ? '' : ' · '}avg ${formatHr(activity.avg_hr)}${activity.max_hr != null ? ` · peak ${formatHr(activity.max_hr)}` : ''} bpm` : ''}` ||
+            `${hrDrift == null ? '' : hrDrift > 0 ? 'Heart rate rose across the run' : hrDrift < 0 ? 'Heart rate fell across the run' : 'Heart rate held steady across the run'}${activity.avg_hr != null ? `${hrDrift == null ? '' : ' · '}whole-activity avg ${formatHr(activity.avg_hr)}${activity.max_hr != null ? ` · peak ${formatHr(activity.max_hr)}` : ''} bpm` : ''}` ||
             'No running HR data'
           }
         />
@@ -959,6 +960,9 @@ export function ActivityPage() {
           <HeadlineStats activity={activity} />
         </div>
       </div>
+
+      {/* ---------------------------------------- 1b. what the run meant */}
+      <RunStoryCard activityId={activity.id} />
 
       {/* -------------------------------------- 2. the rest of the numbers */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_340px] lg:items-start">

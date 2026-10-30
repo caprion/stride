@@ -84,6 +84,14 @@ export function FeedPage() {
 
   const sportParam = sport === 'all' ? undefined : sport
 
+  // One chip per run: what it meant, in two or three words.
+  const chipsQuery = useQuery({
+    queryKey: ['insights-chips', 3650],
+    queryFn: () => api.insightsChips(3650),
+    retry: false,
+    staleTime: 300_000,
+  })
+
   const activitiesQuery = useQuery({
     queryKey: ['activities', page, sportParam ?? 'all', sort, debounced],
     queryFn: () =>
@@ -226,7 +234,12 @@ export function FeedPage() {
           ) : (
             <div className="space-y-3">
               {items.map((activity) => (
-                <ActivityCard key={activity.id} activity={activity} showRoute />
+                <ActivityCard
+                  key={activity.id}
+                  activity={activity}
+                  showRoute
+                  chip={chipsQuery.data?.items[String(activity.id)]}
+                />
               ))}
             </div>
           )}

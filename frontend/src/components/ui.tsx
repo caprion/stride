@@ -274,7 +274,8 @@ export function Toggle({
 }) {
   return (
     <label className="flex cursor-pointer items-start justify-between gap-4">
-      <span>
+      {/* min-w-0 lets a long description wrap instead of pushing the switch off-screen. */}
+      <span className="min-w-0 flex-1">
         <span className="block text-[14px] font-medium text-ink">{label}</span>
         {description ? (
           <span className="mt-0.5 block text-[13px] text-ink-muted">{description}</span>

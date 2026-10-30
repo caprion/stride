@@ -58,6 +58,7 @@ import type {
   SleepPoint,
   ZoneShare,
 } from '../types_phase2'
+import type { Chip, ProgressInsight, RunStory, TodayInsight } from '../types_insights'
 import { readPlanSources } from './planSources'
 
 const BASE = '/api/v1'
@@ -527,6 +528,15 @@ export const api = {
   planAdherence: (from?: string, to?: string) =>
     request<AdherenceSummary>(`/plan/adherence${qs({ from, to })}`),
   planToday: () => request<PlanToday>('/plan/today'),
+
+  // -------------------------------------------------------------- insights
+  // Rust-native routes (no Python reference): the Python dev server answers
+  // 404 and the screens fall back to what they showed before.
+  insightsToday: () => request<TodayInsight>('/insights/today'),
+  insightsActivity: (id: number) => request<RunStory>(`/insights/activity/${id}`),
+  insightsChips: (days = 365) =>
+    request<{ items: Record<string, Chip> }>(`/insights/chips${qs({ days })}`),
+  insightsProgress: () => request<ProgressInsight>('/insights/progress'),
 
   /**
    * The plan sources: where the plan came from.

@@ -16,6 +16,7 @@ import {
   Timer,
 } from 'lucide-react'
 import type { ActivitySummary } from '../types'
+import type { Chip } from '../types_insights'
 import { RouteThumb } from './RouteThumb'
 import { ACCENT_DATA } from '../lib/palette'
 import { Badge, cn } from './ui'
@@ -34,19 +35,28 @@ function Stat({ icon, label, value }: { icon: React.ReactNode; label: string; va
     <span className="inline-flex items-center gap-1.5 whitespace-nowrap">
       <span className="text-ink-faint">{icon}</span>
       <span className="font-semibold text-ink">{value}</span>
-      <span className="hidden text-ink-muted sm:inline">{label}</span>
+      {/* Always labelled: pace and time are both clock-shaped numbers. */}
+      <span className="text-ink-muted">{label}</span>
     </span>
   )
+}
+
+/** The badge tone for an insight chip. */
+export function chipTone(tone: Chip['tone']): 'positive' | 'warn' | 'neutral' {
+  return tone === 'good' ? 'positive' : tone === 'warn' ? 'warn' : 'neutral'
 }
 
 export function ActivityCard({
   activity,
   showRoute = true,
   className,
+  chip,
 }: {
   activity: ActivitySummary
   showRoute?: boolean
   className?: string
+  /** What the run meant, in two or three words ("Usual run"). */
+  chip?: Chip | null
 }) {
   const color = SPORT_COLOR[activity.sport_type] ?? ACCENT_DATA
 
@@ -79,7 +89,14 @@ export function ActivityCard({
                 {sportLabel(activity.sport_type)}
               </p>
             </div>
-            {activity.source === 'demo' ? <Badge tone="info">Demo</Badge> : null}
+            {chip && chip.chip !== 'Usual run' ? (
+              <Badge
+                tone={chipTone(chip.tone)}
+                className="shrink-0 normal-case tracking-normal"
+              >
+                {chip.chip}
+              </Badge>
+            ) : null}
           </header>
 
           <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-[13px]">

@@ -14,8 +14,9 @@ tells you what to do today.
 A social running app is a **social activity log**: it has no concept of
 intent, no physiology and no causality. That is the gap this fills.
 
-**v1 reads the data. It does not author it.** You connect a key, it syncs,
-and you read your own history and the intent behind it. See
+**v1 reads the data, and decides with it.** You connect a key, it syncs, and
+every morning it says what to do today and why; every run gets a sentence on
+what it meant; and Progress shows you getting fitter. See
 [what v1 is](#what-v1-is) below.
 
 ---
@@ -86,13 +87,19 @@ behind it.
 
 | what v1 does | what v1 does not do |
 |---|---|
-| connect a Garmin key, in one native screen | write a plan by hand |
-| sync: activities, wellness, and the plan it finds | edit a run, rename it, describe it |
-| show the plan against what was actually done | keep notes on a run |
-| show readiness, with its drivers | author anything at all |
+| connect a Garmin key, in one native screen | write a plan by hand on the phone |
+| sync: activities, wellness, and the plan it finds | edit a run's data (distance, time, HR) |
+| **Today**: one call, one reason, one guardrail (the 30-day spike limit) | score you against other people |
+| **Runs**: a chip and a short story for every run | show a red "missed" anywhere |
+| **Progress**: pace at the same HR, forgiving consistency, bests, milestones | use Garmin's own scores, which need a password |
+| **Body**: sleep, HRV and resting HR against your own normal | |
+| rename a run and keep a note on it | |
+| an optional weekly goal and a pause (travel, sick, injured), on the device | |
 
-Everything that **authors or edits** — a manual plan editor, editing a run,
-notes — is the next iteration, and it is deliberately not designed yet.
+The three small inputs (a run's name and note, a weekly goal, a pause) are
+there because they change what the app should say. Everything else that
+authors or edits (a plan editor on the phone, editing a run's numbers) is
+the next iteration.
 
 **The Plan screen is the reason the app exists, and it does not need a
 document.** A plan is *intent*: a dated list of sessions with a target. The

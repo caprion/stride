@@ -264,7 +264,7 @@ pub fn run_story(run: &Run, runs: &[Run], recovery: Option<&RecoveryRead>) -> Ru
             if effs.len() >= 3 && usual > 0.0 {
                 let delta = (eff / usual - 1.0) * 100.0;
                 efficiency_delta_pct = Some(round_to(delta, 1));
-                if delta >= 3.0 {
+                if delta >= 4.0 {
                     story.push(format!(
                         "More speed per heartbeat than your usual run of this length ({:+.0}%): {}.",
                         delta,
@@ -288,10 +288,10 @@ pub fn run_story(run: &Run, runs: &[Run], recovery: Option<&RecoveryRead>) -> Ru
                         chip = Some(("Harder than usual".to_string(), "neutral"));
                     }
                 } else {
-                    story.push(format!(
-                        "Right in line with your usual run of this length: {}.",
-                        pace_hr_phrase(pace_delta_s_km, hr_delta_bpm)
-                    ));
+                    // Pace and heart rate are medians of their own, so
+                    // quoting them here can read "in line" next to "10 s/km
+                    // faster"; the efficiency is the one honest number.
+                    story.push("In line with your usual effort for this distance.".to_string());
                 }
             }
         }
@@ -586,7 +586,7 @@ pub fn week_so_far(runs: &[Run], today: &str) -> WeekSoFar {
             let date = monday.add_days(offset);
             let key = date.to_string();
             let on: Vec<&Run> = runs.iter().filter(|run| run.date == key).collect();
-            let distance: f64 = on.iter().map(|run| run.distance_m).sum();
+            let distance: f64 = on.iter().map(|run| run.distance_m).fold(0.0, |a, b| a + b);
             if date <= day {
                 total += distance;
                 count += on.len();
@@ -608,7 +608,7 @@ pub fn week_so_far(runs: &[Run], today: &str) -> WeekSoFar {
                 .iter()
                 .filter(|run| run.day().is_some_and(|d| d >= start && d <= end))
                 .map(|run| run.distance_m)
-                .sum();
+                .fold(0.0, |a, b| a + b);
             if distance > 0.0 {
                 weeks.push(distance);
             }
@@ -697,7 +697,7 @@ pub fn today(today: &str, runs: &[Run], recovery: Option<&RecoveryRead>) -> Toda
             .iter()
             .filter(|run| run.date == today)
             .map(|run| run.distance_m)
-            .sum();
+            .fold(0.0, |a, b| a + b);
         let tomorrow = if story.spike || story.tone == "warn" || !flags.is_empty() {
             "Tomorrow: rest or 30 minutes very easy."
         } else {
@@ -994,7 +994,11 @@ pub fn consistency(runs: &[Run], today: &str) -> Consistency {
             .iter()
             .filter(|run| run.day().is_some_and(|d| d >= start && d <= end))
             .collect();
-        weeks.push((start, on.len(), on.iter().map(|r| r.distance_m).sum()));
+        weeks.push((
+            start,
+            on.len(),
+            on.iter().map(|r| r.distance_m).fold(0.0, |a, b| a + b),
+        ));
     }
     // The bar: two runs a week, or one for an athlete whose usual is one.
     let counts: Vec<f64> = weeks
@@ -1097,7 +1101,7 @@ pub fn bests(runs: &[Run], today: &str) -> Vec<BestRun> {
 
 /// Lifetime milestones.
 pub fn milestones(runs: &[Run], today: &str) -> Milestones {
-    let total: f64 = runs.iter().map(|r| r.distance_m).sum();
+    let total: f64 = runs.iter().map(|r| r.distance_m).fold(0.0, |a, b| a + b);
     let total_km = total / 1000.0;
     let year = today.get(..4).unwrap_or("");
     let this_year: Vec<&Run> = runs.iter().filter(|r| r.date.starts_with(year)).collect();
@@ -1115,12 +1119,13 @@ pub fn milestones(runs: &[Run], today: &str) -> Milestones {
             .iter()
             .copied()
             .find(|tier| total_km < *tier),
-        this_year_m: this_year.iter().map(|r| r.distance_m).sum(),
+        this_year_m: this_year.iter().map(|r| r.distance_m).fold(0.0, |a, b| a + b),
         this_year_runs: this_year.len(),
     }
 }
 
 /// Race-time ranges from the best run of 5 km or more in the last 90 days,
+/// for distances up to 2.2 times that run (a 10K says nothing about a marathon),
 /// by Riegel's formula (exponent 1.06), widened 4% on the slow side because
 /// predictors run optimistic for anyone who has not trained the distance.
 pub fn race_estimates(runs: &[Run], today: &str) -> (Vec<RaceEstimate>, Option<String>) {
@@ -1134,7 +1139,7 @@ pub fn race_estimates(runs: &[Run], today: &str) -> (Vec<RaceEstimate>, Option<S
     };
     let estimates = BEST_DISTANCES
         .iter()
-        .filter(|(_, distance)| *distance <= run.distance_m * 4.5)
+        .filter(|(_, distance)| *distance <= run.distance_m * 2.2)
         .map(|(label, distance)| {
             let time = run.moving_time_s * (distance / run.distance_m).powf(1.06);
             RaceEstimate {
