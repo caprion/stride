@@ -2016,7 +2016,11 @@ fn recommend(
 
     if let Some(done) = session.get("activity").filter(|value| !value.is_null()) {
         if done.get("local_date").and_then(Value::as_str) == Some(today) {
-            let km = done.get("distance_m").and_then(Value::as_f64).unwrap_or(0.0) / 1000.0;
+            let km = done
+                .get("distance_m")
+                .and_then(Value::as_f64)
+                .unwrap_or(0.0)
+                / 1000.0;
             return Ok((
                 format!(
                     "Done for today: {km:.1} km logged. Recover, and let tomorrow take care of itself."

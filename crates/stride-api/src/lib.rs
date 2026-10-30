@@ -42,6 +42,7 @@ pub mod compress;
 pub mod core;
 pub mod error;
 pub mod ffi;
+pub mod insights;
 pub mod mem;
 pub mod network;
 pub mod num;

@@ -96,6 +96,10 @@ pub enum RouteId {
     Compare,
     TilePolicy,
     Tile,
+    InsightsToday,
+    InsightsActivity,
+    InsightsChips,
+    InsightsProgress,
 }
 
 /// One entry of the route table.
@@ -462,6 +466,27 @@ pub const ROUTES: &[Route] = &[
         pattern: "/api/v1/tiles/{z}/{x}/{y}.png",
         id: RouteId::Tile,
     },
+    // The insight routes have no Python reference: see `insights.rs`.
+    Route {
+        method: "GET",
+        pattern: "/api/v1/insights/today",
+        id: RouteId::InsightsToday,
+    },
+    Route {
+        method: "GET",
+        pattern: "/api/v1/insights/activity/{id}",
+        id: RouteId::InsightsActivity,
+    },
+    Route {
+        method: "GET",
+        pattern: "/api/v1/insights/chips",
+        id: RouteId::InsightsChips,
+    },
+    Route {
+        method: "GET",
+        pattern: "/api/v1/insights/progress",
+        id: RouteId::InsightsProgress,
+    },
 ];
 
 /// The parameters a route captured.
@@ -643,6 +668,10 @@ pub fn dispatch(
         RouteId::CompareCandidates => json(routes::compare_candidates(ctx, query)),
         RouteId::Compare => json(routes::compare(ctx, query)),
         RouteId::TilePolicy => json(routes::tile_policy(ctx)),
+        RouteId::InsightsToday => json(crate::insights::today(ctx)),
+        RouteId::InsightsActivity => json(crate::insights::activity(ctx, params.int("id")?)),
+        RouteId::InsightsChips => json(crate::insights::chips(ctx, query)),
+        RouteId::InsightsProgress => json(crate::insights::progress(ctx)),
         RouteId::Tile => routes::tile(ctx, params),
     }
 }

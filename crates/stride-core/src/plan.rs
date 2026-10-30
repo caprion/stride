@@ -598,10 +598,7 @@ pub fn explain_cause(
         || physiology.cadence_cv_baseline.is_some()
     {
         return (
-            Some(
-                "No measured factor explains this one."
-                    .to_string(),
-            ),
+            Some("No measured factor explains this one.".to_string()),
             Some(0.0),
         );
     }

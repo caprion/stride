@@ -354,7 +354,6 @@ fn derive(day: &str, row: Option<&DailyPhysiology>, baseline: &Baselines) -> Rea
             true,
             "bpm",
         );
-
     }
 
     let total_weight: f64 = drivers.iter().map(|(_, weight)| weight).sum();

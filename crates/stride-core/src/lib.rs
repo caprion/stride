@@ -44,6 +44,7 @@
 pub mod comparison;
 pub mod date;
 pub mod fingerprint;
+pub mod insights;
 pub mod model;
 pub mod numeric;
 pub mod ordered;
