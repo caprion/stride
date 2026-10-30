@@ -427,14 +427,38 @@ export interface CompareRun {
   calories: number | null
   pace_s_per_km: number | null
   has_geo: boolean
+  /**
+   * The canonical session type of the plan session this run was matched to
+   * — `easy`, `long`, `tempo`, `interval`, `race` or `recovery` — or null
+   * when nothing says what the run was for.
+   */
+  plan_session_type: string | null
   values: Record<string, number | null>
   profile: CompareProfilePoint[]
 }
+
+/**
+ * What the comparison is comparing.
+ *
+ * `plan_session` — every run was matched to a plan session of the same
+ * kind, so the runs had the same job and can be marked against each other.
+ *
+ * `different_jobs` — the runs were matched to sessions of different kinds,
+ * so one of them beating the other is the plan talking, not the athlete.
+ *
+ * `distance` — at least one run has no plan intent, so distance is the
+ * proxy and the page says so.
+ */
+export type CompareBasis =
+  | { kind: 'plan_session'; session_type: string }
+  | { kind: 'different_jobs' }
+  | { kind: 'distance' }
 
 export interface CompareResponse {
   runs: CompareRun[]
   parameters: CompareParameter[]
   missing: number[]
+  basis?: CompareBasis
 }
 
 /* --------------------------------------------------------------- history */
