@@ -11,7 +11,7 @@
       "surface": "today",
       "name": "exactly one call",
       "ok": true,
-      "detail": "Run 8 km, easy."
+      "detail": "Keep it easy today."
     },
     {
       "surface": "today",
@@ -21,9 +21,15 @@
     },
     {
       "surface": "today",
-      "name": "the guardrail copy is there",
+      "name": "no distance warning when the run is far from the line",
       "ok": true,
-      "detail": "Your longest run in 30 days was 18 km. Keep today under 20 km and stay conversational."
+      "detail": "none"
+    },
+    {
+      "surface": "today",
+      "name": "the graded recovery advice is on the card",
+      "ok": true,
+      "detail": "Last night: resting heart rate 57 vs your usual 51. Just outside your normal range — if you feel off too, take the day. | Last night: 2 of 3 recovery signals in your normal range"
     },
     {
       "surface": "today",

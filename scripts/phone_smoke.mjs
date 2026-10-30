@@ -216,10 +216,17 @@ for (const surface of SURFACES) {
 
   // --------------------------------------------------------- the content
   if (surface.name === 'today') {
+    // The call is the one bold headline: the graded recovery advice, the
+    // good-day call, the comeback, the done-for-today line. The list is
+    // the set of calls the core writes.
     const headlines = await page.evaluate(() =>
-      Array.from(document.querySelectorAll('p')).filter((p) =>
-        /^(Run|Today|Done|Take it easy|Comeback)/.test(p.innerText.trim()),
-      ).map((p) => p.innerText.trim()),
+      Array.from(document.querySelectorAll('p'))
+        .filter((p) =>
+          /^(Run|Today|Done|Take it easy|Take the day|Keep it easy|Go easy|Good day|Welcome back|Comeback)/.test(
+            p.innerText.trim(),
+          ),
+        )
+        .map((p) => p.innerText.trim()),
     )
     check('today', 'exactly one call', headlines.length === 1, headlines.join(' | ') || 'none')
 
@@ -235,12 +242,28 @@ for (const surface of SURFACES) {
       planLines.join(' | ') || 'no plan line',
     )
 
+    // The guardrail speaks only when the distance the call is about is
+    // near the line, so the phone's fixture — a run nowhere near it —
+    // must NOT show one. A card that always carries a warning is a card
+    // whose warning is noise.
     const guardrails = await page.evaluate(() =>
       Array.from(document.querySelectorAll('p'))
         .map((p) => p.innerText.trim())
-        .filter((t) => t.startsWith('Your longest run in 30 days')),
+        .filter((t) => t.startsWith('Runs past')),
     )
-    check('today', 'the guardrail copy is there', guardrails.length === 1, guardrails.join(' | ') || 'none')
+    check('today', 'no distance warning when the run is far from the line', guardrails.length === 0, guardrails.join(' | ') || 'none')
+
+    // The graded recovery advice, on the card, in the app's own words.
+    const advice = await page.evaluate(() =>
+      Array.from(document.querySelectorAll('p')).map((p) => p.innerText.trim()),
+    )
+    check(
+      'today',
+      'the graded recovery advice is on the card',
+      advice.some((t) => t === 'Keep it easy today.') &&
+        advice.some((t) => t.includes('Just outside your normal range')),
+      advice.filter((t) => t.includes('normal range')).join(' | ') || 'none',
+    )
 
     const dots = await page.evaluate(() => {
       const strip = Array.from(document.querySelectorAll('div')).find(

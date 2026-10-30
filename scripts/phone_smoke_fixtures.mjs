@@ -111,15 +111,21 @@ const LAST_RUN_STORY = {
   recovery: { flags: ['sleep_short'], normal: 2, read: 3 },
 }
 
-/** `/insights/today`. */
+/**
+ * `/insights/today`.
+ *
+ * The advice is the graded kind: one signal that is just outside its
+ * normal range eases the plan and leaves the day to the runner. The
+ * screenshot has to show the advice the app actually gives, so the copy
+ * here is the copy the core writes.
+ */
 const TODAY_INSIGHT = {
   date: TODAY,
-  state: 'go',
-  headline: 'Run 8 km, easy.',
+  state: 'easy',
+  headline: 'Keep it easy today.',
   reason:
-    'Three runs in the last seven days and 31 km so far this week — you are on your usual week.',
-  guardrail:
-    'Your longest run in 30 days was 18 km. Keep today under 20 km and stay conversational.',
+    'Last night: resting heart rate 57 vs your usual 51. Just outside your normal range — if you feel off too, take the day.',
+  guardrail: null,
   longest_30d_m: 18000,
   spike_limit_m: 19800,
   days_since_last_run: 1,
