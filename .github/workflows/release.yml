@@ -1,0 +1,26 @@
+name: Release
+
+# Placeholder. This workflow is intentionally minimal until the phone
+# pipeline exists (Slice 1+). It runs only on upstream tags, never on pull
+# requests, so a fork contributor's PR can never touch it or its secrets.
+#
+# When the APK pipeline lands, the signing secret goes here — in this job only,
+# scoped by environment, and never in ci.yml.
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  placeholder:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: release placeholder
+        run: |
+          echo "Release workflow placeholder — the signed APK and desktop"
+          echo "binaries are wired in a later slice. No secrets are referenced yet."
