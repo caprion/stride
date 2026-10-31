@@ -290,13 +290,21 @@ fn the_headline_segmentation_numbers_are_explicit() {
 #[test]
 fn vendor_files_name_only_the_watch_they_contain() {
     let coros = parse_case("vendor_coros_export");
-    assert_eq!(coros.device.as_deref(), Some("COROS DURA"));
+    let coros_expected = golden_case("vendor_coros_export");
+    assert_eq!(
+        coros.device.as_deref(),
+        coros_expected["import"]["activity"]["device"].as_str()
+    );
 
     let strava = parse_case("vendor_strava_export");
     assert_eq!(strava.device, None);
 
     let wahoo = parse_case("vendor_wahoo_export");
-    assert_eq!(wahoo.device.as_deref(), Some("wahoo_fitness"));
+    let wahoo_expected = golden_case("vendor_wahoo_export");
+    assert_eq!(
+        wahoo.device.as_deref(),
+        wahoo_expected["import"]["activity"]["device"].as_str()
+    );
 }
 
 #[test]

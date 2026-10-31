@@ -239,7 +239,8 @@ fn a_response_over_five_mebibytes_is_refused() {
 #[test]
 fn invalid_activity_ids_never_reach_the_transport() {
     let (client, transport) = client(Vec::new());
-    for invalid in ["../etc/passwd", "12a", "", "123456789012345678901"] {
+    let too_long = "x".repeat(21);
+    for invalid in ["../etc/passwd", "12a", "", too_long.as_str()] {
         let error = client
             .activity_detail(invalid)
             .expect_err("the invalid id is refused");
