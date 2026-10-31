@@ -138,8 +138,9 @@
   <div class="grid g3">
     <div class="card">
       <h4>The loop</h4>
-      <p class="how"><b>Plan → Execute → Understand → Adapt.</b> The plan is a first-class object: every session gets a
-      verdict <em>and</em> a cause. Nothing is "missed" unless there was an intent to miss.</p>
+      <p class="how"><b>Plan → Execute → Understand → Adapt.</b> The plan is a first-class object: every session is
+      measured against the intent that produced it. The app records what happened next to what you intended — it
+      never tells you whether you were right.</p>
     </div>
     <div class="card">
       <h4>The promise</h4>
@@ -148,8 +149,9 @@
     </div>
     <div class="card">
       <h4>The difference</h4>
-      <p class="how">Most running apps tell you what you did. Stride tells you whether that was the right thing to do —
-      and what to do tomorrow. The "why" is always on screen, never inferred.</p>
+      <p class="how">Most running apps tell you what you did, and some tell you what you should have done. Stride
+      does neither: it shows you <b>your own numbers against your own normal</b>, in plain language, and leaves the
+      decision where it belongs — with you.</p>
     </div>
   </div>
 
@@ -206,12 +208,12 @@
     <tbody>
       <tr><td><b>Connect</b></td><td>One Garmin Personal API key. Phone: a native screen into the Keystore. Desktop: a first-run page.</td><td>The only credential the product will ever have. No accounts, no pairing, no codes.</td></tr>
       <tr><td><b>Sync</b></td><td>Incremental pull of activities, wellness (sleep/HRV/RHR) and daily summaries; resumable; a 401 triggers exactly one key re-exchange and one retry.</td><td>Without it there is no data. It is the pipeline that everything else is a view over.</td></tr>
-      <tr><td><b>Today</b></td><td>One graded call, one sentence of reason, the distance warning only when the run is near the line, and today's session if there is a plan.</td><td>The reason the app exists. One sentence, never two, never a "missed" in red.</td></tr>
+      <tr><td><b>Today</b></td><td>A factual readout of where you stand this morning: your sleep, HRV and resting HR against your own normal, today's session if a plan exists, and the last run — in name-value form, with no instruction.</td><td>The screen the athlete opens every morning. It informs; it never tells them what to do.</td></tr>
       <tr><td><b>Runs</b></td><td>The feed: every activity with chips (distance, pace, effort), the story line, and entry into the detail page.</td><td>The "understand" half of the loop.</td></tr>
       <tr><td><b>Activity detail</b></td><td>The run's meaning: splits, elevation, HR, map, and the sentences that explain it.</td><td>Where a run becomes a lesson instead of a row.</td></tr>
       <tr><td><b>Progress</b></td><td>Fitness over time: weekly volume, pace-at-HR, bests, milestones, plan adherence.</td><td>The "stay motivated" half — proof you are getting fitter, with consistency forgiven.</td></tr>
-      <tr><td><b>Body</b></td><td>Sleep, HRV and resting HR measured against <em>your own</em> normal, not a population percentile.</td><td>The evidence behind the call. Same engine, same sentence as Today.</td></tr>
-      <tr><td><b>Plan week</b></td><td>Today's session, the week ahead, adherence, and results — with the plan's source named (baseline / prescribed / imported).</td><td>Intent is the input the engine judges against. Reached from Today, never a fifth tab.</td></tr>
+      <tr><td><b>Body</b></td><td>Sleep, HRV and resting HR measured against <em>your own</em> normal, not a population percentile.</td><td>The evidence behind today's readout. The same values as Today, with the history behind them.</td></tr>
+      <tr><td><b>Plan week</b></td><td>Today's session, the week ahead, adherence, and results — with the plan's source named (baseline / prescribed / imported).</td><td>Intent is the input the engine measures against. Reached from Today, never a fifth tab.</td></tr>
       <tr><td><b>Compare</b></td><td>Two runs side by side, with the <em>basis</em> stated (same distance? same route? same HR?), as a metric diff.</td><td>The best screen in the product and the one that most needs responsive design.</td></tr>
       <tr><td><b>FIT import</b></td><td>Import a run from any watch (Strava/COROS/Wahoo exports), dedupe by start ±2 min and distance ±2%.</td><td>The product is about <em>your</em> history, not one vendor's history.</td></tr>
       <tr><td><b>Settings</b></td><td>Weekly goal, a pause (travel/sick/injured), a note on a run, connect status, about.</td><td>Only the three inputs that change what the app should say.</td></tr>
@@ -301,11 +303,11 @@
   <table>
     <thead><tr><th style="width:22%">Engine</th><th style="width:40%">What it computes</th><th style="width:38%">Its contract</th></tr></thead>
     <tbody>
-      <tr><td><b>Recovery</b></td><td>Sleep, HRV, resting HR vs the athlete's own trailing distribution (median + MAD), each as a z-like deviation.</td><td>Never a 0–100 score. Deviations are graded: one signal slightly out, one signal clearly out, several out → three different sentences.</td></tr>
-      <tr><td><b>Today's call</b></td><td>Combines the recovery stance with the plan's intent and the athlete's stated feeling → one of a small set of graded calls.</td><td>Exactly one sentence. Body and Today read the <em>same</em> sentence from the core (the old repo duplicated the wording and they drifted).</td></tr>
-      <tr><td><b>Plan</b></td><td>Active block, today's session, adherence (plan vs what happened, with a cause), results per session.</td><td>"Missed" only when there was intent. A plan inferred from history is a <b>baseline</b>, not a prescription — it never produces a red "missed".</td></tr>
-      <tr><td><b>Story</b></td><td>One or two sentences on what an activity meant (was this a real session? did it fit the plan? was the effort right?).</td><td>Reads the same primitives the charts read. A number on screen and a number in the sentence are always the same number.</td></tr>
-      <tr><td><b>Fitness / Progress</b></td><td>Volume, pace-at-HR, bests, milestones, consistency (forgiving), adherence %.</td><td>No trend percentage without a real baseline. A near-zero starting value yields no percentage, ever.</td></tr>
+      <tr><td><b>Recovery</b></td><td>Sleep, HRV, resting HR vs the athlete's own trailing distribution (median + MAD), each as a deviation.</td><td>Never a 0–100 score, never a grade, never a recommendation. It produces a <b>value and a comparison</b> ("48 ms · 14 below your usual"), and nothing else.</td></tr>
+      <tr><td><b>Today's state</b></td><td>Assembles the morning's readout: the three signals with their comparisons, today's plan intent if there is one, and the last run.</td><td>Informative, not prescriptive: no imperative verbs, no verdicts, no "you should". Today and Body read the <b>same values</b> from the core (the old repo duplicated the wording and they drifted).</td></tr>
+      <tr><td><b>Plan</b></td><td>Active block, today's session, adherence (planned vs what happened, with a cause), results per session.</td><td>Plain fact: <i>done</i> · <i>not done</i> · <i>planned</i>. Never a red "missed", never a judgement. A plan inferred from history is a <b>baseline</b> and never produces a "not done" against it.</td></tr>
+      <tr><td><b>Story</b></td><td>One or two sentences on what an activity meant (was this a real session? was it longer than usual? did it match the plan).</td><td>Descriptive, never evaluative — "10.4 km, 3 km more than your usual Wednesday" — and reads the same primitives the charts read. A number on screen and a number in the sentence are always the same number.</td></tr>
+      <tr><td><b>Fitness / Progress</b></td><td>Volume, pace-at-HR, bests, milestones, consistency (forgiving), adherence as a count of planned vs done.</td><td>No trend percentage without a real baseline. A near-zero starting value yields no percentage, ever. Consistency is stated, never graded.</td></tr>
       <tr><td><b>Compare</b></td><td>A row set of metric differences plus the <b>basis</b> used (same distance / same route / same HR band).</td><td>The basis is always stated on screen. Comparing incomparable runs is allowed but labelled.</td></tr>
     </tbody>
   </table>
@@ -414,26 +416,41 @@
       <div class="cols">
         <div>
           <h4>Why</h4>
-          <p class="how">Every morning the athlete must be told, in one sentence, what to do today and why. This is
-          the whole product in one card. If Today is wrong, nothing else matters.</p>
+          <p class="how">Today is a <b>readout</b>, not an instruction. It tells the athlete where they stand this
+          morning — their own numbers, against their own normal — in the plainest language a human would use, and
+          then stops. The athlete decides what to do; the app's job is to make the decision informed.</p>
           <h4>What it must never do</h4>
           <ul>
-            <li>Never show a red "missed" — the app judges a plan, it does not scold.</li>
-            <li>Never show two different verdicts (the old repo's Today and Body disagreed; the core now owns the sentence).</li>
-            <li>Never quote a distance the athlete will not actually run, when a plan prescribes a different one.</li>
+            <li>Never instruct. No "take the day", no "go easy", no "you should rest", no imperative of any kind. The
+            old product's graded advice ("keep it easy today") was a judgement dressed as a suggestion — v2 drops it.</li>
+            <li>Never grade, score or rank the athlete. No red "missed", no readiness score, no "you are behind".</li>
+            <li>Never show two different numbers for the same thing (the old repo's Today and Body disagreed; the
+            core owns the values and both screens read them).</li>
             <li>Never show a percentage the data cannot support (a near-zero baseline yields no percentage).</li>
+            <li>Never show a raw σ or z — the human value and the human comparison, in words.</li>
           </ul>
         </div>
         <div>
           <h4>Content blocks</h4>
           <ol>
-            <li><b>The call</b> — one sentence, one of four graded states: <i>go as planned</i> · <i>keep it easy</i> ·
-            <i>go easy or take the day</i> · <i>take the day</i>. Plus a one-line reason chip (sleep / HRV / RHR / plan / nothing unusual).</li>
-            <li><b>Today's session</b> — if a plan exists: the intent (distance, type, and the source: <i>baseline</i> / <i>prescribed</i> / <i>imported</i>). Tap → the Plan week.</li>
-            <li><b>The distance warning</b> — appears <b>only</b> when today's run is within 10% of the planned distance. Otherwise absent (the old repo showed it on every card, every day).</li>
-            <li><b>Recovery strip</b> — sleep, HRV, RHR, each as a deviation against your own normal, never a 0–100 score.</li>
-            <li><b>Last run</b> — one line: distance, what it meant, and a link into the detail page.</li>
+            <li><b>The state line</b> — one factual summary of the signals, in name-value form. Example:
+            <i>Sleep 6 h 10 m · 1 h 10 m below your usual · HRV 48 ms · 14 below your usual · Resting HR 63 bpm · 5 above your usual.</i>
+            Nothing more. No verdict, no recommendation.</li>
+            <li><b>The signals table</b> — the same three numbers as label/value/comparison rows against the
+            athlete's own trailing normal (median and spread), each with a 30-point sparkline. This is the screen's
+            real content.</li>
+            <li><b>Today's session</b> — if a plan exists: the intent in name-value form (<i>10 km · easy ·
+            from your imported plan</i>). It is the athlete's own plan, shown, not a command. Tap → the Plan week.</li>
+            <li><b>Distance comparison</b> — shown <b>only</b> when the last run differs from the plan's target
+            by more than <b>10%</b>. Then a neutral line: <i>12.4 km · 2.4 km more than the 10 km target.</i>
+            Within 10%, the line is <b>absent</b> — a 2% difference is not news, and neither more nor less is good or bad.</li>
+            <li><b>Last run</b> — one line: distance, duration, and a link into the detail page.</li>
           </ol>
+          <h4>Name-value style</h4>
+          <p class="how">The house style for every value in the app: <b>label · value · comparison</b>, in that order,
+          with the unit written out and the comparison phrased in words ("below your usual", "2 more than your
+          fastest week"). Numbers are rounded to what a human would say ("6 h 10 m", not "6.166 h"; "14 below your
+          usual", not "−13.7%"). No abbreviations the athlete has to learn, no jargon, no icons standing in for words.</p>
           <h4>Data</h4>
           <p class="k">GET /api/v1/insights/today · GET /api/v1/physiology/readiness · GET /api/v1/plan/today · GET /api/v1/activities?limit=1</p>
         </div>
@@ -442,24 +459,35 @@
       <table>
         <thead><tr><th style="width:16%">Band</th><th>Arrangement</th></tr></thead>
         <tbody>
-          <tr><td>Compact</td><td>One column, call card first and full-bleed; the recovery strip is a 3-up row of tiles; the session card is a tappable row; the warning, when present, sits <b>inside</b> the call card as a second line — never as a floating banner.</td></tr>
-          <tr><td>Medium</td><td>Column capped at 680 px, centred. The call card may sit side-by-side with a small "this week" summary.</td></tr>
-          <tr><td>Wide</td><td>Content column 880 px; the call card spans full width; the recovery strip becomes a 3-up row with room for a sparkline each; the last-run line may become a card with a mini route thumbnail.</td></tr>
+          <tr><td>Compact</td><td>One column. The state line is the first thing on the screen, in full. The three
+          signals follow as label/value rows with a sparkline each. The session card is a tappable row. The distance
+          comparison, when it appears, sits <b>inside</b> the session card as a second line — never as a floating
+          banner, never coloured as a warning.</td></tr>
+          <tr><td>Medium</td><td>Column capped at 680 px, centred. The state line may sit side-by-side with a small
+          "this week" summary.</td></tr>
+          <tr><td>Wide</td><td>Content column 880 px. The state line spans full width; the signals become a 3-up row
+          with room for a sparkline each; the last-run line may become a card with a mini route thumbnail.</td></tr>
         </tbody>
       </table>
       <h4>States</h4>
       <ul>
-        <li><b>No data yet</b> (never synced): "Connect your Garmin key to get today's call" + a connect button. No fake numbers, ever.</li>
-        <li><b>No plan</b>: the call stands alone; the session block is omitted, not shown empty.</li>
-        <li><b>Stale data</b> (&gt; 36 h): the recovery strip says "last synced 2 days ago" and the call is presented as based on stale inputs, in a quieter tone.</li>
-        <li><b>Sync failed</b>: a single line with the reason and a retry. The call is hidden (it would be a lie), and the last good call is shown greyed with its date.</li>
+        <li><b>No data yet</b> (never synced): "Connect your Garmin key to see today's numbers" + a connect button. No fake numbers, ever.</li>
+        <li><b>No plan</b>: the state line and signals stand alone; the session card is omitted, not shown empty.</li>
+        <li><b>Stale data</b> (&gt; 36 h): the header says "last synced 2 days ago" and every value carries that date.</li>
+        <li><b>Sync failed</b>: one line with the reason and a retry. The values are hidden (they would be a lie) and
+        the last good readout is shown greyed with its date.</li>
+        <li><b>Not enough history</b> (a normal that cannot be computed yet): that row says "not enough data for a
+        comparison yet" — and shows the raw value alone.</li>
       </ul>
       <h4>Acceptance checks</h4>
       <ul>
-        <li>Distance warning appears on exactly one fixture (run 10.2 km against a 10 km line) and on none of the others.</li>
-        <li>Today and Body show the byte-identical advice sentence for the same recovery state (a golden assertion, not a screenshot).</li>
-        <li>The call sentence never contains a distance that differs from the plan's prescribed distance.</li>
-        <li>At 360 px: no horizontal scroll; the call card is fully visible without scrolling to read it.</li>
+        <li>No user-facing string on this screen contains an imperative or a recommendation (a CI lint over the string
+        catalogue forbids "should", "must", "take the day", "rest", "go easy", "easy today").</li>
+        <li>The distance comparison appears on exactly one fixture (12.4 km against a 10 km target) and on none of the
+        others (10.2 km against 10 km → <b>silent</b>).</li>
+        <li>Today and Body render the <b>same values</b> for the same state (a golden assertion, not a screenshot).</li>
+        <li>Every displayed value is rounded the way a human would say it, and carries its unit.</li>
+        <li>At 360 px: no horizontal scroll; the state line is fully visible without scrolling.</li>
       </ul>
     </div>
   </div>
@@ -532,7 +560,7 @@
             <li><b>Effort</b> — heart-rate series with the athlete's own zone bands, and the pace series under it, aligned on the same x-axis (the two charts are the same time axis — this is the single most useful view in the app).</li>
             <li><b>Splits</b> — per-kilometre table; at compact it becomes the metric-row form, at wide a real table.</li>
             <li><b>Elevation</b> — an area chart, collapsible (off by default at compact).</li>
-            <li><b>Against the plan</b> — "this was the easy Tuesday: 8 km planned, 8.4 km done". Only if a plan existed.</li>
+            <li><b>Against the plan</b> — a plain comparison, only if a plan existed: "8.4 km run · 8 km planned". No verdict.</li>
             <li><b>Actions</b> — "Compare with…", "Add a note", "Export FIT".</li>
           </ol>
         </div>
@@ -559,13 +587,14 @@
       <div class="cols">
         <div>
           <h4>Why</h4>
-          <p class="how">Progress proves the athlete is getting fitter — <b>forgivingly</b>. A missed week is not a
-          failure; it is a gap in the line. The screen's job is to show the trend without ever inventing a trend the
-          data cannot carry.</p>
+          <p class="how">Progress shows the athlete's trajectory — <b>forgivingly</b>. A week with nothing in it is a
+          gap in the line, not a failure. The screen's job is to show the trend without ever inventing a trend the
+          data cannot carry, and without ever grading the athlete against it.</p>
           <h4>What it must never do</h4>
           <ul>
             <li>Never show a percentage change from a near-zero baseline (the old repo's "trend blow-up" bug).</li>
             <li>Never show a "missed" counter for a week with no plan — only for a plan the athlete set.</li>
+            <li>Never grade consistency ("you are behind", "inconsistent") — state the counts and let the trend speak.</li>
             <li>Never use a population percentile. Everything is against the athlete's own history.</li>
           </ul>
         </div>
@@ -577,7 +606,7 @@
             <li><b>Pace at heart rate</b> — the honest fitness metric: pace at the same HR over time, with gaps left as gaps.</li>
             <li><b>Bests &amp; milestones</b> — recent bests and the milestones that were actually hit (a 10k, a month, a streak).</li>
             <li><b>Consistency</b> — sessions per week over time, forgiving: a gap is a gap, not a red X.</li>
-            <li><b>Adherence</b> — only if a plan exists: sessions planned vs done, with the cause for each miss.</li>
+            <li><b>Adherence</b> — only if a plan exists: a count, not a grade ("7 of 8 sessions run"), with the cause for each session that was not done.</li>
           </ol>
         </div>
       </div>
@@ -590,7 +619,7 @@
       <h4>States</h4>
       <ul>
         <li><b>Not enough data</b> — the headline says so plainly; charts show what exists with a "needs 4 more weeks" note; <b>no percentage is rendered</b>.</li>
-        <li><b>No plan</b> — the adherence card is omitted entirely (never "0% adherence" against a plan that does not exist).</li>
+        <li><b>No plan</b> — the adherence card is omitted entirely (never "0 of 0 sessions run" against a plan that does not exist).</li>
       </ul>
       <h4>Acceptance checks</h4>
       <ul>
@@ -608,20 +637,21 @@
       <div class="cols">
         <div>
           <h4>Why</h4>
-          <p class="how">Body is where the athlete checks the reasoning behind the call. It is the same three signals
-          the engine used, shown against the athlete's own normal — and it must <b>say exactly what Today said</b>.</p>
+          <p class="how">Body is where the athlete checks the numbers behind today's readout. It is the same three
+          signals the engine used, shown against the athlete's own normal — and it must show the <b>same values</b>
+          as Today.</p>
           <h4>What it must never do</h4>
           <ul>
             <li>Never show a 0–100 readiness score (a number the data cannot carry).</li>
             <li>Never show a population percentile or a device score.</li>
-            <li>Never contradict Today — the sentence comes from the core, once.</li>
+            <li>Never contradict Today on a number — the values come from the core, once.</li>
             <li>Never truncate a date label ("Oct 7," was a real bug in the old repo).</li>
           </ul>
         </div>
         <div>
           <h4>Content blocks</h4>
           <ol>
-            <li><b>The same call sentence</b>, from the core, with the reason spelled out.</li>
+            <li><b>The same values</b> as Today, with the history behind them.</li>
             <li><b>Sleep</b> — last night's duration and stage mix, against the athlete's typical night. With no stages, the chart says "duration" and does not draw an empty stage chart.</li>
             <li><b>HRV</b> — the last 30 nights against the personal band (median ± MAD).</li>
             <li><b>Resting HR</b> — the last 30 days against the personal band.</li>
@@ -631,13 +661,13 @@
       </div>
       <h4>Layout by width</h4>
       <ul>
-        <li><b>Compact:</b> one column; the call sentence is the first line of the screen (not a summary at the bottom); each signal is a card with a 30-point sparkline and the personal band shaded.</li>
+        <li><b>Compact:</b> one column; the three signals lead the screen (not a summary at the bottom); each signal is a card with a 30-point sparkline and the personal band shaded.</li>
         <li><b>Medium:</b> column capped 680 px; sleep and HRV may pair up.</li>
         <li><b>Wide:</b> three-column signal cards (sleep · HRV · RHR) above a full-width "how to read this" note; the personal band is labelled on the axis.</li>
       </ul>
       <h4>Acceptance checks</h4>
       <ul>
-        <li>Body's sentence == Today's sentence for the same state (byte-identical, golden assertion).</li>
+        <li>Body's values == Today's values for the same state (byte-identical, golden assertion).</li>
         <li>Every date label renders fully at 360 px (no truncation, no ellipsis).</li>
         <li>A night with no stage data renders the duration chart only — no empty stage chart.</li>
       </ul>
@@ -655,7 +685,8 @@
           place the athlete lives in. It is reached from Today and from the feed, and it goes back where it came from.</p>
           <h4>What it must never do</h4>
           <ul>
-            <li>Never label an inferred baseline as "missed" — a baseline is not a prescription.</li>
+            <li>Never label an inferred baseline as "not done" — a baseline is not a prescription.</li>
+            <li>Never write "missed" — the plain fact is that a session was planned and did not happen.</li>
             <li>Never show two plan blocks at once without naming which is active.</li>
             <li>Never require a Garmin account to have a plan (v2 has no account flow).</li>
           </ul>
@@ -664,7 +695,7 @@
           <h4>Content blocks</h4>
           <ol>
             <li><b>The source banner</b> — <i>Baseline (inferred from your history)</i> · <i>Prescribed (imported)</i> · <i>Typed</i>. Named in plain words, with the "why" available on tap.</li>
-            <li><b>This week</b> — seven days, each with intent (distance, type), the actual, and a verdict of <i>done</i> · <i>planned</i> · <i>missed</i> — the last only for prescriptions.</li>
+            <li><b>This week</b> — seven days, each with intent (distance, type), the actual, and a plain status: <i>done</i> · <i>planned</i> · <i>not done</i>.</li>
             <li><b>Today</b> — highlighted inside the week.</li>
             <li><b>Adherence</b> — a single number plus the count it is made of.</li>
             <li><b>Sources / manage</b> — import a plan (markdown / CSV / JSON / Garmin CSV export). Editing a plan is <b>not</b> in v2.</li>
@@ -673,13 +704,14 @@
       </div>
       <h4>Layout by width</h4>
       <ul>
-        <li><b>Compact:</b> a 7-column week strip that fits 360 px (each day a 44 px column with the day letter and a dot: done / planned / missed / rest), then the day detail below it, then the month list.</li>
+        <li><b>Compact:</b> a 7-column week strip that fits 360 px (each day a 44 px column with the day letter and a dot: done / planned / not done / rest), then the day detail below it, then the month list.</li>
         <li><b>Medium:</b> the week strip becomes a 7-column row with numbers; the day detail is below.</li>
         <li><b>Wide:</b> a real calendar grid (weeks as rows), the selected day's detail to the right, adherence and sources in a left rail column.</li>
       </ul>
       <h4>Acceptance checks</h4>
       <ul>
-        <li>A baseline plan never renders the word "missed" (golden assertion over every corpus day).</li>
+        <li>A baseline plan never renders "not done" (golden assertion over every corpus day).</li>
+        <li>The word "missed" appears nowhere in the app's string catalogue (CI lint).</li>
         <li>Only the active block's sessions are counted — 7 sessions, not 14 (the old repo's duplication bug).</li>
         <li>An imported plan with no recognisable workout keywords is labelled <b>unclassified</b>, never "easy" (the old repo's silent guess bug).</li>
       </ul>
@@ -830,6 +862,57 @@
     <li><b>Connect</b> (phone) — the Keystore field. There is no web fallback: the promise "the key never enters the WebView" would be a lie.</li>
     <li><b>Background sync</b> (phone) — WorkManager, with a system notification ("Synced 12 activities"). The WebView is suspended; the core keeps running in the app process.</li>
   </ul>
+
+  <h3>5.9 The voice: inform, never instruct</h3>
+  <p class="lede">This is a product-wide rule, not a wording preference. It is the difference between an app that
+  helps you and an app that tells you what to do — and it is enforced in CI.</p>
+
+  <div class="cols">
+    <div>
+      <h4>The rules</h4>
+      <ol>
+        <li><b>No imperatives.</b> The app does not say what to do: no "take the day", "go easy", "rest", "you should", "you need to".</li>
+        <li><b>No verdicts.</b> No "good"/"bad", no "missed", no "behind", no "failed", no readiness score, no traffic light.</li>
+        <li><b>Name-value style.</b> Label · value · comparison, in that order: <i>HRV — 48 ms — 14 below your usual.</i> The value first, the comparison second, never a bare number.</li>
+        <li><b>Plain words.</b> "6 h 10 m", not "6.166 h"; "14 below your usual", not "−1.4σ". Units written out.</li>
+        <li><b>The athlete's own frame.</b> Every comparison is against <em>their</em> history — never a population percentile, never a device score.</li>
+        <li><b>The plan is theirs.</b> When a plan exists, the app shows the intent and what happened; it never re-issues the plan as an order.</li>
+        <li><b>Silence is allowed.</b> If the difference is small, say nothing. A 2% difference on a target distance is not news and gets no line at all.</li>
+      </ol>
+    </div>
+    <div>
+      <h4>What replaced the old advice</h4>
+      <table>
+        <thead><tr><th style="width:44%">Old product</th><th>v2</th></tr></thead>
+        <tbody>
+          <tr><td>"Take the day, or make it very easy."</td><td>"Sleep 6 h 10 m — 1 h 10 m below your usual · HRV 48 ms — 14 below your usual"</td></tr>
+          <tr><td>"Keep it easy today."</td><td>the same three values, no sentence about what to do</td></tr>
+          <tr><td>"You missed Tuesday's 10 km."</td><td>"Tuesday — 10 km planned · not done"</td></tr>
+          <tr><td>"0.62 km over your target."</td><td>"10.6 km — 0.6 km more than the 10 km target" (and only when the gap is over 10%)</td></tr>
+          <tr><td>Readiness 63/100</td><td>no score exists</td></tr>
+        </tbody>
+      </table>
+      <h4>How it is enforced</h4>
+      <ul>
+        <li>Every user-facing string lives in one catalogue (<code>strings.toml</code> / JSON), never inline in a component.</li>
+        <li>A CI lint fails the build if the catalogue contains a banned word or a banned construction:
+        <code>should</code>, <code>must</code>, <code>take the day</code>, <code>rest</code>, <code>go easy</code>,
+        <code>missed</code>, <code>bad</code>, <code>fail</code>, <code>behind</code>, <code>ready to</code>.</li>
+        <li>The lint also flags an imperative mood on the first word of a sentence in a sentence-type string.</li>
+        <li>A golden assertion renders every catalogue entry against every fixture state, so the wording cannot drift
+        between screens.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="callout good">
+    <p><strong>What this buys.</strong> The old advice was the product's boldest claim and its most fragile one: every
+    wording change was a review cycle, the "same sentence on two screens" bug kept recurring, and every sentence was a
+    judgement of a person's training on a bad day. Informative language has no such failure mode — a value is either
+    right or wrong, and the golden corpus decides which. It also means the app has nothing to apologise for when the
+    data is thin: it shows the value, says "not enough data for a comparison yet", and stops.</p>
+  </div>
+
 </section>
 
 <!-- ============================ 6 ============================ -->
@@ -974,10 +1057,10 @@
     <thead><tr><th style="width:8%">Slice</th><th style="width:26%">Content</th><th style="width:30%">Done when</th><th style="width:36%">Risk it retires</th></tr></thead>
     <tbody>
       <tr><td><b>0</b></td><td>Contract freeze. New public repo, AGPL, docs skeleton, CI skeleton (fork-safe), sanitised corpus extracted, schema + API shapes frozen as data.</td><td>The corpus is in the new repo; the old repo is untouched; every gate runs on an empty crate.</td><td>Writing code before the contract is frozen — the old repo's single largest loss.</td></tr>
-      <tr><td><b>1</b></td><td>The thin vertical line: key → sync → one run → one Today sentence → APK on the phone.</td><td>A real Garmin key syncs a real run and the app shows one true sentence about it.</td><td>Proves the whole stack end-to-end before any breadth.</td></tr>
+      <tr><td><b>1</b></td><td>The thin vertical line: key → sync → one run → today's readout → APK on the phone.</td><td>A real Garmin key syncs a real run and the app shows its true numbers.</td><td>Proves the whole stack end-to-end before any breadth.</td></tr>
       <tr><td><b>2</b></td><td>FIT decode + segmentation + store + FIT-as-source-of-truth.</td><td>Golden parity on every corpus activity; the FIT blob is stored and re-derivable.</td><td>The FIT decoder's sentinel semantics — plausible wrong numbers.</td></tr>
-      <tr><td><b>3</b></td><td>Recovery engine + the one graded sentence + Body.</td><td>Today and Body return the byte-identical sentence; one signal ≠ three signals.</td><td>The two-screens-disagree bug (the old repo's recurring defect).</td></tr>
-      <tr><td><b>4</b></td><td>The plan engine: sources, active block, today, week, adherence, results.</td><td>Adherence matches the old core number-for-number; no "missed" for a baseline.</td><td>Baseline vs prescription confusion; duplicated sessions.</td></tr>
+      <tr><td><b>3</b></td><td>Recovery engine (values + comparisons) + the string catalogue + the voice lint + Body.</td><td>Today and Body render the same values; the lint forbids every imperative and verdict word.</td><td>The old repo's recurring "two screens disagree" defect, and its endless advice-wording reviews.</td></tr>
+      <tr><td><b>4</b></td><td>The plan engine: sources, active block, today, week, adherence, results.</td><td>Adherence matches the old core number-for-number; a baseline never yields "not done".</td><td>Baseline vs prescription confusion; duplicated sessions.</td></tr>
       <tr><td><b>5</b></td><td>The Runs feed + the activity detail page.</td><td>Every row has a story sentence; the split chart is the hero at 360 px.</td><td>Performance over 160+ activities; windowing bugs.</td></tr>
       <tr><td><b>6</b></td><td>Progress + fitness + bests + milestones.</td><td>No percentage without a baseline; consistency is forgiving.</td><td>Trend blow-up from near-zero baselines.</td></tr>
       <tr><td><b>7</b></td><td>Compare (the diff-table form) + FIT import + dedupe.</td><td>Delta signs flip correctly on swap; a duplicate import adds no row.</td><td>Comparing incomparable runs without saying so.</td></tr>
@@ -1031,6 +1114,8 @@
       <tr><td>Plan sources</td><td><b>Baseline (inferred) + prescribed (imported)</b>; typing a plan is not in v2</td><td>Reading intent is the value; authoring it is separate work.</td></tr>
       <tr><td>MCP/harness</td><td><b>Deferred</b>, with its own disclosure review</td><td>Tool output is a disclosure into a model's context.</td></tr>
       <tr><td>Support</td><td><b>"Issues welcome, features are mine"</b></td><td>Honest, and cheap.</td></tr>
+      <tr><td>Voice</td><td><b>Informative, never prescriptive</b> — no imperatives, no verdicts, name-value style, silence on small differences</td><td>The app's job is to inform; the decision stays with the athlete. Enforced by a CI lint.</td></tr>
+      <tr><td>Distance comparison</td><td><b>Shown only when the gap exceeds 10%</b>, stated neutrally ("2.4 km more than the target")</td><td>A 2% difference is not news; and when it is mentioned it is a fact, not a warning.</td></tr>
     </tbody>
   </table>
 

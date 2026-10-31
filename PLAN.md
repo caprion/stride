@@ -12,10 +12,35 @@ designed to resize: one information architecture, many widths.
 
 ---
 
+## 0. The voice — inform, never instruct
+
+The app **informs**; it never tells the athlete what to do. This is a product-wide rule, enforced in CI.
+
+- **No imperatives:** no "take the day", "go easy", "rest", "you should", "you need to".
+- **No verdicts:** no "good"/"bad", no "missed", no "behind", no readiness score, no traffic light.
+- **Name-value style:** label · value · comparison — *HRV — 48 ms — 14 below your usual.*
+- **Plain words:** "6 h 10 m", not "6.166 h"; "14 below your usual", not "−1.4σ"; units written out.
+- **The athlete's own frame:** every comparison is against *their* history — never a population percentile.
+- **The plan is theirs:** the app shows the intent and what happened; it never re-issues the plan as an order.
+- **Silence is allowed:** small differences get no line at all.
+
+Every user-facing string lives in one catalogue, and a CI lint fails the build on a banned word
+(`should`, `must`, `take the day`, `rest`, `go easy`, `missed`, `bad`, `fail`, `behind`, `ready to`) or on an
+imperative construction.
+
+| old product | v2 |
+|---|---|
+| "Take the day, or make it very easy." | "Sleep 6 h 10 m — 1 h 10 m below your usual · HRV 48 ms — 14 below your usual" |
+| "You missed Tuesday's 10 km." | "Tuesday — 10 km planned · not done" |
+| "0.62 km over your target." | "10.6 km — 0.6 km more than the 10 km target" (and only when the gap is over 10%) |
+| Readiness 63/100 | no score exists |
+
+---
+
 ## 1. The product in one page
 
-Stride is a private, local-first running log for one athlete. It answers two questions: **what should I do
-today**, and **what did that last run actually mean**. Everything else is evidence for those answers.
+Stride is a private, local-first running log for one athlete. It shows you **your own numbers against your own
+normal**, in plain language — and leaves the decision with you.
 
 - **Loop:** Plan → Execute → Understand → Adapt.
 - **Promise:** "Your data stays on this phone." One credential — a Garmin Personal API key — in the Android
@@ -59,11 +84,11 @@ android/…/stride-ffi   UniFFI bindings, panic catching, JSON in / JSON out
 
 | engine | contract |
 |---|---|
-| recovery | never a 0–100 score; deviations graded (one signal ≠ several) |
-| today's call | exactly one sentence; Body and Today read the same sentence from the core |
-| plan | "missed" only against a prescription — an inferred baseline never produces one |
-| story | a sentence's numbers are the same numbers the charts show |
-| fitness | no trend percentage without a real baseline; consistency is forgiving |
+| recovery | never a 0–100 score, never a grade, never a recommendation — a value and a comparison, nothing else |
+| today's state | informative, not prescriptive: no imperative verbs, no verdicts. Today and Body read the same **values** from the core |
+| plan | plain fact: *done* · *not done* · *planned*. Never a red "missed". An inferred baseline never yields "not done" |
+| story | descriptive, never evaluative; reads the same primitives the charts read |
+| fitness | no trend percentage without a real baseline; consistency is stated, never graded |
 | compare | the basis is always stated; swapping A and B flips every delta |
 
 ## 4. The screen system — one IA, every width
@@ -86,6 +111,12 @@ legible, safe-area applied.
 
 Today · Runs · Activity · Progress · Body · Plan week · Compare · Connect · Settings — each with purpose, what
 it must never do, content blocks, layout per width, states, and acceptance checks.
+
+**Today** is a readout, not an instruction: the state line (*Sleep 6 h 10 m · 1 h 10 m below your usual · HRV 48 ms
+· 14 below your usual*), the three signals as label/value/comparison rows, today's session from your own plan,
+and the last run. The **distance comparison appears only when the gap exceeds 10%**, stated neutrally
+("2.4 km more than the 10 km target"); within 10% it is absent — 10.2 km against a 10 km target is simply not
+news, and neither more nor less is good or bad.
 
 **Compare is the canonical form to get right:** metric rows (`metric · A · B · Δ`) at every width; two columns
 and side-by-side charts only when there is room; an A/B chart toggle on narrow screens; the basis always named.
@@ -121,9 +152,9 @@ describe a deleted flow — the old notes still told people to run a removed pai
 | Slice | Content | Done when |
 |---|---|---|
 | 0 | Contract freeze: public repo, corpus extracted + sanitised, fork-safe CI, schema/API frozen | every gate runs on empty crates; the old repo is untouched |
-| 1 | Thin vertical line: key → sync → one run → one Today sentence → APK | a real key syncs a real run and the app tells the truth about it |
+| 1 | Thin vertical line: key → sync → one run → today's readout → APK | a real key syncs a real run and the app shows its true numbers |
 | 2 | FIT decode + segmentation + store | golden parity on every corpus activity |
-| 3 | Recovery + the one graded sentence + Body | Today and Body return the byte-identical sentence |
+| 3 | Recovery engine (values + comparisons) + string catalogue + voice lint + Body | Today and Body render the same values; the lint forbids every imperative and verdict word |
 | 4 | Plan engine (sources, active block, adherence, results) | adherence matches the old core number-for-number |
 | 5 | Runs feed + activity detail | every row carries a story sentence |
 | 6 | Progress + fitness + bests | no percentage without a baseline |
@@ -140,7 +171,7 @@ no Python in the tree · acceptance is a golden assertion wherever possible.
 AGPL-3.0 · public from day one · old repo kept private as the oracle, sanitised public archive at the end ·
 Rust only · five crates · desktop as dev rig + community tool (loopback + CIDR allowlist) · four destinations
 everywhere with Compare and Plan contextual · Garmin account flow out · MCP out · "issues welcome, features are
-mine".
+mine" · **informative voice, never prescriptive** · **distance comparison only beyond a 10% gap**.
 
 **Still open to change on request:** MIT instead of AGPL · anything from the cut list · the destination names ·
 the plan-source set · a native phone UI (a separate project, not v2).
