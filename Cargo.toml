@@ -6,6 +6,11 @@
 #   core ← ingest   core ← store   api → {core, ingest, store}
 #   desktop → {api, store}
 #   stride-testkit is a dev-dependency only, everywhere.
+#
+# The phone's FFI seam is a member too: the plan lists it in §3.1, and a
+# crate outside the workspace is a crate the root gate never sees. Its
+# bindings generator is a member as well, because it is built by the same
+# `cargo build` the seam is.
 
 [workspace]
 resolver = "2"
@@ -16,6 +21,8 @@ members = [
     "crates/stride-api",
     "crates/stride-testkit",
     "desktop",
+    "android/app/src/main/rust/stride-ffi",
+    "android/app/src/main/rust/stride-bindgen",
 ]
 
 [workspace.package]

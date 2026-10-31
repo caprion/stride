@@ -1,8 +1,0 @@
-# The lint rules for this crate.
-#
-# The same three the repository's workspace uses: test code is allowed to
-# unwrap, expect and panic — it is the test. Everything else in the crate
-# is denied them, and `unsafe` is denied outside the FFI boundary.
-allow-unwrap-in-tests = true
-allow-expect-in-tests = true
-allow-panic-in-tests = true
