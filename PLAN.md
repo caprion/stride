@@ -35,7 +35,7 @@ that link would be the judgement.
 past, always with its sample size: *"the 5 other times your sleep was this low, you ran 8 km or less."* It lives on
 **Body**, over the visible history — not on the morning screen, and never next to a suggestion.
 
-**Forbidden:** commands (*take the day*, *rest*, *go easy*, *you should*, *it'd be better to*) · verdicts (*good*,
+**Forbidden:** commands (*take the day*, *rest day*, *rest up*, *rest today*, *go easy*, *you should*, *it'd be better to*) · verdicts (*good*,
 *bad*, *poor*, *missed*, *behind*, a readiness score) · **conclusions** (the app never combines vitals into a
 verdict — it reports each direction and the athlete reads the combination) · ranking the options (*recommended*) ·
 shame (red, *should have*).
@@ -52,7 +52,7 @@ Last run     8.4 km · 42 min · Sat 10 May
 ```
 
 Every user-facing string lives in one catalogue and is typed (`vital`, `direction`, `option`, `pattern`, `status`).
-The lint fails the build on banned words (`should`, `must`, `take the day`, `rest`, `go easy`, `missed`, `bad`,
+The lint fails the build on banned words (`should`, `must`, `take the day`, `rest day`, `rest up`, `rest today`, `go easy`, `missed`, `bad`,
 `poor`, `fail`, `behind`, `ready to`, `recommended`, `better to`, `need to`), requires a `direction` string to come
 from the closed set, and requires a `pattern` string to carry its sample size.
 
@@ -89,7 +89,7 @@ pages · network egress routing · phone plan editor · desktop-only screens.
 ## 3. Architecture
 
 ```
-stride-core    pure domain: plan engine, recovery, story, fitness, compare   (no I/O, no clock)
+stride-core    pure domain: plan engine, vitals & direction, story, fitness, compare   (no I/O, no clock)
 stride-ingest  Garmin Personal API client · FIT decoder · segmentation
 stride-store   SQLCipher schema, migrations, repositories, FIT blobs
 stride-api     the one router · DTOs · the FFI surface · the trust gate
@@ -165,9 +165,10 @@ and side-by-side charts only when there is room; an A/B chart toggle on narrow s
 personal data from the demo-seed incident). `SECURITY.md`, `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`,
 `SUPPORT.md` ("issues welcome, features are mine").
 
-CI gates from commit #1: cargo test + clippy (deny `unwrap`/`expect`/`panic`) · **golden parity** ·
-**viewport matrix** · **secret scan** · **privacy scan** · APK-carries-the-core check and the live security
-check (release only).
+CI gates from commit #1: cargo test + clippy (deny `unwrap`/`expect`/`panic`) · **corpus integrity** (FIT
+SHA-256) · **secret scan** · **privacy scan**. Later slices add **golden parity** (full engine parity against
+the frozen corpus, Slice 2) and the **viewport matrix** (Slice 9). APK-carries-the-core check and the live
+security check are release-only.
 
 > The old repo's `android.yml` is **not** fork-safe — its APK job needs the signing secret, so every outside
 > contributor's build fails, and it grants `contents: write` to pull requests. v2: `contents: read` globally,

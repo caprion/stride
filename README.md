@@ -31,7 +31,7 @@ There is no cloud service, no account to create, and nothing to sign up for. It 
 
 ## The voice
 
-Four registers, and nothing else:
+Four registers, plus one supporting `status` type — five string types in all:
 
 | register | what it is | example |
 |---|---|---|
@@ -40,8 +40,9 @@ Four registers, and nothing else:
 | **option** | what is in your own plan, unranked | *Today — 10 km · easy · from your imported plan* |
 | **pattern** | what usually happened to you, with its sample size | *the 5 other times your sleep was this low, you ran 8 km or less* |
 
-The direction word comes from a closed set — **better than usual · about usual · could be better** —
-and every user-facing string is typed and linted in CI. See
+`status` is the fifth string type — connect/sync/staleness and empty-state lines. The direction word comes
+from a closed set — **better than usual · about usual · could be better** — and every user-facing string
+is typed (`vital · direction · option · pattern · status`) and linted in CI. See
 [the voice rules](PLAN.md#0-the-voice--vitals-direction-options-no-verdicts).
 
 ## Status

@@ -1,0 +1,64 @@
+{
+  "activityList": [
+    {
+      "activityId": 19012837465,
+      "activityName": "Morning Run",
+      "startTimeLocal": "2026-03-07T06:15:00",
+      "activityTypeDTO": { "typeKey": "running", "typeId": 1 },
+      "eventTypeDTO": { "typeKey": "uncategorized" },
+      "metadataDTO": {
+        "manufacturer": "Garmin",
+        "sensors": [
+          { "manufacturer": "Garmin", "product": "Forerunner 265", "type": "WATCH", "sensorsEnabled": true }
+        ]
+      },
+      "summaryDTO": {
+        "startTimeLocal": "2026-03-07T06:15:00",
+        "duration": 3125.44,
+        "movingDuration": 2986.12,
+        "elapsedDuration": 3125.44,
+        "distance": 4993.22,
+        "elevationGain": 84.0,
+        "averageHR": 148.0,
+        "maxHR": 176.0,
+        "minHR": 92.0,
+        "calories": 512.0,
+        "averageRunCadence": 84.0,
+        "maxRunCadence": 92.0,
+        "averageSpeed": 1.6726,
+        "maxSpeed": 4.1667,
+        "strideLength": 118.72,
+        "trainingEffect": 2.4,
+        "aerobicTrainingEffect": 3.1,
+        "bmrCalories": 1480.0
+      }
+    },
+    {
+      "activityId": 19012999001,
+      "activityName": "Trail Loop",
+      "startTimeLocal": "2026-03-08T06:40:00",
+      "activityTypeDTO": { "typeKey": "trail_running", "typeId": 3 },
+      "metadataDTO": {
+        "sensors": [
+          { "manufacturer": "Garmin", "product": "Forerunner 965", "type": "WATCH" }
+        ]
+      },
+      "summaryDTO": {
+        "startTimeLocal": "2026-03-08T06:40:00",
+        "duration": 4890.0,
+        "movingDuration": 4502.5,
+        "elapsedDuration": 4890.0,
+        "distance": 8120.75,
+        "elevationGain": 612.5,
+        "averageHR": 152.5,
+        "maxHR": 181.0,
+        "minHR": 88.0,
+        "calories": 894.0,
+        "averageRunCadence": 79.0,
+        "maxRunCadence": 88.0,
+        "averageSpeed": 1.8041,
+        "maxSpeed": 3.9931
+      }
+    }
+  ]
+}

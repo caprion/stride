@@ -1,0 +1,28 @@
+name: CI
+
+# Fork-safe by construction: the only permission granted is `contents: read`,
+# no job here references a secret, and nothing here grants `contents: write`.
+# The old repo's android.yml broke every outside contributor's PR because the
+# APK job fetched the signing secret during pull_request; that job lives in
+# release.yml now, and only runs on upstream tags.
+#
+# scripts/gate.sh is the single authoritative list of checks — the local gate
+# and the CI gate are the same command.
+on:
+  push:
+    branches: [master]
+  pull_request:
+
+permissions:
+  contents: read
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  gate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      # rust-toolchain.toml pins stable + rustfmt + clippy; rustup installs them.
+      - run: bash scripts/gate.sh

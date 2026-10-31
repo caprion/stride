@@ -1,0 +1,11 @@
+{
+  "bodyBatteryReports": [
+    {
+      "calendarDate": "2026-03-07",
+      "charged": 88.0,
+      "drained": 22.0,
+      "startTimestamp": "2026-03-07T00:00:00.000Z",
+      "bodyBatteryValuesArray": [[1776000000000, 71], [1776000600000, 69]]
+    }
+  ]
+}

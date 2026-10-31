@@ -1,0 +1,24 @@
+{
+  "activityId": 19012999001,
+  "activityTypeDTO": { "typeKey": "trail_running", "typeId": 3 },
+  "metadataDTO": {
+    "sensors": [
+      { "manufacturer": "Garmin", "product": "Forerunner 965", "type": "WATCH" }
+    ]
+  },
+  "summaryDTO": {
+    "duration": 4890.0,
+    "movingDuration": 4502.5,
+    "elapsedDuration": 4890.0,
+    "distance": 8120.75,
+    "elevationGain": 612.5,
+    "averageHR": 152.5,
+    "maxHR": 181.0,
+    "minHR": 88.0,
+    "calories": 894.0,
+    "averageRunCadence": 79.0,
+    "maxRunCadence": 88.0,
+    "averageSpeed": 1.8041,
+    "maxSpeed": 3.9931
+  }
+}

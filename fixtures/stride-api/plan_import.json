@@ -1,0 +1,342 @@
+{
+ "cases": [
+  {
+   "name": "markdown_full",
+   "format": "markdown",
+   "content": "# 2026 Half Marathon Plan\n\n## Phase table\n\n| Phase | Weeks | Duration | Volume |\n|---|---|---|---|\n| Base | 1 - 4 | (March 2 - March 29) | 30-40 km |\n| Build | 5 - 8 | (March 30 - April 26) | 40-55 km |\n\n## Week progression\n\n| Week | Phase | Volume | Tuesday | Notes |\n|---|---|---|---|---|\n| 1 | Base | 25 km | Quality | easy |\n| 2 | Base | 30 km | Tempo 12km @ 4:30/km | |\n| 3 | Build | 35 km | Intervals 6 x 1km @ 3:50/km | |\n\n## Week 1 - Base (March 2 - March 8) 25 km\n\n| Day | Session | Details |\n|---|---|---|\n| Mon | Rest | |\n| Tue | Easy 8km | 4:45-5:00/km |\n| Thu | Intervals 6 x 1km | 3:50/km, 1km jog |\n| Sat | Long 14km | 5:15/km half marathon pace |\n| Sun | Rest or 2km walk | |\n\n## Week 2 - Base (March 9 - March 15) 30 km\n\n| Day | Session | Details |\n|---|---|---|\n| Tue | Tempo 12km | 4:30/km |\n| Sat | Long 16km | 5:10/km |\n",
+   "expected": {
+    "block": {
+     "name": "Imported training plan",
+     "start_date": null,
+     "end_date": null,
+     "goal": null,
+     "status": "active",
+     "source": "imported"
+    },
+    "phases": [
+     {
+      "name": "Base",
+      "week_start": 1,
+      "week_end": 4,
+      "duration": "(March 2 - March 29)",
+      "target_weekly_km_min": 30.0,
+      "target_weekly_km_max": 40.0,
+      "start_date": null,
+      "end_date": null
+     },
+     {
+      "name": "Build",
+      "week_start": 5,
+      "week_end": 8,
+      "duration": "(March 30 - April 26)",
+      "target_weekly_km_min": 40.0,
+      "target_weekly_km_max": 55.0,
+      "start_date": null,
+      "end_date": null
+     }
+    ],
+    "weeks": [],
+    "sessions": [],
+    "warnings": []
+   },
+   "error": null
+  },
+  {
+   "name": "markdown_progression_only",
+   "format": "markdown",
+   "content": "# 2026 Spring Block\n\n## Weekly running volume\n\n| Week | Phase | Volume | Sessions |\n|---|---|---|---|\n| 1 | Base | 24 km | 3 |\n| 2 | Base | 28 km | 3 |\n",
+   "expected": {
+    "block": {
+     "name": "Imported training plan",
+     "start_date": null,
+     "end_date": null,
+     "goal": null,
+     "status": "active",
+     "source": "imported"
+    },
+    "phases": [],
+    "weeks": [],
+    "sessions": [],
+    "warnings": []
+   },
+   "error": null
+  },
+  {
+   "name": "markdown_running_table",
+   "format": "markdown",
+   "content": "# 2026 Spring Block\n\n## Weekly running volume\n\n| Week | Phase | Running | Tuesday | Notes |\n|---|---|---|---|---|\n| 1 | Base | 25 km | Quality | easy |\n| 2 | Base | 30 km | Tempo 12km @ 4:30/km | |\n\n## Week 1 - Base (March 2 - March 8) 25 km\n\n| Day | Session | Details |\n|---|---|---|\n| Mon | Rest | |\n| Tue | Easy 8km | 4:45-5:00/km |\n| Sat | Long 14km | 5:15/km |\n\n## Week 2 - Base (March 9 - March 15) 30 km\n\n| Day | Session | Details |\n|---|---|---|\n| Tue | Tempo 12km | 4:30/km |\n| Sat | Long 16km | 5:10/km |\n",
+   "expected": {
+    "block": {
+     "name": "Imported training plan",
+     "start_date": "2026-01-05",
+     "end_date": "2026-01-18",
+     "goal": null,
+     "status": "active",
+     "source": "imported"
+    },
+    "phases": [],
+    "weeks": [
+     {
+      "week_number": 1,
+      "start_date": "2026-01-05",
+      "end_date": "2026-01-11",
+      "target_km": 25.0,
+      "key_workout": "easy",
+      "phase_index": 0
+     },
+     {
+      "week_number": 2,
+      "start_date": "2026-01-12",
+      "end_date": "2026-01-18",
+      "target_km": 30.0,
+      "key_workout": "",
+      "phase_index": 0
+     }
+    ],
+    "sessions": [
+     {
+      "date": "2026-01-05",
+      "session_type": "rest",
+      "title": "Rest",
+      "details": null,
+      "target_distance_m": null,
+      "pace_low_s_km": null,
+      "pace_high_s_km": null,
+      "source": "imported"
+     },
+     {
+      "date": "2026-01-06",
+      "session_type": "easy",
+      "title": "Easy 8km",
+      "details": "4:45-5:00/km",
+      "target_distance_m": 8000.0,
+      "pace_low_s_km": 285,
+      "pace_high_s_km": 300,
+      "source": "imported"
+     },
+     {
+      "date": "2026-01-10",
+      "session_type": "long",
+      "title": "Long 14km",
+      "details": "5:15/km",
+      "target_distance_m": 14000.0,
+      "pace_low_s_km": 315,
+      "pace_high_s_km": 315,
+      "source": "imported"
+     },
+     {
+      "date": "2026-01-13",
+      "session_type": "tempo",
+      "title": "Tempo 12km",
+      "details": "4:30/km",
+      "target_distance_m": 12000.0,
+      "pace_low_s_km": 270,
+      "pace_high_s_km": 270,
+      "source": "imported"
+     },
+     {
+      "date": "2026-01-17",
+      "session_type": "long",
+      "title": "Long 16km",
+      "details": "5:10/km",
+      "target_distance_m": 16000.0,
+      "pace_low_s_km": 310,
+      "pace_high_s_km": 310,
+      "source": "imported"
+     }
+    ],
+    "warnings": []
+   },
+   "error": null
+  },
+  {
+   "name": "csv",
+   "format": "csv",
+   "content": "date,session_type,title,target_distance_m,pace_low_s_km,pace_high_s_km\n2026-03-02,easy,Easy 8,8000,285,300\n2026-03-04,tempo,Tempo 12,12000,270,280\n",
+   "expected": {
+    "block": {
+     "name": "Imported plan",
+     "start_date": null,
+     "end_date": null,
+     "status": "active",
+     "source": "imported"
+    },
+    "phases": [],
+    "weeks": [],
+    "sessions": [
+     {
+      "date": "2026-03-02",
+      "session_type": "easy",
+      "title": "Easy 8",
+      "target_distance_m": "8000",
+      "pace_low_s_km": "285",
+      "pace_high_s_km": "300"
+     },
+     {
+      "date": "2026-03-04",
+      "session_type": "tempo",
+      "title": "Tempo 12",
+      "target_distance_m": "12000",
+      "pace_low_s_km": "270",
+      "pace_high_s_km": "280"
+     }
+    ],
+    "warnings": []
+   },
+   "error": null
+  },
+  {
+   "name": "json_full",
+   "format": "json",
+   "content": "{\"block\": {\"name\": \"JSON block\", \"start_date\": \"2026-03-02\", \"end_date\": \"2026-03-20\", \"status\": \"active\"}, \"phases\": [{\"name\": \"Base\", \"start_date\": \"2026-03-02\", \"end_date\": \"2026-03-20\"}], \"weeks\": [{\"week_number\": 1, \"start_date\": \"2026-03-02\", \"end_date\": \"2026-03-08\", \"target_km\": 25.0, \"phase_index\": 0}], \"sessions\": [{\"date\": \"2026-03-02\", \"session_type\": \"easy\", \"title\": \"Easy 8\", \"target_distance_m\": 8000}]}",
+   "expected": {
+    "block": {
+     "name": "JSON block",
+     "start_date": "2026-03-02",
+     "end_date": "2026-03-20",
+     "status": "active"
+    },
+    "phases": [
+     {
+      "name": "Base",
+      "start_date": "2026-03-02",
+      "end_date": "2026-03-20"
+     }
+    ],
+    "weeks": [
+     {
+      "week_number": 1,
+      "start_date": "2026-03-02",
+      "end_date": "2026-03-08",
+      "target_km": 25.0,
+      "phase_index": 0
+     }
+    ],
+    "sessions": [
+     {
+      "date": "2026-03-02",
+      "session_type": "easy",
+      "title": "Easy 8",
+      "target_distance_m": 8000
+     }
+    ]
+   },
+   "error": null
+  },
+  {
+   "name": "json_simple",
+   "format": "json",
+   "content": "{\"name\": \"Simple plan\", \"sessions\": [{\"date\": \"2026-04-01\", \"session_type\": \"long\", \"title\": \"Long 20km\", \"target_distance_m\": 20000}]}",
+   "expected": {
+    "block": {
+     "name": "Simple plan",
+     "start_date": null,
+     "end_date": null,
+     "status": "active",
+     "source": "imported"
+    },
+    "phases": [],
+    "weeks": [],
+    "sessions": [
+     {
+      "date": "2026-04-01",
+      "session_type": "long",
+      "title": "Long 20km",
+      "target_distance_m": 20000
+     }
+    ],
+    "warnings": []
+   },
+   "error": null
+  },
+  {
+   "name": "markdown_unnamed_sessions",
+   "format": "markdown",
+   "content": "# 2026 Spring Block\n\n## Phase table\n\n| Phase | Weeks | Duration | Volume |\n|---|---|---|---|\n| Base | 1 - 4 | (March 2 - March 29) | 30-40 km |\n\n| Phase | Easy | Tempo | Interval | Long |\n|---|---|---|---|---|\n| Base | 6:45-7:15/km | 5:50/km | 3:50/km | 5:15/km |\n\n## Weekly running volume\n\n| Week | Phase | Running | Tuesday | Notes |\n|---|---|---|---|---|\n| 1 | Base | 25 km | Quality | easy |\n\n## Week 1 - Base (March 2 - March 8) 25 km\n\n| Day | Session | Details |\n|---|---|---|\n| Mon | Session 4 | |\n| Tue | Zona 3 | |\n| Wed | Easy 8km | 4:45-5:00/km |\n| Thu | Long 14km | 5:15/km |\n",
+   "expected": {
+    "block": {
+     "name": "Imported training plan",
+     "start_date": "2026-01-05",
+     "end_date": "2026-01-11",
+     "goal": null,
+     "status": "active",
+     "source": "imported"
+    },
+    "phases": [
+     {
+      "name": "Base",
+      "week_start": 1,
+      "week_end": 4,
+      "duration": "(March 2 - March 29)",
+      "target_weekly_km_min": 30.0,
+      "target_weekly_km_max": 40.0,
+      "pace_easy_low": 405,
+      "pace_easy_high": 435,
+      "pace_tempo_low": 350,
+      "pace_tempo_high": 350,
+      "pace_interval_low": 230,
+      "pace_interval_high": 230,
+      "pace_long_low": 315,
+      "pace_long_high": 315,
+      "start_date": null,
+      "end_date": null
+     }
+    ],
+    "weeks": [
+     {
+      "week_number": 1,
+      "start_date": "2026-01-05",
+      "end_date": "2026-01-11",
+      "target_km": 25.0,
+      "key_workout": "easy",
+      "phase_index": 0
+     }
+    ],
+    "sessions": [
+     {
+      "date": "2026-01-05",
+      "session_type": "unknown",
+      "title": "Session 4",
+      "details": null,
+      "target_distance_m": null,
+      "pace_low_s_km": null,
+      "pace_high_s_km": null,
+      "source": "imported"
+     },
+     {
+      "date": "2026-01-06",
+      "session_type": "unknown",
+      "title": "Zona 3",
+      "details": null,
+      "target_distance_m": null,
+      "pace_low_s_km": null,
+      "pace_high_s_km": null,
+      "source": "imported"
+     },
+     {
+      "date": "2026-01-07",
+      "session_type": "easy",
+      "title": "Easy 8km",
+      "details": "4:45-5:00/km",
+      "target_distance_m": 8000.0,
+      "pace_low_s_km": 285,
+      "pace_high_s_km": 300,
+      "source": "imported"
+     },
+     {
+      "date": "2026-01-08",
+      "session_type": "long",
+      "title": "Long 14km",
+      "details": "5:15/km",
+      "target_distance_m": 14000.0,
+      "pace_low_s_km": 315,
+      "pace_high_s_km": 315,
+      "source": "imported"
+     }
+    ],
+    "warnings": []
+   },
+   "error": null
+  }
+ ]
+}

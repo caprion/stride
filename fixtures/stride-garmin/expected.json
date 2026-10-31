@@ -1,0 +1,498 @@
+{
+  "activities_params": {
+    "beyond_the_cap": {
+      "endDate": "2026-01-31",
+      "limit": 1,
+      "start": 299,
+      "startDate": "2026-01-01"
+    },
+    "clamped_window": {
+      "endDate": "2026-01-31",
+      "limit": 100,
+      "start": 0,
+      "startDate": "2025-01-31"
+    },
+    "deep_page": {
+      "endDate": "2026-01-31",
+      "limit": 1,
+      "start": 299,
+      "startDate": "2026-01-01"
+    },
+    "default": {
+      "endDate": "2026-01-31",
+      "limit": 100,
+      "start": 0,
+      "startDate": "2026-01-01"
+    },
+    "over_the_limit": {
+      "endDate": "2026-01-31",
+      "limit": 100,
+      "start": 0,
+      "startDate": "2026-01-01"
+    },
+    "under_the_limit": {
+      "endDate": "2026-01-31",
+      "limit": 1,
+      "start": 0,
+      "startDate": "2026-01-01"
+    }
+  },
+  "activity_detail": {
+    "avg_cadence": 84.0,
+    "avg_hr": 148.0,
+    "avg_speed_ms": 1.6726,
+    "calories": 512.0,
+    "day_of_week": "Saturday",
+    "device": "Garmin Forerunner 265",
+    "distance_m": 4993.22,
+    "elapsed_time_s": 3125.44,
+    "elevation_gain_m": 84.0,
+    "external_id": "19012837465",
+    "local_date": "2026-03-07",
+    "max_cadence": 92.0,
+    "max_hr": 176.0,
+    "max_speed_ms": 4.1667,
+    "min_hr": 92.0,
+    "moving_time_s": 2986.12,
+    "name": "Morning Run",
+    "sport_type": "running",
+    "start_time": "2026-03-07T06:15:00+00:00"
+  },
+  "activity_detail_fallback": {
+    "avg_cadence": 79.0,
+    "avg_hr": 152.5,
+    "avg_speed_ms": 1.8041,
+    "calories": 894.0,
+    "day_of_week": "Sunday",
+    "device": "Garmin Forerunner 965",
+    "distance_m": 8120.75,
+    "elapsed_time_s": 4890.0,
+    "elevation_gain_m": 612.5,
+    "external_id": "19012999001",
+    "local_date": "2026-03-08",
+    "max_cadence": 88.0,
+    "max_hr": 181.0,
+    "max_speed_ms": 3.9931,
+    "min_hr": 88.0,
+    "moving_time_s": 4502.5,
+    "name": "Trail Loop",
+    "sport_type": "trail_running",
+    "start_time": "2026-03-08T06:40:00+00:00"
+  },
+  "activity_list": [
+    {
+      "day_of_week": "Saturday",
+      "external_id": "19012837465",
+      "local_date": "2026-03-07",
+      "name": "Morning Run",
+      "start_time": "2026-03-07T06:15:00+00:00"
+    },
+    {
+      "day_of_week": "Sunday",
+      "external_id": "19012999001",
+      "local_date": "2026-03-08",
+      "name": "Trail Loop",
+      "start_time": "2026-03-08T06:40:00+00:00"
+    }
+  ],
+  "activity_list_ids": [
+    "19012837465",
+    "19012999001"
+  ],
+  "activity_list_names": [
+    "Morning Run",
+    "Trail Loop"
+  ],
+  "activity_list_sports": [
+    "running",
+    "trail_running"
+  ],
+  "dates": {
+    "inverted": [
+      "2026-03-01",
+      "2026-03-01"
+    ],
+    "long": [
+      "2025-01-31",
+      "2026-01-31"
+    ],
+    "short": [
+      "2026-01-01",
+      "2026-01-31"
+    ]
+  },
+  "lists": {
+    "activities": [
+      {
+        "activityId": 19012837465,
+        "activityName": "Morning Run",
+        "activityTypeDTO": {
+          "typeId": 1,
+          "typeKey": "running"
+        },
+        "eventTypeDTO": {
+          "typeKey": "uncategorized"
+        },
+        "metadataDTO": {
+          "manufacturer": "Garmin",
+          "sensors": [
+            {
+              "manufacturer": "Garmin",
+              "product": "Forerunner 265",
+              "sensorsEnabled": true,
+              "type": "WATCH"
+            }
+          ]
+        },
+        "startTimeLocal": "2026-03-07T06:15:00",
+        "summaryDTO": {
+          "aerobicTrainingEffect": 3.1,
+          "averageHR": 148.0,
+          "averageRunCadence": 84.0,
+          "averageSpeed": 1.6726,
+          "bmrCalories": 1480.0,
+          "calories": 512.0,
+          "distance": 4993.22,
+          "duration": 3125.44,
+          "elapsedDuration": 3125.44,
+          "elevationGain": 84.0,
+          "maxHR": 176.0,
+          "maxRunCadence": 92.0,
+          "maxSpeed": 4.1667,
+          "minHR": 92.0,
+          "movingDuration": 2986.12,
+          "startTimeLocal": "2026-03-07T06:15:00",
+          "strideLength": 118.72,
+          "trainingEffect": 2.4
+        }
+      },
+      {
+        "activityId": 19012999001,
+        "activityName": "Trail Loop",
+        "activityTypeDTO": {
+          "typeId": 3,
+          "typeKey": "trail_running"
+        },
+        "metadataDTO": {
+          "sensors": [
+            {
+              "manufacturer": "Garmin",
+              "product": "Forerunner 965",
+              "type": "WATCH"
+            }
+          ]
+        },
+        "startTimeLocal": "2026-03-08T06:40:00",
+        "summaryDTO": {
+          "averageHR": 152.5,
+          "averageRunCadence": 79.0,
+          "averageSpeed": 1.8041,
+          "calories": 894.0,
+          "distance": 8120.75,
+          "duration": 4890.0,
+          "elapsedDuration": 4890.0,
+          "elevationGain": 612.5,
+          "maxHR": 181.0,
+          "maxRunCadence": 88.0,
+          "maxSpeed": 3.9931,
+          "minHR": 88.0,
+          "movingDuration": 4502.5,
+          "startTimeLocal": "2026-03-08T06:40:00"
+        }
+      }
+    ],
+    "body_battery": [
+      {
+        "bodyBatteryValuesArray": [
+          [
+            1776000000000,
+            71
+          ],
+          [
+            1776000600000,
+            69
+          ]
+        ],
+        "calendarDate": "2026-03-07",
+        "charged": 88.0,
+        "drained": 22.0,
+        "startTimestamp": "2026-03-07T00:00:00.000Z"
+      }
+    ],
+    "hrv_range": [
+      {
+        "calendarDate": "2026-03-07",
+        "hrvDailySummary": {
+          "lastNightAvg": 58.0,
+          "weeklyAvg": 55.5
+        }
+      },
+      {
+        "calendarDate": "2026-03-08",
+        "hrvDailySummary": {
+          "lastNightAvg": 61.5,
+          "weeklyAvg": 56.0
+        }
+      }
+    ],
+    "sleep_range": [
+      {
+        "calendarDate": "2026-03-07",
+        "deepSleepSeconds": 6420.0,
+        "sleepTimeSeconds": 27900.0
+      },
+      {
+        "calendarDate": "2026-03-08",
+        "deepSleepSeconds": 5900.0,
+        "sleepTimeSeconds": 26400.0
+      }
+    ],
+    "steps": [
+      {
+        "calendarDate": "2026-03-07",
+        "totalDistance": 8120.5,
+        "totalSteps": 11240
+      },
+      {
+        "calendarDate": "2026-03-08",
+        "totalDistance": 6011.25,
+        "totalSteps": 8410
+      }
+    ],
+    "stress": [
+      {
+        "avgStressLevel": 28.4,
+        "calendarDate": "2026-03-07",
+        "maxStressLevel": 61.0
+      },
+      {
+        "avgStressLevel": 31.2,
+        "calendarDate": "2026-03-08",
+        "maxStressLevel": 74.5
+      }
+    ],
+    "weight": [
+      {
+        "bmi": 23.4,
+        "calendarDate": "2026-03-07",
+        "weight": 72150.0
+      }
+    ],
+    "workouts": [
+      {
+        "sportType": {
+          "typeKey": "running"
+        },
+        "workoutId": 88123,
+        "workoutName": "Tempo Tuesday"
+      }
+    ]
+  },
+  "lists_bare_array": [
+    {
+      "activityId": 777,
+      "activityName": "Bare Array Run",
+      "startTimeLocal": "2026-03-09T05:55:00"
+    }
+  ],
+  "lists_unknown_envelope": [],
+  "payloads": {
+    "activity_detail": {
+      "activityId": 19012837465,
+      "activityName": "Morning Run",
+      "activityStatistics": [
+        {
+          "distance": 4993.22,
+          "duration": 3125.44,
+          "timestamp": "2026-03-07T06:15:00.000-08:00"
+        }
+      ],
+      "activityTypeDTO": {
+        "typeId": 1,
+        "typeKey": "running"
+      },
+      "lapSummaries": [
+        {
+          "averageHR": 148.0,
+          "lapIndex": 0,
+          "totalDistance": 4993.22,
+          "totalDuration": 3125.44
+        }
+      ],
+      "metadataDTO": {
+        "manufacturer": "Garmin",
+        "sensors": [
+          {
+            "manufacturer": "Garmin",
+            "product": "Forerunner 265",
+            "sensorsEnabled": true,
+            "type": "WATCH"
+          }
+        ]
+      },
+      "startTimeLocal": "2026-03-07T06:15:00",
+      "summaryDTO": {
+        "aerobicTrainingEffect": 3.1,
+        "averageHR": 148.0,
+        "averageRunCadence": 84.0,
+        "averageSpeed": 1.6726,
+        "bmrCalories": 1480.0,
+        "calories": 512.0,
+        "distance": 4993.22,
+        "duration": 3125.44,
+        "elapsedDuration": 3125.44,
+        "elevationGain": 84.0,
+        "maxHR": 176.0,
+        "maxRunCadence": 92.0,
+        "maxSpeed": 4.1667,
+        "minHR": 92.0,
+        "movingDuration": 2986.12,
+        "startTimeLocal": "2026-03-07T06:15:00",
+        "strideLength": 118.72,
+        "trainingEffect": 2.4
+      }
+    },
+    "daily_heart_rate": {
+      "heartRateSummary": {
+        "lastSevenDaysAvgRestingHeartRate": 48.1,
+        "maxHeartRate": 176.0,
+        "minHeartRate": 44.0,
+        "restingHeartRate": 47.0
+      }
+    },
+    "daily_summary": {
+      "summaryDTO": {
+        "averageStressLevel": 28.4,
+        "bodyBatteryHighestValue": 88.0,
+        "bodyBatteryLowestValue": 22.0,
+        "bodyBatteryMostRecentValue": 71.0,
+        "calendarDate": "2026-03-07",
+        "maxHeartRate": 176.0,
+        "maxStressLevel": 61.0,
+        "restingHeartRate": 47.0,
+        "totalSteps": 11240,
+        "vo2Max": 52.0
+      }
+    },
+    "fitness_age": {
+      "averageVO2Max": 52.0,
+      "chronometricAge": 34.2,
+      "chronometricAgeType": "chronometric",
+      "physiologicalAge": 31.0,
+      "prevPhysiologicalAge": 34.8
+    },
+    "hrv": {
+      "hrvSummary": {
+        "feedbackPhrase": "BALANCED",
+        "hrvSummaryStatus": "BALANCED",
+        "lastNight5MinHigh": 96.0,
+        "lastNightAvg": 58.0,
+        "status": "BALANCED",
+        "weeklyAvg": 55.5
+      }
+    },
+    "sleep": {
+      "dailySleep": {
+        "awakeSleepSeconds": 1800.0,
+        "deepSleepSeconds": 6420.0,
+        "lightSleepSeconds": 14100.0,
+        "remSleepSeconds": 5580.0,
+        "sleepEndTimeGMT": "2026-03-08T06:15:00.000Z",
+        "sleepStartTimeGMT": "2026-03-07T22:30:00.000Z",
+        "sleepTimeSeconds": 27900.0
+      }
+    },
+    "weight": {
+      "dateWeightList": [
+        {
+          "bmi": 23.4,
+          "calendarDate": "2026-03-07",
+          "weight": 72150.0
+        }
+      ]
+    },
+    "zones": {
+      "zones": [
+        {
+          "secsIntoZone": 0,
+          "zoneHighBoundary": 120,
+          "zoneLowBoundary": 0,
+          "zoneName": "Zone 1",
+          "zoneNumber": 1
+        },
+        {
+          "secsIntoZone": 0,
+          "zoneHighBoundary": 140,
+          "zoneLowBoundary": 120,
+          "zoneName": "Zone 2",
+          "zoneNumber": 2
+        },
+        {
+          "secsIntoZone": 0,
+          "zoneHighBoundary": 160,
+          "zoneLowBoundary": 140,
+          "zoneName": "Zone 3",
+          "zoneNumber": 3
+        },
+        {
+          "secsIntoZone": 0,
+          "zoneHighBoundary": 175,
+          "zoneLowBoundary": 160,
+          "zoneName": "Zone 4",
+          "zoneNumber": 4
+        },
+        {
+          "secsIntoZone": 0,
+          "zoneHighBoundary": 190,
+          "zoneLowBoundary": 175,
+          "zoneName": "Zone 5",
+          "zoneNumber": 5
+        }
+      ]
+    }
+  },
+  "profile": {
+    "athlete_name": "ATHLETE",
+    "raw": {
+      "displayName": "ATHLETE",
+      "fullName": "ATHLETE",
+      "id": 0,
+      "nickName": "ATHLETE",
+      "profileImageType": "small",
+      "userName": "athlete",
+      "userProfileId": 0
+    }
+  },
+  "zones": [
+    {
+      "high_bpm": 120,
+      "low_bpm": 0,
+      "name": "Zone 1",
+      "zone_no": 1
+    },
+    {
+      "high_bpm": 140,
+      "low_bpm": 120,
+      "name": "Zone 2",
+      "zone_no": 2
+    },
+    {
+      "high_bpm": 160,
+      "low_bpm": 140,
+      "name": "Zone 3",
+      "zone_no": 3
+    },
+    {
+      "high_bpm": 175,
+      "low_bpm": 160,
+      "name": "Zone 4",
+      "zone_no": 4
+    },
+    {
+      "high_bpm": 190,
+      "low_bpm": 175,
+      "name": "Zone 5",
+      "zone_no": 5
+    }
+  ]
+}
