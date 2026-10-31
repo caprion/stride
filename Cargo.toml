@@ -23,13 +23,19 @@ version = "0.1.0"
 edition = "2021"
 rust-version = "1.75"
 license = "AGPL-3.0"
-repository = "https://github.com/caprion/stride-v2"
+repository = "https://github.com/caprion/stride"
 
 # The lint rules the plan promises (PLAN.md §7): no unwrap, no expect, no
-# panic, no todo, no unimplemented. Unsafe is warned, not denied — only the
-# FFI may use it, and the FFI does not exist yet.
+# panic, no todo, no unimplemented — these are clippy lints, enforced by CI's
+# `-D warnings`, not by a plain `cargo build` (see CONTRIBUTING.md).
+#
+# `unsafe_code` is `allow` here because CI promotes warnings to errors, and
+# "warn" would make unsafe denied everywhere — including the FFI boundary,
+# the one place the plan intends to allow it. Unsafe is instead enforced by
+# scripts/check-contract-greps.sh (no `unsafe` outside the FFI crate), which
+# the FFI crate is exempt from once it lands.
 [workspace.lints.rust]
-unsafe_code = "warn"
+unsafe_code = "allow"
 
 [workspace.lints.clippy]
 unwrap_used = "deny"
