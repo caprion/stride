@@ -5,6 +5,9 @@ name: CI
 # The old repo's android.yml broke every outside contributor's PR because the
 # APK job fetched the signing secret during pull_request; that job lives in
 # release.yml now, and only runs on upstream tags.
+#
+# scripts/gate.sh is the single authoritative list of checks — the local gate
+# and the CI gate are the same command.
 on:
   push:
     branches: [master]
@@ -17,48 +20,9 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  fmt:
+  gate:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       # rust-toolchain.toml pins stable + rustfmt + clippy; rustup installs them.
-      - run: cargo fmt --check
-
-  clippy:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - run: cargo clippy --workspace --all-targets -- -D warnings
-
-  test:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - run: cargo test --workspace
-
-  deps:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - run: bash scripts/check-deps.sh
-
-  scans:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - run: bash scripts/scan-secrets.sh
-      - run: bash scripts/scan-privacy.sh
-      # Prove the scanners catch the bad fixtures — a scanner that never fails
-      # is worse than no scanner.
-      - name: scanner self-test
-        run: |
-          set -euo pipefail
-          if bash scripts/scan-secrets.sh fixtures/scan-tests/secrets-bad.txt; then
-            echo "secret scan did not catch the bad fixture" >&2; exit 1
-          fi
-          bash scripts/scan-secrets.sh fixtures/scan-tests/secrets-good.txt
-          if bash scripts/scan-privacy.sh fixtures/scan-tests/privacy-bad.txt; then
-            echo "privacy scan did not catch the bad fixture" >&2; exit 1
-          fi
-          bash scripts/scan-privacy.sh fixtures/scan-tests/privacy-good.txt
-          echo "scanner self-tests passed"
+      - run: bash scripts/gate.sh
