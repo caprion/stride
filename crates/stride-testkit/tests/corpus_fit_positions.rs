@@ -40,6 +40,28 @@ fn every_corpus_fit_position_is_the_synthetic_anchor() {
 }
 
 #[test]
+fn compressed_timestamp_positions_are_decoded() {
+    // Compressed-timestamp headers are the normal Garmin optimisation for
+    // dense recording. A reader that skips those records would report no
+    // positions and make this corpus check vacuously true.
+    let path = fixtures_dir().join("fit/zz_compressed_timestamp.fit");
+    let positions = fit_position::positions_in(&path)
+        .unwrap_or_else(|e| panic!("{}: decode failed: {e}", path.display()));
+    assert_eq!(
+        positions.len(),
+        2,
+        "compressed records carried no positions"
+    );
+    for &(lat, lon) in &positions {
+        assert!(
+            fit_position::within_anchor(lat, lon),
+            "{}: position ({lat}, {lon}) is not the synthetic anchor",
+            path.display()
+        );
+    }
+}
+
+#[test]
 fn the_bad_fit_fixture_is_detected() {
     // The self-test: prove the reader actually reads positions, by feeding it a
     // file whose position is deliberately not the anchor. If this test passes,

@@ -104,37 +104,54 @@ pub fn positions_from_bytes(bytes: &[u8]) -> Result<Vec<(f64, f64)>, Error> {
         ));
     }
     let header_size = bytes[0] as usize;
-    if header_size < 12 || bytes.len() < header_size {
+    if header_size != 12 && header_size != 14 {
         return Err(Error::Unsupported("bad header size".into()));
     }
+    if bytes.len() < header_size || &bytes[8..12] != b".FIT" {
+        return Err(Error::Unsupported("bad FIT header".into()));
+    }
     let data_size = read_u32(bytes, 4, 0)? as usize;
+    let end = header_size
+        .checked_add(data_size)
+        .ok_or_else(|| Error::Unsupported("FIT data size overflow".into()))?;
+    if bytes.len() < end {
+        return Err(Error::Unsupported("truncated FIT data section".into()));
+    }
 
     const NONE: Option<Definition> = None;
     let mut defs: [Option<Definition>; 16] = [NONE; 16];
     let mut out = Vec::new();
 
-    let mut i = header_size;
-    let end = (header_size + data_size).min(bytes.len());
+    let mut i = if header_size == 12 { 14 } else { header_size };
     while i < end {
         let hdr = bytes[i];
 
-        // Compressed-timestamp header (bit 7): the record message (local 0)
-        // with its timestamp field omitted from the data that follows.
+        // Compressed-timestamp header (bit 7): the local message type lives
+        // in bits 5-6, and the timestamp field is omitted from the data body.
         if hdr & 0x80 != 0 {
-            let skip = match &defs[0] {
-                Some(d) => d
-                    .fields
-                    .iter()
-                    .filter(|f| f.def_num != FIELD_TIMESTAMP)
-                    .map(|f| f.size as usize)
-                    .sum::<usize>(),
+            let local = ((hdr >> 5) & 0x03) as usize;
+            let def = match &defs[local] {
+                Some(d) => d,
                 None => {
                     return Err(Error::Unsupported(
                         "compressed timestamp before a definition".into(),
                     ))
                 }
             };
-            i += 1 + skip;
+            if !def
+                .fields
+                .iter()
+                .any(|field| field.def_num == FIELD_TIMESTAMP)
+            {
+                return Err(Error::Unsupported(
+                    "compressed timestamp without a timestamp field".into(),
+                ));
+            }
+            let (next, lat, lon) = parse_record_data(bytes, i, def, true)?;
+            if let (Some(la), Some(lo)) = (lat, lon) {
+                out.push((la, lo));
+            }
+            i = next;
             continue;
         }
 
@@ -151,7 +168,7 @@ pub fn positions_from_bytes(bytes: &[u8]) -> Result<Vec<(f64, f64)>, Error> {
                     "developer data in a data message".into(),
                 ));
             }
-            let (next, lat, lon) = parse_record_data(bytes, i, def)?;
+            let (next, lat, lon) = parse_record_data(bytes, i, def, false)?;
             if let (Some(la), Some(lo)) = (lat, lon) {
                 out.push((la, lo));
             }
@@ -171,8 +188,15 @@ fn parse_definition(
     let mut j = i + 1;
     if hdr & 0x20 != 0 {
         // developer field count, then three bytes per developer field
-        let dev_count = bytes[j] as usize;
+        let dev_count = bytes
+            .get(j)
+            .copied()
+            .ok_or_else(|| Error::Unsupported("truncated definition message".into()))?
+            as usize;
         j += 1 + dev_count * 3;
+        if j > bytes.len() {
+            return Err(Error::Unsupported("truncated definition message".into()));
+        }
     }
     if j + 5 >= bytes.len() {
         return Err(Error::Unsupported("truncated definition message".into()));
@@ -208,11 +232,15 @@ fn parse_record_data(
     bytes: &[u8],
     i: usize,
     def: &Definition,
+    compressed_timestamp: bool,
 ) -> Result<(usize, Option<f64>, Option<f64>), Error> {
     let mut j = i + 1;
     let mut lat: Option<f64> = None;
     let mut lon: Option<f64> = None;
     for field in &def.fields {
+        if compressed_timestamp && field.def_num == FIELD_TIMESTAMP {
+            continue;
+        }
         let (consumed, value) = read_field(bytes, j, field, def.arch)?;
         if def.global == GLOBAL_RECORD {
             if field.def_num == FIELD_POSITION_LAT && value != SINT32_INVALID {
@@ -231,9 +259,18 @@ fn parse_record_data(
 fn read_field(bytes: &[u8], pos: usize, field: &Field, arch: u8) -> Result<(usize, i64), Error> {
     let size = field.size as usize;
     let base = field.base_type;
+    if size == 0 {
+        return Err(Error::Unsupported(format!(
+            "zero-sized field at byte {pos}"
+        )));
+    }
+    let raw = bytes
+        .get(pos..pos.saturating_add(size))
+        .filter(|raw| raw.len() == size)
+        .ok_or_else(|| Error::Unsupported(format!("truncated field at byte {pos}")))?;
     match base {
-        BASE_ENUM | BASE_UINT8 | BASE_UINT8Z => Ok((1, bytes[pos] as i64)),
-        BASE_SINT8 => Ok((1, bytes[pos] as i8 as i64)),
+        BASE_ENUM | BASE_UINT8 | BASE_UINT8Z => Ok((1, raw[0] as i64)),
+        BASE_SINT8 => Ok((1, raw[0] as i8 as i64)),
         BASE_SINT16 => Ok((2, read_u16(bytes, pos, arch)? as i16 as i64)),
         BASE_UINT16 | BASE_UINT16Z => Ok((2, read_u16(bytes, pos, arch)? as i64)),
         BASE_SINT32 => Ok((4, read_u32(bytes, pos, arch)? as i32 as i64)),
