@@ -59,6 +59,14 @@ fn compressed_timestamp_positions_are_decoded() {
             path.display()
         );
     }
+
+    let mut truncated =
+        std::fs::read(&path).unwrap_or_else(|e| panic!("{}: read failed: {e}", path.display()));
+    truncated.pop();
+    assert!(
+        fit_position::positions_from_bytes(&truncated).is_err(),
+        "an unreadable compressed-timestamp file must be an error, not an empty pass"
+    );
 }
 
 #[test]
