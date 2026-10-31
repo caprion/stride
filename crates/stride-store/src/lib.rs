@@ -27,6 +27,8 @@
 //! | [`key`] | the key: it goes in, and it does not come out |
 //! | [`schema`] | the DDL, the indexes and the migrations |
 //! | [`repos`] | one repository per table |
+//! | [`sync`] | the cursor rule: it advances only after a successful parse |
+//! | [`export`] | export, import, and the plaintext → SQLCipher conversion |
 //! | [`model`] | the rows |
 //! | [`hash`] | SHA-256, for the FIT blob's content hash |
 //! | [`logging`] | the store's log, and the sink a test reads |
@@ -45,6 +47,7 @@
 
 pub mod datetimes;
 pub mod error;
+pub mod export;
 pub mod hash;
 pub mod key;
 pub mod logging;
@@ -53,8 +56,10 @@ pub mod repos;
 pub mod schema;
 pub mod scratch;
 pub mod store;
+pub mod sync;
 
 pub use error::{Result, StoreError};
+pub use export::{ConversionReport, ExportManifest, ImportReport};
 pub use key::DatabaseKey;
 pub use model::{
     Activity, ActivitySamples, ActivitySummary, NewActivity, NewActivitySamples, NewNote,
@@ -63,3 +68,4 @@ pub use model::{
 pub use repos::activity::{FeedCursor, FeedPage};
 pub use schema::SCHEMA_VERSION;
 pub use store::Store;
+pub use sync::SyncCursor;
