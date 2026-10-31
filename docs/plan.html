@@ -304,7 +304,7 @@
     <thead><tr><th style="width:22%">Engine</th><th style="width:40%">What it computes</th><th style="width:38%">Its contract</th></tr></thead>
     <tbody>
       <tr><td><b>Vitals &amp; direction</b></td><td>Sleep, HRV, resting HR (and stress, where the watch reports it) against the athlete's own trailing distribution (median and MAD over 30 nights), each reduced to a value and a direction word.</td><td>Never a score, never a grade, never a recommendation. The direction comes from a closed set — <i>better than usual · about usual · could be better</i> — and the band it is measured against is drawn on the chart.</td></tr>
-      <tr><td><b>Pattern</b></td><td>Compares the current state with the athlete's own history of comparable states: "the 5 other times your sleep was this low, you ran 8 km or less".</td><td>Always carries its sample size; never emitted from fewer than three comparable days; never a forecast and never a rule about what to do. Lives on Body, not on the morning screen.</td></tr>
+      <tr><td><b>Pattern</b></td><td>Compares the current state with the athlete's own history of comparable states: "the 5 other times your sleep was below your usual, you ran 8.4 km or less".</td><td>Always carries its sample size; never emitted from fewer than three comparable days; never a forecast and never a rule about what to do. Lives on Body, not on the morning screen.</td></tr>
       <tr><td><b>Today's state</b></td><td>Assembles the morning's readout: the vitals with their directions, the rest summary, the plan's own sessions and options, and the last run.</td><td>Vitals first. No commands, no verdicts, no conclusions drawn from the vitals, and no link between an option and a vital. Today and Body read the <b>same values and directions</b> from the core.</td></tr>
       <tr><td><b>Plan</b></td><td>Active block, today's session, adherence (planned vs what happened, with a cause), results per session.</td><td>Plain fact: <i>done</i> · <i>not done</i> · <i>planned</i>. Never a red "missed", never a judgement. A plan inferred from history is a <b>baseline</b> and never produces a "not done" against it.</td></tr>
       <tr><td><b>Story</b></td><td>One or two sentences on what an activity meant (was this a real session? was it longer than usual? did it match the plan).</td><td>Descriptive, never evaluative — "10.4 km, 3 km more than your usual Wednesday" — and reads the same primitives the charts read. A number on screen and a number in the sentence are always the same number.</td></tr>
@@ -442,9 +442,12 @@
             coloured or graded.</li>
             <li><b>Rest</b> — one composite line over the three vitals, stated as a count and a direction:
             <i>Rest — could be better · 2 of 3 signals below your usual.</i> It is a summary of the three, not a
-            verdict about the athlete, and the three rows are always shown beneath it.</li>
+            verdict about the athlete, and the three rows are always shown beneath it. The count names the side the
+            signals are <em>literally</em> on — a resting heart rate on its worse side is <i>above</i> its usual, so
+            the sentence says "above" there, and "outside" when the signals do not agree on a side. The sentence must
+            be true as written.</li>
             <li><b>Direction of travel</b> — how each vital has moved over the last few days, in words:
-            <i>3rd night down</i>, <i>up 3 nights</i>, <i>steady</i>.</li>
+            <i>3rd night down</i>, <i>3rd night up</i>, <i>steady</i> — shown only when there is a streak of at least two nights.</li>
             <li><b>Today's session</b> — if a plan exists: the intent in name-value form (<i>10 km · easy ·
             from your imported plan</i>). It is the athlete's own plan, shown, not a command. Tap → the Plan week.</li>
             <li><b>The other options</b> — other sessions in the plan, unranked and never linked to the vitals:
@@ -919,7 +922,7 @@
 
       <h4>4 · Pattern — the history, in the history screen</h4>
       <p class="how">What usually happened to this athlete, stated as a fact about the past, always with its sample
-      size: <i>"the 5 other times your sleep was this low, you ran 8 km or less."</i> It lives on Body, over the
+      size: <i>"the 5 other times your sleep was below your usual, you ran 8.4 km or less."</i> It lives on Body, over the
       visible history — <b>not</b> on the morning screen, and never next to a suggestion.</p>
     </div>
     <div>
@@ -948,7 +951,7 @@
           <b>Also in your plan</b> &nbsp; a 5 km on Friday · a 30-minute one on Sunday
         </div>
         <div style="border-top:1px solid var(--line);margin-top:10px;padding-top:8px;color:varink3;color:var(--ink3)">
-          <b>Last run</b> &nbsp; 8.4 km · 42 min · Sat 10 May
+          <b>Last run</b> &nbsp; 8.4 km · 42 m · Sat 10 May
         </div>
       </div>
       <p class="k">Vitals first, always. Then the plan's own facts. Nothing that draws a conclusion, nothing that

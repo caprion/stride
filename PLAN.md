@@ -32,7 +32,7 @@ Friday, a 30-minute one on Sunday.* The app never says which to pick, and never 
 that link would be the judgement.
 
 **4 · Pattern — the history, in the history screen.** What usually happened to this athlete, as a fact about the
-past, always with its sample size: *"the 5 other times your sleep was this low, you ran 8 km or less."* It lives on
+past, always with its sample size: *"the 5 other times your sleep was below your usual, you ran 8.4 km or less."* It lives on
 **Body**, over the visible history — not on the morning screen, and never next to a suggestion.
 
 **Forbidden:** commands (*take the day*, *rest day*, *rest up*, *rest today*, *go easy*, *you should*, *it'd be better to*) · verdicts (*good*,
@@ -43,12 +43,14 @@ shame (red, *should have*).
 ```
 TODAY · Tue 12 May
 Rest         could be better · 2 of 3 signals below your usual
+            (the count names the side the signals are literally on — "above" when a resting heart rate is the one
+             on its worse side, "outside" when they disagree; the sentence must be true as written)
 Sleep        6 h 10 m   · could be better · 1 h 10 m less than your usual
 HRV          48 ms      · could be better · 14 below your usual · 3rd night down
 Resting HR   63 bpm     · about usual · 5 above your usual
 Today        10 km · easy · from your imported plan
 Also in plan a 5 km on Friday · a 30-minute one on Sunday
-Last run     8.4 km · 42 min · Sat 10 May
+Last run     8.4 km · 42 m · Sat 10 May
 ```
 
 Every user-facing string lives in one catalogue and is typed (`vital`, `direction`, `option`, `pattern`, `status`).

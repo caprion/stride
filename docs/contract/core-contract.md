@@ -91,6 +91,10 @@ with it.
 
 - **Usual** = the median of the last **30 nights** (the day itself excluded).
 - **Band** = median ± **1.5 × MAD** (configurable).
+- **A band needs at least 3 nights** behind it. A band drawn from one night is
+  a point, and every reading would then be "outside" it. With fewer than
+  three, there is no comparison: the row says "not enough data for a
+  comparison yet" and shows the raw value alone.
 - **Inside the band** → "about usual"; outside → "better than usual" or
   "could be better", depending on which side is the better side.
 - **Which side is better is a fact about the measurement**, not an opinion:
@@ -101,9 +105,23 @@ The direction word comes from a **closed set** — `better than usual` ·
 the muted arithmetic ("1 h 10 m less than your usual") and the direction of
 travel ("3rd night down", "steady"), which are descriptive, never a verdict.
 
+- **Direction of travel** is shown when there is a direction to show: a streak
+  of **at least two nights** in the same direction ("3rd night down", "3rd night
+  up"), or "steady" when the value is outside its band and the last two nights
+  are equal. The form is the ordinal one for both directions; "up 3 nights" is
+  not a form the app produces.
+- **The travel line is never shown when there is no streak.** One night is a
+  reading, not a direction.
+
 The "Rest" line on Today is a **count + direction**, not a conclusion: it is a
 summary of the three vitals ("2 of 3 signals below your usual"), and its
 direction word is a pure function of that count, never an editorial judgment.
+
+- **The count names the side the signals are literally on.** A resting heart
+  rate on its worse side is *above* its usual, so the sentence says "above"
+  there; when the signals do not agree on a side, it says "outside". The
+  sentence must be true as written — it is a fact about the data, and a false
+  fact is the one thing this app does not ship.
 
 ## 5. Human rendering (the voice's numbers)
 
@@ -123,6 +141,9 @@ Values are rounded to what a human would say, never to what a machine would.
 - **Units written out**: `ms`, `bpm`, `h`, `m`, `km`, `s` — no abbreviations the
   athlete has to learn, no icons standing in for words, no colour carrying
   meaning on its own.
+- **Effort** is the athlete's own rating, **0–10 (CR10)**, whole numbers — the
+  value the old schema already held in `perceived_exertion`. The app never
+  produces one; it only carries what the athlete entered.
 
 ## 6. Expected differences vs the frozen corpus
 
@@ -142,6 +163,17 @@ The corpus keeps them because it is the oracle's output and its SHA-256 is
 frozen (`scripts/check-corpus.sh`); deleting them would break the oracle's
 integrity and the reference the differ measures against.
 
+### The vitals engine has a different oracle
+
+The old core's readiness engine cannot be the oracle for the vitals engine.
+It used the **mean** of HRV and resting heart rate as its baseline, ad-hoc
+normal ranges (sleep ≥ base − 1 h, HRV ≥ base × 0.85, resting HR < base + 5)
+and a 0–100 score — all of which v2 drops, deliberately. For the vitals
+engine, the oracle is **this contract**: the band, the closed set, the
+arithmetic, the rounding and the words. The old corpus is the oracle for the
+*ingest* numbers (the FIT readings, the distances, the times) and for the plan
+engine's surviving arithmetic — not for the words the athlete reads.
+
 ## 7. The retry rule, and who owns it
 
 **The shell owns the retry. The client does not.**
@@ -158,3 +190,4 @@ One rule, one owner. If the client also retried, the phone would exchange
 and retry twice, and the "exactly one" guarantee would be a coincidence
 rather than a rule. Both sides assert it: the client test asserts one
 exchange per call, and the shell's test asserts one retry per sync.
+
