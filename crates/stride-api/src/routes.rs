@@ -1770,76 +1770,28 @@ fn garmin_source(ctx: &Ctx<'_>, from: &str, to: &str) -> Result<Value, ApiError>
             "sessions": [],
         })
     };
-    let Some(key) = ctx.backend.garmin_personal_key()? else {
+    // **Garmin's calendar is read through an account session.** The
+    // Personal API has no scheduled workouts at all — it answers 404 for
+    // every month — and the reference reads them the same way, with an
+    // account login.
+    //
+    // So the source says what it would take, instead of asking the
+    // Personal API for something that is not there and reporting the 404
+    // as a failure to read.
+    let status = ctx.backend.public_status()?;
+    if status.garmin_method.as_deref() != Some("account") {
         return Ok(unavailable(
-            "No Garmin key is configured, so the scheduled workouts cannot be read.".to_string(),
+            "No Garmin account session is configured, so the scheduled workouts cannot be read."
+                .to_string(),
         ));
-    };
-    let client = stride_garmin::GarminClient::new(key);
-    let mut scheduled: Vec<serde_json::Value> = Vec::new();
-    for (year, month) in months(from, to) {
-        match client.scheduled_workouts(year, month) {
-            Ok(rows) => {
-                for row in rows {
-                    scheduled.push(serde_json::to_value(row).unwrap_or(Value::Null));
-                }
-            }
-            Err(err) => {
-                return Ok(unavailable(format!(
-                    "The scheduled workouts could not be read: {err}"
-                )));
-            }
-        }
     }
-    let mut details: Vec<serde_json::Value> = Vec::new();
-    for row in &scheduled {
-        let Some(id) = row.get("workout_id").and_then(Value::as_str) else {
-            continue;
-        };
-        if let Ok(detail) = client.workout_detail(id) {
-            details.push(serde_json::to_value(detail).unwrap_or(Value::Null));
-        }
-    }
-    let scheduled: Vec<stride_core::plan_sources::ScheduledWorkout> = scheduled
-        .iter()
-        .filter_map(|row| serde_json::from_value(row.clone()).ok())
-        .collect();
-    let details: Vec<stride_core::plan_sources::WorkoutDetail> = details
-        .iter()
-        .filter_map(|row| serde_json::from_value(row.clone()).ok())
-        .collect();
-    let plan = stride_core::plan_sources::workouts_plan(&scheduled, &details);
-    let mut payload = serde_json::to_value(&plan)
-        .map_err(|err| ApiError::internal(format!("the Garmin plan did not render: {err}")))?;
-    if let Some(object) = payload.as_object_mut() {
-        object.insert("available".to_string(), json!(true));
-        object.insert("reason".to_string(), Value::Null);
-    }
-    Ok(payload)
-}
-
-/// The months a range covers.
-fn months(from: &str, to: &str) -> Vec<(i64, i64)> {
-    use chrono::Datelike;
-    let Ok(first) = chrono::NaiveDate::parse_from_str(&from[..from.len().min(10)], "%Y-%m-%d")
-    else {
-        return Vec::new();
-    };
-    let Ok(last) = chrono::NaiveDate::parse_from_str(&to[..to.len().min(10)], "%Y-%m-%d") else {
-        return Vec::new();
-    };
-    let mut out = Vec::new();
-    let mut year = first.year();
-    let mut month = first.month();
-    while (year, month) <= (last.year(), last.month()) {
-        out.push((year as i64, month as i64));
-        month += 1;
-        if month > 12 {
-            year += 1;
-            month = 1;
-        }
-    }
-    out
+    // An account session, and the Rust core still has no account flow: the
+    // desktop's account login answers 501, so there is nothing to read the
+    // calendar with yet.
+    let _ = (from, to);
+    Ok(unavailable(
+        "Reading Garmin's scheduled workouts needs the account flow, which the Rust core does not have yet.".to_string(),
+    ))
 }
 
 /// `GET /api/v1/plan/adherence` — how much of the plan was kept.
