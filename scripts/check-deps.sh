@@ -8,6 +8,10 @@
 #   desktop → {api, store}
 #   stride-testkit is a dev-dependency only, everywhere.
 #
+# Only *internal* edges count. An external dependency (serde, reqwest, …) is
+# not an edge of this graph, so the comparison filters to the workspace's own
+# members before it compares anything.
+#
 # It also asserts no crate overrides the workspace lint table, so a crate
 # cannot silently re-allow `unwrap` (PLAN.md §7).
 set -euo pipefail
@@ -44,16 +48,49 @@ if [[ "$members" != "$expected_members" ]]; then
   fail=1
 fi
 
+# Internal dependency names of one package, by kind.
+#   $1 package name, $2 kind selector: "" (normal), "dev", "build"
+internal_deps() {
+  printf '%s' "$META" | jq -r --arg n "$1" --arg k "$2" '
+    [ .packages[].name ] as $members
+    | [ .packages[] | select(.name == $n) | .dependencies[] ]
+    | map(select(.name as $d | $members | index($d)))
+    | map(select(if $k == "" then (.kind == null) else (.kind == $k) end))
+    | map(.name) | sort | unique | join(" ")
+  '
+}
+
 for name in stride-core stride-ingest stride-store stride-api stride-testkit stride-desktop; do
-  actual=$(printf '%s' "$META" | jq -r --arg n "$name" '
-    .packages[] | select(.name == $n)
-    | [.dependencies[] | select(.kind == null) | .name] | sort | join(" ")
-  ')
+  actual=$(internal_deps "$name" "")
   exp=$(expected "$name")
   if [[ "$actual" != "$exp" ]]; then
     echo "check-deps: $name depends on [$actual]; expected [$exp]" >&2
     fail=1
   fi
+
+  # A build-dependency is a real edge too: it is compiled into the build
+  # script, and it can create a cycle that cargo would not refuse.
+  build=$(internal_deps "$name" "build")
+  for dep in $build; do
+    case " $exp " in
+      *" $dep "*) ;;
+      *) echo "check-deps: $name has a build-dependency on [$dep]; not in its allowed set [$exp]" >&2; fail=1;;
+    esac
+  done
+
+  # A dev-dependency may add only what the package may already depend on, or
+  # the dev-only testkit crate.
+  dev=$(internal_deps "$name" "dev")
+  for dep in $dev; do
+    case " $exp $build " in
+      *" $dep "*) ;;
+      *) if [[ "$dep" != "stride-testkit" ]]; then
+           echo "check-deps: $name has a dev-dependency on [$dep]; not in its allowed set [$exp] and not the dev-only testkit" >&2
+           fail=1
+         fi;;
+    esac
+  done
+
   # stride-testkit must never be a normal (non-dev) dependency.
   if printf '%s' "$META" | jq -e --arg n "$name" '
     .packages[] | select(.name == $n)
