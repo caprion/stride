@@ -118,15 +118,15 @@ object StrideCore {
      * The key is used for the exchange and then dropped by the caller. The
      * bearer token stays in the core's memory.
      */
-    fun garminSync(apiKey: String, days: Long): String = strideGarminSync(apiKey, days)
+    fun garminSync(key: String, days: Long): String = strideGarminSync(key, days)
 
     /**
      * Put the Garmin key in the core's memory, or take it out again.
      *
      * The key is in memory for the length of one pull and no longer.
      */
-    fun setGarminKey(apiKey: String) {
-        strideSetGarminKey(apiKey)
+    fun setGarminKey(key: String) {
+        strideSetGarminKey(key)
     }
 
     /**

@@ -27,11 +27,11 @@ impl Core for PanickingCore {
         panic!("the core panicked on call");
     }
 
-    fn garmin_sync(&self, _api_key: &str, _days: i64) -> Value {
+    fn garmin_sync(&self, _key: &str, _days: i64) -> Value {
         panic!("the core panicked on sync");
     }
 
-    fn set_garmin_key(&self, _api_key: &str) -> Value {
+    fn set_garmin_key(&self, _key: &str) -> Value {
         panic!("the core panicked on set_garmin_key");
     }
 

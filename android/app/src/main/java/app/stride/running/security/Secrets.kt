@@ -17,7 +17,7 @@ object Secrets {
 
     /** The Garmin Personal API key, encrypted. */
     fun credential(context: Context): EnvelopeFile =
-        EnvelopeFile(context, "garmin-credential.v1", KeystoreKeys.ALIAS_CREDENTIAL)
+        EnvelopeFile(context, "garmin-credential.v1", KeystoreKeys.ALIAS_GARMIN)
 
     /** The SQLCipher database key, encrypted. */
     fun databaseKey(context: Context): EnvelopeFile =
@@ -71,6 +71,6 @@ object Secrets {
     /** Forget the Garmin Personal API key and its wrapping key. */
     fun forgetGarminKey(context: Context) {
         credential(context).clear()
-        KeystoreKeys.delete(KeystoreKeys.ALIAS_CREDENTIAL)
+        KeystoreKeys.delete(KeystoreKeys.ALIAS_GARMIN)
     }
 }

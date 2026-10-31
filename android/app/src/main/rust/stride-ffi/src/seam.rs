@@ -40,10 +40,10 @@ pub trait Core: Send + Sync {
     ///
     /// The key is used for the token exchange and then forgotten. Garmin has
     /// no refresh token, so a second exchange is a second call with the key.
-    fn garmin_sync(&self, api_key: &str, days: i64) -> Value;
+    fn garmin_sync(&self, key: &str, days: i64) -> Value;
 
     /// Put the Garmin key in memory, or take it out again.
-    fn set_garmin_key(&self, api_key: &str) -> Value;
+    fn set_garmin_key(&self, key: &str) -> Value;
 
     /// Say whether the phone holds a Garmin key.
     fn set_garmin_connected(&self, connected: bool) -> Value;

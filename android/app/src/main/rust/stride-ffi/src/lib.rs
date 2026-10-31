@@ -110,8 +110,8 @@ pub fn stride_call(method: String, path: String, body: Option<String>) -> String
 /// **Garmin has no refresh token.** A "refresh" is a second exchange, and
 /// the shell decides how many there are — exactly one, and one retry. This
 /// function is one attempt.
-pub fn stride_garmin_sync(api_key: String, days: i64) -> String {
-    boundary::guarded("sync", || installed().garmin_sync(&api_key, days)).to_string()
+pub fn stride_garmin_sync(key: String, days: i64) -> String {
+    boundary::guarded("sync", || installed().garmin_sync(&key, days)).to_string()
 }
 
 /// Put the Garmin key in memory, or take it out again.
@@ -124,8 +124,8 @@ pub fn stride_garmin_sync(api_key: String, days: i64) -> String {
 /// in the Keystore; the copy here is there for the length of a pull. The
 /// connection is a separate fact, and [`stride_set_garmin_connected`] is
 /// what says it.
-pub fn stride_set_garmin_key(api_key: String) -> String {
-    boundary::guarded("connection", || installed().set_garmin_key(&api_key)).to_string()
+pub fn stride_set_garmin_key(key: String) -> String {
+    boundary::guarded("connection", || installed().set_garmin_key(&key)).to_string()
 }
 
 /// Say whether the phone holds a Garmin key.

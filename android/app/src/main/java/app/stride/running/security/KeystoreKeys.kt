@@ -14,7 +14,7 @@ import javax.crypto.spec.GCMParameterSpec
  *
  * Two keys, two aliases, two jobs:
  *
- * * [ALIAS_CREDENTIAL] wraps the Garmin Personal API key;
+ * * [ALIAS_GARMIN] wraps the Garmin Personal API key;
  * * [ALIAS_DATABASE] wraps the SQLCipher key.
  *
  * They are separate on purpose: replacing the Garmin key must not orphan the
@@ -36,7 +36,7 @@ import javax.crypto.spec.GCMParameterSpec
 object KeystoreKeys {
 
     /** The alias of the key that wraps the Garmin credential. */
-    const val ALIAS_CREDENTIAL = "stride.garmin.personal-key.v1"
+    const val ALIAS_GARMIN = "stride.garmin.personal-key.v1"
 
     /** The alias of the key that wraps the SQLCipher database key. */
     const val ALIAS_DATABASE = "stride.database.key.v1"

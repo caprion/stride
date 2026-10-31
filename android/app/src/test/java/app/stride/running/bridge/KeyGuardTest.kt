@@ -14,7 +14,14 @@ import org.junit.Test
  */
 class KeyGuardTest {
 
-    private val key = "9a1f4c0e2b7d6a8f3c5e1b0d4f7a2c6e"
+    /**
+     * A placeholder credential.
+     *
+     * A run of `x`s: obviously not a key, and shaped so the repository's own
+     * scanners and GitHub's push protection both leave it alone. What the
+     * test needs is a string that is not in the answer — any string will do.
+     */
+    private val key = "xxxxxxxxxxxxxxxx"
 
     @Test
     fun `an answer without the key is handed on unchanged`() {
@@ -25,7 +32,7 @@ class KeyGuardTest {
 
     @Test
     fun `an answer with the key is refused outright`() {
-        val answer = """{"ok":true,"status":200,"body":{"api_key":"$key"}}"""
+        val answer = """{"ok":true,"status":200,"body":{"api_key":"xxxxxxxxxxxxxxxx"}}"""
         assertTrue(KeyGuard.carriesKey(answer, key))
         val redacted = KeyGuard.redact(answer, key)
         assertFalse(redacted.contains(key))
@@ -42,7 +49,7 @@ class KeyGuardTest {
 
     @Test
     fun `no key means nothing to find`() {
-        val answer = """{"ok":true,"body":{"api_key":"whatever"}}"""
+        val answer = """{"ok":true,"body":{"api_key":"xxxxxxxxxxxxxxxx"}}"""
         assertFalse(KeyGuard.carriesKey(answer, null))
         assertFalse(KeyGuard.carriesKey(answer, ""))
         assertEquals(answer, KeyGuard.redact(answer, null))

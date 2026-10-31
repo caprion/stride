@@ -5,7 +5,7 @@ import android.content.Context
 /**
  * The phone's settings.
  *
- * Plain `SharedPreferences`, because none of this is a secret: the window,
+ * Plain `SharedPreferences`, because none of this is a secret — the window,
  * the interval, whether the phone may talk to Garmin on its own, and the
  * server URL — which is **empty by default**, because the phone is the whole
  * thing and it points at Garmin, not at a server.

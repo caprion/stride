@@ -43,8 +43,8 @@ it lands, it has to satisfy `seam::Core`:
 pub trait Core: Send + Sync {
     fn open(&self, db_path: &str, db_key_hex: &str) -> Result<Value, String>;
     fn call(&self, method: &str, path: &str, body: Option<&str>) -> Value;
-    fn garmin_sync(&self, api_key: &str, days: i64) -> Value;
-    fn set_garmin_key(&self, api_key: &str) -> Value;
+    fn garmin_sync(&self, key: &str, days: i64) -> Value;
+    fn set_garmin_key(&self, key: &str) -> Value;
     fn set_garmin_connected(&self, connected: bool) -> Value;
     fn status(&self) -> Value;
 }

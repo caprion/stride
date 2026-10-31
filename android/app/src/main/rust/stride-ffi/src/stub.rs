@@ -38,14 +38,14 @@ impl Core for StubCore {
         not_built_envelope()
     }
 
-    fn garmin_sync(&self, _api_key: &str, _days: i64) -> Value {
+    fn garmin_sync(&self, _key: &str, _days: i64) -> Value {
         not_built_envelope()
     }
 
-    fn set_garmin_key(&self, api_key: &str) -> Value {
+    fn set_garmin_key(&self, key: &str) -> Value {
         // The key is never echoed back, not even by the stub: the answer
         // says whether there is a key in memory, and nothing else.
-        ok_envelope(serde_json::json!({"in_memory": !api_key.is_empty()}))
+        ok_envelope(serde_json::json!({"in_memory": !key.is_empty()}))
     }
 
     fn set_garmin_connected(&self, connected: bool) -> Value {

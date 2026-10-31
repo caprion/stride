@@ -76,7 +76,7 @@ class GarminSetupActivity : AppCompatActivity(), SetupRunner.Listener {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        // The screen holds a credential: no screenshots, no recents
+        // The screen holds a credential — no screenshots, no recents
         // thumbnail, no screen recording of the key being pasted.
         window.setFlags(
             WindowManager.LayoutParams.FLAG_SECURE,
