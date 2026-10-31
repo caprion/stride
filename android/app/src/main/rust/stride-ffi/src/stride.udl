@@ -1,0 +1,64 @@
+// The UniFFI surface the phone's Rust core.
+//
+// One namespace, six functions, and every one of them answers with a JSON
+// string. The JSON is the envelope the frozen route table answers with, so
+// the Kotlin side reads one shape whichever way it asks:
+//
+//   {"ok": true,  "status": 200, "body": { ... }}
+//   {"ok": false, "status": 404, "error": {"detail": "..."}}
+//
+// There is no `stride_free` in this surface: UniFFI owns the memory and
+// frees it.
+//
+// **The key is an argument, and only an argument.** The Garmin Personal API
+// key is passed in, used, and dropped. It is never returned by any of these
+// functions, and the shell never hands it to the WebView.
+
+namespace stride {
+  // Open the phone's own database and install the backend behind the routes.
+  //
+  // `db_key_hex` is the 32-byte SQLCipher key, hex-encoded. It comes from
+  // the Android Keystore and is never written anywhere but the encrypted
+  // file the Keystore key protects.
+  string stride_open(string db_path, string db_key_hex);
+
+  // Call a route. `method` and `path` are the HTTP method and the path; the
+  // query string may be part of `path`. `body` is the request body, if the
+  // route takes one.
+  //
+  // The router matches on the path **without** the query string, so the
+  // query string is not part of the route.
+  string stride_call(string method, string path, string? body);
+
+  // Pull from Garmin into the local database.
+  //
+  // `api_key` is the athlete's Garmin Personal API key. It is used for the
+  // token exchange and then forgotten: the bearer token lives in memory only.
+  //
+  // Garmin has no refresh token, so "refreshing" means exchanging the key
+  // again. The shell decides how many exchanges happen — exactly one, and
+  // one retry — and this function is called once per attempt.
+  string stride_garmin_sync(string api_key, i64 days);
+
+  // Put the Garmin Personal API key in memory, or take it out again.
+  //
+  // The key is in memory for the length of one pull and no longer: the
+  // Kotlin shell unwraps it from the Keystore, hands it over for the pull,
+  // and clears it again. An empty string clears it.
+  //
+  // **Clearing the key is not disconnecting.** The key lives in the
+  // Keystore; the copy in memory is there for the length of a pull. The
+  // connection is a separate fact, and `stride_set_garmin_connected` is
+  // what says it.
+  string stride_set_garmin_key(string api_key);
+
+  // Say whether the phone holds a Garmin key.
+  //
+  // The key itself lives in the Keystore, and the core never keeps it. This
+  // says the *fact* of it, so the app can say "Garmin is connected" without
+  // the key being in memory, and without the page ever seeing it.
+  string stride_set_garmin_connected(boolean connected);
+
+  // What the core is and whether it is open. For the phone's own diagnostics.
+  string stride_status();
+};

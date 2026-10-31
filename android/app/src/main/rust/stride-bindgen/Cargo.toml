@@ -1,0 +1,28 @@
+[package]
+name = "stride-bindgen"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.75"
+license = "AGPL-3.0"
+description = "Generates the Kotlin bindings for the phone's Rust core."
+
+# Its own workspace: it is a build tool, and it is not part of the core.
+[workspace]
+
+[[bin]]
+name = "stride-bindgen"
+path = "src/main.rs"
+
+[dependencies]
+camino = "1"
+uniffi_bindgen = "0.29"
+
+[lints.rust]
+unsafe_code = "deny"
+
+[lints.clippy]
+unwrap_used = "deny"
+expect_used = "deny"
+panic = "deny"
+todo = "deny"
+unimplemented = "deny"

@@ -1,0 +1,49 @@
+[package]
+name = "stride-ffi"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.75"
+license = "AGPL-3.0"
+description = "The UniFFI surface the Android shell calls: the seam, the panic boundary, and the setup the phone has to do once."
+
+# The crate is its own workspace.
+#
+# The repository's Rust workspace is the root `Cargo.toml`, and this crate
+# lives below `android/`, where the phone's shell is. The workspace above
+# does not know about it — a package that is not a member of the workspace
+# above it is refused by cargo, and the root manifest is not this crate's to
+# edit — so this one declares itself a workspace of its own.
+#
+# The lint table below is the workspace's, copied: no unwrap, no expect, no
+# panic, no todo, no unimplemented, and `unsafe` denied except in the FFI
+# boundary itself. When this crate joins the root workspace, the copy is
+# replaced by `workspace = true`.
+[workspace]
+
+[lib]
+# `cdylib` is what the APK packages; `rlib` is what the tests link.
+# The file name is `libuniffi_stride.so`, because UniFFI's Kotlin bindings
+# load the library by the namespace's name (`uniffi_stride`).
+name = "uniffi_stride"
+crate-type = ["cdylib", "staticlib", "rlib"]
+
+[dependencies]
+# The scaffolding generator runs in the build script, so UniFFI is a build
+# dependency as well as a normal one.
+uniffi = { version = "0.29", features = ["build"] }
+serde_json = "1"
+
+[build-dependencies]
+uniffi = { version = "0.29", features = ["build"] }
+
+[lints.rust]
+# `unsafe` is denied in this crate and allowed, item by item, in the
+# generated scaffolding — the FFI boundary and nothing else.
+unsafe_code = "deny"
+
+[lints.clippy]
+unwrap_used = "deny"
+expect_used = "deny"
+panic = "deny"
+todo = "deny"
+unimplemented = "deny"
