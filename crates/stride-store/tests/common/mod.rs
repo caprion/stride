@@ -144,7 +144,7 @@ pub fn statements(sql: &str) -> Vec<String> {
     let without = strip_comments(sql);
     without
         .split(';')
-        .map(|statement| normalise(statement))
+        .map(normalise)
         .filter(|statement| !statement.is_empty())
         .collect()
 }
