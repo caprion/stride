@@ -16,18 +16,25 @@
 //!   it, median ± 1.5 × MAD.
 //! * [`strings`] — the typed string catalogue and the lint that holds it to
 //!   `docs/contract/voice.md`.
+//! * [`rest`] — the "Rest" line: a count and a direction, never a verdict.
+//! * [`direction`] — the engine: a vital and its band become one of exactly
+//!   three words, with the arithmetic and the direction of travel beside it.
 //!
 //! The voice, in one line: facts first, no judgements. The app informs; it
 //! never instructs.
 
 pub mod band;
 pub mod date;
+pub mod direction;
+pub mod rest;
 pub mod strings;
 pub mod types;
 pub mod units;
 
 pub use band::{band_for, Band};
 pub use date::Date;
+pub use direction::{day_directions, DayDirections, Direction, Travel, VitalDirection};
+pub use rest::RestSummary;
 pub use strings::StringKind;
 pub use types::{
     BetterSide, Distance, Duration, Effort, HeartRate, Hrv, RestingHr, Sleep, VitalKind, Vitals,
