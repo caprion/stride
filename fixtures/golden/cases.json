@@ -179,6 +179,12 @@
       "sport": "running",
       "start": "2026-05-09T07:00:00Z",
       "watch": "records every second"
+    },
+    "zz_compressed_timestamp": {
+      "bytes": 101,
+      "case_id": "zz_compressed_timestamp",
+      "file": "fixtures/fit/zz_compressed_timestamp.fit",
+      "sha256": "53657a279e65e9a8521a3c269f10aec2505d2f2a78cfa35c6061cc7182f41aa5"
     }
   },
   "command": "python3 scripts/golden.py --fixtures",

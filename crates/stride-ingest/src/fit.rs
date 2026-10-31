@@ -30,6 +30,7 @@ const MESG_SESSION_DATA: u16 = 18;
 const MESG_LAP: u16 = 19;
 const MESG_RECORD: u16 = 20;
 const MESG_DEVICE_INFO: u16 = 23;
+const TIMESTAMP_DEFINITION_NUMBER: u8 = 253;
 
 /// A time series over the running samples.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -537,6 +538,12 @@ fn read_data_message(
 
     let mut fields = Vec::with_capacity(definition.fields.len());
     for field in &definition.fields {
+        // A compressed-timestamp header carries the timestamp in its five
+        // offset bits, so the timestamp field is omitted from the data body.
+        if compressed_timestamp.is_some() && field.definition_number == TIMESTAMP_DEFINITION_NUMBER
+        {
+            continue;
+        }
         let raw = take(bytes, cursor, data_end, field.size)?;
         if let Some(value) = decode_value(raw, field.base_type, definition.little_endian) {
             fields.push((field.definition_number, value));
@@ -1758,6 +1765,9 @@ mod tests {
     #[test]
     fn positions_are_semicircles() {
         assert_eq!(semicircles_to_degrees(0.0), 0.0);
+        assert_eq!(semicircles_to_degrees(1_073_741_824.0), 90.0);
+        assert_eq!(semicircles_to_degrees(2_147_483_648.0), 180.0);
+        assert_eq!(semicircles_to_degrees(-417_566_265.0), -35.0);
     }
 
     #[test]
