@@ -71,7 +71,11 @@ flock /run/user/$(id -u)/cf-heavy.lock ./gradlew testDebugUnitTest
 ```
 
 `assembleDebug` also cross-compiles the Rust core for `arm64-v8a` with
-`cargo-ndk`, using the shared target directory `/home/sumit/stride-v2/target`.
+`cargo-ndk`, using the **shared** target directory
+`/home/sumit/stride-v2/target` — so the crates are compiled once for the
+whole fleet rather than once per worktree.
+`-PstrideTargetDir=…` (or `STRIDE_CARGO_TARGET_DIR=…`) moves it, and a
+checkout that has no shared directory falls back to its own `target/`.
 
 ### Why there is no `gradle-wrapper.jar`
 
@@ -95,6 +99,17 @@ envelope, and a panic boundary in front of every one of them: a panic in the
 core becomes an error the app can show, never a process kill. The panic's
 *payload* is not logged — a payload is whatever the failing code was
 holding, and that might be the key.
+
+The crate is a **member of the repository's workspace**, so the root gate
+sees it: `cargo fmt --all -- --check`, `cargo clippy --workspace
+--all-targets -- -D warnings` and `cargo test --workspace` all cover the
+seam.
+
+**The retry rule has one owner: the shell.** The Garmin client performs
+exactly one token exchange and one HTTP attempt per call and answers the
+typed failure `needs_reconnect` when the token has expired; the caller —
+`PullPolicy` — may make **one** more attempt, and then it stops. See
+`docs/contract/core-contract.md` §7.
 
 See `app/src/main/rust/stride-ffi/README.md` for what the core has to
 provide.
