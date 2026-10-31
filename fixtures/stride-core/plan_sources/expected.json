@@ -1,0 +1,135 @@
+{
+  "inferred": {
+    "description": "Inferred from your last 12 weeks of running. This is a baseline of how you usually run, not a prescription.",
+    "history_runs": 39,
+    "history_weeks": 12,
+    "long_run_day": "Sunday",
+    "prescribed": false,
+    "quality_day": "Tuesday",
+    "reason": null,
+    "rest_days": [
+      "Wednesday",
+      "Friday"
+    ],
+    "sessions": [
+      {
+        "date": "2026-03-03",
+        "details": null,
+        "id": 0,
+        "pace_high_s_km": 318.0,
+        "pace_low_s_km": 287.0,
+        "session_type": "tempo",
+        "target_distance_m": 10500.0,
+        "title": "Your usual quality run"
+      },
+      {
+        "date": "2026-03-05",
+        "details": null,
+        "id": 0,
+        "pace_high_s_km": 341.0,
+        "pace_low_s_km": 309.0,
+        "session_type": "easy",
+        "target_distance_m": 8250.0,
+        "title": "Your usual Thursday run"
+      },
+      {
+        "date": "2026-03-08",
+        "details": null,
+        "id": 0,
+        "pace_high_s_km": 336.0,
+        "pace_low_s_km": 304.0,
+        "session_type": "long",
+        "target_distance_m": 15500.0,
+        "title": "Your usual long run"
+      }
+    ],
+    "source": "inferred",
+    "sufficient": true,
+    "usual_by_weekday": {
+      "Sunday": 15500.0,
+      "Thursday": 8250.0,
+      "Tuesday": 10500.0
+    },
+    "weekly_volume_high_m": 42000.0,
+    "weekly_volume_low_m": 30000.0,
+    "weekly_volume_m": 35125.0,
+    "window_end": "2026-03-01",
+    "window_start": "2025-12-08"
+  },
+  "inferred_thin": {
+    "description": "Inferred from your last 12 weeks of running. This is a baseline of how you usually run, not a prescription.",
+    "history_runs": 14,
+    "history_weeks": 4,
+    "long_run_day": null,
+    "prescribed": false,
+    "quality_day": null,
+    "reason": "Not enough history to infer a usual week: 14 runs over 4 weeks. Stride needs at least 12 runs over 8 weeks.",
+    "rest_days": [],
+    "sessions": [],
+    "source": "inferred",
+    "sufficient": false,
+    "usual_by_weekday": {},
+    "weekly_volume_high_m": 41750.0,
+    "weekly_volume_low_m": 30000.0,
+    "weekly_volume_m": 0.0,
+    "window_end": "2026-03-01",
+    "window_start": "2025-12-08"
+  },
+  "workouts": {
+    "description": "Scheduled in Garmin Connect. This is the plan you wrote down, so every session is compared against your own targets.",
+    "prescribed": true,
+    "sessions": [
+      {
+        "date": "2026-03-02",
+        "details": "Run easy, stay relaxed",
+        "id": 0,
+        "pace_high_s_km": 360.0,
+        "pace_low_s_km": 330.0,
+        "session_type": "easy",
+        "target_distance_m": 5000.0,
+        "title": "Easy 5K"
+      },
+      {
+        "date": "2026-03-04",
+        "details": "6 x 1km at threshold",
+        "id": 0,
+        "pace_high_s_km": 270.0,
+        "pace_low_s_km": 250.0,
+        "session_type": "interval",
+        "target_distance_m": 8000.0,
+        "title": "Threshold 6x1K"
+      },
+      {
+        "date": "2026-03-07",
+        "details": null,
+        "id": 0,
+        "pace_high_s_km": null,
+        "pace_low_s_km": null,
+        "session_type": "easy",
+        "target_distance_m": null,
+        "title": "Trail run"
+      },
+      {
+        "date": "2026-03-08",
+        "details": null,
+        "id": 0,
+        "pace_high_s_km": 370.0,
+        "pace_low_s_km": 330.0,
+        "session_type": "long",
+        "target_distance_m": 18000.0,
+        "title": "Long run"
+      },
+      {
+        "date": "2026-03-09",
+        "details": null,
+        "id": 0,
+        "pace_high_s_km": null,
+        "pace_low_s_km": null,
+        "session_type": "unknown",
+        "target_distance_m": null,
+        "title": "Unnamed session"
+      }
+    ],
+    "source": "garmin"
+  }
+}

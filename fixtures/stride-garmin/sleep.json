@@ -1,0 +1,11 @@
+{
+  "dailySleep": {
+    "sleepTimeSeconds": 27900.0,
+    "deepSleepSeconds": 6420.0,
+    "remSleepSeconds": 5580.0,
+    "lightSleepSeconds": 14100.0,
+    "awakeSleepSeconds": 1800.0,
+    "sleepStartTimeGMT": "2026-03-07T22:30:00.000Z",
+    "sleepEndTimeGMT": "2026-03-08T06:15:00.000Z"
+  }
+}

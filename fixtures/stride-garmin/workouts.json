@@ -1,0 +1,5 @@
+{
+  "workouts": [
+    { "workoutId": 88123, "workoutName": "Tempo Tuesday", "sportType": { "typeKey": "running" } }
+  ]
+}

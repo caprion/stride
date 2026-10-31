@@ -1,0 +1,392 @@
+{
+  "scenario": "week_of_2026_03_02",
+  "range": [
+    "2026-03-02",
+    "2026-03-20"
+  ],
+  "today": "2026-03-13",
+  "sessions": [
+    {
+      "session": {
+        "id": 1,
+        "date": "2026-03-02",
+        "session_type": "easy",
+        "title": "Easy 400",
+        "details": null,
+        "target_distance_m": 400.0,
+        "pace_low_s_km": 330.0,
+        "pace_high_s_km": 420.0
+      },
+      "activity": {
+        "id": 1,
+        "date": "2026-03-02",
+        "name": "Morning easy",
+        "sport_type": "running",
+        "distance_m": 443.0,
+        "pace_s_km": 338.6004514673
+      },
+      "verdict": "hit",
+      "distance_hit": true,
+      "pace_band_hit": true,
+      "distance_delta_m": 43.0,
+      "pace_delta_s_km": -36.3995485327,
+      "adherence_score": 100.0,
+      "cause": null,
+      "cause_confidence": null
+    },
+    {
+      "session": {
+        "id": 2,
+        "date": "2026-03-03",
+        "session_type": "tempo",
+        "title": "Tempo 1900",
+        "details": null,
+        "target_distance_m": 1900.0,
+        "pace_low_s_km": 290.0,
+        "pace_high_s_km": 320.0
+      },
+      "activity": {
+        "id": 2,
+        "date": "2026-03-03",
+        "name": "Tempo run",
+        "sport_type": "running",
+        "distance_m": 1980.0,
+        "pace_s_km": 303.0303030303
+      },
+      "verdict": "hit",
+      "distance_hit": true,
+      "pace_band_hit": true,
+      "distance_delta_m": 80.0,
+      "pace_delta_s_km": -1.9696969697,
+      "adherence_score": 100.0,
+      "cause": null,
+      "cause_confidence": null
+    },
+    {
+      "session": {
+        "id": 3,
+        "date": "2026-03-04",
+        "session_type": "easy",
+        "title": "Treadmill 900",
+        "details": null,
+        "target_distance_m": 900.0,
+        "pace_low_s_km": 320.0,
+        "pace_high_s_km": 360.0
+      },
+      "activity": {
+        "id": 3,
+        "date": "2026-03-04",
+        "name": "Treadmill easy",
+        "sport_type": "running",
+        "distance_m": 900.0,
+        "pace_s_km": 333.3333333333
+      },
+      "verdict": "hit",
+      "distance_hit": true,
+      "pace_band_hit": true,
+      "distance_delta_m": 0.0,
+      "pace_delta_s_km": -6.6666666667,
+      "adherence_score": 100.0,
+      "cause": null,
+      "cause_confidence": null
+    },
+    {
+      "session": {
+        "id": 4,
+        "date": "2026-03-05",
+        "session_type": "long",
+        "title": "Long 1000",
+        "details": null,
+        "target_distance_m": 1000.0,
+        "pace_low_s_km": 280.0,
+        "pace_high_s_km": 310.0
+      },
+      "activity": {
+        "id": 4,
+        "date": "2026-03-05",
+        "name": "Long run",
+        "sport_type": "running",
+        "distance_m": 1020.0,
+        "pace_s_km": 294.1176470588
+      },
+      "verdict": "hit",
+      "distance_hit": true,
+      "pace_band_hit": true,
+      "distance_delta_m": 20.0,
+      "pace_delta_s_km": -0.8823529412,
+      "adherence_score": 100.0,
+      "cause": null,
+      "cause_confidence": null
+    },
+    {
+      "session": {
+        "id": 5,
+        "date": "2026-03-06",
+        "session_type": "interval",
+        "title": "Intervals 300",
+        "details": null,
+        "target_distance_m": 300.0,
+        "pace_low_s_km": 200.0,
+        "pace_high_s_km": 240.0
+      },
+      "activity": {
+        "id": 5,
+        "date": "2026-03-06",
+        "name": "Short effort",
+        "sport_type": "running",
+        "distance_m": 270.0,
+        "pace_s_km": 222.2222222222
+      },
+      "verdict": "short",
+      "distance_hit": false,
+      "pace_band_hit": true,
+      "distance_delta_m": -30.0,
+      "pace_delta_s_km": 2.2222222222,
+      "adherence_score": 95.0,
+      "cause": "Likely influenced by short sleep and elevated fatigue.",
+      "cause_confidence": 0.85
+    },
+    {
+      "session": {
+        "id": 6,
+        "date": "2026-03-07",
+        "session_type": "strength",
+        "title": "Strength",
+        "details": null,
+        "target_distance_m": null,
+        "pace_low_s_km": null,
+        "pace_high_s_km": null
+      },
+      "activity": {
+        "id": 10,
+        "date": "2026-03-07",
+        "name": "Strength session",
+        "sport_type": "strength_training",
+        "distance_m": 0.0,
+        "pace_s_km": null
+      },
+      "verdict": "hit",
+      "distance_hit": true,
+      "pace_band_hit": null,
+      "distance_delta_m": null,
+      "pace_delta_s_km": null,
+      "adherence_score": 100.0,
+      "cause": null,
+      "cause_confidence": null
+    },
+    {
+      "session": {
+        "id": 7,
+        "date": "2026-03-08",
+        "session_type": "recovery",
+        "title": "Recovery 200",
+        "details": null,
+        "target_distance_m": 200.0,
+        "pace_low_s_km": 330.0,
+        "pace_high_s_km": 400.0
+      },
+      "activity": {
+        "id": 6,
+        "date": "2026-03-08",
+        "name": "Recovery jog",
+        "sport_type": "running",
+        "distance_m": 232.1,
+        "pace_s_km": 2542.0077552779
+      },
+      "verdict": "missed_pace",
+      "distance_hit": true,
+      "pace_band_hit": false,
+      "distance_delta_m": 32.1,
+      "pace_delta_s_km": 2177.0077552779,
+      "adherence_score": 60.0,
+      "cause": "No measured factor explains this one.",
+      "cause_confidence": 0.0
+    },
+    {
+      "session": {
+        "id": 8,
+        "date": "2026-03-09",
+        "session_type": "long",
+        "title": "Hills 900",
+        "details": null,
+        "target_distance_m": 900.0,
+        "pace_low_s_km": 300.0,
+        "pace_high_s_km": 340.0
+      },
+      "activity": {
+        "id": 7,
+        "date": "2026-03-09",
+        "name": "Hill repeats",
+        "sport_type": "running",
+        "distance_m": 930.0,
+        "pace_s_km": 322.5806451613
+      },
+      "verdict": "hit",
+      "distance_hit": true,
+      "pace_band_hit": true,
+      "distance_delta_m": 30.0,
+      "pace_delta_s_km": 2.5806451613,
+      "adherence_score": 100.0,
+      "cause": null,
+      "cause_confidence": null
+    },
+    {
+      "session": {
+        "id": 9,
+        "date": "2026-03-10",
+        "session_type": "tempo",
+        "title": "Threshold fartlek",
+        "details": null,
+        "target_distance_m": 700.0,
+        "pace_low_s_km": 300.0,
+        "pace_high_s_km": 400.0
+      },
+      "activity": {
+        "id": 8,
+        "date": "2026-03-10",
+        "name": "Fartlek repeats",
+        "sport_type": "running",
+        "distance_m": 717.0,
+        "pace_s_km": 613.6680613668
+      },
+      "verdict": "substituted",
+      "distance_hit": true,
+      "pace_band_hit": false,
+      "distance_delta_m": 17.0,
+      "pace_delta_s_km": 263.6680613668,
+      "adherence_score": 69.1,
+      "cause": "No measured factor explains this one.",
+      "cause_confidence": 0.0
+    },
+    {
+      "session": {
+        "id": 10,
+        "date": "2026-03-11",
+        "session_type": "easy",
+        "title": "Easy 5000",
+        "details": null,
+        "target_distance_m": 5000.0,
+        "pace_low_s_km": 300.0,
+        "pace_high_s_km": 400.0
+      },
+      "activity": null,
+      "verdict": "missed",
+      "distance_hit": false,
+      "pace_band_hit": false,
+      "distance_delta_m": null,
+      "pace_delta_s_km": null,
+      "adherence_score": null,
+      "cause": "No activity was logged for the planned session.",
+      "cause_confidence": 0.0
+    },
+    {
+      "session": {
+        "id": 11,
+        "date": "2026-03-12",
+        "session_type": "rest",
+        "title": "Rest day",
+        "details": null,
+        "target_distance_m": null,
+        "pace_low_s_km": null,
+        "pace_high_s_km": null
+      },
+      "activity": null,
+      "verdict": "hit",
+      "distance_hit": true,
+      "pace_band_hit": null,
+      "distance_delta_m": null,
+      "pace_delta_s_km": null,
+      "adherence_score": 100.0,
+      "cause": null,
+      "cause_confidence": null
+    },
+    {
+      "session": {
+        "id": 12,
+        "date": "2026-03-14",
+        "session_type": "easy",
+        "title": "Easy 600",
+        "details": null,
+        "target_distance_m": 600.0,
+        "pace_low_s_km": 320.0,
+        "pace_high_s_km": 400.0
+      },
+      "activity": null,
+      "verdict": "not_yet",
+      "distance_hit": false,
+      "pace_band_hit": null,
+      "distance_delta_m": null,
+      "pace_delta_s_km": null,
+      "adherence_score": null,
+      "cause": null,
+      "cause_confidence": null
+    },
+    {
+      "session": {
+        "id": 13,
+        "date": "2026-03-15",
+        "session_type": "rest",
+        "title": "Rest day",
+        "details": null,
+        "target_distance_m": null,
+        "pace_low_s_km": null,
+        "pace_high_s_km": null
+      },
+      "activity": null,
+      "verdict": "not_yet",
+      "distance_hit": false,
+      "pace_band_hit": null,
+      "distance_delta_m": null,
+      "pace_delta_s_km": null,
+      "adherence_score": null,
+      "cause": null,
+      "cause_confidence": null
+    }
+  ],
+  "adherence": {
+    "overall_pct": 81.8,
+    "planned_km": 11.3,
+    "actual_km": 6.49,
+    "planned_sessions": 11,
+    "completed_sessions": 9,
+    "hit_sessions": 8,
+    "missed_sessions": 1,
+    "extra_sessions": 1,
+    "by_verdict": {
+      "hit": 7,
+      "missed_pace": 1,
+      "short": 1,
+      "missed": 1,
+      "substituted": 1,
+      "long": 0
+    },
+    "rows": [
+      {
+        "week_key": "2026-W10",
+        "start_date": "2026-03-02",
+        "phase": null,
+        "planned_km": 4.7,
+        "actual_km": 4.8451,
+        "planned_sessions": 7,
+        "completed_sessions": 7,
+        "missed_sessions": 0,
+        "hit_sessions": 6,
+        "delta_km": 0.15,
+        "adherence_pct": 100.0
+      },
+      {
+        "week_key": "2026-W11",
+        "start_date": "2026-03-09",
+        "phase": null,
+        "planned_km": 6.6,
+        "actual_km": 1.647,
+        "planned_sessions": 4,
+        "completed_sessions": 2,
+        "missed_sessions": 2,
+        "hit_sessions": 2,
+        "delta_km": -4.95,
+        "adherence_pct": 50.0
+      }
+    ]
+  }
+}

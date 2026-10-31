@@ -1,0 +1,76 @@
+{
+  "description": "Readiness scenarios. Each scenario is a complete, frozen input: the physiology rows and the day to score. The golden output is golden/readiness.json.",
+  "scenarios": [
+    {
+      "id": "full_recovery",
+      "description": "A good night's sleep, HRV above baseline, low stress: every driver is present and the score is high.",
+      "day": "2026-03-02",
+      "physiology": [
+        {"date": "2026-02-10", "sleep_s": 27000, "hrv_ms": 55, "resting_hr": 48},
+        {"date": "2026-02-11", "sleep_s": 27000, "hrv_ms": 56, "resting_hr": 48},
+        {"date": "2026-02-12", "sleep_s": 26100, "hrv_ms": 54, "resting_hr": 49},
+        {"date": "2026-02-13", "sleep_s": 27000, "hrv_ms": 57, "resting_hr": 47},
+        {"date": "2026-02-14", "sleep_s": 27000, "hrv_ms": 53, "resting_hr": 48},
+        {"date": "2026-02-15", "sleep_s": 27900, "hrv_ms": 55, "resting_hr": 48},
+        {"date": "2026-02-16", "sleep_s": 27000, "hrv_ms": 56, "resting_hr": 49},
+        {"date": "2026-02-17", "sleep_s": 27000, "hrv_ms": 54, "resting_hr": 48},
+        {"date": "2026-02-18", "sleep_s": 25200, "hrv_ms": 52, "resting_hr": 50},
+        {"date": "2026-02-19", "sleep_s": 27000, "hrv_ms": 55, "resting_hr": 48},
+        {"date": "2026-02-20", "sleep_s": 27000, "hrv_ms": 57, "resting_hr": 47},
+        {"date": "2026-02-21", "sleep_s": 27000, "hrv_ms": 56, "resting_hr": 48},
+        {"date": "2026-02-22", "sleep_s": 27000, "hrv_ms": 54, "resting_hr": 49},
+        {"date": "2026-02-23", "sleep_s": 27000, "hrv_ms": 55, "resting_hr": 48},
+        {"date": "2026-02-24", "sleep_s": 27000, "hrv_ms": 56, "resting_hr": 48},
+        {"date": "2026-02-25", "sleep_s": 27000, "hrv_ms": 53, "resting_hr": 49},
+        {"date": "2026-02-26", "sleep_s": 27000, "hrv_ms": 55, "resting_hr": 48},
+        {"date": "2026-02-27", "sleep_s": 27000, "hrv_ms": 57, "resting_hr": 47},
+        {"date": "2026-02-28", "sleep_s": 27000, "hrv_ms": 56, "resting_hr": 48},
+        {"date": "2026-03-01", "sleep_s": 27000, "hrv_ms": 55, "resting_hr": 48},
+        {"date": "2026-03-02", "sleep_s": 27900, "sleep_score": 85, "hrv_ms": 58, "resting_hr": 47, "stress_avg": 22, "body_battery_avg": 78, "acute_load": 320, "chronic_load": 300}
+      ]
+    },
+    {
+      "id": "poor_recovery",
+      "description": "Short sleep, low HRV, high resting heart rate, high stress, an acute load spike: the score collapses.",
+      "day": "2026-03-03",
+      "physiology": [
+        {"date": "2026-02-10", "sleep_s": 27000, "hrv_ms": 55, "resting_hr": 48},
+        {"date": "2026-02-11", "sleep_s": 27000, "hrv_ms": 56, "resting_hr": 48},
+        {"date": "2026-02-12", "sleep_s": 26100, "hrv_ms": 54, "resting_hr": 49},
+        {"date": "2026-02-13", "sleep_s": 27000, "hrv_ms": 57, "resting_hr": 47},
+        {"date": "2026-02-14", "sleep_s": 27000, "hrv_ms": 53, "resting_hr": 48},
+        {"date": "2026-02-15", "sleep_s": 27900, "hrv_ms": 55, "resting_hr": 48},
+        {"date": "2026-02-16", "sleep_s": 27000, "hrv_ms": 56, "resting_hr": 49},
+        {"date": "2026-02-17", "sleep_s": 27000, "hrv_ms": 54, "resting_hr": 48},
+        {"date": "2026-02-18", "sleep_s": 25200, "hrv_ms": 52, "resting_hr": 50},
+        {"date": "2026-02-19", "sleep_s": 27000, "hrv_ms": 55, "resting_hr": 48},
+        {"date": "2026-02-20", "sleep_s": 27000, "hrv_ms": 57, "resting_hr": 47},
+        {"date": "2026-02-21", "sleep_s": 27000, "hrv_ms": 56, "resting_hr": 48},
+        {"date": "2026-02-22", "sleep_s": 27000, "hrv_ms": 54, "resting_hr": 49},
+        {"date": "2026-02-23", "sleep_s": 27000, "hrv_ms": 55, "resting_hr": 48},
+        {"date": "2026-02-24", "sleep_s": 27000, "hrv_ms": 56, "resting_hr": 48},
+        {"date": "2026-02-25", "sleep_s": 27000, "hrv_ms": 53, "resting_hr": 49},
+        {"date": "2026-02-26", "sleep_s": 27000, "hrv_ms": 55, "resting_hr": 48},
+        {"date": "2026-02-27", "sleep_s": 27000, "hrv_ms": 57, "resting_hr": 47},
+        {"date": "2026-02-28", "sleep_s": 27000, "hrv_ms": 56, "resting_hr": 48},
+        {"date": "2026-03-01", "sleep_s": 27000, "hrv_ms": 55, "resting_hr": 48},
+        {"date": "2026-03-02", "sleep_s": 27900, "sleep_score": 85, "hrv_ms": 58, "resting_hr": 47, "stress_avg": 22, "body_battery_avg": 78, "acute_load": 320, "chronic_load": 300},
+        {"date": "2026-03-03", "sleep_s": 19800, "sleep_score": 42, "hrv_ms": 36, "resting_hr": 58, "stress_avg": 74, "body_battery_avg": 29, "acute_load": 640, "chronic_load": 300}
+      ]
+    },
+    {
+      "id": "no_personal_baselines",
+      "description": "The day has measurements but no history: the three personal drivers cannot be scored, so only the scale-based drivers count.",
+      "day": "2026-03-04",
+      "physiology": [
+        {"date": "2026-03-04", "sleep_s": 27000, "sleep_score": 70, "hrv_ms": 50, "resting_hr": 50, "stress_avg": 40, "body_battery_avg": 60, "acute_load": 200, "chronic_load": 200}
+      ]
+    },
+    {
+      "id": "no_data",
+      "description": "Nothing at all for this day: the score is null and the grade is unknown.",
+      "day": "2026-03-05",
+      "physiology": []
+    }
+  ]
+}
