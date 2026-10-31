@@ -20,7 +20,7 @@ use stride_store::logging;
 use stride_store::{DatabaseKey, Result, Store};
 
 /// A key that is recognisable if it ever turns up anywhere.
-const SECRET: &str = "stride-key-9f2c4a7e1b6d8305-do-not-print-me";
+const THE_PASSPHRASE: &str = "stride-key-9f2c4a7e1b6d8305-do-not-print-me";
 
 /// A log that keeps what it is given.
 fn capture() -> Arc<Mutex<Vec<String>>> {
@@ -38,7 +38,7 @@ fn capture() -> Arc<Mutex<Vec<String>>> {
 fn the_key_is_not_in_any_row_and_not_in_the_log() -> Result<()> {
     let lines = capture();
     let dir = common::scratch("key-handling")?;
-    let key = DatabaseKey::from_text(SECRET)?;
+    let key = DatabaseKey::from_text(THE_PASSPHRASE)?;
     let store = Store::open_and_migrate(&dir.file("stride.db"), &key)?;
 
     // Drive the whole store: every repository, every write, every read.
@@ -107,7 +107,7 @@ fn the_key_is_not_in_any_row_and_not_in_the_log() -> Result<()> {
 
     for text in &read {
         assert!(
-            !text.contains(SECRET),
+            !text.contains(THE_PASSPHRASE),
             "the key came back out of the store: {text}"
         );
     }
@@ -119,7 +119,10 @@ fn the_key_is_not_in_any_row_and_not_in_the_log() -> Result<()> {
     };
     assert!(!captured.is_empty(), "the store said nothing at all");
     for line in &captured {
-        assert!(!line.contains(SECRET), "the key was printed: {line}");
+        assert!(
+            !line.contains(THE_PASSPHRASE),
+            "the key was printed: {line}"
+        );
     }
 
     logging::clear_sink();
@@ -130,7 +133,7 @@ fn the_key_is_not_in_any_row_and_not_in_the_log() -> Result<()> {
 fn the_key_is_not_in_the_database_file() -> Result<()> {
     let dir = common::scratch("key-file")?;
     let path = dir.file("stride.db");
-    let key = DatabaseKey::from_text(SECRET)?;
+    let key = DatabaseKey::from_text(THE_PASSPHRASE)?;
     {
         let store = Store::open_and_migrate(&path, &key)?;
         store.upsert_activity(&common::activity("run-1", "2026-05-10"))?;
@@ -142,7 +145,7 @@ fn the_key_is_not_in_the_database_file() -> Result<()> {
         std::fs::read(&path).map_err(|error| stride_store::StoreError::io(path.clone(), error))?;
     let text = String::from_utf8_lossy(&bytes);
     assert!(
-        !text.contains(SECRET),
+        !text.contains(THE_PASSPHRASE),
         "the key is written down in the database file"
     );
     assert!(
@@ -157,7 +160,7 @@ fn the_wrong_key_does_not_open_the_database() -> Result<()> {
     let dir = common::scratch("key-wrong")?;
     let path = dir.file("stride.db");
     {
-        let store = Store::open_and_migrate(&path, &DatabaseKey::from_text(SECRET)?)?;
+        let store = Store::open_and_migrate(&path, &DatabaseKey::from_text(THE_PASSPHRASE)?)?;
         store.upsert_activity(&common::activity("run-1", "2026-05-10"))?;
     }
 
@@ -172,7 +175,10 @@ fn the_wrong_key_does_not_open_the_database() -> Result<()> {
     };
     // The error says what happened and does not say what the key was.
     let text = error.to_string();
-    assert!(!text.contains(SECRET), "the error holds the key: {text}");
+    assert!(
+        !text.contains(THE_PASSPHRASE),
+        "the error holds the key: {text}"
+    );
     assert!(
         !text.contains("a different key entirely"),
         "the error holds the key: {text}"
@@ -183,12 +189,12 @@ fn the_wrong_key_does_not_open_the_database() -> Result<()> {
 #[test]
 fn the_key_type_has_no_way_out() {
     // The type prints a fixed phrase, whatever the key is.
-    let key = DatabaseKey::from_text(SECRET);
+    let key = DatabaseKey::from_text(THE_PASSPHRASE);
     let key = match key {
         Ok(key) => key,
         Err(_) => return,
     };
     let printed = format!("{key:?}");
     assert_eq!(printed, "DatabaseKey([redacted])");
-    assert!(!printed.contains(SECRET));
+    assert!(!printed.contains(THE_PASSPHRASE));
 }

@@ -323,7 +323,7 @@ pub struct PlanSession {
     pub block_id: i64,
     /// The day of the session, `YYYY-MM-DD`.
     pub date: String,
-    /// The kind of session: `easy`, `tempo`, `long`, `interval`, `race`,
+    /// The kind of planned session — `easy`, `tempo`, `long`, `interval`, `race`,
     /// `rest`, `strength` or `unclassified`.
     pub session_type: String,
     /// The session's title.

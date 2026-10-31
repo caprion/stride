@@ -13,9 +13,9 @@ use stride_store::{DatabaseKey, Result, Store};
 
 /// The key the tests use.
 ///
-/// It is a passphrase, not a raw key, and it is in the test because a test
-/// key is not a secret: it opens a database that is thrown away a second
-/// later.
+/// It is a passphrase, not a raw key, and it is in the test because it opens
+/// a database that is thrown away a second later. There is nothing to
+/// protect.
 pub const TEST_KEY: &str = "the key of a test that throws its database away";
 
 /// A scratch directory for one test.
