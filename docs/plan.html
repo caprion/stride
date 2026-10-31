@@ -1017,11 +1017,14 @@
   <p class="how">Inherited from the old core where the behaviour is right; every route below exists on <b>both</b>
   hosts, and the phone reaches them in-process.</p>
   <div class="grid g3">
-    <div class="card"><h4>Data</h4><p class="k">/activities · /activities/{id} · /physiology/{daily,sleep,hrv,readiness,latest,sources} · /fitness/{fingerprint,trends,zones} · /stats/{summary,weekly,monthly,pace-trends,elevation,hr-zones,personal-records}</p></div>
+    <div class="card"><h4>Data</h4><p class="k">/activities · /activities/{id} · /physiology/{daily,sleep,hrv,readiness,latest,sources} · /fitness/{trends,zones} · /stats/{summary,weekly,pace-trends,elevation,personal-records}</p></div>
     <div class="card"><h4>Plan &amp; insight</h4><p class="k">/plan/{current,today,week,blocks,sources,adherence,results,import} · /insights/{today,progress,chips} · /compare · /compare/candidates</p></div>
     <div class="card"><h4>App</h4><p class="k">/health · /health/daily · /sync/{status,run,runs,history,settings} · /auth/{status,garmin/personal-key,garmin/personal-key/test,garmin/fit-import,garmin/logout} · /calendar</p></div>
   </div>
-  <p class="k">Cut from the old table: /network/*, /tiles/*, /gear, /auth/garmin/{login,mfa,developer-key,callback}, /auth/{pair-code,pair,devices}.</p>
+  <p class="k">Cut from the old table: /network/*, /tiles/*, /gear, /auth/garmin/{login,mfa,developer-key,callback},
+  /auth/{pair-code,pair,devices}, /stats/monthly, /stats/hr-zones, /compare/candidates. The
+  <b>/fitness/fingerprint</b> route stays (the data is already synced) but has no screen — it is a documented
+  endpoint with no UI, and it must say so in the OpenAPI document so nobody builds the screen by accident.</p>
 
   <h3>6.3 Error and freshness rules</h3>
   <ul>
