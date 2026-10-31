@@ -55,9 +55,12 @@ export const catalogue = {
 
 The lint (`npm --prefix frontend run lint:voice`) fails the build on:
 
-- a banned word or construction — *should · must · take the day · rest ·
-  go easy · missed · bad · poor · fail · behind · ready to · recommended ·
-  better to · need to*;
+- a banned word or construction, word for word from the contract —
+  *should · must · take the day · rest day · rest up · rest today · go easy ·
+  keep it easy · missed · bad · poor · fail · behind · good · red · readiness
+  score · not recovered · you are ready · you are not ready · ready to ·
+  recommended · better to · need to*. (`rest` is banned as a command; the
+  "Rest" summary label on Today is a noun and is exempt.)
 - a `direction` string outside the closed set — *better than usual · about
   usual · could be better*;
 - a `pattern` string with no sample size;

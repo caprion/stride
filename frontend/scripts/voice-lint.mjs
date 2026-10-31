@@ -11,22 +11,37 @@
 /**
  * The ban list, from `docs/contract/voice.md`.
  *
- * `caseSensitive` marks a term that is only banned in the lower case. The
- * one exception is "rest": the plan's own Today screen names its composite
- * summary "Rest" (a label for a measurement), while "rest" in the lower
- * case is the instruction the ban list is about.
+ * The contract's list, word for word:
+ *
+ *   should   must      take the day   rest day   rest up   rest today   go easy
+ *   missed   bad       poor           fail       behind    good        keep it easy
+ *   ready to recommended   better to  need to   red        readiness score
+ *   not recovered   you are ready   you are not ready
+ *
+ * `rest` is banned as a *command* — `rest day`, `rest up`, `rest today` —
+ * and never as the noun: the "Rest" summary label on Today is the name of
+ * a row, not an instruction.
  */
 export const BANNED = [
   { term: 'should', pattern: /\bshould\b/i },
   { term: 'must', pattern: /\bmust\b/i },
   { term: 'take the day', pattern: /\btake\s+the\s+day\b/i },
-  { term: 'rest', pattern: /\brest\b/, caseSensitive: true },
+  { term: 'rest day', pattern: /\brest\s+day\b/i },
+  { term: 'rest up', pattern: /\brest\s+up\b/i },
+  { term: 'rest today', pattern: /\brest\s+today\b/i },
   { term: 'go easy', pattern: /\bgo\s+easy\b/i },
+  { term: 'keep it easy', pattern: /\bkeep\s+it\s+easy\b/i },
   { term: 'missed', pattern: /\bmissed\b/i },
   { term: 'bad', pattern: /\bbad\b/i },
   { term: 'poor', pattern: /\bpoor\b/i },
   { term: 'fail', pattern: /\bfail/i },
   { term: 'behind', pattern: /\bbehind\b/i },
+  { term: 'good', pattern: /\bgood\b/i },
+  { term: 'red', pattern: /\bred\b/i },
+  { term: 'readiness score', pattern: /\breadiness\s+score\b/i },
+  { term: 'not recovered', pattern: /\bnot\s+recovered\b/i },
+  { term: 'you are ready', pattern: /\byou\s+are\s+ready\b/i },
+  { term: 'you are not ready', pattern: /\byou\s+are\s+not\s+ready\b/i },
   { term: 'ready to', pattern: /\bready\s+to\b/i },
   { term: 'recommended', pattern: /\brecommended\b/i },
   { term: 'better to', pattern: /\bbetter\s+to\b/i },
@@ -44,8 +59,8 @@ export const SAMPLE_NOUN =
 /** The banned words inside a piece of text. */
 export function bannedWords(text) {
   const found = []
-  for (const { term, pattern, caseSensitive } of BANNED) {
-    const matcher = caseSensitive ? new RegExp(pattern.source, 'g') : pattern
+  for (const { term, pattern } of BANNED) {
+    const matcher = new RegExp(pattern.source, 'gi')
     const hit = matcher.test(text)
     matcher.lastIndex = 0
     if (hit) found.push(term)

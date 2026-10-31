@@ -1,7 +1,6 @@
 export interface BannedTerm {
   term: string
   pattern: RegExp
-  caseSensitive?: boolean
 }
 
 export declare const BANNED: BannedTerm[]

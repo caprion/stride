@@ -18,7 +18,9 @@ const queryClient = new QueryClient({
       // The data is read from the device; there is no server to race.
       staleTime: 30_000,
       refetchOnWindowFocus: false,
-      retry: 1,
+      // The shell owns the retry, the client does not (core-contract §7:
+      // one rule, one owner). A failed read is a fact the screen shows.
+      retry: false,
     },
   },
 })

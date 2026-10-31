@@ -24,6 +24,34 @@ describe('the voice lint', () => {
     expect(failures.join('\n')).toContain('should')
   })
 
+  it('fails on a verdict, a colour or a conclusion', () => {
+    for (const text of ['a good run', 'in red', 'you are not ready', 'not recovered yet']) {
+      const failures = checkCatalogue(
+        { ...entries, 'x.y': { type: 'status', text } },
+        DIRECTION_WORDS,
+      )
+      expect(failures.join('\n')).toContain('banned word')
+    }
+  })
+
+  it('fails on "rest" as a command', () => {
+    for (const text of ['rest day', 'rest up', 'rest today']) {
+      const failures = checkCatalogue(
+        { ...entries, 'x.y': { type: 'status', text } },
+        DIRECTION_WORDS,
+      )
+      expect(failures.join('\n')).toContain('banned word')
+    }
+  })
+
+  it('allows "Rest" as the noun — the name of Today\'s summary row', () => {
+    const failures = checkCatalogue(
+      { ...entries, 'x.y': { type: 'status', text: 'Rest — could be better' } },
+      DIRECTION_WORDS,
+    )
+    expect(failures).toEqual([])
+  })
+
   it('fails on a direction outside the closed set', () => {
     const failures = checkCatalogue(
       { ...entries, 'x.direction': { type: 'direction', text: 'not great' } },
