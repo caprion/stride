@@ -1,4 +1,4 @@
-//! The application state: the credentials, the pairing code and the devices.
+//! The application state: the credentials and the sync.
 //!
 //! The state is not in the database: the Python keeps it in `state.json` and
 //! the phone keeps it in the Android preferences. These tests drive the
@@ -10,98 +10,6 @@ use std::sync::Arc;
 
 use serde_json::Value;
 use stride_api::{Api, MemBackend, StateBackend};
-
-/// A pairing code is the operator's console secret, and it is minted on the
-/// machine that runs Stride.
-///
-/// The reference refuses anybody who is not on the machine, and the
-/// security gate checks exactly that over the TLS listener, which is bound
-/// to the operator's address and not to loopback. The router does not know
-/// who is asking: the host does, and it passes the caller's address and
-/// the name it used with the request. A caller that does not say where it
-/// is gets no code at all.
-#[test]
-fn a_caller_that_does_not_say_where_it_is_gets_no_pairing_code() {
-    // The desktop's stack: the rows, the state, the network, the domain.
-    let api = desktop_api();
-
-    let refused = api
-        .call("GET", "/api/v1/auth/pair-code", None)
-        .expect_err("403");
-    assert_eq!(refused.status, 403);
-    assert_eq!(
-        refused.detail,
-        "A pairing code can only be requested on the machine running Stride."
-    );
-}
-
-/// The desktop's answer: a caller on the machine may mint a code, and a
-/// caller on the network may not.
-///
-/// The desktop is the host: it has the caller's address and the name it
-/// used. The rule is the one the security gate checks over the TLS
-/// listener — a pairing code cannot be minted from another device — and
-/// the one the operator's console needs: a code can be minted here, on the
-/// machine, for the phone to pair with.
-#[test]
-fn a_caller_on_the_machine_may_mint_a_pairing_code() {
-    let api = desktop_api();
-    let caller = stride_api::Caller {
-        peer: Some("127.0.0.1".parse().expect("an address")),
-        host: Some("127.0.0.1:8000".to_string()),
-    };
-    let minted = api
-        .call_response_from(&caller, "GET", "/api/v1/auth/pair-code", None)
-        .expect("the code answers");
-    assert!(
-        minted.to_value()["code"]
-            .as_str()
-            .is_some_and(|code| code.len() == 9),
-        "the code was minted"
-    );
-}
-
-/// A caller on the network is refused, whatever it calls itself.
-#[test]
-fn a_caller_on_the_network_may_not_mint_a_pairing_code() {
-    let api = desktop_api();
-    for (peer, host) in [
-        ("100.89.222.50", "100.89.222.50:8443"),
-        ("127.0.0.1", "stride.example.com"),
-        ("100.89.222.50", "localhost:8000"),
-    ] {
-        let caller = stride_api::Caller {
-            peer: Some(peer.parse().expect("an address")),
-            host: Some(host.to_string()),
-        };
-        let refused = api
-            .call_response_from(&caller, "GET", "/api/v1/auth/pair-code", None)
-            .expect_err("403");
-        assert_eq!(refused.status, 403, "{peer} / {host} was refused");
-    }
-}
-
-/// The desktop's stack, over a temporary database.
-fn desktop_api() -> Api {
-    let directory = tempdir::TempDir::new("stride-api-pairing").expect("a temporary directory");
-    let path = directory.path().join("stride.db");
-    let store = stride_store::Store::open_and_migrate(&path, b"0123456789abcdef0123456789abcdef")
-        .expect("the store opens");
-    let rows = stride_api::store::backend(Arc::new(store));
-    let state = StateBackend::new(rows);
-    Api::new(Arc::new(state))
-}
-
-/// The console \u2014 the in-memory backend \u2014 mints one, because it holds
-/// nothing that is not on this machine.
-#[test]
-fn the_console_may_mint_a_pairing_code() {
-    let api = api();
-    let minted = api
-        .call("GET", "/api/v1/auth/pair-code", None)
-        .expect("the code answers");
-    assert!(minted["code"].as_str().is_some_and(|code| code.len() == 9));
-}
 
 /// The router, over an in-memory store and a fresh state.
 fn api() -> Api {
@@ -127,70 +35,6 @@ fn the_status_carries_the_defaults() {
     // The demo flag is gone with the demo dataset: the status does not
     // carry it, and the reference does not answer it.
     assert_eq!(status.get("demo_visible"), None);
-}
-
-/// A pairing code is minted, used once, and the device is listed.
-#[test]
-fn a_pairing_code_is_single_use() {
-    let api = api();
-    let minted = api
-        .call("GET", "/api/v1/auth/pair-code", None)
-        .expect("the code answers");
-    let code = minted["code"].as_str().expect("a code");
-    assert_eq!(code.len(), 9, "the code is XXXX-XXXX");
-    assert_eq!(code.as_bytes()[4], b'-');
-    assert_eq!(minted["expires_in"], 600);
-
-    // The wrong code is refused.
-    let refused = api
-        .call(
-            "POST",
-            "/api/v1/auth/pair",
-            Some(r#"{"code": "ZZZZ-ZZZZ"}"#),
-        )
-        .expect_err("401");
-    assert_eq!(refused.status, 401);
-    assert_eq!(
-        refused.detail,
-        "That code is wrong, expired, or already used."
-    );
-
-    // The right code pairs a device.
-    let paired = api
-        .call(
-            "POST",
-            "/api/v1/auth/pair",
-            Some(&format!(r#"{{"code": "{code}"}}"#)),
-        )
-        .expect("the pair answers");
-    assert_eq!(paired["ok"], true);
-    let device_id = paired["device_id"].as_str().expect("an id");
-    assert!(!paired["token"].as_str().expect("a token").is_empty());
-
-    // The device is listed, without its token.
-    let devices = api
-        .call("GET", "/api/v1/auth/devices", None)
-        .expect("the devices answer");
-    assert_eq!(devices["devices"].as_array().map(Vec::len), Some(1));
-    assert_eq!(devices["devices"][0]["id"], device_id);
-    assert!(devices["devices"][0].get("token").is_none());
-
-    // The code is spent: the same code does not pair a second device.
-    let again = api
-        .call(
-            "POST",
-            "/api/v1/auth/pair",
-            Some(&format!(r#"{{"code": "{code}"}}"#)),
-        )
-        .expect_err("401");
-    assert_eq!(again.status, 401);
-
-    // The device can be revoked.
-    let revoked = api
-        .call("DELETE", &format!("/api/v1/auth/devices/{device_id}"), None)
-        .expect("the revoke answers");
-    assert_eq!(revoked["ok"], true);
-    assert_eq!(revoked["remaining"], 0);
 }
 
 /// The sync settings are the state's, and they change.
@@ -405,43 +249,4 @@ fn the_plan_sources_answer_with_both_plans() {
     assert!(sources["garmin"]["reason"].is_string());
     // The inferred plan is a baseline: it is never a prescription.
     assert_eq!(sources["inferred"]["prescribed"], false);
-}
-
-/// A tiny temporary-directory helper, so the test does not need a crate.
-mod tempdir {
-    use std::path::{Path, PathBuf};
-
-    /// A directory that removes itself when it is dropped.
-    pub struct TempDir {
-        path: PathBuf,
-    }
-
-    impl TempDir {
-        /// Make a directory with a name nobody else is using.
-        pub fn new(prefix: &str) -> std::io::Result<Self> {
-            let mut path = std::env::temp_dir();
-            let unique = format!(
-                "{prefix}-{}-{}",
-                std::process::id(),
-                std::time::SystemTime::now()
-                    .duration_since(std::time::UNIX_EPOCH)
-                    .map(|since| since.as_nanos())
-                    .unwrap_or_default()
-            );
-            path.push(unique);
-            std::fs::create_dir_all(&path)?;
-            Ok(Self { path })
-        }
-
-        /// The directory itself.
-        pub fn path(&self) -> &Path {
-            &self.path
-        }
-    }
-
-    impl Drop for TempDir {
-        fn drop(&mut self) {
-            let _ = std::fs::remove_dir_all(&self.path);
-        }
-    }
 }

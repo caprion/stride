@@ -51,7 +51,7 @@ use std::time::{Duration, Instant};
 
 use serde_json::{json, Value};
 
-use crate::backend::{Backend, Caller, SettingsPatch};
+use crate::backend::{Backend, SettingsPatch};
 use crate::error::BackendError as Error;
 
 /// The environment variable that names the exit-node tool.
@@ -85,19 +85,6 @@ impl NetworkBackend {
     pub fn inner(&self) -> &Arc<dyn Backend> {
         &self.inner
     }
-}
-
-/// Is this caller on this machine?
-///
-/// Both have to say so: the address the connection came from **and** the
-/// name the caller used. The peer address alone is not enough — a page the
-/// athlete happens to have open can point a name it controls at 127.0.0.1
-/// and then talk to Stride as the origin it came from, and the `Host`
-/// header is what tells the two apart.
-pub fn caller_is_local(caller: &Caller) -> bool {
-    let peer = caller.peer.is_some_and(|peer| peer.is_loopback());
-    let host = caller.host.as_deref().is_some_and(host_is_loopback);
-    peer && host
 }
 
 /// Does the `Host` header name a loopback host?
@@ -766,30 +753,6 @@ impl Backend for NetworkBackend {
 
     fn gear(&self) -> Result<Vec<Value>, Error> {
         self.inner.gear()
-    }
-
-    fn pair_code(&self) -> Result<Value, Error> {
-        self.inner.pair_code()
-    }
-
-    fn may_mint_pairing_code(&self, caller: &Caller) -> bool {
-        self.inner.may_mint_pairing_code(caller)
-    }
-
-    fn device_token_is_live(&self, token: &str) -> bool {
-        self.inner.device_token_is_live(token)
-    }
-
-    fn pair(&self, code: &str) -> Result<Option<Value>, Error> {
-        self.inner.pair(code)
-    }
-
-    fn devices(&self) -> Result<Vec<Value>, Error> {
-        self.inner.devices()
-    }
-
-    fn revoke_device(&self, device_id: &str) -> Result<Value, Error> {
-        self.inner.revoke_device(device_id)
     }
 
     fn connect_personal_key(&self, api_key: &str) -> Result<Value, Error> {

@@ -47,7 +47,7 @@ appears in a log. The app only ever reports `key_source: key_vault`.
 | no NOT NULL orphan columns | the schema still matches the model |
 | backend tests | the suite passes |
 | security gate | the gate passes |
-| a pairing code can be minted, works once and is refused the second time | the second-device flow is intact |
+| a caller on an untrusted network is refused | the API is for the operator's machine |
 | the instance answers | it is actually up |
 
 ---
@@ -62,7 +62,7 @@ address is the operator's business.
 | `STRIDE_TLS_HOST` | `0.0.0.0` | the address the HTTPS listener binds |
 | `STRIDE_TLS_PORT` | `8443` | the port for it |
 | `STRIDE_TLS_DIR` | `data/tls` | where the certificate and the key are. It looks for `stride.crt` and `stride.key` |
-| `STRIDE_TRUST_REMOTE` | `false` | when true, clients from the trusted networks are trusted without a pairing code |
+| `STRIDE_TRUST_REMOTE` | `false` | when true, clients from the trusted networks are trusted without a capability |
 | `STRIDE_TRUSTED_NETWORKS` | empty | comma-separated CIDRs those clients come from. **Empty means nothing extra is trusted** — loopback only |
 | `STRIDE_PORT` | `8000` | the plain listener |
 | `STRIDE_DATA_DIR` | `backend/data` | the database and the state file |
@@ -217,58 +217,36 @@ mint that cookie, and it should not be able to: if every device on the
 network could, then the network *is* the trust boundary, and that is a much
 bigger group than "the athlete's own devices".
 
-**V1 does not use this.** The phone app is the whole thing — its own
-database, its own Garmin key, signed in from the first pixel — and the
-desktop's own browser is the machine Stride runs on, so it is signed in
-automatically. The capability is **kept in the code and not used by the
-product**: the route, the state, the gate's rules and the security gate's
-checks are all still there, and what is gone is the ceremony — the
-`prod.sh pair` command, the QR code, and the form that asked a browser to
-type a code in.
+**There is no second credential.** The app has **one**: the Garmin API
+key. The phone types it into one native screen and it goes straight into
+the Keystore; the desktop has the same field on its own screen, and the
+browser on the machine is signed in automatically.
 
-A browser that reaches the desktop from another machine is told what is
-true — this is the operator's own machine — rather than being handed a
-credential the product does not use.
+A browser on another machine is signed in the same way — **if the operator
+has trusted the network it is on** (`STRIDE_TRUST_REMOTE` and
+`STRIDE_TRUSTED_NETWORKS`). Both default to the safe answer: loopback
+only, and nobody else trusted.
 
-If somebody wants it on purpose, the flow is: mint a code with
-`GET /api/v1/auth/pair-code` on the machine, and exchange it with
-`POST /api/v1/auth/pair`. The code is carried in the URL *fragment*, never
-the query string. A fragment is not sent to the server, so it never lands
-in an access log.
-
-### The device gets its own credential
-
-The paired device is **not** given the master capability. It gets its own
-token, stored only as a SHA-256 hash, in a separate cookie that lasts a year
-rather than a browser session.
-
-| | the operator's machine | a paired device |
-|---|---|---|
-| credential | the master capability | its own token |
-| cookie | session — closing the browser signs it out | a year |
-| if it is lost | nothing to do | revoke it in **Settings → Connected devices**, and nothing else is affected |
+There is no pairing code, no QR code and no second device to revoke: the
+capability the browser holds is the machine's own, it is a session
+cookie, and closing the browser signs it out.
 
 ### Properties
 
 | property | why |
 |---|---|
-| minted on the machine only | `/auth/pair-code` refuses any client that is not loopback |
-| single use | the code is cleared the instant it is exchanged |
-| 10 minute life | a code left on a screen stops working |
-| 5 attempts a minute | a secret being guessed cannot be brute forced |
-| no look-alike characters | `I`, `O`, `0` and `1` are excluded — it is typed on a phone |
-| the code is not the credential | it is exchanged for one, never a long-lived secret in JavaScript |
-| revocable | each device holds its own token, so it can be signed out on its own |
+| the machine's own, or a trusted network | a browser elsewhere is refused |
+| a session cookie | closing the browser signs it out |
+| the capability never leaves the machine | it is in the state file, mode 600 |
 
-The security gate checks four of these on the live service: a wrong code is
-refused, a remote client cannot mint one, a paired device can read the API,
-and a revoked device is signed out.
+The security gate checks the first of these on the live service: a caller
+on an untrusted network is refused.
 
-> **The Rust desktop mints a pairing code only for a caller on the
-> machine.** The peer address *and* the `Host` header have to say loopback:
-> a page the athlete happens to have open can point a name it controls at
-> 127.0.0.1 and then talk to Stride as the origin it came from. A caller on
-> the network is refused, and the security gate checks that over TLS.
+"> **A trusted network is a network the operator named.** The peer address
+> *and* the `Host` header have to say so: a page the athlete happens to
+> have open can point a name it controls at 127.0.0.1 and then talk to
+> Stride as the origin it came from. A caller on any other network is
+> refused, and the security gate checks that over TLS.
 
 ---
 

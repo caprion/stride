@@ -181,73 +181,6 @@ if curl -fsS -m 4 -o /dev/null "$BASE/api/v1/health" 2>/dev/null; then
     bad "no Content-Security-Policy on the served app"
   fi
 
-  # The pairing exchange is the one endpoint that answers without a
-  # capability token, so it gets its own checks.
-  code=$(curl -s -o /dev/null -w '%{http_code}' -m 6 -X POST -H "Origin: $BASE" \
-    -H 'Content-Type: application/json' -d '{"code":"ZZZZ-ZZZZ"}' "$BASE/api/v1/auth/pair")
-  if [[ "$code" == "401" || "$code" == "403" ]]; then
-    ok "the pairing exchange rejects a wrong code ($code)"
-  else
-    bad "the pairing exchange accepted a wrong code ($code)"
-  fi
-
-  # A paired device must be revocable, and revoking one must not touch the
-  # machine it was paired from.
-  # The gate pairs a throwaway device and revokes *that one*. It must never
-  # revoke a device the athlete is actually using.
-  # A jar with the operator's own capability, so the device list is readable.
-  master_jar=$(mktemp)
-  curl -s -c "$master_jar" -o /dev/null -m 6 "$BASE/api/v1/bootstrap"
-  before=$(curl -s -b "$master_jar" -m 6 "$BASE/api/v1/auth/devices" 2>/dev/null | tr ',' '\n' | grep -o '"id":"[^"]*"' | sort)
-  pair_code=$(curl -s -m 6 "$BASE/api/v1/auth/pair-code" 2>/dev/null \
-    | grep -o '"code":"[A-Z0-9-]*"' | head -1 | cut -d'"' -f4)
-  if [[ -n "$pair_code" ]]; then
-    jar=$(mktemp)
-    pair_status=$(curl -s -c "$jar" -o /dev/null -w '%{http_code}' -m 6 -X POST \
-      -H "Origin: $BASE" -H 'Content-Type: application/json' \
-      -d "{\"code\":\"$pair_code\"}" "$BASE/api/v1/auth/pair")
-    if [[ "$pair_status" == "429" ]]; then
-      # The pairing exchange is rate limited, and the gate pairs from the
-      # same address as a human would. Being throttled is not a failure of
-      # the thing being tested.
-      warn "the pairing exchange is rate limited — the device checks were skipped"
-      rm -f "$jar" "$master_jar"
-      pair_code=""
-    fi
-    code=$(curl -s -b "$jar" -o /dev/null -w '%{http_code}' -m 6 "$BASE/api/v1/activities")
-    if [[ "$pair_status" == "429" ]]; then
-      :
-    elif [[ "$code" == "200" ]]; then
-      ok "a paired device can read the API ($code)"
-    else
-      bad "a paired device could not read the API ($code)"
-    fi
-    after=$(curl -s -b "$master_jar" -m 6 "$BASE/api/v1/auth/devices" 2>/dev/null | tr ',' '\n' | grep -o '"id":"[^"]*"' | sort)
-    device_id=$(comm -13 <(echo "$before") <(echo "$after") | head -1 | cut -d'"' -f4)
-    if [[ -n "$pair_code" && -n "$device_id" ]]; then
-      curl -s -b "$master_jar" -o /dev/null -m 6 -X DELETE -H "Origin: $BASE" \
-        "$BASE/api/v1/auth/devices/$device_id"
-      code=$(curl -s -b "$jar" -o /dev/null -w '%{http_code}' -m 6 "$BASE/api/v1/activities")
-      if [[ "$code" == "401" ]]; then
-        ok "a revoked device is signed out ($code)"
-      else
-        bad "a revoked device still has access ($code)"
-      fi
-    else
-      warn "could not identify the device it paired to revoke it"
-    fi
-    # Clean up after itself. A gate that leaves a paired device behind turns
-    # the Settings screen into a list of its own test runs.
-    if [[ -n "$device_id" ]]; then
-      curl -s -b "$master_jar" -o /dev/null -m 6 -X DELETE -H "Origin: $BASE" \
-        "$BASE/api/v1/auth/devices/$device_id"
-    fi
-    rm -f "$jar" "$master_jar"
-  else
-    warn "could not mint a pairing code — the device checks were skipped"
-    rm -f "$master_jar"
-  fi
-
   # The served SPA must never serve a file from outside its own directory.
   # This was a live hole: the catch-all resolved the raw, percent-decoded
   # path, so a request for the state file - the Garmin key, the capability
@@ -268,32 +201,31 @@ if curl -fsS -m 4 -o /dev/null "$BASE/api/v1/health" 2>/dev/null; then
     bad "the served app returned a file from outside its directory"
   fi
 
-  # A pairing code must only be mintable from the machine itself. The
-  # address the listener binds is the operator's configuration
-  # (STRIDE_TLS_HOST), so that is the address the check uses — nothing is
+  # A caller on the network is refused: the API is for the operator's own
+  # machine and the networks it has been told to trust
+  # (`STRIDE_TRUSTED_NETWORKS`).
+  #
+  # The address the listener binds is the operator's configuration
+  # (STRIDE_TLS_HOST), so the check uses that address — nothing is
   # detected and no networking product is asked where the machine is. When
   # the listener is on a wildcard, the machine's own routable address
   # stands in for any other device on the network.
-  #
-  # The plain listener is loopback-only, so the check goes over the TLS
-  # listener, which is where another device would actually connect.
   REMOTE_HOST="${STRIDE_TLS_HOST:-0.0.0.0}"
   if [[ "$REMOTE_HOST" == "0.0.0.0" || "$REMOTE_HOST" == "::" || -z "$REMOTE_HOST" ]]; then
-    REMOTE_HOST=$(ip -4 addr show 2>/dev/null | awk '/inet /{print $2}' | cut -d/ -f1 \
-      | grep -v '^127\.' | head -1)
+    REMOTE_HOST=$(ip -4 addr show 2>/dev/null | awk '/inet /{print $2}' | cut -d/ -f1 | grep -v '^127\.' | head -1)
   fi
   if [[ -n "$REMOTE_HOST" ]]; then
     code=$(curl -sk -o /dev/null -w '%{http_code}' -m 8 \
-      "https://$REMOTE_HOST:${STRIDE_CHECK_TLS_PORT:-8443}/api/v1/auth/pair-code")
+      "https://$REMOTE_HOST:${STRIDE_CHECK_TLS_PORT:-8443}/api/v1/activities")
     if [[ "$code" == "401" || "$code" == "403" ]]; then
-      ok "a pairing code cannot be minted from another device ($code)"
+      ok "the API refuses a caller on an untrusted network ($code)"
     elif [[ "$code" == "000" ]]; then
-      warn "the remote address did not answer — the remote pairing check was skipped"
+      warn "the remote address did not answer — the remote check was skipped"
     else
-      bad "a remote client minted a pairing code ($code)"
+      bad "a caller on an untrusted network was let in ($code)"
     fi
   else
-    warn "no non-loopback address found — the remote pairing check was skipped"
+    warn "no non-loopback address found — the remote check was skipped"
   fi
 else
   warn "the app is not running at $BASE — live checks skipped"

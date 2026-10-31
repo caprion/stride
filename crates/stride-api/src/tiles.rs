@@ -31,7 +31,7 @@ use std::time::{Duration, SystemTime};
 
 use serde_json::{json, Value};
 
-use crate::backend::{Backend, Caller, Tile};
+use crate::backend::{Backend, Tile};
 use crate::error::BackendError as Error;
 
 /// Where the tiles come from.
@@ -445,30 +445,6 @@ impl Backend for TileBackend {
 
     fn gear(&self) -> Result<Vec<Value>, Error> {
         self.inner.gear()
-    }
-
-    fn pair_code(&self) -> Result<Value, Error> {
-        self.inner.pair_code()
-    }
-
-    fn may_mint_pairing_code(&self, caller: &Caller) -> bool {
-        self.inner.may_mint_pairing_code(caller)
-    }
-
-    fn device_token_is_live(&self, token: &str) -> bool {
-        self.inner.device_token_is_live(token)
-    }
-
-    fn pair(&self, code: &str) -> Result<Option<Value>, Error> {
-        self.inner.pair(code)
-    }
-
-    fn devices(&self) -> Result<Vec<Value>, Error> {
-        self.inner.devices()
-    }
-
-    fn revoke_device(&self, device_id: &str) -> Result<Value, Error> {
-        self.inner.revoke_device(device_id)
     }
 
     fn connect_personal_key(&self, api_key: &str) -> Result<Value, Error> {

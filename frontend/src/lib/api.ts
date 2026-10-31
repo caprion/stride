@@ -303,31 +303,9 @@ export async function openNativeGarminSetup(): Promise<void> {
   }
 }
 
-export interface PairedDevice {
-  id: string
-  name: string | null
-  created_at: string | null
-  last_seen_at: string | null
-}
-
 export const api = {
   // ---------------------------------------------------------------- auth
   authStatus: () => request<AuthStatus>('/auth/status'),
-
-  /**
-   * Exchange a single-use pairing code for the session cookie. Used when the
-   * browser is not on the same machine as the server — the phone on the
-   * tailnet, for instance.
-   */
-  pair: (code: string) =>
-    request<void>('/auth/pair', { method: 'POST', body: JSON.stringify({ code }) }),
-
-  /** The devices that have been paired to this instance. */
-  devices: () => request<{ devices: PairedDevice[] }>('/auth/devices'),
-
-  /** Revoke a paired device — a lost phone, say. */
-  revokeDevice: (id: string) =>
-    request<{ ok: boolean }>(`/auth/devices/${id}`, { method: 'DELETE' }),
 
   startDeveloperKey: (consumer_key: string, consumer_secret: string) =>
     request<{ authorize_url: string; request_token: string; instructions: string }>(

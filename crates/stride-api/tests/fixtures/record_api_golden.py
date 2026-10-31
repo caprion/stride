@@ -266,8 +266,6 @@ ROUTES = [
     ("GET", "/api/v1/health", None),
     ("GET", "/api/v1/health/daily", None),
     ("GET", "/api/v1/auth/status", None),
-    ("GET", "/api/v1/auth/pair-code", None),
-    ("GET", "/api/v1/auth/devices", None),
     ("GET", "/api/v1/activities", None),
     ("GET", "/api/v1/activities?per_page=5&page=1", None),
     ("GET", "/api/v1/activities?sport=running", None),

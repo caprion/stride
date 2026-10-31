@@ -468,8 +468,6 @@ fn the_route_table_covers_every_path() {
         "/api/v1/health",
         "/api/v1/health/daily",
         "/api/v1/auth/status",
-        "/api/v1/auth/pair",
-        "/api/v1/auth/pair-code",
         "/api/v1/auth/garmin/personal-key",
         "/api/v1/auth/garmin/personal-key/test",
         "/api/v1/activities",
@@ -852,14 +850,14 @@ fn a_broken_fit_file_is_answered_not_thrown() {
     );
 }
 
-/// The OpenAPI document lists 63 paths and 66 operations. Every one of them
+/// The OpenAPI document lists 59 paths. Every one of them
 /// is in the route table, with the same parameter names.
 #[test]
 fn the_route_table_covers_the_openapi_document() {
     let document: Value = serde_json::from_str(include_str!("fixtures/openapi_paths.json"))
         .expect("the document parses");
     let paths = document["paths"].as_object().expect("the paths");
-    assert_eq!(paths.len(), 63, "the reference has 63 paths");
+    assert_eq!(paths.len(), 59, "the reference has 59 paths");
 
     let routes = stride_api::router::ROUTES;
     for (path, operations) in paths {

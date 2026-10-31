@@ -148,7 +148,7 @@ def main() -> int:
         # uvicorn trusts X-Forwarded-For from 127.0.0.1 by default. Stride
         # is not behind a proxy, and a proxy on this machine would be able to
         # make a remote client look like a loopback one — which is exactly
-        # the check that guards pairing codes and the capability cookie.
+        # the check that guards the capability cookie.
         proxy_headers=False,
     )
     http_server = uvicorn.Server(http_config)

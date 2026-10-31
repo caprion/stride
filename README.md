@@ -162,9 +162,8 @@ call.
 | `node scripts/phone_smoke.mjs` | the four phone surfaces at 390 px, on synthetic data | **29 of 29 checks pass** |
 
 The security gate's live section is not a formality: with the app running it
-mints a pairing code on the machine, pairs a throwaway device, reads the API
-with it, revokes it, and watches it be signed out — and it checks that a
-caller on the network cannot mint a code at all.
+checks that a caller on an untrusted network is turned away, and that the
+served app cannot be walked out of its own directory.
 
 The one difference in the parity check is `GET /api/v1/health`: the Rust
 desktop reports `garmin.method: null` and the reference reports `"personal"`.
@@ -235,7 +234,7 @@ phone reads the same names from its own settings.
 |---|---|---|
 | `STRIDE_TLS_HOST` | `0.0.0.0` | the address the HTTPS listener binds |
 | `STRIDE_TLS_PORT` | `8443` | the port for it |
-| `STRIDE_TRUST_REMOTE` | `false` | when true, clients from the trusted networks are trusted without a pairing code |
+| `STRIDE_TRUST_REMOTE` | `false` | when true, clients from the trusted networks are trusted without a capability |
 | `STRIDE_TRUSTED_NETWORKS` | empty | comma-separated CIDRs those clients come from. **Empty means nothing extra is trusted** — loopback only |
 | `STRIDE_BIND` | `127.0.0.1` | the address the desktop binary binds. A non-loopback address is refused |
 | `STRIDE_PORT` | `8000` | the port the desktop binary binds |
@@ -269,20 +268,16 @@ it to be**: the phone app is the whole thing — its own database, its own
 Garmin key, signed in from the first pixel — and the desktop's own browser
 is the machine Stride runs on.
 
-The **pairing capability is kept in the code and not used by the product**:
-the route, the state, the gate's rules and the security gate's checks are
-all still there, so it stays safe if somebody wires it up on purpose. What
-is gone is the ceremony — the `prod.sh pair` command, the QR code, and the
-form that asked a browser to type a code in.
+There is **no second credential and no ceremony**: no pairing code, no
+QR code, no device list. The app has one credential — the Garmin API key —
+and a browser on a network the operator has trusted is signed in like any
+other.
 
-Two rules, and the security gate checks both:
-
-- **only a caller on the machine can mint a code.** The peer address *and*
-  the `Host` header have to say loopback: a page the athlete happens to have
-  open can point a name it controls at 127.0.0.1 and then talk to Stride as
-  the origin it came from.
-- **the device's credential is stored as a hash, never as the token**, so
-  the state file does not hold a credential that works.
+One rule, and the security gate checks it: **a browser is signed in only
+from the machine or from a network the operator has trusted.** The peer
+address *and* the `Host` header have to say so: a page the athlete
+happens to have open can point a name it controls at 127.0.0.1 and then
+talk to Stride as the origin it came from.
 
 ---
 

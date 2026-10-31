@@ -121,8 +121,8 @@ case "${1:-start}" in
     # the operator says so.
     #
     # A *trusted network* is one the operator names in STRIDE_TRUSTED_NETWORKS.
-    # Clients from it are trusted without a pairing code; nobody else is.
-    # Both default to the safe answer: loopback only, pairing code required.
+    # Clients from it are trusted without a capability; nobody else is.
+    # Both default to the safe answer: loopback only.
     export STRIDE_TRUST_REMOTE="${STRIDE_TRUST_REMOTE:-false}"
     export STRIDE_TLS_HOST="${STRIDE_TLS_HOST:-0.0.0.0}"
     export STRIDE_TLS_PORT="${STRIDE_TLS_PORT:-8443}"

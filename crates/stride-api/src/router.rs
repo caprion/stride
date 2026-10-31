@@ -33,8 +33,6 @@ pub enum RouteId {
     Health,
     HealthDaily,
     AuthStatus,
-    AuthPair,
-    AuthPairCode,
     AuthPersonalKey,
     AuthPersonalKeyTest,
     AuthDeveloperKey,
@@ -44,8 +42,6 @@ pub enum RouteId {
     AuthMfa,
     AuthLogout,
     AuthFitImport,
-    AuthDevices,
-    AuthRevokeDevice,
     Activities,
     Activity,
     ActivityPatch,
@@ -153,16 +149,6 @@ pub const ROUTES: &[Route] = &[
     },
     Route {
         method: "POST",
-        pattern: "/api/v1/auth/pair",
-        id: RouteId::AuthPair,
-    },
-    Route {
-        method: "GET",
-        pattern: "/api/v1/auth/pair-code",
-        id: RouteId::AuthPairCode,
-    },
-    Route {
-        method: "POST",
         pattern: "/api/v1/auth/garmin/personal-key",
         id: RouteId::AuthPersonalKey,
     },
@@ -205,16 +191,6 @@ pub const ROUTES: &[Route] = &[
         method: "POST",
         pattern: "/api/v1/auth/garmin/fit-import",
         id: RouteId::AuthFitImport,
-    },
-    Route {
-        method: "GET",
-        pattern: "/api/v1/auth/devices",
-        id: RouteId::AuthDevices,
-    },
-    Route {
-        method: "DELETE",
-        pattern: "/api/v1/auth/devices/{device_id}",
-        id: RouteId::AuthRevokeDevice,
     },
     Route {
         method: "GET",
@@ -585,14 +561,6 @@ pub fn dispatch(
         RouteId::Health => json(routes::health(ctx)),
         RouteId::HealthDaily => json(routes::health_daily(ctx, query)),
         RouteId::AuthStatus => json(routes::auth_status(ctx)),
-        RouteId::AuthPair => match routes::pair(ctx, body)? {
-            // The Python route answers 204 with no body: the credential goes
-            // into a cookie. The phone has no cookie jar, so its backend
-            // answers with the credential in the body instead.
-            Value::Null => Ok(Response::NoContent),
-            value => Ok(Response::Json(value)),
-        },
-        RouteId::AuthPairCode => json(routes::pair_code(ctx)),
         RouteId::AuthPersonalKey => json(routes::connect_personal_key(ctx, body)),
         RouteId::AuthPersonalKeyTest => json(routes::test_personal_key(ctx, body)),
         RouteId::AuthDeveloperKey => json(routes::garmin_developer_key(ctx, body)),
@@ -602,11 +570,6 @@ pub fn dispatch(
         RouteId::AuthMfa => json(routes::garmin_mfa(ctx, body)),
         RouteId::AuthLogout => json(routes::garmin_logout(ctx)),
         RouteId::AuthFitImport => json(routes::fit_import(ctx, body)),
-        RouteId::AuthDevices => json(routes::devices(ctx)),
-        RouteId::AuthRevokeDevice => json(routes::revoke_device(
-            ctx,
-            params.get("device_id").unwrap_or_default(),
-        )),
         RouteId::Activities => json(routes::list_activities(ctx, query)),
         RouteId::Activity => json(routes::get_activity(ctx, params.int("activity_id")?, query)),
         RouteId::ActivityPatch => json(routes::patch_activity(

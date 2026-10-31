@@ -12,7 +12,7 @@ use serde_json::{json, Map, Value};
 
 use crate::analytics;
 use crate::backend::{
-    ActivityFilter, ActivityPatch, ActivityRow, Backend, Caller, ImportRequest, PlanBlockFields,
+    ActivityFilter, ActivityPatch, ActivityRow, Backend, ImportRequest, PlanBlockFields,
     PlanPhaseFields, PlanSessionFields, PlanWeekFields, SettingsPatch,
 };
 use crate::error::{validation_error, ApiError, BackendError};
@@ -25,12 +25,6 @@ pub struct Ctx<'a> {
     pub backend: &'a dyn Backend,
     /// The day the date-dependent routes count from.
     pub today: chrono::NaiveDate,
-    /// Who is asking.
-    ///
-    /// The router does not know the caller's address or the name it used;
-    /// the host does, and it passes them here so that the routes which
-    /// depend on them — the pairing code — can ask the host.
-    pub caller: &'a Caller,
 }
 
 /// The metrics the fitness trend can chart.
@@ -269,66 +263,6 @@ fn without_demo_flag(payload: &mut Value) {
     if let Some(object) = payload.as_object_mut() {
         object.remove("demo_visible");
     }
-}
-
-/// `GET /api/v1/auth/pair-code` — mint a pairing code.
-///
-/// The reference: `api/auth.pair_code`.
-///
-/// **The code is the operator's console secret.** It is minted on the machine
-/// that runs Stride and typed into the other device, and the reference
-/// refuses anybody who is not on that machine — the check is on the peer
-/// address *and* on the `Host` header, so a rebound name cannot ask for one
-/// either.
-///
-/// The router has neither the peer address nor the `Host` header: only the
-/// host has them. So the host answers the question, and a host that cannot
-/// answer it does not mint a code at all.
-pub fn pair_code(ctx: &Ctx<'_>) -> Result<Value, ApiError> {
-    if !ctx.backend.may_mint_pairing_code(ctx.caller) {
-        return Err(ApiError::forbidden(
-            "A pairing code can only be requested on the machine running Stride.",
-        ));
-    }
-    Ok(ctx.backend.pair_code()?)
-}
-
-/// `POST /api/v1/auth/pair` — exchange a pairing code for a credential.
-///
-/// The reference: `api/auth.pair`. The Python route answers 204 with no body
-/// and puts the credential in a cookie; the phone has no cookie jar, so the
-/// backend answers with the credential in the body instead.
-pub fn pair(ctx: &Ctx<'_>, body: Option<&str>) -> Result<Value, ApiError> {
-    let parsed = body_object(body)?;
-    let code = parsed
-        .get("code")
-        .and_then(Value::as_str)
-        .ok_or_else(|| validation_error(vec!["body", "code"], "Field required", "missing"))?;
-    if code.len() < 4 || code.len() > 32 {
-        return Err(validation_error(
-            vec!["body", "code"],
-            "String should have between 4 and 32 characters",
-            "string_length",
-        ));
-    }
-    match ctx.backend.pair(code)? {
-        Some(value) => Ok(value),
-        None => Ok(Value::Null),
-    }
-}
-
-/// `GET /api/v1/auth/devices` — the paired devices.
-///
-/// The reference: `api/auth.list_devices`.
-pub fn devices(ctx: &Ctx<'_>) -> Result<Value, ApiError> {
-    Ok(json!({ "devices": ctx.backend.devices()? }))
-}
-
-/// `DELETE /api/v1/auth/devices/{device_id}` — revoke a device.
-///
-/// The reference: `api/auth.revoke_device`.
-pub fn revoke_device(ctx: &Ctx<'_>, device_id: &str) -> Result<Value, ApiError> {
-    Ok(ctx.backend.revoke_device(device_id)?)
 }
 
 /// `POST /api/v1/auth/garmin/personal-key` — connect with a Personal API key.

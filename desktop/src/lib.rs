@@ -98,10 +98,6 @@ pub fn build(config: &Config) -> anyhow::Result<Runtime> {
     let rows = stride_api::store::backend(Arc::clone(&store));
     let api_state = state::api_state(&config.state_path, config.trust.clone());
     let state_backend = Arc::new(stride_api::StateBackend::with_state(rows, api_state));
-    // The gate has to know whether a presented token is a live paired
-    // device's, and the state is what holds the device list and the hashes
-    // of their tokens. So the gate asks the state.
-    let devices = Arc::clone(&state_backend);
     let network = Arc::new(stride_api::NetworkBackend::new(state_backend));
     let api = Api::new(Arc::new(CoreBackend::new(network)));
 
@@ -112,10 +108,7 @@ pub fn build(config: &Config) -> anyhow::Result<Runtime> {
         config.auth_enabled,
         config.cookie_secure,
         config.trust.clone(),
-    )
-    .with_device_tokens(Arc::new(move |token: &str| {
-        devices.device_token_is_live(token)
-    }));
+    );
 
     let app = App::new(api, security, config.dist.clone(), allowed_origins());
 

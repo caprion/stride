@@ -50,14 +50,11 @@ CAPABILITY_FREE = frozenset(
     {
         f"{API_PREFIX}/health",
         BOOTSTRAP_PATH,
-        f"{API_PREFIX}/auth/pair-code",
-        f"{API_PREFIX}/auth/pair",
     }
 )
 AUTH_COOKIE = "stride_capability"
 
-# A paired device holds this instead of the master capability, so it can be
-# revoked on its own. It is a session cookie on the operator's own machine
+# The capability the operator's own browser holds. It is a session cookie
 # and a long-lived one on a paired device.
 DEVICE_COOKIE = "stride_device"
 
@@ -275,79 +272,17 @@ def _provided_token(request: Request) -> tuple[str | None, bool]:
     return request.cookies.get(AUTH_COOKIE), False
 
 
-def _device_token(request: Request) -> str | None:
-    return request.cookies.get(DEVICE_COOKIE)
-
-
-def device_token_valid(token: str | None) -> bool:
-    """Is this a live paired-device token?
-
-    The stored form is a SHA-256 hash, so the state file never contains a
-    usable credential — the same property the Garmin key has.
-    """
-    if not token:
-        return False
-    digest = hashlib.sha256(token.encode()).hexdigest()
-    for device in state.devices or []:
-        if hmac.compare_digest(str(device.get("token_hash", "")), digest):
-            return True
-    return False
-
-
-def has_valid_device(request: Request) -> bool:
-    return device_token_valid(_device_token(request))
-
-
-# How stale a device's "last seen" may get before it is refreshed. Writing
-# the state file is not free — it holds the Garmin key — so this is throttled
-# to once an hour rather than on every request.
-_LAST_SEEN_INTERVAL = 3600
-_last_seen_lock = threading.Lock()
-
-
-def touch_device(request: Request) -> None:
-    """Record that a paired device just used the API."""
-    token = _device_token(request)
-    if not token:
-        return
-    digest = hashlib.sha256(token.encode()).hexdigest()
-    now = time.time()
-
-    def action(current: Any) -> tuple[bool, None]:
-        for entry in current.devices or []:
-            if not hmac.compare_digest(str(entry.get("token_hash", "")), digest):
-                continue
-            try:
-                last = float(entry.get("last_seen_epoch") or 0)
-            except (TypeError, ValueError):
-                last = 0.0
-            if now - last < _LAST_SEEN_INTERVAL:
-                return False, None
-            entry["last_seen_at"] = datetime.now(timezone.utc).isoformat()
-            entry["last_seen_epoch"] = now
-            return True, None
-        return False, None
-
-    # The whole read-modify-write happens under the state lock. Writing a
-    # stale copy of the device list back would drop a device that had just
-    # been paired, and would resurrect one that had just been revoked.
-    with _last_seen_lock:
-        state.atomic(action)
-
 
 def has_valid_capability(request: Request) -> tuple[bool, bool]:
     """Is this request authorised?
 
-    Two credentials are accepted: the master capability (the operator's own
-    machine) and a paired device's own token. A device token is deliberately
-    *not* the master capability, so revoking one phone does not lock the
-    athlete out of their laptop.
+    One credential is accepted: the master capability, which the operator's
+    own machine holds. A browser on a trusted network is trusted without
+    one (`is_trusted_remote_client`), and everybody else is refused.
     """
     provided, is_explicit_bearer = _provided_token(request)
     expected = capability_token()
     if provided and expected and hmac.compare_digest(provided, expected):
-        return True, is_explicit_bearer
-    if has_valid_device(request):
         return True, is_explicit_bearer
     return False, is_explicit_bearer
 
@@ -359,7 +294,7 @@ def _host_header_is_loopback(request: Request) -> bool:
     have open can point a name it controls at 127.0.0.1 (DNS rebinding) and
     then talk to Stride as the origin it came from: the TCP peer is
     loopback and the Host header is the attacker's name. Anything that
-    *mints authority* — the bootstrap cookie, a pairing code — must insist
+    *mints authority* — the bootstrap cookie — must insist
     on both.
     """
     host = (request.headers.get("host") or "").strip()
@@ -627,7 +562,7 @@ class SecurityMiddleware(BaseHTTPMiddleware):
             ):
                 return self._protected_response(request, 401, "Capability token required.")
             if valid and not testing:
-                touch_device(request)
+                pass
 
             if method in {"POST", "PUT", "PATCH", "DELETE"} and not testing:
                 # An explicit bearer header is not ambient browser authority;

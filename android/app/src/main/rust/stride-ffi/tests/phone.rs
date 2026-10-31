@@ -182,11 +182,6 @@ fn the_routes_the_phone_cannot_answer_say_so() {
     let answer = uniffi_stride::stride_open(dir.db(), key_hex(5));
     assert!(answer.contains("\"ok\":true"), "the answer was {answer}");
 
-    let pairing = uniffi_stride::stride_call("GET".into(), "/api/v1/auth/pair-code".into(), None);
-    let parsed: Value = serde_json::from_str(&pairing).expect("the answer is JSON");
-    assert_eq!(parsed["ok"], false, "the answer was {pairing}");
-    assert_eq!(parsed["status"], 501);
-
     // The basemap: the phone ships no tiles, and says so.
     let policy = uniffi_stride::stride_call("GET".into(), "/api/v1/tiles/policy".into(), None);
     let parsed: Value = serde_json::from_str(&policy).expect("the answer is JSON");

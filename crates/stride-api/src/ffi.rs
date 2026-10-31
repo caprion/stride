@@ -515,26 +515,6 @@ mod tests {
                 "the FFI test does not call this".to_string(),
             ))
         }
-        fn pair_code(&self) -> Result<Value, BackendError> {
-            Err(BackendError::Unsupported(
-                "the FFI test does not call this".to_string(),
-            ))
-        }
-        fn pair(&self, _code: &str) -> Result<Option<Value>, BackendError> {
-            Err(BackendError::Unsupported(
-                "the FFI test does not call this".to_string(),
-            ))
-        }
-        fn devices(&self) -> Result<Vec<Value>, BackendError> {
-            Err(BackendError::Unsupported(
-                "the FFI test does not call this".to_string(),
-            ))
-        }
-        fn revoke_device(&self, _device_id: &str) -> Result<Value, BackendError> {
-            Err(BackendError::Unsupported(
-                "the FFI test does not call this".to_string(),
-            ))
-        }
         fn connect_personal_key(&self, _api_key: &str) -> Result<Value, BackendError> {
             Err(BackendError::Unsupported(
                 "the FFI test does not call this".to_string(),

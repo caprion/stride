@@ -373,7 +373,7 @@
      "auth"
     ],
     "summary": "Fit Import",
-    "description": "Import one or more ``.FIT`` files. No Garmin credentials required.",
+    "description": "Import one or more ``.FIT`` files. No Garmin credentials required.\n\nThe files may come from any watch \u2014 a Strava export, a COROS or Wahoo\ndownload, a Garmin Connect export. What the file says about itself is\nwhat it is read as.\n\nA run that is already in the history is not added twice: the run that\nwas synced from Garmin and the file that was exported from the watch are\nthe same run, and the store must hold it once.",
     "operationId": "fit_import_api_v1_auth_garmin_fit_import_post",
     "requestBody": {
      "content": {
@@ -394,139 +394,6 @@
          "additionalProperties": true,
          "type": "object",
          "title": "Response Fit Import Api V1 Auth Garmin Fit Import Post"
-        }
-       }
-      }
-     },
-     "422": {
-      "description": "Validation Error",
-      "content": {
-       "application/json": {
-        "schema": {
-         "$ref": "#/components/schemas/HTTPValidationError"
-        }
-       }
-      }
-     }
-    }
-   }
-  },
-  "/api/v1/auth/pair-code": {
-   "get": {
-    "tags": [
-     "auth"
-    ],
-    "summary": "Pair Code",
-    "description": "Mint a pairing code. Loopback only \u2014 this is the operator's console.",
-    "operationId": "pair_code_api_v1_auth_pair_code_get",
-    "responses": {
-     "200": {
-      "description": "Successful Response",
-      "content": {
-       "application/json": {
-        "schema": {
-         "additionalProperties": true,
-         "type": "object",
-         "title": "Response Pair Code Api V1 Auth Pair Code Get"
-        }
-       }
-      }
-     }
-    }
-   }
-  },
-  "/api/v1/auth/pair": {
-   "post": {
-    "tags": [
-     "auth"
-    ],
-    "summary": "Pair",
-    "description": "Exchange a pairing code for a device credential.\n\nThe device gets its **own** token, not the master capability. That is\nwhat makes a lost phone a solved problem: revoke it in Settings and the\nathlete's own machine is untouched.",
-    "operationId": "pair_api_v1_auth_pair_post",
-    "requestBody": {
-     "content": {
-      "application/json": {
-       "schema": {
-        "$ref": "#/components/schemas/PairBody"
-       }
-      }
-     },
-     "required": true
-    },
-    "responses": {
-     "200": {
-      "description": "Successful Response",
-      "content": {
-       "application/json": {
-        "schema": {}
-       }
-      }
-     },
-     "422": {
-      "description": "Validation Error",
-      "content": {
-       "application/json": {
-        "schema": {
-         "$ref": "#/components/schemas/HTTPValidationError"
-        }
-       }
-      }
-     }
-    }
-   }
-  },
-  "/api/v1/auth/devices": {
-   "get": {
-    "tags": [
-     "auth"
-    ],
-    "summary": "List Devices",
-    "description": "The paired devices. Tokens are never returned \u2014 only their hashes.",
-    "operationId": "list_devices_api_v1_auth_devices_get",
-    "responses": {
-     "200": {
-      "description": "Successful Response",
-      "content": {
-       "application/json": {
-        "schema": {
-         "additionalProperties": true,
-         "type": "object",
-         "title": "Response List Devices Api V1 Auth Devices Get"
-        }
-       }
-      }
-     }
-    }
-   }
-  },
-  "/api/v1/auth/devices/{device_id}": {
-   "delete": {
-    "tags": [
-     "auth"
-    ],
-    "summary": "Revoke Device",
-    "description": "Revoke a paired device.",
-    "operationId": "revoke_device_api_v1_auth_devices__device_id__delete",
-    "parameters": [
-     {
-      "name": "device_id",
-      "in": "path",
-      "required": true,
-      "schema": {
-       "type": "string",
-       "title": "Device Id"
-      }
-     }
-    ],
-    "responses": {
-     "200": {
-      "description": "Successful Response",
-      "content": {
-       "application/json": {
-        "schema": {
-         "type": "object",
-         "additionalProperties": true,
-         "title": "Response Revoke Device Api V1 Auth Devices  Device Id  Delete"
         }
        }
       }
@@ -2076,6 +1943,74 @@
     }
    }
   },
+  "/api/v1/plan/sources": {
+   "get": {
+    "tags": [
+     "plan"
+    ],
+    "summary": "Plan Sources Route",
+    "description": "The plans Stride can offer, each judged by its own ruler.\n\n``inferred`` is the baseline: the athlete's own usual week, derived\nfrom their history, and never reported as missed. ``garmin`` is the\nprescription: the scheduled workouts they wrote down.",
+    "operationId": "plan_sources_route_api_v1_plan_sources_get",
+    "parameters": [
+     {
+      "name": "from",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "From"
+      }
+     },
+     {
+      "name": "to",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "To"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object",
+         "additionalProperties": true,
+         "title": "Response Plan Sources Route Api V1 Plan Sources Get"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
   "/api/v1/plan/adherence": {
    "get": {
     "tags": [
@@ -2141,23 +2076,6 @@
       }
      }
     }
-   }
-  },
-  "/api/v1/plan/sources": {
-   "get": {
-    "operationId": "plan_sources_route_api_v1_plan_sources_get",
-    "parameters": [
-     {
-      "in": "query",
-      "name": "from",
-      "required": false
-     },
-     {
-      "in": "query",
-      "name": "to",
-      "required": false
-     }
-    ]
    }
   },
   "/api/v1/plan/today": {
@@ -3294,21 +3212,6 @@
     ],
     "title": "MfaBody"
    },
-   "PairBody": {
-    "properties": {
-     "code": {
-      "type": "string",
-      "maxLength": 32,
-      "minLength": 4,
-      "title": "Code"
-     }
-    },
-    "type": "object",
-    "required": [
-     "code"
-    ],
-    "title": "PairBody"
-   },
    "PersonalKeyBody": {
     "properties": {
      "api_key": {
@@ -3392,17 +3295,6 @@
        }
       ],
       "title": "Exit Node"
-     },
-     "demo_visible": {
-      "anyOf": [
-       {
-        "type": "boolean"
-       },
-       {
-        "type": "null"
-       }
-      ],
-      "title": "Demo Visible"
      }
     },
     "type": "object",

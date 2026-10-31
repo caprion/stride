@@ -16,10 +16,10 @@ use std::sync::Mutex;
 use serde_json::{json, Value};
 
 use crate::backend::{
-    ActivityFilter, ActivityPatch, ActivityRow, Backend, Caller, Counts, DailyMetricRow,
-    ImportRequest, LapRow, PhysiologyRow, PlanBlockFields, PlanBlockRow, PlanPhaseFields,
-    PlanPhaseRow, PlanSessionFields, PlanSessionRow, PlanWeekFields, PlanWeekRow,
-    SessionWithResult, SettingsPatch, StatusView, StreamRow, SyncRunRow, Tile, ZoneRow,
+    ActivityFilter, ActivityPatch, ActivityRow, Backend, Counts, DailyMetricRow, ImportRequest,
+    LapRow, PhysiologyRow, PlanBlockFields, PlanBlockRow, PlanPhaseFields, PlanPhaseRow,
+    PlanSessionFields, PlanSessionRow, PlanWeekFields, PlanWeekRow, SessionWithResult,
+    SettingsPatch, StatusView, StreamRow, SyncRunRow, Tile, ZoneRow,
 };
 use crate::error::BackendError;
 
@@ -1000,51 +1000,6 @@ impl Backend for MemBackend {
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner())
             .clone())
-    }
-
-    fn pair_code(&self) -> Result<Value, BackendError> {
-        // The pairing code is the operator's console: it is minted on the
-        // machine that holds the data, never on a device that asks for it.
-        Err(BackendError::Forbidden(
-            "Pairing codes are issued on the Stride machine only.".to_string(),
-        ))
-    }
-
-    /// The in-memory backend **is** the console: it holds nothing that is
-    /// not on this machine, so a pairing code may be minted for the caller
-    /// that asks.
-    ///
-    /// It is what the tests and the local tools drive, and it is the one
-    /// backend that can answer the question without a peer address: it has
-    /// no network in front of it, so every caller is on this machine.
-    fn may_mint_pairing_code(&self, _caller: &Caller) -> bool {
-        true
-    }
-
-    fn pair(&self, _code: &str) -> Result<Option<Value>, BackendError> {
-        Ok(self.derived("pair"))
-    }
-
-    fn devices(&self) -> Result<Vec<Value>, BackendError> {
-        Ok(self
-            .derived("devices")
-            .and_then(|value| value.as_array().cloned())
-            .unwrap_or_default())
-    }
-
-    fn revoke_device(&self, device_id: &str) -> Result<Value, BackendError> {
-        let devices = self
-            .derived("devices")
-            .and_then(|value| value.as_array().cloned())
-            .unwrap_or_default();
-        let remaining = devices
-            .iter()
-            .filter(|device| device.get("id").and_then(Value::as_str) != Some(device_id))
-            .count();
-        if remaining == devices.len() {
-            return Err(BackendError::Domain("No such device.".to_string()));
-        }
-        Ok(json!({"ok": true, "remaining": remaining}))
     }
 
     fn connect_personal_key(&self, api_key: &str) -> Result<Value, BackendError> {

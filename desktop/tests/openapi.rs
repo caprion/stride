@@ -55,8 +55,8 @@ fn the_router_covers_the_openapi_golden_document() {
         .expect("the paths of the document");
     assert_eq!(
         paths.len(),
-        63,
-        "the reference has 63 paths, the document has {}",
+        59,
+        "the reference has 59 paths, the document has {}",
         paths.len()
     );
 

@@ -30,10 +30,10 @@ use std::sync::Arc;
 use serde_json::Value;
 
 use stride_api::backend::{
-    ActivityFilter, ActivityPatch, ActivityRow, Backend, Caller, Counts, DailyMetricRow,
-    ImportRequest, LapRow, PhysiologyRow, PlanBlockFields, PlanBlockRow, PlanPhaseFields,
-    PlanPhaseRow, PlanSessionFields, PlanSessionRow, PlanWeekFields, PlanWeekRow,
-    SessionWithResult, SettingsPatch, StatusView, StreamRow, SyncRunRow, Tile, ZoneRow,
+    ActivityFilter, ActivityPatch, ActivityRow, Backend, Counts, DailyMetricRow, ImportRequest,
+    LapRow, PhysiologyRow, PlanBlockFields, PlanBlockRow, PlanPhaseFields, PlanPhaseRow,
+    PlanSessionFields, PlanSessionRow, PlanWeekFields, PlanWeekRow, SessionWithResult,
+    SettingsPatch, StatusView, StreamRow, SyncRunRow, Tile, ZoneRow,
 };
 use stride_api::error::BackendError;
 use stride_store::Store;
@@ -75,46 +75,6 @@ impl PhoneSync {
 }
 
 impl Backend for PhoneSync {
-    /// The pairing code.
-    ///
-    /// The phone has no server to pair with: it is the device. The state
-    /// layer above would happily mint a code for a machine that does not
-    /// exist, so the phone says no.
-    fn pair_code(&self) -> Result<Value, BackendError> {
-        Err(BackendError::Unsupported(
-            "the phone has no server to pair with".to_string(),
-        ))
-    }
-
-    /// Exchange a pairing code.
-    fn pair(&self, _code: &str) -> Result<Option<Value>, BackendError> {
-        Err(BackendError::Unsupported(
-            "the phone has no server to pair with".to_string(),
-        ))
-    }
-
-    /// Whether the phone may mint a pairing code.
-    ///
-    /// It may not — but the phone is the machine, so the question "is the
-    /// caller on this machine?" has the answer "yes" here, and the route
-    /// goes on to say the thing that is actually true: the phone has no
-    /// server to pair with.
-    fn may_mint_pairing_code(&self, _caller: &Caller) -> bool {
-        true
-    }
-
-    /// The paired devices.
-    fn devices(&self) -> Result<Vec<Value>, BackendError> {
-        Ok(Vec::new())
-    }
-
-    /// Revoke a paired device.
-    fn revoke_device(&self, _device_id: &str) -> Result<Value, BackendError> {
-        Err(BackendError::Unsupported(
-            "the phone has no paired devices".to_string(),
-        ))
-    }
-
     /// The network status.
     ///
     /// The phone has no exit node and no server: the routes are answered on

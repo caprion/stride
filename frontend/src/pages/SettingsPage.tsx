@@ -186,69 +186,6 @@ function HowItWorks({ children }: { children: React.ReactNode }) {
 
 /* ------------------------------------------------------------- the page */
 
-function PairedDevicesCard() {
-  const queryClient = useQueryClient()
-  const { data, isPending } = useQuery({
-    queryKey: ['paired-devices'],
-    queryFn: api.devices,
-  })
-
-  const revoke = useMutation({
-    mutationFn: (id: string) => api.revokeDevice(id),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['paired-devices'] }),
-  })
-
-  const devices = data?.devices ?? []
-
-  return (
-    <Card>
-      <CardHeader
-        title="Connected devices"
-        subtitle="Phones and browsers that have been paired to this instance."
-      />
-      <div className="px-5 pb-5">
-        {isPending ? (
-          <p className="text-[13px] text-ink-muted">Loading…</p>
-        ) : devices.length === 0 ? (
-          <p className="text-[13px] leading-relaxed text-ink-muted">
-            Nothing is paired, and V1 does not pair. A browser on this machine connects by
-            itself, and the phone app is signed in from the first pixel. The capability is kept
-            in the code for somebody who wants it on purpose.
-          </p>
-        ) : (
-          <ul className="divide-y divide-edge">
-            {devices.map((device) => (
-              <li key={device.id} className="flex items-center justify-between gap-3 py-2.5">
-                <div className="min-w-0">
-                  <p className="text-[13px] font-semibold text-ink">
-                    {device.name ?? 'Device'}
-                  </p>
-                  <p className="text-[12px] text-ink-muted">
-                    Paired{' '}
-                    {device.created_at ? new Date(device.created_at).toLocaleDateString() : '—'}
-                  </p>
-                </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => revoke.mutate(device.id)}
-                  disabled={revoke.isPending}
-                >
-                  Revoke
-                </Button>
-              </li>
-            ))}
-          </ul>
-        )}
-        <p className="mt-3 text-[12px] leading-relaxed text-ink-muted">
-          Revoking a device signs it out immediately. It does not affect this machine or any
-          other device.
-        </p>
-      </div>
-    </Card>
-  )
-}
-
 export function SettingsPage() {
   // The phone has four things: whether Garmin is connected, a sync now, the
   // key itself, and what this app is. The desktop keeps the whole set — it
@@ -323,8 +260,6 @@ function DesktopSettings() {
           error={syncRunsQuery.isError ? messageOf(syncRunsQuery.error) : null}
           runs={syncRunsQuery.data?.items ?? []}
         />
-
-        <PairedDevicesCard />
 
         <AboutCard />
       </div>

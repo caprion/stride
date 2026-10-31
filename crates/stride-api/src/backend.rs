@@ -747,56 +747,6 @@ pub trait Backend: Send + Sync {
     /// The shoes.
     fn gear(&self) -> Result<Vec<Value>, BackendError>;
 
-    /// Mint a pairing code.
-    fn pair_code(&self) -> Result<Value, BackendError>;
-
-    /// Whether this host may mint a pairing code for the caller that is
-    /// asking.
-    ///
-    /// A pairing code is the operator's console secret: it is minted **on
-    /// the machine that runs Stride** and typed into the other device. The
-    /// host is the only layer that knows who is asking — it has the peer
-    /// address and the `Host` header, and the router has neither — so the
-    /// host answers the question.
-    ///
-    /// **The default is no.** A host that has not said otherwise does not
-    /// mint a pairing code, because the alternative is handing a credential
-    /// to whoever asks for it: the reference answers `403` to anybody who is
-    /// not on the machine, and the security gate checks exactly that.
-    ///
-    /// A host that *can* tell a caller on the machine from a caller on the
-    /// network — the desktop can, with the peer address and the `Host`
-    /// header — says so and mints the code for the local caller only.
-    fn may_mint_pairing_code(&self, _caller: &Caller) -> bool {
-        false
-    }
-
-    /// Is this a live paired-device token?
-    ///
-    /// A paired device holds its own token, not the master capability, so
-    /// revoking one phone does not lock the athlete out of their laptop.
-    /// The state owns the device list and the hashes, so it is the state
-    /// that answers.
-    ///
-    /// **The default is no.** A backend that has not said otherwise
-    /// recognises no device token at all.
-    fn device_token_is_live(&self, _token: &str) -> bool {
-        false
-    }
-
-    /// Exchange a pairing code for a device credential.
-    ///
-    /// `None` means "no body": the desktop puts the credential in a cookie
-    /// and answers 204, exactly as the Python route does. The phone has no
-    /// cookie jar, so its implementation answers with the credential.
-    fn pair(&self, code: &str) -> Result<Option<Value>, BackendError>;
-
-    /// The paired devices.
-    fn devices(&self) -> Result<Vec<Value>, BackendError>;
-
-    /// Revoke a device.
-    fn revoke_device(&self, device_id: &str) -> Result<Value, BackendError>;
-
     /// The raw provider payload of an activity, when it has one.
     ///
     /// The `fit_imported` marker lives in here: it says the activity has
@@ -833,20 +783,6 @@ pub trait Backend: Send + Sync {
     /// The answer is the shape `api/auth.fit_import` puts in `activities`:
     /// `{"id", "name", "date", "distance_m", "created"}`.
     fn import_fit(&self, filename: &str, bytes: &[u8]) -> Result<Value, BackendError>;
-}
-
-/// Who is asking.
-///
-/// The router does not know the caller's address, and it does not know the
-/// name the caller used: only the host does. So the host is the one that
-/// answers "is this caller on this machine?", and it answers with what it
-/// knows about the call.
-#[derive(Clone, Debug, Default, PartialEq, Eq)]
-pub struct Caller {
-    /// The address the connection came from.
-    pub peer: Option<std::net::IpAddr>,
-    /// The `Host` header the request carried.
-    pub host: Option<String>,
 }
 
 /// The filter the activity list applies.

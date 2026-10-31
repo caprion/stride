@@ -214,12 +214,10 @@ and are not in the published build yet.
 
 1. **The MCP server is not started by either host.** The nine tools exist;
    the socket does not.
-2. **The Rust desktop does not pair a second device, and does not try.**
-   The capability is kept in the code — the route, the state and the
-   gate's rules — and the security gate still checks it, but V1 does not
-   offer it: the phone app is the whole thing, the desktop's own browser
-   is signed in automatically, and the ceremony (the `prod.sh pair`
-   command, the QR code, the form) is gone.
+2. **There is no pairing at all.** The route, the state, the device list
+   and the QR code are gone from both implementations. The app has one
+   credential — the Garmin API key — and a browser on a network the
+   operator has trusted is signed in like any other.
 3. **The developer-key and account-login flows are not in the Rust core.**
    `/auth/garmin/developer-key`, `/auth/garmin/login` and
    `/auth/garmin/mfa` answer **501**. The phone does not care — it uses the

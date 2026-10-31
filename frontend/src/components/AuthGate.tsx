@@ -13,26 +13,22 @@
  * the phone is the phone app — rather than being handed a credential
  * ceremony the product does not use.
  *
- * The route that mints a pairing code is still there, for somebody who
- * wants it on purpose. **The gate offers it, but never demands it:** the
- * operator's own way to sign a browser in from another machine is to trust
- * the network it is on (`STRIDE_TRUSTED_NETWORKS`), and the code is the
- * deliberate alternative for a network they have not trusted.
+ * There is no pairing. **A browser on a network the operator has trusted is
+ * signed in like any other** (`STRIDE_TRUSTED_NETWORKS`), and a browser
+ * on any other network is told what is true.
  *
  * Everything else (a transient network error, a server that is still
  * starting) must not be mistaken for "not signed in", so only a 401 opens
  * this screen.
  */
 
-import { useState, type ReactNode } from 'react'
+import { type ReactNode } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { Activity, KeyRound, ShieldCheck } from 'lucide-react'
+import { Activity, ShieldCheck } from 'lucide-react'
 import { ApiError, api } from '../lib/api'
 import { localDataLine } from '../lib/surface'
-import { PairDevice } from './PairDevice'
 
 export function AuthGate({ children }: { children: ReactNode }) {
-  const [wantsCode, setWantsCode] = useState(false)
   const { error, isPending } = useQuery({
     queryKey: ['auth-status'],
     queryFn: api.authStatus,
@@ -53,10 +49,7 @@ export function AuthGate({ children }: { children: ReactNode }) {
 
   if (error instanceof ApiError && error.status === 401) {
     // Not signed in. The app does not demand a credential: it says what
-    // is true, and it offers the two ways in.
-    if (wantsCode) {
-      return <PairDevice />
-    }
+    // is true.
     return (
       <div className="flex min-h-screen items-center justify-center bg-surface-soft px-4">
         <div className="max-w-md rounded-xl border border-edge bg-surface p-6 text-center shadow-card">
@@ -76,13 +69,6 @@ export function AuthGate({ children }: { children: ReactNode }) {
             The app on your phone is the phone app: paste your Garmin key into one native screen
             and everything stays on the phone. {localDataLine()}
           </p>
-          <button
-            className="mt-4 inline-flex items-center gap-1.5 text-[13px] font-semibold text-brand-600 hover:text-brand-700"
-            onClick={() => setWantsCode(true)}
-          >
-            <KeyRound size={14} strokeWidth={2} />
-            Sign in with a code
-          </button>
         </div>
       </div>
     )

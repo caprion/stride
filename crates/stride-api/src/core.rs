@@ -17,8 +17,8 @@ use serde_json::{json, Value};
 use stride_core::{FingerprintInput, PlanInputs};
 
 use crate::backend::{
-    ActivityRow, Backend, Caller, LapRow, PhysiologyRow, PlanSessionRow, SessionWithResult,
-    StreamRow, ZoneRow,
+    ActivityRow, Backend, LapRow, PhysiologyRow, PlanSessionRow, SessionWithResult, StreamRow,
+    ZoneRow,
 };
 use crate::error::BackendError;
 use crate::num::{duration_label, pace_s_per_km, round_to};
@@ -712,30 +712,6 @@ impl Backend for CoreBackend {
 
     fn gear(&self) -> Result<Vec<Value>, BackendError> {
         self.inner.gear()
-    }
-
-    fn pair_code(&self) -> Result<Value, BackendError> {
-        self.inner.pair_code()
-    }
-
-    fn may_mint_pairing_code(&self, caller: &Caller) -> bool {
-        self.inner.may_mint_pairing_code(caller)
-    }
-
-    fn device_token_is_live(&self, token: &str) -> bool {
-        self.inner.device_token_is_live(token)
-    }
-
-    fn pair(&self, code: &str) -> Result<Option<Value>, BackendError> {
-        self.inner.pair(code)
-    }
-
-    fn devices(&self) -> Result<Vec<Value>, BackendError> {
-        self.inner.devices()
-    }
-
-    fn revoke_device(&self, device_id: &str) -> Result<Value, BackendError> {
-        self.inner.revoke_device(device_id)
     }
 
     fn connect_personal_key(&self, api_key: &str) -> Result<Value, BackendError> {

@@ -28,7 +28,7 @@ use std::sync::{Arc, Mutex};
 
 use serde_json::{json, Value};
 
-use crate::backend::{Backend, Caller, SettingsPatch, StatusView, SyncRunRow};
+use crate::backend::{Backend, SettingsPatch, StatusView, SyncRunRow};
 use crate::error::BackendError as Error;
 use crate::network::TrustConfig;
 
@@ -36,11 +36,6 @@ use crate::network::TrustConfig;
 ///
 /// No look-alikes: no `I`, no `O`, no `0`, no `1`. The code is read aloud
 /// and typed on a phone keyboard.
-const PAIR_ALPHABET: &[u8] = b"ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-
-/// How long a pairing code is good for, in seconds.
-pub const PAIR_CODE_TTL_SECONDS: i64 = 600;
-
 /// The state of the machine.
 #[derive(Debug, Clone)]
 pub struct State {
@@ -48,19 +43,13 @@ pub struct State {
     pub status: StatusView,
     /// The Garmin Personal API key. A secret: never rendered, never logged.
     pub personal_api_key: Option<String>,
-    /// The pairing code waiting to be exchanged.
-    pub pairing_code: Option<String>,
-    /// When that code stops working, as a Unix timestamp.
-    pub pairing_expires_at: Option<f64>,
-    /// The paired devices. Their tokens are never kept.
-    pub devices: Vec<Value>,
     /// Whether a sync is running right now.
     pub sync_running: bool,
     /// When the last sync started.
     pub sync_started_at: Option<String>,
     /// What the last sync said.
     pub sync_message: Option<String>,
-    /// Who may use the API without a pairing code.
+    /// Who may use the API without a capability.
     ///
     /// This is *deployment* configuration, not application state: it is read
     /// from the environment (`STRIDE_TRUST_REMOTE` and
@@ -85,9 +74,6 @@ impl Default for State {
                 ..StatusView::default()
             },
             personal_api_key: None,
-            pairing_code: None,
-            pairing_expires_at: None,
-            devices: Vec::new(),
             sync_running: false,
             sync_started_at: None,
             sync_message: None,
@@ -114,14 +100,6 @@ impl StateBackend {
             inner,
             state: Arc::new(Mutex::new(state)),
         }
-    }
-
-    /// Is this a live paired device's token?
-    ///
-    /// The gate asks the state, because the state holds the device list and
-    /// the hashes of their tokens.
-    pub fn device_token_is_live(&self, token: &str) -> bool {
-        <Self as Backend>::device_token_is_live(self, token)
     }
 
     /// The state, for a caller that wants to look at it.
@@ -161,76 +139,15 @@ impl StateBackend {
 ///
 /// The pairing code and the device token are credentials, so they come from
 /// `/dev/urandom` — not from a clock, not from a counter.
-fn random_bytes(count: usize) -> Result<Vec<u8>, Error> {
-    use std::io::Read;
-    let mut file = std::fs::File::open("/dev/urandom")
-        .map_err(|err| Error::Domain(format!("the random source is not readable: {err}")))?;
-    let mut bytes = vec![0u8; count];
-    file.read_exact(&mut bytes)
-        .map_err(|err| Error::Domain(format!("the random source failed: {err}")))?;
-    Ok(bytes)
-}
-
 /// A new pairing code: `XXXX-XXXX`.
-fn new_pair_code() -> Result<String, Error> {
-    let bytes = random_bytes(8)?;
-    let mut code = String::with_capacity(9);
-    for (index, byte) in bytes.iter().enumerate() {
-        if index == 4 {
-            code.push('-');
-        }
-        let letter = PAIR_ALPHABET[(*byte as usize) % PAIR_ALPHABET.len()];
-        code.push(letter as char);
-    }
-    Ok(code)
-}
-
 /// A device token: 32 random bytes, in the URL-safe alphabet.
-fn new_device_token() -> Result<String, Error> {
-    let bytes = random_bytes(32)?;
-    let encoded = crate::util::base64_encode(&bytes);
-    Ok(encoded
-        .trim_end_matches('=')
-        .replace('+', "-")
-        .replace('/', "_"))
-}
-
 /// The current time, as a Unix timestamp.
-fn now_seconds() -> f64 {
-    std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)
-        .map(|since| since.as_secs_f64())
-        .unwrap_or_default()
-}
-
 /// Compare two secrets without leaking where they differ.
 /// The SHA-256 of a secret, as hex.
 ///
 /// The reference hashes a device token with SHA-256 and compares the hex
 /// digests, so the two implementations agree about what a stored device
 /// credential looks like.
-fn sha256_hex(secret: &str) -> String {
-    let digest = ring::digest::digest(&ring::digest::SHA256, secret.as_bytes());
-    let mut out = String::with_capacity(digest.as_ref().len() * 2);
-    for byte in digest.as_ref() {
-        out.push_str(&format!("{byte:02x}"));
-    }
-    out
-}
-
-fn same_secret(left: &str, right: &str) -> bool {
-    let left = left.trim().to_uppercase();
-    let right = right.trim().to_uppercase();
-    if left.len() != right.len() {
-        return false;
-    }
-    let mut difference = 0u8;
-    for (left, right) in left.bytes().zip(right.bytes()) {
-        difference |= left ^ right;
-    }
-    difference == 0
-}
-
 /// The athlete's name, whatever Garmin calls it.
 fn athlete_name(profile: &stride_garmin::Profile) -> Value {
     let name = profile
@@ -427,118 +344,6 @@ impl Backend for StateBackend {
             state.status.demo_visible = demo;
         }
         Ok(state.status.clone())
-    }
-
-    fn pair_code(&self) -> Result<Value, Error> {
-        let code = new_pair_code()?;
-        let expires = now_seconds() + PAIR_CODE_TTL_SECONDS as f64;
-        let mut state = self.locked();
-        state.pairing_code = Some(code.clone());
-        state.pairing_expires_at = Some(expires);
-        Ok(json!({
-            "code": code,
-            "expires_in": PAIR_CODE_TTL_SECONDS,
-            "instructions": "Open Stride on the other device and enter this code. It works once, and expires in 10 minutes.",
-        }))
-    }
-
-    /// Whether this host may mint a pairing code.
-    ///
-    /// The state owns the pairing, and the host owns the answer to "is the
-    /// caller on this machine?". The answer is the host's: it has the peer
-    /// address and the `Host` header, and the state has neither.
-    fn may_mint_pairing_code(&self, caller: &Caller) -> bool {
-        self.inner.may_mint_pairing_code(caller)
-    }
-
-    fn pair(&self, code: &str) -> Result<Option<Value>, Error> {
-        let mut state = self.locked();
-        let expected = state.pairing_code.clone().unwrap_or_default();
-        let expires = state.pairing_expires_at.unwrap_or_default();
-        if expected.is_empty() || now_seconds() > expires {
-            return Err(Error::Unauthorized(
-                "That code is wrong, expired, or already used.".to_string(),
-            ));
-        }
-        if !same_secret(&expected, code) {
-            return Err(Error::Unauthorized(
-                "That code is wrong, expired, or already used.".to_string(),
-            ));
-        }
-        // The code is single use: the test and the clear happen together.
-        state.pairing_code = None;
-        state.pairing_expires_at = None;
-
-        let token = new_device_token()?;
-        let device_id = new_device_token()?.chars().take(12).collect::<String>();
-        let now = now_seconds();
-        let device = json!({
-            "id": device_id,
-            "name": "Device",
-            // The hash, not the token: the state file never holds a
-            // credential that works. The reference hashes it the same way.
-            "token_hash": sha256_hex(&token),
-            "created_at": now,
-            "last_seen_at": now,
-        });
-        state
-            .devices
-            .retain(|device| device.get("id") != Some(&json!(device_id)));
-        state.devices.push(device.clone());
-        // The token is handed over once and never kept: the server cannot
-        // leak what it does not have.
-        Ok(Some(json!({
-            "ok": true,
-            "device_id": device_id,
-            "token": token,
-        })))
-    }
-
-    /// Is this a live paired-device token?
-    ///
-    /// The stored form is a hash, so the state file never contains a
-    /// credential that works — the same property the Garmin key has, and
-    /// the same one the reference has.
-    fn device_token_is_live(&self, token: &str) -> bool {
-        if token.is_empty() {
-            return false;
-        }
-        let digest = sha256_hex(token);
-        let state = self.locked();
-        state.devices.iter().any(|device| {
-            device
-                .get("token_hash")
-                .and_then(Value::as_str)
-                .is_some_and(|hash| same_secret(hash, &digest))
-        })
-    }
-
-    fn devices(&self) -> Result<Vec<Value>, Error> {
-        let state = self.locked();
-        Ok(state
-            .devices
-            .iter()
-            .map(|device| {
-                json!({
-                    "id": device.get("id").cloned().unwrap_or(Value::Null),
-                    "name": device.get("name").cloned().unwrap_or(Value::Null),
-                    "created_at": device.get("created_at").cloned().unwrap_or(Value::Null),
-                    "last_seen_at": device.get("last_seen_at").cloned().unwrap_or(Value::Null),
-                })
-            })
-            .collect())
-    }
-
-    fn revoke_device(&self, device_id: &str) -> Result<Value, Error> {
-        let mut state = self.locked();
-        let before = state.devices.len();
-        state
-            .devices
-            .retain(|device| device.get("id").and_then(Value::as_str) != Some(device_id));
-        if state.devices.len() == before {
-            return Err(Error::Domain("No such device.".to_string()));
-        }
-        Ok(json!({ "ok": true, "remaining": state.devices.len() }))
     }
 
     fn connect_personal_key(&self, api_key: &str) -> Result<Value, Error> {

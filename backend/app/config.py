@@ -62,14 +62,14 @@ FRONTEND_DIST = BASE_DIR / "frontend" / "dist"
 # Trust configuration
 # ---------------------------------------------------------------------------
 #
-# Whether a client from a trusted network may use the API without a pairing
+# Whether a client from a trusted network may use the API without a capability
 # code is a *deployment* decision, not application state. It is read from the
 # environment once, at load time, and it is never written to the state file:
 # a stale value in ``state.json`` must not be able to keep a network trusted
 # after the operator turned it off.
 #
 # ``STRIDE_TRUST_REMOTE``
-#     true — clients from the trusted networks are trusted without a pairing
+#     true — clients from the trusted networks are trusted without a capability
 #     code. false (the default) — every remote client needs one.
 # ``STRIDE_TRUSTED_NETWORKS``
 #     comma-separated CIDRs the trusted clients come from. Empty — the
@@ -114,7 +114,7 @@ def _parse_networks(raw: str) -> tuple[Any, ...]:
     return tuple(networks)
 
 
-#: Whether remote clients from the trusted networks skip the pairing code.
+#: Whether remote clients from the trusted networks skip the capability.
 TRUST_REMOTE = _env_flag("STRIDE_TRUST_REMOTE")
 
 #: The networks those clients come from. Empty means loopback only.
@@ -122,7 +122,7 @@ TRUSTED_NETWORKS = _parse_networks(os.getenv("STRIDE_TRUSTED_NETWORKS", ""))
 
 
 def trust_remote_enabled() -> bool:
-    """Are clients from the trusted networks trusted without a pairing code?"""
+    """Are clients from the trusted networks trusted without a capability?"""
     return TRUST_REMOTE
 
 
@@ -181,19 +181,6 @@ class AppState:
     # App-level session secret (so the web UI can hold a session cookie).
     session_secret: str = field(default_factory=lambda: secrets.token_hex(32))
 
-    # Device pairing. A browser on a remote network is not a loopback client, so
-    # it cannot mint a capability cookie by loading the app. The operator
-    # generates a short code on the machine and types it into the device; the
-    # code is exchanged once for the same HttpOnly cookie a loopback browser
-    # gets. Single use, short lived, and never a long-lived secret in
-    # JavaScript.
-    pairing_code: str | None = None
-    pairing_expires_at: str | None = None
-
-    # Paired devices. Each one holds its own token — not the master
-    # capability — so a lost phone can be revoked on its own without
-    # locking the athlete out of their own machine. Only the hash is kept.
-    devices: list[dict[str, Any]] = field(default_factory=list)
 
     # A re-entrant lock: ``update()`` and ``atomic()`` hold it across the
     # write to disk, and the write itself takes it again.

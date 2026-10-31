@@ -252,13 +252,11 @@ in the same commit.
 |---|---|---|---|
 | GET | `/api/v1/activities` | GET | `/api/v1/activities/{activity_id}` |
 | PATCH | `/api/v1/activities/{activity_id}` | GET | `/api/v1/activities/{activity_id}/geo` |
-| GET | `/api/v1/activities/{activity_id}/streams/{kind}` | GET | `/api/v1/auth/devices` |
-| DELETE | `/api/v1/auth/devices/{device_id}` | GET | `/api/v1/auth/garmin/callback` |
+| GET | `/api/v1/activities/{activity_id}/streams/{kind}` | GET | `/api/v1/auth/garmin/callback` |
 | POST | `/api/v1/auth/garmin/developer-key` | POST | `/api/v1/auth/garmin/exchange` |
 | POST | `/api/v1/auth/garmin/fit-import` | POST | `/api/v1/auth/garmin/login` |
 | POST | `/api/v1/auth/garmin/logout` | POST | `/api/v1/auth/garmin/mfa` |
 | POST | `/api/v1/auth/garmin/personal-key` | POST | `/api/v1/auth/garmin/personal-key/test` |
-| POST | `/api/v1/auth/pair` | GET | `/api/v1/auth/pair-code` |
 | GET | `/api/v1/auth/status` | GET | `/api/v1/calendar` |
 | GET | `/api/v1/compare` | GET | `/api/v1/compare/candidates` |
 | GET | `/api/v1/fitness/activity/{id}` | GET | `/api/v1/fitness/fingerprint` |
