@@ -26,6 +26,7 @@
 //! | [`store`] | the database: open it, migrate it, hand it out |
 //! | [`key`] | the key: it goes in, and it does not come out |
 //! | [`schema`] | the DDL, the indexes and the migrations |
+//! | [`repos`] | one repository per table |
 //! | [`model`] | the rows |
 //! | [`hash`] | SHA-256, for the FIT blob's content hash |
 //! | [`logging`] | the store's log, and the sink a test reads |
@@ -48,6 +49,7 @@ pub mod hash;
 pub mod key;
 pub mod logging;
 pub mod model;
+pub mod repos;
 pub mod schema;
 pub mod scratch;
 pub mod store;
@@ -58,5 +60,6 @@ pub use model::{
     Activity, ActivitySamples, ActivitySummary, NewActivity, NewActivitySamples, NewNote,
     NewPlanBlock, NewPlanSession, Note, PlanBlock, PlanSession, SyncState, WellnessDaily,
 };
+pub use repos::activity::{FeedCursor, FeedPage};
 pub use schema::SCHEMA_VERSION;
 pub use store::Store;
