@@ -1,0 +1,11 @@
+This file must pass scripts/scan-privacy.sh.
+
+The synthetic anchor, which every corpus position uses:
+-35.0, -140.0
+
+The deliberate placeholders, in Garmin profile shape:
+"displayName": "ATHLETE"
+"userName": "athlete"
+"userProfileId": 0
+
+Nothing in the plausible-real band (lat 14-16 N, lon 76-78 E).

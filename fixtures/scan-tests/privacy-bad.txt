@@ -1,0 +1,5 @@
+This file must be caught by scripts/scan-privacy.sh.
+
+A coordinate in the plausible-real band, single line: 15.0000, 78.0000
+A personal name in a Garmin profile field: "displayName": "JANE DOE"
+A non-zero Garmin user id: "userProfileId": 12345678
