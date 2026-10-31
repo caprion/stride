@@ -204,6 +204,26 @@ impl VitalDirection {
         parts.join(" · ")
     }
 
+    /// The whole row: the value, then the line — or the status, when there is
+    /// no comparison to make.
+    ///
+    /// The house style is label · value · direction, and the label is the
+    /// catalogue's ("Sleep", "HRV", "Resting HR"), so the row starts at the
+    /// value.
+    pub fn row_text(&self) -> String {
+        let mut parts: Vec<String> = Vec::new();
+        if let Some(value) = self.value_text() {
+            parts.push(value);
+        }
+        let line = self.line();
+        if !line.is_empty() {
+            parts.push(line);
+        } else if let Some(status) = self.status_text() {
+            parts.push(status);
+        }
+        parts.join(" · ")
+    }
+
     /// What the row says when there is no comparison to make.
     pub fn status_text(&self) -> Option<String> {
         if self.direction.is_some() {
@@ -678,6 +698,27 @@ mod tests {
         assert_eq!(
             hrv.line(),
             "could be better · 14 below your usual · 3rd night down"
+        );
+        assert_eq!(
+            hrv.row_text(),
+            "48 ms · could be better · 14 below your usual · 3rd night down"
+        );
+    }
+
+    #[test]
+    fn a_row_without_a_comparison_says_so_instead_of_saying_nothing() {
+        let hrv = VitalDirection {
+            vital: VitalKind::Hrv,
+            value: Some(48.0),
+            direction: None,
+            deviation: None,
+            band: None,
+            travel: None,
+        };
+        assert_eq!(hrv.line(), "");
+        assert_eq!(
+            hrv.row_text(),
+            "48 ms · not enough data for a comparison yet"
         );
     }
 
