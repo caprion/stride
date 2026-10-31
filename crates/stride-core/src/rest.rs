@@ -71,7 +71,10 @@ impl RestSummary {
         self.direction.map(|direction| direction.as_str())
     }
 
-    /// The whole line: the direction, then the count.
+    /// The whole row: the direction, then the count.
+    ///
+    /// The Rest row has no value of its own — it is a summary of the three
+    /// vitals — so the line is the row.
     pub fn line(&self) -> String {
         let mut parts: Vec<String> = Vec::new();
         if let Some(direction) = self.direction_text() {
