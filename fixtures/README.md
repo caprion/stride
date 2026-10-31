@@ -43,7 +43,11 @@ procedure below is the shell equivalent for re-extraction.
 2. **Dates.** The corpus already lives on a fixed synthetic calendar (a week in
    March 2026, the literal values the old generator wrote). No real athlete
    dates were present, so no shift was needed; the relative offsets the plan
-   engine is sensitive to are preserved exactly.
+   engine is sensitive to are preserved exactly. One exception: `stride-api/
+   api_golden.json` recorded the **wall clock of the recording run** —
+   `recorded_at`, `today` and 26 `updated_at` values, all `2026-10-30` with
+   microsecond precision. Those were replaced with the synthetic calendar
+   (`2026-03-15`) so the tree carries no real wall-clock time.
 3. **Names and identifiers.** Two files carried a fabricated-but-plausible
    personal name and a Garmin user id: `stride-garmin/profile.json` and
    `stride-garmin/expected.json` (the reference output for that input). The
@@ -59,7 +63,7 @@ procedure below is the shell equivalent for re-extraction.
    the old repo documents that product ids and serial numbers are invented. No
    Garmin tokens, keys, emails or account credentials were present anywhere;
    `scripts/scan-secrets.sh` asserts that stays true (it fails on private-key
-   blocks, `GCDC_` Garmin keys, AWS key ids, and `Authorization:` headers).
+   blocks, `GCDC_` Garmin keys, AWS key ids, and authorization headers).
 
 ## The privacy standard (reproduced)
 
