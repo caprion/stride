@@ -123,3 +123,21 @@ Values are rounded to what a human would say, never to what a machine would.
 - **Units written out**: `ms`, `bpm`, `h`, `m`, `km`, `s` — no abbreviations the
   athlete has to learn, no icons standing in for words, no colour carrying
   meaning on its own.
+
+## 6. Expected differences vs the frozen corpus
+
+The frozen corpus (`fixtures/golden/*`, `fixtures/stride-api/api_golden.json`)
+is the **old core's recorded output**, not the product's. It still contains the
+fields and words v2 deliberately drops:
+
+- `readiness.score`, `adherence_score`, `overall_pct`, `adherence_pct`,
+  `grade`, `recommendation`, `rationale`;
+- the verdict vocabulary (`hit`, `missed`, `short`, `substituted`,
+  `missed_pace`) and the word `"missed"` wherever the old plan engine wrote it.
+
+These are **expected differences**. The parity differ (Slice 2+) asserts the
+surviving numbers match, and treats the dropped fields and the verdict
+vocabulary as deliberately absent from v2 — a difference there is not a failure.
+The corpus keeps them because it is the oracle's output and its SHA-256 is
+frozen (`scripts/check-corpus.sh`); deleting them would break the oracle's
+integrity and the reference the differ measures against.

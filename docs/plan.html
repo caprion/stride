@@ -491,7 +491,7 @@
       <h4>Acceptance checks</h4>
       <ul>
         <li>No user-facing string on this screen contains an imperative addressed to the athlete (a CI lint over the
-        string catalogue forbids "should", "must", "take the day", "rest", "go easy", "easy today").</li>
+        string catalogue forbids "should", "must", "take the day", "rest day", "rest up", "rest today", "go easy", "easy today").</li>
         <li>Every direction string on this screen comes from the closed set (<i>better than usual · about usual ·
         could be better</i>) — nothing else is permitted.</li>
         <li>No string on this screen links an option to a vital.</li>
@@ -925,7 +925,7 @@
     <div>
       <h4>What is forbidden</h4>
       <ul>
-        <li><b>Commands</b> — "take the day", "rest", "go easy", "you should", "you need to", "it'd be better to".</li>
+        <li><b>Commands</b> — "take the day", "rest day", "rest up", "rest today", "go easy", "you should", "you need to", "it'd be better to". The <b>Rest</b> summary label is the noun, not a command, and is exempt.</li>
         <li><b>Verdicts</b> — "good", "bad", "poor", "missed", "behind", "failed", a readiness score, a traffic light.</li>
         <li><b>Conclusions</b> — the app never combines vitals into a verdict ("you are not recovered"). It reports each vital's direction; the athlete reads the combination.</li>
         <li><b>Ranking the options</b> — never "the best choice today is…", never a highlighted "recommended" chip.</li>
@@ -975,7 +975,7 @@
         <i>about usual</i> · <i>could be better</i> — and may not be extended. The lint enforces it.</li>
         <li>A <code>pattern</code> string must carry its sample size; none is emitted from fewer than three comparable days.</li>
         <li>A CI lint fails the build on a banned word or construction: <code>should</code>, <code>must</code>,
-        <code>take the day</code>, <code>rest</code>, <code>go easy</code>, <code>missed</code>, <code>bad</code>,
+        <code>take the day</code>, <code>rest day</code>, <code>rest up</code>, <code>rest today</code>, <code>go easy</code>, <code>missed</code>, <code>bad</code>,
         <code>poor</code>, <code>fail</code>, <code>behind</code>, <code>ready to</code>, <code>recommended</code>,
         <code>better to</code>, <code>need to</code>.</li>
         <li>A golden assertion renders every catalogue entry against every fixture state, so wording cannot drift
@@ -1185,7 +1185,7 @@
     <thead><tr><th style="width:34%">Question</th><th style="width:30%">Default applied</th><th>Why</th></tr></thead>
     <tbody>
       <tr><td>Licence</td><td><b>AGPL-3.0</b></td><td>Protects the no-cloud promise with teeth.</td></tr>
-      <tr><td>Repository</td><td><b>Public from day one</b>, in the same org, named <code>stride-v2</code> until the old repo is archived (then renamed to <code>stride</code>)</td><td>No history scrub later; the product name keeps its trust.</td></tr>
+      <tr><td>Repository</td><td><b>Public from day one</b>, in the same org, named <code>stride</code> — the previous implementation now lives in <code>stride_old</code> (private) and the discarded first cut in <code>stride-v200</code> (private)</td><td>No history scrub later; the product name keeps its trust.</td></tr>
       <tr><td>Old repo</td><td><b>Private, untouched</b>, the oracle during the migration; sanitised public archive at the end</td><td>Parity needs it; its history has personal data in it.</td></tr>
       <tr><td>Language</td><td><b>Rust only</b>; Python deleted from the new tree; the old core is the oracle</td><td>The point of the exercise.</td></tr>
       <tr><td>Crates</td><td>core · ingest · store · api · testkit + desktop + FFI (the old <code>stride-mcp</code> is dropped)</td><td>Five crates, one DAG, no speculative surface.</td></tr>

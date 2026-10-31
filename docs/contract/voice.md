@@ -9,7 +9,12 @@ The rule in one line: **facts first, no judgements at all** — the vitals, the
 direction each moved, and the plan's own options. The app never tells the
 athlete what to do, never scores them, and never links an option to a vital.
 
-## The four registers
+## The five string types
+
+There are five string types: the four **registers** — `vital`, `direction`,
+`option`, `pattern` — plus the supporting `status` type. All five are typed in
+the catalogue; the first four are the content, `status` covers connect / sync /
+staleness / empty states.
 
 | type | what it is | where it lives |
 |---|---|---|
@@ -38,10 +43,15 @@ judgement.
 The lint fails the build on any of these words or constructions:
 
 ```
-should   must      take the day   rest      go easy
-missed   bad       poor           fail      behind
+should   must      take the day   rest day   rest up   rest today   go easy
+missed   bad       poor           fail       behind
 ready to recommended   better to  need to
 ```
+
+`rest` is banned **as a command** (`rest day`, `rest up`, `rest today`) — never
+as the noun. The **`Rest`** summary label on Today ("Rest — could be better ·
+2 of 3 signals below your usual") is the name of the row, not an instruction,
+and is exempt.
 
 ## Per-type rules the lint enforces
 
