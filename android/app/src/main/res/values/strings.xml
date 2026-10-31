@@ -1,0 +1,101 @@
+<?xml version='1.0' encoding='utf-8'?>
+<!--
+    The phone shell's words.
+
+    **Every string here is a `status` string**: it says what is happening,
+    what the state is, or what the phone did. Nothing here tells the athlete
+    what to do about their training, and nothing here judges them — that is
+    the voice of the product (`docs/contract/voice.md`), and the setup screen
+    is part of the product.
+
+    The one exception is the sentence about a key Garmin refused: there the
+    athlete needs to know what to do next, and a refusal without a next step
+    is a dead end.
+-->
+<resources>
+    <string name="app_name">Stride</string>
+    <string name="title_activity_main">Stride</string>
+
+    <!--
+        The native Garmin screen.
+
+        One screen, one thing on it: the key. The screen says what is
+        happening — checking, syncing, connected, refused — and one line
+        about where the data lives. Nothing else.
+    -->
+    <string name="garmin_title">Connect Garmin</string>
+    <string name="garmin_key_hint">Paste the Garmin Personal API key</string>
+    <string name="garmin_show_key">Show the key</string>
+    <string name="garmin_open_garmin">Garmin\'s key page — pick the one-year expiry</string>
+    <string name="garmin_connect">Connect</string>
+    <!-- "Save", not "replace": the athlete is saving a key, not replacing
+         one, and "replace" reads as destructive. -->
+    <string name="garmin_save_key">Save key</string>
+    <string name="garmin_forget_key">Forget the key</string>
+    <string name="garmin_not_now">Not now</string>
+
+    <!-- The states. These are the words the athlete reads. -->
+    <string name="garmin_not_connected">Garmin is not connected.</string>
+    <string name="garmin_connected">Connected</string>
+    <string name="garmin_checking">Checking…</string>
+    <string name="garmin_syncing">Syncing…</string>
+    <string name="garmin_refused">Garmin did not accept this key. It is copied again from Garmin Connect, where it is called a Personal API key.</string>
+    <string name="garmin_failed">Garmin could not be reached, so the key was not checked.</string>
+    <string name="garmin_key_too_short">That is shorter than a Garmin Personal API key. The whole key is copied.</string>
+    <string name="garmin_no_browser">There is no browser on this phone to open Garmin.</string>
+    <string name="garmin_credential_refused">Your phone\'s own credential was not given, so nothing changed.</string>
+
+    <!-- The run count. "12 runs", and then "Connected · 160 runs". -->
+    <plurals name="garmin_runs">
+        <item quantity="one">%1$d run</item>
+        <item quantity="other">%1$d runs</item>
+    </plurals>
+    <plurals name="garmin_connected_runs">
+        <item quantity="one">Connected · %1$d run</item>
+        <item quantity="other">Connected · %1$d runs</item>
+    </plurals>
+
+    <!--
+        The one line about where the data lives. There is only one, and it
+        is the product's promise: your data stays on this phone.
+    -->
+    <string name="garmin_promise">Your data stays on this phone.</string>
+
+    <!-- What the phone answers instead of the routes it does not have. -->
+    <string name="garmin_key_not_in_browser">The Garmin key is typed into the Stride app, not into the page. The setup screen has opened.</string>
+    <string name="garmin_not_connected_error">Garmin is not connected on this phone.</string>
+    <string name="garmin_key_locked">The phone is locked, so the key cannot be read. Unlock it and try again — your runs are still here.</string>
+    <string name="garmin_key_gone">This phone\'s key store was reset, so the saved Garmin key cannot be read. Connect Garmin again.</string>
+    <string name="screen_lock_required">A screen lock is set on this phone first. Stride keeps your runs and your health data on a phone anyone can pick up.</string>
+
+    <!--
+        What the bridge answers.
+
+        A route that is not in the frozen table, and a locked screen.
+    -->
+    <string name="bridge_unknown_route">That is not a route this app has.</string>
+    <string name="bridge_locked">The phone is locked, so no runs are shown.</string>
+
+    <!-- The app gate. -->
+    <string name="gate_title">Unlock Stride</string>
+    <string name="gate_description">Your runs and your health data are on this phone, and only your phone\'s own credential opens them.</string>
+    <string name="gate_locked">Stride is locked.\n\nYour runs, your physiology and your plans are here. The phone asks for its own credential before it shows them.</string>
+    <string name="gate_unlock">Unlock</string>
+
+    <!--
+        The sync notifications. They say what happened and nothing about the
+        athlete\'s health.
+    -->
+    <string name="sync_channel_name">Garmin sync</string>
+    <string name="sync_channel_description">Says when Stride has pulled new activities from Garmin.</string>
+    <string name="sync_in_progress_title">Syncing with Garmin</string>
+    <string name="sync_in_progress_text">Fetching your activities and wellness.</string>
+    <string name="sync_done_title">Stride is up to date</string>
+    <string name="sync_failed_title">Stride could not reach Garmin</string>
+
+    <!-- The count of what arrived. "Synced 12 activities". -->
+    <plurals name="sync_done_activities">
+        <item quantity="one">Synced %1$d activity</item>
+        <item quantity="other">Synced %1$d activities</item>
+    </plurals>
+</resources>

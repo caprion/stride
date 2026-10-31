@@ -1,0 +1,30 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+
+    <!--
+        The app's theme.
+
+        No action bar: the web app draws its own, and the app is one
+        surface. The window is the app's own surface colour, so the launch
+        does not flash a white screen before the app's colours arrive.
+    -->
+    <style name="AppTheme" parent="Theme.AppCompat.DayNight.NoActionBar">
+        <item name="android:windowBackground">@color/stride_surface</item>
+        <item name="android:colorBackground">@color/stride_surface</item>
+    </style>
+
+    <!--
+        The native Garmin setup screen.
+
+        Its own theme, so the system splash is not drawn over the one screen
+        the athlete has to read. The screen keeps its layout when the phone
+        is turned: a pull can take a while, and the count should not be lost
+        to a rotation.
+    -->
+    <style name="AppTheme.GarminSetup" parent="Theme.AppCompat.DayNight.NoActionBar">
+        <item name="android:windowBackground">@color/stride_surface</item>
+        <item name="android:colorBackground">@color/stride_surface</item>
+        <item name="android:textColorPrimary">@color/stride_on_surface</item>
+        <item name="android:textColorSecondary">@color/stride_muted</item>
+    </style>
+</resources>

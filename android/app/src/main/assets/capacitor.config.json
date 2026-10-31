@@ -1,0 +1,13 @@
+{
+	"appId": "app.stride.running",
+	"appName": "Stride",
+	"webDir": "frontend/dist",
+	"server": {
+		"cleartext": false,
+		"androidScheme": "https"
+	},
+	"android": {
+		"allowMixedContent": false,
+		"webContentsDebuggingEnabled": false
+	}
+}

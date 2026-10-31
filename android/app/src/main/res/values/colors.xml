@@ -1,0 +1,10 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <!-- The app's own colours: the surface the screens are drawn on, and
+         the one accent colour a link may take. -->
+    <color name="stride_surface">#0B0F14</color>
+    <color name="stride_on_surface">#F2F5F8</color>
+    <color name="stride_muted">#B9C2CC</color>
+    <color name="stride_brand">#4FD1C5</color>
+    <color name="stride_launcher_background">#0B0F14</color>
+</resources>
