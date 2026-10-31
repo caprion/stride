@@ -8,53 +8,32 @@ import app.stride.running.security.Secrets
 import org.json.JSONObject
 
 /**
- * One pull from Garmin.
- *
- * The result is a sentence the phone can show, and the counts behind it. A
- * pull that failed is not a success with a zero: the phone keeps the data it
- * has and says plainly that it could not reach Garmin.
- */
-data class SyncOutcome(
-    /** Whether the pull finished. */
-    val ok: Boolean,
-    /** What happened, in one sentence. */
-    val message: String,
-    /** How many runs Garmin had in the window. */
-    val activitiesFound: Int = 0,
-    /** How many of them the phone did not have. */
-    val activitiesNew: Int = 0,
-    /** How many days of wellness arrived. */
-    val wellnessDays: Int = 0,
-    /** The failure, if there was one. */
-    val error: String? = null,
-)
-
-/**
  * The pull itself.
  *
  * The same code answers the "Sync now" button, the background worker and the
  * setup screen, so the three cannot drift apart.
  *
- * **A refused key is re-exchanged once.** Garmin's token lasts about a day
- * and there is no refresh token, so a 401 is answered with one more
- * exchange and one more try — and then the pull stops. See
- * [PullPolicy].
+ * **The rule about a refused key lives in [PullPolicy].** The core performs
+ * one token exchange and one attempt per call and answers `needs_reconnect`
+ * when the token has expired; this engine may make **one** more attempt, and
+ * then it stops. See `docs/contract/core-contract.md` §7 — "The retry rule,
+ * and who owns it".
  */
 object SyncEngine {
 
     private const val TAG = "StrideSync"
 
     /** The failure of a pull that Garmin refused the key for. */
-    const val ERROR_REFUSED = "refused"
+    const val ERROR_REFUSED = SyncErrors.REFUSED
 
     /** The failure of a pull on a locked phone. */
-    const val ERROR_LOCKED = "locked"
+    const val ERROR_LOCKED = SyncErrors.LOCKED
 
     /** The failure of a pull that could not reach Garmin. */
-    const val ERROR_FAILED = "failed"
+    const val ERROR_FAILED = SyncErrors.FAILED
 
     /** The failure of a pull with no key on the phone. */
-    const val ERROR_NOT_CONNECTED = "not connected"
+    const val ERROR_NOT_CONNECTED = SyncErrors.NOT_CONNECTED
 
     /**
      * Run a pull.
@@ -86,32 +65,16 @@ object SyncEngine {
             )
         }
 
-        var exchanges = 0
-        var outcome = attempt(context, key, days)
-        exchanges += 1
-
-        // One re-exchange, and one retry. The exchange happens inside the
-        // core: Garmin has no refresh token, so the key is exchanged again.
-        while (outcome.error == ERROR_REFUSED &&
-            PullPolicy.afterRefusal(exchanges) == PullPolicy.Step.ReExchangeAndRetry
-        ) {
-            outcome = attempt(context, key, days)
-            exchanges += 1
-        }
-
-        if (outcome.error == ERROR_REFUSED) {
-            return SyncOutcome(
-                ok = false,
-                message = PullPolicy.NEEDS_RECONNECT,
-                error = ERROR_REFUSED,
-            )
-        }
-
-        return outcome
+        // The retry is the policy's, and the policy has no Android in it.
+        return PullPolicy.drive { _ -> attempt(context, key, days) }
     }
 
     /**
      * One attempt: the exchange and the pull.
+     *
+     * The seam's contract says this is one token exchange and one HTTP
+     * attempt, and that the answer may be `needs_reconnect` — the policy
+     * reads that and decides whether there is one more attempt.
      */
     private fun attempt(context: Context, key: String, days: Long): SyncOutcome = try {
         val answer = StrideCore.garminSync(key, days)
@@ -163,12 +126,15 @@ object SyncEngine {
         val envelope = JSONObject(answer)
         if (!envelope.optBoolean("ok")) {
             val status = envelope.optInt("status", 0)
-            val detail = envelope.optJSONObject("error")?.optString("detail")
-                ?: "Garmin could not be reached."
+            val error = envelope.optJSONObject("error")
+            val detail = error?.optString("detail") ?: "Garmin could not be reached."
+            val code = error?.optString("code")
             return SyncOutcome(
                 ok = false,
                 message = detail,
-                error = if (status == 401) ERROR_REFUSED else ERROR_FAILED,
+                // A refusal is a refusal whatever shape it takes: the typed
+                // failure the contract names, or a plain 401.
+                error = if (PullPolicy.isRefusal(status, code)) ERROR_REFUSED else ERROR_FAILED,
             )
         }
         val body = envelope.optJSONObject("body") ?: JSONObject()
