@@ -82,11 +82,20 @@ def androidNdkDir = {
 /**
  * Where the Rust build puts its artefacts.
  *
- * **The workspace's target directory, and not another one.** The rule is in
- * the brief and it is a good one: one target directory means one set of
- * artefacts, and a second one means a second copy of every dependency.
+ * **The shared target directory.** The canonical checkout of this
+ * repository lives at `/home/sumit/stride-v2`, and its `target/` is the
+ * directory every checkout shares: the crates are compiled once for the
+ * whole fleet rather than once per worktree. A checkout that has no shared
+ * directory falls back to its own `target/`, and `-PstrideTargetDir=…` (or
+ * `STRIDE_CARGO_TARGET_DIR=…`) moves it either way.
  */
-def rustTargetDir = new File(rustWorkspaceDir, 'target')
+def rustTargetDir = {
+    def asked = (project.findProperty('strideTargetDir') ?: System.getenv('STRIDE_CARGO_TARGET_DIR'))?.toString()
+    if (asked) return file(asked)
+    def shared = new File('/home/sumit/stride-v2/target')
+    if (shared.isDirectory() && shared.canWrite()) return shared
+    return new File(rustWorkspaceDir, 'target')
+}()
 
 /**
  * Whether the real Rust core is in this build.
@@ -174,6 +183,15 @@ tasks.register('cargoNdkBuild', Exec) {
     // directory: Gradle deletes a task's previous outputs when it re-runs
     // the task, and the cargo target directory belongs to cargo.
     outputs.file layout.buildDirectory.file("rust/cargo-ndk-${targetAbis[0]}-${rustCoreMode}.stamp")
+    // **The library is an input as well.** The stamp says "cargo ran", and
+    // cargo's output lives in the shared target directory — which any other
+    // build on this machine may clean. Without this, a wiped target
+    // directory leaves the stamp behind, Gradle considers the task done,
+    // and the APK ships the core from an earlier build. A missing input is
+    // a missing input: the task is out of date and cargo runs again.
+    inputs.files(fileTree(rustTargetDir) {
+        include "**/${rustTriple(targetAbis[0])}/release/libuniffi_stride.so"
+    })
     environment 'CARGO_TARGET_DIR', rustTargetDir.absolutePath
 }
 
@@ -195,18 +213,16 @@ tasks.register('copyRustLibrary') {
     // whether the ABI changed, finds that it did not, and considers the copy
     // up to date — so a cargo rebuild is invisible to it and the APK ships
     // the core from an earlier build.
-    inputs.files(fileTree(rustWorkspaceDir) {
-        include "target/${rustTriple(targetAbis[0])}/release/libuniffi_stride.so"
-    })
-    inputs.files(fileTree(rustCrateDir) {
-        include "target/${rustTriple(targetAbis[0])}/release/libuniffi_stride.so"
+    inputs.files(fileTree(rustTargetDir) {
+        include "**/${rustTriple(targetAbis[0])}/release/libuniffi_stride.so"
     })
     outputs.dir new File(rustJniLibsDir.get().asFile, targetAbis[0])
     doLast {
         def triple = rustTriple(targetAbis[0])
+        // The seam is a member of the repository's workspace, so cargo puts
+        // its output in the workspace's target directory and nowhere else.
         def candidates = [
-                file("src/main/rust/stride-ffi/target/${triple}/release"),
-                file("${rustWorkspaceDir}/target/${triple}/release"),
+                file("${rustTargetDir}/${triple}/release"),
         ]
         def source = candidates.find { new File(it, 'libuniffi_stride.so').exists() }
         if (!source) {
