@@ -771,10 +771,30 @@ impl CoreBackend {
 
     /// The inputs of the plan engine, as owned data.
     fn plan_inputs(&self, from: &str, to: &str) -> Result<PlanData, BackendError> {
+        // **Only the active block's sessions are the plan.**
+        //
+        // A plan that was imported twice leaves two blocks with the same
+        // dates — the old one archived, the new one active — and reading
+        // every session in the range counts each one twice: the week shows
+        // fourteen sessions for seven days, the planned distance doubles,
+        // and the week's adherence is halved.
+        //
+        // The reference filters by the active block here, and the port has
+        // to do the same.
+        let active = self
+            .inner
+            .plan_blocks()?
+            .into_iter()
+            .filter(|block| block.status == "active")
+            .max_by(|a, b| a.start_date.cmp(&b.start_date));
         let sessions: Vec<stride_core::PlanSession> = self
             .inner
             .plan_sessions_in_range(from, to)?
             .iter()
+            .filter(|row| match &active {
+                Some(block) => row.block_id == Some(block.id),
+                None => true,
+            })
             .map(Self::core_session)
             .collect();
         let activities = self.core_activities()?;
