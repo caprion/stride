@@ -107,9 +107,16 @@ pub fn stride_call(method: String, path: String, body: Option<String>) -> String
 /// same database. The key is used for the token exchange and then dropped:
 /// the bearer token stays in memory, inside the client.
 ///
-/// **Garmin has no refresh token.** A "refresh" is a second exchange, and
-/// the shell decides how many there are — exactly one, and one retry. This
-/// function is one attempt.
+/// **One attempt.** The core performs exactly one token exchange and one
+/// HTTP attempt, and then answers. When the token has expired the answer
+/// is the typed failure `needs_reconnect` (status 401).
+///
+/// **The retry belongs to the caller.** The contract says so
+/// (`docs/contract/core-contract.md` §7 — "The retry rule, and who owns
+/// it"): the client does not re-exchange and try again, and the shell may
+/// make exactly **one** more attempt, which performs one fresh exchange.
+/// A second failure stops, the phone says the key was refused, and the next
+/// scheduled sync tries again.
 pub fn stride_garmin_sync(key: String, days: i64) -> String {
     boundary::guarded("sync", || installed().garmin_sync(&key, days)).to_string()
 }

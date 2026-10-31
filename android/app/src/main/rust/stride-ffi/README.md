@@ -11,8 +11,8 @@ where a panic in the core stops being a process kill.
 | `src/stride.udl` | the surface: six functions, every one answering with a JSON envelope |
 | `src/seam.rs` | the trait the core has to meet, and the envelope helpers |
 | `src/boundary.rs` | the panic boundary: a panic becomes an error the app can show |
-| `src/stub.rs` | the core that is not in this build yet |
-| `build.rs` | the UniFFI scaffolding, and the `unsafe` allowance for it alone |
+| `src/stub.rs` | the core that is not in the build yet |
+| `build.rs` | the UniFFI scaffolding |
 | `../stride-bindgen` | the generator that writes the Kotlin bindings |
 
 ## The rules the seam keeps
@@ -27,12 +27,37 @@ where a panic in the core stops being a process kill.
   a payload is whatever the failing code was holding, and that might be the
   key. The location is logged; the message is not.
 * **The routes are the frozen ones.** The route table is
-  the frozen route table (`docs/contract/api-paths.md`) in the repository root. This crate does not
+  `docs/contract/api-paths.md` in the repository root. This crate does not
   decide which route a path names — the router does — and it does not add
   one.
-* **`unsafe` is allowed here and nowhere else.** The crate denies
-  `unsafe_code`; the generated scaffolding is the one exception, and the
-  build script gives it the allowance item by item.
+* **`unsafe` is allowed here and nowhere else.** The workspace's lint table
+  sets `unsafe_code = "allow"` — "warn" would make unsafe denied
+  everywhere, including this one place — and the rule is enforced by
+  `scripts/check-contract-greps.sh` (no `unsafe` outside the FFI crate),
+  which a `#[allow]` cannot talk its way out of.
+
+## The retry rule: the shell owns it
+
+**`stride_garmin_sync` is one attempt.** The core performs exactly one
+token exchange and one HTTP attempt and then answers. When the token has
+expired the answer is the typed failure `needs_reconnect`:
+
+```text
+{"ok": false, "status": 401, "error": {"code": "needs_reconnect", "detail": "..."}}
+```
+
+The **caller** may make exactly **one** more attempt, and that attempt
+performs one fresh token exchange. A second failure stops: the caller
+surfaces the error and the next scheduled sync tries again.
+
+This is the contract's rule, not this crate's invention:
+`docs/contract/core-contract.md` §7 — "The retry rule, and who owns it".
+The client does not re-exchange and try again, because if it did *and* the
+shell did, the phone would exchange and retry twice and "exactly one" would
+be a coincidence rather than a rule.
+
+The shell's side of it is `PullPolicy` and `SyncEngine`, and the shell's
+test asserts one retry per sync.
 
 ## What the core has to provide
 
@@ -77,7 +102,16 @@ whose core is the stub would be a product that does nothing.
 
 ## Building it
 
-The Gradle build does this, under the host lock:
+The crate is a member of the repository's workspace, so the root gate sees
+it:
+
+```bash
+cargo fmt --all -- --check
+cargo clippy --workspace --all-targets -- -D warnings
+cargo test --workspace
+```
+
+The Gradle build cross-compiles it for the phone, under the host lock:
 
 ```bash
 flock /run/user/$(id -u)/cf-heavy.lock ./gradlew :app:assembleDebug
@@ -90,10 +124,4 @@ cargo run --release --manifest-path android/app/src/main/rust/stride-bindgen/Car
     -- android/app/src/main/rust/stride-ffi/src/stride.udl <the generated directory>
 cargo ndk -t arm64-v8a build --release \
     --manifest-path android/app/src/main/rust/stride-ffi/Cargo.toml
-```
-
-The tests are plain Rust tests:
-
-```bash
-cargo test --manifest-path android/app/src/main/rust/stride-ffi/Cargo.toml
 ```

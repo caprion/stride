@@ -38,6 +38,12 @@ pub trait Core: Send + Sync {
 
     /// Pull from Garmin into the phone's database.
     ///
+    /// **One attempt.** The core performs exactly one token exchange and one
+    /// HTTP attempt and then answers; the retry belongs to the caller. See
+    /// `docs/contract/core-contract.md` §7 — "The retry rule, and who owns
+    /// it": the client does not re-exchange and try again, it returns the
+    /// typed failure `needs_reconnect` and the caller decides.
+    ///
     /// The key is used for the token exchange and then forgotten. Garmin has
     /// no refresh token, so a second exchange is a second call with the key.
     fn garmin_sync(&self, key: &str, days: i64) -> Value;

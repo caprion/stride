@@ -32,13 +32,24 @@ namespace stride {
 
   // Pull from Garmin into the local database.
   //
-  // `api_key` is the athlete's Garmin Personal API key. It is used for the
-  // token exchange and then forgotten: the bearer token lives in memory only.
+  // **This is ONE attempt.** The core performs exactly one token exchange
+  // and one HTTP attempt, and then answers — the retry belongs to the
+  // caller, and the contract says so (`docs/contract/core-contract.md` §7,
+  // "The retry rule, and who owns it").
   //
-  // Garmin has no refresh token, so "refreshing" means exchanging the key
-  // again. The shell decides how many exchanges happen — exactly one, and
-  // one retry — and this function is called once per attempt.
-  string stride_garmin_sync(string api_key, i64 days);
+  // `key` is the athlete's Garmin Personal API key. It is used for the
+  // token exchange and then forgotten: the bearer token lives in memory
+  // only.
+  //
+  // When the token has expired the answer is the typed failure
+  // `needs_reconnect` (status 401):
+  //
+  //   {"ok": false, "status": 401, "error": {"code": "needs_reconnect", ...}}
+  //
+  // The caller may then make **one** more call, and that call performs one
+  // fresh token exchange. A second failure stops: the caller surfaces the
+  // error and the next scheduled sync tries again.
+  string stride_garmin_sync(string key, i64 days);
 
   // Put the Garmin Personal API key in memory, or take it out again.
   //
