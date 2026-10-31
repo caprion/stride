@@ -10,3 +10,13 @@ repository.workspace = true
 workspace = true
 
 [dependencies]
+# The domain types are serialized on their way out (the API's DTOs, the
+# desktop's JSON), so they carry serde's derives. Nothing else: the core is
+# pure functions over plain data, and every dependency it takes is a cost the
+# phone pays at startup.
+serde = { version = "1", features = ["derive"] }
+
+[dev-dependencies]
+# Only the tests read JSON: the exported string catalogue is checked against
+# the file the frontend's lint reads, and that check needs a parser.
+serde_json = "1"
