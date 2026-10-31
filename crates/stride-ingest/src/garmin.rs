@@ -460,7 +460,7 @@ impl GarminClient {
     /// The original FIT file for one activity.
     ///
     /// Garmin normally serves the file in a zip archive. The archive is
-    /// checked before any member is read: unsafe names, too many entries and
+    /// checked before any member is read: path-traversal names, too many entries and
     /// implausible sizes are all rejected.
     pub fn activity_fit(&self, activity_id: &str) -> Result<Vec<u8>, GarminError> {
         let id = check_activity_id(activity_id)?;
