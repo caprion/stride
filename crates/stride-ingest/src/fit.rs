@@ -116,7 +116,7 @@ pub struct GeoPoints {
 }
 
 /// A decoded FIT activity.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct FitActivity {
     /// The file's serial number, when it has one.
     pub serial_number: Option<u64>,
@@ -309,6 +309,7 @@ struct RawMessage {
     mesg_num: u16,
     compressed_timestamp: Option<u32>,
     fields: Vec<(u8, RawValue)>,
+    offset: usize,
 }
 
 impl RawMessage {
@@ -550,6 +551,7 @@ fn read_data_message(
         mesg_num: definition.mesg_num,
         compressed_timestamp,
         fields,
+        offset: message_offset,
     })
 }
 
@@ -916,7 +918,9 @@ impl Importer<'_> {
             .number(253)
             .filter(|value| *value >= 0.0 && *value <= f64::from(u32::MAX))
             .or_else(|| message.compressed_timestamp.map(f64::from))
-            .ok_or(FitError::MissingTimestamp { offset: 0 })?;
+            .ok_or(FitError::MissingTimestamp {
+                offset: message.offset,
+            })?;
         if self.start_timestamp_s.is_none() {
             self.start_timestamp_s = Some(timestamp_s);
         }
