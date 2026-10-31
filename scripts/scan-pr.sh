@@ -135,7 +135,7 @@ NEW_DEPS=$(printf '%s\n' "$FILES_TOUCHED" | grep -E '(^|/)Cargo\.toml$|package(-
 if [[ -n "$NEW_DEPS" ]]; then
   added_dep=$(git diff --unified=0 "$BASE...$HEAD" -- $NEW_DEPS \
     | grep -E '^\+' | grep -vE '^\+\+\+' \
-    | grep -E '^(\+[A-Za-z0-9_-]+[[:space:]]*=[[:space:]]*|[[:space:]]*"[A-Za-z@/.-]+"[[:space:]]*:)' \
+    | grep -E '^\+[[:space:]]*([A-Za-z0-9_-]+[[:space:]]*=[[:space:]]*|"[A-Za-z@/.-]+"[[:space:]]*:)' \
     | grep -vE 'stride-|path[[:space:]]*=' | head -20)
   if [[ -n "$added_dep" ]]; then
     echo "scan-pr: dependencies added by this change (each needs a justification in the PR description):" >&2
