@@ -20,6 +20,10 @@
 # Fork-safe: it reads the diff, never a secret, and writes nothing.
 set -uo pipefail
 
+# The privacy rules live in one file, shared with scripts/scan-privacy.sh.
+# shellcheck source=scripts/privacy-rules.sh
+source "$(dirname "$0")/privacy-rules.sh" 
+
 cd "$(dirname "$0")/.."
 
 BASE="${1:-origin/master}"
@@ -42,7 +46,8 @@ ADDED=$(printf '%s\n' "$DIFF" | awk '
   /^\+/ && !/^\+\+\+/ { printf "%s\t%s\n", file, substr($0, 2) }
 ')
 
-FILES_TOUCHED=$(printf '%s\n' "$DIFF" | awk '/^\+\+\+ b\// { print substr($0, 7) }' | sort -u)
+# `git diff --name-only` sees binary files too; the +++ header does not.
+FILES_TOUCHED=$(git diff --name-only "$BASE...$HEAD" | sort -u)
 
 found=0
 fail() { echo "scan-pr: $1" >&2; found=1; }
@@ -54,7 +59,9 @@ SECRET_KEY_RE='(api[_-]?key|secret|password|passwd|token|credential|authorizatio
 SECRET_VALUE_RE='[:=]\s*["'"'"']?[A-Za-z0-9/+_.-]{12,}'
 # A value that is obviously a placeholder. Anchored to the whole value — a
 # substring search would let "0" inside a real token excuse it.
-PLACEHOLDER_RE='^(placeholder|example|sample|redacted|your[_-]?key|<[^>]+>|none|null|nil|false|true|0|test|testing|fake|dummy|changeme|change_me|todo|fixme|x+|x{3,}|\*+|n/?a|redacted|hidden|secret|pass|token|key|value)+$'
+# (PLACEHOLDER_RE itself belongs to scripts/privacy-rules.sh, so the tree
+# scanner and this one agree on what a placeholder is.)
+SECRET_PLACEHOLDER_RE="$PLACEHOLDER_RE"
 
 # Literal shapes that are credentials wherever they appear.
 LITERAL_PATTERNS=(
@@ -89,58 +96,95 @@ while IFS= read -r line; do
   printf '%s' "$text" | grep -qP -- "$SECRET_VALUE_RE" || continue
   value=$(printf '%s' "$text" | grep -oP '[:=]\s*["'"'"']?[A-Za-z0-9/+_.-]{8,}' | head -1 \
     | sed -E 's/^[:=]\s*["'"'"']?//')
-  printf '%s' "$value" | grep -qiP -- "$PLACEHOLDER_RE" && continue
+  printf '%s' "$value" | grep -qiP -- "$SECRET_PLACEHOLDER_RE" && continue
   fail "a credential-named field with a non-placeholder value was added — $file"
   echo "    ${text:0:160}" >&2
 done < <(printf '%s\n' "$ADDED")
 
 # ------------------------------------------------------------- 2. personal data
-BAND_LAT='(?<![-0-9.])1[4-6]\.[0-9]{2,}'
-BAND_LON='(?<![-0-9.])7[6-8]\.[0-9]{2,}'
-PERSONAL=(
-  "$BAND_LAT.*$BAND_LON"
-  "$BAND_LON.*$BAND_LAT"
-  'displayName"?[[:space:]]*:[[:space:]]*"(?!ATHLETE|athlete)[^"]{2,}"'
-  'fullName"?[[:space:]]*:[[:space:]]*"(?!ATHLETE)[^"]{2,}"'
-  'userProfileId"?[[:space:]]*:[[:space:]]*[0-9]{4,}'
-  'userName"?[[:space:]]*:[[:space:]]*"(?!athlete)[^"]{2,}"'
-  '[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}'
-  # A phone number only when it is actually a phone number: an international
-  # prefix, or a key that says so. A bare run of digits is not a phone number -
-  # Cargo.lock checksums are full of them.
-  '(\+[0-9]{1,3}[- ]?[0-9]{4,}[- ]?[0-9]{4,}|(phone|mobile|tel|telephone|phone_number|mobile_number)"?[[:space:]]*[:=][[:space:]]*"?[0-9]{6,})'
-)
+# The shared rules decide what is personal: labelled coordinates, unlabelled
+# pairs, coordinate conversions, profile fields, serials, emails, phones and
+# free-text notes. The rules are anchored on the synthetic corpus anchor, not
+# on a geographic band — a band narrow enough to catch a real coordinate is
+# also narrow enough to tell a stranger roughly where the athlete lives.
+while IFS= read -r line; do
+  while IFS= read -r violation; do
+    [[ -n "$violation" ]] && fail "$violation"
+  done < <(privacy_check_line "${line%%$'\t'*}" "${line#*$'\t'}")
+done < <(printf '%s\n' "$ADDED")
 
-# The personal-data rules do not apply to the generated lockfile: a checksum
-# contains long digit runs, and a package version is not personal data. The
-# secret rules DO apply to it - a registry URL can carry a token.
-PERSONAL_SCOPE=$(printf '%s\n' "$ADDED" | grep -v $'\t'"Cargo.lock"$'\t' | grep -vP '\tCargo\.lock\t')
-
-while IFS= read -r pat; do
-  hits=$(printf '%s\n' "$PERSONAL_SCOPE" | grep -Pn -- "$pat" | head -5)
-  if [[ -n "$hits" ]]; then
-    fail "personal data may have been added:"
-    printf '%s\n' "$hits" | cut -f1 | while IFS= read -r h; do echo "    ${h}" >&2; done
-  fi
-done < <(printf '%s\n' "${PERSONAL[@]}")
-
-# A free-text note field, if it is not one of the documented placeholders.
-if printf '%s\n' "$PERSONAL_SCOPE" | grep -qiP -- '"(note|notes|comment|remark)"[[:space:]]*:[[:space:]]*"[^"]{4,}"'; then
-  fail "a free-text note was added — the only free text the product stores is the athlete's own; if this is a fixture, use a placeholder"
-  printf '%s\n' "$PERSONAL_SCOPE" | grep -inP -- '"(note|notes|comment|remark)"[[:space:]]*:[[:space:]]*"[^"]{4,}"' | head -3 | cut -f1 | while IFS= read -r h; do echo "    ${h}" >&2; done
-fi
+while IFS= read -r line; do
+  text="${line#*$'\t'}"
+  printf '%s' "$text" | grep -qP -- "$privacy_email_re" \
+    && fail "an email address was added — ${line%%$'\t'*}"
+  printf '%s' "$text" | grep -qP -- "$privacy_phone_re" \
+    && fail "a phone number was added — ${line%%$'\t'*}"
+  printf '%s' "$text" | grep -qP -- "$privacy_note_re" \
+    && fail "a free-text note was added — the only free text the product stores is the athlete's own; if this is a fixture, use a placeholder"
+done < <(printf '%s\n' "$ADDED")
 
 # ------------------------------------------------------------ 3. dependencies
-NEW_DEPS=$(printf '%s\n' "$FILES_TOUCHED" | grep -E '(^|/)Cargo\.toml$|package(-lock)?\.json$' || true)
-if [[ -n "$NEW_DEPS" ]]; then
-  added_dep=$(git diff --unified=0 "$BASE...$HEAD" -- $NEW_DEPS \
-    | grep -E '^\+' | grep -vE '^\+\+\+' \
-    | grep -E '^\+[[:space:]]*([A-Za-z0-9_-]+[[:space:]]*=[[:space:]]*|"[A-Za-z@/.-]+"[[:space:]]*:)' \
-    | grep -vE 'stride-|path[[:space:]]*=' | head -20)
-  if [[ -n "$added_dep" ]]; then
-    echo "scan-pr: dependencies added by this change (each needs a justification in the PR description):" >&2
-    printf '%s\n' "$added_dep" | sed 's/^/    /' >&2
-  fi
+NEW_DEPS=$(printf '%s\n' "$FILES_TOUCHED" | grep -E '(^|/)Cargo\.toml$|package\.json$' || true)
+#
+# A dependency is read out of the *manifest*, before and after — not out of
+# the diff, where a section header is just another added line. A dependency
+# outside the approved list (scripts/approved-deps.txt) fails the build; the
+# approved list is the contract's "no new dependency without saying so".
+unapproved=()
+
+cargo_deps_in() {
+  # $1 = a Cargo.toml file. Prints the dependency names of every dependency
+  # section, one per line.
+  awk '
+    /^[[:space:]]*\[/ { sec = $0; sub(/[[:space:]]*#.*/, "", sec) }
+    sec ~ /^\[(dev-|build-)?dependencies\]/ {
+      line = $0; sub(/#.*/, "", line)
+      if (match(line, /^[[:space:]]*"?[A-Za-z0-9_.-]+"?[[:space:]]*=/)) {
+        n = substr(line, RSTART, RLENGTH)
+        gsub(/[[:space:]"?=]/, "", n)
+        print n
+      }
+    }' "$1" | sort -u
+}
+
+npm_deps_in() {
+  # $1 = a package.json file.
+  jq -r '((.dependencies // {}) + (.devDependencies // {}) + (.peerDependencies // {})) | keys[]' "$1" 2>/dev/null | sort -u
+}
+
+for manifest in $NEW_DEPS; do
+  base_file=$(mktemp); head_file=$(mktemp)
+  git show "$BASE:$manifest" > "$base_file" 2>/dev/null || : > "$base_file"
+  git show "$HEAD:$manifest" > "$head_file" 2>/dev/null || : > "$head_file"
+
+  case "$manifest" in
+    *Cargo.toml)
+      before=$(cargo_deps_in "$base_file")
+      after=$(cargo_deps_in "$head_file")
+      ;;
+    *package.json)
+      before=$(npm_deps_in "$base_file")
+      after=$(npm_deps_in "$head_file")
+      ;;
+  esac
+
+  while IFS= read -r dep; do
+    [[ -z "$dep" ]] && continue
+    printf '%s\n' "$before" | grep -qxF "$dep" && continue   # not new
+    case "$dep" in
+      stride-*) continue ;;                                   # an internal crate
+    esac
+    grep -qxF "$dep" scripts/approved-deps.txt && continue
+    unapproved+=("$dep")
+  done < <(printf '%s\n' "$after")
+
+  rm -f "$base_file" "$head_file"
+done
+
+if [[ ${#unapproved[@]} -gt 0 ]]; then
+  fail "a dependency was added that is not on the approved list (scripts/approved-deps.txt):"
+  printf '    %s\n' "${unapproved[@]}" >&2
+  echo "    A dependency outside the approved list needs a plan change that travels with it." >&2
 fi
 
 # ------------------------------------------------------------- 4. provenance

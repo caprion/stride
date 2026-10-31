@@ -19,6 +19,11 @@
 # files given as arguments. Exits non-zero naming the file and the line.
 set -uo pipefail
 
+# The rules live in one file, shared with scripts/scan-pr.sh, so the tree
+# scanner and the diff scanner cannot drift apart.
+# shellcheck source=scripts/privacy-rules.sh
+source "$(dirname "$0")/privacy-rules.sh" 
+
 if [[ $# -gt 0 ]]; then
   mapfile -t FILES < <(printf '%s\n' "$@")
 else
@@ -56,7 +61,9 @@ COORDS_LONLAT='"coordinates"[[:space:]]*:[[:space:]]*\[[[:space:]]*"?'"$BAND_LON
 
 # A real email address. The RFC 2606 reserved TLDs (.invalid, .example,
 # .test, .localhost) are never routed and are not personal data.
-EMAIL='[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.(?!invalid\b|example\b|test\b|localhost\b)[A-Za-z]{2,}'
+EMAIL="$privacy_email_re"
+PHONE="$privacy_phone_re"
+NOTE="$privacy_note_re"
 
 # Garmin profile fields. A name field must hold a placeholder (ATHLETE /
 # athlete); a user id must be zero.
@@ -77,7 +84,18 @@ report_pcre() {
 for f in "${FILES[@]}"; do
   [[ -f "$f" ]] || continue
 
-  report_pcre "$f" "$NAME_BAD" "Garmin profile name field is not a placeholder"
+  # The shared rules decide: labelled coordinates, unlabelled pairs, coordinate
+  # conversions, profile fields, serials.
+  # The frozen corpus may carry serial-shaped values; it is hashed and its
+  # provenance is documented, so the serial rule does not re-litigate it here.
+  skip_serials=0
+  case "$f" in fixtures/*) skip_serials=1 ;; esac
+  while IFS= read -r line; do
+    while IFS= read -r violation; do
+      [[ -n "$violation" ]] && fail "$violation"
+    done < <(privacy_check_line "$f" "$line" "$skip_serials")
+  done < <(grep -nI "" "$f" 2>/dev/null | cut -d: -f2-)
+
   report "$f" "$ID_BAD" "non-zero Garmin user id"
 
   grep -qI -- . "$f" 2>/dev/null || continue

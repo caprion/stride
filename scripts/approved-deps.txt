@@ -1,0 +1,61 @@
+# The approved dependency list.
+#
+# "No new dependency without saying so and justifying it" is only enforceable
+# if there is a list to be not-on. A pull request that adds one of these is
+# fine; a pull request that adds anything else fails scripts/scan-pr.sh and
+# needs a plan change that travels with it.
+#
+# Rust (the workspace's own crates never appear here):
+serde
+serde_json
+chrono
+thiserror
+anyhow
+uuid
+rusqlite
+zip
+reqwest
+#
+# npm (the frontend):
+react
+react-dom
+react-router-dom
+@tanstack/react-query
+@capacitor/core
+@capacitor/android
+@capacitor/cli
+typescript
+vite
+tailwindcss
+postcss
+autoprefixer
+clsx
+tailwind-merge
+zustand
+date-fns
+recharts
+lucide-react
+leaflet
+react-leaflet
+prettier
+vitest
+@testing-library/react
+@testing-library/jest-dom
+jsdom
+
+# The FFI seam (the phone's Rust core, bound to Kotlin):
+uniffi
+uniffi_bindgen
+camino
+#
+# npm — test tooling for the frontend:
+@testing-library/dom
+@testing-library/user-event
+@types/node
+@types/react
+@types/react-dom
+@types/leaflet
+@types/react-leaflet
+@vitejs/plugin-react
+happy-dom
+playwright-core

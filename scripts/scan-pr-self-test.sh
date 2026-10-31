@@ -18,6 +18,8 @@ set -uo pipefail
 
 cd "$(dirname "$0")/.."
 SCANNER="$PWD/scripts/scan-pr.sh"
+RULES="$PWD/scripts/privacy-rules.sh"
+DEPS_LIST="$PWD/scripts/approved-deps.txt"
 
 TMP=$(mktemp -d "${TMPDIR:-/tmp}/stride-scan-pr-selftest.XXXXXX")
 cleanup() { rm -rf "$TMP"; }
@@ -31,6 +33,9 @@ git config user.email "selftest"
 git config user.name "selftest"
 mkdir -p scripts
 cp "$SCANNER" scripts/scan-pr.sh
+# The scanner sources the shared privacy rules; the scratch repo needs them too.
+cp "$RULES" scripts/privacy-rules.sh
+cp "$DEPS_LIST" scripts/approved-deps.txt
 
 printf '# scratch\n' > README.md
 git add -A
@@ -64,7 +69,7 @@ fi
 
 # Each of those must be reported by name, not merely counted.
 out=$(bash scripts/scan-pr.sh "$BASE" "$LEAK" 2>&1)
-for needle in "credential-shaped" "personal data" "free-text note"; do
+for needle in "credential-shaped" "credential-named field" "coordinate value" "free-text note"; do
   printf '%s' "$out" | grep -q "$needle" || fail "the scanner did not report '$needle'"
 done
 
@@ -88,8 +93,28 @@ printf '%s' "$out" | grep -q "credential-named field" \
 
 # A lockfile checksum must not be reported as personal data.
 out=$(bash scripts/scan-pr.sh "$LEAK" "$GOOD" 2>&1)
-printf '%s' "$out" | grep -q "personal data may have been added" \
-  && fail "a Cargo.lock checksum was reported as personal data"
+printf '%s' "$out" | grep -q "coordinate value" \
+  && fail "a Cargo.lock checksum was reported as a coordinate"
+
+# --- a dependency outside the approved list -------------------------------
+printf '[dependencies]\nrand = "0.8"\n' > Cargo.toml
+git add -A
+git commit -qm deps
+DEPS=$(git rev-parse HEAD)
+if bash scripts/scan-pr.sh "$GOOD" "$DEPS" >/dev/null 2>&1; then
+  fail "the scanner passed a dependency that is not on the approved list"
+fi
+out=$(bash scripts/scan-pr.sh "$GOOD" "$DEPS" 2>&1)
+printf '%s' "$out" | grep -q "not on the approved list" \
+  || fail "the scanner did not report the unapproved dependency"
+
+# An approved dependency must pass.
+printf '[dependencies]\nserde = "1"\n' > Cargo.toml
+git add -A
+git commit -qm approved
+APPROVED=$(git rev-parse HEAD)
+bash scripts/scan-pr.sh "$DEPS" "$APPROVED" >/dev/null 2>&1 \
+  || fail "the scanner blocked an approved dependency"
 
 echo "scan-pr self-test: passed"
 exit 0
