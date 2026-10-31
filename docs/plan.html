@@ -254,7 +254,7 @@
   <table>
     <thead><tr><th style="width:24%">Crate</th><th style="width:44%">Owns</th><th style="width:32%">Must never</th></tr></thead>
     <tbody>
-      <tr><td><code>stride-core</code></td><td>Domain types and units; plan engine; recovery &amp; readiness; run story; fitness &amp; progress maths; compare. Pure: no I/O, no clock, no randomness.</td><td>Touch SQLite, HTTP, or the system clock. Everything time-dependent takes an injected clock — that is what makes the golden corpus reproducible.</td></tr>
+      <tr><td><code>stride-core</code></td><td>Domain types and units; plan engine; vitals &amp; direction; run story; fitness &amp; progress maths; compare. Pure: no I/O, no clock, no randomness.</td><td>Touch SQLite, HTTP, or the system clock. Everything time-dependent takes an injected clock — that is what makes the golden corpus reproducible.</td></tr>
       <tr><td><code>stride-ingest</code></td><td>Garmin Personal API client (token exchange, zip download, size caps, one-retry 401); the FIT decoder; run/walk/stand segmentation.</td><td>Decide what a number <em>means</em> (that is core's job), or write to the store.</td></tr>
       <tr><td><code>stride-store</code></td><td>SQLCipher schema, migrations, repositories, FIT blob storage, export/import.</td><td>Log, return or persist the database key. The key comes from the caller and never comes back out.</td></tr>
       <tr><td><code>stride-api</code></td><td>The single router, DTOs, response shapes, the FFI surface, the trust gate.</td><td>Contain domain logic — it translates, it does not decide.</td></tr>
@@ -461,7 +461,7 @@
           below your usual", not "−13.7%"). No abbreviations the athlete has to learn, no jargon, no icons standing
           in for words, no colour carrying meaning on its own.</p>
           <h4>Data</h4>
-          <p class="k">GET /api/v1/insights/today · GET /api/v1/physiology/readiness · GET /api/v1/plan/today · GET /api/v1/activities?limit=1</p>
+          <p class="k">GET /api/v1/insights/today · GET /api/v1/physiology/vitals · GET /api/v1/plan/today · GET /api/v1/activities?limit=1</p>
         </div>
       </div>
       <h4>Layout by width</h4>
@@ -1017,7 +1017,7 @@
   <p class="how">Inherited from the old core where the behaviour is right; every route below exists on <b>both</b>
   hosts, and the phone reaches them in-process.</p>
   <div class="grid g3">
-    <div class="card"><h4>Data</h4><p class="k">/activities · /activities/{id} · /physiology/{daily,sleep,hrv,readiness,latest,sources} · /fitness/{trends,zones} · /stats/{summary,weekly,pace-trends,elevation,personal-records}</p></div>
+    <div class="card"><h4>Data</h4><p class="k">/activities · /activities/{id} · /physiology/{daily,sleep,hrv,vitals,latest,sources} · /fitness/{trends,zones} · /stats/{summary,weekly,pace-trends,elevation,personal-records}</p></div>
     <div class="card"><h4>Plan &amp; insight</h4><p class="k">/plan/{current,today,week,blocks,sources,adherence,results,import} · /insights/{today,progress,chips} · /compare · /compare/candidates</p></div>
     <div class="card"><h4>App</h4><p class="k">/health · /health/daily · /sync/{status,run,runs,history,settings} · /auth/{status,garmin/personal-key,garmin/personal-key/test,garmin/fit-import,garmin/logout} · /calendar</p></div>
   </div>
