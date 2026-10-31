@@ -1,0 +1,40 @@
+{
+  "version": 1,
+  "rules": {
+    "banned_phrases": ["should", "must", "take the day", "rest day", "rest up", "rest today", "go easy", "missed", "bad", "poor", "fail", "behind", "ready to", "recommended", "better to", "need to", "good", "score", "not recovered", "you are ready", "keep it easy"],
+    "direction_set": ["better than usual", "about usual", "could be better"],
+    "vital_words": ["sleep", "hrv", "heart rate", "resting hr", "resting heart rate", "readiness", "recovery", "stress"],
+    "min_pattern_sample": 3,
+    "match": "case_insensitive_word"
+  },
+  "entries": [
+    { "id": "vital.sleep.label", "kind": "vital", "role": null, "template": "Sleep" },
+    { "id": "vital.hrv.label", "kind": "vital", "role": null, "template": "HRV" },
+    { "id": "vital.resting_hr.label", "kind": "vital", "role": null, "template": "Resting HR" },
+    { "id": "vital.rest.label", "kind": "vital", "role": null, "template": "Rest" },
+    { "id": "vital.sleep.value", "kind": "vital", "role": null, "template": "{value}" },
+    { "id": "vital.hrv.value", "kind": "vital", "role": null, "template": "{value} ms" },
+    { "id": "vital.resting_hr.value", "kind": "vital", "role": null, "template": "{value} bpm" },
+    { "id": "direction.better_than_usual", "kind": "direction", "role": "primary", "template": "better than usual" },
+    { "id": "direction.about_usual", "kind": "direction", "role": "primary", "template": "about usual" },
+    { "id": "direction.could_be_better", "kind": "direction", "role": "primary", "template": "could be better" },
+    { "id": "direction.above_usual", "kind": "direction", "role": "arithmetic", "template": "{value} above your usual" },
+    { "id": "direction.below_usual", "kind": "direction", "role": "arithmetic", "template": "{value} below your usual" },
+    { "id": "direction.more_than_usual", "kind": "direction", "role": "arithmetic", "template": "{value} more than your usual" },
+    { "id": "direction.less_than_usual", "kind": "direction", "role": "arithmetic", "template": "{value} less than your usual" },
+    { "id": "direction.travel.steady", "kind": "direction", "role": "travel", "template": "steady" },
+    { "id": "direction.travel.down", "kind": "direction", "role": "travel", "template": "{ordinal} night down" },
+    { "id": "direction.travel.up", "kind": "direction", "role": "travel", "template": "{ordinal} night up" },
+    { "id": "rest.count.below", "kind": "direction", "role": "arithmetic", "template": "{count} of {total} signals below your usual" },
+    { "id": "rest.count.above", "kind": "direction", "role": "arithmetic", "template": "{count} of {total} signals above your usual" },
+    { "id": "rest.count.outside", "kind": "direction", "role": "arithmetic", "template": "{count} of {total} signals outside your usual" },
+    { "id": "rest.count.about", "kind": "direction", "role": "arithmetic", "template": "{count} of {total} signals about your usual" },
+    { "id": "option.today_session", "kind": "option", "role": null, "template": "Today — {summary}" },
+    { "id": "option.other_session", "kind": "option", "role": null, "template": "{day} — {summary}" },
+    { "id": "option.other_sessions", "kind": "option", "role": null, "template": "Also in your plan — {summary}" },
+    { "id": "pattern.usual_streak", "kind": "pattern", "role": null, "template": "your {vital} has been {side} your usual for {n} nights" },
+    { "id": "pattern.comparable_outcome", "kind": "pattern", "role": null, "template": "the {n} other times your {vital} was {side} your usual, you ran {distance} or less" },
+    { "id": "pattern.comparable_outcome.at_least", "kind": "pattern", "role": null, "template": "the {n} other times your {vital} was {side} your usual, you ran {distance} or more" },
+    { "id": "status.not_enough_data", "kind": "status", "role": null, "template": "not enough data for a comparison yet" }
+  ]
+}

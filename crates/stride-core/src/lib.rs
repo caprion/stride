@@ -14,17 +14,21 @@
 //! * [`date`] — a civil date, with no clock and no timezone.
 //! * [`band`] — "usual": the median of the last 30 nights, and the band around
 //!   it, median ± 1.5 × MAD.
+//! * [`strings`] — the typed string catalogue and the lint that holds it to
+//!   `docs/contract/voice.md`.
 //!
 //! The voice, in one line: facts first, no judgements. The app informs; it
 //! never instructs.
 
 pub mod band;
 pub mod date;
+pub mod strings;
 pub mod types;
 pub mod units;
 
 pub use band::{band_for, Band};
 pub use date::Date;
+pub use strings::StringKind;
 pub use types::{
     BetterSide, Distance, Duration, Effort, HeartRate, Hrv, RestingHr, Sleep, VitalKind, Vitals,
     WellnessDay,
