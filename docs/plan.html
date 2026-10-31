@@ -303,9 +303,9 @@
   <table>
     <thead><tr><th style="width:22%">Engine</th><th style="width:40%">What it computes</th><th style="width:38%">Its contract</th></tr></thead>
     <tbody>
-      <tr><td><b>Recovery</b></td><td>Sleep, HRV, resting HR vs the athlete's own trailing distribution (median + MAD), each as a deviation.</td><td>Never a 0–100 score, never a grade, never a recommendation. It produces a <b>value and a comparison</b> ("48 ms · 14 below your usual"), and nothing else.</td></tr>
-      <tr><td><b>Pattern</b></td><td>Compares the current state with the athlete's own history of comparable states: "the 5 other times your sleep was this low, you ran 8 km or less".</td><td>Always carries its sample size; never emitted from fewer than three comparable days; never a forecast and never a rule about what to do.</td></tr>
-      <tr><td><b>Today's state</b></td><td>Assembles the morning's readout: the three signals with their comparisons, today's plan intent if there is one, the last run, plus at most one pattern line and one conditional possibility line.</td><td>Three registers — fact, pattern, possibility — and nothing else. No commands, no verdicts, no ranking of options. Today and Body read the <b>same values</b> from the core.</td></tr>
+      <tr><td><b>Vitals &amp; direction</b></td><td>Sleep, HRV, resting HR (and stress, where the watch reports it) against the athlete's own trailing distribution (median and MAD over 30 nights), each reduced to a value and a direction word.</td><td>Never a score, never a grade, never a recommendation. The direction comes from a closed set — <i>better than usual · about usual · could be better</i> — and the band it is measured against is drawn on the chart.</td></tr>
+      <tr><td><b>Pattern</b></td><td>Compares the current state with the athlete's own history of comparable states: "the 5 other times your sleep was this low, you ran 8 km or less".</td><td>Always carries its sample size; never emitted from fewer than three comparable days; never a forecast and never a rule about what to do. Lives on Body, not on the morning screen.</td></tr>
+      <tr><td><b>Today's state</b></td><td>Assembles the morning's readout: the vitals with their directions, the rest summary, the plan's own sessions and options, and the last run.</td><td>Vitals first. No commands, no verdicts, no conclusions drawn from the vitals, and no link between an option and a vital. Today and Body read the <b>same values and directions</b> from the core.</td></tr>
       <tr><td><b>Plan</b></td><td>Active block, today's session, adherence (planned vs what happened, with a cause), results per session.</td><td>Plain fact: <i>done</i> · <i>not done</i> · <i>planned</i>. Never a red "missed", never a judgement. A plan inferred from history is a <b>baseline</b> and never produces a "not done" against it.</td></tr>
       <tr><td><b>Story</b></td><td>One or two sentences on what an activity meant (was this a real session? was it longer than usual? did it match the plan).</td><td>Descriptive, never evaluative — "10.4 km, 3 km more than your usual Wednesday" — and reads the same primitives the charts read. A number on screen and a number in the sentence are always the same number.</td></tr>
       <tr><td><b>Fitness / Progress</b></td><td>Volume, pace-at-HR, bests, milestones, consistency (forgiving), adherence as a count of planned vs done.</td><td>No trend percentage without a real baseline. A near-zero starting value yields no percentage, ever. Consistency is stated, never graded.</td></tr>
@@ -422,10 +422,10 @@
           then stops. The athlete decides what to do; the app's job is to make the decision informed.</p>
           <h4>What it must never do</h4>
           <ul>
-            <li>Never instruct. No "take the day", no "go easy", no "you should rest", no imperative addressed to the
-            athlete. The old product's graded advice ("keep it easy today") was a judgement dressed as a suggestion —
-            v2 drops it.</li>
-            <li>Never grade, score or rank the athlete. No red "missed", no readiness score, no "you are behind".</li>
+            <li><b>Never instruct.</b> No "take the day", no "go easy", no "you should", no imperative addressed to the athlete. The old product's graded advice ("keep it easy today") was a judgement dressed as a suggestion — v2 drops it.</li>
+            <li><b>Never grade, score or rank the athlete.</b> No red "missed", no readiness score, no "you are behind".</li>
+            <li>Never draw a conclusion from the vitals — no "you are not recovered", no "you are ready". Report each vital's direction; the athlete reads the combination.</li>
+            <li>Never link an option to a vital ("because your sleep was low, there's an easy one") — that link is the judgement.</li>
             <li>Never rank or prefer the options it offers — no "recommended" chip, no highlighted choice.</li>
             <li>Never show two different numbers for the same thing (the old repo's Today and Body disagreed; the
             core owns the values and both screens read them).</li>
@@ -436,30 +436,30 @@
         <div>
           <h4>Content blocks</h4>
           <ol>
-            <li><b>The state line</b> — one factual summary of the signals, in name-value form. Example:
-            <i>Sleep 6 h 10 m · 1 h 10 m below your usual · HRV 48 ms · 14 below your usual · Resting HR 63 bpm · 5 above your usual.</i>
-            Nothing more. No verdict, no recommendation.</li>
-            <li><b>The signals table</b> — the same three numbers as label/value/comparison rows against the
-            athlete's own trailing normal (median and spread), each with a 30-point sparkline. This is the screen's
-            real content.</li>
-            <li><b>The pattern</b> — one line, when the history supports it: <i>the 5 other times your sleep was this
-            low, you ran 8 km or less.</i> It states what usually happened to this athlete; it never states what they
-            should do. It carries its sample size, and it is absent when there are fewer than three comparable days.</li>
+            <li><b>The vitals</b> — the primary content, always first: sleep, HRV and resting HR as rows of
+            <b>value + direction</b>. <i>Sleep — 6 h 10 m — could be better · 1 h 10 m less than your usual.</i>
+            The direction word comes from the closed set; the arithmetic is secondary and muted; nothing is scored,
+            coloured or graded.</li>
+            <li><b>Rest</b> — one composite line over the three vitals, stated as a count and a direction:
+            <i>Rest — could be better · 2 of 3 signals below your usual.</i> It is a summary of the three, not a
+            verdict about the athlete, and the three rows are always shown beneath it.</li>
+            <li><b>Direction of travel</b> — how each vital has moved over the last few days, in words:
+            <i>3rd night down</i>, <i>up 3 nights</i>, <i>steady</i>.</li>
             <li><b>Today's session</b> — if a plan exists: the intent in name-value form (<i>10 km · easy ·
             from your imported plan</i>). It is the athlete's own plan, shown, not a command. Tap → the Plan week.</li>
-            <li><b>The possibility</b> — at most one line, and only when there is a genuine option to name: <i>if you
-            want an easier day, there's a very easy one in your plan.</i> Conditional, unranked, last. When there is
-            no plan and no comparable option, this line is absent.</li>
+            <li><b>The other options</b> — other sessions in the plan, unranked and never linked to the vitals:
+            <i>a 5 km on Friday · a 30-minute one on Sunday</i>. Absent when the plan holds nothing else.</li>
             <li><b>Distance comparison</b> — shown <b>only</b> when the last run differs from the plan's target
             by more than <b>10%</b>. Then a neutral line: <i>12.4 km · 2.4 km more than the 10 km target.</i>
             Within 10%, the line is <b>absent</b> — a 2% difference is not news, and neither more nor less is good or bad.</li>
             <li><b>Last run</b> — one line: distance, duration, and a link into the detail page.</li>
           </ol>
-          <h4>Name-value style</h4>
-          <p class="how">The house style for every value in the app: <b>label · value · comparison</b>, in that order,
-          with the unit written out and the comparison phrased in words ("below your usual", "2 more than your
-          fastest week"). Numbers are rounded to what a human would say ("6 h 10 m", not "6.166 h"; "14 below your
-          usual", not "−13.7%"). No abbreviations the athlete has to learn, no jargon, no icons standing in for words.</p>
+          <h4>House style for every value</h4>
+          <p class="how"><b>label · value · direction</b>, in that order, with the unit written out and the direction
+          taken from the closed set. The arithmetic sits behind the direction, muted: "14 below your usual" is
+          arithmetic, not a verdict. Numbers are rounded to what a human would say ("6 h 10 m", not "6.166 h"; "14
+          below your usual", not "−13.7%"). No abbreviations the athlete has to learn, no jargon, no icons standing
+          in for words, no colour carrying meaning on its own.</p>
           <h4>Data</h4>
           <p class="k">GET /api/v1/insights/today · GET /api/v1/physiology/readiness · GET /api/v1/plan/today · GET /api/v1/activities?limit=1</p>
         </div>
@@ -492,14 +492,15 @@
       <ul>
         <li>No user-facing string on this screen contains an imperative addressed to the athlete (a CI lint over the
         string catalogue forbids "should", "must", "take the day", "rest", "go easy", "easy today").</li>
-        <li>A <code>possibility</code> string always begins with a conditional, and never ranks the options.</li>
-        <li>A <code>pattern</code> string always carries its sample size, and no pattern is emitted from fewer than
-        three comparable days.</li>
+        <li>Every direction string on this screen comes from the closed set (<i>better than usual · about usual ·
+        could be better</i>) — nothing else is permitted.</li>
+        <li>No string on this screen links an option to a vital.</li>
         <li>The distance comparison appears on exactly one fixture (12.4 km against a 10 km target) and on none of the
         others (10.2 km against 10 km → <b>silent</b>).</li>
-        <li>Today and Body render the <b>same values</b> for the same state (a golden assertion, not a screenshot).</li>
+        <li>Today and Body render the <b>same values and directions</b> for the same state (a golden assertion, not
+        a screenshot).</li>
         <li>Every displayed value is rounded the way a human would say it, and carries its unit.</li>
-        <li>At 360 px: no horizontal scroll; the state line is fully visible without scrolling.</li>
+        <li>At 360 px: no horizontal scroll; the vitals block is fully visible without scrolling.</li>
       </ul>
     </div>
   </div>
@@ -668,9 +669,9 @@
             <li><b>HRV</b> — the last 30 nights against the personal band (median ± MAD).</li>
             <li><b>Resting HR</b> — the last 30 days against the personal band.</li>
             <li><b>How to read this</b> — two lines of plain text explaining the band. No jargon.</li>
-            <li><b>The patterns</b> — the same pattern engine as Today, over the visible history: <i>your HRV has been
-            below your usual 3 nights this month</i>, <i>on your 6 longest runs this year, your last 3 km was always
-            the slowest</i>. Each carries its sample size.</li>
+            <li><b>The patterns</b> — the pattern engine over the visible history: <i>your HRV has been below your usual
+            3 nights this month</i>, <i>on your 6 longest runs this year, your last 3 km was always the
+            slowest</i>. Each carries its sample size. Patterns live here, not on Today.</li>
           </ol>
         </div>
       </div>
@@ -878,76 +879,87 @@
     <li><b>Background sync</b> (phone) — WorkManager, with a system notification ("Synced 12 activities"). The WebView is suspended; the core keeps running in the app process.</li>
   </ul>
 
-  <h3>5.9 The voice: three registers</h3>
-  <p class="lede">A data dump is not helpful, and an app that tells you what to do is judging you. Stride uses
-  <b>three registers</b>, in this order, and nothing else. It is enforced in CI, not left to taste.</p>
+  <h3>5.9 The voice: vitals, direction, options — no verdicts</h3>
+  <p class="lede">The app shows the athlete's vitals, says which way each one has moved against their own usual, and
+  lists what is on the table. It draws no conclusion. A data dump is not helpful and an app that tells you what to
+  do is judging you; this is the line between them, and it is enforced in CI.</p>
 
   <div class="cols">
     <div>
-      <h4>1 · Fact — what the data says</h4>
-      <p class="how">Label · value · comparison, in that order, in plain words: <i>HRV — 48 ms — 14 below your
-      usual.</i> Always present, never editorial, never scored, never a number without its unit.</p>
+      <h4>1 · Vital — the measurement</h4>
+      <p class="how">Label, value, unit. Nothing added: <i>Sleep — 6 h 10 m · HRV — 48 ms · Resting HR — 63 bpm.</i>
+      No score, no band colour, no icon standing in for a word.</p>
 
-      <h4>2 · Pattern — what usually happens to you</h4>
-      <p class="how">The athlete's own history, stated as a fact about the past — never as a forecast, never as a
-      rule about what they should do. This is where the app earns its keep beyond a dashboard: it is the only layer
-      that needs the history, and it is completely free of judgment.</p>
+      <h4>2 · Direction — which way it moved</h4>
+      <p class="how">How the vital sits against <b>the athlete's own usual</b>, said in plain words. The primary
+      descriptor comes from a <b>closed set</b> — three words, no synonyms, no judgement:</p>
       <ul>
-        <li><i>"The 5 other times your sleep was this low, you ran 8 km or less."</i></li>
-        <li><i>"On your 6 longest runs this year, your last 3 km was always the slowest."</i></li>
-        <li><i>"Your HRV has been below your usual 3 nights this month."</i></li>
+        <li><b>better than usual</b></li>
+        <li><b>about usual</b></li>
+        <li><b>could be better</b></li>
       </ul>
-      <p class="k">Patterns always carry their <b>n</b> ("the 5 other times"). A pattern from two data points is not a
-      pattern — with fewer than three, the app says "twice so far" and stops.</p>
+      <p class="how">Beside it, the arithmetic — muted, secondary: <i>5 above your usual</i>, <i>1 h 10 m less than
+      your usual</i>. And the direction of travel in words: <i>3rd night down</i>, <i>steady</i>. The athlete reads
+      it; the app does not conclude from it.</p>
+      <p class="k">"Usual" is defined once, visibly, and drawn on the chart: the median of the last 30 nights, with
+      the band being median ± 1.5 × MAD (config). Inside the band is "about usual". Which side is the better side is
+      a fact about the measurement, not an opinion: more sleep, higher HRV, lower resting HR. Because the band is
+      drawn on every chart, the athlete can see where the line is — and disagree with it.</p>
 
-      <h4>3 · Possibility — what is on the table</h4>
-      <p class="how">A named, optional option, phrased as a possibility and never as an instruction. The app offers;
-      the athlete chooses. This is where "easy" and "very easy" live — as <em>options in the athlete's own
-      vocabulary</em>, not as orders.</p>
+      <h4>3 · Options — what is on the table</h4>
+      <p class="how">Facts about the athlete's own plan, listed unranked, <b>never conditioned on the vitals</b>.
+      This is where "easy" and "very easy" live — as the plan's own vocabulary, present or absent on their own merit.</p>
       <ul>
-        <li><i>"If you want an easier day, there's a very easy one in your plan."</i></li>
-        <li><i>"Your plan has a short one on Friday if you'd rather."</i></li>
-        <li><i>"A 30-minute version of today's session is there if you want it."</i></li>
+        <li><i>Today — 10 km · easy · from your imported plan</i></li>
+        <li><i>Also in your plan — a 5 km on Friday, and a 30-minute one on Sunday</i></li>
       </ul>
-      <p class="k">Every possibility line is <b>conditional</b> ("if you want", "if you'd rather"), never imperative,
-      and it never ranks or prefers. The app does not mark one option as the right one.</p>
+      <p class="k">The app does not say which to pick, does not highlight one, and does not say "because your sleep
+      was low". Listing an option <em>because</em> the vitals were poor would be the app judging the vitals — so that
+      link is never made.</p>
+
+      <h4>4 · Pattern — the history, in the history screen</h4>
+      <p class="how">What usually happened to this athlete, stated as a fact about the past, always with its sample
+      size: <i>"the 5 other times your sleep was this low, you ran 8 km or less."</i> It lives on Body, over the
+      visible history — <b>not</b> on the morning screen, and never next to a suggestion.</p>
     </div>
     <div>
       <h4>What is forbidden</h4>
       <ul>
-        <li><b>Commands</b> — "take the day", "rest", "go easy", "you should", "you need to".</li>
-        <li><b>Verdicts</b> — "good", "bad", "missed", "behind", "failed", a readiness score, a traffic light.</li>
+        <li><b>Commands</b> — "take the day", "rest", "go easy", "you should", "you need to", "it'd be better to".</li>
+        <li><b>Verdicts</b> — "good", "bad", "poor", "missed", "behind", "failed", a readiness score, a traffic light.</li>
+        <li><b>Conclusions</b> — the app never combines vitals into a verdict ("you are not recovered"). It reports each vital's direction; the athlete reads the combination.</li>
         <li><b>Ranking the options</b> — never "the best choice today is…", never a highlighted "recommended" chip.</li>
         <li><b>Shame</b> — no red, no "should have", no "you were inconsistent".</li>
       </ul>
 
-      <h4>How the three sit together on Today</h4>
+      <h4>How it sits together on Today</h4>
       <div class="frame" style="font-size:13px">
         <div class="k" style="margin-bottom:8px">TODAY · Tue 12 May</div>
         <div style="border-top:1px solid var(--line);padding-top:8px">
-          <b>Sleep</b> &nbsp; 6 h 10 m &nbsp;· 1 h 10 m below your usual<br>
-          <b>HRV</b> &nbsp; 48 ms &nbsp;· 14 below your usual<br>
-          <b>Resting HR</b> &nbsp; 63 bpm &nbsp;· 5 above your usual
+          <b>Rest</b> &nbsp; <span style="color:var(--acc)">could be better</span> &nbsp;· 2 of 3 signals below your usual<br>
+          <b>Sleep</b> &nbsp; 6 h 10 m &nbsp;· <span style="color:var(--acc)">could be better</span> &nbsp;· 1 h 10 m less than your usual<br>
+          <b>HRV</b> &nbsp; 48 ms &nbsp;· <span style="color:var(--acc)">could be better</span> &nbsp;· 14 below your usual · <span style="color:var(--ink3)">3rd night down</span><br>
+          <b>Resting HR</b> &nbsp; 63 bpm &nbsp;· <span style="color:var(--ink2)">about usual</span> &nbsp;· 5 above your usual
         </div>
         <div style="border-top:1px solid var(--line);margin-top:10px;padding-top:8px;color:var(--ink2)">
-          <i>Pattern</i> — the 5 other times your sleep was this low, you ran 8 km or less.
+          <b>Today</b> &nbsp; 10 km · easy · from your imported plan
         </div>
         <div style="border-top:1px solid var(--line);margin-top:10px;padding-top:8px;color:var(--ink2)">
-          <i>Your plan</i> — 10 km · easy · from your imported plan
+          <b>Also in your plan</b> &nbsp; a 5 km on Friday · a 30-minute one on Sunday
         </div>
-        <div style="border-top:1px solid var(--line);margin-top:10px;padding-top:8px;color:var(--ink2)">
-          <i>Possibility</i> — if you want an easier day, there's a very easy one in your plan.
+        <div style="border-top:1px solid var(--line);margin-top:10px;padding-top:8px;color:varink3;color:var(--ink3)">
+          <b>Last run</b> &nbsp; 8.4 km · 42 min · Sat 10 May
         </div>
       </div>
-      <p class="k">The order matters: facts first (never buried), then what usually happens, then the plan, then the
-      option. The app's opinion is last and conditional — or absent.</p>
+      <p class="k">Vitals first, always. Then the plan's own facts. Nothing that draws a conclusion, nothing that
+      asks for a decision, nothing coloured as a problem.</p>
 
       <h4>Old product → v2</h4>
       <table>
         <thead><tr><th style="width:42%">Old product</th><th>v2</th></tr></thead>
         <tbody>
-          <tr><td>"Take the day, or make it very easy."</td><td>facts + a pattern + "if you want an easier day, there's a very easy one in your plan"</td></tr>
-          <tr><td>"Keep it easy today."</td><td>facts + the pattern; the option is named, not ordered</td></tr>
+          <tr><td>"Take the day, or make it very easy."</td><td>"Rest — could be better · 2 of 3 signals below your usual" — and the plan's options, unlinked</td></tr>
+          <tr><td>"Keep it easy today."</td><td>"Sleep — 6 h 10 m · could be better · 1 h 10 m less than your usual"</td></tr>
           <tr><td>"You missed Tuesday's 10 km."</td><td>"Tuesday — 10 km planned · not done"</td></tr>
           <tr><td>"0.62 km over your target."</td><td>"10.6 km — 0.6 km more than the 10 km target" (only beyond a 10% gap)</td></tr>
           <tr><td>Readiness 63/100</td><td>no score exists</td></tr>
@@ -957,13 +969,15 @@
       <h4>How it is enforced</h4>
       <ul>
         <li>Every user-facing string lives in one catalogue (<code>strings.toml</code> / JSON), never inline in a component.</li>
-        <li>Each string is typed: <code>fact</code>, <code>pattern</code>, <code>possibility</code>, or <code>status</code>.
-        A <code>possibility</code> string must begin with a conditional ("If you…", "…if you'd rather") — the lint
-        enforces the shape.</li>
+        <li>Each string is typed: <code>vital</code>, <code>direction</code>, <code>option</code>, <code>pattern</code>,
+        or <code>status</code>.</li>
+        <li>A <code>direction</code> string must come from the closed set — <i>better than usual</i> ·
+        <i>about usual</i> · <i>could be better</i> — and may not be extended. The lint enforces it.</li>
+        <li>A <code>pattern</code> string must carry its sample size; none is emitted from fewer than three comparable days.</li>
         <li>A CI lint fails the build on a banned word or construction: <code>should</code>, <code>must</code>,
         <code>take the day</code>, <code>rest</code>, <code>go easy</code>, <code>missed</code>, <code>bad</code>,
-        <code>fail</code>, <code>behind</code>, <code>ready to</code>, <code>recommended</code>.</li>
-        <li>Pattern strings must carry their <code>n</code> — the lint fails a pattern with no sample size.</li>
+        <code>poor</code>, <code>fail</code>, <code>behind</code>, <code>ready to</code>, <code>recommended</code>,
+        <code>better to</code>, <code>need to</code>.</li>
         <li>A golden assertion renders every catalogue entry against every fixture state, so wording cannot drift
         between screens.</li>
       </ul>
@@ -1124,7 +1138,7 @@
       <tr><td><b>0</b></td><td>Contract freeze. New public repo, AGPL, docs skeleton, CI skeleton (fork-safe), sanitised corpus extracted, schema + API shapes frozen as data.</td><td>The corpus is in the new repo; the old repo is untouched; every gate runs on an empty crate.</td><td>Writing code before the contract is frozen — the old repo's single largest loss.</td></tr>
       <tr><td><b>1</b></td><td>The thin vertical line: key → sync → one run → today's readout → APK on the phone.</td><td>A real Garmin key syncs a real run and the app shows its true numbers.</td><td>Proves the whole stack end-to-end before any breadth.</td></tr>
       <tr><td><b>2</b></td><td>FIT decode + segmentation + store + FIT-as-source-of-truth.</td><td>Golden parity on every corpus activity; the FIT blob is stored and re-derivable.</td><td>The FIT decoder's sentinel semantics — plausible wrong numbers.</td></tr>
-      <tr><td><b>3</b></td><td>Recovery engine (values + comparisons) + the pattern engine + the string catalogue + the voice lint + Body.</td><td>Today and Body render the same values; the lint forbids every imperative and verdict word, and requires patterns to carry their sample size.</td><td>The old repo's recurring "two screens disagree" defect, and its endless advice-wording reviews.</td></tr>
+      <tr><td><b>3</b></td><td>Vitals &amp; direction engine (value + closed-set direction) + the pattern engine + the string catalogue + the voice lint + Body.</td><td>Today and Body render the same values and directions; the lint forbids every imperative, verdict and ranking word.</td><td>The old repo's recurring "two screens disagree" defect, and its endless advice-wording reviews.</td></tr>
       <tr><td><b>4</b></td><td>The plan engine: sources, active block, today, week, adherence, results.</td><td>Adherence matches the old core number-for-number; a baseline never yields "not done".</td><td>Baseline vs prescription confusion; duplicated sessions.</td></tr>
       <tr><td><b>5</b></td><td>The Runs feed + the activity detail page.</td><td>Every row has a story sentence; the split chart is the hero at 360 px.</td><td>Performance over 160+ activities; windowing bugs.</td></tr>
       <tr><td><b>6</b></td><td>Progress + fitness + bests + milestones.</td><td>No percentage without a baseline; consistency is forgiving.</td><td>Trend blow-up from near-zero baselines.</td></tr>
@@ -1179,7 +1193,7 @@
       <tr><td>Plan sources</td><td><b>Baseline (inferred) + prescribed (imported)</b>; typing a plan is not in v2</td><td>Reading intent is the value; authoring it is separate work.</td></tr>
       <tr><td>MCP/harness</td><td><b>Deferred</b>, with its own disclosure review</td><td>Tool output is a disclosure into a model's context.</td></tr>
       <tr><td>Support</td><td><b>"Issues welcome, features are mine"</b></td><td>Honest, and cheap.</td></tr>
-      <tr><td>Voice</td><td><b>Three registers</b> — fact (label · value · comparison), pattern (what usually happened to you, with its sample size), and possibility (an optional option, conditional, never ranked)</td><td>Neither a data dump nor a set of orders. "Easy" and "very easy" survive as <em>options in the athlete's own vocabulary</em>, not as commands.</td></tr>
+      <tr><td>Voice</td><td><b>Vitals · direction · options</b> — the vitals with a direction word from a closed set (better than usual · about usual · could be better), the plan's own options unranked, and no verdicts, commands or conclusions anywhere</td><td>Not a data dump and not a set of orders. "Easy" and "very easy" survive as the plan's own vocabulary, never as commands, and never linked to the vitals.</td></tr>
       <tr><td>Distance comparison</td><td><b>Shown only when the gap exceeds 10%</b>, stated neutrally ("2.4 km more than the target")</td><td>A 2% difference is not news; and when it is mentioned it is a fact, not a warning.</td></tr>
     </tbody>
   </table>

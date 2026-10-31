@@ -12,51 +12,57 @@ designed to resize: one information architecture, many widths.
 
 ---
 
-## 0. The voice — three registers
+## 0. The voice — vitals, direction, options; no verdicts
 
-Not a data dump, and not a set of orders. Stride uses **three registers**, in this order, and nothing else.
-Enforced in CI.
+Not a data dump, and not a set of orders. The app shows the vitals, says which way each has moved against the
+athlete's own usual, and lists what is on the table. It draws no conclusion. Enforced in CI.
 
-**1 · Fact — what the data says.** Label · value · comparison, in that order, in plain words:
-*HRV — 48 ms — 14 below your usual.* Always present, never editorial, never scored, never a number without its unit.
+**1 · Vital — the measurement.** Label, value, unit. Nothing added: *Sleep — 6 h 10 m · HRV — 48 ms ·
+Resting HR — 63 bpm.* No score, no band colour, no icon standing in for a word.
 
-**2 · Pattern — what usually happens to you.** The athlete's own history, stated as a fact about the past —
-never a forecast, never a rule about what to do. This is the layer a dashboard cannot produce, and it is free of
-judgment: *"the 5 other times your sleep was this low, you ran 8 km or less."* Every pattern carries its **n**, and
-none is emitted from fewer than three comparable days.
+**2 · Direction — which way it moved.** A direction word from a **closed set** — *better than usual · about usual ·
+could be better* — beside the muted arithmetic (*5 above your usual*) and the direction of travel (*3rd night down*,
+*steady*). "Usual" is defined once and drawn on every chart: the median of the last 30 nights, band = median ±
+1.5 × MAD. Which side is better is a fact about the measurement (more sleep, higher HRV, lower resting HR) — and
+because the band is drawn, the athlete can disagree with it.
 
-**3 · Possibility — what is on the table.** A named, optional option, phrased as a possibility and never as an
-instruction: *"if you want an easier day, there's a very easy one in your plan."* Always conditional
-("if you want", "if you'd rather"), never ranked, never preferred. This is where **easy** and **very easy** live —
-as options in the athlete's own vocabulary, not as orders.
+**3 · Options — what is on the table.** The plan's own sessions and alternatives, listed unranked and **never
+conditioned on the vitals**. *Today — 10 km · easy · from your imported plan · Also in your plan — a 5 km on
+Friday, a 30-minute one on Sunday.* The app never says which to pick, and never says "because your sleep was low" —
+that link would be the judgement.
 
-**Forbidden:** commands ("take the day", "rest", "go easy", "you should") · verdicts ("good", "bad", "missed",
-"behind", a readiness score, a traffic light) · ranking the options ("recommended") · shame (red, "should have").
+**4 · Pattern — the history, in the history screen.** What usually happened to this athlete, as a fact about the
+past, always with its sample size: *"the 5 other times your sleep was this low, you ran 8 km or less."* It lives on
+**Body**, over the visible history — not on the morning screen, and never next to a suggestion.
+
+**Forbidden:** commands (*take the day*, *rest*, *go easy*, *you should*, *it'd be better to*) · verdicts (*good*,
+*bad*, *poor*, *missed*, *behind*, a readiness score) · **conclusions** (the app never combines vitals into a
+verdict — it reports each direction and the athlete reads the combination) · ranking the options (*recommended*) ·
+shame (red, *should have*).
 
 ```
 TODAY · Tue 12 May
-Sleep        6 h 10 m   · 1 h 10 m below your usual
-HRV          48 ms      · 14 below your usual
-Resting HR   63 bpm     · 5 above your usual
-  Pattern    — the 5 other times your sleep was this low, you ran 8 km or less.
-  Your plan  — 10 km · easy · from your imported plan
-  Possibility— if you want an easier day, there's a very easy one in your plan.
+Rest         could be better · 2 of 3 signals below your usual
+Sleep        6 h 10 m   · could be better · 1 h 10 m less than your usual
+HRV          48 ms      · could be better · 14 below your usual · 3rd night down
+Resting HR   63 bpm     · about usual · 5 above your usual
+Today        10 km · easy · from your imported plan
+Also in plan a 5 km on Friday · a 30-minute one on Sunday
+Last run     8.4 km · 42 min · Sat 10 May
 ```
 
-Every user-facing string lives in one catalogue and is typed (`fact`, `pattern`, `possibility`, `status`). The lint
-fails the build on banned words (`should`, `must`, `take the day`, `rest`, `go easy`, `missed`, `bad`, `fail`,
-`behind`, `ready to`, `recommended`), requires a `possibility` string to open with a conditional, and requires a
-`pattern` string to carry its sample size.
+Every user-facing string lives in one catalogue and is typed (`vital`, `direction`, `option`, `pattern`, `status`).
+The lint fails the build on banned words (`should`, `must`, `take the day`, `rest`, `go easy`, `missed`, `bad`,
+`poor`, `fail`, `behind`, `ready to`, `recommended`, `better to`, `need to`), requires a `direction` string to come
+from the closed set, and requires a `pattern` string to carry its sample size.
 
 | old product | v2 |
 |---|---|
-| "Take the day, or make it very easy." | facts + a pattern + "if you want an easier day, there's a very easy one in your plan" |
-| "Keep it easy today." | facts + the pattern; the option is named, not ordered |
+| "Take the day, or make it very easy." | "Rest — could be better · 2 of 3 signals below your usual", and the plan's options, unlinked |
+| "Keep it easy today." | "Sleep — 6 h 10 m · could be better · 1 h 10 m less than your usual" |
 | "You missed Tuesday's 10 km." | "Tuesday — 10 km planned · not done" |
 | "0.62 km over your target." | "10.6 km — 0.6 km more than the 10 km target" (and only when the gap is over 10%) |
 | Readiness 63/100 | no score exists |
-
----
 
 ## 1. The product in one page
 
@@ -105,9 +111,9 @@ android/…/stride-ffi   UniFFI bindings, panic catching, JSON in / JSON out
 
 | engine | contract |
 |---|---|
-| recovery | never a 0–100 score, never a grade, never a recommendation — a value and a comparison, nothing else |
-| pattern | the athlete's own history of comparable states; always carries its n; never from fewer than three cases |
-| today's state | three registers — fact, pattern, possibility. No commands, no verdicts, no ranking of options. Today and Body read the same **values** from the core |
+| vitals & direction | never a 0–100 score, never a grade, never a recommendation — a value and a direction word from a closed set, with the band drawn on the chart |
+| pattern | the athlete's own history of comparable states; always carries its n; never from fewer than three cases; lives on Body, not Today |
+| today's state | vitals first, then the plan's own options. No commands, no verdicts, no conclusions, no link between an option and a vital. Today and Body read the same **values and directions** from the core |
 | plan | plain fact: *done* · *not done* · *planned*. Never a red "missed". An inferred baseline never yields "not done" |
 | story | descriptive, never evaluative; reads the same primitives the charts read |
 | fitness | no trend percentage without a real baseline; consistency is stated, never graded |
@@ -134,12 +140,12 @@ legible, safe-area applied.
 Today · Runs · Activity · Progress · Body · Plan week · Compare · Connect · Settings — each with purpose, what
 it must never do, content blocks, layout per width, states, and acceptance checks.
 
-**Today** is a readout with two optional lines under it: the state line (*Sleep 6 h 10 m · 1 h 10 m below your
-usual · HRV 48 ms · 14 below your usual*), a **pattern** line from your own history (*the 5 other times your sleep
-was this low, you ran 8 km or less*), today's session from your own plan, and at most one **possibility** line
-(*if you want an easier day, there's a very easy one in your plan*). The **distance comparison appears only when
-the gap exceeds 10%**, stated neutrally ("2.4 km more than the 10 km target"); within 10% it is absent — 10.2 km
-against a 10 km target is simply not news, and neither more nor less is good or bad.
+**Today** leads with the vitals: each with its value, its direction word (*better than usual · about usual ·
+could be better*) and the muted arithmetic (*14 below your usual · 3rd night down*), then a **Rest** summary
+(*2 of 3 signals below your usual*), then the plan's own session and its other options, unranked and unlinked.
+The **distance comparison appears only when the gap exceeds 10%**, stated neutrally ("2.4 km more than the 10 km
+target"); within 10% it is absent — 10.2 km against a 10 km target is simply not news, and neither more nor less is
+good or bad.
 
 **Compare is the canonical form to get right:** metric rows (`metric · A · B · Δ`) at every width; two columns
 and side-by-side charts only when there is room; an A/B chart toggle on narrow screens; the basis always named.
@@ -177,7 +183,7 @@ describe a deleted flow — the old notes still told people to run a removed pai
 | 0 | Contract freeze: public repo, corpus extracted + sanitised, fork-safe CI, schema/API frozen | every gate runs on empty crates; the old repo is untouched |
 | 1 | Thin vertical line: key → sync → one run → today's readout → APK | a real key syncs a real run and the app shows its true numbers |
 | 2 | FIT decode + segmentation + store | golden parity on every corpus activity |
-| 3 | Recovery engine (values + comparisons) + pattern engine + string catalogue + voice lint + Body | Today and Body render the same values; the lint forbids every imperative and verdict word, and patterns must carry their sample size |
+| 3 | Vitals & direction engine + pattern engine + string catalogue + voice lint + Body | Today and Body render the same values and directions; the lint forbids every imperative, verdict and ranking word |
 | 4 | Plan engine (sources, active block, adherence, results) | adherence matches the old core number-for-number |
 | 5 | Runs feed + activity detail | every row carries a story sentence |
 | 6 | Progress + fitness + bests | no percentage without a baseline |
@@ -194,7 +200,7 @@ no Python in the tree · acceptance is a golden assertion wherever possible.
 AGPL-3.0 · public from day one · old repo kept private as the oracle, sanitised public archive at the end ·
 Rust only · five crates · desktop as dev rig + community tool (loopback + CIDR allowlist) · four destinations
 everywhere with Compare and Plan contextual · Garmin account flow out · MCP out · "issues welcome, features are
-mine" · **three-register voice: fact, pattern, possibility** · **distance comparison only beyond a 10% gap**.
+mine" · **voice: vitals, direction (closed set), options — no verdicts** · **distance comparison only beyond a 10% gap**.
 
 **Still open to change on request:** MIT instead of AGPL · anything from the cut list · the destination names ·
 the plan-source set · a native phone UI (a separate project, not v2).
