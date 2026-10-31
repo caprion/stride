@@ -49,4 +49,7 @@ done
 bash scripts/scan-privacy.sh fixtures/scan-tests/privacy-good.txt
 echo "scanner self-tests passed"
 
+step "pull-request scanner self-test"
+bash scripts/scan-pr-self-test.sh
+
 printf '\n== gate: all green ==\n'

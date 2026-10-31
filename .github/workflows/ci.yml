@@ -26,3 +26,19 @@ jobs:
       - uses: actions/checkout@v4
       # rust-toolchain.toml pins stable + rustfmt + clippy; rustup installs them.
       - run: bash scripts/gate.sh
+
+  # The scanners above look at the tree. This one looks at the *change*: the
+  # lines a pull request adds. A leak is introduced by a commit, so the commit
+  # is where it has to be caught — before it can be merged, and before it is
+  # ever seen by anyone but the reviewer.
+  #
+  # Fork-safe: it reads the diff, needs no secret, and grants nothing.
+  pr-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # The diff needs the base branch, not just the tip.
+          fetch-depth: 0
+      - name: Scan the change for credentials, personal data and unexplained dependencies
+        run: bash scripts/scan-pr.sh origin/master HEAD
