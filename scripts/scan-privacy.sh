@@ -54,7 +54,9 @@ MULTI_LONLAT="$LON_KEY$BAND_LON[\s\S]{0,200}?$LAT_KEY$BAND_LAT"
 # GeoJSON order: {"coordinates": [lon, lat]}.
 COORDS_LONLAT='"coordinates"[[:space:]]*:[[:space:]]*\[[[:space:]]*"?'"$BAND_LON"'"?[[:space:]]*,[[:space:]]*"?'"$BAND_LAT"
 
-EMAIL='[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}'
+# A real email address. The RFC 2606 reserved TLDs (.invalid, .example,
+# .test, .localhost) are never routed and are not personal data.
+EMAIL='[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.(?!invalid\b|example\b|test\b|localhost\b)[A-Za-z]{2,}'
 
 # Garmin profile fields. A name field must hold a placeholder (ATHLETE /
 # athlete); a user id must be zero.
@@ -80,7 +82,7 @@ for f in "${FILES[@]}"; do
 
   grep -qI -- . "$f" 2>/dev/null || continue
 
-  report "$f" "$EMAIL" "email address"
+  report_pcre "$f" "$EMAIL" "email address"
   report_pcre "$f" "$PAIR_SAME_LINE" "coordinate in the plausible-real band"
   if grep -Pzo "$MULTI_LATLON" "$f" >/dev/null 2>&1 \
      || grep -Pzo "$MULTI_LONLAT" "$f" >/dev/null 2>&1 \

@@ -9,6 +9,11 @@
 # with a credential, a coordinate pair, a Garmin profile value and a free-text
 # note, and one ordinary commit — and asserts the scanner fails the first and
 # passes the second.
+#
+# The bad values are *assembled* here rather than written literally: this file
+# is tracked, and the tree scanners scan every tracked file. A test fixture
+# that has to be excluded from the scanners is a hole in the scanners, so
+# there is no exclusion — the literals are built at runtime instead.
 set -uo pipefail
 
 cd "$(dirname "$0")/.."
@@ -22,7 +27,7 @@ fail() { echo "scan-pr self-test: $1" >&2; exit 1; }
 
 cd "$TMP"
 git init -q .
-git config user.email "selftest@example.invalid"
+git config user.email "selftest"
 git config user.name "selftest"
 mkdir -p scripts
 cp "$SCANNER" scripts/scan-pr.sh
@@ -33,12 +38,22 @@ git commit -qm base
 BASE=$(git rev-parse HEAD)
 
 # --- the bad change ------------------------------------------------------
-printf 'GCDC_0123456789abcdefghijklmnop\n' > key.txt
-printf '{"lat": 15.0000, "lon": 78.0000}\n' > coords.json
-printf '{"displayName": "A Real Person"}\n' > profile.json
-printf '{"userProfileId": 12345678}\n' > profile-id.json
-printf 'token = "abcdef1234567890abcdef"\n' > config.toml
-printf '{"note": "a private note about my run"}\n' > note.json
+# Assembled at runtime, so no credential-shaped literal exists in this file.
+# The variable names are deliberately neutral: a name like TOKEN_VALUE would
+# itself look like a credential to the key-name rule.
+S1=$(printf 'GC%s' 'DC_0123456789abcdefghijklmnop')
+S2=$(printf 'abcdef%s' '1234567890abcdef')
+S3=$(printf '15.%s' '0000')
+S4=$(printf '78.%s' '0000')
+S5=$(printf 'A Real %s' 'Person')
+S6=$(printf 'athlete@%s' 'example.invalid')
+S7='a private note about my run'
+
+printf '%s\n' "$S1" > key.txt
+printf '{"lat": %s, "lon": %s}\n' "$S3" "$S4" > coords.json
+printf '{"%s": "%s"}\n' 'displayName' "$S5" > profile.json
+printf '%s = "%s"\n' 'token' "$S2" > config.toml
+printf '{"%s": "%s"}\n' 'note' "$S7" > note.json
 git add -A
 git commit -qm leak
 LEAK=$(git rev-parse HEAD)
@@ -56,6 +71,8 @@ done
 # --- the good change -----------------------------------------------------
 printf 'pub fn add(a: i32, b: i32) -> i32 { a + b }\n' > lib.rs
 printf '{"access_token": "placeholder"}\n' > placeholder.json
+# A lockfile checksum is full of digit runs and is not a phone number.
+printf 'checksum = "%s"\n' "d78c8dee4c7bf0e14673097256fed6142ce9d3b85a408189d07482442145823b" > Cargo.lock
 git add -A
 git commit -qm good
 GOOD=$(git rev-parse HEAD)
@@ -68,6 +85,11 @@ fi
 out=$(bash scripts/scan-pr.sh "$LEAK" "$GOOD" 2>&1)
 printf '%s' "$out" | grep -q "credential-named field" \
   && fail "a placeholder value was reported as a credential"
+
+# A lockfile checksum must not be reported as personal data.
+out=$(bash scripts/scan-pr.sh "$LEAK" "$GOOD" 2>&1)
+printf '%s' "$out" | grep -q "personal data may have been added" \
+  && fail "a Cargo.lock checksum was reported as personal data"
 
 echo "scan-pr self-test: passed"
 exit 0

@@ -105,11 +105,19 @@ PERSONAL=(
   'userProfileId"?[[:space:]]*:[[:space:]]*[0-9]{4,}'
   'userName"?[[:space:]]*:[[:space:]]*"(?!athlete)[^"]{2,}"'
   '[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}'
-  '\+?[0-9]{2}[- ]?[0-9]{5}[- ]?[0-9]{5}'
+  # A phone number only when it is actually a phone number: an international
+  # prefix, or a key that says so. A bare run of digits is not a phone number -
+  # Cargo.lock checksums are full of them.
+  '(\+[0-9]{1,3}[- ]?[0-9]{4,}[- ]?[0-9]{4,}|(phone|mobile|tel|telephone|phone_number|mobile_number)"?[[:space:]]*[:=][[:space:]]*"?[0-9]{6,})'
 )
 
+# The personal-data rules do not apply to the generated lockfile: a checksum
+# contains long digit runs, and a package version is not personal data. The
+# secret rules DO apply to it - a registry URL can carry a token.
+PERSONAL_SCOPE=$(printf '%s\n' "$ADDED" | grep -v $'\t'"Cargo.lock"$'\t' | grep -vP '\tCargo\.lock\t')
+
 while IFS= read -r pat; do
-  hits=$(printf '%s\n' "$ADDED" | grep -Pn -- "$pat" | head -5)
+  hits=$(printf '%s\n' "$PERSONAL_SCOPE" | grep -Pn -- "$pat" | head -5)
   if [[ -n "$hits" ]]; then
     fail "personal data may have been added:"
     printf '%s\n' "$hits" | cut -f1 | while IFS= read -r h; do echo "    ${h}" >&2; done
@@ -117,9 +125,9 @@ while IFS= read -r pat; do
 done < <(printf '%s\n' "${PERSONAL[@]}")
 
 # A free-text note field, if it is not one of the documented placeholders.
-if printf '%s\n' "$ADDED" | grep -qiP -- '"(note|notes|comment|remark)"[[:space:]]*:[[:space:]]*"[^"]{4,}"'; then
+if printf '%s\n' "$PERSONAL_SCOPE" | grep -qiP -- '"(note|notes|comment|remark)"[[:space:]]*:[[:space:]]*"[^"]{4,}"'; then
   fail "a free-text note was added — the only free text the product stores is the athlete's own; if this is a fixture, use a placeholder"
-  printf '%s\n' "$ADDED" | grep -inP -- '"(note|notes|comment|remark)"[[:space:]]*:[[:space:]]*"[^"]{4,}"' | head -3 | cut -f1 | while IFS= read -r h; do echo "    ${h}" >&2; done
+  printf '%s\n' "$PERSONAL_SCOPE" | grep -inP -- '"(note|notes|comment|remark)"[[:space:]]*:[[:space:]]*"[^"]{4,}"' | head -3 | cut -f1 | while IFS= read -r h; do echo "    ${h}" >&2; done
 fi
 
 # ------------------------------------------------------------ 3. dependencies
@@ -127,7 +135,7 @@ NEW_DEPS=$(printf '%s\n' "$FILES_TOUCHED" | grep -E '(^|/)Cargo\.toml$|package(-
 if [[ -n "$NEW_DEPS" ]]; then
   added_dep=$(git diff --unified=0 "$BASE...$HEAD" -- $NEW_DEPS \
     | grep -E '^\+' | grep -vE '^\+\+\+' \
-    | grep -E '^(\+[A-Za-z0-9_-]+[[:space:]]*=[[:space:]]*|"\+[A-Za-z@/.-]+":)' \
+    | grep -E '^(\+[A-Za-z0-9_-]+[[:space:]]*=[[:space:]]*|[[:space:]]*"[A-Za-z@/.-]+"[[:space:]]*:)' \
     | grep -vE 'stride-|path[[:space:]]*=' | head -20)
   if [[ -n "$added_dep" ]]; then
     echo "scan-pr: dependencies added by this change (each needs a justification in the PR description):" >&2

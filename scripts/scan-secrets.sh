@@ -43,7 +43,16 @@ URL_CRED='[a-z][a-z0-9+.-]*://[^/@[:space:]]+:[^/@[:space:]]+@'
 
 # --- the key-name rule (shape from redaction.py + security.py) ---
 SECRET_KEY_NAMES='(api[_-]?key|apikey|authorization|bearer|consumer[_-]?secret|cookie|credential|oauth[_-]?token([_-]?secret)?|password|passwd|private[_-]?key|secret|session|token)'
-KEY_ASSIGN="$SECRET_KEY_NAMES[\"']?[[:space:]]*[:=][[:space:]]*"
+# Two shapes, because the value's shape tells us what the line is:
+#   "="  — TOML, .env, .properties. The value may be bare.
+#   ":"  — JSON, YAML, or a type declaration. A quoted value is data; an
+#          unquoted one is usually a *type* ("session: SessionResponse"), and
+#          a type is not a secret. YAML and env files are exempt, because
+#          their values are routinely unquoted.
+KEY_ASSIGN_EQ="$SECRET_KEY_NAMES[\"']?[[:space:]]*=[[:space:]]*"
+KEY_ASSIGN_COLON="$SECRET_KEY_NAMES[\"']?[[:space:]]*:[[:space:]]*"
+VALUE_QUOTED='["'"'"']\K[^"'"'"']+'
+VALUE_BARE='\K[^"'"'"',}[:space:]]+'
 
 report() {
   local h
@@ -74,10 +83,28 @@ for f in "${FILES[@]}"; do
   report "$f" "$URL_CRED"     "URL with embedded credentials"
 
   # key-name rule: a credential-like key assigned a non-placeholder value
+  #
+  # A value is a candidate when it is quoted (JSON/YAML/TOML), or when the
+  # assignment uses "=" (TOML/env/properties), or when the file is a YAML or
+  # env file (their values are routinely unquoted). A bare value after ":"
+  # in a source file is a type declaration, not a secret.
+  case "$f" in
+    *.yml|*.yaml|*.env|*.properties) bare_colon_ok=1 ;;
+    *) bare_colon_ok=0 ;;
+  esac
   while IFS= read -r line; do
     lineno="${line%%:*}"
     text="${line#*:}"
-    value=$(printf '%s' "$text" | grep -ioP "$KEY_ASSIGN[\"']?\K[^\"',}[:space:]]+" | head -1)
+    value=$(printf '%s' "$text" | grep -ioP "$KEY_ASSIGN_EQ$VALUE_QUOTED" | head -1)
+    if [[ -z "$value" ]]; then
+      value=$(printf '%s' "$text" | grep -ioP "$KEY_ASSIGN_EQ$VALUE_BARE" | head -1)
+    fi
+    if [[ -z "$value" ]]; then
+      value=$(printf '%s' "$text" | grep -ioP "$KEY_ASSIGN_COLON$VALUE_QUOTED" | head -1)
+    fi
+    if [[ -z "$value" && "$bare_colon_ok" == "1" ]]; then
+      value=$(printf '%s' "$text" | grep -ioP "$KEY_ASSIGN_COLON$VALUE_BARE" | head -1)
+    fi
     [[ -z "$value" ]] && continue
     # Only a non-placeholder *string* is a secret: skip placeholders, booleans,
     # null, numbers, objects and arrays (a credential is never `false` or `{`).
@@ -85,7 +112,7 @@ for f in "${FILES[@]}"; do
       continue
     fi
     fail "$f:$lineno: credential-like key with a value"
-  done < <(grep -niP "$KEY_ASSIGN[^[:space:]]" "$f" 2>/dev/null)
+  done < <(grep -niP "$SECRET_KEY_NAMES[[:space:]]*[:=]" "$f" 2>/dev/null)
 done
 
 if [[ "$found" -ne 0 ]]; then
