@@ -5,6 +5,7 @@
 #   ./scripts/prod.sh start    harden permissions, start, health-check
 #   ./scripts/prod.sh status   what is running and what is in the database
 #   ./scripts/prod.sh doctor   the full pre-flight before you trust it
+#   ./scripts/prod.sh pair     mint a one-time code to sign in another browser
 #   ./scripts/prod.sh stop     stop the instance
 #
 # The production instance is the one at backend/data on :8000. It holds the
@@ -50,6 +51,48 @@ case "${1:-status}" in
     harden_permissions
     log "health:"
     health | "$PY" -m json.tool 2>/dev/null || health
+    ;;
+
+  pair)
+    # Mint a single-use code for a browser on another machine.
+    #
+    # **This is the deliberate way in**, for a network the operator has not
+    # trusted. The ordinary way is `STRIDE_TRUSTED_NETWORKS`: a browser on a
+    # trusted network is signed in like any other, with no code at all.
+    #
+    # The code is printed here, exchanged once for the device's own
+    # credential, and expires in 10 minutes. The Android app does not pair:
+    # it is the whole thing, and it talks to Garmin itself.
+    if ! curl -fsS -m 5 "http://127.0.0.1:$PORT/api/v1/health" > /dev/null 2>&1; then
+      bad "Stride is not answering on :$PORT — start it with scripts/prod.sh start"
+      exit 1
+    fi
+    code="$(curl -fsS -m 10 "http://127.0.0.1:$PORT/api/v1/auth/pair-code" \
+      | "$PY" -c 'import json,sys; print(json.load(sys.stdin)["code"])' 2>/dev/null || true)"
+    if [[ -z "$code" ]]; then
+      bad "could not mint a pairing code"
+      exit 1
+    fi
+
+    # The address the other device will use. It is the operator's to say:
+    # the repository does not know, and does not guess.
+    tls_port="${STRIDE_TLS_PORT:-8443}"
+    reach="${STRIDE_TLS_HOST:-}"
+    if [[ -n "$reach" && "$reach" != "0.0.0.0" && "$reach" != "::" ]]; then
+      url="https://$reach:$tls_port/#pair=$code"
+    else
+      warn "set STRIDE_TLS_HOST to the address other devices reach this machine on"
+      warn "so the link below points somewhere they can open."
+      reach="127.0.0.1"
+      url="http://$reach:$PORT/#pair=$code"
+    fi
+    echo
+    printf '    \033[1;38;5;208m%s\033[0m\n' "$code"
+    printf '    \033[2m%s\033[0m\n' "$url"
+    echo
+    log "Type the code into the browser that is asking to sign in."
+    log "It works once and expires in 10 minutes."
+    log "A browser on a trusted network does not need any of this."
     ;;
 
   stop)
@@ -175,7 +218,7 @@ PY
     ;;
 
   *)
-    echo "usage: $0 {setup|start|stop|status|doctor}" >&2
+    echo "usage: $0 {setup|start|stop|status|doctor|pair}" >&2
     exit 2
     ;;
 esac
