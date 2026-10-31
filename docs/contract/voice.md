@@ -44,9 +44,15 @@ The lint fails the build on any of these words or constructions:
 
 ```
 should   must      take the day   rest day   rest up   rest today   go easy
-missed   bad       poor           fail       behind
-ready to recommended   better to  need to
+missed   bad       poor           fail       behind    good        keep it easy
+ready to recommended   better to  need to   red        readiness score
+not recovered   you are ready   you are not ready
 ```
+
+`good` is on the list because the plan lists it as a verdict ("no good/bad");
+`red` because nothing may be coloured as a problem; `readiness score` because
+there is no score; `not recovered` / `you are ready` because they are
+conclusions the app does not draw.
 
 `rest` is banned **as a command** (`rest day`, `rest up`, `rest today`) — never
 as the noun. The **`Rest`** summary label on Today ("Rest — could be better ·
