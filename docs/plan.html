@@ -1,0 +1,1061 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Stride v2 — the plan of record</title>
+<style>
+  :root{
+    --bg:#0e1116; --bg2:#151a21; --bg3:#1c222b; --line:#2a323d; --line2:#39434f;
+    --ink:#e6edf3; --ink2:#a9b4c0; --ink3:#7b8794;
+    --acc:#5ee0a0; --acc2:#7aa2f7; --warn:#e0af68; --bad:#f7768e; --purple:#bb9af7;
+    --mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,monospace;
+    --sans:ui-sans-serif,-apple-system,"Segoe UI",Inter,Roboto,system-ui,sans-serif;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.6 var(--sans);-webkit-font-smoothing:antialiased}
+  .wrap{max-width:1180px;margin:0 auto;padding:0 24px}
+  header.top{border-bottom:1px solid var(--line);background:linear-gradient(180deg,#121821,#0e1116);padding:38px 0 30px}
+  h1{font-size:34px;line-height:1.15;margin:0 0 6px;letter-spacing:-.02em}
+  .sub{color:var(--ink2);max-width:76ch;margin:0 0 18px}
+  .badges{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+  .badge{font:600 11px/1 var(--mono);letter-spacing:.06em;text-transform:uppercase;
+    padding:7px 10px;border:1px solid var(--line2);border-radius:999px;color:var(--ink2);background:var(--bg2)}
+  .badge.ok{color:var(--acc);border-color:#2c5c47}
+  .badge.no{color:var(--bad);border-color:#5c2c38}
+  .badge.in{color:var(--acc2);border-color:#33456e}
+  nav.toc{position:sticky;top:0;z-index:20;background:rgba(14,17,22,.92);backdrop-filter:blur(8px);
+    border-bottom:1px solid var(--line);padding:10px 0}
+  nav.toc .wrap{display:flex;gap:6px;overflow-x:auto;scrollbar-width:thin}
+  nav.toc a{color:var(--ink3);text-decoration:none;font:500 12px/1 var(--mono);padding:8px 10px;border-radius:7px;white-space:nowrap}
+  nav.toc a:hover{color:var(--ink);background:var(--bg2)}
+  section{padding:44px 0;border-bottom:1px solid var(--line)}
+  h2{font-size:24px;letter-spacing:-.01em;margin:0 0 6px;display:flex;align-items:baseline;gap:12px}
+  h2 .n{font:700 12px/1 var(--mono);color:var(--acc)}
+  h3{font-size:17px;margin:28px 0 8px;color:#fff}
+  h4{font-size:14px;margin:18px 0 6px;color:var(--acc2);font-family:var(--mono);letter-spacing:.02em;text-transform:uppercase}
+  p{margin:8px 0;max-width:88ch}
+  .lede{color:var(--ink2);font-size:16px;max-width:84ch}
+  ul,ol{margin:8px 0 8px 20px;padding:0;max-width:88ch}
+  li{margin:4px 0}
+  code,kbd{font-family:var(--mono);font-size:12.5px;background:var(--bg3);padding:1.5px 5px;border-radius:5px;color:#cfe3ff}
+  table{width:100%;border-collapse:collapse;margin:12px 0 18px;font-size:13.5px}
+  th,td{text-align:left;padding:9px 11px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{color:var(--ink3);font:600 11px/1.4 var(--mono);text-transform:uppercase;letter-spacing:.06em}
+  tr:hover td{background:#12171e}
+  .grid{display:grid;gap:14px}
+  .g2{grid-template-columns:repeat(auto-fit,minmax(320px,1fr))}
+  .g3{grid-template-columns:repeat(auto-fit,minmax(240px,1fr))}
+  .card{background:var(--bg2);border:1px solid var(--line);border-radius:12px;padding:16px 18px}
+  .card h4{margin-top:0}
+  .card p,.card ul{color:var(--ink2);font-size:13.5px}
+  .callout{border-left:3px solid var(--acc2);background:#131922;border-radius:0 10px 10px 0;padding:12px 16px;margin:14px 0}
+  .callout.warn{border-color:var(--warn)}
+  .callout.bad{border-color:var(--bad)}
+  .callout.good{border-color:var(--acc)}
+  .callout p:first-child{margin-top:0}.callout p:last-child{margin-bottom:0}
+  .callout strong{color:#fff}
+  .why{color:var(--acc2);font-family:var(--mono);font-size:11.5px;letter-spacing:.05em;text-transform:uppercase;font-weight:700}
+  .how{color:var(--ink2)}
+  .k{color:var(--ink3);font-family:var(--mono);font-size:12px}
+  .screen{border:1px solid var(--line);border-radius:14px;background:var(--bg2);margin:18px 0 26px;overflow:hidden}
+  .screen > .head{padding:16px 20px;border-bottom:1px solid var(--line);display:flex;flex-wrap:wrap;gap:10px;align-items:baseline}
+  .screen > .head .nm{font-size:19px;font-weight:700;margin-right:4px}
+  .screen > .head .tag{font:600 11px/1 var(--mono);color:var(--ink3);text-transform:uppercase;letter-spacing:.05em}
+  .screen .body{padding:18px 20px}
+  .screen .body h4:first-child{margin-top:0}
+  .cols{display:grid;gap:18px}
+  @media(min-width:900px){.cols{grid-template-columns:1fr 1fr}}
+  .wf{display:flex;gap:14px;flex-wrap:wrap;align-items:flex-start;margin:14px 0 4px}
+  .wf .dev{border:1px solid var(--line2);border-radius:12px;background:#0b0e13;padding:10px;width:240px}
+  .wf .dev.n360{width:236px}.wf .dev.n390{width:250px}
+  .wf .cap{font:600 10.5px/1 var(--mono);color:var(--ink3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px}
+  .bar{height:9px;border-radius:4px;background:var(--bg3);margin:6px 0}
+  .bar.s{width:55%}.bar.m{width:80%}.bar.l{width:100%}
+  .bar.a{background:#2a4a3c}.bar.b{background:#2d3f5e}.bar.c{background:#4a3a2a}
+  .pill{display:inline-block;font:600 10px/1 var(--mono);padding:5px 7px;border-radius:6px;background:var(--bg3);color:var(--ink2);margin:3px 4px 3px 0}
+  .pill.ok{color:var(--acc);background:#13291f}.pill.no{color:var(--bad);background:#2b151b}.pill.in{color:var(--acc2);background:#161f33}
+  .tabs{display:flex;gap:6px;margin:14px 0 6px;flex-wrap:wrap}
+  .tabs button{background:var(--bg3);border:1px solid var(--line2);color:var(--ink2);font:600 11px/1 var(--mono);
+    padding:8px 11px;border-radius:8px;cursor:pointer}
+  .tabs button.on{background:#16342a;border-color:#2c5c47;color:var(--acc)}
+  .frame{border:1px dashed var(--line2);border-radius:12px;padding:16px;background:#0b0e13}
+  footer{padding:34px 0 60px;color:var(--ink3);font-size:13px}
+  .toc2{font:600 11px/1 var(--mono);color:var(--ink3);text-transform:uppercase;letter-spacing:.07em;margin:22px 0 6px}
+  .pill-row{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0}
+  .num{font-family:var(--mono);font-weight:700;color:var(--acc);margin-right:6px}
+  hr.sep{border:0;border-top:1px solid var(--line);margin:26px 0}
+  .muted{color:var(--ink3)}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap">
+    <h1>Stride v2 — the plan of record</h1>
+    <p class="sub">
+      A clean-room re-implementation of Stride in <strong>Rust only</strong>, in a new open-source repository,
+      keeping the mobile app the user already likes. Every screen is designed <em>before</em> code, and every
+      screen is designed to <em>resize</em>: one information architecture, many widths.
+    </p>
+    <div class="badges">
+      <span class="badge ok">Rust only — no Python in the tree</span>
+      <span class="badge ok">AGPL-3.0</span>
+      <span class="badge ok">Public from day one</span>
+      <span class="badge in">Phone = the product</span>
+      <span class="badge in">Desktop = dev rig + community tool</span>
+      <span class="badge in">IA constant, layout fluid</span>
+      <span class="badge no">Old repo = oracle, then archive</span>
+    </div>
+  </div>
+</header>
+
+<nav class="toc"><div class="wrap">
+  <a href="#s1">1 · The product</a>
+  <a href="#s2">2 · Scope: in / out</a>
+  <a href="#s3">3 · Architecture</a>
+  <a href="#s4">4 · The screen system</a>
+  <a href="#s5">5 · Screen specs</a>
+  <a href="#s6">6 · Data model &amp; API</a>
+  <a href="#s7">7 · Security &amp; trust</a>
+  <a href="#s8">8 · Open source posture</a>
+  <a href="#s9">9 · Delivery plan</a>
+  <a href="#s10">10 · Defaults applied</a>
+</div></nav>
+
+<div class="wrap">
+
+<!-- ============================ 1 ============================ -->
+<section id="s1">
+  <h2><span class="n">01</span> The product in one page</h2>
+  <p class="lede">
+    Stride is a private, local-first running log for one athlete. It exists to answer one question every morning
+    and one question every evening: <strong>what should I do today, and what did that last run actually mean?</strong>
+    Everything else in the app is evidence for those two answers.
+  </p>
+
+  <div class="grid g3">
+    <div class="card">
+      <h4>The loop</h4>
+      <p class="how"><b>Plan → Execute → Understand → Adapt.</b> The plan is a first-class object: every session gets a
+      verdict <em>and</em> a cause. Nothing is "missed" unless there was an intent to miss.</p>
+    </div>
+    <div class="card">
+      <h4>The promise</h4>
+      <p class="how"><b>"Your data stays on this phone."</b> One credential (a Garmin Personal API key) lives in the
+      Android Keystore. No account, no cloud, no server to reach. Works on a plane.</p>
+    </div>
+    <div class="card">
+      <h4>The difference</h4>
+      <p class="how">Most running apps tell you what you did. Stride tells you whether that was the right thing to do —
+      and what to do tomorrow. The "why" is always on screen, never inferred.</p>
+    </div>
+  </div>
+
+  <h3>The four destinations (constant at every width)</h3>
+  <p class="how">
+    The IA is <b>fixed</b>. Width changes the arrangement, never the set. Compare and Plan are reached
+    <em>contextually</em>, so the destination count stays at four on a 360 px phone and on a 1280 px browser.
+  </p>
+  <div class="pill-row">
+    <span class="pill in">Today</span><span class="pill in">Runs</span><span class="pill in">Progress</span><span class="pill in">Body</span>
+    <span class="pill">+ Compare (from any run)</span><span class="pill">+ Plan week (from Today)</span>
+  </div>
+
+  <div class="callout good">
+    <p><strong>The one rule that kills the old repo's churn:</strong> <em>if a screen cannot exist on the phone, it does not exist.</em>
+    The desktop is the same four destinations with more room — it never grows its own features. This single rule
+    retires the entire class of problems the old repo suffered from (desktop-only Compare, the training calendar,
+    <code>/connect</code>, the pairing ceremony).</p>
+  </div>
+
+  <h3>What the desktop is, precisely</h3>
+  <div class="grid g2">
+    <div class="card">
+      <h4>It is</h4>
+      <ul>
+        <li>the <b>dev rig</b> — the fast feedback loop (edit → reload → see it in 3 seconds, not 3 minutes)</li>
+        <li>the <b>reference host</b> — the process the MCP/agent harness queries and the parity differ runs against</li>
+        <li>the <b>community tool</b> — published, cloneable, buildable by a stranger in one command</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h4>It is not</h4>
+      <ul>
+        <li>not a distributed product — no store, no SLA, no feature parity promise</li>
+        <li>not a place with its own screens</li>
+        <li>not a second implementation of anything — it hosts <em>the same</em> Rust core</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ============================ 2 ============================ -->
+<section id="s2">
+  <h2><span class="n">02</span> Scope: what v2 ships and what it does not</h2>
+  <p class="lede">
+    A rewrite that carries the old scope is a treadmill. v2 ships fewer things, done properly, with the same four
+    destinations. Everything cut here is <em>not</em> rejected — it is deferred, and most of it was cut in the old
+    repo too, only later and messily.
+  </p>
+
+  <h3>In scope (v2)</h3>
+  <table>
+    <thead><tr><th style="width:19%">Capability</th><th style="width:38%">What it does</th><th style="width:43%">Why it exists / why now</th></tr></thead>
+    <tbody>
+      <tr><td><b>Connect</b></td><td>One Garmin Personal API key. Phone: a native screen into the Keystore. Desktop: a first-run page.</td><td>The only credential the product will ever have. No accounts, no pairing, no codes.</td></tr>
+      <tr><td><b>Sync</b></td><td>Incremental pull of activities, wellness (sleep/HRV/RHR) and daily summaries; resumable; a 401 triggers exactly one key re-exchange and one retry.</td><td>Without it there is no data. It is the pipeline that everything else is a view over.</td></tr>
+      <tr><td><b>Today</b></td><td>One graded call, one sentence of reason, the distance warning only when the run is near the line, and today's session if there is a plan.</td><td>The reason the app exists. One sentence, never two, never a "missed" in red.</td></tr>
+      <tr><td><b>Runs</b></td><td>The feed: every activity with chips (distance, pace, effort), the story line, and entry into the detail page.</td><td>The "understand" half of the loop.</td></tr>
+      <tr><td><b>Activity detail</b></td><td>The run's meaning: splits, elevation, HR, map, and the sentences that explain it.</td><td>Where a run becomes a lesson instead of a row.</td></tr>
+      <tr><td><b>Progress</b></td><td>Fitness over time: weekly volume, pace-at-HR, bests, milestones, plan adherence.</td><td>The "stay motivated" half — proof you are getting fitter, with consistency forgiven.</td></tr>
+      <tr><td><b>Body</b></td><td>Sleep, HRV and resting HR measured against <em>your own</em> normal, not a population percentile.</td><td>The evidence behind the call. Same engine, same sentence as Today.</td></tr>
+      <tr><td><b>Plan week</b></td><td>Today's session, the week ahead, adherence, and results — with the plan's source named (baseline / prescribed / imported).</td><td>Intent is the input the engine judges against. Reached from Today, never a fifth tab.</td></tr>
+      <tr><td><b>Compare</b></td><td>Two runs side by side, with the <em>basis</em> stated (same distance? same route? same HR?), as a metric diff.</td><td>The best screen in the product and the one that most needs responsive design.</td></tr>
+      <tr><td><b>FIT import</b></td><td>Import a run from any watch (Strava/COROS/Wahoo exports), dedupe by start ±2 min and distance ±2%.</td><td>The product is about <em>your</em> history, not one vendor's history.</td></tr>
+      <tr><td><b>Settings</b></td><td>Weekly goal, a pause (travel/sick/injured), a note on a run, connect status, about.</td><td>Only the three inputs that change what the app should say.</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Out of scope for v2 (deferred, with the reason)</h3>
+  <table>
+    <thead><tr><th style="width:22%">Cut</th><th style="width:48%">Why</th><th style="width:30%">Revisit when</th></tr></thead>
+    <tbody>
+      <tr><td>Garmin <b>account login + MFA</b> and scheduled-workout calendar</td><td>Garmin's calendar lives behind an email+password+OTP flow — the one place the product would need credentials it promised never to want. The Personal API returns 404 for scheduled workouts.</td><td>Only if a plan-prescription source becomes essential.</td></tr>
+      <tr><td><b>MCP / agent harness</b> tools</td><td>Every tool output is a disclosure into a model's context. It deserves its own review, not a footnote.</td><td>After v2 is stable; it rides on the same router.</td></tr>
+      <tr><td><b>Running-form fingerprint</b> page</td><td>The old design review measured it at 14.8 screens for a page nobody used twice.</td><td>If the fingerprint engine earns a single insight worth a sentence.</td></tr>
+      <tr><td><b>Gear</b>, <b>heatmap</b>, <b>tiles proxy</b>, <b>monthly stats table</b>, <b>HR-zone pages</b></td><td>Ledgers, not insights. None of them changes what the app tells you to do.</td><td>Never, for most athletes.</td></tr>
+      <tr><td><b>Network egress routing</b> (the "route my traffic" switch)</td><td>A privacy feature inherited from the old product; it needs an account, which v2 does not have.</td><td>Never, in the local-first design.</td></tr>
+      <tr><td><b>Manual plan editor on the phone</b></td><td>Authoring a plan is separate work and separate risk. v2 reads a plan; it does not author one.</td><td>When plan authoring is designed, not inherited.</td></tr>
+      <tr><td><b>Desktop-only screens</b></td><td>They are how the old repo forked into two products.</td><td>Never under the rule in §01.</td></tr>
+    </tbody>
+  </table>
+
+  <div class="callout warn">
+    <p><strong>Deferred ≠ forgotten.</strong> Every cut above is a <em>later slice</em>, and the slices are additive:
+    no slice ever rewrites a previous slice's behaviour. The old repo's hardest problem was exactly this — a
+    "v0.7 cut" and a "v1 cut" and a "phone cut" and a "desktop cut" all landing on each other.</p>
+  </div>
+</section>
+
+<!-- ============================ 3 ============================ -->
+<section id="s3">
+  <h2><span class="n">03</span> Architecture</h2>
+  <p class="lede">
+    One domain implementation, two hosts, zero Python. The phone and the desktop are the same crate graph — the
+    phone reaches it in-process through a small FFI, the desktop reaches it over loopback HTTP. There is no second
+    implementation of the domain, and therefore nothing that can drift.
+  </p>
+
+  <h3>3.1 The workspace</h3>
+  <table>
+    <thead><tr><th style="width:24%">Crate</th><th style="width:44%">Owns</th><th style="width:32%">Must never</th></tr></thead>
+    <tbody>
+      <tr><td><code>stride-core</code></td><td>Domain types and units; plan engine; recovery &amp; readiness; run story; fitness &amp; progress maths; compare. Pure: no I/O, no clock, no randomness.</td><td>Touch SQLite, HTTP, or the system clock. Everything time-dependent takes an injected clock — that is what makes the golden corpus reproducible.</td></tr>
+      <tr><td><code>stride-ingest</code></td><td>Garmin Personal API client (token exchange, zip download, size caps, one-retry 401); the FIT decoder; run/walk/stand segmentation.</td><td>Decide what a number <em>means</em> (that is core's job), or write to the store.</td></tr>
+      <tr><td><code>stride-store</code></td><td>SQLCipher schema, migrations, repositories, FIT blob storage, export/import.</td><td>Log, return or persist the database key. The key comes from the caller and never comes back out.</td></tr>
+      <tr><td><code>stride-api</code></td><td>The single router, DTOs, response shapes, the FFI surface, the trust gate.</td><td>Contain domain logic — it translates, it does not decide.</td></tr>
+      <tr><td><code>stride-testkit</code></td><td>The frozen golden corpus, fixture builders, the parity differ harness, viewport/UI assertion fixtures.</td><td>Be imported by a product crate (it is a dev-dependency everywhere).</td></tr>
+      <tr><td><code>desktop</code></td><td>One binary: static SPA bundle + router + trust model + local key store.</td><td>Grow a feature of its own.</td></tr>
+      <tr><td><code>android/…/stride-ffi</code></td><td>UniFFI bindings, panic catching, JSON in / JSON out.</td><td>Let a panic cross the boundary. The FFI is the only place <code>unsafe</code> is allowed.</td></tr>
+    </tbody>
+  </table>
+  <p class="k">Dependency rule: the graph is a DAG and it stays one — core ← ingest, core ← store, api → core, ingest, store. No cycles, no horizontal edges.</p>
+
+  <h3>3.2 Two hosts, one core</h3>
+  <div class="grid g2">
+    <div class="card">
+      <h4>Phone (the product)</h4>
+      <p class="how">Kotlin shell + Capacitor WebView hosting the React app. The WebView calls
+      <code>plugin.apiCall(path, body)</code>; the plugin hands the path to the Rust core <b>in-process</b>. No HTTP,
+      no port, no server. The Garmin key is unwrapped by the Keystore inside the native layer and never enters
+      JavaScript.</p>
+    </div>
+    <div class="card">
+      <h4>Desktop (the rig / community tool)</h4>
+      <p class="how">One Rust binary. It opens the encrypted database, serves the embedded React bundle, and exposes
+      the same router over loopback HTTP (plus an explicitly trusted CIDR list). It is the same crate graph — the
+      desktop binary and the APK cannot disagree about a number.</p>
+    </div>
+  </div>
+
+  <h3>3.3 The data flow of one sync</h3>
+  <ol>
+    <li><b>Key exchange</b> — Personal API key → OAuth1 token pair → 24-hour JWT. The key is stored encrypted; the JWT is disposable and re-minted on demand.</li>
+    <li><b>Index pull</b> — activity list + wellness list for the missing window, with a cursor. The cursor is stored <em>after</em> a successful parse, never before.</li>
+    <li><b>Download</b> — the activity zip (ZIP-slip-safe member validation, absolute paths rejected, size caps).</li>
+    <li><b>Decode</b> — FIT → per-second series + events. Sentinel values mean "no value" and must never be read as numbers.</li>
+    <li><b>Derive</b> — segmentation, fingerprint features, per-activity metrics. This is where FIT is kept as the source of truth: the <b>original file is stored</b>, and every derived series is recomputable.</li>
+    <li><b>Persist</b> — SQLCipher transaction; the activity, its metrics and the FIT blob land together or not at all.</li>
+    <li><b>Re-derive the views</b> — plan/recovery/progress are computed on read from stored primitives, so a change to the engine needs no re-sync.</li>
+  </ol>
+
+  <div class="callout">
+    <p><strong>Why "compute on read" instead of "precompute a score column":</strong> because the engine will change
+    during the migration, and a stored score silently rots. The old repo's stale-golden bug came from exactly this
+    shape. The cost is CPU; the benefit is that the score always matches the current engine.</p>
+  </div>
+
+  <h3>3.4 The engine (the part that must not be wrong)</h3>
+  <table>
+    <thead><tr><th style="width:22%">Engine</th><th style="width:40%">What it computes</th><th style="width:38%">Its contract</th></tr></thead>
+    <tbody>
+      <tr><td><b>Recovery</b></td><td>Sleep, HRV, resting HR vs the athlete's own trailing distribution (median + MAD), each as a z-like deviation.</td><td>Never a 0–100 score. Deviations are graded: one signal slightly out, one signal clearly out, several out → three different sentences.</td></tr>
+      <tr><td><b>Today's call</b></td><td>Combines the recovery stance with the plan's intent and the athlete's stated feeling → one of a small set of graded calls.</td><td>Exactly one sentence. Body and Today read the <em>same</em> sentence from the core (the old repo duplicated the wording and they drifted).</td></tr>
+      <tr><td><b>Plan</b></td><td>Active block, today's session, adherence (plan vs what happened, with a cause), results per session.</td><td>"Missed" only when there was intent. A plan inferred from history is a <b>baseline</b>, not a prescription — it never produces a red "missed".</td></tr>
+      <tr><td><b>Story</b></td><td>One or two sentences on what an activity meant (was this a real session? did it fit the plan? was the effort right?).</td><td>Reads the same primitives the charts read. A number on screen and a number in the sentence are always the same number.</td></tr>
+      <tr><td><b>Fitness / Progress</b></td><td>Volume, pace-at-HR, bests, milestones, consistency (forgiving), adherence %.</td><td>No trend percentage without a real baseline. A near-zero starting value yields no percentage, ever.</td></tr>
+      <tr><td><b>Compare</b></td><td>A row set of metric differences plus the <b>basis</b> used (same distance / same route / same HR band).</td><td>The basis is always stated on screen. Comparing incomparable runs is allowed but labelled.</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ============================ 4 ============================ -->
+<section id="s4">
+  <h2><span class="n">04</span> The screen system: one IA, every width</h2>
+  <p class="lede">
+    The old repo branched the app by <em>device class</em> (<code>isNativeApp()</code>) and produced two information
+    architectures that then had to be kept in sync. v2 branches by <em>width</em> and produces one architecture with
+    several arrangements.
+  </p>
+
+  <h3>4.1 Width bands</h3>
+  <table>
+    <thead><tr><th style="width:16%">Band</th><th style="width:20%">Width</th><th style="width:30%">Navigation</th><th style="width:34%">Shape of a screen</th></tr></thead>
+    <tbody>
+      <tr><td><b>Compact</b></td><td>&lt; 600 px</td><td>Bottom tab bar (4), thumb-reachable</td><td>One column. Cards stack. Tables become metric rows. Charts are full-bleed with a horizontal scroll <em>inside</em> the chart only.</td></tr>
+      <tr><td><b>Medium</b></td><td>600–1023 px</td><td>Bottom tab bar → collapses to a top bar</td><td>One column capped at ~680 px, centred; two-column only where a card pair is genuinely independent.</td></tr>
+      <tr><td><b>Wide</b></td><td>≥ 1024 px</td><td>Left rail (4 destinations + secondary links)</td><td>Content column max ~880 px; charts may sit side by side; Compare shows two columns.</td></tr>
+    </tbody>
+  </table>
+  <p class="k">Bands are decided by <b>container</b> width (CSS container queries), not viewport width — so a phone in
+  split-screen, a foldable unfolded, or a browser window resized mid-session all land in the right band without a
+  reload.</p>
+
+  <h3>4.2 The reflow rules (these are the contract)</h3>
+  <ul>
+    <li><b>Set constant, arrangement fluid.</b> The four destinations are identical at every band. A test asserts
+    the destination set at every viewport, so a desktop-only screen cannot reappear by accident.</li>
+    <li><b>Nothing scrolls sideways except a chart's own series.</b> No page-level horizontal scroll, ever, at any width.</li>
+    <li><b>Tap targets ≥ 44×44 px</b> at compact; ≥ 32 px at wide (mouse).</li>
+    <li><b>Type scales with the band, not the device</b> — 16/14/13 for body at compact, 15/13/12 at wide (denser is fine when there is room).</li>
+    <li><b>Safe areas</b> are respected via <code>env(safe-area-inset-*)</code>; the compact tab bar sits above the home indicator; the old repo's Capacitor safe-area injection bug is fixed at the source, not worked around.</li>
+    <li><b>Heights use <code>dvh</code></b>, not <code>vh</code> — mobile browser chrome must not clip the last row.</li>
+    <li><b>No device sniffing</b> for layout. A build-time flag exists only for genuinely native capabilities
+    (hardware back button, Keystore screen, share sheet).</li>
+  </ul>
+
+  <h3>4.3 How the shell morphs</h3>
+  <div class="wf">
+    <div class="dev n360">
+      <div class="cap">Compact · 360</div>
+      <div class="bar l a"></div><div class="bar m"></div>
+      <div class="bar l b"></div><div class="bar s"></div>
+      <div style="height:10px"></div>
+      <div class="bar l"></div><div class="bar s c"></div>
+      <div style="margin-top:12px;border-top:1px solid var(--line2);padding-top:8px">
+        <span class="pill">Today</span><span class="pill">Runs</span><span class="pill">Progress</span><span class="pill">Body</span>
+      </div>
+    </div>
+    <div class="dev n390">
+      <div class="cap">Medium · 768</div>
+      <div class="bar l a"></div><div class="bar m"></div>
+      <div class="bar l b"></div><div class="bar s"></div>
+      <div style="height:10px"></div>
+      <div style="display:flex;gap:8px">
+        <div style="flex:1"><div class="bar l"></div><div class="bar s c"></div></div>
+        <div style="flex:1"><div class="bar l"></div><div class="bar s"></div></div>
+      </div>
+    </div>
+    <div class="dev" style="width:320px">
+      <div class="cap">Wide · 1280</div>
+      <div style="display:flex;gap:12px">
+        <div style="width:56px">
+          <div class="bar l a"></div><div class="bar l b"></div><div class="bar l"></div><div class="bar l c"></div>
+        </div>
+        <div style="flex:1">
+          <div class="bar l a"></div><div class="bar m"></div>
+          <div class="bar l b"></div><div class="bar s"></div>
+          <div style="height:10px"></div>
+          <div style="display:flex;gap:8px">
+            <div style="flex:1"><div class="bar l"></div><div class="bar s"></div></div>
+            <div style="flex:1"><div class="bar l"></div><div class="bar s c"></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <h3>4.4 The viewport matrix (a gate, not a suggestion)</h3>
+  <p class="how">The old repo checked one width (390 px). v2 gates six, in CI, on every pull request:</p>
+  <div class="pill-row">
+    <span class="pill">360×640 small phone</span><span class="pill">390×844 phone</span><span class="pill">430×932 large phone</span>
+    <span class="pill">768×1024 tablet</span><span class="pill">1024×768 landscape</span><span class="pill">1280×800 desktop</span>
+  </div>
+  <p class="how">At each width the gate asserts: no horizontal page scroll · no clipped or truncated labels ·
+  tap targets ≥ 44 px · <b>the destination set is identical</b> · the primary action of the screen is reachable
+  without a horizontal scroll · charts render with legible axis labels · the safe-area padding is applied.</p>
+</section>
+
+<!-- ============================ 5 ============================ -->
+<section id="s5">
+  <h2><span class="n">05</span> Screen specifications</h2>
+  <p class="lede">
+    Every screen below is specified <b>before</b> code: its purpose, the question it answers, what it must never do,
+    its content blocks at each width, the data behind it, its interactions, its states, and the checks that prove it
+    works. This is the document the implementation is measured against.
+  </p>
+
+  <!-- Today -->
+  <div class="screen">
+    <div class="head"><span class="nm">Today</span><span class="tag">destination 1 of 4</span><span class="tag">the reason the app exists</span></div>
+    <div class="body">
+      <div class="cols">
+        <div>
+          <h4>Why</h4>
+          <p class="how">Every morning the athlete must be told, in one sentence, what to do today and why. This is
+          the whole product in one card. If Today is wrong, nothing else matters.</p>
+          <h4>What it must never do</h4>
+          <ul>
+            <li>Never show a red "missed" — the app judges a plan, it does not scold.</li>
+            <li>Never show two different verdicts (the old repo's Today and Body disagreed; the core now owns the sentence).</li>
+            <li>Never quote a distance the athlete will not actually run, when a plan prescribes a different one.</li>
+            <li>Never show a percentage the data cannot support (a near-zero baseline yields no percentage).</li>
+          </ul>
+        </div>
+        <div>
+          <h4>Content blocks</h4>
+          <ol>
+            <li><b>The call</b> — one sentence, one of four graded states: <i>go as planned</i> · <i>keep it easy</i> ·
+            <i>go easy or take the day</i> · <i>take the day</i>. Plus a one-line reason chip (sleep / HRV / RHR / plan / nothing unusual).</li>
+            <li><b>Today's session</b> — if a plan exists: the intent (distance, type, and the source: <i>baseline</i> / <i>prescribed</i> / <i>imported</i>). Tap → the Plan week.</li>
+            <li><b>The distance warning</b> — appears <b>only</b> when today's run is within 10% of the planned distance. Otherwise absent (the old repo showed it on every card, every day).</li>
+            <li><b>Recovery strip</b> — sleep, HRV, RHR, each as a deviation against your own normal, never a 0–100 score.</li>
+            <li><b>Last run</b> — one line: distance, what it meant, and a link into the detail page.</li>
+          </ol>
+          <h4>Data</h4>
+          <p class="k">GET /api/v1/insights/today · GET /api/v1/physiology/readiness · GET /api/v1/plan/today · GET /api/v1/activities?limit=1</p>
+        </div>
+      </div>
+      <h4>Layout by width</h4>
+      <table>
+        <thead><tr><th style="width:16%">Band</th><th>Arrangement</th></tr></thead>
+        <tbody>
+          <tr><td>Compact</td><td>One column, call card first and full-bleed; the recovery strip is a 3-up row of tiles; the session card is a tappable row; the warning, when present, sits <b>inside</b> the call card as a second line — never as a floating banner.</td></tr>
+          <tr><td>Medium</td><td>Column capped at 680 px, centred. The call card may sit side-by-side with a small "this week" summary.</td></tr>
+          <tr><td>Wide</td><td>Content column 880 px; the call card spans full width; the recovery strip becomes a 3-up row with room for a sparkline each; the last-run line may become a card with a mini route thumbnail.</td></tr>
+        </tbody>
+      </table>
+      <h4>States</h4>
+      <ul>
+        <li><b>No data yet</b> (never synced): "Connect your Garmin key to get today's call" + a connect button. No fake numbers, ever.</li>
+        <li><b>No plan</b>: the call stands alone; the session block is omitted, not shown empty.</li>
+        <li><b>Stale data</b> (&gt; 36 h): the recovery strip says "last synced 2 days ago" and the call is presented as based on stale inputs, in a quieter tone.</li>
+        <li><b>Sync failed</b>: a single line with the reason and a retry. The call is hidden (it would be a lie), and the last good call is shown greyed with its date.</li>
+      </ul>
+      <h4>Acceptance checks</h4>
+      <ul>
+        <li>Distance warning appears on exactly one fixture (run 10.2 km against a 10 km line) and on none of the others.</li>
+        <li>Today and Body show the byte-identical advice sentence for the same recovery state (a golden assertion, not a screenshot).</li>
+        <li>The call sentence never contains a distance that differs from the plan's prescribed distance.</li>
+        <li>At 360 px: no horizontal scroll; the call card is fully visible without scrolling to read it.</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- Runs -->
+  <div class="screen">
+    <div class="head"><span class="nm">Runs</span><span class="tag">destination 2 of 4</span><span class="tag">the feed</span></div>
+    <div class="body">
+      <div class="cols">
+        <div>
+          <h4>Why</h4>
+          <p class="how">The feed is the athlete's memory of their own running, and the entry point to every
+          explanation. It is a list of <b>activities</b>, not of days, and each row carries a sentence about meaning.</p>
+          <h4>What it must never do</h4>
+          <ul>
+            <li>Never hide the story line — a row without a sentence is a spreadsheet.</li>
+            <li>Never show a "missed" badge against an activity; activities are facts, not scores.</li>
+            <li>Never load everything — the feed is windowed by date with an explicit "load more".</li>
+          </ul>
+        </div>
+        <div>
+          <h4>Content blocks</h4>
+          <ol>
+            <li><b>Group header</b> — "This week" / "12 Oct" — with the group's total (distance, time) at wide widths only.</li>
+            <li><b>Activity row</b> — date, title, chips (distance · pace · avg HR · effort), and the story line in one sentence. A route thumbnail at wide widths.</li>
+            <li><b>Actions</b> — open the detail page; "Compare with…" (the contextual entry to Compare); "Add a note" (one of the three allowed inputs).</li>
+            <li><b>Import entry</b> — a single "Import a FIT file" action (phone: file picker; desktop: drag-and-drop). Dedupe is silent and reported.</li>
+          </ol>
+          <h4>Data</h4>
+          <p class="k">GET /api/v1/activities?cursor=… · GET /api/v1/insights/chips?id=… · POST /api/v1/auth/garmin/fit-import</p>
+        </div>
+      </div>
+      <h4>Layout by width</h4>
+      <ul>
+        <li><b>Compact:</b> one column, 72–88 px rows, chips wrap to a second line, story line clamped to two lines with the full text on the detail page. Filter chips scroll horizontally <em>within the chip strip</em>.</li>
+        <li><b>Medium:</b> single column, capped 680 px; group headers gain the weekly total.</li>
+        <li><b>Wide:</b> two columns of activity cards (each card = thumbnail + chips + story), filters become a left-aligned filter row, and the feed sits in the 880 px content column.</li>
+      </ul>
+      <h4>States</h4>
+      <ul>
+        <li><b>Empty</b> — "No activities yet" with the connect and import actions; no skeleton forever.</li>
+        <li><b>Import in progress</b> — an inline row on the list with progress, not a modal.</li>
+        <li><b>Import rejected as duplicate</b> — one line: "Already have this run (12 Oct, 10.2 km)".</li>
+      </ul>
+      <h4>Acceptance checks</h4>
+      <ul>
+        <li>Every visible row has a non-empty story sentence (golden assertion over the corpus).</li>
+        <li>Feed loads ≤ 40 rows per page; scrolling to the end requests the next page once.</li>
+        <li>A duplicated FIT import produces zero new rows and exactly one explanation line.</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- Activity detail -->
+  <div class="screen">
+    <div class="head"><span class="nm">Activity</span><span class="tag">reached from Runs</span><span class="tag">the detail page</span></div>
+    <div class="body">
+      <div class="cols">
+        <div>
+          <h4>Why</h4>
+          <p class="how">A run becomes a lesson here. The screen answers three questions in order: what was it, what
+          did it mean, and how did it compare to my plan and my normal?</p>
+        </div>
+        <div>
+          <h4>Content blocks (in order)</h4>
+          <ol>
+            <li><b>Header</b> — title, date, and the three headline numbers (distance, time, pace).</li>
+            <li><b>The story</b> — the same sentence shown in the feed, expanded with the "why" (it sat inside the zone, it was longer than usual, it matched the plan).</li>
+            <li><b>Map</b> — route with a start/end marker; at compact the map is a 16:9 banner, not a full-bleed panel.</li>
+            <li><b>Effort</b> — heart-rate series with the athlete's own zone bands, and the pace series under it, aligned on the same x-axis (the two charts are the same time axis — this is the single most useful view in the app).</li>
+            <li><b>Splits</b> — per-kilometre table; at compact it becomes the metric-row form, at wide a real table.</li>
+            <li><b>Elevation</b> — an area chart, collapsible (off by default at compact).</li>
+            <li><b>Against the plan</b> — "this was the easy Tuesday: 8 km planned, 8.4 km done". Only if a plan existed.</li>
+            <li><b>Actions</b> — "Compare with…", "Add a note", "Export FIT".</li>
+          </ol>
+        </div>
+      </div>
+      <h4>Layout by width</h4>
+      <ul>
+        <li><b>Compact:</b> single column; the effort chart is the hero; the map is a collapsible banner; splits collapse to "show splits"; everything is one tap away, nothing is hidden behind a horizontal scroll.</li>
+        <li><b>Medium:</b> single column capped 680 px; map and effort chart may sit side-by-side above 900 px of content width.</li>
+        <li><b>Wide:</b> two columns — left: story + splits + elevation; right (sticky): map, effort chart and the plan comparison.</li>
+      </ul>
+      <h4>Acceptance checks</h4>
+      <ul>
+        <li>The headline numbers match the row in the feed and the values in the story sentence (single source, golden assertion).</li>
+        <li>HR and pace charts share an x-axis and are aligned to the second in the DOM.</li>
+        <li>At 360 px the effort chart's axis labels are legible (≥ 11 px effective) and the chart does not overflow its card.</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- Progress -->
+  <div class="screen">
+    <div class="head"><span class="nm">Progress</span><span class="tag">destination 3 of 4</span><span class="tag">the motivation</span></div>
+    <div class="body">
+      <div class="cols">
+        <div>
+          <h4>Why</h4>
+          <p class="how">Progress proves the athlete is getting fitter — <b>forgivingly</b>. A missed week is not a
+          failure; it is a gap in the line. The screen's job is to show the trend without ever inventing a trend the
+          data cannot carry.</p>
+          <h4>What it must never do</h4>
+          <ul>
+            <li>Never show a percentage change from a near-zero baseline (the old repo's "trend blow-up" bug).</li>
+            <li>Never show a "missed" counter for a week with no plan — only for a plan the athlete set.</li>
+            <li>Never use a population percentile. Everything is against the athlete's own history.</li>
+          </ul>
+        </div>
+        <div>
+          <h4>Content blocks</h4>
+          <ol>
+            <li><b>Headline</b> — "fitter than 8 weeks ago" (or an honest "not enough data yet"), with the evidence in one clause (e.g. "same heart rate, 24 s/km faster").</li>
+            <li><b>Weekly volume</b> — a bar chart of the last 12 weeks, with a soft band showing the athlete's typical week.</li>
+            <li><b>Pace at heart rate</b> — the honest fitness metric: pace at the same HR over time, with gaps left as gaps.</li>
+            <li><b>Bests &amp; milestones</b> — recent bests and the milestones that were actually hit (a 10k, a month, a streak).</li>
+            <li><b>Consistency</b> — sessions per week over time, forgiving: a gap is a gap, not a red X.</li>
+            <li><b>Adherence</b> — only if a plan exists: sessions planned vs done, with the cause for each miss.</li>
+          </ol>
+        </div>
+      </div>
+      <h4>Layout by width</h4>
+      <ul>
+        <li><b>Compact:</b> one column; headline first; each chart is a card with a 12-week default range; a range selector (4/8/12/26 weeks) is a segmented control that fits the width without a horizontal scroll.</li>
+        <li><b>Medium:</b> column capped 680 px; volume and pace-at-HR may be side-by-side above 900 px.</li>
+        <li><b>Wide:</b> two-column grid: left = headline + volume + pace-at-HR; right = bests, milestones, consistency, adherence.</li>
+      </ul>
+      <h4>States</h4>
+      <ul>
+        <li><b>Not enough data</b> — the headline says so plainly; charts show what exists with a "needs 4 more weeks" note; <b>no percentage is rendered</b>.</li>
+        <li><b>No plan</b> — the adherence card is omitted entirely (never "0% adherence" against a plan that does not exist).</li>
+      </ul>
+      <h4>Acceptance checks</h4>
+      <ul>
+        <li>A fixture with a zero baseline renders no percentage anywhere on the screen.</li>
+        <li>Adherence is computed against the active plan block only (not every block ever imported — the old repo's duplication bug).</li>
+        <li>The headline sentence's numbers are the same numbers the charts show.</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- Body -->
+  <div class="screen">
+    <div class="head"><span class="nm">Body</span><span class="tag">destination 4 of 4</span><span class="tag">the evidence</span></div>
+    <div class="body">
+      <div class="cols">
+        <div>
+          <h4>Why</h4>
+          <p class="how">Body is where the athlete checks the reasoning behind the call. It is the same three signals
+          the engine used, shown against the athlete's own normal — and it must <b>say exactly what Today said</b>.</p>
+          <h4>What it must never do</h4>
+          <ul>
+            <li>Never show a 0–100 readiness score (a number the data cannot carry).</li>
+            <li>Never show a population percentile or a device score.</li>
+            <li>Never contradict Today — the sentence comes from the core, once.</li>
+            <li>Never truncate a date label ("Oct 7," was a real bug in the old repo).</li>
+          </ul>
+        </div>
+        <div>
+          <h4>Content blocks</h4>
+          <ol>
+            <li><b>The same call sentence</b>, from the core, with the reason spelled out.</li>
+            <li><b>Sleep</b> — last night's duration and stage mix, against the athlete's typical night. With no stages, the chart says "duration" and does not draw an empty stage chart.</li>
+            <li><b>HRV</b> — the last 30 nights against the personal band (median ± MAD).</li>
+            <li><b>Resting HR</b> — the last 30 days against the personal band.</li>
+            <li><b>How to read this</b> — two lines of plain text explaining the band. No jargon.</li>
+          </ol>
+        </div>
+      </div>
+      <h4>Layout by width</h4>
+      <ul>
+        <li><b>Compact:</b> one column; the call sentence is the first line of the screen (not a summary at the bottom); each signal is a card with a 30-point sparkline and the personal band shaded.</li>
+        <li><b>Medium:</b> column capped 680 px; sleep and HRV may pair up.</li>
+        <li><b>Wide:</b> three-column signal cards (sleep · HRV · RHR) above a full-width "how to read this" note; the personal band is labelled on the axis.</li>
+      </ul>
+      <h4>Acceptance checks</h4>
+      <ul>
+        <li>Body's sentence == Today's sentence for the same state (byte-identical, golden assertion).</li>
+        <li>Every date label renders fully at 360 px (no truncation, no ellipsis).</li>
+        <li>A night with no stage data renders the duration chart only — no empty stage chart.</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- Plan week -->
+  <div class="screen">
+    <div class="head"><span class="nm">Plan</span><span class="tag">reached from Today</span><span class="tag">not a destination</span></div>
+    <div class="body">
+      <div class="cols">
+        <div>
+          <h4>Why</h4>
+          <p class="how">The plan is the intent the engine judges against, so it must be inspectable — but it is not a
+          place the athlete lives in. It is reached from Today and from the feed, and it goes back where it came from.</p>
+          <h4>What it must never do</h4>
+          <ul>
+            <li>Never label an inferred baseline as "missed" — a baseline is not a prescription.</li>
+            <li>Never show two plan blocks at once without naming which is active.</li>
+            <li>Never require a Garmin account to have a plan (v2 has no account flow).</li>
+          </ul>
+        </div>
+        <div>
+          <h4>Content blocks</h4>
+          <ol>
+            <li><b>The source banner</b> — <i>Baseline (inferred from your history)</i> · <i>Prescribed (imported)</i> · <i>Typed</i>. Named in plain words, with the "why" available on tap.</li>
+            <li><b>This week</b> — seven days, each with intent (distance, type), the actual, and a verdict of <i>done</i> · <i>planned</i> · <i>missed</i> — the last only for prescriptions.</li>
+            <li><b>Today</b> — highlighted inside the week.</li>
+            <li><b>Adherence</b> — a single number plus the count it is made of.</li>
+            <li><b>Sources / manage</b> — import a plan (markdown / CSV / JSON / Garmin CSV export). Editing a plan is <b>not</b> in v2.</li>
+          </ol>
+        </div>
+      </div>
+      <h4>Layout by width</h4>
+      <ul>
+        <li><b>Compact:</b> a 7-column week strip that fits 360 px (each day a 44 px column with the day letter and a dot: done / planned / missed / rest), then the day detail below it, then the month list.</li>
+        <li><b>Medium:</b> the week strip becomes a 7-column row with numbers; the day detail is below.</li>
+        <li><b>Wide:</b> a real calendar grid (weeks as rows), the selected day's detail to the right, adherence and sources in a left rail column.</li>
+      </ul>
+      <h4>Acceptance checks</h4>
+      <ul>
+        <li>A baseline plan never renders the word "missed" (golden assertion over every corpus day).</li>
+        <li>Only the active block's sessions are counted — 7 sessions, not 14 (the old repo's duplication bug).</li>
+        <li>An imported plan with no recognisable workout keywords is labelled <b>unclassified</b>, never "easy" (the old repo's silent guess bug).</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- Compare -->
+  <div class="screen">
+    <div class="head"><span class="nm">Compare</span><span class="tag">reached from any run</span><span class="tag">not a destination</span></div>
+    <div class="body">
+      <div class="cols">
+        <div>
+          <h4>Why</h4>
+          <p class="how">It is the best screen in the product: it turns "is that better?" into a number. It is also the
+          screen most damaged by a small screen, because the naive form is two columns side by side.</p>
+          <h4>What it must never do</h4>
+          <ul>
+            <li>Never compare silently — the <b>basis</b> is always named (same distance / same route / same HR band / different).</li>
+            <li>Never show a "winner" verdict when the basis does not support it.</li>
+            <li>Never require horizontal scrolling to see a difference.</li>
+          </ul>
+        </div>
+        <div>
+          <h4>Content blocks</h4>
+          <ol>
+            <li><b>The basis banner</b> — "Same distance, 3 weeks apart" / "Same route, different week" / "Different distances — read with care".</li>
+            <li><b>The metric diff</b> — the primary form at every width: rows of <i>metric · A · B · Δ</i>.</li>
+            <li><b>The charts</b> — at wide widths, two charts side by side; at compact, one chart with an <b>A / B toggle</b>.</li>
+            <li><b>The two runs</b> — a compact identity card each (date, distance, the story sentence).</li>
+            <li><b>Actions</b> — swap A and B; choose a different run; share the comparison as an image or HTML file.</li>
+          </ol>
+        </div>
+      </div>
+      <h4>The metric diff is the canonical form</h4>
+      <div class="wf">
+        <div class="dev n360">
+          <div class="cap">Compact · 360</div>
+          <div class="bar m a"></div>
+          <div style="height:8px"></div>
+          <div class="bar s"></div><div class="bar s"></div><div class="bar s"></div>
+          <div style="height:8px"></div>
+          <div class="bar m b"></div><div class="bar s"></div>
+        </div>
+        <div class="dev" style="width:330px">
+          <div class="cap">Wide · A | B | Δ</div>
+          <div class="bar m a"></div>
+          <div style="height:8px"></div>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px">
+            <div class="bar s"></div><div class="bar s"></div><div class="bar s c"></div>
+            <div class="bar s"></div><div class="bar s"></div><div class="bar s c"></div>
+            <div class="bar s"></div><div class="bar s"></div><div class="bar s c"></div>
+          </div>
+        </div>
+      </div>
+      <h4>Layout by width</h4>
+      <ul>
+        <li><b>Compact:</b> the diff rows are the screen; a row expands in place to reveal the two values and the delta; charts are behind an A/B toggle; the run identity cards are two stacked rows.</li>
+        <li><b>Medium:</b> the diff table widens; A and B columns stay side by side from ~520 px of content width up.</li>
+        <li><b>Wide:</b> two pinned columns (A left, B right) with the diff column at the right edge; charts side by side under the banner.</li>
+      </ul>
+      <h4>Acceptance checks</h4>
+      <ul>
+        <li>At 360 px every delta is visible without scrolling, and the row labels are not truncated.</li>
+        <li>The basis banner is always present; a fixture that compares different distances shows the caution wording.</li>
+        <li>Swapping A and B flips the sign of every delta (property test over the corpus).</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- Connect / onboarding -->
+  <div class="screen">
+    <div class="head"><span class="nm">Connect</span><span class="tag">first run, phone</span><span class="tag">native, not a web page</span></div>
+    <div class="body">
+      <div class="cols">
+        <div>
+          <h4>Why</h4>
+          <p class="how">One credential, one screen, one promise. This is the first thing a stranger sees, and it must
+          be the easiest screen in the product to get right — and the hardest to leak.</p>
+          <h4>What it must never do</h4>
+          <ul>
+            <li>Never let the key enter the WebView — it is typed into a native field and wrapped by a non-exportable Keystore key.</li>
+            <li>Never ask for an account, a password, a code, or a pairing.</li>
+            <li>Never show a wall of text before the field.</li>
+          </ul>
+        </div>
+        <div>
+          <h4>Flow</h4>
+          <ol>
+            <li>The promise in one line: <b>"Your data stays on this phone."</b></li>
+            <li>A native text field for the Personal API key, with a link to Garmin's page to create one.</li>
+            <li>A single primary button: <b>Connect</b>. → states: <i>Checking…</i> → <i>Syncing…</i> → <i>Connected · 160 runs</i>.</li>
+            <li>"Not now" — the app opens in an empty but honest state (no fake data, ever).</li>
+          </ol>
+          <h4>Layout</h4>
+          <ul>
+            <li><b>Phone:</b> a native Kotlin activity, full-screen, one column, the field and the button above the fold at 360×640; the keyboard must not cover the button.</li>
+            <li><b>Desktop:</b> the same content as a first-run page (<code>/connect</code>) that stands alone — no app chrome, no tabs — and disappears once connected.</li>
+          </ul>
+          <h4>Acceptance checks</h4>
+          <ul>
+            <li>The key never appears in any WebView-reachable surface: asserted by a test over the bridge's route table.</li>
+            <li>A failed key produces a specific, actionable message ("that key was rejected by Garmin") and never a stack trace.</li>
+            <li>The desktop first-run page has zero references to pairing, codes or devices.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Settings -->
+  <div class="screen">
+    <div class="head"><span class="nm">Settings</span><span class="tag">secondary</span><span class="tag">reachable from the rail / a header menu</span></div>
+    <div class="body">
+      <div class="cols">
+        <div>
+          <h4>Why</h4>
+          <p class="how">Three inputs change what the app should say: the weekly goal, a pause, and a note on a run.
+          Everything else in settings is plumbing.</p>
+        </div>
+        <div>
+          <h4>Content blocks</h4>
+          <ol>
+            <li><b>Weekly goal</b> — one number; a blank means "no goal" (never a default of 0 that reads as a failure).</li>
+            <li><b>Pause</b> — start/end date, and a one-line reason (travel / sick / injured). While paused, adherence is suspended and the app says so.</li>
+            <li><b>Connection</b> — Garmin status, key identifier (last 4 only), last sync time, a "re-connect" action. Never the key itself.</li>
+            <li><b>Import</b> — import a plan file or a FIT file.</li>
+            <li><b>Storage</b> — database size, "export a backup", "delete all data" (with a typed confirmation).</li>
+            <li><b>About</b> — version, licence, the promise, and where the source is.</li>
+          </ol>
+          <h4>Layout</h4>
+          <ul>
+            <li><b>Compact:</b> a list of rows, each a tappable group; groups are collapsible; nothing nested deeper than one level.</li>
+            <li><b>Wide:</b> a two-column settings grid inside the 880 px column; destructive actions are last and visually separated.</li>
+          </ul>
+          <h4>Acceptance checks</h4>
+          <ul>
+            <li>No screen in the app ever renders the Garmin key (a CI grep over the built bundle asserts it).</li>
+            <li>"Delete all data" requires typing the word DELETE and cannot be undone silently.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <h3>5.8 The two screens that are <em>not</em> web pages</h3>
+  <p class="how">Two flows stay native because the platform APIs are the point:</p>
+  <ul>
+    <li><b>Connect</b> (phone) — the Keystore field. There is no web fallback: the promise "the key never enters the WebView" would be a lie.</li>
+    <li><b>Background sync</b> (phone) — WorkManager, with a system notification ("Synced 12 activities"). The WebView is suspended; the core keeps running in the app process.</li>
+  </ul>
+</section>
+
+<!-- ============================ 6 ============================ -->
+<section id="s6">
+  <h2><span class="n">06</span> Data model and the API contract</h2>
+  <p class="lede">The API shapes and the schema are frozen in Slice 0 and never change afterwards. The React app and the
+  FFI both consume the same shapes.</p>
+
+  <h3>6.1 Principal tables</h3>
+  <table>
+    <thead><tr><th style="width:22%">Table</th><th style="width:44%">Holds</th><th style="width:34%">Notes</th></tr></thead>
+    <tbody>
+      <tr><td><code>activities</code></td><td>the run: times, distance, elevation, HR summary, source, and the FIT blob reference</td><td>the FIT is the source of truth; derived series are recomputable</td></tr>
+      <tr><td><code>activity_samples</code></td><td>per-second stream, stored compressed and windowed</td><td>may be pruned and re-derived from the FIT</td></tr>
+      <tr><td><code>wellness_daily</code></td><td>sleep, HRV, resting HR, stress and the day's summaries</td><td>the source of Body and of recovery</td></tr>
+      <tr><td><code>plan_blocks</code> / <code>plan_sessions</code></td><td>the plan: its source (baseline / prescribed / typed), its date range, its sessions</td><td>exactly one active block per plan source</td></tr>
+      <tr><td><code>notes</code></td><td>the athlete's own note on a run, and the goal/pause settings</td><td>the only free text the app stores</td></tr>
+      <tr><td><code>sync_state</code></td><td>cursors per data kind, last successful sync, token expiry</td><td>a cursor advances only after a successful parse</td></tr>
+    </tbody>
+  </table>
+
+  <h3>6.2 The route table (frozen)</h3>
+  <p class="how">Inherited from the old core where the behaviour is right; every route below exists on <b>both</b>
+  hosts, and the phone reaches them in-process.</p>
+  <div class="grid g3">
+    <div class="card"><h4>Data</h4><p class="k">/activities · /activities/{id} · /physiology/{daily,sleep,hrv,readiness,latest,sources} · /fitness/{fingerprint,trends,zones} · /stats/{summary,weekly,monthly,pace-trends,elevation,hr-zones,personal-records}</p></div>
+    <div class="card"><h4>Plan &amp; insight</h4><p class="k">/plan/{current,today,week,blocks,sources,adherence,results,import} · /insights/{today,progress,chips} · /compare · /compare/candidates</p></div>
+    <div class="card"><h4>App</h4><p class="k">/health · /health/daily · /sync/{status,run,runs,history,settings} · /auth/{status,garmin/personal-key,garmin/personal-key/test,garmin/fit-import,garmin/logout} · /calendar</p></div>
+  </div>
+  <p class="k">Cut from the old table: /network/*, /tiles/*, /gear, /auth/garmin/{login,mfa,developer-key,callback}, /auth/{pair-code,pair,devices}.</p>
+
+  <h3>6.3 Error and freshness rules</h3>
+  <ul>
+    <li>Every response carries a <code>generated_at</code>; the UI shows staleness rather than silently showing old numbers.</li>
+    <li>Business failures are typed: <code>no_plan</code>, <code>stale_data</code>, <code>not_enough_history</code>, <code>garmin_rejected</code> — the UI renders each as a specific sentence, never a generic error.</li>
+    <li>No endpoint ever returns the database key, the Garmin key, a file path, or a credential.</li>
+  </ul>
+</section>
+
+<!-- ============================ 7 ============================ -->
+<section id="s7">
+  <h2><span class="n">07</span> Security and the trust model</h2>
+  <p class="lede">Local-first does not mean "no security model". It means the model is small, explicit, and auditable.</p>
+
+  <div class="grid g2">
+    <div class="card">
+      <h4>The credential</h4>
+      <ul>
+        <li>Phone: typed into a native field, wrapped by a non-exportable Android Keystore AES key, stored in <code>noBackupFilesDir</code>, never in the WebView, never in the database, never in a log.</li>
+        <li>Desktop: stored in the OS keyring-equivalent (a file with 0600 in the user's data dir, or an env var for CI); the app reads it, never returns it.</li>
+        <li>The Garmin access token is short-lived (24 h) and disposable: a 401 triggers exactly one re-exchange and one retry, never a loop.</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h4>The database</h4>
+      <ul>
+        <li>SQLCipher, key supplied by the caller, never logged, never returned by an endpoint, never written to a state file.</li>
+        <li>The desktop converts a legacy plain database on first run and keeps a plain backup beside it — with an explicit, documented path.</li>
+        <li>Every query is parameterised; there is no string-built SQL anywhere in the tree (a CI grep asserts it).</li>
+      </ul>
+    </div>
+  </div>
+
+  <h3>The desktop trust model (documented in ten lines)</h3>
+  <table>
+    <thead><tr><th style="width:34%">Caller</th><th style="width:26%">Result</th><th>Rule</th></tr></thead>
+    <tbody>
+      <tr><td>loopback (127.0.0.1 / ::1)</td><td><span class="pill ok">allowed</span></td><td>always; no configuration, no ceremony</td></tr>
+      <tr><td>an explicitly trusted network</td><td><span class="pill ok">allowed</span></td><td><code>STRIDE_TRUSTED_NETWORKS=100.64.0.0/10,192.168.1.0/24</code> — the peer address must be inside a listed CIDR</td></tr>
+      <tr><td>anything else</td><td><span class="pill no">refused</span></td><td>401 with a message naming the env var; no pairing code exists to mint</td></tr>
+    </tbody>
+  </table>
+  <p class="k">Why this is the whole model: the data is on the machine, the key is in the machine, and the only
+  exposure is someone on the network reading your own runs. There is no account to phish, no session to steal, no
+  device to revoke — and nothing to explain to a stranger who clones the repo.</p>
+
+  <div class="callout warn">
+    <p><strong>Never reintroduce:</strong> pairing codes, QR codes, device tokens, capability cookies, remote
+    minting. The old repo spent a day deleting exactly these and they are the single biggest source of "the app wants
+    an account" anxiety. A CI grep asserts that the strings <code>pair-code</code>, <code>pairing</code> and
+    <code>qr</code> do not appear in the route table.</p>
+  </div>
+</section>
+
+<!-- ============================ 8 ============================ -->
+<section id="s8">
+  <h2><span class="n">08</span> Open-source posture</h2>
+  <p class="lede">Everything is public: the code, the corpus, the CI, the release pipeline. That is a promise with a
+  bill attached, and the bill is paid in the design.</p>
+
+  <div class="grid g3">
+    <div class="card"><h4>Licence</h4><p class="how"><b>AGPL-3.0.</b> It is the licence that matches the product: anyone
+    may run it, fork it, improve it — but if someone offers it <em>over a network</em>, they must publish their
+    source. That protects the "there is no cloud version of Stride" promise with teeth instead of a README sentence.</p></div>
+    <div class="card"><h4>Repository</h4><p class="how">Created <b>public, on day one</b>, with the privacy gate
+    already wired. Retrofitting openness onto a repo with history means a history scrub; the old repo's history
+    already contains the athlete's own coordinates from the demo-seed incident.</p></div>
+    <div class="card"><h4>Support</h4><p class="how">A <code>SUPPORT.md</code> that says it plainly: <b>"Issues
+    welcome. Features are mine."</b> One athlete's roadmap, everyone's bug reports.</p></div>
+  </div>
+
+  <h3>The CI that must exist from commit #1</h3>
+  <table>
+    <thead><tr><th style="width:26%">Gate</th><th style="width:44%">What it proves</th><th style="width:30%">Fork-safe?</th></tr></thead>
+    <tbody>
+      <tr><td><code>cargo test</code> + clippy (deny <code>unwrap</code>, <code>expect</code>, <code>panic</code>)</td><td>The core's maths and the FIT decoder's sentinels are right.</td><td>yes</td></tr>
+      <tr><td><b>golden parity</b></td><td>Every number matches the frozen corpus — the old Rust core is the oracle until parity is 100%.</td><td>yes</td></tr>
+      <tr><td><b>viewport matrix</b></td><td>The six-width UI assertions of §04.4.</td><td>yes</td></tr>
+      <tr><td><b>secret scan</b></td><td>No key, keystore, token or <code>.db</code> is tracked or printed.</td><td>yes</td></tr>
+      <tr><td><b>privacy scan</b></td><td>No real coordinates, athlete names, device names or notes in tracked files; the corpus is sanitised.</td><td>yes</td></tr>
+      <tr><td><b>APK check</b></td><td>The published APK carries the Rust core it was built with, and its signing certificate matches the committed fingerprint.</td><td>no — release only</td></tr>
+      <tr><td><b>security check</b></td><td>The live trust model: loopback allowed, untrusted network refused, no path traversal, no secret in any response.</td><td>no — release only</td></tr>
+    </tbody>
+  </table>
+
+  <div class="callout bad">
+    <p><strong>The old repo's CI is not fork-safe and must not be copied.</strong> In <code>android.yml</code> the APK
+    job fetches the signing key from repository secrets; on a pull request from a fork those secrets do not exist, so
+    <em>every outside contributor's build fails</em>. It also grants <code>contents: write</code> at workflow level,
+    including to pull requests. v2's workflow: <code>permissions: contents: read</code> globally; secrets only in the
+    release job; pull requests from forks build a debug APK with no signing; releases only from upstream tags.</p>
+  </div>
+
+  <h3>What ships in a release</h3>
+  <ul>
+    <li><b>The APK</b> — signed, arm64, with the certificate fingerprint committed in <code>assetlinks.json</code> so the app installs as a real app, not a browser tab.</li>
+    <li><b>The desktop binary</b> — one file, per platform, plus the source (which is the point of the licence).</li>
+    <li><b>Generated release notes</b> — derived from the canonical install document, so the notes cannot describe a
+    flow that no longer exists (the old repo's release notes still told people to run a deleted pairing command).</li>
+  </ul>
+</section>
+
+<!-- ============================ 9 ============================ -->
+<section id="s9">
+  <h2><span class="n">09</span> Delivery plan</h2>
+  <p class="lede">
+    Slices are vertical and additive: each one ends with a working app and green gates. No slice rewrites a previous
+    slice's behaviour — that rule is what the old repo lacked, and it is why its cuts collided.
+  </p>
+
+  <table>
+    <thead><tr><th style="width:8%">Slice</th><th style="width:26%">Content</th><th style="width:30%">Done when</th><th style="width:36%">Risk it retires</th></tr></thead>
+    <tbody>
+      <tr><td><b>0</b></td><td>Contract freeze. New public repo, AGPL, docs skeleton, CI skeleton (fork-safe), sanitised corpus extracted, schema + API shapes frozen as data.</td><td>The corpus is in the new repo; the old repo is untouched; every gate runs on an empty crate.</td><td>Writing code before the contract is frozen — the old repo's single largest loss.</td></tr>
+      <tr><td><b>1</b></td><td>The thin vertical line: key → sync → one run → one Today sentence → APK on the phone.</td><td>A real Garmin key syncs a real run and the app shows one true sentence about it.</td><td>Proves the whole stack end-to-end before any breadth.</td></tr>
+      <tr><td><b>2</b></td><td>FIT decode + segmentation + store + FIT-as-source-of-truth.</td><td>Golden parity on every corpus activity; the FIT blob is stored and re-derivable.</td><td>The FIT decoder's sentinel semantics — plausible wrong numbers.</td></tr>
+      <tr><td><b>3</b></td><td>Recovery engine + the one graded sentence + Body.</td><td>Today and Body return the byte-identical sentence; one signal ≠ three signals.</td><td>The two-screens-disagree bug (the old repo's recurring defect).</td></tr>
+      <tr><td><b>4</b></td><td>The plan engine: sources, active block, today, week, adherence, results.</td><td>Adherence matches the old core number-for-number; no "missed" for a baseline.</td><td>Baseline vs prescription confusion; duplicated sessions.</td></tr>
+      <tr><td><b>5</b></td><td>The Runs feed + the activity detail page.</td><td>Every row has a story sentence; the split chart is the hero at 360 px.</td><td>Performance over 160+ activities; windowing bugs.</td></tr>
+      <tr><td><b>6</b></td><td>Progress + fitness + bests + milestones.</td><td>No percentage without a baseline; consistency is forgiving.</td><td>Trend blow-up from near-zero baselines.</td></tr>
+      <tr><td><b>7</b></td><td>Compare (the diff-table form) + FIT import + dedupe.</td><td>Delta signs flip correctly on swap; a duplicate import adds no row.</td><td>Comparing incomparable runs without saying so.</td></tr>
+      <tr><td><b>8</b></td><td>Settings, goal, pause, notes, export/import of the database.</td><td>The desktop export opens on the phone (schema unchanged).</td><td>Data loss on export/import round-trip.</td></tr>
+      <tr><td><b>9</b></td><td>Responsive pass across the whole app + the viewport matrix gate.</td><td>All six widths pass; the destination set is identical everywhere.</td><td>The old repo's phone-only CSS fixes (safe-area, date labels) resurfacing.</td></tr>
+      <tr><td><b>10</b></td><td>Release: signed APK, desktop binaries, docs, generated notes, first public tag.</td><td>A stranger clones, builds and runs it; the install doc is correct because it is generated.</td><td>Fork-hostile CI; stale docs.</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Working rules for the migration</h3>
+  <ul>
+    <li><b>The old repo is the oracle until parity is 100%</b> — the differ runs in CI on every slice, and the old
+    Rust core is retired only when no fixture disagrees.</li>
+    <li><b>One slice at a time.</b> No two features in flight in the same area of the tree.</li>
+    <li><b>Every slice ships</b> — the gates run on the slice, and the phone APK is rebuilt for the end-of-slice check.</li>
+    <li><b>No Python in the new tree.</b> The frozen corpus is data, not code.</li>
+    <li><b>Each slice's acceptance is a golden assertion</b> where possible — not a screenshot, not a human read.</li>
+  </ul>
+
+  <h3>Risks</h3>
+  <table>
+    <thead><tr><th style="width:30%">Risk</th><th style="width:40%">Why it is real</th><th style="width:30%">Mitigation</th></tr></thead>
+    <tbody>
+      <tr><td>The rewrite never feels finished</td><td>Ten slices is a lot of evenings</td><td>Each slice is independently useful; the app is usable from slice 1</td></tr>
+      <tr><td>Numbers drift from the old core</td><td>Two engines, different roundings</td><td>Golden parity gate; core is pure and clock-injected</td></tr>
+      <tr><td>The corpus leaks personal data</td><td>It is derived from real runs</td><td>Sanitise at extraction; privacy scan in CI</td></tr>
+      <tr><td>The phone's memory stays ~100 MB</td><td>The WebView is the cost, not Rust</td><td>Accepted for v2; a native UI is a later, separate decision</td></tr>
+      <tr><td>Open-source maintenance drains attention</td><td>Strangers file issues</td><td>Explicit SUPPORT.md; features stay the owner's call</td></tr>
+      <tr><td>Scope creeps back in</td><td>The old repo's cuts collided</td><td>The cut list in §02 is a contract; adding back requires removing something</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ============================ 10 ============================ -->
+<section id="s10">
+  <h2><span class="n">10</span> Defaults I applied, and what I would still change on request</h2>
+
+  <h3>Defaults applied (you said: take my defaults)</h3>
+  <table>
+    <thead><tr><th style="width:34%">Question</th><th style="width:30%">Default applied</th><th>Why</th></tr></thead>
+    <tbody>
+      <tr><td>Licence</td><td><b>AGPL-3.0</b></td><td>Protects the no-cloud promise with teeth.</td></tr>
+      <tr><td>Repository</td><td><b>Public from day one</b>, in the same org, named <code>stride-v2</code> until the old repo is archived (then renamed to <code>stride</code>)</td><td>No history scrub later; the product name keeps its trust.</td></tr>
+      <tr><td>Old repo</td><td><b>Private, untouched</b>, the oracle during the migration; sanitised public archive at the end</td><td>Parity needs it; its history has personal data in it.</td></tr>
+      <tr><td>Language</td><td><b>Rust only</b>; Python deleted from the new tree; the old core is the oracle</td><td>The point of the exercise.</td></tr>
+      <tr><td>Crates</td><td>core · ingest · store · api · testkit + desktop + FFI (the old <code>stride-mcp</code> is dropped)</td><td>Five crates, one DAG, no speculative surface.</td></tr>
+      <tr><td>Desktop</td><td><b>A dev rig + community tool</b>: one binary, embedded SPA, loopback + CIDR allowlist, no pairing</td><td>Fast feedback loop without a second product.</td></tr>
+      <tr><td>IA</td><td><b>Today · Runs · Progress · Body</b> at every width; Compare and Plan are contextual</td><td>One IA, many arrangements.</td></tr>
+      <tr><td>Compare</td><td><b>Contextual from a run</b>; metric-diff rows as the canonical form; A/B toggle on charts</td><td>It is a task, not a place — and the diff form survives 360 px.</td></tr>
+      <tr><td>Garmin account</td><td><b>Not in v2</b> (no login, no MFA, no calendar)</td><td>The only flow needing credentials the product promised never to want.</td></tr>
+      <tr><td>Plan sources</td><td><b>Baseline (inferred) + prescribed (imported)</b>; typing a plan is not in v2</td><td>Reading intent is the value; authoring it is separate work.</td></tr>
+      <tr><td>MCP/harness</td><td><b>Deferred</b>, with its own disclosure review</td><td>Tool output is a disclosure into a model's context.</td></tr>
+      <tr><td>Support</td><td><b>"Issues welcome, features are mine"</b></td><td>Honest, and cheap.</td></tr>
+    </tbody>
+  </table>
+
+  <h3>What I would still change on request</h3>
+  <ul>
+    <li><b>MIT instead of AGPL</b> — if you would rather maximise adoption than protect the no-cloud promise. One-line change, but it is a one-way door in people's minds.</li>
+    <li><b>The cut list</b> — if any of "gear", "heatmap", "HR zones" or the "running form" page matters to you personally, say which and it comes back (as a screen that also works on the phone).</li>
+    <li><b>The destination names</b> — "Progress" could be "Fitness"; "Runs" could be "Log". Cheap now, expensive later.</li>
+    <li><b>The Plan source set</b> — if you want Garmin's calendar, that is an account flow and it changes the onboarding promise.</li>
+    <li><b>Native phone UI</b> — dropping the WebView would save ~100 MB of RAM but is a second UI implementation and a separate project. v2 does not attempt it.</li>
+  </ul>
+
+  <div class="callout good">
+    <p><strong>What happens when you say go.</strong> Slice 0 only: create the public repo, extract and sanitise the
+    frozen corpus, wire the fork-safe CI, the secret scan and the privacy scan, and stand up the workspace with
+    empty crates — then stop and show you the result before a single line of product logic is written.</p>
+  </div>
+</section>
+
+<footer>
+  <p><b>Stride v2 — the plan of record.</b> Written before code, as agreed. Supersedes the old repo's PLAN.md, which
+  described a system with two implementations; this one describes one. Every screen above is a specification to be
+  measured against, not a description of something that exists.</p>
+</footer>
+
+</div>
+</body>
+</html>

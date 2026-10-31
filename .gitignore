@@ -1,0 +1,9 @@
+target/
+**/target/
+node_modules/
+frontend/dist/
+*.tsbuildinfo
+.DS_Store
+.env
+.env.*
+!.env.example
