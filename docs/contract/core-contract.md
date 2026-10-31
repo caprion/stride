@@ -141,3 +141,20 @@ vocabulary as deliberately absent from v2 — a difference there is not a failur
 The corpus keeps them because it is the oracle's output and its SHA-256 is
 frozen (`scripts/check-corpus.sh`); deleting them would break the oracle's
 integrity and the reference the differ measures against.
+
+## 7. The retry rule, and who owns it
+
+**The shell owns the retry. The client does not.**
+
+- `stride-ingest` performs **exactly one** token exchange and **one** HTTP
+  attempt per call. If the token has expired, the call returns
+  `NeedsReconnect` — it does not re-exchange and try again.
+- The caller — the phone's sync engine, or the desktop's — may make **one**
+  more attempt, and that attempt may perform one fresh token exchange. A
+  second failure stops: the caller surfaces the error and the next scheduled
+  sync tries again.
+
+One rule, one owner. If the client also retried, the phone would exchange
+and retry twice, and the "exactly one" guarantee would be a coincidence
+rather than a rule. Both sides assert it: the client test asserts one
+exchange per call, and the shell's test asserts one retry per sync.
