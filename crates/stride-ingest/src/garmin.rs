@@ -279,6 +279,12 @@ impl ReqwestTransport {
 
 impl HttpTransport for ReqwestTransport {
     fn execute(&self, request: &HttpRequest) -> Result<HttpResponse, TransportError> {
+        let host = request.url.host_str().unwrap_or_default();
+        if request.url.scheme() != "https" || !GARMIN_HOSTS.contains(&host) {
+            return Err(TransportError::new(
+                "refusing a request outside Garmin's hosts",
+            ));
+        }
         let mut builder = self
             .client
             .request(request.method.as_reqwest(), request.url.clone());
@@ -974,6 +980,22 @@ mod tests {
         assert!(unsafe_member_name("C:\\escape.fit"));
         assert!(unsafe_member_name("folder\\..\\escape.fit"));
         assert!(!unsafe_member_name("42_ACTIVITY.fit"));
+    }
+
+    #[test]
+    fn the_production_transport_refuses_a_non_garmin_host() {
+        let Ok(transport) = ReqwestTransport::new() else {
+            return;
+        };
+        let Ok(url) = Url::parse("https://outside.example/collect") else {
+            return;
+        };
+        let request = HttpRequest {
+            method: HttpMethod::Get,
+            url,
+            auth_value: None,
+        };
+        assert!(transport.execute(&request).is_err());
     }
 
     #[test]
