@@ -1,0 +1,39 @@
+# Stride v2 — one workspace, one DAG.
+#
+# The dependency graph is fixed by the plan (PLAN.md §3.1) and asserted by
+# scripts/check-deps.sh in CI:
+#
+#   core ← ingest   core ← store   api → {core, ingest, store}
+#   desktop → {api, store}
+#   stride-testkit is a dev-dependency only, everywhere.
+
+[workspace]
+resolver = "2"
+members = [
+    "crates/stride-core",
+    "crates/stride-ingest",
+    "crates/stride-store",
+    "crates/stride-api",
+    "crates/stride-testkit",
+    "desktop",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.75"
+license = "AGPL-3.0"
+repository = "https://github.com/caprion/stride-v2"
+
+# The lint rules the plan promises (PLAN.md §7): no unwrap, no expect, no
+# panic, no todo, no unimplemented. Unsafe is warned, not denied — only the
+# FFI may use it, and the FFI does not exist yet.
+[workspace.lints.rust]
+unsafe_code = "warn"
+
+[workspace.lints.clippy]
+unwrap_used = "deny"
+expect_used = "deny"
+panic = "deny"
+todo = "deny"
+unimplemented = "deny"
