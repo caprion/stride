@@ -1,13 +1,27 @@
 /**
  * The client entry point.
  *
- * The scaffold's placeholder: the real entry mounts the router.
+ * The app is mounted, the query client is created, and the router is
+ * installed. Nothing else happens here.
  */
 
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
+import { BrowserRouter } from 'react-router-dom'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import './index.css'
 import { App } from './app/App'
+
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      // The data is read from the device; there is no server to race.
+      staleTime: 30_000,
+      refetchOnWindowFocus: false,
+      retry: 1,
+    },
+  },
+})
 
 const container = document.getElementById('root')
 if (!container) {
@@ -16,6 +30,10 @@ if (!container) {
 
 createRoot(container).render(
   <StrictMode>
-    <App />
+    <QueryClientProvider client={queryClient}>
+      <BrowserRouter>
+        <App />
+      </BrowserRouter>
+    </QueryClientProvider>
   </StrictMode>,
 )
