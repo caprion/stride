@@ -26,8 +26,17 @@ use crate::error::{Error, Result};
 /// The largest request head the rig will read.
 pub const MAX_HEAD_BYTES: usize = 32 * 1024;
 
-/// The largest request body the rig will read.
+/// The largest ordinary request body the rig will read.
 pub const MAX_BODY_BYTES: usize = 1024 * 1024;
+
+/// The largest raw FIT file the rig will read.
+pub const MAX_FIT_BODY_BYTES: usize = 20 * 1024 * 1024;
+
+/// The largest base64 FIT request the API will read.
+pub const MAX_FIT_ENCODED_BODY_BYTES: usize = 28 * 1024 * 1024;
+
+/// The largest file in an uploaded export the rig will stage.
+pub const MAX_UPLOAD_BODY_BYTES: usize = 128 * 1024 * 1024;
 
 /// A request, as the rig read it.
 #[derive(Debug, Clone, Default)]
@@ -121,6 +130,15 @@ impl Response {
             status,
             headers: vec![("content-type".to_string(), "application/json".to_string())],
             body: body.as_bytes().to_vec(),
+        }
+    }
+
+    /// A redirect to another path on this rig.
+    pub fn redirect(status: u16, location: &str) -> Response {
+        Response {
+            status,
+            headers: vec![("location".to_string(), location.to_string())],
+            body: Vec::new(),
         }
     }
 
@@ -236,7 +254,7 @@ fn read_request_after_line(reader: &mut impl BufRead, line: String) -> Result<Op
     }
 
     let (path, query) = split_target(&target)?;
-    let body = read_body(reader, &headers)?;
+    let body = read_body(reader, &headers, body_limit_for(&path))?;
 
     Ok(Some(Request {
         method,
@@ -285,8 +303,26 @@ pub fn percent_decode(text: &str) -> String {
     String::from_utf8_lossy(&out).into_owned()
 }
 
+/// The body limit for one path.
+///
+/// Ordinary API requests stay small. A FIT import and an uploaded export
+/// have their own, bounded limits; no other path can ask for more than a
+/// megabyte.
+pub fn body_limit_for(path: &str) -> usize {
+    match path {
+        "/rig/fit-import" => MAX_FIT_BODY_BYTES,
+        "/api/v1/auth/garmin/fit-import" => MAX_FIT_ENCODED_BODY_BYTES,
+        "/rig/import/file" => MAX_UPLOAD_BODY_BYTES,
+        _ => MAX_BODY_BYTES,
+    }
+}
+
 /// Read the body of a request.
-fn read_body(reader: &mut impl BufRead, headers: &[(String, String)]) -> Result<Vec<u8>> {
+fn read_body(
+    reader: &mut impl BufRead,
+    headers: &[(String, String)],
+    limit: usize,
+) -> Result<Vec<u8>> {
     let transfer = headers
         .iter()
         .find(|(name, _)| name.eq_ignore_ascii_case("transfer-encoding"))
@@ -309,7 +345,7 @@ fn read_body(reader: &mut impl BufRead, headers: &[(String, String)]) -> Result<
             .map_err(|_| Error::http("the content length is not a number"))?,
         None => 0,
     };
-    if length > MAX_BODY_BYTES {
+    if length > limit {
         return Err(Error::http("the request body is too large"));
     }
     let mut body = vec![0u8; length];

@@ -19,6 +19,8 @@
 //! | [`spa`] | the embedded app, and the guard that keeps it inside |
 //! | [`api`] | the seam to the router, and the router itself |
 //! | [`sync`] | the rig's pull policy: the one retry the shell owns |
+//! | [`workspace`] | the machine-side services and the first-run state |
+//! | [`tools`] | the rig's verified export and import |
 //! | [`paths`] | where the rig keeps its files |
 //! | [`log`] | the rig's log, and the sink a test reads |
 //!
@@ -49,4 +51,6 @@ pub mod paths;
 pub mod server;
 pub mod spa;
 pub mod sync;
+pub mod tools;
 pub mod trust;
+pub mod workspace;

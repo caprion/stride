@@ -1,11 +1,13 @@
 //! The command line.
 //!
-//! Three commands, and no flags that change what the rig *is*:
+//! Five commands, and no flags that change what the rig *is*:
 //!
 //! ```text
 //! stride-desktop serve      serve the app and the router
 //! stride-desktop migrate    bring the database up to the frozen schema
 //! stride-desktop doctor     say what this rig is and where its files are
+//! stride-desktop export     write a verified export of the local log
+//! stride-desktop import     read a verified export back into the local log
 //! ```
 //!
 //! `serve` is the one a stranger runs. It opens the database, holds the
@@ -32,7 +34,9 @@ use stride_desktop::log;
 use stride_desktop::paths;
 use stride_desktop::server::{self, DesktopHost, Server};
 use stride_desktop::spa::Spa;
+use stride_desktop::tools;
 use stride_desktop::trust::Trust;
+use stride_desktop::workspace::Workspace;
 
 /// The address the rig serves on when it is not told otherwise.
 pub const DEFAULT_BIND: &str = "127.0.0.1";
@@ -55,16 +59,15 @@ fn main() {
 fn run(arguments: &[String]) -> Result<i32> {
     let command = match arguments.first() {
         Some(command) => command.clone(),
-        None => {
-            print_help();
-            return Ok(2);
-        }
+        None => return serve(&[]),
     };
     let rest = &arguments[1..];
     match command.as_str() {
         "serve" => serve(rest),
         "migrate" => migrate(rest),
         "doctor" => doctor(rest),
+        "export" => export_command(rest),
+        "import" => import_command(rest),
         "help" | "--help" | "-h" => {
             print_help();
             Ok(0)
@@ -96,7 +99,9 @@ fn serve(arguments: &[String]) -> Result<i32> {
     paths::ensure_data_dir(&directory)?;
 
     let database = paths::database_path(&directory);
-    let database_key = DatabaseSecret::load_or_create(&paths::database_key_path(&directory))?;
+    let database_key = Arc::new(DatabaseSecret::load_or_create(&paths::database_key_path(
+        &directory,
+    ))?);
 
     // The database is created with `0600`, so that the file and the
     // write-ahead log beside it are readable by their owner only.
@@ -117,7 +122,14 @@ fn serve(arguments: &[String]) -> Result<i32> {
         &database,
         &database_key.store_key()?,
     )?);
+    dbkey::protect_database_files(&database)?;
     let keys = Arc::new(garmin_key(&directory)?);
+    let workspace = Arc::new(Workspace::new(
+        Arc::clone(&store),
+        Arc::clone(&database_key),
+        Arc::clone(&keys),
+        directory.clone(),
+    ));
     let trust = Trust::from_environment()?;
 
     let bind: IpAddr = options
@@ -156,7 +168,7 @@ fn serve(arguments: &[String]) -> Result<i32> {
     // decides what a route says.
     let host = DesktopHost::new(Arc::clone(&store), Arc::clone(&keys));
     let router: Arc<dyn Router> = Arc::new(ApiRouter::over(&host)?);
-    let server = Server::new(trust, router, spa);
+    let server = Server::with_workspace(trust, router, spa, workspace);
 
     println!("stride {}", env!("CARGO_PKG_VERSION"));
     println!("the app is on http://{served}");
@@ -225,12 +237,112 @@ fn migrate(arguments: &[String]) -> Result<i32> {
     }
 
     let store = Store::open_and_migrate(&database, &database_key.store_key()?)?;
+    dbkey::protect_database_files(&database)?;
     let version = store.schema_version()?;
     println!(
         "the database at {} is at schema version {version}",
         database.display()
     );
     Ok(0)
+}
+
+/// Write an export and say where it is.
+fn export_command(arguments: &[String]) -> Result<i32> {
+    let options = Options::parse(arguments)?;
+    options.reject_unknown(&["data-dir", "output"])?;
+    let directory = data_directory(&options)?;
+    let workspace = workspace_for(&directory)?;
+
+    let summary = match options.value("output") {
+        Some(output) => tools::export_to(&workspace, std::path::Path::new(output))?,
+        None => tools::export(&workspace)?,
+    };
+    println!("the export is at {}", summary.path.display());
+    println!(
+        "it holds {} rows (format version {}, schema version {})",
+        summary.rows, summary.format_version, summary.schema_version
+    );
+    println!("the Garmin key is not in the export");
+    println!(
+        "the folder contains the athlete's runs; keep it off public storage and copy the whole \
+         folder over a private channel"
+    );
+    Ok(0)
+}
+
+/// Read an export back and report what came in.
+fn import_command(arguments: &[String]) -> Result<i32> {
+    let mut source = None;
+    let mut option_arguments = Vec::new();
+    for argument in arguments {
+        if argument.starts_with("--") {
+            option_arguments.push(argument.clone());
+        } else if source.is_none() {
+            source = Some(argument.clone());
+        } else {
+            return Err(Error::config(
+                "the import takes one export directory and no more",
+            ));
+        }
+    }
+    let options = Options::parse(&option_arguments)?;
+    options.reject_unknown(&["data-dir"])?;
+    let source = source.ok_or_else(|| Error::config("the import needs an export directory"))?;
+    let directory = data_directory(&options)?;
+    let workspace = workspace_for(&directory)?;
+    let summary = tools::import(&workspace, std::path::Path::new(&source))?;
+
+    println!("read {} rows from {}", summary.rows, summary.path.display());
+    println!(
+        "format version {}; schema version {}",
+        summary.format_version, summary.schema_version
+    );
+    println!(
+        "runs {}; wellness days {}; plan blocks {}; planned sessions {}; notes {}",
+        summary.activities,
+        summary.wellness,
+        summary.plan_blocks,
+        summary.plan_sessions,
+        summary.notes
+    );
+    if summary.refused.is_empty() {
+        println!("refused: nothing");
+    } else {
+        println!("refused: {}", summary.refused.join("; "));
+    }
+    Ok(0)
+}
+
+/// Open the machine-side services for a command that does not serve.
+fn workspace_for(directory: &std::path::Path) -> Result<Workspace> {
+    paths::ensure_data_dir(directory)?;
+    let database = paths::database_path(directory);
+    let database_key = Arc::new(DatabaseSecret::load_or_create(&paths::database_key_path(
+        directory,
+    ))?);
+    paths::ensure_private_file(&database)?;
+    if let Some(report) = dbkey::convert_plaintext_database(&database, &database_key)? {
+        log::log(&format!(
+            "converted the plain database at {} into an encrypted one; the plain copy is at {}",
+            database.display(),
+            dbkey::plaintext_backup_path(&database).display()
+        ));
+        let _ = report;
+    }
+    let store = Arc::new(Store::open_and_migrate(
+        &database,
+        &database_key.store_key()?,
+    )?);
+    dbkey::protect_database_files(&database)?;
+    let keys = Arc::new(KeyStore::with_persist_path(paths::garmin_key_path(
+        directory,
+    )));
+    Ok(Workspace::new(
+        store,
+        database_key,
+        keys,
+        directory.to_path_buf(),
+    ))
 }
 
 /// Say what this rig is and where its files are.
@@ -300,8 +412,12 @@ fn doctor(arguments: &[String]) -> Result<i32> {
         if stride_desktop::spa::bundle_is_built() {
             "built into this binary"
         } else {
-            "not built — run `npm --prefix frontend run build` and build the rig again"
+            "not built — build the rig again"
         }
+    );
+    println!(
+        "the exports          {}",
+        paths::exports_directory(&directory).display()
     );
 
     if database.exists() {
@@ -352,7 +468,7 @@ fn garmin_key(directory: &std::path::Path) -> Result<KeyStore> {
     if file.exists() {
         return KeyStore::from_file(&file);
     }
-    Ok(KeyStore::empty())
+    Ok(KeyStore::with_persist_path(file))
 }
 
 /// What a file is: missing, plain, or encrypted.
@@ -445,6 +561,14 @@ stride {version} — the desktop rig: one binary that serves the app and the rou
   stride-desktop serve     serve the app on http://127.0.0.1:8080
   stride-desktop migrate   bring the database up to the frozen schema
   stride-desktop doctor    say what this rig is and where its files are
+  stride-desktop export    write a verified export of the local log
+  stride-desktop import    read a verified export back into the local log
+
+the options of `export`
+  --output <directory>     where to write the export (default: the rig's private exports folder)
+
+the options of `import`
+  --data-dir <directory>   where the rig keeps its files
 
 the options of `serve`
   --bind <address>         the address to serve on (default {DEFAULT_BIND})

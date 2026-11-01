@@ -176,18 +176,36 @@ impl ApiRouter {
     ///
     /// The key is read out of the body once, and it never reaches a log
     /// line: the rig logs the method and the path, and nothing else.
-    fn keep_key_store_in_step(&self, request: &Request<'_>) {
+    fn keep_key_store_in_step(&self, request: &Request<'_>, status: u16) -> Option<Response> {
         if !request.method.eq_ignore_ascii_case("POST") {
-            return;
+            return None;
         }
         match request.path {
-            "/api/v1/auth/garmin/personal-key" => {
-                if let Some(key) = key_in_body(request.body) {
-                    let _ = self.keys.set(&key);
+            "/api/v1/auth/garmin/personal-key" if status == 200 => {
+                let key = key_in_body(request.body)?;
+                if let Err(error) = self.keys.set(&key) {
+                    return Some(key_store_failure(&error));
                 }
+                if let Err(error) = self.keys.persist() {
+                    self.keys.forget();
+                    crate::log::log(&format!(
+                        "the Garmin key could not be kept on disk: {error}"
+                    ));
+                    return Some(key_store_failure(&error));
+                }
+                None
             }
-            "/api/v1/auth/garmin/logout" => self.keys.forget(),
-            _ => {}
+            "/api/v1/auth/garmin/logout" => {
+                self.keys.forget();
+                if let Err(error) = self.keys.remove_persisted() {
+                    crate::log::log(&format!(
+                        "the private Garmin key file could not be removed: {error}"
+                    ));
+                    return Some(key_store_failure(&error));
+                }
+                None
+            }
+            _ => None,
         }
     }
 }
@@ -213,7 +231,9 @@ impl Router for ApiRouter {
 
         // The rig's key store is the holder, so it is told what the athlete
         // typed — and told to forget it on a logout.
-        self.keep_key_store_in_step(request);
+        if let Some(failure) = self.keep_key_store_in_step(request, answer.status) {
+            return failure;
+        }
 
         // **The answer is the body, byte for byte.** The router's status
         // goes in the status line, and its body goes on the wire as it is:
@@ -221,6 +241,18 @@ impl Router for ApiRouter {
         let body = serde_json::to_vec(&answer.body).unwrap_or_else(|_| b"{}".to_vec());
         Response::new(answer.status, "application/json", body)
     }
+}
+
+/// The answer when the rig could not keep the key safely.
+///
+/// The detail says what to do and carries neither the key nor a file path.
+/// The path is in the rig's own log, where it belongs.
+fn key_store_failure(error: &Error) -> Response {
+    let _ = error;
+    Response::json(
+        500,
+        "{\"code\":\"key_store_failed\",\"detail\":\"the key was accepted, but this rig could not keep it safely; check the data directory's permissions and try again\"}",
+    )
 }
 
 /// The path, with its query string.
