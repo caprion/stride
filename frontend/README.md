@@ -99,6 +99,13 @@ Two hosts that disagree about a number is a bug. Two hosts that disagree
 about a *sentence* is the same bug, and it is worse, because a sentence is
 what the athlete reads.
 
+**And the difference is the core's too.** `CompareMetric.delta` is a
+`RenderedValue`: the core's rendering of `B − A`, sign and all. A negative
+difference is written with the typographic minus (U+2212) — `−0.2 km`, not
+`-0.2 km`. The app shows the sign it is given, and `tests/ownership.test.ts`
+fails if the app's own code ever carries that character: the app may not
+sign a number the core has already signed.
+
 ### And the test that holds the line
 
 A convention is not a rule. The port of `units.rs` was exact, and it still
@@ -252,6 +259,22 @@ The fixture's sentences are the core's, written out: the fixture is a
 captured answer, not a computation, so the app has nothing to recompute.
 The fixture's rendered values are written out the same way — "12.4 km",
 "1 h 7 m", "148 bpm", "5:24 /km" — next to the number a chart draws.
+
+**Every word in it is a word the core can produce.** A negative difference
+carries the core's typographic minus (`−0.2 km`, not `-0.2 km`); the plan's
+line under a run is the core's whole statement ("12.4 km · 2.4 km more than
+the 10 km target"); a record's time is the core's duration ("20 m"),
+because the core renders a duration in minutes and has no clock for a race;
+and the sessions a week is absent, because the core has no renderer for the
+average of a count and the API sends nothing there — the app shows the em
+dash, which is what the real app shows too.
+
+The one thing in the fixture that is **not** the core's is the story
+sentence under a run: the core has no story engine yet — PLAN.md's slice 5
+asks for one, and the API answers `story: null` until it exists — so the
+fixture's stories are the app's stand-ins for that field, and they say so.
+They are replaced by captured core sentences the day the core grows the
+engine.
 
 ## The checks
 
