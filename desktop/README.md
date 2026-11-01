@@ -63,7 +63,8 @@ runs or fake wellness data.
 
 The key stays on this machine. After Garmin accepts it, the rig keeps it in
 `~/.local/share/stride/garmin.key` (or the platform equivalent), with mode
-`0600`. The next launch goes straight to the app.
+`0600` on POSIX systems and private inherited permissions elsewhere. The
+next launch goes straight to the app.
 
 The key is never put in a URL, a log line, an API response, a fixture, or any
 other page. The Connect field is the only surface that shows it, and it is a
@@ -173,8 +174,9 @@ The import refuses the whole bundle when:
 - the export format version or database schema version is not one this build
   reads;
 - the named database is not a plain file inside the export directory;
-- the database's size or SHA-256 digest does not match the manifest; or
-- an included `db.key` is readable by other people.
+- the database's size or SHA-256 digest does not match the manifest;
+- an included `db.key` is readable by other people; or
+- an uploaded export is over 128 MiB.
 
 A refused import changes nothing.
 
@@ -208,16 +210,16 @@ phone uses.
 
 ```text
 stride.db          the live encrypted database
-db.key             the live database key, with 0600
-garmin.key         the Garmin key, with 0600, when one is kept
+db.key             the live database key, private to the account
+garmin.key         the Garmin key, private to the account, when one is kept
 first-run          a non-secret marker that remembers the first-run choice
 exports/           private export bundles
 imports/           temporary upload staging, removed after an import
 ```
 
 Converting an older plain database leaves `stride.db.plaintext-backup` beside
-it, also with `0600`; it is the recovery copy and the athlete's to delete
-once the encrypted database opens.
+it, also private to the account (`0600` on POSIX systems); it is the
+recovery copy and the athlete's to delete once the encrypted database opens.
 
 The Garmin key and the database key are different secrets. Neither opens the
 other.

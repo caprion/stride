@@ -102,7 +102,8 @@ phone, against a local encrypted database.
    is compiled into the binary.
 2. **Give it a Garmin Personal API key.** The first-run Connect page asks for
    the consumer key, tests it with Garmin, and then keeps it on this machine
-   in a private `0600` file. The key is never put in a URL, a log line, an API
+   in a private file (`0600` on POSIX systems). The key is never put in a URL,
+   a log line, an API
    response, or another page. `cf-garmin env -- cargo run -p stride-desktop`
    supplies a development key in memory.
 3. **The trust model is three lines.** The loopback is always answered; an
