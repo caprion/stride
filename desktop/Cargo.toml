@@ -5,10 +5,38 @@ edition.workspace = true
 rust-version.workspace = true
 license.workspace = true
 repository.workspace = true
+description = "The desktop rig: one binary that serves the app and the router, on this machine."
 
 [lints]
 workspace = true
 
 [dependencies]
+# The router is `stride-api`'s, and the readings are `stride-store`'s. The
+# desktop owns neither: it is the host they run on.
 stride-api = { path = "../crates/stride-api" }
 stride-store = { path = "../crates/stride-store" }
+
+# The app is embedded in the binary, so `cargo run -p stride-desktop` needs
+# no node and no second process.
+rust-embed = "8"
+
+# TLS, for the trusted-network case: a Garmin key must not cross a network
+# in the clear. The `ring` provider is the one the rest of the tree already
+# builds (reqwest's rustls), so this adds no new cryptography.
+rustls = { version = "0.23", default-features = false, features = ["ring", "std", "tls12", "logging"] }
+rustls-pemfile = "2"
+
+# The random bytes the database key is made of. `uuid` is already on the
+# approved dependency list, and its v4 generator reads the operating
+# system's random bytes on every platform the rig runs on.
+uuid = { version = "1", features = ["v4"] }
+
+# The rig's one error type, with the sentences in one place.
+thiserror = "1"
+
+[dev-dependencies]
+# The tests write a row and read a row, so they need the same clock the
+# store uses.
+chrono = "0.4"
+# The tests build a plain database to convert, so they need SQLite itself.
+rusqlite = "0.31"
