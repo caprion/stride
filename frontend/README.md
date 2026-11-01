@@ -67,12 +67,28 @@ export interface VitalReading {
 The app's own catalogue (`src/i18n/catalogue.ts`) holds the chrome — the
 headings, the buttons, the labels, the empty states — and nothing else.
 
-The rounding belongs to `crates/stride-core/src/units.rs`. The app's copy
-of those rules is `src/lib/units.ts`: the same names, the same answers,
-half to even, a heart rate truncated, a duration in the human form. It is
-the only place in the app that rounds a number, and `tests/units.test.ts`
-holds it to the core's own answers (30 s is "0 m" on both; 148.7 bpm is
-148 on both).
+### The numbers are rendered too
+
+The core's `units.rs` is the one implementation of "how do we say 30
+seconds" and "how do we say 8.4 km", so the API sends the words beside the
+numbers, and the app shows the words:
+
+```ts
+export interface RenderedValue {
+  text: string // "8.4 km", "42 m", "148 bpm", "5:24 /km"
+  raw: number | null // the number, for a chart
+}
+```
+
+`text` is what the athlete reads; `raw` is what a chart draws. **The app
+has no rounding of its own.** There is no `src/lib/units.ts` and no
+`src/lib/format.ts` that formats a domain value: `src/lib/format.ts` is the
+chrome — the dates, the counts, the sport's own name, the em dash for a
+value that is not there — and nothing else.
+
+The app's charts keep their own scales (the x-axis is in minutes, the
+volume chart is in kilometres). A chart's scale is the app's; a chart's
+*words* are the core's, and the tooltips show the text the API sent.
 
 Two hosts that disagree about a number is a bug. Two hosts that disagree
 about a *sentence* is the same bug, and it is worse, because a sentence is
@@ -118,6 +134,11 @@ cargo run -p stride-core --example export_catalogue
 Three lists have to agree, and the contract wins: `docs/contract/voice.md`,
 the lint's transcription of it, and the export. `tests/catalogue.test.ts`
 compares all three, so they cannot drift apart again.
+
+**The list of words that name a vital is not written out twice.** It lives
+in the export — `rules.vital_words` — and the lint reads it from there, so
+the app's catalogue and the core's export are checked against the same
+list. A second copy of that list is how the two drift, and they had.
 
 The lint is a function (`scripts/voice-lint.mjs`) and is tested against
 deliberately bad catalogues: a scanner that never fails is worse than no
@@ -185,14 +206,20 @@ its own server.
 The contract froze the **routes**; it did not freeze the **response
 bodies**. The shapes this client speaks are written down in
 `src/lib/types.ts`, and they are a proposal for the backend slice to match.
-Three names are worth knowing about: `TodayInsight.planned` is the plan's own
-session for today, `TodayInsight.options` are its other options, and
+The one to look at first is `RenderedValue` — `{ text, raw }` — because it
+is where §8 reaches the numbers: the API sends the core's words beside the
+number, and the app shows `text` and draws `raw`. Three names are worth
+knowing about: `TodayInsight.planned` is the plan's own session for today,
+`TodayInsight.options` are its other options, and
 `TodayInsight.distance_comparison` is the neutral distance comparison the
 core states only beyond a 10% gap.
 
 The shapes follow §8: the domain's sentences are `*_text` fields, already
-written by the core. The api slice owns the templates for the three
-sentences the core does not have a template for yet — the distance
+written by the core, and the domain's numbers are `RenderedValue`s, also
+written by the core. There is no `format:` hint anywhere in the client's
+types — a hint that tells the frontend how to render a value is the
+template-with-holes shape §8 forbids. The api slice owns the templates for
+the three sentences the core does not have a template for yet — the distance
 comparison, the Progress headline and the Compare basis — and the frontend
 shows what it is given.
 
@@ -207,6 +234,8 @@ distance comparison appears.
 
 The fixture's sentences are the core's, written out: the fixture is a
 captured answer, not a computation, so the app has nothing to recompute.
+The fixture's rendered values are written out the same way — "12.4 km",
+"1 h 7 m", "148 bpm", "5:24 /km" — next to the number a chart draws.
 
 ## The checks
 
