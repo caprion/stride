@@ -205,7 +205,11 @@ impl Store {
     /// moment with two goals.
     ///
     /// Returns the goal's id, or `None` when there is no goal.
-    pub fn set_goal(&self, kilometres: Option<f64>) -> Result<Option<i64>> {
+    pub fn set_goal(
+        &self,
+        kilometres: Option<f64>,
+        created_at: chrono::DateTime<chrono::Utc>,
+    ) -> Result<Option<i64>> {
         let mut conn = self.lock()?;
         let transaction = conn
             .transaction_with_behavior(TransactionBehavior::Immediate)
@@ -229,7 +233,7 @@ impl Store {
                     value: Some(value),
                     start_date: None,
                     end_date: None,
-                    created_at: chrono::Utc::now(),
+                    created_at,
                 };
                 Some(
                     transaction
@@ -309,6 +313,7 @@ impl Store {
         start_date: Option<&str>,
         end_date: Option<&str>,
         reason: Option<&str>,
+        created_at: chrono::DateTime<chrono::Utc>,
     ) -> Result<Option<i64>> {
         let mut conn = self.lock()?;
         let transaction = conn
@@ -331,7 +336,7 @@ impl Store {
                     value: None,
                     start_date: Some(start.to_string()),
                     end_date: Some(end.to_string()),
-                    created_at: chrono::Utc::now(),
+                    created_at,
                 };
                 Some(
                     transaction
@@ -369,7 +374,12 @@ impl Store {
     /// one transaction. `None` takes the note away.
     ///
     /// Returns the note's id, or `None` when the run has no note.
-    pub fn set_note(&self, activity_id: i64, text: Option<&str>) -> Result<Option<i64>> {
+    pub fn set_note(
+        &self,
+        activity_id: i64,
+        text: Option<&str>,
+        created_at: chrono::DateTime<chrono::Utc>,
+    ) -> Result<Option<i64>> {
         let mut conn = self.lock()?;
         let transaction = conn
             .transaction_with_behavior(TransactionBehavior::Immediate)
@@ -393,7 +403,7 @@ impl Store {
                     value: None,
                     start_date: None,
                     end_date: None,
-                    created_at: chrono::Utc::now(),
+                    created_at,
                 };
                 Some(
                     transaction

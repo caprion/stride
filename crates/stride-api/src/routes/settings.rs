@@ -85,7 +85,7 @@ pub fn write_settings(api: &Api, request: &Request) -> ApiResult<Value> {
             Some(_) => return Err(ApiError::bad_request("the goal is not a distance")),
         };
         api.store()
-            .set_goal(goal)
+            .set_goal(goal, api.now())
             .map_err(|error| api.store_error("the goal could not be written", &error))?;
     }
 
@@ -128,12 +128,12 @@ pub fn write_settings(api: &Api, request: &Request) -> ApiResult<Value> {
         match pause {
             None => {
                 api.store()
-                    .set_pause(None, None, None)
+                    .set_pause(None, None, None, api.now())
                     .map_err(|error| api.store_error("the pause could not be written", &error))?;
             }
             Some((start, end, reason)) => {
                 api.store()
-                    .set_pause(Some(&start), Some(&end), Some(&reason))
+                    .set_pause(Some(&start), Some(&end), Some(&reason), api.now())
                     .map_err(|error| api.store_error("the pause could not be written", &error))?;
             }
         }
@@ -215,7 +215,7 @@ pub fn write_note(api: &Api, request: &Request) -> ApiResult<Value> {
         .map(|text| text.trim().to_string())
         .filter(|text| !text.is_empty());
     api.store()
-        .set_note(activity_id, text.as_deref())
+        .set_note(activity_id, text.as_deref(), api.now())
         .map_err(|error| api.store_error("the note could not be written", &error))?;
 
     let written = api

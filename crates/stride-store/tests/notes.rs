@@ -145,18 +145,18 @@ fn a_note_about_a_run_goes_when_the_run_goes() -> Result<()> {
 #[test]
 fn a_goal_is_set_and_taken_away() -> Result<()> {
     let (dir, store) = common::store("notes-set-goal")?;
-    let id = store.set_goal(Some(40.0))?;
+    let id = store.set_goal(Some(40.0), common::instant())?;
     assert!(id.is_some());
     assert_eq!(store.goal_km()?, Some(40.0));
 
     // A second goal replaces the first: there is one goal, and it is the
     // one that was written last.
-    store.set_goal(Some(50.0))?;
+    store.set_goal(Some(50.0), common::instant())?;
     assert_eq!(store.goal_km()?, Some(50.0));
     assert_eq!(store.count_notes()?, 1);
 
     // A blank goal is no goal: the row goes, and nothing reads as a zero.
-    store.set_goal(None)?;
+    store.set_goal(None, common::instant())?;
     assert_eq!(store.goal_km()?, None);
     assert_eq!(store.count_notes()?, 0);
     drop(dir);
@@ -166,7 +166,12 @@ fn a_goal_is_set_and_taken_away() -> Result<()> {
 #[test]
 fn a_pause_is_set_and_the_one_in_force_is_found() -> Result<()> {
     let (dir, store) = common::store("notes-set-pause")?;
-    store.set_pause(Some("2026-05-10"), Some("2026-05-14"), Some("travel"))?;
+    store.set_pause(
+        Some("2026-05-10"),
+        Some("2026-05-14"),
+        Some("travel"),
+        common::instant(),
+    )?;
 
     let in_force = store.pause_in_force("2026-05-12")?;
     let in_force = match in_force {
@@ -184,12 +189,17 @@ fn a_pause_is_set_and_the_one_in_force_is_found() -> Result<()> {
     assert!(store.pause_in_force("2026-05-20")?.is_none());
 
     // A second pause replaces the first.
-    store.set_pause(Some("2026-06-01"), Some("2026-06-14"), Some("sick"))?;
+    store.set_pause(
+        Some("2026-06-01"),
+        Some("2026-06-14"),
+        Some("sick"),
+        common::instant(),
+    )?;
     assert_eq!(store.pauses()?.len(), 1);
     assert_eq!(store.pauses()?[0].text, Some("sick".to_string()));
 
     // And the pause can be taken away.
-    store.set_pause(None, None, None)?;
+    store.set_pause(None, None, None, common::instant())?;
     assert_eq!(store.pauses()?.len(), 0);
     drop(dir);
     Ok(())
@@ -199,15 +209,15 @@ fn a_pause_is_set_and_the_one_in_force_is_found() -> Result<()> {
 fn a_run_carries_one_note() -> Result<()> {
     let (dir, store) = common::store("notes-set-note")?;
     let activity_id = store.upsert_activity(&common::activity("run-1", "2026-05-10"))?;
-    store.set_note(activity_id, Some("the first note"))?;
-    store.set_note(activity_id, Some("the second note"))?;
+    store.set_note(activity_id, Some("the first note"), common::instant())?;
+    store.set_note(activity_id, Some("the second note"), common::instant())?;
 
     let notes = store.notes_for_activity(activity_id)?;
     assert_eq!(notes.len(), 1);
     assert_eq!(notes[0].text, Some("the second note".to_string()));
 
     // An empty note takes the note away.
-    store.set_note(activity_id, None)?;
+    store.set_note(activity_id, None, common::instant())?;
     assert_eq!(store.notes_for_activity(activity_id)?.len(), 0);
     drop(dir);
     Ok(())

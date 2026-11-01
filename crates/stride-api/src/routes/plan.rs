@@ -23,6 +23,8 @@
 //! in every answer, so the app never shows a plan without saying where it
 //! came from.
 
+use std::collections::BTreeMap;
+
 use serde_json::Value;
 use stride_core::plan::PlanBlock as CoreBlock;
 use stride_store::model::{plan_source, plan_status};
@@ -248,31 +250,26 @@ pub fn adherence(api: &Api, request: &Request) -> ApiResult<Value> {
     let facts = plan::run_facts(api, "0000-01-01", &current.to_iso())?;
     let count = plan::adherence_of(stride_core::plan::adherence_of(&active.block, &facts));
 
-    // The weeks of the block, each counted by the core.
-    let mut weeks: Vec<AdherenceWeek> = Vec::new();
+    // The weeks of the block, each counted by the engine.
+    let mut by_week: BTreeMap<String, Vec<stride_core::plan::PlanSession>> = BTreeMap::new();
     for session in active.block.sessions.iter() {
-        let start = week_start(session.date);
-        let key = start.to_iso();
-        let in_week: Vec<stride_core::plan::PlanSession> = active
-            .block
-            .sessions
-            .iter()
-            .filter(|other| week_start(other.date) == session.date)
-            .cloned()
-            .collect();
-        if weeks.iter().any(|week| week.week_start == key) {
-            continue;
-        }
+        by_week
+            .entry(week_start(session.date).to_iso())
+            .or_default()
+            .push(session.clone());
+    }
+    let mut weeks: Vec<AdherenceWeek> = Vec::with_capacity(by_week.len());
+    for (week, sessions) in by_week.iter() {
         let week_block = CoreBlock {
             source: active.source,
             name: active.name.clone(),
-            sessions: in_week,
+            sessions: sessions.clone(),
         };
-        let week_count = plan::adherence_of(stride_core::plan::adherence_of(&week_block, &facts));
+        let count = plan::adherence_of(stride_core::plan::adherence_of(&week_block, &facts));
         weeks.push(AdherenceWeek {
-            week_start: key,
-            done: week_count.done,
-            planned: week_count.planned,
+            week_start: week.clone(),
+            done: count.done,
+            planned: count.planned,
         });
     }
 

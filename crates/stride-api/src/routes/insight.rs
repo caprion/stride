@@ -7,15 +7,15 @@ use stride_core::units;
 use stride_core::ValueUnit;
 
 use crate::dto::{
-    Adherence, Best, Chips, CompareCandidate, CompareMetric, CompareResponse, CompareRun,
-    CompareSeries, Consistency, PaceAtHr, ProgressInsight, TodayInsight, WeekRunning, WeeklyVolume,
+    Best, Chips, CompareCandidate, CompareMetric, CompareResponse, CompareRun, CompareSeries,
+    Consistency, PaceAtHr, ProgressInsight, TodayInsight, WeekRunning, WeeklyVolume,
 };
 use crate::error::{ApiError, ApiResult};
 use crate::render;
 use crate::router::Request;
 use crate::state::Api;
 
-use super::{core_date, ok, personal_records, runs_on};
+use super::{core_date, ok, personal_records};
 
 /// How far apart two runs may be and still be "the same distance".
 const SAME_DISTANCE_TOLERANCE: f64 = 0.1;
@@ -155,28 +155,19 @@ pub fn progress(api: &Api, request: &Request) -> ApiResult<Value> {
         })
         .collect();
 
-    let adherence = api
-        .store()
-        .active_plan_block(stride_store::model::plan_source::PRESCRIBED)
-        .ok()
-        .flatten()
-        .map(|block| {
-            let sessions = api
-                .store()
-                .plan_sessions_for_block(block.id)
-                .unwrap_or_default();
-            let mut done = 0usize;
-            for session in sessions.iter() {
-                if !runs_on(api, &session.date).unwrap_or_default().is_empty() {
-                    done += 1;
-                }
-            }
-            Adherence {
-                done,
-                planned: sessions.len(),
-                not_done: sessions.len().saturating_sub(done),
-            }
-        });
+    // The plan's adherence: the count of the block in force, and the
+    // count is the engine's.
+    let adherence = match crate::plan::active_or_empty(api) {
+        Ok(active) => {
+            let facts =
+                crate::plan::run_facts(api, "0000-01-01", &current.to_iso()).unwrap_or_default();
+            Some(crate::plan::adherence_of(stride_core::plan::adherence_of(
+                &active.block,
+                &facts,
+            )))
+        }
+        Err(_) => None,
+    };
 
     // The headline is the core's statement: it compares the pace at the
     // same heart rate now and then, and it says so plainly when there is
