@@ -7,6 +7,7 @@
 use std::collections::VecDeque;
 use std::io::{Cursor, Write};
 use std::sync::{Arc, Mutex};
+use std::time::Duration;
 
 use serde_json::json;
 use stride_ingest::{
@@ -15,7 +16,6 @@ use stride_ingest::{
 
 const PERSONAL_KEY: &str = "unit-test-personal-value";
 const FIRST_ACCESS: &str = "first-access-value";
-const SECOND_ACCESS: &str = "second-access-value";
 
 #[derive(Debug, Clone)]
 struct RecordedRequest {
@@ -124,50 +124,68 @@ fn the_key_is_exchanged_once_and_the_access_value_is_reused() {
 }
 
 #[test]
-fn a_401_causes_exactly_one_re_exchange_and_one_retry() {
+fn a_401_returns_without_re_exchange_or_retry() {
     let (client, transport) = client(vec![
         response(200, FIRST_ACCESS),
         response(401, "expired"),
-        response(200, SECOND_ACCESS),
+        // These responses prove the client does not consume a second
+        // exchange or a second data attempt.
+        response(200, "unused-access-value"),
         json_response(200, json!({"displayName": "ATHLETE"})),
     ]);
 
-    client.profile().expect("the one retry succeeds");
-
-    assert_eq!(client.exchange_count(), 2);
-    assert_eq!(client.request_count(), 4);
+    let error = client
+        .profile()
+        .expect_err("the 401 is returned to the shell");
+    assert!(matches!(error, GarminError::NeedsReconnect));
+    assert_eq!(client.exchange_count(), 1);
+    assert_eq!(client.request_count(), 2);
+    assert_eq!(transport.request_count(), 2);
     let requests = transport.requests();
     assert_eq!(
         requests
             .iter()
             .filter(|request| request.method == HttpMethod::Post)
             .count(),
-        2
+        1
     );
     assert_eq!(
         requests
             .iter()
             .filter(|request| request.method == HttpMethod::Get)
             .count(),
-        2
-    );
-    assert_eq!(
-        requests[3].auth_value.as_deref(),
-        Some("Bearer second-access-value")
+        1
     );
 }
 
 #[test]
-fn a_second_401_stops_instead_of_looping() {
+fn a_successful_call_after_a_fresh_exchange_is_not_retried() {
     let (client, transport) = client(vec![
         response(200, FIRST_ACCESS),
-        response(401, "expired"),
-        response(200, SECOND_ACCESS),
-        response(401, "expired again"),
+        json_response(200, json!({"displayName": "ATHLETE"})),
     ]);
 
-    let error = client.profile().expect_err("the second 401 is fatal");
-    assert!(matches!(error, GarminError::NeedsReconnect));
+    client.profile().expect("the call succeeds");
+
+    assert_eq!(client.exchange_count(), 1);
+    assert_eq!(client.request_count(), 2);
+    assert_eq!(transport.request_count(), 2);
+}
+
+#[test]
+fn an_expired_cached_access_is_refreshed_before_the_next_call() {
+    let (client, transport) = client(vec![
+        response(200, FIRST_ACCESS),
+        json_response(200, json!({"displayName": "ATHLETE"})),
+        response(200, "fresh-access-value"),
+        json_response(200, json!({"displayName": "ATHLETE"})),
+    ]);
+    let client = client.with_access_ttl(Duration::ZERO);
+
+    client.profile().expect("the first call succeeds");
+    client.profile().expect("the second call succeeds");
+
+    // The refresh happens before the second call, not as a retry of the first.
     assert_eq!(client.exchange_count(), 2);
     assert_eq!(client.request_count(), 4);
     assert_eq!(transport.request_count(), 4);

@@ -2,8 +2,9 @@
 //!
 //! One long-lived Personal API key is exchanged for a short-lived bearer
 //! value. The key is supplied by the caller, stays in memory, and is never
-//! written, printed, or placed in a URL. A `401` causes exactly one key
-//! re-exchange and one request retry — never a loop.
+//! written, printed, or placed in a URL. Each call performs at most one token
+//! exchange and one data request. A `401` returns [`GarminError::NeedsReconnect`]
+//! immediately; the shell owns the retry.
 
 use std::fmt;
 use std::io::{Cursor, Read};
@@ -109,7 +110,10 @@ pub enum GarminError {
     /// The key exchange returned no bearer value.
     #[error("Garmin returned an empty access value")]
     EmptyAccessValue,
-    /// A request remained unauthorized after the one permitted retry.
+    /// Garmin rejected the access value.
+    ///
+    /// The client returns this immediately without exchanging again or
+    /// retrying the request. The caller owns the retry policy.
     #[error("the Garmin session expired; a new Personal API key is required")]
     NeedsReconnect,
     /// Garmin denied the request's scope.
@@ -342,8 +346,9 @@ struct ClientState {
 /// The Garmin Connect Personal API client.
 ///
 /// The client is meant to live for the duration of a sync. It caches the
-/// short-lived access value in memory and refreshes it once, without ever
-/// retrying in a loop.
+/// short-lived access value in memory. A cached value that has expired is
+/// refreshed before the next call; an unauthorized request is never retried
+/// by this client.
 pub struct GarminClient {
     personal_key: String,
     transport: Arc<dyn HttpTransport>,
@@ -569,20 +574,15 @@ impl GarminClient {
         self.get_value(PROFILE_PATH, &[])
     }
 
+    /// Fetch one JSON value with exactly one data request.
+    ///
+    /// If no usable access value is cached, this performs one key exchange
+    /// before that request. A `401` becomes [`GarminError::NeedsReconnect`]
+    /// immediately: the client never re-exchanges or retries the request.
     fn get_value(&self, path: &str, params: &[(String, String)]) -> Result<Value, GarminError> {
-        let access = self.access_value(false)?;
-        match self.get_value_with(&access, path, params) {
-            Ok(value) => Ok(value),
-            Err(RequestFailure::Unauthorized) => {
-                let fresh = self.access_value(true)?;
-                match self.get_value_with(&fresh, path, params) {
-                    Ok(value) => Ok(value),
-                    Err(RequestFailure::Unauthorized) => Err(GarminError::NeedsReconnect),
-                    Err(failure) => Err(failure.into_error(path)),
-                }
-            }
-            Err(failure) => Err(failure.into_error(path)),
-        }
+        let access = self.access_value()?;
+        self.get_value_with(&access, path, params)
+            .map_err(|failure| failure.into_error(path))
     }
 
     fn get_value_with(
@@ -613,20 +613,15 @@ impl GarminClient {
         }
     }
 
+    /// Fetch one response body with exactly one data request.
+    ///
+    /// If no usable access value is cached, this performs one key exchange
+    /// before that request. A `401` becomes [`GarminError::NeedsReconnect`]
+    /// immediately: the client never re-exchanges or retries the request.
     fn get_bytes(&self, path: &str) -> Result<Vec<u8>, GarminError> {
-        let access = self.access_value(false)?;
-        match self.get_bytes_with(&access, path) {
-            Ok(bytes) => Ok(bytes),
-            Err(RequestFailure::Unauthorized) => {
-                let fresh = self.access_value(true)?;
-                match self.get_bytes_with(&fresh, path) {
-                    Ok(bytes) => Ok(bytes),
-                    Err(RequestFailure::Unauthorized) => Err(GarminError::NeedsReconnect),
-                    Err(failure) => Err(failure.into_error(path)),
-                }
-            }
-            Err(failure) => Err(failure.into_error(path)),
-        }
+        let access = self.access_value()?;
+        self.get_bytes_with(&access, path)
+            .map_err(|failure| failure.into_error(path))
     }
 
     fn get_bytes_with(&self, access: &str, path: &str) -> Result<Vec<u8>, RequestFailure> {
@@ -648,8 +643,8 @@ impl GarminClient {
         }
     }
 
-    fn access_value(&self, force: bool) -> Result<String, GarminError> {
-        if !force {
+    fn access_value(&self) -> Result<String, GarminError> {
+        {
             let state = self.lock();
             if let Some(cached) = state.access.as_ref() {
                 if cached
