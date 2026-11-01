@@ -1,6 +1,7 @@
 //! The insight routes: Today, Progress, the chips of a run, and Compare.
 
 use serde_json::Value;
+use stride_core::plan::distance_comparison;
 use stride_core::statement;
 use stride_core::units;
 use stride_core::ValueUnit;
@@ -74,7 +75,7 @@ pub fn today(api: &Api, request: &Request) -> ApiResult<Value> {
     };
 
     let distance_comparison = match (&planned, &last_run) {
-        (Some(session), Some(run)) => super::distance_comparison(
+        (Some(session), Some(run)) => distance_comparison(
             run.distance.raw,
             session.target.as_ref().and_then(|value| value.raw),
         ),
