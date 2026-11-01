@@ -49,6 +49,15 @@ class MainActivity : BridgeActivity() {
      */
     private var setupOpened = false
 
+    /**
+     * Whether the phone held a Garmin key at the last foreground pass.
+     *
+     * The WebView may have asked Today for its data while the native setup
+     * screen was in front of it. When the key appears or disappears, the
+     * page is reloaded once so it reads the local database as it is now.
+     */
+    private var keyAtLastForeground = false
+
     override fun onCreate(savedInstanceState: Bundle?) {
         // The plugin has to be registered before the bridge is built.
         registerPlugin(StrideApiPlugin::class.java)
@@ -62,13 +71,17 @@ class MainActivity : BridgeActivity() {
 
         super.onCreate(savedInstanceState)
 
+        keyAtLastForeground = hasGarminKey()
         SyncNotifications.ensureChannel(this)
 
         // The setup screen waits for the gate: it is opened behind the
         // credential, never in front of it. The listener is set first: a
         // phone with no screen lock has nothing to unlock, so the gate
         // opens at once and says so.
-        gate.onUnlocked = { openSetupIfNeeded() }
+        gate.onUnlocked = {
+            openSetupIfNeeded()
+            reloadIfTheConnectionChanged()
+        }
 
         // The gate goes up before anything is shown.
         gate.lock()
@@ -104,6 +117,9 @@ class MainActivity : BridgeActivity() {
             }
             StrideCore.setGarminConnected(!key.isNullOrBlank())
             SyncScheduler.schedule(applicationContext)
+            // The WebView may have asked for Today before the core was
+            // open. Read the local database once it is.
+            runOnUiThread { bridge?.webView?.reload() }
         }, "stride-open").apply { isDaemon = true }.start()
     }
 
@@ -111,6 +127,11 @@ class MainActivity : BridgeActivity() {
         super.onStart()
         gate.onForeground()
         if (gate.isUnlocked) openSetupIfNeeded()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        reloadIfTheConnectionChanged()
     }
 
     override fun onStop() {
@@ -144,6 +165,21 @@ class MainActivity : BridgeActivity() {
         } catch (_: Exception) {
             Log.w("Stride", "the setup screen could not be opened")
         }
+    }
+
+    /**
+     * Reload Today once when setup changed the connection.
+     *
+     * The setup screen sits in front of the WebView. The page's first read
+     * can therefore happen before the first pull has landed. This brings
+     * the page back to the foreground state without reloading on every
+     * ordinary foreground pass.
+     */
+    private fun reloadIfTheConnectionChanged() {
+        val connected = hasGarminKey()
+        if (connected == keyAtLastForeground) return
+        keyAtLastForeground = connected
+        bridge?.webView?.reload()
     }
 
     /** Whether the phone holds a Garmin key. */

@@ -143,8 +143,10 @@ class SetupRunner(
                     Verdict.Accepted -> Unit
                 }
 
-                // Garmin took it, so the phone keeps it.
+                // Garmin took it, so the phone keeps it. The core is told
+                // the fact of the connection; it never keeps this copy.
                 Secrets.saveGarminKey(app, key)
+                StrideCore.setGarminConnected(true)
 
                 publish(SetupUi(SetupPhase.Syncing))
 

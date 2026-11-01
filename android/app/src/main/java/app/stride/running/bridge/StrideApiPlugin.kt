@@ -247,8 +247,11 @@ class StrideApiPlugin : Plugin() {
                     if (decision.kind == PhoneRoutes.Kind.Pull) {
                         // The key was in the core's memory for the pull and
                         // no longer: the copy in the Keystore is the one
-                        // that lasts, and the phone is still connected.
+                        // that lasts. Clearing that temporary copy also
+                        // clears the core's connection fact, so the fact is
+                        // restored separately — without another key copy.
                         StrideCore.setGarminKey("")
+                        StrideCore.setGarminConnected(true)
                     }
                     if (isLogout) {
                         // The credential lives in the Keystore, so the

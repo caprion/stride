@@ -92,6 +92,10 @@ object SyncEngine {
         val attemptKey = savedKey
         // The retry is the policy's, and the policy has no Android in it.
         val outcome = PullPolicy.drive { _ -> attempt(context, attemptKey, window) }
+        // The exchange dropped the core's temporary key. The credential is
+        // still in the Keystore, so the core is told the separate fact that
+        // the phone remains connected.
+        StrideCore.setGarminConnected(true)
         // The plaintext key is no longer needed by the shell. The copy in
         // the Keystore is the one that lasts.
         return outcome
