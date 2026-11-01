@@ -408,7 +408,9 @@ export const activityDetailFixture: ActivityDetail = {
     { offset_s: 360, pace: value('5:26 /km', 326), heart_rate: value('141 bpm', 141) },
     { offset_s: 420, pace: value('5:36 /km', 336), heart_rate: value('139 bpm', 139) },
   ],
-  plan_line: { text: '12.4 km of a 10 km target' },
+  // The plan's line under the run: the core's own statement, with the
+  // distance first and the gap after it.
+  plan_line: { text: '12.4 km · 2.4 km more than the 10 km target' },
   note: null,
 }
 
