@@ -12,7 +12,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { format, parseISO } from 'date-fns'
 import { api } from '../lib/api'
-import { formatDateMedium } from '../lib/format'
+import { formatDateMedium, renderedText } from '../lib/format'
 import type { PlanSession } from '../lib/types'
 import { t } from '../i18n'
 import { PageHeader } from '../ui/layout/PageHeader'
@@ -109,7 +109,7 @@ export function PlanWeekPage() {
                   aria-hidden="true"
                 />
                 <span className="text-[10.5px] text-ink-faint">
-                  {planned?.target?.text ?? ''}
+                  {planned?.target ? renderedText(planned.target) : ''}
                 </span>
               </div>
             )
@@ -136,7 +136,7 @@ export function PlanWeekPage() {
               <p className="mt-0.5 text-[13.5px] text-ink-muted" data-testid="plan-status">
                 {statusText(planned.status)}
                 {planned.actual !== null
-                  ? ` · ${t('plan.days.actual', { distance: planned.actual.text })}`
+                  ? ` · ${t('plan.days.actual', { distance: renderedText(planned.actual) })}`
                   : ''}
               </p>
             </>

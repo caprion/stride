@@ -30,6 +30,11 @@ import type { CatalogueKey } from '../i18n'
  * The core renders the numbers — the distance, the duration, the heart
  * rate, the pace — from `units.rs`, and the API sends the result. The
  * app shows `text` and draws `raw`; it never renders the value itself.
+ *
+ * A value that is not there crosses as a null value — the whole
+ * `RenderedValue` is absent, never a `text` of "0" and never a `raw` of
+ * zero. The core's renderers return nothing for a missing value
+ * (`render_distance(None)` is `None`), so the API sends nothing.
  */
 export interface RenderedValue {
   /** The core's words: "8.4 km", "42 m", "148 bpm", "5:02 /km". */

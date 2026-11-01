@@ -22,7 +22,7 @@ import {
   YAxis,
 } from 'recharts'
 import { api } from '../lib/api'
-import { formatDateMedium } from '../lib/format'
+import { formatDateMedium, renderedText } from '../lib/format'
 import type { CompareMetric, CompareSeriesPoint } from '../lib/types'
 import { t } from '../i18n'
 import { PageHeader } from '../ui/layout/PageHeader'
@@ -36,13 +36,13 @@ function MetricRow({ metric }: { metric: CompareMetric }) {
     >
       <span className="text-[13.5px] text-ink-soft">{t(metric.label_key)}</span>
       <span className="text-[13.5px] font-semibold tabular-nums text-ink">
-        {metric.a?.text ?? '—'}
+        {renderedText(metric.a)}
       </span>
       <span className="text-[13.5px] font-semibold tabular-nums text-ink">
-        {metric.b?.text ?? '—'}
+        {renderedText(metric.b)}
       </span>
       <span className="text-[13.5px] tabular-nums text-ink-muted">
-        {metric.delta?.text ?? '—'}
+        {renderedText(metric.delta)}
       </span>
     </li>
   )
@@ -190,7 +190,7 @@ export function ComparePage({ id }: { id: string }) {
               {t(key === 'a' ? 'compare.column.a' : 'compare.column.b')}
             </p>
             <p className="text-[15px] font-semibold text-ink">
-              {run.distance.text} · {formatDateMedium(run.date)}
+              {renderedText(run.distance)} · {formatDateMedium(run.date)}
             </p>
             {run.story ? <p className="mt-0.5 text-[13px] text-ink-soft">{run.story}</p> : null}
           </section>

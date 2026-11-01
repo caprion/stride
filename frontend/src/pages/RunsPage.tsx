@@ -9,19 +9,18 @@
 import { useQuery } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
 import { api } from '../lib/api'
-import {
-  formatDateShort,
-  sportLabel,
-} from '../lib/format'
+import { formatDateShort, renderedText, sportLabel } from '../lib/format'
 import type { ActivitySummary } from '../lib/types'
 import { t } from '../i18n'
 import { PageHeader } from '../ui/layout/PageHeader'
 
 /** The chips under a run's title. */
 function Chips({ activity }: { activity: ActivitySummary }) {
-  const chips = [activity.distance.text, activity.pace?.text, activity.heart_rate?.text].filter(
-    (chip): chip is string => chip !== null && chip !== undefined && chip !== '',
-  )
+  const chips = [
+    renderedText(activity.distance),
+    activity.pace ? renderedText(activity.pace) : null,
+    activity.heart_rate ? renderedText(activity.heart_rate) : null,
+  ].filter((chip): chip is string => chip !== null && chip !== '')
 
   return (
     <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-[12.5px] text-ink-muted">
@@ -47,7 +46,7 @@ function ActivityRow({ activity }: { activity: ActivitySummary }) {
             {sportLabel(activity.sport_type)}
           </span>
           <span className="text-[12.5px] text-ink-faint">
-            {formatDateShort(activity.local_date)} · {activity.duration.text}
+            {formatDateShort(activity.local_date)} · {renderedText(activity.duration)}
           </span>
         </div>
         <Chips activity={activity} />
@@ -135,8 +134,8 @@ export function RunsPage() {
                 </h2>
                 <span className="text-[12px] text-ink-faint">
                   {t('runs.group.total', {
-                    distance: group.totals.distance.text,
-                    time: group.totals.duration.text,
+                    distance: renderedText(group.totals.distance),
+                    time: renderedText(group.totals.duration),
                   })}
                 </span>
               </div>

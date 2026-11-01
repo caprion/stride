@@ -18,9 +18,21 @@
  */
 
 import { format, formatDistanceToNow, parseISO } from 'date-fns'
+import type { RenderedValue } from './types'
 
 /** The mark for a number that is not there. */
 export const ABSENT = '—'
+
+/**
+ * A rendered value, as the athlete reads it.
+ *
+ * The core rendered it; the app shows it. A value that is not there shows
+ * the em dash — never "null", never "0" (contract §8: a missing value
+ * crosses as null, never as "0").
+ */
+export function renderedText(value: RenderedValue | null | undefined): string {
+  return value?.text ?? ABSENT
+}
 
 /** An ISO date -> "Sat 10 May". */
 export function formatDateShort(iso: string | null | undefined): string {

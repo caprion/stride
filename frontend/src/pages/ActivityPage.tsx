@@ -20,10 +20,7 @@ import {
   YAxis,
 } from 'recharts'
 import { api } from '../lib/api'
-import {
-  formatDateMedium,
-  sportLabel,
-} from '../lib/format'
+import { formatDateMedium, renderedText, sportLabel } from '../lib/format'
 import { t } from '../i18n'
 import { PageHeader } from '../ui/layout/PageHeader'
 
@@ -75,7 +72,7 @@ export function ActivityPage({ id }: { id: string }) {
               {t('vital.distance')}
             </span>
             <span className="ml-2 text-[17px] font-semibold tabular-nums text-ink">
-              {data.distance.text}
+              {renderedText(data.distance)}
             </span>
           </span>
           <span>
@@ -83,7 +80,7 @@ export function ActivityPage({ id }: { id: string }) {
               {t('vital.time')}
             </span>
             <span className="ml-2 text-[17px] font-semibold tabular-nums text-ink">
-              {data.duration.text}
+              {renderedText(data.duration)}
             </span>
           </span>
           <span>
@@ -91,7 +88,7 @@ export function ActivityPage({ id }: { id: string }) {
               {t('vital.pace')}
             </span>
             <span className="ml-2 text-[17px] font-semibold tabular-nums text-ink">
-              {data.pace?.text ?? '—'}
+              {renderedText(data.pace)}
             </span>
           </span>
         </div>
@@ -181,12 +178,14 @@ export function ActivityPage({ id }: { id: string }) {
                 key={split.index}
                 className="grid grid-cols-[1fr_auto_auto] items-baseline gap-x-3 border-b border-edge py-1.5 last:border-b-0"
               >
-                <span className="text-[13px] text-ink-soft">{split.distance.text}</span>
+                <span className="text-[13px] text-ink-soft">
+                  {renderedText(split.distance)}
+                </span>
                 <span className="text-[13px] tabular-nums text-ink">
-                  {split.duration.text}
+                  {renderedText(split.duration)}
                 </span>
                 <span className="text-[13px] tabular-nums text-ink-muted">
-                  {split.heart_rate?.text ?? '—'}
+                  {renderedText(split.heart_rate)}
                 </span>
               </li>
             ))}
