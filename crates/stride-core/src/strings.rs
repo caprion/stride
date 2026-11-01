@@ -105,6 +105,14 @@ pub enum StringKind {
     Option,
     /// What usually happened, with its sample size.
     Pattern,
+    /// A factual sentence about the data — the distance comparison, the
+    /// Progress headline, the Compare basis.
+    ///
+    /// A statement carries no verdict and no instruction. It may name a vital
+    /// (unlike an `option`, which must not: an option is a choice, and a
+    /// statement is a fact), and it is always rendered by the core, with the
+    /// values it compares already in the sentence.
+    Statement,
     /// Connect, sync, staleness and empty-state lines.
     Status,
 }
@@ -117,6 +125,7 @@ impl StringKind {
             StringKind::Direction => "direction",
             StringKind::Option => "option",
             StringKind::Pattern => "pattern",
+            StringKind::Statement => "statement",
             StringKind::Status => "status",
         }
     }
@@ -162,7 +171,7 @@ pub struct Entry {
 }
 
 /// The catalogue.
-pub const CATALOGUE: [Entry; 28] = [
+pub const CATALOGUE: [Entry; 40] = [
     // The vitals.
     Entry {
         id: "vital.sleep.label",
@@ -334,12 +343,85 @@ pub const CATALOGUE: [Entry; 28] = [
         template:
             "the {n} other times your {vital} was {side} your usual, you ran {distance} or more",
     },
+    // The statements: factual sentences about the data, rendered by the core.
+    Entry {
+        id: "statement.distance.more",
+        kind: StringKind::Statement,
+        role: None,
+        template: "{gap} more than the {target} target",
+    },
+    Entry {
+        id: "statement.distance.less",
+        kind: StringKind::Statement,
+        role: None,
+        template: "{gap} less than the {target} target",
+    },
+    Entry {
+        id: "statement.distance.line",
+        kind: StringKind::Statement,
+        role: None,
+        template: "{distance} · {comparison}",
+    },
+    Entry {
+        id: "statement.progress.fitter",
+        kind: StringKind::Statement,
+        role: None,
+        template: "fitter than {ago}",
+    },
+    Entry {
+        id: "statement.progress.slower",
+        kind: StringKind::Statement,
+        role: None,
+        template: "slower than {ago}",
+    },
+    Entry {
+        id: "statement.progress.unchanged",
+        kind: StringKind::Statement,
+        role: None,
+        template: "the same pace as {ago}",
+    },
+    Entry {
+        id: "statement.progress.evidence.faster",
+        kind: StringKind::Statement,
+        role: None,
+        template: "same heart rate, {pace} s/km faster",
+    },
+    Entry {
+        id: "statement.progress.evidence.slower",
+        kind: StringKind::Statement,
+        role: None,
+        template: "same heart rate, {pace} s/km slower",
+    },
+    Entry {
+        id: "statement.compare.same_distance",
+        kind: StringKind::Statement,
+        role: None,
+        template: "Same distance, {gap}",
+    },
+    Entry {
+        id: "statement.compare.same_route",
+        kind: StringKind::Statement,
+        role: None,
+        template: "Same route, different week",
+    },
+    Entry {
+        id: "statement.compare.different",
+        kind: StringKind::Statement,
+        role: None,
+        template: "Different distances — read with care",
+    },
     // The statuses.
     Entry {
         id: "status.not_enough_data",
         kind: StringKind::Status,
         role: None,
         template: "not enough data for a comparison yet",
+    },
+    Entry {
+        id: "status.not_enough_data_yet",
+        kind: StringKind::Status,
+        role: None,
+        template: "not enough data yet",
     },
 ];
 
@@ -390,6 +472,8 @@ pub mod lint {
         PatternWithoutSampleSize,
         /// An `option` string that names a vital.
         OptionReferencesVital,
+        /// A rendered statement that still carries a hole.
+        StatementHole,
     }
 
     impl Rule {
@@ -401,6 +485,7 @@ pub mod lint {
                 Rule::DirectionTailReserved => "direction_tail_reserved",
                 Rule::PatternWithoutSampleSize => "pattern_without_sample_size",
                 Rule::OptionReferencesVital => "option_references_vital",
+                Rule::StatementHole => "statement_hole",
             }
         }
     }
@@ -506,6 +591,22 @@ pub mod lint {
                 rule: Rule::PatternWithoutSampleSize,
                 entry_id: None,
                 detail: format!("the pattern does not carry its sample size ({sample_size})"),
+            }];
+        }
+        Vec::new()
+    }
+
+    /// Check a rendered statement: it must carry no hole.
+    ///
+    /// A statement is rendered by the core, with the values it compares
+    /// already in the sentence. A hole left in it is a place for the second
+    /// implementation to grow back, so one is a failure, not a warning.
+    pub fn check_rendered_statement(text: &str) -> Vec<Violation> {
+        if text.contains('{') || text.contains('}') {
+            return vec![Violation {
+                rule: Rule::StatementHole,
+                entry_id: None,
+                detail: format!("the rendered statement still carries a hole: \"{text}\""),
             }];
         }
         Vec::new()
