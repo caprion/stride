@@ -1,7 +1,7 @@
 {
   "version": 1,
   "rules": {
-    "banned_phrases": ["should", "must", "take the day", "rest day", "rest up", "rest today", "go easy", "missed", "bad", "poor", "fail", "behind", "ready to", "recommended", "better to", "need to", "good", "score", "not recovered", "you are ready", "keep it easy"],
+    "banned_phrases": ["should", "must", "take the day", "rest day", "rest up", "rest today", "go easy", "missed", "bad", "poor", "fail", "behind", "good", "keep it easy", "ready to", "recommended", "better to", "need to", "red", "readiness score", "not recovered", "you are ready", "you are not ready"],
     "direction_set": ["better than usual", "about usual", "could be better"],
     "vital_words": ["sleep", "hrv", "heart rate", "resting hr", "resting heart rate", "readiness", "recovery", "stress"],
     "min_pattern_sample": 3,

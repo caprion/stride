@@ -45,7 +45,7 @@ pub const DIRECTION_SET: [&str; 3] = [BETTER_THAN_USUAL, ABOUT_USUAL, COULD_BE_B
 /// a command**, never as the noun. The product's own summary row is called
 /// "Rest" — "Rest — could be better · 2 of 3 signals below your usual" — and
 /// that is a name, not an instruction, so it needs no exemption.
-pub const BANNED_PHRASES: [&str; 16] = [
+pub const BANNED_PHRASES: [&str; 23] = [
     "should",
     "must",
     "take the day",
@@ -58,22 +58,23 @@ pub const BANNED_PHRASES: [&str; 16] = [
     "poor",
     "fail",
     "behind",
+    "good",
+    "keep it easy",
     "ready to",
     "recommended",
     "better to",
     "need to",
-];
-
-/// The ban list `PLAN.md` §0 adds to `voice.md`'s: the verdicts and the
-/// conclusions the plan names in prose rather than in the machine-checkable
-/// list, and the old product's own advice the plan replaces.
-pub const EXTRA_BANNED_PHRASES: [&str; 5] = [
-    "good",
-    "score",
+    "red",
+    "readiness score",
     "not recovered",
     "you are ready",
-    "keep it easy",
+    "you are not ready",
 ];
+
+/// The list used to be two: `voice.md`'s and `PLAN.md` §0's additions. They
+/// are one now — the contract's list, word for word — because two lists is
+/// how a lint ends up passing a string the contract bans.
+pub const EXTRA_BANNED_PHRASES: [&str; 0] = [];
 
 /// The words that name a vital. An `option` string may not contain any of
 /// them: "because your sleep was low" is the banned link, and listing an
