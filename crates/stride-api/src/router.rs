@@ -502,6 +502,25 @@ impl Router {
         ROUTES
     }
 
+    /// The answer, as the envelope the hosts read.
+    ///
+    /// **One envelope on both sides of the boundary.** The desktop's HTTP
+    /// layer puts the body on the wire and the status in the status line;
+    /// the phone's bridge hands the body across and rejects the call. Both
+    /// read the same envelope, so a number cannot differ between the two
+    /// hosts without one of them being wrong.
+    ///
+    /// ```text
+    /// {"ok": true,  "status": 200, "body": { ... }}
+    /// {"ok": false, "status": 401, "error": {"code": "needs_reconnect", "detail": "…"}}
+    /// ```
+    ///
+    /// This is what the phone's seam calls, and what the rig answers with
+    /// when it hands the body over: one function, one envelope.
+    pub fn envelope(&self, method: &str, path: &str, body: Option<&str>) -> Value {
+        self.call(method, path, body).envelope()
+    }
+
     /// Answer a request.
     ///
     /// The path may carry a query string and may carry the desktop's

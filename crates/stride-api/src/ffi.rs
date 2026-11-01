@@ -143,6 +143,10 @@ pub fn stride_status() -> String {
             "core": "stride-api",
             "version": env!("CARGO_PKG_VERSION"),
             "open": true,
+            // **The marker.** The phone's stub answers "backend": "stub",
+            // so a shell that asks the core what it is can tell a stub
+            // from a router — and a release build may not ship the stub.
+            "backend": "stride-api",
             "generated_at": router.api().generated_at(),
         })),
         None => not_open_envelope(),

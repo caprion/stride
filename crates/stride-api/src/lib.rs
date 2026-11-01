@@ -56,6 +56,37 @@
 //! FFI's own envelope is the seam's business (`android/…/stride-ffi`),
 //! and the two hosts hand the app the same bytes.
 //!
+//! ## How a host wires this
+//!
+//! The router is the whole of the domain's answer, and a host is a dozen
+//! lines around it:
+//!
+//! ```no_run
+//! use std::sync::Arc;
+//! use stride_api::{Api, Config, Router, SystemClock};
+//! use stride_store::{DatabaseKey, Store};
+//!
+//! # fn main() -> Result<(), Box<dyn std::error::Error>> {
+//! let key = DatabaseKey::from_text("the key the caller holds")?;
+//! let store = Arc::new(Store::open_and_migrate(std::path::Path::new("stride.db"), &key)?);
+//! let api = Arc::new(Api::new(store, Config::default(), Arc::new(SystemClock))?);
+//! let router = Router::new(api);
+//!
+//! // The desktop's HTTP layer: the body on the wire, the status in the
+//! // status line.
+//! let answer = router.call("GET", "/api/v1/activities", None);
+//! let (status, body) = (answer.status, answer.body);
+//!
+//! // The phone's bridge: the same envelope, and the shell unwraps it.
+//! let envelope = router.envelope("GET", "/api/v1/activities", None);
+//! # Ok(())
+//! # }
+//! ```
+//!
+//! **One envelope on both sides** ([`Router::envelope`]), so the two hosts
+//! hand the app the same bytes and a number cannot differ between them
+//! without one of them being wrong.
+//!
 //! ## The route table is frozen
 //!
 //! `docs/contract/api-paths.md` is the list, and this crate implements
