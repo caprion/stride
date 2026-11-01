@@ -9,11 +9,16 @@ import java.io.IOException
  * One encrypted file in `noBackupFilesDir`.
  *
  * The file holds one secret — the Garmin credential, or the database key —
- * wrapped by a Keystore key. The format is:
+ * wrapped by a Keystore key. The bytes are:
  *
  * ```text
- * "STRD" | version | nonce length | nonce | ciphertext + GCM tag
+ * nonce length (one byte) | nonce | ciphertext + GCM tag
  * ```
+ *
+ * No magic and no version in the bytes: the version is in the file's
+ * *name* (`garmin-credential.v1`, `database-key.v1`), which is readable,
+ * and the framing itself is [EnvelopeFraming]'s — the same object the
+ * writer and the reader use, so the two cannot drift apart.
  *
  * The file is written atomically (a temporary file, then a rename) so that a
  * crash halfway through cannot leave a half-written envelope that decrypts to

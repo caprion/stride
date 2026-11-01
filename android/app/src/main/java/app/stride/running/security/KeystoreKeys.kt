@@ -80,18 +80,14 @@ object KeystoreKeys {
      * Encrypt with a wrapping key.
      *
      * The nonce is written in front of the ciphertext, because the caller
-     * stores the result and needs it back.
+     * stores the result and needs it back — and the framing of the file is
+     * [EnvelopeFraming]'s, so the reader and the writer cannot drift
+     * apart.
      */
     fun encrypt(alias: String, plaintext: ByteArray): ByteArray {
         val cipher = Cipher.getInstance(TRANSFORMATION)
         cipher.init(Cipher.ENCRYPT_MODE, key(alias))
-        val iv = cipher.iv
-        val ciphertext = cipher.doFinal(plaintext)
-        val out = ByteArray(1 + iv.size + ciphertext.size)
-        out[0] = iv.size.toByte()
-        iv.copyInto(out, 1)
-        ciphertext.copyInto(out, 1 + iv.size)
-        return out
+        return EnvelopeFraming.pack(cipher.iv, cipher.doFinal(plaintext))
     }
 
     /**
@@ -99,16 +95,18 @@ object KeystoreKeys {
      *
      * @throws javax.crypto.AEADBadTagException when the bytes were not
      *   written by this key — a wrong key, a truncated file, a device restore.
+     * @throws IllegalArgumentException when the bytes are not an envelope at
+     *   all — an empty file, or one that was cut short.
      */
     fun decrypt(alias: String, bytes: ByteArray): ByteArray {
-        require(bytes.size > 1) { "the envelope is empty" }
-        val ivLength = bytes[0].toInt()
-        require(ivLength in 12..16 && bytes.size > 1 + ivLength) { "the envelope is truncated" }
-        val iv = bytes.copyOfRange(1, 1 + ivLength)
-        val ciphertext = bytes.copyOfRange(1 + ivLength, bytes.size)
+        val envelope = EnvelopeFraming.unpack(bytes)
         val cipher = Cipher.getInstance(TRANSFORMATION)
-        cipher.init(Cipher.DECRYPT_MODE, key(alias), GCMParameterSpec(TAG_BITS, iv))
-        return cipher.doFinal(ciphertext)
+        cipher.init(
+            Cipher.DECRYPT_MODE,
+            key(alias),
+            GCMParameterSpec(TAG_BITS, envelope.nonce),
+        )
+        return cipher.doFinal(envelope.ciphertext)
     }
 
     /** Whether the alias has a key. */
