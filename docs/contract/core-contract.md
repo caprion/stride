@@ -205,7 +205,10 @@ The domain sentences and the domain numbers have **one owner: the core**.
   wording, and it does not re-implement the domain's rounding.
 - **The DTOs carry the rendered value.** A domain value crosses the wire as
   both: the **text** the core rendered ("8.4 km", "42 m", "148 bpm", "5:02
-  /km") and the **raw number** for a chart. There is no `format:` hint — a
+  /km", and a difference — "+2.4 km", "−0.6 km") and the **raw number** for a
+  chart. The list is not exhaustive: **a difference is a domain value too**,
+  and it is rendered by the same renderer as the value it is a difference of,
+  so a delta can never be a second form of a value. There is no `format:` hint — a
   hint tells the frontend *how* to render, which is the hole this section
   closes. A missing value crosses as null in both, never as "0".
 - **The rounding belongs to `units.rs`.** Half-even where the contract says
