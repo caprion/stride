@@ -24,10 +24,16 @@ if grep -rniE '(SELECT|INSERT|UPDATE|DELETE)[[:space:]]*["'"'"'][^"'"'"']*[{}]' 
   fail=1
 fi
 
-# No `unsafe` outside the FFI crate. The FFI crate does not exist yet (it is
-# Slice 1+), so today this means no `unsafe` anywhere. When stride-ffi lands,
-# exempt it here.
-if grep -rnE '\bunsafe\b' crates/ desktop/ 2>/dev/null; then
+# No `unsafe` outside the FFI crate. The seam is the one place it is allowed:
+# the phone's Rust core is called across a C boundary, and that boundary is
+# where the panic-catching lives. Everywhere else — the libraries, the
+# desktop, and the phone's tree outside the seam — it stays out.
+if grep -rnE '\bunsafe\b' --include='*.rs' --include='*.kt' --include='*.kts' crates/ desktop/ 2>/dev/null; then
+  echo "check-contract-greps: unsafe found outside the FFI crate" >&2
+  fail=1
+fi
+if grep -rnE '\bunsafe\b' --include='*.rs' --include='*.kt' --include='*.kts' android/ 2>/dev/null \
+     | grep -v '^android/app/src/main/rust/stride-ffi/'; then
   echo "check-contract-greps: unsafe found outside the FFI crate" >&2
   fail=1
 fi
