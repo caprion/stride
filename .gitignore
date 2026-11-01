@@ -10,6 +10,3 @@ frontend/dist/
 
 # The Python bytecode cache of the release checker.
 __pycache__/
-
-# The development aid's screenshots (frontend/scripts/shots.mjs).
-frontend/shots/
