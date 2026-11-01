@@ -19,7 +19,13 @@ import type {
   TodayInsight,
   VitalsSnapshot,
 } from './types'
-import { ApiError, selectTransport, type ApiRequest, type HttpMethod } from './transport'
+import {
+  ApiError,
+  currentHost,
+  selectTransport,
+  type ApiRequest,
+  type HttpMethod,
+} from './transport'
 
 export { ApiError }
 
@@ -215,9 +221,64 @@ export const api = {
   syncSettings: () => get<unknown>(ROUTES.syncSettings),
 
   authStatus: () => get<unknown>(ROUTES.authStatus),
-  setGarminPersonalKey: (key: string) => post<unknown>(ROUTES.authGarminPersonalKey, { key }),
-  testGarminPersonalKey: (key: string) =>
-    post<unknown>(ROUTES.authGarminPersonalKeyTest, { key }),
+
+  /**
+   * The Garmin key, typed into the desktop.
+   *
+   * The desktop's server keeps the key, so the desktop has a field and
+   * this call carries the key to the server. The phone has no server and
+   * no field: the bridge refuses the key routes, so this call refuses
+   * here, before anything is sent. **The key never crosses the bridge.**
+   */
+  setGarminPersonalKey: async (key: string) => {
+    if (currentHost() === 'native') {
+      throw new ApiError('garmin_rejected', 'the key is typed on the phone', 0)
+    }
+    return post<unknown>(ROUTES.authGarminPersonalKey, { key })
+  },
+
+  /**
+   * The key, checked against Garmin.
+   *
+   * The desktop's server checks it; the phone's own screen does. So this
+   * one is the desktop's as well.
+   */
+  testGarminPersonalKey: async (key: string) => {
+    if (currentHost() === 'native') {
+      throw new ApiError('garmin_rejected', 'the key is typed on the phone', 0)
+    }
+    return post<unknown>(ROUTES.authGarminPersonalKeyTest, { key })
+  },
+
+  /**
+   * The phone's key setup.
+   *
+   * The native setup screen owns the key on the phone, and the bridge
+   * opens it: asking for the key route with **no key in it** makes the
+   * plugin open its own screen and refuse the call. The refusal is the
+   * answer — the screen is open — so it is not an error to show.
+   *
+   * The desktop has no native screen, and no need of one: its field
+   * belongs to the Settings screen.
+   */
+  openGarminKeySetup: async () => {
+    if (currentHost() !== 'native') {
+      throw new ApiError('unknown', 'the desktop has no native setup screen', 0)
+    }
+    try {
+      await post<unknown>(ROUTES.authGarminPersonalKey)
+    } catch (reason) {
+      const failure =
+        reason instanceof ApiError
+          ? reason
+          : new ApiError('transport', 'the setup screen did not open', 0)
+      // The plugin opens the screen and *then* refuses the call, with a
+      // 400: that refusal is how the phone says "the screen is open".
+      if (failure.status === 400) return
+      throw failure
+    }
+  },
+
   importFit: (payload: unknown) => post<unknown>(ROUTES.authGarminFitImport, payload),
   garminLogout: () => post<unknown>(ROUTES.authGarminLogout),
   calendar: () => get<unknown>(ROUTES.calendar),
