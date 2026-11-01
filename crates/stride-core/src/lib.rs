@@ -46,14 +46,14 @@ pub use direction::{day_directions, DayDirections, Direction, Travel, VitalDirec
 pub use pattern::{patterns, HistoryDay, Pattern, PatternKind};
 pub use plan::{
     adherence_of, adherence_of_at, baseline_from_history, baseline_from_history_at,
-    baseline_not_enough_history, day_label, results_of, results_of_at, session_label,
-    source_banner, today_of, week_of, week_start, Adherence, PlanBlock, PlanSession, PlanSource,
-    RunFact, SessionKind, SessionResult, SessionStatus,
+    baseline_not_enough_history, day_label, distance_comparison, results_of, results_of_at,
+    session_label, source_banner, today_of, week_of, week_start, Adherence, PlanBlock, PlanSession,
+    PlanSource, RunFact, SessionKind, SessionResult, SessionStatus,
 };
 pub use rest::RestSummary;
 pub use statement::{
-    compare_basis, distance_comparison, distance_comparison_line, progress_headline, CompareBasis,
-    PaceAtHr, ProgressHeadline,
+    compare_basis, distance_comparison_line, progress_headline, CompareBasis, PaceAtHr,
+    ProgressHeadline,
 };
 pub use strings::StringKind;
 pub use types::{
