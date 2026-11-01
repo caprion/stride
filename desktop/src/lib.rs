@@ -6,6 +6,21 @@
 //! runs it), and the reference host (the process the parity differ and the
 //! harness talk to).
 //!
+//! ## What it is made of
+//!
+//! | module | what it is |
+//! |---|---|
+//! | [`main`] | the command line: `serve`, `migrate`, `doctor` |
+//! | [`server`] | the HTTP surface: the trust gate, the router, the app, TLS |
+//! | [`http`] | HTTP/1.1, written out |
+//! | [`trust`] | the trust model: loopback, a trusted network, or a refusal |
+//! | [`key`] | the Garmin key: in memory, in the environment, or in a file |
+//! | [`dbkey`] | the database key: generated, stored with `0600`, and the plaintext conversion |
+//! | [`spa`] | the embedded app, and the guard that keeps it inside |
+//! | [`api`] | the seam to the router, and what the rig answers with until it lands |
+//! | [`paths`] | where the rig keeps its files |
+//! | [`log`] | the rig's log, and the sink a test reads |
+//!
 //! ## The rules it keeps
 //!
 //! * **The trust model is three lines.** Loopback is always allowed; a
@@ -23,9 +38,13 @@
 
 #![deny(missing_docs)]
 
+pub mod api;
 pub mod dbkey;
 pub mod error;
+pub mod http;
 pub mod key;
 pub mod log;
 pub mod paths;
+pub mod server;
+pub mod spa;
 pub mod trust;
