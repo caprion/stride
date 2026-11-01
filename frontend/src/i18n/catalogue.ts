@@ -1,19 +1,26 @@
 /**
- * The string catalogue.
+ * The app's string catalogue — the chrome.
  *
- * Every user-facing string in Stride lives here, and every one of them is
- * typed. The types are the voice's own registers:
+ * Every user-facing string the app writes itself lives here, and every one
+ * of them is typed. The types are the voice's own registers:
  *
- *   vital     — a measurement: label, value, unit
- *   direction — a word from a closed set, with descriptive tails
+ *   vital     — a measurement's label
+ *   direction — a word from the closed set
  *   option    — a session or alternative from the athlete's own plan
  *   pattern   — a fact about the past, always with its sample size
  *   status    — connection, sync, staleness and empty-state lines
  *
- * The lint (`npm run lint:voice`) reads this file and fails the build on a
- * banned word, on a `direction` string outside the closed set, on a
- * `pattern` string without a sample size, and on an `option` string that
- * mentions a vital.
+ * Since core-contract §8 the *domain* sentences are not here: the
+ * direction word, the arithmetic, the travel, the Rest line and the
+ * pattern sentences are written by `stride-core` and travel to the app
+ * already rendered. What is left is the chrome around them — headings,
+ * buttons, labels, empty states — and it is what this file holds.
+ *
+ * The lint (`npm run lint:voice`) reads this file *and* the core's export
+ * (`crates/stride-core/strings.json`), and fails the build on a banned
+ * word, on a `direction` string outside the closed set, on a `pattern`
+ * string without a sample size, on an `option` string that mentions a
+ * vital, and on a ban list that has drifted from the contract's.
  *
  * Nothing in the app may write a user-facing string inline. If a string is
  * not in this file, it does not exist yet.
@@ -26,6 +33,11 @@ export type StringType = (typeof STRING_TYPES)[number]
 /**
  * The closed direction set. Three words, no synonyms, no extensions.
  * See `docs/contract/voice.md`.
+ *
+ * The set is frozen by the contract and the core's export carries it too;
+ * the lint checks that the two agree. The app knows the words because it
+ * colours them — the meaning is always in the word itself, never in the
+ * colour.
  */
 export const DIRECTION_WORDS = ['better than usual', 'about usual', 'could be better'] as const
 export type DirectionWord = (typeof DIRECTION_WORDS)[number]
@@ -34,22 +46,6 @@ interface Entry {
   readonly type: StringType
   readonly text: string
 }
-
-/**
- * The direction words themselves.
- *
- * A `direction` entry's text is *exactly* one of these. The arithmetic
- * ("14 below your usual") and the travel ("3rd night down") are separate
- * `status` strings that are rendered beside the word, never inside it.
- */
-export const directions = {
-  'direction.better': { type: 'direction', text: 'better than usual' },
-  'direction.usual': { type: 'direction', text: 'about usual' },
-  'direction.could': { type: 'direction', text: 'could be better' },
-} as const satisfies Record<
-  string,
-  { readonly type: 'direction'; readonly text: DirectionWord }
->
 
 /**
  * Everything else. Placeholders are written `{name}` and filled in by
@@ -67,19 +63,11 @@ export const catalogue = {
   // ------------------------------------------------------------- today
   'today.heading': { type: 'status', text: 'Today' },
   'today.vitals.heading': { type: 'status', text: 'Vitals' },
-  'today.rest.label': { type: 'vital', text: 'Rest' },
-  'today.rest.summary': {
-    type: 'status',
-    text: '{below} of {total} signals below your usual',
-  },
-  'today.session.label': { type: 'status', text: 'Today' },
-  'today.session.source.imported': { type: 'option', text: 'from your imported plan' },
-  'today.session.source.baseline': { type: 'option', text: 'from your inferred baseline' },
-  'today.session.source.typed': { type: 'option', text: 'from your plan' },
-  'today.options.heading': { type: 'option', text: 'Also in your plan' },
+  'today.session.source.imported': { type: 'status', text: 'from your imported plan' },
+  'today.session.source.baseline': { type: 'status', text: 'from your inferred baseline' },
+  'today.session.source.typed': { type: 'status', text: 'from your plan' },
+  'today.options.heading': { type: 'status', text: 'Also in your plan' },
   'today.lastRun.label': { type: 'status', text: 'Last run' },
-  'today.distance.more': { type: 'status', text: '{gap} more than the {target} target' },
-  'today.distance.less': { type: 'status', text: '{gap} less than the {target} target' },
   'today.week.heading': { type: 'status', text: 'This week' },
   'today.state.noData': {
     type: 'status',
@@ -91,31 +79,13 @@ export const catalogue = {
   'today.state.stale.minutes': { type: 'status', text: 'last synced {n} minutes ago' },
   'today.state.syncIncomplete': { type: 'status', text: 'The last sync did not complete' },
   'today.state.retry': { type: 'status', text: 'Try again' },
-  'today.state.notEnoughHistory': {
-    type: 'status',
-    text: 'not enough data for a comparison yet',
-  },
   'today.state.noPlan': { type: 'status', text: 'No plan is active for today' },
 
-  // ------------------------------------------- the arithmetic and travel
-  'delta.above': { type: 'status', text: '{value} above your usual' },
-  'delta.below': { type: 'status', text: '{value} below your usual' },
-  'delta.moreThan': { type: 'status', text: '{value} more than your usual' },
-  'delta.lessThan': { type: 'status', text: '{value} less than your usual' },
-  'travel.steady': { type: 'status', text: 'steady' },
-  'travel.nightDown': { type: 'status', text: '{n} night down' },
-  'travel.nightUp': { type: 'status', text: '{n} night up' },
-  'travel.nightsUp': { type: 'status', text: 'up {n} nights' },
-  'travel.nightsDown': { type: 'status', text: '{n} nights down' },
-
   // ------------------------------------------------------ the vitals
-  'vital.sleep.label': { type: 'vital', text: 'Sleep' },
   'vital.distance': { type: 'vital', text: 'Distance' },
   'vital.time': { type: 'vital', text: 'Time' },
   'vital.pace': { type: 'vital', text: 'Pace' },
-  'vital.hrv.label': { type: 'vital', text: 'HRV' },
-  'vital.restingHr.label': { type: 'vital', text: 'Resting HR' },
-  'vital.stress.label': { type: 'vital', text: 'Stress' },
+  'vital.heartRate': { type: 'vital', text: 'Heart rate' },
 
   // ------------------------------------------------------------- runs
   'runs.heading': { type: 'status', text: 'Runs' },
@@ -136,19 +106,12 @@ export const catalogue = {
 
   // --------------------------------------------------------- progress
   'progress.heading': { type: 'status', text: 'Progress' },
-  'progress.headline.fitter': { type: 'status', text: 'fitter than {n} weeks ago' },
-  'progress.headline.notEnough': { type: 'status', text: 'not enough data yet' },
-  'progress.headline.evidence': {
-    type: 'status',
-    text: 'same heart rate, {value} faster',
-  },
   'progress.volume.heading': { type: 'status', text: 'Weekly volume' },
   'progress.paceAtHr.heading': { type: 'status', text: 'Pace at heart rate' },
   'progress.bests.heading': { type: 'status', text: 'Bests & milestones' },
   'progress.consistency.heading': { type: 'status', text: 'Consistency' },
   'progress.adherence.heading': { type: 'status', text: 'Adherence' },
   'progress.adherence.count': { type: 'status', text: '{done} of {planned} sessions run' },
-  'progress.needsWeeks': { type: 'status', text: 'needs {n} more weeks' },
   'progress.range.label': { type: 'status', text: 'Range' },
   'progress.range.weeks': { type: 'status', text: '{n} weeks' },
   'progress.typicalWeek': { type: 'status', text: 'your typical week' },
@@ -172,25 +135,9 @@ export const catalogue = {
   'body.sleep.duration': { type: 'status', text: 'duration' },
   'body.sleep.stages': { type: 'status', text: 'stages' },
   'body.history.label': { type: 'status', text: 'Last {n} nights' },
-  'body.pattern.hrvBelow': {
-    type: 'pattern',
-    text: 'your HRV has been below your usual on {n} nights this month',
-  },
-  'body.pattern.longRunFade': {
-    type: 'pattern',
-    text: 'on your {n} longest runs this year, your last 3 km was the slowest',
-  },
-  'body.pattern.sleepLowDistance': {
-    type: 'pattern',
-    text: 'the {n} other times your sleep was this low, you ran {distance} or less',
-  },
 
   // ---------------------------------------------------------- compare
   'compare.heading': { type: 'status', text: 'Compare' },
-  'compare.basis.sameDistance': { type: 'status', text: 'Same distance, {n} weeks apart' },
-  'compare.basis.sameRoute': { type: 'status', text: 'Same route, different week' },
-  'compare.basis.sameHr': { type: 'status', text: 'Same heart rate band' },
-  'compare.basis.different': { type: 'status', text: 'Different distances — read with care' },
   'compare.column.metric': { type: 'status', text: 'Metric' },
   'compare.column.a': { type: 'status', text: 'A' },
   'compare.column.b': { type: 'status', text: 'B' },
@@ -241,8 +188,7 @@ export const catalogue = {
 
 export type CatalogueEntry = (typeof catalogue)[keyof typeof catalogue]
 export type CatalogueKey = keyof typeof catalogue
-export type DirectionKey = keyof typeof directions
 
-/** Every entry, in one map — the catalogue and the closed direction set. */
-export const allEntries = { ...catalogue, ...directions } as const
+/** Every entry, in one map. */
+export const allEntries = catalogue
 export type AllKeys = keyof typeof allEntries

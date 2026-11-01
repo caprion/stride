@@ -25,7 +25,7 @@ import {
   formatDistance,
   formatDurationHuman,
   formatElevation,
-  formatNumber,
+  formatHeartRate,
   formatPace,
   sportLabel,
 } from '../lib/format'
@@ -166,7 +166,7 @@ export function ActivityPage({ id }: { id: string }) {
                   {formatDurationHuman(split.duration_s)}
                 </span>
                 <span className="text-[13px] tabular-nums text-ink-muted">
-                  {split.avg_hr === null ? '—' : `${formatNumber(split.avg_hr)} bpm`}
+                  {split.avg_hr === null ? '—' : formatHeartRate(split.avg_hr)}
                 </span>
               </li>
             ))}

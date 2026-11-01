@@ -5,6 +5,9 @@
  * than as a read-through: the same values on Today and on Body, the
  * distance comparison appearing on exactly one fixture, and the swap
  * flipping every delta.
+ *
+ * The sentences they assert are the core's (core-contract §8): the app
+ * shows them as they arrive, and these tests are how we know it does.
  */
 
 import { screen, waitFor } from '@testing-library/react'
@@ -41,6 +44,7 @@ describe('Today', () => {
     expect(container.textContent).toContain('1 h 10 m less than your usual')
     expect(container.textContent).toContain('14 below your usual')
     expect(container.textContent).toContain('5 above your usual')
+    expect(container.textContent).toContain('6th night down')
     expect(container.textContent).toContain('3rd night down')
   })
 
@@ -58,7 +62,7 @@ describe('Today', () => {
     await waitFor(() =>
       expect(container.querySelector('[data-testid="today-session"]')).toBeTruthy(),
     )
-    expect(container.textContent).toContain('10.0 km')
+    expect(container.textContent).toContain('Today — 10 km · easy')
     expect(container.textContent).toContain('from your imported plan')
     expect(container.textContent).toContain('Also in your plan')
   })
@@ -92,8 +96,7 @@ describe('the distance comparison', () => {
     const line = container.querySelector(
       '[data-testid="today-distance-comparison"]',
     )?.textContent
-    expect(line).toContain('12.4 km')
-    expect(line).toContain('2.4 km more than the 10.0 km target')
+    expect(line).toContain('2.4 km more than the 10 km target')
     window.history.pushState({}, '', '/?fixtures=1')
   })
 })
@@ -120,7 +123,7 @@ describe('Body', () => {
       expect(container.querySelector('[data-testid="body-patterns"]')).toBeTruthy(),
     )
     const patterns = container.querySelector('[data-testid="body-patterns"]')?.textContent ?? ''
-    expect(patterns).toContain('3 nights this month')
+    expect(patterns).toContain('your HRV has been below your usual for 3 nights')
     expect(patterns).toContain('the 5 other times')
   })
 })

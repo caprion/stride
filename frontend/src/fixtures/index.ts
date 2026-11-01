@@ -5,43 +5,34 @@
  * tests assert against it. The values are invented: no real routes, no
  * names, no notes, no coordinates that mean anything.
  *
- * The vitals are built the way the core builds them — the band is the
- * median ± 1.5 × MAD of the previous nights, and the direction word falls
- * out of that band — so the fixture obeys the contract instead of
- * asserting a number the contract would not produce.
+ * The sentences here are the core's, written out. Since core-contract §8
+ * the domain's sentences arrive already rendered — the direction word, the
+ * arithmetic, the travel, the Rest line and the pattern sentences — so the
+ * fixture is a captured answer rather than a computation. The numbers under
+ * them are the history the charts draw.
+ *
+ * The wording is the core's wording, from `crates/stride-core/strings.json`:
+ *
+ *   "6 h 10 m" · "could be better" · "1 h 10 m less than your usual"
+ *   "6th night down" · "2 of 3 signals below your usual"
+ *   "your HRV has been below your usual for 3 nights"
  */
 
-import { computeBaseline, directionFor, travelFrom } from '../lib/direction'
+import { round_pace_s_per_km } from '../lib/units'
 import type {
   ActivityDetail,
   ActivityListResponse,
   ActivitySummary,
   CompareCandidate,
   CompareResponse,
-  Direction,
   HealthDaily,
   PlanSession,
   PlanWeek,
   ProgressInsight,
   SyncStatus,
   TodayInsight,
-  VitalKey,
-  VitalValue,
   VitalsSnapshot,
 } from '../lib/types'
-
-/** A small deterministic generator, so the fixture is the same every run. */
-function unusedGenerator(seed: number): () => number {
-  let a = seed
-  return () => {
-    a |= 0
-    a = (a + 0x6d2b79f5) | 0
-    let t = Math.imul(a ^ (a >>> 15), 1 | a)
-    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296
-  }
-}
-void unusedGenerator
 
 /** The day the fixture set is "now". */
 export const TODAY = '2026-05-12'
@@ -49,11 +40,11 @@ export const TODAY = '2026-05-12'
 /**
  * The synthetic nights.
  *
- * The values are written out rather than generated, because the readout
- * has to land on the numbers the plan describes: a usual of 6 h 40 m of
- * sleep, a usual HRV of 62 ms, a usual resting heart rate of 58 bpm — and
- * because the band (median ± 1.5 × MAD) has to put today's value outside
- * the band for sleep and HRV, and inside it for the resting heart rate.
+ * The values are written out rather than generated, because the readout has
+ * to land on the numbers the plan describes: a usual of 6 h 40 m of sleep,
+ * a usual HRV of 62 ms, a usual resting heart rate of 58 bpm — and because
+ * the band (median ± 1.5 × MAD) has to put today's value outside the band
+ * for sleep and HRV, and inside it for the resting heart rate.
  */
 const SLEEP_NIGHTS = [
   26400, 27600, 25200, 28800, 26400, 24000, 27600, 25200, 30000, 26400, 24000, 27600, 22800,
@@ -99,36 +90,51 @@ const nights = buildNights()
 /** The previous nights, the day itself excluded — the band's window. */
 const history = nights.slice(0, 29)
 
-function vital(key: VitalKey, unit: 's' | 'ms' | 'bpm', values: number[]): VitalValue {
-  // The band is measured over the nights before the day itself.
-  const baseline = computeBaseline(values.slice(0, -1))
-  const value = values[values.length - 1] ?? null
-  const { travel, days } = travelFrom(values)
-  const deviation = baseline && value !== null ? value - baseline.median : null
-  return {
-    key,
-    value,
-    unit,
-    direction: directionFor(key, value, baseline),
-    deviation,
-    travel,
-    travel_days: days,
-    baseline,
-  }
-}
-
-const sleepValues = nights.map((night) => night.sleep_s)
-const hrvValues = nights.map((night) => night.hrv_ms)
-const rhrValues = nights.map((night) => night.resting_hr)
-
-/** The vitals — the snapshot Today and Body both read. */
+/**
+ * The vitals — the snapshot Today and Body both read.
+ *
+ * The bands are the median ± 1.5 × MAD of the nights before the day
+ * itself: sleep 26 400 ± 3 600 s, HRV 62 ± 6 ms, resting heart rate
+ * 58 ± 6 bpm. The sentences are the core's answers for those numbers.
+ */
 export const vitalsFixture: VitalsSnapshot = {
   date: TODAY,
   generated_at: '2026-05-12T06:30:00Z',
+  rest: {
+    label: 'Rest',
+    line: 'could be better · 2 of 3 signals below your usual',
+  },
   vitals: [
-    vital('sleep', 's', sleepValues),
-    vital('hrv', 'ms', hrvValues),
-    vital('resting_hr', 'bpm', rhrValues),
+    {
+      key: 'sleep',
+      label: 'Sleep',
+      value_text: '6 h 10 m',
+      direction_text: 'could be better',
+      deviation_text: '1 h 10 m less than your usual',
+      travel_text: '6th night down',
+      status_text: null,
+      band: { lower: 22_800, upper: 30_000, nights: 29 },
+    },
+    {
+      key: 'hrv',
+      label: 'HRV',
+      value_text: '48 ms',
+      direction_text: 'could be better',
+      deviation_text: '14 below your usual',
+      travel_text: '3rd night down',
+      status_text: null,
+      band: { lower: 56, upper: 68, nights: 29 },
+    },
+    {
+      key: 'resting_hr',
+      label: 'Resting HR',
+      value_text: '63 bpm',
+      direction_text: 'about usual',
+      deviation_text: '5 above your usual',
+      travel_text: null,
+      status_text: null,
+      band: { lower: 52, upper: 64, nights: 29 },
+    },
   ],
   history: {
     sleep: history.map((night) => ({ date: night.date, value: night.sleep_s })),
@@ -138,34 +144,15 @@ export const vitalsFixture: VitalsSnapshot = {
   patterns: [
     {
       id: 'hrv-below',
-      key: 'body.pattern.hrvBelow',
-      n: 3,
-    },
-    {
-      id: 'long-run-fade',
-      key: 'body.pattern.longRunFade',
-      n: 6,
+      text: 'your HRV has been below your usual for 3 nights',
+      sample_size: 3,
     },
     {
       id: 'sleep-low-distance',
-      key: 'body.pattern.sleepLowDistance',
-      n: 5,
-      params: { distance: '8 km' },
+      text: 'the 5 other times your sleep was below your usual, you ran 8 km or less',
+      sample_size: 5,
     },
   ],
-}
-
-/** How many signals are below their usual. */
-export function belowCount(snapshot: VitalsSnapshot = vitalsFixture): number {
-  return snapshot.vitals.filter((entry) => entry.direction === 'could be better').length
-}
-
-/** The Rest summary's direction: a pure function of the three vitals. */
-export function restDirection(snapshot: VitalsSnapshot = vitalsFixture): Direction {
-  const below = belowCount(snapshot)
-  if (below === 0) return 'better than usual'
-  if (below === snapshot.vitals.length) return 'could be better'
-  return 'could be better'
 }
 
 // ------------------------------------------------------------------ plan
@@ -175,6 +162,7 @@ const planSessions: PlanSession[] = [
     date: '2026-05-11',
     session_type: 'easy',
     title: 'Easy 8',
+    sentence: '11 May 2026 — 8 km · easy',
     target_distance_m: 8_000,
     actual_distance_m: 8_100,
     status: 'done',
@@ -184,6 +172,7 @@ const planSessions: PlanSession[] = [
     date: '2026-05-12',
     session_type: 'easy',
     title: 'Easy 10',
+    sentence: 'Today — 10 km · easy',
     target_distance_m: 10_000,
     actual_distance_m: null,
     status: 'planned',
@@ -193,6 +182,7 @@ const planSessions: PlanSession[] = [
     date: '2026-05-13',
     session_type: 'rest',
     title: null,
+    sentence: '13 May 2026 — rest',
     target_distance_m: null,
     actual_distance_m: null,
     status: 'planned',
@@ -202,6 +192,7 @@ const planSessions: PlanSession[] = [
     date: '2026-05-14',
     session_type: 'easy',
     title: 'Easy 5',
+    sentence: '14 May 2026 — 5 km · easy',
     target_distance_m: 5_000,
     actual_distance_m: null,
     status: 'planned',
@@ -211,6 +202,7 @@ const planSessions: PlanSession[] = [
     date: '2026-05-15',
     session_type: 'long',
     title: 'Long 16',
+    sentence: '15 May 2026 — 16 km · long',
     target_distance_m: 16_000,
     actual_distance_m: null,
     status: 'planned',
@@ -220,6 +212,7 @@ const planSessions: PlanSession[] = [
     date: '2026-05-16',
     session_type: 'easy',
     title: 'Easy 30 minutes',
+    sentence: '16 May 2026 — easy',
     target_distance_m: null,
     actual_distance_m: null,
     status: 'planned',
@@ -229,6 +222,7 @@ const planSessions: PlanSession[] = [
     date: '2026-05-17',
     session_type: 'easy',
     title: 'Easy 6',
+    sentence: '17 May 2026 — 6 km · easy',
     target_distance_m: 6_000,
     actual_distance_m: null,
     status: 'planned',
@@ -271,7 +265,7 @@ function activity(
     max_hr: 171,
     avg_cadence: 178,
     elevation_gain_m: 42,
-    pace_s_per_km: Math.round(moving_time_s / (distance_m / 1000)),
+    pace_s_per_km: round_pace_s_per_km(moving_time_s / (distance_m / 1000)),
     story,
     geo_points: [],
     ...extra,
@@ -325,14 +319,17 @@ export const activityDetailFixture: ActivityDetail = {
 
 // ----------------------------------------------------------------- today
 
-function todayInsight(lastRun: ActivitySummary): TodayInsight {
+function todayInsight(
+  lastRun: ActivitySummary,
+  distanceComparison: string | null,
+): TodayInsight {
   return {
     generated_at: '2026-05-12T06:30:00Z',
     date: TODAY,
     planned: planSessions[1] as PlanSession,
     options: [planSessions[3] as PlanSession, planSessions[5] as PlanSession],
     last_run: lastRun,
-    target_distance_m: 10_000,
+    distance_comparison: distanceComparison,
     week: { distance_m: 20_600, sessions: 2 },
   }
 }
@@ -343,7 +340,10 @@ function todayInsight(lastRun: ActivitySummary): TodayInsight {
  * The distance comparison is absent here, and that is the rule: 10.2 km
  * against a 10 km target is not news.
  */
-export const todayFixture: TodayInsight = todayInsight(activityFixtures[1] as ActivitySummary)
+export const todayFixture: TodayInsight = todayInsight(
+  activityFixtures[1] as ActivitySummary,
+  null,
+)
 
 /**
  * Today, with a last run 24% beyond the target.
@@ -352,13 +352,15 @@ export const todayFixture: TodayInsight = todayInsight(activityFixtures[1] as Ac
  */
 export const todayOverFixture: TodayInsight = todayInsight(
   activityFixtures[0] as ActivitySummary,
+  '2.4 km more than the 10 km target',
 )
 
 // --------------------------------------------------------------- progress
 
 export const progressFixture: ProgressInsight = {
   generated_at: '2026-05-12T06:30:00Z',
-  headline: { kind: 'fitter', weeks: 8, pace_delta_s_per_km: 24 },
+  headline: 'fitter than 8 weeks ago',
+  headline_note: 'same heart rate, 24 s/km faster',
   weekly_volume: [
     { week_start: '2026-03-16', distance_m: 24_100 },
     { week_start: '2026-03-23', distance_m: 27_400 },
@@ -407,7 +409,7 @@ function series(distance_m: number, moving_time_s: number, base_hr: number) {
 }
 
 export const compareFixture: CompareResponse = {
-  basis: { kind: 'same_distance', weeks_apart: 3 },
+  basis_text: 'Same distance, 3 weeks apart',
   metrics: [
     {
       key: 'distance',
@@ -426,7 +428,7 @@ export const compareFixture: CompareResponse = {
       delta: -60,
     },
     { key: 'pace', label_key: 'vital.pace', format: 'pace', a: 317, b: 306, delta: -11 },
-    { key: 'hr', label_key: 'vital.restingHr.label', format: 'hr', a: 149, b: 146, delta: -3 },
+    { key: 'hr', label_key: 'vital.heartRate', format: 'hr', a: 149, b: 146, delta: -3 },
   ],
   a: {
     id: 102,

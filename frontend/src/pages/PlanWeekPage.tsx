@@ -131,13 +131,9 @@ export function PlanWeekPage() {
               <p className="text-[12px] font-semibold uppercase tracking-[0.07em] text-ink-faint">
                 {t('plan.day.today')} · {formatDateMedium(planned.date)}
               </p>
+              {/* The session, as the core wrote it. */}
               <p className="mt-1 text-[16px] font-semibold text-ink">
-                {planned.target_distance_m === null
-                  ? planned.session_type
-                  : formatDistance(planned.target_distance_m)}
-                <span className="ml-2 text-[13.5px] font-normal text-ink-soft">
-                  {planned.session_type}
-                </span>
+                {planned.sentence}
               </p>
               <p className="mt-0.5 text-[13.5px] text-ink-muted" data-testid="plan-status">
                 {statusText(planned.status)}

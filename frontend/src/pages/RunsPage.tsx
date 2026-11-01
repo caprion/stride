@@ -13,7 +13,7 @@ import {
   formatDateShort,
   formatDistance,
   formatDurationHuman,
-  formatNumber,
+  formatHeartRate,
   formatPace,
   sportLabel,
 } from '../lib/format'
@@ -26,7 +26,7 @@ function Chips({ activity }: { activity: ActivitySummary }) {
   const chips = [
     formatDistance(activity.distance_m),
     formatPace(activity.pace_s_per_km),
-    activity.avg_hr === null ? null : `${formatNumber(activity.avg_hr)} bpm`,
+    activity.avg_hr === null ? null : formatHeartRate(activity.avg_hr),
   ].filter((chip): chip is string => chip !== null && chip !== '—')
 
   return (

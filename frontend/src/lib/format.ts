@@ -1,97 +1,95 @@
 /**
- * Human rendering.
+ * Human rendering — the app's chrome.
  *
- * The core contract (§5) is the rulebook: values are rounded to what a
- * human would say, never to what a machine would. "6 h 10 m", not "6.166 h";
- * "14 below your usual", not "−13.7%".
+ * The domain's rendering belongs to the core: the rounding and the human
+ * form of a duration live in `crates/stride-core/src/units.rs`, and this
+ * app's copy of those rules is `src/lib/units.ts`. Contract §8 gives them
+ * to the core, and says so twice.
+ *
+ * What is left here is the chrome: dates, the dense forms a table needs,
+ * the sport's own name, and the em dash that stands for a number that is
+ * not there. Every rounding in the app goes through `units.ts`, so the
+ * phone and the desktop cannot disagree about a number.
  */
 
 import { format, formatDistanceToNow, parseISO } from 'date-fns'
-import type { VitalKey } from './types'
+import {
+  format_distance_km_short,
+  format_duration,
+  format_whole,
+  round_half_even,
+  truncate_heart_rate,
+} from './units'
 
-/** Metres -> "12.4 km". */
-export function formatDistance(metres: number | null | undefined, decimals = 1): string {
-  if (metres === null || metres === undefined) return '—'
-  return `${(metres / 1000).toFixed(decimals)} km`
+/** The mark for a number that is not there. */
+const ABSENT = '—'
+
+/** Metres -> "12.4 km", "5 km". */
+export function formatDistance(metres: number | null | undefined): string {
+  if (metres === null || metres === undefined) return ABSENT
+  return `${format_distance_km_short(metres)} km`
 }
 
 /**
  * Seconds -> "6 h 10 m", "42 m".
  *
- * Minutes are rounded to the nearest minute; hours are written with a
- * space, because "6h10m" is a code, not a sentence.
+ * The core's `format_duration`: minutes are rounded to the nearest minute
+ * and an exact zero minutes is left out — a person says "1 h", not
+ * "1 h 00 m".
  */
 export function formatDurationHuman(seconds: number | null | undefined): string {
-  if (seconds === null || seconds === undefined) return '—'
-  const totalMinutes = Math.round(seconds / 60)
-  if (totalMinutes < 1) return '0 m'
-  const hours = Math.floor(totalMinutes / 60)
-  const minutes = totalMinutes % 60
-  if (hours > 0 && minutes > 0) return `${hours} h ${minutes} m`
-  if (hours > 0) return `${hours} h`
-  return `${minutes} m`
-}
-
-/** Seconds -> "1:23:45" or "23:45" — the dense form, for tables. */
-export function formatDurationClock(seconds: number | null | undefined): string {
-  if (seconds === null || seconds === undefined) return '—'
-  const total = Math.round(seconds)
-  const hours = Math.floor(total / 3600)
-  const minutes = Math.floor((total % 3600) / 60)
-  const secs = total % 60
-  if (hours > 0) {
-    return `${hours}:${String(minutes).padStart(2, '0')}:${String(secs).padStart(2, '0')}`
-  }
-  return `${minutes}:${String(secs).padStart(2, '0')}`
-}
-
-/** Seconds per kilometre -> "5:24". */
-export function formatPace(secondsPerKm: number | null | undefined): string {
-  if (secondsPerKm === null || secondsPerKm === undefined || secondsPerKm <= 0) return '—'
-  const total = Math.round(secondsPerKm)
-  return `${Math.floor(total / 60)}:${String(total % 60).padStart(2, '0')}`
-}
-
-/** A number -> "63". */
-export function formatNumber(value: number | null | undefined): string {
-  if (value === null || value === undefined) return '—'
-  return String(Math.round(value))
+  if (seconds === null || seconds === undefined) return ABSENT
+  return format_duration(seconds)
 }
 
 /**
- * The deviation from the usual value, in the metric's own scale.
+ * Seconds per kilometre -> "5:24".
  *
- * A duration carries its unit ("1 h 10 m"); a heart rate and an HRV do
- * not, because the unit is already on the value.
+ * The dense form, for a table or a chart. The number is rounded by the
+ * core's rule (half to even) before the minute and the second are taken
+ * from it.
  */
-export function formatDeviation(metric: VitalKey, deviation: number | null): string | null {
-  if (deviation === null || deviation === undefined) return null
-  const magnitude = Math.abs(deviation)
-  if (metric === 'sleep') {
-    return formatDurationHuman(magnitude)
-  }
-  return String(Math.round(magnitude))
+export function formatPace(secondsPerKm: number | null | undefined): string {
+  if (secondsPerKm === null || secondsPerKm === undefined || secondsPerKm <= 0) return ABSENT
+  const total = Math.trunc(round_half_even(secondsPerKm, 0))
+  return `${Math.floor(total / 60)}:${String(total % 60).padStart(2, '0')}`
+}
+
+/** A number in its own scale, with no decimals: "63". */
+export function formatNumber(value: number | null | undefined): string {
+  if (value === null || value === undefined) return ABSENT
+  return format_whole(value)
+}
+
+/**
+ * A heart rate -> "148 bpm".
+ *
+ * A heart rate is truncated, never rounded (contract §3): 148.7 is 148.
+ */
+export function formatHeartRate(value: number | null | undefined): string {
+  if (value === null || value === undefined) return ABSENT
+  return `${truncate_heart_rate(value)} bpm`
 }
 
 /** Metres of climb -> "128 m". */
 export function formatElevation(metres: number | null | undefined): string {
-  if (metres === null || metres === undefined) return '—'
-  return `${Math.round(metres)} m`
+  if (metres === null || metres === undefined) return ABSENT
+  return `${format_whole(metres)} m`
 }
 
 /** An ISO date -> "Sat 10 May". */
 export function formatDateShort(iso: string | null | undefined): string {
-  if (!iso) return '—'
+  if (!iso) return ABSENT
   const date = parseISO(iso)
-  if (Number.isNaN(date.getTime())) return '—'
+  if (Number.isNaN(date.getTime())) return ABSENT
   return format(date, 'EEE d MMM')
 }
 
 /** An ISO date -> "10 May 2026". */
 export function formatDateMedium(iso: string | null | undefined): string {
-  if (!iso) return '—'
+  if (!iso) return ABSENT
   const date = parseISO(iso)
-  if (Number.isNaN(date.getTime())) return '—'
+  if (Number.isNaN(date.getTime())) return ABSENT
   return format(date, 'd MMM yyyy')
 }
 

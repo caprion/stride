@@ -42,13 +42,50 @@ sideways, and every tap target is at least 44px tall at compact.
 | `/plan` | **Plan week** — the week, and today's plan: *done · planned · not done* |
 | `/compare/:id` | **Compare** — `metric · A · B · Δ`, the basis always named, swapping A and B flipping every delta |
 
+## Who owns the sentences and the rounding
+
+**The core owns the domain's sentences and the domain's numbers**
+(`docs/contract/core-contract.md` §8). The app renders app chrome only.
+
+So the direction word, the arithmetic, the direction of travel, the Rest
+line and the pattern sentences **arrive already rendered** — the API sends a
+sentence, not a template with holes in it. `src/lib/types.ts` says so:
+
+```ts
+export interface VitalReading {
+  key: VitalKey
+  label: string // the catalogue's: "Sleep"
+  value_text: string | null // "6 h 10 m"
+  direction_text: string | null // "could be better"
+  deviation_text: string | null // "1 h 10 m less than your usual"
+  travel_text: string | null // "6th night down"
+  status_text: string | null // "not enough data for a comparison yet"
+  band: VitalBand | null // the numbers the chart draws
+}
+```
+
+The app's own catalogue (`src/i18n/catalogue.ts`) holds the chrome — the
+headings, the buttons, the labels, the empty states — and nothing else.
+
+The rounding belongs to `crates/stride-core/src/units.rs`. The app's copy
+of those rules is `src/lib/units.ts`: the same names, the same answers,
+half to even, a heart rate truncated, a duration in the human form. It is
+the only place in the app that rounds a number, and `tests/units.test.ts`
+holds it to the core's own answers (30 s is "0 m" on both; 148.7 bpm is
+148 on both).
+
+Two hosts that disagree about a number is a bug. Two hosts that disagree
+about a *sentence* is the same bug, and it is worse, because a sentence is
+what the athlete reads.
+
 ## The voice
 
-Every string lives in `src/i18n/catalogue.ts`, typed and closed:
+Every string the app writes lives in `src/i18n/catalogue.ts`, typed and
+closed:
 
 ```ts
 export const catalogue = {
-  'today.state.count': { type: 'status', text: '{n} of 3 signals below your usual' },
+  'today.heading': { type: 'status', text: 'Today' },
   // …
 } as const
 ```
@@ -67,6 +104,20 @@ The lint (`npm --prefix frontend run lint:voice`) fails the build on:
 - an `option` string that mentions a vital (an option is never linked to a
   vital);
 - a banned word written inline in a component instead of in the catalogue.
+
+It then reads the core's export — `crates/stride-core/strings.json`, which
+carries the catalogue's strings *and the rules with them* — and fails on the
+same four rules inside it, on a ban list that has drifted from the
+contract's, and on a direction set that has been extended. The export is
+regenerated, never hand-edited:
+
+```
+cargo run -p stride-core --example export_catalogue
+```
+
+Three lists have to agree, and the contract wins: `docs/contract/voice.md`,
+the lint's transcription of it, and the export. `tests/catalogue.test.ts`
+compares all three, so they cannot drift apart again.
 
 The lint is a function (`scripts/voice-lint.mjs`) and is tested against
 deliberately bad catalogues: a scanner that never fails is worse than no
@@ -89,8 +140,16 @@ client.insightsToday()
 The contract froze the **routes**; it did not freeze the **response
 bodies**. The shapes this client speaks are written down in
 `src/lib/types.ts`, and they are a proposal for the backend slice to match.
-Two names are worth knowing about: `TodayInsight.planned` is the plan's own
-session for today, and `TodayInsight.options` are its other options.
+Three names are worth knowing about: `TodayInsight.planned` is the plan's own
+session for today, `TodayInsight.options` are its other options, and
+`TodayInsight.distance_comparison` is the neutral distance comparison the
+core states only beyond a 10% gap.
+
+The shapes follow §8: the domain's sentences are `*_text` fields, already
+written by the core. The api slice owns the templates for the three
+sentences the core does not have a template for yet — the distance
+comparison, the Progress headline and the Compare basis — and the frontend
+shows what it is given.
 
 ## The fixtures
 
@@ -100,6 +159,9 @@ fixtures instead of the network, so every screen can be rendered, reviewed
 and tested without a backend. `?fixtures=over` selects the one variant whose
 last run is beyond 10% of the plan's target — the only fixture where the
 distance comparison appears.
+
+The fixture's sentences are the core's, written out: the fixture is a
+captured answer, not a computation, so the app has nothing to recompute.
 
 ## The checks
 

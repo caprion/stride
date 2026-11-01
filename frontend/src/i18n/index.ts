@@ -5,20 +5,16 @@
  * catalogue's types come along with the key, so a `direction` word cannot be
  * swapped for a `status` line by accident, and the lint can read the same
  * file the app renders from.
+ *
+ * The domain's sentences are not here: they arrive from the core already
+ * rendered (core-contract §8), and the app shows them as they stand.
  */
 
-import {
-  DIRECTION_WORDS,
-  catalogue,
-  directions,
-  type CatalogueKey,
-  type DirectionKey,
-  type DirectionWord,
-  type StringType,
-} from './catalogue'
+import { catalogue, type CatalogueKey, type StringType } from './catalogue'
+import { DIRECTION_WORDS } from './catalogue'
 
-export { DIRECTION_WORDS, catalogue, directions }
-export type { CatalogueKey, DirectionKey, DirectionWord, StringType }
+export { DIRECTION_WORDS, catalogue }
+export type { CatalogueKey, StringType }
 
 /** The keys of the catalogue that carry a given register. */
 export type KeysOfType<T extends StringType> = {
@@ -44,21 +40,4 @@ function fill(text: string, params?: Params): string {
 /** Render a catalogue entry. */
 export function t(key: CatalogueKey, params?: Params): string {
   return fill(catalogue[key].text, params)
-}
-
-/** Render one of the three closed direction words. */
-export function directionText(key: DirectionKey): DirectionWord {
-  return directions[key].text
-}
-
-/**
- * The direction word for a core-provided direction.
- *
- * The core owns the value; the app only chooses the word that carries it.
- * An unknown value falls back to "about usual" rather than inventing a
- * fourth word — the set is closed.
- */
-export function directionWord(direction: string): DirectionWord {
-  const match = DIRECTION_WORDS.find((word) => word === direction)
-  return match ?? 'about usual'
 }
