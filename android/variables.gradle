@@ -25,6 +25,8 @@ ext {
     androidxWorkVersion = '2.10.1'
     jnaVersion = '5.17.0'
     junitVersion = '4.13.2'
+    rhinoVersion = '1.7.15'
+    jsonVersion = '20240303'
     androidxJunitVersion = '1.3.0'
     androidxEspressoCoreVersion = '3.7.0'
 }

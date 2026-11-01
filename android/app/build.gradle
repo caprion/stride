@@ -365,6 +365,25 @@ dependencies {
     implementation project(':capacitor-android')
 
     testImplementation "junit:junit:$junitVersion"
+
+    // The bridge shim is JavaScript, and the test that proves its shape
+    // runs JavaScript.
+    //
+    // **Rhino, test-only.** The shim is the piece the web app talks to, and
+    // a shim that is only inspected is a shim that is not tested. Rhino is
+    // a JavaScript engine that runs on the JVM, so the *shipped* file — the
+    // one in `src/main/assets/public/stride-bridge.js` — is evaluated in the
+    // unit test against a fake plugin, and the test asserts what the web
+    // app would see.
+    //
+    // It is a test dependency and nothing else: it is not in the APK, and
+    // the app never loads it.
+    testImplementation "org.mozilla:rhino:$rhinoVersion"
+
+    // The real `org.json`, so the unit tests parse JSON instead of talking
+    // to the platform's stub (which answers with defaults, and is not a
+    // parser at all). Test-only: the app uses the platform's.
+    testImplementation "org.json:json:$jsonVersion"
     androidTestImplementation "androidx.test.ext:junit:$androidxJunitVersion"
     androidTestImplementation "androidx.test.espresso:espresso-core:$androidxEspressoCoreVersion"
 }
