@@ -1,7 +1,6 @@
 package app.stride.running.core
 
 import android.content.Context
-import android.os.Build
 import android.util.Log
 import app.stride.running.security.CredentialUnavailable
 import app.stride.running.security.CredentialUnreadable
@@ -166,10 +165,6 @@ object StrideCore {
     private fun lockedOrBroken(error: Exception): String {
         val name = error.javaClass.simpleName
         Log.w(TAG, "the Keystore refused the key: $name")
-        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            "the phone is locked, or the key was invalidated — unlock the phone and try again"
-        } else {
-            "the Stride key store is not available"
-        }
+        return "the phone is locked, or the key was invalidated — unlock the phone and try again"
     }
 }

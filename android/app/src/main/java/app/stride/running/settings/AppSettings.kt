@@ -1,6 +1,7 @@
 package app.stride.running.settings
 
 import android.content.Context
+import androidx.core.content.edit
 import app.stride.running.sync.PullWindow
 
 /**
@@ -31,33 +32,36 @@ class AppSettings(context: Context) {
             if (trimmed.isNotEmpty() && !trimmed.startsWith("https://")) {
                 // Refused rather than stored: a setting that is not there is
                 // the bundled app, which is the whole app.
-                preferences.edit().remove(KEY_SERVER_URL).apply()
+                preferences.edit { remove(KEY_SERVER_URL) }
                 return
             }
-            preferences.edit().putString(KEY_SERVER_URL, trimmed).apply()
+            preferences.edit { putString(KEY_SERVER_URL, trimmed) }
         }
 
     /** How many days a pull covers. */
     var syncDays: Int
         get() = preferences.getInt(KEY_SYNC_DAYS, PullWindow.DEFAULT_DAYS.toInt())
-        set(value) = preferences.edit()
-            .putInt(KEY_SYNC_DAYS, value.coerceIn(PullWindow.MIN_DAYS.toInt(), PullWindow.MAX_DAYS.toInt()))
-            .apply()
+        set(value) = preferences.edit {
+            putInt(
+                KEY_SYNC_DAYS,
+                value.coerceIn(PullWindow.MIN_DAYS.toInt(), PullWindow.MAX_DAYS.toInt()),
+            )
+        }
 
     /** Whether the phone pulls on its own. */
     var autoSync: Boolean
         get() = preferences.getBoolean(KEY_AUTO_SYNC, true)
-        set(value) = preferences.edit().putBoolean(KEY_AUTO_SYNC, value).apply()
+        set(value) = preferences.edit { putBoolean(KEY_AUTO_SYNC, value) }
 
     /** How many hours between the pulls. */
     var syncIntervalHours: Int
         get() = preferences.getInt(KEY_SYNC_INTERVAL, 6)
-        set(value) = preferences.edit().putInt(KEY_SYNC_INTERVAL, value.coerceIn(1, 24)).apply()
+        set(value) = preferences.edit { putInt(KEY_SYNC_INTERVAL, value.coerceIn(1, 24)) }
 
     /** Whether the phone may use the network at all. */
     var networkEnabled: Boolean
         get() = preferences.getBoolean(KEY_NETWORK, true)
-        set(value) = preferences.edit().putBoolean(KEY_NETWORK, value).apply()
+        set(value) = preferences.edit { putBoolean(KEY_NETWORK, value) }
 
     /**
      * Whether the Garmin setup screen has been dealt with.
@@ -72,7 +76,7 @@ class AppSettings(context: Context) {
      */
     var setupDismissed: Boolean
         get() = preferences.getBoolean(KEY_SETUP_DISMISSED, false)
-        set(value) = preferences.edit().putBoolean(KEY_SETUP_DISMISSED, value).apply()
+        set(value) = preferences.edit { putBoolean(KEY_SETUP_DISMISSED, value) }
 
     /**
      * Whether the native setup screen changed the Garmin connection.
@@ -83,12 +87,12 @@ class AppSettings(context: Context) {
      */
     var connectionChanged: Boolean
         get() = preferences.getBoolean(KEY_CONNECTION_CHANGED, false)
-        set(value) = preferences.edit().putBoolean(KEY_CONNECTION_CHANGED, value).apply()
+        set(value) = preferences.edit { putBoolean(KEY_CONNECTION_CHANGED, value) }
 
     /** Read and clear the connection-changed hand-off. */
     fun consumeConnectionChanged(): Boolean {
         val changed = connectionChanged
-        if (changed) preferences.edit().remove(KEY_CONNECTION_CHANGED).apply()
+        if (changed) preferences.edit { remove(KEY_CONNECTION_CHANGED) }
         return changed
     }
 
@@ -103,14 +107,12 @@ class AppSettings(context: Context) {
             val value = preferences.getLong(KEY_NEXT_PULL_AT, NO_NEXT_PULL)
             return if (value == NO_NEXT_PULL) null else value
         }
-        set(value) {
-            val editor = preferences.edit()
+        set(value) = preferences.edit {
             if (value == null) {
-                editor.remove(KEY_NEXT_PULL_AT)
+                remove(KEY_NEXT_PULL_AT)
             } else {
-                editor.putLong(KEY_NEXT_PULL_AT, value)
+                putLong(KEY_NEXT_PULL_AT, value)
             }
-            editor.apply()
         }
 
     companion object {

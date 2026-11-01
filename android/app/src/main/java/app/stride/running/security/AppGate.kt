@@ -11,6 +11,7 @@ import android.widget.Button
 import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.TextView
+import androidx.core.graphics.toColorInt
 import androidx.fragment.app.FragmentActivity
 import app.stride.running.R
 
@@ -115,7 +116,7 @@ class AppGate(private val activity: FragmentActivity) {
             gravity = Gravity.CENTER
             setPadding(48, 48, 48, 48)
             // Opaque: the recents thumbnail must not show the app behind it.
-            setBackgroundColor(Color.parseColor("#0B0F14"))
+            setBackgroundColor("#0B0F14".toColorInt())
         }
 
         val title = TextView(activity).apply {
@@ -126,7 +127,7 @@ class AppGate(private val activity: FragmentActivity) {
         val message = TextView(activity).apply {
             text = activity.getString(R.string.gate_locked)
             textSize = 15f
-            setTextColor(Color.parseColor("#B9C2CC"))
+            setTextColor("#B9C2CC".toColorInt())
             setPadding(0, 24, 0, 24)
         }
         val unlock = Button(activity).apply {
@@ -139,7 +140,7 @@ class AppGate(private val activity: FragmentActivity) {
         panel.addView(unlock)
 
         val view = FrameLayout(activity).apply {
-            setBackgroundColor(Color.parseColor("#0B0F14"))
+            setBackgroundColor("#0B0F14".toColorInt())
             addView(
                 panel,
                 FrameLayout.LayoutParams(

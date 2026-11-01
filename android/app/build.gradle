@@ -615,6 +615,13 @@ android {
         // The lint is part of the build: a fatal is a failed build.
         abortOnError true
         warningsAsErrors true
+        // The Gradle distribution is pinned deliberately. A newer patch is
+        // not an Android API mistake and must not make the phone's build
+        // fail on the day it is released.
+        disable += 'AndroidGradlePluginVersion'
+        // Adaptive launcher icons still live in the API-26 resource folder
+        // that AAPT recognises, even though this app's floor is API 35.
+        disable += 'ObsoleteSdkInt'
     }
     testOptions {
         unitTests {

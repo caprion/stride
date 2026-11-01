@@ -19,6 +19,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.browser.customtabs.CustomTabsIntent
 import androidx.core.content.ContextCompat
+import androidx.core.net.toUri
 import app.stride.running.R
 import app.stride.running.security.DeviceCredential
 import app.stride.running.security.KeyIdentifier
@@ -223,7 +224,7 @@ class GarminSetupActivity : AppCompatActivity(), SetupRunner.Listener {
      * view instead: it is worse, and it is better than nothing.
      */
     private fun openGarmin() {
-        val url = Uri.parse(GarminKeyPage.URL)
+        val url = GarminKeyPage.URL.toUri()
         try {
             CustomTabsIntent.Builder()
                 .setShowTitle(true)

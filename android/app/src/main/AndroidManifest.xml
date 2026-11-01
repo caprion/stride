@@ -2,6 +2,20 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
+    <!-- Permissions -->
+
+    <!-- The pull talks to Garmin, and nothing else. -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+
+    <!-- The sync notification. Android 13 and later ask the athlete; a
+         refusal never disables the import or the browsing. -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
+    <!-- The foreground service that holds a long pull. -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
+
     <!--
         The application.
 
@@ -85,18 +99,4 @@
             android:foregroundServiceType="dataSync"
             tools:node="merge" />
     </application>
-
-    <!-- Permissions -->
-
-    <!-- The pull talks to Garmin, and nothing else. -->
-    <uses-permission android:name="android.permission.INTERNET" />
-    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
-
-    <!-- The sync notification. Android 13 and later ask the athlete; a
-         refusal never disables the import or the browsing. -->
-    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
-
-    <!-- The foreground service that holds a long pull. -->
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
 </manifest>

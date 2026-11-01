@@ -265,9 +265,9 @@ class SetupRunner(
      * what "12 runs" is: the number that has arrived so far.
      */
     private fun startCounting() {
-        counting = counter.scheduleAtFixedRate(
+        counting = counter.scheduleWithFixedDelay(
             {
-                if (phase != SetupPhase.Syncing) return@scheduleAtFixedRate
+                if (phase != SetupPhase.Syncing) return@scheduleWithFixedDelay
                 val runs = SyncEngine.runCount(app)
                 publish(SetupUi(SetupPhase.Syncing, runs = runs))
             },

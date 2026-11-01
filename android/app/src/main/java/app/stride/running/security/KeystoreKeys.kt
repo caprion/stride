@@ -1,6 +1,5 @@
 package app.stride.running.security
 
-import android.os.Build
 import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyProperties
 import java.security.KeyStore
@@ -66,11 +65,9 @@ object KeystoreKeys {
             .setKeySize(256)
             .setRandomizedEncryptionRequired(true)
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-            // The key is unusable while the phone is locked. The background
-            // worker checks the lock state and defers rather than failing.
-            builder.setUnlockedDeviceRequired(true)
-        }
+        // The key is unusable while the phone is locked. The background
+        // worker checks the lock state and defers rather than failing.
+        builder.setUnlockedDeviceRequired(true)
 
         generator.init(builder.build())
         return generator.generateKey()
