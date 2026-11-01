@@ -161,10 +161,7 @@ fn a_result_states_the_actual_and_the_target_neutrally() {
     assert!(results[0].ran);
     assert_eq!(results[0].actual, Some(8_400.0));
     assert_eq!(results[0].line.as_deref(), Some("8.4 km of a 10 km target"));
-    assert_eq!(
-        results[0].difference.as_deref(),
-        Some("1.6 km less than the 10 km target")
-    );
+    assert!(results[0].difference.is_none());
     assert_eq!(results[0].status, SessionStatus::Done);
 }
 
@@ -188,6 +185,7 @@ fn the_distance_comparison_is_only_news_beyond_ten_per_cent() {
         Some("12.4 km · 2.4 km more than the 10 km target")
     );
     assert!(distance_comparison(Some(10_200.0), Some(10_000.0)).is_none());
+    assert!(distance_comparison(Some(8_000.0), Some(10_000.0)).is_none());
     assert!(distance_comparison(None, Some(10_000.0)).is_none());
     assert!(distance_comparison(Some(12_400.0), None).is_none());
     assert!(distance_comparison(Some(12_400.0), Some(0.0)).is_none());

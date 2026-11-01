@@ -507,10 +507,11 @@ fn result_line(ran: bool, actual_m: Option<f64>, target_m: Option<f64>) -> Optio
 
 /// The distance comparison, when there is one.
 ///
-/// The comparison is neutral in both directions: "2.4 km more than the 10 km
-/// target" and "2 km less than the 10 km target" say the same kind of thing.
-/// It is absent when either value is absent, and when the gap is within ten
-/// per cent of the target.
+/// The comparison states an overshoot neutrally: "2.4 km more than the 10 km
+/// target". It is absent when either value is absent, when the run did not
+/// reach the target, and when the gap is within ten per cent of the target.
+/// A run below the target is stated by the result line itself; the
+/// comparison is not a shortfall.
 pub fn distance_comparison(actual_m: Option<f64>, target_m: Option<f64>) -> Option<String> {
     let actual = actual_m?;
     let target = target_m?;
@@ -518,17 +519,15 @@ pub fn distance_comparison(actual_m: Option<f64>, target_m: Option<f64>) -> Opti
         return None;
     }
     let gap = actual - target;
-    if gap.abs() / target <= DISTANCE_COMPARISON_THRESHOLD {
+    if gap <= 0.0 || gap / target <= DISTANCE_COMPARISON_THRESHOLD {
         return None;
     }
-    let gap_text = format!("{} km", units::format_distance_km_short(gap.abs()));
+    let gap_text = format!("{} km", units::format_distance_km_short(gap));
     let target_text = format!("{} km", units::format_distance_km_short(target));
-    let id = if gap > 0.0 {
-        "statement.distance.more"
-    } else {
-        "statement.distance.less"
-    };
-    strings::render(id, &[("gap", &gap_text), ("target", &target_text)])
+    strings::render(
+        "statement.distance.more",
+        &[("gap", &gap_text), ("target", &target_text)],
+    )
 }
 
 /// The distance comparison with the actual distance in front of it:

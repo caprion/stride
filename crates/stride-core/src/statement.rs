@@ -248,7 +248,7 @@ mod tests {
     }
 
     #[test]
-    fn the_comparison_is_symmetric_and_neutral() {
+    fn the_comparison_states_an_overshoot_and_neutral() {
         let target = match distance(10.0) {
             Some(distance) => distance,
             None => return,
@@ -257,10 +257,7 @@ mod tests {
             Some(distance) => distance,
             None => return,
         };
-        assert_eq!(
-            distance_comparison(under, target),
-            Some("1.1 km less than the 10 km target".to_string())
-        );
+        assert_eq!(distance_comparison(under, target), None);
         // Exactly ten per cent is not "beyond" ten per cent.
         let edge = match distance(11.0) {
             Some(distance) => distance,
