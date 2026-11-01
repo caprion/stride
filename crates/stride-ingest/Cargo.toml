@@ -11,3 +11,9 @@ workspace = true
 
 [dependencies]
 stride-core = { path = "../stride-core" }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+chrono = { version = "0.4", features = ["serde"] }
+thiserror = "1"
+zip = { version = "2.6", default-features = false, features = ["deflate"] }
+reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "blocking", "json", "gzip"] }

@@ -3,8 +3,9 @@
 This directory freezes the observable behaviour of Stride's domain logic as
 **data**, so that the v2 Rust core can be *proved* equal to the old core instead
 of believed equal to it. Every file here came out of `/home/sumit/stride` (the
-parity oracle) and was **sanitised before it was committed**. Nothing here is
-generated at build time, and nothing here is Python.
+parity oracle) and was **sanitised before it was committed**, except the
+explicitly marked v2 synthetic regression fixture. Nothing here is generated
+at build time, and nothing here is Python.
 
 The scanner gate that keeps it clean is `scripts/scan-privacy.sh` (plus
 `scripts/scan-secrets.sh`). The standard it enforces is the same one the old
@@ -15,7 +16,7 @@ carry a real name, or carry a Garmin identifier.
 
 | path | source in `/home/sumit/stride` | what it is |
 |---|---|---|
-| `fit/*.fit` | `backend/tests/golden/fixtures/*.fit` | the 15 synthetic FIT inputs |
+| `fit/*.fit` | `backend/tests/golden/fixtures/*.fit` plus one v2 synthetic regression | the 16 synthetic FIT inputs |
 | `golden/cases.json` | `backend/tests/golden/cases.json` | the frozen index of every input (sha256, size, sport, device, dates) |
 | `golden/scenarios/readiness.json` | `backend/tests/golden/scenarios/readiness.json` | the physiology rows and day for the readiness scenario |
 | `golden/scenarios/plan.json` | `backend/tests/golden/scenarios/plan.json` | the plan-engine inputs |
@@ -89,6 +90,8 @@ mkdir -p fixtures/{fit,golden/golden,golden/scenarios,stride-core/plan_sources,s
 # FIT samples and golden outputs — copied byte-for-byte, already synthetic
 cp /home/sumit/stride/backend/tests/golden/fixtures/*.fit   fixtures/fit/
 cp /home/sumit/stride/backend/tests/golden/cases.json        fixtures/golden/
+# The old index has no v2-only zz_compressed_timestamp entry: merge that entry
+# from this repository's index instead of replacing the index wholesale.
 cp /home/sumit/stride/backend/tests/golden/scenarios/*.json  fixtures/golden/scenarios/
 cp /home/sumit/stride/backend/tests/golden/golden/*.json     fixtures/golden/golden/
 
@@ -116,8 +119,10 @@ must both pass.
 
 ## The FIT cases
 
-Fifteen files, each shaped by what a *port* gets wrong (or by what a real watch
-writes). Their names and purposes, condensed from the old repo's golden README:
+Sixteen files, each shaped by what a *port* gets wrong (or by what a real watch
+writes). Fifteen are frozen parity-oracle inputs; the sixteenth is the v2
+compressed-timestamp privacy regression described below. Their names and
+purposes, condensed from the old repo's golden README:
 
 | case | why it exists |
 |---|---|
@@ -136,7 +141,21 @@ writes). Their names and purposes, condensed from the old repo's golden README:
 | `vendor_strava_export` | Strava re-encoded it: manufacturer 265, no `device_info` |
 | `vendor_coros_export` | COROS wrote it: manufacturer 294, product name `COROS DURA` |
 | `vendor_wahoo_export` | Wahoo wrote it: manufacturer 32, no product name — named by manufacturer alone |
+| `zz_compressed_timestamp` | v2 privacy regression: a compressed-timestamp record whose position must not be skipped |
 
 The three `vendor_*` ids sort after the other twelve on purpose: the API golden
 numbers its recorded rows in seed order, and a case that sorted first would
-renumber every recorded activity.
+renumber every recorded activity. The `zz_` prefix gives the new v2-only case
+the same ordering property; it is a privacy-reader regression, not another API
+activity.
+
+### The compressed-timestamp privacy fixture
+
+`zz_compressed_timestamp.fit` is new in v2 and was constructed byte-for-byte
+from synthetic values; it did not come from the old repository. It contains a
+normal-header record followed by a compressed-timestamp-header record using
+local message type two, plus a synthetic running-session summary. Both
+records carry the corpus anchor position. There is no route, name, device id,
+serial or other personal data in the file. Its SHA-256 is frozen in
+`golden/cases.json`; changing one byte requires regenerating that hash and
+reviewing this provenance note.
