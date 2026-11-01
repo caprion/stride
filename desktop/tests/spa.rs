@@ -11,7 +11,9 @@
 //!
 //! The rig is built in two places: with the frontend bundle and without it.
 //! A binary built without the bundle says so, in a sentence, and points at
-//! `npm --prefix frontend run build` — so both states are checked here.
+//! `npm --prefix frontend run build` — so both states are checked here. The
+//! gate builds without the bundle (the CI job has no node), and a rig built
+//! with it answers the same way.
 
 mod common;
 
@@ -78,9 +80,22 @@ fn an_unknown_path_falls_back_to_the_app() -> Result<()> {
 fn a_missing_file_is_a_plain_404() -> Result<()> {
     let server = server(Trust::loopback_only());
     let response = server.handle(&request("GET", "/assets/nothing-here.js"), loopback());
-    assert_eq!(response.status, 404);
     let body = body_of(&response);
     assert!(!body.contains("panicked at"), "{body}");
+
+    if stride_desktop::spa::bundle_is_built() {
+        // The bundle is there, and the file is not: the rig says so, and it
+        // says it in a sentence.
+        assert_eq!(response.status, 404);
+    } else {
+        // The rig was built without the bundle. It says *that*, in a
+        // sentence, and it does not pretend the file is missing.
+        assert_eq!(response.status, 200);
+        assert!(
+            body.contains("npm --prefix frontend run build"),
+            "the rig has to say what is missing: {body}"
+        );
+    }
     Ok(())
 }
 

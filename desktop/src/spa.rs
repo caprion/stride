@@ -72,15 +72,28 @@ impl Spa {
 
     /// Answer a request for a path.
     pub fn serve(&self, path: &str) -> Response {
-        if !bundle_is_built() {
-            return self.not_built();
-        }
+        // The guard comes first, and it comes first always: it is a
+        // property of the rig, not of the bundle. A rig built without the
+        // bundle refuses a path that walks upwards exactly as a rig with it
+        // does.
         if !is_safe_path(path) {
             return Response::text(
                 400,
                 "That path is not one the rig will follow. A path that walks upwards is refused \
                  before anything is looked up.",
             );
+        }
+
+        if !bundle_is_built() {
+            // A directory to serve from is asked for before this: the
+            // development loop is exactly this — a rig built without the
+            // bundle, serving the bundle the developer just built.
+            if let Some(directory) = &self.static_dir {
+                if let Some(response) = serve_from_disk(directory, path) {
+                    return response;
+                }
+            }
+            return self.not_built();
         }
 
         if let Some(directory) = &self.static_dir {
