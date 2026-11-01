@@ -45,7 +45,10 @@ object SyncScheduler {
      * It carries [PERIODIC_NAME], which is the tag every Garmin pull
      * carries: a query for that tag answers "is a pull scheduled".
      */
-    fun periodicRequest(intervalHours: Long): PeriodicWorkRequest {
+    fun periodicRequest(
+        intervalHours: Long,
+        initialDelayMillis: Long = 0L,
+    ): PeriodicWorkRequest {
         val constraints = Constraints.Builder()
             .setRequiredNetworkType(androidx.work.NetworkType.CONNECTED)
             .setRequiresBatteryNotLow(true)
@@ -54,6 +57,8 @@ object SyncScheduler {
         return PeriodicWorkRequestBuilder<GarminSyncWorker>(
             intervalHours.coerceAtLeast(1),
             TimeUnit.HOURS,
+            initialDelayMillis.coerceAtLeast(0L),
+            TimeUnit.MILLISECONDS,
         )
             .setConstraints(constraints)
             .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 30, TimeUnit.MINUTES)
@@ -82,7 +87,14 @@ object SyncScheduler {
 
         return OneTimeWorkRequestBuilder<GarminSyncWorker>()
             .setConstraints(constraints)
-            .setInputData(workDataOf(KEY_DAYS to days.coerceIn(1, 90)))
+            .setInputData(
+                workDataOf(
+                    KEY_DAYS to days.coerceIn(
+                        PullWindow.MIN_DAYS.toInt(),
+                        PullWindow.MAX_DAYS.toInt(),
+                    ),
+                ),
+            )
             .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 15, TimeUnit.MINUTES)
             .setExpedited(OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST)
             .addTag(PERIODIC_NAME)
@@ -98,11 +110,21 @@ object SyncScheduler {
             return
         }
 
-        val request = periodicRequest(settings.syncIntervalHours.toLong())
+        val intervalHours = settings.syncIntervalHours.toLong()
+        val now = System.currentTimeMillis()
+        val nextPullAt = SyncSchedule.nextBoundary(now, intervalHours)
+        settings.nextPullAtMillis = nextPullAt
 
+        val request = periodicRequest(
+            intervalHours = intervalHours,
+            initialDelayMillis = nextPullAt - now,
+        )
+
+        // `KEEP`, not `UPDATE`: opening the app must not push the next pull
+        // out of the window it was already scheduled in.
         WorkManager.getInstance(context).enqueueUniquePeriodicWork(
             PERIODIC_NAME,
-            ExistingPeriodicWorkPolicy.UPDATE,
+            ExistingPeriodicWorkPolicy.KEEP,
             request,
         )
     }
@@ -128,5 +150,6 @@ object SyncScheduler {
     fun cancel(context: Context) {
         WorkManager.getInstance(context).cancelUniqueWork(PERIODIC_NAME)
         WorkManager.getInstance(context).cancelUniqueWork(ONESHOT_NAME)
+        AppSettings(context).nextPullAtMillis = null
     }
 }

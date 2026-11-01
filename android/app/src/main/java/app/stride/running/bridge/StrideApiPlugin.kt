@@ -3,6 +3,7 @@ package app.stride.running.bridge
 import android.content.Context
 import android.content.Intent
 import android.util.Log
+import android.widget.Toast
 import app.stride.running.R
 import app.stride.running.core.StrideCore
 import app.stride.running.security.AppLock
@@ -13,6 +14,7 @@ import app.stride.running.security.Secrets
 import app.stride.running.settings.AppSettings
 import app.stride.running.setup.GarminSetupActivity
 import app.stride.running.sync.ForgetGarminKey
+import app.stride.running.sync.PullWindow
 import app.stride.running.sync.SyncScheduler
 import com.getcapacitor.JSObject
 import com.getcapacitor.Plugin
@@ -258,14 +260,20 @@ class StrideApiPlugin : Plugin() {
                         // decides what happens to the Garmin key.
                         try {
                             ForgetGarminKey.onPhone(context)
-                        } catch (error: Throwable) {
-                            Log.w("StrideApi", "the key could not be forgotten: ${error.message}")
+                            showForgetResult(context)
+                        } catch (_: Throwable) {
+                            // The exception's message is not logged: it may
+                            // carry a value from the credential store.
+                            Log.w("StrideApi", "the key could not be fully forgotten")
+                            showForgetProblem(context)
                         }
                     }
                 }
-            } catch (error: Throwable) {
-                Log.w("StrideApi", "the request failed: ${error.message}")
-                call.reject(error.message ?: "the request could not be completed", "500")
+            } catch (_: Throwable) {
+                // The exception's message is not logged or returned: it may
+                // carry a value from the request body.
+                Log.w("StrideApi", "the request could not be completed")
+                call.reject(context.getString(R.string.bridge_request_failed), "500")
             }
         }
     }
@@ -284,6 +292,27 @@ class StrideApiPlugin : Plugin() {
         return null
     }
 
+    /**
+     * Say exactly what forgetting the key removed and what stayed.
+     *
+     * The message is native. It is not a route answer and it never carries
+     * the key or an identifier of it.
+     */
+    private fun showForgetResult(context: Context) {
+        val message = context.getString(R.string.forget_key_result)
+        activity?.runOnUiThread {
+            Toast.makeText(context, message, Toast.LENGTH_LONG).show()
+        }
+    }
+
+    /** Say that the removal was incomplete, without guessing why. */
+    private fun showForgetProblem(context: Context) {
+        val message = context.getString(R.string.forget_key_incomplete)
+        activity?.runOnUiThread {
+            Toast.makeText(context, message, Toast.LENGTH_LONG).show()
+        }
+    }
+
     /** Open the native setup screen. */
     private fun openNativeSetup(context: Context) {
         val host = activity
@@ -294,8 +323,8 @@ class StrideApiPlugin : Plugin() {
         host.runOnUiThread {
             try {
                 host.startActivity(Intent(host, GarminSetupActivity::class.java))
-            } catch (error: Exception) {
-                Log.w("StrideApi", "the setup screen could not be opened: ${error.message}")
+            } catch (_: Exception) {
+                Log.w("StrideApi", "the setup screen could not be opened")
             }
         }
     }
@@ -310,7 +339,14 @@ class StrideApiPlugin : Plugin() {
     private fun requestedDays(context: Context, body: String?): Int {
         val parsed = body?.let { runCatching { JSONObject(it) }.getOrNull() }
         val days = parsed?.optInt("days", 0) ?: 0
-        return if (days > 0) days.coerceIn(1, 90) else AppSettings(context).syncDays
+        return if (days > 0) {
+            days.coerceIn(
+                PullWindow.MIN_DAYS.toInt(),
+                PullWindow.MAX_DAYS.toInt(),
+            )
+        } else {
+            AppSettings(context).syncDays
+        }
     }
 
     companion object {

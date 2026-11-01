@@ -11,19 +11,24 @@ import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import app.stride.running.MainActivity
 import app.stride.running.R
+import app.stride.running.settings.AppSettings
 
 /**
  * The notifications.
  *
  * Two rules, both from the design:
  *
- * * a notification says **generic progress or reconnect text**, never a
+ * * a notification says **generic progress or connection text**, never a
  *   route, a heart rate, an activity name or a health conclusion;
  * * the channel is low-importance, so the phone never makes a noise about a
  *   background pull.
  *
- * The count of runs is in the notification — "Synced 12 activities" — because
- * a count is not a conclusion, and it is the answer the athlete asked for.
+ * The count of runs is in the notification — "Synced 12 activities" —
+ * because a count is not a conclusion, and it is the answer the athlete
+ * asked for. A failed pull names what could not be reached and when the
+ * next scheduled pull is due. It is one notification per scheduled pull:
+ * the shell's single retry happens inside the pull and does not turn one
+ * missed pull into a trail of alerts.
  */
 object SyncNotifications {
 
@@ -39,7 +44,6 @@ object SyncNotifications {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
         val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as? NotificationManager
             ?: return
-        if (manager.getNotificationChannel(CHANNEL_ID) != null) return
         val channel = NotificationChannel(
             CHANNEL_ID,
             context.getString(R.string.sync_channel_name),
@@ -48,6 +52,9 @@ object SyncNotifications {
             description = context.getString(R.string.sync_channel_description)
             setShowBadge(false)
         }
+        // Creating an existing channel updates its app-owned name and
+        // description without changing the channel's importance or the
+        // athlete's choice about it.
         manager.createNotificationChannel(channel)
     }
 
@@ -57,7 +64,7 @@ object SyncNotifications {
         return NotificationCompat.Builder(context, CHANNEL_ID)
             .setContentTitle(context.getString(R.string.sync_in_progress_title))
             .setContentText(context.getString(R.string.sync_in_progress_text))
-            .setSmallIcon(android.R.drawable.stat_notify_sync)
+            .setSmallIcon(R.drawable.ic_stat_stride)
             .setPriority(NotificationCompat.PRIORITY_LOW)
             .setOngoing(true)
             .setContentIntent(openApp(context))
@@ -67,46 +74,61 @@ object SyncNotifications {
     /** The notification of a finished pull. */
     fun finished(context: Context, outcome: SyncOutcome) {
         ensureChannel(context)
-        val notification = NotificationCompat.Builder(context, CHANNEL_ID)
-            .setContentTitle(
-                if (outcome.ok) {
-                    context.getString(R.string.sync_done_title)
-                } else {
-                    context.getString(R.string.sync_failed_title)
-                }
-            )
-            .setContentText(notificationText(context, outcome))
-            .setSmallIcon(
-                if (outcome.ok) {
-                    android.R.drawable.stat_notify_sync
-                } else {
-                    android.R.drawable.stat_notify_error
-                }
-            )
-            .setPriority(NotificationCompat.PRIORITY_LOW)
-            .setAutoCancel(true)
-            .setContentIntent(openApp(context))
-            .build()
+        val notification = if (outcome.ok) {
+            NotificationCompat.Builder(context, CHANNEL_ID)
+                .setContentTitle(notificationText(context, outcome))
+                .setContentText(context.getString(R.string.sync_done_detail))
+                .setSmallIcon(R.drawable.ic_stat_stride)
+                .setPriority(NotificationCompat.PRIORITY_LOW)
+                .setAutoCancel(true)
+                .setContentIntent(openApp(context))
+                .build()
+        } else {
+            NotificationCompat.Builder(context, CHANNEL_ID)
+                .setContentTitle(context.getString(R.string.sync_failed_title))
+                .setContentText(failureText(context, outcome))
+                .setSmallIcon(R.drawable.ic_stat_stride)
+                .setPriority(NotificationCompat.PRIORITY_LOW)
+                .setAutoCancel(true)
+                .setContentIntent(openApp(context))
+                .build()
+        }
         notify(context, RESULT_ID, notification)
     }
 
     /**
-     * The line the notification says.
+     * The line the success notification says.
      *
      * "Synced 12 activities" — the count, and nothing about what the runs
      * were. The count is in the plural form, so one activity and twelve
      * activities both come out right.
      */
     fun notificationText(context: Context, outcome: SyncOutcome): String =
-        if (outcome.ok) {
-            context.resources.getQuantityString(
-                R.plurals.sync_done_activities,
-                outcome.activities,
-                outcome.activities,
-            )
+        context.resources.getQuantityString(
+            R.plurals.sync_done_activities,
+            outcome.activities,
+            outcome.activities,
+        )
+
+    /**
+     * The line a failed pull says.
+     *
+     * It names the failure and the next scheduled pull. WorkManager's time
+     * is inexact, so the phone names the local boundary it scheduled
+     * around rather than pretending to know the exact second.
+     */
+    fun failureText(context: Context, outcome: SyncOutcome): String {
+        val nextPullAt = AppSettings(context).nextPullAtMillis
+        return if (nextPullAt == null) {
+            context.getString(R.string.sync_failed_next_unknown, outcome.message)
         } else {
-            outcome.message
+            context.getString(
+                R.string.sync_failed_next_pull,
+                outcome.message,
+                SyncSchedule.formatTime(context, nextPullAt),
+            )
         }
+    }
 
     /** Show a notification, if the phone allows it. */
     private fun notify(context: Context, id: Int, notification: Notification) {

@@ -1,7 +1,7 @@
 package app.stride.running.sync
 
 /**
- * What a pull is allowed to do about a refused key.
+ * What a pull is allowed to do about a failed attempt.
  *
  * Garmin's Personal API key is exchanged for a bearer token that lasts
  * about a day, and **Garmin has no refresh token**: a "refresh" is a second
@@ -10,12 +10,9 @@ package app.stride.running.sync
  *
  * But it is not a loop either. The rule is:
  *
- * * **one** re-exchange, and **one** retry;
- * * and then the pull stops, and the phone says the key was refused.
- *
- * Two exchanges with the same key that both come back refused mean the key
- * itself is the problem, and asking again would be asking the same question
- * twice and getting the same answer.
+ * * the client makes **one** token exchange and **one** HTTP attempt;
+ * * the shell makes **one** more attempt;
+ * * and then the pull stops and the failure is surfaced.
  *
  * **The shell owns this rule, and the client does not.**
  * `docs/contract/core-contract.md` §7 — "The retry rule, and who owns it":
@@ -30,15 +27,18 @@ package app.stride.running.sync
  */
 object PullPolicy {
 
+    /** How many retries there are. One. */
+    const val MAX_RETRIES = 1
+
     /** How many re-exchanges there are. One. */
-    const val MAX_RE_EXCHANGES = 1
+    const val MAX_RE_EXCHANGES = MAX_RETRIES
 
     /** What the pull does next. */
     enum class Step {
-        /** Exchange the key again, and try the pull once more. */
-        ReExchangeAndRetry,
+        /** Make one more attempt. It may perform one fresh token exchange. */
+        Retry,
 
-        /** Stop. The key was refused after the re-exchange. */
+        /** Stop. The failure is surfaced to the phone. */
         Stop,
     }
 
@@ -61,13 +61,21 @@ object PullPolicy {
     const val GARMIN_REJECTED = "garmin_rejected"
 
     /**
-     * What a pull does after the key was refused.
+     * What a pull does after an attempt.
+     *
+     * `attempt` is the attempt's number — 1, then 2. The first failure may
+     * be followed by one retry; the second failure stops the pull.
+     */
+    fun afterAttempt(attempt: Int): Step =
+        if (attempt <= MAX_RETRIES) Step.Retry else Step.Stop
+
+    /**
+     * What the pull does after a refused key.
      *
      * `exchanges` is how many exchanges have already happened for this
      * pull, including the first one.
      */
-    fun afterRefusal(exchanges: Int): Step =
-        if (exchanges <= MAX_RE_EXCHANGES) Step.ReExchangeAndRetry else Step.Stop
+    fun afterRefusal(exchanges: Int): Step = afterAttempt(exchanges)
 
     /**
      * Whether the core's answer is a refusal.
@@ -90,41 +98,31 @@ object PullPolicy {
      * in it, so the rule can be proved without a phone:
      *
      * * a first attempt that works is **not** retried;
-     * * a first attempt that is refused is retried **once**;
-     * * a second refusal stops the pull, and the phone says the key was
-     *   refused.
+     * * a first attempt that fails is retried **once**;
+     * * a second failure stops the pull, and the phone says what happened.
      *
      * The attempt is the seam's: one call, one token exchange, one HTTP
      * attempt (see `docs/contract/core-contract.md` §7).
      */
     fun drive(attempt: (Int) -> SyncOutcome): SyncOutcome {
-        var exchanges = 0
-        var outcome = attempt(++exchanges)
+        var attemptNumber = 1
+        var outcome = attempt(attemptNumber)
 
-        while (outcome.error == SyncErrors.REFUSED &&
-            afterRefusal(exchanges) == Step.ReExchangeAndRetry
-        ) {
-            outcome = attempt(++exchanges)
-        }
-
-        if (outcome.error == SyncErrors.REFUSED) {
-            return SyncOutcome(
-                ok = false,
-                message = NEEDS_RECONNECT_MESSAGE,
-                error = SyncErrors.REFUSED,
-            )
+        while (!outcome.ok && retryable(outcome) && afterAttempt(attemptNumber) == Step.Retry) {
+            attemptNumber += 1
+            outcome = attempt(attemptNumber)
         }
 
         return outcome
     }
 
     /**
-     * The sentence for a pull that stopped because the key was refused
-     * again.
+     * Whether a failed exchange is one the shell may try once more.
      *
-     * It says what happened and what is left to do, and it does not blame
-     * the athlete: the key may have been rotated, or revoked at Garmin.
+     * A refused key and an unreachable Garmin are both one more exchange.
+     * A local condition — a locked phone or no credential — is not: those
+     * are checked before an exchange starts and never reach this policy.
      */
-    const val NEEDS_RECONNECT_MESSAGE =
-        "Garmin refused the key again, so the sync stopped. A new key may be needed."
+    private fun retryable(outcome: SyncOutcome): Boolean =
+        outcome.error == SyncErrors.REFUSED || outcome.error == SyncErrors.FAILED
 }

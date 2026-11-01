@@ -1,6 +1,7 @@
 package app.stride.running.settings
 
 import android.content.Context
+import app.stride.running.sync.PullWindow
 
 /**
  * The phone's settings.
@@ -38,8 +39,10 @@ class AppSettings(context: Context) {
 
     /** How many days a pull covers. */
     var syncDays: Int
-        get() = preferences.getInt(KEY_SYNC_DAYS, 30)
-        set(value) = preferences.edit().putInt(KEY_SYNC_DAYS, value.coerceIn(1, 90)).apply()
+        get() = preferences.getInt(KEY_SYNC_DAYS, PullWindow.DEFAULT_DAYS.toInt())
+        set(value) = preferences.edit()
+            .putInt(KEY_SYNC_DAYS, value.coerceIn(PullWindow.MIN_DAYS.toInt(), PullWindow.MAX_DAYS.toInt()))
+            .apply()
 
     /** Whether the phone pulls on its own. */
     var autoSync: Boolean
@@ -71,7 +74,29 @@ class AppSettings(context: Context) {
         get() = preferences.getBoolean(KEY_SETUP_DISMISSED, false)
         set(value) = preferences.edit().putBoolean(KEY_SETUP_DISMISSED, value).apply()
 
+    /**
+     * When the next periodic pull is scheduled, in epoch milliseconds.
+     *
+     * WorkManager does not promise an exact second, but the phone does name
+     * the local boundary it scheduled around when it reports a failure.
+     */
+    var nextPullAtMillis: Long?
+        get() {
+            val value = preferences.getLong(KEY_NEXT_PULL_AT, NO_NEXT_PULL)
+            return if (value == NO_NEXT_PULL) null else value
+        }
+        set(value) {
+            val editor = preferences.edit()
+            if (value == null) {
+                editor.remove(KEY_NEXT_PULL_AT)
+            } else {
+                editor.putLong(KEY_NEXT_PULL_AT, value)
+            }
+            editor.apply()
+        }
+
     companion object {
+        private const val NO_NEXT_PULL = -1L
         private const val NAME = "stride.settings"
         private const val KEY_SERVER_URL = "server_url"
         private const val KEY_SYNC_DAYS = "sync_days"
@@ -79,5 +104,6 @@ class AppSettings(context: Context) {
         private const val KEY_SYNC_INTERVAL = "sync_interval_hours"
         private const val KEY_NETWORK = "network_enabled"
         private const val KEY_SETUP_DISMISSED = "setup_dismissed"
+        private const val KEY_NEXT_PULL_AT = "next_pull_at"
     }
 }

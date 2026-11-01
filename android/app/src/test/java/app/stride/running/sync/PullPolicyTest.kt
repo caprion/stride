@@ -25,6 +25,10 @@ class PullPolicyTest {
     private fun refused(): SyncOutcome =
         SyncOutcome(ok = false, message = "the token has expired", error = SyncErrors.REFUSED)
 
+    /** An attempt that could not reach Garmin. */
+    private fun unreachable(): SyncOutcome =
+        SyncOutcome(ok = false, message = "Garmin could not be reached", error = SyncErrors.FAILED)
+
     /** An attempt that worked. */
     private fun worked(): SyncOutcome =
         SyncOutcome(ok = true, message = "Imported 12 new runs", activities = 12)
@@ -32,7 +36,7 @@ class PullPolicyTest {
     @Test
     fun `the first refusal leads to one re-exchange`() {
         assertEquals(
-            PullPolicy.Step.ReExchangeAndRetry,
+            PullPolicy.Step.Retry,
             PullPolicy.afterRefusal(exchanges = 1),
         )
     }
@@ -128,10 +132,38 @@ class PullPolicyTest {
     }
 
     @Test
-    fun `the sentence says what happened and does not blame the athlete`() {
-        assertEquals(
-            "Garmin refused the key again, so the sync stopped. A new key may be needed.",
-            PullPolicy.NEEDS_RECONNECT_MESSAGE,
-        )
+    fun `an unreachable Garmin is retried exactly once`() {
+        var attempts = 0
+        val outcome = PullPolicy.drive { _ ->
+            attempts += 1
+            unreachable()
+        }
+
+        assertEquals("the pull made two attempts", 2, attempts)
+        assertFalse(outcome.ok)
+        assertEquals(SyncErrors.FAILED, outcome.error)
+    }
+
+    @Test
+    fun `a pull that cannot reach Garmin stops after the retry`() {
+        var attempts = 0
+        PullPolicy.drive { _ ->
+            attempts += 1
+            unreachable()
+        }
+
+        assertEquals("the pull made two attempts", 2, attempts)
+    }
+
+    @Test
+    fun `an unreachable Garmin that returns on the retry stops there`() {
+        var attempts = 0
+        val outcome = PullPolicy.drive { number ->
+            attempts += 1
+            if (number == 1) unreachable() else worked()
+        }
+
+        assertEquals("the pull made two attempts", 2, attempts)
+        assertTrue(outcome.ok)
     }
 }
