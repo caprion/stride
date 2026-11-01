@@ -38,23 +38,25 @@ Four registers, plus one supporting `status` type — five string types in all:
 | **vital** | the measurement | *Sleep — 6 h 10 m* |
 | **direction** | which way it moved against your own usual | *could be better · 1 h 10 m less than your usual* |
 | **option** | what is in your own plan, unranked | *Today — 10 km · easy · from your imported plan* |
-| **pattern** | what usually happened to you, with its sample size | *the 5 other times your sleep was this low, you ran 8 km or less* |
+| **pattern** | what usually happened to you, with its sample size | *the 5 other times your sleep was below your usual, you ran 8.4 km or less* |
+| **statement** | a fact about a comparison | *2.4 km more than the 10 km target* |
 
-`status` is the fifth string type — connect/sync/staleness and empty-state lines. The direction word comes
+`status` is the sixth string type — connect/sync/staleness and empty-state lines. The direction word comes
 from a closed set — **better than usual · about usual · could be better** — and every user-facing string
-is typed (`vital · direction · option · pattern · status`) and linted in CI. See
+is typed (`vital · direction · option · pattern · statement · status`) and linted in CI. See
 [the voice rules](PLAN.md#0-the-voice--vitals-direction-options-no-verdicts).
 
 ## Status
 
-**v2 is being built in the open, from a clean sheet.** The design is finished and specified; the code is
-coming, one vertical slice at a time.
+**v2 runs.** The vertical line is proven end to end against the real Garmin Personal API: the key, the
+sync, the run in the encrypted database, the readout, and the phone showing it.
 
 | | |
 |---|---|
 | design | [PLAN.md](PLAN.md) — features, architecture, delivery plan |
 | screens | [docs/plan.html](docs/plan.html) — every screen, every width, before any code |
-| slices | 0 → 10, each ending with a working app and green gates |
+| the release | **v0.9.0** — the first v2 build, signed with the same certificate as v0.8.0 |
+| the code | 51 commits, every one behind a gate and an independent review |
 
 The desktop is a **development rig and a community tool**, not a product surface: it is the same Rust
 core, one binary, and the phone app is the product.
@@ -70,7 +72,7 @@ certificate, so the v2 builds that follow will install over it on the phone
 without an uninstall and without losing your data.
 
 ```bash
-gh release download v0.8.0 --repo caprion/stride --pattern '*.apk'
+gh release download v0.9.0 --repo caprion/stride --pattern '*.apk'
 ```
 
 | | |
