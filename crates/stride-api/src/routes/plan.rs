@@ -97,7 +97,7 @@ pub fn week(api: &Api, request: &Request) -> ApiResult<Value> {
     let target = {
         let metres: f64 = rendered
             .iter()
-            .filter_map(|session| session.target_distance.as_ref().and_then(|value| value.raw))
+            .filter_map(|session| session.target.as_ref().and_then(|value| value.raw))
             .sum();
         render::distance(if metres > 0.0 { Some(metres) } else { None })
     };
@@ -247,8 +247,8 @@ pub fn results(api: &Api, request: &Request) -> ApiResult<Value> {
             date: read.date,
             session_type: read.session_type,
             status: read.status,
-            target_distance: read.target_distance,
-            actual_distance: read.actual_distance,
+            target: read.target,
+            actual: read.actual,
         });
     }
     let response = PlanResults {
@@ -450,11 +450,7 @@ fn session_of(
     let actual_distance_m = if runs.is_empty() {
         None
     } else {
-        Some(
-            runs.iter()
-                .filter_map(|run| run.distance.as_ref().and_then(|value| value.raw))
-                .sum(),
-        )
+        Some(runs.iter().filter_map(|run| run.distance.raw).sum())
     };
     let status = session_status(date, current, source, !runs.is_empty());
     Ok(PlanSession {
@@ -467,8 +463,8 @@ fn session_of(
             session.target_distance_m,
             &session.session_type,
         ),
-        target_distance: render::distance(session.target_distance_m),
-        actual_distance: render::distance(actual_distance_m),
+        target: render::distance(session.target_distance_m),
+        actual: render::distance(actual_distance_m),
         status: status.to_string(),
         source: source.to_string(),
     })

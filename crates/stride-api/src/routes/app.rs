@@ -451,13 +451,12 @@ pub fn calendar(api: &Api, request: &Request) -> ApiResult<Value> {
             .store()
             .activities_for_date(&date)
             .map_err(|error| api.store_error("the runs could not be read", &error))?;
-        let summaries: Vec<crate::dto::ActivitySummary> =
-            runs.iter().map(super::activity_summary).collect();
+        let summaries = super::summaries(api, &runs)?;
         days.push(CalendarDay {
             date,
             day,
             distance: render::distance(Some(runs.iter().map(|run| run.distance_m).sum())),
-            moving_time: render::duration(Some(runs.iter().map(|run| run.moving_time_s).sum())),
+            duration: render::duration(Some(runs.iter().map(|run| run.moving_time_s).sum())),
             activities: summaries,
         });
     }

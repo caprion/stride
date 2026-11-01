@@ -7,7 +7,7 @@ use serde_json::Value;
 use stride_core::band;
 use stride_core::direction::day_directions;
 use stride_core::pattern::{patterns, HistoryDay, PatternKind};
-use stride_core::types::VitalKind;
+use stride_core::types::{Distance, VitalKind};
 use stride_core::units;
 use stride_store::{ActivitySummary as StoredActivity, WellnessDaily};
 
@@ -24,7 +24,7 @@ use crate::router::Request;
 use crate::state::Api;
 
 use super::series;
-use super::{activity_summary, core_date, ok, pace_of, today, week_start};
+use super::{core_date, ok, pace_of, today, week_start};
 
 /// The most runs one answer may carry.
 const MAX_RUNS_IN_ANSWER: usize = 500;
@@ -78,11 +78,7 @@ fn feed(
                 .activity_feed(cursor.as_ref(), limit)
                 .map_err(|error| api.store_error("the feed could not be read", &error))?;
             let next = page.next_cursor.map(|cursor| cursor.encode());
-            let runs = page
-                .activities
-                .iter()
-                .map(activity_summary)
-                .collect::<Vec<ActivitySummary>>();
+            let runs = super::summaries(api, &page.activities)?;
             Ok((runs, next))
         }
         Some(from) => {
@@ -108,10 +104,8 @@ fn feed(
                 }
                 _ => None,
             };
-            let runs = page
-                .iter()
-                .map(|row| activity_summary(row))
-                .collect::<Vec<ActivitySummary>>();
+            let rows: Vec<StoredActivity> = page.iter().map(|row| (*row).clone()).collect();
+            let runs = super::summaries(api, &rows)?;
             Ok((runs, next))
         }
     }
@@ -133,7 +127,10 @@ pub fn activity(api: &Api, request: &Request) -> ApiResult<Value> {
         }
     };
 
-    let mut summary = activity_summary(&run.summary());
+    let mut summary = match super::summaries(api, std::slice::from_ref(&run.summary()))?.first() {
+        Some(summary) => summary.clone(),
+        None => return Err(ApiError::internal("the run could not be read")),
+    };
     let mut splits = Vec::new();
     let mut elevation = Vec::new();
     let mut samples = Vec::new();
@@ -168,13 +165,22 @@ fn plan_line(api: &Api, date: &str, actual_m: f64) -> ApiResult<Option<crate::dt
         .store()
         .plan_sessions_for_day(date)
         .map_err(|error| api.store_error("the plan could not be read", &error))?;
-    Ok(sessions
+    let target = sessions
         .iter()
         .find_map(|session| session.target_distance_m)
-        .map(|target| crate::dto::PlanLine {
-            actual: render::distance(Some(actual_m)),
-            target: render::distance(Some(target)),
-        }))
+        .and_then(Distance::from_metres);
+    let actual = Distance::from_metres(actual_m);
+    let (actual, target) = match (actual, target) {
+        (Some(actual), Some(target)) => (actual, target),
+        _ => return Ok(None),
+    };
+    // The line is the core's statement, and it is absent when the gap from
+    // the target is within ten per cent: 10.2 km against a 10 km target is
+    // not news, and neither here nor on Today.
+    Ok(
+        stride_core::statement::distance_comparison_line(actual, target)
+            .map(|text| crate::dto::PlanLine { text }),
+    )
 }
 
 // --------------------------------------------------------------- physiology
@@ -492,18 +498,12 @@ pub fn fitness_fingerprint(api: &Api, request: &Request) -> ApiResult<Value> {
     let runs = stored_runs(api, request)?;
     let mut items = Vec::new();
     for run in runs.iter().take(MAX_RUNS_IN_ANSWER) {
-        let decoded = match series::decoded(api, run.id) {
-            Some(decoded) => decoded,
-            None => continue,
-        };
         items.push(Fingerprint {
             activity_id: run.id,
             local_date: run.local_date.clone(),
             distance: render::distance(Some(run.distance_m)),
-            moving_time: render::duration(Some(run.moving_time_s)),
-            avg_hr: render::heart_rate(run.avg_hr),
-            max_hr: render::heart_rate(run.max_hr),
-            avg_cadence: render::cadence(decoded.avg_cadence),
+            duration: render::duration(Some(run.moving_time_s)),
+            heart_rate: render::heart_rate(run.avg_hr),
             pace: render::pace(pace_of(run.distance_m, run.moving_time_s)),
             elevation_gain: render::elevation(Some(run.elevation_gain_m)),
         });
@@ -635,9 +635,9 @@ fn totals<'a>(runs: impl IntoIterator<Item = &'a StoredActivity>) -> Totals {
         activity_count: runs.len() as i64,
         distance: render::distance(Some(distance_m)),
         elevation_gain: render::elevation(Some(runs.iter().map(|run| run.elevation_gain_m).sum())),
-        moving_time: render::duration(Some(moving_time_s)),
+        duration: render::duration(Some(moving_time_s)),
         avg_pace: render::pace(avg_pace_s_per_km),
-        avg_hr: render::heart_rate(if hearts.is_empty() {
+        heart_rate: render::heart_rate(if hearts.is_empty() {
             None
         } else {
             Some(units::round_half_even(
@@ -660,7 +660,7 @@ pub fn stats_weekly(api: &Api, request: &Request) -> ApiResult<Value> {
                 week_start: week.to_iso(),
                 activity_count: week_runs.len() as i64,
                 distance: render::distance(Some(distance_m)),
-                moving_time: render::duration(Some(moving_time_s)),
+                duration: render::duration(Some(moving_time_s)),
                 elevation_gain: render::elevation(Some(
                     week_runs.iter().map(|run| run.elevation_gain_m).sum(),
                 )),

@@ -46,11 +46,11 @@ fn a_duration_is_the_core_s_rendering_and_the_core_s_number() {
         None => panic!("the core did not render the duration"),
     };
     assert_eq!(
-        body["moving_time"]["text"].as_str(),
+        body["duration"]["text"].as_str(),
         Some(text.as_str()),
         "the moving time is not the core's rendering"
     );
-    assert_eq!(body["moving_time"]["raw"].as_f64(), Some(2_520.0));
+    assert_eq!(body["duration"]["raw"].as_f64(), Some(2_520.0));
 }
 
 #[test]
@@ -64,11 +64,11 @@ fn a_heart_rate_is_the_core_s_catalogue_and_the_core_s_units() {
         None => panic!("the core did not render the heart rate"),
     };
     assert_eq!(
-        body["avg_hr"]["text"].as_str(),
+        body["heart_rate"]["text"].as_str(),
         Some(text.as_str()),
         "the heart rate is not the core's rendering"
     );
-    assert_eq!(body["avg_hr"]["raw"].as_f64(), Some(148.0));
+    assert_eq!(body["heart_rate"]["raw"].as_f64(), Some(148.0));
 }
 
 #[test]

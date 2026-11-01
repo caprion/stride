@@ -23,8 +23,35 @@
 
 use stride_core::strings;
 use stride_core::units;
+use stride_core::ValueUnit;
 
 use crate::dto::RenderedValue;
+
+/// A distance that is always there, as the core renders it.
+///
+/// A run always has a distance, and a group always has a total, so the
+/// value is never absent. The empty text is the unreachable case: the
+/// core renders every distance the store holds.
+pub fn distance_of(metres: f64) -> RenderedValue {
+    match distance(Some(metres)) {
+        Some(value) => value,
+        None => RenderedValue {
+            text: String::new(),
+            raw: Some(metres),
+        },
+    }
+}
+
+/// A duration that is always there, as the core renders it.
+pub fn duration_of(seconds: f64) -> RenderedValue {
+    match duration(Some(seconds)) {
+        Some(value) => value,
+        None => RenderedValue {
+            text: String::new(),
+            raw: Some(seconds),
+        },
+    }
+}
 
 /// A distance, as the core renders it: "8.4 km", "5 km".
 pub fn distance(metres: Option<f64>) -> Option<RenderedValue> {
@@ -55,6 +82,17 @@ pub fn pace(seconds_per_km: Option<f64>) -> Option<RenderedValue> {
         text,
         raw: seconds_per_km,
     })
+}
+
+/// An elevation that is always there, as the core renders it.
+pub fn elevation_of(metres: f64) -> RenderedValue {
+    match elevation(Some(metres)) {
+        Some(value) => value,
+        None => RenderedValue {
+            text: String::new(),
+            raw: Some(metres),
+        },
+    }
 }
 
 /// An elevation, as the core renders it: "128 m".
@@ -90,10 +128,25 @@ pub fn cadence(_steps_per_minute: Option<f64>) -> Option<RenderedValue> {
 
 /// The difference between two values, as the core renders it.
 ///
-/// **The core does not render a difference yet.** A difference is signed,
-/// and the core's renderers read a magnitude: there is nothing to borrow,
-/// so the difference is absent until the core has a renderer of its own.
-pub fn difference(_difference: Option<f64>) -> Option<RenderedValue> {
+/// **The core renders it, sign and all**: "+2.4 km", "−0.6 km", "+6 s/km".
+/// The unit is the metric's own, so a difference is never a second form of
+/// a value — and swapping A and B flips the sign of every difference, the
+/// way the plan's acceptance check says.
+pub fn difference(difference: Option<f64>, unit: ValueUnit) -> Option<RenderedValue> {
+    let text = units::render_difference(difference, unit)?;
+    Some(RenderedValue {
+        text,
+        raw: difference,
+    })
+}
+
+/// An average, as the core renders it.
+///
+/// **The core does not render an average yet.** The core reads a count as
+/// a whole number, and an average of 3.4 sessions is not a whole number of
+/// sessions — so the average is absent until the core has a renderer of
+/// its own.
+pub fn average(_average: Option<f64>) -> Option<RenderedValue> {
     None
 }
 

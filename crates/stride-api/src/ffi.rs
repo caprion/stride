@@ -29,9 +29,29 @@
 //! [`stride_set_garmin_key`] puts the key in memory for the length of a
 //! pull and [`stride_set_garmin_connected`] takes it out again. Nothing
 //! here returns the key, and nothing here logs it.
+//!
+//! ## One seam, not two
+//!
+//! The phone calls this core through **UniFFI**
+//! (`android/app/src/main/rust/stride-ffi`), and that seam is the phone's
+//! own boundary: it catches the panic and hands the body across. This
+//! module is the **JSON in, JSON out** surface underneath it — the same
+//! shape the desktop's HTTP layer answers with — and there is no second
+//! implementation of it here: a C-ABI surface with its own allocator and
+//! its own free would be a second seam, and two seams are two answers to
+//! the same question.
+//!
+//! The envelope is the contract's:
+//!
+//! ```text
+//! {"ok": true,  "status": 200, "body": { ... }}
+//! {"ok": false, "status": 401, "error": {"code": "needs_reconnect", "detail": "…"}}
+//! ```
+//!
+//! The failure carries the **code** as well as the sentence, because the
+//! phone's reader reads the code: `needs_reconnect` is what tells the
+//! caller that one more attempt is allowed.
 
-use std::collections::HashMap;
-use std::ffi::c_void;
 use std::panic::{self, AssertUnwindSafe};
 use std::sync::{Arc, Mutex, Once, OnceLock};
 
@@ -42,9 +62,6 @@ use crate::router::Router;
 
 /// The core the calls go to.
 static CORE: OnceLock<Mutex<Option<Arc<Router>>>> = OnceLock::new();
-
-/// The answers that were handed out and have not been freed yet.
-static ANSWERS: OnceLock<Mutex<HashMap<usize, Box<[u8]>>>> = OnceLock::new();
 
 /// The panic hook, installed once.
 static HOOK: Once = Once::new();
@@ -82,52 +99,6 @@ pub fn stride_call_with(method: &str, path: &str, body: Option<&str>) -> String 
         None => not_open_envelope(),
     });
     answer.to_string()
-}
-
-/// Call a route and hand the answer over as a pointer.
-///
-/// The answer is a null-terminated document; the caller frees it with
-/// [`stride_free`]. The pointer is the only thing that crosses the
-/// boundary, and the answer behind it is owned by this module until it is
-/// freed.
-pub fn stride_call_ptr(method: &str, path: &str, body: Option<&str>) -> *mut c_void {
-    let answer = stride_call_with(method, path, body).into_bytes();
-    let mut bytes = answer;
-    bytes.push(0);
-    let mut boxed = bytes.into_boxed_slice();
-    let pointer = boxed.as_mut_ptr() as *mut c_void;
-    let answers = ANSWERS.get_or_init(|| Mutex::new(HashMap::new()));
-    let mut guard = answers
-        .lock()
-        .unwrap_or_else(|poisoned| poisoned.into_inner());
-    guard.insert(pointer as usize, boxed);
-    pointer
-}
-
-/// Free an answer that was handed over as a pointer.
-///
-/// A pointer this module did not hand out is ignored: freeing it is not
-/// this module's business, and guessing would be worse than doing
-/// nothing.
-pub fn stride_free(pointer: *mut c_void) {
-    let key = pointer as usize;
-    let answers = ANSWERS.get_or_init(|| Mutex::new(HashMap::new()));
-    let mut guard = answers
-        .lock()
-        .unwrap_or_else(|poisoned| poisoned.into_inner());
-    guard.remove(&key);
-}
-
-/// How many answers were handed out and have not been freed yet.
-///
-/// The count is here so that the free can be proved: an answer that is
-/// handed out is in flight, and an answer that is freed is not.
-pub fn answers_in_flight() -> usize {
-    let answers = ANSWERS.get_or_init(|| Mutex::new(HashMap::new()));
-    let guard = answers
-        .lock()
-        .unwrap_or_else(|poisoned| poisoned.into_inner());
-    guard.len()
 }
 
 /// Put the Garmin key in memory, or take it out again.

@@ -3,6 +3,7 @@
 use serde_json::Value;
 use stride_core::statement;
 use stride_core::units;
+use stride_core::ValueUnit;
 
 use crate::dto::{
     Adherence, Best, Chips, CompareCandidate, CompareMetric, CompareResponse, CompareRun,
@@ -60,21 +61,22 @@ pub fn today(api: &Api, request: &Request) -> ApiResult<Value> {
         .store()
         .activities_between("0000-01-01", &current.to_iso())
         .map_err(|error| api.store_error("the runs could not be read", &error))?;
-    let last_run = runs.first().map(super::activity_summary);
+    let summaries = super::summaries(api, &runs)?;
+    let last_run = summaries.first().cloned();
 
     let week_runs = api
         .store()
         .activities_between(&week_start(current).to_iso(), &current.to_iso())
         .map_err(|error| api.store_error("the runs could not be read", &error))?;
     let week = WeekRunning {
-        distance: render::distance(Some(week_runs.iter().map(|run| run.distance_m).sum())),
+        distance: render::distance_of(week_runs.iter().map(|run| run.distance_m).sum()),
         sessions: week_runs.len(),
     };
 
     let distance_comparison = match (&planned, &last_run) {
         (Some(session), Some(run)) => super::distance_comparison(
-            run.distance.as_ref().and_then(|value| value.raw),
-            session.target_distance.as_ref().and_then(|value| value.raw),
+            run.distance.raw,
+            session.target.as_ref().and_then(|value| value.raw),
         ),
         _ => None,
     };
@@ -107,7 +109,7 @@ pub fn progress(api: &Api, request: &Request) -> ApiResult<Value> {
         let distance_m: f64 = week_runs.iter().map(|run| run.distance_m).sum();
         weekly_volume.push(WeeklyVolume {
             week_start: week.to_iso(),
-            distance: render::distance(Some(distance_m)),
+            distance: render::distance_of(distance_m),
         });
         let paces: Vec<f64> = week_runs
             .iter()
@@ -117,7 +119,7 @@ pub fn progress(api: &Api, request: &Request) -> ApiResult<Value> {
         pace_at_hr.push(PaceAtHr {
             week_start: week.to_iso(),
             pace: render::pace(super::median(&paces).map(units::round_pace_s_per_km)),
-            hr: render::heart_rate(super::median(&hearts)),
+            heart_rate: render::heart_rate(super::median(&hearts)),
         });
         consistency.push(Consistency {
             week_start: week.to_iso(),
@@ -128,7 +130,7 @@ pub fn progress(api: &Api, request: &Request) -> ApiResult<Value> {
     let typical_week = super::median(
         &weekly_volume
             .iter()
-            .filter_map(|week| week.distance.as_ref().and_then(|value| value.raw))
+            .filter_map(|week| week.distance.raw)
             .collect::<Vec<f64>>(),
     );
 
@@ -137,7 +139,11 @@ pub fn progress(api: &Api, request: &Request) -> ApiResult<Value> {
         .iter()
         .map(|record| Best {
             key: record.key.clone(),
-            value: record.value.clone(),
+            value: record
+                .value
+                .clone()
+                .map(|value| value.text)
+                .unwrap_or_default(),
             date: record.activity_date.clone(),
         })
         .collect();
@@ -170,6 +176,20 @@ pub fn progress(api: &Api, request: &Request) -> ApiResult<Value> {
     let headline = statement::progress_headline(pace_at_hr_comparison(&pace_at_hr));
     let headline_note = headline.evidence.clone();
 
+    // The sessions a week, as the core renders them.
+    //
+    // The average of a count has no renderer in the core yet — the core
+    // renders a count as a whole number, and an average of 3.4 sessions is
+    // not a whole number of sessions — so the field is there and the value
+    // is absent until the core grows one.
+    let sessions_per_week = if consistency.is_empty() {
+        None
+    } else {
+        let total: usize = consistency.iter().map(|week| week.sessions).sum();
+        let average = total as f64 / consistency.len() as f64;
+        render::average(Some(average))
+    };
+
     let response = ProgressInsight {
         generated_at: api.generated_at(),
         headline: headline.headline,
@@ -179,6 +199,7 @@ pub fn progress(api: &Api, request: &Request) -> ApiResult<Value> {
         pace_at_hr,
         bests,
         consistency,
+        sessions_per_week,
         adherence,
     };
     ok(&response)
@@ -273,24 +294,28 @@ pub fn compare(api: &Api, request: &Request) -> ApiResult<Value> {
             "vital.distance",
             render::distance(Some(first.distance_m)),
             render::distance(Some(second.distance_m)),
+            ValueUnit::Distance,
         ),
         metric(
             "time",
             "vital.time",
             render::duration(Some(first.moving_time_s)),
             render::duration(Some(second.moving_time_s)),
+            ValueUnit::Duration,
         ),
         metric(
             "pace",
             "vital.pace",
             render::pace(pace_a),
             render::pace(pace_b),
+            ValueUnit::Pace,
         ),
         metric(
             "hr",
             "vital.heartRate",
             render::heart_rate(first.avg_hr),
             render::heart_rate(second.avg_hr),
+            ValueUnit::HeartRate,
         ),
     ];
 
@@ -306,14 +331,14 @@ pub fn compare(api: &Api, request: &Request) -> ApiResult<Value> {
             id: first.id,
             label: first.name.clone(),
             date: first.local_date.clone(),
-            distance: render::distance(Some(first.distance_m)),
+            distance: render::distance_of(first.distance_m),
             story: None,
         },
         b: CompareRun {
             id: second.id,
             label: second.name.clone(),
             date: second.local_date.clone(),
-            distance: render::distance(Some(second.distance_m)),
+            distance: render::distance_of(second.distance_m),
             story: None,
         },
         series,
@@ -336,7 +361,7 @@ pub fn compare_candidates(api: &Api, request: &Request) -> ApiResult<Value> {
             id: run.id,
             label: run.name.clone(),
             date: run.local_date.clone(),
-            distance: render::distance(Some(run.distance_m)),
+            distance: render::distance_of(run.distance_m),
         })
         .collect();
     // The shape the app consumes is a list of candidates; the envelope
@@ -357,7 +382,11 @@ fn pace_at_hr_comparison(weeks: &[PaceAtHr]) -> Option<statement::PaceAtHr> {
     let mut now_index = None;
     for (index, week) in weeks.iter().enumerate().rev() {
         let has_pace = week.pace.as_ref().and_then(|value| value.raw).is_some();
-        let has_heart_rate = week.hr.as_ref().and_then(|value| value.raw).is_some();
+        let has_heart_rate = week
+            .heart_rate
+            .as_ref()
+            .and_then(|value| value.raw)
+            .is_some();
         if has_pace && has_heart_rate {
             now_index = Some(index);
             break;
@@ -365,14 +394,14 @@ fn pace_at_hr_comparison(weeks: &[PaceAtHr]) -> Option<statement::PaceAtHr> {
     }
     let now_index = now_index?;
     let now = weeks.get(now_index)?;
-    let now_hr = now.hr.as_ref().and_then(|value| value.raw)?;
+    let now_hr = now.heart_rate.as_ref().and_then(|value| value.raw)?;
     let now_pace = now.pace.as_ref().and_then(|value| value.raw)?;
 
     // Eight weeks back, if there were eight weeks and the heart rate was
     // the same then.
     let then_index = now_index.checked_sub(WEEKS_APART)?;
     let then = weeks.get(then_index)?;
-    let then_hr = then.hr.as_ref().and_then(|value| value.raw)?;
+    let then_hr = then.heart_rate.as_ref().and_then(|value| value.raw)?;
     let then_pace = then.pace.as_ref().and_then(|value| value.raw)?;
     if (then_hr - now_hr).abs() > SAME_HEART_RATE_TOLERANCE {
         return None;
@@ -387,16 +416,18 @@ fn pace_at_hr_comparison(weeks: &[PaceAtHr]) -> Option<statement::PaceAtHr> {
 /// One row of the diff.
 ///
 /// The values are the core's rendering of them, with the numbers beside
-/// them. The **difference** is the core's to render as well, and the core
-/// does not render a difference yet — so the row carries no difference
-/// until it does.
+/// them, and the **difference** is the core's rendering too: the sign is
+/// the number's own, so the core's renderer reads a difference the way it
+/// reads any other value ("-0.2 km", "-1 m", "-3 bpm").
+///
 fn metric(
     key: &str,
     label_key: &str,
     a: Option<crate::dto::RenderedValue>,
     b: Option<crate::dto::RenderedValue>,
+    unit: ValueUnit,
 ) -> CompareMetric {
-    let delta = match (a.as_ref(), b.as_ref()) {
+    let difference = match (a.as_ref(), b.as_ref()) {
         (Some(a), Some(b)) => match (a.raw, b.raw) {
             (Some(a), Some(b)) => Some(b - a),
             _ => None,
@@ -408,7 +439,7 @@ fn metric(
         label_key: label_key.to_string(),
         a,
         b,
-        delta: render::difference(delta),
+        delta: render::difference(difference, unit),
     }
 }
 
@@ -454,11 +485,7 @@ fn render_session(
     let actual_distance_m = if runs.is_empty() {
         None
     } else {
-        Some(
-            runs.iter()
-                .filter_map(|run| run.distance.as_ref().and_then(|value| value.raw))
-                .sum(),
-        )
+        Some(runs.iter().filter_map(|run| run.distance.raw).sum())
     };
     let status = super::session_status(date, current, source, !runs.is_empty());
     Ok(crate::dto::PlanSession {
@@ -471,8 +498,8 @@ fn render_session(
             session.target_distance_m,
             &session.session_type,
         ),
-        target_distance: render::distance(session.target_distance_m),
-        actual_distance: render::distance(actual_distance_m),
+        target: render::distance(session.target_distance_m),
+        actual: render::distance(actual_distance_m),
         status: status.to_string(),
         source: source.to_string(),
     })
