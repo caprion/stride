@@ -1,14 +1,15 @@
 //! The insight routes: Today, Progress, the chips of a run, and Compare.
 
 use serde_json::Value;
+use stride_core::statement;
 use stride_core::units;
 
 use crate::dto::{
     Adherence, Best, Chips, CompareCandidate, CompareMetric, CompareResponse, CompareRun,
-    CompareSeries, Consistency, PaceAtHr, ProgressInsight, TodayInsight, WeeklyVolume,
-    WeekRunning,
+    CompareSeries, Consistency, PaceAtHr, ProgressInsight, TodayInsight, WeekRunning, WeeklyVolume,
 };
 use crate::error::{ApiError, ApiResult};
+use crate::render;
 use crate::router::Request;
 use crate::state::Api;
 
@@ -17,6 +18,12 @@ use super::{core_date, ok, personal_records, runs_on, session_sentence, week_sta
 /// How far apart two runs may be and still be "the same distance".
 const SAME_DISTANCE_TOLERANCE: f64 = 0.1;
 
+/// How many weeks back the fitness comparison looks.
+const WEEKS_APART: usize = 8;
+
+/// How far apart two heart rates may be and still be the same heart rate.
+const SAME_HEART_RATE_TOLERANCE: f64 = 3.0;
+
 /// Today's readout.
 pub fn today(api: &Api, request: &Request) -> ApiResult<Value> {
     let _ = request;
@@ -24,7 +31,7 @@ pub fn today(api: &Api, request: &Request) -> ApiResult<Value> {
     let sessions = api
         .store()
         .plan_sessions_for_day(&current.to_iso())
-        .map_err(|_| ApiError::internal("the plan could not be read"))?;
+        .map_err(|error| api.store_error("the plan could not be read", &error))?;
     let source = plan_source_of(api, &sessions);
 
     let mut planned = None;
@@ -33,7 +40,7 @@ pub fn today(api: &Api, request: &Request) -> ApiResult<Value> {
     let week_sessions = api
         .store()
         .plan_sessions_between(&week_start(current).to_iso(), &week_end.to_iso())
-        .map_err(|_| ApiError::internal("the plan could not be read"))?;
+        .map_err(|error| api.store_error("the plan could not be read", &error))?;
     for session in week_sessions.iter() {
         if session.date == current.to_iso() {
             if planned.is_none() {
@@ -52,22 +59,23 @@ pub fn today(api: &Api, request: &Request) -> ApiResult<Value> {
     let runs = api
         .store()
         .activities_between("0000-01-01", &current.to_iso())
-        .map_err(|_| ApiError::internal("the runs could not be read"))?;
+        .map_err(|error| api.store_error("the runs could not be read", &error))?;
     let last_run = runs.first().map(super::activity_summary);
 
     let week_runs = api
         .store()
         .activities_between(&week_start(current).to_iso(), &current.to_iso())
-        .map_err(|_| ApiError::internal("the runs could not be read"))?;
+        .map_err(|error| api.store_error("the runs could not be read", &error))?;
     let week = WeekRunning {
-        distance_m: units::round_distance_m(week_runs.iter().map(|run| run.distance_m).sum()),
+        distance: render::distance(Some(week_runs.iter().map(|run| run.distance_m).sum())),
         sessions: week_runs.len(),
     };
 
     let distance_comparison = match (&planned, &last_run) {
-        (Some(session), Some(run)) => {
-            super::distance_comparison(Some(run.distance_m), session.target_distance_m)
-        }
+        (Some(session), Some(run)) => super::distance_comparison(
+            run.distance.as_ref().and_then(|value| value.raw),
+            session.target_distance.as_ref().and_then(|value| value.raw),
+        ),
         _ => None,
     };
 
@@ -90,7 +98,7 @@ pub fn progress(api: &Api, request: &Request) -> ApiResult<Value> {
     let runs = api
         .store()
         .activities_between("0000-01-01", &current.to_iso())
-        .map_err(|_| ApiError::internal("the runs could not be read"))?;
+        .map_err(|error| api.store_error("the runs could not be read", &error))?;
 
     let mut weekly_volume: Vec<WeeklyVolume> = Vec::new();
     let mut pace_at_hr: Vec<PaceAtHr> = Vec::new();
@@ -99,7 +107,7 @@ pub fn progress(api: &Api, request: &Request) -> ApiResult<Value> {
         let distance_m: f64 = week_runs.iter().map(|run| run.distance_m).sum();
         weekly_volume.push(WeeklyVolume {
             week_start: week.to_iso(),
-            distance_m: units::round_distance_m(distance_m),
+            distance: render::distance(Some(distance_m)),
         });
         let paces: Vec<f64> = week_runs
             .iter()
@@ -108,8 +116,8 @@ pub fn progress(api: &Api, request: &Request) -> ApiResult<Value> {
         let hearts: Vec<f64> = week_runs.iter().filter_map(|run| run.avg_hr).collect();
         pace_at_hr.push(PaceAtHr {
             week_start: week.to_iso(),
-            pace_s_per_km: super::median(&paces).map(units::round_pace_s_per_km),
-            hr: super::median(&hearts),
+            pace: render::pace(super::median(&paces).map(units::round_pace_s_per_km)),
+            hr: render::heart_rate(super::median(&hearts)),
         });
         consistency.push(Consistency {
             week_start: week.to_iso(),
@@ -117,10 +125,10 @@ pub fn progress(api: &Api, request: &Request) -> ApiResult<Value> {
         });
     }
 
-    let typical_week_m = super::median(
+    let typical_week = super::median(
         &weekly_volume
             .iter()
-            .map(|week| week.distance_m)
+            .filter_map(|week| week.distance.as_ref().and_then(|value| value.raw))
             .collect::<Vec<f64>>(),
     );
 
@@ -129,7 +137,7 @@ pub fn progress(api: &Api, request: &Request) -> ApiResult<Value> {
         .iter()
         .map(|record| Best {
             key: record.key.clone(),
-            value: record.display.clone(),
+            value: record.value.clone(),
             date: record.activity_date.clone(),
         })
         .collect();
@@ -156,29 +164,18 @@ pub fn progress(api: &Api, request: &Request) -> ApiResult<Value> {
             }
         });
 
-    // The headline is a fact about the history, not a verdict: how many
-    // weeks there are, and what a typical week holds. The fitness engine's
-    // own headline comes with the fitness slice; until then this says what
-    // the data says and nothing more.
-    let weeks = weekly_volume.len();
-    let headline = if weeks == 0 {
-        "no runs yet".to_string()
-    } else {
-        format!("{weeks} weeks of running")
-    };
-    let headline_note = typical_week_m.map(|typical| {
-        format!(
-            "{} km in a typical week",
-            units::format_distance_km_short(typical)
-        )
-    });
+    // The headline is the core's statement: it compares the pace at the
+    // same heart rate now and then, and it says so plainly when there is
+    // not enough history to compare.
+    let headline = statement::progress_headline(pace_at_hr_comparison(&pace_at_hr));
+    let headline_note = headline.evidence.clone();
 
     let response = ProgressInsight {
         generated_at: api.generated_at(),
-        headline,
+        headline: headline.headline,
         headline_note,
         weekly_volume,
-        typical_week_m,
+        typical_week: render::distance(typical_week),
         pace_at_hr,
         bests,
         consistency,
@@ -199,7 +196,7 @@ pub fn chips(api: &Api, request: &Request) -> ApiResult<Value> {
     let run = api
         .store()
         .activity(id)
-        .map_err(|_| ApiError::internal("the run could not be read"))?;
+        .map_err(|error| api.store_error("the run could not be read", &error))?;
     let run = match run {
         Some(run) => run,
         None => {
@@ -208,31 +205,28 @@ pub fn chips(api: &Api, request: &Request) -> ApiResult<Value> {
             )))
         }
     };
-    let mut chips: Vec<crate::dto::Chip> = Vec::new();
-    chips.push(crate::dto::Chip {
-        key: "distance".to_string(),
-        label: "Distance".to_string(),
-        value: units::format_distance_km_short(run.distance_m),
-    });
-    chips.push(crate::dto::Chip {
-        key: "time".to_string(),
-        label: "Time".to_string(),
-        value: units::format_duration(run.moving_time_s),
-    });
-    if let Some(pace) = super::pace_of(run.distance_m, run.moving_time_s) {
-        chips.push(crate::dto::Chip {
+    let chips: Vec<crate::dto::Chip> = vec![
+        crate::dto::Chip {
+            key: "distance".to_string(),
+            label: "Distance".to_string(),
+            value: render::distance(Some(run.distance_m)),
+        },
+        crate::dto::Chip {
+            key: "time".to_string(),
+            label: "Time".to_string(),
+            value: render::duration(Some(run.moving_time_s)),
+        },
+        crate::dto::Chip {
             key: "pace".to_string(),
             label: "Pace".to_string(),
-            value: format!("{} s/km", units::format_whole(pace)),
-        });
-    }
-    if let Some(heart) = run.avg_hr {
-        chips.push(crate::dto::Chip {
+            value: render::pace(super::pace_of(run.distance_m, run.moving_time_s)),
+        },
+        crate::dto::Chip {
             key: "heart_rate".to_string(),
             label: "Heart rate".to_string(),
-            value: format!("{} bpm", units::format_whole(heart)),
-        });
-    }
+            value: render::heart_rate(run.avg_hr),
+        },
+    ];
     let response = Chips {
         activity_id: id,
         chips,
@@ -258,10 +252,7 @@ pub fn compare(api: &Api, request: &Request) -> ApiResult<Value> {
     let first = read_run(api, a)?;
     let second = read_run(api, b)?;
 
-    let days = match (
-        core_date(&first.local_date),
-        core_date(&second.local_date),
-    ) {
+    let days = match (core_date(&first.local_date), core_date(&second.local_date)) {
         (Ok(first), Ok(second)) => Some(second.days_since(first).abs()),
         _ => None,
     };
@@ -270,12 +261,9 @@ pub fn compare(api: &Api, request: &Request) -> ApiResult<Value> {
     } else {
         false
     };
-    let basis_text = match days {
-        Some(days) if same_distance => format!("Same distance, {days} days apart"),
-        Some(days) => format!("Different distances, {days} days apart"),
-        None if same_distance => "Same distance".to_string(),
-        None => "Different distances".to_string(),
-    };
+    // The basis is the core's statement: what the two runs are being
+    // compared on, in the core's words.
+    let basis_text = statement::compare_basis(same_distance, false, days.unwrap_or(0)).sentence();
 
     let pace_a = super::pace_of(first.distance_m, first.moving_time_s);
     let pace_b = super::pace_of(second.distance_m, second.moving_time_s);
@@ -283,19 +271,27 @@ pub fn compare(api: &Api, request: &Request) -> ApiResult<Value> {
         metric(
             "distance",
             "vital.distance",
-            "distance",
-            Some(first.distance_m),
-            Some(second.distance_m),
+            render::distance(Some(first.distance_m)),
+            render::distance(Some(second.distance_m)),
         ),
         metric(
             "time",
             "vital.time",
-            "duration",
-            Some(first.moving_time_s),
-            Some(second.moving_time_s),
+            render::duration(Some(first.moving_time_s)),
+            render::duration(Some(second.moving_time_s)),
         ),
-        metric("pace", "vital.pace", "pace", pace_a, pace_b),
-        metric("hr", "vital.heartRate", "hr", first.avg_hr, second.avg_hr),
+        metric(
+            "pace",
+            "vital.pace",
+            render::pace(pace_a),
+            render::pace(pace_b),
+        ),
+        metric(
+            "hr",
+            "vital.heartRate",
+            render::heart_rate(first.avg_hr),
+            render::heart_rate(second.avg_hr),
+        ),
     ];
 
     let series = CompareSeries {
@@ -310,14 +306,14 @@ pub fn compare(api: &Api, request: &Request) -> ApiResult<Value> {
             id: first.id,
             label: first.name.clone(),
             date: first.local_date.clone(),
-            distance_m: first.distance_m,
+            distance: render::distance(Some(first.distance_m)),
             story: None,
         },
         b: CompareRun {
             id: second.id,
             label: second.name.clone(),
             date: second.local_date.clone(),
-            distance_m: second.distance_m,
+            distance: render::distance(Some(second.distance_m)),
             story: None,
         },
         series,
@@ -332,7 +328,7 @@ pub fn compare_candidates(api: &Api, request: &Request) -> ApiResult<Value> {
     let runs = api
         .store()
         .activities_between("0000-01-01", &current.to_iso())
-        .map_err(|_| ApiError::internal("the runs could not be read"))?;
+        .map_err(|error| api.store_error("the runs could not be read", &error))?;
     let candidates: Vec<CompareCandidate> = runs
         .iter()
         .take(super::MAX_RUNS_IN_ANSWER)
@@ -340,7 +336,7 @@ pub fn compare_candidates(api: &Api, request: &Request) -> ApiResult<Value> {
             id: run.id,
             label: run.name.clone(),
             date: run.local_date.clone(),
-            distance_m: run.distance_m,
+            distance: render::distance(Some(run.distance_m)),
         })
         .collect();
     // The shape the app consumes is a list of candidates; the envelope
@@ -351,25 +347,68 @@ pub fn compare_candidates(api: &Api, request: &Request) -> ApiResult<Value> {
 
 // ------------------------------------------------------------------ helpers
 
+/// The pace at the same heart rate, now and then.
+///
+/// The core renders the Progress headline from this: a lower pace at the
+/// same heart rate is a fitter athlete, and a higher one is not. The
+/// comparison needs two weeks at the same heart rate, so it is made only
+/// when the history has them.
+fn pace_at_hr_comparison(weeks: &[PaceAtHr]) -> Option<statement::PaceAtHr> {
+    let mut now_index = None;
+    for (index, week) in weeks.iter().enumerate().rev() {
+        let has_pace = week.pace.as_ref().and_then(|value| value.raw).is_some();
+        let has_heart_rate = week.hr.as_ref().and_then(|value| value.raw).is_some();
+        if has_pace && has_heart_rate {
+            now_index = Some(index);
+            break;
+        }
+    }
+    let now_index = now_index?;
+    let now = weeks.get(now_index)?;
+    let now_hr = now.hr.as_ref().and_then(|value| value.raw)?;
+    let now_pace = now.pace.as_ref().and_then(|value| value.raw)?;
+
+    // Eight weeks back, if there were eight weeks and the heart rate was
+    // the same then.
+    let then_index = now_index.checked_sub(WEEKS_APART)?;
+    let then = weeks.get(then_index)?;
+    let then_hr = then.hr.as_ref().and_then(|value| value.raw)?;
+    let then_pace = then.pace.as_ref().and_then(|value| value.raw)?;
+    if (then_hr - now_hr).abs() > SAME_HEART_RATE_TOLERANCE {
+        return None;
+    }
+    Some(statement::PaceAtHr {
+        now_s_per_km: now_pace,
+        then_s_per_km: then_pace,
+        weeks: (now_index - then_index) as u32,
+    })
+}
+
 /// One row of the diff.
+///
+/// The values are the core's rendering of them, with the numbers beside
+/// them. The **difference** is the core's to render as well, and the core
+/// does not render a difference yet — so the row carries no difference
+/// until it does.
 fn metric(
     key: &str,
     label_key: &str,
-    format: &str,
-    a: Option<f64>,
-    b: Option<f64>,
+    a: Option<crate::dto::RenderedValue>,
+    b: Option<crate::dto::RenderedValue>,
 ) -> CompareMetric {
-    let delta = match (a, b) {
-        (Some(a), Some(b)) => Some(b - a),
+    let delta = match (a.as_ref(), b.as_ref()) {
+        (Some(a), Some(b)) => match (a.raw, b.raw) {
+            (Some(a), Some(b)) => Some(b - a),
+            _ => None,
+        },
         _ => None,
     };
     CompareMetric {
         key: key.to_string(),
         label_key: label_key.to_string(),
-        format: format.to_string(),
         a,
         b,
-        delta,
+        delta: render::difference(delta),
     }
 }
 
@@ -378,7 +417,7 @@ fn read_run(api: &Api, id: i64) -> ApiResult<stride_store::Activity> {
     let run = api
         .store()
         .activity(id)
-        .map_err(|_| ApiError::internal("the run could not be read"))?;
+        .map_err(|error| api.store_error("the run could not be read", &error))?;
     match run {
         Some(run) => Ok(run),
         None => Err(ApiError::not_found(format!(
@@ -388,10 +427,7 @@ fn read_run(api: &Api, id: i64) -> ApiResult<stride_store::Activity> {
 }
 
 /// The source the plan's sessions came from.
-fn plan_source_of(
-    api: &Api,
-    sessions: &[stride_store::PlanSession],
-) -> String {
+fn plan_source_of(api: &Api, sessions: &[stride_store::PlanSession]) -> String {
     if sessions.is_empty() {
         return stride_store::model::plan_source::TYPED.to_string();
     }
@@ -418,18 +454,25 @@ fn render_session(
     let actual_distance_m = if runs.is_empty() {
         None
     } else {
-        Some(units::round_distance_m(
-            runs.iter().map(|run| run.distance_m).sum(),
-        ))
+        Some(
+            runs.iter()
+                .filter_map(|run| run.distance.as_ref().and_then(|value| value.raw))
+                .sum(),
+        )
     };
     let status = super::session_status(date, current, source, !runs.is_empty());
     Ok(crate::dto::PlanSession {
         date: session.date.clone(),
         session_type: session.session_type.clone(),
         title: session.title.clone(),
-        sentence: session_sentence(date, current, session.target_distance_m, &session.session_type),
-        target_distance_m: session.target_distance_m,
-        actual_distance_m,
+        sentence: session_sentence(
+            date,
+            current,
+            session.target_distance_m,
+            &session.session_type,
+        ),
+        target_distance: render::distance(session.target_distance_m),
+        actual_distance: render::distance(actual_distance_m),
         status: status.to_string(),
         source: source.to_string(),
     })

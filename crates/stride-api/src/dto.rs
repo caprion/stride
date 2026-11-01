@@ -1,18 +1,22 @@
 //! The response shapes — one type per route.
 //!
 //! The shapes are the contract: the app consumes them, so they are written
-//! down here and nowhere else. Three rules shape every one of them.
+//! down here and nowhere else. Four rules shape every one of them.
 //!
 //! * **The core's sentences travel as text.** A direction word, the
-//!   arithmetic, the direction of travel, the "Rest" line and a pattern
-//!   sentence are rendered by `stride-core` and arrive here already
-//!   written. There is no template in this crate and no hole in a string:
-//!   a sentence with a `{placeholder}` in it is the core's business, not
-//!   this crate's.
+//!   arithmetic, the direction of travel, the "Rest" line, a pattern
+//!   sentence and the three statements are rendered by `stride-core` and
+//!   arrive here already written. There is no template in this crate and no
+//!   hole in a string: a sentence with a `{placeholder}` in it is the
+//!   core's business, not this crate's.
+//! * **The core's values travel as text and as a number.** A domain value
+//!   crosses the wire as a [`RenderedValue`]: the core's words *and* the
+//!   raw number a chart draws. There is no `format:` hint — a hint tells
+//!   the app how to render, which is the hole the contract closes.
 //! * **"No value" is `null`.** A missing measurement is `None`, never `0`.
 //!   The fields that may be absent are `Option`, and the fields that are
 //!   always there are not.
-//! * **Every response carries `generated_at`.** The UI shows staleness
+//! * **Every response carries `generated_at`.** The app shows staleness
 //!   rather than silently showing old numbers.
 //!
 //! The names are the app's own (`frontend/src/lib/types.ts`): where the app
@@ -20,6 +24,19 @@
 //! keys, the same nullability — so the two cannot drift.
 
 use serde::Serialize;
+
+/// A domain value, as the core renders it.
+///
+/// `text` is the core's words ("8.4 km", "42 m", "148 bpm"); `raw` is the
+/// number, for a chart. `raw` is `None` when there is no value, and then
+/// `text` is empty — never "0", never "0 km".
+#[derive(Clone, Debug, PartialEq, Serialize)]
+pub struct RenderedValue {
+    /// The core's words.
+    pub text: String,
+    /// The number, for a chart. `None` when there is no value.
+    pub raw: Option<f64>,
+}
 
 // ---------------------------------------------------------------- activities
 
@@ -36,22 +53,22 @@ pub struct ActivitySummary {
     pub start_time: String,
     /// The athlete's local date.
     pub local_date: String,
-    /// The distance, in metres.
-    pub distance_m: f64,
-    /// The moving time, in seconds.
-    pub moving_time_s: f64,
-    /// The elapsed time, in seconds.
-    pub elapsed_time_s: f64,
-    /// The average heart rate. `null` when the watch reported none.
-    pub avg_hr: Option<f64>,
-    /// The maximum heart rate. `null` when the watch reported none.
-    pub max_hr: Option<f64>,
-    /// The average cadence. `null` when the watch reported none.
-    pub avg_cadence: Option<f64>,
-    /// The elevation gain, in metres.
-    pub elevation_gain_m: Option<f64>,
-    /// The pace, in seconds per kilometre. `null` when there is no distance.
-    pub pace_s_per_km: Option<f64>,
+    /// The distance, as the core renders it.
+    pub distance: Option<RenderedValue>,
+    /// The moving time, as the core renders it.
+    pub moving_time: Option<RenderedValue>,
+    /// The elapsed time, as the core renders it.
+    pub elapsed_time: Option<RenderedValue>,
+    /// The average heart rate, as the core renders it.
+    pub avg_hr: Option<RenderedValue>,
+    /// The maximum heart rate, as the core renders it.
+    pub max_hr: Option<RenderedValue>,
+    /// The average cadence, as the core renders it.
+    pub avg_cadence: Option<RenderedValue>,
+    /// The elevation gain, as the core renders it.
+    pub elevation_gain: Option<RenderedValue>,
+    /// The pace, as the core renders it.
+    pub pace: Option<RenderedValue>,
     /// The one sentence about what the run meant.
     ///
     /// `null` until the core has a story engine: the sentence is the core's
@@ -77,21 +94,21 @@ pub struct ActivityListResponse {
 pub struct Split {
     /// The split's number, from one.
     pub index: i64,
-    /// The split's distance, in metres.
-    pub distance_m: f64,
-    /// The split's duration, in seconds.
-    pub duration_s: f64,
-    /// The average heart rate over the split. `null` when there was none.
-    pub avg_hr: Option<f64>,
+    /// The split's distance, as the core renders it.
+    pub distance: Option<RenderedValue>,
+    /// The split's duration, as the core renders it.
+    pub duration: Option<RenderedValue>,
+    /// The average heart rate over the split, as the core renders it.
+    pub avg_hr: Option<RenderedValue>,
 }
 
 /// One point of the elevation profile.
 #[derive(Clone, Debug, PartialEq, Serialize)]
 pub struct ElevationPoint {
-    /// The distance from the start, in metres.
-    pub distance_m: f64,
-    /// The altitude, in metres.
-    pub elevation_m: f64,
+    /// The distance from the start, as the core renders it.
+    pub distance: Option<RenderedValue>,
+    /// The altitude, as the core renders it.
+    pub elevation: Option<RenderedValue>,
 }
 
 /// One point of the run's series.
@@ -99,19 +116,19 @@ pub struct ElevationPoint {
 pub struct SamplePoint {
     /// The seconds from the start of the run.
     pub offset_s: f64,
-    /// The pace over the sample, in seconds per kilometre.
-    pub pace_s_per_km: Option<f64>,
-    /// The heart rate over the sample.
-    pub hr: Option<f64>,
+    /// The pace over the sample, as the core renders it.
+    pub pace: Option<RenderedValue>,
+    /// The heart rate over the sample, as the core renders it.
+    pub hr: Option<RenderedValue>,
 }
 
 /// The plan's line under a run: what was planned and what was run.
 #[derive(Clone, Debug, PartialEq, Serialize)]
 pub struct PlanLine {
-    /// The distance that was run, in metres.
-    pub actual_distance_m: f64,
-    /// The distance that was planned, in metres.
-    pub target_distance_m: f64,
+    /// The distance that was run, as the core renders it.
+    pub actual: Option<RenderedValue>,
+    /// The distance that was planned, as the core renders it.
+    pub target: Option<RenderedValue>,
 }
 
 /// One run, in full.
@@ -139,22 +156,22 @@ pub struct ActivityDetail {
 pub struct PhysiologyDay {
     /// The athlete's local date.
     pub date: String,
-    /// The sleep, in seconds.
-    pub sleep_s: Option<f64>,
-    /// The deep sleep, in seconds.
-    pub deep_sleep_s: Option<f64>,
-    /// The REM sleep, in seconds.
-    pub rem_sleep_s: Option<f64>,
-    /// The light sleep, in seconds.
-    pub light_sleep_s: Option<f64>,
-    /// The time awake, in seconds.
-    pub awake_s: Option<f64>,
-    /// The heart-rate variability, in milliseconds.
-    pub hrv_ms: Option<f64>,
-    /// The resting heart rate, in beats per minute.
-    pub resting_hr: Option<f64>,
-    /// The average stress, where the watch reported one.
-    pub stress_avg: Option<f64>,
+    /// The sleep, as the core renders it.
+    pub sleep: Option<RenderedValue>,
+    /// The deep sleep, as the core renders it.
+    pub deep_sleep: Option<RenderedValue>,
+    /// The REM sleep, as the core renders it.
+    pub rem_sleep: Option<RenderedValue>,
+    /// The light sleep, as the core renders it.
+    pub light_sleep: Option<RenderedValue>,
+    /// The time awake, as the core renders it.
+    pub awake: Option<RenderedValue>,
+    /// The heart-rate variability, as the core renders it.
+    pub hrv: Option<RenderedValue>,
+    /// The resting heart rate, as the core renders it.
+    pub resting_hr: Option<RenderedValue>,
+    /// The average stress, as the core renders it.
+    pub stress: Option<RenderedValue>,
     /// Where the row came from.
     pub source: String,
 }
@@ -173,16 +190,16 @@ pub struct PhysiologyDays {
 pub struct SleepDay {
     /// The athlete's local date.
     pub date: String,
-    /// The sleep, in seconds.
-    pub sleep_s: Option<f64>,
-    /// The deep sleep, in seconds.
-    pub deep_sleep_s: Option<f64>,
-    /// The REM sleep, in seconds.
-    pub rem_sleep_s: Option<f64>,
-    /// The light sleep, in seconds.
-    pub light_sleep_s: Option<f64>,
-    /// The time awake, in seconds.
-    pub awake_s: Option<f64>,
+    /// The sleep, as the core renders it.
+    pub sleep: Option<RenderedValue>,
+    /// The deep sleep, as the core renders it.
+    pub deep_sleep: Option<RenderedValue>,
+    /// The REM sleep, as the core renders it.
+    pub rem_sleep: Option<RenderedValue>,
+    /// The light sleep, as the core renders it.
+    pub light_sleep: Option<RenderedValue>,
+    /// The time awake, as the core renders it.
+    pub awake: Option<RenderedValue>,
 }
 
 /// The nights of sleep.
@@ -199,10 +216,10 @@ pub struct SleepDays {
 pub struct HrvDay {
     /// The athlete's local date.
     pub date: String,
-    /// The heart-rate variability, in milliseconds.
-    pub hrv_ms: Option<f64>,
-    /// The resting heart rate, in beats per minute.
-    pub resting_hr: Option<f64>,
+    /// The heart-rate variability, as the core renders it.
+    pub hrv: Option<RenderedValue>,
+    /// The resting heart rate, as the core renders it.
+    pub resting_hr: Option<RenderedValue>,
 }
 
 /// The mornings.
@@ -341,20 +358,20 @@ pub struct Fingerprint {
     pub activity_id: i64,
     /// The athlete's local date.
     pub local_date: String,
-    /// The distance, in metres.
-    pub distance_m: f64,
-    /// The moving time, in seconds.
-    pub moving_time_s: f64,
-    /// The average heart rate.
-    pub avg_hr: Option<f64>,
-    /// The maximum heart rate.
-    pub max_hr: Option<f64>,
-    /// The average cadence, in steps per minute.
-    pub avg_cadence: Option<f64>,
-    /// The pace, in seconds per kilometre.
-    pub pace_s_per_km: Option<f64>,
-    /// The elevation gain, in metres.
-    pub elevation_gain_m: f64,
+    /// The distance, as the core renders it.
+    pub distance: Option<RenderedValue>,
+    /// The moving time, as the core renders it.
+    pub moving_time: Option<RenderedValue>,
+    /// The average heart rate, as the core renders it.
+    pub avg_hr: Option<RenderedValue>,
+    /// The maximum heart rate, as the core renders it.
+    pub max_hr: Option<RenderedValue>,
+    /// The average cadence, as the core renders it.
+    pub avg_cadence: Option<RenderedValue>,
+    /// The pace, as the core renders it.
+    pub pace: Option<RenderedValue>,
+    /// The elevation gain, as the core renders it.
+    pub elevation_gain: Option<RenderedValue>,
 }
 
 /// The fingerprints of the runs that have been synced.
@@ -371,8 +388,8 @@ pub struct Fingerprints {
 pub struct TrendPoint {
     /// The athlete's local date.
     pub date: String,
-    /// The value on that day.
-    pub value: f64,
+    /// The value on that day, as the core renders it.
+    pub value: Option<RenderedValue>,
 }
 
 /// One measured trend.
@@ -387,7 +404,7 @@ pub struct Trend {
     /// The points, oldest first.
     pub points: Vec<TrendPoint>,
     /// The median of the points, when there are any.
-    pub baseline: Option<f64>,
+    pub baseline: Option<RenderedValue>,
 }
 
 /// The measured trends.
@@ -432,16 +449,16 @@ pub struct Zones {
 pub struct Totals {
     /// How many runs there are.
     pub activity_count: i64,
-    /// The distance, in metres.
-    pub distance_m: f64,
-    /// The elevation gain, in metres.
-    pub elevation_gain_m: f64,
-    /// The moving time, in seconds.
-    pub moving_time_s: f64,
-    /// The average pace, in seconds per kilometre.
-    pub avg_pace_s_per_km: Option<f64>,
-    /// The average heart rate.
-    pub avg_hr: Option<f64>,
+    /// The distance, as the core renders it.
+    pub distance: Option<RenderedValue>,
+    /// The elevation gain, as the core renders it.
+    pub elevation_gain: Option<RenderedValue>,
+    /// The moving time, as the core renders it.
+    pub moving_time: Option<RenderedValue>,
+    /// The average pace, as the core renders it.
+    pub avg_pace: Option<RenderedValue>,
+    /// The average heart rate, as the core renders it.
+    pub avg_hr: Option<RenderedValue>,
 }
 
 /// The totals, over four windows.
@@ -466,14 +483,14 @@ pub struct WeekTotals {
     pub week_start: String,
     /// How many runs there are.
     pub activity_count: i64,
-    /// The distance, in metres.
-    pub distance_m: f64,
-    /// The moving time, in seconds.
-    pub moving_time_s: f64,
-    /// The elevation gain, in metres.
-    pub elevation_gain_m: f64,
-    /// The average pace, in seconds per kilometre.
-    pub avg_pace_s_per_km: Option<f64>,
+    /// The distance, as the core renders it.
+    pub distance: Option<RenderedValue>,
+    /// The moving time, as the core renders it.
+    pub moving_time: Option<RenderedValue>,
+    /// The elevation gain, as the core renders it.
+    pub elevation_gain: Option<RenderedValue>,
+    /// The average pace, as the core renders it.
+    pub avg_pace: Option<RenderedValue>,
 }
 
 /// The weeks of running.
@@ -492,10 +509,10 @@ pub struct PaceWeek {
     pub week_start: String,
     /// How many runs there are.
     pub run_count: i64,
-    /// The median pace, in seconds per kilometre.
-    pub median_pace_s_per_km: Option<f64>,
-    /// The fastest pace, in seconds per kilometre.
-    pub best_pace_s_per_km: Option<f64>,
+    /// The median pace, as the core renders it.
+    pub median_pace: Option<RenderedValue>,
+    /// The fastest pace, as the core renders it.
+    pub best_pace: Option<RenderedValue>,
 }
 
 /// The pace, week by week.
@@ -512,8 +529,8 @@ pub struct PaceTrends {
 pub struct ElevationWeek {
     /// The first day of the week.
     pub week_start: String,
-    /// The elevation gain, in metres.
-    pub elevation_gain_m: f64,
+    /// The elevation gain, as the core renders it.
+    pub elevation_gain: Option<RenderedValue>,
 }
 
 /// The climbing, week by week.
@@ -532,10 +549,8 @@ pub struct PersonalRecord {
     pub key: String,
     /// The record's label.
     pub label: String,
-    /// The value, in the record's own unit.
-    pub value: f64,
-    /// The value, as the app shows it.
-    pub display: String,
+    /// The value, as the core renders it.
+    pub value: Option<RenderedValue>,
     /// The run the record was set in.
     pub activity_id: i64,
     /// The day the record was set on.
@@ -564,10 +579,10 @@ pub struct PlanSession {
     pub title: Option<String>,
     /// The session, already rendered: "Today — 10 km · easy".
     pub sentence: String,
-    /// The target distance, in metres.
-    pub target_distance_m: Option<f64>,
-    /// The distance that was run, in metres.
-    pub actual_distance_m: Option<f64>,
+    /// The target distance, as the core renders it.
+    pub target_distance: Option<RenderedValue>,
+    /// The distance that was run, as the core renders it.
+    pub actual_distance: Option<RenderedValue>,
     /// `done`, `planned` or `not_done`.
     pub status: String,
     /// Where the plan came from: `baseline`, `prescribed` or `typed`.
@@ -606,8 +621,8 @@ pub struct PlanWeek {
     pub week_start: String,
     /// The last day of the week.
     pub week_end: String,
-    /// The week's target, in kilometres.
-    pub target_km: Option<f64>,
+    /// The week's target, as the core renders it.
+    pub target: Option<RenderedValue>,
     /// The week's sessions, in the order they fall.
     pub sessions: Vec<PlanSession>,
     /// How many of the week's sessions were run.
@@ -705,10 +720,10 @@ pub struct PlanResult {
     pub session_type: String,
     /// `done`, `planned` or `not_done`.
     pub status: String,
-    /// The distance that was planned, in metres.
-    pub target_distance_m: Option<f64>,
-    /// The distance that was run, in metres.
-    pub actual_distance_m: Option<f64>,
+    /// The distance that was planned, as the core renders it.
+    pub target_distance: Option<RenderedValue>,
+    /// The distance that was run, as the core renders it.
+    pub actual_distance: Option<RenderedValue>,
 }
 
 /// The plan's results.
@@ -759,10 +774,10 @@ pub struct TodayInsight {
 }
 
 /// This week's running.
-#[derive(Clone, Copy, Debug, PartialEq, Serialize)]
+#[derive(Clone, Debug, PartialEq, Serialize)]
 pub struct WeekRunning {
-    /// The distance, in metres.
-    pub distance_m: f64,
+    /// The distance, as the core renders it.
+    pub distance: Option<RenderedValue>,
     /// How many runs there were.
     pub sessions: usize,
 }
@@ -772,8 +787,8 @@ pub struct WeekRunning {
 pub struct WeeklyVolume {
     /// The first day of the week.
     pub week_start: String,
-    /// The distance, in metres.
-    pub distance_m: f64,
+    /// The distance, as the core renders it.
+    pub distance: Option<RenderedValue>,
 }
 
 /// One week of pace at a heart rate.
@@ -781,10 +796,10 @@ pub struct WeeklyVolume {
 pub struct PaceAtHr {
     /// The first day of the week.
     pub week_start: String,
-    /// The median pace of the week, in seconds per kilometre.
-    pub pace_s_per_km: Option<f64>,
-    /// The median heart rate of the week.
-    pub hr: Option<f64>,
+    /// The median pace of the week, as the core renders it.
+    pub pace: Option<RenderedValue>,
+    /// The median heart rate of the week, as the core renders it.
+    pub hr: Option<RenderedValue>,
 }
 
 /// One best.
@@ -792,8 +807,8 @@ pub struct PaceAtHr {
 pub struct Best {
     /// The catalogue key that names the row.
     pub key: String,
-    /// The value, as the app shows it.
-    pub value: String,
+    /// The value, as the core renders it.
+    pub value: Option<RenderedValue>,
     /// The day it was set on.
     pub date: String,
 }
@@ -818,8 +833,8 @@ pub struct ProgressInsight {
     pub headline_note: Option<String>,
     /// The volume, week by week.
     pub weekly_volume: Vec<WeeklyVolume>,
-    /// The typical week, in metres.
-    pub typical_week_m: Option<f64>,
+    /// The typical week, as the core renders it.
+    pub typical_week: Option<RenderedValue>,
     /// The pace at a heart rate, week by week.
     pub pace_at_hr: Vec<PaceAtHr>,
     /// The bests.
@@ -837,8 +852,8 @@ pub struct Chip {
     pub key: String,
     /// The chip's label.
     pub label: String,
-    /// The chip's value, as the app shows it.
-    pub value: String,
+    /// The chip's value, as the core renders it.
+    pub value: Option<RenderedValue>,
 }
 
 /// The chips of one run.
@@ -861,14 +876,12 @@ pub struct CompareMetric {
     pub key: String,
     /// The catalogue key that names the row.
     pub label_key: String,
-    /// How the value is rendered.
-    pub format: String,
-    /// The first run's value.
-    pub a: Option<f64>,
-    /// The second run's value.
-    pub b: Option<f64>,
+    /// The first run's value, as the core renders it.
+    pub a: Option<RenderedValue>,
+    /// The second run's value, as the core renders it.
+    pub b: Option<RenderedValue>,
     /// B − A, in the metric's own unit.
-    pub delta: Option<f64>,
+    pub delta: Option<RenderedValue>,
 }
 
 /// The identity of a run, in a comparison.
@@ -880,8 +893,8 @@ pub struct CompareRun {
     pub label: String,
     /// The day of the run.
     pub date: String,
-    /// The distance, in metres.
-    pub distance_m: f64,
+    /// The distance, as the core renders it.
+    pub distance: Option<RenderedValue>,
     /// The one sentence about what the run meant.
     pub story: Option<String>,
 }
@@ -919,8 +932,8 @@ pub struct CompareCandidate {
     pub label: String,
     /// The day of the run.
     pub date: String,
-    /// The distance, in metres.
-    pub distance_m: f64,
+    /// The distance, as the core renders it.
+    pub distance: Option<RenderedValue>,
 }
 
 // ---------------------------------------------------------------------- app
@@ -990,8 +1003,8 @@ pub struct SyncedRun {
     pub name: String,
     /// The day of the run.
     pub local_date: String,
-    /// The distance, in metres.
-    pub distance_m: f64,
+    /// The distance, as the core renders it.
+    pub distance: Option<RenderedValue>,
     /// When the run was synced.
     pub updated_at: String,
 }
@@ -1093,10 +1106,10 @@ pub struct CalendarDay {
     pub day: u32,
     /// The runs of the day.
     pub activities: Vec<ActivitySummary>,
-    /// The distance of the day, in metres.
-    pub distance_m: f64,
-    /// The moving time of the day, in seconds.
-    pub moving_time_s: f64,
+    /// The distance of the day, as the core renders it.
+    pub distance: Option<RenderedValue>,
+    /// The moving time of the day, as the core renders it.
+    pub moving_time: Option<RenderedValue>,
 }
 
 /// The local month calendar.

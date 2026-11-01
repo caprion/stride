@@ -11,6 +11,10 @@
 //! The cut routes are checked too: the contract names them as well, and
 //! they are the routes that must never come back.
 
+// The tests are allowed to panic and to expect: they are a separate crate,
+// not a `#[cfg(test)]` module, so the lint configuration does not reach them.
+#![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
+
 mod common;
 
 use std::collections::BTreeSet;
@@ -245,7 +249,6 @@ fn a_path_that_is_not_a_route_is_not_answered() {
         "/network/status",
         "/tiles/policy",
         "/gear",
-        "/auth/pair-code",
         "/auth/garmin/developer-key",
         "/insights",
         "/plan",
@@ -264,7 +267,9 @@ fn a_path_that_is_not_a_route_is_not_answered() {
 fn the_query_string_is_not_part_of_the_route() {
     let harness = common::Harness::empty("query");
     let plain = harness.router.call("GET", "/activities", None);
-    let with_query = harness.router.call("GET", "/activities?limit=5&since=2026-01-01", None);
+    let with_query = harness
+        .router
+        .call("GET", "/activities?limit=5&since=2026-01-01", None);
     assert_eq!(plain.status, with_query.status);
     assert!(harness.router.route_at("/activities?x=1").is_some());
 }

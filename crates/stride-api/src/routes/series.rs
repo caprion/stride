@@ -12,6 +12,7 @@
 use stride_ingest::{decode_fit, FitActivity, MAX_FIT_INPUT_BYTES};
 
 use crate::dto::{ElevationPoint, SamplePoint, Split};
+use crate::render;
 use crate::state::Api;
 use stride_core::units;
 
@@ -39,9 +40,9 @@ pub fn splits(activity: &FitActivity) -> Vec<Split> {
         .iter()
         .map(|lap| Split {
             index: lap.lap_index,
-            distance_m: units::round_lap_distance_m(lap.distance_m),
-            duration_s: units::round_time_s(lap.duration_s),
-            avg_hr: lap.avg_hr.map(|rate| rate as f64),
+            distance: render::distance(Some(lap.distance_m)),
+            duration: render::duration(Some(lap.duration_s)),
+            avg_hr: render::heart_rate(lap.avg_hr.map(|rate| rate as f64)),
         })
         .collect()
 }
@@ -59,8 +60,8 @@ pub fn elevation(activity: &FitActivity, cap: usize) -> Vec<ElevationPoint> {
             let distance = sample.distance_m?;
             let altitude = sample.altitude_m?;
             Some(ElevationPoint {
-                distance_m: units::round_distance_m(distance),
-                elevation_m: units::round_distance_m(altitude),
+                distance: render::distance(Some(distance)),
+                elevation: render::altitude(Some(altitude)),
             })
         })
         .collect();
@@ -75,13 +76,13 @@ pub fn samples(activity: &FitActivity, cap: usize) -> Vec<SamplePoint> {
         .iter()
         .map(|sample| SamplePoint {
             offset_s: units::round_time_s(sample.elapsed_s),
-            pace_s_per_km: sample.speed_ms.and_then(|speed| {
+            pace: render::pace(sample.speed_ms.and_then(|speed| {
                 if speed <= 0.0 {
                     return None;
                 }
                 Some(units::round_pace_s_per_km(1000.0 / speed))
-            }),
-            hr: sample.heart_rate_bpm,
+            })),
+            hr: render::heart_rate(sample.heart_rate_bpm),
         })
         .collect();
     thin(&mut points, cap);
@@ -91,7 +92,12 @@ pub fn samples(activity: &FitActivity, cap: usize) -> Vec<SamplePoint> {
 /// The route of a run: the first and the last points the file carries.
 pub fn geo_points(activity: &FitActivity) -> Vec<[f64; 2]> {
     let mut points: Vec<[f64; 2]> = Vec::new();
-    for point in activity.geo_points.first.iter().chain(activity.geo_points.last.iter()) {
+    for point in activity
+        .geo_points
+        .first
+        .iter()
+        .chain(activity.geo_points.last.iter())
+    {
         let latitude = units::round_gps_degrees(point[0]);
         let longitude = units::round_gps_degrees(point[1]);
         points.push([latitude, longitude]);

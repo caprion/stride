@@ -11,6 +11,7 @@
 //! |---|---|
 //! | [`router`] | the dispatcher: route → handler → JSON, and the frozen route table |
 //! | [`dto`] | the response shapes, one type per route |
+//! | [`render`] | the rendered value: the core's words, and the number for a chart |
 //! | [`state`] | the shared state: the store, the Garmin key, the configuration, the clock |
 //! | [`error`] | the typed failures and the envelope they travel in |
 //! | [`ffi`] | the FFI surface: JSON in, JSON out, and the panic boundary |
@@ -19,11 +20,15 @@
 //! ## The rules this crate keeps
 //!
 //! * **The core renders the sentences and the numbers.** A direction word,
-//!   the arithmetic beside it, the direction of travel, the "Rest" line and
-//!   a pattern sentence are written by `stride-core` and travel to the UI
-//!   already written. This crate never rounds a number on its own — every
-//!   rounding rule is the core's — and it never writes a domain sentence of
-//!   its own.
+//!   the arithmetic beside it, the direction of travel, the "Rest" line, a
+//!   pattern sentence and the three statements — the distance comparison,
+//!   the Progress headline, the Compare basis — are written by
+//!   `stride-core` and travel to the UI already written. A domain value
+//!   crosses the wire as a [`RenderedValue`]: the core's words *and* the
+//!   raw number a chart draws. There is no `format:` hint — a hint tells
+//!   the app how to render, which is the hole the contract closes. This
+//!   crate never rounds a number on its own and never writes a domain
+//!   sentence of its own.
 //! * **"No value" is `null`, never `0`.** A missing reading is `None`, and
 //!   the fields that may be absent are `Option`.
 //! * **The Garmin key never enters a response.** It arrives as an argument,
@@ -39,7 +44,17 @@
 //!   through the ingest crate's own ceiling.
 //! * **The failures are typed.** `no_plan`, `stale_data`,
 //!   `not_enough_history`, `garmin_rejected`, `needs_reconnect`,
-//!   `not_found`, `bad_request` — each one is a sentence the app can show.
+//!   `not_found`, `bad_request`, `locked` — each one is a sentence the app
+//!   can show.
+//!
+//! ## The answer is the body
+//!
+//! The router answers with the response **body** — the DTO, and nothing
+//! around it (`docs/contract/api-paths.md`, "The shape of an answer"). The
+//! host puts the status in the status line: the desktop's HTTP layer, or
+//! the phone's bridge, which rejects the call when the router failed. The
+//! FFI's own envelope is the seam's business (`android/…/stride-ffi`),
+//! and the two hosts hand the app the same bytes.
 //!
 //! ## The route table is frozen
 //!
@@ -73,10 +88,12 @@
 pub mod dto;
 pub mod error;
 pub mod ffi;
-pub mod routes;
+pub mod render;
 pub mod router;
+pub mod routes;
 pub mod state;
 
+pub use dto::RenderedValue;
 pub use error::{ApiError, ApiResult, ErrorEnvelope, ErrorKind};
 pub use router::{Method, Request, Response, Route, Router, ROUTES};
 pub use state::{Api, Clock, Config, FixedClock, GarminKey, SystemClock};

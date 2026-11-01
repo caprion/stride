@@ -25,12 +25,15 @@ use serde::Serialize;
 use serde_json::Value;
 use stride_core::band;
 use stride_core::date::Date;
+use stride_core::statement;
+use stride_core::types::Distance;
 use stride_core::types::{Duration, Hrv, RestingHr, Sleep, Vitals, WellnessDay};
 use stride_core::units;
 use stride_store::{ActivitySummary as StoredActivity, WellnessDaily};
 
 use crate::dto::{ActivitySummary, PersonalRecord};
 use crate::error::{ApiError, ApiResult};
+use crate::render;
 use crate::state::Api;
 
 /// The most runs one answer may carry.
@@ -136,6 +139,9 @@ pub fn pace_of(distance_m: f64, moving_time_s: f64) -> Option<f64> {
 }
 
 /// One run, as the feed shows it.
+///
+/// Every measurement in the row is the core's rendering of it, with the
+/// number beside it for the chart. Nothing here formats a value.
 pub fn activity_summary(activity: &StoredActivity) -> ActivitySummary {
     ActivitySummary {
         id: activity.id,
@@ -143,14 +149,14 @@ pub fn activity_summary(activity: &StoredActivity) -> ActivitySummary {
         sport_type: activity.sport_type.clone(),
         start_time: crate::state::format_instant(activity.start_time),
         local_date: activity.local_date.clone(),
-        distance_m: activity.distance_m,
-        moving_time_s: units::round_time_s(activity.moving_time_s),
-        elapsed_time_s: units::round_time_s(activity.elapsed_time_s),
-        avg_hr: activity.avg_hr,
-        max_hr: activity.max_hr,
-        avg_cadence: None,
-        elevation_gain_m: Some(activity.elevation_gain_m),
-        pace_s_per_km: pace_of(activity.distance_m, activity.moving_time_s),
+        distance: render::distance(Some(activity.distance_m)),
+        moving_time: render::duration(Some(activity.moving_time_s)),
+        elapsed_time: render::duration(Some(activity.elapsed_time_s)),
+        avg_hr: render::heart_rate(activity.avg_hr),
+        max_hr: render::heart_rate(activity.max_hr),
+        avg_cadence: render::cadence(None),
+        elevation_gain: render::altitude(Some(activity.elevation_gain_m)),
+        pace: render::pace(pace_of(activity.distance_m, activity.moving_time_s)),
         story: None,
         geo_points: Vec::new(),
     }
@@ -181,39 +187,23 @@ pub fn median(values: &[f64]) -> Option<f64> {
 
 /// The distance comparison, when there is one.
 ///
-/// The core contract §5: the comparison is shown only when the gap from
-/// the target is beyond 10%, and it is stated neutrally — "2.4 km more than
-/// the 10 km target". Within 10% it is absent: 10.2 km against a 10 km
-/// target is not news.
-///
-/// The catalogue has no entry for this sentence yet, so it is written here
-/// from the contract's wording, with the numbers the core's units render.
+/// **The core renders it.** The comparison is a statement — "2.4 km more
+/// than the 10 km target" — and the core states it only when the gap from
+/// the target is beyond 10% (the contract §5). Within 10% it is absent:
+/// 10.2 km against a 10 km target is not news.
 pub fn distance_comparison(actual_m: Option<f64>, target_m: Option<f64>) -> Option<String> {
-    let actual = actual_m?;
-    let target = target_m?;
-    if target <= 0.0 {
-        return None;
-    }
-    let gap = actual - target;
-    if gap.abs() <= target * 0.1 {
-        return None;
-    }
-    let gap_text = units::format_distance_km_short(gap.abs());
-    let target_text = units::format_distance_km_short(target);
-    if gap > 0.0 {
-        Some(format!("{gap_text} km more than the {target_text} km target"))
-    } else {
-        Some(format!("{gap_text} km less than the {target_text} km target"))
-    }
+    let actual = Distance::from_metres(actual_m?)?;
+    let target = Distance::from_metres(target_m?)?;
+    statement::distance_comparison(actual, target)
 }
 
 /// The summary of a planned session: "10 km · easy".
+///
+/// The distance is the core's own rendering of it, and the session type is
+/// the plan's own vocabulary.
 pub fn session_summary(target_distance_m: Option<f64>, session_type: &str) -> String {
-    match target_distance_m {
-        Some(distance) => format!(
-            "{} km · {session_type}",
-            units::format_distance_km_short(distance)
-        ),
+    match target_distance_m.and_then(Distance::from_metres) {
+        Some(distance) => format!("{} · {session_type}", distance.to_human()),
         None => session_type.to_string(),
     }
 }
@@ -236,8 +226,11 @@ pub fn session_sentence(
             .unwrap_or(summary);
     }
     let label = day_label(day);
-    stride_core::strings::render("option.other_session", &[("day", &label), ("summary", &summary)])
-        .unwrap_or(summary)
+    stride_core::strings::render(
+        "option.other_session",
+        &[("day", &label), ("summary", &summary)],
+    )
+    .unwrap_or(summary)
 }
 
 /// Whether a planned session was run.
@@ -245,12 +238,7 @@ pub fn session_sentence(
 /// The status is computed on read: a stored verdict would be a judgement
 /// the plan forbids. A **baseline** never yields "not done" — an inferred
 /// baseline is not a prescription, and the plan says so.
-pub fn session_status(
-    date: Date,
-    today: Date,
-    source: &str,
-    ran: bool,
-) -> &'static str {
+pub fn session_status(date: Date, today: Date, source: &str, ran: bool) -> &'static str {
     if ran {
         return "done";
     }
@@ -293,8 +281,7 @@ pub fn personal_records(api: &Api, runs: &[StoredActivity]) -> ApiResult<Vec<Per
         records.push(PersonalRecord {
             key: "progress.best.longest".to_string(),
             label: "Longest run".to_string(),
-            value: units::round_distance_m(longest.distance_m),
-            display: units::format_distance_km_short(longest.distance_m),
+            value: render::distance(Some(longest.distance_m)),
             activity_id: longest.id,
             activity_date: longest.local_date.clone(),
         });
@@ -324,8 +311,7 @@ pub fn personal_records(api: &Api, runs: &[StoredActivity]) -> ApiResult<Vec<Per
             records.push(PersonalRecord {
                 key: key.to_string(),
                 label: label.to_string(),
-                value: units::round_time_s(seconds),
-                display: units::format_duration(seconds),
+                value: render::duration(Some(seconds)),
                 activity_id: run.id,
                 activity_date: run.local_date.clone(),
             });

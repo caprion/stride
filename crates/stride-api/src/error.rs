@@ -46,6 +46,12 @@ pub enum ErrorKind {
     NotFound,
     /// The request could not be read.
     BadRequest,
+    /// The phone is locked, and the data is behind the lock.
+    ///
+    /// The shell refuses the data routes on a locked screen before the
+    /// core is asked for anything; this is the same refusal, seen from
+    /// here: the database key is not available.
+    Locked,
     /// The router itself could not answer.
     ///
     /// This one is a bug, not a business failure: it is the only kind that
@@ -69,6 +75,7 @@ impl ErrorKind {
             ErrorKind::NeedsReconnect => "needs_reconnect",
             ErrorKind::NotFound => "not_found",
             ErrorKind::BadRequest => "bad_request",
+            ErrorKind::Locked => "locked",
             ErrorKind::Internal => "internal",
         }
     }
@@ -83,6 +90,7 @@ impl ErrorKind {
             ErrorKind::NeedsReconnect => 401,
             ErrorKind::NotFound => 404,
             ErrorKind::BadRequest => 400,
+            ErrorKind::Locked => 403,
             ErrorKind::Internal => 500,
         }
     }
@@ -138,6 +146,11 @@ impl ApiError {
     /// The request could not be read.
     pub fn bad_request(detail: impl Into<String>) -> Self {
         Self::new(ErrorKind::BadRequest, detail)
+    }
+
+    /// The data is behind a lock.
+    pub fn locked(detail: impl Into<String>) -> Self {
+        Self::new(ErrorKind::Locked, detail)
     }
 
     /// The router could not answer.

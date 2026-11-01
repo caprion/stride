@@ -9,6 +9,10 @@
 //! The lint is the core's, not this crate's: a second list of banned words
 //! is a second rule, and two rules drift.
 
+// The tests are allowed to panic and to expect: they are a separate crate,
+// not a `#[cfg(test)]` module, so the lint configuration does not reach them.
+#![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
+
 mod common;
 
 use stride_core::strings::lint::{self, Rule};
@@ -115,7 +119,13 @@ fn the_progress_headline_breaks_no_rule() {
 #[test]
 fn the_direction_words_are_the_closed_set() {
     let harness = common::Harness::empty("voice-direction");
-    for date in ["2026-05-07", "2026-05-08", "2026-05-09", "2026-05-10", "2026-05-11"] {
+    for date in [
+        "2026-05-07",
+        "2026-05-08",
+        "2026-05-09",
+        "2026-05-10",
+        "2026-05-11",
+    ] {
         harness.write_wellness(common::wellness_with(
             date,
             Some(22_200.0),

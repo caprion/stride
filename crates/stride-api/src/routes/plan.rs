@@ -12,15 +12,17 @@
 
 use serde_json::Value;
 use stride_core::date::Date;
-use stride_core::units;
 use stride_store::model::{plan_source, plan_status};
-use stride_store::{NewPlanBlock, NewPlanSession, PlanBlock as StoredBlock, PlanSession as StoredSession};
+use stride_store::{
+    NewPlanBlock, NewPlanSession, PlanBlock as StoredBlock, PlanSession as StoredSession,
+};
 
 use crate::dto::{
     Adherence, AdherenceWeek, CurrentPlan, PlanAdherence, PlanBlock, PlanBlocks, PlanImport,
     PlanResult, PlanResults, PlanSession, PlanSource, PlanSources, PlanToday, PlanWeek,
 };
 use crate::error::{ApiError, ApiResult};
+use crate::render;
 use crate::router::Request;
 use crate::state::Api;
 
@@ -57,7 +59,7 @@ pub fn today(api: &Api, _request: &Request) -> ApiResult<Value> {
     let sessions = api
         .store()
         .plan_sessions_for_day(&current.to_iso())
-        .map_err(|_| ApiError::internal("the plan could not be read"))?;
+        .map_err(|error| api.store_error("the plan could not be read", &error))?;
     let source = source_of_sessions(api, &sessions);
     let mut rendered: Vec<PlanSession> = Vec::new();
     for session in sessions.iter() {
@@ -82,7 +84,7 @@ pub fn week(api: &Api, request: &Request) -> ApiResult<Value> {
     let sessions = api
         .store()
         .plan_sessions_between(&start.to_iso(), &end.to_iso())
-        .map_err(|_| ApiError::internal("the plan could not be read"))?;
+        .map_err(|error| api.store_error("the plan could not be read", &error))?;
     let source = source_of_sessions(api, &sessions);
     let mut rendered: Vec<PlanSession> = Vec::new();
     for session in sessions.iter() {
@@ -92,16 +94,12 @@ pub fn week(api: &Api, request: &Request) -> ApiResult<Value> {
         .iter()
         .filter(|session| session.status == "done")
         .count();
-    let target_km = {
+    let target = {
         let metres: f64 = rendered
             .iter()
-            .filter_map(|session| session.target_distance_m)
+            .filter_map(|session| session.target_distance.as_ref().and_then(|value| value.raw))
             .sum();
-        if metres > 0.0 {
-            Some(units::round_km(metres / 1000.0))
-        } else {
-            None
-        }
+        render::distance(if metres > 0.0 { Some(metres) } else { None })
     };
     let block_name = block_name_of(api, &sessions)?;
     let response = PlanWeek {
@@ -109,7 +107,7 @@ pub fn week(api: &Api, request: &Request) -> ApiResult<Value> {
         source,
         week_start: start.to_iso(),
         week_end: end.to_iso(),
-        target_km,
+        target,
         adherence: Some(Adherence {
             done,
             planned: rendered.len(),
@@ -125,7 +123,7 @@ pub fn blocks(api: &Api, request: &Request) -> ApiResult<Value> {
     let blocks = api
         .store()
         .plan_blocks()
-        .map_err(|_| ApiError::internal("the plan could not be read"))?;
+        .map_err(|error| api.store_error("the plan could not be read", &error))?;
     let mut rendered: Vec<PlanBlock> = Vec::new();
     for block in blocks.iter() {
         rendered.push(block_of(api, block)?);
@@ -143,7 +141,7 @@ pub fn sources(api: &Api, request: &Request) -> ApiResult<Value> {
     let blocks = api
         .store()
         .plan_blocks()
-        .map_err(|_| ApiError::internal("the plan could not be read"))?;
+        .map_err(|error| api.store_error("the plan could not be read", &error))?;
     let mut rendered: Vec<PlanSource> = Vec::new();
     for source in SOURCES.iter() {
         let of_source: Vec<&StoredBlock> = blocks
@@ -177,7 +175,7 @@ pub fn adherence(api: &Api, request: &Request) -> ApiResult<Value> {
         Some(block) => api
             .store()
             .plan_sessions_for_block(block.id)
-            .map_err(|_| ApiError::internal("the plan could not be read"))?,
+            .map_err(|error| api.store_error("the plan could not be read", &error))?,
         None => Vec::new(),
     };
     let source = block
@@ -234,7 +232,7 @@ pub fn results(api: &Api, request: &Request) -> ApiResult<Value> {
         Some(block) => api
             .store()
             .plan_sessions_for_block(block.id)
-            .map_err(|_| ApiError::internal("the plan could not be read"))?,
+            .map_err(|error| api.store_error("the plan could not be read", &error))?,
         None => Vec::new(),
     };
     let source = block
@@ -249,8 +247,8 @@ pub fn results(api: &Api, request: &Request) -> ApiResult<Value> {
             date: read.date,
             session_type: read.session_type,
             status: read.status,
-            target_distance_m: read.target_distance_m,
-            actual_distance_m: read.actual_distance_m,
+            target_distance: read.target_distance,
+            actual_distance: read.actual_distance,
         });
     }
     let response = PlanResults {
@@ -313,7 +311,7 @@ pub fn import(api: &Api, request: &Request) -> ApiResult<Value> {
     let block_id = api
         .store()
         .upsert_plan_block(&block)
-        .map_err(|_| ApiError::internal("the plan could not be written"))?;
+        .map_err(|error| api.store_error("the plan could not be written", &error))?;
 
     let mut written = 0usize;
     if let Some(sessions) = body.get("sessions").and_then(|value| value.as_array()) {
@@ -358,7 +356,7 @@ pub fn import(api: &Api, request: &Request) -> ApiResult<Value> {
             };
             api.store()
                 .upsert_plan_session(&planned)
-                .map_err(|_| ApiError::internal("the plan could not be written"))?;
+                .map_err(|error| api.store_error("the plan could not be written", &error))?;
             written += 1;
         }
     }
@@ -380,7 +378,7 @@ fn active_block(api: &Api) -> ApiResult<Option<StoredBlock>> {
         let block = api
             .store()
             .active_plan_block(source)
-            .map_err(|_| ApiError::internal("the plan could not be read"))?;
+            .map_err(|error| api.store_error("the plan could not be read", &error))?;
         if block.is_some() {
             return Ok(block);
         }
@@ -393,7 +391,7 @@ fn block_of(api: &Api, block: &StoredBlock) -> ApiResult<PlanBlock> {
     let sessions = api
         .store()
         .plan_sessions_for_block(block.id)
-        .map_err(|_| ApiError::internal("the plan could not be read"))?;
+        .map_err(|error| api.store_error("the plan could not be read", &error))?;
     Ok(PlanBlock {
         id: block.id,
         name: block.name.clone(),
@@ -432,7 +430,7 @@ fn block_name_of(api: &Api, sessions: &[StoredSession]) -> ApiResult<String> {
     let blocks = api
         .store()
         .plan_blocks()
-        .map_err(|_| ApiError::internal("the plan could not be read"))?;
+        .map_err(|error| api.store_error("the plan could not be read", &error))?;
     Ok(blocks
         .iter()
         .find(|block| block.id == block_id)
@@ -452,18 +450,25 @@ fn session_of(
     let actual_distance_m = if runs.is_empty() {
         None
     } else {
-        Some(units::round_distance_m(
-            runs.iter().map(|run| run.distance_m).sum(),
-        ))
+        Some(
+            runs.iter()
+                .filter_map(|run| run.distance.as_ref().and_then(|value| value.raw))
+                .sum(),
+        )
     };
     let status = session_status(date, current, source, !runs.is_empty());
     Ok(PlanSession {
         date: session.date.clone(),
         session_type: session.session_type.clone(),
         title: session.title.clone(),
-        sentence: session_sentence(date, current, session.target_distance_m, &session.session_type),
-        target_distance_m: session.target_distance_m,
-        actual_distance_m,
+        sentence: session_sentence(
+            date,
+            current,
+            session.target_distance_m,
+            &session.session_type,
+        ),
+        target_distance: render::distance(session.target_distance_m),
+        actual_distance: render::distance(actual_distance_m),
         status: status.to_string(),
         source: source.to_string(),
     })

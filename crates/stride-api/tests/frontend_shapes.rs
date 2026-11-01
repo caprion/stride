@@ -9,6 +9,10 @@
 //! here, and a field added to an answer without the app knowing fails it
 //! too.
 
+// The tests are allowed to panic and to expect: they are a separate crate,
+// not a `#[cfg(test)]` module, so the lint configuration does not reach them.
+#![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
+
 mod common;
 
 use std::collections::HashMap;
@@ -88,16 +92,53 @@ fn declarations() -> HashMap<String, Vec<String>> {
     out
 }
 
+/// The fields the app declares and the API deliberately does not carry.
+///
+/// **`format`** is the one: a hint that tells the app *how* to render a
+/// value is the hole the contract closes (core-contract §8). The app's
+/// declaration of it goes away when the app takes the rendered value.
+const DROPPED_BY_THE_CONTRACT: &[&str] = &["format"];
+
+/// The unit suffixes the app's raw numbers carry.
+///
+/// The app names a raw number for its unit — `distance_m`, `moving_time_s`,
+/// `pace_s_per_km` — and a rendered value has no unit in its name: the
+/// unit is in the text the core wrote. The suffix is therefore dropped on
+/// both sides before the two are compared, so the test compares the shape
+/// and not the convention.
+const UNIT_SUFFIXES: &[&str] = &["_s_per_km", "_ms", "_km", "_m", "_s"];
+
+/// A field's name, without its unit suffix.
+fn bare(name: &str) -> String {
+    for suffix in UNIT_SUFFIXES {
+        if let Some(stripped) = name.strip_suffix(suffix) {
+            return stripped.to_string();
+        }
+    }
+    name.to_string()
+}
+
 /// The fields of an answer, against the fields the app declares.
 fn assert_declared(declarations: &HashMap<String, Vec<String>>, name: &str, value: &Value) {
     let declared = match declarations.get(name) {
         Some(declared) => declared.clone(),
         None => panic!("the app declares no interface called {name}"),
     };
-    let mut actual = common::keys(value);
+    let mut expected: Vec<String> = declared
+        .iter()
+        .filter(|field| !DROPPED_BY_THE_CONTRACT.contains(&field.as_str()))
+        .map(|field| bare(field))
+        .collect();
+    expected.sort();
+    expected.dedup();
+    let mut actual: Vec<String> = common::keys(value)
+        .iter()
+        .map(|field| bare(field))
+        .collect();
     actual.sort();
+    actual.dedup();
     assert_eq!(
-        actual, declared,
+        actual, expected,
         "the answer does not carry the shape the app declares for {name}"
     );
 }

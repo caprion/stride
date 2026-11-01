@@ -8,6 +8,10 @@
 //! This test takes the store's own counts before and after a set of
 //! failing calls and holds them to the same numbers.
 
+// The tests are allowed to panic and to expect: they are a separate crate,
+// not a `#[cfg(test)]` module, so the lint configuration does not reach them.
+#![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
+
 mod common;
 
 use stride_store::Store;
@@ -31,7 +35,9 @@ fn a_failing_route_leaves_the_store_as_it_was() {
     assert!(!answer.is_ok());
 
     // A cursor that is not a cursor.
-    let answer = harness.router.call("GET", "/activities?cursor=not-a-cursor", None);
+    let answer = harness
+        .router
+        .call("GET", "/activities?cursor=not-a-cursor", None);
     assert!(!answer.is_ok());
 
     // A limit that is not a number.
@@ -39,7 +45,9 @@ fn a_failing_route_leaves_the_store_as_it_was() {
     assert!(!answer.is_ok());
 
     // A body that is not JSON.
-    let answer = harness.router.call("POST", "/plan/import", Some("{not json"));
+    let answer = harness
+        .router
+        .call("POST", "/plan/import", Some("{not json"));
     assert!(!answer.is_ok());
 
     // An import with no plan in it.
@@ -47,7 +55,9 @@ fn a_failing_route_leaves_the_store_as_it_was() {
     assert!(!answer.is_ok());
 
     // A key that is not there.
-    let answer = harness.router.call("POST", "/auth/garmin/personal-key", Some("{}"));
+    let answer = harness
+        .router
+        .call("POST", "/auth/garmin/personal-key", Some("{}"));
     assert!(!answer.is_ok());
 
     // A path that is not a route.
@@ -111,9 +121,17 @@ fn a_reading_route_leaves_the_store_as_it_was() {
 #[test]
 fn the_same_read_twice_answers_the_same_way() {
     let harness = common::Harness::seeded("purity-twice");
-    for path in ["/activities", "/physiology/vitals", "/insights/today", "/stats/summary"] {
+    for path in [
+        "/activities",
+        "/physiology/vitals",
+        "/insights/today",
+        "/stats/summary",
+    ] {
         let first = harness.router.call("GET", path, None);
         let second = harness.router.call("GET", path, None);
-        assert_eq!(first.body, second.body, "the route {path} answered differently");
+        assert_eq!(
+            first.body, second.body,
+            "the route {path} answered differently"
+        );
     }
 }

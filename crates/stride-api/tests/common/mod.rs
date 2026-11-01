@@ -9,7 +9,9 @@
 //! fake records every request so that a test can prove how many calls the
 //! router made.
 
-#![allow(dead_code)]
+// The tests are allowed to panic and to expect: they are a separate crate,
+// not a `#[cfg(test)]` module, so the lint configuration does not reach them.
+#![allow(dead_code, clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
@@ -19,7 +21,7 @@ use serde_json::Value;
 use stride_api::{Api, Config, FixedClock, Router};
 use stride_ingest::{HttpRequest, HttpResponse, HttpTransport, TransportError};
 use stride_store::scratch::ScratchDir;
-use stride_store::{DatabaseKey, NewActivity, Store, WellnessDaily};
+use stride_store::{DatabaseKey, NewActivity, NewPlanBlock, NewPlanSession, Store, WellnessDaily};
 
 /// The instant the tests read the clock at.
 pub const NOW: &str = "2026-05-12T06:30:00Z";
@@ -46,6 +48,8 @@ pub struct Harness {
     pub dir: ScratchDir,
     /// The database.
     pub store: Arc<Store>,
+    /// The shared state.
+    pub api: Arc<Api>,
     /// The router.
     pub router: Router,
     /// The fake Garmin.
@@ -79,7 +83,8 @@ impl Harness {
         Harness {
             dir,
             store,
-            router: Router::new(api),
+            router: Router::new(api.clone()),
+            api,
             garmin,
         }
     }
@@ -109,6 +114,50 @@ impl Harness {
         }
     }
 
+    /// Write a plan: a block and its sessions.
+    ///
+    /// The sessions are `(date, kind, target distance in metres)`.
+    pub fn write_plan(
+        &self,
+        name: &str,
+        source: &str,
+        sessions: &[(&str, &str, Option<f64>)],
+    ) -> i64 {
+        let block = NewPlanBlock {
+            name: name.to_string(),
+            source: source.to_string(),
+            start_date: sessions
+                .first()
+                .map(|session| session.0.to_string())
+                .unwrap_or_else(|| TODAY.to_string()),
+            end_date: None,
+            goal: None,
+            status: "active".to_string(),
+            notes: None,
+            created_at: instant(),
+        };
+        let block_id = match self.store.upsert_plan_block(&block) {
+            Ok(id) => id,
+            Err(_) => panic!("the plan block could not be written"),
+        };
+        for (date, kind, target) in sessions {
+            let session = NewPlanSession {
+                block_id,
+                date: date.to_string(),
+                session_type: kind.to_string(),
+                title: None,
+                details: None,
+                target_distance_m: *target,
+                pace_low_s_km: None,
+                pace_high_s_km: None,
+            };
+            if let Err(error) = self.store.upsert_plan_session(&session) {
+                panic!("the plan session could not be written: {error}");
+            }
+        }
+        block_id
+    }
+
     /// Call a route and read the body.
     pub fn get(&self, path: &str) -> Value {
         let answer = self.router.call("GET", path, None);
@@ -131,7 +180,12 @@ impl Harness {
 }
 
 /// A run to write.
-pub fn run(external_id: &str, local_date: &str, distance_m: f64, moving_time_s: f64) -> NewActivity {
+pub fn run(
+    external_id: &str,
+    local_date: &str,
+    distance_m: f64,
+    moving_time_s: f64,
+) -> NewActivity {
     NewActivity {
         source: "garmin_personal".to_string(),
         external_id: external_id.to_string(),
@@ -217,7 +271,7 @@ pub struct FakeGarmin {
 
 #[derive(Default)]
 struct FakeInner {
-    answers: HashMap<String, Vec<HttpResponse>>,
+    answers: HashMap<String, HttpResponse>,
     requests: Vec<(String, Option<String>)>,
 }
 
@@ -230,7 +284,7 @@ impl FakeGarmin {
     }
 
     /// Answer a path with a body.
-    pub fn with_json(self, path: &str, body: &str) -> FakeGarmin {
+    pub fn with_json(&self, path: &str, body: &str) {
         self.with_response(
             path,
             HttpResponse {
@@ -238,11 +292,11 @@ impl FakeGarmin {
                 headers: Vec::new(),
                 body: body.as_bytes().to_vec(),
             },
-        )
+        );
     }
 
     /// Answer a path with a status and a body.
-    pub fn with_status(self, path: &str, status: u16, body: &str) -> FakeGarmin {
+    pub fn with_status(&self, path: &str, status: u16, body: &str) {
         self.with_response(
             path,
             HttpResponse {
@@ -250,23 +304,20 @@ impl FakeGarmin {
                 headers: Vec::new(),
                 body: body.as_bytes().to_vec(),
             },
-        )
+        );
     }
 
     /// Answer a path with a response.
-    pub fn with_response(self, path: &str, response: HttpResponse) -> FakeGarmin {
-        {
-            let mut inner = match self.inner.lock() {
-                Ok(inner) => inner,
-                Err(poisoned) => poisoned.into_inner(),
-            };
-            inner
-                .answers
-                .entry(path.to_string())
-                .or_default()
-                .push(response);
-        }
-        self
+    ///
+    /// The answer is the one every request to that path gets. A path that
+    /// carries the day in it — Garmin's HRV endpoint does — is answered by
+    /// the longest prefix that matches, so one answer covers every day.
+    pub fn with_response(&self, path: &str, response: HttpResponse) {
+        let mut inner = match self.inner.lock() {
+            Ok(inner) => inner,
+            Err(poisoned) => poisoned.into_inner(),
+        };
+        inner.answers.insert(path.to_string(), response);
     }
 
     /// Every request the fake was asked for, with the path and the
@@ -295,21 +346,29 @@ impl HttpTransport for FakeGarmin {
         inner
             .requests
             .push((path.clone(), request.auth_value.clone()));
-        let answer = inner
-            .answers
-            .get_mut(&path)
-            .and_then(|queue| {
-                if queue.is_empty() {
-                    None
-                } else {
-                    Some(queue.remove(0))
-                }
-            })
-            .unwrap_or_else(|| HttpResponse {
+        // The longest prefix that matches answers the path.
+        let mut best: Option<&String> = None;
+        for candidate in inner.answers.keys() {
+            if path.starts_with(candidate.as_str())
+                && best
+                    .map(|best| candidate.len() > best.len())
+                    .unwrap_or(true)
+            {
+                best = Some(candidate);
+            }
+        }
+        let answer = match best.and_then(|candidate| inner.answers.get(candidate)) {
+            Some(answer) => HttpResponse {
+                status: answer.status,
+                headers: answer.headers.clone(),
+                body: answer.body.clone(),
+            },
+            None => HttpResponse {
                 status: 404,
                 headers: Vec::new(),
                 body: b"no answer was set for this path".to_vec(),
-            });
+            },
+        };
         Ok(answer)
     }
 }
@@ -325,8 +384,7 @@ pub const TOKEN_PATH: &str = "/personalapitoken-service/personal-api/personal-ap
 /// The import route carries a file as text, so the test has to be able to
 /// write that text.
 pub fn base64(bytes: &[u8]) -> String {
-    const ALPHABET: &[u8; 64] =
-        b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+    const ALPHABET: &[u8; 64] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
     let mut out = String::new();
     for chunk in bytes.chunks(3) {
         let first = chunk[0] as u32;

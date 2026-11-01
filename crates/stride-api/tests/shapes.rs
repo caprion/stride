@@ -11,6 +11,10 @@
 //! * **the nullability** — a field that may be absent is `null` when it
 //!   is, and never `0`.
 
+// The tests are allowed to panic and to expect: they are a separate crate,
+// not a `#[cfg(test)]` module, so the lint configuration does not reach them.
+#![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
+
 mod common;
 
 use serde_json::Value;
@@ -52,16 +56,16 @@ fn the_feed_carries_the_shape_the_app_reads() {
         &[
             "avg_cadence",
             "avg_hr",
-            "distance_m",
-            "elapsed_time_s",
-            "elevation_gain_m",
+            "distance",
+            "elapsed_time",
+            "elevation_gain",
             "geo_points",
             "id",
             "local_date",
             "max_hr",
-            "moving_time_s",
+            "moving_time",
             "name",
-            "pace_s_per_km",
+            "pace",
             "sport_type",
             "start_time",
             "story",
@@ -80,18 +84,18 @@ fn one_run_carries_the_shape_the_app_reads() {
         &[
             "avg_cadence",
             "avg_hr",
-            "distance_m",
+            "distance",
             "elevation",
-            "elapsed_time_s",
-            "elevation_gain_m",
+            "elapsed_time",
+            "elevation_gain",
             "geo_points",
             "id",
             "local_date",
             "max_hr",
-            "moving_time_s",
+            "moving_time",
             "name",
             "note",
-            "pace_s_per_km",
+            "pace",
             "plan_line",
             "samples",
             "sport_type",
@@ -112,16 +116,16 @@ fn the_wellness_routes_carry_their_shapes() {
     assert_keys(
         first(&daily, "days"),
         &[
-            "awake_s",
+            "awake",
             "date",
-            "deep_sleep_s",
-            "hrv_ms",
-            "light_sleep_s",
-            "rem_sleep_s",
+            "deep_sleep",
+            "hrv",
+            "light_sleep",
+            "rem_sleep",
             "resting_hr",
-            "sleep_s",
+            "sleep",
             "source",
-            "stress_avg",
+            "stress",
         ],
         "/physiology/daily: a day",
     );
@@ -131,12 +135,12 @@ fn the_wellness_routes_carry_their_shapes() {
     assert_keys(
         first(&sleep, "days"),
         &[
-            "awake_s",
+            "awake",
             "date",
-            "deep_sleep_s",
-            "light_sleep_s",
-            "rem_sleep_s",
-            "sleep_s",
+            "deep_sleep",
+            "light_sleep",
+            "rem_sleep",
+            "sleep",
         ],
         "/physiology/sleep: a night",
     );
@@ -145,7 +149,7 @@ fn the_wellness_routes_carry_their_shapes() {
     assert_keys(&hrv, &["days", "generated_at"], "/physiology/hrv");
     assert_keys(
         first(&hrv, "days"),
-        &["date", "hrv_ms", "resting_hr"],
+        &["date", "hrv", "resting_hr"],
         "/physiology/hrv: a morning",
     );
 
@@ -153,7 +157,11 @@ fn the_wellness_routes_carry_their_shapes() {
     assert_keys(&latest, &["day", "generated_at"], "/physiology/latest");
 
     let sources = harness.ok_get("/physiology/sources");
-    assert_keys(&sources, &["generated_at", "sources"], "/physiology/sources");
+    assert_keys(
+        &sources,
+        &["generated_at", "sources"],
+        "/physiology/sources",
+    );
     assert_keys(
         first(&sources, "sources"),
         &["days", "latest", "name"],
@@ -167,10 +175,21 @@ fn the_vitals_snapshot_carries_the_shape_the_app_reads() {
     let body = harness.ok_get("/physiology/vitals");
     assert_keys(
         &body,
-        &["date", "generated_at", "history", "patterns", "rest", "vitals"],
+        &[
+            "date",
+            "generated_at",
+            "history",
+            "patterns",
+            "rest",
+            "vitals",
+        ],
         "/physiology/vitals",
     );
-    assert_keys(&body["rest"], &["label", "line"], "/physiology/vitals: rest");
+    assert_keys(
+        &body["rest"],
+        &["label", "line"],
+        "/physiology/vitals: rest",
+    );
     assert_keys(
         first(&body, "vitals"),
         &[
@@ -226,7 +245,13 @@ fn the_statistics_routes_carry_their_shapes() {
     let summary = harness.ok_get("/stats/summary");
     assert_keys(
         &summary,
-        &["all_time", "generated_at", "this_month", "this_week", "this_year"],
+        &[
+            "all_time",
+            "generated_at",
+            "this_month",
+            "this_week",
+            "this_year",
+        ],
         "/stats/summary",
     );
     assert_keys(
@@ -234,10 +259,10 @@ fn the_statistics_routes_carry_their_shapes() {
         &[
             "activity_count",
             "avg_hr",
-            "avg_pace_s_per_km",
-            "distance_m",
-            "elevation_gain_m",
-            "moving_time_s",
+            "avg_pace",
+            "distance",
+            "elevation_gain",
+            "moving_time",
         ],
         "/stats/summary: the totals",
     );
@@ -248,10 +273,10 @@ fn the_statistics_routes_carry_their_shapes() {
         first(&weekly, "weeks"),
         &[
             "activity_count",
-            "avg_pace_s_per_km",
-            "distance_m",
-            "elevation_gain_m",
-            "moving_time_s",
+            "avg_pace",
+            "distance",
+            "elevation_gain",
+            "moving_time",
             "week_start",
         ],
         "/stats/weekly: a week",
@@ -261,24 +286,15 @@ fn the_statistics_routes_carry_their_shapes() {
     assert_keys(&pace, &["generated_at", "weeks"], "/stats/pace-trends");
     assert_keys(
         first(&pace, "weeks"),
-        &[
-            "best_pace_s_per_km",
-            "median_pace_s_per_km",
-            "run_count",
-            "week_start",
-        ],
+        &["best_pace", "median_pace", "run_count", "week_start"],
         "/stats/pace-trends: a week",
     );
 
     let elevation = harness.ok_get("/stats/elevation");
-    assert_keys(
-        &elevation,
-        &["generated_at", "weeks"],
-        "/stats/elevation",
-    );
+    assert_keys(&elevation, &["generated_at", "weeks"], "/stats/elevation");
     assert_keys(
         first(&elevation, "weeks"),
-        &["elevation_gain_m", "week_start"],
+        &["elevation_gain", "week_start"],
         "/stats/elevation: a week",
     );
 
@@ -308,7 +324,7 @@ fn the_plan_routes_carry_their_shapes() {
             "block_name",
             "sessions",
             "source",
-            "target_km",
+            "target",
             "week_end",
             "week_start",
         ],
@@ -360,7 +376,11 @@ fn the_insight_routes_carry_their_shapes() {
         ],
         "/insights/today",
     );
-    assert_keys(&today["week"], &["distance_m", "sessions"], "/insights/today: week");
+    assert_keys(
+        &today["week"],
+        &["distance", "sessions"],
+        "/insights/today: week",
+    );
 
     let progress = harness.ok_get("/insights/progress");
     assert_keys(
@@ -373,7 +393,7 @@ fn the_insight_routes_carry_their_shapes() {
             "headline",
             "headline_note",
             "pace_at_hr",
-            "typical_week_m",
+            "typical_week",
             "weekly_volume",
         ],
         "/insights/progress",
@@ -407,12 +427,12 @@ fn the_compare_routes_carry_their_shapes() {
     );
     assert_keys(
         first(&compare, "metrics"),
-        &["a", "b", "delta", "format", "key", "label_key"],
+        &["a", "b", "delta", "key", "label_key"],
         "/compare: a metric",
     );
     assert_keys(
         &compare["a"],
-        &["date", "distance_m", "id", "label", "story"],
+        &["date", "distance", "id", "label", "story"],
         "/compare: a run",
     );
 
@@ -423,7 +443,7 @@ fn the_compare_routes_carry_their_shapes() {
     );
     assert_keys(
         &candidates[0],
-        &["date", "distance_m", "id", "label"],
+        &["date", "distance", "id", "label"],
         "/compare/candidates: a candidate",
     );
 }
@@ -467,14 +487,25 @@ fn the_app_routes_carry_their_shapes() {
     let settings = harness.ok_get("/sync/settings");
     assert_keys(
         &settings,
-        &["generated_at", "health_history_days", "history_months", "sync_days"],
+        &[
+            "generated_at",
+            "health_history_days",
+            "history_months",
+            "sync_days",
+        ],
         "/sync/settings",
     );
 
     let auth = harness.ok_get("/auth/status");
     assert_keys(
         &auth,
-        &["connected", "generated_at", "key_source", "last_sync_at", "method"],
+        &[
+            "connected",
+            "generated_at",
+            "key_source",
+            "last_sync_at",
+            "method",
+        ],
         "/auth/status",
     );
 
@@ -486,7 +517,7 @@ fn the_app_routes_carry_their_shapes() {
     );
     assert_keys(
         first(&calendar, "days"),
-        &["activities", "date", "day", "distance_m", "moving_time_s"],
+        &["activities", "date", "day", "distance", "moving_time"],
         "/calendar: a day",
     );
 }

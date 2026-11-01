@@ -9,6 +9,10 @@
 //! not the ones that are supposed to take it — and asserts that it appears
 //! nowhere: not in a body, not in an error, not in the log.
 
+// The tests are allowed to panic and to expect: they are a separate crate,
+// not a `#[cfg(test)]` module, so the lint configuration does not reach them.
+#![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
+
 mod common;
 
 use std::sync::{Arc, Mutex};
@@ -124,7 +128,9 @@ fn no_log_line_carries_the_key() {
     }
     stride_store::logging::clear_sink();
 
-    let guard = lines.lock().unwrap_or_else(|poisoned| poisoned.into_inner());
+    let guard = lines
+        .lock()
+        .unwrap_or_else(|poisoned| poisoned.into_inner());
     for line in guard.iter() {
         assert!(
             !line.contains(GARMIN_KEY),
@@ -157,7 +163,9 @@ fn the_key_is_forgotten_when_it_is_taken_out() {
     let harness = common::Harness::empty("key-forgotten");
     harness.router.api().set_garmin_key(GARMIN_KEY);
     assert!(harness.router.api().garmin_connected());
-    let answer = harness.router.call("POST", "/auth/garmin/logout", Some("{}"));
+    let answer = harness
+        .router
+        .call("POST", "/auth/garmin/logout", Some("{}"));
     assert!(answer.is_ok());
     assert!(!harness.router.api().garmin_connected());
     assert_eq!(answer.body["connected"], serde_json::json!(false));

@@ -98,9 +98,7 @@ impl Query {
             Some(text) if text.trim().is_empty() => Ok(None),
             Some(text) => match text.trim().parse::<i64>() {
                 Ok(value) => Ok(Some(value)),
-                Err(_) => Err(ApiError::bad_request(format!(
-                    "the {name} is not a number"
-                ))),
+                Err(_) => Err(ApiError::bad_request(format!("the {name} is not a number"))),
             },
         }
     }
@@ -170,9 +168,7 @@ impl Request {
             None => Err(ApiError::not_found("there is no such route")),
             Some(text) => match text.trim().parse::<i64>() {
                 Ok(value) => Ok(value),
-                Err(_) => Err(ApiError::bad_request(format!(
-                    "the {name} is not a number"
-                ))),
+                Err(_) => Err(ApiError::bad_request(format!("the {name} is not a number"))),
             },
         }
     }
@@ -191,18 +187,23 @@ impl Request {
             None | Some(Value::Null) => Ok(None),
             Some(Value::Number(number)) => match number.as_f64() {
                 Some(value) if value.is_finite() => Ok(Some(value)),
-                _ => Err(ApiError::bad_request(format!(
-                    "the {name} is not a number"
-                ))),
+                _ => Err(ApiError::bad_request(format!("the {name} is not a number"))),
             },
-            Some(_) => Err(ApiError::bad_request(format!(
-                "the {name} is not a number"
-            ))),
+            Some(_) => Err(ApiError::bad_request(format!("the {name} is not a number"))),
         }
     }
 }
 
 /// One answer.
+///
+/// **The answer is the body.** The body is the DTO, and nothing around it:
+/// the host puts the status in the status line — the desktop's HTTP layer
+/// in the status line, the phone's bridge by rejecting the call. A body
+/// that says `{"error": …}` with a 200 is never the shape.
+///
+/// [`Response::envelope`] is the FFI's own: the phone's seam reads an
+/// envelope and hands the app the body inside it, so that the two hosts
+/// give the app the same bytes.
 #[derive(Clone, Debug, PartialEq)]
 pub struct Response {
     /// The status the answer travels under.
@@ -256,11 +257,13 @@ pub struct Route {
 
 /// The frozen route table.
 ///
-/// Every route of `docs/contract/api-paths.md`, and nothing else. The cut
-/// routes — `/network/*`, `/tiles/*`, `/gear`,
-/// `/auth/garmin/{login,mfa,developer-key,callback}`,
-/// `/auth/{pair-code,pair,devices}`, `/stats/monthly`, `/stats/hr-zones` —
-/// are not here, and a path that names one is answered with `not_found`.
+/// Every route of `docs/contract/api-paths.md`, and nothing else. The
+/// routes the contract cut are not here, and a path that names one is
+/// answered with `not_found`.
+///
+/// The cut list is not written out here on purpose: the contract's own
+/// grep refuses those names anywhere in the crates, and the test that
+/// holds the cut routes out reads the list out of the contract itself.
 pub const ROUTES: &[Route] = &[
     // The data.
     Route {
@@ -513,9 +516,7 @@ impl Router {
             Some(text) => match serde_json::from_str::<Value>(text) {
                 Ok(value) => Some(value),
                 Err(_) => {
-                    return failure(&ApiError::bad_request(
-                        "the body is not a JSON document",
-                    ))
+                    return failure(&ApiError::bad_request("the body is not a JSON document"))
                 }
             },
         };
@@ -532,9 +533,7 @@ impl Router {
                         method.as_str()
                     )));
                 }
-                return failure(&ApiError::not_found(format!(
-                    "there is no route at {path}"
-                )));
+                return failure(&ApiError::not_found(format!("there is no route at {path}")));
             }
         };
 
@@ -596,8 +595,7 @@ pub fn failure(error: &ApiError) -> Response {
 
 /// The success, as a response.
 pub fn success<T: Serialize>(value: &T) -> ApiResult<Value> {
-    serde_json::to_value(value)
-        .map_err(|_| ApiError::internal("the answer could not be written"))
+    serde_json::to_value(value).map_err(|_| ApiError::internal("the answer could not be written"))
 }
 
 /// The path and the query string of a path.

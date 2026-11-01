@@ -7,6 +7,10 @@
 //! This test walks the routes that carry measurements and holds every one
 //! of them to that rule.
 
+// The tests are allowed to panic and to expect: they are a separate crate,
+// not a `#[cfg(test)]` module, so the lint configuration does not reach them.
+#![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
+
 mod common;
 
 use serde_json::Value;
@@ -72,9 +76,9 @@ fn a_run_with_no_distance_has_no_pace() {
     ));
     let body = harness.ok_get(&format!("/activities/{id}"));
     assert!(
-        value_of(&body, &["pace_s_per_km"]).is_null(),
+        value_of(&body, &["pace"]).is_null(),
         "the pace of a run with no distance is not null: {}",
-        value_of(&body, &["pace_s_per_km"])
+        value_of(&body, &["pace"])
     );
 }
 
@@ -86,14 +90,14 @@ fn a_day_with_no_readings_carries_null() {
     let body = harness.ok_get("/physiology/daily");
     let day = &body["days"][0];
     for field in [
-        "sleep_s",
-        "deep_sleep_s",
-        "rem_sleep_s",
-        "light_sleep_s",
-        "awake_s",
-        "hrv_ms",
+        "sleep",
+        "deep_sleep",
+        "rem_sleep",
+        "light_sleep",
+        "awake",
+        "hrv",
         "resting_hr",
-        "stress_avg",
+        "stress",
     ] {
         assert!(
             day[field].is_null(),
@@ -103,10 +107,10 @@ fn a_day_with_no_readings_carries_null() {
     }
 
     let sleep = harness.ok_get("/physiology/sleep");
-    assert!(sleep["days"][0]["sleep_s"].is_null());
+    assert!(sleep["days"][0]["sleep"].is_null());
 
     let hrv = harness.ok_get("/physiology/hrv");
-    assert!(hrv["days"][0]["hrv_ms"].is_null());
+    assert!(hrv["days"][0]["hrv"].is_null());
     assert!(hrv["days"][0]["resting_hr"].is_null());
 }
 
@@ -146,11 +150,17 @@ fn a_run_with_no_readings_still_carries_the_numbers_it_has() {
         3_000.0,
     ));
     let body = harness.ok_get(&format!("/activities/{id}"));
-    assert_eq!(body["distance_m"].as_f64(), Some(10_000.0));
-    assert_eq!(body["moving_time_s"].as_f64(), Some(3_000.0));
-    // A flat run has no climbing: that is a measurement of zero, not an
-    // absent measurement.
-    assert_eq!(body["elevation_gain_m"].as_f64(), Some(0.0));
+    assert_eq!(body["distance"]["raw"].as_f64(), Some(10_000.0));
+    assert_eq!(body["distance"]["text"].as_str(), Some("10.0 km"));
+    assert_eq!(body["moving_time"]["raw"].as_f64(), Some(3_000.0));
+    assert_eq!(body["moving_time"]["text"].as_str(), Some("50 m"));
+    // The climb is absent: the core does not render an altitude yet, and
+    // this crate does not invent a format for it.
+    assert!(
+        body["elevation_gain"].is_null(),
+        "the climb is not absent: {}",
+        body["elevation_gain"]
+    );
 }
 
 #[test]

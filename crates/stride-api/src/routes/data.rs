@@ -16,16 +16,15 @@ use crate::dto::{
     Fingerprint, Fingerprints, HrvDay, HrvDays, LatestPhysiology, PaceTrends, PaceWeek,
     PersonalRecords, PhysiologyDay, PhysiologyDays, SleepDay, SleepDays, SourceInfo, Sources,
     StatsSummary, Totals, Trend, TrendPoint, Trends, VitalBand, VitalReading, VitalsHistory,
-    VitalsSnapshot, WeeklyStats, WeekTotals, Zones,
+    VitalsSnapshot, WeekTotals, WeeklyStats, Zones,
 };
 use crate::error::{ApiError, ApiResult};
+use crate::render;
 use crate::router::Request;
 use crate::state::Api;
 
 use super::series;
-use super::{
-    activity_summary, core_date, ok, pace_of, today, week_start,
-};
+use super::{activity_summary, core_date, ok, pace_of, today, week_start};
 
 /// The most runs one answer may carry.
 const MAX_RUNS_IN_ANSWER: usize = 500;
@@ -77,7 +76,7 @@ fn feed(
         None => {
             let page = store
                 .activity_feed(cursor.as_ref(), limit)
-                .map_err(|_| ApiError::internal("the feed could not be read"))?;
+                .map_err(|error| api.store_error("the feed could not be read", &error))?;
             let next = page.next_cursor.map(|cursor| cursor.encode());
             let runs = page
                 .activities
@@ -90,7 +89,7 @@ fn feed(
             let to = today(api)?.to_iso();
             let rows = store
                 .activities_between(&from, &to)
-                .map_err(|_| ApiError::internal("the feed could not be read"))?;
+                .map_err(|error| api.store_error("the feed could not be read", &error))?;
             let kept: Vec<&StoredActivity> = rows
                 .iter()
                 .filter(|row| match &cursor {
@@ -104,9 +103,9 @@ fn feed(
             let more = kept.len() > limit as usize;
             let page: Vec<&StoredActivity> = kept.into_iter().take(limit as usize).collect();
             let next = match (more, page.last()) {
-                (true, Some(last)) => Some(
-                    stride_store::FeedCursor::new(last.local_date.clone(), last.id).encode(),
-                ),
+                (true, Some(last)) => {
+                    Some(stride_store::FeedCursor::new(last.local_date.clone(), last.id).encode())
+                }
                 _ => None,
             };
             let runs = page
@@ -124,7 +123,7 @@ pub fn activity(api: &Api, request: &Request) -> ApiResult<Value> {
     let run = api
         .store()
         .activity(id)
-        .map_err(|_| ApiError::internal("the run could not be read"))?;
+        .map_err(|error| api.store_error("the run could not be read", &error))?;
     let run = match run {
         Some(run) => run,
         None => {
@@ -168,13 +167,13 @@ fn plan_line(api: &Api, date: &str, actual_m: f64) -> ApiResult<Option<crate::dt
     let sessions = api
         .store()
         .plan_sessions_for_day(date)
-        .map_err(|_| ApiError::internal("the plan could not be read"))?;
+        .map_err(|error| api.store_error("the plan could not be read", &error))?;
     Ok(sessions
         .iter()
         .find_map(|session| session.target_distance_m)
         .map(|target| crate::dto::PlanLine {
-            actual_distance_m: actual_m,
-            target_distance_m: target,
+            actual: render::distance(Some(actual_m)),
+            target: render::distance(Some(target)),
         }))
 }
 
@@ -189,9 +188,7 @@ fn window(api: &Api, request: &Request) -> ApiResult<(String, String)> {
     };
     let from = match request.query.get("from") {
         Some(text) if !text.trim().is_empty() => core_date(text.trim())?.to_iso(),
-        _ => current
-            .add_days(-api.config().health_history_days)
-            .to_iso(),
+        _ => current.add_days(-api.config().health_history_days).to_iso(),
     };
     Ok((from, to))
 }
@@ -202,7 +199,7 @@ pub fn physiology_daily(api: &Api, request: &Request) -> ApiResult<Value> {
     let rows = api
         .store()
         .wellness_between(&from, &to)
-        .map_err(|_| ApiError::internal("the wellness could not be read"))?;
+        .map_err(|error| api.store_error("the wellness could not be read", &error))?;
     let days: Vec<PhysiologyDay> = rows.iter().map(physiology_day).collect();
     let response = PhysiologyDays {
         days,
@@ -217,16 +214,16 @@ pub fn physiology_sleep(api: &Api, request: &Request) -> ApiResult<Value> {
     let rows = api
         .store()
         .wellness_between(&from, &to)
-        .map_err(|_| ApiError::internal("the wellness could not be read"))?;
+        .map_err(|error| api.store_error("the wellness could not be read", &error))?;
     let days: Vec<SleepDay> = rows
         .iter()
         .map(|row| SleepDay {
             date: row.date.clone(),
-            sleep_s: row.sleep_s,
-            deep_sleep_s: row.deep_sleep_s,
-            rem_sleep_s: row.rem_s,
-            light_sleep_s: row.light_sleep_s,
-            awake_s: row.awake_s,
+            sleep: render::duration(row.sleep_s),
+            deep_sleep: render::duration(row.deep_sleep_s),
+            rem_sleep: render::duration(row.rem_s),
+            light_sleep: render::duration(row.light_sleep_s),
+            awake: render::duration(row.awake_s),
         })
         .collect();
     let response = SleepDays {
@@ -242,13 +239,13 @@ pub fn physiology_hrv(api: &Api, request: &Request) -> ApiResult<Value> {
     let rows = api
         .store()
         .wellness_between(&from, &to)
-        .map_err(|_| ApiError::internal("the wellness could not be read"))?;
+        .map_err(|error| api.store_error("the wellness could not be read", &error))?;
     let days: Vec<HrvDay> = rows
         .iter()
         .map(|row| HrvDay {
             date: row.date.clone(),
-            hrv_ms: row.hrv_ms,
-            resting_hr: row.resting_hr,
+            hrv: render::hrv(row.hrv_ms),
+            resting_hr: render::heart_rate(row.resting_hr),
         })
         .collect();
     let response = HrvDays {
@@ -299,7 +296,7 @@ pub fn physiology_vitals(api: &Api, request: &Request) -> ApiResult<Value> {
     let history_rows = api
         .store()
         .wellness_before(&day.to_iso(), band::BAND_WINDOW_NIGHTS)
-        .map_err(|_| ApiError::internal("the history could not be read"))?;
+        .map_err(|error| api.store_error("the history could not be read", &error))?;
     let charts = VitalsHistory {
         sleep: history_rows
             .iter()
@@ -357,7 +354,7 @@ pub fn physiology_latest(api: &Api, _request: &Request) -> ApiResult<Value> {
     let row = api
         .store()
         .latest_wellness(&current.to_iso())
-        .map_err(|_| ApiError::internal("the wellness could not be read"))?;
+        .map_err(|error| api.store_error("the wellness could not be read", &error))?;
     let response = LatestPhysiology {
         day: row.as_ref().map(physiology_day),
         generated_at: api.generated_at(),
@@ -371,11 +368,17 @@ pub fn physiology_sources(api: &Api, request: &Request) -> ApiResult<Value> {
     let rows = api
         .store()
         .wellness_between(&from, &to)
-        .map_err(|_| ApiError::internal("the wellness could not be read"))?;
+        .map_err(|error| api.store_error("the wellness could not be read", &error))?;
     let mut sources = Vec::new();
     for (name, count) in [
-        ("sleep", rows.iter().filter(|row| row.sleep_s.is_some()).count()),
-        ("hrv", rows.iter().filter(|row| row.hrv_ms.is_some()).count()),
+        (
+            "sleep",
+            rows.iter().filter(|row| row.sleep_s.is_some()).count(),
+        ),
+        (
+            "hrv",
+            rows.iter().filter(|row| row.hrv_ms.is_some()).count(),
+        ),
         (
             "resting_hr",
             rows.iter().filter(|row| row.resting_hr.is_some()).count(),
@@ -384,12 +387,10 @@ pub fn physiology_sources(api: &Api, request: &Request) -> ApiResult<Value> {
         let latest = rows
             .iter()
             .rev()
-            .find(|row| {
-                match name {
-                    "sleep" => row.sleep_s.is_some(),
-                    "hrv" => row.hrv_ms.is_some(),
-                    _ => row.resting_hr.is_some(),
-                }
+            .find(|row| match name {
+                "sleep" => row.sleep_s.is_some(),
+                "hrv" => row.hrv_ms.is_some(),
+                _ => row.resting_hr.is_some(),
             })
             .map(|row| row.date.clone());
         sources.push(SourceInfo {
@@ -409,14 +410,14 @@ pub fn physiology_sources(api: &Api, request: &Request) -> ApiResult<Value> {
 fn physiology_day(row: &WellnessDaily) -> PhysiologyDay {
     PhysiologyDay {
         date: row.date.clone(),
-        sleep_s: row.sleep_s,
-        deep_sleep_s: row.deep_sleep_s,
-        rem_sleep_s: row.rem_s,
-        light_sleep_s: row.light_sleep_s,
-        awake_s: row.awake_s,
-        hrv_ms: row.hrv_ms,
-        resting_hr: row.resting_hr,
-        stress_avg: row.stress_avg,
+        sleep: render::duration(row.sleep_s),
+        deep_sleep: render::duration(row.deep_sleep_s),
+        rem_sleep: render::duration(row.rem_s),
+        light_sleep: render::duration(row.light_sleep_s),
+        awake: render::duration(row.awake_s),
+        hrv: render::hrv(row.hrv_ms),
+        resting_hr: render::heart_rate(row.resting_hr),
+        stress: render::whole(row.stress_avg),
         source: row.source.clone(),
     }
 }
@@ -426,7 +427,7 @@ fn wellness_rows(api: &Api, day: stride_core::date::Date) -> ApiResult<Vec<Welln
     let from = day.add_days(-band::BAND_WINDOW_NIGHTS).to_iso();
     api.store()
         .wellness_between(&from, &day.to_iso())
-        .map_err(|_| ApiError::internal("the wellness could not be read"))
+        .map_err(|error| api.store_error("the wellness could not be read", &error))
 }
 
 /// The history the pattern engine reads: the wellness and the runs.
@@ -439,7 +440,7 @@ fn history_days(
     let runs = api
         .store()
         .activities_between(&from, &day.to_iso())
-        .map_err(|_| ApiError::internal("the runs could not be read"))?;
+        .map_err(|error| api.store_error("the runs could not be read", &error))?;
     let mut distances: BTreeMap<String, f64> = BTreeMap::new();
     for run in runs {
         *distances.entry(run.local_date.clone()).or_insert(0.0) += run.distance_m;
@@ -498,13 +499,13 @@ pub fn fitness_fingerprint(api: &Api, request: &Request) -> ApiResult<Value> {
         items.push(Fingerprint {
             activity_id: run.id,
             local_date: run.local_date.clone(),
-            distance_m: run.distance_m,
-            moving_time_s: units::round_time_s(run.moving_time_s),
-            avg_hr: run.avg_hr,
-            max_hr: run.max_hr,
-            avg_cadence: decoded.avg_cadence,
-            pace_s_per_km: pace_of(run.distance_m, run.moving_time_s),
-            elevation_gain_m: run.elevation_gain_m,
+            distance: render::distance(Some(run.distance_m)),
+            moving_time: render::duration(Some(run.moving_time_s)),
+            avg_hr: render::heart_rate(run.avg_hr),
+            max_hr: render::heart_rate(run.max_hr),
+            avg_cadence: render::cadence(decoded.avg_cadence),
+            pace: render::pace(pace_of(run.distance_m, run.moving_time_s)),
+            elevation_gain: render::altitude(Some(run.elevation_gain_m)),
         });
     }
     let response = Fingerprints {
@@ -524,41 +525,44 @@ pub fn fitness_trends(api: &Api, request: &Request) -> ApiResult<Value> {
             .iter()
             .filter_map(|run| pace_of(run.distance_m, run.moving_time_s))
             .collect();
-        let hearts: Vec<f64> = week_runs
-            .iter()
-            .filter_map(|run| run.avg_hr)
-            .collect();
+        let hearts: Vec<f64> = week_runs.iter().filter_map(|run| run.avg_hr).collect();
         if let Some(pace) = super::median(&paces) {
             pace_points.push(TrendPoint {
                 date: week.to_iso(),
-                value: units::round_pace_s_per_km(pace),
+                value: render::pace(Some(units::round_pace_s_per_km(pace))),
             });
         }
         if !hearts.is_empty() {
             let mean = hearts.iter().sum::<f64>() / hearts.len() as f64;
             heart_points.push(TrendPoint {
                 date: week.to_iso(),
-                value: units::round_half_even(mean, 1),
+                value: render::heart_rate(Some(units::round_half_even(mean, 1))),
             });
         }
     }
     let trends = vec![
         Trend {
-            metric: "median_pace_s_per_km".to_string(),
+            metric: "median_pace".to_string(),
             label: "Median pace".to_string(),
             unit: "s/km".to_string(),
-            baseline: super::median(
-                &pace_points.iter().map(|point| point.value).collect::<Vec<f64>>(),
-            ),
+            baseline: render::pace(super::median(
+                &pace_points
+                    .iter()
+                    .filter_map(|point| point.value.as_ref().and_then(|value| value.raw))
+                    .collect::<Vec<f64>>(),
+            )),
             points: pace_points,
         },
         Trend {
             metric: "avg_hr".to_string(),
             label: "Average heart rate".to_string(),
             unit: "bpm".to_string(),
-            baseline: super::median(
-                &heart_points.iter().map(|point| point.value).collect::<Vec<f64>>(),
-            ),
+            baseline: render::heart_rate(super::median(
+                &heart_points
+                    .iter()
+                    .filter_map(|point| point.value.as_ref().and_then(|value| value.raw))
+                    .collect::<Vec<f64>>(),
+            )),
             points: heart_points,
         },
     ];
@@ -602,10 +606,7 @@ pub fn stats_summary(api: &Api, request: &Request) -> ApiResult<Value> {
         .iter()
         .filter(|run| run.local_date >= month_start)
         .collect();
-    let this_week: Vec<&StoredActivity> = all
-        .iter()
-        .filter(|run| run.local_date >= week)
-        .collect();
+    let this_week: Vec<&StoredActivity> = all.iter().filter(|run| run.local_date >= week).collect();
 
     let response = StatsSummary {
         all_time: totals(all.iter()),
@@ -624,24 +625,26 @@ fn totals<'a>(runs: impl IntoIterator<Item = &'a StoredActivity>) -> Totals {
     let moving_time_s: f64 = runs.iter().map(|run| run.moving_time_s).sum();
     let hearts: Vec<f64> = runs.iter().filter_map(|run| run.avg_hr).collect();
     let avg_pace_s_per_km = if distance_m > 0.0 {
-        Some(units::round_pace_s_per_km(moving_time_s / (distance_m / 1000.0)))
+        Some(units::round_pace_s_per_km(
+            moving_time_s / (distance_m / 1000.0),
+        ))
     } else {
         None
     };
     Totals {
         activity_count: runs.len() as i64,
-        distance_m: units::round_distance_m(distance_m),
-        elevation_gain_m: units::round_distance_m(runs.iter().map(|run| run.elevation_gain_m).sum()),
-        moving_time_s: units::round_time_s(moving_time_s),
-        avg_pace_s_per_km,
-        avg_hr: if hearts.is_empty() {
+        distance: render::distance(Some(distance_m)),
+        elevation_gain: render::altitude(Some(runs.iter().map(|run| run.elevation_gain_m).sum())),
+        moving_time: render::duration(Some(moving_time_s)),
+        avg_pace: render::pace(avg_pace_s_per_km),
+        avg_hr: render::heart_rate(if hearts.is_empty() {
             None
         } else {
             Some(units::round_half_even(
                 hearts.iter().sum::<f64>() / hearts.len() as f64,
                 1,
             ))
-        },
+        }),
     }
 }
 
@@ -656,16 +659,18 @@ pub fn stats_weekly(api: &Api, request: &Request) -> ApiResult<Value> {
             WeekTotals {
                 week_start: week.to_iso(),
                 activity_count: week_runs.len() as i64,
-                distance_m: units::round_distance_m(distance_m),
-                moving_time_s: units::round_time_s(moving_time_s),
-                elevation_gain_m: units::round_distance_m(
+                distance: render::distance(Some(distance_m)),
+                moving_time: render::duration(Some(moving_time_s)),
+                elevation_gain: render::altitude(Some(
                     week_runs.iter().map(|run| run.elevation_gain_m).sum(),
-                ),
-                avg_pace_s_per_km: if distance_m > 0.0 {
-                    Some(units::round_pace_s_per_km(moving_time_s / (distance_m / 1000.0)))
+                )),
+                avg_pace: render::pace(if distance_m > 0.0 {
+                    Some(units::round_pace_s_per_km(
+                        moving_time_s / (distance_m / 1000.0),
+                    ))
                 } else {
                     None
-                },
+                }),
             }
         })
         .collect();
@@ -689,17 +694,19 @@ pub fn stats_pace_trends(api: &Api, request: &Request) -> ApiResult<Value> {
             PaceWeek {
                 week_start: week.to_iso(),
                 run_count: week_runs.len() as i64,
-                median_pace_s_per_km: super::median(&paces).map(units::round_pace_s_per_km),
-                best_pace_s_per_km: paces
-                    .iter()
-                    .copied()
-                    .fold(None, |best: Option<f64>, pace| {
-                        Some(match best {
-                            Some(current) => current.min(pace),
-                            None => pace,
+                median_pace: render::pace(super::median(&paces).map(units::round_pace_s_per_km)),
+                best_pace: render::pace(
+                    paces
+                        .iter()
+                        .copied()
+                        .fold(None, |best: Option<f64>, pace| {
+                            Some(match best {
+                                Some(current) => current.min(pace),
+                                None => pace,
+                            })
                         })
-                    })
-                    .map(units::round_pace_s_per_km),
+                        .map(units::round_pace_s_per_km),
+                ),
             }
         })
         .collect();
@@ -717,9 +724,9 @@ pub fn stats_elevation(api: &Api, request: &Request) -> ApiResult<Value> {
         .into_iter()
         .map(|(week, week_runs)| ElevationWeek {
             week_start: week.to_iso(),
-            elevation_gain_m: units::round_distance_m(
+            elevation_gain: render::altitude(Some(
                 week_runs.iter().map(|run| run.elevation_gain_m).sum(),
-            ),
+            )),
         })
         .collect();
     let response = ElevationStats {
@@ -751,14 +758,12 @@ fn stored_runs(api: &Api, request: &Request) -> ApiResult<Vec<StoredActivity>> {
     };
     let from = match request.query.get("from") {
         Some(text) if !text.trim().is_empty() => core_date(text.trim())?.to_iso(),
-        _ => current
-            .add_days(-api.config().history_months * 30)
-            .to_iso(),
+        _ => current.add_days(-api.config().history_months * 30).to_iso(),
     };
     let runs = api
         .store()
         .activities_between(&from, &to)
-        .map_err(|_| ApiError::internal("the runs could not be read"))?;
+        .map_err(|error| api.store_error("the runs could not be read", &error))?;
     Ok(runs)
 }
 

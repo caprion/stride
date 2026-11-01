@@ -20,7 +20,7 @@ use std::sync::{Arc, Mutex, MutexGuard};
 
 use chrono::{DateTime, SecondsFormat, Utc};
 use stride_ingest::{GarminClient, HttpTransport, ReqwestTransport, TransportError};
-use stride_store::Store;
+use stride_store::{Store, StoreError};
 
 use crate::error::ApiError;
 
@@ -317,6 +317,21 @@ impl Api {
         GarminKey::new(key).client(self.transport.clone())
     }
 
+    /// A failure of the store, as the router reports it.
+    ///
+    /// **A rejected database key is the lock.** The phone's key comes from
+    /// the Keystore, and it is not there when the phone is locked: the
+    /// failure is the typed `locked`, which the app shows as "unlock the
+    /// phone" rather than as a broken app.
+    ///
+    /// Everything else is a failure of the router itself, and it says so.
+    pub fn store_error(&self, context: &str, error: &StoreError) -> ApiError {
+        match error {
+            StoreError::InvalidKey { .. } => ApiError::locked("the database key is not available"),
+            _ => ApiError::internal(context),
+        }
+    }
+
     /// The Garmin failure as the router reports it.
     ///
     /// The client already redacts what Garmin sent; the router adds the
@@ -336,9 +351,7 @@ impl Api {
             GarminError::RateLimited { .. } => {
                 ApiError::garmin_rejected("Garmin is rate limiting the request")
             }
-            GarminError::Transport(_) => {
-                ApiError::garmin_rejected("Garmin could not be reached")
-            }
+            GarminError::Transport(_) => ApiError::garmin_rejected("Garmin could not be reached"),
             _ => ApiError::garmin_rejected("Garmin refused the request"),
         }
     }

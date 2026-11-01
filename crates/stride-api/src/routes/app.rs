@@ -2,7 +2,6 @@
 
 use chrono::{NaiveDate, NaiveDateTime};
 use serde_json::Value;
-use stride_core::units;
 use stride_store::model::{note_kind, source, sync_kind};
 use stride_store::{NewActivity, SyncState};
 
@@ -11,6 +10,7 @@ use crate::dto::{
     SyncHistoryEntry, SyncRun, SyncSettings, SyncStatus, SyncedRun, SyncedRuns,
 };
 use crate::error::{ApiError, ApiResult};
+use crate::render;
 use crate::router::Request;
 use crate::state::Api;
 
@@ -22,13 +22,13 @@ pub fn health(api: &Api, request: &Request) -> ApiResult<Value> {
     let store = api.store();
     let activities = store
         .count_activities()
-        .map_err(|_| ApiError::internal("the runs could not be counted"))?;
+        .map_err(|error| api.store_error("the runs could not be counted", &error))?;
     let wellness_days = store
         .count_wellness_daily()
-        .map_err(|_| ApiError::internal("the wellness could not be counted"))?;
+        .map_err(|error| api.store_error("the wellness could not be counted", &error))?;
     let plan_sessions = store
         .count_plan_sessions()
-        .map_err(|_| ApiError::internal("the plan could not be counted"))?;
+        .map_err(|error| api.store_error("the plan could not be counted", &error))?;
     let response = Health {
         ok: true,
         service: "stride".to_string(),
@@ -49,7 +49,7 @@ pub fn health_daily(api: &Api, request: &Request) -> ApiResult<Value> {
     let states = api
         .store()
         .all_sync_state()
-        .map_err(|_| ApiError::internal("the sync state could not be read"))?;
+        .map_err(|error| api.store_error("the sync state could not be read", &error))?;
     let newest = states
         .iter()
         .filter_map(|state| state.last_success_at)
@@ -72,7 +72,7 @@ pub fn sync_status(api: &Api, request: &Request) -> ApiResult<Value> {
     let store = api.store();
     let states = store
         .all_sync_state()
-        .map_err(|_| ApiError::internal("the sync state could not be read"))?;
+        .map_err(|error| api.store_error("the sync state could not be read", &error))?;
     let last_sync_at = states
         .iter()
         .filter_map(|state| state.last_success_at)
@@ -80,7 +80,7 @@ pub fn sync_status(api: &Api, request: &Request) -> ApiResult<Value> {
         .map(crate::state::format_instant);
     let activity_count = store
         .count_activities()
-        .map_err(|_| ApiError::internal("the runs could not be counted"))?;
+        .map_err(|error| api.store_error("the runs could not be counted", &error))?;
     let response = SyncStatus {
         last_sync_at,
         last_error: api.garmin_last_error(),
@@ -191,7 +191,7 @@ pub fn sync_run(api: &Api, request: &Request) -> ApiResult<Value> {
         };
         api.store()
             .upsert_activity(&row)
-            .map_err(|_| ApiError::internal("the run could not be written"))?;
+            .map_err(|error| api.store_error("the run could not be written", &error))?;
         pulled += 1;
     }
 
@@ -202,7 +202,7 @@ pub fn sync_run(api: &Api, request: &Request) -> ApiResult<Value> {
         if let Some(row) = row {
             api.store()
                 .upsert_wellness_daily(&row)
-                .map_err(|_| ApiError::internal("the wellness could not be written"))?;
+                .map_err(|error| api.store_error("the wellness could not be written", &error))?;
             wellness_days += 1;
         }
     }
@@ -228,7 +228,7 @@ pub fn sync_runs(api: &Api, request: &Request) -> ApiResult<Value> {
     let runs = api
         .store()
         .activities_between("0000-01-01", &current.to_iso())
-        .map_err(|_| ApiError::internal("the runs could not be read"))?;
+        .map_err(|error| api.store_error("the runs could not be read", &error))?;
     let runs: Vec<SyncedRun> = runs
         .iter()
         .filter(|run| run.source == source::GARMIN_PERSONAL)
@@ -236,7 +236,7 @@ pub fn sync_runs(api: &Api, request: &Request) -> ApiResult<Value> {
             id: run.id,
             name: run.name.clone(),
             local_date: run.local_date.clone(),
-            distance_m: run.distance_m,
+            distance: render::distance(Some(run.distance_m)),
             updated_at: crate::state::format_instant(run.updated_at),
         })
         .collect();
@@ -253,7 +253,7 @@ pub fn sync_history(api: &Api, request: &Request) -> ApiResult<Value> {
     let states = api
         .store()
         .all_sync_state()
-        .map_err(|_| ApiError::internal("the sync state could not be read"))?;
+        .map_err(|error| api.store_error("the sync state could not be read", &error))?;
     let entries: Vec<SyncHistoryEntry> = states
         .iter()
         .map(|state| SyncHistoryEntry {
@@ -288,7 +288,7 @@ pub fn auth_status(api: &Api, request: &Request) -> ApiResult<Value> {
     let states = api
         .store()
         .all_sync_state()
-        .map_err(|_| ApiError::internal("the sync state could not be read"))?;
+        .map_err(|error| api.store_error("the sync state could not be read", &error))?;
     let last_sync_at = states
         .iter()
         .filter_map(|state| state.last_success_at)
@@ -364,8 +364,8 @@ pub fn auth_fit_import(api: &Api, request: &Request) -> ApiResult<Value> {
         .map(|text| text.trim().to_string())
         .filter(|text| !text.is_empty())
         .ok_or_else(|| ApiError::bad_request("there is no file in the request"))?;
-    let bytes = decode_base64(&encoded)
-        .ok_or_else(|| ApiError::bad_request("the file is not base64"))?;
+    let bytes =
+        decode_base64(&encoded).ok_or_else(|| ApiError::bad_request("the file is not base64"))?;
     if bytes.len() > api.config().max_fit_import_bytes {
         return Err(ApiError::bad_request("the file is larger than the limit"));
     }
@@ -393,7 +393,7 @@ pub fn auth_fit_import(api: &Api, request: &Request) -> ApiResult<Value> {
     let activity_id = api
         .store()
         .upsert_activity(&row)
-        .map_err(|_| ApiError::internal("the run could not be written"))?;
+        .map_err(|error| api.store_error("the run could not be written", &error))?;
     let response = FitImport {
         imported: true,
         activity_id,
@@ -450,14 +450,14 @@ pub fn calendar(api: &Api, request: &Request) -> ApiResult<Value> {
         let runs = api
             .store()
             .activities_for_date(&date)
-            .map_err(|_| ApiError::internal("the runs could not be read"))?;
+            .map_err(|error| api.store_error("the runs could not be read", &error))?;
         let summaries: Vec<crate::dto::ActivitySummary> =
             runs.iter().map(super::activity_summary).collect();
         days.push(CalendarDay {
             date,
             day,
-            distance_m: units::round_distance_m(runs.iter().map(|run| run.distance_m).sum()),
-            moving_time_s: units::round_time_s(runs.iter().map(|run| run.moving_time_s).sum()),
+            distance: render::distance(Some(runs.iter().map(|run| run.distance_m).sum())),
+            moving_time: render::duration(Some(runs.iter().map(|run| run.moving_time_s).sum())),
             activities: summaries,
         });
     }
@@ -497,9 +497,7 @@ fn wellness_of(
         .and_then(|value| value.get("hrvSummary"))
         .and_then(|value| value.get("lastNightAvg"))
         .and_then(|value| value.as_f64());
-    let summary = summary
-        .as_ref()
-        .and_then(|value| value.get("summaryDTO"));
+    let summary = summary.as_ref().and_then(|value| value.get("summaryDTO"));
     let resting_hr = summary
         .and_then(|value| value.get("restingHeartRate"))
         .and_then(|value| value.as_f64());
@@ -544,7 +542,7 @@ fn write_state(
     let previous = api
         .store()
         .sync_state(kind)
-        .map_err(|_| ApiError::internal("the sync state could not be read"))?;
+        .map_err(|error| api.store_error("the sync state could not be read", &error))?;
     let previous_cursor = previous.as_ref().and_then(|state| state.cursor.clone());
     let previous_expiry = previous.and_then(|state| state.token_expires_at);
     let state = SyncState {
@@ -556,7 +554,7 @@ fn write_state(
     };
     api.store()
         .write_sync_state(&state)
-        .map_err(|_| ApiError::internal("the sync state could not be written"))
+        .map_err(|error| api.store_error("the sync state could not be written", &error))
 }
 
 /// Decode a base64 document.
@@ -596,7 +594,7 @@ pub fn notes(api: &Api) -> ApiResult<usize> {
     api.store()
         .notes_of_kind(note_kind::NOTE)
         .map(|notes| notes.len())
-        .map_err(|_| ApiError::internal("the notes could not be read"))
+        .map_err(|error| api.store_error("the notes could not be read", &error))
 }
 
 /// The time of the day, as the calendar counts it.

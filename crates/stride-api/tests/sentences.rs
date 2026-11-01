@@ -9,6 +9,10 @@
 //! There is no second implementation of a sentence here, and there is
 //! none to drift.
 
+// The tests are allowed to panic and to expect: they are a separate crate,
+// not a `#[cfg(test)]` module, so the lint configuration does not reach them.
+#![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
+
 mod common;
 
 use stride_core::direction::day_directions;
@@ -16,7 +20,7 @@ use stride_core::pattern::{patterns, HistoryDay};
 use stride_core::types::{Duration, Hrv, RestingHr, Sleep, Vitals, WellnessDay};
 use stride_core::Date;
 
-use common::{TODAY, NOW};
+use common::{NOW, TODAY};
 
 /// The core's history of one test: the days, the sleep, the HRV and the
 /// resting heart rate of each.
@@ -132,7 +136,11 @@ fn the_direction_and_the_arithmetic_come_from_the_core() {
     };
     let directions = day_directions(&history, day);
 
-    for (reading, core) in body["vitals"].as_array().unwrap().iter().zip(directions.vitals.iter())
+    for (reading, core) in body["vitals"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .zip(directions.vitals.iter())
     {
         assert_eq!(
             reading["direction_text"].as_str(),
@@ -281,14 +289,20 @@ fn the_contract_s_example_is_the_example_the_router_produces() {
     let vitals = body["vitals"].as_array().unwrap();
 
     assert_eq!(vitals[0]["value_text"].as_str(), Some("6 h 10 m"));
-    assert_eq!(vitals[0]["direction_text"].as_str(), Some("could be better"));
+    assert_eq!(
+        vitals[0]["direction_text"].as_str(),
+        Some("could be better")
+    );
     assert_eq!(
         vitals[0]["deviation_text"].as_str(),
         Some("1 h 10 m less than your usual")
     );
 
     assert_eq!(vitals[1]["value_text"].as_str(), Some("48 ms"));
-    assert_eq!(vitals[1]["direction_text"].as_str(), Some("could be better"));
+    assert_eq!(
+        vitals[1]["direction_text"].as_str(),
+        Some("could be better")
+    );
     assert_eq!(
         vitals[1]["deviation_text"].as_str(),
         Some("14 below your usual")

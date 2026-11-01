@@ -20,7 +20,7 @@ use stride_api::ffi;
 #[test]
 fn a_call_answers_with_the_envelope() {
     let harness = common::Harness::empty("ffi-envelope");
-    ffi::install(stride_api::Router::new(Arc::clone(&harness.router.api().shared())));
+    ffi::install(stride_api::Router::new(Arc::clone(&harness.api)));
 
     let answer = ffi::stride_call("/activities", None);
     let parsed: Value = serde_json::from_str(&answer).expect("the answer is JSON");
@@ -33,7 +33,7 @@ fn a_call_answers_with_the_envelope() {
 #[test]
 fn a_failure_answers_with_the_error_envelope() {
     let harness = common::Harness::empty("ffi-failure");
-    ffi::install(stride_api::Router::new(Arc::clone(&harness.router.api().shared())));
+    ffi::install(stride_api::Router::new(Arc::clone(&harness.api)));
 
     let answer = ffi::stride_call("/nothing/here", None);
     let parsed: Value = serde_json::from_str(&answer).expect("the answer is JSON");
@@ -68,7 +68,7 @@ fn the_panic_payload_is_not_in_the_answer() {
 #[test]
 fn an_answer_handed_over_as_a_pointer_is_freed() {
     let harness = common::Harness::empty("ffi-free");
-    ffi::install(stride_api::Router::new(Arc::clone(&harness.router.api().shared())));
+    ffi::install(stride_api::Router::new(Arc::clone(&harness.api)));
 
     let before = ffi::answers_in_flight();
     let pointer = ffi::stride_call_ptr("GET", "/activities", None);
@@ -93,7 +93,7 @@ fn freeing_a_pointer_that_is_not_ours_is_harmless() {
 #[test]
 fn the_key_goes_in_and_nothing_comes_out() {
     let harness = common::Harness::empty("ffi-key");
-    ffi::install(stride_api::Router::new(Arc::clone(&harness.router.api().shared())));
+    ffi::install(stride_api::Router::new(Arc::clone(&harness.api)));
 
     let answer = ffi::stride_set_garmin_key(common::GARMIN_KEY);
     assert!(!answer.contains(common::GARMIN_KEY));
@@ -110,7 +110,7 @@ fn the_key_goes_in_and_nothing_comes_out() {
 #[test]
 fn the_status_says_what_the_core_is() {
     let harness = common::Harness::empty("ffi-status");
-    ffi::install(stride_api::Router::new(Arc::clone(&harness.router.api().shared())));
+    ffi::install(stride_api::Router::new(Arc::clone(&harness.api)));
     let answer = ffi::stride_status();
     let parsed: Value = serde_json::from_str(&answer).expect("the answer is JSON");
     assert_eq!(parsed["ok"], json!(true));

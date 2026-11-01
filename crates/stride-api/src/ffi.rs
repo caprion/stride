@@ -97,7 +97,9 @@ pub fn stride_call_ptr(method: &str, path: &str, body: Option<&str>) -> *mut c_v
     let mut boxed = bytes.into_boxed_slice();
     let pointer = boxed.as_mut_ptr() as *mut c_void;
     let answers = ANSWERS.get_or_init(|| Mutex::new(HashMap::new()));
-    let mut guard = answers.lock().unwrap_or_else(|poisoned| poisoned.into_inner());
+    let mut guard = answers
+        .lock()
+        .unwrap_or_else(|poisoned| poisoned.into_inner());
     guard.insert(pointer as usize, boxed);
     pointer
 }
@@ -110,7 +112,9 @@ pub fn stride_call_ptr(method: &str, path: &str, body: Option<&str>) -> *mut c_v
 pub fn stride_free(pointer: *mut c_void) {
     let key = pointer as usize;
     let answers = ANSWERS.get_or_init(|| Mutex::new(HashMap::new()));
-    let mut guard = answers.lock().unwrap_or_else(|poisoned| poisoned.into_inner());
+    let mut guard = answers
+        .lock()
+        .unwrap_or_else(|poisoned| poisoned.into_inner());
     guard.remove(&key);
 }
 
@@ -120,7 +124,9 @@ pub fn stride_free(pointer: *mut c_void) {
 /// handed out is in flight, and an answer that is freed is not.
 pub fn answers_in_flight() -> usize {
     let answers = ANSWERS.get_or_init(|| Mutex::new(HashMap::new()));
-    let guard = answers.lock().unwrap_or_else(|poisoned| poisoned.into_inner());
+    let guard = answers
+        .lock()
+        .unwrap_or_else(|poisoned| poisoned.into_inner());
     guard.len()
 }
 
