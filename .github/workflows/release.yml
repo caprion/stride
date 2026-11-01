@@ -162,10 +162,13 @@ jobs:
       # before the real build, and the release build below makes its own APK
       # with the key from the secrets.
       #
-      # The stub core is allowed here, and only here — the real core is not
-      # in the tree yet. `scripts/check_apk.py` still refuses a stub core
-      # ("the Rust core is suspiciously small"), so nothing with a stub can
-      # be published.
+      # The stub core is allowed here, and only here — this step is the
+      # pipeline proving itself with a throwaway key, and the real core is
+      # wired in by the build below. `scripts/check_apk.py` still refuses a
+      # stub core ("the Rust core is suspiciously small"), so nothing with a
+      # stub can be published: the throwaway's artefact is deleted before
+      # the real build, and the published APK must carry the core cargo
+      # built.
       - name: The pipeline proves itself with a throwaway key
         env:
           ANDROID_HOME: /usr/local/lib/android/sdk
