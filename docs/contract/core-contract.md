@@ -191,3 +191,29 @@ and retry twice, and the "exactly one" guarantee would be a coincidence
 rather than a rule. Both sides assert it: the client test asserts one
 exchange per call, and the shell's test asserts one retry per sync.
 
+
+## 8. One owner for the sentences and the rounding
+
+The domain sentences and the domain numbers have **one owner: the core**.
+
+- **The core renders them.** The direction word, the arithmetic tail, the
+  direction of travel, the "Rest" line and the pattern sentences are produced
+  by `stride-core` and travel to the UI **already rendered**. The API sends
+  the sentence, not a template with holes in it.
+- **The frontend renders app chrome only.** Labels, buttons, empty states, the
+  chrome around the sentences. It does not re-implement the domain's
+  wording, and it does not re-implement the domain's rounding.
+- **The rounding belongs to `units.rs`.** Half-even where the contract says
+  half-even, truncation for heart rate, the human form for a duration. A
+  second implementation of "how do we say 30 seconds" is the same disease as
+  a second implementation of the FIT decoder: it will disagree, and it will
+  disagree quietly.
+
+`crates/stride-core/strings.json` is the catalogue's export — it carries the
+ban list, the closed direction set and the minimum pattern sample **with** the
+strings, so the frontend's lint and the core's lint read the same rules. If
+the two ever disagree, the contract's list wins and the export is regenerated.
+
+Two hosts that disagree about a number is a bug. Two hosts that disagree
+about a *sentence* is the same bug, and it is worse, because a sentence is
+what the athlete reads.
