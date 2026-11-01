@@ -111,10 +111,10 @@ fn the_week_is_seven_days_in_order_with_the_right_intent() {
 
 #[test]
 fn a_session_without_a_target_says_that_it_has_no_target() {
-    let session = PlanSession::new(date("2026-05-11"), SessionKind::Easy, None);
-    assert_eq!(session.target_distance_m, None);
-    assert_eq!(session.label, "easy · no distance target");
-    assert_eq!(session_label(&session), "easy · no distance target");
+    let planned = PlanSession::new(date("2026-05-11"), SessionKind::Easy, None);
+    assert_eq!(planned.target_distance_m, None);
+    assert_eq!(planned.label, "easy · no distance target");
+    assert_eq!(session_label(&planned), "easy · no distance target");
 }
 
 #[test]
@@ -153,8 +153,8 @@ fn adherence_is_a_count_and_a_baseline_never_has_a_shortfall() {
 
 #[test]
 fn a_result_states_the_actual_and_the_target_neutrally() {
-    let session = PlanSession::new(date("2026-05-01"), SessionKind::Easy, Some(10_000.0));
-    let block = PlanBlock::new(PlanSource::Prescribed, "A plan".to_string(), vec![session]);
+    let planned = PlanSession::new(date("2026-05-01"), SessionKind::Easy, Some(10_000.0));
+    let block = PlanBlock::new(PlanSource::Prescribed, "A plan".to_string(), vec![planned]);
     let actual = vec![RunFact::new(date("2026-05-01"), Some(8_400.0))];
     let results = results_of(&block, &actual);
     assert_eq!(results.len(), 1);
@@ -167,8 +167,8 @@ fn a_result_states_the_actual_and_the_target_neutrally() {
 
 #[test]
 fn a_baseline_result_never_says_not_done() {
-    let session = PlanSession::new(date("2026-05-01"), SessionKind::Easy, Some(10_000.0));
-    let block = PlanBlock::new(PlanSource::Baseline, "Usual".to_string(), vec![session]);
+    let planned = PlanSession::new(date("2026-05-01"), SessionKind::Easy, Some(10_000.0));
+    let block = PlanBlock::new(PlanSource::Baseline, "Usual".to_string(), vec![planned]);
     let results = results_of(&block, &[]);
     assert_eq!(results[0].status, SessionStatus::Planned);
     assert!(!results[0].ran);

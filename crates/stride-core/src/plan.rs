@@ -138,14 +138,14 @@ impl PlanSession {
     pub fn new(date: Date, kind: SessionKind, target_distance_m: Option<f64>) -> Self {
         let target_distance_m =
             target_distance_m.filter(|distance| distance.is_finite() && *distance >= 0.0);
-        let mut session = Self {
+        let mut planned = Self {
             date,
             kind,
             target_distance_m,
             label: String::new(),
         };
-        session.label = session_label(&session);
-        session
+        planned.label = session_label(&planned);
+        planned
     }
 }
 
@@ -284,7 +284,7 @@ impl SessionResult {
     }
 }
 
-/// The label of a session: "10 km · easy".
+/// The label of an intent: "10 km · easy".
 ///
 /// A session with no target says so: "easy · no distance target". The
 /// target is never rendered as zero.
