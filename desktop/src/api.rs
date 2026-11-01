@@ -99,9 +99,10 @@ pub trait Host: Send + Sync {
 
 /// The router that is not in the build yet.
 ///
-/// It refuses every route with the sentence the phone's stub uses, and it
-/// answers in the envelope the phone's seam uses — the same envelope, so
-/// that the two hosts cannot drift apart in their shape either.
+/// It refuses every route with the sentence the phone's stub uses, and the
+/// refusal is a refusal: the status is in the status line, and the body is
+/// a sentence an athlete can read. It is not an envelope — the contract says
+/// the answer is the body.
 #[derive(Debug, Clone, Copy, Default)]
 pub struct StubRouter;
 
@@ -110,9 +111,10 @@ pub const NOT_BUILT: &str = "the Rust core is not in this build. Nothing is show
 
 impl Router for StubRouter {
     fn call(&self, _request: &Request<'_>) -> Response {
-        Response::json(
+        Response::new(
             503,
-            &format!("{{\"ok\":false,\"status\":503,\"error\":{{\"detail\":\"{NOT_BUILT}\"}}}}"),
+            "text/plain; charset=utf-8",
+            NOT_BUILT.as_bytes().to_vec(),
         )
     }
 }
@@ -121,13 +123,17 @@ impl Router for StubRouter {
 ///
 /// The app's requests all carry the [`API_PREFIX`]; everything else is the
 /// app's own routing, and the app answers it.
-pub fn route_path(path: &str) -> Option<String> {
+///
+/// The prefix is **not** taken off: the router sees the path the app asked
+/// for, and it is the router — and only the router — that decides which
+/// route a path names.
+pub fn route_path(path: &str) -> Option<&str> {
     if path == API_PREFIX {
-        return Some("/".to_string());
+        return Some(path);
     }
     path.strip_prefix(API_PREFIX)
         .filter(|rest| rest.starts_with('/'))
-        .map(|rest| rest.to_string())
+        .map(|_| path)
 }
 
 #[cfg(test)]
@@ -135,12 +141,9 @@ mod tests {
     use super::*;
 
     #[test]
-    fn the_prefix_is_cut_off() {
-        assert_eq!(
-            route_path("/api/v1/activities"),
-            Some("/activities".to_string())
-        );
-        assert_eq!(route_path("/api/v1"), Some("/".to_string()));
+    fn the_prefix_decides_and_is_not_taken_off() {
+        assert_eq!(route_path("/api/v1/activities"), Some("/api/v1/activities"));
+        assert_eq!(route_path("/api/v1"), Some("/api/v1"));
         assert_eq!(route_path("/runs"), None);
         assert_eq!(route_path("/api/v2/activities"), None);
     }
@@ -149,7 +152,7 @@ mod tests {
     fn the_stub_refuses_rather_than_guesses() {
         let answer = StubRouter.call(&Request {
             method: "GET",
-            path: "/activities",
+            path: "/api/v1/activities",
             query: "",
             body: &[],
         });
@@ -159,5 +162,8 @@ mod tests {
             body.contains("the Rust core is not in this build"),
             "{body}"
         );
+        // A refusal is a refusal: the status is in the status line, and the
+        // body is not an envelope around it.
+        assert!(!body.contains("\"ok\""), "{body}");
     }
 }

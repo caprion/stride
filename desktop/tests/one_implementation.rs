@@ -60,13 +60,17 @@ fn the_answer_is_the_router_answer_byte_for_byte() -> Result<()> {
 }
 
 #[test]
-fn the_router_is_asked_for_the_route_without_the_prefix() -> Result<()> {
+fn the_router_is_asked_for_the_path_the_app_asked_for() -> Result<()> {
+    // The contract's rule: the app asks for /api/v1/..., and the router
+    // matches on the path without the query string. The rig hands the path
+    // on as it is — the prefix included — and takes the query string off,
+    // because the query string is not part of the route.
     let server = server(Trust::loopback_only());
     let response = server.handle(&request("GET", "/api/v1/activities?limit=3"), loopback());
     let body = body_of(&response);
     assert!(
-        body.contains("\"path\":\"/activities\""),
-        "the router was asked for the wrong route: {body}"
+        body.contains("\"path\":\"/api/v1/activities\""),
+        "the router was asked for the wrong path: {body}"
     );
     Ok(())
 }

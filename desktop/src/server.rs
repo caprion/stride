@@ -17,6 +17,21 @@
 //!
 //! The trust gate comes first because it is the only step that can say no.
 //!
+//! ## The answer
+//!
+//! **The answer is the body, and the status is the status** — the contract's
+//! rule (`docs/contract/api-paths.md`, "The shape of an answer"). The
+//! router's body goes on the wire as it is, with the router's status in the
+//! status line. There is no envelope, and the rig does not add one.
+//!
+//! ## The path
+//!
+//! The app asks for `/api/v1/...`, and the rig hands the router **the path
+//! the app asked for** — the prefix included, the query string aside. The
+//! rig decides one thing about a path: whether it is for the router or for
+//! the app. Which *route* it names is the router's business, and only the
+//! router's.
+//!
 //! ## The listener
 //!
 //! The rig listens on the loopback by default. A listener on a network is
@@ -87,12 +102,13 @@ impl Server {
             Some(path) => {
                 let answer = self.router.call(&api::Request {
                     method: &request.method,
-                    path: &path,
+                    path,
                     query: &request.query,
                     body: &request.body,
                 });
                 // The router's answer is passed on as it is. The rig is a
-                // host: it does not re-shape what the router said.
+                // host: it does not re-shape what the router said, and it
+                // does not wrap it in an envelope.
                 Response::bytes(answer.status, &answer.content_type, answer.body)
             }
             None => self.spa.serve(&request.path),
