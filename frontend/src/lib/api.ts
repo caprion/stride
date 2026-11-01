@@ -228,7 +228,7 @@ export const api = {
   planSources: () => get<unknown>(ROUTES.planSources),
   planAdherence: () => get<unknown>(ROUTES.planAdherence),
   planResults: () => get<unknown>(ROUTES.planResults),
-  planImport: () => post<PlanImportResult>(ROUTES.planImport),
+  planImport: (payload: unknown) => post<PlanImportResult>(ROUTES.planImport, payload),
 
   /** Today's readout. */
   insightsToday: () => get<TodayInsight>(ROUTES.insightsToday),

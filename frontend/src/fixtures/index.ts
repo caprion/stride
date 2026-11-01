@@ -1080,6 +1080,18 @@ export const syncStatusStaleFixture: SyncStatus = {
   activity_count: 42,
 }
 
+/**
+ * A sync that never happened.
+ *
+ * The app has no key yet: nothing has been pulled, and the first-run
+ * page is the one that takes the key.
+ */
+export const syncStatusFreshFixture: SyncStatus = {
+  last_sync_at: null,
+  last_error: null,
+  activity_count: 0,
+}
+
 /** A sync that did not finish. */
 export const syncStatusFailedFixture: SyncStatus = {
   last_sync_at: new Date(Date.now() - 2 * 3_600_000).toISOString(),
@@ -1109,6 +1121,7 @@ export const healthDailyStaleFixture: HealthDaily = {
  * | `1` (or empty) | everything present |
  * | `over` | the last run beyond 10% of the plan's target |
  * | `empty` | no runs, no wellness, no plan, no key |
+ * | `fresh` | no key yet: the first-run page is the one that takes it |
  * | `stale` | the last sync three days old |
  * | `failed` | the last sync did not finish |
  * | `baseline` | a plan inferred from the athlete's history |
@@ -1156,13 +1169,15 @@ export function fixtureResponse(
     case '/sync/status':
       if (variant === 'stale') return syncStatusStaleFixture
       if (variant === 'failed') return syncStatusFailedFixture
+      if (variant === 'fresh') return syncStatusFreshFixture
       return syncStatusFixture
     case '/health/daily':
       return variant === 'stale' ? healthDailyStaleFixture : healthDailyFixture
     case '/health':
       return healthFixture
     case '/auth/status':
-      return variant === 'empty' ? connectionEmptyFixture : connectionFixture
+      if (variant === 'empty' || variant === 'fresh') return connectionEmptyFixture
+      return connectionFixture
     case '/settings':
       if (variant === 'empty') return settingsEmptyFixture
       if (variant === 'paused') return settingsPausedFixture

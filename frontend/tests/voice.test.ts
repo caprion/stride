@@ -110,6 +110,26 @@ describe('the voice lint', () => {
     expect(failures.join('\n')).toContain('mentions a vital')
   })
 
+  it('fails on a statement with a hole in it', () => {
+    // A statement is a whole sentence: the values it talks about are
+    // already in it.
+    const failures = checkCatalogue(
+      { ...entries, 'x.statement': { type: 'statement', text: '{gap} more than the {target}' } },
+      DIRECTION_WORDS,
+      vitalWords,
+    )
+    expect(failures.join('\n')).toContain('hole')
+  })
+
+  it('allows a statement without a hole', () => {
+    const failures = checkCatalogue(
+      { ...entries, 'x.statement': { type: 'statement', text: 'Your data stays on this phone.' } },
+      DIRECTION_WORDS,
+      vitalWords,
+    )
+    expect(failures).toEqual([])
+  })
+
   it('fails on a banned word written inline in a component', () => {
     const failures = checkInlineText('src/pages/Example.tsx', '<p>You should take the day</p>')
     expect(failures.join('\n')).toContain('should')
