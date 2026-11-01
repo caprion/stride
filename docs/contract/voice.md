@@ -9,18 +9,20 @@ The rule in one line: **facts first, no judgements at all** — the vitals, the
 direction each moved, and the plan's own options. The app never tells the
 athlete what to do, never scores them, and never links an option to a vital.
 
-## The five string types
+## The six string types
 
-There are five string types: the four **registers** — `vital`, `direction`,
-`option`, `pattern` — plus the supporting `status` type. All five are typed in
-the catalogue; the first four are the content, `status` covers connect / sync /
-staleness / empty states.
+There are six string types: the four **registers** — `vital`, `direction`,
+`option`, `pattern` — plus the two supporting types, `statement` and `status`.
+All six are typed in the catalogue; the four registers are the content,
+`statement` carries the sentences that state a fact about a comparison, and
+`status` covers connect / sync / staleness / empty states.
 
 | type | what it is | where it lives |
 |---|---|---|
 | `vital` | label · value · unit — "Sleep — 6 h 10 m" | Today, Body |
 | `direction` | a word from the closed set, beside muted arithmetic and travel — "could be better · 1 h 10 m less than your usual · 3rd night down" | Today, Body |
 | `option` | a session or alternative from the athlete's own plan, listed unranked, never conditioned on the vitals | Today |
+| `statement` | a factual sentence about a comparison — "2.4 km more than the 10 km target", "fitter than 8 weeks ago", "Same distance, 3 weeks apart" | Today, Progress, Compare |
 | `pattern` | what usually happened to this athlete, as a fact about the past, always with its sample size | Body only (never Today, never next to a suggestion) |
 | `status` | connect/sync/staleness and empty-state lines ("last synced 2 days ago", "not enough data for a comparison yet") | anywhere |
 
@@ -67,6 +69,12 @@ and is exempt.
 - **`pattern`** — must carry its sample size **n** ("the 5 other times …");
   never emitted from fewer than **three** comparable days (two is "twice so
   far", not a pattern).
+- **`statement`** — a factual sentence about a comparison. The ban list applies
+  to it like to every other kind; it must not be a directive; and **a rendered
+  statement may not carry a hole** — the values it compares are already in the
+  sentence. A template hole in a statement is where a second implementation
+  grows back. Unlike an `option`, a statement **may** name a vital: a choice
+  is not a fact, and this is a fact.
 - **`option`** — must never reference a vital. "because your sleep was low" is
   the banned link — listing an option *because* a vital was poor would be the
   app judging the vitals. Options are unranked: no "recommended" chip, no

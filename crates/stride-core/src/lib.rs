@@ -21,6 +21,8 @@
 //!   three words, with the arithmetic and the direction of travel beside it.
 //! * [`pattern`] — what usually happened, with its sample size, never from
 //!   fewer than three comparable days.
+//! * [`statement`] — the sixth kind: a factual sentence about the data — the
+//!   distance comparison, the Progress headline, the Compare basis.
 //!
 //! The voice, in one line: facts first, no judgements. The app informs; it
 //! never instructs.
@@ -30,6 +32,7 @@ pub mod date;
 pub mod direction;
 pub mod pattern;
 pub mod rest;
+pub mod statement;
 pub mod strings;
 pub mod types;
 pub mod units;
@@ -39,6 +42,10 @@ pub use date::Date;
 pub use direction::{day_directions, DayDirections, Direction, Travel, VitalDirection};
 pub use pattern::{patterns, HistoryDay, Pattern, PatternKind};
 pub use rest::RestSummary;
+pub use statement::{
+    compare_basis, distance_comparison, distance_comparison_line, progress_headline, CompareBasis,
+    PaceAtHr, ProgressHeadline,
+};
 pub use strings::StringKind;
 pub use types::{
     BetterSide, Distance, Duration, Effort, HeartRate, Hrv, RestingHr, Sleep, VitalKind, Vitals,

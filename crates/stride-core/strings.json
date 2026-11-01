@@ -35,6 +35,18 @@
     { "id": "pattern.usual_streak", "kind": "pattern", "role": null, "template": "your {vital} has been {side} your usual for {n} nights" },
     { "id": "pattern.comparable_outcome", "kind": "pattern", "role": null, "template": "the {n} other times your {vital} was {side} your usual, you ran {distance} or less" },
     { "id": "pattern.comparable_outcome.at_least", "kind": "pattern", "role": null, "template": "the {n} other times your {vital} was {side} your usual, you ran {distance} or more" },
-    { "id": "status.not_enough_data", "kind": "status", "role": null, "template": "not enough data for a comparison yet" }
+    { "id": "statement.distance.more", "kind": "statement", "role": null, "template": "{gap} more than the {target} target" },
+    { "id": "statement.distance.less", "kind": "statement", "role": null, "template": "{gap} less than the {target} target" },
+    { "id": "statement.distance.line", "kind": "statement", "role": null, "template": "{distance} · {comparison}" },
+    { "id": "statement.progress.fitter", "kind": "statement", "role": null, "template": "fitter than {ago}" },
+    { "id": "statement.progress.slower", "kind": "statement", "role": null, "template": "slower than {ago}" },
+    { "id": "statement.progress.unchanged", "kind": "statement", "role": null, "template": "the same pace as {ago}" },
+    { "id": "statement.progress.evidence.faster", "kind": "statement", "role": null, "template": "same heart rate, {pace} s/km faster" },
+    { "id": "statement.progress.evidence.slower", "kind": "statement", "role": null, "template": "same heart rate, {pace} s/km slower" },
+    { "id": "statement.compare.same_distance", "kind": "statement", "role": null, "template": "Same distance, {gap}" },
+    { "id": "statement.compare.same_route", "kind": "statement", "role": null, "template": "Same route, different week" },
+    { "id": "statement.compare.different", "kind": "statement", "role": null, "template": "Different distances — read with care" },
+    { "id": "status.not_enough_data", "kind": "status", "role": null, "template": "not enough data for a comparison yet" },
+    { "id": "status.not_enough_data_yet", "kind": "status", "role": null, "template": "not enough data yet" }
   ]
 }
