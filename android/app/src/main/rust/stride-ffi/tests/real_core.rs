@@ -52,6 +52,18 @@ fn database(name: &str) -> (String, Vec<u8>) {
 }
 
 #[test]
+fn the_real_seam_says_which_backend_it_carries() {
+    let core = uniffi_stride::real::ApiCore::new();
+    let parsed = core.status();
+    assert_eq!(parsed["ok"], json!(true));
+    assert_eq!(parsed["body"]["backend"], json!("stride-api"));
+    assert_eq!(
+        parsed["body"]["backend_marker"],
+        json!("stride-backend:stride-api")
+    );
+}
+
+#[test]
 fn the_seam_answers_the_router_answer() {
     let _lock = alone();
     let (path, bytes) = database("parity");

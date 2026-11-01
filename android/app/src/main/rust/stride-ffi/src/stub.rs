@@ -53,11 +53,15 @@ impl Core for StubCore {
     }
 
     fn status(&self) -> Value {
+        // The installed stub says what it is even in a test binary whose
+        // default feature is the real core. A stub that claimed to be the
+        // router would make the marker meaningless.
         ok_envelope(serde_json::json!({
             "core": "stride-ffi",
             "version": env!("CARGO_PKG_VERSION"),
             "open": false,
-            "backend": "stub",
+            "backend": crate::seam::BACKEND_STUB,
+            "backend_marker": "stride-backend:stub",
         }))
     }
 }

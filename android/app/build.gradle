@@ -277,8 +277,95 @@ tasks.register('copyRustLibrary') {
     }
 }
 
-tasks.matching { it.name == 'preBuild' }.configureEach {
+/**
+ * The backend marker carried by the real seam.
+ *
+ * The seam's status says `"backend": "stride-api"`; the stub says
+ * `"backend": "stub"`. The marker below is the same fact in a form the
+ * release build can read out of a cross-compiled shared object without
+ * running Android. The build checks the library it is about to package,
+ * not the Gradle property that selected the feature.
+ */
+def realBackendMarker = 'stride-backend:stride-api'
+def stubBackendMarker = 'stride-backend:stub'
+
+tasks.register('verifyRustBackend') {
+    group = 'stride'
+    description = 'Refuses a packaged Rust core whose seam says it is the stub.'
     dependsOn 'copyRustLibrary'
+    inputs.property('backend', rustCoreMode)
+    inputs.files(fileTree(rustJniLibsDir) {
+        include "**/libuniffi_stride.so"
+    })
+    outputs.file layout.buildDirectory.file("rust/backend-${targetAbis[0]}-${rustCoreMode}.stamp")
+    doLast {
+        def expected = rustCoreMode == 'real' ? realBackendMarker : stubBackendMarker
+        def library = file("${rustJniLibsDir.get().asFile}/${targetAbis[0]}/libuniffi_stride.so")
+        if (!library.isFile()) {
+            throw new GradleException("The packaged Rust core is missing: ${library}")
+        }
+        def bytes = library.bytes
+        def text = new String(bytes, 'ISO-8859-1')
+        if (!text.contains(expected)) {
+            throw new GradleException(
+                    "The packaged Rust core does not carry the ${expected} marker. " +
+                    'Its seam status must name the backend the release build selected.')
+        }
+        if (rustCoreMode == 'real' && text.contains(stubBackendMarker)) {
+            throw new GradleException(
+                    'The packaged Rust core carries both the real and stub backend markers. ' +
+                    'The release build refuses an ambiguous core.')
+        }
+        logger.lifecycle("stride: the packaged Rust core carries ${expected}.")
+    }
+}
+
+/**
+ * The native strings use the product's voice rules.
+ *
+ * The native shell cannot import the frontend's TypeScript catalogue, so it
+ * reads the core's exported rules — the same ban list and the same matching
+ * mode — and checks every native string and plural against them. Every
+ * native string is a `status`: the shell owns connection, sync, and empty
+ * state chrome, and no domain sentence.
+ */
+tasks.register('lintNativeStrings') {
+    group = 'stride'
+    description = "Checks the native strings against the product's voice rules."
+    def nativeStrings = file('src/main/res/values/strings.xml')
+    def voiceRules = file("${rustWorkspaceDir}/crates/stride-core/strings.json")
+    inputs.file nativeStrings
+    inputs.file voiceRules
+    outputs.file layout.buildDirectory.file('stride/native-strings.lint')
+    doLast {
+        def rules = new groovy.json.JsonSlurper().parse(voiceRules, 'UTF-8')
+        def banned = rules.rules.banned_phrases as List<String>
+        def document = new groovy.xml.XmlParser().parse(nativeStrings)
+        def texts = []
+        document.string.each { texts << it.text() }
+        document.plurals.item.each { texts << it.text() }
+
+        texts.each { text ->
+            banned.each { phrase ->
+                def pattern = java.util.regex.Pattern.compile(
+                        "(?<!\\w)" + java.util.regex.Pattern.quote(phrase) + "(?!\\w)",
+                        java.util.regex.Pattern.CASE_INSENSITIVE)
+                if (pattern.matcher(text).find()) {
+                    throw new GradleException(
+                            "The native string contains the banned phrase '${phrase}': ${text}")
+                }
+            }
+        }
+        def stamp = layout.buildDirectory.file('stride/native-strings.lint').get().asFile
+        stamp.parentFile.mkdirs()
+        stamp.text = "checked ${texts.size()} native strings against ${banned.size()} rules"
+        logger.lifecycle("stride: ${texts.size()} native strings use the product's voice rules.")
+    }
+}
+
+tasks.matching { it.name == 'preBuild' }.configureEach {
+    dependsOn 'verifyRustBackend'
+    dependsOn 'lintNativeStrings'
 }
 
 /**

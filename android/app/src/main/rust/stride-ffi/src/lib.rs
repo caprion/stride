@@ -193,5 +193,7 @@ pub fn status_envelope(open: bool) -> Value {
         "core": "stride-ffi",
         "version": env!("CARGO_PKG_VERSION"),
         "open": open,
+        "backend": seam::COMPILED_BACKEND,
+        "backend_marker": seam::COMPILED_BACKEND_MARKER,
     }))
 }
