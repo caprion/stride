@@ -1415,9 +1415,13 @@ checksum = "a2eb9349b6444b326872e140eb1cf5e7c522154d69e7a0ffb0fb81c06b37543f"
 name = "stride-api"
 version = "0.1.0"
 dependencies = [
+ "chrono",
+ "serde",
+ "serde_json",
  "stride-core",
  "stride-ingest",
  "stride-store",
+ "thiserror 1.0.69",
 ]
 
 [[package]]

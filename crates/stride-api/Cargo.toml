@@ -13,3 +13,11 @@ workspace = true
 stride-core = { path = "../stride-core" }
 stride-ingest = { path = "../stride-ingest" }
 stride-store = { path = "../stride-store" }
+
+# The response shapes are serialized on their way out, and the clock is a
+# `DateTime<Utc>`. Nothing else is needed: the router has no HTTP server of
+# its own, and the FFI surface speaks JSON.
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+chrono = { version = "0.4", features = ["serde"] }
+thiserror = "1"
