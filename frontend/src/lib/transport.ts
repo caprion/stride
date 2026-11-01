@@ -57,11 +57,28 @@ export type ApiErrorKind =
   | 'stale_data'
   | 'not_enough_history'
   | 'garmin_rejected'
+  /** The Garmin session ended; the key can be exchanged once more. */
+  | 'needs_reconnect'
+  /** The request could not be read. */
+  | 'bad_request'
   | 'not_found'
   /** The phone's screen lock: the shell refuses the data routes. */
   | 'locked'
   | 'transport'
   | 'unknown'
+
+/** The kinds a router may answer a failure with. */
+export const API_ERROR_KINDS: readonly ApiErrorKind[] = [
+  'no_plan',
+  'stale_data',
+  'not_enough_history',
+  'garmin_rejected',
+  'needs_reconnect',
+  'bad_request',
+  'not_found',
+  'locked',
+  'unknown',
+]
 
 export class ApiError extends Error {
   readonly kind: ApiErrorKind
@@ -181,10 +198,12 @@ export const httpTransport = async (request: ApiRequest): Promise<unknown> => {
   }
   if (!response.ok) {
     // **The status is in the status line.** A failure is reported as a
-    // failure; the body of a failure is only read for its message.
+    // failure; the body of a failure is only read for its code and its
+    // message.
+    const failure = await failureBody(response)
     throw new ApiError(
-      kindForStatus(response.status, 'http'),
-      await errorText(response),
+      kindForCode(failure.code, response.status, 'http'),
+      failure.detail ?? `the request failed (${response.status})`,
       response.status,
     )
   }
@@ -220,12 +239,42 @@ function kindForStatus(status: number, host: Host): ApiErrorKind {
   return 'unknown'
 }
 
-async function errorText(response: Response): Promise<string> {
+/**
+ * The kind a failure carries.
+ *
+ * The router's answer names its kind — `no_plan`, `stale_data`,
+ * `not_enough_history`, `garmin_rejected` — and the app renders each one
+ * as its own sentence. The status alone cannot tell them apart: a plan
+ * that is not there and a run that is not there are both a 404.
+ *
+ * The phone's bridge carries the status and the message but not the
+ * code, so on the phone the kind falls back to the status.
+ */
+function kindForCode(
+  code: string | undefined,
+  status: number,
+  host: Host,
+): ApiErrorKind {
+  if (code && (API_ERROR_KINDS as readonly string[]).includes(code)) {
+    return code as ApiErrorKind
+  }
+  return kindForStatus(status, host)
+}
+
+/** A failure's code and its message, as the router sent them. */
+async function failureBody(response: Response): Promise<{ code?: string; detail?: string }> {
   try {
-    const body = (await response.json()) as { detail?: string; error?: string }
-    return body.detail ?? body.error ?? `the request failed (${response.status})`
+    const body = (await response.json()) as {
+      code?: string
+      detail?: string
+      error?: { code?: string; detail?: string }
+    }
+    return {
+      code: body.error?.code ?? body.code,
+      detail: body.error?.detail ?? body.detail,
+    }
   } catch {
-    return `the request failed (${response.status})`
+    return {}
   }
 }
 
