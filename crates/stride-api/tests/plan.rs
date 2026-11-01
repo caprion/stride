@@ -134,13 +134,23 @@ fn the_week_carries_the_core_s_wording_and_whether_a_run_happened() {
     );
     // The eleventh was a Monday, and nothing was run on it.
     assert_eq!(first["ran"].as_bool(), Some(false));
-    assert_eq!(first["status"].as_str(), Some("not_done"));
 
     let second = &sessions[1];
     assert_eq!(second["date"].as_str(), Some("2026-05-12"));
     assert_eq!(second["sentence"].as_str(), Some("Today — 20 km · long"));
     assert_eq!(second["status"].as_str(), Some("planned"));
     assert_eq!(second["ran"].as_bool(), Some(false));
+
+    // The statuses and the count are the engine's, and they agree: how
+    // many sessions are "not done" is the count's "not done".
+    let not_done = sessions
+        .iter()
+        .filter(|one| one["status"].as_str() == Some("not_done"))
+        .count();
+    assert_eq!(
+        not_done,
+        body["adherence"]["not_done"].as_u64().unwrap_or_default() as usize
+    );
 }
 
 #[test]

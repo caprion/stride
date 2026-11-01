@@ -75,15 +75,16 @@ pub fn current(api: &Api, request: &Request) -> ApiResult<Value> {
 pub fn today(api: &Api, _request: &Request) -> ApiResult<Value> {
     let current = super::today(api)?;
     let active = plan::active_or_empty(api)?;
-    let source = active.source_name();
+    let facts = plan::run_facts(api, "0000-01-01", &current.to_iso())?;
     let planned = match stride_core::plan::today_of(&active.block, current) {
         Some(one) => {
             let actual = plan::distance_on(api, &current.to_iso())?;
             Some(plan::session_of(
                 one,
                 current,
-                source,
+                active.source,
                 current,
+                &facts,
                 actual,
                 actual.is_some(),
             ))
@@ -112,6 +113,7 @@ pub fn week(api: &Api, request: &Request) -> ApiResult<Value> {
     let end = start.add_days(6);
     let active = plan::active_or_empty(api)?;
     let source = active.source_name();
+    let facts = plan::run_facts(api, "0000-01-01", &end.to_iso())?;
 
     let sessions = stride_core::plan::week_of(&active.block, day);
     let mut rendered: Vec<PlanSession> = Vec::with_capacity(sessions.len());
@@ -120,8 +122,9 @@ pub fn week(api: &Api, request: &Request) -> ApiResult<Value> {
         rendered.push(plan::session_of(
             session,
             session.date,
-            source,
+            active.source,
             day,
+            &facts,
             actual,
             actual.is_some(),
         ));
@@ -141,7 +144,6 @@ pub fn week(api: &Api, request: &Request) -> ApiResult<Value> {
         name: active.name.clone(),
         sessions: sessions.clone(),
     };
-    let facts = plan::run_facts(api, "0000-01-01", &end.to_iso())?;
     let adherence = plan::adherence_of(stride_core::plan::adherence_of(&week_block, &facts));
 
     let response = PlanWeek {
@@ -294,7 +296,7 @@ pub fn results(api: &Api, request: &Request) -> ApiResult<Value> {
     let current = super::today(api)?;
     let active = plan::active_or_empty(api)?;
     let facts = plan::run_facts(api, "0000-01-01", &current.to_iso())?;
-    let rendered: Vec<PlanResult> = plan::results_of(api, &active, &facts, current)?;
+    let rendered: Vec<PlanResult> = plan::results_of(api, &active, &facts)?;
     let response = PlanResults {
         results: rendered,
         generated_at: api.generated_at(),

@@ -251,21 +251,7 @@ pub fn session_sentence(day: Date, today: Date, summary: &str) -> String {
     .unwrap_or_else(|| summary.to_string())
 }
 
-/// Whether a planned session was run.
-///
-/// The status is computed on read: a stored verdict would be a judgement
-/// the plan forbids. A **baseline** never yields "not done" — an inferred
-/// baseline is not a prescription, and the plan says so.
-pub fn session_status(date: Date, today: Date, source: &str, ran: bool) -> &'static str {
-    if ran {
-        return "done";
-    }
-    if date < today && source != stride_store::model::plan_source::BASELINE {
-        return "not_done";
-    }
-    "planned"
-}
-
+/// The runs of every week, oldest first.
 /// The runs of every week, oldest first.
 pub fn weeks(runs: &[StoredActivity]) -> Vec<(Date, Vec<&StoredActivity>)> {
     let mut grouped: BTreeMap<String, Vec<&StoredActivity>> = BTreeMap::new();

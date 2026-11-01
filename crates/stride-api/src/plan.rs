@@ -282,13 +282,14 @@ pub fn distance_on(api: &Api, date: &str) -> ApiResult<Option<f64>> {
 /// One session of the plan, as the answer carries it.
 ///
 /// The label and the wording are the core's, the target and the actual are
-/// the core's rendering of the numbers, and the status is the plan's plain
-/// fact: *done*, *not done* or *planned*.
+/// the core's rendering of the numbers, and **the status is the core's
+/// answer**: *done*, *not done* or *planned*.
 pub fn session_of(
     session: &CoreSession,
     date: Date,
-    source: &str,
+    source: CoreSource,
     current: Date,
+    facts: &[RunFact],
     actual_m: Option<f64>,
     ran: bool,
 ) -> PlanSession {
@@ -302,9 +303,34 @@ pub fn session_of(
         sentence,
         target: render::distance(session.target_distance_m),
         actual: render::distance(actual_m),
-        status: crate::routes::session_status(date, current, source, ran).to_string(),
+        status: status_of(source, session, facts).to_string(),
         ran,
-        source: source.to_string(),
+        source: source_name(source).to_string(),
+    }
+}
+
+/// The status of one session: *done*, *not done* or *planned*.
+///
+/// **The core's answer.** The engine is asked about the session on its own,
+/// and it answers with the same rule it uses for the count — so a session's
+/// status and the block's count can never disagree, and the rule lives in
+/// one place.
+///
+/// A **baseline** never says "not done": an inferred week is not a
+/// prescription, and that is the engine's rule and not this crate's.
+pub fn status_of(source: CoreSource, session: &CoreSession, facts: &[RunFact]) -> &'static str {
+    let one = CoreBlock {
+        source,
+        name: String::new(),
+        sessions: vec![session.clone()],
+    };
+    let count = stride_core::plan::adherence_of(&one, facts);
+    if count.done > 0 {
+        "done"
+    } else if count.not_done > 0 {
+        "not_done"
+    } else {
+        "planned"
     }
 }
 
@@ -321,13 +347,8 @@ pub fn adherence_of(adherence: CoreAdherence) -> Adherence {
 ///
 /// The intent, what happened and the difference between the two — the
 /// difference as the core states it, and only when there is one to state.
-pub fn results_of(
-    api: &Api,
-    plan: &ActivePlan,
-    facts: &[RunFact],
-    current: Date,
-) -> ApiResult<Vec<PlanResult>> {
-    let source = plan.source_name();
+pub fn results_of(api: &Api, plan: &ActivePlan, facts: &[RunFact]) -> ApiResult<Vec<PlanResult>> {
+    let source = plan.source;
     let results: Vec<CoreSessionResult> = stride_core::plan::results_of(&plan.block, facts);
     // The ids belong to the store: a session that was written down has one,
     // and a session of the baseline does not.
@@ -345,7 +366,6 @@ pub fn results_of(
     for result in results.iter() {
         let date = result.date.to_iso();
         let actual_m = result.actual_distance_m;
-        let ran = actual_m.is_some();
         let session_id = stored
             .iter()
             .find(|(stored_date, _)| *stored_date == date)
@@ -360,7 +380,17 @@ pub fn results_of(
                 target_distance_m: result.target_distance_m,
                 label: result.label.clone(),
             }),
-            status: crate::routes::session_status(result.date, current, source, ran).to_string(),
+            status: status_of(
+                source,
+                &CoreSession {
+                    date: result.date,
+                    kind: result.kind.clone(),
+                    target_distance_m: result.target_distance_m,
+                    label: result.label.clone(),
+                },
+                facts,
+            )
+            .to_string(),
             target: render::distance(result.target_distance_m),
             actual: render::distance(actual_m),
             difference: stride_core::plan::distance_comparison(actual_m, result.target_distance_m),

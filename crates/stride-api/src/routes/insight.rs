@@ -35,7 +35,7 @@ pub fn today(api: &Api, request: &Request) -> ApiResult<Value> {
     let _ = request;
     let current = super::today(api)?;
     let active = crate::plan::active_or_empty(api)?;
-    let source = active.source_name();
+    let facts = crate::plan::run_facts(api, "0000-01-01", &current.to_iso())?;
 
     let mut planned = None;
     let mut options = Vec::new();
@@ -44,8 +44,9 @@ pub fn today(api: &Api, request: &Request) -> ApiResult<Value> {
         let rendered = crate::plan::session_of(
             session,
             session.date,
-            source,
+            active.source,
             current,
+            &facts,
             actual,
             actual.is_some(),
         );
