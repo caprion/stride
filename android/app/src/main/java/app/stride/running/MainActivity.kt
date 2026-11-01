@@ -89,7 +89,7 @@ class MainActivity : BridgeActivity() {
         Thread({
             val problem = StrideCore.ensureOpen(applicationContext)
             if (problem != null) {
-                Log.i("Stride", "the core is not open: $problem")
+                Log.i("Stride", "the core is not open")
                 return@Thread
             }
             // The phone's key lives in the Keystore and the core never keeps
@@ -98,8 +98,8 @@ class MainActivity : BridgeActivity() {
             // memory.
             val key = try {
                 Secrets.garminKey(applicationContext)
-            } catch (error: Exception) {
-                Log.i("Stride", "the Garmin key could not be read: ${error.message}")
+            } catch (_: Exception) {
+                Log.i("Stride", "the Garmin key could not be read")
                 null
             }
             StrideCore.setGarminConnected(!key.isNullOrBlank())
@@ -141,18 +141,18 @@ class MainActivity : BridgeActivity() {
         setupOpened = true
         try {
             startActivity(Intent(this, GarminSetupActivity::class.java))
-        } catch (error: Exception) {
-            Log.w("Stride", "the setup screen could not be opened: ${error.message}")
+        } catch (_: Exception) {
+            Log.w("Stride", "the setup screen could not be opened")
         }
     }
 
     /** Whether the phone holds a Garmin key. */
     private fun hasGarminKey(): Boolean = try {
         !Secrets.garminKey(this).isNullOrBlank()
-    } catch (error: Exception) {
+    } catch (_: Exception) {
         // A phone whose key store has been reset has no key, and the
         // setup screen is the way to put one back.
-        Log.i("Stride", "the Garmin key could not be read: ${error.message}")
+        Log.i("Stride", "the Garmin key could not be read")
         false
     }
 
@@ -170,8 +170,8 @@ class MainActivity : BridgeActivity() {
                 .bufferedReader()
                 .use { it.readText() }
             JSONObject(text)
-        } catch (error: Exception) {
-            Log.w("Stride", "the packaged configuration could not be read: ${error.message}")
+        } catch (_: Exception) {
+            Log.w("Stride", "the packaged configuration could not be read")
             JSONObject()
         }
         val server = json.optJSONObject("server") ?: JSONObject()

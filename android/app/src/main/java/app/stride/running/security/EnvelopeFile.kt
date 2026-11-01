@@ -106,9 +106,19 @@ class EnvelopeFile(
         write(plaintext.toByteArray(Charsets.UTF_8))
     }
 
-    /** Forget the secret. */
-    fun clear() {
-        file().delete()
-        File(context.noBackupFilesDir, "$name.tmp").delete()
+    /**
+     * Forget the secret.
+     *
+     * The answer says whether the envelope is gone. A caller that removes
+     * a credential must not claim that it was removed when the file is
+     * still there, so the filesystem's answer is passed on rather than
+     * hidden.
+     */
+    fun clear(): Boolean {
+        val target = file()
+        val targetRemoved = !target.exists() || target.delete()
+        val temporary = File(context.noBackupFilesDir, "$name.tmp")
+        val temporaryRemoved = !temporary.exists() || temporary.delete()
+        return targetRemoved && temporaryRemoved
     }
 }

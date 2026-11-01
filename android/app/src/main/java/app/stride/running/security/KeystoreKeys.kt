@@ -115,11 +115,16 @@ object KeystoreKeys {
         return keyStore.containsAlias(alias)
     }
 
-    /** Forget a wrapping key. The envelope it protected becomes unreadable. */
-    fun delete(alias: String) {
+    /**
+     * Forget a wrapping key. The envelope it protected becomes unreadable.
+     *
+     * The answer says whether the alias is gone. An alias that was not
+     * there counts as removed: there is nothing left to use.
+     */
+    fun delete(alias: String): Boolean {
         val keyStore = KeyStore.getInstance(ANDROID_KEYSTORE).apply { load(null) }
-        if (keyStore.containsAlias(alias)) {
-            keyStore.deleteEntry(alias)
-        }
+        if (!keyStore.containsAlias(alias)) return true
+        keyStore.deleteEntry(alias)
+        return !keyStore.containsAlias(alias)
     }
 }
