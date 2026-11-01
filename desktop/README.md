@@ -116,7 +116,7 @@ lives in one of three places:
 
 | where | how |
 |---|---|
-| **in memory** | pasted into the connect screen; held for the session |
+| **in memory** | pasted into the app's own field; held for the session |
 | **in the environment** | `STRIDE_GARMIN_KEY=…` |
 | **in a file** | `~/.local/share/stride/garmin.key`, with `0600` |
 

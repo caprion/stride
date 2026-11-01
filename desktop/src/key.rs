@@ -1,15 +1,15 @@
 //! The Garmin key.
 //!
 //! **One credential for the whole product**: the Garmin Personal API key. It
-//! is the thing the athlete pastes into the connect screen, and it is the
+//! is the thing the athlete pastes into the app's own field, and it is the
 //! only secret the athlete ever types.
 //!
 //! ## Where it lives at runtime
 //!
 //! Three places, and no more:
 //!
-//! * **in memory**, for the length of the session — the connect screen
-//!   posts it, and the rig holds it until it is forgotten;
+//! * **in memory**, for the length of the session — the app's field posts
+//!   it, and the rig holds it until it is forgotten;
 //! * **an environment variable** — `STRIDE_GARMIN_KEY` — for a rig that a
 //!   script starts;
 //! * **a file with `0600`** in the data directory — for a rig that is
@@ -84,7 +84,7 @@ impl fmt::Debug for GarminKey {
 /// Where the key came from.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Source {
-    /// It was typed into the connect screen, and it is in memory.
+    /// It was typed into the app's own field, and it is in memory.
     Memory,
     /// It was read from `STRIDE_GARMIN_KEY`.
     Environment,
