@@ -31,7 +31,9 @@ describe('Today, with nothing in it', () => {
   it('says what is missing, and invents no numbers', async () => {
     window.history.pushState({}, '', '/?fixtures=empty')
     const { container } = renderApp('/')
-    await waitFor(() => expect(container.querySelector('[data-testid="today-empty"]')).toBeTruthy())
+    await waitFor(() =>
+      expect(container.querySelector('[data-testid="today-empty"]')).toBeTruthy(),
+    )
 
     expect(container.textContent).toContain("Connect your Garmin key to see today's numbers")
     expect(container.textContent).toContain('Connect Garmin')
@@ -60,13 +62,15 @@ describe('Today, with the data gone stale', () => {
   it('says when it was last synced', async () => {
     window.history.pushState({}, '', '/?fixtures=stale')
     const { container } = renderApp('/')
-    await waitFor(() => expect(container.querySelector('[data-testid="today-vitals"]')).toBeTruthy())
+    await waitFor(() =>
+      expect(container.querySelector('[data-testid="today-vitals"]')).toBeTruthy(),
+    )
 
     expect(container.textContent).toContain('last synced 3 days ago')
     // And the numbers say which day they are from.
-    expect(container.querySelector('[data-testid="today-reading-date"]')?.textContent).toContain(
-      'From',
-    )
+    expect(
+      container.querySelector('[data-testid="today-reading-date"]')?.textContent,
+    ).toContain('From')
   })
 })
 
@@ -82,7 +86,9 @@ describe('Today, with the sync broken', () => {
     expect(container.textContent).toContain('Garmin refused the token')
     expect(container.textContent).toContain('Try again')
     // The numbers are there, but they are the last good ones.
-    expect(container.querySelector('[data-testid="today-vitals"]')?.className).toContain('opacity-60')
+    expect(container.querySelector('[data-testid="today-vitals"]')?.className).toContain(
+      'opacity-60',
+    )
   })
 })
 
@@ -90,7 +96,9 @@ describe('Body, with too little history', () => {
   it('says that there is not enough data, and shows the value alone', async () => {
     window.history.pushState({}, '', '/?fixtures=notenough')
     const { container } = renderApp('/body')
-    await waitFor(() => expect(container.querySelector('[data-testid="body-signals"]')).toBeTruthy())
+    await waitFor(() =>
+      expect(container.querySelector('[data-testid="body-signals"]')).toBeTruthy(),
+    )
 
     expect(container.textContent).toContain('not enough data for a comparison yet')
     // The value is there; the direction is not, because there is none.
@@ -103,7 +111,9 @@ describe('Body, with nothing in it', () => {
   it('says what is missing', async () => {
     window.history.pushState({}, '', '/?fixtures=empty')
     const { container } = renderApp('/body')
-    await waitFor(() => expect(container.querySelector('[data-testid="body-empty"]')).toBeTruthy())
+    await waitFor(() =>
+      expect(container.querySelector('[data-testid="body-empty"]')).toBeTruthy(),
+    )
 
     expect(container.textContent).toContain('No wellness data yet')
   })
@@ -118,9 +128,9 @@ describe('Progress, with too little history', () => {
     )
 
     expect(container.textContent).toContain('not enough data yet')
-    expect(container.querySelector('[data-testid="progress-needs-more"]')?.textContent).toContain(
-      'Needs 4 more weeks',
-    )
+    expect(
+      container.querySelector('[data-testid="progress-needs-more"]')?.textContent,
+    ).toContain('Needs 4 more weeks')
     expect(container.textContent).not.toContain('%')
   })
 })
@@ -141,7 +151,9 @@ describe('the Runs page', () => {
   it('says that there is nothing yet, and offers the two actions', async () => {
     window.history.pushState({}, '', '/?fixtures=empty')
     const { container } = renderApp('/runs')
-    await waitFor(() => expect(container.querySelector('[data-testid="runs-empty"]')).toBeTruthy())
+    await waitFor(() =>
+      expect(container.querySelector('[data-testid="runs-empty"]')).toBeTruthy(),
+    )
 
     expect(container.textContent).toContain('No activities yet')
     expect(container.textContent).toContain('Connect Garmin')
@@ -150,7 +162,9 @@ describe('the Runs page', () => {
 
   it('offers the import as a drop target on the desktop', async () => {
     const { container } = renderApp('/runs')
-    await waitFor(() => expect(container.querySelector('[data-testid="fit-import"]')).toBeTruthy())
+    await waitFor(() =>
+      expect(container.querySelector('[data-testid="fit-import"]')).toBeTruthy(),
+    )
 
     expect(container.querySelector('[data-testid="fit-drop"]')?.textContent).toContain(
       'Drop a FIT file here',
@@ -161,13 +175,17 @@ describe('the Runs page', () => {
     window.history.pushState({}, '', '/?fixtures=duplicate')
     const user = userEvent.setup()
     const { container } = renderApp('/runs')
-    await waitFor(() => expect(container.querySelector('[data-testid="fit-import"]')).toBeTruthy())
+    await waitFor(() =>
+      expect(container.querySelector('[data-testid="fit-import"]')).toBeTruthy(),
+    )
 
     const input = container.querySelector('[data-testid="fit-file"]') as HTMLInputElement
     const file = new File(['not a fit file'], 'run.fit', { type: 'application/octet-stream' })
     await user.upload(input, file)
 
-    await waitFor(() => expect(container.querySelector('[data-testid="fit-answer"]')).toBeTruthy())
+    await waitFor(() =>
+      expect(container.querySelector('[data-testid="fit-answer"]')).toBeTruthy(),
+    )
     const answer = container.querySelector('[data-testid="fit-answer"]')?.textContent ?? ''
     expect(answer).toContain('Already have this run')
     expect(answer).toContain('9 May')
@@ -178,7 +196,9 @@ describe('the Runs page', () => {
 describe('the Activity page', () => {
   it('shows the note, and the line against the plan', async () => {
     const { container } = renderApp('/runs/101')
-    await waitFor(() => expect(container.querySelector('[data-testid="activity-detail"]')).toBeTruthy())
+    await waitFor(() =>
+      expect(container.querySelector('[data-testid="activity-detail"]')).toBeTruthy(),
+    )
 
     // The plan line, when there is a plan.
     expect(container.textContent).toContain('of a 10 km target')
@@ -190,28 +210,36 @@ describe('the Activity page', () => {
   it('saves a note on the run', async () => {
     const user = userEvent.setup()
     const { container } = renderApp('/runs/101')
-    await waitFor(() => expect(container.querySelector('[data-testid="activity-note"]')).toBeTruthy())
+    await waitFor(() =>
+      expect(container.querySelector('[data-testid="activity-note"]')).toBeTruthy(),
+    )
 
-    await user.click(container.querySelector('[data-testid="activity-note-edit"]') as HTMLElement)
+    await user.click(
+      container.querySelector('[data-testid="activity-note-edit"]') as HTMLElement,
+    )
     await user.type(
       container.querySelector('[data-testid="activity-note-input"]') as HTMLElement,
       'Felt easy all the way.',
     )
-    await user.click(container.querySelector('[data-testid="activity-note-save"]') as HTMLElement)
+    await user.click(
+      container.querySelector('[data-testid="activity-note-save"]') as HTMLElement,
+    )
 
     await waitFor(() =>
       expect(container.querySelector('[data-testid="activity-note-text"]')).toBeTruthy(),
     )
-    expect(container.querySelector('[data-testid="activity-note-text"]')?.textContent).toContain(
-      'Felt easy all the way.',
-    )
+    expect(
+      container.querySelector('[data-testid="activity-note-text"]')?.textContent,
+    ).toContain('Felt easy all the way.')
   })
 })
 
 describe('the Plan week', () => {
   it('shows the seven days, the source and the three counts', async () => {
     const { container } = renderApp('/plan')
-    await waitFor(() => expect(container.querySelector('[data-testid="plan-week"]')).toBeTruthy())
+    await waitFor(() =>
+      expect(container.querySelector('[data-testid="plan-week"]')).toBeTruthy(),
+    )
 
     const days = container.querySelectorAll('[data-testid^="plan-day-2"]')
     expect(days.length).toBe(7)
@@ -222,19 +250,23 @@ describe('the Plan week', () => {
     )
 
     // The counts, and never a percentage that hides them.
-    expect(container.querySelector('[data-testid="plan-count-done"]')?.textContent).toContain('1 done')
-    expect(container.querySelector('[data-testid="plan-count-planned"]')?.textContent).toContain(
-      '5 planned',
+    expect(container.querySelector('[data-testid="plan-count-done"]')?.textContent).toContain(
+      '1 done',
     )
-    expect(container.querySelector('[data-testid="plan-count-not-done"]')?.textContent).toContain(
-      '1 not done',
-    )
+    expect(
+      container.querySelector('[data-testid="plan-count-planned"]')?.textContent,
+    ).toContain('5 planned')
+    expect(
+      container.querySelector('[data-testid="plan-count-not-done"]')?.textContent,
+    ).toContain('1 not done')
     expect(container.textContent).not.toContain('%')
   })
 
   it('never says "missed"', async () => {
     const { container } = renderApp('/plan')
-    await waitFor(() => expect(container.querySelector('[data-testid="plan-week"]')).toBeTruthy())
+    await waitFor(() =>
+      expect(container.querySelector('[data-testid="plan-week"]')).toBeTruthy(),
+    )
 
     expect(container.textContent?.toLowerCase()).not.toContain('missed')
   })
@@ -242,21 +274,25 @@ describe('the Plan week', () => {
   it('names a baseline plan as the source it is', async () => {
     window.history.pushState({}, '', '/?fixtures=baseline')
     const { container } = renderApp('/plan')
-    await waitFor(() => expect(container.querySelector('[data-testid="plan-week"]')).toBeTruthy())
+    await waitFor(() =>
+      expect(container.querySelector('[data-testid="plan-week"]')).toBeTruthy(),
+    )
 
     expect(container.querySelector('[data-testid="plan-source"]')?.textContent).toContain(
       'Baseline (inferred from your history)',
     )
     // A baseline is not a prescription, so it never says "not done".
-    expect(container.querySelector('[data-testid="plan-count-not-done"]')?.textContent).toContain(
-      '0 not done',
-    )
+    expect(
+      container.querySelector('[data-testid="plan-count-not-done"]')?.textContent,
+    ).toContain('0 not done')
   })
 
   it('says when there is no plan at all', async () => {
     window.history.pushState({}, '', '/?fixtures=noplan')
     const { container } = renderApp('/plan')
-    await waitFor(() => expect(container.querySelector('[data-testid="plan-none"]')).toBeTruthy())
+    await waitFor(() =>
+      expect(container.querySelector('[data-testid="plan-none"]')).toBeTruthy(),
+    )
 
     expect(container.textContent).toContain('No plan is active')
     expect(container.textContent).toContain('imported, or inferred from your own history')
@@ -292,9 +328,9 @@ describe('the Compare page', () => {
     await user.click(screen.getByTestId('compare-swap'))
 
     await waitFor(() =>
-      expect(container.querySelector('[data-testid="compare-row-pace"]')?.textContent).toContain(
-        '+11 s/km',
-      ),
+      expect(
+        container.querySelector('[data-testid="compare-row-pace"]')?.textContent,
+      ).toContain('+11 s/km'),
     )
   })
 })

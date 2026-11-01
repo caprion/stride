@@ -35,13 +35,7 @@ import { FitImport } from '../components/FitImport'
 import { KeyField } from '../components/KeyField'
 import { PlanImport } from '../components/PlanImport'
 import { PageHeader } from '../ui/layout/PageHeader'
-import {
-  Choice,
-  Field,
-  Notice,
-  SettingRow,
-  SettingsGroup,
-} from '../ui/settings/SettingsGroup'
+import { Choice, Field, Notice, SettingRow, SettingsGroup } from '../ui/settings/SettingsGroup'
 
 /** The reasons a pause can have. The athlete's own words for it. */
 const REASONS: { value: string; label: string }[] = [
@@ -83,7 +77,9 @@ export function SettingsPage() {
   const exportBackup = useMutation({
     mutationFn: () => api.exportBackup(),
     onSuccess: (result) => {
-      setNotice(result.exported ? t('settings.storage.exported') : t('settings.storage.exportFailed'))
+      setNotice(
+        result.exported ? t('settings.storage.exported') : t('settings.storage.exportFailed'),
+      )
     },
   })
 
@@ -164,7 +160,9 @@ export function SettingsPage() {
               onClick={() => {
                 const km = goalValue.trim() === '' ? null : Number(goalValue.trim())
                 if (km !== null && !Number.isFinite(km)) return
-                setGoalNotice(km === null ? t('settings.goal.cleared') : t('settings.goal.saved'))
+                setGoalNotice(
+                  km === null ? t('settings.goal.cleared') : t('settings.goal.saved'),
+                )
                 setGoal(null)
                 save.mutate({ goal_km: km })
               }}
@@ -275,7 +273,11 @@ export function SettingsPage() {
         <SettingsGroup title={t('settings.connection.heading')} testId="settings-connection">
           <SettingRow
             label={t('settings.connection.status')}
-            value={link?.connected ? t('settings.connection.connected') : t('settings.connection.notConnected')}
+            value={
+              link?.connected
+                ? t('settings.connection.connected')
+                : t('settings.connection.notConnected')
+            }
             testId="settings-connection-state"
           />
           <SettingRow
@@ -292,7 +294,9 @@ export function SettingsPage() {
             }
             testId="settings-connection-sync"
           />
-          <p className="mt-1 text-[12.5px] text-ink-faint">{t('settings.connection.keyNote')}</p>
+          <p className="mt-1 text-[12.5px] text-ink-faint">
+            {t('settings.connection.keyNote')}
+          </p>
 
           {showKey ? (
             <div className="mt-3">
@@ -394,7 +398,9 @@ export function SettingsPage() {
               <div data-testid="settings-delete-confirm">
                 <p className="text-[13.5px] text-ink-soft">{t('settings.delete.what')}</p>
                 <p className="text-[13.5px] text-ink-soft">{t('settings.delete.undo')}</p>
-                <p className="mt-2 text-[13px] text-ink-muted">{t('settings.delete.confirm')}</p>
+                <p className="mt-2 text-[13px] text-ink-muted">
+                  {t('settings.delete.confirm')}
+                </p>
                 <input
                   type="text"
                   value={confirmation}

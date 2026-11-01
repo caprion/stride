@@ -32,7 +32,10 @@ export function ConnectPage() {
         </div>
 
         {/* The promise, in one line, before anything else. */}
-        <p className="text-[19px] font-semibold leading-snug text-ink" data-testid="connect-promise">
+        <p
+          className="text-[19px] font-semibold leading-snug text-ink"
+          data-testid="connect-promise"
+        >
           {t('connect.promise')}
         </p>
 

@@ -23,8 +23,7 @@ export function FitImport() {
   const onPhone = currentHost() === 'native'
 
   const send = useMutation({
-    mutationFn: async (file: File) =>
-      api.importFit({ fit_base64: await fileAsBase64(file) }),
+    mutationFn: async (file: File) => api.importFit({ fit_base64: await fileAsBase64(file) }),
     onSuccess: (result) => {
       if (result.duplicate && result.date) {
         setAnswer(

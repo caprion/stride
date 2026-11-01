@@ -20,7 +20,9 @@ describe('the first-run page', () => {
   it('stands alone: no chrome, no tabs, no destinations', async () => {
     window.history.pushState({}, '', '/?fixtures=fresh')
     const { container } = renderApp('/connect')
-    await waitFor(() => expect(container.querySelector('[data-testid="key-input"]')).toBeTruthy())
+    await waitFor(() =>
+      expect(container.querySelector('[data-testid="key-input"]')).toBeTruthy(),
+    )
 
     expect(container.querySelector('.shell')).toBeNull()
     expect(container.querySelectorAll('[data-destination]')).toHaveLength(0)
@@ -31,7 +33,9 @@ describe('the first-run page', () => {
   it('states the promise in one line, before the field', async () => {
     window.history.pushState({}, '', '/?fixtures=fresh')
     const { container } = renderApp('/connect')
-    await waitFor(() => expect(container.querySelector('[data-testid="key-input"]')).toBeTruthy())
+    await waitFor(() =>
+      expect(container.querySelector('[data-testid="key-input"]')).toBeTruthy(),
+    )
 
     expect(container.querySelector('[data-testid="connect-promise"]')?.textContent).toBe(
       'Your data stays on this phone.',
@@ -39,13 +43,17 @@ describe('the first-run page', () => {
     // The promise comes before the field.
     const promise = container.querySelector('[data-testid="connect-promise"]') as HTMLElement
     const field = container.querySelector('[data-testid="key-input"]') as HTMLElement
-    expect(promise.compareDocumentPosition(field) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    expect(
+      promise.compareDocumentPosition(field) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy()
   })
 
   it('takes the key in a masked field, with the two actions', async () => {
     window.history.pushState({}, '', '/?fixtures=fresh')
     const { container } = renderApp('/connect')
-    await waitFor(() => expect(container.querySelector('[data-testid="key-input"]')).toBeTruthy())
+    await waitFor(() =>
+      expect(container.querySelector('[data-testid="key-input"]')).toBeTruthy(),
+    )
 
     const field = container.querySelector('[data-testid="key-input"]') as HTMLInputElement
     expect(field.type).toBe('password')
@@ -58,9 +66,14 @@ describe('the first-run page', () => {
     const user = userEvent.setup()
     window.history.pushState({}, '', '/?fixtures=fresh')
     const { container } = renderApp('/connect')
-    await waitFor(() => expect(container.querySelector('[data-testid="key-input"]')).toBeTruthy())
+    await waitFor(() =>
+      expect(container.querySelector('[data-testid="key-input"]')).toBeTruthy(),
+    )
 
-    await user.type(container.querySelector('[data-testid="key-input"]') as HTMLElement, 'a-key')
+    await user.type(
+      container.querySelector('[data-testid="key-input"]') as HTMLElement,
+      'a-key',
+    )
     await user.click(screen.getByTestId('key-test'))
 
     expect(window.location.search).not.toContain('a-key')
@@ -71,19 +84,25 @@ describe('the first-run page', () => {
     const user = userEvent.setup()
     window.history.pushState({}, '', '/?fixtures=fresh')
     const { container } = renderApp('/connect')
-    await waitFor(() => expect(container.querySelector('[data-testid="key-input"]')).toBeTruthy())
+    await waitFor(() =>
+      expect(container.querySelector('[data-testid="key-input"]')).toBeTruthy(),
+    )
 
     await user.click(screen.getByTestId('connect-not-now'))
 
     // The app opens on Today, and Today says what is missing.
-    await waitFor(() => expect(container.querySelector('[data-testid="today-empty"]')).toBeTruthy())
+    await waitFor(() =>
+      expect(container.querySelector('[data-testid="today-empty"]')).toBeTruthy(),
+    )
     expect(container.textContent).toContain("Connect your Garmin key to see today's numbers")
   })
 
   it('disappears once the app is connected', async () => {
     // The fixture set's default is a connected app.
     const { container } = renderApp('/connect')
-    await waitFor(() => expect(container.querySelector('[data-testid="today-session"]')).toBeTruthy())
+    await waitFor(() =>
+      expect(container.querySelector('[data-testid="today-session"]')).toBeTruthy(),
+    )
 
     expect(container.querySelector('[data-testid="key-input"]')).toBeNull()
   })

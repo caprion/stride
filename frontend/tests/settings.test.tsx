@@ -22,11 +22,13 @@ afterEach(() => {
 describe('the weekly goal', () => {
   it('shows the goal the api sent, and the number in the field', async () => {
     const { container } = renderApp('/settings')
-    await waitFor(() => expect(container.querySelector('[data-testid="settings-goal"]')).toBeTruthy())
-
-    expect(container.querySelector('[data-testid="settings-goal-value"]')?.textContent).toContain(
-      '40 km',
+    await waitFor(() =>
+      expect(container.querySelector('[data-testid="settings-goal"]')).toBeTruthy(),
     )
+
+    expect(
+      container.querySelector('[data-testid="settings-goal-value"]')?.textContent,
+    ).toContain('40 km')
     const input = container.querySelector(
       '[data-testid="settings-goal-input"]',
     ) as HTMLInputElement
@@ -35,23 +37,27 @@ describe('the weekly goal', () => {
 
   it('says that a blank goal is no goal, and never a zero', async () => {
     const { container } = renderApp('/settings')
-    await waitFor(() => expect(container.querySelector('[data-testid="settings-goal"]')).toBeTruthy())
+    await waitFor(() =>
+      expect(container.querySelector('[data-testid="settings-goal"]')).toBeTruthy(),
+    )
 
     expect(container.textContent).toContain('A blank goal means no goal.')
     // The goal is never a zero: a zero would read as a failure.
-    expect(container.querySelector('[data-testid="settings-goal-value"]')?.textContent).not.toBe(
-      '0 km',
-    )
+    expect(
+      container.querySelector('[data-testid="settings-goal-value"]')?.textContent,
+    ).not.toBe('0 km')
   })
 
   it('says "No goal" when there is no goal', async () => {
     window.history.pushState({}, '', '/?fixtures=empty')
     const { container } = renderApp('/settings')
-    await waitFor(() => expect(container.querySelector('[data-testid="settings-goal"]')).toBeTruthy())
-
-    expect(container.querySelector('[data-testid="settings-goal-value"]')?.textContent).toContain(
-      'No goal',
+    await waitFor(() =>
+      expect(container.querySelector('[data-testid="settings-goal"]')).toBeTruthy(),
     )
+
+    expect(
+      container.querySelector('[data-testid="settings-goal-value"]')?.textContent,
+    ).toContain('No goal')
   })
 })
 
@@ -63,14 +69,17 @@ describe('the pause', () => {
       expect(container.querySelector('[data-testid="settings-pause-state"]')).toBeTruthy(),
     )
 
-    const state = container.querySelector('[data-testid="settings-pause-state"]')?.textContent ?? ''
+    const state =
+      container.querySelector('[data-testid="settings-pause-state"]')?.textContent ?? ''
     expect(state).toContain('paused until')
     expect(state).toContain('travel')
   })
 
   it('offers the three reasons, and no free text', async () => {
     const { container } = renderApp('/settings')
-    await waitFor(() => expect(container.querySelector('[data-testid="settings-pause"]')).toBeTruthy())
+    await waitFor(() =>
+      expect(container.querySelector('[data-testid="settings-pause"]')).toBeTruthy(),
+    )
 
     const select = container.querySelector(
       '[data-testid="settings-pause-reason"]',
@@ -87,7 +96,8 @@ describe('the connection', () => {
       expect(container.querySelector('[data-testid="settings-connection"]')).toBeTruthy(),
     )
 
-    const key = container.querySelector('[data-testid="settings-connection-key"]')?.textContent ?? ''
+    const key =
+      container.querySelector('[data-testid="settings-connection-key"]')?.textContent ?? ''
     expect(key).toContain('4F2A')
     // The whole key is nowhere: the app has never had it.
     expect(container.textContent).not.toContain('personal-key')
@@ -115,20 +125,23 @@ describe('the storage', () => {
       expect(container.querySelector('[data-testid="settings-storage"]')).toBeTruthy(),
     )
 
-    expect(container.querySelector('[data-testid="settings-storage-size"]')?.textContent).toContain(
-      '2.4 MB',
-    )
+    expect(
+      container.querySelector('[data-testid="settings-storage-size"]')?.textContent,
+    ).toContain('2.4 MB')
   })
 
   it('takes the word before it deletes anything', async () => {
     const user = userEvent.setup()
     const { container } = renderApp('/settings')
-    await waitFor(() => expect(container.querySelector('[data-testid="settings-delete"]')).toBeTruthy())
+    await waitFor(() =>
+      expect(container.querySelector('[data-testid="settings-delete"]')).toBeTruthy(),
+    )
 
     await user.click(container.querySelector('[data-testid="settings-delete"]') as HTMLElement)
 
     // The confirmation says exactly what goes.
-    const confirm = container.querySelector('[data-testid="settings-delete-confirm"]')?.textContent ?? ''
+    const confirm =
+      container.querySelector('[data-testid="settings-delete-confirm"]')?.textContent ?? ''
     expect(confirm).toContain('every run')
     expect(confirm).toContain('every wellness day')
     expect(confirm).toContain('the plan')
@@ -141,7 +154,10 @@ describe('the storage', () => {
     ) as HTMLButtonElement
     expect(button.disabled).toBe(true)
 
-    await user.type(container.querySelector('[data-testid="settings-delete-input"]') as HTMLElement, 'DELETE')
+    await user.type(
+      container.querySelector('[data-testid="settings-delete-input"]') as HTMLElement,
+      'DELETE',
+    )
     expect(button.disabled).toBe(false)
   })
 })
@@ -149,27 +165,31 @@ describe('the storage', () => {
 describe('About', () => {
   it('carries the version, the licence, the promise and the source', async () => {
     const { container } = renderApp('/settings')
-    await waitFor(() => expect(container.querySelector('[data-testid="settings-about"]')).toBeTruthy())
+    await waitFor(() =>
+      expect(container.querySelector('[data-testid="settings-about"]')).toBeTruthy(),
+    )
 
-    expect(container.querySelector('[data-testid="settings-about-version"]')?.textContent).toContain(
-      '0.9.0',
-    )
-    expect(container.querySelector('[data-testid="settings-about-licence"]')?.textContent).toContain(
-      'AGPL-3.0',
-    )
-    expect(container.querySelector('[data-testid="settings-about-promise"]')?.textContent).toContain(
-      'Your data stays on this phone.',
-    )
-    expect(container.querySelector('[data-testid="settings-about-source"]')?.textContent).toContain(
-      'github.com/caprion/stride',
-    )
+    expect(
+      container.querySelector('[data-testid="settings-about-version"]')?.textContent,
+    ).toContain('0.9.0')
+    expect(
+      container.querySelector('[data-testid="settings-about-licence"]')?.textContent,
+    ).toContain('AGPL-3.0')
+    expect(
+      container.querySelector('[data-testid="settings-about-promise"]')?.textContent,
+    ).toContain('Your data stays on this phone.')
+    expect(
+      container.querySelector('[data-testid="settings-about-source"]')?.textContent,
+    ).toContain('github.com/caprion/stride')
   })
 })
 
 describe('the shell', () => {
   it('reaches the settings without making it a destination', async () => {
     const { container } = renderApp('/')
-    await waitFor(() => expect(container.querySelector('[data-testid="shell-settings"]')).toBeTruthy())
+    await waitFor(() =>
+      expect(container.querySelector('[data-testid="shell-settings"]')).toBeTruthy(),
+    )
 
     const destinations = new Set(
       [...container.querySelectorAll('[data-destination]')].map((node) =>
