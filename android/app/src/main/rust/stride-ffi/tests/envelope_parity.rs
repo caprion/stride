@@ -30,11 +30,8 @@ fn a_failure_answers_with_the_same_envelope_on_both_sides() {
     let error = ApiError::needs_reconnect("the token has expired");
 
     let from_the_router = stride_api::ffi::failure_envelope(&error);
-    let from_the_seam = uniffi_stride::seam::error_envelope(
-        error.status(),
-        error.code(),
-        error.detail(),
-    );
+    let from_the_seam =
+        uniffi_stride::seam::error_envelope(error.status(), error.code(), error.detail());
 
     assert_eq!(
         from_the_router, from_the_seam,
@@ -58,11 +55,8 @@ fn the_envelope_carries_a_code_the_shell_reads() {
     // The shell's `PullPolicy` reads `code == "needs_reconnect"`, so the
     // code has to be there and has to be the router's.
     let error = ApiError::needs_reconnect("the token has expired");
-    let envelope = uniffi_stride::seam::error_envelope(
-        error.status(),
-        error.code(),
-        error.detail(),
-    );
+    let envelope =
+        uniffi_stride::seam::error_envelope(error.status(), error.code(), error.detail());
 
     assert_eq!(envelope["ok"], json!(false));
     assert_eq!(envelope["status"], json!(401));
