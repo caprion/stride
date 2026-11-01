@@ -15,8 +15,7 @@
 
 mod common;
 
-use stride_core::types::{Distance, Duration};
-use stride_core::{strings, units};
+use stride_core::units;
 
 #[test]
 fn a_distance_is_the_core_s_rendering_and_the_core_s_number() {
@@ -24,16 +23,16 @@ fn a_distance_is_the_core_s_rendering_and_the_core_s_number() {
     let id = harness.write_run(common::run("a-run", "2026-05-10", 8_400.0, 2_520.0));
     let body = harness.ok_get(&format!("/activities/{id}"));
 
-    let distance = match Distance::from_metres(8_400.0) {
-        Some(distance) => distance,
-        None => panic!("the distance could not be made"),
+    let text = match stride_core::units::render_distance(Some(8_400.0)) {
+        Some(text) => text,
+        None => panic!("the core did not render the distance"),
     };
     assert_eq!(
         body["distance"]["text"].as_str(),
-        Some(distance.to_human().as_str()),
+        Some(text.as_str()),
         "the distance is not the core's rendering"
     );
-    assert_eq!(body["distance"]["raw"].as_f64(), Some(distance.metres()));
+    assert_eq!(body["distance"]["raw"].as_f64(), Some(8_400.0));
 }
 
 #[test]
@@ -42,19 +41,16 @@ fn a_duration_is_the_core_s_rendering_and_the_core_s_number() {
     let id = harness.write_run(common::run("a-run", "2026-05-10", 8_400.0, 2_520.0));
     let body = harness.ok_get(&format!("/activities/{id}"));
 
-    let duration = match Duration::from_seconds(2_520.0) {
-        Some(duration) => duration,
-        None => panic!("the duration could not be made"),
+    let text = match stride_core::units::render_duration(Some(2_520.0)) {
+        Some(text) => text,
+        None => panic!("the core did not render the duration"),
     };
     assert_eq!(
         body["moving_time"]["text"].as_str(),
-        Some(duration.to_human().as_str()),
+        Some(text.as_str()),
         "the moving time is not the core's rendering"
     );
-    assert_eq!(
-        body["moving_time"]["raw"].as_f64(),
-        Some(duration.seconds())
-    );
+    assert_eq!(body["moving_time"]["raw"].as_f64(), Some(2_520.0));
 }
 
 #[test]
@@ -63,9 +59,9 @@ fn a_heart_rate_is_the_core_s_catalogue_and_the_core_s_units() {
     let id = harness.write_run(common::run("a-run", "2026-05-10", 8_400.0, 2_520.0));
     let body = harness.ok_get(&format!("/activities/{id}"));
 
-    let text = match strings::render("vital.resting_hr.value", &[("value", "148")]) {
+    let text = match stride_core::units::render_heart_rate(Some(148.0)) {
         Some(text) => text,
-        None => panic!("the catalogue has no heart-rate template"),
+        None => panic!("the core did not render the heart rate"),
     };
     assert_eq!(
         body["avg_hr"]["text"].as_str(),
@@ -83,24 +79,40 @@ fn a_whole_number_is_the_core_s_units() {
 }
 
 #[test]
+fn a_pace_is_the_core_s_rendering() {
+    let harness = common::Harness::empty("rendered-pace");
+    let id = harness.write_run(common::run("a-run", "2026-05-10", 8_400.0, 2_520.0));
+    let body = harness.ok_get(&format!("/activities/{id}"));
+    // 2520 s over 8.4 km is 300 s/km: "5:00 /km".
+    assert_eq!(
+        body["pace"]["text"].as_str(),
+        Some(
+            stride_core::units::render_pace(Some(300.0))
+                .unwrap_or_default()
+                .as_str()
+        ),
+        "the pace is not the core's rendering"
+    );
+    assert_eq!(body["pace"]["raw"].as_f64(), Some(300.0));
+}
+
+#[test]
+fn an_elevation_is_the_core_s_rendering() {
+    let harness = common::Harness::empty("rendered-elevation");
+    let id = harness.write_run(common::run("a-run", "2026-05-10", 8_400.0, 2_520.0));
+    let body = harness.ok_get(&format!("/activities/{id}"));
+    assert_eq!(body["elevation_gain"]["text"].as_str(), Some("42 m"));
+    assert_eq!(body["elevation_gain"]["raw"].as_f64(), Some(42.0));
+}
+
+#[test]
 fn a_value_the_core_does_not_render_is_absent() {
-    // The core does not render a pace, an altitude, a cadence or a
-    // difference yet. Those values are absent rather than formatted here:
-    // a second implementation of the core's rounding is the disease the
-    // contract is about.
+    // The core does not render a cadence or a difference yet. Those values
+    // are absent rather than formatted here: a second implementation of the
+    // core's rounding is the disease the contract is about.
     let harness = common::Harness::empty("rendered-absent");
     let id = harness.write_run(common::run("a-run", "2026-05-10", 8_400.0, 2_520.0));
     let body = harness.ok_get(&format!("/activities/{id}"));
-    assert!(
-        body["pace"].is_null(),
-        "the pace was formatted here: {}",
-        body["pace"]
-    );
-    assert!(
-        body["elevation_gain"].is_null(),
-        "the climb was formatted here: {}",
-        body["elevation_gain"]
-    );
     assert!(
         body["avg_cadence"].is_null(),
         "the cadence was formatted here: {}",

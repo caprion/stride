@@ -151,16 +151,13 @@ fn a_run_with_no_readings_still_carries_the_numbers_it_has() {
     ));
     let body = harness.ok_get(&format!("/activities/{id}"));
     assert_eq!(body["distance"]["raw"].as_f64(), Some(10_000.0));
-    assert_eq!(body["distance"]["text"].as_str(), Some("10.0 km"));
+    assert_eq!(body["distance"]["text"].as_str(), Some("10 km"));
     assert_eq!(body["moving_time"]["raw"].as_f64(), Some(3_000.0));
     assert_eq!(body["moving_time"]["text"].as_str(), Some("50 m"));
-    // The climb is absent: the core does not render an altitude yet, and
-    // this crate does not invent a format for it.
-    assert!(
-        body["elevation_gain"].is_null(),
-        "the climb is not absent: {}",
-        body["elevation_gain"]
-    );
+    // A flat run has no climbing: that is a measurement of zero, not an
+    // absent measurement, and the core renders it as one.
+    assert_eq!(body["elevation_gain"]["text"].as_str(), Some("0 m"));
+    assert_eq!(body["elevation_gain"]["raw"].as_f64(), Some(0.0));
 }
 
 #[test]

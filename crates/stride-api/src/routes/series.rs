@@ -61,7 +61,7 @@ pub fn elevation(activity: &FitActivity, cap: usize) -> Vec<ElevationPoint> {
             let altitude = sample.altitude_m?;
             Some(ElevationPoint {
                 distance: render::distance(Some(distance)),
-                elevation: render::altitude(Some(altitude)),
+                elevation: render::elevation(Some(altitude)),
             })
         })
         .collect();

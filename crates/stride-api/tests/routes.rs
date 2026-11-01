@@ -25,7 +25,7 @@ fn activities_answers_with_the_feed() {
     assert_eq!(runs.len(), 1);
     assert_eq!(runs[0]["local_date"].as_str(), Some("2026-05-10"));
     assert_eq!(runs[0]["distance"]["raw"].as_f64(), Some(10_000.0));
-    assert_eq!(runs[0]["distance"]["text"].as_str(), Some("10.0 km"));
+    assert_eq!(runs[0]["distance"]["text"].as_str(), Some("10 km"));
     assert!(body["next_cursor"].is_null());
     assert_eq!(body["generated_at"].as_str(), Some(common::NOW));
 }
@@ -242,7 +242,7 @@ fn plan_today_answers_with_the_session_of_the_day() {
     assert_eq!(body["session"]["status"].as_str(), Some("planned"));
     assert_eq!(
         body["session"]["sentence"].as_str(),
-        Some("Today — 10.0 km · easy")
+        Some("Today — 10 km · easy")
     );
 }
 
@@ -437,7 +437,7 @@ fn insights_chips_answers_with_the_chips_of_a_run() {
     let chips = body["chips"].as_array().unwrap();
     assert_eq!(chips.len(), 4);
     assert_eq!(chips[0]["key"].as_str(), Some("distance"));
-    assert_eq!(chips[0]["value"]["text"].as_str(), Some("10.0 km"));
+    assert_eq!(chips[0]["value"]["text"].as_str(), Some("10 km"));
 }
 
 #[test]

@@ -155,7 +155,7 @@ pub fn activity_summary(activity: &StoredActivity) -> ActivitySummary {
         avg_hr: render::heart_rate(activity.avg_hr),
         max_hr: render::heart_rate(activity.max_hr),
         avg_cadence: render::cadence(None),
-        elevation_gain: render::altitude(Some(activity.elevation_gain_m)),
+        elevation_gain: render::elevation(Some(activity.elevation_gain_m)),
         pace: render::pace(pace_of(activity.distance_m, activity.moving_time_s)),
         story: None,
         geo_points: Vec::new(),
@@ -197,13 +197,13 @@ pub fn distance_comparison(actual_m: Option<f64>, target_m: Option<f64>) -> Opti
     statement::distance_comparison(actual, target)
 }
 
-/// The summary of a planned session: "10 km · easy".
+/// The summary of a planned session — "10 km · easy".
 ///
 /// The distance is the core's own rendering of it, and the session type is
 /// the plan's own vocabulary.
 pub fn session_summary(target_distance_m: Option<f64>, session_type: &str) -> String {
-    match target_distance_m.and_then(Distance::from_metres) {
-        Some(distance) => format!("{} · {session_type}", distance.to_human()),
+    match render::distance(target_distance_m) {
+        Some(distance) => format!("{} · {session_type}", distance.text),
         None => session_type.to_string(),
     }
 }

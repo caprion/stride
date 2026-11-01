@@ -141,7 +141,7 @@ impl Harness {
             Err(_) => panic!("the plan block could not be written"),
         };
         for (date, kind, target) in sessions {
-            let session = NewPlanSession {
+            let planned = NewPlanSession {
                 block_id,
                 date: date.to_string(),
                 session_type: kind.to_string(),
@@ -151,7 +151,7 @@ impl Harness {
                 pace_low_s_km: None,
                 pace_high_s_km: None,
             };
-            if let Err(error) = self.store.upsert_plan_session(&session) {
+            if let Err(error) = self.store.upsert_plan_session(&planned) {
                 panic!("the plan session could not be written: {error}");
             }
         }
@@ -372,9 +372,6 @@ impl HttpTransport for FakeGarmin {
         Ok(answer)
     }
 }
-
-/// The token exchange, as the fake answers it.
-pub const TOKEN_ANSWER: &str = r#"{"accessToken":"the-access-value","tokenType":"Bearer"}"#;
 
 /// The path of the token exchange.
 pub const TOKEN_PATH: &str = "/personalapitoken-service/personal-api/personal-api-key/token";

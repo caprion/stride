@@ -505,7 +505,7 @@ pub fn fitness_fingerprint(api: &Api, request: &Request) -> ApiResult<Value> {
             max_hr: render::heart_rate(run.max_hr),
             avg_cadence: render::cadence(decoded.avg_cadence),
             pace: render::pace(pace_of(run.distance_m, run.moving_time_s)),
-            elevation_gain: render::altitude(Some(run.elevation_gain_m)),
+            elevation_gain: render::elevation(Some(run.elevation_gain_m)),
         });
     }
     let response = Fingerprints {
@@ -634,7 +634,7 @@ fn totals<'a>(runs: impl IntoIterator<Item = &'a StoredActivity>) -> Totals {
     Totals {
         activity_count: runs.len() as i64,
         distance: render::distance(Some(distance_m)),
-        elevation_gain: render::altitude(Some(runs.iter().map(|run| run.elevation_gain_m).sum())),
+        elevation_gain: render::elevation(Some(runs.iter().map(|run| run.elevation_gain_m).sum())),
         moving_time: render::duration(Some(moving_time_s)),
         avg_pace: render::pace(avg_pace_s_per_km),
         avg_hr: render::heart_rate(if hearts.is_empty() {
@@ -661,7 +661,7 @@ pub fn stats_weekly(api: &Api, request: &Request) -> ApiResult<Value> {
                 activity_count: week_runs.len() as i64,
                 distance: render::distance(Some(distance_m)),
                 moving_time: render::duration(Some(moving_time_s)),
-                elevation_gain: render::altitude(Some(
+                elevation_gain: render::elevation(Some(
                     week_runs.iter().map(|run| run.elevation_gain_m).sum(),
                 )),
                 avg_pace: render::pace(if distance_m > 0.0 {
@@ -724,7 +724,7 @@ pub fn stats_elevation(api: &Api, request: &Request) -> ApiResult<Value> {
         .into_iter()
         .map(|(week, week_runs)| ElevationWeek {
             week_start: week.to_iso(),
-            elevation_gain: render::altitude(Some(
+            elevation_gain: render::elevation(Some(
                 week_runs.iter().map(|run| run.elevation_gain_m).sum(),
             )),
         })
