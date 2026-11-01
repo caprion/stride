@@ -1,0 +1,276 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+  Stride's layout system.
+
+  Two rules decide everything here:
+
+  1. **Bands are decided by container width, not viewport width.** The shell
+     is a container; everything inside it asks the container how wide it is.
+     A split-screen phone, an unfolded foldable and a resized browser
+     window all land in the right band without a reload, and without a
+     single line of JavaScript reading `window.innerWidth`.
+
+  2. **Nothing scrolls sideways except a chart's own series.** No page-level
+     horizontal scroll, ever, at any width.
+
+  Heights use `dvh`, safe areas use `env(safe-area-inset-*)` — in CSS, not
+  in JavaScript, because the old Capacitor build injected the safe-area
+  variables from script and threw on every page load.
+*/
+
+@layer base {
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+
+  body {
+    @apply bg-surface-soft font-sans text-ink;
+  }
+
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-thumb {
+    @apply rounded-full bg-edge;
+  }
+  ::-webkit-scrollbar-track {
+    @apply bg-transparent;
+  }
+}
+
+@layer components {
+  /* The shell: the container every band is measured against. */
+  .shell {
+    container-type: inline-size;
+    container-name: shell;
+    display: flex;
+    height: 100dvh;
+    overflow: hidden;
+    flex-direction: column;
+    padding-left: env(safe-area-inset-left, 0px);
+    padding-right: env(safe-area-inset-right, 0px);
+  }
+
+  .shell__body {
+    display: flex;
+    width: 100%;
+    min-height: 0;
+    flex: 1 1 auto;
+    justify-content: center;
+  }
+
+  .shell__main {
+    display: flex;
+    min-width: 0;
+    min-height: 0;
+    flex: 1 1 auto;
+    flex-direction: column;
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /*
+    The content column. One column at every band; only its cap changes:
+    680 px at medium, 880 px at wide.
+  */
+  .column {
+    width: 100%;
+    margin-inline: auto;
+    padding-inline: 16px;
+  }
+
+  @container shell (min-width: 600px) {
+    .column {
+      max-width: 680px;
+      padding-inline: 24px;
+    }
+  }
+
+  @container shell (min-width: 1024px) {
+    .column {
+      max-width: 880px;
+      padding-inline: 32px;
+    }
+  }
+
+  /* The three arrangements of the same four destinations. */
+  .nav-tabbar {
+    display: flex;
+  }
+  .nav-topbar {
+    display: none;
+  }
+  .nav-rail {
+    display: none;
+  }
+
+  @container shell (min-width: 600px) {
+    .nav-tabbar {
+      display: none;
+    }
+    .nav-topbar {
+      display: flex;
+    }
+  }
+
+  @container shell (min-width: 1024px) {
+    .nav-topbar {
+      display: none;
+    }
+    .nav-rail {
+      display: block;
+    }
+  }
+
+  /* Fallback for engines without container queries: the same bands, by
+     viewport. The bands are the same; only the trigger differs. */
+  @supports not (container-type: inline-size) {
+    @media (min-width: 600px) {
+      .nav-tabbar {
+        display: none;
+      }
+      .nav-topbar {
+        display: flex;
+      }
+    }
+    @media (min-width: 1024px) {
+      .nav-topbar {
+        display: none;
+      }
+      .nav-rail {
+        display: block;
+      }
+    }
+  }
+
+  /* Tap targets: 44 px at compact, where a thumb has to find them. */
+  .tap {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  .tap-inline {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  @container shell (min-width: 600px) {
+    .tap {
+      min-height: 36px;
+      min-width: 36px;
+    }
+    .tap-inline {
+      min-height: 32px;
+      min-width: 32px;
+    }
+  }
+
+  /* Safe areas. */
+  .safe-top {
+    padding-top: env(safe-area-inset-top, 0px);
+  }
+  .safe-bottom {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  /* The stat strip used on activity rows and detail headers. */
+  .stat-strip {
+    @apply flex flex-wrap items-center gap-x-6 gap-y-2 text-[13px];
+  }
+
+  /* The three signals on Body: one column at compact, a pair at medium,
+     three across at wide. */
+  .signal-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  @container shell (min-width: 600px) {
+    .signal-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  @container shell (min-width: 1024px) {
+    .signal-grid {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+  }
+
+  /* Progress: one column at compact and medium, two at wide. */
+  .progress-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  @container shell (min-width: 1024px) {
+    .progress-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  /* Compare: the two run cards pair up as soon as there is room. */
+  .compare-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  @container shell (min-width: 600px) {
+    .compare-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  /* The charts: one at a time with the A/B toggle, both when there is
+     room for them. */
+  .compare-charts {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .compare-hidden {
+    display: none;
+  }
+
+  @container shell (min-width: 1024px) {
+    .compare-charts {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+    .compare-hidden {
+      display: block;
+    }
+    .compare-toggle {
+      display: none;
+    }
+  }
+
+  /* A card. */
+  .card {
+    @apply rounded-card border border-edge bg-surface shadow-card;
+  }
+
+  /* A chart's own series may scroll sideways; nothing else may. */
+  .series-scroll {
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+}
