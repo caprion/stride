@@ -40,6 +40,19 @@ the primary control; the primary control is that the key never lands on a filesy
 
 ## Building
 
+**One target directory per worktree. Do not share it.**
+
+Cargo's fingerprint for a path package is keyed by the package id, so two
+worktrees of the same crate share one fingerprint slot in a shared `target/`.
+One worktree's build then marks the other's artefact fresh, and the second
+build links the first worktree's `.rlib` — so `cargo test --workspace` fails
+with an error that names a function the current worktree does have. A lock
+does not fix it: the lock serialises the builds, not the artefacts.
+
+So: let each worktree have its own `target/`, and delete it when the worktree
+is finished. (We tried one shared tree to save 14 GB of disk. It cost more
+than it saved.)
+
 ```bash
 # core + desktop
 cargo build --release
