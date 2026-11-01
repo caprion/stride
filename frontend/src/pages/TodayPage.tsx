@@ -19,7 +19,7 @@ import { useMutation, useQuery } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
 import { api } from '../lib/api'
 import { connectGarmin } from '../lib/connect'
-import { formatDateMedium, formatDistance, formatDurationHuman } from '../lib/format'
+import { formatDateMedium } from '../lib/format'
 import type { PlanSession } from '../lib/types'
 import { t } from '../i18n'
 import { Sparkline } from '../components/Sparkline'
@@ -199,8 +199,7 @@ export function TodayPage() {
               {t('today.lastRun.label')}
             </span>
             <span className="text-[14px] text-ink">
-              {formatDistance(lastRun.distance_m)} ·{' '}
-              {formatDurationHuman(lastRun.moving_time_s)} ·{' '}
+              {lastRun.distance.text} · {lastRun.duration.text} ·{' '}
               {formatDateMedium(lastRun.local_date)}
             </span>
           </Link>

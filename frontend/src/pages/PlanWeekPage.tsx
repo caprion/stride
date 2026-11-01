@@ -12,7 +12,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { format, parseISO } from 'date-fns'
 import { api } from '../lib/api'
-import { formatDateMedium, formatDistance } from '../lib/format'
+import { formatDateMedium } from '../lib/format'
 import type { PlanSession } from '../lib/types'
 import { t } from '../i18n'
 import { PageHeader } from '../ui/layout/PageHeader'
@@ -109,9 +109,7 @@ export function PlanWeekPage() {
                   aria-hidden="true"
                 />
                 <span className="text-[10.5px] text-ink-faint">
-                  {planned?.target_distance_m
-                    ? (planned.target_distance_m / 1000).toFixed(0)
-                    : ''}
+                  {planned?.target?.text ?? ''}
                 </span>
               </div>
             )
@@ -137,8 +135,8 @@ export function PlanWeekPage() {
               </p>
               <p className="mt-0.5 text-[13.5px] text-ink-muted" data-testid="plan-status">
                 {statusText(planned.status)}
-                {planned.actual_distance_m !== null
-                  ? ` · ${t('plan.days.actual', { distance: formatDistance(planned.actual_distance_m) })}`
+                {planned.actual !== null
+                  ? ` · ${t('plan.days.actual', { distance: planned.actual.text })}`
                   : ''}
               </p>
             </>

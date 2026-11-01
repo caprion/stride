@@ -22,65 +22,13 @@ import {
   YAxis,
 } from 'recharts'
 import { api } from '../lib/api'
-import {
-  formatDateMedium,
-  formatDistance,
-  formatDurationHuman,
-  formatHeartRate,
-  formatNumber,
-  formatPace,
-} from '../lib/format'
-import type { CompareMetric } from '../lib/types'
+import { formatDateMedium } from '../lib/format'
+import type { CompareMetric, CompareSeriesPoint } from '../lib/types'
 import { t } from '../i18n'
 import { PageHeader } from '../ui/layout/PageHeader'
 
-/** The delta, signed, in the metric's own unit. */
-export function formatDelta(metric: CompareMetric, delta: number | null): string {
-  if (delta === null) return '—'
-  const sign = delta > 0 ? '+' : delta < 0 ? '−' : ''
-  const magnitude = Math.abs(delta)
-  switch (metric.format) {
-    case 'distance':
-      return `${sign}${formatDistance(magnitude)}`
-    case 'duration':
-      return `${sign}${formatDurationHuman(magnitude)}`
-    case 'pace':
-      return `${sign}${formatNumber(magnitude)} s/km`
-    case 'hr':
-      return `${sign}${formatHeartRate(magnitude)}`
-    default:
-      return `${sign}${formatNumber(magnitude)}`
-  }
-}
-
-/** The value, in the metric's own unit. */
-function formatValue(metric: CompareMetric, value: number | null): string {
-  if (value === null) return '—'
-  switch (metric.format) {
-    case 'distance':
-      return formatDistance(value)
-    case 'duration':
-      return formatDurationHuman(value)
-    case 'pace':
-      return `${formatPace(value)} /km`
-    case 'hr':
-      return formatHeartRate(value)
-    default:
-      return formatNumber(value)
-  }
-}
-
-function MetricRow({
-  metric,
-  a,
-  b,
-  delta,
-}: {
-  metric: CompareMetric
-  a: number | null
-  b: number | null
-  delta: number | null
-}) {
+/** One row of the diff: the metric, A, B and the delta — the core's words. */
+function MetricRow({ metric }: { metric: CompareMetric }) {
   return (
     <li
       className="grid grid-cols-[1fr_auto_auto_auto] items-baseline gap-x-3 border-b border-edge px-4 py-2 last:border-b-0"
@@ -88,13 +36,13 @@ function MetricRow({
     >
       <span className="text-[13.5px] text-ink-soft">{t(metric.label_key)}</span>
       <span className="text-[13.5px] font-semibold tabular-nums text-ink">
-        {formatValue(metric, a)}
+        {metric.a?.text ?? '—'}
       </span>
       <span className="text-[13.5px] font-semibold tabular-nums text-ink">
-        {formatValue(metric, b)}
+        {metric.b?.text ?? '—'}
       </span>
       <span className="text-[13.5px] tabular-nums text-ink-muted">
-        {formatDelta(metric, delta)}
+        {metric.delta?.text ?? '—'}
       </span>
     </li>
   )
@@ -104,13 +52,16 @@ function EffortChart({
   series,
   name,
 }: {
-  series: { offset_s: number; pace_s_per_km: number | null; hr: number | null }[]
+  series: CompareSeriesPoint[]
   name: string
 }) {
   const data = series.map((point) => ({
+    // The chart's own scale: minutes into the run.
     minute: Math.round(point.offset_s / 60),
-    hr: point.hr,
-    pace: point.pace_s_per_km,
+    hr: point.heart_rate?.raw ?? null,
+    hrText: point.heart_rate?.text ?? null,
+    pace: point.pace?.raw ?? null,
+    paceText: point.pace?.text ?? null,
   }))
   return (
     <figure className="m-0">
@@ -127,7 +78,17 @@ function EffortChart({
               width={38}
               domain={['dataMin - 5', 'dataMax + 5']}
             />
-            <Tooltip />
+            <Tooltip
+              formatter={(_value, name, item) => {
+                const payload = item?.payload as
+                  | { hrText?: string | null; paceText?: string | null }
+                  | undefined
+                // The tooltip shows the core's words, not the chart's
+                // numbers.
+                if (name === 'hr') return payload?.hrText ?? ''
+                return payload?.paceText ?? ''
+              }}
+            />
             <Line type="monotone" dataKey="hr" stroke="#1E5E96" strokeWidth={2} dot={false} />
           </LineChart>
         </ResponsiveContainer>
@@ -140,9 +101,20 @@ export function ComparePage({ id }: { id: string }) {
   const [swapped, setSwapped] = useState(false)
   const [chart, setChart] = useState<'a' | 'b'>('a')
 
+  /**
+   * Which run is A is the API's business.
+   *
+   * Swapping the columns changes the question — "the other way round" is a
+   * different comparison — and the delta's sign is the core's arithmetic.
+   * So the app asks the API again, and shows the answer as it comes.
+   */
+  const other = id === '101' ? '102' : '101'
+  const a = swapped ? id : other
+  const b = swapped ? other : id
+
   const comparison = useQuery({
-    queryKey: ['compare', id],
-    queryFn: () => api.compare(id, id === '101' ? '102' : '101'),
+    queryKey: ['compare', a, b],
+    queryFn: () => api.compare(a, b),
   })
   const data = comparison.data
 
@@ -155,19 +127,10 @@ export function ComparePage({ id }: { id: string }) {
     )
   }
 
-  const runA = swapped ? data.b : data.a
-  const runB = swapped ? data.a : data.b
-  const rows = data.metrics.map((metric) => ({
-    metric,
-    a: swapped ? metric.b : metric.a,
-    b: swapped ? metric.a : metric.b,
-    // The delta is B − A. Swapping flips its sign.
-    delta: metric.delta === null ? null : swapped ? -metric.delta : metric.delta,
-  }))
-
-  const chartSeries = swapped
-    ? { a: data.series.b, b: data.series.a }
-    : { a: data.series.a, b: data.series.b }
+  const runA = data.a
+  const runB = data.b
+  const rows = data.metrics
+  const chartSeries = { a: data.series.a, b: data.series.b }
 
   return (
     <div>
@@ -210,14 +173,8 @@ export function ComparePage({ id }: { id: string }) {
           </span>
         </div>
         <ul>
-          {rows.map((row) => (
-            <MetricRow
-              key={row.metric.key}
-              metric={row.metric}
-              a={row.a}
-              b={row.b}
-              delta={row.delta}
-            />
+          {rows.map((metric) => (
+            <MetricRow key={metric.key} metric={metric} />
           ))}
         </ul>
       </section>
@@ -233,7 +190,7 @@ export function ComparePage({ id }: { id: string }) {
               {t(key === 'a' ? 'compare.column.a' : 'compare.column.b')}
             </p>
             <p className="text-[15px] font-semibold text-ink">
-              {formatDistance(run.distance_m)} · {formatDateMedium(run.date)}
+              {run.distance.text} · {formatDateMedium(run.date)}
             </p>
             {run.story ? <p className="mt-0.5 text-[13px] text-ink-soft">{run.story}</p> : null}
           </section>

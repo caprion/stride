@@ -22,11 +22,6 @@ import {
 import { api } from '../lib/api'
 import {
   formatDateMedium,
-  formatDistance,
-  formatDurationHuman,
-  formatElevation,
-  formatHeartRate,
-  formatPace,
   sportLabel,
 } from '../lib/format'
 import { t } from '../i18n'
@@ -49,13 +44,20 @@ export function ActivityPage({ id }: { id: string }) {
   }
 
   const samples = data.samples.map((sample) => ({
+    // The chart's own scale: minutes into the run.
     minute: Math.round(sample.offset_s / 60),
-    hr: sample.hr,
-    pace: sample.pace_s_per_km,
+    hr: sample.heart_rate?.raw ?? null,
+    hrText: sample.heart_rate?.text ?? null,
+    pace: sample.pace?.raw ?? null,
+    paceText: sample.pace?.text ?? null,
   }))
   const elevation = data.elevation.map((point) => ({
-    km: Number((point.distance_m / 1000).toFixed(1)),
-    m: point.elevation_m,
+    // The chart's own scale: the distance along the run, in kilometres.
+    // The words beside it are the core's — the tooltip shows the text the
+    // API sent, not a number this app rounded.
+    km: (point.distance.raw ?? 0) / 1000,
+    m: point.elevation.raw ?? 0,
+    elevationText: point.elevation.text,
   }))
 
   return (
@@ -73,7 +75,7 @@ export function ActivityPage({ id }: { id: string }) {
               {t('vital.distance')}
             </span>
             <span className="ml-2 text-[17px] font-semibold tabular-nums text-ink">
-              {formatDistance(data.distance_m)}
+              {data.distance.text}
             </span>
           </span>
           <span>
@@ -81,7 +83,7 @@ export function ActivityPage({ id }: { id: string }) {
               {t('vital.time')}
             </span>
             <span className="ml-2 text-[17px] font-semibold tabular-nums text-ink">
-              {formatDurationHuman(data.moving_time_s)}
+              {data.duration.text}
             </span>
           </span>
           <span>
@@ -89,7 +91,7 @@ export function ActivityPage({ id }: { id: string }) {
               {t('vital.pace')}
             </span>
             <span className="ml-2 text-[17px] font-semibold tabular-nums text-ink">
-              {formatPace(data.pace_s_per_km)} /km
+              {data.pace?.text ?? '—'}
             </span>
           </span>
         </div>
@@ -116,7 +118,17 @@ export function ActivityPage({ id }: { id: string }) {
               <CartesianGrid stroke="#E4EBF0" vertical={false} />
               <XAxis dataKey="minute" tick={{ fontSize: 11, fill: '#61788D' }} />
               <YAxis tick={{ fontSize: 11, fill: '#61788D' }} width={38} />
-              <Tooltip />
+              <Tooltip
+                formatter={(_value, name, item) => {
+                  const payload = item?.payload as
+                    | { hrText?: string | null; paceText?: string | null }
+                    | undefined
+                  // The tooltip shows the core's words, not the chart's
+                  // numbers.
+                  if (name === 'hr') return payload?.hrText ?? ''
+                  return payload?.paceText ?? ''
+                }}
+              />
               <Line type="monotone" dataKey="hr" stroke="#1E5E96" strokeWidth={2} dot={false} />
             </LineChart>
           </ResponsiveContainer>
@@ -127,7 +139,15 @@ export function ActivityPage({ id }: { id: string }) {
               <CartesianGrid stroke="#E4EBF0" vertical={false} />
               <XAxis dataKey="minute" tick={{ fontSize: 11, fill: '#61788D' }} />
               <YAxis tick={{ fontSize: 11, fill: '#61788D' }} width={38} />
-              <Tooltip />
+              <Tooltip
+                formatter={(_value, name, item) => {
+                  const payload = item?.payload as
+                    | { hrText?: string | null; paceText?: string | null }
+                    | undefined
+                  if (name === 'hr') return payload?.hrText ?? ''
+                  return payload?.paceText ?? ''
+                }}
+              />
               <Line
                 type="monotone"
                 dataKey="pace"
@@ -161,12 +181,12 @@ export function ActivityPage({ id }: { id: string }) {
                 key={split.index}
                 className="grid grid-cols-[1fr_auto_auto] items-baseline gap-x-3 border-b border-edge py-1.5 last:border-b-0"
               >
-                <span className="text-[13px] text-ink-soft">{split.index} km</span>
+                <span className="text-[13px] text-ink-soft">{split.distance.text}</span>
                 <span className="text-[13px] tabular-nums text-ink">
-                  {formatDurationHuman(split.duration_s)}
+                  {split.duration.text}
                 </span>
                 <span className="text-[13px] tabular-nums text-ink-muted">
-                  {split.avg_hr === null ? '—' : formatHeartRate(split.avg_hr)}
+                  {split.heart_rate?.text ?? '—'}
                 </span>
               </li>
             ))}
@@ -195,7 +215,11 @@ export function ActivityPage({ id }: { id: string }) {
                 <CartesianGrid stroke="#E4EBF0" vertical={false} />
                 <XAxis dataKey="km" tick={{ fontSize: 11, fill: '#61788D' }} />
                 <YAxis tick={{ fontSize: 11, fill: '#61788D' }} width={40} />
-                <Tooltip formatter={(value: number) => formatElevation(value)} />
+                <Tooltip
+                  formatter={(_value, _name, item) =>
+                    (item?.payload as { elevationText?: string } | undefined)?.elevationText ?? ''
+                  }
+                />
                 <Area type="monotone" dataKey="m" stroke="#3F6E9E" fill="#D6E6F3" />
               </AreaChart>
             </ResponsiveContainer>
@@ -209,12 +233,7 @@ export function ActivityPage({ id }: { id: string }) {
           <h2 className="text-[12px] font-semibold uppercase tracking-[0.07em] text-ink-faint">
             {t('activity.plan.heading')}
           </h2>
-          <p className="mt-1 text-[14px] text-ink-soft">
-            {t('activity.plan.line', {
-              actual: formatDistance(data.plan_line.actual_distance_m),
-              target: formatDistance(data.plan_line.target_distance_m),
-            })}
-          </p>
+          <p className="mt-1 text-[14px] text-ink-soft">{data.plan_line.text}</p>
         </section>
       ) : null}
 

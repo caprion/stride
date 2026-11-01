@@ -11,9 +11,32 @@
  * pattern sentences are written by `stride-core` and travel as text. The
  * app renders the chrome around them. A sentence with holes in it is the
  * core's business, not the app's.
+ *
+ * **The numbers are rendered too.** The core's `units.rs` is the one
+ * implementation of "how do we say 30 seconds" and "how do we say 8.4 km",
+ * so the API sends the words beside the numbers: the text for the screen,
+ * the raw number for a chart. The app has no rounding of its own — see
+ * `src/lib/format.ts`, which is the chrome and nothing else.
+ *
+ * The API's DTOs do not exist yet. **These are the frontend's proposal**
+ * for them, and they change when the API's land.
  */
 
 import type { CatalogueKey } from '../i18n'
+
+/**
+ * A domain value, as the core renders it.
+ *
+ * The core renders the numbers — the distance, the duration, the heart
+ * rate, the pace — from `units.rs`, and the API sends the result. The
+ * app shows `text` and draws `raw`; it never renders the value itself.
+ */
+export interface RenderedValue {
+  /** The core's words: "8.4 km", "42 m", "148 bpm", "5:02 /km". */
+  text: string
+  /** The number, for a chart. Null when there is no number to draw. */
+  raw: number | null
+}
 
 /** The three vitals the engine reports. */
 export type VitalKey = 'sleep' | 'hrv' | 'resting_hr'
@@ -112,8 +135,10 @@ export interface PlanSession {
   title: string | null
   /** The session, already rendered: "Today — 10 km · easy". */
   sentence: string
-  target_distance_m: number | null
-  actual_distance_m: number | null
+  /** The target, as the core renders it: "10 km". */
+  target: RenderedValue | null
+  /** What was actually run, as the core renders it: "8.4 km". */
+  actual: RenderedValue | null
   status: 'done' | 'planned' | 'not_done'
   source: 'baseline' | 'prescribed' | 'typed'
 }
@@ -124,9 +149,25 @@ export interface PlanWeek {
   source: 'baseline' | 'prescribed' | 'typed'
   week_start: string
   week_end: string
-  target_km: number | null
+  /** The week's target, as the core renders it: "40 km". */
+  target: RenderedValue | null
   sessions: PlanSession[]
   adherence: { done: number; planned: number } | null
+}
+
+/**
+ * The totals of a group of runs.
+ *
+ * The feed is grouped by the API — it is the API that knows the totals —
+ * and the app labels the groups.
+ */
+export interface ActivityGroupTotals {
+  /** The group's key: the date the group starts. */
+  key: string
+  /** The group's distance, as the core renders it: "42.3 km". */
+  distance: RenderedValue
+  /** The group's time, as the core renders it: "3 h 42 m". */
+  duration: RenderedValue
 }
 
 /** An activity, as the feed shows it. */
@@ -136,14 +177,18 @@ export interface ActivitySummary {
   sport_type: string
   start_time: string
   local_date: string
-  distance_m: number
-  moving_time_s: number
-  elapsed_time_s: number
-  avg_hr: number | null
-  max_hr: number | null
-  avg_cadence: number | null
-  elevation_gain_m: number | null
-  pace_s_per_km: number | null
+  /** The distance, as the core renders it: "8.4 km". */
+  distance: RenderedValue
+  /** The moving time, as the core renders it: "42 m". */
+  duration: RenderedValue
+  /** The average heart rate, when the run had one: "148 bpm". */
+  heart_rate: RenderedValue | null
+  /** The pace, when the run had one: "5:02 /km". */
+  pace: RenderedValue | null
+  /** The climb, when the run had one: "128 m". */
+  elevation_gain: RenderedValue | null
+  /** The group the run is in, and that group's totals. */
+  group: ActivityGroupTotals
   /** The one sentence about what the run meant. */
   story: string | null
   geo_points: [number, number][]
@@ -158,10 +203,16 @@ export interface ActivityListResponse {
 
 /** One run, in full. */
 export interface ActivityDetail extends ActivitySummary {
-  splits: { index: number; distance_m: number; duration_s: number; avg_hr: number | null }[]
-  elevation: { distance_m: number; elevation_m: number }[]
-  samples: { offset_s: number; pace_s_per_km: number | null; hr: number | null }[]
-  plan_line: { actual_distance_m: number; target_distance_m: number } | null
+  splits: {
+    index: number
+    distance: RenderedValue
+    duration: RenderedValue
+    heart_rate: RenderedValue | null
+  }[]
+  elevation: { distance: RenderedValue; elevation: RenderedValue }[]
+  samples: { offset_s: number; pace: RenderedValue | null; heart_rate: RenderedValue | null }[]
+  /** The line against the plan, already written: "8.4 km of a 10 km target". */
+  plan_line: { text: string } | null
   note: string | null
 }
 
@@ -183,8 +234,8 @@ export interface TodayInsight {
    * absent — a 2% difference is not news.
    */
   distance_comparison: string | null
-  /** This week's running, in metres. */
-  week: { distance_m: number; sessions: number }
+  /** This week's running, as the core renders it. */
+  week: { distance: RenderedValue; sessions: number }
 }
 
 /** One row of the metric diff. */
@@ -192,12 +243,22 @@ export interface CompareMetric {
   key: string
   /** The catalogue key that names the row. */
   label_key: CatalogueKey
-  /** How the value is rendered: distance, duration, pace, heart rate. */
-  format: 'distance' | 'duration' | 'pace' | 'hr'
-  a: number | null
-  b: number | null
-  /** B − A, in the metric's own unit. */
-  delta: number | null
+  /** The value of A, as the core renders it. */
+  a: RenderedValue | null
+  /** The value of B, as the core renders it. */
+  b: RenderedValue | null
+  /** B − A, as the core renders it — sign and all. */
+  delta: RenderedValue | null
+}
+
+/** One point of a comparison's series: where it was, and what it was. */
+export interface CompareSeriesPoint {
+  /** How far into the run the point is, in seconds. */
+  offset_s: number
+  /** The pace at that point, as the core renders it. */
+  pace: RenderedValue | null
+  /** The heart rate at that point, as the core renders it. */
+  heart_rate: RenderedValue | null
 }
 
 /** The identity of a run, in a comparison. */
@@ -205,7 +266,7 @@ export interface CompareRun {
   id: number
   label: string
   date: string
-  distance_m: number
+  distance: RenderedValue
   story: string | null
 }
 
@@ -217,8 +278,16 @@ export interface CompareResponse {
   a: CompareRun
   b: CompareRun
   series: {
-    a: { offset_s: number; pace_s_per_km: number | null; hr: number | null }[]
-    b: { offset_s: number; pace_s_per_km: number | null; hr: number | null }[]
+    /**
+     * The chart's own points.
+     *
+     * A chart draws a line; it does not read a sentence. But the words
+     * for these points are the core's too, so each point carries the
+     * rendered value beside the number: `raw` for the line, `text` for
+     * the tooltip.
+     */
+    a: CompareSeriesPoint[]
+    b: CompareSeriesPoint[]
   }
 }
 
@@ -227,7 +296,7 @@ export interface CompareCandidate {
   id: number
   label: string
   date: string
-  distance_m: number
+  distance: RenderedValue
 }
 
 /** The Progress screen's data. */
@@ -237,11 +306,28 @@ export interface ProgressInsight {
   headline: string
   /** The evidence under it: "same heart rate, 24 s/km faster". */
   headline_note: string | null
-  weekly_volume: { week_start: string; distance_m: number }[]
-  typical_week_m: number | null
-  pace_at_hr: { week_start: string; pace_s_per_km: number | null; hr: number | null }[]
+  weekly_volume: { week_start: string; distance: RenderedValue }[]
+  /** The typical week, as the core renders it: "32 km". */
+  typical_week: RenderedValue | null
+  /**
+   * The pace at a given heart rate, for the chart.
+   *
+   * The numbers are the line; the words are the tooltip.
+   */
+  pace_at_hr: {
+    week_start: string
+    pace: RenderedValue | null
+    heart_rate: RenderedValue | null
+  }[]
   bests: { key: CatalogueKey; value: string; date: string }[]
   consistency: { week_start: string; sessions: number }[]
+  /**
+   * The sessions a week, as the core averages and renders them: "3.4".
+   *
+   * The average and its rounding are the core's; the label beside it —
+   * "sessions a week" — is the app's chrome.
+   */
+  sessions_per_week: RenderedValue | null
   adherence: { done: number; planned: number } | null
 }
 

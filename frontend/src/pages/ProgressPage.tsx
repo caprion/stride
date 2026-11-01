@@ -20,7 +20,7 @@ import {
   YAxis,
 } from 'recharts'
 import { api } from '../lib/api'
-import { formatDateShort, formatNumber } from '../lib/format'
+import { formatCount, formatDateShort } from '../lib/format'
 import { t } from '../i18n'
 import { PageHeader } from '../ui/layout/PageHeader'
 
@@ -51,12 +51,17 @@ export function ProgressPage() {
 
   const volume = data.weekly_volume.map((week) => ({
     ...week,
-    km: week.distance_m / 1000,
+    km: (week.distance.raw ?? 0) / 1000,
+    distanceText: week.distance.text,
     label: formatDateShort(week.week_start),
   }))
   const pace = data.pace_at_hr.map((week) => ({
     ...week,
     label: formatDateShort(week.week_start),
+    paceValue: week.pace?.raw ?? null,
+    paceText: week.pace?.text ?? null,
+    hrValue: week.heart_rate?.raw ?? null,
+    hrText: week.heart_rate?.text ?? null,
   }))
   const consistency = data.consistency.map((week) => ({
     ...week,
@@ -91,10 +96,14 @@ export function ProgressPage() {
                   interval="preserveStartEnd"
                 />
                 <YAxis tick={{ fontSize: 11, fill: '#61788D' }} width={44} />
-                <Tooltip formatter={(value: number) => `${value.toFixed(1)} km`} />
-                {data.typical_week_m !== null ? (
+                <Tooltip
+                  formatter={(_value, _name, item) =>
+                    (item?.payload as { distanceText?: string } | undefined)?.distanceText ?? ''
+                  }
+                />
+                {data.typical_week !== null ? (
                   <ReferenceLine
-                    y={data.typical_week_m / 1000}
+                    y={(data.typical_week.raw ?? 0) / 1000}
                     stroke="#93A6B7"
                     strokeDasharray="4 3"
                     label={{
@@ -127,10 +136,19 @@ export function ProgressPage() {
                   width={44}
                   domain={['dataMin - 10', 'dataMax + 10']}
                 />
-                <Tooltip />
+                <Tooltip
+                  formatter={(_value, name, item) => {
+                    const payload = item?.payload as
+                      | { paceText?: string | null; hrText?: string | null }
+                      | undefined
+                    // The tooltip shows the core's words.
+                    if (name === 'pace') return payload?.paceText ?? ''
+                    return payload?.hrText ?? ''
+                  }}
+                />
                 <Line
                   type="monotone"
-                  dataKey="pace_s_per_km"
+                  dataKey="paceValue"
                   stroke="#1E5E96"
                   strokeWidth={2}
                   dot={false}
@@ -192,12 +210,9 @@ export function ProgressPage() {
       </div>
 
       <p className="mt-4 text-[12.5px] text-ink-faint">
-        {formatNumber(data.weekly_volume.length)} weeks ·{' '}
+        {formatCount(data.weekly_volume.length)} weeks ·{' '}
         {t('progress.sessionsPerWeek', {
-          n: Math.round(
-            data.consistency.reduce((sum, week) => sum + week.sessions, 0) /
-              Math.max(1, data.consistency.length),
-          ),
+          n: data.sessions_per_week?.text ?? formatCount(null),
         })}
       </p>
     </div>
