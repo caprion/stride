@@ -5,21 +5,37 @@
  * are asserted here.
  */
 
+import { readFileSync } from 'node:fs'
+import { dirname, join } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 import { checkCatalogue, checkInlineText } from '../scripts/voice-lint.mjs'
 import { DIRECTION_WORDS, catalogue } from '../src/i18n'
+
+const here = dirname(fileURLToPath(import.meta.url))
+const repo = join(here, '..', '..')
+
+/**
+ * The words that name a vital are the core's — read from the export, not
+ * written out here. A second copy of the list is how the two drift.
+ */
+const exported = JSON.parse(
+  readFileSync(join(repo, 'crates/stride-core/strings.json'), 'utf8'),
+)
+const vitalWords: string[] = exported.rules?.vital_words ?? []
 
 const entries = catalogue
 
 describe('the voice lint', () => {
   it('passes the real catalogue', () => {
-    expect(checkCatalogue(entries, DIRECTION_WORDS)).toEqual([])
+    expect(checkCatalogue(entries, DIRECTION_WORDS, vitalWords)).toEqual([])
   })
 
   it('fails on a banned word', () => {
     const failures = checkCatalogue(
       { ...entries, 'x.y': { type: 'status', text: 'You should rest today' } },
       DIRECTION_WORDS,
+      vitalWords,
     )
     expect(failures.join('\n')).toContain('should')
   })
@@ -29,6 +45,7 @@ describe('the voice lint', () => {
       const failures = checkCatalogue(
         { ...entries, 'x.y': { type: 'status', text } },
         DIRECTION_WORDS,
+        vitalWords,
       )
       expect(failures.join('\n')).toContain('banned word')
     }
@@ -39,6 +56,7 @@ describe('the voice lint', () => {
       const failures = checkCatalogue(
         { ...entries, 'x.y': { type: 'status', text } },
         DIRECTION_WORDS,
+        vitalWords,
       )
       expect(failures.join('\n')).toContain('banned word')
     }
@@ -48,6 +66,7 @@ describe('the voice lint', () => {
     const failures = checkCatalogue(
       { ...entries, 'x.y': { type: 'status', text: 'Rest — could be better' } },
       DIRECTION_WORDS,
+      vitalWords,
     )
     expect(failures).toEqual([])
   })
@@ -56,6 +75,7 @@ describe('the voice lint', () => {
     const failures = checkCatalogue(
       { ...entries, 'x.direction': { type: 'direction', text: 'not great' } },
       DIRECTION_WORDS,
+      vitalWords,
     )
     expect(failures.join('\n')).toContain('closed set')
   })
@@ -64,6 +84,7 @@ describe('the voice lint', () => {
     const failures = checkCatalogue(
       { ...entries, 'x.direction': { type: 'direction', text: 'slightly below usual' } },
       DIRECTION_WORDS,
+      vitalWords,
     )
     expect(failures.join('\n')).toContain('closed set')
   })
@@ -72,6 +93,7 @@ describe('the voice lint', () => {
     const failures = checkCatalogue(
       { ...entries, 'x.pattern': { type: 'pattern', text: 'your HRV has been low lately' } },
       DIRECTION_WORDS,
+      vitalWords,
     )
     expect(failures.join('\n')).toContain('sample size')
   })
@@ -83,6 +105,7 @@ describe('the voice lint', () => {
         'x.option': { type: 'option', text: 'a 5 km, because your sleep was low' },
       },
       DIRECTION_WORDS,
+      vitalWords,
     )
     expect(failures.join('\n')).toContain('mentions a vital')
   })
