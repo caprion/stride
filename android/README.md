@@ -100,11 +100,11 @@ flock /run/user/$(id -u)/cf-heavy.lock ./gradlew testDebugUnitTest
 ```
 
 `assembleDebug` also cross-compiles the Rust core for `arm64-v8a` with
-`cargo-ndk`, using the **shared** target directory
-`/home/sumit/stride-v2/target` — so the crates are compiled once for the
-whole fleet rather than once per worktree.
-`-PstrideTargetDir=…` (or `STRIDE_CARGO_TARGET_DIR=…`) moves it, and a
-checkout that has no shared directory falls back to its own `target/`.
+`cargo-ndk`, into **this checkout's** `target/` — cargo's own default. One
+target directory per checkout is the point: a shared one means one set of
+artefacts written by two owners, and the build fails in ways that look
+like a broken crate. `-PstrideTargetDir=…` (or `STRIDE_CARGO_TARGET_DIR=…`)
+moves it when there is a reason to.
 
 ### Why there is no `gradle-wrapper.jar`
 
