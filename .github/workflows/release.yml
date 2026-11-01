@@ -65,6 +65,17 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+    # The signing key lives in this environment and nowhere else, so it is
+    # not readable by a workflow that is not this job. The `release`
+    # environment holds ANDROID_KEYSTORE_BASE64 and
+    # ANDROID_KEYSTORE_PASSWORD — **the same key that signed v0.8.0**, so a
+    # v2 APK installs over a v1 install on the phone instead of asking the
+    # athlete to uninstall and lose their data.
+    #
+    # The binding is here because this is the job that reads the secret;
+    # the publishing job follows it, so the environment's rules gate the
+    # whole release and not only the last step of it.
+    environment: release
     steps:
       - uses: actions/checkout@v4
 
@@ -318,13 +329,6 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
-    # The signing key lives in this environment and nowhere else, so it is
-    # not readable by a workflow that is not this job. The `release`
-    # environment holds ANDROID_KEYSTORE_BASE64 and
-    # ANDROID_KEYSTORE_PASSWORD — **the same key that signed v0.8.0**, so a
-    # v2 APK installs over a v1 install on the phone instead of asking the
-    # athlete to uninstall and lose their data.
-    environment: release
     steps:
       - uses: actions/checkout@v4
         with:

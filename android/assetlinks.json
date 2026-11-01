@@ -4,7 +4,9 @@
     "target": {
       "namespace": "android_app",
       "package_name": "app.stride.running",
-      "sha256_cert_fingerprints": []
+      "sha256_cert_fingerprints": [
+        "87:E5:7B:81:F8:ED:7C:FE:1B:A6:0B:8F:B5:E2:E7:3F:B3:E6:41:C8:71:08:46:ED:87:74:1B:7B:9B:23:BC:26"
+      ]
     }
   }
 ]

@@ -96,33 +96,28 @@ signs a published artefact. `android/scripts/check-apk-selftest.sh` is the
 same idea without the build: it proves the checker catches a certificate
 that is not published, an empty published list and an unsigned APK.
 
+### The published certificate
+
+[`assetlinks.json`](assetlinks.json) carries the fingerprint of the
+certificate the release APK is signed with — **the same key that signed
+v0.8.0**, so a v2 build installs over a v1 install on the phone instead of
+asking the athlete to uninstall and lose their data.
+
+A fingerprint is not a secret: it is the public half of a key pair, and it
+is what the phone pins. The key itself is in the repository's `release`
+environment, and it never comes near the tree.
+
 ### What is not publishable yet
 
-**There is no signing key in this repository, and no published
-certificate.** `assetlinks.json` publishes no fingerprint yet, so:
+**The real Rust core is not in the tree**, so a release build refuses to be
+assembled: an APK whose core is the stub answers every route with "the Rust
+core is not in this build", and a product that does nothing should not be
+published under the Stride name.
 
-* the release build refuses to be assembled — *"the release key's
-  certificate has not been committed, so no release can be built"*;
-* the checker refuses any APK — the same message.
-
-That is the honest state, and it is deliberate: an APK signed with a key
-whose fingerprint nobody has published is not the app, and publishing one
-would be worse than publishing nothing.
-
-The **real core** is not in the tree either, so a release build refuses that
-too — an APK whose core is the stub answers every route with "the Rust core
-is not in this build", and a product that does nothing should not be
-published under the Stride name. The pipeline's own test allows the stub
-explicitly (`-PstrideAllowStubCore=true`), and the checker still refuses a
-stub core, so nothing with a stub can be published.
-
-When the key exists, its fingerprint goes into `assetlinks.json`:
-
-```json
-"sha256_cert_fingerprints": ["87:E5:7B:...:26"]
-```
-
-and the pipeline publishes from that moment on.
+That is the one refusal left, and it is the honest one. The pipeline's own
+test allows the stub explicitly (`-PstrideAllowStubCore=true`), and the
+checker still refuses a stub core — it is suspiciously small — so nothing
+with a stub can be published.
 
 ## The layout
 
