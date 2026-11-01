@@ -74,6 +74,7 @@ export const catalogue = {
     text: "Connect your Garmin key to see today's numbers",
   },
   'today.state.noDataAction': { type: 'status', text: 'Connect Garmin' },
+  'today.state.connectFailed': { type: 'status', text: "The setup screen did not open" },
   'today.state.stale.days': { type: 'status', text: 'last synced {n} days ago' },
   'today.state.stale.hours': { type: 'status', text: 'last synced {n} hours ago' },
   'today.state.stale.minutes': { type: 'status', text: 'last synced {n} minutes ago' },

@@ -15,9 +15,10 @@
  * plan's sessions arrive written. The screen is the chrome around them.
  */
 
-import { useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
 import { api } from '../lib/api'
+import { connectGarmin } from '../lib/connect'
 import { formatDateMedium, formatDistance, formatDurationHuman } from '../lib/format'
 import type { PlanSession } from '../lib/types'
 import { t } from '../i18n'
@@ -77,6 +78,7 @@ export function TodayPage() {
   const today = useQuery({ queryKey: ['insights-today'], queryFn: api.insightsToday })
   const vitals = useQuery({ queryKey: ['physiology-vitals'], queryFn: api.vitals })
   const sync = useQuery({ queryKey: ['sync-status'], queryFn: api.syncStatus })
+  const connect = useMutation({ mutationFn: () => connectGarmin() })
 
   const insight = today.data
   const snapshot = vitals.data
@@ -99,9 +101,15 @@ export function TodayPage() {
           <button
             type="button"
             className="tap mt-3 inline-flex items-center rounded-md bg-brand-600 px-4 text-[14px] font-semibold text-white"
+            onClick={() => {
+              connect.mutate()
+            }}
           >
             {t('today.state.noDataAction')}
           </button>
+          {connect.isError ? (
+            <p className="mt-2 text-[13px] text-ink-muted">{t('today.state.connectFailed')}</p>
+          ) : null}
         </div>
       </div>
     )
