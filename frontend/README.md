@@ -137,6 +137,51 @@ const client = createApiClient(transport)
 client.insightsToday()
 ```
 
+### The answer is the body, and the status is the status
+
+That is the contract's rule (`docs/contract/api-paths.md`, "The shape of an
+answer"), and the transport is where it is kept:
+
+- **No envelope.** The body is the body. The plugin hands the app the same
+  bytes the desktop's HTTP layer puts on the wire, and the app's DTO *is*
+  that body. Nothing unwraps anything.
+- **A failure is a failure.** The desktop's HTTP layer puts the status in
+  the status line; the phone's bridge rejects the call. A rejected call
+  becomes a typed `ApiError` — with the status the plugin reported ("404",
+  "403", "400") — and never reaches the app as data. A body that says
+  `{"error": …}` with a 200 is not a shape this app reads.
+
+The status means slightly different things on the two hosts, and the
+transport says which: a 403 on the desktop is a refused credential, and a
+403 on the phone is a locked screen.
+
+### The key, and the host that keeps it
+
+The key never belongs to the app. The desktop's server keeps it on the
+desktop; the phone's Keystore keeps it on the phone — and the phone's
+bridge refuses the key routes, because the plan's acceptance check is that
+the key never appears in any WebView-reachable surface.
+
+So there are two key surfaces, and `src/lib/connect.ts` is the one place
+that decides between them:
+
+| host | the key surface | the client |
+|---|---|---|
+| the desktop | a field | `api.setGarminPersonalKey(key)` sends it to the desktop's server |
+| the phone | the native setup screen | `api.setGarminPersonalKey(key)` refuses locally, and sends nothing |
+
+**The field is not shown on the phone at all** — a field that cannot be
+typed into is a trap. On the phone the Connect entry opens the native
+setup screen instead: asking for the key route with *no key in it* makes
+the plugin open its own screen and refuse the call, and that refusal is
+how the phone says "the screen is open". `api.openGarminKeySetup()` does
+exactly that, and `connectGarmin()` in `src/lib/connect.ts` is the
+host-aware entry a screen calls.
+
+`tests/connect.test.ts` holds the line: the key never crosses the bridge,
+the phone sends no key with the setup call, and the desktop's key goes to
+its own server.
+
 The contract froze the **routes**; it did not freeze the **response
 bodies**. The shapes this client speaks are written down in
 `src/lib/types.ts`, and they are a proposal for the backend slice to match.
