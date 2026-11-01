@@ -21,6 +21,11 @@
  *   "6 h 10 m" · "could be better" · "1 h 10 m less than your usual"
  *   "6th night down" · "2 of 3 signals below your usual"
  *   "your HRV has been below your usual for 3 nights"
+ *   "+0.2 km" · "−0.2 km"
+ *
+ * **The sign is the core's.** A negative difference is written with the
+ * typographic minus the core uses (U+2212), never with the keyboard's
+ * hyphen: `−0.2 km`, not `-0.2 km`. The app shows the sign it is given.
  */
 
 import type {
@@ -605,6 +610,14 @@ const SERIES_B: CompareSeriesPoint[] = [
     { offset_s: 2340, pace: { text: '5:18 /km', raw: 318 }, heart_rate: { text: '137 bpm', raw: 137 } },
 ]
 
+/**
+ * The comparison, as the core renders it.
+ *
+ * The delta is the core's difference: the sign is the number's own, and
+ * the number beside it is `B − A` in the metric's own unit — metres for a
+ * distance, seconds for a duration, seconds per kilometre for a pace.
+ * A negative difference is written with the core's typographic minus.
+ */
 export const compareFixture: CompareResponse = {
   basis_text: 'Same distance, 3 weeks apart',
   metrics: [
@@ -620,21 +633,21 @@ export const compareFixture: CompareResponse = {
       label_key: 'vital.time',
       a: value('55 m', 3_300),
       b: value('54 m', 3_240),
-      delta: value('-1 m', -60),
+      delta: value('−1 m', -60),
     },
     {
       key: 'pace',
       label_key: 'vital.pace',
       a: value('5:17 /km', 317),
       b: value('5:06 /km', 306),
-      delta: value('-11 s/km', -11),
+      delta: value('−11 s/km', -11),
     },
     {
       key: 'hr',
       label_key: 'vital.heartRate',
       a: value('149 bpm', 149),
       b: value('146 bpm', 146),
-      delta: value('-3 bpm', -3),
+      delta: value('−3 bpm', -3),
     },
   ],
   a: {
@@ -672,7 +685,7 @@ export const compareSwappedFixture: CompareResponse = {
       label_key: 'vital.distance',
       a: value('10.6 km', 10_600),
       b: value('10.4 km', 10_400),
-      delta: value('-0.2 km', -200),
+      delta: value('−0.2 km', -200),
     },
     {
       key: 'time',
