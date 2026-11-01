@@ -6,8 +6,8 @@
  * chart are the same numbers.
  */
 
-import { useQuery } from '@tanstack/react-query'
-import { useState } from 'react'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useEffect, useState } from 'react'
 import {
   Area,
   AreaChart,
@@ -27,9 +27,27 @@ import { PageHeader } from '../ui/layout/PageHeader'
 export function ActivityPage({ id }: { id: string }) {
   const [splitsOpen, setSplitsOpen] = useState(false)
   const [elevationOpen, setElevationOpen] = useState(false)
+  const [noteOpen, setNoteOpen] = useState(false)
+  const [note, setNote] = useState('')
+  const client = useQueryClient()
 
   const activity = useQuery({ queryKey: ['activity', id], queryFn: () => api.activity(id) })
   const data = activity.data
+
+  useEffect(() => {
+    if (data?.note !== undefined && data?.note !== null) setNote(data.note)
+  }, [data?.note])
+
+  const saveNote = useMutation({
+    mutationFn: (value: string | null) => api.saveNote(id, value),
+    onSuccess: (answer) => {
+      client.setQueryData(['activity', id], (previous: unknown) => {
+        const run = previous as { note?: string | null } | undefined
+        return run ? { ...run, note: answer.note } : previous
+      })
+      setNoteOpen(false)
+    },
+  })
 
   if (!data) {
     return (
@@ -238,6 +256,74 @@ export function ActivityPage({ id }: { id: string }) {
         </section>
       ) : null}
 
+      {/* ----------------------------------------------------- the note */}
+      {/*
+        The note is the only free text the product stores, and it belongs
+        to the run it is about. It is edited here, on the run's own page —
+        the settings screen holds the settings, not the notes.
+      */}
+      <section className="card mt-3 px-4 py-3" data-testid="activity-note">
+        <div className="flex items-center justify-between gap-3">
+          <h2 className="text-[12px] font-semibold uppercase tracking-[0.07em] text-ink-faint">
+            {t('activity.note.heading')}
+          </h2>
+          <button
+            type="button"
+            className="tap text-[13px] font-medium text-brand-600 underline underline-offset-2"
+            data-testid="activity-note-edit"
+            onClick={() => {
+              setNoteOpen((open) => !open)
+            }}
+          >
+            {data.note ? t('activity.note.edit') : t('runs.addNote')}
+          </button>
+        </div>
+
+        {noteOpen ? (
+          <div className="mt-2">
+            <textarea
+              value={note}
+              rows={3}
+              placeholder={t('activity.note.placeholder')}
+              onChange={(event) => setNote(event.target.value)}
+              data-testid="activity-note-input"
+              className="tap w-full rounded-md border border-edge bg-surface px-3 text-[15px] text-ink outline-none focus:border-brand-400"
+            />
+            <div className="mt-2 flex flex-wrap items-center gap-3">
+              <button
+                type="button"
+                className="tap inline-flex items-center rounded-md bg-brand-600 px-4 text-[14px] font-semibold text-white disabled:opacity-50"
+                disabled={saveNote.isPending}
+                data-testid="activity-note-save"
+                onClick={() => {
+                  saveNote.mutate(note.trim() === '' ? null : note)
+                }}
+              >
+                {t('activity.note.save')}
+              </button>
+              <button
+                type="button"
+                className="tap-inline text-[13px] font-medium text-ink-muted underline underline-offset-2"
+                onClick={() => {
+                  setNoteOpen(false)
+                  setNote(data.note ?? '')
+                }}
+              >
+                {t('common.close')}
+              </button>
+            </div>
+          </div>
+        ) : data.note ? (
+          <p className="mt-1 text-[14.5px] text-ink-soft" data-testid="activity-note-text">
+            {data.note}
+          </p>
+        ) : (
+          <p className="mt-1 text-[13.5px] text-ink-muted" data-testid="activity-note-empty">
+            {t('activity.note.none')}
+          </p>
+        )}
+      </section>
+
       {/* --------------------------------------------------------- actions */}
       <div className="mt-3 flex flex-wrap gap-4 pb-2">
         <a
@@ -249,6 +335,9 @@ export function ActivityPage({ id }: { id: string }) {
         <button
           type="button"
           className="tap-inline text-[13px] font-medium text-ink-muted underline underline-offset-2"
+          onClick={() => {
+            setNoteOpen(true)
+          }}
         >
           {t('runs.addNote')}
         </button>

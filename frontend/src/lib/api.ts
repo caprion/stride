@@ -170,6 +170,7 @@ async function request<T>(
       path,
       Object.fromEntries(query.entries()),
       fixtureVariant() ?? '',
+      body,
     )
     if (answer === undefined) {
       throw new ApiError('not_found', `no fixture for ${path}`, 404)

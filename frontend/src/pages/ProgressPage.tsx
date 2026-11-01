@@ -21,6 +21,7 @@ import {
 } from 'recharts'
 import { api } from '../lib/api'
 import { formatCount, formatDateShort } from '../lib/format'
+import { useStaleness } from '../lib/staleness'
 import { t } from '../i18n'
 import { PageHeader } from '../ui/layout/PageHeader'
 
@@ -38,6 +39,7 @@ function ChartCard({ title, children }: { title: string; children: React.ReactNo
 
 export function ProgressPage() {
   const progress = useQuery({ queryKey: ['insights-progress'], queryFn: api.insightsProgress })
+  const stale = useStaleness()
   const data = progress.data
 
   if (!data) {
@@ -45,6 +47,19 @@ export function ProgressPage() {
       <div>
         <PageHeader title={t('progress.heading')} />
         <p className="text-[14px] text-ink-muted">{t('common.loading')}</p>
+      </div>
+    )
+  }
+
+  // Nothing to draw yet: the screen says so, and invents no numbers.
+  if (data.weekly_volume.length === 0) {
+    return (
+      <div>
+        <PageHeader title={t('progress.heading')} />
+        <div className="card px-4 py-8 text-center" data-testid="progress-empty">
+          <p className="text-[15px] font-semibold text-ink">{t('progress.empty.title')}</p>
+          <p className="mt-1 text-[13px] text-ink-muted">{t('progress.empty.body')}</p>
+        </div>
       </div>
     )
   }
@@ -70,7 +85,10 @@ export function ProgressPage() {
 
   return (
     <div>
-      <PageHeader title={t('progress.heading')} />
+      <PageHeader
+        title={t('progress.heading')}
+        meta={stale ? <span className="text-ink-faint">{stale}</span> : null}
+      />
 
       {/* ------------------------------------------------- the headline */}
       <section className="card px-4 py-3" data-testid="progress-headline">
@@ -80,6 +98,16 @@ export function ProgressPage() {
         </p>
         {data.headline_note ? (
           <p className="mt-0.5 text-[13.5px] text-ink-muted">{data.headline_note}</p>
+        ) : null}
+        {/*
+          Not enough history: the charts show what there is, and the note
+          says how much more the core wants. No percentage is drawn — a
+          percentage from a near-zero baseline is the old bug.
+        */}
+        {data.weeks_needed !== null ? (
+          <p className="mt-1 text-[13px] text-ink-muted" data-testid="progress-needs-more">
+            {t('progress.needsMore', { n: data.weeks_needed })}
+          </p>
         ) : null}
       </section>
 

@@ -11,7 +11,7 @@
  */
 
 import { useMutation } from '@tanstack/react-query'
-import { useRef, useState } from 'react'
+import { useState } from 'react'
 import { api } from '../lib/api'
 import { fileAsBase64 } from '../lib/files'
 import { formatDayMonth } from '../lib/format'
@@ -20,7 +20,7 @@ import { t } from '../i18n'
 
 export function FitImport() {
   const [answer, setAnswer] = useState<string | null>(null)
-  const input = useRef<HTMLInputElement>(null)
+  const onPhone = currentHost() === 'native'
 
   const send = useMutation({
     mutationFn: async (file: File) =>
@@ -48,28 +48,20 @@ export function FitImport() {
     send.mutate(file)
   }
 
-  const onPhone = currentHost() === 'native'
-
   return (
     <div data-testid="fit-import">
-      {onPhone ? null : (
-        <div
-          onDragOver={(event) => event.preventDefault()}
-          onDrop={(event) => {
-            event.preventDefault()
-            take(event.dataTransfer.files[0])
-          }}
-          data-testid="fit-drop"
-          className="rounded-md border border-dashed border-edge bg-surface-soft px-4 py-4 text-center"
-        >
-          <p className="text-[13.5px] text-ink-soft">{t('runs.import.drop')}</p>
-          <p className="mt-0.5 text-[12.5px] text-ink-faint">{t('runs.import.hint')}</p>
-        </div>
-      )}
-
-      <label className="tap mt-2 flex cursor-pointer items-center justify-center rounded-md border border-edge bg-surface px-4 text-[14px] font-semibold text-ink-soft">
+      <label
+        onDragOver={(event) => event.preventDefault()}
+        onDrop={(event) => {
+          event.preventDefault()
+          take(event.dataTransfer.files[0])
+        }}
+        data-testid="fit-drop"
+        className={`tap flex cursor-pointer flex-col items-center justify-center rounded-md border border-dashed border-edge bg-surface-soft px-4 text-center ${
+          onPhone ? 'py-3' : 'py-4'
+        }`}
+      >
         <input
-          ref={input}
           type="file"
           accept=".fit"
           className="hidden"
@@ -79,9 +71,18 @@ export function FitImport() {
             event.target.value = ''
           }}
         />
-        {send.isPending ? t('runs.importing') : t('runs.import')}
+        {onPhone ? null : (
+          <>
+            <p className="text-[13.5px] text-ink-soft">{t('runs.import.drop')}</p>
+            <p className="mt-0.5 text-[12.5px] text-ink-faint">{t('runs.import.hint')}</p>
+          </>
+        )}
+        <span className="mt-2 text-[14px] font-semibold text-brand-600">
+          {send.isPending ? t('runs.importing') : t('runs.import')}
+        </span>
       </label>
 
+      {/* The answer, in the list and not in a modal. */}
       {answer ? (
         <p className="mt-2 text-[13.5px] text-ink-soft" data-testid="fit-answer">
           {answer}

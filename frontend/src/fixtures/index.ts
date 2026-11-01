@@ -571,6 +571,7 @@ export const progressFixture: ProgressInsight = {
   ],
   sessions_per_week: value('3.4', 3.4),
   adherence: { done: 7, planned: 8 },
+  weeks_needed: null,
 }
 
 // --------------------------------------------------------------- compare
@@ -1065,6 +1066,7 @@ export const progressNotEnoughFixture: ProgressInsight = {
   ],
   sessions_per_week: null,
   adherence: null,
+  weeks_needed: 4,
 }
 
 /** Progress, with no plan behind it: the adherence card is omitted. */
@@ -1120,7 +1122,8 @@ export const healthDailyStaleFixture: HealthDaily = {
  * |---|---|
  * | `1` (or empty) | everything present |
  * | `over` | the last run beyond 10% of the plan's target |
- * | `empty` | no runs, no wellness, no plan, no key |
+ * | `empty` | no runs, no wellness, no plan, and nothing ever synced |
+ * | `nowellness` | synced, but no wellness data yet |
  * | `fresh` | no key yet: the first-run page is the one that takes it |
  * | `stale` | the last sync three days old |
  * | `failed` | the last sync did not finish |
@@ -1134,30 +1137,42 @@ export function fixtureResponse(
   path: string,
   params: Record<string, string> = {},
   variant = '',
+  body?: unknown,
 ): unknown {
   switch (path) {
     case '/insights/today':
-      if (variant === 'empty') return todayEmptyFixture
+      if (variant === 'empty' || variant === 'fresh') return todayEmptyFixture
+      if (variant === 'nowellness') return todayEmptyFixture
       if (variant === 'noplan') return { ...todayFixture, planned: null, options: [] }
       if (variant === 'paused') return { ...todayFixture, options: [] }
       return variant === 'over' ? todayOverFixture : todayFixture
     case '/physiology/vitals':
-      if (variant === 'empty') return vitalsEmptyFixture
+      if (variant === 'empty' || variant === 'fresh') return vitalsEmptyFixture
+      if (variant === 'nowellness') return vitalsEmptyFixture
       if (variant === 'notenough') return vitalsNotEnoughFixture
       return vitalsFixture
     case '/activities':
-      return variant === 'empty' ? activitiesEmptyFixture : activitiesFixture
+      return variant === 'empty' || variant === 'fresh'
+        ? activitiesEmptyFixture
+        : activitiesFixture
     case '/activities/101':
       return activityDetailFixture
     case '/plan/week':
-      if (variant === 'empty' || variant === 'noplan') {
+      if (
+        variant === 'empty' ||
+        variant === 'fresh' ||
+        variant === 'nowellness' ||
+        variant === 'noplan'
+      ) {
         return new FixtureFailure('no_plan', 'there is no plan for this week', 404)
       }
       if (variant === 'baseline') return planWeekBaselineFixture
       return planWeekFixture
     case '/insights/progress':
       if (variant === 'notenough') return progressNotEnoughFixture
-      if (variant === 'empty' || variant === 'noplan') return progressNoPlanFixture
+      if (variant === 'empty' || variant === 'fresh' || variant === 'noplan') {
+        return progressNoPlanFixture
+      }
       return progressFixture
     case '/compare': {
       // Which run is A is the API's business: the app asks, and the API
@@ -1169,7 +1184,7 @@ export function fixtureResponse(
     case '/sync/status':
       if (variant === 'stale') return syncStatusStaleFixture
       if (variant === 'failed') return syncStatusFailedFixture
-      if (variant === 'fresh') return syncStatusFreshFixture
+      if (variant === 'fresh' || variant === 'empty') return syncStatusFreshFixture
       return syncStatusFixture
     case '/health/daily':
       return variant === 'stale' ? healthDailyStaleFixture : healthDailyFixture
@@ -1179,7 +1194,7 @@ export function fixtureResponse(
       if (variant === 'empty' || variant === 'fresh') return connectionEmptyFixture
       return connectionFixture
     case '/settings':
-      if (variant === 'empty') return settingsEmptyFixture
+      if (variant === 'empty' || variant === 'fresh') return settingsEmptyFixture
       if (variant === 'paused') return settingsPausedFixture
       return settingsFixture
     case '/settings/export':
@@ -1198,7 +1213,10 @@ export function fixtureResponse(
       return planImportFixture
     default:
       if (path.startsWith('/activities/') && path.endsWith('/note')) {
-        return noteFixture
+        // The fixture answers as a captured answer would: it echoes the
+        // note that was written.
+        const written = (body as { text?: string | null } | undefined)?.text
+        return { ...noteFixture, note: written ?? null }
       }
       return undefined
   }

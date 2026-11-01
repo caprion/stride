@@ -83,6 +83,7 @@ export const catalogue = {
   'today.options.heading': { type: 'status', text: 'Also in your plan' },
   'today.lastRun.label': { type: 'status', text: 'Last run' },
   'today.week.heading': { type: 'status', text: 'This week' },
+  'today.week.sessions': { type: 'status', text: '{n} sessions' },
   'today.state.noData': {
     type: 'status',
     text: "Connect your Garmin key to see today's numbers",

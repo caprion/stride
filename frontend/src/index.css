@@ -298,6 +298,17 @@
     gap: 12px;
   }
 
+  /* This week's line: it sits beside the readout when there is room. */
+  .today-week {
+    display: none;
+  }
+
+  @container shell (min-width: 600px) {
+    .today-week {
+      display: block;
+    }
+  }
+
   /* A pair of fields side by side, when the column has room for them. */
   .settings-pair {
     display: grid;

@@ -13,6 +13,7 @@
 
 import { useQuery } from '@tanstack/react-query'
 import { api } from '../lib/api'
+import { useStaleness } from '../lib/staleness'
 import { t } from '../i18n'
 import { Sparkline } from '../components/Sparkline'
 import { VitalRow } from '../components/VitalRow'
@@ -20,6 +21,7 @@ import { PageHeader } from '../ui/layout/PageHeader'
 
 export function BodyPage() {
   const vitals = useQuery({ queryKey: ['physiology-vitals'], queryFn: api.vitals })
+  const stale = useStaleness()
   const snapshot = vitals.data
 
   if (!snapshot) {
@@ -33,9 +35,29 @@ export function BodyPage() {
 
   const nights = snapshot.history.sleep.length
 
+  // No wellness yet: the screen says what is missing and what to do,
+  // and it draws no chart of nothing.
+  if (snapshot.vitals.length === 0) {
+    return (
+      <div>
+        <PageHeader
+          title={t('body.heading')}
+          meta={stale ? <span className="text-ink-faint">{stale}</span> : null}
+        />
+        <div className="card px-4 py-8 text-center" data-testid="body-empty">
+          <p className="text-[15px] font-semibold text-ink">{t('body.state.empty')}</p>
+          <p className="mt-1 text-[13px] text-ink-muted">{t('body.state.emptyBody')}</p>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div>
-      <PageHeader title={t('body.heading')} />
+      <PageHeader
+        title={t('body.heading')}
+        meta={stale ? <span className="text-ink-faint">{stale}</span> : null}
+      />
 
       {/* --------------------------------------------- the three signals */}
       <section className="signal-grid" data-testid="body-signals">
