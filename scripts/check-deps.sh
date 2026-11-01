@@ -44,6 +44,18 @@ expected() {
 
 fail=0
 
+# The dev-only dependencies a crate may have, beyond the dev-only testkit.
+# The phone's seam dev-depends on the router: it compares the two sides'
+# error envelopes for the same failure, and a seam that invents its own shape
+# is a second implementation of the seam. It is a dev-dependency on purpose —
+# the phone's build must not drag the core in before the seam is wired to it.
+dev_only() {
+  case "$1" in
+    stride-ffi) printf 'stride-api';;
+    *) printf '';;
+  esac
+}
+
 # The workspace must contain exactly the planned members: the six from Slice 0
 # plus the phone's seam and its generator, which arrived with the Android
 # shell.
@@ -90,7 +102,7 @@ for name in stride-core stride-ingest stride-store stride-api stride-testkit str
   for dep in $dev; do
     case " $exp $build " in
       *" $dep "*) ;;
-      *) if [[ "$dep" != "stride-testkit" ]]; then
+      *) if [[ "$dep" != "stride-testkit" && " $(dev_only "$name") " != *" $dep "* ]]; then
            echo "check-deps: $name has a dev-dependency on [$dep]; not in its allowed set [$exp] and not the dev-only testkit" >&2
            fail=1
          fi;;
