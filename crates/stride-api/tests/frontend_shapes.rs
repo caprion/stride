@@ -492,3 +492,24 @@ fn the_health_carries_the_shape_the_app_declares() {
     let body = harness.ok_get("/health/daily");
     assert_declared(&declarations, "HealthDaily", &body);
 }
+
+#[test]
+fn the_settings_carry_the_shape_the_app_declares() {
+    let declarations = declarations();
+    let harness = common::Harness::seeded("frontend-settings");
+    let body = harness.ok_get("/settings");
+    assert_declared(&declarations, "Settings", &body);
+    if let Some(pause) = at(&body, &["pause"]) {
+        if pause.is_object() {
+            assert_declared(&declarations, "Pause", pause);
+        }
+    }
+}
+
+#[test]
+fn the_notes_carry_the_shape_the_app_declares() {
+    let declarations = declarations();
+    let harness = common::Harness::seeded("frontend-notes");
+    let body = harness.ok_get("/notes");
+    assert_declared(&declarations, "Notes", &body);
+}

@@ -56,6 +56,24 @@ fn the_error_details_break_no_rule() {
         ("POST", "/auth/garmin/fit-import", Some("{}")),
         ("GET", "/nothing/here", None),
         ("POST", "/activities", Some("{}")),
+        ("POST", "/settings", Some("{}")),
+        ("POST", "/settings", Some("{\"goal_km\":\"lots\"}")),
+        ("POST", "/settings", Some("{\"pause\":{\"start_date\":\"2026-05-12\"}}")),
+        (
+            "POST",
+            "/settings",
+            Some("{\"pause\":{\"start_date\":\"2026-05-12\",\"end_date\":\"2026-05-10\",\"reason\":\"travel\"}}"),
+        ),
+        (
+            "POST",
+            "/settings",
+            Some("{\"pause\":{\"start_date\":\"2026-05-12\",\"end_date\":\"2026-05-14\",\"reason\":\"weather\"}}"),
+        ),
+        ("POST", "/notes", Some("{}")),
+        ("POST", "/notes", Some("{\"activity_id\":9999,\"text\":\"a note\"}")),
+        ("POST", "/data/export", Some("{}")),
+        ("POST", "/data/import", Some("{}")),
+        ("POST", "/data/import", Some("{\"directory\":\"../elsewhere\"}")),
     ];
     for (method, path, body) in failures {
         let answer = harness.router.call(method, path, body);

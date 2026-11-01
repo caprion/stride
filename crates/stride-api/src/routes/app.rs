@@ -14,7 +14,14 @@ use crate::render;
 use crate::router::Request;
 use crate::state::Api;
 
-use super::{ok, today};
+use super::{core_date, day_label, ok, today};
+
+/// How far apart two starts may be and still be the same run: two minutes.
+const DUPLICATE_START_SECONDS: i64 = 120;
+
+/// How far apart two distances may be and still be the same run: two per
+/// cent.
+const DUPLICATE_DISTANCE: f64 = 0.02;
 
 /// The liveness of the app.
 pub fn health(api: &Api, request: &Request) -> ApiResult<Value> {
@@ -398,6 +405,14 @@ pub fn auth_personal_key_test(api: &Api, request: &Request) -> ApiResult<Value> 
 /// The file arrives as bytes — base64 in the body — and is decoded by the
 /// ingest crate, which is the only part of Stride that reads a FIT file.
 /// A file that cannot be decoded is a bad request, not a run.
+///
+/// **The original file is stored with the run**: the FIT file is the source
+/// of truth, and every derived series is recomputable from it.
+///
+/// **A duplicate is refused.** A file that is the same run as one that is
+/// already there — within two minutes of the start and within two per cent
+/// of the distance — adds no row, and the refusal says which run it is:
+/// "already have this run: 12 Oct 2026, 10.2 km".
 pub fn auth_fit_import(api: &Api, request: &Request) -> ApiResult<Value> {
     let encoded = request
         .body_str("fit_base64")
@@ -413,6 +428,21 @@ pub fn auth_fit_import(api: &Api, request: &Request) -> ApiResult<Value> {
         .map_err(|_| ApiError::bad_request("the file is not a FIT file"))?;
     let default_date = today(api)?.to_iso();
     let local_date = decoded.local_date.clone().unwrap_or(default_date);
+
+    // The run that is already there, if this file is one of them.
+    if let Some(duplicate) = duplicate_of(api, &decoded)? {
+        let distance = render::distance(Some(duplicate.distance_m))
+            .map(|value| value.text)
+            .unwrap_or_default();
+        let date = match core_date(&duplicate.local_date) {
+            Ok(date) => day_label(date),
+            Err(_) => duplicate.local_date.clone(),
+        };
+        return Err(ApiError::bad_request(format!(
+            "already have this run: {date}, {distance}"
+        )));
+    }
+
     let row = NewActivity {
         source: source::FIT_IMPORT.to_string(),
         external_id: decoded.external_id.clone(),
@@ -440,6 +470,57 @@ pub fn auth_fit_import(api: &Api, request: &Request) -> ApiResult<Value> {
         generated_at: api.generated_at(),
     };
     ok(&response)
+}
+
+/// A run that is already in the store.
+struct Duplicate {
+    /// The run's day.
+    local_date: String,
+    /// The run's distance, in metres.
+    distance_m: f64,
+}
+
+/// The run this file is a copy of, if it is one.
+///
+/// **The rule is the schema's own**: a FIT import dedupes by start ±2
+/// minutes and distance ±2 %. A file that is the same run as one that is
+/// already there is refused rather than added twice.
+fn duplicate_of(api: &Api, decoded: &stride_ingest::FitActivity) -> ApiResult<Option<Duplicate>> {
+    let start = match decoded.start_time {
+        Some(start) => start,
+        None => return Ok(None),
+    };
+    let date = decoded
+        .local_date
+        .clone()
+        .unwrap_or_else(|| start.format("%Y-%m-%d").to_string());
+    // A run that starts at either side of midnight is on one of two days.
+    let previous = match core_date(&date) {
+        Ok(day) => day.add_days(-1).to_iso(),
+        Err(_) => date.clone(),
+    };
+    let runs = api
+        .store()
+        .activities_between(&previous, &date)
+        .map_err(|error| api.store_error("the runs could not be read", &error))?;
+    for run in runs.iter() {
+        let minutes = (run.start_time - start).num_seconds().abs();
+        if minutes > DUPLICATE_START_SECONDS {
+            continue;
+        }
+        if run.distance_m <= 0.0 {
+            continue;
+        }
+        let gap = (run.distance_m - decoded.distance_m).abs() / run.distance_m;
+        if gap > DUPLICATE_DISTANCE {
+            continue;
+        }
+        return Ok(Some(Duplicate {
+            local_date: run.local_date.clone(),
+            distance_m: run.distance_m,
+        }));
+    }
+    Ok(None)
 }
 
 /// Forget the Garmin key.

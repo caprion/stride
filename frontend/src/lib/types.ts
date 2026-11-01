@@ -138,6 +138,12 @@ export interface PlanSession {
   /** The plan's own vocabulary: easy, long, tempo, rest, strength. */
   session_type: string
   title: string | null
+  /**
+   * The session's label, as the core renders it: "10 km · easy".
+   *
+   * The words are the core's — the app never renders a plan value itself.
+   */
+  label: string
   /** The session, already rendered: "Today — 10 km · easy". */
   sentence: string
   /** The target, as the core renders it: "10 km". */
@@ -145,6 +151,8 @@ export interface PlanSession {
   /** What was actually run, as the core renders it: "8.4 km". */
   actual: RenderedValue | null
   status: 'done' | 'planned' | 'not_done'
+  /** Whether a run happened on the day of the session. */
+  ran: boolean
   source: 'baseline' | 'prescribed' | 'typed'
 }
 
@@ -157,7 +165,7 @@ export interface PlanWeek {
   /** The week's target, as the core renders it: "40 km". */
   target: RenderedValue | null
   sessions: PlanSession[]
-  adherence: { done: number; planned: number } | null
+  adherence: { done: number; planned: number; not_done: number } | null
 }
 
 /**
@@ -333,7 +341,48 @@ export interface ProgressInsight {
    * "sessions a week" — is the app's chrome.
    */
   sessions_per_week: RenderedValue | null
-  adherence: { done: number; planned: number } | null
+  adherence: { done: number; planned: number; not_done: number } | null
+}
+
+/**
+ * A pause in the plan.
+ *
+ * The athlete's own three reasons — travel, sick, injured — and nothing
+ * else: the app never shows a reason it did not read.
+ */
+export interface Pause {
+  start_date: string
+  end_date: string
+  reason: 'travel' | 'sick' | 'injured'
+}
+
+/**
+ * The settings: the goal, the pause, and what they mean now.
+ *
+ * Three inputs change what the app says. A blank goal is no goal — the
+ * goal is null, never a zero that reads as a failure.
+ */
+export interface Settings {
+  /** The weekly goal, as the core renders it: "40 km". */
+  goal: RenderedValue | null
+  /** The pause in force, when there is one. */
+  pause: Pause | null
+  /** Whether the plan is paused today. */
+  paused: boolean
+  generated_at: string
+}
+
+/** The athlete's note on a run — the only free text the product stores. */
+export interface RunNote {
+  activity_id: number
+  text: string
+  created_at: string
+}
+
+/** The notes. */
+export interface Notes {
+  notes: RunNote[]
+  generated_at: string
 }
 
 /** The connection and sync state. */

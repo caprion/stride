@@ -16,13 +16,14 @@
 //!   makes `generated_at` — and every date the router derives — reproducible.
 
 use std::fmt;
+use std::path::PathBuf;
 use std::sync::{Arc, Mutex, MutexGuard};
 
 use chrono::{DateTime, SecondsFormat, Utc};
 use stride_ingest::{GarminClient, HttpTransport, ReqwestTransport, TransportError};
-use stride_store::{Store, StoreError};
+use stride_store::{DatabaseKey, Store, StoreError};
 
-use crate::error::ApiError;
+use crate::error::{ApiError, ApiResult};
 
 /// The clock the router reads the time from.
 ///
@@ -170,6 +171,18 @@ pub struct Config {
     /// The athlete's day is a local day, and the router only knows the
     /// offset the host gives it. Zero — UTC — is the default.
     pub utc_offset_minutes: i32,
+    /// Where the export and the import live: the host's own directory.
+    ///
+    /// `None` on a device that has no place to write an export into — the
+    /// phone, for one — and the export routes say so rather than writing
+    /// somewhere the host did not choose.
+    pub export_root: Option<PathBuf>,
+    /// How many weeks of the athlete's own history the baseline is read
+    /// from.
+    ///
+    /// The baseline is inferred, and the weeks it was read from are said
+    /// out loud: "your usual week, from the last 8 weeks".
+    pub baseline_weeks: usize,
 }
 
 impl Default for Config {
@@ -187,6 +200,8 @@ impl Default for Config {
             max_fit_import_bytes: 20 * 1024 * 1024,
             max_samples_in_response: 1_000,
             utc_offset_minutes: 0,
+            export_root: None,
+            baseline_weeks: 8,
         }
     }
 }
@@ -198,6 +213,7 @@ pub struct Api {
     clock: Arc<dyn Clock>,
     garmin: Mutex<GarminState>,
     transport: Arc<dyn HttpTransport>,
+    export: Mutex<Option<DatabaseKey>>,
 }
 
 impl fmt::Debug for Api {
@@ -236,6 +252,7 @@ impl Api {
             clock,
             garmin: Mutex::new(GarminState::default()),
             transport,
+            export: Mutex::new(None),
         }
     }
 
@@ -371,6 +388,50 @@ impl Api {
             }
             GarminError::Transport(_) => ApiError::garmin_rejected("Garmin could not be reached"),
             _ => ApiError::garmin_rejected("Garmin refused the request"),
+        }
+    }
+
+    /// Hold the key the export and the import use.
+    ///
+    /// The key is an argument: the host hands it over, the routes use it
+    /// for the length of the call, and it is never returned, never logged
+    /// and never in an error. It is the key that opens the database, and it
+    /// is the key the export is written with — so the export opens with the
+    /// same key the database does.
+    pub fn set_export_key(&self, key: DatabaseKey) {
+        let mut state = self
+            .export
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner());
+        *state = Some(key);
+    }
+
+    /// Whether the host gave a key for the export.
+    pub fn has_export_key(&self) -> bool {
+        let state = self
+            .export
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner());
+        state.is_some()
+    }
+
+    /// Do something with the export key, if the host gave one.
+    ///
+    /// The key is borrowed for the length of the call and given back: it
+    /// never comes out of here.
+    pub fn with_export_key<T>(
+        &self,
+        action: impl FnOnce(&DatabaseKey) -> ApiResult<T>,
+    ) -> ApiResult<T> {
+        let state = self
+            .export
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner());
+        match state.as_ref() {
+            Some(key) => action(key),
+            None => Err(ApiError::bad_request(
+                "this device has no key for the export",
+            )),
         }
     }
 }

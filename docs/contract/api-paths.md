@@ -40,6 +40,13 @@ reference only).
 | `/sync/{status,run,runs,history,settings}` | incremental sync |
 | `/auth/{status,garmin/personal-key,garmin/personal-key/test,garmin/fit-import,garmin/logout}` | the one credential |
 | `/calendar` | the local month calendar (activities per day) — **not** Garmin's scheduled-workout calendar |
+| `/settings` | the weekly goal, the pause and what they mean now — the three inputs that change what the app says |
+| `/notes` | the athlete's note on a run — the only free text the product stores |
+| `/data/{export,import}` | the export and the import of the database: the rig's own backup, and the way back in |
+
+The last three rows arrived with the settings slice (PLAN.md §8, slice 8), and they are
+the first change to the frozen table since the freeze. They travel with the plan edit
+in the same pull request, as the freeze requires.
 
 ## Cut from the old table
 
@@ -120,7 +127,11 @@ Two rules hold for every shape below.
 | `/activities` | `activities: ActivitySummary[]`, `next_cursor: string \| null`, `generated_at: string` |
 | `/activities/{id}` | `ActivitySummary` and `splits: {index, distance, duration, heart_rate}[]`, `elevation: {distance, elevation}[]`, `samples: {offset_s, pace, heart_rate}[]`, `plan_line: {text} \| null`, `note: string \| null` |
 | `/physiology/vitals` | `date`, `generated_at`, `rest: {label, line}`, `vitals: {key, label, value_text, direction_text, deviation_text, travel_text, status_text, band}[]`, `history: {sleep, hrv, resting_hr}`, `patterns: {id, text, sample_size}[]` |
-| `/plan/week` | `block_name`, `source`, `week_start`, `week_end`, `target`, `sessions: {date, session_type, title, sentence, target, actual, status, source}[]`, `adherence: {done, planned} \| null` |
+| `/plan/week` | `block_name`, `source`, `week_start`, `week_end`, `target`, `sessions: {date, session_type, title, label, sentence, target, actual, status, ran, source}[]`, `adherence: {done, planned, not_done} \| null` |
+| `/settings` | `goal: {text, raw} \| null`, `pause: {start_date, end_date, reason} \| null`, `paused: boolean`, `generated_at` |
+| `/notes` | `notes: {activity_id, text, created_at}[]`, `generated_at` |
+| `/data/export` | `directory`, `rows`, `tables`, `schema_version`, `database_bytes`, `database_sha256`, `created_at`, `generated_at` |
+| `/data/import` | `activities`, `wellness`, `plan_blocks`, `plan_sessions`, `notes`, `rows`, `generated_at` |
 | `/insights/today` | `generated_at`, `date`, `planned`, `options`, `last_run`, `distance_comparison: string \| null`, `week: {distance, sessions}` |
 | `/insights/progress` | `generated_at`, `headline`, `headline_note`, `weekly_volume`, `typical_week`, `pace_at_hr`, `bests`, `consistency`, `sessions_per_week`, `adherence` |
 | `/compare` | `basis_text`, `metrics: {key, label_key, a, b, delta}[]`, `a: CompareRun`, `b: CompareRun`, `series: {a: {offset_s, pace, heart_rate}[], b: …}` |
@@ -143,3 +154,20 @@ The routes the app does not type — `/physiology/{daily,sleep,hrv,latest,source
 `/calendar` — are the router's own, and they are written down in
 `crates/stride-api/src/dto.rs`. They follow the same two rules: a domain
 value is a rendered value, and a sentence is a sentence.
+
+### The settings, the goal and the pause
+
+Three inputs change what the app says, and they live in the `notes` table (the
+schema is frozen, and it holds them already).
+
+- **The goal** is a weekly distance, in kilometres — the schema's own unit. **A
+  blank goal is no goal**: the answer carries `null`, never a zero that reads
+  as a failure. The rendered value's `raw` is in metres, like every other
+  distance the app draws.
+- **The pause** is a start, an end and one of the athlete's own three reasons —
+  `travel`, `sick` or `injured`. A reason outside that set is refused.
+- **While the plan is paused**, the adherence is suspended: `/plan/adherence`
+  carries `suspended: true` and the reason, and the count is not a verdict
+  about a week the athlete was not running.
+- **The note** is the only free text the product stores. A run carries one; a
+  new note replaces it.

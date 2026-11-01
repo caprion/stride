@@ -14,9 +14,11 @@
 
 pub mod app;
 pub mod data;
+pub mod export;
 pub mod insight;
 pub mod plan;
 pub mod series;
+pub mod settings;
 
 use std::collections::BTreeMap;
 
@@ -230,40 +232,23 @@ pub fn median(values: &[f64]) -> Option<f64> {
     band::median(values)
 }
 
-/// The summary of a planned session — "10 km · easy".
-///
-/// The distance is the core's own rendering of it, and the session type is
-/// the plan's own vocabulary.
-pub fn session_summary(target_distance_m: Option<f64>, session_type: &str) -> String {
-    match render::distance(target_distance_m) {
-        Some(distance) => format!("{} · {session_type}", distance.text),
-        None => session_type.to_string(),
-    }
-}
-
 /// The sentence of a planned session.
 ///
 /// The wording is the catalogue's: "Today — 10 km · easy" for the day
-/// itself, "11 May 2026 — 8 km · easy" for another day. The catalogue's
-/// templates take the summary as an argument, and the summary is the
-/// distance the core's units render and the plan's own vocabulary.
-pub fn session_sentence(
-    day: Date,
-    today: Date,
-    target_distance_m: Option<f64>,
-    session_type: &str,
-) -> String {
-    let summary = session_summary(target_distance_m, session_type);
+/// itself, "11 May 2026 — 8 km · easy" for another day. The summary is the
+/// core's own label of the session, and the template is the core's
+/// catalogue: there is no wording of this crate's own here.
+pub fn session_sentence(day: Date, today: Date, summary: &str) -> String {
     if day == today {
-        return stride_core::strings::render("option.today_session", &[("summary", &summary)])
-            .unwrap_or(summary);
+        return stride_core::strings::render("option.today_session", &[("summary", summary)])
+            .unwrap_or_else(|| summary.to_string());
     }
     let label = day_label(day);
     stride_core::strings::render(
         "option.other_session",
-        &[("day", &label), ("summary", &summary)],
+        &[("day", &label), ("summary", summary)],
     )
-    .unwrap_or(summary)
+    .unwrap_or_else(|| summary.to_string())
 }
 
 /// Whether a planned session was run.

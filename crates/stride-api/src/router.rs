@@ -479,6 +479,38 @@ pub const ROUTES: &[Route] = &[
         method: Method::Get,
         handler: crate::routes::app::calendar,
     },
+    // The settings: the goal, the pause and the note on a run.
+    Route {
+        pattern: "/settings",
+        method: Method::Get,
+        handler: crate::routes::settings::settings,
+    },
+    Route {
+        pattern: "/settings",
+        method: Method::Post,
+        handler: crate::routes::settings::write_settings,
+    },
+    Route {
+        pattern: "/notes",
+        method: Method::Get,
+        handler: crate::routes::settings::notes,
+    },
+    Route {
+        pattern: "/notes",
+        method: Method::Post,
+        handler: crate::routes::settings::write_note,
+    },
+    // The export and the import of the database.
+    Route {
+        pattern: "/data/export",
+        method: Method::Post,
+        handler: crate::routes::export::export,
+    },
+    Route {
+        pattern: "/data/import",
+        method: Method::Post,
+        handler: crate::routes::export::import,
+    },
 ];
 
 /// The router.

@@ -13,6 +13,12 @@ gates) is merged; so are the domain, the store, the Garmin client and the FIT de
 the app, the phone's shell and the desktop rig. What is left is the wiring — the router hosted by
 both hosts — and the first vertical line: key → sync → one run → today's readout.
 
+**The settings slice (slice 8) is landing.** The api's plan, settings, notes, import and export are
+in the tree, on the core's plan engine, and three routes have joined the frozen table:
+`/settings` (the weekly goal and the pause), `/notes` (the note on a run) and
+`/data/{export,import}` (the rig's own backup, and the way back in). The contract's route table and
+its shapes travel with this edit, as the freeze requires.
+
 ---
 
 ## 0. The voice — vitals, direction, options; no verdicts
@@ -201,6 +207,12 @@ describe a deleted flow — the old notes still told people to run a removed pai
 | 8 | Settings, goal, pause, notes, export/import | the desktop export opens on the phone |
 | 9 | Responsive pass + viewport matrix gate | all six widths pass; identical IA everywhere |
 | 10 | Release: signed APK, binaries, docs, first public tag | a stranger clones, builds and runs it |
+
+**Slice 8, in two halves.** The **api's half** is landing with this edit: the plan routes on the
+core's engine, the settings (the weekly goal, the pause and the note on a run), the plan import
+(markdown, CSV, JSON and the Garmin workout schedule), the export and the import of the database,
+and the FIT import's duplicate rule. The **phone's half** — the Settings screen, and the export
+opening on the phone — is the app's own slice, and it reads the shapes written into the contract.
 
 Rules: the old core is the oracle until parity is 100% · one slice at a time · every slice ships and is gated ·
 no Python in the tree · acceptance is a golden assertion wherever possible.

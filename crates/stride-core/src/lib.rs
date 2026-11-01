@@ -25,6 +25,8 @@
 //!   adherence, the results and the distance comparison.
 //! * [`statement`] — the sixth kind: a factual sentence about the data — the
 //!   distance comparison, the Progress headline, the Compare basis.
+//! * [`plan`] — the plan engine: the sources, the active block, the
+//!   baseline, the adherence and the results.
 //!
 //! The voice, in one line: facts first, no judgements. The app informs; it
 //! never instructs.
@@ -45,10 +47,9 @@ pub use date::Date;
 pub use direction::{day_directions, DayDirections, Direction, Travel, VitalDirection};
 pub use pattern::{patterns, HistoryDay, Pattern, PatternKind};
 pub use plan::{
-    adherence_of, adherence_of_at, baseline_from_history, baseline_from_history_at,
-    baseline_not_enough_history, day_label, distance_comparison, results_of, results_of_at,
-    session_label, source_banner, today_of, week_of, week_start, Adherence, PlanBlock, PlanSession,
-    PlanSource, RunFact, SessionKind, SessionResult, SessionStatus,
+    adherence_of, baseline_from_history, distance_comparison as plan_distance_comparison,
+    results_of, session_label, today_of, week_of, Adherence, PlanBlock, PlanSession, PlanSource,
+    RunFact, SessionKind, SessionResult,
 };
 pub use rest::RestSummary;
 pub use statement::{

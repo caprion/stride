@@ -612,6 +612,8 @@ pub struct PlanSession {
     pub session_type: String,
     /// The session's title.
     pub title: Option<String>,
+    /// The session's label, as the core renders it: "10 km · easy".
+    pub label: String,
     /// The session, already rendered: "Today — 10 km · easy".
     pub sentence: String,
     /// The target, as the core renders it.
@@ -620,6 +622,11 @@ pub struct PlanSession {
     pub actual: Option<RenderedValue>,
     /// `done`, `planned` or `not_done`.
     pub status: String,
+    /// Whether a run happened on the day of the session.
+    ///
+    /// The plain fact, beside the status: a session of a **baseline** is
+    /// never "not done", and this is what says a run happened.
+    pub ran: bool,
     /// Where the plan came from: `baseline`, `prescribed` or `typed`.
     pub source: String,
 }
@@ -627,8 +634,8 @@ pub struct PlanSession {
 /// One plan block.
 #[derive(Clone, Debug, PartialEq, Serialize)]
 pub struct PlanBlock {
-    /// The block's id.
-    pub id: i64,
+    /// The block's id. `null` for the baseline, which is not stored.
+    pub id: Option<i64>,
     /// The block's name.
     pub name: String,
     /// Where the block came from.
@@ -643,6 +650,12 @@ pub struct PlanBlock {
     pub status: String,
     /// How many sessions the block holds.
     pub session_count: usize,
+    /// Whether the block is a **baseline**: inferred from the athlete's own
+    /// history rather than written down.
+    ///
+    /// It changes what the app may say about the plan: a baseline is a
+    /// source, not a prescription.
+    pub is_baseline: bool,
 }
 
 /// The plan's week.
@@ -665,12 +678,19 @@ pub struct PlanWeek {
 }
 
 /// How many of the planned sessions were run.
+///
+/// A count, never a score: there is no percentage and no grade.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize)]
 pub struct Adherence {
     /// How many were run.
     pub done: usize,
     /// How many were planned.
     pub planned: usize,
+    /// How many were planned and did not happen.
+    ///
+    /// A **baseline** never counts here: an inferred week is not a
+    /// prescription.
+    pub not_done: usize,
 }
 
 /// The plan's blocks.
@@ -687,6 +707,18 @@ pub struct PlanBlocks {
 pub struct CurrentPlan {
     /// The block in force. `null` when there is none.
     pub block: Option<PlanBlock>,
+    /// The source of the plan in force, always named.
+    ///
+    /// `baseline` when the athlete has no plan of their own: the baseline is
+    /// what the app infers from the athlete's own history, and it is a
+    /// source rather than a prescription.
+    pub source: String,
+    /// Whether the plan in force is a baseline.
+    pub is_baseline: bool,
+    /// How many weeks of history the baseline was read from.
+    ///
+    /// `null` when the plan is not a baseline.
+    pub baseline_weeks: Option<usize>,
     /// When this answer was produced.
     pub generated_at: String,
 }
@@ -718,6 +750,8 @@ pub struct PlanSource {
 pub struct PlanSources {
     /// The sources.
     pub sources: Vec<PlanSource>,
+    /// The source in force, always named.
+    pub active_source: String,
     /// When this answer was produced.
     pub generated_at: String,
 }
@@ -729,6 +763,14 @@ pub struct PlanAdherence {
     pub adherence: Adherence,
     /// The weeks of the window.
     pub weeks: Vec<AdherenceWeek>,
+    /// Whether the adherence is suspended.
+    ///
+    /// A pause suspends the count: the sessions of a paused week were not
+    /// missed, and the answer says so rather than counting them.
+    pub suspended: bool,
+    /// Why the adherence is suspended, in the athlete's own word: `travel`,
+    /// `sick` or `injured`.
+    pub suspension_reason: Option<String>,
     /// When this answer was produced.
     pub generated_at: String,
 }
@@ -748,17 +790,28 @@ pub struct AdherenceWeek {
 #[derive(Clone, Debug, PartialEq, Serialize)]
 pub struct PlanResult {
     /// The session's id.
-    pub session_id: i64,
+    ///
+    /// `null` for a session of the baseline: the baseline is inferred, and
+    /// it is not stored.
+    pub session_id: Option<i64>,
     /// The day of the session.
     pub date: String,
     /// The plan's own vocabulary.
     pub session_type: String,
+    /// The session's label, as the core renders it.
+    pub label: String,
     /// `done`, `planned` or `not_done`.
     pub status: String,
     /// The distance that was planned, as the core renders it.
     pub target: Option<RenderedValue>,
     /// The distance that was run, as the core renders it.
     pub actual: Option<RenderedValue>,
+    /// The difference between the two, as the core states it.
+    ///
+    /// "2.4 km more than the 10 km target" — and nothing at all when the
+    /// gap is within ten per cent: 10.2 km against a 10 km target is not
+    /// news, and neither more nor less is good or bad.
+    pub difference: Option<String>,
 }
 
 /// The plan's results.
@@ -779,6 +832,122 @@ pub struct PlanImport {
     pub block_id: i64,
     /// How many sessions were written.
     pub sessions: usize,
+    /// Where the plan was recorded as coming from.
+    ///
+    /// `prescribed` for a plan that was imported — it was written down
+    /// somewhere else — and `typed` for a plan the athlete typed in.
+    pub source: String,
+    /// How many of the sessions were **unclassified**.
+    ///
+    /// A session whose workout the import did not recognise is
+    /// unclassified, and it says so here: it is never given a kind it did
+    /// not have.
+    pub unclassified: usize,
+    /// When this answer was produced.
+    pub generated_at: String,
+}
+
+// ----------------------------------------------------------------- settings
+
+/// A pause in the plan.
+///
+/// The athlete's own three reasons: the pause is a fact about their life,
+/// not a verdict about their running.
+#[derive(Clone, Debug, PartialEq, Serialize)]
+pub struct Pause {
+    /// The first day of the pause.
+    pub start_date: String,
+    /// The last day of the pause.
+    pub end_date: String,
+    /// Why: `travel`, `sick` or `injured`.
+    pub reason: String,
+}
+
+/// The settings: the goal, the pause, and what they mean now.
+///
+/// The three inputs that change what the app says. Everything else in the
+/// settings is plumbing.
+#[derive(Clone, Debug, PartialEq, Serialize)]
+pub struct Settings {
+    /// The weekly goal, as the core renders it.
+    ///
+    /// `null` when there is no goal: **a blank means no goal**, and it is
+    /// never a zero that reads as a failure.
+    pub goal: Option<RenderedValue>,
+    /// The pause in force, when there is one.
+    pub pause: Option<Pause>,
+    /// Whether the plan is paused today.
+    ///
+    /// While the pause is on, the adherence is suspended — and the plan's
+    /// own answers say so.
+    pub paused: bool,
+    /// When this answer was produced.
+    pub generated_at: String,
+}
+
+/// The athlete's note on a run.
+///
+/// The only free text the product stores.
+#[derive(Clone, Debug, PartialEq, Serialize)]
+pub struct RunNote {
+    /// The run the note is about.
+    pub activity_id: i64,
+    /// The note, in the athlete's own words.
+    pub text: String,
+    /// When the note was written.
+    pub created_at: String,
+}
+
+/// The notes.
+#[derive(Clone, Debug, PartialEq, Serialize)]
+pub struct Notes {
+    /// The notes, oldest first.
+    pub notes: Vec<RunNote>,
+    /// When this answer was produced.
+    pub generated_at: String,
+}
+
+// ------------------------------------------------------------------- export
+
+/// The export that was written.
+#[derive(Clone, Debug, PartialEq, Serialize)]
+pub struct ExportWritten {
+    /// The name of the directory the export was written into.
+    ///
+    /// The name, not the path: the path is the rig's own, and the athlete
+    /// moves the file, not the router.
+    pub directory: String,
+    /// How many rows the export holds.
+    pub rows: i64,
+    /// How many rows each table holds.
+    pub tables: std::collections::BTreeMap<String, i64>,
+    /// The schema version of the export.
+    pub schema_version: i64,
+    /// The size of the exported database, in bytes.
+    pub database_bytes: u64,
+    /// The SHA-256 of the exported database.
+    pub database_sha256: String,
+    /// When the export was made.
+    pub created_at: String,
+    /// When this answer was produced.
+    pub generated_at: String,
+}
+
+/// What an import read.
+#[derive(Clone, Debug, PartialEq, Serialize)]
+pub struct ImportRead {
+    /// How many runs were written.
+    pub activities: usize,
+    /// How many days of wellness were written.
+    pub wellness: usize,
+    /// How many plan blocks were written.
+    pub plan_blocks: usize,
+    /// How many planned sessions were written.
+    pub plan_sessions: usize,
+    /// How many notes were written.
+    pub notes: usize,
+    /// How many rows there were in all.
+    pub rows: usize,
     /// When this answer was produced.
     pub generated_at: String,
 }

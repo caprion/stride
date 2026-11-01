@@ -110,6 +110,8 @@ fn a_reading_route_leaves_the_store_as_it_was() {
         "/sync/settings",
         "/auth/status",
         "/calendar",
+        "/settings",
+        "/notes",
     ] {
         let answer = harness.router.call("GET", path, None);
         assert!(answer.is_ok(), "the route {path} did not answer");
