@@ -45,7 +45,7 @@ home="$cache/stride-distributions"
 
 # Is this directory a Gradle distribution?
 is_distribution() {
-  [ -x "$1/bin/gradle" ]
+  [ -f "$1/bin/gradle" ]
 }
 
 # Find the distribution, in the places it may already be.
@@ -76,6 +76,9 @@ fi
 if [ -z "$distribution" ]; then
   echo "gradlew: fetching $name"
   mkdir -p "$home"
+  # The old, unpacked distribution goes first — but the archive that was just
+  # downloaded must NOT: it is what is about to be unpacked.
+  rm -rf "$home/$name"
   archive="$home/$name.zip"
 
   if command -v curl >/dev/null 2>&1; then
@@ -87,7 +90,11 @@ if [ -z "$distribution" ]; then
     exit 1
   fi
 
-  rm -rf "$home/$name" "$home/$name.zip"
+  if [ ! -s "$archive" ]; then
+    echo "gradlew: the distribution could not be downloaded from $url" >&2
+    exit 1
+  fi
+
   if command -v unzip >/dev/null 2>&1; then
     unzip -q "$archive" -d "$home"
   elif command -v jar >/dev/null 2>&1; then
@@ -100,6 +107,13 @@ if [ -z "$distribution" ]; then
     exit 1
   fi
   rm -f "$archive"
+
+  # The distribution's own launcher may arrive without its executable bit —
+  # the archive's permissions do not always survive the trip — so it is set
+  # here rather than trusted.
+  for candidate in "$home/$name/bin/gradle" "$home/$name/$name/bin/gradle"; do
+    [ -f "$candidate" ] && chmod +x "$candidate" 2>/dev/null || true
+  done
 
   distribution=$(find_distribution "$home/$name" "$home/$name/$name") || true
 fi
