@@ -1026,12 +1026,8 @@
   <div class="grid g3">
     <div class="card"><h4>Data</h4><p class="k">/activities · /activities/{id} · /physiology/{daily,sleep,hrv,vitals,latest,sources} · /fitness/{trends,zones} · /stats/{summary,weekly,pace-trends,elevation,personal-records}</p></div>
     <div class="card"><h4>Plan &amp; insight</h4><p class="k">/plan/{current,today,week,blocks,sources,adherence,results,import} · /insights/{today,progress,chips} · /compare · /compare/candidates</p></div>
-    <div class="card"><h4>App</h4><p class="k">/health · /health/daily · /sync/{status,run,runs,history,settings} · /auth/{status,garmin/personal-key,garmin/personal-key/test,garmin/fit-import,garmin/logout} · /calendar · /settings · /notes · /data/{export,import}</p></div>
+    <div class="card"><h4>App</h4><p class="k">/health · /health/daily · /sync/{status,run,runs,history,settings} · /auth/{status,garmin/personal-key,garmin/personal-key/test,garmin/fit-import,garmin/logout} · /calendar</p></div>
   </div>
-  <p class="k">The last three — <b>/settings</b>, <b>/notes</b> and <b>/data/{export,import}</b> — came with the
-  settings slice (slice 8): the weekly goal, the pause and the note on a run, and the rig's own backup. They
-  are the first change to the frozen table since the freeze, and they travel with the plan edit in the same
-  pull request.</p>
   <p class="k">Cut from the old table: /network/*, /tiles/*, /gear, /auth/garmin/{login,mfa,developer-key,callback},
   /auth/{pair-code,pair,devices}, /stats/monthly, /stats/hr-zones. The
   <b>/fitness/fingerprint</b> route stays (the data is already synced) but has no screen — it is a documented

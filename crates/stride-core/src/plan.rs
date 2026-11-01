@@ -1,67 +1,67 @@
-//! The plan engine: the plan the athlete has, and what it says.
+//! The plan engine: what the athlete intends to do, and what happened.
 //!
-//! **This file is a stand-in.** The plan engine has one owner — this crate —
-//! and the engine itself is written in the core's own pull request. What is
-//! here is the **interface** the API builds to, written out so that the API
-//! can be built, run and tested before that file lands. The core's own file
-//! replaces this one wholesale; the API calls only the interface below.
+//! A plan is a set of dated sessions with a source. The source is always
+//! named: a baseline is inferred from the athlete's history, while a
+//! prescribed or typed plan is an intent the athlete wrote down. The core
+//! owns the baseline, the week, the adherence, the results and the distance
+//! comparison, so the API and the app cannot answer those questions in two
+//! different ways.
 //!
-//! ## What the engine decides
+//! The rules that shape this module:
 //!
-//! * **the baseline** — what the athlete's own history says their week
-//!   looks like. A baseline is a *source*, never a prescription: it never
-//!   yields "not done".
-//! * **the session of a day** and **the sessions of a week**.
-//! * **the adherence** — a count: planned, done, not done. Never a score.
-//! * **the results** — what was planned and what happened.
-//! * **the wording** — the label of a session, and the difference between
-//!   what was planned and what was run.
-//!
-//! ## The rules
-//!
-//! * Pure by contract: no I/O, no clock, no randomness. The day a session
-//!   belongs to and the runs that happened are injected by the caller.
-//! * **No value is `None`, never `0`.** A session with no target distance
-//!   has no target.
-//! * **No verdict.** A session is *done*, *not done* or *planned*. A
-//!   baseline is never "not done": an inferred week is not a prescription.
-//! * **A count is a count.** The adherence is three numbers, and there is no
-//!   percentage anywhere in this module.
+//! * a **baseline is not a prescription**. It never produces a "not done",
+//!   never a shortfall and never a verdict; it says what the athlete
+//!   usually does;
+//! * "done" and "not done" are facts, not grades;
+//! * a distance comparison appears only when the gap from the target is
+//!   beyond ten per cent, and it is neutral in either direction;
+//! * no value is `None`, never `0`: a session without a target has no target;
+//! * everything time-dependent is an argument. There is no clock here.
 
+use std::collections::BTreeMap;
+
+use serde::{Deserialize, Serialize};
+
+use crate::band;
 use crate::date::Date;
-use crate::statement;
-use crate::types::Distance;
+use crate::strings;
 use crate::units;
 
-/// Where a plan came from.
+/// The fewest weeks of history a usual week may be inferred from.
 ///
-/// The three sources are the whole set: a plan the athlete wrote or
-/// imported, and the week the app inferred from the athlete's own history.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+/// Eight weeks is enough to see a weekly shape without turning one unusual
+/// week into the athlete's habit. The threshold is the same one the old
+/// plan-source oracle used.
+pub const MIN_BASELINE_WEEKS: usize = 8;
+
+/// The fewest usable runs a baseline needs.
+///
+/// A run with no distance cannot describe a usual distance, so it does not
+/// count towards this minimum.
+pub const MIN_BASELINE_RUNS: usize = 12;
+
+/// The gap from the target above which a distance comparison is news.
+///
+/// Contract §5: the comparison is shown only when the gap exceeds ten per
+/// cent. Exactly ten per cent is not beyond ten per cent.
+pub const DISTANCE_COMPARISON_THRESHOLD: f64 = 0.10;
+
+/// Where a plan came from. The app names the source; it never hides it.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
 pub enum PlanSource {
     /// Inferred from the athlete's own history. A baseline, never a
     /// prescription.
     Baseline,
-    /// Written down by the athlete — in Garmin Connect, or imported.
+    /// Imported from a plan the athlete wrote down.
     Prescribed,
     /// Typed into the app.
     Typed,
 }
 
 impl PlanSource {
-    /// The three sources, in the order the app prefers them.
-    ///
-    /// The athlete's own plan comes first: a plan the athlete wrote or
-    /// imported is the plan in force. A baseline is what the app inferred,
-    /// and it is the last thing the app offers.
-    pub const ALL: [PlanSource; 3] = [
-        PlanSource::Prescribed,
-        PlanSource::Typed,
-        PlanSource::Baseline,
-    ];
-
-    /// The source's name, as it travels.
-    pub fn name(self) -> &'static str {
+    /// The stable name of this source.
+    pub fn as_str(self) -> &'static str {
         match self {
             PlanSource::Baseline => "baseline",
             PlanSource::Prescribed => "prescribed",
@@ -69,514 +69,684 @@ impl PlanSource {
         }
     }
 
-    /// The source with this name.
-    pub fn from_name(name: &str) -> Option<PlanSource> {
-        match name {
-            "baseline" => Some(PlanSource::Baseline),
-            "prescribed" => Some(PlanSource::Prescribed),
-            "typed" => Some(PlanSource::Typed),
-            _ => None,
+    /// The catalogue id of this source's banner.
+    pub fn banner_id(self) -> &'static str {
+        match self {
+            PlanSource::Baseline => "statement.plan.source.baseline",
+            PlanSource::Prescribed => "statement.plan.source.prescribed",
+            PlanSource::Typed => "statement.plan.source.typed",
         }
+    }
+
+    /// The source banner: "your usual week, inferred from your history".
+    pub fn banner(self) -> String {
+        strings::render(self.banner_id(), &[]).unwrap_or_default()
     }
 }
 
-/// The kind of a planned session.
-///
-/// The kinds the engine names are the ones every plan uses. Everything else
-/// is [`SessionKind::Other`], which carries the athlete's own word for it —
-/// so a session the engine does not recognise keeps its name instead of
-/// being given one.
-#[derive(Clone, Debug, PartialEq, Eq)]
+/// What a session is. This is the athlete's own vocabulary.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
 pub enum SessionKind {
     /// An easy run.
     Easy,
     /// A long run.
     Long,
-    /// A session of quality: a tempo, an interval set, a race.
+    /// A quality session.
     Quality,
-    /// A day with no run planned.
+    /// A rest day.
     Rest,
-    /// A session the engine does not name: the athlete's own word for it.
+    /// A kind the athlete named themselves.
     Other(String),
 }
 
 impl SessionKind {
-    /// The kind's name, as it travels.
-    pub fn name(&self) -> &str {
-        match self {
-            SessionKind::Easy => "easy",
-            SessionKind::Long => "long",
-            SessionKind::Quality => "quality",
-            SessionKind::Rest => "rest",
-            SessionKind::Other(name) => name.as_str(),
-        }
-    }
-
-    /// The kind with this name.
-    ///
-    /// A name the engine does not name is [`SessionKind::Other`]: it keeps
-    /// its own word, and it is never given one of the named kinds.
-    pub fn from_name(name: &str) -> SessionKind {
-        match name.trim().to_ascii_lowercase().as_str() {
-            "easy" => SessionKind::Easy,
-            "long" => SessionKind::Long,
-            "quality" => SessionKind::Quality,
-            "rest" => SessionKind::Rest,
-            other => SessionKind::Other(other.to_string()),
-        }
+    /// The word the plan uses for this kind.
+    pub fn word(&self) -> String {
+        let id = match self {
+            SessionKind::Easy => "statement.plan.kind.easy",
+            SessionKind::Long => "statement.plan.kind.long",
+            SessionKind::Quality => "statement.plan.kind.quality",
+            SessionKind::Rest => "statement.plan.kind.rest",
+            SessionKind::Other(_) => "statement.plan.kind.other",
+        };
+        let value = match self {
+            SessionKind::Other(name) if name.trim().is_empty() => "other".to_string(),
+            SessionKind::Other(name) => name.clone(),
+            _ => String::new(),
+        };
+        strings::render(id, &[("kind", &value)]).unwrap_or_default()
     }
 }
 
-/// One planned session.
-///
-/// The session is the **intent**: the day, the kind, and the distance the
-/// athlete wrote down. Whether it was done, not done or is still planned is
-/// **not** here — it is computed on read, from the date, the runs of that
-/// day and the block's source.
-#[derive(Clone, Debug, PartialEq)]
+/// One dated intent.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct PlanSession {
-    /// The day of the session.
+    /// The day the session belongs to.
     pub date: Date,
-    /// The kind of session.
+    /// What kind of session it is.
     pub kind: SessionKind,
-    /// The distance that was planned, in metres. `None` when there is none.
+    /// The target distance, in metres. `None` means the session has no
+    /// distance target; it never means zero.
     pub target_distance_m: Option<f64>,
-    /// The session's own title, in the athlete's words.
+    /// The label as the app reads it: "10 km · easy".
     pub label: String,
 }
 
-/// One block of a plan: a set of sessions, and where they came from.
-#[derive(Clone, Debug, PartialEq)]
+impl PlanSession {
+    /// A dated intent, with its label rendered by the core.
+    pub fn new(date: Date, kind: SessionKind, target_distance_m: Option<f64>) -> Self {
+        let target_distance_m =
+            target_distance_m.filter(|distance| distance.is_finite() && *distance >= 0.0);
+        let mut planned = Self {
+            date,
+            kind,
+            target_distance_m,
+            label: String::new(),
+        };
+        planned.label = session_label(&planned);
+        planned
+    }
+}
+
+/// A block of sessions: one source and one date range.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct PlanBlock {
     /// Where the block came from.
     pub source: PlanSource,
     /// The block's name.
     pub name: String,
-    /// The block's sessions.
+    /// The dated sessions in the block, oldest first.
     pub sessions: Vec<PlanSession>,
 }
 
-/// One thing the athlete did.
-///
-/// The fact is a day and, when there was one, a distance. A run with no
-/// distance is still a run: the distance is `None`, not `0`.
-#[derive(Clone, Copy, Debug, PartialEq)]
+impl PlanBlock {
+    /// A block whose sessions are put in date order.
+    pub fn new(source: PlanSource, name: String, mut sessions: Vec<PlanSession>) -> Self {
+        sessions.sort_by_key(|session| session.date);
+        Self {
+            source,
+            name,
+            sessions,
+        }
+    }
+}
+
+/// What actually happened, as the plan engine needs to see it.
+#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
 pub struct RunFact {
-    /// The day of the run.
+    /// The athlete-local day of the run.
     pub date: Date,
-    /// The distance of the run, in metres. `None` when there was none.
+    /// The distance run, in metres. `None` means the distance is absent, not
+    /// zero.
     pub distance_m: Option<f64>,
 }
 
-/// How many of the planned sessions were run.
-///
-/// A count, never a score: there is no percentage here, and there is no
-/// grade.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+impl RunFact {
+    /// One run fact.
+    pub fn new(date: Date, distance_m: Option<f64>) -> Self {
+        Self { date, distance_m }
+    }
+}
+
+/// The plain status of a session.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum SessionStatus {
+    /// A run happened on the session's day.
+    Done,
+    /// The day has not arrived, or no prescription exists to call it not
+    /// done.
+    Planned,
+    /// A prescribed session's day arrived without a run.
+    NotDone,
+}
+
+/// The count of a plan's adherence. It is a count, never a score.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Adherence {
-    /// How many sessions the block planned.
+    /// How many sessions the plan contains.
     pub planned: usize,
-    /// How many of them were run.
+    /// How many of them have a run on their day.
     pub done: usize,
-    /// How many of them were not.
+    /// How many prescribed sessions have passed without a run.
     ///
-    /// A **baseline** never counts here: an inferred week is not a
-    /// prescription, and it cannot be "not done".
+    /// This is always zero for a baseline: a baseline is not a prescription.
     pub not_done: usize,
 }
 
-/// What one planned session turned into.
-#[derive(Clone, Debug, PartialEq)]
+impl Adherence {
+    /// The adherence line: "7 of 8 sessions run".
+    ///
+    /// `None` when there is no plan. A zero-plan count never becomes "0 of
+    /// 0 sessions run".
+    pub fn line(&self) -> Option<String> {
+        if self.planned == 0 {
+            return None;
+        }
+        let done = self.done.to_string();
+        let planned = self.planned.to_string();
+        strings::render(
+            "statement.plan.adherence",
+            &[("done", &done), ("planned", &planned)],
+        )
+    }
+
+    /// The baseline line: "3 sessions in your usual week".
+    ///
+    /// It states what happened and never implies a shortfall.
+    pub fn baseline_line(&self) -> Option<String> {
+        if self.planned == 0 {
+            return None;
+        }
+        if self.done == 1 {
+            return strings::render("statement.plan.adherence.baseline.one", &[]);
+        }
+        let done = self.done.to_string();
+        strings::render("statement.plan.adherence.baseline", &[("done", &done)])
+    }
+
+    /// The line appropriate to the plan's source.
+    pub fn line_for(&self, source: PlanSource) -> Option<String> {
+        match source {
+            PlanSource::Baseline => self.baseline_line(),
+            PlanSource::Prescribed | PlanSource::Typed => self.line(),
+        }
+    }
+}
+
+/// One session's intent, what happened, and the difference between them.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct SessionResult {
-    /// The day of the session.
-    pub date: Date,
-    /// The kind of session.
-    pub kind: SessionKind,
-    /// The session's own title.
-    pub label: String,
-    /// The distance that was planned, in metres. `None` when there was none.
-    pub target_distance_m: Option<f64>,
-    /// The distance that was run, in metres. `None` when nothing was run.
-    pub actual_distance_m: Option<f64>,
-    /// The difference between the two, in metres. `None` when there is no
-    /// difference to state.
-    pub difference_m: Option<f64>,
+    /// The intent.
+    pub session: PlanSession,
+    /// Whether a run happened on the session's day.
+    pub ran: bool,
+    /// The distance actually run, in metres, when there is one.
+    pub actual: Option<f64>,
+    /// The neutral distance difference, when it is beyond ten per cent.
+    pub difference: Option<String>,
+    /// The result line: "8.4 km of a 10 km target".
+    pub line: Option<String>,
+    /// The plain status of the session.
+    pub status: SessionStatus,
 }
 
-/// The baseline: the week the athlete's own history describes.
-///
-/// The baseline is built from the last `weeks` weeks of the athlete's runs.
-/// For every weekday the athlete ran on, the median distance of those runs
-/// is the session for that weekday — so the baseline is the athlete's own
-/// week, described back to them.
-///
-/// `None` when there is not enough history to describe a week: a baseline
-/// drawn from one run is a point, and the app would be inventing a week.
-pub fn baseline_from_history(runs: &[RunFact], weeks: usize) -> Option<PlanBlock> {
-    if weeks == 0 {
-        return None;
-    }
-    let newest = runs.iter().map(|run| run.date).max()?;
-    let first_day = newest.add_days(-(weeks as i64 * 7 - 1));
-
-    // Every run of the window, grouped by the weekday it fell on.
-    let mut by_weekday: Vec<Vec<Option<f64>>> = vec![Vec::new(); 7];
-    for run in runs.iter() {
-        if run.date < first_day || run.date > newest {
-            continue;
-        }
-        let weekday = weekday_of(run.date);
-        by_weekday[weekday].push(run.distance_m);
+impl SessionResult {
+    /// The intent.
+    pub fn intent(&self) -> &PlanSession {
+        &self.session
     }
 
-    let mut sessions: Vec<PlanSession> = Vec::new();
-    for (weekday, distances) in by_weekday.iter().enumerate() {
-        if distances.is_empty() {
-            continue;
-        }
-        // The median of the distances that were measured. A run with no
-        // distance is a run, and it counts as one: it is left out of the
-        // median, but it still makes the weekday a weekday the athlete ran
-        // on.
-        let measured: Vec<f64> = distances.iter().filter_map(|value| *value).collect();
-        let target = if measured.is_empty() {
-            None
-        } else {
-            crate::band::median(&measured)
-        };
-        // The session is dated on the most recent run of that weekday, so
-        // the weekday is the session's own.
-        let date = runs
-            .iter()
-            .filter(|run| run.date <= newest && weekday_of(run.date) == weekday)
-            .map(|run| run.date)
-            .max()
-            .unwrap_or(newest);
-        sessions.push(PlanSession {
-            date,
-            kind: SessionKind::Easy,
-            target_distance_m: target,
-            label: String::new(),
-        });
-    }
-
-    if sessions.is_empty() {
-        return None;
-    }
-    Some(PlanBlock {
-        source: PlanSource::Baseline,
-        name: "Your usual week".to_string(),
-        sessions,
-    })
-}
-
-/// The session of a day.
-///
-/// For a block with dates, the session **on** that day. For a baseline — a
-/// pattern rather than a set of days — the session of that weekday, which
-/// is what the pattern means.
-pub fn today_of(block: &PlanBlock, day: Date) -> Option<&PlanSession> {
-    match block.source {
-        PlanSource::Baseline => block
-            .sessions
-            .iter()
-            .find(|session| weekday_of(session.date) == weekday_of(day)),
-        _ => block.sessions.iter().find(|session| session.date == day),
+    /// The distance actually run, in metres.
+    pub fn actual_distance_m(&self) -> Option<f64> {
+        self.actual
     }
 }
 
-/// The sessions of the week a day is in.
+/// The label of an intent: "10 km · easy".
 ///
-/// The seven days of that week, in the order they fall. For a baseline the
-/// sessions are dated into the week asked for, because a baseline is a
-/// pattern and a pattern is asked about a week.
+/// A session with no target says so: "easy · no distance target". The
+/// target is never rendered as zero.
+pub fn session_label(session: &PlanSession) -> String {
+    let kind = session.kind.word();
+    let target = session
+        .target_distance_m
+        .filter(|distance| distance.is_finite() && *distance >= 0.0)
+        .and_then(|distance| units::render_distance(Some(distance)));
+    match target {
+        Some(distance) => strings::render(
+            "statement.plan.session.label",
+            &[("distance", &distance), ("kind", &kind)],
+        )
+        .unwrap_or_default(),
+        None => strings::render("statement.plan.session.no_target", &[("kind", &kind)])
+            .unwrap_or_default(),
+    }
+}
+
+/// The source banner for a plan.
+pub fn source_banner(source: PlanSource) -> String {
+    source.banner()
+}
+
+/// The name of a weekday: "Monday".
+pub fn day_label(day: Date) -> String {
+    let id = match weekday_index(day) {
+        0 => "statement.plan.day.monday",
+        1 => "statement.plan.day.tuesday",
+        2 => "statement.plan.day.wednesday",
+        3 => "statement.plan.day.thursday",
+        4 => "statement.plan.day.friday",
+        5 => "statement.plan.day.saturday",
+        _ => "statement.plan.day.sunday",
+    };
+    strings::render(id, &[]).unwrap_or_default()
+}
+
+/// The Monday of the calendar week containing a day.
+pub fn week_start(day: Date) -> Date {
+    day.add_days(-weekday_index(day))
+}
+
+/// The sessions in the calendar week containing a day, oldest first.
+///
+/// The week is Monday through Sunday, the same week the API's plan routes
+/// use. A day without an intent has no session: absence is not converted
+/// into a rest day.
 pub fn week_of(block: &PlanBlock, day: Date) -> Vec<PlanSession> {
     let start = week_start(day);
     let end = start.add_days(6);
-    match block.source {
-        PlanSource::Baseline => {
-            let mut sessions: Vec<PlanSession> = block
-                .sessions
-                .iter()
-                .map(|session| {
-                    let mut moved = session.clone();
-                    moved.date = start.add_days(weekday_of(moved.date) as i64);
-                    moved
-                })
-                .collect();
-            sessions.sort_by_key(|session| session.date);
-            sessions
-        }
-        _ => {
-            let mut sessions: Vec<PlanSession> = block
-                .sessions
-                .iter()
-                .filter(|session| session.date >= start && session.date <= end)
-                .cloned()
-                .collect();
-            sessions.sort_by_key(|session| session.date);
-            sessions
-        }
-    }
-}
-
-/// How many of the planned sessions were run.
-///
-/// The count is of the block's own sessions, and the runs are matched by
-/// their day. A **baseline** never yields "not done": an inferred week is
-/// not a prescription.
-pub fn adherence_of(block: &PlanBlock, actual: &[RunFact]) -> Adherence {
-    let mut adherence = Adherence {
-        planned: block.sessions.len(),
-        done: 0,
-        not_done: 0,
-    };
-    let newest = actual.iter().map(|run| run.date).max();
-    for session in block.sessions.iter() {
-        if ran_on(actual, session.date) {
-            adherence.done += 1;
-            continue;
-        }
-        // A session that is still to come is planned, not missed — and a
-        // baseline is never "not done" at all.
-        let is_past = match newest {
-            Some(newest) => session.date < newest,
-            None => false,
-        };
-        if is_past && block.source != PlanSource::Baseline {
-            adherence.not_done += 1;
-        }
-    }
-    adherence
-}
-
-/// What every planned session turned into.
-///
-/// The intent, what happened, and the difference between the two — as
-/// numbers. The wording is [`distance_comparison`]'s business.
-pub fn results_of(block: &PlanBlock, actual: &[RunFact]) -> Vec<SessionResult> {
-    let mut results: Vec<SessionResult> = Vec::new();
-    for session in block.sessions.iter() {
-        let actual_distance_m = distance_on(actual, session.date);
-        let difference_m = match (session.target_distance_m, actual_distance_m) {
-            (Some(target), Some(actual)) => Some(actual - target),
-            _ => None,
-        };
-        results.push(SessionResult {
-            date: session.date,
-            kind: session.kind.clone(),
-            label: session.label.clone(),
-            target_distance_m: session.target_distance_m,
-            actual_distance_m,
-            difference_m,
-        });
-    }
-    results.sort_by_key(|result| result.date);
-    results
-}
-
-/// The difference between what was planned and what was run.
-///
-/// The core renders it: "2.4 km more than the 10 km target", and it says it
-/// only when the gap from the target is beyond ten per cent. Within ten per
-/// cent it is absent — 10.2 km against a 10 km target is not news, and
-/// neither more nor less is good or bad.
-pub fn distance_comparison(actual_m: Option<f64>, target_m: Option<f64>) -> Option<String> {
-    let actual = Distance::from_metres(actual_m?)?;
-    let target = Distance::from_metres(target_m?)?;
-    statement::distance_comparison(actual, target)
-}
-
-/// The label of a session — "10 km · easy".
-///
-/// The distance is the core's own rendering of it, and the kind is the
-/// session's own word. A session with no distance is labelled by its kind
-/// alone.
-pub fn session_label(session: &PlanSession) -> String {
-    let kind = session.kind.name();
-    match units::render_distance(session.target_distance_m) {
-        Some(distance) => format!("{distance} · {kind}"),
-        None => kind.to_string(),
-    }
-}
-
-/// Whether the athlete ran on a day.
-fn ran_on(actual: &[RunFact], day: Date) -> bool {
-    actual.iter().any(|run| run.date == day)
-}
-
-/// The distance run on a day, in metres.
-///
-/// The sum of the runs of that day. A day with no run has no distance, and
-/// a day whose runs had no distance has none either: `None`, never `0`.
-fn distance_on(actual: &[RunFact], day: Date) -> Option<f64> {
-    let distances: Vec<f64> = actual
+    let mut sessions: Vec<PlanSession> = block
+        .sessions
         .iter()
-        .filter(|run| run.date == day)
-        .filter_map(|run| run.distance_m)
+        .filter(|session| session.date >= start && session.date <= end)
+        .cloned()
         .collect();
-    if distances.is_empty() {
+    sessions.sort_by_key(|session| session.date);
+    sessions
+}
+
+/// The session on a day, when the plan has one.
+pub fn today_of(block: &PlanBlock, day: Date) -> Option<&PlanSession> {
+    block.sessions.iter().find(|session| session.date == day)
+}
+
+/// The adherence count for a block.
+///
+/// A baseline never has a "not done": it describes what the athlete
+/// usually does, not what they were told to do. For a prescribed or typed
+/// plan, every session without a matching run is counted as not done.
+pub fn adherence_of(block: &PlanBlock, actual: &[RunFact]) -> Adherence {
+    let planned = block.sessions.len();
+    let done = block
+        .sessions
+        .iter()
+        .filter(|session| actual.iter().any(|fact| fact.date == session.date))
+        .count();
+    let not_done = match block.source {
+        PlanSource::Baseline => 0,
+        PlanSource::Prescribed | PlanSource::Typed => planned.saturating_sub(done),
+    };
+    Adherence {
+        planned,
+        done,
+        not_done,
+    }
+}
+
+/// The adherence count as of a day.
+///
+/// Only a prescribed session whose day has passed can be "not done". A
+/// future session is still planned, and a baseline never produces a
+/// shortfall.
+pub fn adherence_of_at(block: &PlanBlock, actual: &[RunFact], day: Date) -> Adherence {
+    let planned = block.sessions.len();
+    let done = block
+        .sessions
+        .iter()
+        .filter(|session| actual.iter().any(|fact| fact.date == session.date))
+        .count();
+    let not_done = match block.source {
+        PlanSource::Baseline => 0,
+        PlanSource::Prescribed | PlanSource::Typed => block
+            .sessions
+            .iter()
+            .filter(|session| session.date < day)
+            .filter(|session| !actual.iter().any(|fact| fact.date == session.date))
+            .count(),
+    };
+    Adherence {
+        planned,
+        done,
+        not_done,
+    }
+}
+
+/// The result of every session in a block.
+///
+/// The result line states the actual and the target neutrally. The separate
+/// difference is present only when the gap is beyond ten per cent.
+pub fn results_of(block: &PlanBlock, actual: &[RunFact]) -> Vec<SessionResult> {
+    block
+        .sessions
+        .iter()
+        .map(|session| session_result(block.source, session, actual, None))
+        .collect()
+}
+
+/// The results of a block as of a day.
+///
+/// A prescribed session is "not done" only after its day has passed. A
+/// baseline session without a run stays "planned": there was no prescription
+/// to miss.
+pub fn results_of_at(block: &PlanBlock, actual: &[RunFact], day: Date) -> Vec<SessionResult> {
+    block
+        .sessions
+        .iter()
+        .map(|session| session_result(block.source, session, actual, Some(day)))
+        .collect()
+}
+
+/// One session's result.
+fn session_result(
+    source: PlanSource,
+    session: &PlanSession,
+    actual: &[RunFact],
+    day: Option<Date>,
+) -> SessionResult {
+    let facts: Vec<&RunFact> = actual
+        .iter()
+        .filter(|fact| fact.date == session.date)
+        .collect();
+    let ran = !facts.is_empty();
+    let distances: Vec<f64> = facts
+        .iter()
+        .filter_map(|fact| fact.distance_m)
+        .filter(|distance| distance.is_finite() && *distance >= 0.0)
+        .collect();
+    let actual_distance_m = if distances.is_empty() {
+        None
+    } else {
+        Some(distances.iter().sum())
+    };
+    let difference = distance_comparison(actual_distance_m, session.target_distance_m);
+    let line = result_line(ran, actual_distance_m, session.target_distance_m);
+    let status = if ran {
+        SessionStatus::Done
+    } else {
+        let has_passed = day.map(|day| session.date < day).unwrap_or(true);
+        match source {
+            // A baseline is not a prescription, so it never says "not done".
+            PlanSource::Baseline => SessionStatus::Planned,
+            PlanSource::Prescribed | PlanSource::Typed => {
+                if has_passed {
+                    SessionStatus::NotDone
+                } else {
+                    SessionStatus::Planned
+                }
+            }
+        }
+    };
+    SessionResult {
+        session: session.clone(),
+        ran,
+        actual: actual_distance_m,
+        difference,
+        line,
+        status,
+    }
+}
+
+/// The result line for one session.
+fn result_line(ran: bool, actual_m: Option<f64>, target_m: Option<f64>) -> Option<String> {
+    let actual = actual_m.and_then(|distance| units::render_distance(Some(distance)));
+    let target = target_m.and_then(|distance| units::render_distance(Some(distance)));
+    match (ran, actual, target) {
+        (true, Some(actual), Some(target)) => strings::render(
+            "statement.plan.result.target",
+            &[("actual", &actual), ("target", &target)],
+        ),
+        (true, Some(actual), None) => {
+            strings::render("statement.plan.result.no_target", &[("actual", &actual)])
+        }
+        (false, None, Some(target)) => {
+            strings::render("statement.plan.result.no_run", &[("target", &target)])
+        }
+        (false, None, None) => strings::render("statement.plan.result.empty", &[]),
+        (true, None, Some(target)) => strings::render(
+            "statement.plan.result.no_distance_with_target",
+            &[("target", &target)],
+        ),
+        (true, None, None) => strings::render("statement.plan.result.no_distance", &[]),
+        // A run with a distance and no target was handled above. This arm
+        // keeps the match exhaustive if a future value is added.
+        (false, Some(_), _) => None,
+    }
+}
+
+/// The distance comparison, when there is one.
+///
+/// The comparison states an overshoot neutrally: "2.4 km more than the 10 km
+/// target". It is absent when either value is absent, when the run did not
+/// reach the target, and when the gap is within ten per cent of the target.
+/// A run below the target is stated by the result line itself; the
+/// comparison is not a shortfall.
+pub fn distance_comparison(actual_m: Option<f64>, target_m: Option<f64>) -> Option<String> {
+    let actual = actual_m?;
+    let target = target_m?;
+    if !actual.is_finite() || !target.is_finite() || actual < 0.0 || target <= 0.0 {
         return None;
     }
-    Some(distances.iter().sum())
+    let gap = actual - target;
+    if gap <= 0.0 || gap / target <= DISTANCE_COMPARISON_THRESHOLD {
+        return None;
+    }
+    let gap_text = format!("{} km", units::format_distance_km_short(gap));
+    let target_text = format!("{} km", units::format_distance_km_short(target));
+    strings::render(
+        "statement.distance.more",
+        &[("gap", &gap_text), ("target", &target_text)],
+    )
 }
 
-/// The weekday of a day, from Monday (zero) to Sunday (six).
-fn weekday_of(day: Date) -> usize {
-    // 1970-01-01 was a Thursday, so the epoch day counts from there.
-    let epoch_day = day.epoch_day();
-    let weekday = (epoch_day + 3).rem_euclid(7);
-    weekday as usize
+/// The distance comparison with the actual distance in front of it:
+/// "12.4 km · 2.4 km more than the 10 km target".
+pub fn distance_comparison_line(actual_m: Option<f64>, target_m: Option<f64>) -> Option<String> {
+    let comparison = distance_comparison(actual_m, target_m)?;
+    let actual = actual_m?;
+    let distance = format!("{} km", units::format_distance_km_short(actual));
+    strings::render(
+        "statement.distance.line",
+        &[("distance", &distance), ("comparison", &comparison)],
+    )
 }
 
-/// The first day of the week a day is in: the Monday.
-fn week_start(day: Date) -> Date {
-    let offset = weekday_of(day) as i64;
-    day.add_days(-offset)
+/// The line shown when history is too thin to infer a usual week.
+pub fn baseline_not_enough_history() -> String {
+    strings::render("statement.plan.baseline.not_enough_history", &[]).unwrap_or_default()
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
+/// Infer the athlete's usual week from their history.
+///
+/// The engine reads the last `weeks` calendar weeks before the most recent
+/// usable run. It needs at least eight weeks and twelve usable runs; a
+/// thinner history yields `None` rather than an invented plan.
+///
+/// From the usable history it reads:
+///
+/// * the typical number of sessions in a week (the median weekly count,
+///   including weeks with no run);
+/// * the typical distance for each weekday that recurs (the median distance
+///   on that weekday);
+/// * the typical kind: the longest recurring run is long, the second
+///   longest is quality, and the rest are easy.
+///
+/// The block's name states how many weeks were actually used. The sessions
+/// are dated in the week containing the most recent usable run, so the
+/// result is deterministic and needs no clock.
+pub fn baseline_from_history(runs: &[RunFact], weeks: usize) -> Option<PlanBlock> {
+    let anchor = runs
+        .iter()
+        .filter_map(|run| usable_distance(run).map(|distance| (run.date, distance)))
+        .map(|(date, _)| date)
+        .max()?;
+    baseline_from_history_at(runs, weeks, anchor)
+}
 
-    /// A date, as a test reads it.
-    fn day(text: &str) -> Result<Date, Box<dyn std::error::Error>> {
-        match Date::parse(text) {
-            Some(date) => Ok(date),
-            None => Err(format!("the date {text} could not be read").into()),
+/// Infer the athlete's usual week for a particular week.
+///
+/// This is the time-injected form of [`baseline_from_history`]. The history
+/// is read from the requested number of weeks before `day`; the resulting
+/// sessions are dated in the calendar week containing `day`.
+pub fn baseline_from_history_at(runs: &[RunFact], weeks: usize, day: Date) -> Option<PlanBlock> {
+    if weeks < MIN_BASELINE_WEEKS {
+        return None;
+    }
+    let requested_weeks = i64::try_from(weeks).unwrap_or(i64::MAX);
+    let anchor_week = week_start(day);
+    let window_start = anchor_week.add_days(-(requested_weeks.saturating_sub(1)) * 7);
+    let usable: Vec<(Date, f64)> = runs
+        .iter()
+        .filter(|run| run.date >= window_start && run.date <= day)
+        .filter_map(|run| usable_distance(run).map(|distance| (run.date, distance)))
+        .collect();
+    if usable.len() < MIN_BASELINE_RUNS {
+        return None;
+    }
+    let first_week = usable.iter().map(|(date, _)| week_start(*date)).min()?;
+    let spanned_weeks = anchor_week.days_since(first_week) / 7 + 1;
+    if spanned_weeks < MIN_BASELINE_WEEKS as i64 {
+        return None;
+    }
+    let weeks_used = usize::try_from(spanned_weeks).unwrap_or(weeks).min(weeks);
+
+    // The weekly session counts include empty weeks between the first and
+    // last observed week: an athlete who usually runs three times a week
+    // should not have that usual week changed by one quiet week.
+    let week_count = usize::try_from(spanned_weeks).unwrap_or(0);
+    let mut weekly_counts = vec![0usize; week_count];
+    for (date, _) in &usable {
+        let index = date.days_since(first_week) / 7;
+        if let Ok(index) = usize::try_from(index) {
+            if let Some(count) = weekly_counts.get_mut(index) {
+                *count += 1;
+            }
         }
     }
+    let typical_sessions = units::round_half_even(
+        band::median(
+            &weekly_counts
+                .iter()
+                .map(|count| *count as f64)
+                .collect::<Vec<_>>(),
+        )
+        .unwrap_or(0.0),
+        0,
+    ) as usize;
+    if typical_sessions == 0 {
+        return None;
+    }
+    let typical_sessions = typical_sessions.min(7);
 
-    /// A date, as a test makes it.
-    fn date(year: i32, month: u32, day: u32) -> Result<Date, Box<dyn std::error::Error>> {
-        match Date::from_ymd(year, month, day) {
-            Some(date) => Ok(date),
-            None => Err("the date could not be made".into()),
+    // Group the usable runs by weekday. A weekday that appears in more
+    // distinct weeks is more a part of the usual week than one that appears
+    // often in a single week.
+    let mut by_weekday: [Vec<(usize, f64)>; 7] = [
+        Vec::new(),
+        Vec::new(),
+        Vec::new(),
+        Vec::new(),
+        Vec::new(),
+        Vec::new(),
+        Vec::new(),
+    ];
+    for (date, distance) in &usable {
+        let weekday = usize::try_from(weekday_index(*date)).unwrap_or(0);
+        let week = date.days_since(first_week) / 7;
+        if let Ok(week) = usize::try_from(week) {
+            by_weekday[weekday].push((week, *distance));
         }
     }
-
-    /// A fact, as a test writes it.
-    fn fact(text: &str, distance_m: Option<f64>) -> Result<RunFact, Box<dyn std::error::Error>> {
-        Ok(RunFact {
-            date: day(text)?,
-            distance_m,
-        })
+    let mut candidates: Vec<WeekdayCandidate> = Vec::new();
+    for (weekday, entries) in by_weekday.iter().enumerate() {
+        if entries.is_empty() {
+            continue;
+        }
+        let mut weeks_seen: Vec<usize> = entries.iter().map(|(week, _)| *week).collect();
+        weeks_seen.sort_unstable();
+        weeks_seen.dedup();
+        let distances: Vec<f64> = entries.iter().map(|(_, distance)| *distance).collect();
+        let typical_distance = band::median(&distances)?;
+        candidates.push(WeekdayCandidate {
+            weekday,
+            weeks_seen: weeks_seen.len(),
+            entries: entries.len(),
+            typical_distance,
+        });
     }
+    candidates.sort_by(|left, right| {
+        right
+            .weeks_seen
+            .cmp(&left.weeks_seen)
+            .then_with(|| right.entries.cmp(&left.entries))
+            .then_with(|| right.typical_distance.total_cmp(&left.typical_distance))
+            .then_with(|| left.weekday.cmp(&right.weekday))
+    });
+    candidates.truncate(typical_sessions);
 
-    #[test]
-    fn a_session_is_the_intent_and_nothing_else() -> Result<(), Box<dyn std::error::Error>> {
-        let planned = PlanSession {
-            date: date(2026, 5, 12)?,
-            kind: SessionKind::Easy,
-            target_distance_m: Some(10_000.0),
-            label: String::new(),
+    // The longest recurring distance is the long run; the second longest is
+    // the quality run; the rest are easy runs.
+    let mut by_distance = candidates.clone();
+    by_distance.sort_by(|left, right| {
+        left.typical_distance
+            .total_cmp(&right.typical_distance)
+            .then_with(|| left.weekday.cmp(&right.weekday))
+    });
+    let mut kinds: BTreeMap<usize, SessionKind> = BTreeMap::new();
+    for (index, candidate) in by_distance.iter().enumerate() {
+        let kind = if by_distance.len() == 1 {
+            SessionKind::Easy
+        } else if index + 1 == by_distance.len() {
+            SessionKind::Long
+        } else if index + 2 == by_distance.len() {
+            SessionKind::Quality
+        } else {
+            SessionKind::Easy
         };
-        assert_eq!(session_label(&planned), "10 km · easy");
-        assert_eq!(
-            session_label(&PlanSession {
-                date: date(2026, 5, 12)?,
-                kind: SessionKind::Rest,
-                target_distance_m: None,
-                label: String::new(),
-            }),
-            "rest"
-        );
-        Ok(())
+        kinds.insert(candidate.weekday, kind);
     }
 
-    #[test]
-    fn a_kind_the_engine_does_not_name_keeps_its_own_name() {
-        assert_eq!(
-            SessionKind::from_name("tempo"),
-            SessionKind::Other("tempo".to_string())
-        );
-        assert_eq!(SessionKind::from_name("Easy"), SessionKind::Easy);
-        assert_eq!(SessionKind::from_name("tempo").name(), "tempo");
+    let mut sessions = Vec::with_capacity(candidates.len());
+    for candidate in candidates {
+        let date = anchor_week.add_days(candidate.weekday as i64);
+        let kind = kinds
+            .get(&candidate.weekday)
+            .cloned()
+            .unwrap_or(SessionKind::Easy);
+        sessions.push(PlanSession::new(
+            date,
+            kind,
+            Some(candidate.typical_distance),
+        ));
     }
+    sessions.sort_by_key(|session| session.date);
 
-    #[test]
-    fn the_adherence_is_a_count_and_never_a_score() -> Result<(), Box<dyn std::error::Error>> {
-        let block = PlanBlock {
-            source: PlanSource::Prescribed,
-            name: "A plan".to_string(),
-            sessions: vec![
-                PlanSession {
-                    date: date(2026, 5, 10)?,
-                    kind: SessionKind::Easy,
-                    target_distance_m: Some(10_000.0),
-                    label: String::new(),
-                },
-                PlanSession {
-                    date: date(2026, 5, 11)?,
-                    kind: SessionKind::Easy,
-                    target_distance_m: Some(8_000.0),
-                    label: String::new(),
-                },
-            ],
-        };
-        let actual = vec![
-            RunFact {
-                date: date(2026, 5, 10)?,
-                distance_m: Some(10_400.0),
-            },
-            RunFact {
-                date: date(2026, 5, 12)?,
-                distance_m: None,
-            },
-        ];
-        let adherence = adherence_of(&block, &actual);
-        assert_eq!(adherence.planned, 2);
-        assert_eq!(adherence.done, 1);
-        assert_eq!(adherence.not_done, 1);
-        Ok(())
-    }
+    let weeks_text = weeks_used.to_string();
+    let name = strings::render(
+        "statement.plan.baseline.description",
+        &[("weeks", &weeks_text)],
+    )
+    .unwrap_or_default();
+    Some(PlanBlock::new(PlanSource::Baseline, name, sessions))
+}
 
-    #[test]
-    fn a_baseline_never_yields_not_done() -> Result<(), Box<dyn std::error::Error>> {
-        let block = PlanBlock {
-            source: PlanSource::Baseline,
-            name: "Your usual week".to_string(),
-            sessions: vec![PlanSession {
-                date: date(2026, 5, 10)?,
-                kind: SessionKind::Easy,
-                target_distance_m: Some(10_000.0),
-                label: String::new(),
-            }],
-        };
-        let actual = vec![RunFact {
-            date: date(2026, 5, 12)?,
-            distance_m: None,
-        }];
-        let adherence = adherence_of(&block, &actual);
-        assert_eq!(adherence.not_done, 0);
-        assert_eq!(adherence.planned, 1);
-        Ok(())
-    }
+/// A weekday's recurrence and typical distance.
+#[derive(Clone, Copy, Debug)]
+struct WeekdayCandidate {
+    /// Monday is zero.
+    weekday: usize,
+    /// How many distinct weeks contain this weekday.
+    weeks_seen: usize,
+    /// How many runs occurred on this weekday.
+    entries: usize,
+    /// The median distance on this weekday.
+    typical_distance: f64,
+}
 
-    #[test]
-    fn the_difference_is_stated_only_beyond_ten_per_cent() {
-        assert!(distance_comparison(Some(10_200.0), Some(10_000.0)).is_none());
-        assert_eq!(
-            distance_comparison(Some(12_400.0), Some(10_000.0)),
-            Some("2.4 km more than the 10 km target".to_string())
-        );
-        assert!(distance_comparison(None, Some(10_000.0)).is_none());
-    }
+/// The usable distance of a run: a finite, positive distance.
+///
+/// A run with no distance is a fact, but it cannot describe a usual
+/// distance and therefore is not part of the distance inference.
+fn usable_distance(run: &RunFact) -> Option<f64> {
+    run.distance_m
+        .filter(|distance| distance.is_finite() && *distance > 0.0)
+}
 
-    #[test]
-    fn the_baseline_describes_the_athletes_own_week() -> Result<(), Box<dyn std::error::Error>> {
-        let runs = vec![
-            fact("2026-05-04", Some(10_000.0))?,
-            fact("2026-05-06", Some(12_000.0))?,
-            fact("2026-05-11", Some(11_000.0))?,
-            fact("2026-05-13", Some(13_000.0))?,
-        ];
-        let block = match baseline_from_history(&runs, 4) {
-            Some(block) => block,
-            None => return Err("there was enough history for a baseline".into()),
-        };
-        assert_eq!(block.source, PlanSource::Baseline);
-        assert_eq!(block.sessions.len(), 2);
-        Ok(())
-    }
+/// The weekday index, Monday is zero.
+///
+/// 1970-01-01 was a Thursday, so three days are added before the epoch day
+/// is reduced into the Monday-first week.
+fn weekday_index(day: Date) -> i64 {
+    day.epoch_day().saturating_add(3).rem_euclid(7)
 }

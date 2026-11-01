@@ -366,8 +366,11 @@ pub fn results_of(api: &Api, plan: &ActivePlan, facts: &[RunFact]) -> ApiResult<
     };
     let mut rendered: Vec<PlanResult> = Vec::with_capacity(results.len());
     for result in results.iter() {
-        let date = result.date.to_iso();
-        let actual_m = result.actual_distance_m;
+        // The core's SessionResult carries the intent inside it; the app's
+        // shape is flat, so the mapping is here - and only here.
+        let session = &result.session;
+        let date = session.date.to_iso();
+        let actual_m = result.actual;
         let session_id = stored
             .iter()
             .find(|(stored_date, _)| *stored_date == date)
@@ -375,27 +378,12 @@ pub fn results_of(api: &Api, plan: &ActivePlan, facts: &[RunFact]) -> ApiResult<
         rendered.push(PlanResult {
             session_id,
             date: date.clone(),
-            session_type: kind_name(&result.kind),
-            label: stride_core::plan::session_label(&CoreSession {
-                date: result.date,
-                kind: result.kind.clone(),
-                target_distance_m: result.target_distance_m,
-                label: result.label.clone(),
-            }),
-            status: status_of(
-                source,
-                &CoreSession {
-                    date: result.date,
-                    kind: result.kind.clone(),
-                    target_distance_m: result.target_distance_m,
-                    label: result.label.clone(),
-                },
-                facts,
-            )
-            .to_string(),
-            target: render::distance(result.target_distance_m),
+            session_type: kind_name(&session.kind),
+            label: stride_core::plan::session_label(session),
+            status: status_of(source, session, facts).to_string(),
+            target: render::distance(session.target_distance_m),
             actual: render::distance(actual_m),
-            difference: stride_core::plan::distance_comparison(actual_m, result.target_distance_m),
+            difference: stride_core::plan::distance_comparison(actual_m, session.target_distance_m),
         });
     }
     Ok(rendered)
