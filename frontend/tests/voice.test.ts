@@ -7,9 +7,9 @@
 
 import { describe, expect, it } from 'vitest'
 import { checkCatalogue, checkInlineText } from '../scripts/voice-lint.mjs'
-import { DIRECTION_WORDS, catalogue, directions } from '../src/i18n'
+import { DIRECTION_WORDS, catalogue } from '../src/i18n'
 
-const entries = { ...catalogue, ...directions }
+const entries = catalogue
 
 describe('the voice lint', () => {
   it('passes the real catalogue', () => {
@@ -93,7 +93,7 @@ describe('the voice lint', () => {
   })
 
   it('does not flag a catalogue lookup as inline prose', () => {
-    const failures = checkInlineText('src/pages/Example.tsx', "<p>{t('today.rest.label')}</p>")
+    const failures = checkInlineText('src/pages/Example.tsx', "<p>{t('today.heading')}</p>")
     expect(failures).toEqual([])
   })
 })

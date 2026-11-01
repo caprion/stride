@@ -87,21 +87,25 @@ export function checkCatalogue(entries, directionWords) {
     }
   }
 
-  // The closed direction set.
+  // The closed direction set — for the catalogues that carry one. The
+  // app's own catalogue no longer does: the direction words arrive
+  // rendered, and the core's export is the one that holds them.
   const directions = Object.entries(entries).filter(([, entry]) => entry.type === 'direction')
-  for (const [key, entry] of directions) {
-    if (!directionWords.includes(entry.text)) {
-      failures.push(`catalogue.${key}: is a direction outside the closed set — "${entry.text}"`)
+  if (directions.length > 0) {
+    for (const [key, entry] of directions) {
+      if (!directionWords.includes(entry.text)) {
+        failures.push(`catalogue.${key}: is a direction outside the closed set — "${entry.text}"`)
+      }
     }
-  }
-  const seen = new Set(directions.map(([, entry]) => entry.text))
-  for (const word of directionWords) {
-    if (!seen.has(word)) {
-      failures.push(`catalogue: the closed direction set is missing "${word}"`)
+    const seen = new Set(directions.map(([, entry]) => entry.text))
+    for (const word of directionWords) {
+      if (!seen.has(word)) {
+        failures.push(`catalogue: the closed direction set is missing "${word}"`)
+      }
     }
-  }
-  if (seen.size !== directionWords.length) {
-    failures.push('catalogue: the closed direction set has been extended')
+    if (seen.size !== directionWords.length) {
+      failures.push('catalogue: the closed direction set has been extended')
+    }
   }
 
   // A pattern carries its sample size.
@@ -143,5 +147,76 @@ export function checkInlineText(file, text) {
       failures.push(`${file}: writes the banned word "${term}" inline — "${literal}"`)
     }
   }
+  return failures
+}
+
+/**
+ * Check the core's export — `crates/stride-core/strings.json`.
+ *
+ * The export carries the catalogue's strings *and the rules with them*:
+ * the ban list, the closed direction set, the minimum pattern sample and
+ * the vital words. It is the artefact the contract names, and it is
+ * regenerated, never hand-edited:
+ *
+ *     cargo run -p stride-core --example export_catalogue
+ *
+ * So the export is checked against the same rules the app's own catalogue
+ * is checked against, and its ban list is checked against the contract's:
+ * if the two ever disagree, the contract's list wins and the export is
+ * regenerated.
+ */
+export function checkExport(exported, directionWords) {
+  const failures = []
+  const rules = exported?.rules ?? {}
+  const entries = exported?.entries ?? []
+
+  // The ban list is one list: the contract's, word for word.
+  const exportList = rules.banned_phrases ?? []
+  const contractList = BANNED.map((entry) => entry.term)
+  const missing = contractList.filter((term) => !exportList.includes(term))
+  const extra = exportList.filter((term) => !contractList.includes(term))
+  if (missing.length > 0) {
+    failures.push(`the export's ban list is missing: ${missing.join(', ')}`)
+  }
+  if (extra.length > 0) {
+    failures.push(`the export's ban list has words the contract does not: ${extra.join(', ')}`)
+  }
+
+  // The closed direction set is the contract's, and it is not extended.
+  const exportSet = rules.direction_set ?? []
+  const sameSet =
+    exportSet.length === directionWords.length &&
+    directionWords.every((word) => exportSet.includes(word))
+  if (!sameSet) {
+    failures.push(`the export's direction set is not the contract's: ${exportSet.join(' · ')}`)
+  }
+
+  // No banned word in any exported string.
+  for (const entry of entries) {
+    for (const term of bannedWords(entry.template ?? '')) {
+      failures.push(`the export's ${entry.id}: contains the banned word "${term}"`)
+    }
+  }
+
+  // A pattern carries its sample size.
+  for (const entry of entries) {
+    if (entry.kind !== 'pattern') continue
+    if (!SAMPLE_SIZE.test(entry.template ?? '') || !SAMPLE_NOUN.test(entry.template ?? '')) {
+      failures.push(`the export's ${entry.id}: is a pattern without a sample size`)
+    }
+  }
+
+  // An option never mentions a vital.
+  const vitalWords = rules.vital_words ?? VITAL_WORDS
+  for (const entry of entries) {
+    if (entry.kind !== 'option') continue
+    const lowered = (entry.template ?? '').toLowerCase()
+    for (const vital of vitalWords) {
+      if (lowered.includes(vital)) {
+        failures.push(`the export's ${entry.id}: is an option that mentions a vital ("${vital}")`)
+      }
+    }
+  }
+
   return failures
 }
