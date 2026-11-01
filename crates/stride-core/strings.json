@@ -40,6 +40,8 @@
     { "id": "value.heart_rate", "kind": "statement", "role": null, "template": "{value} bpm" },
     { "id": "value.pace", "kind": "statement", "role": null, "template": "{value} /km" },
     { "id": "value.elevation", "kind": "statement", "role": null, "template": "{value} m" },
+    { "id": "value.difference", "kind": "statement", "role": null, "template": "{sign}{value}" },
+    { "id": "value.pace_difference", "kind": "statement", "role": null, "template": "{value} s/km" },
     { "id": "statement.distance.more", "kind": "statement", "role": null, "template": "{gap} more than the {target} target" },
     { "id": "statement.distance.less", "kind": "statement", "role": null, "template": "{gap} less than the {target} target" },
     { "id": "statement.distance.line", "kind": "statement", "role": null, "template": "{distance} · {comparison}" },

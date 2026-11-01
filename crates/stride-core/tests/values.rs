@@ -6,6 +6,7 @@
 //! the frontend to act on.
 
 use stride_core::units;
+use stride_core::units::ValueUnit;
 
 #[test]
 fn a_distance_renders_in_the_apps_own_form() {
@@ -73,6 +74,33 @@ fn a_missing_value_renders_nothing_at_all() {
     assert_eq!(units::render_elevation(None), None);
     // And a pace of zero is no value, never "0:00".
     assert_eq!(units::render_pace(Some(0.0)), None);
+}
+
+#[test]
+fn a_difference_is_signed_and_in_the_metrics_own_unit() {
+    // The plan's Δ column: "metric · A · B · Δ", and swapping A and B flips
+    // the sign of every delta.
+    assert_eq!(
+        units::render_difference(Some(2400.0), ValueUnit::Distance),
+        Some("+2.4 km".to_string())
+    );
+    assert_eq!(
+        units::render_difference(Some(-2400.0), ValueUnit::Distance),
+        Some("\u{2212}2.4 km".to_string())
+    );
+    assert_eq!(
+        units::render_difference(Some(2520.0), ValueUnit::Duration),
+        Some("+42 m".to_string())
+    );
+    assert_eq!(
+        units::render_difference(Some(6.0), ValueUnit::Pace),
+        Some("+6 s/km".to_string())
+    );
+    assert_eq!(
+        units::render_difference(Some(5.7), ValueUnit::HeartRate),
+        Some("+5 bpm".to_string())
+    );
+    assert_eq!(units::render_difference(None, ValueUnit::Distance), None);
 }
 
 #[test]

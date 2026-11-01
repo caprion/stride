@@ -17,6 +17,8 @@
 //!
 //! Each renderer says which rounding rule it obeys, next to the rule.
 
+use serde::{Deserialize, Serialize};
+
 use crate::strings;
 
 /// Round half to even at `decimals` places.
@@ -221,6 +223,60 @@ pub fn render_elevation(metres: Option<f64>) -> Option<String> {
     strings::render("value.elevation", &[("value", &value)])
 }
 
+/// The unit a metric is measured in.
+///
+/// A difference between two values is rendered in the unit of the metric it
+/// belongs to, so the core has to know which unit that is.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub enum ValueUnit {
+    /// A distance, in kilometres.
+    Distance,
+    /// A duration.
+    Duration,
+    /// A pace, in seconds per kilometre.
+    Pace,
+    /// A heart rate, in beats per minute.
+    HeartRate,
+    /// A count, with no unit.
+    Count,
+}
+
+/// The rendered difference between two values: "+2.4 km".
+///
+/// The difference is signed — the plan's Δ column, and "swapping A and B
+/// flips the sign of every delta" — and the magnitude is rendered by the
+/// unit's own renderer, so a difference is never a second form of a value.
+///
+/// The rounding is the unit's own rule: a distance to one decimal, a duration
+/// to the nearest minute, a pace to a whole second per kilometre (a
+/// difference of clock times reads as nothing), a heart rate truncated, a
+/// count whole. A difference of no value renders nothing at all.
+pub fn render_difference(difference: Option<f64>, unit: ValueUnit) -> Option<String> {
+    let difference = difference?;
+    if !difference.is_finite() {
+        return None;
+    }
+    let sign = if difference > 0.0 {
+        "+"
+    } else if difference < 0.0 {
+        "\u{2212}"
+    } else {
+        ""
+    };
+    let magnitude = difference.abs();
+    let value = match unit {
+        ValueUnit::Distance => render_distance(Some(magnitude))?,
+        ValueUnit::Duration => render_duration(Some(magnitude))?,
+        ValueUnit::Pace => {
+            let seconds = format!("{}", round_half_even(magnitude, 0) as i64);
+            strings::render("value.pace_difference", &[("value", &seconds)])?
+        }
+        ValueUnit::HeartRate => render_heart_rate(Some(magnitude))?,
+        ValueUnit::Count => format_whole(magnitude),
+    };
+    strings::render("value.difference", &[("sign", sign), ("value", &value)])
+}
+
 /// The ordinal of a count: 1st, 2nd, 3rd, 4th, 11th, 21st.
 pub fn ordinal(count: usize) -> String {
     let suffix = match (count % 100, count % 10) {
@@ -255,6 +311,42 @@ mod tests {
         assert_eq!(render_pace(Some(302.0)), Some("5:02 /km".to_string()));
         // An elevation: whole metres.
         assert_eq!(render_elevation(Some(128.0)), Some("128 m".to_string()));
+    }
+
+    #[test]
+    fn a_difference_is_signed_and_in_the_metrics_own_unit() {
+        assert_eq!(
+            render_difference(Some(2400.0), ValueUnit::Distance),
+            Some("+2.4 km".to_string())
+        );
+        assert_eq!(
+            render_difference(Some(-600.0), ValueUnit::Distance),
+            Some("\u{2212}0.6 km".to_string())
+        );
+        assert_eq!(
+            render_difference(Some(0.0), ValueUnit::Distance),
+            Some("0 km".to_string())
+        );
+        assert_eq!(
+            render_difference(Some(2520.0), ValueUnit::Duration),
+            Some("+42 m".to_string())
+        );
+        // A pace difference is a count of seconds per kilometre, not a clock:
+        // a difference of clock times reads as nothing.
+        assert_eq!(
+            render_difference(Some(6.0), ValueUnit::Pace),
+            Some("+6 s/km".to_string())
+        );
+        // A heart rate is truncated, as everywhere else.
+        assert_eq!(
+            render_difference(Some(5.7), ValueUnit::HeartRate),
+            Some("+5 bpm".to_string())
+        );
+        assert_eq!(
+            render_difference(Some(3.0), ValueUnit::Count),
+            Some("+3".to_string())
+        );
+        assert_eq!(render_difference(None, ValueUnit::Distance), None);
     }
 
     #[test]

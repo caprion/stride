@@ -171,7 +171,7 @@ pub struct Entry {
 }
 
 /// The catalogue.
-pub const CATALOGUE: [Entry; 45] = [
+pub const CATALOGUE: [Entry; 47] = [
     // The vitals.
     Entry {
         id: "vital.sleep.label",
@@ -375,6 +375,18 @@ pub const CATALOGUE: [Entry; 45] = [
         kind: StringKind::Statement,
         role: None,
         template: "{value} m",
+    },
+    Entry {
+        id: "value.difference",
+        kind: StringKind::Statement,
+        role: None,
+        template: "{sign}{value}",
+    },
+    Entry {
+        id: "value.pace_difference",
+        kind: StringKind::Statement,
+        role: None,
+        template: "{value} s/km",
     },
     // The statements: factual sentences about the data, rendered by the core.
     Entry {
