@@ -26,6 +26,7 @@ import {
   formatDateMedium,
   formatDistance,
   formatDurationHuman,
+  formatHeartRate,
   formatNumber,
   formatPace,
 } from '../lib/format'
@@ -40,13 +41,13 @@ export function formatDelta(metric: CompareMetric, delta: number | null): string
   const magnitude = Math.abs(delta)
   switch (metric.format) {
     case 'distance':
-      return `${sign}${(magnitude / 1000).toFixed(1)} km`
+      return `${sign}${formatDistance(magnitude)}`
     case 'duration':
       return `${sign}${formatDurationHuman(magnitude)}`
     case 'pace':
-      return `${sign}${Math.round(magnitude)} s/km`
+      return `${sign}${formatNumber(magnitude)} s/km`
     case 'hr':
-      return `${sign}${formatNumber(magnitude)} bpm`
+      return `${sign}${formatHeartRate(magnitude)}`
     default:
       return `${sign}${formatNumber(magnitude)}`
   }
@@ -63,23 +64,9 @@ function formatValue(metric: CompareMetric, value: number | null): string {
     case 'pace':
       return `${formatPace(value)} /km`
     case 'hr':
-      return `${formatNumber(value)} bpm`
+      return formatHeartRate(value)
     default:
       return formatNumber(value)
-  }
-}
-
-/** The basis banner's wording. */
-function basisText(basis: { kind: string; weeks_apart?: number }): string {
-  switch (basis.kind) {
-    case 'same_distance':
-      return t('compare.basis.sameDistance', { n: basis.weeks_apart ?? 0 })
-    case 'same_route':
-      return t('compare.basis.sameRoute')
-    case 'same_hr':
-      return t('compare.basis.sameHr')
-    default:
-      return t('compare.basis.different')
   }
 }
 
@@ -203,7 +190,7 @@ export function ComparePage({ id }: { id: string }) {
         className="card px-4 py-2.5 text-[13.5px] font-medium text-ink-soft"
         data-testid="compare-basis"
       >
-        {basisText(data.basis)}
+        {data.basis_text}
       </p>
 
       {/* ------------------------------------------- the metric diff */}

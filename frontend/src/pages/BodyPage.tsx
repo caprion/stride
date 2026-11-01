@@ -5,6 +5,10 @@
  * the band they are measured against. The patterns live here and nowhere
  * else: they are facts about the past, and they always carry their
  * sample size.
+ *
+ * The pattern sentences are the core's (core-contract §8) — "your HRV has
+ * been below your usual for 3 nights" — and they are shown as they
+ * arrive. The app does not phrase them again.
  */
 
 import { useQuery } from '@tanstack/react-query'
@@ -27,6 +31,8 @@ export function BodyPage() {
     )
   }
 
+  const nights = snapshot.history.sleep.length
+
   return (
     <div>
       <PageHeader title={t('body.heading')} />
@@ -41,13 +47,9 @@ export function BodyPage() {
                   values={snapshot.history[vital.key]
                     .map((point) => point.value)
                     .filter((value): value is number => value !== null)}
-                  band={
-                    vital.baseline
-                      ? { lower: vital.baseline.lower, upper: vital.baseline.upper }
-                      : null
-                  }
+                  band={vital.band}
                   height={44}
-                  label={t('body.history.label', { n: 30 })}
+                  label={t('body.history.label', { n: nights })}
                 />
               </div>
             </VitalRow>
@@ -61,7 +63,7 @@ export function BodyPage() {
           {t('body.howToRead.heading')}
         </h2>
         <p className="mt-1 text-[13.5px] text-ink-soft">
-          {t('body.howToRead.band', { n: 30 })}
+          {t('body.howToRead.band', { n: nights })}
         </p>
         <p className="text-[13.5px] text-ink-soft">{t('body.howToRead.inside')}</p>
       </section>
@@ -75,7 +77,7 @@ export function BodyPage() {
           <ul className="mt-1.5 space-y-1.5">
             {snapshot.patterns.map((pattern) => (
               <li key={pattern.id} className="text-[14px] text-ink-soft">
-                {t(pattern.key, { n: pattern.n, ...pattern.params })}
+                {pattern.text}
               </li>
             ))}
           </ul>

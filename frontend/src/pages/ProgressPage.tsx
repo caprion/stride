@@ -69,27 +69,13 @@ export function ProgressPage() {
 
       {/* ------------------------------------------------- the headline */}
       <section className="card px-4 py-3" data-testid="progress-headline">
-        {data.headline.kind === 'fitter' ? (
-          <>
-            <p className="text-[19px] font-semibold leading-tight text-ink">
-              {t('progress.headline.fitter', { n: data.headline.weeks })}
-            </p>
-            <p className="mt-0.5 text-[13.5px] text-ink-muted">
-              {t('progress.headline.evidence', {
-                value: `${data.headline.pace_delta_s_per_km} s/km`,
-              })}
-            </p>
-          </>
-        ) : (
-          <>
-            <p className="text-[19px] font-semibold leading-tight text-ink">
-              {t('progress.headline.notEnough')}
-            </p>
-            <p className="mt-0.5 text-[13.5px] text-ink-muted">
-              {t('progress.needsWeeks', { n: data.headline.weeks_needed })}
-            </p>
-          </>
-        )}
+        {/* The headline is the core's sentence (core-contract §8). */}
+        <p className="text-[19px] font-semibold leading-tight text-ink">
+          {data.headline}
+        </p>
+        {data.headline_note ? (
+          <p className="mt-0.5 text-[13.5px] text-ink-muted">{data.headline_note}</p>
+        ) : null}
       </section>
 
       <div className="mt-3 grid grid-cols-1 gap-3 progress-grid">

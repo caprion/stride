@@ -9,31 +9,21 @@
  * Nothing here instructs, grades, ranks or concludes. The plan's sessions
  * are listed unranked and are never linked to a vital — that link would
  * be the judgement.
+ *
+ * Every sentence on this screen is the core's (core-contract §8): the
+ * Rest line, the direction words, the arithmetic, the travel and the
+ * plan's sessions arrive written. The screen is the chrome around them.
  */
 
 import { useQuery } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
 import { api } from '../lib/api'
-import { distanceComparison } from '../lib/direction'
 import { formatDateMedium, formatDistance, formatDurationHuman } from '../lib/format'
-import type { Direction, TodayInsight, VitalsSnapshot } from '../lib/types'
+import type { PlanSession } from '../lib/types'
 import { t } from '../i18n'
-import { DirectionText } from '../components/DirectionText'
 import { Sparkline } from '../components/Sparkline'
 import { VitalRow } from '../components/VitalRow'
 import { PageHeader } from '../ui/layout/PageHeader'
-
-/** The number of signals below their usual, and the direction that follows. */
-function restSummary(snapshot: VitalsSnapshot): {
-  below: number
-  total: number
-  direction: Direction
-} {
-  const below = snapshot.vitals.filter((vital) => vital.direction === 'could be better').length
-  const total = snapshot.vitals.length
-  const direction: Direction = below === 0 ? 'better than usual' : 'could be better'
-  return { below, total, direction }
-}
 
 /** How long ago the last sync was, in words — only when it matters. */
 function stalenessText(lastSyncAt: string | null | undefined): string | null {
@@ -49,10 +39,9 @@ function SessionCard({
   planned,
   comparison,
 }: {
-  planned: NonNullable<TodayInsight['planned']>
-  comparison: ReturnType<typeof distanceComparison>
+  planned: PlanSession
+  comparison: string | null
 }) {
-  const distance = planned.target_distance_m
   const sourceKey =
     planned.source === 'prescribed'
       ? 'today.session.source.imported'
@@ -66,28 +55,18 @@ function SessionCard({
       data-testid="today-session"
       className="tap card block px-4 py-3 transition-shadow hover:shadow-lift"
     >
-      <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
-        <span className="text-[13px] font-semibold uppercase tracking-[0.06em] text-ink-muted">
-          {t('today.session.label')}
-        </span>
-        <span className="text-[17px] font-semibold text-ink">
-          {distance === null ? planned.session_type : formatDistance(distance)}
-        </span>
-        <span className="text-[13px] text-ink-soft">· {planned.session_type}</span>
-        <span className="text-[13px] text-ink-muted">· {t(sourceKey)}</span>
-      </div>
+      {/* The session, as the core wrote it: "Today — 10 km · easy". */}
+      <p className="text-[17px] font-semibold text-ink">{planned.sentence}</p>
+      <p className="mt-0.5 text-[13px] text-ink-muted">{t(sourceKey)}</p>
       {/*
         The distance comparison appears only when the gap from the target
         is beyond 10%, and it sits inside the session card as a second
-        line — never as a banner, never coloured as a warning.
+        line — never as a banner, never coloured as a warning. The core
+        decides whether it is there at all, and writes it when it is.
       */}
       {comparison ? (
         <p className="mt-1 text-[13px] text-ink-muted" data-testid="today-distance-comparison">
-          {formatDistance(comparison.actual_m)} —{' '}
-          {t(comparison.over ? 'today.distance.more' : 'today.distance.less', {
-            gap: formatDistance(comparison.gap_m),
-            target: formatDistance(comparison.target_m),
-          })}
+          {comparison}
         </p>
       ) : null}
     </Link>
@@ -128,10 +107,9 @@ export function TodayPage() {
     )
   }
 
-  const summary = restSummary(snapshot)
   const lastRun = insight.last_run
-  const comparison = distanceComparison(lastRun?.distance_m ?? null, insight.target_distance_m)
   const stale = stalenessText(sync.data?.last_sync_at)
+  const nights = snapshot.history.sleep.length
 
   return (
     <div>
@@ -149,15 +127,12 @@ export function TodayPage() {
       <section className="card px-4 py-3" data-testid="today-state-line">
         <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
           <span className="text-[13px] font-semibold uppercase tracking-[0.06em] text-ink-muted">
-            {t('today.rest.label')}
+            {snapshot.rest.label}
           </span>
-          <DirectionText direction={summary.direction} />
           <span className="text-ink-faint" aria-hidden="true">
             ·
           </span>
-          <span className="text-[13px] text-ink-muted">
-            {t('today.rest.summary', { below: summary.below, total: summary.total })}
-          </span>
+          <span className="text-[13px] text-ink-muted">{snapshot.rest.line}</span>
         </div>
       </section>
 
@@ -170,12 +145,8 @@ export function TodayPage() {
                 values={snapshot.history[vital.key]
                   .map((point) => point.value)
                   .filter((value): value is number => value !== null)}
-                band={
-                  vital.baseline
-                    ? { lower: vital.baseline.lower, upper: vital.baseline.upper }
-                    : null
-                }
-                label={t('body.history.label', { n: 30 })}
+                band={vital.band}
+                label={t('body.history.label', { n: nights })}
               />
             </div>
           </VitalRow>
@@ -185,7 +156,10 @@ export function TodayPage() {
       {/* -------------------------------------------- the plan's session */}
       {insight.planned ? (
         <section className="mt-3">
-          <SessionCard planned={insight.planned} comparison={comparison} />
+          <SessionCard
+            planned={insight.planned}
+            comparison={insight.distance_comparison}
+          />
         </section>
       ) : null}
 
@@ -198,10 +172,7 @@ export function TodayPage() {
           <ul className="mt-1.5 space-y-1">
             {insight.options.map((option) => (
               <li key={option.date} className="text-[14px] text-ink-soft">
-                {option.target_distance_m === null
-                  ? option.session_type
-                  : formatDistance(option.target_distance_m)}{' '}
-                · {option.session_type} · {formatDateMedium(option.date)}
+                {option.sentence}
               </li>
             ))}
           </ul>

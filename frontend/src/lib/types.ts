@@ -5,47 +5,70 @@
  * are the app's own reading of it. Every one of them is typed here and
  * nowhere else, and the fixtures in `src/fixtures/` are the same types, so
  * a screen can be rendered and tested without a running backend.
+ *
+ * Since core-contract §8 the *domain* sentences arrive already rendered:
+ * the direction word, the arithmetic, the travel, the Rest line and the
+ * pattern sentences are written by `stride-core` and travel as text. The
+ * app renders the chrome around them. A sentence with holes in it is the
+ * core's business, not the app's.
  */
 
 import type { CatalogueKey } from '../i18n'
 
-/** The closed direction set, as the core hands it over. */
-export type Direction = 'better than usual' | 'about usual' | 'could be better'
-
-/** Which way a vital has moved over the last few days. */
-export type Travel = 'up' | 'down' | 'steady'
-
 /** The three vitals the engine reports. */
 export type VitalKey = 'sleep' | 'hrv' | 'resting_hr'
 
-/** The personal band a direction is measured against. */
-export interface VitalBaseline {
-  /** The median of the last 30 nights, the day itself excluded. */
-  median: number
-  /** median − 1.5 × MAD */
+/**
+ * The band a direction was measured against.
+ *
+ * Numbers, not a sentence: the chart draws it, and the core computed it.
+ */
+export interface VitalBand {
+  /** The lower edge: median − 1.5 × MAD. */
   lower: number
-  /** median + 1.5 × MAD */
+  /** The upper edge: median + 1.5 × MAD. */
   upper: number
-  /** The median absolute deviation. */
-  mad: number
-  /** How many nights the band was computed from. */
+  /** How many nights the band was measured from. */
   nights: number
 }
 
-/** One vital: the value, its direction, and the arithmetic behind it. */
-export interface VitalValue {
+/**
+ * One vital, as the core renders it.
+ *
+ * Every sentence here is the core's: `value_text` is "6 h 10 m",
+ * `direction_text` is a word from the closed set, `deviation_text` is
+ * "1 h 10 m less than your usual" and `travel_text` is "6th night down".
+ */
+export interface VitalReading {
+  /** Which vital this is. */
   key: VitalKey
-  /** The measurement in its own unit: seconds, milliseconds, bpm. */
-  value: number | null
-  unit: 's' | 'ms' | 'bpm'
-  direction: Direction
-  /** The value minus the usual value, in the metric's own scale. */
-  deviation: number | null
-  travel: Travel
-  /** How many days the travel covers. */
-  travel_days: number | null
-  /** The band, when there is enough history for one. */
-  baseline: VitalBaseline | null
+  /** The catalogue's label: "Sleep", "HRV", "Resting HR". */
+  label: string
+  /** The value, rendered: "6 h 10 m", "48 ms", "63 bpm". */
+  value_text: string | null
+  /** The direction word: "could be better". */
+  direction_text: string | null
+  /** The arithmetic: "1 h 10 m less than your usual". */
+  deviation_text: string | null
+  /** The travel: "6th night down". */
+  travel_text: string | null
+  /** What the row says when there is no comparison to make. */
+  status_text: string | null
+  /** The band, for the chart. */
+  band: VitalBand | null
+}
+
+/**
+ * The Rest row, as the core renders it.
+ *
+ * The line is the count and the direction — "could be better · 2 of 3
+ * signals below your usual" — and the label is the name of the row.
+ */
+export interface RestReading {
+  /** The catalogue's label: "Rest". */
+  label: string
+  /** The line, already written. */
+  line: string | null
 }
 
 /** One night of history, for the charts on Body. */
@@ -54,24 +77,31 @@ export interface VitalHistoryPoint {
   value: number | null
 }
 
-/** A pattern: a fact about the past, with its sample size. */
-export interface Pattern {
+/**
+ * A pattern: a fact about the past, with its sample size.
+ *
+ * The sentence is the core's — "your HRV has been below your usual for 3
+ * nights" — and it always carries its sample size, because the core only
+ * states a pattern from three comparable days or more.
+ */
+export interface PatternReading {
   id: string
-  /** The catalogue key that phrases it. */
-  key: CatalogueKey
-  /** The sample size. Never below three. */
-  n: number
-  /** The numbers the phrasing carries. */
-  params?: Record<string, string | number>
+  /** The sentence, already written. */
+  text: string
+  /** How many comparable days it was read from. */
+  sample_size: number
 }
 
 /** The vitals and their directions — the same snapshot Today and Body read. */
 export interface VitalsSnapshot {
   date: string
   generated_at: string
-  vitals: VitalValue[]
+  /** The Rest row. */
+  rest: RestReading
+  vitals: VitalReading[]
+  /** The history, for the charts. Numbers. */
   history: Record<VitalKey, VitalHistoryPoint[]>
-  patterns: Pattern[]
+  patterns: PatternReading[]
 }
 
 /** A session from the athlete's own plan. */
@@ -80,6 +110,8 @@ export interface PlanSession {
   /** The plan's own vocabulary: easy, long, tempo, rest, strength. */
   session_type: string
   title: string | null
+  /** The session, already rendered: "Today — 10 km · easy". */
+  sentence: string
   target_distance_m: number | null
   actual_distance_m: number | null
   status: 'done' | 'planned' | 'not_done'
@@ -143,18 +175,17 @@ export interface TodayInsight {
   options: PlanSession[]
   /** The last run, when there is one. */
   last_run: ActivitySummary | null
-  /** The plan's target for today, in metres. */
-  target_distance_m: number | null
+  /**
+   * The distance comparison, when there is one.
+   *
+   * The core states it, and states it only when the gap from the target is
+   * beyond 10%: "2.4 km more than the 10 km target". Within 10% it is
+   * absent — a 2% difference is not news.
+   */
+  distance_comparison: string | null
   /** This week's running, in metres. */
   week: { distance_m: number; sessions: number }
 }
-
-/** The basis a comparison is drawn on. */
-export type CompareBasis =
-  | { kind: 'same_distance'; weeks_apart: number }
-  | { kind: 'same_route' }
-  | { kind: 'same_hr' }
-  | { kind: 'different' }
 
 /** One row of the metric diff. */
 export interface CompareMetric {
@@ -180,7 +211,8 @@ export interface CompareRun {
 
 /** The comparison itself. */
 export interface CompareResponse {
-  basis: CompareBasis
+  /** The basis, already written: "Same distance, 3 weeks apart". */
+  basis_text: string
   metrics: CompareMetric[]
   a: CompareRun
   b: CompareRun
@@ -201,9 +233,10 @@ export interface CompareCandidate {
 /** The Progress screen's data. */
 export interface ProgressInsight {
   generated_at: string
-  headline:
-    | { kind: 'fitter'; weeks: number; pace_delta_s_per_km: number }
-    | { kind: 'not_enough'; weeks_needed: number }
+  /** The headline, already written: "fitter than 8 weeks ago". */
+  headline: string
+  /** The evidence under it: "same heart rate, 24 s/km faster". */
+  headline_note: string | null
   weekly_volume: { week_start: string; distance_m: number }[]
   typical_week_m: number | null
   pace_at_hr: { week_start: string; pace_s_per_km: number | null; hr: number | null }[]

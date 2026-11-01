@@ -20,7 +20,6 @@ import {
   round_half_even,
   truncate_heart_rate,
 } from './units'
-import type { VitalKey } from './types'
 
 /** The mark for a number that is not there. */
 const ABSENT = '—'
@@ -76,21 +75,6 @@ export function formatHeartRate(value: number | null | undefined): string {
 export function formatElevation(metres: number | null | undefined): string {
   if (metres === null || metres === undefined) return ABSENT
   return `${format_whole(metres)} m`
-}
-
-/**
- * The deviation from the usual value, in the metric's own scale.
- *
- * A duration carries its unit ("1 h 10 m"); a heart rate and an HRV do
- * not, because the unit is already on the value.
- */
-export function formatDeviation(metric: VitalKey, deviation: number | null): string | null {
-  if (deviation === null || deviation === undefined) return null
-  const magnitude = Math.abs(deviation)
-  if (metric === 'sleep') {
-    return format_duration(magnitude)
-  }
-  return format_whole(magnitude)
 }
 
 /** An ISO date -> "Sat 10 May". */
