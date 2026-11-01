@@ -177,8 +177,8 @@ fn import_key(workspace: &Workspace, source: &Path) -> Result<stride_store::Data
         return workspace.database_key().store_key();
     }
     check_private_file(&path)?;
-    let secret = DatabaseSecret::load(&path)?;
-    secret.store_key()
+    let loaded_key = DatabaseSecret::load(&path)?;
+    loaded_key.store_key()
 }
 
 /// Refuse a key file other people can read.

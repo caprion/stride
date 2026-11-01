@@ -220,24 +220,24 @@ impl UploadRegistry {
             .sessions
             .lock()
             .map_err(|_| Error::config("the upload registry's lock was poisoned"))?;
-        let session = sessions.get_mut(id).ok_or_else(|| {
+        let upload = sessions.get_mut(id).ok_or_else(|| {
             Error::config("that import is not waiting for files; start the import again")
         })?;
-        if session.bytes.saturating_add(bytes.len()) > crate::http::MAX_UPLOAD_BODY_BYTES {
+        if upload.bytes.saturating_add(bytes.len()) > crate::http::MAX_UPLOAD_BODY_BYTES {
             return Err(Error::config(
                 "the uploaded export is larger than the limit",
             ));
         }
 
-        let destination = session.directory.join(name);
+        let destination = upload.directory.join(name);
         if destination.exists() {
             let old = std::fs::metadata(&destination)
                 .map_err(|source| Error::io(&destination, source))?
                 .len() as usize;
-            session.bytes = session.bytes.saturating_sub(old);
+            upload.bytes = upload.bytes.saturating_sub(old);
         }
         paths::write_private_atomic(&destination, bytes)?;
-        session.bytes = session.bytes.saturating_add(bytes.len());
+        upload.bytes = upload.bytes.saturating_add(bytes.len());
         Ok(())
     }
 
@@ -247,10 +247,10 @@ impl UploadRegistry {
             .sessions
             .lock()
             .map_err(|_| Error::config("the upload registry's lock was poisoned"))?;
-        let session = sessions.remove(id).ok_or_else(|| {
+        let upload = sessions.remove(id).ok_or_else(|| {
             Error::config("that import is not waiting for files; start the import again")
         })?;
-        Ok(session.directory)
+        Ok(upload.directory)
     }
 }
 
