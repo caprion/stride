@@ -40,9 +40,11 @@ import java.util.concurrent.Executors
  * `127.0.0.1`, so a server would hand the Garmin data to every other app on
  * the phone. The plugin bridge has no port at all.
  *
- * The answer is a JSON string rather than an object, because a Capacitor
- * plugin call cannot carry a top-level JSON array, and the core's envelope is
- * the one the app reads either way.
+ * The answer is the response body, as a JSON string. That is what the
+ * desktop's router puts on the wire, so the two hosts hand the web app the
+ * same bytes and the app cannot tell which one it is talking to. A string
+ * rather than an object, because a response body may be a JSON array and a
+ * plugin call cannot carry one.
  *
  * ## What the bridge refuses, and why
  *
@@ -65,6 +67,22 @@ class StrideApiPlugin : Plugin() {
     }
 
     /**
+     * Install the bridge the web app talks to.
+     *
+     * **The shim is injected into the page before the app's own scripts
+     * run.** Capacitor serves the page with its runtime already in it, and
+     * this file is injected with it — after Capacitor's runtime, so the
+     * plugin proxy it calls already exists, and before the app's scripts,
+     * so the app's first request finds the bridge.
+     *
+     * The file is `assets/public/stride-bridge.js`, and Capacitor reads it
+     * from there.
+     */
+    override fun load() {
+        bridge?.injectScriptBeforeLoad(SHIM)
+    }
+
+    /**
      * Call a route in the Rust core.
      *
      * The work happens off the WebView's thread: a Garmin pull takes longer
@@ -77,16 +95,10 @@ class StrideApiPlugin : Plugin() {
             call.reject("a request needs a path", "400")
             return
         }
-        val body = call.getString("body")
-        // The method travels with the body, so the call is `apiCall(path,
-        // body)`. A separate "method" argument is accepted too, because
-        // that is the shape the old app's bridge had.
-        val method = call.getString("method")?.takeIf { it.isNotBlank() }
-            ?: methodIn(body)
-            ?: "GET"
-        // The method is not part of the request the core sees: it is how
-        // the request is made, not what it carries.
-        val forwardBody = withoutMethod(body)
+        val bodyJson = bodyJsonOf(call)
+        // The method travels in the body; a method named as an argument is
+        // understood too. See BridgeRequestShape.
+        val request = BridgeRequestShape.of(call.getString("method"), bodyJson)
         val context = context
         if (context == null) {
             call.reject("the app has no context", "500")
@@ -98,7 +110,7 @@ class StrideApiPlugin : Plugin() {
                 // What the phone does with this request. The decisions live
                 // in PhoneRoutes, which has no Android in it and is unit
                 // tested; the side effects live here.
-                val decision = PhoneRoutes.decide(method, path)
+                val decision = PhoneRoutes.decide(request.method, path)
 
                 // **A route that is not in the frozen table is refused.**
                 // The bridge is not a general-purpose escape hatch: it may
@@ -181,7 +193,7 @@ class StrideApiPlugin : Plugin() {
                             call.reject(context.getString(R.string.garmin_not_connected_error), "400")
                             return@execute
                         }
-                        if (isBackgroundPull(body)) {
+                        if (isBackgroundPull(request.body)) {
                             // A background pull is a job: it survives the app
                             // being killed, and the phone has one scheduler
                             // for it. The job unwraps the key from the
@@ -192,11 +204,11 @@ class StrideApiPlugin : Plugin() {
                             // the work is queued — the count of runs arrives
                             // by itself, in the notification, when the pull
                             // has landed them.
-                            SyncScheduler.pullNow(context, requestedDays(context, body))
+                            SyncScheduler.pullNow(context, requestedDays(context, request.body))
                             call.resolve(
                                 JSObject().put(
                                     "json",
-                                    """{"ok":true,"status":202,"body":{"queued":true}}""",
+                                    """{"queued":true}""",
                                 ),
                             )
                             return@execute
@@ -213,10 +225,22 @@ class StrideApiPlugin : Plugin() {
                 val isLogout = decision.kind == PhoneRoutes.Kind.Logout
 
                 try {
-                    val answer = StrideCore.call(method, path, forwardBody)
+                    val answer = StrideCore.call(request.method, path, request.body)
                     // The last line of defence: an answer that carries the
                     // key does not reach the page.
-                    call.resolve(JSObject().put("json", KeyGuard.redact(answer, key)))
+                    val safe = KeyGuard.redact(answer, key)
+                    // The app is handed the response body — the same bytes
+                    // the desktop's router puts on the wire — and a failure
+                    // is a failure, not a body.
+                    val answered = BridgeAnswerShape.of(safe)
+                    if (answered.ok) {
+                        call.resolve(JSObject().put("json", answered.text))
+                    } else {
+                        call.reject(
+                            answered.detail ?: "the request could not be completed",
+                            answered.status.toString(),
+                        )
+                    }
                 } finally {
                     if (decision.kind == PhoneRoutes.Kind.Pull) {
                         // The key was in the core's memory for the pull and
@@ -246,20 +270,18 @@ class StrideApiPlugin : Plugin() {
         }
     }
 
-    /** The method the body names, if it names one. */
-    private fun methodIn(body: String?): String? {
-        if (body.isNullOrBlank()) return null
-        val parsed = runCatching { JSONObject(body) }.getOrNull() ?: return null
-        return parsed.optString("method").takeIf { it.isNotBlank() }
-    }
-
-    /** The body without the method, for the core. */
-    private fun withoutMethod(body: String?): String? {
-        if (body.isNullOrBlank()) return body
-        val parsed = runCatching { JSONObject(body) }.getOrNull() ?: return body
-        if (!parsed.has("method")) return body
-        parsed.remove("method")
-        return parsed.toString()
+    /**
+     * The body of the request, as JSON.
+     *
+     * The web app's bridge sends an **object** — the app's body is an
+     * object — and the old app's bridge sent a **string**. Both are read:
+     * the object is serialised, and the string is taken as it is.
+     */
+    private fun bodyJsonOf(call: PluginCall): String? {
+        call.getString("body")?.let { return it }
+        call.getObject("body")?.let { return it.toString() }
+        call.getArray("body")?.let { return it.toString() }
+        return null
     }
 
     /** Open the native setup screen. */
@@ -289,5 +311,13 @@ class StrideApiPlugin : Plugin() {
         val parsed = body?.let { runCatching { JSONObject(it) }.getOrNull() }
         val days = parsed?.optInt("days", 0) ?: 0
         return if (days > 0) days.coerceIn(1, 90) else AppSettings(context).syncDays
+    }
+
+    companion object {
+        /**
+         * The shim the web app talks to, in the assets the page is served
+         * from.
+         */
+        const val SHIM = "stride-bridge.js"
     }
 }
