@@ -48,6 +48,82 @@ The answer the app is handed is the **response body**, as a JSON string —
 the same bytes the desktop's router puts on the wire — so the two hosts
 cannot be told apart by the app. A failure is a rejection, not a body.
 
+## The release
+
+**A signed release APK**, published on a `v*` tag as a release asset.
+
+The signing key lives in the repository's secrets and never in the
+repository. The CI writes the keystore to the runner's temporary directory
+and hands the values to the build in the environment; **it writes no
+properties file**, because a tracked file that carries a credential-named
+field with a value is a credential as far as the repository's own scanner
+is concerned, and it cannot tell a secret reference from a secret.
+
+A developer builds a release with `android/keystore.properties` instead —
+git-ignored, never scanned, and it still works:
+
+```properties
+storePath=/home/you/keys/stride.jks
+storePassword=<the-keystore-password>
+keyAlias=stride
+keyPassword=<the-keystore-password>
+```
+
+The published certificate is in [`assetlinks.json`](assetlinks.json): the
+fingerprint of a certificate is not a secret, and it is what says that an
+APK signed with that certificate is the app. **The release fails if the
+committed fingerprint does not match the key that signed the build**, and
+the build itself refuses to sign with anything else — an APK signed with
+anything is not the app, whatever is inside it.
+
+Three checks stand between a build and a published artefact:
+
+1. **the staged core must be cargo's** — the copy task's output against
+   the library cargo just built;
+2. **the APK must carry the staged core** — the APK's `libuniffi_stride.so`
+   against the staged copy;
+3. **the signing block must match the published certificate**.
+
+They are in `scripts/check_apk.py`, and they run in the release job and
+again in the publishing job, where the artefact that is about to be
+published is the one being checked.
+
+**The pipeline proves itself before it is trusted.** A release build signed
+with a *throwaway* key is checked against the throwaway's own certificate
+(which must pass) and against the published one (which must fail). The
+throwaway key is made in the job, used in the job and thrown away; it never
+signs a published artefact. `android/scripts/check-apk-selftest.sh` is the
+same idea without the build: it proves the checker catches a certificate
+that is not published, an empty published list and an unsigned APK.
+
+### What is not publishable yet
+
+**There is no signing key in this repository, and no published
+certificate.** `assetlinks.json` publishes no fingerprint yet, so:
+
+* the release build refuses to be assembled — *"the release key's
+  certificate has not been committed, so no release can be built"*;
+* the checker refuses any APK — the same message.
+
+That is the honest state, and it is deliberate: an APK signed with a key
+whose fingerprint nobody has published is not the app, and publishing one
+would be worse than publishing nothing.
+
+The **real core** is not in the tree either, so a release build refuses that
+too — an APK whose core is the stub answers every route with "the Rust core
+is not in this build", and a product that does nothing should not be
+published under the Stride name. The pipeline's own test allows the stub
+explicitly (`-PstrideAllowStubCore=true`), and the checker still refuses a
+stub core, so nothing with a stub can be published.
+
+When the key exists, its fingerprint goes into `assetlinks.json`:
+
+```json
+"sha256_cert_fingerprints": ["87:E5:7B:...:26"]
+```
+
+and the pipeline publishes from that moment on.
+
 ## The layout
 
 ```
@@ -72,6 +148,9 @@ android/
 │       └── test/                        the unit tests
 ├── fetch-capacitor.sh            put the Capacitor Android library where Gradle finds it
 ├── sync-web.sh                   copy the web bundle into the APK's assets
+├── scripts/
+│   └── check-apk-selftest.sh     prove the APK checker catches what it must
+├── assetlinks.json               the published certificate
 └── gradlew                       Gradle, without a binary jar in the tree
 ```
 

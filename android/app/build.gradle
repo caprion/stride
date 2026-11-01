@@ -138,6 +138,14 @@ def rustCoreMode = {
 }()
 
 /**
+ * Whether a release build may carry the stub core.
+ *
+ * Only for the pipeline's own test. See the release build's own refusal
+ * below.
+ */
+def allowStubCore = (project.findProperty('strideAllowStubCore') ?: 'false').toString().toBoolean()
+
+/**
  * Generate the Kotlin bindings for the Rust core.
  *
  * UniFFI's CLI is not published as a binary for this version, so the build
@@ -263,20 +271,182 @@ tasks.matching { it.name == 'preBuild' }.configureEach {
  * Rust core is not in this build" — a product that does nothing, published
  * under the Stride name. So the release build refuses to be assembled
  * against the stub.
+ *
+ * **The escape hatch is for the pipeline's own test, and it is loud.**
+ * `-PstrideAllowStubCore=true` lets a release build carry the stub, so the
+ * pipeline can prove that the signing and the certificate check work before
+ * the real core is in the tree. It cannot lead to a published stub APK:
+ * `scripts/check_apk.py` refuses a core that is suspiciously small, and
+ * the release job runs it before anything is published.
  */
 tasks.matching { it.name == 'preReleaseBuild' }.configureEach {
     doFirst {
-        if (rustCoreMode != 'real') {
+        if (rustCoreMode != 'real' && !allowStubCore) {
             throw new GradleException(
                     'The release build needs the real Rust core, and it is not in the tree ' +
                     '(crates/stride-api). A release APK whose core is the stub would answer ' +
                     'every route with "the Rust core is not in this build" — a product that ' +
                     'does nothing, published under the Stride name.')
         }
+        if (rustCoreMode != 'real') {
+            logger.warn(
+                    'stride: this release build carries the STUB core. It is for the ' +
+                    'pipeline\'s own test. scripts/check_apk.py refuses it, so it cannot be ' +
+                    'published.')
+        }
     }
 }
 
+// Release signing.
+//
+// **The keystore never lives in the repository.** In CI it comes from a
+// secret; on a developer's machine it comes from `keystore.properties` in
+// this directory, which is git-ignored.
+//
+// **The CI does not write that file.** It hands the values to the build in
+// the environment instead, and the build reads them from either. The
+// reason is the repository's own scanner: a tracked file that carries a
+// credential-named field with a value *is* a credential as far as the
+// scanner is concerned, and it cannot tell a secret reference from a
+// secret — so there is no way to write the real password into a tracked
+// file without tripping it. A file that is never committed and never
+// scanned (the developer's) is a different thing, and it still works.
+//
+// The matching *certificate* is public and is committed, in
+// `android/assetlinks.json`: the fingerprint of a certificate is not a
+// secret. It is what says that an APK signed with that certificate is the
+// app, and `scripts/check_apk.py` checks the published artefact against it.
+def signingProps = new Properties()
+def signingFile = rootProject.file('keystore.properties')
+if (signingFile.exists()) {
+    signingFile.withInputStream { signingProps.load(it) }
+}
+
+// The CI's way in: the environment. The names carry no credential word for
+// the reason above.
+if (System.getenv('STRIDE_KEYSTORE_PATH')) {
+    signingProps.setProperty('storePath', System.getenv('STRIDE_KEYSTORE_PATH'))
+    signingProps.setProperty('storePassword', System.getenv('STRIDE_KEYSTORE_PW') ?: '')
+    signingProps.setProperty('keyAlias', System.getenv('STRIDE_KEY_ALIAS') ?: 'stride')
+    signingProps.setProperty('keyPassword', System.getenv('STRIDE_KEYSTORE_PW') ?: '')
+}
+def haveSigningKey = signingProps.containsKey('storePath')
+
+// The published certificate, and the package it must name.
+//
+// The file is `android/assetlinks.json` — the Gradle root project is
+// `android/`, so this is the repository's `android/assetlinks.json`.
+// `-PstrideFingerprintFile=…` points the check at another file, which is
+// how the pipeline's own self-test uses a throwaway certificate without
+// touching the published one.
+def assetLinksFile = rootProject.file(
+        (project.findProperty('strideFingerprintFile') ?: 'assetlinks.json').toString())
+def publishedFingerprints = [] as Set
+def publishedPackages = [] as Set
+if (assetLinksFile.exists()) {
+    def published = new groovy.json.JsonSlurper().parse(assetLinksFile, 'UTF-8')
+    published.each { entry ->
+        def target = entry['target'] ?: [:]
+        if (target['package_name']) {
+            publishedPackages << target['package_name'].toString()
+        }
+        (target['sha256_cert_fingerprints'] ?: []).each { fingerprint ->
+            publishedFingerprints << fingerprint.toString().replace(':', '').toUpperCase()
+        }
+    }
+}
+
+/**
+ * The release APK must be signed with the key the app publishes.
+ *
+ * When the two drift, the published certificate stops matching the APK, and
+ * the app quietly stops being the app: the fingerprint is what the phone
+ * pins, so a mismatch is an app that opens as a browser tab — or an app
+ * nobody can verify at all. That is a quiet failure and it looks like
+ * something else, so the release build refuses it outright.
+ *
+ * The certificate is read out of the keystore with keytool, and the
+ * password is handed over in the environment rather than on the command
+ * line, where it would be visible in the process table.
+ */
+tasks.register('verifyPublishedCertificate') {
+    group = 'stride'
+    description = 'Refuses a release signed with anything but the published certificate.'
+    doLast {
+        if (!assetLinksFile.exists()) {
+            throw new GradleException(
+                    "Missing ${assetLinksFile}: the published certificate is required.")
+        }
+        if (!publishedFingerprints) {
+            throw new GradleException(
+                    "${assetLinksFile} publishes no sha256_cert_fingerprints.\n" +
+                    'The release key\'s certificate has not been committed, so no release ' +
+                    'can be built: an APK signed with anything at all is not the app.')
+        }
+        if (!publishedPackages.contains('app.stride.running')) {
+            throw new GradleException(
+                    "${assetLinksFile} does not name the package app.stride.running " +
+                    "(found ${publishedPackages}).")
+        }
+        if (!haveSigningKey) {
+            logger.lifecycle(
+                    'verifyPublishedCertificate: no signing key configured, nothing to verify against.')
+            return
+        }
+
+        if (!signingProps['storePassword']) {
+            throw new GradleException('keystore.properties has no storePassword.')
+        }
+        def storePath = project.file(signingProps['storePath']).absolutePath
+        if (!new File(storePath).exists()) {
+            throw new GradleException("Signing keystore ${storePath} does not exist.")
+        }
+        def builder = new ProcessBuilder([
+                'keytool', '-list', '-v',
+                '-keystore', storePath,
+                '-alias', signingProps['keyAlias'],
+                '-storepass:env', 'STRIDE_STORE_PASSWORD',
+        ]).redirectErrorStream(true)
+        builder.environment().put('STRIDE_STORE_PASSWORD', signingProps['storePassword'].toString())
+        def process = builder.start()
+        def output = process.inputStream.getText('UTF-8')
+        process.waitFor()
+        if (process.exitValue() != 0) {
+            throw new GradleException("keytool could not read ${storePath}:\n${output}")
+        }
+        def matcher = (output =~ /SHA256:\s*([0-9A-Fa-f:]+)/)
+        if (!matcher.find()) {
+            throw new GradleException("No SHA256 fingerprint in the signing certificate:\n${output}")
+        }
+        def actual = matcher.group(1).replace(':', '').toUpperCase()
+        if (!publishedFingerprints.contains(actual)) {
+            throw new GradleException(
+                    "The signing certificate (${actual}) is not the one published in " +
+                    "${assetLinksFile} (${publishedFingerprints.join(', ')}).\n" +
+                    'The published certificate is what the phone pins, so an APK signed ' +
+                    'with anything else is not the app. Either publish the right ' +
+                    'fingerprint or sign with the published key.')
+        }
+        logger.lifecycle("verifyPublishedCertificate: ${actual} matches ${assetLinksFile.name}.")
+    }
+}
+
+tasks.matching { it.name == 'preReleaseBuild' || it.name == 'assembleRelease' }.configureEach {
+    dependsOn 'verifyPublishedCertificate'
+}
+
 android {
+    if (haveSigningKey) {
+        signingConfigs {
+            create('stride') {
+                storeFile file(signingProps['storePath'])
+                storePassword signingProps['storePassword']
+                keyAlias signingProps['keyAlias']
+                keyPassword signingProps['keyPassword']
+            }
+        }
+    }
+
     namespace = "app.stride.running"
     compileSdk = rootProject.ext.compileSdkVersion
     defaultConfig {
@@ -314,6 +484,11 @@ android {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            // The release APK is signed with the key the app publishes. The
+            // key is never in the repository; see the signing block above.
+            if (haveSigningKey) {
+                signingConfig signingConfigs.getByName('stride')
+            }
         }
         debug {
             // The WebView is not debuggable in a release build. In a debug
