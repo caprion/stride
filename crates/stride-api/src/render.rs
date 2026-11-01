@@ -27,6 +27,15 @@ use stride_core::ValueUnit;
 
 use crate::dto::RenderedValue;
 
+/// The total of a set of measurements.
+///
+/// **The total of nothing is zero**, and not a negative zero: an empty sum
+/// in Rust starts at `-0.0`, and the core renders that as "-0 km" — a
+/// number the athlete never ran.
+pub fn total_of(values: impl IntoIterator<Item = f64>) -> f64 {
+    values.into_iter().fold(0.0, |total, value| total + value)
+}
+
 /// A distance that is always there, as the core renders it.
 ///
 /// A run always has a distance, and a group always has a total, so the

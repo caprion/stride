@@ -134,10 +134,11 @@ pub fn week(api: &Api, request: &Request) -> ApiResult<Value> {
 
     // The week's target: the sum of the sessions' targets, as the core
     // renders it.
-    let metres: f64 = rendered
-        .iter()
-        .filter_map(|session| session.target.as_ref().and_then(|value| value.raw))
-        .sum();
+    let metres: f64 = render::total_of(
+        rendered
+            .iter()
+            .filter_map(|session| session.target.as_ref().and_then(|value| value.raw)),
+    );
     let target = render::distance(if metres > 0.0 { Some(metres) } else { None });
 
     // The week's count, from the core.

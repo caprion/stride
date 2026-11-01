@@ -175,8 +175,8 @@ pub fn group_totals(api: &Api, key: &str) -> ApiResult<crate::dto::ActivityGroup
         .store()
         .activities_between(key, &end.to_iso())
         .map_err(|error| api.store_error("the runs could not be read", &error))?;
-    let distance_m: f64 = runs.iter().map(|run| run.distance_m).sum();
-    let moving_time_s: f64 = runs.iter().map(|run| run.moving_time_s).sum();
+    let distance_m: f64 = render::total_of(runs.iter().map(|run| run.distance_m));
+    let moving_time_s: f64 = render::total_of(runs.iter().map(|run| run.moving_time_s));
     Ok(crate::dto::ActivityGroupTotals {
         key: key.to_string(),
         distance: render::distance_of(distance_m),
@@ -224,7 +224,7 @@ pub fn distance_on(api: &Api, date: &str) -> ApiResult<f64> {
         .store()
         .activities_for_date(date)
         .map_err(|_| ApiError::internal("the runs could not be read"))?;
-    Ok(runs.iter().map(|run| run.distance_m).sum())
+    Ok(render::total_of(runs.iter().map(|run| run.distance_m)))
 }
 
 /// The median of a sample, as the core reads it.

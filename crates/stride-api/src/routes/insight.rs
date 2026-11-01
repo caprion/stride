@@ -76,7 +76,7 @@ pub fn today(api: &Api, request: &Request) -> ApiResult<Value> {
         .activities_between(&super::week_start(current).to_iso(), &current.to_iso())
         .map_err(|error| api.store_error("the runs could not be read", &error))?;
     let week = WeekRunning {
-        distance: render::distance_of(week_runs.iter().map(|run| run.distance_m).sum()),
+        distance: render::distance_of(render::total_of(week_runs.iter().map(|run| run.distance_m))),
         sessions: week_runs.len(),
     };
 
@@ -113,7 +113,7 @@ pub fn progress(api: &Api, request: &Request) -> ApiResult<Value> {
     let mut pace_at_hr: Vec<PaceAtHr> = Vec::new();
     let mut consistency: Vec<Consistency> = Vec::new();
     for (week, week_runs) in super::weeks(&runs) {
-        let distance_m: f64 = week_runs.iter().map(|run| run.distance_m).sum();
+        let distance_m: f64 = render::total_of(week_runs.iter().map(|run| run.distance_m));
         weekly_volume.push(WeeklyVolume {
             week_start: week.to_iso(),
             distance: render::distance_of(distance_m),

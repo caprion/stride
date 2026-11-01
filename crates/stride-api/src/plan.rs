@@ -276,7 +276,9 @@ pub fn distance_on(api: &Api, date: &str) -> ApiResult<Option<f64>> {
     if runs.is_empty() {
         return Ok(None);
     }
-    Ok(Some(runs.iter().map(|run| run.distance_m).sum()))
+    Ok(Some(render::total_of(
+        runs.iter().map(|run| run.distance_m),
+    )))
 }
 
 /// One session of the plan, as the answer carries it.

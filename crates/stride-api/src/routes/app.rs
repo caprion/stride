@@ -576,8 +576,12 @@ pub fn calendar(api: &Api, request: &Request) -> ApiResult<Value> {
         days.push(CalendarDay {
             date,
             day,
-            distance: render::distance(Some(runs.iter().map(|run| run.distance_m).sum())),
-            duration: render::duration(Some(runs.iter().map(|run| run.moving_time_s).sum())),
+            distance: render::distance(Some(render::total_of(
+                runs.iter().map(|run| run.distance_m),
+            ))),
+            duration: render::duration(Some(render::total_of(
+                runs.iter().map(|run| run.moving_time_s),
+            ))),
             activities: summaries,
         });
     }
