@@ -51,3 +51,6 @@ pub use types::{
     BetterSide, Distance, Duration, Effort, HeartRate, Hrv, RestingHr, Sleep, VitalKind, Vitals,
     WellnessDay,
 };
+pub use units::{
+    render_distance, render_duration, render_elevation, render_heart_rate, render_pace,
+};
