@@ -67,5 +67,5 @@ impl Core for StubCore {
 /// It is a function of its own so that the shell's tests can ask for the
 /// answer without a core.
 pub fn stub_status() -> Value {
-    error_envelope(503, "the Rust core is not in this build")
+    error_envelope(503, "not_open", "the Rust core is not in this build")
 }

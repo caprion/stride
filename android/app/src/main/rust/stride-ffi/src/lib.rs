@@ -154,7 +154,7 @@ pub fn stride_status() -> String {
 /// It is here so that the shell and the tests can ask for it without a
 /// core: the answer is a fact about the envelope, not about the core.
 pub fn not_open_envelope() -> Value {
-    error_envelope(503, "the database is not open")
+    error_envelope(503, "not_open", "the database is not open")
 }
 
 /// The envelope of a status.
