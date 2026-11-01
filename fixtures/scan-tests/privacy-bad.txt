@@ -12,3 +12,12 @@ call +1 555 123 4567
 
 A phone number under a key:
 phone: 5551234567
+
+A camelCase coordinate key — the rule splits the key on camelCase too:
+latitudeDeg: 12.9716
+
+A coarse pair, where a word says this is a place:
+near 48.9, 2.3 here
+
+A note that is not JSON — a TOML value:
+note = "my run felt great today"

@@ -113,6 +113,11 @@ privacy_check_line() {
   # (a coarse latitude and longitude, written with two decimals) and, unlike a
   # keyword filter, it cannot miss a pair that has no label at all.
   local RE_PAIR='(-?[0-9]{1,3}\.[0-9]{2,})[[:space:]]*,[[:space:]]*(-?[0-9]{1,3}\.[0-9]{2,})'
+  # A pair written with one decimal is coarse - about ten kilometres - but
+  # real. It is only flagged where a word nearby says this is a place, because
+  # a pair of small numbers is usually arithmetic, not geography.
+  local RE_PAIR_COARSE='(-?[0-9]{1,3}\.[0-9])[[:space:]]*,[[:space:]]*(-?[0-9]{1,3}\.[0-9])'
+  local RE_PLACE_WORD='(near|around|about|point|coord|location|place|route|track|home|city|park|street|address|gps|south|north|east|west)'
   local RE_CONV_AFTER='(degree|semicircle)[^0-9-]{0,24}(-?[0-9]{1,3}\.[0-9]{4,})'
   local RE_CONV_BEFORE='(-?[0-9]{1,3}\.[0-9]{4,})[^0-9-]{0,24}(degree|semicircle)'
   local RE_PROFILE='["'"'"']?([A-Za-z0-9_.-]*(displayName|fullName|nickName|userName|athlete_name|deviceName|device_name|firstName|lastName)[A-Za-z0-9_.-]*)["'"'"']?[[:space:]]*[:=][[:space:]]*["'"'"']?([^"'"'"',}[:space:]]+)'
@@ -126,14 +131,28 @@ privacy_check_line() {
     # Is one of the key's segments a coordinate word? A *segment*, not a
     # substring: "d3-interpolate" is not a latitude, and a package-lock is
     # full of words that end in "lat".
-    local role='' seg lower="${key,,}"
-    local oldifs="$IFS"; IFS='_-.'; read -ra segs <<< "$lower"; IFS="$oldifs"
-    for seg in ${segs[@]+"${segs[@]}"}; do
-      case "$seg" in
-        lat|latitude) role=lat; break ;;
-        lon|longitude|lng) role=lon; break ;;
-      esac
-    done
+    # A coordinate key is one that holds a coordinate word as a *segment*:
+    # separated ("position_lat", "lat"), or at a camelCase boundary
+    # ("latitudeDeg", "posLat", "latVal"). "template" and "d3-interpolate"
+    # are not coordinate keys, and neither is "headline_note".
+    local role=''
+    # Case is spelled out with character classes rather than nocasematch:
+    # nocasematch would also loosen the *negated* classes, and then
+    # "template" and "d3-interpolate" would read as latitudes.
+    local LAT='[lL][aA][tT]'
+    local LATITUDE='[lL][aA][tT][iI][tT][uU][dD][eE]'
+    local LON='[lL][oO][nN]'
+    local LONGITUDE='[lL][oO][nN][gG][iI][tT][uU][dD][eE]'
+    local LNG='[lL][nN][gG]'
+    if [[ "$key" =~ (^|[^A-Za-z0-9])($LAT|$LATITUDE)([^A-Za-z0-9]|$) ]] \
+       || [[ "$key" =~ ($LAT|$LATITUDE)([A-Z]) ]] \
+       || [[ "$key" =~ ([a-z0-9])($LAT|$LATITUDE)($) ]]; then
+      role=lat
+    elif [[ "$key" =~ (^|[^A-Za-z0-9])($LON|$LONGITUDE|$LNG)([^A-Za-z0-9]|$) ]] \
+         || [[ "$key" =~ ($LON|$LONGITUDE|$LNG)([A-Z]) ]] \
+         || [[ "$key" =~ ([a-z0-9])($LON|$LONGITUDE|$LNG)($) ]]; then
+      role=lon
+    fi
     [[ -z "$role" ]] && continue
     privacy_is_allowed_coord "$value" "$role" || \
       out+="$file: coordinate value '$value' for '$key'"$'\n'
@@ -147,6 +166,25 @@ privacy_check_line() {
     if ! privacy_is_allowed_coord "$a" lat && ! privacy_is_allowed_coord "$a" lon \
        && ! privacy_is_allowed_coord "$b" lat && ! privacy_is_allowed_coord "$b" lon; then
       out+="$file: an unlabelled coordinate pair ($a, $b)"$'\n'
+    fi
+  done
+
+  # The coarse pair, where a word says this is a place.
+  rest="$text"
+  while [[ "$rest" =~ $RE_PAIR_COARSE ]]; do
+    local m="${BASH_REMATCH[0]}" a="${BASH_REMATCH[1]}" b="${BASH_REMATCH[2]}"
+    rest="${rest#*"$m"}"
+    [[ "$text" =~ $RE_PLACE_WORD ]] || continue
+    # One of the two has to be big enough to be a place: a pair of small
+    # numbers is arithmetic, not geography.
+    big=0
+    for n in "$a" "$b"; do
+      awk -v v="$n" 'BEGIN { a = v < 0 ? -v : v; exit !(a >= 45) }' && big=1
+    done
+    [[ "$big" == "1" ]] || continue
+    if ! privacy_is_allowed_coord "$a" lat && ! privacy_is_allowed_coord "$a" lon \
+       && ! privacy_is_allowed_coord "$b" lat && ! privacy_is_allowed_coord "$b" lon; then
+      out+="$file: a coarse coordinate pair ($a, $b)"$'\n'
     fi
   done
 
@@ -204,7 +242,9 @@ privacy_check_line() {
   local RE_EMAIL='[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}'
   local RE_PHONE_INTL='\+[0-9]{1,3}([-[:space:]][0-9]{2,4}){2,4}'
   local RE_PHONE_KEY='(phone|mobile|tel|telephone|phone_number|mobile_number)["'"'"']?[[:space:]]*[:=][[:space:]]*["'"'"']?[0-9]{6,}'
-  local RE_NOTE='"(note|notes|comment|remark)"[[:space:]]*:[[:space:]]*"[^"]{4,}"'
+  # A word boundary before the key: "headline_note" is not a note, and
+  # "note: null" is a value, not free text.
+  local RE_NOTE='(^|[^A-Za-z0-9_])["'"'"']?(note|notes|comment|remark)["'"'"']?[[:space:]]*[:=][[:space:]]*["'"'"'][^"'"'"']{4,}["'"'"']'
   if [[ "$text" =~ $RE_EMAIL_RESERVED ]]; then
     : # a reserved domain — not personal data
   elif [[ "$text" =~ $RE_EMAIL ]]; then
@@ -252,4 +292,4 @@ privacy_pair_lines() {
 privacy_email_reserved_re='[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.(invalid|example|test|localhost)'
 privacy_email_re='[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}'
 privacy_phone_re='(\+[0-9]{1,3}([-[:space:]][0-9]{2,4}){2,4}|(phone|mobile|tel|telephone|phone_number|mobile_number)["'"'"']?[[:space:]]*[:=][[:space:]]*["'"'"']?[0-9]{6,})'
-privacy_note_re='"(note|notes|comment|remark)"[[:space:]]*:[[:space:]]*"[^"]{4,}"'
+privacy_note_re='(^|[^A-Za-z0-9_])["'"'"']?(note|notes|comment|remark)["'"'"']?[[:space:]]*[:=][[:space:]]*["'"'"'][^"'"'"']{4,}["'"'"']'
