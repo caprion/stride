@@ -11,6 +11,18 @@
  * The transport is chosen once, at start-up, and never changes its mind.
  * The surface — the typed client in `api.ts` — is the same on both hosts,
  * so a screen cannot drift between them.
+ *
+ * **The answer is the body, and the status is the status.**
+ *
+ * That is the contract's rule (`docs/contract/api-paths.md`, "The shape of
+ * an answer"), and this file is where it is kept:
+ *
+ *   - nothing here expects an envelope. The body is the body: it is
+ *     parsed and handed over as it is, and the app's DTO is that body.
+ *   - a failure is a failure. The desktop's HTTP layer puts the status in
+ *     the status line; the phone's bridge rejects the call. Neither one
+ *     answers with a body that says `{"error": …}` and a 200, and this
+ *     file never reads such a body as an answer.
  */
 
 export type HttpMethod = 'GET' | 'POST'
@@ -46,6 +58,8 @@ export type ApiErrorKind =
   | 'not_enough_history'
   | 'garmin_rejected'
   | 'not_found'
+  /** The phone's screen lock: the shell refuses the data routes. */
+  | 'locked'
   | 'transport'
   | 'unknown'
 
@@ -68,42 +82,141 @@ export function hasNativeBridge(): boolean {
   )
 }
 
-/** The native transport: the Rust core, in the same process. */
+/**
+ * The host this app is running on.
+ *
+ * The desktop talks to the router over loopback HTTP; the phone talks to
+ * the Rust core in the same process. The two hosts differ in more than the
+ * transport — the Garmin key belongs to a different place on each — so
+ * the app asks this question rather than sniffing the device.
+ */
+export type Host = 'native' | 'http'
+
+/** The host, as the bridge sees it. */
+export function currentHost(): Host {
+  return hasNativeBridge() ? 'native' : 'http'
+}
+
+/**
+ * The native transport: the Rust core, in the same process.
+ *
+ * The plugin answers with the response body as a JSON string, and it
+ * rejects when the request failed. So:
+ *
+ *   - a resolved call is the body, and the body is parsed as it is — no
+ *     envelope is unwrapped, because there is none;
+ *   - a rejected call is a failure. It becomes a typed `ApiError` with
+ *     the status the plugin reported ("404", "403", "400"), and it never
+ *     reaches the app as data.
+ */
 export const nativeTransport = async (request: ApiRequest): Promise<unknown> => {
   const bridge = window.__stride_bridge__
   if (!bridge) {
     throw new ApiError('transport', 'the native bridge is not installed', 0)
   }
-  const answer = await bridge.apiCall({
-    method: request.method,
-    path: request.path,
-    body: request.body,
-  })
-  return answer ? JSON.parse(answer) : null
+  let answer: string
+  try {
+    answer = await bridge.apiCall({
+      method: request.method,
+      path: request.path,
+      body: request.body,
+    })
+  } catch (reason) {
+    // **A failure is a failure.** The rejection carries the status; it is
+    // never read as an answer.
+    throw failureFrom(reason)
+  }
+  if (answer === null || answer === undefined || answer === '') return null
+  try {
+    return JSON.parse(answer)
+  } catch {
+    throw new ApiError('transport', 'the native bridge answered with no JSON', 0)
+  }
+}
+
+/**
+ * The failure the plugin reported.
+ *
+ * The plugin rejects with a message and a code — "400" for a route that
+ * carries the key, "403" for a locked phone, "404" for a route that is
+ * not in the frozen table — so the status comes across with the message
+ * and the app can tell one failure from another. A rejection with no code
+ * is a transport failure.
+ */
+function failureFrom(reason: unknown): ApiError {
+  if (reason instanceof ApiError) return reason
+  const status = statusOf(reason)
+  return new ApiError(kindForStatus(status, 'native'), messageOf(reason), status)
+}
+
+/** The status a rejection carries, if it carries one. */
+function statusOf(reason: unknown): number {
+  if (typeof reason !== 'object' || reason === null) return 0
+  const record = reason as { code?: unknown; status?: unknown }
+  for (const value of [record.code, record.status]) {
+    const parsed =
+      typeof value === 'number'
+        ? value
+        : typeof value === 'string' && value.trim() !== ''
+          ? Number(value)
+          : Number.NaN
+    if (Number.isFinite(parsed) && parsed >= 100 && parsed < 600) return parsed
+  }
+  return 0
 }
 
 /** The HTTP transport: the desktop rig and the browser. */
 export const httpTransport = async (request: ApiRequest): Promise<unknown> => {
-  const response = await fetch(request.path, {
-    method: request.method,
-    headers: request.body ? { 'content-type': 'application/json' } : undefined,
-    body: request.body ? JSON.stringify(request.body) : undefined,
-  })
+  let response: Response
+  try {
+    response = await fetch(request.path, {
+      method: request.method,
+      headers: request.body ? { 'content-type': 'application/json' } : undefined,
+      body: request.body ? JSON.stringify(request.body) : undefined,
+    })
+  } catch (reason) {
+    // The request never arrived. That is a failure too, and it is the
+    // transport's own.
+    throw new ApiError('transport', messageOf(reason), 0)
+  }
   if (!response.ok) {
+    // **The status is in the status line.** A failure is reported as a
+    // failure; the body of a failure is only read for its message.
     throw new ApiError(
-      kindForStatus(response.status),
+      kindForStatus(response.status, 'http'),
       await errorText(response),
       response.status,
     )
   }
   const text = await response.text()
-  return text ? JSON.parse(text) : null
+  if (!text) return null
+  try {
+    return JSON.parse(text)
+  } catch {
+    throw new ApiError('transport', 'the answer was not JSON', 0)
+  }
 }
 
-function kindForStatus(status: number): ApiErrorKind {
+/** The message a failure carries, if it carries one. */
+function messageOf(reason: unknown): string {
+  if (reason instanceof Error && reason.message) return reason.message
+  if (typeof reason === 'string' && reason.length > 0) return reason
+  return 'the request failed'
+}
+
+/**
+ * What a status means.
+ *
+ * The two hosts share the statuses but not every meaning: a 403 on the
+ * desktop is a refused credential, and a 403 on the phone is a locked
+ * screen — the shell refuses the data routes before the core is asked
+ * for anything.
+ */
+function kindForStatus(status: number, host: Host): ApiErrorKind {
   if (status === 404) return 'not_found'
-  if (status === 401 || status === 403) return 'garmin_rejected'
   if (status === 409) return 'not_enough_history'
+  if (status === 401) return 'garmin_rejected'
+  if (status === 403) return host === 'native' ? 'locked' : 'garmin_rejected'
   return 'unknown'
 }
 
