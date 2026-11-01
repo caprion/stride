@@ -36,10 +36,11 @@ fn main() {
 
     let development = bundle.join("index.html").is_file();
     let released_built = released.join("index.html").is_file();
+    // The development folder always exists. The embedder is pointed at it
+    // even when the released bundle is the one being served, and a missing
+    // folder is a compile error with a message nobody wrote.
+    let _ = std::fs::create_dir_all(&bundle);
     if !development && !released_built {
-        // The folders have to exist: the embedders are pointed at them, and
-        // a missing folder is a compile error with a message nobody wrote.
-        let _ = std::fs::create_dir_all(&bundle);
         let _ = std::fs::create_dir_all(&released);
         println!("cargo:warning=the app bundle is not present in this checkout");
     }
