@@ -101,8 +101,8 @@ object SyncNotifications {
         if (outcome.ok) {
             context.resources.getQuantityString(
                 R.plurals.sync_done_activities,
-                outcome.activitiesNew,
-                outcome.activitiesNew,
+                outcome.activities,
+                outcome.activities,
             )
         } else {
             outcome.message
