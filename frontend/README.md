@@ -86,6 +86,11 @@ has no rounding of its own.** There is no `src/lib/units.ts` and no
 chrome — the dates, the counts, the sport's own name, the em dash for a
 value that is not there — and nothing else.
 
+A value that is not there crosses as a null value, never as a `text` of
+"0" and never as a `raw` of zero: the core's renderers return nothing for
+a missing value (`render_distance(None)` is `None`), so the API sends
+nothing, and the app shows the em dash.
+
 The app's charts keep their own scales (the x-axis is in minutes, the
 volume chart is in kilometres). A chart's scale is the app's; a chart's
 *words* are the core's, and the tooltips show the text the API sent.
@@ -93,6 +98,17 @@ volume chart is in kilometres). A chart's scale is the app's; a chart's
 Two hosts that disagree about a number is a bug. Two hosts that disagree
 about a *sentence* is the same bug, and it is worse, because a sentence is
 what the athlete reads.
+
+### And the test that holds the line
+
+A convention is not a rule. The port of `units.rs` was exact, and it still
+drifted — because nothing failed when it did. So `tests/ownership.test.ts`
+scans the app's own source for the shapes a second implementation of the
+domain would take: a formatter for a domain value, a rounding of one, a
+`format:` hint in the types, a port of the core's units under another
+name. A chart's own geometry is allowed — the x-axis is in minutes and the
+volume chart is in kilometres, because a chart's scale is the app's. A
+chart's *words* are the core's.
 
 ## The voice
 
