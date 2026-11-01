@@ -24,8 +24,14 @@ capacitor-cordova-android-plugins/
 # The copied web bundle. `sync-web.sh` puts the frontend's build here; the
 # placeholder that is committed is only what the shell carries when the
 # bundle has not been installed yet.
+#
+# **The bridge shim is an exception.** It is not part of the web bundle: it
+# is the shell's, it is injected into the page by Capacitor, and the web
+# app has to find it there before its first request. `sync-web.sh` puts it
+# back after it copies the bundle.
 app/src/main/assets/public/*
 !app/src/main/assets/public/index.html
+!app/src/main/assets/public/stride-bridge.js
 
 # Editors and logs.
 *.iml

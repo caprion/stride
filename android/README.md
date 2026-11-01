@@ -19,6 +19,35 @@ Garmin pull and the background work.
 | `FLAG_SECURE`, `allowBackup=false`, backup rules, minimal intent filters, nothing exported but the launcher | `MainActivity.kt`, `AndroidManifest.xml`, `res/xml/` |
 | `unsafe` is allowed in the FFI seam and nowhere else | `app/src/main/rust/stride-ffi/` |
 
+## The bridge the web app talks to
+
+The web app is the same app on both hosts: the desktop rig talks to the
+router over loopback HTTP, and the phone talks to the Rust core in the same
+process. The app does not know which — it calls one function, and the
+transport behind it differs.
+
+**The shell installs the shim.** `app/src/main/assets/public/stride-bridge.js`
+is the phone's half of that seam:
+
+```js
+window.__stride_bridge__.apiCall({ method, path, body })  // → Promise<string>
+```
+
+Capacitor injects the file into the page it serves — after its own runtime,
+so the plugin proxy the shim calls already exists, and **before the app's
+own scripts**, so the app's first request finds the bridge. The native side
+asks for the injection in `StrideApiPlugin.load()`.
+
+The shim does two things and nothing else: it moves the `method` into the
+body (the plugin's contract is `apiCall(path, body)`), and it hands the
+plugin's answer back. **It adds no capability**: the route table, the
+refusal of the Garmin-key routes, the lock check and the redaction are all
+in the plugin it calls.
+
+The answer the app is handed is the **response body**, as a JSON string —
+the same bytes the desktop's router puts on the wire — so the two hosts
+cannot be told apart by the app. A failure is a rejection, not a body.
+
 ## The layout
 
 ```
@@ -125,3 +154,10 @@ flock /run/user/$(id -u)/cf-heavy.lock ./gradlew testDebugUnitTest
 They cover the route table (including the query-string forms of the key
 routes), the redaction of an answer that carries the key, the one-retry
 rule, the setup screen's states and the Garmin key page's host.
+
+The **bridge shim is tested by running it**: `StrideBridgeShimTest`
+evaluates the shipped `stride-bridge.js` on a JavaScript engine (Rhino,
+test-only) against a fake plugin, and asserts what the web app would see —
+the app's `{ method, path, body }` going to the plugin with the method in
+the body, the plugin's JSON string coming back, and a failure coming back
+as a failure.
