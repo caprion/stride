@@ -59,6 +59,7 @@
             android:inputType="textPassword"
             android:maxLines="1"
             android:minHeight="48dp"
+            android:saveEnabled="false"
             android:textColor="@color/stride_on_surface" />
 
         <!--
@@ -115,13 +116,26 @@
             android:textSize="14sp"
             android:visibility="gone" />
 
+        <!--
+            The identifier of the connected key. This is a native surface,
+            and it carries four characters of the key — never the key.
+        -->
+        <TextView
+            android:id="@+id/garmin_key_identifier"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:textColor="@color/stride_muted"
+            android:textSize="13sp"
+            android:visibility="gone" />
+
         <Button
             android:id="@+id/garmin_connect"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="24dp"
             android:minHeight="48dp"
-            android:text="@string/garmin_connect" />
+            android:text="@string/garmin_test_key" />
 
         <Button
             android:id="@+id/garmin_not_now"

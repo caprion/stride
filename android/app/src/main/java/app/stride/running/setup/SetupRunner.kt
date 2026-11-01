@@ -6,6 +6,8 @@ import android.os.Looper
 import android.util.Log
 import app.stride.running.core.StrideCore
 import app.stride.running.security.Secrets
+import app.stride.running.sync.ForgetGarminKey
+import app.stride.running.sync.GarminFailure
 import app.stride.running.sync.SyncEngine
 import app.stride.running.sync.SyncScheduler
 import org.json.JSONObject
@@ -49,6 +51,12 @@ class SetupRunner(
         /** Garmin did not take it. */
         Refused,
 
+        /** Garmin could not be reached. */
+        Unreachable,
+
+        /** Garmin is rate limiting the phone. */
+        RateLimited,
+
         /** The check could not be made. */
         Failed,
     }
@@ -91,59 +99,92 @@ class SetupRunner(
         publish(SetupUi(SetupPhase.Checking))
 
         worker.execute {
-            val problem = StrideCore.ensureOpen(app)
-            if (problem != null) {
-                finish(SetupUi(SetupPhase.Failed, detail = problem))
-                return@execute
-            }
-
-            when (test(key)) {
-                Verdict.Refused -> {
-                    // Garmin did not want it. The key is not kept, and the
-                    // field stays where the athlete left it.
-                    finish(SetupUi(SetupPhase.Refused))
+            try {
+                val problem = StrideCore.ensureOpen(app)
+                if (problem != null) {
+                    finish(SetupUi(SetupPhase.Failed, reason = SetupFailure.LocalStore))
                     return@execute
                 }
-                Verdict.Failed -> {
-                    finish(SetupUi(SetupPhase.Failed, detail = "the key could not be checked"))
+
+                when (test(key)) {
+                    Verdict.Refused -> {
+                        // Garmin did not want it. The key is not kept, and the
+                        // field stays where the athlete left it.
+                        finish(SetupUi(SetupPhase.Refused))
+                        return@execute
+                    }
+                    Verdict.Unreachable -> {
+                        finish(
+                            SetupUi(
+                                SetupPhase.Failed,
+                                reason = SetupFailure.GarminUnreachable,
+                            ),
+                        )
+                        return@execute
+                    }
+                    Verdict.RateLimited -> {
+                        finish(
+                            SetupUi(
+                                SetupPhase.Failed,
+                                reason = SetupFailure.RateLimited,
+                            ),
+                        )
+                        return@execute
+                    }
+                    Verdict.Failed -> {
+                        finish(
+                            SetupUi(
+                                SetupPhase.Failed,
+                                reason = SetupFailure.KeyCheckFailed,
+                            ),
+                        )
+                        return@execute
+                    }
+                    Verdict.Accepted -> Unit
+                }
+
+                // Garmin took it, so the phone keeps it.
+                Secrets.saveGarminKey(app, key)
+
+                publish(SetupUi(SetupPhase.Syncing))
+
+                // The pull that follows the key. The periodic job takes over
+                // after this one.
+                SyncScheduler.schedule(app)
+
+                startCounting()
+                val outcome = SyncEngine.run(app, FIRST_PULL_DAYS)
+                stopCounting()
+
+                if (!outcome.ok) {
+                    finish(
+                        if (outcome.error == SyncEngine.ERROR_REFUSED) {
+                            SetupUi(SetupPhase.Refused)
+                        } else {
+                            SetupUi(
+                                SetupPhase.Failed,
+                                reason = SetupFailure.PullFailed,
+                            )
+                        },
+                    )
                     return@execute
                 }
-                Verdict.Accepted -> Unit
+
+                // The count is read after the pull, so it is the count of the
+                // runs that have actually landed.
+                finish(SetupUi(SetupPhase.Connected, runs = SyncEngine.runCount(app)))
+            } catch (_: Throwable) {
+                // The exception's message is not logged: an exception may
+                // carry the value the failing code was holding, and this
+                // code was holding a Garmin key.
+                finish(SetupUi(SetupPhase.Failed, reason = SetupFailure.LocalStore))
             }
-
-            // Garmin took it, so the phone keeps it.
-            Secrets.saveGarminKey(app, key)
-
-            publish(SetupUi(SetupPhase.Syncing))
-
-            // The pull that follows the key. The periodic job takes over
-            // after this one.
-            SyncScheduler.schedule(app)
-
-            startCounting()
-            val outcome = SyncEngine.run(app, FIRST_PULL_DAYS)
-            stopCounting()
-
-            if (!outcome.ok) {
-                finish(SetupUi(SetupPhase.Failed, detail = outcome.message))
-                return@execute
-            }
-
-            // The count is read after the pull, so it is the count of the
-            // runs that have actually landed.
-            finish(SetupUi(SetupPhase.Connected, runs = SyncEngine.runCount(app)))
         }
     }
 
     /** Forget the key. The imported runs stay on the phone. */
     fun forget() {
-        Secrets.forgetGarminKey(app)
-        SyncScheduler.cancel(app)
-        // The core forgets it too: the fact of the connection goes with
-        // the key. Clearing the copy in the core's memory and saying the
-        // phone is not connected are two things, and both are needed here.
-        StrideCore.setGarminKey("")
-        StrideCore.setGarminConnected(false)
+        ForgetGarminKey.onPhone(app)
         publish(SetupUi(SetupPhase.Idle))
     }
 
@@ -159,8 +200,8 @@ class SetupRunner(
                 val runs = SyncEngine.runCount(app)
                 main.post { onCount(runs) }
             }
-        } catch (error: Throwable) {
-            Log.w(TAG, "the runs could not be counted: ${error.message}")
+        } catch (_: Throwable) {
+            Log.w(TAG, "the runs could not be counted")
         }
     }
 
@@ -175,31 +216,33 @@ class SetupRunner(
      * Whether Garmin accepts the key.
      *
      * The check is the token exchange and a profile read: both have to work
-     * before the key is worth having.
-     *
-     * The route answers every failure the same way — a 400 with "the Garmin
-     * API key was refused" — so the phone cannot tell a wrong key from a
-     * Garmin that is down. It can tell a phone with no network from a phone
-     * with one, and that is the difference it acts on: a phone with no
-     * signal is told Garmin could not be reached, and a phone with a signal
-     * is told the key was refused.
+     * before the key is worth having. The route's safe detail is classified
+     * so that a refused key, an unreachable Garmin and a rate limit do not
+     * all become the same sentence.
      */
     private fun test(key: String): Verdict {
+        if (!hasNetwork()) return Verdict.Unreachable
+
         // The body is the api's: the route reads the key from "key".
         val body = JSONObject().put("key", key).toString()
         val envelope = try {
             JSONObject(StrideCore.call("POST", PERSONAL_KEY_TEST_ROUTE, body))
-        } catch (error: Throwable) {
-            Log.w(TAG, "the key could not be checked: ${error.message}")
+        } catch (_: Throwable) {
+            Log.w(TAG, "the key could not be checked")
             return Verdict.Failed
         }
         if (envelope.optBoolean("ok")) return Verdict.Accepted
 
-        // The reason is in the log, not on the screen: the screen says the
-        // key was refused, and that is what the athlete has to act on.
-        val detail = envelope.optJSONObject("error")?.optString("detail").orEmpty()
-        Log.w(TAG, "Garmin refused the key: $detail")
-        return if (!hasNetwork()) Verdict.Failed else Verdict.Refused
+        val error = envelope.optJSONObject("error")
+        val status = envelope.optInt("status", 0)
+        val code = error?.optString("code")
+        val detail = error?.optString("detail").orEmpty()
+        return when (GarminFailure.classify(status, code, detail)) {
+            GarminFailure.Kind.KeyRejected -> Verdict.Refused
+            GarminFailure.Kind.Unreachable -> Verdict.Unreachable
+            GarminFailure.Kind.RateLimited -> Verdict.RateLimited
+            GarminFailure.Kind.Unknown -> Verdict.Failed
+        }
     }
 
     /** Whether the phone has a network to reach Garmin over. */
@@ -265,16 +308,12 @@ class SetupRunner(
         /**
          * How far back the first pull reaches.
          *
-         * A year. The pull that follows the key is the one the athlete is
-         * watching, and it is the one that has to bring the history: a
-         * thirty-day window would connect the phone and leave the athlete
-         * looking at a handful of runs and thinking the sync had failed
-         * again. The periodic pull after this one uses the phone's own
-         * window, which is the right size for keeping up to date.
-         *
-         * The core caps the work at 300 activities, so the window cannot
-         * run away however long the history is.
+         * Thirty days is the phone's ordinary window. The core bounds the
+         * work inside that window as well — at most the newest activities
+         * and the newest wellness days — because Garmin answers only a few
+         * requests a minute. The first pull therefore asks for what the
+         * phone can use, not for every run the athlete has ever recorded.
          */
-        const val FIRST_PULL_DAYS = 365L
+        const val FIRST_PULL_DAYS = 30L
     }
 }
