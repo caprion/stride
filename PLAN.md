@@ -8,7 +8,10 @@ This is a clean-room re-implementation of Stride in **Rust only**, in a **new op
 keeping the mobile app the user already likes. Every screen is designed before code, and every screen is
 designed to resize: one information architecture, many widths.
 
-**Status:** plan of record. No product code written yet. Slice 0 is next, on approval.
+**Status:** the plan of record, and the code is following it. Slice 0 (the contracts, the CI and the
+gates) is merged; so are the domain, the store, the Garmin client and the FIT decoder, the router,
+the app, the phone's shell and the desktop rig. What is left is the wiring — the router hosted by
+both hosts — and the first vertical line: key → sync → one run → today's readout.
 
 ---
 
@@ -187,7 +190,7 @@ describe a deleted flow — the old notes still told people to run a removed pai
 
 | Slice | Content | Done when |
 |---|---|---|
-| 0 | Contract freeze: public repo, corpus extracted + sanitised, fork-safe CI, schema/API frozen | every gate runs on empty crates; the old repo is untouched |
+| 0 | Contract freeze: public repo, corpus extracted + sanitised, fork-safe CI, schema/API frozen | **done** — merged |
 | 1 | Thin vertical line: key → sync → one run → today's readout → APK | a real key syncs a real run and the app shows its true numbers |
 | 2 | FIT decode + segmentation + store | golden parity on every corpus activity |
 | 3 | Vitals & direction engine + pattern engine + string catalogue + voice lint + Body | Today and Body render the same values and directions; the lint forbids every imperative, verdict and ranking word |

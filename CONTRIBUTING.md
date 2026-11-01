@@ -62,8 +62,8 @@ cargo run -p stride-desktop        # serves the app on loopback
 cargo test --workspace
 ```
 
-**The phone** (the `android/` shell and the `frontend/` UI) lands with Slice 1; neither directory
-exists in this tree yet. The build steps are:
+**The phone** (the `android/` shell) and **the app** (the `frontend/` UI) are both in the tree. The
+build steps are:
 
 ```bash
 sdkmanager "platforms;android-36" "build-tools;36.0.0" "ndk;27.2.12479018"
