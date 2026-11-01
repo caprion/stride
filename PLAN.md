@@ -35,6 +35,10 @@ that link would be the judgement.
 past, always with its sample size: *"the 5 other times your sleep was below your usual, you ran 8.4 km or less."* It lives on
 **Body**, over the visible history — not on the morning screen, and never next to a suggestion.
 
+The Progress headline is the factual mirror of the evidence, in one of three wordings — *fitter than 8 weeks
+ago*, *the same pace as 8 weeks ago*, *slower than 8 weeks ago* — with the evidence in a clause. It never
+claims a change it cannot see.
+
 **Forbidden:** commands (*take the day*, *rest day*, *rest up*, *rest today*, *go easy*, *you should*, *it'd be better to*) · verdicts (*good*,
 *bad*, *poor*, *missed*, *behind*, a readiness score) · **conclusions** (the app never combines vitals into a
 verdict — it reports each direction and the athlete reads the combination) · ranking the options (*recommended*) ·
