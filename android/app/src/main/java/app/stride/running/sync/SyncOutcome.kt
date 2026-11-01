@@ -14,11 +14,14 @@ data class SyncOutcome(
     val ok: Boolean,
     /** What happened, in one sentence. */
     val message: String,
-    /** How many runs Garmin had in the window. */
-    val activitiesFound: Int = 0,
-    /** How many of them the phone did not have. */
-    val activitiesNew: Int = 0,
-    /** How many days of wellness arrived. */
+    /**
+     * How many runs the pull brought in.
+     *
+     * The api's `SyncRun.activities` — the count the pull reports, not a
+     * count the phone keeps of its own.
+     */
+    val activities: Int = 0,
+    /** How many days of wellness the pull brought in. */
     val wellnessDays: Int = 0,
     /** The failure, if there was one. */
     val error: String? = null,

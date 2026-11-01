@@ -7,3 +7,6 @@ frontend/dist/
 .env
 .env.*
 !.env.example
+
+# The Python bytecode cache of the release checker.
+__pycache__/

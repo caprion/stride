@@ -27,7 +27,7 @@ class PullPolicyTest {
 
     /** An attempt that worked. */
     private fun worked(): SyncOutcome =
-        SyncOutcome(ok = true, message = "Imported 12 new runs", activitiesNew = 12)
+        SyncOutcome(ok = true, message = "Imported 12 new runs", activities = 12)
 
     @Test
     fun `the first refusal leads to one re-exchange`() {
@@ -97,7 +97,7 @@ class PullPolicyTest {
 
         assertEquals("the pull made one attempt", 1, attempts)
         assertTrue(outcome.ok)
-        assertEquals(12, outcome.activitiesNew)
+        assertEquals(12, outcome.activities)
     }
 
     @Test

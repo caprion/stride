@@ -48,8 +48,10 @@ pub fn install_hook() {
 /// Run a call across the boundary, and turn a panic into an error.
 ///
 /// The answer is always a JSON envelope. A panic becomes
-/// `{"ok": false, "status": 500, "error": {"detail": "..."}}` — the same
-/// shape as every other failure, so the shell has one thing to read.
+/// `{"ok": false, "status": 500, "error": {"code": "internal", "detail":
+/// "..."}}` — the same shape as every other failure, and **the router's
+/// own shape**: the code is what the shell reads, so the two sides of the
+/// boundary have to agree on it. `tests/envelope_parity.rs` proves they do.
 pub fn guarded(what: &str, call: impl FnOnce() -> Value) -> Value {
     install_hook();
     let outcome = panic::catch_unwind(AssertUnwindSafe(call));
@@ -57,7 +59,7 @@ pub fn guarded(what: &str, call: impl FnOnce() -> Value) -> Value {
         Ok(value) => value,
         Err(_) => {
             let detail = format!("the {what} could not be completed");
-            error_envelope(500, &detail)
+            error_envelope(500, "internal", &detail)
         }
     }
 }
@@ -69,10 +71,10 @@ pub fn guarded_fallible(what: &str, call: impl FnOnce() -> Result<Value, String>
     let outcome = panic::catch_unwind(AssertUnwindSafe(call));
     match outcome {
         Ok(Ok(value)) => value,
-        Ok(Err(detail)) => error_envelope(500, &detail),
+        Ok(Err(detail)) => error_envelope(500, "internal", &detail),
         Err(_) => {
             let detail = format!("the {what} could not be completed");
-            error_envelope(500, &detail)
+            error_envelope(500, "internal", &detail)
         }
     }
 }

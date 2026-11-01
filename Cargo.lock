@@ -1460,6 +1460,7 @@ name = "stride-ffi"
 version = "0.1.0"
 dependencies = [
  "serde_json",
+ "stride-api",
  "uniffi",
 ]
 

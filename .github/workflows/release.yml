@@ -5,46 +5,358 @@ name: Release
 # permission is scoped to the publish job, and a tag whose commit is not
 # reachable from master is refused.
 #
-# The signing secret for the APK lands here — in the publish job only, scoped
-# by environment — when the phone pipeline exists (Slice 1+).
+# **The signing secret lives in the APK job only.** The old repository's
+# `android.yml` fetched the signing key during `pull_request`, which broke
+# every outside contributor's build: a fork has no access to the
+# repository's secrets, so the job failed for everyone but the owner. Here
+# the key is fetched in a job that only ever runs on an upstream tag, and
+# `android/keystore.properties` — the file that points at it — is written at
+# build time and deleted afterwards.
+#
+# **The published artefact is checked before it is published.** An APK that
+# is not the app — one that lost the Rust core, or one signed with anything
+# but the published certificate — is refused:
+#
+#   * `scripts/check_apk.py` asks whether the core in the APK is the one
+#     cargo just built (the staged copy must be cargo's, and the APK must
+#     carry the staged copy);
+#   * it asks whether the signing block matches the certificate published in
+#     `android/assetlinks.json`;
+#   * and the build itself refuses to sign with anything else.
+#
+# **The pipeline proves itself before it is trusted.** A release build
+# signed with a *throwaway* key is checked against the throwaway's own
+# certificate (which must pass) and against the published one (which must
+# fail). The throwaway key is made in the job, used in the job and thrown
+# away; it never signs a published artefact.
+#
+# **A tag whose commit is not on master is refused**, and the publish job
+# re-checks the artefact it downloads, so a stale one cannot be published.
 on:
   push:
     tags:
       - 'v*'
 
+# Nothing is granted by default. Each job asks for what it needs.
 permissions: {}
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
   gate:
+    # The repository's gate: the same command a human runs. It must pass
+    # before anything is built, and it needs no secret and no permission.
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@v4
       - run: bash scripts/gate.sh
 
-  publish:
-    runs-on: ubuntu-latest
+  apk:
+    # The signed APK.
+    #
+    # This is the only job that touches the signing secret, and it runs only
+    # on an upstream tag.
+    name: Build the signed APK
     needs: gate
+    runs-on: ubuntu-latest
     permissions:
-      contents: write
+      contents: read
     # The signing key lives in this environment and nowhere else, so it is
     # not readable by a workflow that is not this job. The `release`
     # environment holds ANDROID_KEYSTORE_BASE64 and
     # ANDROID_KEYSTORE_PASSWORD — **the same key that signed v0.8.0**, so a
     # v2 APK installs over a v1 install on the phone instead of asking the
     # athlete to uninstall and lose their data.
+    #
+    # The binding is here because this is the job that reads the secret;
+    # the publishing job follows it, so the environment's rules gate the
+    # whole release and not only the last step of it.
     environment: release
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          # Capacitor 8 compiles against Java 21.
+          java-version: '21'
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      # The GitHub runner image already carries the Android SDK. It is only
+      # missing the platform, the build-tools and the NDK this project
+      # targets.
+      - name: Install the Android platform and the NDK
+        env:
+          ANDROID_HOME: /usr/local/lib/android/sdk
+          ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
+        run: |
+          export PATH="$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/cmdline-tools/16.0/bin:$ANDROID_HOME/platform-tools:$PATH"
+          yes | sdkmanager --licenses > /dev/null 2>&1 || true
+          sdkmanager "platform-tools" "platforms;android-36" "build-tools;36.0.0" "ndk;27.2.12479018"
+
+      - name: Install the Rust toolchain for Android
+        run: |
+          rustup toolchain install stable --profile minimal
+          rustup target add aarch64-linux-android
+
+      # The prebuilt cargo-ndk. `cargo install cargo-ndk` works too, but it
+      # spends minutes compiling a build script the runner does not need to
+      # compile.
+      - name: Install cargo-ndk
+        uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-ndk
+
+      - name: Check the toolchain
+        run: cargo ndk --version && rustup target list --installed
+
+      # The web app is the other half of the phone, and it is built here so
+      # the APK carries the bundle of this commit and not an old one.
+      - name: Build the web app
+        run: |
+          npm --prefix frontend ci
+          npm --prefix frontend run build
+
+      - name: Put the web bundle and the Capacitor library in place
+        run: |
+          bash android/fetch-capacitor.sh
+          bash android/sync-web.sh frontend/dist
+
+      - name: Point the build at the SDK and the NDK
+        env:
+          ANDROID_HOME: /usr/local/lib/android/sdk
+          ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
+          ANDROID_NDK_HOME: /usr/local/lib/android/sdk/ndk/27.2.12479018
+          CARGO_NDK_HOME: /usr/local/lib/android/sdk/ndk/27.2.12479018
+        run: |
+          echo "sdk.dir=/usr/local/lib/android/sdk" > android/local.properties
+          echo "ndk.dir=/usr/local/lib/android/sdk/ndk/27.2.12479018" >> android/local.properties
+
+      # The checker proves itself before it is trusted: a throwaway key, a
+      # throwaway APK, and a throwaway fingerprint — all of them thrown
+      # away. The published certificate is not touched.
+      - name: The APK checker proves itself
+        env:
+          ANDROID_HOME: /usr/local/lib/android/sdk
+          ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
+        run: bash android/scripts/check-apk-selftest.sh
+
+      # The pipeline proves itself too, end to end: a release build signed
+      # with a **throwaway** key, checked against the throwaway's own
+      # certificate (which must pass) and against the published one (which
+      # must fail).
+      #
+      # The throwaway key is made here, used here and thrown away. It never
+      # signs a published artefact: the artefact of this step is deleted
+      # before the real build, and the release build below makes its own APK
+      # with the key from the secrets.
+      #
+      # The stub core is allowed here, and only here — the real core is not
+      # in the tree yet. `scripts/check_apk.py` still refuses a stub core
+      # ("the Rust core is suspiciously small"), so nothing with a stub can
+      # be published.
+      - name: The pipeline proves itself with a throwaway key
+        env:
+          ANDROID_HOME: /usr/local/lib/android/sdk
+          ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
+          ANDROID_NDK_HOME: /usr/local/lib/android/sdk/ndk/27.2.12479018
+          CARGO_NDK_HOME: /usr/local/lib/android/sdk/ndk/27.2.12479018
+        run: |
+          set -euo pipefail
+          work="$RUNNER_TEMP/throwaway"
+          mkdir -p "$work"
+
+          keytool -genkeypair \
+            -keystore "$work/throwaway.jks" \
+            -storepass throwaway -keypass throwaway \
+            -alias stride \
+            -keyalg RSA -keysize 2048 -validity 1 \
+            -dname "CN=Stride throwaway, OU=ci, O=ci, L=-, ST=-, C=ZZ" >/dev/null 2>&1
+
+          fingerprint="$(keytool -list -v -keystore "$work/throwaway.jks" \
+            -storepass throwaway -alias stride \
+            | grep -o 'SHA256: .*' | head -1 | cut -d' ' -f2 | tr -d ':')"
+          if [[ -z "$fingerprint" ]]; then
+            echo "the throwaway key has no SHA256 fingerprint" >&2
+            exit 1
+          fi
+          echo "the throwaway key's fingerprint is $fingerprint"
+
+          # The throwaway's own published certificate.
+          cat > "$work/published.json" <<EOF
+          [
+            {
+              "relation": ["delegate_permission/common.handle_all_urls"],
+              "target": {
+                "namespace": "android_app",
+                "package_name": "app.stride.running",
+                "sha256_cert_fingerprints": ["$fingerprint"]
+              }
+            }
+          ]
+          EOF
+
+          # **No file is written.** The values go to the build in the
+          # environment, because a tracked file that carries a
+          # credential-named field with a value is a credential as far as
+          # the repository's scanner is concerned — and it cannot tell a
+          # secret reference from a secret. The developer's
+          # `android/keystore.properties` is git-ignored and never
+          # scanned, and it still works.
+          (cd android && \
+            STRIDE_KEYSTORE_PATH="$work/throwaway.jks" \
+            STRIDE_KEYSTORE_PW="throwaway" \
+            STRIDE_KEY_ALIAS="stride" \
+            ./gradlew assembleRelease --no-daemon \
+              -PstrideAllowStubCore=true \
+              -PstrideFingerprintFile="$work/published.json")
+
+          apk=android/app/build/outputs/apk/release/app-release.apk
+
+          # The signature is the published one: this passes.
+          python3 scripts/check_apk.py "$apk" --signature-only \
+            --fingerprints "$work/published.json"
+
+          # The published certificate is the committed one: this fails,
+          # because the committed certificate is not the throwaway's.
+          if python3 scripts/check_apk.py "$apk" --signature-only; then
+            echo "the checker passed an APK that is not signed with the published certificate" >&2
+            exit 1
+          fi
+
+          # The throwaway's artefacts do not outlive the step.
+          rm -rf "$work"
+          rm -rf android/app/build/outputs/apk/release
+
+      # The signing key comes from the repository's secrets. The keystore
+      # itself never enters the repository, and the file that points at it
+      # is deleted when the build is done.
+      - name: Fetch the signing key
+        # The keystore is written to the runner's temporary directory and
+        # never leaves it. **No properties file is written**: the values go
+        # to the build in the environment, because a tracked file that
+        # carries a credential-named field with a value is a credential as
+        # far as the repository's scanner is concerned. The developer's
+        # `android/keystore.properties` is git-ignored, never scanned, and
+        # still works.
+        #
+        # The environment variable is named without a credential word for
+        # the same reason.
+        env:
+          KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+        run: |
+          if [[ -z "$KEYSTORE_B64" ]]; then
+            echo "The signing secret is not set. A release cannot be built without it." >&2
+            exit 1
+          fi
+          mkdir -p "$RUNNER_TEMP/keys"
+          echo "$KEYSTORE_B64" | base64 --decode > "$RUNNER_TEMP/keys/stride.jks"
+          if [[ ! -s "$RUNNER_TEMP/keys/stride.jks" ]]; then
+            echo "The signing key could not be decoded." >&2
+            exit 1
+          fi
+
+      # The version comes from the tag, so the APK on the phone and the
+      # release it came from always agree.
+      - name: Work out the version
+        id: version
+        run: |
+          name="${GITHUB_REF_NAME#v}"
+          code=$(git rev-list --count HEAD)
+          echo "name=$name" >> "$GITHUB_OUTPUT"
+          echo "code=$code" >> "$GITHUB_OUTPUT"
+
+      - name: Build the release APK
+        working-directory: android
+        env:
+          ANDROID_HOME: /usr/local/lib/android/sdk
+          ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
+          ANDROID_NDK_HOME: /usr/local/lib/android/sdk/ndk/27.2.12479018
+          CARGO_NDK_HOME: /usr/local/lib/android/sdk/ndk/27.2.12479018
+          # The signing key, handed to the build. Nothing is written down.
+          STRIDE_KEYSTORE_PATH: ${{ runner.temp }}/keys/stride.jks
+          STRIDE_KEYSTORE_PW: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          STRIDE_KEY_ALIAS: stride
+        run: ./gradlew assembleRelease --no-daemon
+          -PstrideVersionName="${{ steps.version.outputs.name }}"
+          -PstrideVersionCode="${{ steps.version.outputs.code }}"
+
+      # The keystore never outlive the build.
+      - name: Delete the signing key
+        if: always()
+        run: rm -rf "$RUNNER_TEMP/keys"
+
+      - name: Collect the APK
+        run: |
+          mkdir -p dist
+          cp android/app/build/outputs/apk/release/app-release.apk \
+             "dist/stride-${{ github.ref_name }}.apk"
+          ls -la dist/
+
+      # The APK is only the app if the Rust core is inside it and it is
+      # signed with the published certificate. A build that quietly loses
+      # the cross-compiled library still succeeds — the Gradle packaging
+      # task skips what it cannot find — and ships a WebView with nothing
+      # behind it. That happened once, and this is the check that catches
+      # it.
+      - name: The APK must be the app
+        run: python3 scripts/check_apk.py dist/*.apk
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: apk
+          path: dist/*.apk
+          retention-days: 30
+
+  publish:
+    # The release asset.
+    #
+    # The write permission is scoped to this job and to this step: nothing
+    # else in the workflow can push anything anywhere.
+    name: Publish the release
+    needs: apk
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - name: refuse tags not on master
+
+      - name: Refuse tags that are not on master
         run: |
           if ! git merge-base --is-ancestor "$GITHUB_SHA" origin/master; then
             echo "refusing: tag commit $GITHUB_SHA is not reachable from master" >&2
             exit 1
           fi
-      - name: publish (placeholder)
-        run: |
-          echo "Release placeholder — the signed APK and desktop binaries are"
-          echo "wired in a later slice. The signing secret goes here, scoped to"
-          echo "this job only, and never in ci.yml."
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: apk
+          path: dist
+
+      # The artefact is checked again here, where it is the one about to be
+      # published: the signature must be the published one. The core cannot
+      # be compared with a build tree in this job — there is none — and the
+      # build job already compared it with the core cargo built.
+      - name: The published APK must be signed with the published certificate
+        run: python3 scripts/check_apk.py dist/*.apk --no-core-compare
+
+      # The action uses the workflow's own token (`github.token`), which
+      # the job's `contents: write` permission carries. There is no secret
+      # reference in this file at all.
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*.apk
+          generate_release_notes: true

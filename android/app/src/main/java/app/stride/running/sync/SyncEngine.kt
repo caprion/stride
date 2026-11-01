@@ -97,10 +97,15 @@ object SyncEngine {
     /**
      * How many runs the phone has.
      *
-     * It is the number the database holds, so it grows as a pull lands them:
+     * It is the number the store holds, so it grows as a pull lands them:
      * that is what "12 runs" is while the pull runs, and what "160 runs" is
      * when it is over. A phone that cannot be opened has no runs to count,
      * and the count is zero.
+     *
+     * The count comes from the api's `SyncStatus.activity_count` — the
+     * number of runs the store holds — and not from the length of a page
+     * of the feed: a page of ten is not the phone's history, and the feed
+     * has no total.
      */
     fun runCount(context: Context): Int {
         val problem = StrideCore.ensureOpen(context)
@@ -109,11 +114,11 @@ object SyncEngine {
             return 0
         }
         return try {
-            val envelope = JSONObject(StrideCore.call("GET", "/activities?per_page=1", null))
+            val envelope = JSONObject(StrideCore.call("GET", "/sync/status", null))
             if (!envelope.optBoolean("ok")) {
                 0
             } else {
-                envelope.optJSONObject("body")?.optInt("total", 0) ?: 0
+                SyncResult.storedRuns(envelope.optJSONObject("body"))
             }
         } catch (error: Throwable) {
             Log.w(TAG, "the runs could not be counted: ${error.message}")
@@ -137,26 +142,21 @@ object SyncEngine {
                 error = if (PullPolicy.isRefusal(status, code)) ERROR_REFUSED else ERROR_FAILED,
             )
         }
-        val body = envelope.optJSONObject("body") ?: JSONObject()
-        val found = body.optInt("activities_found", 0)
-        val created = body.optInt("activities_new", 0)
-        val wellness = body.optInt("wellness_days", 0)
-        val errors = body.optJSONArray("errors")
-        val errorCount = errors?.length() ?: 0
+        // The api's `SyncRun`: { activities, wellness_days, finished_at,
+        // generated_at }. Those are the fields it has, and the only ones
+        // read here — see SyncResult.
+        val counts = SyncResult.counts(envelope.optJSONObject("body"))
         val message = when {
-            errorCount > 0 -> {
-                val first = errors?.optJSONObject(0)?.optString("error") ?: "a problem"
-                "Imported $created new runs. One problem: $first"
-            }
-            created == 0 && found == 0 -> "Garmin had no runs in the last $days days."
-            else -> "Imported $created new runs and $wellness days of wellness."
+            counts.activities == 0 && counts.wellnessDays == 0 ->
+                "Garmin had nothing new in the last $days days."
+            else -> "Imported ${counts.activities} new runs and " +
+                "${counts.wellnessDays} days of wellness."
         }
         return SyncOutcome(
             ok = true,
             message = message,
-            activitiesFound = found,
-            activitiesNew = created,
-            wellnessDays = wellness,
+            activities = counts.activities,
+            wellnessDays = counts.wellnessDays,
         )
     }
 }

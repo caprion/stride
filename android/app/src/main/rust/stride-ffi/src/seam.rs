@@ -68,21 +68,36 @@ pub fn ok_envelope(body: Value) -> Value {
 }
 
 /// The envelope of a failure.
-pub fn error_envelope(status: u16, detail: &str) -> Value {
+///
+/// **Exactly the router's shape.** The router answers with
+///
+/// ```text
+/// {"ok": false, "status": 404, "error": {"code": "not_found", "detail": "…"}}
+/// ```
+///
+/// and the code is not decoration: the shell reads it — a refusal is
+/// `needs_reconnect` — so an envelope without one is a shape the two sides
+/// of the boundary disagree about. `tests/envelope_parity.rs` proves they
+/// agree, against the router's own function.
+pub fn error_envelope(status: u16, code: &str, detail: &str) -> Value {
     json!({
         "ok": false,
         "status": status,
-        "error": {"detail": detail},
+        "error": {
+            "code": code,
+            "detail": detail,
+        },
     })
 }
 
-/// The envelope of a core that is not in this build.
+/// The envelope of a core that is not there.
 ///
-/// The detail is a sentence the app can show, not a stack trace: the app
-/// shows this to an athlete, and an athlete is not a compiler.
+/// It is the router's `not_open` — the same code, for the same reason — and
+/// the seam's own sentence.
 pub fn not_built_envelope() -> Value {
     error_envelope(
         503,
+        "not_open",
         "the Rust core is not in this build. Nothing is shown until it is.",
     )
 }
