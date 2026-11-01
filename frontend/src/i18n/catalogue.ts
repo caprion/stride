@@ -175,7 +175,6 @@ export const catalogue = {
   'activity.elevation.heading': { type: 'status', text: 'Elevation' },
   'activity.route.heading': { type: 'status', text: 'Route' },
   'activity.plan.heading': { type: 'status', text: 'Against the plan' },
-  'activity.plan.line': { type: 'status', text: '{actual} run · {target} planned' },
   'activity.export': { type: 'status', text: 'Export FIT' },
   'activity.showSplits': { type: 'status', text: 'Show splits' },
   'activity.hideSplits': { type: 'status', text: 'Hide splits' },

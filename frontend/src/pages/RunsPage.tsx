@@ -9,14 +9,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
 import { api } from '../lib/api'
-import {
-  formatDateShort,
-  formatDistance,
-  formatDurationHuman,
-  formatHeartRate,
-  formatPace,
-  sportLabel,
-} from '../lib/format'
+import { formatDateShort, renderedText, sportLabel } from '../lib/format'
 import type { ActivitySummary } from '../lib/types'
 import { t } from '../i18n'
 import { PageHeader } from '../ui/layout/PageHeader'
@@ -24,10 +17,10 @@ import { PageHeader } from '../ui/layout/PageHeader'
 /** The chips under a run's title. */
 function Chips({ activity }: { activity: ActivitySummary }) {
   const chips = [
-    formatDistance(activity.distance_m),
-    formatPace(activity.pace_s_per_km),
-    activity.avg_hr === null ? null : formatHeartRate(activity.avg_hr),
-  ].filter((chip): chip is string => chip !== null && chip !== '—')
+    renderedText(activity.distance),
+    activity.pace ? renderedText(activity.pace) : null,
+    activity.heart_rate ? renderedText(activity.heart_rate) : null,
+  ].filter((chip): chip is string => chip !== null && chip !== '')
 
   return (
     <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-[12.5px] text-ink-muted">
@@ -53,8 +46,7 @@ function ActivityRow({ activity }: { activity: ActivitySummary }) {
             {sportLabel(activity.sport_type)}
           </span>
           <span className="text-[12.5px] text-ink-faint">
-            {formatDateShort(activity.local_date)} ·{' '}
-            {formatDurationHuman(activity.moving_time_s)}
+            {formatDateShort(activity.local_date)} · {renderedText(activity.duration)}
           </span>
         </div>
         <Chips activity={activity} />
@@ -80,13 +72,18 @@ function ActivityRow({ activity }: { activity: ActivitySummary }) {
   )
 }
 
-/** The feed's group headers: "This week", or the date. */
-function groupLabel(date: string, today: string): string {
-  const groupDate = new Date(`${date}T00:00:00Z`)
+/**
+ * The feed's group headers: "This week", or the date.
+ *
+ * The API groups the feed — it is the API that knows the totals — and the
+ * app labels the groups. The label is chrome; the totals are the core's.
+ */
+function groupLabel(key: string, today: string): string {
+  const groupDate = new Date(`${key}T00:00:00Z`)
   const todayDate = new Date(`${today}T00:00:00Z`)
   const days = Math.round((todayDate.getTime() - groupDate.getTime()) / 86_400_000)
   if (days >= 0 && days < 7) return t('runs.group.thisWeek')
-  return t('runs.group.date', { date: formatDateShort(date) })
+  return t('runs.group.date', { date: formatDateShort(key) })
 }
 
 export function RunsPage() {
@@ -98,12 +95,13 @@ export function RunsPage() {
   const rows = activities.data?.activities ?? []
   const today = rows[0]?.local_date ?? new Date().toISOString().slice(0, 10)
 
-  const groups: { label: string; activities: ActivitySummary[] }[] = []
+  const groups: { label: string; totals: ActivitySummary['group']; activities: ActivitySummary[] }[] =
+    []
   for (const activity of rows) {
-    const label = groupLabel(activity.local_date, today)
+    const label = groupLabel(activity.group.key, today)
     const last = groups[groups.length - 1]
     if (last && last.label === label) last.activities.push(activity)
-    else groups.push({ label, activities: [activity] })
+    else groups.push({ label, totals: activity.group, activities: [activity] })
   }
 
   return (
@@ -136,15 +134,8 @@ export function RunsPage() {
                 </h2>
                 <span className="text-[12px] text-ink-faint">
                   {t('runs.group.total', {
-                    distance: formatDistance(
-                      group.activities.reduce((sum, activity) => sum + activity.distance_m, 0),
-                    ),
-                    time: formatDurationHuman(
-                      group.activities.reduce(
-                        (sum, activity) => sum + activity.moving_time_s,
-                        0,
-                      ),
-                    ),
+                    distance: renderedText(group.totals.distance),
+                    time: renderedText(group.totals.duration),
                   })}
                 </span>
               </div>

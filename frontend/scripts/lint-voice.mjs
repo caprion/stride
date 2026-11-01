@@ -40,7 +40,21 @@ const catalogueModule = await import(dataUrl)
 const { catalogue, DIRECTION_WORDS } = catalogueModule
 const allEntries = { ...catalogue }
 
-const failures = checkCatalogue(allEntries, DIRECTION_WORDS)
+// ------------------------------------------------- the core's export
+//
+// The export is read first: it carries the rules the app's own catalogue
+// is checked against — the words that name a vital — so there is one list
+// and not two.
+
+if (!existsSync(exportPath)) {
+  console.error(`voice lint: the core's export is not there: ${exportPath}`)
+  process.exit(1)
+}
+
+const exported = JSON.parse(readFileSync(exportPath, 'utf8'))
+const vitalWords = exported.rules?.vital_words ?? []
+
+const failures = checkCatalogue(allEntries, DIRECTION_WORDS, vitalWords)
 
 // ------------------------------------- inline strings in the components
 
@@ -61,12 +75,8 @@ for (const file of walk(join(root, 'src'))) {
 
 // ------------------------------------------------- the core's export
 
-let exportChecked = false
-if (existsSync(exportPath)) {
-  const exported = JSON.parse(readFileSync(exportPath, 'utf8'))
-  failures.push(...checkExport(exported, DIRECTION_WORDS))
-  exportChecked = true
-}
+failures.push(...checkExport(exported, DIRECTION_WORDS))
+const exportChecked = true
 
 // ---------------------------------------------------------------- report
 

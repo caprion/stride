@@ -1,80 +1,37 @@
 /**
  * Human rendering — the app's chrome.
  *
- * The domain's rendering belongs to the core: the rounding and the human
- * form of a duration live in `crates/stride-core/src/units.rs`, and this
- * app's copy of those rules is `src/lib/units.ts`. Contract §8 gives them
- * to the core, and says so twice.
+ * **The domain's rendering belongs to the core.** The rounding and the
+ * human form of a number live in `crates/stride-core/src/units.rs`, and
+ * contract §8 gives them to the core: "the frontend renders app chrome
+ * only. It does not re-implement the domain's wording, and it does not
+ * re-implement the domain's rounding."
  *
- * What is left here is the chrome: dates, the dense forms a table needs,
- * the sport's own name, and the em dash that stands for a number that is
- * not there. Every rounding in the app goes through `units.ts`, so the
- * phone and the desktop cannot disagree about a number.
+ * So this file does not render a domain value at all. The distance, the
+ * duration, the heart rate and the pace arrive **already rendered** — the
+ * API sends the core's words beside the numbers (see `src/lib/types.ts`),
+ * and the app shows them as they stand.
+ *
+ * What is left here is the chrome: the dates, the dense forms a table
+ * needs, the sport's own name, and the em dash that stands for a value
+ * that is not there.
  */
 
 import { format, formatDistanceToNow, parseISO } from 'date-fns'
-import {
-  format_distance_km_short,
-  format_duration,
-  format_whole,
-  round_half_even,
-  truncate_heart_rate,
-} from './units'
+import type { RenderedValue } from './types'
 
 /** The mark for a number that is not there. */
-const ABSENT = '—'
-
-/** Metres -> "12.4 km", "5 km". */
-export function formatDistance(metres: number | null | undefined): string {
-  if (metres === null || metres === undefined) return ABSENT
-  return `${format_distance_km_short(metres)} km`
-}
+export const ABSENT = '—'
 
 /**
- * Seconds -> "6 h 10 m", "42 m".
+ * A rendered value, as the athlete reads it.
  *
- * The core's `format_duration`: minutes are rounded to the nearest minute
- * and an exact zero minutes is left out — a person says "1 h", not
- * "1 h 00 m".
+ * The core rendered it; the app shows it. A value that is not there shows
+ * the em dash — never "null", never "0" (contract §8: a missing value
+ * crosses as null, never as "0").
  */
-export function formatDurationHuman(seconds: number | null | undefined): string {
-  if (seconds === null || seconds === undefined) return ABSENT
-  return format_duration(seconds)
-}
-
-/**
- * Seconds per kilometre -> "5:24".
- *
- * The dense form, for a table or a chart. The number is rounded by the
- * core's rule (half to even) before the minute and the second are taken
- * from it.
- */
-export function formatPace(secondsPerKm: number | null | undefined): string {
-  if (secondsPerKm === null || secondsPerKm === undefined || secondsPerKm <= 0) return ABSENT
-  const total = Math.trunc(round_half_even(secondsPerKm, 0))
-  return `${Math.floor(total / 60)}:${String(total % 60).padStart(2, '0')}`
-}
-
-/** A number in its own scale, with no decimals: "63". */
-export function formatNumber(value: number | null | undefined): string {
-  if (value === null || value === undefined) return ABSENT
-  return format_whole(value)
-}
-
-/**
- * A heart rate -> "148 bpm".
- *
- * A heart rate is truncated, never rounded (contract §3): 148.7 is 148.
- */
-export function formatHeartRate(value: number | null | undefined): string {
-  if (value === null || value === undefined) return ABSENT
-  return `${truncate_heart_rate(value)} bpm`
-}
-
-/** Metres of climb -> "128 m". */
-export function formatElevation(metres: number | null | undefined): string {
-  if (metres === null || metres === undefined) return ABSENT
-  return `${format_whole(metres)} m`
+export function renderedText(value: RenderedValue | null | undefined): string {
+  return value?.text ?? ABSENT
 }
 
 /** An ISO date -> "Sat 10 May". */
@@ -99,6 +56,17 @@ export function formatRelative(iso: string | null | undefined): string {
   const date = parseISO(iso)
   if (Number.isNaN(date.getTime())) return 'never'
   return formatDistanceToNow(date, { addSuffix: true })
+}
+
+/**
+ * A count -> "8".
+ *
+ * A count is a count: it is already a whole number, so there is nothing
+ * to round and nothing to render.
+ */
+export function formatCount(count: number | null | undefined): string {
+  if (count === null || count === undefined) return ABSENT
+  return String(count)
 }
 
 /** The plan's own vocabulary for a session type, read as the plan reads it. */

@@ -48,8 +48,14 @@ export const BANNED = [
   { term: 'need to', pattern: /\bneed\s+to\b/i },
 ]
 
-/** The words that name a vital. An `option` may not mention one. */
-export const VITAL_WORDS = ['sleep', 'hrv', 'resting hr', 'resting heart rate', 'stress']
+/**
+ * The words that name a vital.
+ *
+ * There is no list here on purpose: the core's export carries the vital
+ * words — `crates/stride-core/strings.json`, `rules.vital_words` — and an
+ * `option` may not mention one. A second copy of the list is how the two
+ * drift, and the two have already drifted once.
+ */
 
 /** A sample size is a number — written out or carried in a placeholder. */
 export const SAMPLE_SIZE = /\b\d+\b|\{n\}/
@@ -72,9 +78,10 @@ export function bannedWords(text) {
  * Check a catalogue.
  *
  * `entries` is a map of key → { type, text }; `directionWords` is the
- * closed set.
+ * closed set; `vitalWords` is the core's list of the words that name a
+ * vital — read from the export, never written out here.
  */
-export function checkCatalogue(entries, directionWords) {
+export function checkCatalogue(entries, directionWords, vitalWords = []) {
   const failures = []
 
   for (const [key, entry] of Object.entries(entries)) {
@@ -120,7 +127,7 @@ export function checkCatalogue(entries, directionWords) {
   for (const [key, entry] of Object.entries(entries)) {
     if (entry.type !== 'option') continue
     const lowered = entry.text.toLowerCase()
-    for (const vital of VITAL_WORDS) {
+    for (const vital of vitalWords) {
       if (lowered.includes(vital)) {
         failures.push(
           `catalogue.${key}: is an option that mentions a vital ("${vital}") — "${entry.text}"`,
@@ -206,12 +213,15 @@ export function checkExport(exported, directionWords) {
     }
   }
 
-  // An option never mentions a vital.
-  const vitalWords = rules.vital_words ?? VITAL_WORDS
+  // An option never mentions a vital — and the list is the export's.
+  const vitalWords = rules.vital_words
+  if (!Array.isArray(vitalWords) || vitalWords.length === 0) {
+    failures.push('the export does not carry the words that name a vital')
+  }
   for (const entry of entries) {
     if (entry.kind !== 'option') continue
     const lowered = (entry.template ?? '').toLowerCase()
-    for (const vital of vitalWords) {
+    for (const vital of vitalWords ?? []) {
       if (lowered.includes(vital)) {
         failures.push(`the export's ${entry.id}: is an option that mentions a vital ("${vital}")`)
       }

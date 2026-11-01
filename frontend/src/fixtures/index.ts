@@ -7,9 +7,14 @@
  *
  * The sentences here are the core's, written out. Since core-contract §8
  * the domain's sentences arrive already rendered — the direction word, the
- * arithmetic, the travel, the Rest line and the pattern sentences — so the
- * fixture is a captured answer rather than a computation. The numbers under
- * them are the history the charts draw.
+ * arithmetic, the travel, the Rest line and the pattern sentences — and
+ * since the values joined them, the numbers arrive rendered too: "8.4 km",
+ * "42 m", "148 bpm", "5:24 /km".
+ *
+ * **The fixture is a captured answer, not a computation.** Every rendered
+ * value below is written out, in the core's words, because a fixture that
+ * computed its own values would be a second implementation of the core's
+ * rules — the very thing the core owns.
  *
  * The wording is the core's wording, from `crates/stride-core/strings.json`:
  *
@@ -18,9 +23,9 @@
  *   "your HRV has been below your usual for 3 nights"
  */
 
-import { round_pace_s_per_km } from '../lib/units'
 import type {
   ActivityDetail,
+  CompareSeriesPoint,
   ActivityListResponse,
   ActivitySummary,
   CompareCandidate,
@@ -29,6 +34,7 @@ import type {
   PlanSession,
   PlanWeek,
   ProgressInsight,
+  RenderedValue,
   SyncStatus,
   TodayInsight,
   VitalsSnapshot,
@@ -36,6 +42,11 @@ import type {
 
 /** The day the fixture set is "now". */
 export const TODAY = '2026-05-12'
+
+/** A rendered value: the core's words, and the number a chart draws. */
+function value(text: string, raw: number | null): RenderedValue {
+  return { text, raw }
+}
 
 /**
  * The synthetic nights.
@@ -163,8 +174,8 @@ const planSessions: PlanSession[] = [
     session_type: 'easy',
     title: 'Easy 8',
     sentence: '11 May 2026 — 8 km · easy',
-    target_distance_m: 8_000,
-    actual_distance_m: 8_100,
+    target: value('8 km', 8_000),
+    actual: value('8.1 km', 8_100),
     status: 'done',
     source: 'prescribed',
   },
@@ -173,8 +184,8 @@ const planSessions: PlanSession[] = [
     session_type: 'easy',
     title: 'Easy 10',
     sentence: 'Today — 10 km · easy',
-    target_distance_m: 10_000,
-    actual_distance_m: null,
+    target: value('10 km', 10_000),
+    actual: null,
     status: 'planned',
     source: 'prescribed',
   },
@@ -183,8 +194,8 @@ const planSessions: PlanSession[] = [
     session_type: 'rest',
     title: null,
     sentence: '13 May 2026 — rest',
-    target_distance_m: null,
-    actual_distance_m: null,
+    target: null,
+    actual: null,
     status: 'planned',
     source: 'prescribed',
   },
@@ -193,8 +204,8 @@ const planSessions: PlanSession[] = [
     session_type: 'easy',
     title: 'Easy 5',
     sentence: '14 May 2026 — 5 km · easy',
-    target_distance_m: 5_000,
-    actual_distance_m: null,
+    target: value('5 km', 5_000),
+    actual: null,
     status: 'planned',
     source: 'prescribed',
   },
@@ -203,8 +214,8 @@ const planSessions: PlanSession[] = [
     session_type: 'long',
     title: 'Long 16',
     sentence: '15 May 2026 — 16 km · long',
-    target_distance_m: 16_000,
-    actual_distance_m: null,
+    target: value('16 km', 16_000),
+    actual: null,
     status: 'planned',
     source: 'prescribed',
   },
@@ -213,8 +224,8 @@ const planSessions: PlanSession[] = [
     session_type: 'easy',
     title: 'Easy 30 minutes',
     sentence: '16 May 2026 — easy',
-    target_distance_m: null,
-    actual_distance_m: null,
+    target: null,
+    actual: null,
     status: 'planned',
     source: 'prescribed',
   },
@@ -223,8 +234,8 @@ const planSessions: PlanSession[] = [
     session_type: 'easy',
     title: 'Easy 6',
     sentence: '17 May 2026 — 6 km · easy',
-    target_distance_m: 6_000,
-    actual_distance_m: null,
+    target: value('6 km', 6_000),
+    actual: null,
     status: 'planned',
     source: 'prescribed',
   },
@@ -236,49 +247,116 @@ export const planWeekFixture: PlanWeek = {
   source: 'prescribed',
   week_start: '2026-05-11',
   week_end: '2026-05-17',
-  target_km: 25,
+  target: value('25 km', 25_000),
   sessions: planSessions,
   adherence: { done: 1, planned: 7 },
 }
 
 // -------------------------------------------------------------- activities
 
+/**
+ * The feed's groups.
+ *
+ * The API groups the feed — it is the API that knows the totals — and the
+ * app labels the groups. The key is the date the group starts.
+ */
+const THIS_WEEK = {
+  key: '2026-05-06',
+  distance: value('36 km', 36_000),
+  duration: value('3 h 11 m', 11_480),
+}
+const LONG_RUN_DAY = {
+  key: '2026-05-04',
+  distance: value('16.1 km', 16_100),
+  duration: value('1 h 25 m', 5_072),
+}
+const MONDAY = {
+  key: '2026-05-03',
+  distance: value('6.3 km', 6_300),
+  duration: value('35 m', 2_080),
+}
+
 function activity(
   id: number,
   date: string,
-  distance_m: number,
-  moving_time_s: number,
+  distance: RenderedValue,
+  duration: RenderedValue,
+  pace: RenderedValue,
   story: string,
-  extra: Partial<ActivitySummary> = {},
+  group: typeof THIS_WEEK,
 ): ActivitySummary {
-  const elapsed = moving_time_s + 60
   return {
     id,
     name: 'Run',
     sport_type: 'running',
     start_time: `${date}T07:10:00Z`,
     local_date: date,
-    distance_m,
-    moving_time_s,
-    elapsed_time_s: elapsed,
-    avg_hr: 148,
-    max_hr: 171,
-    avg_cadence: 178,
-    elevation_gain_m: 42,
-    pace_s_per_km: round_pace_s_per_km(moving_time_s / (distance_m / 1000)),
+    distance,
+    duration,
+    heart_rate: value('148 bpm', 148),
+    pace,
+    elevation_gain: value('42 m', 42),
+    group,
     story,
     geo_points: [],
-    ...extra,
   }
 }
 
 export const activityFixtures: ActivitySummary[] = [
-  activity(101, '2026-05-10', 12_400, 4_020, '12.4 km, 2.4 km more than your usual Wednesday'),
-  activity(102, '2026-05-09', 10_200, 3_320, '10.2 km, about your usual Saturday'),
-  activity(103, '2026-05-07', 8_400, 2_520, '8.4 km, a bit shorter than your usual Wednesday'),
-  activity(104, '2026-05-06', 5_000, 1_620, '5 km, your shortest run in three weeks'),
-  activity(105, '2026-05-04', 16_100, 5_080, '16.1 km, your longest run this month'),
-  activity(106, '2026-05-03', 6_300, 2_080, '6.3 km, about your usual Monday'),
+  activity(
+    101,
+    '2026-05-10',
+    value('12.4 km', 12_400),
+    value('1 h 7 m', 4_020),
+    value('5:24 /km', 324.19),
+    '12.4 km, 2.4 km more than your usual Wednesday',
+    THIS_WEEK,
+  ),
+  activity(
+    102,
+    '2026-05-09',
+    value('10.2 km', 10_200),
+    value('55 m', 3_320),
+    value('5:25 /km', 325.49),
+    '10.2 km, about your usual Saturday',
+    THIS_WEEK,
+  ),
+  activity(
+    103,
+    '2026-05-07',
+    value('8.4 km', 8_400),
+    value('42 m', 2_520),
+    value('5:00 /km', 300),
+    '8.4 km, a bit shorter than your usual Wednesday',
+    THIS_WEEK,
+  ),
+  activity(
+    104,
+    '2026-05-06',
+    value('5 km', 5_000),
+    value('27 m', 1_620),
+    value('5:24 /km', 324),
+    '5 km, your shortest run in three weeks',
+    THIS_WEEK,
+  ),
+  activity(
+    105,
+    '2026-05-04',
+    value('16.1 km', 16_100),
+    value('1 h 25 m', 5_072),
+    value('5:15 /km', 315.03),
+    '16.1 km, your longest run this month',
+    LONG_RUN_DAY,
+  ),
+  activity(
+    106,
+    '2026-05-03',
+    value('6.3 km', 6_300),
+    value('35 m', 2_080),
+    value('5:30 /km', 330.16),
+    '6.3 km, about your usual Monday',
+    MONDAY,
+  ),
 ]
 
 export const activitiesFixture: ActivityListResponse = {
@@ -290,30 +368,42 @@ export const activitiesFixture: ActivityListResponse = {
 export const activityDetailFixture: ActivityDetail = {
   ...(activityFixtures[0] as ActivitySummary),
   splits: [
-    { index: 1, distance_m: 1_000, duration_s: 322, avg_hr: 149 },
-    { index: 2, distance_m: 1_000, duration_s: 318, avg_hr: 151 },
-    { index: 3, distance_m: 1_000, duration_s: 315, avg_hr: 152 },
-    { index: 4, distance_m: 1_000, duration_s: 320, avg_hr: 153 },
-    { index: 5, distance_m: 1_000, duration_s: 326, avg_hr: 154 },
-    { index: 6, distance_m: 1_000, duration_s: 330, avg_hr: 155 },
-    { index: 7, distance_m: 1_000, duration_s: 334, avg_hr: 156 },
-    { index: 8, distance_m: 1_000, duration_s: 336, avg_hr: 158 },
-    { index: 9, distance_m: 1_000, duration_s: 335, avg_hr: 157 },
-    { index: 10, distance_m: 1_000, duration_s: 337, avg_hr: 158 },
-    { index: 11, distance_m: 1_000, duration_s: 341, avg_hr: 159 },
-    { index: 12, distance_m: 1_000, duration_s: 338, avg_hr: 158 },
-    { index: 13, distance_m: 400, duration_s: 138, avg_hr: 156 },
+    { index: 1, distance: value('1 km', 1_000), duration: value('5 m', 322), heart_rate: value('149 bpm', 149) },
+    { index: 2, distance: value('1 km', 1_000), duration: value('5 m', 318), heart_rate: value('151 bpm', 151) },
+    { index: 3, distance: value('1 km', 1_000), duration: value('5 m', 315), heart_rate: value('152 bpm', 152) },
+    { index: 4, distance: value('1 km', 1_000), duration: value('5 m', 320), heart_rate: value('153 bpm', 153) },
+    { index: 5, distance: value('1 km', 1_000), duration: value('5 m', 326), heart_rate: value('154 bpm', 154) },
+    { index: 6, distance: value('1 km', 1_000), duration: value('5 m', 330), heart_rate: value('155 bpm', 155) },
+    { index: 7, distance: value('1 km', 1_000), duration: value('5 m', 334), heart_rate: value('156 bpm', 156) },
+    { index: 8, distance: value('1 km', 1_000), duration: value('5 m', 336), heart_rate: value('158 bpm', 158) },
+    { index: 9, distance: value('1 km', 1_000), duration: value('5 m', 335), heart_rate: value('157 bpm', 157) },
+    { index: 10, distance: value('1 km', 1_000), duration: value('5 m', 337), heart_rate: value('158 bpm', 158) },
+    { index: 11, distance: value('1 km', 1_000), duration: value('5 m', 341), heart_rate: value('159 bpm', 159) },
+    { index: 12, distance: value('1 km', 1_000), duration: value('5 m', 338), heart_rate: value('158 bpm', 158) },
+    { index: 13, distance: value('400 m', 400), duration: value('2 m', 138), heart_rate: value('156 bpm', 156) },
   ],
-  elevation: Array.from({ length: 26 }, (_, index) => ({
-    distance_m: index * 500,
-    elevation_m: 40 + Math.round(20 * Math.sin(index / 3)),
-  })),
-  samples: Array.from({ length: 60 }, (_, index) => ({
-    offset_s: index * 60,
-    pace_s_per_km: 300 + Math.round(20 * Math.sin(index / 6)),
-    hr: 140 + Math.round(18 * Math.sin(index / 9)),
-  })),
-  plan_line: { actual_distance_m: 12_400, target_distance_m: 10_000 },
+  elevation: [
+    { distance: value('0 km', 0), elevation: value('40 m', 40) },
+    { distance: value('1.5 km', 1_500), elevation: value('51 m', 51) },
+    { distance: value('3 km', 3_000), elevation: value('40 m', 40) },
+    { distance: value('4.5 km', 4_500), elevation: value('29 m', 29) },
+    { distance: value('6 km', 6_000), elevation: value('40 m', 40) },
+    { distance: value('7.5 km', 7_500), elevation: value('51 m', 51) },
+    { distance: value('9 km', 9_000), elevation: value('40 m', 40) },
+    { distance: value('10.5 km', 10_500), elevation: value('29 m', 29) },
+    { distance: value('12 km', 12_000), elevation: value('40 m', 40) },
+  ],
+  samples: [
+    { offset_s: 0, pace: value('5:24 /km', 324), heart_rate: value('140 bpm', 140) },
+    { offset_s: 60, pace: value('5:13 /km', 313), heart_rate: value('154 bpm', 154) },
+    { offset_s: 120, pace: value('5:04 /km', 304), heart_rate: value('156 bpm', 156) },
+    { offset_s: 180, pace: value('5:00 /km', 300), heart_rate: value('152 bpm', 152) },
+    { offset_s: 240, pace: value('5:05 /km', 305), heart_rate: value('147 bpm', 147) },
+    { offset_s: 300, pace: value('5:15 /km', 315), heart_rate: value('144 bpm', 144) },
+    { offset_s: 360, pace: value('5:26 /km', 326), heart_rate: value('141 bpm', 141) },
+    { offset_s: 420, pace: value('5:36 /km', 336), heart_rate: value('139 bpm', 139) },
+  ],
+  plan_line: { text: '12.4 km of a 10 km target' },
   note: null,
 }
 
@@ -330,7 +420,7 @@ function todayInsight(
     options: [planSessions[3] as PlanSession, planSessions[5] as PlanSession],
     last_run: lastRun,
     distance_comparison: distanceComparison,
-    week: { distance_m: 20_600, sessions: 2 },
+    week: { distance: value('20.6 km', 20_600), sessions: 2 },
   }
 }
 
@@ -362,23 +452,43 @@ export const progressFixture: ProgressInsight = {
   headline: 'fitter than 8 weeks ago',
   headline_note: 'same heart rate, 24 s/km faster',
   weekly_volume: [
-    { week_start: '2026-03-16', distance_m: 24_100 },
-    { week_start: '2026-03-23', distance_m: 27_400 },
-    { week_start: '2026-03-30', distance_m: 21_800 },
-    { week_start: '2026-04-06', distance_m: 31_200 },
-    { week_start: '2026-04-13', distance_m: 28_900 },
-    { week_start: '2026-04-20', distance_m: 35_400 },
-    { week_start: '2026-04-27', distance_m: 30_100 },
-    { week_start: '2026-05-04', distance_m: 38_600 },
-    { week_start: '2026-05-11', distance_m: 20_600 },
+    { week_start: '2026-03-16', distance: value('24.1 km', 24_100) },
+    { week_start: '2026-03-23', distance: value('27.4 km', 27_400) },
+    { week_start: '2026-03-30', distance: value('21.8 km', 21_800) },
+    { week_start: '2026-04-06', distance: value('31.2 km', 31_200) },
+    { week_start: '2026-04-13', distance: value('28.9 km', 28_900) },
+    { week_start: '2026-04-20', distance: value('35.4 km', 35_400) },
+    { week_start: '2026-04-27', distance: value('30.1 km', 30_100) },
+    { week_start: '2026-05-04', distance: value('38.6 km', 38_600) },
+    { week_start: '2026-05-11', distance: value('20.6 km', 20_600) },
   ],
-  typical_week_m: 30_000,
+  typical_week: value('30 km', 30_000),
   pace_at_hr: [
-    { week_start: '2026-03-16', pace_s_per_km: 336, hr: 150 },
-    { week_start: '2026-03-30', pace_s_per_km: 330, hr: 150 },
-    { week_start: '2026-04-13', pace_s_per_km: 324, hr: 150 },
-    { week_start: '2026-04-27', pace_s_per_km: 318, hr: 150 },
-    { week_start: '2026-05-11', pace_s_per_km: 312, hr: 150 },
+    {
+      week_start: '2026-03-16',
+      pace: value('5:36 /km', 336),
+      heart_rate: value('150 bpm', 150),
+    },
+    {
+      week_start: '2026-03-30',
+      pace: value('5:30 /km', 330),
+      heart_rate: value('150 bpm', 150),
+    },
+    {
+      week_start: '2026-04-13',
+      pace: value('5:24 /km', 324),
+      heart_rate: value('150 bpm', 150),
+    },
+    {
+      week_start: '2026-04-27',
+      pace: value('5:18 /km', 318),
+      heart_rate: value('150 bpm', 150),
+    },
+    {
+      week_start: '2026-05-11',
+      pace: value('5:12 /km', 312),
+      heart_rate: value('150 bpm', 150),
+    },
   ],
   bests: [
     { key: 'progress.best.5k', value: '19:48', date: '2026-04-27' },
@@ -395,18 +505,105 @@ export const progressFixture: ProgressInsight = {
     { week_start: '2026-04-27', sessions: 4 },
     { week_start: '2026-05-11', sessions: 2 },
   ],
+  sessions_per_week: value('3.4', 3.4),
   adherence: { done: 7, planned: 8 },
 }
 
 // --------------------------------------------------------------- compare
 
-function series(distance_m: number, moving_time_s: number, base_hr: number) {
-  return Array.from({ length: 40 }, (_, index) => ({
-    offset_s: index * 60,
-    pace_s_per_km: Math.round(moving_time_s / (distance_m / 1000) + 12 * Math.sin(index / 5)),
-    hr: base_hr + Math.round(14 * Math.sin(index / 7)),
-  }))
-}
+/**
+ * The two effort series, written out.
+ *
+ * A point carries the core's words beside the number: the text for the
+ * tooltip, the raw for the line. They are written out rather than
+ * computed, because a fixture that computed its own values would be a
+ * second implementation of the core's rules.
+ */
+const SERIES_A: CompareSeriesPoint[] = [
+    { offset_s: 0, pace: { text: '5:17 /km', raw: 317 }, heart_rate: { text: '149 bpm', raw: 149 } },
+    { offset_s: 60, pace: { text: '5:19 /km', raw: 319 }, heart_rate: { text: '151 bpm', raw: 151 } },
+    { offset_s: 120, pace: { text: '5:22 /km', raw: 322 }, heart_rate: { text: '153 bpm', raw: 153 } },
+    { offset_s: 180, pace: { text: '5:24 /km', raw: 324 }, heart_rate: { text: '155 bpm', raw: 155 } },
+    { offset_s: 240, pace: { text: '5:26 /km', raw: 326 }, heart_rate: { text: '157 bpm', raw: 157 } },
+    { offset_s: 300, pace: { text: '5:27 /km', raw: 327 }, heart_rate: { text: '158 bpm', raw: 158 } },
+    { offset_s: 360, pace: { text: '5:28 /km', raw: 328 }, heart_rate: { text: '160 bpm', raw: 160 } },
+    { offset_s: 420, pace: { text: '5:29 /km', raw: 329 }, heart_rate: { text: '161 bpm', raw: 161 } },
+    { offset_s: 480, pace: { text: '5:29 /km', raw: 329 }, heart_rate: { text: '162 bpm', raw: 162 } },
+    { offset_s: 540, pace: { text: '5:29 /km', raw: 329 }, heart_rate: { text: '162 bpm', raw: 162 } },
+    { offset_s: 600, pace: { text: '5:28 /km', raw: 328 }, heart_rate: { text: '163 bpm', raw: 163 } },
+    { offset_s: 660, pace: { text: '5:27 /km', raw: 327 }, heart_rate: { text: '163 bpm', raw: 163 } },
+    { offset_s: 720, pace: { text: '5:25 /km', raw: 325 }, heart_rate: { text: '163 bpm', raw: 163 } },
+    { offset_s: 780, pace: { text: '5:23 /km', raw: 323 }, heart_rate: { text: '162 bpm', raw: 162 } },
+    { offset_s: 840, pace: { text: '5:21 /km', raw: 321 }, heart_rate: { text: '162 bpm', raw: 162 } },
+    { offset_s: 900, pace: { text: '5:19 /km', raw: 319 }, heart_rate: { text: '161 bpm', raw: 161 } },
+    { offset_s: 960, pace: { text: '5:16 /km', raw: 316 }, heart_rate: { text: '160 bpm', raw: 160 } },
+    { offset_s: 1020, pace: { text: '5:14 /km', raw: 314 }, heart_rate: { text: '158 bpm', raw: 158 } },
+    { offset_s: 1080, pace: { text: '5:12 /km', raw: 312 }, heart_rate: { text: '157 bpm', raw: 157 } },
+    { offset_s: 1140, pace: { text: '5:10 /km', raw: 310 }, heart_rate: { text: '155 bpm', raw: 155 } },
+    { offset_s: 1200, pace: { text: '5:08 /km', raw: 308 }, heart_rate: { text: '153 bpm', raw: 153 } },
+    { offset_s: 1260, pace: { text: '5:07 /km', raw: 307 }, heart_rate: { text: '151 bpm', raw: 151 } },
+    { offset_s: 1320, pace: { text: '5:06 /km', raw: 306 }, heart_rate: { text: '149 bpm', raw: 149 } },
+    { offset_s: 1380, pace: { text: '5:05 /km', raw: 305 }, heart_rate: { text: '147 bpm', raw: 147 } },
+    { offset_s: 1440, pace: { text: '5:05 /km', raw: 305 }, heart_rate: { text: '145 bpm', raw: 145 } },
+    { offset_s: 1500, pace: { text: '5:05 /km', raw: 305 }, heart_rate: { text: '143 bpm', raw: 143 } },
+    { offset_s: 1560, pace: { text: '5:06 /km', raw: 306 }, heart_rate: { text: '141 bpm', raw: 141 } },
+    { offset_s: 1620, pace: { text: '5:08 /km', raw: 308 }, heart_rate: { text: '140 bpm', raw: 140 } },
+    { offset_s: 1680, pace: { text: '5:09 /km', raw: 309 }, heart_rate: { text: '138 bpm', raw: 138 } },
+    { offset_s: 1740, pace: { text: '5:11 /km', raw: 311 }, heart_rate: { text: '137 bpm', raw: 137 } },
+    { offset_s: 1800, pace: { text: '5:14 /km', raw: 314 }, heart_rate: { text: '136 bpm', raw: 136 } },
+    { offset_s: 1860, pace: { text: '5:16 /km', raw: 316 }, heart_rate: { text: '136 bpm', raw: 136 } },
+    { offset_s: 1920, pace: { text: '5:18 /km', raw: 318 }, heart_rate: { text: '135 bpm', raw: 135 } },
+    { offset_s: 1980, pace: { text: '5:21 /km', raw: 321 }, heart_rate: { text: '135 bpm', raw: 135 } },
+    { offset_s: 2040, pace: { text: '5:23 /km', raw: 323 }, heart_rate: { text: '135 bpm', raw: 135 } },
+    { offset_s: 2100, pace: { text: '5:25 /km', raw: 325 }, heart_rate: { text: '136 bpm', raw: 136 } },
+    { offset_s: 2160, pace: { text: '5:27 /km', raw: 327 }, heart_rate: { text: '136 bpm', raw: 136 } },
+    { offset_s: 2220, pace: { text: '5:28 /km', raw: 328 }, heart_rate: { text: '137 bpm', raw: 137 } },
+    { offset_s: 2280, pace: { text: '5:29 /km', raw: 329 }, heart_rate: { text: '138 bpm', raw: 138 } },
+    { offset_s: 2340, pace: { text: '5:29 /km', raw: 329 }, heart_rate: { text: '140 bpm', raw: 140 } },
+]
+
+const SERIES_B: CompareSeriesPoint[] = [
+    { offset_s: 0, pace: { text: '5:06 /km', raw: 306 }, heart_rate: { text: '146 bpm', raw: 146 } },
+    { offset_s: 60, pace: { text: '5:08 /km', raw: 308 }, heart_rate: { text: '148 bpm', raw: 148 } },
+    { offset_s: 120, pace: { text: '5:11 /km', raw: 311 }, heart_rate: { text: '150 bpm', raw: 150 } },
+    { offset_s: 180, pace: { text: '5:13 /km', raw: 313 }, heart_rate: { text: '152 bpm', raw: 152 } },
+    { offset_s: 240, pace: { text: '5:15 /km', raw: 315 }, heart_rate: { text: '154 bpm', raw: 154 } },
+    { offset_s: 300, pace: { text: '5:16 /km', raw: 316 }, heart_rate: { text: '155 bpm', raw: 155 } },
+    { offset_s: 360, pace: { text: '5:17 /km', raw: 317 }, heart_rate: { text: '157 bpm', raw: 157 } },
+    { offset_s: 420, pace: { text: '5:18 /km', raw: 318 }, heart_rate: { text: '158 bpm', raw: 158 } },
+    { offset_s: 480, pace: { text: '5:18 /km', raw: 318 }, heart_rate: { text: '159 bpm', raw: 159 } },
+    { offset_s: 540, pace: { text: '5:18 /km', raw: 318 }, heart_rate: { text: '159 bpm', raw: 159 } },
+    { offset_s: 600, pace: { text: '5:17 /km', raw: 317 }, heart_rate: { text: '160 bpm', raw: 160 } },
+    { offset_s: 660, pace: { text: '5:16 /km', raw: 316 }, heart_rate: { text: '160 bpm', raw: 160 } },
+    { offset_s: 720, pace: { text: '5:14 /km', raw: 314 }, heart_rate: { text: '160 bpm', raw: 160 } },
+    { offset_s: 780, pace: { text: '5:12 /km', raw: 312 }, heart_rate: { text: '159 bpm', raw: 159 } },
+    { offset_s: 840, pace: { text: '5:10 /km', raw: 310 }, heart_rate: { text: '159 bpm', raw: 159 } },
+    { offset_s: 900, pace: { text: '5:08 /km', raw: 308 }, heart_rate: { text: '158 bpm', raw: 158 } },
+    { offset_s: 960, pace: { text: '5:05 /km', raw: 305 }, heart_rate: { text: '157 bpm', raw: 157 } },
+    { offset_s: 1020, pace: { text: '5:03 /km', raw: 303 }, heart_rate: { text: '155 bpm', raw: 155 } },
+    { offset_s: 1080, pace: { text: '5:01 /km', raw: 301 }, heart_rate: { text: '154 bpm', raw: 154 } },
+    { offset_s: 1140, pace: { text: '4:59 /km', raw: 299 }, heart_rate: { text: '152 bpm', raw: 152 } },
+    { offset_s: 1200, pace: { text: '4:57 /km', raw: 297 }, heart_rate: { text: '150 bpm', raw: 150 } },
+    { offset_s: 1260, pace: { text: '4:56 /km', raw: 296 }, heart_rate: { text: '148 bpm', raw: 148 } },
+    { offset_s: 1320, pace: { text: '4:55 /km', raw: 295 }, heart_rate: { text: '146 bpm', raw: 146 } },
+    { offset_s: 1380, pace: { text: '4:54 /km', raw: 294 }, heart_rate: { text: '144 bpm', raw: 144 } },
+    { offset_s: 1440, pace: { text: '4:54 /km', raw: 294 }, heart_rate: { text: '142 bpm', raw: 142 } },
+    { offset_s: 1500, pace: { text: '4:54 /km', raw: 294 }, heart_rate: { text: '140 bpm', raw: 140 } },
+    { offset_s: 1560, pace: { text: '4:55 /km', raw: 295 }, heart_rate: { text: '138 bpm', raw: 138 } },
+    { offset_s: 1620, pace: { text: '4:57 /km', raw: 297 }, heart_rate: { text: '137 bpm', raw: 137 } },
+    { offset_s: 1680, pace: { text: '4:58 /km', raw: 298 }, heart_rate: { text: '135 bpm', raw: 135 } },
+    { offset_s: 1740, pace: { text: '5:00 /km', raw: 300 }, heart_rate: { text: '134 bpm', raw: 134 } },
+    { offset_s: 1800, pace: { text: '5:03 /km', raw: 303 }, heart_rate: { text: '133 bpm', raw: 133 } },
+    { offset_s: 1860, pace: { text: '5:05 /km', raw: 305 }, heart_rate: { text: '133 bpm', raw: 133 } },
+    { offset_s: 1920, pace: { text: '5:07 /km', raw: 307 }, heart_rate: { text: '132 bpm', raw: 132 } },
+    { offset_s: 1980, pace: { text: '5:10 /km', raw: 310 }, heart_rate: { text: '132 bpm', raw: 132 } },
+    { offset_s: 2040, pace: { text: '5:12 /km', raw: 312 }, heart_rate: { text: '132 bpm', raw: 132 } },
+    { offset_s: 2100, pace: { text: '5:14 /km', raw: 314 }, heart_rate: { text: '133 bpm', raw: 133 } },
+    { offset_s: 2160, pace: { text: '5:16 /km', raw: 316 }, heart_rate: { text: '133 bpm', raw: 133 } },
+    { offset_s: 2220, pace: { text: '5:17 /km', raw: 317 }, heart_rate: { text: '134 bpm', raw: 134 } },
+    { offset_s: 2280, pace: { text: '5:18 /km', raw: 318 }, heart_rate: { text: '135 bpm', raw: 135 } },
+    { offset_s: 2340, pace: { text: '5:18 /km', raw: 318 }, heart_rate: { text: '137 bpm', raw: 137 } },
+]
 
 export const compareFixture: CompareResponse = {
   basis_text: 'Same distance, 3 weeks apart',
@@ -414,39 +611,108 @@ export const compareFixture: CompareResponse = {
     {
       key: 'distance',
       label_key: 'vital.distance',
-      format: 'distance',
-      a: 10_400,
-      b: 10_600,
-      delta: 200,
+      a: value('10.4 km', 10_400),
+      b: value('10.6 km', 10_600),
+      delta: value('+0.2 km', 200),
     },
     {
       key: 'time',
       label_key: 'vital.time',
-      format: 'duration',
-      a: 3_300,
-      b: 3_240,
-      delta: -60,
+      a: value('55 m', 3_300),
+      b: value('54 m', 3_240),
+      delta: value('-1 m', -60),
     },
-    { key: 'pace', label_key: 'vital.pace', format: 'pace', a: 317, b: 306, delta: -11 },
-    { key: 'hr', label_key: 'vital.heartRate', format: 'hr', a: 149, b: 146, delta: -3 },
+    {
+      key: 'pace',
+      label_key: 'vital.pace',
+      a: value('5:17 /km', 317),
+      b: value('5:06 /km', 306),
+      delta: value('-11 s/km', -11),
+    },
+    {
+      key: 'hr',
+      label_key: 'vital.heartRate',
+      a: value('149 bpm', 149),
+      b: value('146 bpm', 146),
+      delta: value('-3 bpm', -3),
+    },
   ],
   a: {
     id: 102,
     label: 'Run',
     date: '2026-04-19',
-    distance_m: 10_400,
+    distance: value('10.4 km', 10_400),
     story: '10.4 km, about your usual Saturday',
   },
   b: {
     id: 101,
     label: 'Run',
     date: '2026-05-10',
-    distance_m: 10_600,
+    distance: value('10.6 km', 10_600),
     story: '10.6 km, a little more than your usual Saturday',
   },
   series: {
-    a: series(10_400, 3_300, 149),
-    b: series(10_600, 3_240, 146),
+    a: SERIES_A,
+    b: SERIES_B,
+  },
+}
+
+/**
+ * The comparison the other way round.
+ *
+ * Asking for the newer run as A is a different question, and the API
+ * answers it — the app does not swap the columns itself: the delta's sign
+ * is the core's arithmetic, and the app cannot un-render a word.
+ */
+export const compareSwappedFixture: CompareResponse = {
+  basis_text: 'Same distance, 3 weeks apart',
+  metrics: [
+    {
+      key: 'distance',
+      label_key: 'vital.distance',
+      a: value('10.6 km', 10_600),
+      b: value('10.4 km', 10_400),
+      delta: value('-0.2 km', -200),
+    },
+    {
+      key: 'time',
+      label_key: 'vital.time',
+      a: value('54 m', 3_240),
+      b: value('55 m', 3_300),
+      delta: value('+1 m', 60),
+    },
+    {
+      key: 'pace',
+      label_key: 'vital.pace',
+      a: value('5:06 /km', 306),
+      b: value('5:17 /km', 317),
+      delta: value('+11 s/km', 11),
+    },
+    {
+      key: 'hr',
+      label_key: 'vital.heartRate',
+      a: value('146 bpm', 146),
+      b: value('149 bpm', 149),
+      delta: value('+3 bpm', 3),
+    },
+  ],
+  a: {
+    id: 101,
+    label: 'Run',
+    date: '2026-05-10',
+    distance: value('10.6 km', 10_600),
+    story: '10.6 km, a little more than your usual Saturday',
+  },
+  b: {
+    id: 102,
+    label: 'Run',
+    date: '2026-04-19',
+    distance: value('10.4 km', 10_400),
+    story: '10.4 km, about your usual Saturday',
+  },
+  series: {
+    a: SERIES_B,
+    b: SERIES_A,
   },
 }
 
@@ -454,7 +720,7 @@ export const compareCandidatesFixture: CompareCandidate[] = activityFixtures.map
   id: entry.id,
   label: entry.name,
   date: entry.local_date,
-  distance_m: entry.distance_m,
+  distance: entry.distance,
 }))
 
 // ------------------------------------------------------------------ sync
@@ -499,22 +765,9 @@ export function fixtureResponse(
     case '/insights/progress':
       return progressFixture
     case '/compare': {
-      // Swapping A and B flips every delta's sign. The fixture's A is
-      // the older run; asking for the newer one as A reverses the rows.
-      const reversed = params['a'] === '101'
-      if (!reversed) return compareFixture
-      return {
-        ...compareFixture,
-        a: compareFixture.b,
-        b: compareFixture.a,
-        series: { a: compareFixture.series.b, b: compareFixture.series.a },
-        metrics: compareFixture.metrics.map((metric) => ({
-          ...metric,
-          a: metric.b,
-          b: metric.a,
-          delta: metric.delta === null ? null : -metric.delta,
-        })),
-      }
+      // Which run is A is the API's business: the app asks, and the API
+      // answers the question in that order.
+      return params['a'] === '101' ? compareSwappedFixture : compareFixture
     }
     case '/compare/candidates':
       return compareCandidatesFixture

@@ -142,21 +142,39 @@ describe('Compare', () => {
     expect(container.textContent).toContain('Difference')
   })
 
-  it('flips the sign of every delta when A and B are swapped', async () => {
+  it('asks the API the other way round when A and B are swapped', async () => {
     const user = userEvent.setup()
     const { container } = renderApp('/compare/101')
     await waitFor(() =>
       expect(container.querySelector('[data-testid="compare-row-pace"]')).toBeTruthy(),
     )
 
+    // The delta's sign is the core's arithmetic, so the app cannot flip
+    // it: it asks the API for the other order, and shows the answer.
     const before =
       container.querySelector('[data-testid="compare-row-pace"]')?.textContent ?? ''
-    expect(before).toContain('+11 s/km')
+    expect(before).toContain('-11 s/km')
 
     await user.click(screen.getByTestId('compare-swap'))
 
-    const after = container.querySelector('[data-testid="compare-row-pace"]')?.textContent ?? ''
-    expect(after).toContain('−11 s/km')
+    await waitFor(() =>
+      expect(container.querySelector('[data-testid="compare-row-pace"]')?.textContent).toContain(
+        '+11 s/km',
+      ),
+    )
+  })
+
+  it('shows the values the API sent, word for word', async () => {
+    const { container } = renderApp('/runs')
+    await waitFor(() => expect(container.querySelector('[data-testid="run-101"]')).toBeTruthy())
+
+    // "8.4 km", "42 m", "148 bpm", "5:24 /km" — the core's words, not the
+    // app's arithmetic.
+    const row = container.querySelector('[data-testid="run-101"]')?.textContent ?? ''
+    expect(row).toContain('12.4 km')
+    expect(row).toContain('1 h 7 m')
+    expect(row).toContain('148 bpm')
+    expect(row).toContain('5:24 /km')
   })
 })
 
