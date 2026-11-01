@@ -25,8 +25,6 @@ use serde::Serialize;
 use serde_json::Value;
 use stride_core::band;
 use stride_core::date::Date;
-use stride_core::statement;
-use stride_core::types::Distance;
 use stride_core::types::{Duration, Hrv, RestingHr, Sleep, Vitals, WellnessDay};
 use stride_core::units;
 use stride_store::{ActivitySummary as StoredActivity, WellnessDaily};
@@ -230,18 +228,6 @@ pub fn distance_on(api: &Api, date: &str) -> ApiResult<f64> {
 /// The median of a sample, as the core reads it.
 pub fn median(values: &[f64]) -> Option<f64> {
     band::median(values)
-}
-
-/// The distance comparison, when there is one.
-///
-/// **The core renders it.** The comparison is a statement — "2.4 km more
-/// than the 10 km target" — and the core states it only when the gap from
-/// the target is beyond 10% (the contract §5). Within 10% it is absent:
-/// 10.2 km against a 10 km target is not news.
-pub fn distance_comparison(actual_m: Option<f64>, target_m: Option<f64>) -> Option<String> {
-    let actual = Distance::from_metres(actual_m?)?;
-    let target = Distance::from_metres(target_m?)?;
-    statement::distance_comparison(actual, target)
 }
 
 /// The summary of a planned session — "10 km · easy".

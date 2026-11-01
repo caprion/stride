@@ -29,33 +29,17 @@ use crate::units;
 
 /// The gap from the target above which a distance comparison is news.
 ///
-/// Contract §5: *shown only when the gap from the plan's target exceeds
-/// **10%***. Within 10% it is absent — 10.2 km against 10 km is not news, and
-/// neither more nor less is good or bad.
-pub const DISTANCE_COMPARISON_THRESHOLD: f64 = 0.10;
+/// The plan engine owns the rule; this re-export keeps the statement API
+/// stable for callers that already use it.
+pub use crate::plan::DISTANCE_COMPARISON_THRESHOLD;
 
 /// The distance comparison: "2.4 km more than the 10 km target".
 ///
 /// `None` when the gap is within ten per cent, and `None` when there is no
 /// target to compare against: a near-zero baseline yields no percentage,
-/// ever.
+/// ever. The rule itself lives in [`crate::plan`], its single owner.
 pub fn distance_comparison(actual: Distance, target: Distance) -> Option<String> {
-    if target.metres() <= 0.0 {
-        return None;
-    }
-    let gap = (actual.metres() - target.metres()).abs();
-    let share = gap / target.metres();
-    if share <= DISTANCE_COMPARISON_THRESHOLD {
-        return None;
-    }
-    let gap_text = format!("{} km", units::format_distance_km_short(gap));
-    let target_text = format!("{} km", units::format_distance_km_short(target.metres()));
-    let id = if actual.metres() >= target.metres() {
-        "statement.distance.more"
-    } else {
-        "statement.distance.less"
-    };
-    strings::render(id, &[("gap", &gap_text), ("target", &target_text)])
+    crate::plan::distance_comparison(Some(actual.metres()), Some(target.metres()))
 }
 
 /// The distance comparison as the contract prints it:
@@ -63,12 +47,7 @@ pub fn distance_comparison(actual: Distance, target: Distance) -> Option<String>
 ///
 /// `None` exactly when [`distance_comparison`] is `None`.
 pub fn distance_comparison_line(actual: Distance, target: Distance) -> Option<String> {
-    let comparison = distance_comparison(actual, target)?;
-    let distance = format!("{} km", units::format_distance_km_short(actual.metres()));
-    strings::render(
-        "statement.distance.line",
-        &[("distance", &distance), ("comparison", &comparison)],
-    )
+    crate::plan::distance_comparison_line(Some(actual.metres()), Some(target.metres()))
 }
 
 /// The pace at the same heart rate, now and then: the honest fitness metric.
@@ -269,7 +248,7 @@ mod tests {
     }
 
     #[test]
-    fn the_comparison_is_symmetric_and_neutral() {
+    fn the_comparison_states_an_overshoot_and_neutral() {
         let target = match distance(10.0) {
             Some(distance) => distance,
             None => return,
@@ -278,10 +257,7 @@ mod tests {
             Some(distance) => distance,
             None => return,
         };
-        assert_eq!(
-            distance_comparison(under, target),
-            Some("1.1 km less than the 10 km target".to_string())
-        );
+        assert_eq!(distance_comparison(under, target), None);
         // Exactly ten per cent is not "beyond" ten per cent.
         let edge = match distance(11.0) {
             Some(distance) => distance,

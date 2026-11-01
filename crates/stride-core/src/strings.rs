@@ -171,7 +171,7 @@ pub struct Entry {
 }
 
 /// The catalogue.
-pub const CATALOGUE: [Entry; 47] = [
+pub const CATALOGUE: [Entry; 78] = [
     // The vitals.
     Entry {
         id: "vital.sleep.label",
@@ -387,6 +387,194 @@ pub const CATALOGUE: [Entry; 47] = [
         kind: StringKind::Statement,
         role: None,
         template: "{value} s/km",
+    },
+    // The plan's statements: what the athlete intended, what happened, and
+    // where the intent came from. They are facts, never verdicts.
+    Entry {
+        id: "statement.plan.source.baseline",
+        kind: StringKind::Statement,
+        role: None,
+        template: "your usual week, inferred from your history",
+    },
+    Entry {
+        id: "statement.plan.source.prescribed",
+        kind: StringKind::Statement,
+        role: None,
+        template: "from your imported plan",
+    },
+    Entry {
+        id: "statement.plan.source.typed",
+        kind: StringKind::Statement,
+        role: None,
+        template: "from your typed plan",
+    },
+    Entry {
+        id: "statement.plan.baseline.description",
+        kind: StringKind::Statement,
+        role: None,
+        template: "your usual week, inferred from your history ({weeks} weeks)",
+    },
+    Entry {
+        id: "statement.plan.baseline.not_enough_history",
+        kind: StringKind::Statement,
+        role: None,
+        template: "not enough history to infer a usual week",
+    },
+    Entry {
+        id: "statement.plan.kind.easy",
+        kind: StringKind::Statement,
+        role: None,
+        template: "easy",
+    },
+    Entry {
+        id: "statement.plan.kind.long",
+        kind: StringKind::Statement,
+        role: None,
+        template: "long",
+    },
+    Entry {
+        id: "statement.plan.kind.quality",
+        kind: StringKind::Statement,
+        role: None,
+        template: "quality",
+    },
+    Entry {
+        id: "statement.plan.kind.rest",
+        kind: StringKind::Statement,
+        role: None,
+        template: "rest",
+    },
+    Entry {
+        id: "statement.plan.kind.other",
+        kind: StringKind::Statement,
+        role: None,
+        template: "{kind}",
+    },
+    Entry {
+        id: "statement.plan.session.label",
+        kind: StringKind::Statement,
+        role: None,
+        template: "{distance} · {kind}",
+    },
+    Entry {
+        id: "statement.plan.session.no_target",
+        kind: StringKind::Statement,
+        role: None,
+        template: "{kind} · no distance target",
+    },
+    Entry {
+        id: "statement.plan.day.monday",
+        kind: StringKind::Statement,
+        role: None,
+        template: "Monday",
+    },
+    Entry {
+        id: "statement.plan.day.tuesday",
+        kind: StringKind::Statement,
+        role: None,
+        template: "Tuesday",
+    },
+    Entry {
+        id: "statement.plan.day.wednesday",
+        kind: StringKind::Statement,
+        role: None,
+        template: "Wednesday",
+    },
+    Entry {
+        id: "statement.plan.day.thursday",
+        kind: StringKind::Statement,
+        role: None,
+        template: "Thursday",
+    },
+    Entry {
+        id: "statement.plan.day.friday",
+        kind: StringKind::Statement,
+        role: None,
+        template: "Friday",
+    },
+    Entry {
+        id: "statement.plan.day.saturday",
+        kind: StringKind::Statement,
+        role: None,
+        template: "Saturday",
+    },
+    Entry {
+        id: "statement.plan.day.sunday",
+        kind: StringKind::Statement,
+        role: None,
+        template: "Sunday",
+    },
+    Entry {
+        id: "statement.plan.adherence",
+        kind: StringKind::Statement,
+        role: None,
+        template: "{done} of {planned} sessions run",
+    },
+    Entry {
+        id: "statement.plan.adherence.baseline",
+        kind: StringKind::Statement,
+        role: None,
+        template: "{done} sessions in your usual week",
+    },
+    Entry {
+        id: "statement.plan.adherence.baseline.one",
+        kind: StringKind::Statement,
+        role: None,
+        template: "1 session in your usual week",
+    },
+    Entry {
+        id: "statement.plan.result.target",
+        kind: StringKind::Statement,
+        role: None,
+        template: "{actual} of a {target} target",
+    },
+    Entry {
+        id: "statement.plan.result.no_target",
+        kind: StringKind::Statement,
+        role: None,
+        template: "{actual} · no distance target",
+    },
+    Entry {
+        id: "statement.plan.result.no_run",
+        kind: StringKind::Statement,
+        role: None,
+        template: "{target} target · no run recorded",
+    },
+    Entry {
+        id: "statement.plan.result.empty",
+        kind: StringKind::Statement,
+        role: None,
+        template: "no run recorded · no distance target",
+    },
+    Entry {
+        id: "statement.plan.result.no_distance_with_target",
+        kind: StringKind::Statement,
+        role: None,
+        template: "run recorded · no distance recorded · {target} target",
+    },
+    Entry {
+        id: "statement.plan.result.no_distance",
+        kind: StringKind::Statement,
+        role: None,
+        template: "run recorded · no distance recorded",
+    },
+    Entry {
+        id: "statement.plan.status.done",
+        kind: StringKind::Statement,
+        role: None,
+        template: "done",
+    },
+    Entry {
+        id: "statement.plan.status.planned",
+        kind: StringKind::Statement,
+        role: None,
+        template: "planned",
+    },
+    Entry {
+        id: "statement.plan.status.not_done",
+        kind: StringKind::Statement,
+        role: None,
+        template: "not done",
     },
     // The statements: factual sentences about the data, rendered by the core.
     Entry {
