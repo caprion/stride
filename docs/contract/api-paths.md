@@ -74,10 +74,19 @@ and `qr` never appear in the route table.
   failure: the HTTP layer puts the status in the status line, and the phone's
   bridge rejects the call. A body that says `{"error": …}` with a 200 is
   never the shape.
-- The two hosts therefore hand the app **the same bytes**: the desktop's HTTP
+- The two hosts therefore hand the app **the same answer**: the desktop's HTTP
   layer puts the body on the wire, and the phone's plugin hands the body
   across the bridge. A host that answered with an envelope would make the
   app unwrap it — and an unwrap is where a second implementation grows.
+- **The same answer, not necessarily the same bytes.** The phone's JSON is
+  parsed and re-serialised by the platform's parser on the way through the
+  bridge, so a number's *spelling* can change in transit (`162.0` may arrive
+  as `162`, and a `/` may arrive escaped). The **fields, their names, their
+  nullability and their values** are the contract; the spelling of a number
+  is not — and that is exactly why the app never parses a number to show it.
+  The words on screen are the core's rendered text, which is why the two hosts
+  cannot disagree about what a value *says*, whatever the transport does to
+  its digits.
 
 ## The path the app asks for
 
