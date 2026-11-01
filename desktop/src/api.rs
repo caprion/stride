@@ -5,30 +5,36 @@
 //! loopback HTTP. Neither can disagree about a number, because there is only
 //! one of it.
 //!
-//! ## The state of things
+//! ## What the rig hosts
 //!
-//! `crates/stride-api` is an empty skeleton today — it holds its charter and
-//! nothing else — so the rig has no router to host yet. Until that changes,
-//! the rig answers through a **stub** that refuses rather than guesses.
+//! The rig builds `stride_api::Router` over the rig's own database and hands
+//! it to the HTTP surface. The router's answer goes back on the wire **byte
+//! for byte**: the rig does not re-shape a response, add a field to one, or
+//! turn a number into a string.
 //!
-//! That is the same seam the phone's FFI crate uses (`seam::Core` in
-//! `android/app/src/main/rust/stride-ffi`), and it is the same rule: **a
-//! stub can refuse, but it cannot be wrong.** An app that shows nothing is a
-//! disappointing app; an app that shows a number nobody computed is a lie
-//! about somebody's training.
+//! ## The key
 //!
-//! So the stub answers every route with one sentence — the same sentence
-//! the phone's stub answers with — and the rig is honest about it.
+//! The Garmin key is an argument and a session copy, and never more.
 //!
-//! ## What changes when the router lands
+//! * the rig's **key store** is the holder: it holds the key the athlete
+//!   typed into the app's own field, the key in the environment, or the
+//!   key in a file with `0600` — and it forgets it on a logout;
+//! * the **core** gets a working copy for the length of the call, and the
+//!   copy is dropped when the call is over;
+//! * and neither a response, nor a log line, nor an error, nor a file
+//!   carries it.
 //!
-//! One file: this one. The [`Router`] trait is the port, the [`Host`]
-//! trait is what the router may ask of the machine it runs on, and the
-//! adapter that joins them to `stride_api` is a dozen lines. Nothing else in
-//! the rig knows how a route is answered.
+//! The rig reads the key out of the request body exactly once — when the
+//! athlete's own field posts it — and forgets it the moment it is not
+//! wanted.
 
+use std::sync::Arc;
+
+use serde_json::Value;
+use stride_api::{Api, Clock, Config, Router as CoreRouter, SystemClock};
 use stride_store::Store;
 
+use crate::error::Error;
 use crate::key::KeyStore;
 
 /// The prefix the app's requests carry.
@@ -91,32 +97,149 @@ pub trait Router: Send + Sync {
 /// This is the whole of the surface: two services, and nothing else.
 pub trait Host: Send + Sync {
     /// The database, for the routes that read.
-    fn store(&self) -> &Store;
+    fn store(&self) -> Arc<Store>;
 
     /// The Garmin key, for the routes that connect and pull.
-    fn keys(&self) -> &KeyStore;
+    fn keys(&self) -> Arc<KeyStore>;
 }
 
-/// The router that is not in the build yet.
+/// The real router: `stride-api`'s, hosted by the rig.
 ///
-/// It refuses every route with the sentence the phone's stub uses, and the
-/// refusal is a refusal: the status is in the status line, and the body is
-/// a sentence an athlete can read. It is not an envelope — the contract says
-/// the answer is the body.
-#[derive(Debug, Clone, Copy, Default)]
-pub struct StubRouter;
+/// The adapter is a dozen lines, and that is the whole of it: the rig
+/// builds the router, hands it the rig's database, and passes on what it
+/// says. Nothing else in the rig knows how a route is answered.
+pub struct ApiRouter {
+    /// The router.
+    router: Arc<CoreRouter>,
+    /// The rig's key store: the holder of the session key.
+    keys: Arc<KeyStore>,
+}
 
-/// The sentence the stub answers with.
-pub const NOT_BUILT: &str = "the Rust core is not in this build. Nothing is shown until it is.";
-
-impl Router for StubRouter {
-    fn call(&self, _request: &Request<'_>) -> Response {
-        Response::new(
-            503,
-            "text/plain; charset=utf-8",
-            NOT_BUILT.as_bytes().to_vec(),
-        )
+impl ApiRouter {
+    /// The router over a host.
+    ///
+    /// The host's database is the router's database, and the host's clock
+    /// is the router's clock. The key is **not** installed here: it is
+    /// installed for the length of each call, from the rig's key store,
+    /// so that a key the athlete typed and a key the environment holds are
+    /// the same key by the time the router sees them.
+    pub fn over(host: &dyn Host) -> Result<ApiRouter, Error> {
+        Self::with_clock(host, Arc::new(SystemClock))
     }
+
+    /// The router over a host, with a clock of the caller's choosing.
+    ///
+    /// The clock is injected, so every date the router derives is
+    /// reproducible: a test can hold it still and compare two hosts'
+    /// answers byte for byte.
+    pub fn with_clock(host: &dyn Host, clock: Arc<dyn Clock>) -> Result<ApiRouter, Error> {
+        let api = Api::new(host.store(), Config::default(), clock)
+            .map_err(|_| Error::config("the Garmin client could not be built"))?;
+        Ok(ApiRouter {
+            router: Arc::new(CoreRouter::new(Arc::new(api))),
+            keys: host.keys(),
+        })
+    }
+
+    /// The router underneath.
+    pub fn router(&self) -> &CoreRouter {
+        &self.router
+    }
+
+    /// The shared state.
+    pub fn api(&self) -> &stride_api::Api {
+        self.router.api()
+    }
+
+    /// Give the core the rig's key, for the length of the call.
+    ///
+    /// The core's copy is a working copy: the rig's key store is the
+    /// holder, and this is what the core borrows for one call. A key store
+    /// with nothing in it leaves the core with nothing in it, so a logout
+    /// on either side is a logout on both.
+    fn lend_key(&self) {
+        let lent = self
+            .keys
+            .with_secret(|secret| self.router.api().set_garmin_key(secret));
+        if lent.is_none() {
+            self.router.api().clear_garmin_key();
+        }
+    }
+
+    /// Keep the rig's key store in step with the key the athlete typed.
+    ///
+    /// Two routes change the key, and the rig is the one that holds it:
+    ///
+    /// * `POST /auth/garmin/personal-key` — the athlete's own field posts
+    ///   the key, and the rig keeps it for the session, in memory;
+    /// * `POST /auth/garmin/logout` — and the rig forgets it.
+    ///
+    /// The key is read out of the body once, and it never reaches a log
+    /// line: the rig logs the method and the path, and nothing else.
+    fn keep_key_store_in_step(&self, request: &Request<'_>) {
+        if !request.method.eq_ignore_ascii_case("POST") {
+            return;
+        }
+        match request.path {
+            "/api/v1/auth/garmin/personal-key" => {
+                if let Some(key) = key_in_body(request.body) {
+                    let _ = self.keys.set(&key);
+                }
+            }
+            "/api/v1/auth/garmin/logout" => self.keys.forget(),
+            _ => {}
+        }
+    }
+}
+
+impl Router for ApiRouter {
+    fn call(&self, request: &Request<'_>) -> Response {
+        // The core borrows the rig's key for the length of this call.
+        self.lend_key();
+
+        let path = with_query(request.path, request.query);
+        let body = match std::str::from_utf8(request.body) {
+            Ok(text) if text.trim().is_empty() => None,
+            Ok(text) => Some(text),
+            Err(_) => {
+                return Response::json(
+                    400,
+                    "{\"code\":\"bad_request\",\"detail\":\"the body is not text\"}",
+                )
+            }
+        };
+
+        let answer = self.router.call(request.method, &path, body);
+
+        // The rig's key store is the holder, so it is told what the athlete
+        // typed — and told to forget it on a logout.
+        self.keep_key_store_in_step(request);
+
+        // **The answer is the body, byte for byte.** The router's status
+        // goes in the status line, and its body goes on the wire as it is:
+        // the rig does not wrap it, and it does not add a field to it.
+        let body = serde_json::to_vec(&answer.body).unwrap_or_else(|_| b"{}".to_vec());
+        Response::new(answer.status, "application/json", body)
+    }
+}
+
+/// The path, with its query string.
+fn with_query(path: &str, query: &str) -> String {
+    if query.trim().is_empty() {
+        return path.to_string();
+    }
+    format!("{path}?{query}")
+}
+
+/// The key in a request body, if the body carries one.
+fn key_in_body(body: &[u8]) -> Option<String> {
+    let text = std::str::from_utf8(body).ok()?;
+    let parsed: Value = serde_json::from_str(text).ok()?;
+    let key = parsed.get("key")?.as_str()?.trim();
+    if key.is_empty() {
+        return None;
+    }
+    Some(key.to_string())
 }
 
 /// Is this path a request for the router?
@@ -136,6 +259,15 @@ pub fn route_path(path: &str) -> Option<&str> {
         .map(|_| path)
 }
 
+/// Is this request a pull from Garmin?
+///
+/// The pull is the one request the rig owns a rule for: the client makes
+/// one exchange and one attempt, and the rig may make one more attempt.
+/// See [`crate::sync`].
+pub fn is_pull(method: &str, path: &str) -> bool {
+    method.eq_ignore_ascii_case("POST") && path == "/api/v1/sync/run"
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -149,21 +281,27 @@ mod tests {
     }
 
     #[test]
-    fn the_stub_refuses_rather_than_guesses() {
-        let answer = StubRouter.call(&Request {
-            method: "GET",
-            path: "/api/v1/activities",
-            query: "",
-            body: &[],
-        });
-        assert_eq!(answer.status, 503);
-        let body = String::from_utf8_lossy(&answer.body).into_owned();
-        assert!(
-            body.contains("the Rust core is not in this build"),
-            "{body}"
+    fn the_query_string_is_put_back_on_the_path() {
+        assert_eq!(with_query("/api/v1/activities", ""), "/api/v1/activities");
+        assert_eq!(
+            with_query("/api/v1/activities", "limit=3"),
+            "/api/v1/activities?limit=3"
         );
-        // A refusal is a refusal: the status is in the status line, and the
-        // body is not an envelope around it.
-        assert!(!body.contains("\"ok\""), "{body}");
+    }
+
+    #[test]
+    fn only_the_pull_is_a_pull() {
+        assert!(is_pull("POST", "/api/v1/sync/run"));
+        assert!(!is_pull("GET", "/api/v1/sync/run"));
+        assert!(!is_pull("POST", "/api/v1/sync/status"));
+    }
+
+    #[test]
+    fn the_key_is_read_out_of_the_body_once() {
+        let body = br#"{"key":"a-key","days":30}"#;
+        assert_eq!(key_in_body(body).as_deref(), Some("a-key"));
+        assert_eq!(key_in_body(br#"{"days":30}"#), None);
+        assert_eq!(key_in_body(br#"{"key":"  "}"#), None);
+        assert_eq!(key_in_body(b"not json"), None);
     }
 }

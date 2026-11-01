@@ -16,6 +16,10 @@ workspace = true
 stride-api = { path = "../crates/stride-api" }
 stride-store = { path = "../crates/stride-store" }
 
+# The router's answer is JSON, and the rig reads two things out of it: the
+# bytes it puts on the wire, and the key the athlete's own field posted.
+serde_json = "1"
+
 # The app is embedded in the binary, so `cargo run -p stride-desktop` needs
 # no node and no second process.
 rust-embed = "8"

@@ -6,10 +6,11 @@
 #
 #   core ← ingest   core ← store   api → {core, ingest, store}
 #   desktop → {api, store}
+#   stride-ffi → {api, store}
 #   stride-testkit is a dev-dependency only, everywhere.
-#   stride-ffi is the phone's seam: it may reach the core, and it must not
-#   create a cycle. stride-bindgen is the generator beside it: it depends on
-#   nothing of ours.
+#   stride-ffi is the phone's seam: it calls the router **in this process**,
+#   so it reaches the core and the store, and it must not create a cycle.
+#   stride-bindgen is the generator beside it: it depends on nothing of ours.
 #
 # Only *internal* edges count. An external dependency (serde, reqwest, …) is
 # not an edge of this graph, so the comparison filters to the workspace's own
@@ -36,7 +37,7 @@ expected() {
     stride-api)     printf 'stride-core stride-ingest stride-store';;
     stride-testkit) printf '';;
     stride-desktop) printf 'stride-api stride-store';;
-    stride-ffi)    printf '';;
+    stride-ffi)    printf 'stride-api stride-store';;
     stride-bindgen) printf '';;
     *) echo "check-deps: unknown workspace member $1" >&2; exit 2;;
   esac
@@ -45,15 +46,10 @@ expected() {
 fail=0
 
 # The dev-only dependencies a crate may have, beyond the dev-only testkit.
-# The phone's seam dev-depends on the router: it compares the two sides'
-# error envelopes for the same failure, and a seam that invents its own shape
-# is a second implementation of the seam. It is a dev-dependency on purpose —
-# the phone's build must not drag the core in before the seam is wired to it.
+# Nobody has one: the phone's seam calls the router in this process, so the
+# core is a real dependency of it and not a dev-dependency.
 dev_only() {
-  case "$1" in
-    stride-ffi) printf 'stride-api';;
-    *) printf '';;
-  esac
+  printf ''
 }
 
 # The workspace must contain exactly the planned members: the six from Slice 0

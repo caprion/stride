@@ -24,7 +24,7 @@ use std::sync::Arc;
 
 use stride_store::Store;
 
-use stride_desktop::api::{Router, StubRouter};
+use stride_desktop::api::{ApiRouter, Router};
 use stride_desktop::dbkey::{self, DatabaseSecret};
 use stride_desktop::error::{Error, Result};
 use stride_desktop::key::KeyStore;
@@ -117,7 +117,7 @@ fn serve(arguments: &[String]) -> Result<i32> {
         &database,
         &database_key.store_key()?,
     )?);
-    let keys = garmin_key(&directory)?;
+    let keys = Arc::new(garmin_key(&directory)?);
     let trust = Trust::from_environment()?;
 
     let bind: IpAddr = options
@@ -149,10 +149,14 @@ fn serve(arguments: &[String]) -> Result<i32> {
         .map_err(|source| Error::io(PathBuf::from(address.to_string()), source))?;
 
     let spa = Spa::new(options.value("static-dir").map(PathBuf::from));
-    let router: Arc<dyn Router> = Arc::new(StubRouter);
-    let server = Server::new(trust, router, spa);
 
-    let _host = DesktopHost::new(Arc::clone(&store), keys);
+    // **The router is `stride-api`'s.** The rig hosts it over the loopback,
+    // and the rig's own trust model, key handling and traversal guard stay
+    // exactly as they were: the rig decides who is let in, and the router
+    // decides what a route says.
+    let host = DesktopHost::new(Arc::clone(&store), Arc::clone(&keys));
+    let router: Arc<dyn Router> = Arc::new(ApiRouter::over(&host)?);
+    let server = Server::new(trust, router, spa);
 
     println!("stride {}", env!("CARGO_PKG_VERSION"));
     println!("the app is on http://{served}");

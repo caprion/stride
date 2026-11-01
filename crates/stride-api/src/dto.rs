@@ -35,7 +35,33 @@ pub struct RenderedValue {
     /// The core's words.
     pub text: String,
     /// The number, for a chart. `None` when there is no value.
+    #[serde(serialize_with = "serialize_raw")]
     pub raw: Option<f64>,
+}
+
+/// A number the way the contract writes it.
+///
+/// The contract's §2: *JSON output carries no `NaN`, no `Infinity`, and no
+/// trailing `.0` on an integer-valued float.* A distance of 6 439 metres
+/// is `6439`, not `6439.0`.
+///
+/// It is not only the contract. **The two hosts hand the app the same
+/// bytes**, and a number written two ways is two answers: the rig's
+/// serializer would write `162.0` where the phone's writes `162`, and the
+/// app could not tell which host it was talking to. One number, one way of
+/// writing it, on both sides.
+fn serialize_raw<S>(raw: &Option<f64>, serializer: S) -> Result<S::Ok, S::Error>
+where
+    S: serde::Serializer,
+{
+    match raw {
+        None => serializer.serialize_none(),
+        Some(value) if !value.is_finite() => serializer.serialize_none(),
+        Some(value) if value.fract() == 0.0 && value.abs() < 9.0e15 => {
+            serializer.serialize_i64(*value as i64)
+        }
+        Some(value) => serializer.serialize_f64(*value),
+    }
 }
 
 // ---------------------------------------------------------------- activities

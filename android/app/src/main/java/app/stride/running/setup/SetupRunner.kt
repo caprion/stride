@@ -185,7 +185,8 @@ class SetupRunner(
      * is told the key was refused.
      */
     private fun test(key: String): Verdict {
-        val body = JSONObject().put("api_key", key).toString()
+        // The body is the api's: the route reads the key from "key".
+        val body = JSONObject().put("key", key).toString()
         val envelope = try {
             JSONObject(StrideCore.call("POST", PERSONAL_KEY_TEST_ROUTE, body))
         } catch (error: Throwable) {

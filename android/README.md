@@ -192,10 +192,15 @@ exactly the same place as the wrapper pins it.
 
 ## The Rust seam
 
-The core is `stride-api` in the workspace at the repository root. It is not
-in the tree yet, so the seam is built against a **stub** that answers every
-route with a sentence saying so — a stub can refuse, but it cannot be
-wrong. The release build refuses to be assembled against the stub.
+The core is `stride-api` in the workspace at the repository root, and the
+seam calls it **in this process**: the phone talks to no server, and the
+answer the app is handed is the router's own answer — the same bytes the
+desktop's HTTP layer puts on the wire.
+
+A build without the `real-core` feature runs the **stub** instead, which
+answers every route with a sentence saying so — a stub can refuse, but it
+cannot be wrong. The release build refuses to be assembled against the
+stub.
 
 The seam is six functions, all of them answering with the same JSON
 envelope, and a panic boundary in front of every one of them: a panic in the

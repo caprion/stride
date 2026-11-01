@@ -120,20 +120,23 @@ def rustCoreMode = {
                     "strideCore=real was asked for, but the Rust core is not in the tree: " +
                     "${new File(rustWorkspaceDir, 'crates/stride-api')} does not exist.")
         }
-        throw new GradleException(
-                'strideCore=real: the FFI seam has not been wired to crates/stride-api yet. ' +
-                'The seam is documented in ' +
-                'android/app/src/main/rust/stride-ffi/README.md; it is wired in the slice that ' +
-                'brings the core.')
+        logger.lifecycle('stride: the Rust core is crates/stride-api, and the seam calls it in ' +
+                'this process. The APK answers every route with the router\'s answer.')
+        return 'real'
     }
     if (asked == 'stub') {
         logger.lifecycle('stride: the Rust core is the STUB. The APK answers every route with ' +
                 '"the Rust core is not in this build". This is a development build.')
-    } else {
-        logger.warn('stride: the Rust core crates/stride-api are not in the tree, so the APK is ' +
-                'built against the stub. Every route answers "the Rust core is not in this ' +
-                'build".')
+        return 'stub'
     }
+    if (realCore) {
+        logger.lifecycle('stride: the Rust core is crates/stride-api, and the seam calls it in ' +
+                'this process.')
+        return 'real'
+    }
+    logger.warn('stride: the Rust core crates/stride-api are not in the tree, so the APK is ' +
+            'built against the stub. Every route answers "the Rust core is not in this ' +
+            'build".')
     return 'stub'
 }()
 
@@ -182,6 +185,11 @@ tasks.register('cargoNdkBuild', Exec) {
     workingDir rustCrateDir
     commandLine 'cargo', 'ndk', '-t', targetAbis.join(','),
             'build', '--release', '--manifest-path', 'Cargo.toml'
+    if (rustCoreMode == 'stub') {
+        // The stub is a build without the `real-core` feature: the seam
+        // answers every route with "the Rust core is not in this build".
+        commandLine '--no-default-features'
+    }
     if (androidNdkDir) {
         environment 'ANDROID_NDK_HOME', androidNdkDir
         environment 'ANDROID_NDK_ROOT', androidNdkDir
@@ -189,6 +197,15 @@ tasks.register('cargoNdkBuild', Exec) {
     inputs.dir file('src/main/rust/stride-ffi/src')
     inputs.file file('src/main/rust/stride-ffi/Cargo.toml')
     inputs.file file('src/main/rust/stride-bindgen/Cargo.toml')
+    // **The core's own sources are an input.** The seam is a member of the
+    // workspace, and the workspace's crates are what the seam calls: a
+    // change in `crates/stride-api` changes the core, and without this the
+    // task would consider itself up to date and the APK would ship the
+    // core from the last build.
+    inputs.files(fileTree(rustWorkspaceDir) {
+        include 'crates/*/src/**'
+        include 'crates/*/Cargo.toml'
+    })
     inputs.property('abi', targetAbis[0])
     inputs.property('core', rustCoreMode)
     // The stamp lives in the build directory, **not** in the cargo target

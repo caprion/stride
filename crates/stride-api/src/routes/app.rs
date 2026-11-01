@@ -124,15 +124,33 @@ pub fn sync_run(api: &Api, request: &Request) -> ApiResult<Value> {
     let activities = client
         .activities(0, 100, Some(&from), Some(&to))
         .map_err(|error| api.garmin_error(&error))?;
-    let list = activities
-        .get("activityList")
-        .and_then(|value| value.as_array())
-        .cloned()
-        .unwrap_or_default();
+    // **Garmin answers the search with a list.** Some of its routes wrap
+    // their payload in an object and some do not, so the reading here takes
+    // both: a list is a list, and an object with an "activityList" in it
+    // is the same list.
+    let list = match &activities {
+        Value::Array(items) => items.clone(),
+        Value::Object(_) => activities
+            .get("activityList")
+            .and_then(|value| value.as_array())
+            .cloned()
+            .unwrap_or_default(),
+        _ => Vec::new(),
+    };
 
+    // **A pull is bounded.** Garmin's Personal API answers a few requests
+    // a minute, so a pull that asked for everything would spend the whole
+    // limit and come back with half of it. The bound is the configuration's,
+    // and the next pull takes the next runs.
+    let activity_budget = api.config().max_activities_per_sync;
     let mut pulled = 0usize;
     let mut newest: Option<String> = None;
+    let mut attempts = 0usize;
+    let mut stopped: Option<String> = None;
     for entry in list.iter() {
+        if attempts >= activity_budget {
+            break;
+        }
         let activity_id = match entry
             .get("activityId")
             .and_then(|value| value.as_u64())
@@ -144,9 +162,18 @@ pub fn sync_run(api: &Api, request: &Request) -> ApiResult<Value> {
         if newest.is_none() {
             newest = Some(activity_id.clone());
         }
+        attempts += 1;
         let blob = match client.activity_fit(&activity_id) {
             Ok(blob) => blob,
-            Err(_) => continue,
+            Err(error) => {
+                // A rate limit or a lost connection ends the pull: asking
+                // again would spend the limit on the same answer.
+                if stops_the_pull(&error) {
+                    stopped = Some(error.to_string());
+                    break;
+                }
+                continue;
+            }
         };
         let fit = match stride_ingest::extract_fit(&blob, &activity_id) {
             Ok(fit) => fit,
@@ -195,10 +222,20 @@ pub fn sync_run(api: &Api, request: &Request) -> ApiResult<Value> {
         pulled += 1;
     }
 
+    // The wellness of the last few days, and no more than the bound: the
+    // wellness of a day is three requests, and a year of it is a rate
+    // limit spent before anything has landed.
+    let wellness_window = days.min(api.config().max_wellness_days_per_sync);
     let mut wellness_days = 0usize;
-    for offset in 0..days {
+    for offset in 0..wellness_window {
         let date = current.add_days(-offset).to_iso();
-        let row = wellness_of(&client, &date);
+        let row = match wellness_of(&client, &date) {
+            Ok(row) => row,
+            Err(error) => {
+                stopped = Some(error.to_string());
+                break;
+            }
+        };
         if let Some(row) = row {
             api.store()
                 .upsert_wellness_daily(&row)
@@ -210,7 +247,10 @@ pub fn sync_run(api: &Api, request: &Request) -> ApiResult<Value> {
     let finished_at = api.now();
     write_state(api, sync_kind::ACTIVITIES, newest, finished_at)?;
     write_state(api, sync_kind::WELLNESS, None, finished_at)?;
-    api.set_garmin_last_error(None);
+    match &stopped {
+        Some(error) => api.set_garmin_last_error(Some(error.clone())),
+        None => api.set_garmin_last_error(None),
+    }
 
     let response = SyncRun {
         activities: pulled,
@@ -483,52 +523,74 @@ fn key_of(api: &Api, request: &Request) -> ApiResult<Option<String>> {
 }
 
 /// The wellness of one day, as Garmin reports it.
+///
+/// `Err` means the pull must stop: Garmin is rate limiting, or the
+/// connection is gone, and asking again would spend the limit on the same
+/// answer. A day with no sleep is not an error — it is a day with no
+/// sleep.
 fn wellness_of(
     client: &stride_ingest::GarminClient,
     date: &str,
-) -> Option<stride_store::WellnessDaily> {
-    let sleep = client.sleep_daily(date).ok()?;
-    let hrv = client.hrv_daily(date).ok();
-    let summary = client.daily_summary(date).ok();
-    let sleep = sleep.get("dailySleep");
-    let hrv = hrv
-        .as_ref()
-        .and_then(|value| value.get("hrvSummary"))
-        .and_then(|value| value.get("lastNightAvg"))
-        .and_then(|value| value.as_f64());
-    let summary = summary.as_ref().and_then(|value| value.get("summaryDTO"));
-    let resting_hr = summary
-        .and_then(|value| value.get("restingHeartRate"))
-        .and_then(|value| value.as_f64());
-    let stress_avg = summary
-        .and_then(|value| value.get("averageStressLevel"))
-        .and_then(|value| value.as_f64());
-    if sleep.is_none() && hrv.is_none() && resting_hr.is_none() {
-        return None;
+) -> Result<Option<stride_store::WellnessDaily>, stride_ingest::GarminError> {
+    let sleep = match client.sleep_daily(date) {
+        Ok(value) => value,
+        Err(error) if stops_the_pull(&error) => return Err(error),
+        Err(_) => Value::Null,
+    };
+    let hrv = client.hrv_daily(date).unwrap_or(Value::Null);
+    let summary = client.daily_summary(date).unwrap_or(Value::Null);
+    let sleep_s = field(&sleep, "dailySleep", "sleepTimeSeconds").and_then(|v| v.as_f64());
+    let deep_sleep_s = field(&sleep, "dailySleep", "deepSleepSeconds").and_then(|v| v.as_f64());
+    let rem_s = field(&sleep, "dailySleep", "remSleepSeconds").and_then(|v| v.as_f64());
+    let light_sleep_s = field(&sleep, "dailySleep", "lightSleepSeconds").and_then(|v| v.as_f64());
+    let awake_s = field(&sleep, "dailySleep", "awakeSleepSeconds").and_then(|v| v.as_f64());
+    let hrv_ms = field(&hrv, "hrvSummary", "lastNightAvg").and_then(|v| v.as_f64());
+    let resting_hr = field(&summary, "summaryDTO", "restingHeartRate").and_then(|v| v.as_f64());
+    let stress_avg = field(&summary, "summaryDTO", "averageStressLevel").and_then(|v| v.as_f64());
+    if sleep_s.is_none() && hrv_ms.is_none() && resting_hr.is_none() {
+        return Ok(None);
     }
-    Some(stride_store::WellnessDaily {
+    Ok(Some(stride_store::WellnessDaily {
         date: date.to_string(),
-        sleep_s: sleep
-            .and_then(|value| value.get("sleepTimeSeconds"))
-            .and_then(|value| value.as_f64()),
-        deep_sleep_s: sleep
-            .and_then(|value| value.get("deepSleepSeconds"))
-            .and_then(|value| value.as_f64()),
-        rem_s: sleep
-            .and_then(|value| value.get("remSleepSeconds"))
-            .and_then(|value| value.as_f64()),
-        light_sleep_s: sleep
-            .and_then(|value| value.get("lightSleepSeconds"))
-            .and_then(|value| value.as_f64()),
-        awake_s: sleep
-            .and_then(|value| value.get("awakeSleepSeconds"))
-            .and_then(|value| value.as_f64()),
-        hrv_ms: hrv,
+        sleep_s,
+        deep_sleep_s,
+        rem_s,
+        light_sleep_s,
+        awake_s,
+        hrv_ms,
         resting_hr,
         stress_avg,
         source: source::GARMIN_PERSONAL.to_string(),
         updated_at: chrono::Utc::now(),
-    })
+    }))
+}
+
+/// A field of a payload, whether Garmin wrapped it or not.
+///
+/// Garmin's wellness routes answer with the payload itself on some routes
+/// and with a wrapper on others. The reading here takes both, so a day of
+/// sleep is a day of sleep whichever shape Garmin sends — and a change in
+/// Garmin's shape does not silently empty the vitals.
+fn field<'a>(value: &'a Value, wrapper: &str, name: &str) -> Option<&'a Value> {
+    if let Some(inner) = value.get(wrapper) {
+        if let Some(found) = inner.get(name) {
+            return Some(found);
+        }
+    }
+    value.get(name)
+}
+
+/// Whether a Garmin failure ends the pull.
+///
+/// A rate limit and a lost connection do: the answer will not change by
+/// asking again, and the rate limit is a budget. A refused key and a
+/// missing file do not: the pull carries on with the next run.
+fn stops_the_pull(error: &stride_ingest::GarminError) -> bool {
+    use stride_ingest::GarminError;
+    matches!(
+        error,
+        GarminError::RateLimited { .. } | GarminError::Transport(_) | GarminError::NeedsReconnect
+    )
 }
 
 /// Write the state of one kind of sync.

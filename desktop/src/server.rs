@@ -100,18 +100,33 @@ impl Server {
     fn dispatch(&self, request: &Request) -> Response {
         match api::route_path(&request.path) {
             Some(path) => {
-                let answer = self.router.call(&api::Request {
-                    method: &request.method,
-                    path,
-                    query: &request.query,
-                    body: &request.body,
-                });
+                let answer = self.answer(request, path);
                 // The router's answer is passed on as it is. The rig is a
                 // host: it does not re-shape what the router said, and it
                 // does not wrap it in an envelope.
                 Response::bytes(answer.status, &answer.content_type, answer.body)
             }
             None => self.spa.serve(&request.path),
+        }
+    }
+
+    /// Ask the router, and pass on what it says.
+    ///
+    /// **The rig owns the retry on a pull.** The client makes one token
+    /// exchange and one attempt, and the router adds no retry of its own;
+    /// the rig may make one more attempt, and only one more. See
+    /// [`crate::sync`].
+    fn answer(&self, request: &Request, path: &str) -> api::Response {
+        let call = api::Request {
+            method: &request.method,
+            path,
+            query: &request.query,
+            body: &request.body,
+        };
+        if api::is_pull(&request.method, path) {
+            crate::sync::pull(self.router.as_ref(), &call)
+        } else {
+            self.router.call(&call)
         }
     }
 
@@ -279,25 +294,25 @@ pub fn install_crypto_provider() {
 /// router may use. Nothing else crosses this line.
 pub struct DesktopHost {
     store: std::sync::Arc<stride_store::Store>,
-    keys: crate::key::KeyStore,
+    keys: std::sync::Arc<crate::key::KeyStore>,
 }
 
 impl DesktopHost {
     /// The host.
     pub fn new(
         store: std::sync::Arc<stride_store::Store>,
-        keys: crate::key::KeyStore,
+        keys: std::sync::Arc<crate::key::KeyStore>,
     ) -> DesktopHost {
         DesktopHost { store, keys }
     }
 }
 
 impl Host for DesktopHost {
-    fn store(&self) -> &stride_store::Store {
-        &self.store
+    fn store(&self) -> std::sync::Arc<stride_store::Store> {
+        Arc::clone(&self.store)
     }
 
-    fn keys(&self) -> &crate::key::KeyStore {
-        &self.keys
+    fn keys(&self) -> std::sync::Arc<crate::key::KeyStore> {
+        Arc::clone(&self.keys)
     }
 }

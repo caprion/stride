@@ -54,7 +54,12 @@ cp "$target/$shim" "$kept"
 # The placeholder is replaced, not merged with: a bundle carries its own
 # asset names and hashes, and a stale file from the last build would ship
 # beside it.
-find "$target" -mindepth 1 -maxdepth 1 -not -name index.html -delete
+#
+# **`rm -rf`, not `find -delete`.** A bundle's assets live in a directory,
+# and `find -delete` cannot delete a directory that is not empty — so the
+# second sync of a checkout failed on the directory the first one left
+# behind, and the APK carried the placeholder instead of the bundle.
+find "$target" -mindepth 1 -maxdepth 1 -not -name index.html -exec rm -rf {} +
 rm -f "$target/index.html"
 cp -R "$source/." "$target/"
 

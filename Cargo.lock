@@ -1449,6 +1449,7 @@ dependencies = [
  "rust-embed",
  "rustls",
  "rustls-pemfile",
+ "serde_json",
  "stride-api",
  "stride-store",
  "thiserror 1.0.69",
@@ -1459,8 +1460,10 @@ dependencies = [
 name = "stride-ffi"
 version = "0.1.0"
 dependencies = [
+ "chrono",
  "serde_json",
  "stride-api",
+ "stride-store",
  "uniffi",
 ]
 
