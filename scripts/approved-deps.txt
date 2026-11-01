@@ -59,3 +59,10 @@ camino
 @vitejs/plugin-react
 happy-dom
 playwright-core
+
+# The desktop rig: the app embedded in the binary (so `cargo run` needs no
+# node), and TLS for the trusted-network case - a Garmin key must never cross
+# a network in the clear.
+rust-embed
+rustls
+rustls-pemfile
