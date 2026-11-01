@@ -214,3 +214,47 @@ mine" · **voice: vitals, direction (closed set), options — no verdicts** · *
 
 **Still open to change on request:** MIT instead of AGPL · anything from the cut list · the destination names ·
 the plan-source set · a native phone UI (a separate project, not v2).
+
+---
+
+## 11 · After the vertical line — the rest of the product
+
+The vertical line (slice 1) is merged and released as **v0.9.0**. The plan engine, the settings, the
+notes, the import and the export, and the screens' states are what is left.
+
+### Two rules this stretch earned
+
+**The plan engine has one owner: the core.** `crates/stride-core/src/plan.rs` holds the baseline inference,
+the week, the adherence, the results and the distance comparison. The api reads the plan out of the store
+and hands it to the core; the frontend renders what the core rendered. The reason is written down because it
+has been learned three times in this project: a client that retried *and* a shell that retried; a frontend
+that carried a port of `units.rs`; two FFI surfaces. **A rule that lives in two places is a rule that will
+drift.**
+
+**The screen inventory is complete; what was missing was the states.** All nine screens of §5 exist. The
+states each must cover:
+
+- **empty** — no runs, no wellness, no plan: the screen says what is missing and what to do, in the app's
+  voice, with no invented numbers;
+- **not enough data** — the honest form of the empty state, where a comparison is impossible;
+- **stale** — the data is older than it should be, and the screen says when it was last synced;
+- **the plan's states** — a baseline plan, an imported plan and no plan at all, each named as the source it is;
+- **a baseline is not a prescription** — a plan inferred from the athlete's own history never produces a "not
+  done"; it is what they usually do, not what they were told to do;
+- **an unrecognised session is unclassified**, never labelled "easy" by guesswork.
+
+### The delivery plan from here
+
+| slice | what | done when |
+|---|---|---|
+| **1** | the vertical line — key → sync → one run → today's readout → the phone | **done** (merged; released as v0.9.0) |
+| **2** | the plan engine in the core: the baseline, the week, the adherence, the results, the 10% rule | the baseline infers a week from a synthetic history and says how many weeks it used; a thin history yields nothing |
+| **3** | the api's plan, settings, notes, import and export — all on the core's engine | every route in the frozen table answers; the import refuses what it cannot read; the shapes are written into the contract |
+| **4** | the app's screens: Settings, Connect, and the states on every screen | the viewport matrix passes at six widths; the lint passes; no screen invents a number |
+| **5** | the phone's first run, its notifications, and the key's whole life | the key goes in, the pull lands the runs, the app says so; "forget the key" keeps the history |
+| **6** | the rig: the connect page, the export, the import, the stranger's README | a stranger clones it, runs it, gives it a key and sees their own runs |
+| **7** | the second review, and the release that carries it | an independent review of the whole product, and a v0.10.0 an Instinct can install |
+
+Slices 2 to 6 run in parallel where they touch different crates. 3 and 4 meet at the shapes — the app's
+declarations are the contract, and the api is held to them — and 5 and 6 are independent of everything but the
+router.
