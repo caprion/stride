@@ -171,7 +171,10 @@ impl Server {
                     Some(connect_page())
                 }
             }
-            ("GET", "/rig") => Some(Response::html(200, include_str!("../pages/tools.html"))),
+            ("GET", "/rig") => Some(
+                Response::html(200, include_str!("../pages/tools.html"))
+                    .with_header("cache-control", "no-store"),
+            ),
             ("POST", "/rig/first-run/not-now") => Some(match workspace.remember_skipped() {
                 Ok(()) => json_response(200, serde_json::json!({"ok": true})),
                 Err(error) => rig_error(500, "first_run_failed", &error.to_string()),
@@ -298,7 +301,13 @@ impl Server {
             .unwrap_or_default();
         let after = workspace.store().count_activities().unwrap_or(before);
         let duplicate = !imported || after <= before;
-        let (date, distance) = self.activity_details(activity_id);
+        let (mut date, mut distance) = self.activity_details(activity_id);
+        if let Some(direct_date) = value.get("date").and_then(serde_json::Value::as_str) {
+            date = direct_date.to_string();
+        }
+        if let Some(direct_distance) = value.get("distance") {
+            distance = distance_text(direct_distance);
+        }
         json_response(
             200,
             serde_json::json!({
@@ -333,12 +342,7 @@ impl Server {
             .and_then(serde_json::Value::as_str)
             .unwrap_or_default()
             .to_string();
-        let distance = value
-            .get("distance")
-            .and_then(|distance| distance.get("text"))
-            .and_then(serde_json::Value::as_str)
-            .unwrap_or_default()
-            .to_string();
+        let distance = value.get("distance").map(distance_text).unwrap_or_default();
         (date, distance)
     }
 
@@ -467,6 +471,7 @@ impl Server {
 /// The first-run page.
 fn connect_page() -> Response {
     Response::html(200, include_str!("../pages/connect.html"))
+        .with_header("cache-control", "no-store")
 }
 
 /// A JSON answer.
@@ -518,6 +523,16 @@ fn query_value(query: &str, name: &str) -> Option<String> {
         }
     }
     None
+}
+
+/// The text of a distance, whether the API sent a string or a rendered
+/// value.
+fn distance_text(value: &serde_json::Value) -> String {
+    value
+        .as_str()
+        .or_else(|| value.get("text").and_then(serde_json::Value::as_str))
+        .unwrap_or_default()
+        .to_string()
 }
 
 /// Base64-encode bytes, without a dependency.

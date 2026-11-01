@@ -14,10 +14,11 @@
 //! ## The limits
 //!
 //! * a request head is at most [`MAX_HEAD_BYTES`];
-//! * a request body is at most [`MAX_BODY_BYTES`].
+//! * an ordinary request body is at most [`MAX_BODY_BYTES`];
+//! * a FIT file and an uploaded export have their own bounded limits.
 //!
-//! A body that is too large is refused with `413` and the connection is
-//! closed: the rig does not read a body it has no use for.
+//! A body that is too large is refused and the connection is closed: the
+//! rig does not read a body it has no use for.
 
 use std::io::{BufRead, Write};
 

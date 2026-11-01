@@ -274,7 +274,18 @@ fn export_command(arguments: &[String]) -> Result<i32> {
 fn import_command(arguments: &[String]) -> Result<i32> {
     let mut source = None;
     let mut option_arguments = Vec::new();
-    for argument in arguments {
+    let mut index = 0;
+    while index < arguments.len() {
+        let argument = &arguments[index];
+        if argument == "--data-dir" {
+            let value = arguments.get(index + 1).ok_or_else(|| {
+                Error::config("--data-dir needs the directory the rig keeps its files in")
+            })?;
+            option_arguments.push(argument.clone());
+            option_arguments.push(value.clone());
+            index += 2;
+            continue;
+        }
         if argument.starts_with("--") {
             option_arguments.push(argument.clone());
         } else if source.is_none() {
@@ -284,6 +295,7 @@ fn import_command(arguments: &[String]) -> Result<i32> {
                 "the import takes one export directory and no more",
             ));
         }
+        index += 1;
     }
     let options = Options::parse(&option_arguments)?;
     options.reject_unknown(&["data-dir"])?;
