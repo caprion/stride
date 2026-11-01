@@ -11,13 +11,38 @@ Garmin pull and the background work.
 |---|---|
 | The Garmin key is typed into a **native** field and never enters the WebView | `setup/GarminSetupActivity.kt`, `bridge/PhoneRoutes.kt` |
 | The key is wrapped by a **non-exportable** Keystore AES-GCM key and lives in `noBackupFilesDir` | `security/KeystoreKeys.kt`, `security/EnvelopeFile.kt` |
+| The key's identifier is only its **last four characters**, on a native surface | `security/KeyIdentifier.kt`, `setup/GarminSetupActivity.kt` |
 | The bridge has **one** method, `apiCall(path, body)`, and may call the frozen routes only | `bridge/StrideApiPlugin.kt`, `bridge/PhoneRoutes.kt` |
 | The Garmin-key routes are refused, **including the query-string forms** | `bridge/PhoneRoutes.kt` (and its test) |
 | A locked screen gets no real data | `bridge/StrideApiPlugin.kt`, `security/AppLock.kt` |
-| The pull is **resumable** and a 401 gets **exactly one** re-exchange and one retry | `sync/SyncEngine.kt`, `sync/PullPolicy.kt` |
+| The pull is **bounded** to the phone's thirty-day window | `sync/PullWindow.kt`, `sync/SyncScheduler.kt` |
+| A failed exchange gets **exactly one** shell-owned retry; the second attempt stops | `sync/SyncEngine.kt`, `sync/PullPolicy.kt` |
 | "Synced 12 activities" is the notification, and it says nothing about the athlete | `sync/SyncNotifications.kt` |
+| A failed pull says what stopped it and when the next pull is due | `sync/SyncSchedule.kt`, `sync/SyncNotifications.kt` |
 | `FLAG_SECURE`, `allowBackup=false`, backup rules, minimal intent filters, nothing exported but the launcher | `MainActivity.kt`, `AndroidManifest.xml`, `res/xml/` |
+| A release carries the **real** core, checked from the seam's own backend marker | `app/build.gradle`, `app/src/main/rust/stride-ffi/` |
 | `unsafe` is allowed in the FFI seam and nowhere else | `app/src/main/rust/stride-ffi/` |
+
+## The first run and the key's life
+
+The first launch opens the native Garmin screen behind the phone's own
+credential. It says **“Your data stays on this phone.”**, takes the key in
+a native field, and moves through **Checking… → Syncing… → Connected · N
+runs**. A rejected key says that Garmin refused it and that it may be for
+a different account; an unreachable Garmin and a rate limit have their own
+lines. No raw error or stack trace reaches the screen.
+
+**Not now** is remembered. The app opens Today with no invented numbers;
+it says that no Garmin key is connected and where the key comes from. A
+connected key stays in the Keystore, so the next launch goes straight to
+Today.
+
+**Forget the key** is the Settings action behind the frozen logout route.
+The native shell cancels scheduled pulls, removes the encrypted credential
+envelope and its Keystore protection, and clears the core's temporary
+copy. It then says exactly what was removed and what stayed: the runs,
+health history, plans, and local database stay on the phone. The database
+has its own Keystore-wrapped key and is never derived from the Garmin key.
 
 ## The bridge the web app talks to
 
@@ -107,17 +132,18 @@ A fingerprint is not a secret: it is the public half of a key pair, and it
 is what the phone pins. The key itself is in the repository's `release`
 environment, and it never comes near the tree.
 
-### What is not publishable yet
+### The core a release may carry
 
-**The real Rust core is not in the tree**, so a release build refuses to be
-assembled: an APK whose core is the stub answers every route with "the Rust
-core is not in this build", and a product that does nothing should not be
-published under the Stride name.
+A release APK must carry the **real** Rust core. The seam's status says
+`"backend": "stride-api"` for the router and `"backend": "stub"` for the
+stub. The Gradle build reads the same fact from the packaged shared object
+and refuses a library without the real backend marker, so a mistaken Cargo
+feature cannot produce a release that looks real.
 
-That is the one refusal left, and it is the honest one. The pipeline's own
-test allows the stub explicitly (`-PstrideAllowStubCore=true`), and the
-checker still refuses a stub core — it is suspiciously small — so nothing
-with a stub can be published.
+The normal release build refuses the stub before assembly. The pipeline's
+own signing test may ask for the stub explicitly
+(`-PstrideAllowStubCore=true`), but the APK checker still refuses that core
+as suspiciously small, so nothing carrying a stub can be published.
 
 ## The layout
 
@@ -216,7 +242,9 @@ seam.
 **The retry rule has one owner: the shell.** The Garmin client performs
 exactly one token exchange and one HTTP attempt per call and answers the
 typed failure `needs_reconnect` when the token has expired; the caller —
-`PullPolicy` — may make **one** more attempt, and then it stops. See
+`PullPolicy` — may make **one** more attempt, and then it stops. A network
+failure follows the same rule: one retry inside the pull, no second
+WorkManager retry, and the next scheduled pull carries on. See
 `docs/contract/core-contract.md` §7.
 
 See `app/src/main/rust/stride-ffi/README.md` for what the core has to
@@ -231,8 +259,12 @@ flock /run/user/$(id -u)/cf-heavy.lock ./gradlew testDebugUnitTest
 ```
 
 They cover the route table (including the query-string forms of the key
-routes), the redaction of an answer that carries the key, the one-retry
-rule, the setup screen's states and the Garmin key page's host.
+routes), the redaction of an answer that carries the key, the key's
+four-character identifier, what forgetting the key removes and keeps, the
+bounded pull and its one-retry rule, the next-pull time, the worker's
+stop-after-retry decision, the setup screen's states and the Garmin key
+page's host. The native strings are also checked against the product's
+exported voice rules by the Gradle build.
 
 The **bridge shim is tested by running it**: `StrideBridgeShimTest`
 evaluates the shipped `stride-bridge.js` on a JavaScript engine (Rhino,
