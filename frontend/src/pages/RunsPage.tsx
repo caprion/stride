@@ -14,7 +14,7 @@
  *     10.2 km)".
  */
 
-import { useQuery } from '@tanstack/react-query'
+import { useInfiniteQuery } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
 import { api } from '../lib/api'
 import { connectGarmin } from '../lib/connect'
@@ -98,13 +98,18 @@ function groupLabel(key: string, today: string): string {
 }
 
 export function RunsPage() {
-  const activities = useQuery({
+  // The feed is windowed by date: a page of forty runs, and the next
+  // page when the athlete asks for it. It never loads everything.
+  const feed = useInfiniteQuery({
     queryKey: ['activities'],
-    queryFn: () => api.activities({ limit: 40 }),
+    queryFn: ({ pageParam }) =>
+      api.activities({ limit: 40, cursor: pageParam as string | undefined }),
+    initialPageParam: undefined as string | undefined,
+    getNextPageParam: (last) => last.next_cursor ?? undefined,
   })
   const stale = useStaleness()
 
-  const rows = activities.data?.activities ?? []
+  const rows = feed.data?.pages.flatMap((page) => page.activities) ?? []
   const today = rows[0]?.local_date ?? new Date().toISOString().slice(0, 10)
 
   const groups: { label: string; totals: ActivitySummary['group']; activities: ActivitySummary[] }[] =
@@ -165,12 +170,18 @@ export function RunsPage() {
               </ul>
             </section>
           ))}
-          <button
-            type="button"
-            className="tap w-full rounded-md border border-edge bg-surface py-2 text-[13px] font-semibold text-ink-soft"
-          >
-            {t('runs.loadMore')}
-          </button>
+          {feed.hasNextPage ? (
+            <button
+              type="button"
+              className="tap w-full rounded-md border border-edge bg-surface py-2 text-[13px] font-semibold text-ink-soft"
+              data-testid="runs-load-more"
+              onClick={() => {
+                feed.fetchNextPage()
+              }}
+            >
+              {t('runs.loadMore')}
+            </button>
+          ) : null}
         </div>
       )}
     </div>
