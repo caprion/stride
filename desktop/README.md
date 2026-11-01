@@ -173,12 +173,15 @@ delete** once the encrypted database opens.
 ## The router
 
 The router is `stride-api`'s — one router, two hosts, so the phone and the
-desktop cannot disagree about a number. That crate is an empty skeleton
-today, so the rig answers through a **stub that refuses rather than
-guesses**: every route answers with
+desktop cannot disagree about a number. The rig **hosts** it: it builds the
+router over the rig's own database, hands it the rig's clock, and passes
+the answer on **byte for byte** (the status in the status line, the body on
+the wire, and no envelope around either).
 
-> the Rust core is not in this build. Nothing is shown until it is.
+The rig is a host, not a brain. It decides who is let in (the trust model),
+it keeps the Garmin key (in memory, for the session), and it owns the
+**one retry** the contract gives the shell: the client makes one exchange
+and one attempt, and the rig may make one more (`desktop/src/sync.rs`).
 
-A stub can refuse, but it cannot be wrong, and an app that shows a number
-nobody computed is a lie about somebody's training. When the router lands,
-`desktop/src/api.rs` is the only file that changes.
+The adapter is `desktop/src/api.rs`, and it is the only file that knows how
+a route is answered.

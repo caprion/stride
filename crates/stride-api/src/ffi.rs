@@ -94,11 +94,20 @@ pub fn stride_call(path: &str, body: Option<&str>) -> String {
 
 /// Call a route with a method.
 pub fn stride_call_with(method: &str, path: &str, body: Option<&str>) -> String {
-    let answer = guarded("request", || match installed() {
+    call_value(method, path, body).to_string()
+}
+
+/// Call a route, and hand the envelope back as a value.
+///
+/// This is the same answer as [`stride_call_with`], before it is written as
+/// text. **The phone's seam calls this**: the seam's contract is
+/// `stride_call(path, body)`, and this module is the other side of it — so
+/// the phone's answer is the router's answer, and not a copy of it.
+pub fn call_value(method: &str, path: &str, body: Option<&str>) -> Value {
+    guarded("request", || match installed() {
         Some(router) => router.call(method, path, body).envelope(),
         None => not_open_envelope(),
-    });
-    answer.to_string()
+    })
 }
 
 /// Put the Garmin key in memory, or take it out again.
@@ -106,7 +115,16 @@ pub fn stride_call_with(method: &str, path: &str, body: Option<&str>) -> String 
 /// The key is in memory for the length of a pull and no longer. An empty
 /// key takes it out.
 pub fn stride_set_garmin_key(key: &str) -> String {
-    let answer = guarded("connection", || match installed() {
+    set_garmin_key_value(key).to_string()
+}
+
+/// Hold the Garmin key, and hand the answer back as a value.
+///
+/// The same answer as [`stride_set_garmin_key`], before it is written as
+/// text. The phone's seam uses this, so that the phone's answer is the
+/// router's answer.
+pub fn set_garmin_key_value(key: &str) -> Value {
+    guarded("connection", || match installed() {
         Some(router) => {
             router.api().set_garmin_key(key);
             ok_envelope(json!({
@@ -115,13 +133,21 @@ pub fn stride_set_garmin_key(key: &str) -> String {
             }))
         }
         None => not_open_envelope(),
-    });
-    answer.to_string()
+    })
 }
 
 /// Say whether the phone holds a Garmin key.
 pub fn stride_set_garmin_connected(connected: bool) -> String {
-    let answer = guarded("connection", || match installed() {
+    set_garmin_connected_value(connected).to_string()
+}
+
+/// Say whether the phone holds a Garmin key, as a value.
+///
+/// The same answer as [`stride_set_garmin_connected`], before it is written
+/// as text. The phone's seam uses this, so that the phone's answer is the
+/// router's answer.
+pub fn set_garmin_connected_value(connected: bool) -> Value {
+    guarded("connection", || match installed() {
         Some(router) => {
             if !connected {
                 router.api().clear_garmin_key();
@@ -132,13 +158,21 @@ pub fn stride_set_garmin_connected(connected: bool) -> String {
             }))
         }
         None => not_open_envelope(),
-    });
-    answer.to_string()
+    })
 }
 
 /// What the core is, and whether it is open.
 pub fn stride_status() -> String {
-    let answer = guarded("status", || match installed() {
+    status_value().to_string()
+}
+
+/// What the core is, and whether it is open, as a value.
+///
+/// The same answer as [`stride_status`], before it is written as text. The
+/// phone's seam uses this, so that the phone's answer is the router's
+/// answer.
+pub fn status_value() -> Value {
+    guarded("status", || match installed() {
         Some(router) => ok_envelope(json!({
             "core": "stride-api",
             "version": env!("CARGO_PKG_VERSION"),
@@ -150,8 +184,7 @@ pub fn stride_status() -> String {
             "generated_at": router.api().generated_at(),
         })),
         None => not_open_envelope(),
-    });
-    answer.to_string()
+    })
 }
 
 /// The envelope of a success.

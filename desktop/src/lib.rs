@@ -17,7 +17,8 @@
 //! | [`key`] | the Garmin key: in memory, in the environment, or in a file |
 //! | [`dbkey`] | the database key: generated, stored with `0600`, and the plaintext conversion |
 //! | [`spa`] | the embedded app, and the guard that keeps it inside |
-//! | [`api`] | the seam to the router, and what the rig answers with until it lands |
+//! | [`api`] | the seam to the router, and the router itself |
+//! | [`sync`] | the rig's pull policy: the one retry the shell owns |
 //! | [`paths`] | where the rig keeps its files |
 //! | [`log`] | the rig's log, and the sink a test reads |
 //!
@@ -47,4 +48,5 @@ pub mod log;
 pub mod paths;
 pub mod server;
 pub mod spa;
+pub mod sync;
 pub mod trust;

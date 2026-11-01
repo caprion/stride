@@ -5,6 +5,7 @@
 #
 #   core ← ingest   core ← store   api → {core, ingest, store}
 #   desktop → {api, store}
+#   stride-ffi → {api, store}   (the phone's seam, in this process)
 #   stride-testkit is a dev-dependency only, everywhere.
 #
 # The phone's FFI seam is a member too: the plan lists it in §3.1, and a

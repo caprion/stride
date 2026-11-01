@@ -98,7 +98,14 @@ fn a_real_database_answers_with_a_real_number() {
         .expect("the feed is a list");
     assert_eq!(activities.len(), 1);
     assert_eq!(activities[0]["distance"]["text"], json!("10 km"));
-    assert_eq!(activities[0]["distance"]["raw"], json!(10_000.0));
+    // The number is compared by *value*, not by spelling: the contract says
+    // the two hosts hand over the same answer, and a number's spelling can
+    // change in transit (10000.0 may arrive as 10000).
+    assert_eq!(
+        activities[0]["distance"]["raw"].as_f64(),
+        Some(10_000.0),
+        "the distance's raw number is not 10000"
+    );
     assert_eq!(activities[0]["duration"]["text"], json!("50 m"));
     assert_eq!(activities[0]["heart_rate"]["text"], json!("148 bpm"));
 

@@ -9,6 +9,9 @@
 //! * **the seam** ([`seam`]) — the narrow trait the core has to meet;
 //! * **the boundary** ([`boundary`]) — a panic in the core becomes an error
 //!   the app can show, never a process kill;
+//! * **the core** ([`real`]) — `stride-api`'s router, in this process;
+//! * **the stub** ([`stub`]) — the core that is not there, kept for the
+//!   tests that prove a stub can refuse;
 //! * **the surface** — the six functions the UDL declares, every one of
 //!   them answering with the same JSON envelope.
 //!
@@ -23,14 +26,21 @@
 //!   decide which route a path names — the router does — and it does not add
 //!   one.
 //!
-//! ## The core that is not there yet
+//! ## The core that is in the tree
 //!
-//! The core is `stride-api`, in the workspace above. While it is not in the
-//! tree, the seam is built against [`stub`]: every route answers with a
-//! sentence saying so. See `README.md` in this directory for what the core
-//! has to provide.
+//! The core is `stride-api`, in the workspace above this crate, and this
+//! crate calls it **in this process** — through the api's own FFI surface,
+//! which is the other side of the seam's `stride_call`. So the phone's
+//! answer is the router's answer, and the desktop's answer is the same
+//! router's answer: the two hosts cannot disagree about a number.
+//!
+//! The stub is still here, and it is still honest — it refuses every route
+//! with a sentence saying so — but it is no longer what the phone runs. It
+//! is what the tests put in front of the boundary.
 
 pub mod boundary;
+#[cfg(feature = "real-core")]
+pub mod real;
 pub mod seam;
 pub mod stub;
 
@@ -53,12 +63,32 @@ static CORE: OnceLock<RwLock<Arc<dyn Core>>> = OnceLock::new();
 
 /// The process-wide slot.
 fn slot() -> &'static RwLock<Arc<dyn Core>> {
-    CORE.get_or_init(|| RwLock::new(Arc::new(stub::StubCore::new())))
+    CORE.get_or_init(|| RwLock::new(default_core()))
+}
+
+/// The core the phone runs.
+///
+/// **The real core**: `stride-api`'s router, in this process. A build
+/// without the `real-core` feature runs the stub instead — a development
+/// build, and one that says so on every route.
+#[cfg(feature = "real-core")]
+fn default_core() -> Arc<dyn Core> {
+    Arc::new(real::ApiCore::new())
+}
+
+/// The core that is not there.
+///
+/// It is here for the builds that ask for it on purpose: a core that opens
+/// nothing, answers no route, and says so.
+#[cfg(not(feature = "real-core"))]
+fn default_core() -> Arc<dyn Core> {
+    Arc::new(stub::StubCore::new())
 }
 
 /// The core that is installed.
 ///
-/// It is the stub until the real core is installed over it.
+/// It is the real core — `stride-api`'s router, in this process — until
+/// something else is installed over it.
 fn installed() -> Arc<dyn Core> {
     slot()
         .read()
@@ -68,8 +98,8 @@ fn installed() -> Arc<dyn Core> {
 
 /// Install a core.
 ///
-/// This is how the real core replaces the stub, and how the tests put a
-/// core that panics in front of the boundary.
+/// This is how the stub replaces the real core in a test, and how the tests
+/// put a core that panics in front of the boundary.
 pub fn install(core: Arc<dyn Core>) {
     let mut guard = slot()
         .write()

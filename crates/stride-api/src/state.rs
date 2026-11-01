@@ -139,6 +139,22 @@ pub struct Config {
     pub max_feed_page: u32,
     /// How many days a pull reaches back by default.
     pub sync_days: i64,
+    /// How many runs one pull downloads.
+    ///
+    /// **A pull is bounded.** Garmin's Personal API answers a few requests
+    /// a minute, and a pull that asked for a year of history would spend
+    /// the whole rate limit on the first day and come back with nothing.
+    /// So a pull downloads this many runs — the newest ones, which are the
+    /// ones the athlete is waiting for — and the next pull takes the next
+    /// ones. The runs are the same runs; they arrive over more than one
+    /// pull.
+    pub max_activities_per_sync: usize,
+    /// How many days of wellness one pull reads.
+    ///
+    /// The same bound, for the same reason: the wellness of a day is three
+    /// requests, and a pull that reads a year of it is a rate limit spent
+    /// before anything has landed.
+    pub max_wellness_days_per_sync: i64,
     /// How many months of history the settings say the app keeps.
     pub history_months: i64,
     /// How many days of health data the settings say the app keeps.
@@ -163,6 +179,8 @@ impl Default for Config {
             feed_page_size: 50,
             max_feed_page: 200,
             sync_days: 30,
+            max_activities_per_sync: 20,
+            max_wellness_days_per_sync: 14,
             history_months: 12,
             health_history_days: 90,
             stale_after_hours: 36,
