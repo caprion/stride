@@ -13,11 +13,18 @@
 # The placeholder page that is committed is replaced by the bundle. It stays
 # in the repository because an APK without a bundle should say so rather than
 # show a blank WebView.
+#
+# **The bridge shim is kept.** `stride-bridge.js` is not part of the web
+# bundle: it is the shell's half of the seam between the app and the Rust
+# core, and Capacitor injects it into the page it serves — before the app's
+# own scripts, so the app's first request finds the bridge. The bundle
+# replaces everything else in the directory; the shim is put back.
 set -euo pipefail
 
 here="$(cd "$(dirname "$0")" && pwd)"
 source="${1:-${STRIDE_WEB_DIST:-$here/../frontend/dist}}"
 target="$here/app/src/main/assets/public"
+shim="stride-bridge.js"
 
 if [[ ! -d "$source" ]]; then
   echo "sync-web: there is no bundle at $source" >&2
@@ -30,13 +37,30 @@ if [[ ! -f "$source/index.html" ]]; then
   exit 1
 fi
 
+if [[ ! -f "$target/$shim" ]]; then
+  echo "sync-web: the bridge shim is missing from $target" >&2
+  echo "sync-web: it is the shell's, and it is committed. Restore it before building." >&2
+  exit 1
+fi
+
 echo "sync-web: copying $source into $target"
 mkdir -p "$target"
+
+# The shim is put aside: the bundle replaces everything else in the
+# directory, and a stale file from the last build would ship beside it.
+kept="$(mktemp)"
+cp "$target/$shim" "$kept"
+
 # The placeholder is replaced, not merged with: a bundle carries its own
 # asset names and hashes, and a stale file from the last build would ship
 # beside it.
 find "$target" -mindepth 1 -maxdepth 1 -not -name index.html -delete
 rm -f "$target/index.html"
 cp -R "$source/." "$target/"
+
+# The shim goes back, whatever the bundle brought with it.
+cp "$kept" "$target/$shim"
+chmod 644 "$target/$shim"
+rm -f "$kept"
 
 echo "sync-web: done"

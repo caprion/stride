@@ -63,3 +63,27 @@ and `qr` never appear in the route table.
    the plan after Slice 0 flagged it): v2 has no readiness score, so the route
    returns the vitals and their directions. The table above already uses the
    new name.
+
+## The shape of an answer
+
+**The answer is the body, and the status is the status.**
+
+- The router answers with the response **body** — the DTO, and nothing around
+  it. Not an envelope, not a wrapper, not a `{"json": "..."}` inside a JSON.
+- **A failure is a failure, not a body.** The transport reports it as a
+  failure: the HTTP layer puts the status in the status line, and the phone's
+  bridge rejects the call. A body that says `{"error": …}` with a 200 is
+  never the shape.
+- The two hosts therefore hand the app **the same bytes**: the desktop's HTTP
+  layer puts the body on the wire, and the phone's plugin hands the body
+  across the bridge. A host that answered with an envelope would make the
+  app unwrap it — and an unwrap is where a second implementation grows.
+
+## The path the app asks for
+
+- The app asks for `/api/v1/...` — the same path the desktop's HTTP layer
+  passes, query string and all.
+- **The router matches on the path without the query string.** `/api/v1/activities?limit=10`
+  is the route `/api/v1/activities`, with `limit=10` as its parameters. A
+  decision made on the raw path — or on a path with a different prefix — is
+  a bug, and the phone's bridge exists precisely because the old one made it.
