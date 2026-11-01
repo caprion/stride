@@ -128,12 +128,21 @@ pub struct VitalDirection {
 
 impl VitalDirection {
     /// The value as the athlete reads it: "6 h 10 m", "48 ms", "63 bpm".
+    ///
+    /// The wording is the catalogue's and the rounding is `units.rs`'s; this
+    /// module only chooses which vital it is.
     pub fn value_text(&self) -> Option<String> {
         let value = self.value?;
         match self.vital {
-            VitalKind::Sleep => Some(units::format_duration(value)),
-            VitalKind::Hrv => Some(format!("{} ms", units::format_whole(value))),
-            VitalKind::RestingHr => Some(format!("{} bpm", units::format_whole(value))),
+            VitalKind::Sleep => units::render_duration(Some(value)),
+            VitalKind::Hrv => {
+                let number = units::format_whole(value);
+                strings::render("vital.hrv.value", &[("value", &number)])
+            }
+            VitalKind::RestingHr => {
+                let number = units::format_truncated(value);
+                strings::render("vital.resting_hr.value", &[("value", &number)])
+            }
         }
     }
 

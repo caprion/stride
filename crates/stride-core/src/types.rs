@@ -67,7 +67,7 @@ impl Duration {
 
     /// The human rendering: "6 h 10 m", "42 m".
     pub fn to_human(&self) -> String {
-        units::format_duration(self.seconds)
+        units::render_duration(Some(self.seconds)).unwrap_or_default()
     }
 }
 
@@ -102,9 +102,9 @@ impl Distance {
         self.metres / 1000.0
     }
 
-    /// The human rendering: "8.4 km".
+    /// The human rendering: "8.4 km", "5 km".
     pub fn to_human(&self) -> String {
-        format!("{} km", units::format_distance_km(self.metres, 1))
+        units::render_distance(Some(self.metres)).unwrap_or_default()
     }
 }
 
@@ -134,6 +134,11 @@ impl HeartRate {
     pub fn bpm(&self) -> f64 {
         self.bpm
     }
+
+    /// The human rendering: "148 bpm".
+    pub fn to_human(&self) -> String {
+        units::render_heart_rate(Some(self.bpm)).unwrap_or_default()
+    }
 }
 
 /// A resting heart rate, in beats per minute.
@@ -161,6 +166,11 @@ impl RestingHr {
     /// The resting heart rate in beats per minute.
     pub fn bpm(&self) -> f64 {
         self.bpm
+    }
+
+    /// The human rendering: "63 bpm".
+    pub fn to_human(&self) -> String {
+        units::render_heart_rate(Some(self.bpm)).unwrap_or_default()
     }
 }
 
