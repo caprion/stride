@@ -82,20 +82,19 @@ def androidNdkDir = {
 /**
  * Where the Rust build puts its artefacts.
  *
- * **The shared target directory.** The canonical checkout of this
- * repository lives at `/home/sumit/stride-v2`, and its `target/` is the
- * directory every checkout shares: the crates are compiled once for the
- * whole fleet rather than once per worktree. A checkout that has no shared
- * directory falls back to its own `target/`, and `-PstrideTargetDir=…` (or
- * `STRIDE_CARGO_TARGET_DIR=…`) moves it either way.
+ * **Cargo's own default: this checkout's `target/`.** Every checkout has
+ * its own, and that is the point — one target directory for several
+ * checkouts means one set of artefacts written by two owners, and the
+ * build then fails in ways that look like a broken crate: a symbol that is
+ * in one checkout's object file and not in the other's.
+ *
+ * So the build does not point cargo anywhere: cargo puts its output in the
+ * workspace's `target/`, which is this checkout's. `-PstrideTargetDir=…`
+ * (or `STRIDE_CARGO_TARGET_DIR=…`, or cargo's own `CARGO_TARGET_DIR`)
+ * moves it when there is a reason to.
  */
-def rustTargetDir = {
-    def asked = (project.findProperty('strideTargetDir') ?: System.getenv('STRIDE_CARGO_TARGET_DIR'))?.toString()
-    if (asked) return file(asked)
-    def shared = new File('/home/sumit/stride-v2/target')
-    if (shared.isDirectory() && shared.canWrite()) return shared
-    return new File(rustWorkspaceDir, 'target')
-}()
+def rustTargetOverride = (project.findProperty('strideTargetDir') ?: System.getenv('STRIDE_CARGO_TARGET_DIR'))?.toString()
+def rustTargetDir = rustTargetOverride ? file(rustTargetOverride) : new File(rustWorkspaceDir, 'target')
 
 /**
  * Whether the real Rust core is in this build.
@@ -154,7 +153,12 @@ tasks.register('uniffiGenerateKotlin', Exec) {
     inputs.file file('src/main/rust/stride-ffi/src/stride.udl')
     inputs.file file('src/main/rust/stride-bindgen/Cargo.toml')
     outputs.dir uniffiGeneratedDir
-    environment 'CARGO_TARGET_DIR', rustTargetDir.absolutePath
+    // Cargo is not pointed anywhere: its default is this checkout's
+    // `target/`, and one target directory per checkout is what keeps two
+    // checkouts from writing over each other's artefacts.
+    if (rustTargetOverride) {
+        environment 'CARGO_TARGET_DIR', rustTargetDir.absolutePath
+    }
 }
 
 /**
@@ -184,15 +188,17 @@ tasks.register('cargoNdkBuild', Exec) {
     // the task, and the cargo target directory belongs to cargo.
     outputs.file layout.buildDirectory.file("rust/cargo-ndk-${targetAbis[0]}-${rustCoreMode}.stamp")
     // **The library is an input as well.** The stamp says "cargo ran", and
-    // cargo's output lives in the shared target directory — which any other
-    // build on this machine may clean. Without this, a wiped target
-    // directory leaves the stamp behind, Gradle considers the task done,
-    // and the APK ships the core from an earlier build. A missing input is
-    // a missing input: the task is out of date and cargo runs again.
+    // cargo's output lives in the target directory — which any other build
+    // on this machine may clean. Without this, a wiped target directory
+    // leaves the stamp behind, Gradle considers the task done, and the APK
+    // ships the core from an earlier build. A missing input is a missing
+    // input: the task is out of date and cargo runs again.
     inputs.files(fileTree(rustTargetDir) {
         include "**/${rustTriple(targetAbis[0])}/release/libuniffi_stride.so"
     })
-    environment 'CARGO_TARGET_DIR', rustTargetDir.absolutePath
+    if (rustTargetOverride) {
+        environment 'CARGO_TARGET_DIR', rustTargetDir.absolutePath
+    }
 }
 
 /**
