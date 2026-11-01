@@ -40,9 +40,9 @@ pub fn splits(activity: &FitActivity) -> Vec<Split> {
         .iter()
         .map(|lap| Split {
             index: lap.lap_index,
-            distance: render::distance(Some(lap.distance_m)),
-            duration: render::duration(Some(lap.duration_s)),
-            avg_hr: render::heart_rate(lap.avg_hr.map(|rate| rate as f64)),
+            distance: render::distance_of(lap.distance_m),
+            duration: render::duration_of(lap.duration_s),
+            heart_rate: render::heart_rate(lap.avg_hr.map(|rate| rate as f64)),
         })
         .collect()
 }
@@ -60,8 +60,8 @@ pub fn elevation(activity: &FitActivity, cap: usize) -> Vec<ElevationPoint> {
             let distance = sample.distance_m?;
             let altitude = sample.altitude_m?;
             Some(ElevationPoint {
-                distance: render::distance(Some(distance)),
-                elevation: render::elevation(Some(altitude)),
+                distance: render::distance_of(distance),
+                elevation: render::elevation_of(altitude),
             })
         })
         .collect();
@@ -82,7 +82,7 @@ pub fn samples(activity: &FitActivity, cap: usize) -> Vec<SamplePoint> {
                 }
                 Some(units::round_pace_s_per_km(1000.0 / speed))
             })),
-            hr: render::heart_rate(sample.heart_rate_bpm),
+            heart_rate: render::heart_rate(sample.heart_rate_bpm),
         })
         .collect();
     thin(&mut points, cap);

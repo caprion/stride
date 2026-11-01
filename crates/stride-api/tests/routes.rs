@@ -62,7 +62,7 @@ fn an_activity_answers_with_the_run() {
     assert_eq!(body["id"].as_i64(), Some(id));
     assert_eq!(body["name"].as_str(), Some("a run"));
     assert_eq!(body["sport_type"].as_str(), Some("running"));
-    assert_eq!(body["moving_time"]["text"].as_str(), Some("50 m"));
+    assert_eq!(body["duration"]["text"].as_str(), Some("50 m"));
     assert!(body["splits"].is_array());
     assert!(body["samples"].is_array());
     assert!(body["plan_line"].is_null());
@@ -336,7 +336,7 @@ fn plan_results_answers_with_what_happened() {
     let results = body["results"].as_array().unwrap();
     assert_eq!(results.len(), 2);
     assert_eq!(results[0]["status"].as_str(), Some("done"));
-    assert_eq!(results[0]["actual_distance"]["raw"].as_f64(), Some(8_000.0));
+    assert_eq!(results[0]["actual"]["raw"].as_f64(), Some(8_000.0));
     assert_eq!(results[1]["status"].as_str(), Some("planned"));
 }
 
@@ -703,6 +703,98 @@ fn calendar_answers_with_the_month() {
     assert_eq!(tenth["day"].as_u64(), Some(10));
     assert_eq!(tenth["activities"].as_array().unwrap().len(), 1);
     assert_eq!(tenth["distance"]["raw"].as_f64(), Some(10_000.0));
+}
+
+#[test]
+fn the_compare_delta_carries_its_sign() {
+    let harness = common::Harness::empty("route-compare-delta");
+    let first = harness.write_run(common::run("a-run", "2026-05-03", 10_000.0, 3_300.0));
+    let second = harness.write_run(common::run("b-run", "2026-05-10", 10_200.0, 3_240.0));
+
+    let body = harness.ok_get(&format!("/compare?a={first}&b={second}"));
+    let metrics = body["metrics"].as_array().unwrap();
+    let distance = metrics
+        .iter()
+        .find(|metric| metric["key"] == "distance")
+        .unwrap();
+    // The core renders the difference, sign and all.
+    assert_eq!(distance["delta"]["text"].as_str(), Some("+0.2 km"));
+    assert_eq!(distance["delta"]["raw"].as_f64(), Some(200.0));
+
+    let time = metrics
+        .iter()
+        .find(|metric| metric["key"] == "time")
+        .unwrap();
+    assert_eq!(time["delta"]["text"].as_str(), Some("\u{2212}1 m"));
+
+    // Swapping A and B flips the sign of every difference: the question is
+    // a different one, and the app asks the API again.
+    let swapped = harness.ok_get(&format!("/compare?a={second}&b={first}"));
+    let metrics = swapped["metrics"].as_array().unwrap();
+    let distance = metrics
+        .iter()
+        .find(|metric| metric["key"] == "distance")
+        .unwrap();
+    assert_eq!(distance["delta"]["text"].as_str(), Some("\u{2212}0.2 km"));
+    assert_eq!(distance["delta"]["raw"].as_f64(), Some(-200.0));
+}
+
+#[test]
+fn the_feed_groups_the_runs_and_carries_the_group_totals() {
+    let harness = common::Harness::empty("route-feed-group");
+    // Two runs in the same week, one in another.
+    harness.write_run(common::run("a-run", "2026-05-04", 10_000.0, 3_000.0));
+    harness.write_run(common::run("b-run", "2026-05-06", 5_000.0, 1_500.0));
+    harness.write_run(common::run("c-run", "2026-05-11", 8_000.0, 2_400.0));
+
+    let body = harness.ok_get("/activities");
+    let runs = body["activities"].as_array().unwrap();
+    assert_eq!(runs.len(), 3);
+    // The group is the week: the key is the day the week starts on.
+    assert_eq!(runs[0]["group"]["key"].as_str(), Some("2026-05-11"));
+    assert_eq!(runs[0]["group"]["distance"]["raw"].as_f64(), Some(8_000.0));
+    assert_eq!(runs[1]["group"]["key"].as_str(), Some("2026-05-04"));
+    // The group's totals are the week's, not the page's.
+    assert_eq!(runs[1]["group"]["distance"]["raw"].as_f64(), Some(15_000.0));
+    assert_eq!(
+        runs[1]["group"]["duration"]["text"].as_str(),
+        Some("1 h 15 m")
+    );
+}
+
+#[test]
+fn the_plan_line_is_the_core_s_statement() {
+    let harness = common::Harness::empty("route-plan-line");
+    harness.write_plan(
+        "Base block",
+        "prescribed",
+        &[("2026-05-10", "easy", Some(10_000.0))],
+    );
+    let id = harness.write_run(common::run("a-run", "2026-05-10", 12_400.0, 4_020.0));
+    let body = harness.ok_get(&format!("/activities/{id}"));
+    // The line against the plan is the core's statement: the distance and
+    // the comparison, in the core's words.
+    assert_eq!(
+        body["plan_line"]["text"].as_str(),
+        Some("12.4 km \u{b7} 2.4 km more than the 10 km target")
+    );
+}
+
+#[test]
+fn the_plan_line_is_absent_when_the_gap_is_not_news() {
+    let harness = common::Harness::empty("route-plan-line-small");
+    harness.write_plan(
+        "Base block",
+        "prescribed",
+        &[("2026-05-10", "easy", Some(10_000.0))],
+    );
+    let id = harness.write_run(common::run("a-run", "2026-05-10", 10_200.0, 3_300.0));
+    let body = harness.ok_get(&format!("/activities/{id}"));
+    assert!(
+        body["plan_line"].is_null(),
+        "a 2% gap was stated: {}",
+        body["plan_line"]
+    );
 }
 
 /// The answers of every route, read once: nothing in them is a secret and

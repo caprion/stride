@@ -52,5 +52,6 @@ pub use types::{
     WellnessDay,
 };
 pub use units::{
-    render_distance, render_duration, render_elevation, render_heart_rate, render_pace,
+    render_difference, render_distance, render_duration, render_elevation, render_heart_rate,
+    render_pace, ValueUnit,
 };

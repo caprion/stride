@@ -54,21 +54,17 @@ pub struct ActivitySummary {
     /// The athlete's local date.
     pub local_date: String,
     /// The distance, as the core renders it.
-    pub distance: Option<RenderedValue>,
+    pub distance: RenderedValue,
     /// The moving time, as the core renders it.
-    pub moving_time: Option<RenderedValue>,
-    /// The elapsed time, as the core renders it.
-    pub elapsed_time: Option<RenderedValue>,
+    pub duration: RenderedValue,
     /// The average heart rate, as the core renders it.
-    pub avg_hr: Option<RenderedValue>,
-    /// The maximum heart rate, as the core renders it.
-    pub max_hr: Option<RenderedValue>,
-    /// The average cadence, as the core renders it.
-    pub avg_cadence: Option<RenderedValue>,
+    pub heart_rate: Option<RenderedValue>,
     /// The elevation gain, as the core renders it.
     pub elevation_gain: Option<RenderedValue>,
     /// The pace, as the core renders it.
     pub pace: Option<RenderedValue>,
+    /// The group the run is in, and that group's totals.
+    pub group: ActivityGroupTotals,
     /// The one sentence about what the run meant.
     ///
     /// `null` until the core has a story engine: the sentence is the core's
@@ -76,6 +72,20 @@ pub struct ActivitySummary {
     pub story: Option<String>,
     /// The route, as `[latitude, longitude]` pairs.
     pub geo_points: Vec<[f64; 2]>,
+}
+
+/// The totals of a group of runs.
+///
+/// The feed is grouped by the API — the API is the one that knows the
+/// totals — and the app labels the groups.
+#[derive(Clone, Debug, PartialEq, Serialize)]
+pub struct ActivityGroupTotals {
+    /// The group's key: the day the group starts.
+    pub key: String,
+    /// The group's distance, as the core renders it.
+    pub distance: RenderedValue,
+    /// The group's time, as the core renders it.
+    pub duration: RenderedValue,
 }
 
 /// The feed, windowed by date.
@@ -95,20 +105,20 @@ pub struct Split {
     /// The split's number, from one.
     pub index: i64,
     /// The split's distance, as the core renders it.
-    pub distance: Option<RenderedValue>,
+    pub distance: RenderedValue,
     /// The split's duration, as the core renders it.
-    pub duration: Option<RenderedValue>,
+    pub duration: RenderedValue,
     /// The average heart rate over the split, as the core renders it.
-    pub avg_hr: Option<RenderedValue>,
+    pub heart_rate: Option<RenderedValue>,
 }
 
 /// One point of the elevation profile.
 #[derive(Clone, Debug, PartialEq, Serialize)]
 pub struct ElevationPoint {
     /// The distance from the start, as the core renders it.
-    pub distance: Option<RenderedValue>,
+    pub distance: RenderedValue,
     /// The altitude, as the core renders it.
-    pub elevation: Option<RenderedValue>,
+    pub elevation: RenderedValue,
 }
 
 /// One point of the run's series.
@@ -119,16 +129,19 @@ pub struct SamplePoint {
     /// The pace over the sample, as the core renders it.
     pub pace: Option<RenderedValue>,
     /// The heart rate over the sample, as the core renders it.
-    pub hr: Option<RenderedValue>,
+    pub heart_rate: Option<RenderedValue>,
 }
 
 /// The plan's line under a run: what was planned and what was run.
+///
+/// The line is **the core's statement**: "8.4 km · 1.6 km less than the 10
+/// km target". It is absent when the gap from the target is within ten per
+/// cent — 10.2 km against a 10 km target is not news, and neither here nor
+/// on Today.
 #[derive(Clone, Debug, PartialEq, Serialize)]
 pub struct PlanLine {
-    /// The distance that was run, as the core renders it.
-    pub actual: Option<RenderedValue>,
-    /// The distance that was planned, as the core renders it.
-    pub target: Option<RenderedValue>,
+    /// The line, already written.
+    pub text: String,
 }
 
 /// One run, in full.
@@ -361,13 +374,9 @@ pub struct Fingerprint {
     /// The distance, as the core renders it.
     pub distance: Option<RenderedValue>,
     /// The moving time, as the core renders it.
-    pub moving_time: Option<RenderedValue>,
+    pub duration: Option<RenderedValue>,
     /// The average heart rate, as the core renders it.
-    pub avg_hr: Option<RenderedValue>,
-    /// The maximum heart rate, as the core renders it.
-    pub max_hr: Option<RenderedValue>,
-    /// The average cadence, as the core renders it.
-    pub avg_cadence: Option<RenderedValue>,
+    pub heart_rate: Option<RenderedValue>,
     /// The pace, as the core renders it.
     pub pace: Option<RenderedValue>,
     /// The elevation gain, as the core renders it.
@@ -454,11 +463,11 @@ pub struct Totals {
     /// The elevation gain, as the core renders it.
     pub elevation_gain: Option<RenderedValue>,
     /// The moving time, as the core renders it.
-    pub moving_time: Option<RenderedValue>,
+    pub duration: Option<RenderedValue>,
     /// The average pace, as the core renders it.
     pub avg_pace: Option<RenderedValue>,
     /// The average heart rate, as the core renders it.
-    pub avg_hr: Option<RenderedValue>,
+    pub heart_rate: Option<RenderedValue>,
 }
 
 /// The totals, over four windows.
@@ -486,7 +495,7 @@ pub struct WeekTotals {
     /// The distance, as the core renders it.
     pub distance: Option<RenderedValue>,
     /// The moving time, as the core renders it.
-    pub moving_time: Option<RenderedValue>,
+    pub duration: Option<RenderedValue>,
     /// The elevation gain, as the core renders it.
     pub elevation_gain: Option<RenderedValue>,
     /// The average pace, as the core renders it.
@@ -579,10 +588,10 @@ pub struct PlanSession {
     pub title: Option<String>,
     /// The session, already rendered: "Today — 10 km · easy".
     pub sentence: String,
-    /// The target distance, as the core renders it.
-    pub target_distance: Option<RenderedValue>,
-    /// The distance that was run, as the core renders it.
-    pub actual_distance: Option<RenderedValue>,
+    /// The target, as the core renders it.
+    pub target: Option<RenderedValue>,
+    /// What was actually run, as the core renders it.
+    pub actual: Option<RenderedValue>,
     /// `done`, `planned` or `not_done`.
     pub status: String,
     /// Where the plan came from: `baseline`, `prescribed` or `typed`.
@@ -721,9 +730,9 @@ pub struct PlanResult {
     /// `done`, `planned` or `not_done`.
     pub status: String,
     /// The distance that was planned, as the core renders it.
-    pub target_distance: Option<RenderedValue>,
+    pub target: Option<RenderedValue>,
     /// The distance that was run, as the core renders it.
-    pub actual_distance: Option<RenderedValue>,
+    pub actual: Option<RenderedValue>,
 }
 
 /// The plan's results.
@@ -777,7 +786,7 @@ pub struct TodayInsight {
 #[derive(Clone, Debug, PartialEq, Serialize)]
 pub struct WeekRunning {
     /// The distance, as the core renders it.
-    pub distance: Option<RenderedValue>,
+    pub distance: RenderedValue,
     /// How many runs there were.
     pub sessions: usize,
 }
@@ -788,7 +797,7 @@ pub struct WeeklyVolume {
     /// The first day of the week.
     pub week_start: String,
     /// The distance, as the core renders it.
-    pub distance: Option<RenderedValue>,
+    pub distance: RenderedValue,
 }
 
 /// One week of pace at a heart rate.
@@ -799,7 +808,7 @@ pub struct PaceAtHr {
     /// The median pace of the week, as the core renders it.
     pub pace: Option<RenderedValue>,
     /// The median heart rate of the week, as the core renders it.
-    pub hr: Option<RenderedValue>,
+    pub heart_rate: Option<RenderedValue>,
 }
 
 /// One best.
@@ -808,7 +817,7 @@ pub struct Best {
     /// The catalogue key that names the row.
     pub key: String,
     /// The value, as the core renders it.
-    pub value: Option<RenderedValue>,
+    pub value: String,
     /// The day it was set on.
     pub date: String,
 }
@@ -841,6 +850,8 @@ pub struct ProgressInsight {
     pub bests: Vec<Best>,
     /// The consistency, week by week.
     pub consistency: Vec<Consistency>,
+    /// The sessions a week, as the core renders them.
+    pub sessions_per_week: Option<RenderedValue>,
     /// The plan's adherence.
     pub adherence: Option<Adherence>,
 }
@@ -894,7 +905,7 @@ pub struct CompareRun {
     /// The day of the run.
     pub date: String,
     /// The distance, as the core renders it.
-    pub distance: Option<RenderedValue>,
+    pub distance: RenderedValue,
     /// The one sentence about what the run meant.
     pub story: Option<String>,
 }
@@ -933,7 +944,7 @@ pub struct CompareCandidate {
     /// The day of the run.
     pub date: String,
     /// The distance, as the core renders it.
-    pub distance: Option<RenderedValue>,
+    pub distance: RenderedValue,
 }
 
 // ---------------------------------------------------------------------- app
@@ -1109,7 +1120,7 @@ pub struct CalendarDay {
     /// The distance of the day, as the core renders it.
     pub distance: Option<RenderedValue>,
     /// The moving time of the day, as the core renders it.
-    pub moving_time: Option<RenderedValue>,
+    pub duration: Option<RenderedValue>,
 }
 
 /// The local month calendar.

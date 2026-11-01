@@ -87,3 +87,50 @@ and `qr` never appear in the route table.
   is the route `/api/v1/activities`, with `limit=10` as its parameters. A
   decision made on the raw path — or on a path with a different prefix — is
   a bug, and the phone's bridge exists precisely because the old one made it.
+
+## The shapes of the answers
+
+The route table names the routes; the **shapes** name the fields. They are
+written down here because a shape that lives in one file is a shape that
+drifts: the app and the router must agree on the fields, and the agreement
+needs a source on both sides.
+
+Two rules hold for every shape below.
+
+- **A domain value crosses as a rendered value**: `{"text": "8.4 km", "raw":
+  8400}` — the core's words and the number a chart draws (core-contract §8).
+  There is no `format:` hint: a hint tells the app how to render, which is
+  the hole §8 closes. A value that is not there is `null`, never a `text` of
+  `"0"`.
+- **A sentence crosses as a sentence**: the direction word, the arithmetic,
+  the travel, the Rest line, the pattern sentences and the statements are
+  the core's, already written. There is no template in a body.
+
+| route | the fields |
+|---|---|
+| `/activities` | `activities: ActivitySummary[]`, `next_cursor: string \| null`, `generated_at: string` |
+| `/activities/{id}` | `ActivitySummary` and `splits: {index, distance, duration, heart_rate}[]`, `elevation: {distance, elevation}[]`, `samples: {offset_s, pace, heart_rate}[]`, `plan_line: {text} \| null`, `note: string \| null` |
+| `/physiology/vitals` | `date`, `generated_at`, `rest: {label, line}`, `vitals: {key, label, value_text, direction_text, deviation_text, travel_text, status_text, band}[]`, `history: {sleep, hrv, resting_hr}`, `patterns: {id, text, sample_size}[]` |
+| `/plan/week` | `block_name`, `source`, `week_start`, `week_end`, `target`, `sessions: {date, session_type, title, sentence, target, actual, status, source}[]`, `adherence: {done, planned} \| null` |
+| `/insights/today` | `generated_at`, `date`, `planned`, `options`, `last_run`, `distance_comparison: string \| null`, `week: {distance, sessions}` |
+| `/insights/progress` | `generated_at`, `headline`, `headline_note`, `weekly_volume`, `typical_week`, `pace_at_hr`, `bests`, `consistency`, `sessions_per_week`, `adherence` |
+| `/compare` | `basis_text`, `metrics: {key, label_key, a, b, delta}[]`, `a: CompareRun`, `b: CompareRun`, `series: {a: {offset_s, pace, heart_rate}[], b: …}` |
+| `/compare/candidates` | a list of `{id, label, date, distance}` |
+| `/sync/status` | `last_sync_at: string \| null`, `last_error: string \| null`, `activity_count: number` |
+| `/health/daily` | `date`, `generated_at`, `stale: boolean` |
+
+The app's own declarations are in `frontend/src/lib/types.ts`, and
+`crates/stride-api/tests/frontend_shapes.rs` holds the router to them: it
+reads the app's file and compares the **shapes**, field by field, so a
+renamed field, a changed nullability or a `format:` hint fails the build.
+**The written contract and the app's declarations are checked against each
+other**: a contract that is not checked is a document, not a gate.
+
+### The shapes the app does not read
+
+The routes the app does not type — `/physiology/{daily,sleep,hrv,latest,sources}`,
+`/fitness/*`, `/stats/*`, `/plan/{current,today,blocks,sources,adherence,results,import}`,
+`/insights/chips`, `/sync/{run,runs,history,settings}`, `/auth/*`,
+`/calendar` — are the router's own, and they are written down in
+`crates/stride-api/src/dto.rs`. They follow the same two rules: a domain
+value is a rendered value, and a sentence is a sentence.

@@ -39,19 +39,9 @@ fn a_run_with_no_heart_rate_carries_null() {
 
     let body = harness.ok_get(&format!("/activities/{id}"));
     assert!(
-        value_of(&body, &["avg_hr"]).is_null(),
+        value_of(&body, &["heart_rate"]).is_null(),
         "the average heart rate is not null: {}",
-        value_of(&body, &["avg_hr"])
-    );
-    assert!(
-        value_of(&body, &["max_hr"]).is_null(),
-        "the maximum heart rate is not null: {}",
-        value_of(&body, &["max_hr"])
-    );
-    assert!(
-        value_of(&body, &["avg_cadence"]).is_null(),
-        "the cadence is not null: {}",
-        value_of(&body, &["avg_cadence"])
+        value_of(&body, &["heart_rate"])
     );
     assert!(
         value_of(&body, &["story"]).is_null(),
@@ -61,8 +51,10 @@ fn a_run_with_no_heart_rate_carries_null() {
 
     let feed = harness.ok_get("/activities");
     let run = &feed["activities"][0];
-    assert!(run["avg_hr"].is_null(), "the feed's heart rate is not null");
-    assert!(run["max_hr"].is_null(), "the feed's heart rate is not null");
+    assert!(
+        run["heart_rate"].is_null(),
+        "the feed's heart rate is not null"
+    );
 }
 
 #[test]
@@ -152,8 +144,8 @@ fn a_run_with_no_readings_still_carries_the_numbers_it_has() {
     let body = harness.ok_get(&format!("/activities/{id}"));
     assert_eq!(body["distance"]["raw"].as_f64(), Some(10_000.0));
     assert_eq!(body["distance"]["text"].as_str(), Some("10 km"));
-    assert_eq!(body["moving_time"]["raw"].as_f64(), Some(3_000.0));
-    assert_eq!(body["moving_time"]["text"].as_str(), Some("50 m"));
+    assert_eq!(body["duration"]["raw"].as_f64(), Some(3_000.0));
+    assert_eq!(body["duration"]["text"].as_str(), Some("50 m"));
     // A flat run has no climbing: that is a measurement of zero, not an
     // absent measurement, and the core renders it as one.
     assert_eq!(body["elevation_gain"]["text"].as_str(), Some("0 m"));

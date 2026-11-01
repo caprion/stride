@@ -66,28 +66,29 @@ fn the_panic_payload_is_not_in_the_answer() {
 }
 
 #[test]
-fn an_answer_handed_over_as_a_pointer_is_freed() {
-    let harness = common::Harness::empty("ffi-free");
+fn the_failure_envelope_carries_the_code_and_the_sentence() {
+    let harness = common::Harness::empty("ffi-envelope-code");
     ffi::install(stride_api::Router::new(Arc::clone(&harness.api)));
 
-    let before = ffi::answers_in_flight();
-    let pointer = ffi::stride_call_ptr("GET", "/activities", None);
-    assert!(
-        !pointer.is_null(),
-        "the answer was not handed over as a pointer"
-    );
-    assert_eq!(ffi::answers_in_flight(), before + 1);
+    // A failure the phone can act on: the code is what tells the caller
+    // that one more attempt is allowed.
+    let answer = ffi::stride_call_with("POST", "/sync/run", Some("{}"));
+    let parsed: Value = serde_json::from_str(&answer).expect("the answer is JSON");
+    assert_eq!(parsed["ok"], json!(false));
+    assert_eq!(parsed["error"]["code"], json!("garmin_rejected"));
+    assert!(parsed["error"]["detail"].is_string());
 
-    ffi::stride_free(pointer);
-    assert_eq!(ffi::answers_in_flight(), before);
-}
-
-#[test]
-fn freeing_a_pointer_that_is_not_ours_is_harmless() {
-    let before = ffi::answers_in_flight();
-    let pointer = std::ptr::null_mut::<std::ffi::c_void>();
-    ffi::stride_free(pointer);
-    assert_eq!(ffi::answers_in_flight(), before);
+    // The envelope is the contract's, and nothing else: the keys are the
+    // three the contract names, and the error object carries the code and
+    // the sentence and nothing more.
+    let keys: Vec<&String> = parsed.as_object().unwrap().keys().collect();
+    let mut sorted = keys.clone();
+    sorted.sort();
+    assert_eq!(sorted, vec!["error", "ok", "status"]);
+    let error_keys: Vec<&String> = parsed["error"].as_object().unwrap().keys().collect();
+    let mut sorted = error_keys.clone();
+    sorted.sort();
+    assert_eq!(sorted, vec!["code", "detail"]);
 }
 
 #[test]

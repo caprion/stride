@@ -54,16 +54,14 @@ fn the_feed_carries_the_shape_the_app_reads() {
     assert_keys(
         run,
         &[
-            "avg_cadence",
-            "avg_hr",
             "distance",
-            "elapsed_time",
+            "duration",
             "elevation_gain",
             "geo_points",
+            "group",
+            "heart_rate",
             "id",
             "local_date",
-            "max_hr",
-            "moving_time",
             "name",
             "pace",
             "sport_type",
@@ -82,17 +80,15 @@ fn one_run_carries_the_shape_the_app_reads() {
     assert_keys(
         &body,
         &[
-            "avg_cadence",
-            "avg_hr",
             "distance",
+            "duration",
             "elevation",
-            "elapsed_time",
             "elevation_gain",
             "geo_points",
+            "group",
+            "heart_rate",
             "id",
             "local_date",
-            "max_hr",
-            "moving_time",
             "name",
             "note",
             "pace",
@@ -258,11 +254,11 @@ fn the_statistics_routes_carry_their_shapes() {
         &summary["all_time"],
         &[
             "activity_count",
-            "avg_hr",
+            "heart_rate",
             "avg_pace",
             "distance",
             "elevation_gain",
-            "moving_time",
+            "duration",
         ],
         "/stats/summary: the totals",
     );
@@ -276,7 +272,7 @@ fn the_statistics_routes_carry_their_shapes() {
             "avg_pace",
             "distance",
             "elevation_gain",
-            "moving_time",
+            "duration",
             "week_start",
         ],
         "/stats/weekly: a week",
@@ -393,6 +389,7 @@ fn the_insight_routes_carry_their_shapes() {
             "headline",
             "headline_note",
             "pace_at_hr",
+            "sessions_per_week",
             "typical_week",
             "weekly_volume",
         ],
@@ -517,7 +514,7 @@ fn the_app_routes_carry_their_shapes() {
     );
     assert_keys(
         first(&calendar, "days"),
-        &["activities", "date", "day", "distance", "moving_time"],
+        &["activities", "date", "day", "distance", "duration"],
         "/calendar: a day",
     );
 }

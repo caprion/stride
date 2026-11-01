@@ -142,24 +142,71 @@ pub fn pace_of(distance_m: f64, moving_time_s: f64) -> Option<f64> {
 ///
 /// Every measurement in the row is the core's rendering of it, with the
 /// number beside it for the chart. Nothing here formats a value.
-pub fn activity_summary(activity: &StoredActivity) -> ActivitySummary {
+pub fn activity_summary(
+    activity: &StoredActivity,
+    group: crate::dto::ActivityGroupTotals,
+) -> ActivitySummary {
     ActivitySummary {
         id: activity.id,
         name: activity.name.clone(),
         sport_type: activity.sport_type.clone(),
         start_time: crate::state::format_instant(activity.start_time),
         local_date: activity.local_date.clone(),
-        distance: render::distance(Some(activity.distance_m)),
-        moving_time: render::duration(Some(activity.moving_time_s)),
-        elapsed_time: render::duration(Some(activity.elapsed_time_s)),
-        avg_hr: render::heart_rate(activity.avg_hr),
-        max_hr: render::heart_rate(activity.max_hr),
-        avg_cadence: render::cadence(None),
+        distance: render::distance_of(activity.distance_m),
+        duration: render::duration_of(activity.moving_time_s),
+        heart_rate: render::heart_rate(activity.avg_hr),
         elevation_gain: render::elevation(Some(activity.elevation_gain_m)),
         pace: render::pace(pace_of(activity.distance_m, activity.moving_time_s)),
+        group,
         story: None,
         geo_points: Vec::new(),
     }
+}
+
+/// The group a run belongs to, and that group's totals.
+///
+/// The feed is grouped by the API — the API is the one that knows the
+/// totals — and the app labels the groups. A group is a week: the key is
+/// the Monday the week starts on.
+pub fn group_totals(api: &Api, key: &str) -> ApiResult<crate::dto::ActivityGroupTotals> {
+    let start = core_date(key)?;
+    let end = start.add_days(6);
+    let runs = api
+        .store()
+        .activities_between(key, &end.to_iso())
+        .map_err(|error| api.store_error("the runs could not be read", &error))?;
+    let distance_m: f64 = runs.iter().map(|run| run.distance_m).sum();
+    let moving_time_s: f64 = runs.iter().map(|run| run.moving_time_s).sum();
+    Ok(crate::dto::ActivityGroupTotals {
+        key: key.to_string(),
+        distance: render::distance_of(distance_m),
+        duration: render::duration_of(moving_time_s),
+    })
+}
+
+/// The runs as the feed shows them, each with the group it belongs to.
+pub fn summaries(api: &Api, runs: &[StoredActivity]) -> ApiResult<Vec<ActivitySummary>> {
+    let mut groups: BTreeMap<String, crate::dto::ActivityGroupTotals> = BTreeMap::new();
+    let mut out: Vec<ActivitySummary> = Vec::with_capacity(runs.len());
+    for run in runs {
+        let key = group_key(run)?;
+        let group = match groups.get(&key) {
+            Some(group) => group.clone(),
+            None => {
+                let group = group_totals(api, &key)?;
+                groups.insert(key.clone(), group.clone());
+                group
+            }
+        };
+        out.push(activity_summary(run, group));
+    }
+    Ok(out)
+}
+
+/// The group a run belongs to: the week it falls in.
+pub fn group_key(activity: &StoredActivity) -> ApiResult<String> {
+    let date = core_date(&activity.local_date)?;
+    Ok(week_start(date).to_iso())
 }
 
 /// The runs of one day.
@@ -167,8 +214,8 @@ pub fn runs_on(api: &Api, date: &str) -> ApiResult<Vec<ActivitySummary>> {
     let runs = api
         .store()
         .activities_for_date(date)
-        .map_err(|_| ApiError::internal("the runs could not be read"))?;
-    Ok(runs.iter().map(activity_summary).collect())
+        .map_err(|error| api.store_error("the runs could not be read", &error))?;
+    summaries(api, &runs)
 }
 
 /// The distance of one day, in metres.
