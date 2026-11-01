@@ -75,6 +75,24 @@ class AppSettings(context: Context) {
         set(value) = preferences.edit().putBoolean(KEY_SETUP_DISMISSED, value).apply()
 
     /**
+     * Whether the native setup screen changed the Garmin connection.
+     *
+     * The WebView may have read Today while the native screen was in
+     * front. This one-bit hand-off tells it to read the local database
+     * again when the screen closes. It carries no credential.
+     */
+    var connectionChanged: Boolean
+        get() = preferences.getBoolean(KEY_CONNECTION_CHANGED, false)
+        set(value) = preferences.edit().putBoolean(KEY_CONNECTION_CHANGED, value).apply()
+
+    /** Read and clear the connection-changed hand-off. */
+    fun consumeConnectionChanged(): Boolean {
+        val changed = connectionChanged
+        if (changed) preferences.edit().remove(KEY_CONNECTION_CHANGED).apply()
+        return changed
+    }
+
+    /**
      * When the next periodic pull is scheduled, in epoch milliseconds.
      *
      * WorkManager does not promise an exact second, but the phone does name
@@ -105,5 +123,6 @@ class AppSettings(context: Context) {
         private const val KEY_NETWORK = "network_enabled"
         private const val KEY_SETUP_DISMISSED = "setup_dismissed"
         private const val KEY_NEXT_PULL_AT = "next_pull_at"
+        private const val KEY_CONNECTION_CHANGED = "connection_changed"
     }
 }

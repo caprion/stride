@@ -262,6 +262,7 @@ class GarminSetupActivity : AppCompatActivity(), SetupRunner.Listener {
         try {
             runner.forget()
             connected = false
+            AppSettings(this).connectionChanged = true
             showIdentifier(null)
             show(SetupUi(SetupPhase.Idle))
             Toast.makeText(this, R.string.forget_key_result, Toast.LENGTH_LONG).show()
@@ -294,6 +295,7 @@ class GarminSetupActivity : AppCompatActivity(), SetupRunner.Listener {
             // A key is on the phone, so the screen has nothing left to ask
             // for.
             AppSettings(this).setupDismissed = true
+            AppSettings(this).connectionChanged = true
             showIdentifier(savedKey())
             askForNotificationPermission()
         }

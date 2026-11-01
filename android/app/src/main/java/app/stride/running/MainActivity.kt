@@ -177,7 +177,8 @@ class MainActivity : BridgeActivity() {
      */
     private fun reloadIfTheConnectionChanged() {
         val connected = hasGarminKey()
-        if (connected == keyAtLastForeground) return
+        val changed = AppSettings(this).consumeConnectionChanged()
+        if (!changed && connected == keyAtLastForeground) return
         keyAtLastForeground = connected
         bridge?.webView?.reload()
     }
