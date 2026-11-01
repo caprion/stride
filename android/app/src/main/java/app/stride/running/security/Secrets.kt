@@ -15,13 +15,25 @@ import java.security.SecureRandom
  */
 object Secrets {
 
+    /**
+     * The file the Garmin credential is in.
+     *
+     * **The version is in the name.** The bytes of an envelope carry no
+     * magic and no version — they are the nonce's length, the nonce and
+     * the ciphertext — because a name is readable and a byte is not.
+     */
+    const val CREDENTIAL_FILE = "garmin-credential.v1"
+
+    /** The file the SQLCipher database key is in. */
+    const val DATABASE_FILE = "database-key.v1"
+
     /** The Garmin Personal API key, encrypted. */
     fun credential(context: Context): EnvelopeFile =
-        EnvelopeFile(context, "garmin-credential.v1", KeystoreKeys.ALIAS_GARMIN)
+        EnvelopeFile(context, CREDENTIAL_FILE, KeystoreKeys.ALIAS_GARMIN)
 
     /** The SQLCipher database key, encrypted. */
     fun databaseKey(context: Context): EnvelopeFile =
-        EnvelopeFile(context, "database-key.v1", KeystoreKeys.ALIAS_DATABASE)
+        EnvelopeFile(context, DATABASE_FILE, KeystoreKeys.ALIAS_DATABASE)
 
     /**
      * The 32-byte SQLCipher key, hex-encoded.
