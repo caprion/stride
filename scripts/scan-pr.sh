@@ -107,11 +107,15 @@ done < <(printf '%s\n' "$ADDED")
 # free-text notes. The rules are anchored on the synthetic corpus anchor, not
 # on a geographic band — a band narrow enough to catch a real coordinate is
 # also narrow enough to tell a stranger roughly where the athlete lives.
+# Only the added lines that could possibly match are checked: one grep for
+# the whole diff, instead of a process per line (which took minutes).
+CANDIDATES=$(printf '%s\n' "$ADDED" | grep -iE 'lat|lon|displayname|fullname|nickname|username|athlete_name|devicename|device_name|serialnumber|serial_number|external_id|unit_id|unitid|product_number|part_number|note|comment|remark|@|degree|semicircle|position' || true)
+
 while IFS= read -r line; do
   while IFS= read -r violation; do
     [[ -n "$violation" ]] && fail "$violation"
   done < <(privacy_check_line "${line%%$'\t'*}" "${line#*$'\t'}")
-done < <(printf '%s\n' "$ADDED")
+done < <(printf '%s\n' "$CANDIDATES")
 
 while IFS= read -r line; do
   text="${line#*$'\t'}"

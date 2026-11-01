@@ -86,15 +86,23 @@ for f in "${FILES[@]}"; do
 
   # The shared rules decide: labelled coordinates, unlabelled pairs, coordinate
   # conversions, profile fields, serials.
-  # The frozen corpus may carry serial-shaped values; it is hashed and its
-  # provenance is documented, so the serial rule does not re-litigate it here.
-  skip_serials=0
-  case "$f" in fixtures/*) skip_serials=1 ;; esac
+  # The frozen corpus may carry serial-shaped values and documentation notes;
+  # it is hashed and its provenance is documented, so those two rules do not
+  # re-litigate it here. The diff scanner does — a new one is new data.
+  frozen=0
+  case "$f" in fixtures/*) frozen=1 ;; esac
+  # A lockfile is a generated file of checksums and versions: the personal
+  # rules do not apply to it (the secret rules still do).
+  case "$f" in
+    *Cargo.lock|*package-lock.json|*pnpm-lock.yaml) continue ;;
+  esac
+  # Only the lines that could match are checked — one grep instead of one
+  # process per line, which is the difference between seconds and minutes.
   while IFS= read -r line; do
     while IFS= read -r violation; do
       [[ -n "$violation" ]] && fail "$violation"
-    done < <(privacy_check_line "$f" "$line" "$skip_serials")
-  done < <(grep -nI "" "$f" 2>/dev/null | cut -d: -f2-)
+    done < <(privacy_check_line "$f" "$line" "$frozen")
+  done < <(privacy_candidate_lines "$f")
 
   report "$f" "$ID_BAD" "non-zero Garmin user id"
 
