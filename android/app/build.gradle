@@ -188,7 +188,9 @@ tasks.register('cargoNdkBuild', Exec) {
     if (rustCoreMode == 'stub') {
         // The stub is a build without the `real-core` feature: the seam
         // answers every route with "the Rust core is not in this build".
-        commandLine '--no-default-features'
+        // `args` appends to the command; another `commandLine` call would
+        // replace it and try to execute the flag as a program.
+        args '--no-default-features'
     }
     if (androidNdkDir) {
         environment 'ANDROID_NDK_HOME', androidNdkDir
@@ -387,10 +389,10 @@ tasks.matching { it.name == 'preReleaseBuild' }.configureEach {
     doFirst {
         if (rustCoreMode != 'real' && !allowStubCore) {
             throw new GradleException(
-                    'The release build needs the real Rust core, and it is not in the tree ' +
-                    '(crates/stride-api). A release APK whose core is the stub would answer ' +
-                    'every route with "the Rust core is not in this build" — a product that ' +
-                    'does nothing, published under the Stride name.')
+                    'The release build needs the real Rust core, but it was configured to ' +
+                    'carry the stub. A release APK whose core is the stub would answer every ' +
+                    'route with "the Rust core is not in this build" — a product that does ' +
+                    'nothing, published under the Stride name.')
         }
         if (rustCoreMode != 'real') {
             logger.warn(
