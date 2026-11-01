@@ -93,13 +93,26 @@ privacy_check_line() {
   # serial and note rules do not re-litigate a corpus that is hashed and
   # whose provenance is documented. The diff scanner never passes it — a new
   # serial or a new note anywhere is new data.
+  #
+  # The rules are split by what they need:
+  #   * the *shape* rules (a coordinate pair, a conversion, an email, a phone)
+  #     must see every line that could match — a keyword filter would make an
+  #     unlabelled coordinate pair unreachable, which is the exact case the
+  #     pair rule exists to catch;
+  #   * the *key* rules (a labelled coordinate, a profile field, a serial)
+  #     need a key, so they are given the lines that carry one.
   local file="$1" text="$2" frozen="${3:-0}"
   local out='' key value rest pair a b
 
   # The patterns live in variables: inside [[ =~ ]] an unquoted variable is
   # the pattern, and it may contain quotes without any escaping dance.
   local RE_COORD='["'"'"']?([A-Za-z0-9_.-]+)["'"'"']?[[:space:]]*[:=][[:space:]]*["'"'"']?(-?[0-9]{1,3}\.[0-9]+)'
-  local RE_PAIR='(-?[0-9]{1,3}\.[0-9]{3,})[[:space:]]*,[[:space:]]*(-?[0-9]{1,3}\.[0-9]{3,})'
+  # Two decimals is the floor. One decimal is mostly noise — a table of
+  # medians reads as "3.0, 2.0" — and a real coordinate is written with
+  # more precision than that. Two decimals still catches the coarse case
+  # (a coarse latitude and longitude, written with two decimals) and, unlike a
+  # keyword filter, it cannot miss a pair that has no label at all.
+  local RE_PAIR='(-?[0-9]{1,3}\.[0-9]{2,})[[:space:]]*,[[:space:]]*(-?[0-9]{1,3}\.[0-9]{2,})'
   local RE_CONV_AFTER='(degree|semicircle)[^0-9-]{0,24}(-?[0-9]{1,3}\.[0-9]{4,})'
   local RE_CONV_BEFORE='(-?[0-9]{1,3}\.[0-9]{4,})[^0-9-]{0,24}(degree|semicircle)'
   local RE_PROFILE='["'"'"']?([A-Za-z0-9_.-]*(displayName|fullName|nickName|userName|athlete_name|deviceName|device_name|firstName|lastName)[A-Za-z0-9_.-]*)["'"'"']?[[:space:]]*[:=][[:space:]]*["'"'"']?([^"'"'"',}[:space:]]+)'
@@ -189,7 +202,7 @@ privacy_check_line() {
   # --- 6. an email address (reserved TLDs are not personal data) ---------
   local RE_EMAIL_RESERVED='[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.(invalid|example|test|localhost)'
   local RE_EMAIL='[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}'
-  local RE_PHONE_INTL='\+[0-9]{1,3}[-[:space:]][0-9]{4,}[-[:space:]][0-9]{4,}'
+  local RE_PHONE_INTL='\+[0-9]{1,3}([-[:space:]][0-9]{2,4}){2,4}'
   local RE_PHONE_KEY='(phone|mobile|tel|telephone|phone_number|mobile_number)["'"'"']?[[:space:]]*[:=][[:space:]]*["'"'"']?[0-9]{6,}'
   local RE_NOTE='"(note|notes|comment|remark)"[[:space:]]*:[[:space:]]*"[^"]{4,}"'
   if [[ "$text" =~ $RE_EMAIL_RESERVED ]]; then
@@ -220,9 +233,23 @@ privacy_candidate_lines() {
   grep -inE 'lat|lon|displayname|fullname|nickname|username|athlete_name|devicename|device_name|serialnumber|serial_number|external_id|unit_id|unitid|product_number|part_number|note|comment|remark|@|degree|semicircle|position' "$1" 2>/dev/null | cut -d: -f2-
 }
 
+# The lines that could hold a phone number: an international prefix, or a key
+# that says so. Same idea as the pair filter — a shape, not a keyword list
+# someone has to remember to update.
+privacy_phone_lines() {
+  grep -nE '\+[0-9]{1,3}([-. ][0-9]{2,4}){1,4}|(phone|mobile|tel|telephone|phone_number|mobile_number)' "$1" 2>/dev/null | cut -d: -f2-
+}
+
+# The lines that could hold a coordinate *pair*, however they are labelled.
+# A shape filter, not a keyword filter: an unlabelled pair has no keyword,
+# and a filter that skipped it would make the rule unreachable.
+privacy_pair_lines() {
+  grep -nE '[0-9]\.[0-9]+[[:space:]]*,[[:space:]]*[-0-9]*[0-9]\.[0-9]+' "$1" 2>/dev/null | cut -d: -f2-
+}
+
 # The three text rules the diff scanner applies to whole lines. They are the
 # same rules privacy_check_line applies per line, in regex form.
 privacy_email_reserved_re='[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.(invalid|example|test|localhost)'
 privacy_email_re='[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}'
-privacy_phone_re='(\+[0-9]{1,3}[-[:space:]][0-9]{4,}[-[:space:]][0-9]{4,}|(phone|mobile|tel|telephone|phone_number|mobile_number)["'"'"']?[[:space:]]*[:=][[:space:]]*["'"'"']?[0-9]{6,})'
+privacy_phone_re='(\+[0-9]{1,3}([-[:space:]][0-9]{2,4}){2,4}|(phone|mobile|tel|telephone|phone_number|mobile_number)["'"'"']?[[:space:]]*[:=][[:space:]]*["'"'"']?[0-9]{6,})'
 privacy_note_re='"(note|notes|comment|remark)"[[:space:]]*:[[:space:]]*"[^"]{4,}"'

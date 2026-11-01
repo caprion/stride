@@ -3,3 +3,12 @@ This file must be caught by scripts/scan-privacy.sh.
 A coordinate in the plausible-real band, single line: 15.0000, 78.0000
 A personal name in a Garmin profile field: "displayName": "JANE DOE"
 A non-zero Garmin user id: "userProfileId": 12345678
+
+An unlabelled coordinate pair — no keyword, so only the shape rule can see it:
+near 15.1234, 78.5678 here
+
+A phone number in the 3-3-4 form:
+call +1 555 123 4567
+
+A phone number under a key:
+phone: 5551234567

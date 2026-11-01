@@ -112,7 +112,7 @@ for f in "${FILES[@]}"; do
       continue
     fi
     fail "$f:$lineno: credential-like key with a value"
-  done < <(grep -niP "$SECRET_KEY_NAMES[[:space:]]*[:=]" "$f" 2>/dev/null)
+  done < <(grep -niP "$SECRET_KEY_NAMES[\"']?[[:space:]]*[:=]" "$f" 2>/dev/null)
 done
 
 if [[ "$found" -ne 0 ]]; then

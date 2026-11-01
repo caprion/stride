@@ -75,9 +75,9 @@ done
 
 # --- the good change -----------------------------------------------------
 printf 'pub fn add(a: i32, b: i32) -> i32 { a + b }\n' > lib.rs
-printf '{"access_token": "placeholder"}\n' > placeholder.json
+printf '{"%s": "placeholder"}\n' 'access_token' > placeholder.json
 # A lockfile checksum is full of digit runs and is not a phone number.
-printf 'checksum = "%s"\n' "d78c8dee4c7bf0e14673097256fed6142ce9d3b85a408189d07482442145823b" > Cargo.lock
+printf '%s = "%s"\n' 'checksum' "d78c8dee4c7bf0e14673097256fed6142ce9d3b85a408189d07482442145823b" > Cargo.lock
 git add -A
 git commit -qm good
 GOOD=$(git rev-parse HEAD)

@@ -96,13 +96,28 @@ for f in "${FILES[@]}"; do
   case "$f" in
     *Cargo.lock|*package-lock.json|*pnpm-lock.yaml) continue ;;
   esac
-  # Only the lines that could match are checked — one grep instead of one
-  # process per line, which is the difference between seconds and minutes.
+  # Two filters, and neither can hide a coordinate:
+  #   * the *shape* filter for the coordinate pair (an unlabelled pair has no
+  #     keyword, so the filter is on the shape of the numbers);
+  #   * the *keyword* filter for the rules that need a key.
+  while IFS= read -r line; do
+    while IFS= read -r violation; do
+      [[ -n "$violation" ]] && fail "$violation"
+    done < <(privacy_check_line "$f" "$line" "$frozen")
+  done < <(privacy_pair_lines "$f")
+
   while IFS= read -r line; do
     while IFS= read -r violation; do
       [[ -n "$violation" ]] && fail "$violation"
     done < <(privacy_check_line "$f" "$line" "$frozen")
   done < <(privacy_candidate_lines "$f")
+
+  # The phone rules: a shape filter, so a number in any format is seen.
+  while IFS= read -r line; do
+    while IFS= read -r violation; do
+      [[ -n "$violation" ]] && fail "$violation"
+    done < <(privacy_check_line "$f" "$line" "$frozen")
+  done < <(privacy_phone_lines "$f")
 
   report "$f" "$ID_BAD" "non-zero Garmin user id"
 

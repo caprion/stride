@@ -107,15 +107,31 @@ done < <(printf '%s\n' "$ADDED")
 # free-text notes. The rules are anchored on the synthetic corpus anchor, not
 # on a geographic band — a band narrow enough to catch a real coordinate is
 # also narrow enough to tell a stranger roughly where the athlete lives.
-# Only the added lines that could possibly match are checked: one grep for
-# the whole diff, instead of a process per line (which took minutes).
-CANDIDATES=$(printf '%s\n' "$ADDED" | grep -iE 'lat|lon|displayname|fullname|nickname|username|athlete_name|devicename|device_name|serialnumber|serial_number|external_id|unit_id|unitid|product_number|part_number|note|comment|remark|@|degree|semicircle|position' || true)
+# Two filters, and neither can hide a coordinate:
+#   * the *shape* filter for the coordinate pair — an unlabelled pair has no
+#     keyword, so the filter is on the shape of the numbers;
+#   * the *keyword* filter for the rules that need a key.
+CANDIDATES=$(printf '%s\n' "$ADDED" | grep -E '[0-9]\.[0-9]+[[:space:]]*,[[:space:]]*[-0-9]*[0-9]\.[0-9]+' || true)
+KEY_LINES=$(printf '%s\n' "$ADDED" | grep -iE 'lat|lon|displayname|fullname|nickname|username|athlete_name|devicename|device_name|serialnumber|serial_number|external_id|unit_id|unitid|product_number|part_number|note|comment|remark|@|degree|semicircle|position' || true)
+PHONE_LINES=$(printf '%s\n' "$ADDED" | grep -E '\+[0-9]{1,3}([-. ][0-9]{2,4}){1,4}|(phone|mobile|tel|telephone|phone_number|mobile_number)' || true)
 
 while IFS= read -r line; do
   while IFS= read -r violation; do
     [[ -n "$violation" ]] && fail "$violation"
   done < <(privacy_check_line "${line%%$'\t'*}" "${line#*$'\t'}")
 done < <(printf '%s\n' "$CANDIDATES")
+
+while IFS= read -r line; do
+  while IFS= read -r violation; do
+    [[ -n "$violation" ]] && fail "$violation"
+  done < <(privacy_check_line "${line%%$'\t'*}" "${line#*$'\t'}")
+done < <(printf '%s\n' "$KEY_LINES")
+
+while IFS= read -r line; do
+  while IFS= read -r violation; do
+    [[ -n "$violation" ]] && fail "$violation"
+  done < <(privacy_check_line "${line%%$'\t'*}" "${line#*$'\t'}")
+done < <(printf '%s\n' "$PHONE_LINES")
 
 while IFS= read -r line; do
   text="${line#*$'\t'}"
