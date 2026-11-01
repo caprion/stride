@@ -263,6 +263,7 @@ fn every_frozen_fit_matches_the_golden_output() {
 fn compressed_timestamp_records_are_decoded() {
     let activity = parse_case("zz_compressed_timestamp");
     assert_eq!(activity.samples.len(), 2);
+    assert_eq!(activity.samples[1].elapsed_s, 1.0);
     assert_eq!(activity.geo_points.count, 2);
     assert_eq!(activity.geo_points.first[0], [-35.0, -140.0]);
     assert_eq!(activity.geo_points.last[0], [-35.0, -140.0]);
