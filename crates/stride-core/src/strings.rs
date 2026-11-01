@@ -171,7 +171,7 @@ pub struct Entry {
 }
 
 /// The catalogue.
-pub const CATALOGUE: [Entry; 40] = [
+pub const CATALOGUE: [Entry; 45] = [
     // The vitals.
     Entry {
         id: "vital.sleep.label",
@@ -342,6 +342,39 @@ pub const CATALOGUE: [Entry; 40] = [
         role: None,
         template:
             "the {n} other times your {vital} was {side} your usual, you ran {distance} or more",
+    },
+    // The rendered values. The number is already formatted by `units.rs`; the
+    // template adds the unit, so the API sends "8.4 km" and nobody downstream
+    // rounds it again.
+    Entry {
+        id: "value.distance",
+        kind: StringKind::Statement,
+        role: None,
+        template: "{value} km",
+    },
+    Entry {
+        id: "value.duration",
+        kind: StringKind::Statement,
+        role: None,
+        template: "{value}",
+    },
+    Entry {
+        id: "value.heart_rate",
+        kind: StringKind::Statement,
+        role: None,
+        template: "{value} bpm",
+    },
+    Entry {
+        id: "value.pace",
+        kind: StringKind::Statement,
+        role: None,
+        template: "{value} /km",
+    },
+    Entry {
+        id: "value.elevation",
+        kind: StringKind::Statement,
+        role: None,
+        template: "{value} m",
     },
     // The statements: factual sentences about the data, rendered by the core.
     Entry {

@@ -8,6 +8,16 @@
 //!
 //! The human rendering is the one the athlete reads: "6 h 10 m", not "6.166 h";
 //! "14 below your usual", not "−13.7%".
+//!
+//! This module is also the **one** owner of the domain values' rendering.
+//! Contract §8: the core renders the domain's sentences *and* its numbers;
+//! the frontend renders chrome. A second implementation of "how do we say 30
+//! seconds" is the same disease as a second implementation of the FIT decoder,
+//! so the API sends the rendered value and nobody downstream rounds it again.
+//!
+//! Each renderer says which rounding rule it obeys, next to the rule.
+
+use crate::strings;
 
 /// Round half to even at `decimals` places.
 ///
@@ -119,6 +129,98 @@ pub fn format_whole(value: f64) -> String {
     format!("{rounded}")
 }
 
+/// A number truncated to an integer: "148" from 148.7.
+///
+/// Contract §3: a heart rate is **truncated**, never rounded — 148.7 is 148.
+pub fn format_truncated(value: f64) -> String {
+    if !value.is_finite() {
+        return String::new();
+    }
+    format!("{}", truncate_heart_rate(value))
+}
+
+/// The dense form of a pace: "5:02" from 302 seconds per kilometre.
+///
+/// The seconds are rounded half to even to a whole second (the contract's
+/// rounding rule, applied to the pace), and the seconds are written with two
+/// digits, because a pace is read as a clock, not as a decimal.
+pub fn format_pace(seconds_per_km: f64) -> String {
+    if !seconds_per_km.is_finite() || seconds_per_km <= 0.0 {
+        return String::new();
+    }
+    let total = round_half_even(seconds_per_km, 0) as i64;
+    let (minutes, seconds) = (total / 60, total.rem_euclid(60));
+    format!("{minutes}:{seconds:02}")
+}
+
+/// The rendered value of a distance: "8.4 km".
+///
+/// The rounding: one decimal, with the decimals a person leaves out dropped —
+/// the app's own form, "8.4 km" and "5 km". A distance of no value renders
+/// nothing at all: `None`, never "0 km".
+pub fn render_distance(metres: Option<f64>) -> Option<String> {
+    let metres = metres?;
+    if !metres.is_finite() {
+        return None;
+    }
+    let value = format_distance_km_short(metres);
+    strings::render("value.distance", &[("value", &value)])
+}
+
+/// The rendered value of a duration: "6 h 10 m", "42 m".
+///
+/// The rounding: minutes to the nearest minute, half to even, and an exact
+/// zero minutes left out — a person says "1 h", not "1 h 00 m" (contract §5).
+/// A duration of no value renders nothing at all.
+pub fn render_duration(seconds: Option<f64>) -> Option<String> {
+    let seconds = seconds?;
+    if !seconds.is_finite() {
+        return None;
+    }
+    let value = format_duration(seconds);
+    strings::render("value.duration", &[("value", &value)])
+}
+
+/// The rendered value of a heart rate: "148 bpm".
+///
+/// The rounding: truncated to an integer, never rounded (contract §3) — 148.7
+/// is 148. A heart rate of no value renders nothing at all.
+pub fn render_heart_rate(bpm: Option<f64>) -> Option<String> {
+    let bpm = bpm?;
+    if !bpm.is_finite() {
+        return None;
+    }
+    let value = format_truncated(bpm);
+    strings::render("value.heart_rate", &[("value", &value)])
+}
+
+/// The rendered value of a pace: "5:02 /km".
+///
+/// The rounding: the seconds are rounded half to even to a whole second and
+/// written as a clock ("5:02"). A pace of no value renders nothing at all —
+/// never "0:00".
+pub fn render_pace(seconds_per_km: Option<f64>) -> Option<String> {
+    let seconds_per_km = seconds_per_km?;
+    if !seconds_per_km.is_finite() || seconds_per_km <= 0.0 {
+        return None;
+    }
+    let value = format_pace(seconds_per_km);
+    strings::render("value.pace", &[("value", &value)])
+}
+
+/// The rendered value of an elevation: "128 m".
+///
+/// The rounding: a whole number of metres, half to even. An elevation of no
+/// value renders nothing at all.
+pub fn render_elevation(metres: Option<f64>) -> Option<String> {
+    let metres = metres?;
+    if !metres.is_finite() {
+        return None;
+    }
+    let value = format_whole(metres);
+    strings::render("value.elevation", &[("value", &value)])
+}
+
 /// The ordinal of a count: 1st, 2nd, 3rd, 4th, 11th, 21st.
 pub fn ordinal(count: usize) -> String {
     let suffix = match (count % 100, count % 10) {
@@ -134,6 +236,58 @@ pub fn ordinal(count: usize) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn the_rendered_values_are_the_apps_own_forms() {
+        // A distance: one decimal, the decimals a person leaves out dropped.
+        assert_eq!(render_distance(Some(8400.0)), Some("8.4 km".to_string()));
+        assert_eq!(render_distance(Some(5000.0)), Some("5 km".to_string()));
+        // A duration: minutes to the nearest minute.
+        assert_eq!(render_duration(Some(2520.0)), Some("42 m".to_string()));
+        assert_eq!(
+            render_duration(Some(6.0 * 3600.0 + 10.0 * 60.0)),
+            Some("6 h 10 m".to_string())
+        );
+        // A heart rate: truncated, never rounded.
+        assert_eq!(render_heart_rate(Some(148.7)), Some("148 bpm".to_string()));
+        assert_eq!(render_heart_rate(Some(148.2)), Some("148 bpm".to_string()));
+        // A pace: a clock, not a decimal.
+        assert_eq!(render_pace(Some(302.0)), Some("5:02 /km".to_string()));
+        // An elevation: whole metres.
+        assert_eq!(render_elevation(Some(128.0)), Some("128 m".to_string()));
+    }
+
+    #[test]
+    fn a_missing_value_renders_nothing_at_all() {
+        assert_eq!(render_distance(None), None);
+        assert_eq!(render_duration(None), None);
+        assert_eq!(render_heart_rate(None), None);
+        assert_eq!(render_pace(None), None);
+        assert_eq!(render_elevation(None), None);
+        // And a pace of zero is no value, never "0:00".
+        assert_eq!(render_pace(Some(0.0)), None);
+        assert_eq!(render_pace(Some(-1.0)), None);
+    }
+
+    #[test]
+    fn a_rendered_value_carries_no_hole() {
+        for rendered in [
+            render_distance(Some(8400.0)),
+            render_duration(Some(2520.0)),
+            render_heart_rate(Some(148.7)),
+            render_pace(Some(302.0)),
+            render_elevation(Some(128.0)),
+        ] {
+            let rendered = match rendered {
+                Some(rendered) => rendered,
+                None => continue,
+            };
+            assert!(
+                crate::strings::lint::check_rendered_statement(&rendered).is_empty(),
+                "\"{rendered}\" still carries a hole"
+            );
+        }
+    }
 
     #[test]
     fn rounding_is_half_to_even_like_the_reference() {
