@@ -9,6 +9,7 @@ small, explicit, and auditable. This document says what it is, and how to report
 |---|---|
 | **Your Garmin key** | Typed into a native screen on Android, wrapped by a non-exportable Keystore key, stored in `noBackupFilesDir`. It never enters the WebView, never enters the database, and is never returned by an endpoint. |
 | **Your data** | In a SQLCipher database. The key is supplied by the caller, never logged, never persisted to a state file, never returned by an API. |
+| **The first-run conversion** | The desktop's first-run migration encrypts a plaintext database in place and **leaves the plaintext copy beside it**, at `<database>.plaintext-backup`. The file was plaintext before, and the copy is the recovery path if the conversion is wrong. It is the user's file: delete it once the encrypted database opens. |
 | **The desktop rig** | Loopback is always allowed. Additional networks are opt-in via `STRIDE_TRUSTED_NETWORKS` (a CIDR list). Everything else is refused. There are **no pairing codes, no QR codes, no device tokens** — deliberately. |
 
 The threat model is therefore: *someone on your network, or someone with your unlocked phone*. There is no

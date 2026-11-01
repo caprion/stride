@@ -9,5 +9,13 @@ repository.workspace = true
 [lints]
 workspace = true
 
+# The dependency versions are the ones the old implementation shipped with, so
+# the two trees share one rusqlite and one libsqlite3-sys. The root manifest is
+# shared with the other workstreams and is not edited from here.
 [dependencies]
 stride-core = { path = "../stride-core" }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+chrono = { version = "0.4", features = ["serde"] }
+thiserror = "1"
+rusqlite = { version = "0.31", features = ["bundled-sqlcipher-vendored-openssl"] }

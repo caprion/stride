@@ -24,6 +24,20 @@ if grep -rniE '(SELECT|INSERT|UPDATE|DELETE)[[:space:]]*["'"'"'][^"'"'"']*[{}]' 
   fail=1
 fi
 
+# An interpolated *identifier* — a column list, a table name — is as much a
+# hole as an interpolated value: a name that came from a variable is a name
+# that can be anything. The one interpolation a statement may carry is a
+# compile-time constant, and Rust's naming says which is which: a constant
+# is written in upper case, and a local variable cannot be (the lints would
+# say so). So a lower-case name inside a statement is a hole.
+#
+# The case matters, so the name's first letter is matched with the
+# case-insensitivity switched off for it: `(?-i:…)` is a PCRE group.
+if grep -rniP '(SELECT|INSERT|UPDATE|DELETE)[[:space:]].*\{(?-i:[a-z_])[a-zA-Z0-9_]*\}' crates/ 2>/dev/null; then
+  echo "check-contract-greps: an identifier interpolated into SQL is not a constant" >&2
+  fail=1
+fi
+
 # No `unsafe` outside the FFI crate. The seam is the one place it is allowed:
 # the phone's Rust core is called across a C boundary, and that boundary is
 # where the panic-catching lives. Everywhere else — the libraries, the
