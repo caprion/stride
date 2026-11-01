@@ -37,9 +37,12 @@
 //!
 //! * **The key never comes back out.** There is no accessor for it, no
 //!   `Display` for it, and the `Debug` output is a fixed phrase.
-//! * **Every query is parameterised.** There is no string-built SQL in this
-//!   tree, and `scripts/check-contract-greps.sh` fails the build if that ever
-//!   stops being true.
+//! * **Every query is parameterised.** No value is ever interpolated into a
+//!   statement, and the values are bound. The one thing a statement may
+//!   interpolate is a column list, and that list is a compile-time constant.
+//!   `scripts/check-contract-greps.sh` fails the build if an interpolated
+//!   value, or an interpolated identifier that is not a constant, ever
+//!   appears in a statement.
 //! * **The FIT file is the source of truth.** It is stored, byte for byte,
 //!   with its SHA-256; every derived series is recomputable from it.
 //! * **No score, no verdict, no grade.** The product never shows a device's

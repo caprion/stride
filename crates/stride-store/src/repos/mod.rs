@@ -1,10 +1,18 @@
 //! The repositories: one per table.
 //!
-//! Every query in this crate is **parameterised**. There is no
-//! string-built SQL anywhere in the tree: the statements are `format!`ed
-//! only where a *column list* is interpolated, and never where a value is.
-//! `scripts/check-contract-greps.sh` fails the build if that ever stops being
-//! true.
+//! Every query in this crate is **parameterised**: no value is ever
+//! interpolated into a statement, and the values are bound. The one thing a
+//! statement may interpolate is a **column list**, and that list is a
+//! compile-time constant — Rust's naming says so, and the lints enforce it,
+//! because a local variable cannot be written in upper case.
+//!
+//! The table a statement names is always written out in the statement
+//! itself. A name that came from a variable could be anything, and a
+//! statement that is built at runtime is a statement nobody read.
+//!
+//! `scripts/check-contract-greps.sh` fails the build if an interpolated
+//! value or an interpolated identifier that is not a constant ever appears
+//! in a statement.
 //!
 //! | module | table |
 //! |---|---|
