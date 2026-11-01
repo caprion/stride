@@ -8,12 +8,12 @@
 //! ## The engine is the core's
 //!
 //! Every answer here is the core's: the baseline, the session of the day,
-//! the sessions of the week, the count and the results. This crate reads
-//! the store, hands the core the domain types it works on, and carries the
-//! core's answers back. The status of a session is **computed on read**,
-//! from the session's date, the runs of that day and the block's source —
-//! a stored verdict would be a judgement the plan forbids, and a baseline
-//! never yields "not done": an inferred baseline is not a prescription.
+//! the sessions of the week, the count, the results and the status of a
+//! session. This crate reads the store, hands the core the domain types it
+//! works on, and carries the core's answers back. The status of a session
+//! is **computed on read** and never stored — a stored verdict would be a
+//! judgement the plan forbids, and a baseline never yields "not done": an
+//! inferred baseline is not a prescription.
 //!
 //! ## The sources
 //!
