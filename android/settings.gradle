@@ -1,0 +1,55 @@
+// The phone shell's Gradle settings.
+//
+// The Capacitor Android library is an **npm package**, not a Maven
+// artifact: `@capacitor/android` ships the Gradle project that builds
+// `com.getcapacitor.android`, and it is the only copy of the bridge this
+// app talks through. It is looked for in this order:
+//
+//   1. `-PcapacitorAndroidDir=/some/path`     — an explicit override;
+//   2. `$CAPACITOR_ANDROID_DIR`                — the same, from the
+//      environment;
+//   3. `<repository>/node_modules/@capacitor/android/capacitor` — where an
+//      `npm install` at the repository root puts it, which is the layout
+//      the Capacitor CLI expects;
+//   4. `<this directory>/.capacitor/node_modules/@capacitor/android/capacitor`
+//      — where `android/fetch-capacitor.sh` puts it, for a build of the
+//      shell on its own.
+//
+// If none of them is there the build stops with a sentence that says what
+// to do, rather than with a Gradle error about a missing project.
+
+rootProject.name = 'stride-android'
+
+include ':app'
+
+/** The candidates for the Capacitor Android library, in order. */
+def capacitorCandidates = { ->
+    def listed = []
+    def asked = providers.gradleProperty('capacitorAndroidDir').getOrNull()
+    if (asked) {
+        listed << asked
+    }
+    def fromEnvironment = System.getenv('CAPACITOR_ANDROID_DIR')
+    if (fromEnvironment) {
+        listed << fromEnvironment
+    }
+    listed << new File(rootProject.projectDir, '../node_modules/@capacitor/android/capacitor').absolutePath
+    listed << new File(rootProject.projectDir, '.capacitor/node_modules/@capacitor/android/capacitor').absolutePath
+    return listed
+}()
+
+def capacitorDir = capacitorCandidates.find { new File(it, 'build.gradle').isFile() }
+
+if (capacitorDir == null) {
+    throw new GradleException(
+            "The Capacitor Android library was not found.\n" +
+            "Looked in:\n  " + capacitorCandidates.join("\n  ") + "\n" +
+            "Run ./fetch-capacitor.sh, or install the repository's npm " +
+            "dependencies, or point the build at a copy with " +
+            "-PcapacitorAndroidDir=<path>.")
+}
+
+include ':capacitor-android'
+project(':capacitor-android').projectDir = new File(capacitorDir)
+
+logger.lifecycle("capacitor-android: ${capacitorDir}")

@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    The launcher icon.
+
+    A vector, not a set of PNGs: the icon is a shape, and a shape does not
+    need a density ladder. The adaptive icon is the whole icon on every
+    Android the app supports (the floor is Android 15, which is well past
+    adaptive icons).
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!--
+        Three strides: a line, a gap, a line. The mark is the app's own
+        subject — the log — and nothing else.
+    -->
+    <path
+        android:fillColor="#4FD1C5"
+        android:pathData="M30,36 L42,36 L42,42 L30,42 Z" />
+    <path
+        android:fillColor="#4FD1C5"
+        android:pathData="M30,51 L48,51 L48,57 L30,57 Z" />
+    <path
+        android:fillColor="#4FD1C5"
+        android:pathData="M36,66 L54,66 L54,72 L36,72 Z" />
+</vector>

@@ -1,0 +1,112 @@
+#!/bin/sh
+#
+# Gradle, for this project.
+#
+# **There is no `gradle-wrapper.jar` in this repository, and there is a
+# reason.** The wrapper is normally a shell script plus a small binary jar;
+# the binary is what the repository's own pull-request scanner refuses —
+# `scripts/scan-pr.sh` fails a change that adds a binary file outside the
+# corpus, and a 40 KB jar is a binary file.
+#
+# So this script does what the wrapper does, without the jar: it reads the
+# distribution out of `gradle/wrapper/gradle-wrapper.properties`, finds it in
+# the Gradle cache, downloads it if it is not there, and runs it. The version
+# is pinned in exactly the same place, so `./gradlew assembleDebug` means the
+# same thing on every machine.
+#
+# The distribution is the one Gradle publishes, and it is fetched over
+# HTTPS. Nothing about it is private, and nothing about it is a secret.
+#
+set -eu
+
+here=$(cd "$(dirname "$0")" && pwd)
+properties="$here/gradle/wrapper/gradle-wrapper.properties"
+
+if [ ! -f "$properties" ]; then
+  echo "gradlew: $properties is missing" >&2
+  exit 1
+fi
+
+# The distribution URL out of the properties file. The `\` escapes are the
+# properties file's own escaping and are not part of the URL.
+url=$(sed -n 's/^distributionUrl=//p' "$properties" | head -1 | tr -d '\\')
+if [ -z "$url" ]; then
+  echo "gradlew: the distribution is not named in $properties" >&2
+  exit 1
+fi
+
+# The name the distribution unpacks under.
+name=$(basename "$url" .zip)
+name=${name%-bin}
+name=${name%-all}
+
+cache="${GRADLE_USER_HOME:-$HOME/.gradle}"
+home="$cache/stride-distributions"
+
+# Is this directory a Gradle distribution?
+is_distribution() {
+  [ -x "$1/bin/gradle" ]
+}
+
+# Find the distribution, in the places it may already be.
+find_distribution() {
+  for candidate in "$@"; do
+    if is_distribution "$candidate"; then
+      printf '%s' "$candidate"
+      return 0
+    fi
+  done
+  return 1
+}
+
+distribution=""
+distribution=$(find_distribution "$home/$name" "$home/$name/$name") || true
+
+if [ -z "$distribution" ]; then
+  # The wrapper's own cache: a machine that has built this project before
+  # has the distribution there.
+  for candidate in "$cache"/wrapper/dists/*/*/"$name" "$cache"/wrapper/dists/*/*/*/"$name"; do
+    if is_distribution "$candidate"; then
+      distribution="$candidate"
+      break
+    fi
+  done
+fi
+
+if [ -z "$distribution" ]; then
+  echo "gradlew: fetching $name"
+  mkdir -p "$home"
+  archive="$home/$name.zip"
+
+  if command -v curl >/dev/null 2>&1; then
+    curl -fsSL "$url" -o "$archive"
+  elif command -v wget >/dev/null 2>&1; then
+    wget -q "$url" -O "$archive"
+  else
+    echo "gradlew: neither curl nor wget is available" >&2
+    exit 1
+  fi
+
+  rm -rf "$home/$name" "$home/$name.zip"
+  if command -v unzip >/dev/null 2>&1; then
+    unzip -q "$archive" -d "$home"
+  elif command -v jar >/dev/null 2>&1; then
+    # `jar` is in the JDK, and the JDK is already needed to build an APK.
+    (cd "$home" && jar xf "$archive")
+  elif command -v python3 >/dev/null 2>&1; then
+    python3 -c 'import sys, zipfile; zipfile.ZipFile(sys.argv[1]).extractall(sys.argv[2])' "$archive" "$home"
+  else
+    echo "gradlew: nothing on this machine can unpack a zip (unzip, jar or python3)" >&2
+    exit 1
+  fi
+  rm -f "$archive"
+
+  distribution=$(find_distribution "$home/$name" "$home/$name/$name") || true
+fi
+
+if [ -z "$distribution" ]; then
+  echo "gradlew: the distribution was not unpacked" >&2
+  exit 1
+fi
+
+exec "$distribution/bin/gradle" "$@"

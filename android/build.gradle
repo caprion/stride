@@ -1,0 +1,29 @@
+// The phone shell's top-level build file.
+//
+// Two plugins and nothing else: the Android application plugin and the
+// Kotlin plugin. The Rust core is built by the tasks in `app/build.gradle`
+// (cargo-ndk), not by a Gradle plugin, so there is no Rust plugin to keep
+// in step with the toolchain.
+buildscript {
+    repositories {
+        google()
+        mavenCentral()
+    }
+    dependencies {
+        classpath 'com.android.tools.build:gradle:8.13.0'
+        classpath 'org.jetbrains.kotlin:kotlin-gradle-plugin:2.1.20'
+    }
+}
+
+apply from: "variables.gradle"
+
+allprojects {
+    repositories {
+        google()
+        mavenCentral()
+    }
+}
+
+tasks.register('clean', Delete) {
+    delete rootProject.layout.buildDirectory
+}

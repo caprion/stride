@@ -1,0 +1,26 @@
+[package]
+name = "stride-bindgen"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+description = "Generates the Kotlin bindings for the phone's Rust core."
+
+# A member of the repository's workspace, next to the seam it serves: the
+# Gradle build runs it, and the root gate has to see it.
+#
+# The lint table is inherited, not restated — a crate that declares its own
+# lint table can silently re-allow `unwrap`.
+[lints]
+workspace = true
+
+[[bin]]
+name = "stride-bindgen"
+path = "src/main.rs"
+
+[dependencies]
+# UniFFI's CLI is not published as a binary for this version, so the
+# generator is used as a library.
+uniffi_bindgen = "0.29"
+# UniFFI's path type.
+camino = "1"

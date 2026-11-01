@@ -1,0 +1,146 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    The native Garmin setup screen.
+
+    It exists because the credential must never be reachable from JavaScript:
+    a WebView is a browser, and anything in it is one injection away from a
+    stranger. The key is typed here, in the app, and goes straight into the
+    Keystore-wrapped envelope.
+
+    One thing on the screen: the key. There is no server field — the phone
+    has no server, it *is* the app — and no paragraph about what local-first
+    means. The status line says what is happening, and the line underneath
+    says how many runs have arrived.
+
+    **One link**, directly under the key field: Garmin's key page. It is a
+    link and not a button, because it goes somewhere, and it is on its own
+    line and not in a row with another button, because a row of two buttons
+    is a choice and this is not one.
+-->
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:fillViewport="true">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="24dp">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/garmin_title"
+            android:textColor="@color/stride_on_surface"
+            android:textSize="24sp"
+            android:textStyle="bold" />
+
+        <!--
+            The promise, in the app's own words, at the top of the screen
+            that asks for the one credential the app has.
+        -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="@string/garmin_promise"
+            android:textColor="@color/stride_muted"
+            android:textSize="14sp" />
+
+        <EditText
+            android:id="@+id/garmin_key"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:autofillHints=""
+            android:hint="@string/garmin_key_hint"
+            android:importantForAutofill="no"
+            android:inputType="textPassword"
+            android:maxLines="1"
+            android:minHeight="48dp"
+            android:textColor="@color/stride_on_surface" />
+
+        <!--
+            The one link, directly under the field.
+
+            It goes to Garmin's key page, in a Custom Tab, so the athlete
+            comes back to the field they were filling in.
+        -->
+        <TextView
+            android:id="@+id/garmin_open_garmin"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:clickable="true"
+            android:focusable="true"
+            android:gravity="center_vertical"
+            android:minHeight="48dp"
+            android:text="@string/garmin_open_garmin"
+            android:textColor="@color/stride_brand"
+            android:textSize="14sp" />
+
+        <!--
+            The toggle for the field itself: it shows the key that was
+            pasted, so a half-copied key can be seen before it is saved.
+        -->
+        <Button
+            android:id="@+id/garmin_show"
+            style="?android:attr/borderlessButtonStyle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:minHeight="48dp"
+            android:text="@string/garmin_show_key"
+            android:textSize="13sp" />
+
+        <!--
+            The state. One line, and the words are the words: checking,
+            syncing, connected, refused.
+        -->
+        <TextView
+            android:id="@+id/garmin_status"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:textColor="@color/stride_on_surface"
+            android:textSize="16sp" />
+
+        <!-- The count as it arrives: "12 runs", then "160 runs". -->
+        <TextView
+            android:id="@+id/garmin_progress"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:textColor="@color/stride_muted"
+            android:textSize="14sp"
+            android:visibility="gone" />
+
+        <Button
+            android:id="@+id/garmin_connect"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:minHeight="48dp"
+            android:text="@string/garmin_connect" />
+
+        <Button
+            android:id="@+id/garmin_not_now"
+            style="?android:attr/borderlessButtonStyle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:minHeight="48dp"
+            android:text="@string/garmin_not_now"
+            android:visibility="gone" />
+
+        <Button
+            android:id="@+id/garmin_forget"
+            style="?android:attr/borderlessButtonStyle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:minHeight="48dp"
+            android:text="@string/garmin_forget_key"
+            android:visibility="gone" />
+    </LinearLayout>
+</ScrollView>

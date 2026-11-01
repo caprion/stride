@@ -7,6 +7,9 @@
 #   core ← ingest   core ← store   api → {core, ingest, store}
 #   desktop → {api, store}
 #   stride-testkit is a dev-dependency only, everywhere.
+#   stride-ffi is the phone's seam: it may reach the core, and it must not
+#   create a cycle. stride-bindgen is the generator beside it: it depends on
+#   nothing of ours.
 #
 # Only *internal* edges count. An external dependency (serde, reqwest, …) is
 # not an edge of this graph, so the comparison filters to the workspace's own
@@ -33,16 +36,19 @@ expected() {
     stride-api)     printf 'stride-core stride-ingest stride-store';;
     stride-testkit) printf '';;
     stride-desktop) printf 'stride-api stride-store';;
+    stride-ffi)    printf '';;
+    stride-bindgen) printf '';;
     *) echo "check-deps: unknown workspace member $1" >&2; exit 2;;
   esac
 }
 
 fail=0
 
-# The workspace must contain exactly the six planned members. The seventh —
-# android/…/stride-ffi — is Slice 1+, so its appearance here is a violation.
+# The workspace must contain exactly the planned members: the six from Slice 0
+# plus the phone's seam and its generator, which arrived with the Android
+# shell.
 members=$(printf '%s' "$META" | jq -r '[.packages[].name] | sort | join(" ")')
-expected_members="stride-api stride-core stride-desktop stride-ingest stride-store stride-testkit"
+expected_members="stride-api stride-bindgen stride-core stride-desktop stride-ffi stride-ingest stride-store stride-testkit"
 if [[ "$members" != "$expected_members" ]]; then
   echo "check-deps: workspace members [$members]; expected [$expected_members]" >&2
   fail=1
@@ -60,7 +66,7 @@ internal_deps() {
   '
 }
 
-for name in stride-core stride-ingest stride-store stride-api stride-testkit stride-desktop; do
+for name in stride-core stride-ingest stride-store stride-api stride-testkit stride-desktop stride-ffi stride-bindgen; do
   actual=$(internal_deps "$name" "")
   exp=$(expected "$name")
   if [[ "$actual" != "$exp" ]]; then

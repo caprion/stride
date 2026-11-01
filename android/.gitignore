@@ -1,0 +1,33 @@
+# The phone shell's build output.
+build/
+.gradle/
+.cxx/
+
+# The Capacitor Android library, fetched by `fetch-capacitor.sh`.
+# It is an npm package, not a source file of this repository.
+.capacitor/
+
+# Local configuration: the SDK path and the signing key never enter the
+# repository. `local.properties` names the SDK; `keystore.properties` names
+# the signing key, and the key itself lives outside the tree.
+local.properties
+keystore.properties
+*.jks
+*.keystore
+
+# The generated Capacitor configuration and the Cordova plugin module.
+# `cap sync` writes them; the configuration that is committed is the shipped
+# one, and the plugin list is empty because the app has no Cordova plugins.
+app/src/main/res/xml/config.xml
+capacitor-cordova-android-plugins/
+
+# The copied web bundle. `sync-web.sh` puts the frontend's build here; the
+# placeholder that is committed is only what the shell carries when the
+# bundle has not been installed yet.
+app/src/main/assets/public/*
+!app/src/main/assets/public/index.html
+
+# Editors and logs.
+*.iml
+.idea/
+*.log

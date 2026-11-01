@@ -1,0 +1,370 @@
+apply plugin: 'com.android.application'
+apply plugin: 'org.jetbrains.kotlin.android'
+
+// ---------------------------------------------------------------------------
+// The Rust core.
+//
+// The phone runs the Rust core **in this process**: `cargo-ndk` cross-compiles
+// it for `aarch64-linux-android`, the UniFFI scaffolding generates the Kotlin
+// bindings from the UDL, and the shared object is packaged as
+// `libuniffi_stride.so`.
+//
+// **The core is not optional.** A release APK without the core is not Stride,
+// so the release build refuses to be assembled without it. A debug build may
+// be assembled without it, and says so loudly — see `rustCoreMode` below.
+// ---------------------------------------------------------------------------
+
+/**
+ * The ABIs this build carries.
+ *
+ * **arm64-v8a only**, which is what ships: almost every phone in use is
+ * arm64, and the release APK has to stay small. The x86_64 variant exists
+ * for the emulator and is never published:
+ *
+ *     ./gradlew :app:assembleDebug -PstrideEmulatorAbi=x86_64
+ */
+def targetAbis = project.hasProperty('strideEmulatorAbi')
+        ? [project.strideEmulatorAbi]
+        : ['arm64-v8a']
+
+/** The Rust crate of the phone. */
+def rustCrateDir = file('src/main/rust/stride-ffi')
+
+/** The binding generator: a build tool next to the crate. */
+def rustBindgenDir = file('src/main/rust/stride-bindgen')
+
+/** Where the generated Kotlin bindings go. */
+def uniffiGeneratedDir = layout.buildDirectory.dir('generated/uniffi/kotlin')
+
+/** Where the shared object is staged for the APK. */
+def rustJniLibsDir = layout.buildDirectory.dir('rust/jniLibs')
+
+/** The repository root: the Gradle root is `android/`, one level below it. */
+def rustWorkspaceDir = rootProject.projectDir.parentFile
+
+/**
+ * The Rust target triple of an ABI.
+ *
+ * `cargo-ndk` builds into `target/<triple>/release`, and the triple is not
+ * the ABI name: `arm64-v8a` is `aarch64-linux-android`.
+ */
+def rustTriple = { abi ->
+    switch (abi) {
+        case 'arm64-v8a': return 'aarch64-linux-android'
+        case 'x86_64': return 'x86_64-linux-android'
+        case 'armeabi-v7a': return 'armv7-linux-androideabi'
+        default: return null
+    }
+}
+
+/** The Android SDK, from `local.properties` or from the environment. */
+def androidSdkDir = {
+    def properties = new Properties()
+    def local = rootProject.file('local.properties')
+    if (local.exists()) {
+        local.withInputStream { properties.load(it) }
+    }
+    def dir = properties.getProperty('sdk.dir')
+    if (!dir) dir = System.getenv('ANDROID_HOME') ?: System.getenv('ANDROID_SDK_ROOT')
+    return dir ? file(dir).absolutePath : null
+}()
+
+/** The NDK, from the environment or from the SDK. */
+def androidNdkDir = {
+    if (System.getenv('ANDROID_NDK_HOME')) return System.getenv('ANDROID_NDK_HOME')
+    if (!androidSdkDir) return null
+    def root = new File(androidSdkDir, 'ndk')
+    if (!root.exists()) return null
+    def versions = (root.listFiles() ?: []).findAll { it.directory }.sort { it.name }
+    return versions.isEmpty() ? null : versions.last().absolutePath
+}()
+
+/**
+ * Where the Rust build puts its artefacts.
+ *
+ * **The shared target directory.** The canonical checkout of this
+ * repository lives at `/home/sumit/stride-v2`, and its `target/` is the
+ * directory every checkout shares: the crates are compiled once for the
+ * whole fleet rather than once per worktree. A checkout that has no shared
+ * directory falls back to its own `target/`, and `-PstrideTargetDir=…` (or
+ * `STRIDE_CARGO_TARGET_DIR=…`) moves it either way.
+ */
+def rustTargetDir = {
+    def asked = (project.findProperty('strideTargetDir') ?: System.getenv('STRIDE_CARGO_TARGET_DIR'))?.toString()
+    if (asked) return file(asked)
+    def shared = new File('/home/sumit/stride-v2/target')
+    if (shared.isDirectory() && shared.canWrite()) return shared
+    return new File(rustWorkspaceDir, 'target')
+}()
+
+/**
+ * Whether the real Rust core is in this build.
+ *
+ * The core is `crates/stride-api` in the workspace above, and the FFI seam
+ * calls it. Until that crate is in the tree the seam builds against its
+ * **stub**: the same panic boundary, the same envelopes, the same routes —
+ * and a core that answers every route with "the Rust core is not in this
+ * build" rather than with a number. A stub can refuse; it cannot be wrong.
+ *
+ * `-PstrideCore=real` demands the real core and fails without it.
+ * `-PstrideCore=stub` asks for the stub on purpose.
+ */
+def rustCoreMode = {
+    def asked = (project.findProperty('strideCore') ?: 'auto').toString()
+    if (!(asked in ['auto', 'real', 'stub'])) {
+        throw new GradleException("strideCore must be one of auto, real or stub; it is '${asked}'.")
+    }
+    def realCore = new File(rustWorkspaceDir, 'crates/stride-api/Cargo.toml').isFile()
+    if (asked == 'real') {
+        if (!realCore) {
+            throw new GradleException(
+                    "strideCore=real was asked for, but the Rust core is not in the tree: " +
+                    "${new File(rustWorkspaceDir, 'crates/stride-api')} does not exist.")
+        }
+        throw new GradleException(
+                'strideCore=real: the FFI seam has not been wired to crates/stride-api yet. ' +
+                'The seam is documented in ' +
+                'android/app/src/main/rust/stride-ffi/README.md; it is wired in the slice that ' +
+                'brings the core.')
+    }
+    if (asked == 'stub') {
+        logger.lifecycle('stride: the Rust core is the STUB. The APK answers every route with ' +
+                '"the Rust core is not in this build". This is a development build.')
+    } else {
+        logger.warn('stride: the Rust core crates/stride-api are not in the tree, so the APK is ' +
+                'built against the stub. Every route answers "the Rust core is not in this ' +
+                'build".')
+    }
+    return 'stub'
+}()
+
+/**
+ * Generate the Kotlin bindings for the Rust core.
+ *
+ * UniFFI's CLI is not published as a binary for this version, so the build
+ * uses the generator as a library: `stride-bindgen` is a small crate next to
+ * the FFI crate that writes the bindings into the build directory.
+ */
+tasks.register('uniffiGenerateKotlin', Exec) {
+    group = 'stride'
+    description = 'Generates the Kotlin bindings for the Rust core.'
+    workingDir rustBindgenDir
+    commandLine 'cargo', 'run', '--release', '--manifest-path', 'Cargo.toml',
+            '--', '../stride-ffi/src/stride.udl', uniffiGeneratedDir.get().asFile.absolutePath
+    inputs.file file('src/main/rust/stride-ffi/src/stride.udl')
+    inputs.file file('src/main/rust/stride-bindgen/Cargo.toml')
+    outputs.dir uniffiGeneratedDir
+    environment 'CARGO_TARGET_DIR', rustTargetDir.absolutePath
+}
+
+/**
+ * Build the Rust core for the phone.
+ *
+ * `cargo-ndk` cross-compiles for the ABI. Only `libuniffi_stride.so` is
+ * packaged: the shared objects of the path dependencies do not ride along.
+ */
+tasks.register('cargoNdkBuild', Exec) {
+    group = 'stride'
+    description = "Builds the Rust core for ${targetAbis.join(',')}."
+    dependsOn 'uniffiGenerateKotlin'
+    workingDir rustCrateDir
+    commandLine 'cargo', 'ndk', '-t', targetAbis.join(','),
+            'build', '--release', '--manifest-path', 'Cargo.toml'
+    if (androidNdkDir) {
+        environment 'ANDROID_NDK_HOME', androidNdkDir
+        environment 'ANDROID_NDK_ROOT', androidNdkDir
+    }
+    inputs.dir file('src/main/rust/stride-ffi/src')
+    inputs.file file('src/main/rust/stride-ffi/Cargo.toml')
+    inputs.file file('src/main/rust/stride-bindgen/Cargo.toml')
+    inputs.property('abi', targetAbis[0])
+    inputs.property('core', rustCoreMode)
+    // The stamp lives in the build directory, **not** in the cargo target
+    // directory: Gradle deletes a task's previous outputs when it re-runs
+    // the task, and the cargo target directory belongs to cargo.
+    outputs.file layout.buildDirectory.file("rust/cargo-ndk-${targetAbis[0]}-${rustCoreMode}.stamp")
+    // **The library is an input as well.** The stamp says "cargo ran", and
+    // cargo's output lives in the shared target directory — which any other
+    // build on this machine may clean. Without this, a wiped target
+    // directory leaves the stamp behind, Gradle considers the task done,
+    // and the APK ships the core from an earlier build. A missing input is
+    // a missing input: the task is out of date and cargo runs again.
+    inputs.files(fileTree(rustTargetDir) {
+        include "**/${rustTriple(targetAbis[0])}/release/libuniffi_stride.so"
+    })
+    environment 'CARGO_TARGET_DIR', rustTargetDir.absolutePath
+}
+
+/**
+ * Put the core's shared object where the APK picks it up.
+ *
+ * This is a plain task with the copy in its action, not a `Copy` task with a
+ * `from(...)`: Gradle resolves a Copy task's sources while it works out the
+ * task graph, which is *before* cargo-ndk has built anything. The lookup has
+ * to happen inside the action, where the library exists.
+ */
+tasks.register('copyRustLibrary') {
+    group = 'stride'
+    description = "Packages the Rust core as lib/${targetAbis[0]}/libuniffi_stride.so."
+    dependsOn 'cargoNdkBuild'
+    inputs.property('abi', targetAbis[0])
+    inputs.property('core', rustCoreMode)
+    // **The library itself is an input.** Without this Gradle asks only
+    // whether the ABI changed, finds that it did not, and considers the copy
+    // up to date — so a cargo rebuild is invisible to it and the APK ships
+    // the core from an earlier build.
+    inputs.files(fileTree(rustTargetDir) {
+        include "**/${rustTriple(targetAbis[0])}/release/libuniffi_stride.so"
+    })
+    outputs.dir new File(rustJniLibsDir.get().asFile, targetAbis[0])
+    doLast {
+        def triple = rustTriple(targetAbis[0])
+        // The seam is a member of the repository's workspace, so cargo puts
+        // its output in the workspace's target directory and nowhere else.
+        def candidates = [
+                file("${rustTargetDir}/${triple}/release"),
+        ]
+        def source = candidates.find { new File(it, 'libuniffi_stride.so').exists() }
+        if (!source) {
+            throw new GradleException(
+                    "cargo-ndk has not built ${triple}. Looked in:\n  " +
+                    candidates.collect { it.absolutePath }.join("\n  "))
+        }
+        // Only the core's own library ships. A shared object left over from
+        // an earlier build — `libstride_api.so`, say — would be packaged
+        // beside it and the app would carry a megabyte it never loads.
+        //
+        // **This ABI's directory is cleared, not the whole tree.**
+        def destination = new File(rustJniLibsDir.get().asFile, targetAbis[0])
+        delete destination
+        destination.mkdirs()
+        copy {
+            from new File(source, 'libuniffi_stride.so')
+            into destination
+        }
+        logger.lifecycle("packaged the Rust core: ${source}/libuniffi_stride.so")
+    }
+}
+
+tasks.matching { it.name == 'preBuild' }.configureEach {
+    dependsOn 'copyRustLibrary'
+}
+
+/**
+ * The release build carries the real core.
+ *
+ * A release APK whose core is the stub would answer every route with "the
+ * Rust core is not in this build" — a product that does nothing, published
+ * under the Stride name. So the release build refuses to be assembled
+ * against the stub.
+ */
+tasks.matching { it.name == 'preReleaseBuild' }.configureEach {
+    doFirst {
+        if (rustCoreMode != 'real') {
+            throw new GradleException(
+                    'The release build needs the real Rust core, and it is not in the tree ' +
+                    '(crates/stride-api). A release APK whose core is the stub would answer ' +
+                    'every route with "the Rust core is not in this build" — a product that ' +
+                    'does nothing, published under the Stride name.')
+        }
+    }
+}
+
+android {
+    namespace = "app.stride.running"
+    compileSdk = rootProject.ext.compileSdkVersion
+    defaultConfig {
+        applicationId "app.stride.running"
+        minSdkVersion rootProject.ext.minSdkVersion
+        targetSdkVersion rootProject.ext.targetSdkVersion
+        versionCode (project.hasProperty('strideVersionCode') ? project.strideVersionCode.toInteger() : 1)
+        versionName (project.hasProperty('strideVersionName') ? project.strideVersionName : '0.1.0')
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        ndk {
+            abiFilters(*targetAbis)
+        }
+        aaptOptions {
+            ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
+        }
+    }
+    sourceSets {
+        main {
+            // The Kotlin bindings UniFFI generates.
+            java.srcDirs += uniffiGeneratedDir
+            // The Rust core, as a shared object.
+            jniLibs.srcDirs += rustJniLibsDir
+        }
+    }
+    packaging {
+        jniLibs {
+            // The native libraries are compressed in the APK: the Rust core is
+            // megabytes of encrypted database and TLS, and a stored
+            // (uncompressed) shared object would put the download over the
+            // size limit on its own.
+            useLegacyPackaging true
+        }
+    }
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
+        debug {
+            // The WebView is not debuggable in a release build. In a debug
+            // build `chrome://inspect` may attach, which is a development
+            // tool and not a hole in the product.
+            applicationIdSuffix ".debug"
+            versionNameSuffix "-debug"
+        }
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_21
+        targetCompatibility JavaVersion.VERSION_21
+    }
+    kotlinOptions {
+        jvmTarget = '21'
+    }
+    lint {
+        // The lint is part of the build: a fatal is a failed build.
+        abortOnError true
+        warningsAsErrors true
+    }
+    testOptions {
+        unitTests {
+            // The unit tests are plain JVM tests: they carry no Android
+            // framework, so they need no instrumentation and no emulator.
+            returnDefaultValues = true
+        }
+    }
+}
+
+dependencies {
+    implementation "androidx.appcompat:appcompat:$androidxAppCompatVersion"
+    implementation "androidx.coordinatorlayout:coordinatorlayout:$androidxCoordinatorLayoutVersion"
+    implementation "androidx.core:core-ktx:$androidxCoreVersion"
+    implementation "androidx.fragment:fragment-ktx:$androidxFragmentVersion"
+
+    // The background pull. WorkManager survives the app being killed, and
+    // its constraints are the honest ones.
+    implementation "androidx.work:work-runtime-ktx:$androidxWorkVersion"
+
+    // The app gate asks the phone for its own credential. The platform's
+    // BiometricPrompt lost the pieces this needs in the API 36 platform, so
+    // the prompt is AndroidX's.
+    implementation "androidx.biometric:biometric:$androidxBiometricVersion"
+
+    // The Garmin key page opens in a **Custom Tab**: a browser tab that is
+    // part of this app's task, so the athlete closes it and comes straight
+    // back to the field they were filling in.
+    implementation "androidx.browser:browser:$androidxBrowserVersion"
+
+    // UniFFI's Kotlin bindings call the Rust core through JNA. The AAR is
+    // the Android build of JNA.
+    implementation("net.java.dev.jna:jna:${jnaVersion}@aar")
+
+    implementation project(':capacitor-android')
+
+    testImplementation "junit:junit:$junitVersion"
+    androidTestImplementation "androidx.test.ext:junit:$androidxJunitVersion"
+    androidTestImplementation "androidx.test.espresso:espresso-core:$androidxEspressoCoreVersion"
+}
