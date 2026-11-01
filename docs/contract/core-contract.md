@@ -203,6 +203,11 @@ The domain sentences and the domain numbers have **one owner: the core**.
 - **The frontend renders app chrome only.** Labels, buttons, empty states, the
   chrome around the sentences. It does not re-implement the domain's
   wording, and it does not re-implement the domain's rounding.
+- **The DTOs carry the rendered value.** A domain value crosses the wire as
+  both: the **text** the core rendered ("8.4 km", "42 m", "148 bpm", "5:02
+  /km") and the **raw number** for a chart. There is no `format:` hint — a
+  hint tells the frontend *how* to render, which is the hole this section
+  closes. A missing value crosses as null in both, never as "0".
 - **The rounding belongs to `units.rs`.** Half-even where the contract says
   half-even, truncation for heart rate, the human form for a duration. A
   second implementation of "how do we say 30 seconds" is the same disease as
@@ -217,3 +222,18 @@ the two ever disagree, the contract's list wins and the export is regenerated.
 Two hosts that disagree about a number is a bug. Two hosts that disagree
 about a *sentence* is the same bug, and it is worse, because a sentence is
 what the athlete reads.
+
+### Two real instances, recorded so the third is easier to spot
+
+- The frontend shipped a **port** of `units.rs` and rendered domain values
+  with it. A copy is a copy, even an exact one: it drifts the moment the
+  core's rule changes, and nothing fails.
+- The Garmin client **retried** on a 401 while the shell also retried, so a
+  routine token expiry produced three exchanges and three attempts against a
+  contract that says two (§7).
+
+Both arrived because a rule lived in prose and in two implementations. The
+mechanism that prevents it is the same in both cases: **the catalogue with
+its rules** (the export the frontend's lint reads) and **the contract's
+single owner** for a rule. When you find yourself writing a rule twice, you
+have found the bug — put it in the core and read it from there.
