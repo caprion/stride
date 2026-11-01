@@ -262,3 +262,129 @@ fn an_encrypted_file_is_not_converted_again() -> Result<()> {
     assert!(refused.is_err(), "an encrypted file was converted again");
     Ok(())
 }
+
+/// A plain file with a table whose name is an injection attempt.
+///
+/// The table name is never interpolated into a statement, and the file's own
+/// DDL is never executed: the conversion refuses the file, and the file is
+/// left exactly as it was.
+#[test]
+fn a_plain_database_with_a_crafted_table_name_is_refused() -> Result<()> {
+    let dir = common::scratch("export-craft")?;
+    let path = dir.file("stride.db");
+
+    {
+        let connection = rusqlite::Connection::open(&path)?;
+        for statement in stride_store::schema::all_statements() {
+            connection.execute_batch(statement)?;
+        }
+        connection
+            .execute_batch("CREATE TABLE \"x\"\"; DROP TABLE activities; --\" (a INTEGER);")?;
+        connection.execute(
+            "INSERT INTO activities (
+                source, external_id, name, sport_type, start_time, local_date,
+                distance_m, moving_time_s, elapsed_time_s, elevation_gain_m,
+                avg_hr, max_hr, fit_blob, fit_sha256, created_at, updated_at
+             ) VALUES ('garmin_personal', 'run-1', 'a run', 'running',
+                '2026-05-10T06:30:15.000000Z', '2026-05-10', 10000.0, 3000.0,
+                3100.0, 42.0, 148.0, 171.0, x'0102', 'a hash',
+                '2026-05-10T06:30:15.000000Z', '2026-05-10T06:30:15.000000Z')",
+            [],
+        )?;
+    }
+
+    let refused = export::convert_plaintext_to_encrypted(&path, &common::key()?);
+    let error = match refused {
+        Ok(_) => {
+            return Err(stride_store::StoreError::Invariant(
+                "a crafted file was converted".to_string(),
+            ))
+        }
+        Err(error) => error,
+    };
+    assert!(
+        error.to_string().contains("frozen schema"),
+        "the error does not say why: {error}"
+    );
+
+    // The file is untouched: it is still plain, and the run is still there.
+    assert_eq!(export::detect_format(&path)?, Format::Plaintext);
+    let connection = rusqlite::Connection::open(&path)?;
+    let runs: i64 =
+        connection.query_row("SELECT count(*) FROM activities", [], |row| row.get(0))?;
+    assert_eq!(runs, 1, "the crafted file was changed");
+    Ok(())
+}
+
+/// A plain file whose table has the right name and the wrong columns.
+#[test]
+fn a_plain_database_with_the_wrong_columns_is_refused() -> Result<()> {
+    let dir = common::scratch("export-columns")?;
+    let path = dir.file("stride.db");
+
+    {
+        let connection = rusqlite::Connection::open(&path)?;
+        connection.execute_batch("CREATE TABLE activities (id INTEGER PRIMARY KEY, name TEXT)")?;
+    }
+
+    let refused = export::convert_plaintext_to_encrypted(&path, &common::key()?);
+    assert!(
+        refused.is_err(),
+        "a file with the wrong columns was converted"
+    );
+    assert_eq!(export::detect_format(&path)?, Format::Plaintext);
+    Ok(())
+}
+
+/// A manifest that names a file outside the export directory.
+#[test]
+fn an_import_refuses_a_manifest_that_points_outside() -> Result<()> {
+    let (dir, store) = common::store("export-outside")?;
+    store.upsert_activity(&common::activity("run-1", "2026-05-10"))?;
+
+    let target = dir.file("export");
+    export::export(&store, &target, &common::key()?)?;
+
+    // A file outside the export, which the manifest now names.
+    let outside = dir.file("not-the-export.db");
+    common::write(&outside, "not a database")?;
+
+    let path = target.join("manifest.json");
+    let text = common::read_text(&path)?;
+    let text = text.replace("\"stride.db\"", "\"../not-the-export.db\"");
+    common::write(&path, &text)?;
+
+    let other = Store::open_and_migrate(&dir.file("other.db"), &common::key()?)?;
+    let refused = export::import(&other, &target, &common::key()?);
+    assert!(
+        refused.is_err(),
+        "the import followed the manifest out of the directory"
+    );
+    assert_eq!(other.count_activities()?, 0);
+
+    // The file outside was not touched.
+    assert_eq!(common::read_text(&outside)?, "not a database");
+    Ok(())
+}
+
+/// A manifest whose digest does not match the file.
+#[test]
+fn an_import_refuses_an_export_that_has_changed() -> Result<()> {
+    let (dir, store) = common::store("export-changed")?;
+    store.upsert_activity(&common::activity("run-1", "2026-05-10"))?;
+
+    let target = dir.file("export");
+    export::export(&store, &target, &common::key()?)?;
+
+    // The database is changed after the manifest was written.
+    let path = target.join("stride.db");
+    let mut bytes = common::read(&path)?;
+    bytes.push(0);
+    common::write(&path, &String::from_utf8_lossy(&bytes))?;
+
+    let other = Store::open_and_migrate(&dir.file("other.db"), &common::key()?)?;
+    let refused = export::import(&other, &target, &common::key()?);
+    assert!(refused.is_err(), "the import accepted a changed export");
+    assert_eq!(other.count_activities()?, 0);
+    Ok(())
+}

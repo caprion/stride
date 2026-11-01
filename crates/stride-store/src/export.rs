@@ -34,9 +34,14 @@
 //! The old desktop converted a plain SQLite file into an encrypted one, once,
 //! on the first run — the Python app wrote plain files and SQLCipher refused
 //! them. This is the same operation: the plain file is read, an encrypted
-//! file with the same schema and the same rows is written, the plain copy is
-//! kept beside it as `<name>.plaintext-backup`, and the encrypted file is put
-//! in the plain file's place.
+//! file with the **frozen** schema and the plain file's rows is written, the
+//! plain copy is kept beside it as `<name>.plaintext-backup`, and the
+//! encrypted file is put in the plain file's place.
+//!
+//! The plain copy is **not** a leak: the file was plaintext before the
+//! conversion, and the copy is the recovery path if the conversion is wrong.
+//! It is the user's file to delete once the encrypted database opens, and
+//! `SECURITY.md` says so.
 //!
 //! The conversion is careful, because it replaces a file:
 //!
@@ -49,6 +54,23 @@
 //!   replace the original if the two do not agree;
 //! * it reads the result back, and puts the plain file back if it does not
 //!   answer.
+//!
+//! ## The file is not trusted
+//!
+//! The file being converted is somebody else's file, so nothing in it is
+//! taken on trust:
+//!
+//! * its table names are checked against the frozen list, and a table that
+//!   is not in the frozen schema is **refused**;
+//! * its DDL is never executed — the destination gets the frozen schema, and
+//!   the rows are copied with the frozen statements;
+//! * its columns are checked against the frozen columns;
+//! * the values are always bound.
+//!
+//! The same is true of an export: the manifest names the database, and the
+//! name must be a plain file name that resolves **inside** the export
+//! directory, and the file must match the digest in the manifest before it
+//! is opened.
 
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
@@ -269,7 +291,14 @@ pub fn import(store: &Store, directory: &Path, key: &DatabaseKey) -> Result<Impo
         });
     }
 
-    let database = directory.join(&manifest.database);
+    // The database's name comes from the manifest, and the manifest comes
+    // from a file that is not ours. It must be a plain file name, and the
+    // file it names must be inside the export directory — a manifest that
+    // says "../../.ssh/id_rsa" must not make the store open it with the
+    // user's key.
+    let database = confined_database(directory, &manifest.database)?;
+    verify_database(&database, &manifest)?;
+
     let source = Store::open(&database, key)?;
 
     let report = store.with_connection(|destination| {
@@ -284,89 +313,189 @@ pub fn import(store: &Store, directory: &Path, key: &DatabaseKey) -> Result<Impo
     Ok(report)
 }
 
+/// The path of the database an export names, checked twice.
+///
+/// The name must be a plain file name — no directory part, no `..`, no
+/// separator — and the file it names must resolve **inside** the export
+/// directory. A symlink out of the directory is caught by the second check,
+/// because the path is canonicalised before it is compared.
+///
+/// The file is not opened here. It is only located.
+fn confined_database(directory: &Path, name: &str) -> Result<PathBuf> {
+    let named = Path::new(name);
+    let plain = named
+        .file_name()
+        .map(|file_name| file_name == named.as_os_str())
+        .unwrap_or(false);
+    if !plain {
+        return Err(StoreError::export(
+            directory,
+            format!("the manifest names {name:?}, which is not a plain file name"),
+        ));
+    }
+
+    let root = std::fs::canonicalize(directory)
+        .map_err(|source| StoreError::export(directory, source.to_string()))?;
+    let database = std::fs::canonicalize(root.join(name))
+        .map_err(|source| StoreError::export(directory, source.to_string()))?;
+    if database.parent() != Some(root.as_path()) {
+        return Err(StoreError::export(
+            directory,
+            format!("the manifest names {name:?}, which is not inside the export"),
+        ));
+    }
+    Ok(database)
+}
+
+/// Check the exported file against the manifest, before anything opens it.
+///
+/// The size and the SHA-256 are in the manifest, and they are checked
+/// against the file on the disk: an export that has been changed since it
+/// was written is refused, not imported.
+fn verify_database(database: &Path, manifest: &ExportManifest) -> Result<()> {
+    let bytes = std::fs::read(database)
+        .map_err(|source| StoreError::export(database.to_path_buf(), source.to_string()))?;
+    if bytes.len() as u64 != manifest.database_bytes {
+        return Err(StoreError::export(
+            database.to_path_buf(),
+            format!(
+                "the file is {} bytes and the manifest says {}",
+                bytes.len(),
+                manifest.database_bytes
+            ),
+        ));
+    }
+    let digest = hash::sha256_hex(&bytes);
+    if digest != manifest.database_sha256 {
+        return Err(StoreError::export(
+            database.to_path_buf(),
+            "the file does not match the digest in the manifest".to_string(),
+        ));
+    }
+    Ok(())
+}
+
 // -------------------------------------------------------------------- merge
 
-/// The columns of `activities`, in the schema's order.
-const ACTIVITY_COLUMNS: &[&str] = &[
-    "id",
-    "source",
-    "external_id",
-    "name",
-    "sport_type",
-    "start_time",
-    "local_date",
-    "distance_m",
-    "moving_time_s",
-    "elapsed_time_s",
-    "elevation_gain_m",
-    "avg_hr",
-    "max_hr",
-    "fit_blob",
-    "fit_sha256",
-    "created_at",
-    "updated_at",
-];
+/// One table of the frozen schema, and the statements that read and write it.
+///
+/// The statements are **literals**. A table name, a column name and a
+/// placeholder are all written out, and nothing is ever interpolated into
+/// them: a name that came from a variable could be anything, and a
+/// statement that is built at runtime is a statement nobody read.
+///
+/// The values are the only thing that varies, and they are always bound.
+struct FrozenTable {
+    /// The table's name.
+    name: &'static str,
+    /// The statement that reads a row.
+    select: &'static str,
+    /// The statement that writes a row.
+    insert: &'static str,
+    /// The statement that reads the table's columns.
+    columns: &'static str,
+}
 
-/// The columns of `activity_samples`.
-const SAMPLE_COLUMNS: &[&str] = &["activity_id", "series", "sha256", "first_s", "last_s"];
+/// `activities`.
+const ACTIVITIES: FrozenTable = FrozenTable {
+    name: "activities",
+    select: "SELECT id, source, external_id, name, sport_type, start_time, local_date, \
+             distance_m, moving_time_s, elapsed_time_s, elevation_gain_m, avg_hr, max_hr, \
+             fit_blob, fit_sha256, created_at, updated_at FROM activities",
+    insert: "INSERT INTO activities (id, source, external_id, name, sport_type, start_time, \
+              local_date, distance_m, moving_time_s, elapsed_time_s, elevation_gain_m, avg_hr, \
+              max_hr, fit_blob, fit_sha256, created_at, updated_at) \
+              VALUES (:id, :source, :external_id, :name, :sport_type, :start_time, :local_date, \
+              :distance_m, :moving_time_s, :elapsed_time_s, :elevation_gain_m, :avg_hr, :max_hr, \
+              :fit_blob, :fit_sha256, :created_at, :updated_at)",
+    columns: "PRAGMA main.table_info(\"activities\")",
+};
 
-/// The columns of `wellness_daily`.
-const WELLNESS_COLUMNS: &[&str] = &[
-    "date",
-    "sleep_s",
-    "deep_sleep_s",
-    "rem_s",
-    "light_sleep_s",
-    "awake_s",
-    "hrv_ms",
-    "resting_hr",
-    "stress_avg",
-    "source",
-    "updated_at",
-];
+/// `activity_samples`.
+const ACTIVITY_SAMPLES: FrozenTable = FrozenTable {
+    name: "activity_samples",
+    select: "SELECT activity_id, series, sha256, first_s, last_s FROM activity_samples",
+    insert: "INSERT INTO activity_samples (activity_id, series, sha256, first_s, last_s) \
+              VALUES (:activity_id, :series, :sha256, :first_s, :last_s)",
+    columns: "PRAGMA main.table_info(\"activity_samples\")",
+};
 
-/// The columns of `plan_blocks`.
-const BLOCK_COLUMNS: &[&str] = &[
-    "id",
-    "name",
-    "source",
-    "start_date",
-    "end_date",
-    "goal",
-    "status",
-    "notes",
-    "created_at",
-];
+/// `wellness_daily`.
+const WELLNESS_DAILY: FrozenTable = FrozenTable {
+    name: "wellness_daily",
+    select: "SELECT date, sleep_s, deep_sleep_s, rem_s, light_sleep_s, awake_s, hrv_ms, \
+             resting_hr, stress_avg, source, updated_at FROM wellness_daily",
+    insert: "INSERT INTO wellness_daily (date, sleep_s, deep_sleep_s, rem_s, light_sleep_s, \
+              awake_s, hrv_ms, resting_hr, stress_avg, source, updated_at) \
+              VALUES (:date, :sleep_s, :deep_sleep_s, :rem_s, :light_sleep_s, :awake_s, \
+              :hrv_ms, :resting_hr, :stress_avg, :source, :updated_at)",
+    columns: "PRAGMA main.table_info(\"wellness_daily\")",
+};
 
-/// The columns of `plan_sessions`.
-const SESSION_COLUMNS: &[&str] = &[
-    "id",
-    "block_id",
-    "date",
-    "session_type",
-    "title",
-    "details",
-    "target_distance_m",
-    "pace_low_s_km",
-    "pace_high_s_km",
-];
+/// `plan_blocks`.
+const PLAN_BLOCKS: FrozenTable = FrozenTable {
+    name: "plan_blocks",
+    select: "SELECT id, name, source, start_date, end_date, goal, status, notes, created_at \
+             FROM plan_blocks",
+    insert: "INSERT INTO plan_blocks (id, name, source, start_date, end_date, goal, status, \
+              notes, created_at) \
+              VALUES (:id, :name, :source, :start_date, :end_date, :goal, :status, :notes, \
+              :created_at)",
+    columns: "PRAGMA main.table_info(\"plan_blocks\")",
+};
 
-/// The columns of `notes`.
-const NOTE_COLUMNS: &[&str] = &[
-    "id",
-    "kind",
-    "activity_id",
-    "text",
-    "value",
-    "start_date",
-    "end_date",
-    "created_at",
+/// `plan_sessions`.
+const PLAN_SESSIONS: FrozenTable = FrozenTable {
+    name: "plan_sessions",
+    select: "SELECT id, block_id, date, session_type, title, details, target_distance_m, \
+             pace_low_s_km, pace_high_s_km FROM plan_sessions",
+    insert: "INSERT INTO plan_sessions (id, block_id, date, session_type, title, details, \
+              target_distance_m, pace_low_s_km, pace_high_s_km) \
+              VALUES (:id, :block_id, :date, :session_type, :title, :details, \
+              :target_distance_m, :pace_low_s_km, :pace_high_s_km)",
+    columns: "PRAGMA main.table_info(\"plan_sessions\")",
+};
+
+/// `notes`.
+const NOTES: FrozenTable = FrozenTable {
+    name: "notes",
+    select: "SELECT id, kind, activity_id, text, value, start_date, end_date, created_at \
+             FROM notes",
+    insert: "INSERT INTO notes (id, kind, activity_id, text, value, start_date, end_date, \
+              created_at) \
+              VALUES (:id, :kind, :activity_id, :text, :value, :start_date, :end_date, \
+              :created_at)",
+    columns: "PRAGMA main.table_info(\"notes\")",
+};
+
+/// `sync_state`.
+const SYNC_STATE: FrozenTable = FrozenTable {
+    name: "sync_state",
+    select: "SELECT kind, cursor, last_success_at, token_expires_at, updated_at FROM sync_state",
+    insert: "INSERT INTO sync_state (kind, cursor, last_success_at, token_expires_at, \
+              updated_at) \
+              VALUES (:kind, :cursor, :last_success_at, :token_expires_at, :updated_at)",
+    columns: "PRAGMA main.table_info(\"sync_state\")",
+};
+
+/// The tables of the frozen schema, in the schema's order.
+///
+/// The order is the schema's: parents before children, so a child never
+/// arrives before its parent.
+const FROZEN_TABLES: [FrozenTable; 7] = [
+    ACTIVITIES,
+    ACTIVITY_SAMPLES,
+    WELLNESS_DAILY,
+    PLAN_BLOCKS,
+    PLAN_SESSIONS,
+    NOTES,
+    SYNC_STATE,
 ];
 
 /// Copy every row of the schema from one database to another.
 ///
 /// The tables are copied in the schema's order, so a child never arrives
-/// before its parent. The columns are the schema's own, and the values are
+/// before its parent. The statements are the frozen ones, and the values are
 /// always bound as parameters.
 fn copy_schema(source: &Connection, destination: &Connection) -> Result<BTreeMap<String, i64>> {
     let mut counts = BTreeMap::new();
@@ -375,45 +504,12 @@ fn copy_schema(source: &Connection, destination: &Connection) -> Result<BTreeMap
         .unchecked_transaction()
         .map_err(|error| StoreError::query("BEGIN", error))?;
 
-    counts.insert(
-        "activities".to_string(),
-        copy_table(source, &transaction, "activities", ACTIVITY_COLUMNS)?,
-    );
-    counts.insert(
-        "activity_samples".to_string(),
-        copy_table(source, &transaction, "activity_samples", SAMPLE_COLUMNS)?,
-    );
-    counts.insert(
-        "wellness_daily".to_string(),
-        copy_table(source, &transaction, "wellness_daily", WELLNESS_COLUMNS)?,
-    );
-    counts.insert(
-        "plan_blocks".to_string(),
-        copy_table(source, &transaction, "plan_blocks", BLOCK_COLUMNS)?,
-    );
-    counts.insert(
-        "plan_sessions".to_string(),
-        copy_table(source, &transaction, "plan_sessions", SESSION_COLUMNS)?,
-    );
-    counts.insert(
-        "notes".to_string(),
-        copy_table(source, &transaction, "notes", NOTE_COLUMNS)?,
-    );
-    counts.insert(
-        "sync_state".to_string(),
-        copy_table(
-            source,
-            &transaction,
-            "sync_state",
-            &[
-                "kind",
-                "cursor",
-                "last_success_at",
-                "token_expires_at",
-                "updated_at",
-            ],
-        )?,
-    );
+    for table in &FROZEN_TABLES {
+        counts.insert(
+            table.name.to_string(),
+            copy_table(source, &transaction, table)?,
+        );
+    }
 
     transaction
         .commit()
@@ -423,47 +519,49 @@ fn copy_schema(source: &Connection, destination: &Connection) -> Result<BTreeMap
 
 /// Copy the rows of one table from one database to another.
 ///
-/// The column names come from the schema, not from anything a user typed, and
-/// the values are bound as parameters.
-fn copy_table(
-    source: &Connection,
-    destination: &Connection,
-    table: &str,
-    columns: &[&str],
-) -> Result<i64> {
-    let list = quoted_list(columns);
-    let select = format!("SELECT {list} FROM \"{table}\"");
-    let insert = format!(
-        "INSERT INTO \"{table}\" ({list}) VALUES ({})",
-        placeholders(columns.len())
-    );
-
+/// The statement is the frozen one: the table's name and its columns are
+/// written out, and only the values are bound.
+fn copy_table(source: &Connection, destination: &Connection, table: &FrozenTable) -> Result<i64> {
     let mut statement = source
-        .prepare(&select)
-        .map_err(|source| StoreError::query(select.clone(), source))?;
+        .prepare(table.select)
+        .map_err(|source| StoreError::query(table.select, source))?;
     let mut rows = statement
         .query([])
-        .map_err(|source| StoreError::query(select.clone(), source))?;
+        .map_err(|source| StoreError::query(table.select, source))?;
 
     let mut prepared = destination
-        .prepare(&insert)
-        .map_err(|source| StoreError::query(insert.clone(), source))?;
+        .prepare(table.insert)
+        .map_err(|source| StoreError::query(table.insert, source))?;
 
     let mut copied = 0i64;
     while let Some(row) = rows
         .next()
-        .map_err(|source| StoreError::query(select.clone(), source))?
+        .map_err(|source| StoreError::query(table.select, source))?
     {
-        let mut values = Vec::with_capacity(columns.len());
-        for index in 0..columns.len() {
+        // The columns are the ones the statement asked for, by name: the
+        // values are bound by the same names the insert expects. SQLite
+        // wants the name with its colon.
+        let names: Vec<String> = row
+            .as_ref()
+            .column_names()
+            .iter()
+            .map(|name| format!(":{}", name))
+            .collect();
+        let mut owned: Vec<Value> = Vec::with_capacity(names.len());
+        for index in 0..names.len() {
             let value = row
                 .get::<_, Value>(index)
-                .map_err(|source| StoreError::query(select.clone(), source))?;
-            values.push(value);
+                .map_err(|source| StoreError::query(table.select, source))?;
+            owned.push(value);
         }
+        let values: Vec<(&str, &dyn rusqlite::ToSql)> = names
+            .iter()
+            .zip(owned.iter())
+            .map(|(name, value)| (name.as_str(), value as &dyn rusqlite::ToSql))
+            .collect();
         prepared
-            .execute(rusqlite::params_from_iter(values.iter()))
-            .map_err(|source| StoreError::query(insert.clone(), source))?;
+            .execute(&values[..])
+            .map_err(|source| StoreError::query(table.insert, source))?;
         copied += 1;
     }
     Ok(copied)
@@ -483,7 +581,7 @@ fn merge(source: &Connection, destination: &Connection) -> Result<ImportReport> 
 
     // The runs, and the map from the export's ids to this database's ids.
     let mut activity_ids: BTreeMap<i64, i64> = BTreeMap::new();
-    for row in read_rows(source, "activities", ACTIVITY_COLUMNS)? {
+    for row in read_rows(source, &ACTIVITIES)? {
         let external_id = text_of(&row, "external_id");
         let source_name = text_of(&row, "source");
         let existing = find_activity(destination, &source_name, &external_id)?;
@@ -501,7 +599,7 @@ fn merge(source: &Connection, destination: &Connection) -> Result<ImportReport> 
     }
 
     // The derived series, against the runs' new ids.
-    for row in read_rows(source, "activity_samples", SAMPLE_COLUMNS)? {
+    for row in read_rows(source, &ACTIVITY_SAMPLES)? {
         let old = row
             .get("activity_id")
             .and_then(|value| value.as_i64())
@@ -534,7 +632,7 @@ fn merge(source: &Connection, destination: &Connection) -> Result<ImportReport> 
     }
 
     // The days of wellness, by date.
-    for row in read_rows(source, "wellness_daily", WELLNESS_COLUMNS)? {
+    for row in read_rows(source, &WELLNESS_DAILY)? {
         let date = text_of(&row, "date");
         let values = values_of(
             &row,
@@ -587,7 +685,7 @@ fn merge(source: &Connection, destination: &Connection) -> Result<ImportReport> 
 
     // The plan blocks, by source, name and first day.
     let mut block_ids: BTreeMap<i64, i64> = BTreeMap::new();
-    for row in read_rows(source, "plan_blocks", BLOCK_COLUMNS)? {
+    for row in read_rows(source, &PLAN_BLOCKS)? {
         let name = text_of(&row, "name");
         let source_name = text_of(&row, "source");
         let start_date = text_of(&row, "start_date");
@@ -607,7 +705,7 @@ fn merge(source: &Connection, destination: &Connection) -> Result<ImportReport> 
     }
 
     // The planned sessions, by block, date and kind.
-    for row in read_rows(source, "plan_sessions", SESSION_COLUMNS)? {
+    for row in read_rows(source, &PLAN_SESSIONS)? {
         let old = row
             .get("block_id")
             .and_then(|value| value.as_i64())
@@ -632,7 +730,7 @@ fn merge(source: &Connection, destination: &Connection) -> Result<ImportReport> 
     }
 
     // The notes, by kind, run, text and dates.
-    for row in read_rows(source, "notes", NOTE_COLUMNS)? {
+    for row in read_rows(source, &NOTES)? {
         let old = row.get("activity_id").and_then(|value| value.as_i64());
         let activity_id = match old {
             Some(old) => match activity_ids.get(&old) {
@@ -689,17 +787,7 @@ fn merge(source: &Connection, destination: &Connection) -> Result<ImportReport> 
     // The sync cursors. They come with the runs: a phone that has the runs
     // does not have to fetch them again, and the cursor says where the sync
     // got to.
-    for row in read_rows(
-        source,
-        "sync_state",
-        &[
-            "kind",
-            "cursor",
-            "last_success_at",
-            "token_expires_at",
-            "updated_at",
-        ],
-    )? {
+    for row in read_rows(source, &SYNC_STATE)? {
         let kind = text_of(&row, "kind");
         transaction
             .execute(
@@ -729,31 +817,35 @@ fn merge(source: &Connection, destination: &Connection) -> Result<ImportReport> 
 }
 
 /// Read the rows of one table, as maps of column name to value.
-fn read_rows(
-    source: &Connection,
-    table: &str,
-    columns: &[&str],
-) -> Result<Vec<BTreeMap<String, Value>>> {
-    let list = quoted_list(columns);
-    let select = format!("SELECT {list} FROM \"{table}\"");
+/// Read the rows of one table, as maps of column name to value.
+///
+/// The statement is the frozen one, and the columns are the ones it asked
+/// for, by name.
+fn read_rows(source: &Connection, table: &FrozenTable) -> Result<Vec<BTreeMap<String, Value>>> {
     let mut statement = source
-        .prepare(&select)
-        .map_err(|source| StoreError::query(select.clone(), source))?;
+        .prepare(table.select)
+        .map_err(|source| StoreError::query(table.select, source))?;
     let mut rows = statement
         .query([])
-        .map_err(|source| StoreError::query(select.clone(), source))?;
+        .map_err(|source| StoreError::query(table.select, source))?;
 
     let mut out = Vec::new();
     while let Some(row) = rows
         .next()
-        .map_err(|source| StoreError::query(select.clone(), source))?
+        .map_err(|source| StoreError::query(table.select, source))?
     {
+        let names: Vec<String> = row
+            .as_ref()
+            .column_names()
+            .iter()
+            .map(|name| (*name).to_string())
+            .collect();
         let mut values = BTreeMap::new();
-        for (index, column) in columns.iter().enumerate() {
+        for (index, column) in names.iter().enumerate() {
             let value = row
                 .get::<_, Value>(index)
-                .map_err(|source| StoreError::query(select.clone(), source))?;
-            values.insert((*column).to_string(), value);
+                .map_err(|source| StoreError::query(table.select, source))?;
+            values.insert(column.clone(), value);
         }
         out.push(values);
     }
@@ -1075,23 +1167,6 @@ fn find_note(
         .map_err(|error| StoreError::query("find the note", error))
 }
 
-/// The column list of a statement, quoted.
-fn quoted_list(columns: &[&str]) -> String {
-    columns
-        .iter()
-        .map(|column| format!("\"{column}\""))
-        .collect::<Vec<_>>()
-        .join(", ")
-}
-
-/// The placeholders of an insert, numbered.
-fn placeholders(count: usize) -> String {
-    (1..=count)
-        .map(|index| format!("?{index}"))
-        .collect::<Vec<_>>()
-        .join(", ")
-}
-
 // --------------------------------------------------------------- conversion
 
 /// What is the file at this path?
@@ -1126,11 +1201,15 @@ pub fn detect_format(path: &Path) -> Result<Format> {
 ///
 /// The plain file is kept as `<name>.plaintext-backup`.
 ///
-/// The encrypted file has the **same schema and the same rows** as the plain
-/// one: the conversion is an encryption, not a migration. A plain file that
-/// already holds the frozen schema becomes a frozen-schema database, and a
-/// plain file that holds something else becomes that something else, with the
-/// difference reported in [`ConversionReport::drift`].
+/// The encrypted file has the **frozen** schema and the plain file's rows. A
+/// plain file that is not a Stride database is refused, with a message that
+/// says what it holds: its table names are checked against the frozen list,
+/// its DDL is never executed, and its columns are checked against the
+/// frozen ones.
+///
+/// The plain copy is **not** a leak: the file was plaintext before, and the
+/// copy is the recovery path if the conversion is wrong. It is the user's
+/// file to delete once the encrypted database opens.
 pub fn convert_plaintext_to_encrypted(path: &Path, key: &DatabaseKey) -> Result<ConversionReport> {
     match detect_format(path)? {
         Format::Plaintext => {}
@@ -1183,8 +1262,8 @@ pub fn convert_plaintext_to_encrypted(path: &Path, key: &DatabaseKey) -> Result<
     // here that cannot be undone.
     take_snapshot(path, &backup)?;
 
-    // The encrypted copy: the same schema, the same rows.
-    let target = Store::open(&staged, key)?;
+    // The encrypted copy: the frozen schema, and the rows of the plain file.
+    let target = Store::open_and_migrate(&staged, key)?;
     let report = target.with_connection(|destination| {
         source
             .execute_batch("BEGIN;")
@@ -1231,66 +1310,73 @@ pub fn convert_plaintext_to_encrypted(path: &Path, key: &DatabaseKey) -> Result<
     Ok(report)
 }
 
-/// Copy the schema and the rows of one database into another.
+/// Copy the rows of one database into another, into the **frozen** schema.
 ///
-/// The schema is taken from the source's own `sqlite_master`, so the
-/// encrypted file holds exactly the tables the plain one held.
+/// The file being converted is not ours, so nothing in it is trusted:
+///
+/// * its table names are checked against the frozen list, and a table that
+///   is not in the frozen schema is **refused** — not copied, not renamed;
+/// * its DDL is never executed. The destination gets the frozen schema, and
+///   the rows are copied with the frozen statements;
+/// * its column names are checked against the frozen columns, and a table
+///   that does not have them is refused;
+/// * the values are always bound.
+///
+/// A file that is not a Stride database is therefore refused, with a
+/// message that says what it holds. The old desktop copied the columns the
+/// two schemas had in common and dropped the rest, which for the old
+/// schema — a different shape entirely — meant an empty database and a year
+/// of history lost quietly.
 fn mirror(source: &Connection, destination: &Connection) -> Result<ConversionReport> {
     let mut report = ConversionReport::default();
 
-    let tables = source_objects(source, "table")?;
-    let indexes = source_objects(source, "index")?;
+    // The tables the file holds, by name only. The names are checked
+    // against the frozen list before any of them reaches a statement.
+    let held = source_table_names(source)?;
+    for name in &held {
+        if !FROZEN_TABLES.iter().any(|table| table.name == *name) {
+            return Err(StoreError::Invariant(format!(
+                "the plain database holds the table {name:?}, which is not in the frozen schema"
+            )));
+        }
+    }
 
     let transaction = destination
         .unchecked_transaction()
         .map_err(|error| StoreError::query("BEGIN", error))?;
 
-    for (name, sql) in &tables {
-        transaction
-            .execute_batch(sql)
-            .map_err(|source| StoreError::migration(name.clone(), source))?;
-    }
-    for (name, sql) in &indexes {
-        transaction
-            .execute_batch(sql)
-            .map_err(|source| StoreError::migration(name.clone(), source))?;
-    }
+    for table in &FROZEN_TABLES {
+        if !held.iter().any(|name| name == table.name) {
+            report.drift.push(format!(
+                "the table {} is not in the plain database",
+                table.name
+            ));
+            continue;
+        }
 
-    for (name, _) in &tables {
-        let columns = source_columns(source, name)?;
-        let borrowed: Vec<&str> = columns.iter().map(|column| column.as_str()).collect();
-        let copied = copy_table(source, &transaction, name, &borrowed)?;
+        // The columns have to be the frozen ones. A table with another shape
+        // is refused rather than copied into the wrong columns.
+        let columns = source_columns(source, table)?;
+        let expected = expected_columns(&transaction, table)?;
+        if columns != expected {
+            report.drift.push(format!(
+                "the table {} holds the columns [{}] and the frozen schema holds [{}]",
+                table.name,
+                columns.join(", "),
+                expected.join(", ")
+            ));
+            return Err(StoreError::Invariant(format!(
+                "the table {} does not have the columns of the frozen schema",
+                table.name
+            )));
+        }
+
+        let copied = copy_table(source, &transaction, table)?;
         report.rows += copied;
-        report.tables.push((name.clone(), copied));
+        report.tables.push((table.name.to_string(), copied));
     }
 
-    // The schema of the plain file decides the schema of the encrypted one.
-    // When it is the frozen schema, the encrypted file is at the frozen
-    // schema's version; when it is not, the version stays where it was and
-    // the difference is reported.
-    let frozen: Vec<String> = frozen_table_names();
-    let mirrored: Vec<String> = report.tables.iter().map(|(name, _)| name.clone()).collect();
-    if mirrored == frozen {
-        report.schema_matches = true;
-        transaction
-            .pragma_update(None, "user_version", schema::SCHEMA_VERSION)
-            .map_err(|error| StoreError::migration("PRAGMA user_version", error))?;
-    } else {
-        for name in &frozen {
-            if !mirrored.contains(name) {
-                report
-                    .drift
-                    .push(format!("the table {name} is not in the plain database"));
-            }
-        }
-        for name in &mirrored {
-            if !frozen.contains(name) {
-                report
-                    .drift
-                    .push(format!("the table {name} is not in the frozen schema"));
-            }
-        }
-    }
+    report.schema_matches = report.drift.is_empty();
 
     transaction
         .commit()
@@ -1298,54 +1384,59 @@ fn mirror(source: &Connection, destination: &Connection) -> Result<ConversionRep
     Ok(report)
 }
 
-/// The names of the tables of the frozen schema, in the schema's order.
-fn frozen_table_names() -> Vec<String> {
-    let mut names = Vec::new();
-    for statement in schema::TABLE_STATEMENTS {
-        let words: Vec<&str> = statement.split_whitespace().collect();
-        // "CREATE TABLE <name> (" …
-        if words.len() > 2 && words[0] == "CREATE" && words[1] == "TABLE" {
-            let name = words[2].trim_end_matches('(');
-            names.push(name.to_string());
-        }
-    }
-    names
-}
-
-/// The objects of a kind in a database: their names and their SQL.
-fn source_objects(source: &Connection, kind: &str) -> Result<Vec<(String, String)>> {
+/// The names of the tables a database holds.
+///
+/// The names only: the DDL behind them is never read and never executed.
+/// A name is checked against the frozen list before it goes anywhere.
+fn source_table_names(source: &Connection) -> Result<Vec<String>> {
     let mut statement = source
         .prepare(
-            "SELECT name, sql FROM sqlite_master
-             WHERE type = ?1 AND sql IS NOT NULL AND name NOT LIKE 'sqlite_%'
+            "SELECT name FROM sqlite_master
+             WHERE type = 'table' AND name NOT LIKE 'sqlite_%'
              ORDER BY rowid",
         )
         .map_err(|source| StoreError::query("sqlite_master", source))?;
     let rows = statement
-        .query_map(rusqlite::params![kind], |row| {
-            Ok((row.get::<_, String>(0)?, row.get::<_, String>(1)?))
-        })
+        .query_map([], |row| row.get::<_, String>(0))
         .map_err(|source| StoreError::query("sqlite_master", source))?;
-    let mut out = Vec::new();
+    let mut names = Vec::new();
     for row in rows {
-        out.push(row.map_err(|source| StoreError::query("sqlite_master", source))?);
+        names.push(row.map_err(|source| StoreError::query("sqlite_master", source))?);
     }
-    Ok(out)
+    Ok(names)
 }
 
-/// The columns of a table in a database.
-fn source_columns(source: &Connection, table: &str) -> Result<Vec<String>> {
+/// The columns a table has in a database.
+///
+/// The statement is the frozen one — the table's name is written out — so
+/// nothing a file says reaches a statement.
+fn source_columns(source: &Connection, table: &FrozenTable) -> Result<Vec<String>> {
     let mut statement = source
-        .prepare(&format!("PRAGMA main.table_info(\"{table}\")"))
-        .map_err(|source| StoreError::query("PRAGMA table_info", source))?;
+        .prepare(table.columns)
+        .map_err(|source| StoreError::query(table.columns, source))?;
     let rows = statement
         .query_map([], |row| row.get::<_, String>(1))
-        .map_err(|source| StoreError::query("PRAGMA table_info", source))?;
+        .map_err(|source| StoreError::query(table.columns, source))?;
     let mut columns = Vec::new();
     for row in rows {
-        columns.push(row.map_err(|source| StoreError::query("PRAGMA table_info", source))?);
+        columns.push(row.map_err(|source| StoreError::query(table.columns, source))?);
     }
     Ok(columns)
+}
+
+/// The columns the frozen schema has for a table.
+///
+/// They are the columns the frozen statement asks for, read off the
+/// statement itself — so there is one list of names, not two.
+fn expected_columns(destination: &Connection, table: &FrozenTable) -> Result<Vec<String>> {
+    let statement = destination
+        .prepare(table.select)
+        .map_err(|source| StoreError::query(table.select, source))?;
+    Ok(statement
+        .column_names()
+        .iter()
+        .map(|name| (*name).to_string())
+        .collect())
 }
 
 /// Check that a database can be read.
@@ -1399,18 +1490,33 @@ fn take_snapshot(source: &Path, target: &Path) -> Result<()> {
 }
 
 /// Open the converted database and count its rows.
+///
+/// The counts are the ones the copy reported, so this proves that what is
+/// on the disk is what was copied. The statement is the frozen one, and the
+/// rows are counted as they are read.
 fn verify_converted(path: &Path, key: &DatabaseKey, report: &ConversionReport) -> Result<()> {
     let store = Store::open(path, key)?;
     let counts = store.with_connection(|connection| {
         let mut counts = Vec::new();
         for (table, rows) in &report.tables {
-            let count: i64 = connection
-                .query_row(
-                    &format!("SELECT count(*) FROM main.\"{table}\""),
-                    [],
-                    |row| row.get(0),
-                )
-                .map_err(|source| StoreError::query("count the rows", source))?;
+            let frozen = match FROZEN_TABLES.iter().find(|frozen| frozen.name == *table) {
+                Some(frozen) => frozen,
+                None => continue,
+            };
+            let mut statement = connection
+                .prepare(frozen.select)
+                .map_err(|source| StoreError::query(frozen.select, source))?;
+            let mut read = statement
+                .query([])
+                .map_err(|source| StoreError::query(frozen.select, source))?;
+            let mut count = 0i64;
+            while read
+                .next()
+                .map_err(|source| StoreError::query(frozen.select, source))?
+                .is_some()
+            {
+                count += 1;
+            }
             counts.push((table.clone(), count, *rows));
         }
         Ok(counts)
