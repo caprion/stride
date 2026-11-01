@@ -111,4 +111,24 @@ describe('the app renders chrome only', () => {
     expect(types).toContain('text: string')
     expect(types).toContain('raw: number | null')
   })
+
+  it('never signs a difference itself', () => {
+    // The core renders the difference, sign and all: a negative one is
+    // written with the typographic minus (U+2212). That character in the
+    // app's own code would be the app signing a number — a second answer
+    // to the question the core already answers. The fixtures are captured
+    // answers, so they may carry the core's characters; the app's code
+    // may not. A comment may mention the sign; only the code is scanned.
+    const comments = (text: string) =>
+      text.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '')
+    const offenders: string[] = []
+    for (const file of files) {
+      if (file.includes(`${join('', 'fixtures')}`)) continue
+      const code = comments(readFileSync(file, 'utf8'))
+      if (code.includes('\u2212')) {
+        offenders.push(relative(src, file))
+      }
+    }
+    expect(offenders).toEqual([])
+  })
 })
