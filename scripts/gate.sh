@@ -59,8 +59,10 @@ step "the app: voice, types, tests and the viewport matrix"
 # six-width viewport matrix. The voice is the product's central design
 # constraint, so it is machine-enforced and not merely reviewed.
 if [ ! -d frontend/node_modules ]; then
-  echo "gate: frontend/node_modules is missing - run: npm --prefix frontend ci" >&2
-  exit 1
+  # The gate is one command a human runs, so it installs what it needs rather
+  # than failing and making the reader know the incantation.
+  echo "gate: installing the app's dependencies (npm --prefix frontend ci)"
+  npm --prefix frontend ci
 fi
 npm --prefix frontend run lint:voice
 npm --prefix frontend run typecheck
