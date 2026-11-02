@@ -171,7 +171,7 @@ pub struct Entry {
 }
 
 /// The catalogue.
-pub const CATALOGUE: [Entry; 83] = [
+pub const CATALOGUE: [Entry; 103] = [
     // The vitals.
     Entry {
         id: "vital.sleep.label",
@@ -416,6 +416,129 @@ pub const CATALOGUE: [Entry; 83] = [
         kind: StringKind::Statement,
         role: None,
         template: "Z{index}",
+    },
+    // The days of the week: the names the app writes.
+    Entry {
+        id: "weekday.monday",
+        kind: StringKind::Vital,
+        role: None,
+        template: "Monday",
+    },
+    Entry {
+        id: "weekday.tuesday",
+        kind: StringKind::Vital,
+        role: None,
+        template: "Tuesday",
+    },
+    Entry {
+        id: "weekday.wednesday",
+        kind: StringKind::Vital,
+        role: None,
+        template: "Wednesday",
+    },
+    Entry {
+        id: "weekday.thursday",
+        kind: StringKind::Vital,
+        role: None,
+        template: "Thursday",
+    },
+    Entry {
+        id: "weekday.friday",
+        kind: StringKind::Vital,
+        role: None,
+        template: "Friday",
+    },
+    Entry {
+        id: "weekday.saturday",
+        kind: StringKind::Vital,
+        role: None,
+        template: "Saturday",
+    },
+    Entry {
+        id: "weekday.sunday",
+        kind: StringKind::Vital,
+        role: None,
+        template: "Sunday",
+    },
+    // The story: one sentence about what the run was, and never a judgement
+    // about the athlete.
+    Entry {
+        id: "story.usual.more",
+        kind: StringKind::Statement,
+        role: None,
+        template: "{distance}, {gap} more than your usual {weekday}",
+    },
+    Entry {
+        id: "story.usual.less",
+        kind: StringKind::Statement,
+        role: None,
+        template: "{distance}, {gap} less than your usual {weekday}",
+    },
+    Entry {
+        id: "story.slowest_split",
+        kind: StringKind::Statement,
+        role: None,
+        template: "the last {distance} were the slowest of the run",
+    },
+    Entry {
+        id: "story.slowest_split_one",
+        kind: StringKind::Statement,
+        role: None,
+        template: "the last {distance} was the slowest of the run",
+    },
+    Entry {
+        id: "story.fastest_split",
+        kind: StringKind::Statement,
+        role: None,
+        template: "the first {distance} were the fastest of the run",
+    },
+    Entry {
+        id: "story.fastest_split_one",
+        kind: StringKind::Statement,
+        role: None,
+        template: "the first {distance} was the fastest of the run",
+    },
+    Entry {
+        id: "story.plain",
+        kind: StringKind::Statement,
+        role: None,
+        template: "{distance} in {duration}, at an average of {heart_rate}",
+    },
+    Entry {
+        id: "story.plain_no_heart_rate",
+        kind: StringKind::Statement,
+        role: None,
+        template: "{distance} in {duration}",
+    },
+    Entry {
+        id: "story.plain_heart_rate_only",
+        kind: StringKind::Statement,
+        role: None,
+        template: "{distance}, at an average of {heart_rate}",
+    },
+    Entry {
+        id: "story.plain_distance_only",
+        kind: StringKind::Statement,
+        role: None,
+        template: "{distance}",
+    },
+    Entry {
+        id: "story.plain_no_distance",
+        kind: StringKind::Statement,
+        role: None,
+        template: "{duration}, at an average of {heart_rate}",
+    },
+    Entry {
+        id: "story.plain_duration_only",
+        kind: StringKind::Statement,
+        role: None,
+        template: "{duration}",
+    },
+    Entry {
+        id: "story.nothing_unusual",
+        kind: StringKind::Statement,
+        role: None,
+        template: "nothing unusual about this one",
     },
     Entry {
         // The honest answer when the bands cannot be computed. The maximum is

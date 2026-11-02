@@ -25,6 +25,8 @@
 //!   adherence, the results and the distance comparison.
 //! * [`statement`] — the sixth kind: a factual sentence about the data — the
 //!   distance comparison, the Progress headline, the Compare basis.
+//! * [`story`] — the one sentence every run carries: descriptive, never
+//!   evaluative, and read from the same primitives the charts read.
 //!
 //! The voice, in one line: facts first, no judgements. The app informs; it
 //! never instructs.
@@ -36,6 +38,7 @@ pub mod pattern;
 pub mod plan;
 pub mod rest;
 pub mod statement;
+pub mod story;
 pub mod strings;
 pub mod types;
 pub mod units;
@@ -55,6 +58,7 @@ pub use statement::{
     compare_basis, distance_comparison_line, progress_headline, CompareBasis, PaceAtHr,
     ProgressHeadline,
 };
+pub use story::{story, RunFacts, Split};
 pub use strings::StringKind;
 pub use types::{
     BetterSide, Distance, Duration, Effort, HeartRate, Hrv, RestingHr, Sleep, VitalKind, Vitals,
