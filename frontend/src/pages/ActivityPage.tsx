@@ -160,14 +160,24 @@ export function ActivityPage({ id }: { id: string }) {
       </section>
 
       {/* ------------------------------------------------------- the story */}
-      {data.story ? (
-        <section className="card mt-3 px-4 py-3">
-          <h2 className="text-[12px] font-semibold uppercase tracking-[0.07em] text-ink-faint">
-            {t('activity.story.heading')}
-          </h2>
-          <p className="mt-1 text-[14.5px] text-ink-soft">{data.story}</p>
-        </section>
-      ) : null}
+      {/*
+        The sentence the feed shows, and the one extra fact the detail
+        knows: the run's own shape, in the core's words. The why is said
+        only when it is worth a sentence — when a split stands out from
+        the run's average pace — so when it is absent, the sentence
+        stands alone.
+      */}
+      <section className="card mt-3 px-4 py-3">
+        <h2 className="text-[12px] font-semibold uppercase tracking-[0.07em] text-ink-faint">
+          {t('activity.story.heading')}
+        </h2>
+        <p className="mt-1 text-[14.5px] text-ink-soft">{data.story}</p>
+        {data.why ? (
+          <p className="mt-1 text-[14.5px] text-ink-soft" data-testid="activity-why">
+            {data.why}
+          </p>
+        ) : null}
+      </section>
 
       {/* ----------------------------------------------------------- map */}
       {/*

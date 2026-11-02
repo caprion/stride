@@ -43,10 +43,11 @@ fn a_run_with_no_heart_rate_carries_null() {
         "the average heart rate is not null: {}",
         value_of(&body, &["heart_rate"])
     );
+    // The story is never empty — a row without a sentence is a spreadsheet.
+    let story = value_of(&body, &["story"]);
     assert!(
-        value_of(&body, &["story"]).is_null(),
-        "the story is not null: {}",
-        value_of(&body, &["story"])
+        story.is_string() && !story.as_str().unwrap_or_default().is_empty(),
+        "the story is empty"
     );
 
     let feed = harness.ok_get("/activities");

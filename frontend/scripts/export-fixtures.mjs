@@ -22,7 +22,8 @@
  *
  * The two halves are written together, and the script refuses to write a
  * dump that was taken from a different seed: the answers would be about
- * another store.
+ * another store. The dump's baseline variant — the same seed with no plan
+ * block, so the router infers the baseline — travels with the answers.
  *
  *   npm --prefix frontend run fixtures:export -- --seed
  *   npm --prefix frontend run fixtures:export -- <router-answers.json> <router-compare.json>
@@ -67,16 +68,16 @@ const seed = {
 }
 
 /**
- * The answers' own text, taken out of the dump.
+ * One section's own text, taken out of the dump.
  *
  * Not re-serialised: the router writes `62.0` where a JavaScript
  * `JSON.stringify` writes `62`, and the api's test compares the answers
  * value for value — a whole number and a float are not the same value to
  * it. The dump's text is the answer; the app reads it.
  */
-function answersText(dump) {
-  const key = dump.indexOf('"answers"')
-  if (key < 0) throw new Error('the dump carries no answers')
+function sectionText(dump, name) {
+  const key = dump.indexOf(`"${name}"`)
+  if (key < 0) throw new Error(`the dump carries no ${name}`)
   const open = dump.indexOf('{', key)
   let depth = 0
   let inString = false
@@ -99,7 +100,7 @@ function answersText(dump) {
       if (depth === 0) return dump.slice(open, index + 1)
     }
   }
-  throw new Error("the dump's answers are not closed")
+  throw new Error(`the dump's ${name} is not closed`)
 }
 
 /**
@@ -122,11 +123,19 @@ function canonical(value) {
   return value
 }
 
-/** The fixture file: the answers and the seed they come from. */
-function fixtureFile(answers) {
+/**
+ * The fixture file: the answers, the baseline variant and the seed.
+ *
+ * The prescribed variant and the baseline variant are the two states the
+ * api's test holds the fixture to — a store with the prescribed plan, and
+ * the same store with no plan block, so the router infers the baseline
+ * from the athlete's own history.
+ */
+function fixtureFile(answers, baseline) {
   return `{
   "version": 1,
   "answers": ${answers},
+  "baseline": ${baseline},
   "seed": ${JSON.stringify(seed, null, 2)}
 }
 `
@@ -136,10 +145,14 @@ const args = process.argv.slice(2)
 
 if (args[0] === '--seed') {
   // The seed alone: the api's test reads it, seeds the store with it and
-  // answers from it. The answers stay as they are — the router's own
-  // text — until the router has been asked again.
+  // answers from it. The answers and the baseline stay as they are — the
+  // router's own text — until the router has been asked again.
   const current = readFileSync(answersPath, 'utf8')
-  writeFileSync(answersPath, fixtureFile(answersText(current)), 'utf8')
+  writeFileSync(
+    answersPath,
+    fixtureFile(sectionText(current, 'answers'), sectionText(current, 'baseline')),
+    'utf8',
+  )
   console.log('fixtures: the seed is written; ask the router again for the answers')
   process.exit(0)
 }
@@ -173,7 +186,14 @@ if (JSON.stringify(canonical(dumped.seed)) !== JSON.stringify(canonical(seed))) 
   process.exit(1)
 }
 
-writeFileSync(answersPath, fixtureFile(answersText(routerAnswersText)), 'utf8')
+writeFileSync(
+  answersPath,
+  fixtureFile(
+    sectionText(routerAnswersText, 'answers'),
+    sectionText(routerAnswersText, 'baseline'),
+  ),
+  'utf8',
+)
 console.log(`fixtures: the router's answers written to ${answersPath}`)
 
 writeFileSync(comparePath, routerCompareText, 'utf8')

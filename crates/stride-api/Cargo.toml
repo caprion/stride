@@ -25,3 +25,8 @@ serde = { version = "1", features = ["derive"] }
 serde_json = { version = "1", features = ["float_roundtrip"] }
 chrono = { version = "0.4", features = ["serde"] }
 thiserror = "1"
+
+[dev-dependencies]
+# The fixture-parity test seeds a store with the fixture's own primary keys,
+# which the repositories' upserts do not do: it inserts the rows directly.
+rusqlite = { version = "0.31", features = ["bundled-sqlcipher-vendored-openssl"] }

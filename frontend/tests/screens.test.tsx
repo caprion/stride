@@ -212,12 +212,13 @@ describe('Compare', () => {
     await waitFor(() => expect(container.querySelector('[data-testid="run-101"]')).toBeTruthy())
 
     // "8.4 km", "42 m", "148 bpm", "5:24 /km" — the core's words, not the
-    // app's arithmetic.
+    // app's arithmetic. And the story: the one sentence every run carries.
     const row = container.querySelector('[data-testid="run-101"]')?.textContent ?? ''
     expect(row).toContain('12.4 km')
     expect(row).toContain('1 h 7 m')
     expect(row).toContain('148 bpm')
     expect(row).toContain('5:24 /km')
+    expect(row).toContain('12.4 km in 1 h 7 m, at an average of 148 bpm')
   })
 })
 

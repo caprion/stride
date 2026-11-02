@@ -196,6 +196,21 @@ describe('the Runs page', () => {
 })
 
 describe('the Activity page', () => {
+  it('shows the story, and the why only when the core says one', async () => {
+    const { container } = renderApp('/runs/101')
+    await waitFor(() =>
+      expect(container.querySelector('[data-testid="activity-detail"]')).toBeTruthy(),
+    )
+
+    // The sentence is the core's and is never empty: the feed's line, on
+    // the run's own page.
+    expect(container.textContent).toContain('12.4 km in 1 h 7 m, at an average of 148 bpm')
+    // The why is the one extra fact the detail knows — the run's own
+    // shape — and the seeded run has no splits to stand out, so the
+    // router answers null and the screen says nothing more.
+    expect(container.querySelector('[data-testid="activity-why"]')).toBeNull()
+  })
+
   it('shows the note, and no plan line when there is none', async () => {
     const { container } = renderApp('/runs/101')
     await waitFor(() =>
