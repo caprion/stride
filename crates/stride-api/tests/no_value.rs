@@ -162,5 +162,16 @@ fn an_empty_database_answers_with_empty_lists_and_not_with_zeros() {
 
     let vitals = harness.ok_get("/physiology/vitals");
     assert!(vitals["vitals"].as_array().unwrap().len() == 3);
+    // The three vitals are still there — the shape is frozen — and every
+    // one of them has no value: the empty state is "no value", never a zero
+    // and never a made-up reading.
+    for vital in vitals["vitals"].as_array().unwrap() {
+        assert!(
+            vital["value_text"].is_null(),
+            "an empty store's vital has a value: {vital}"
+        );
+        assert!(vital["direction_text"].is_null());
+        assert!(vital["deviation_text"].is_null());
+    }
     assert!(vitals["patterns"].as_array().unwrap().is_empty());
 }
