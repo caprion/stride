@@ -8,8 +8,8 @@
 //! ## The engine is the core's
 //!
 //! Every answer here is the core's: the baseline, the session of the day,
-//! the sessions of the week, the count, the results and the status of a
-//! session. This crate reads the store, hands the core the domain types it
+//! the sessions of the week, the count, the status of a session and the
+//! results. This crate reads the store, hands the core the domain types it
 //! works on, and carries the core's answers back. The status of a session
 //! is **computed on read** and never stored — a stored verdict would be a
 //! judgement the plan forbids, and a baseline never yields "not done": an
@@ -31,8 +31,8 @@ use stride_store::model::{plan_source, plan_status};
 use stride_store::{NewPlanBlock, NewPlanSession};
 
 use crate::dto::{
-    AdherenceWeek, CurrentPlan, PlanAdherence, PlanBlock, PlanBlocks, PlanImport, PlanResult,
-    PlanResults, PlanSession, PlanSource, PlanSources, PlanToday, PlanWeek,
+    AdherenceWeek, Counts, CurrentPlan, PlanAdherence, PlanBlock, PlanBlocks, PlanImport,
+    PlanResult, PlanResults, PlanSession, PlanSource, PlanSources, PlanToday, PlanWeek,
 };
 use crate::error::{ApiError, ApiResult};
 use crate::plan;
@@ -52,14 +52,12 @@ pub fn current(api: &Api, request: &Request) -> ApiResult<Value> {
     let _ = request;
     let active = plan::active(api)?;
     let response = CurrentPlan {
-        block: match &active {
-            Some(active) => Some(block_of(api, active)?),
-            None => None,
-        },
+        block: active.as_ref().map(block_of),
         source: active
             .as_ref()
-            .map(|active| active.source_name().to_string())
-            .unwrap_or_else(|| plan_source::BASELINE.to_string()),
+            .map(|active| active.source_name())
+            .unwrap_or_else(|| plan_source::BASELINE)
+            .to_string(),
         is_baseline: active
             .as_ref()
             .map(|active| active.is_baseline())
@@ -78,21 +76,11 @@ pub fn today(api: &Api, _request: &Request) -> ApiResult<Value> {
     let current = super::today(api)?;
     let active = plan::active_or_empty(api)?;
     let facts = plan::run_facts(api, "0000-01-01", &current.to_iso())?;
-    let planned = match stride_core::plan::today_of(&active.block, current) {
-        Some(one) => {
-            let actual = plan::distance_on(api, &current.to_iso())?;
-            Some(plan::session_of(
-                one,
-                current,
-                active.source,
-                current,
-                &facts,
-                actual,
-                actual.is_some(),
-            ))
-        }
-        None => None,
-    };
+    let results = stride_core::plan::results_of_at(&active.block, &facts, current);
+    let planned = results
+        .iter()
+        .find(|result| result.session.date == current)
+        .map(|result| plan::session_of(&active, result, current));
     let response = PlanToday {
         date: current.to_iso(),
         session: planned,
@@ -104,8 +92,9 @@ pub fn today(api: &Api, _request: &Request) -> ApiResult<Value> {
 /// The plan's week.
 ///
 /// The seven days: each with its date, its kind, its target — the core's
-/// rendered text, not a number the app has to format — and whether a run
-/// happened.
+/// rendered text, not a number the app has to format — and the plain
+/// status of the session. The week's counts are the api's count of the
+/// core's statuses.
 pub fn week(api: &Api, request: &Request) -> ApiResult<Value> {
     let day = match request.query.get("date") {
         Some(text) if !text.trim().is_empty() => core_date(text.trim())?,
@@ -114,23 +103,31 @@ pub fn week(api: &Api, request: &Request) -> ApiResult<Value> {
     let start = week_start(day);
     let end = start.add_days(6);
     let active = plan::active_or_empty(api)?;
-    let source = active.source_name();
     let facts = plan::run_facts(api, "0000-01-01", &end.to_iso())?;
 
-    let sessions = stride_core::plan::week_of(&active.block, day);
-    let mut rendered: Vec<PlanSession> = Vec::with_capacity(sessions.len());
-    for session in sessions.iter() {
-        let actual = plan::distance_on(api, &session.date.to_iso())?;
-        rendered.push(plan::session_of(
-            session,
-            session.date,
-            active.source,
-            day,
-            &facts,
-            actual,
-            actual.is_some(),
-        ));
-    }
+    let results = stride_core::plan::results_of_at(&active.block, &facts, day);
+    let rendered: Vec<PlanSession> = results
+        .iter()
+        .filter(|result| result.session.date >= start && result.session.date <= end)
+        .map(|result| plan::session_of(&active, result, day))
+        .collect();
+
+    // The week's counts: the api counts the core's statuses, so the app
+    // never counts the plan's sessions itself.
+    let counts = Counts {
+        done: rendered
+            .iter()
+            .filter(|session| session.status == "done")
+            .count(),
+        planned: rendered
+            .iter()
+            .filter(|session| session.status == "planned")
+            .count(),
+        not_done: rendered
+            .iter()
+            .filter(|session| session.status == "not_done")
+            .count(),
+    };
 
     // The week's target: the sum of the sessions' targets, as the core
     // renders it.
@@ -141,21 +138,18 @@ pub fn week(api: &Api, request: &Request) -> ApiResult<Value> {
     );
     let target = render::distance(if metres > 0.0 { Some(metres) } else { None });
 
-    // The week's count, from the core.
-    let week_block = CoreBlock {
-        source: active.source,
-        name: active.name.clone(),
-        sessions: sessions.clone(),
-    };
-    let adherence = plan::adherence_of(stride_core::plan::adherence_of(&week_block, &facts));
-
     let response = PlanWeek {
         block_name: active.name.clone(),
-        source: source.to_string(),
+        source: active.source_name().to_string(),
         week_start: start.to_iso(),
         week_end: end.to_iso(),
+        today: super::today(api)?.to_iso(),
         target,
-        adherence: Some(adherence),
+        adherence: Some(crate::dto::Adherence {
+            done: counts.done,
+            planned: counts.done + counts.planned + counts.not_done,
+        }),
+        counts,
         sessions: rendered,
     };
     ok(&response)
@@ -173,6 +167,10 @@ pub fn blocks(api: &Api, request: &Request) -> ApiResult<Value> {
         .map_err(|error| api.store_error("the plan could not be read", &error))?;
     let mut rendered: Vec<PlanBlock> = Vec::with_capacity(blocks.len());
     for block in blocks.iter() {
+        let sessions = api
+            .store()
+            .plan_sessions_for_block(block.id)
+            .map_err(|error| api.store_error("the plan could not be read", &error))?;
         rendered.push(PlanBlock {
             id: Some(block.id),
             name: block.name.clone(),
@@ -181,11 +179,7 @@ pub fn blocks(api: &Api, request: &Request) -> ApiResult<Value> {
             end_date: block.end_date.clone(),
             goal: block.goal.clone(),
             status: block.status.clone(),
-            session_count: api
-                .store()
-                .plan_sessions_for_block(block.id)
-                .map_err(|error| api.store_error("the plan could not be read", &error))?
-                .len(),
+            session_count: sessions.len(),
             is_baseline: block.source == plan_source::BASELINE,
         });
     }
@@ -210,7 +204,7 @@ pub fn sources(api: &Api, request: &Request) -> ApiResult<Value> {
     let active = plan::active(api)?;
     let mut rendered: Vec<PlanSource> = Vec::with_capacity(plan::SOURCES.len());
     for source in plan::SOURCES.iter() {
-        let name = plan::source_name(*source);
+        let name = source.as_str();
         let of_source: Vec<&stride_store::PlanBlock> =
             blocks.iter().filter(|block| block.source == name).collect();
         let stored_active = of_source
@@ -232,8 +226,9 @@ pub fn sources(api: &Api, request: &Request) -> ApiResult<Value> {
         sources: rendered,
         active_source: active
             .as_ref()
-            .map(|active| active.source_name().to_string())
-            .unwrap_or_else(|| plan_source::BASELINE.to_string()),
+            .map(|active| active.source_name())
+            .unwrap_or_else(|| plan_source::BASELINE)
+            .to_string(),
         generated_at: api.generated_at(),
     };
     ok(&response)
@@ -249,7 +244,7 @@ pub fn adherence(api: &Api, request: &Request) -> ApiResult<Value> {
     let current = super::today(api)?;
     let active = plan::active_or_empty(api)?;
     let facts = plan::run_facts(api, "0000-01-01", &current.to_iso())?;
-    let count = plan::adherence_of(stride_core::plan::adherence_of(&active.block, &facts));
+    let count = stride_core::plan::adherence_of_at(&active.block, &facts, current);
 
     // The weeks of the block, each counted by the engine.
     let mut by_week: BTreeMap<String, Vec<stride_core::plan::PlanSession>> = BTreeMap::new();
@@ -261,22 +256,21 @@ pub fn adherence(api: &Api, request: &Request) -> ApiResult<Value> {
     }
     let mut weeks: Vec<AdherenceWeek> = Vec::with_capacity(by_week.len());
     for (week, sessions) in by_week.iter() {
-        let week_block = CoreBlock {
-            source: active.source,
-            name: active.name.clone(),
-            sessions: sessions.clone(),
-        };
-        let count = plan::adherence_of(stride_core::plan::adherence_of(&week_block, &facts));
+        let week_block = CoreBlock::new(active.source, active.name.clone(), sessions.clone());
+        let week_count = stride_core::plan::adherence_of_at(&week_block, &facts, current);
+        let counts = plan::counts_of(week_count);
         weeks.push(AdherenceWeek {
             week_start: week.clone(),
-            done: count.done,
-            planned: count.planned,
+            done: counts.done,
+            planned: counts.done + counts.planned + counts.not_done,
+            not_done: counts.not_done,
         });
     }
 
     let reason = crate::routes::settings::suspension_reason(api, current)?;
     let response = PlanAdherence {
-        adherence: count,
+        adherence: plan::adherence_of(count),
+        counts: plan::counts_of(count),
         weeks,
         suspended: reason.is_some(),
         suspension_reason: reason,
@@ -294,7 +288,7 @@ pub fn results(api: &Api, request: &Request) -> ApiResult<Value> {
     let current = super::today(api)?;
     let active = plan::active_or_empty(api)?;
     let facts = plan::run_facts(api, "0000-01-01", &current.to_iso())?;
-    let rendered: Vec<PlanResult> = plan::results_of(api, &active, &facts)?;
+    let rendered: Vec<PlanResult> = plan::results_of(&active, &facts, current);
     let response = PlanResults {
         results: rendered,
         generated_at: api.generated_at(),
@@ -340,11 +334,7 @@ pub fn import(api: &Api, request: &Request) -> ApiResult<Value> {
         .map_err(|error| api.store_error("the plan could not be written", &error))?;
 
     let mut written = 0usize;
-    let mut unclassified = 0usize;
     for session in sessions.iter() {
-        if session.session_type == "unclassified" {
-            unclassified += 1;
-        }
         let planned = NewPlanSession {
             block_id,
             date: session.date.to_iso(),
@@ -363,10 +353,8 @@ pub fn import(api: &Api, request: &Request) -> ApiResult<Value> {
 
     let response = PlanImport {
         imported: true,
-        block_id,
+        block_id: Some(block_id),
         sessions: written,
-        source: source.to_string(),
-        unclassified,
         generated_at: api.generated_at(),
     };
     ok(&response)
@@ -375,10 +363,8 @@ pub fn import(api: &Api, request: &Request) -> ApiResult<Value> {
 // ------------------------------------------------------------------ helpers
 
 /// One block, as it travels.
-fn block_of(api: &Api, active: &plan::ActivePlan) -> ApiResult<PlanBlock> {
-    let session_count = active.block.sessions.len();
-    let _ = api;
-    Ok(PlanBlock {
+fn block_of(active: &plan::ActivePlan) -> PlanBlock {
+    PlanBlock {
         id: active.stored.as_ref().map(|block| block.id),
         name: active.name.clone(),
         source: active.source_name().to_string(),
@@ -389,9 +375,9 @@ fn block_of(api: &Api, active: &plan::ActivePlan) -> ApiResult<PlanBlock> {
             Some(block) => block.status.clone(),
             None => plan_status::ACTIVE.to_string(),
         },
-        session_count,
+        session_count: active.block.sessions.len(),
         is_baseline: active.is_baseline(),
-    })
+    }
 }
 
 /// The plan in the request: the sessions, and where the plan came from.

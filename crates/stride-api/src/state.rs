@@ -100,6 +100,20 @@ impl GarminKey {
         self.secret.trim().is_empty()
     }
 
+    /// The last four characters of the key — and never the key.
+    ///
+    /// The Settings screen shows an identifier the athlete can check
+    /// against their own key: the last four characters, and nothing else.
+    /// The key itself never leaves this type: there is no accessor for it,
+    /// no `Display`, and the `Debug` output is a fixed phrase.
+    pub fn last_four(&self) -> Option<String> {
+        let characters: Vec<char> = self.secret.chars().collect();
+        if characters.len() < 4 {
+            return None;
+        }
+        Some(characters[characters.len() - 4..].iter().collect())
+    }
+
     /// The client that talks to Garmin with this key.
     ///
     /// The key is copied into the client and stays there; nothing copies it
@@ -323,6 +337,15 @@ impl Api {
     /// Whether the phone or the desktop holds a Garmin key.
     pub fn garmin_connected(&self) -> bool {
         self.garmin().connected
+    }
+
+    /// The last four characters of the key that is held, when there is one.
+    ///
+    /// An identifier the athlete can check against their own key — and
+    /// never the key.
+    pub fn garmin_key_last4(&self) -> Option<String> {
+        let state = self.garmin();
+        state.key.as_ref().and_then(|key| key.last_four())
     }
 
     /// The last Garmin failure, when there was one.

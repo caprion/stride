@@ -74,10 +74,10 @@ fn calls() -> Vec<(&'static str, &'static str, Option<&'static str>)> {
         ("GET", "/calendar", None),
         ("GET", "/settings", None),
         ("POST", "/settings", Some("{}")),
-        ("GET", "/notes", None),
-        ("POST", "/notes", Some("{}")),
-        ("POST", "/data/export", Some("{}")),
-        ("POST", "/data/import", Some("{}")),
+        ("POST", "/settings/export", Some("{}")),
+        ("POST", "/settings/delete", Some("{}")),
+        ("POST", "/settings/import", Some("{}")),
+        ("POST", "/activities/1/note", Some("{}")),
     ]
 }
 

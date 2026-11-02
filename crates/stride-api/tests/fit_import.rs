@@ -1,9 +1,9 @@
 //! The FIT import: the file comes in, it is stored with the run, and a
-//! duplicate is refused.
+//! duplicate is reported and adds no row.
 //!
 //! The rule is the schema's own: a FIT import dedupes by start ±2 minutes
 //! and distance ±2 %. A file that is the same run as one that is already
-//! there adds no row, and the refusal says which run it is.
+//! there adds no row, and the answer says which run it already has.
 
 // The tests are allowed to panic and to expect: they are a separate crate,
 // not a `#[cfg(test)]` module, so the lint configuration does not reach them.
@@ -20,6 +20,7 @@ fn a_fit_file_is_stored_with_the_run() {
         &format!("{{\"fit_base64\":\"{}\"}}", common::base64(&file)),
     );
     assert_eq!(body["imported"].as_bool(), Some(true));
+    assert_eq!(body["duplicate"].as_bool(), Some(false));
     let id = body["activity_id"].as_i64().unwrap_or_default();
     assert!(id > 0);
 
@@ -36,7 +37,7 @@ fn a_fit_file_is_stored_with_the_run() {
 }
 
 #[test]
-fn a_duplicate_is_refused_and_the_refusal_says_which_run() {
+fn a_duplicate_adds_no_row_and_the_answer_says_which_run() {
     let harness = common::Harness::empty("fit-import-duplicate");
     let file = common::corpus_fit("real_garmin_run.fit");
     let first = harness.post(
@@ -51,28 +52,31 @@ fn a_duplicate_is_refused_and_the_refusal_says_which_run() {
         .unwrap_or_default()
         .to_string();
 
-    // The same file again: the same run, and it is refused.
-    let answer = harness.router.call(
-        "POST",
+    // The same file again: the same run. No row is added, and the answer
+    // says which run is already in the log.
+    let second = harness.post(
         "/auth/garmin/fit-import",
-        Some(&format!("{{\"fit_base64\":\"{}\"}}", common::base64(&file))),
+        &format!("{{\"fit_base64\":\"{}\"}}", common::base64(&file)),
     );
-    assert!(!answer.is_ok());
-    assert_eq!(answer.body["code"].as_str(), Some("bad_request"));
-    let detail = answer.body["detail"].as_str().unwrap_or_default();
-    assert!(
-        detail.starts_with("already have this run"),
-        "the detail was {detail}"
-    );
-    // The refusal names the run that is already there.
-    assert!(detail.contains(&distance), "the detail was {detail}");
-    let day = chrono::NaiveDate::parse_from_str(&date, "%Y-%m-%d")
-        .unwrap_or_default()
-        .format("%-d %b %Y")
-        .to_string();
-    assert!(detail.contains(&day), "the detail was {detail}");
+    assert_eq!(second["imported"].as_bool(), Some(false));
+    assert_eq!(second["duplicate"].as_bool(), Some(true));
+    assert_eq!(second["activity_id"].as_i64(), Some(id));
+    assert_eq!(second["date"].as_str(), Some(date.as_str()));
+    assert_eq!(second["distance"]["text"].as_str(), Some(distance.as_str()));
 
     // And no second row was added.
     let feed = harness.ok_get("/activities");
     assert_eq!(feed["activities"].as_array().unwrap().len(), 1);
+}
+
+#[test]
+fn a_file_that_is_not_a_fit_file_is_refused() {
+    let harness = common::Harness::empty("fit-import-bad");
+    let answer = harness.router.call(
+        "POST",
+        "/auth/garmin/fit-import",
+        Some("{\"fit_base64\":\"bm90IGEgZml0IGZpbGU=\"}"),
+    );
+    assert!(!answer.is_ok());
+    assert_eq!(answer.body["code"].as_str(), Some("bad_request"));
 }

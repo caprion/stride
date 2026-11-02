@@ -24,16 +24,26 @@ fn sessions<'a>(body: &'a Value, name: &str) -> &'a Vec<Value> {
     }
 }
 
-/// A history of runs: one a week, for eight weeks.
+/// A history of runs: enough for the engine to infer a usual week.
+///
+/// The engine needs eight weeks and twelve runs; a thinner history yields
+/// no baseline, and it says so rather than inventing a week.
 fn history(harness: &common::Harness) {
     let days = [
-        ("2026-03-16", 10_000.0),
-        ("2026-03-22", 12_000.0),
+        ("2026-03-23", 10_000.0),
+        ("2026-03-26", 8_000.0),
+        ("2026-03-29", 12_000.0),
+        ("2026-04-02", 10_000.0),
         ("2026-04-05", 9_000.0),
+        ("2026-04-09", 14_000.0),
         ("2026-04-12", 11_000.0),
+        ("2026-04-16", 7_000.0),
         ("2026-04-19", 10_500.0),
+        ("2026-04-23", 13_000.0),
         ("2026-04-26", 12_500.0),
+        ("2026-04-30", 9_500.0),
         ("2026-05-03", 10_000.0),
+        ("2026-05-07", 15_000.0),
         ("2026-05-10", 11_000.0),
     ];
     for (index, (date, distance)) in days.iter().enumerate() {
@@ -126,30 +136,33 @@ fn the_week_carries_the_core_s_wording_and_whether_a_run_happened() {
     // The target is the core's own words, and the number beside it.
     assert_eq!(first["target"]["text"].as_str(), Some("10 km"));
     assert_eq!(first["target"]["raw"].as_f64(), Some(10_000.0));
-    // The label is the core's, and so is the wording.
-    assert_eq!(first["label"].as_str(), Some("10 km · easy"));
+    // The core's wording, and the core's label inside it.
     assert_eq!(
         first["sentence"].as_str(),
         Some("11 May 2026 — 10 km · easy")
     );
     // The eleventh was a Monday, and nothing was run on it.
-    assert_eq!(first["ran"].as_bool(), Some(false));
+    assert_eq!(first["status"].as_str(), Some("not_done"));
+    assert!(first["actual"].is_null());
 
     let second = &sessions[1];
     assert_eq!(second["date"].as_str(), Some("2026-05-12"));
     assert_eq!(second["sentence"].as_str(), Some("Today — 20 km · long"));
     assert_eq!(second["status"].as_str(), Some("planned"));
-    assert_eq!(second["ran"].as_bool(), Some(false));
 
-    // The statuses and the count are the engine's, and they agree: how
-    // many sessions are "not done" is the count's "not done".
-    let not_done = sessions
-        .iter()
-        .filter(|one| one["status"].as_str() == Some("not_done"))
-        .count();
+    // The athlete's day is the api's day, and the app highlights it.
+    assert_eq!(body["today"].as_str(), Some("2026-05-12"));
+
+    // The counts are by status: the three add up to the week's sessions.
+    let counts = body.get("counts").expect("the week carries its counts");
+    let total = counts["done"].as_u64().unwrap_or_default()
+        + counts["planned"].as_u64().unwrap_or_default()
+        + counts["not_done"].as_u64().unwrap_or_default();
+    assert_eq!(total, sessions.len() as u64);
+    assert_eq!(counts["not_done"].as_u64(), Some(1));
     assert_eq!(
-        not_done,
-        body["adherence"]["not_done"].as_u64().unwrap_or_default() as usize
+        body["adherence"]["planned"].as_u64(),
+        Some(sessions.len() as u64)
     );
 }
 
@@ -165,9 +178,10 @@ fn the_day_carries_the_core_s_label_and_wording() {
     let body = harness.ok_get("/plan/today");
     assert_eq!(body["date"].as_str(), Some("2026-05-12"));
     let planned = body.get("session").expect("the day has a session");
-    assert_eq!(planned["label"].as_str(), Some("10 km · easy"));
+    // The core's wording, and the core's label inside it.
     assert_eq!(planned["sentence"].as_str(), Some("Today — 10 km · easy"));
     assert_eq!(planned["source"].as_str(), Some("prescribed"));
+    assert_eq!(planned["status"].as_str(), Some("planned"));
 }
 
 #[test]
@@ -266,9 +280,10 @@ fn a_plan_the_athlete_typed_in_is_recorded_as_typed() {
         "{\"name\":\"My plan\",\"sessions\":[{\"date\":\"2026-05-12\",\"session_type\":\"easy\",\"target_distance_m\":10000}]}",
     );
     assert_eq!(body["imported"].as_bool(), Some(true));
-    assert_eq!(body["source"].as_str(), Some("typed"));
     assert_eq!(body["sessions"].as_u64(), Some(1));
+    assert!(body["block_id"].as_i64().is_some());
 
+    // The source is recorded on the block.
     let current = harness.ok_get("/plan/current");
     assert_eq!(current["source"].as_str(), Some("typed"));
 }
@@ -281,9 +296,9 @@ fn a_plan_the_athlete_imported_is_recorded_as_prescribed() {
         "{\"name\":\"A coach's plan\",\"format\":\"csv\",\"content\":\"date,type,distance\\n2026-05-12,easy,10 km\\n2026-05-13,long,20 km\\n\"}",
     );
     assert_eq!(body["imported"].as_bool(), Some(true));
-    assert_eq!(body["source"].as_str(), Some("prescribed"));
     assert_eq!(body["sessions"].as_u64(), Some(2));
 
+    // The source is recorded on the block.
     let current = harness.ok_get("/plan/current");
     assert_eq!(current["source"].as_str(), Some("prescribed"));
     assert_eq!(current["block"]["name"].as_str(), Some("A coach's plan"));
@@ -344,11 +359,11 @@ fn a_workout_the_vocabulary_does_not_know_is_unclassified() {
         "{\"format\":\"csv\",\"content\":\"date,type,distance\\n2026-05-12,Hill repeats,10\\n\"}",
     );
     assert_eq!(body["imported"].as_bool(), Some(true));
-    assert_eq!(body["unclassified"].as_u64(), Some(1));
 
     let week = harness.ok_get("/plan/week");
     let sessions = sessions(&week, "sessions");
-    // Never "easy": the import does not guess.
+    // Never "easy": the import does not guess. The session keeps the
+    // athlete's own words as its title.
     assert_eq!(sessions[0]["session_type"].as_str(), Some("unclassified"));
     assert_eq!(sessions[0]["title"].as_str(), Some("Hill repeats"));
 }

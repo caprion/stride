@@ -1,6 +1,7 @@
-//! The settings: the weekly goal, the pause, and the note on a run.
+//! The settings: the weekly goal, the pause, the storage, and the note on
+//! a run.
 //!
-//! Three inputs change what the app says, and everything else in the
+//! Four inputs change what the app says, and everything else in the
 //! settings is plumbing:
 //!
 //! * **the goal** — a weekly distance. **A blank goal is no goal**: it is
@@ -8,16 +9,21 @@
 //! * **the pause** — a start, an end and one of the athlete's own three
 //!   reasons. While the pause is on, the adherence is suspended, and the
 //!   plan's own answers say so.
+//! * **the storage** — what is on the device and how big it is.
 //! * **the note** — the only free text the product stores.
 //!
-//! The three live in the `notes` table (the schema is frozen), and the
-//! store owns the writing of them.
+//! The goal, the pause and the note live in the `notes` table (the schema
+//! is frozen, and it holds them already), and the store owns the writing of
+//! them.
 
 use serde_json::Value;
 use stride_core::date::Date;
 use stride_store::model::note_kind;
 
-use crate::dto::{Notes, Pause, RunNote, Settings};
+use crate::dto::{
+    NoteResult, SettingsDeleteResult, SettingsExportResult, SettingsGoal, SettingsPause,
+    SettingsState, SettingsStorage,
+};
 use crate::error::{ApiError, ApiResult};
 use crate::render;
 use crate::router::Request;
@@ -32,23 +38,17 @@ use super::{core_date, ok};
 /// did not read.
 pub const PAUSE_REASONS: [&str; 3] = ["travel", "sick", "injured"];
 
-/// The settings: the goal, the pause, and what they mean now.
+/// The word the delete takes.
+///
+/// The typed confirmation is the caller's: the word has to arrive with the
+/// request, so a delete cannot happen by accident.
+pub const DELETE_CONFIRMATION: &str = "DELETE";
+
+/// The settings: the goal, the pause and the storage.
 pub fn settings(api: &Api, request: &Request) -> ApiResult<Value> {
     let _ = request;
     let current = super::today(api)?;
-    let goal = goal_of(api)?;
-    let pause = pause_of(api, current)?;
-    let paused = api
-        .store()
-        .pause_in_force(&current.to_iso())
-        .map_err(|error| api.store_error("the pause could not be read", &error))?
-        .is_some();
-    let response = Settings {
-        goal,
-        pause,
-        paused,
-        generated_at: api.generated_at(),
-    };
+    let response = state_of(api, current)?;
     ok(&response)
 }
 
@@ -57,7 +57,8 @@ pub fn settings(api: &Api, request: &Request) -> ApiResult<Value> {
 /// The body carries the goal and the pause. The goal is a number of
 /// kilometres — the schema's own unit — or nothing at all, and nothing at
 /// all means no goal. The pause is a start, an end and one of the three
-/// reasons, or nothing at all, and nothing at all means no pause.
+/// reasons (or no reason at all), or nothing at all, and nothing at all
+/// means no pause.
 ///
 /// The answer is the settings as they now are.
 pub fn write_settings(api: &Api, request: &Request) -> ApiResult<Value> {
@@ -109,12 +110,13 @@ pub fn write_settings(api: &Api, request: &Request) -> ApiResult<Value> {
                     .get("reason")
                     .and_then(|value| value.as_str())
                     .map(|text| text.trim().to_ascii_lowercase())
-                    .filter(|text| !text.is_empty())
-                    .ok_or_else(|| ApiError::bad_request("the pause has no reason"))?;
-                if !PAUSE_REASONS.contains(&reason.as_str()) {
-                    return Err(ApiError::bad_request(
-                        "the reason for the pause is not one of travel, sick or injured",
-                    ));
+                    .filter(|text| !text.is_empty());
+                if let Some(reason) = reason.as_ref() {
+                    if !PAUSE_REASONS.contains(&reason.as_str()) {
+                        return Err(ApiError::bad_request(
+                            "the reason for the pause is not one of travel, sick or injured",
+                        ));
+                    }
                 }
                 let start = core_date(&start)?.to_iso();
                 let end = core_date(&end)?.to_iso();
@@ -133,54 +135,58 @@ pub fn write_settings(api: &Api, request: &Request) -> ApiResult<Value> {
             }
             Some((start, end, reason)) => {
                 api.store()
-                    .set_pause(Some(&start), Some(&end), Some(&reason), api.now())
+                    .set_pause(Some(&start), Some(&end), reason.as_deref(), api.now())
                     .map_err(|error| api.store_error("the pause could not be written", &error))?;
             }
         }
     }
 
     let current = super::today(api)?;
-    let response = Settings {
-        goal: goal_of(api)?,
-        pause: pause_of(api, current)?,
-        paused: api
-            .store()
-            .pause_in_force(&current.to_iso())
-            .map_err(|error| api.store_error("the pause could not be read", &error))?
-            .is_some(),
+    let response = state_of(api, current)?;
+    ok(&response)
+}
+
+/// Write a backup.
+///
+/// The export is the store's own: a directory with the database and a
+/// manifest, written into the directory the host chose. The answer says
+/// that it was written and how big it is.
+pub fn export_backup(api: &Api, request: &Request) -> ApiResult<Value> {
+    let _ = request;
+    let written = crate::routes::export::write_export(api)?;
+    let response = SettingsExportResult {
+        exported: written.is_some(),
+        size: render::bytes(written.map(|export| export.database_bytes)),
         generated_at: api.generated_at(),
     };
     ok(&response)
 }
 
-/// The notes.
+/// Delete everything.
 ///
-/// With `activity_id`, the note on that run; without it, every note the
-/// athlete has written.
-pub fn notes(api: &Api, request: &Request) -> ApiResult<Value> {
-    let activity_id = request.query.integer("activity_id")?;
-    let notes = match activity_id {
-        Some(id) => api
-            .store()
-            .notes_for_activity(id)
-            .map_err(|error| api.store_error("the notes could not be read", &error))?,
-        None => api
-            .store()
-            .notes_of_kind(note_kind::NOTE)
-            .map_err(|error| api.store_error("the notes could not be read", &error))?,
+/// The word has to travel with the request: the api refuses the call
+/// unless it carries the confirmation, so a delete cannot happen by
+/// accident.
+pub fn delete_everything(api: &Api, request: &Request) -> ApiResult<Value> {
+    let body = match &request.body {
+        Some(body) => body.clone(),
+        None => return Err(ApiError::bad_request("the delete carries no confirmation")),
     };
-    let rendered: Vec<RunNote> = notes
-        .iter()
-        .filter_map(|note| {
-            Some(RunNote {
-                activity_id: note.activity_id?,
-                text: note.text.clone().unwrap_or_default(),
-                created_at: crate::state::format_instant(note.created_at),
-            })
-        })
-        .collect();
-    let response = Notes {
-        notes: rendered,
+    let confirmation = body
+        .get("confirm")
+        .and_then(|value| value.as_str())
+        .map(|text| text.trim().to_string())
+        .unwrap_or_default();
+    if confirmation != DELETE_CONFIRMATION {
+        return Err(ApiError::bad_request(
+            "the delete did not carry the word that confirms it",
+        ));
+    }
+    api.store()
+        .delete_everything()
+        .map_err(|error| api.store_error("the data could not be deleted", &error))?;
+    let response = SettingsDeleteResult {
+        deleted: true,
         generated_at: api.generated_at(),
     };
     ok(&response)
@@ -195,10 +201,13 @@ pub fn write_note(api: &Api, request: &Request) -> ApiResult<Value> {
         Some(body) => body.clone(),
         None => return Err(ApiError::bad_request("the note carries nothing to write")),
     };
-    let activity_id = body
-        .get("activity_id")
-        .and_then(|value| value.as_i64())
-        .ok_or_else(|| ApiError::bad_request("the note has no run"))?;
+    let activity_id = match request.param_id("id") {
+        Ok(id) => id,
+        Err(_) => body
+            .get("activity_id")
+            .and_then(|value| value.as_i64())
+            .ok_or_else(|| ApiError::bad_request("the note has no run"))?,
+    };
     let exists = api
         .store()
         .activity(activity_id)
@@ -222,15 +231,10 @@ pub fn write_note(api: &Api, request: &Request) -> ApiResult<Value> {
         .store()
         .notes_for_activity(activity_id)
         .map_err(|error| api.store_error("the notes could not be read", &error))?;
-    let note = written.iter().find_map(|note| {
-        Some(RunNote {
-            activity_id: note.activity_id?,
-            text: note.text.clone().unwrap_or_default(),
-            created_at: crate::state::format_instant(note.created_at),
-        })
-    });
-    let response = Notes {
-        notes: note.into_iter().collect(),
+    let response = NoteResult {
+        note: written
+            .iter()
+            .find_map(|note| note.text.clone().filter(|text| !text.is_empty())),
         generated_at: api.generated_at(),
     };
     ok(&response)
@@ -238,25 +242,51 @@ pub fn write_note(api: &Api, request: &Request) -> ApiResult<Value> {
 
 // ------------------------------------------------------------------ helpers
 
-/// The weekly goal, as the core renders it.
-///
-/// `None` when there is no goal: **a blank means no goal**, and it is
-/// never a zero that reads as a failure.
-pub fn goal_of(api: &Api) -> ApiResult<Option<crate::dto::RenderedValue>> {
-    let goal = api
+/// The settings as they now are.
+fn state_of(api: &Api, current: Date) -> ApiResult<SettingsState> {
+    let goal_km = api
         .store()
         .goal_km()
         .map_err(|error| api.store_error("the goal could not be read", &error))?;
-    match goal {
-        None => Ok(None),
-        Some(kilometres) => Ok(render::distance(Some(kilometres * 1000.0))),
-    }
+    let goal = SettingsGoal {
+        value: match goal_km {
+            None => None,
+            Some(kilometres) => render::distance(Some(kilometres * 1000.0)),
+        },
+        km: goal_km,
+    };
+    let pause = pause_of(api, current)?;
+    let storage = SettingsStorage {
+        size: render::bytes(api.store().size_bytes()),
+        activity_count: api
+            .store()
+            .count_activities()
+            .map_err(|error| api.store_error("the runs could not be counted", &error))?,
+        wellness_day_count: api
+            .store()
+            .count_wellness_daily()
+            .map_err(|error| api.store_error("the wellness could not be counted", &error))?,
+        plan_session_count: api
+            .store()
+            .count_plan_sessions()
+            .map_err(|error| api.store_error("the plan could not be counted", &error))?,
+        note_count: api
+            .store()
+            .count_notes()
+            .map_err(|error| api.store_error("the notes could not be counted", &error))?,
+    };
+    Ok(SettingsState {
+        goal,
+        pause,
+        storage,
+        generated_at: api.generated_at(),
+    })
 }
 
 /// The pause, as the settings show it.
 ///
 /// The pause that is on, and the last one when the plan is not paused now.
-pub fn pause_of(api: &Api, current: Date) -> ApiResult<Option<Pause>> {
+pub fn pause_of(api: &Api, current: Date) -> ApiResult<Option<SettingsPause>> {
     let in_force = api
         .store()
         .pause_in_force(&current.to_iso())
@@ -269,10 +299,10 @@ pub fn pause_of(api: &Api, current: Date) -> ApiResult<Option<Pause>> {
             .map_err(|error| api.store_error("the pause could not be read", &error))?,
     };
     Ok(note.and_then(|note| {
-        Some(Pause {
+        Some(SettingsPause {
             start_date: note.start_date?,
             end_date: note.end_date?,
-            reason: note.text.unwrap_or_default(),
+            reason: note.text,
         })
     }))
 }
@@ -286,4 +316,12 @@ pub fn suspension_reason(api: &Api, current: Date) -> ApiResult<Option<String>> 
         .pause_in_force(&current.to_iso())
         .map_err(|error| api.store_error("the pause could not be read", &error))?;
     Ok(note.and_then(|note| note.text))
+}
+
+/// The notes of the athlete, for the routes that read them.
+pub fn notes(api: &Api) -> ApiResult<usize> {
+    api.store()
+        .notes_of_kind(note_kind::NOTE)
+        .map(|notes| notes.len())
+        .map_err(|error| api.store_error("the notes could not be read", &error))
 }

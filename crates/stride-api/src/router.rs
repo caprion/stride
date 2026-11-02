@@ -479,7 +479,8 @@ pub const ROUTES: &[Route] = &[
         method: Method::Get,
         handler: crate::routes::app::calendar,
     },
-    // The settings: the goal, the pause and the note on a run.
+    // The settings: the goal, the pause, the storage, and the note on a
+    // run.
     Route {
         pattern: "/settings",
         method: Method::Get,
@@ -491,25 +492,24 @@ pub const ROUTES: &[Route] = &[
         handler: crate::routes::settings::write_settings,
     },
     Route {
-        pattern: "/notes",
-        method: Method::Get,
-        handler: crate::routes::settings::notes,
-    },
-    Route {
-        pattern: "/notes",
+        pattern: "/settings/export",
         method: Method::Post,
-        handler: crate::routes::settings::write_note,
+        handler: crate::routes::settings::export_backup,
     },
-    // The export and the import of the database.
     Route {
-        pattern: "/data/export",
+        pattern: "/settings/delete",
         method: Method::Post,
-        handler: crate::routes::export::export,
+        handler: crate::routes::settings::delete_everything,
     },
     Route {
-        pattern: "/data/import",
+        pattern: "/settings/import",
         method: Method::Post,
         handler: crate::routes::export::import,
+    },
+    Route {
+        pattern: "/activities/{id}/note",
+        method: Method::Post,
+        handler: crate::routes::settings::write_note,
     },
 ];
 

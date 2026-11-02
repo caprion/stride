@@ -31,7 +31,7 @@
 use std::path::{Path, PathBuf};
 use std::sync::{Mutex, MutexGuard};
 
-use rusqlite::{Connection, OpenFlags};
+use rusqlite::{Connection, OpenFlags, TransactionBehavior};
 
 use crate::error::{Result, StoreError};
 use crate::key::{key_failure, DatabaseKey};
@@ -173,6 +173,74 @@ impl Store {
     pub fn with_connection<T>(&self, f: impl FnOnce(&Connection) -> Result<T>) -> Result<T> {
         let conn = self.lock()?;
         f(&conn)
+    }
+
+    /// Delete everything: every run, every wellness day, the plan and every
+    /// note.
+    ///
+    /// **One transaction.** The data goes or it does not: a delete that
+    /// stopped halfway would leave the log in a state no athlete had ever
+    /// been in.
+    ///
+    /// The sync cursors go with it. They point at runs that are no longer
+    /// there, and a cursor that outlives its data would ask Garmin for
+    /// nothing and leave the log empty.
+    ///
+    /// Returns how many rows were deleted.
+    pub fn delete_everything(&self) -> Result<i64> {
+        let mut conn = self.lock()?;
+        let transaction = conn
+            .transaction_with_behavior(TransactionBehavior::Immediate)
+            .map_err(|source| StoreError::query("BEGIN", source))?;
+
+        let mut deleted = 0i64;
+        // The children first: the schema's foreign keys point at the
+        // parents. Every statement is written out — the tables are the
+        // frozen ones, and a statement that is built at runtime is a
+        // statement nobody read.
+        let removed = transaction
+            .execute("DELETE FROM activity_samples", [])
+            .map_err(|source| StoreError::query("activity_samples", source))?;
+        deleted += removed as i64;
+        let removed = transaction
+            .execute("DELETE FROM activities", [])
+            .map_err(|source| StoreError::query("activities", source))?;
+        deleted += removed as i64;
+        let removed = transaction
+            .execute("DELETE FROM wellness_daily", [])
+            .map_err(|source| StoreError::query("wellness_daily", source))?;
+        deleted += removed as i64;
+        let removed = transaction
+            .execute("DELETE FROM plan_sessions", [])
+            .map_err(|source| StoreError::query("plan_sessions", source))?;
+        deleted += removed as i64;
+        let removed = transaction
+            .execute("DELETE FROM plan_blocks", [])
+            .map_err(|source| StoreError::query("plan_blocks", source))?;
+        deleted += removed as i64;
+        let removed = transaction
+            .execute("DELETE FROM notes", [])
+            .map_err(|source| StoreError::query("notes", source))?;
+        deleted += removed as i64;
+        let removed = transaction
+            .execute("DELETE FROM sync_state", [])
+            .map_err(|source| StoreError::query("sync_state", source))?;
+        deleted += removed as i64;
+
+        transaction
+            .commit()
+            .map_err(|source| StoreError::query("COMMIT", source))?;
+        Ok(deleted)
+    }
+
+    /// The size of the database file, in bytes.
+    ///
+    /// `None` when the file cannot be read: a size that is not there is
+    /// not a zero.
+    pub fn size_bytes(&self) -> Option<u64> {
+        std::fs::metadata(&self.path)
+            .ok()
+            .map(|metadata| metadata.len())
     }
 
     /// Say something in the store's log.

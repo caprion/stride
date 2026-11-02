@@ -37,11 +37,19 @@ use super::ok;
 /// Write an export of the database.
 ///
 /// The export goes into the host's own export directory, in a directory of
-/// its own: the athlete moves that directory to the phone. The answer says
-/// what was written — how many rows, and the digest the import will check.
-pub fn export(api: &Api, request: &Request) -> ApiResult<Value> {
-    let root = export_root(api)?;
-    let name = export_name(api, request)?;
+/// its own: the athlete moves that directory to the phone.
+///
+/// `None` when the host has no export directory or no key: the answer says
+/// that the backup was not written, and it says why in the failure.
+pub fn write_export(api: &Api) -> ApiResult<Option<ExportWritten>> {
+    let root = match api.config().export_root.clone() {
+        Some(root) => root,
+        None => return Ok(None),
+    };
+    if !api.has_export_key() {
+        return Ok(None);
+    }
+    let name = format!("export-{}", api.now().format("%Y%m%d-%H%M%S"));
     let directory = plain_name(&name)
         .map_err(|_| ApiError::bad_request("the name of the export is not a plain name"))?;
     let path = root.join(directory);
@@ -66,7 +74,7 @@ pub fn export(api: &Api, request: &Request) -> ApiResult<Value> {
             .map_err(|error| export_error(api, &error))
     })?;
 
-    let response = ExportWritten {
+    Ok(Some(ExportWritten {
         directory: directory.to_string(),
         rows: manifest.rows,
         tables: manifest.tables,
@@ -75,8 +83,7 @@ pub fn export(api: &Api, request: &Request) -> ApiResult<Value> {
         database_sha256: manifest.database_sha256,
         created_at: crate::state::format_instant(manifest.created_at),
         generated_at: api.generated_at(),
-    };
-    ok(&response)
+    }))
 }
 
 /// Read an export back.
@@ -122,19 +129,6 @@ fn export_root(api: &Api) -> ApiResult<PathBuf> {
         None => Err(ApiError::bad_request(
             "this device has no directory to write an export into",
         )),
-    }
-}
-
-/// The name of the export: the caller's, or one from the clock.
-fn export_name(api: &Api, request: &Request) -> ApiResult<String> {
-    let given = request
-        .body_str("directory")
-        .or_else(|| request.body_str("name"))
-        .map(|text| text.trim().to_string())
-        .filter(|text| !text.is_empty());
-    match given {
-        Some(name) => Ok(name),
-        None => Ok(format!("export-{}", api.now().format("%Y%m%d-%H%M%S"))),
     }
 }
 

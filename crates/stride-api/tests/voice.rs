@@ -69,11 +69,11 @@ fn the_error_details_break_no_rule() {
             "/settings",
             Some("{\"pause\":{\"start_date\":\"2026-05-12\",\"end_date\":\"2026-05-14\",\"reason\":\"weather\"}}"),
         ),
-        ("POST", "/notes", Some("{}")),
-        ("POST", "/notes", Some("{\"activity_id\":9999,\"text\":\"a note\"}")),
-        ("POST", "/data/export", Some("{}")),
-        ("POST", "/data/import", Some("{}")),
-        ("POST", "/data/import", Some("{\"directory\":\"../elsewhere\"}")),
+        ("POST", "/activities/9999/note", Some("{\"text\":\"a note\"}")),
+        ("POST", "/settings/delete", Some("{}")),
+        ("POST", "/settings/delete", Some("{\"confirm\":\"delete\"}")),
+        ("POST", "/settings/import", Some("{}")),
+        ("POST", "/settings/import", Some("{\"directory\":\"../elsewhere\"}")),
     ];
     for (method, path, body) in failures {
         let answer = harness.router.call(method, path, body);

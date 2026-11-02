@@ -14,7 +14,7 @@ use crate::render;
 use crate::router::Request;
 use crate::state::Api;
 
-use super::{core_date, day_label, ok, today};
+use super::{core_date, ok, today};
 
 /// How far apart two starts may be and still be the same run: two minutes.
 const DUPLICATE_START_SECONDS: i64 = 120;
@@ -350,6 +350,9 @@ pub fn auth_status(api: &Api, request: &Request) -> ApiResult<Value> {
         } else {
             "none".to_string()
         },
+        // The last four characters of the key, and never the key: an
+        // identifier the athlete can check against their own.
+        key_last4: api.garmin_key_last4(),
         last_sync_at,
         generated_at: api.generated_at(),
     };
@@ -409,10 +412,10 @@ pub fn auth_personal_key_test(api: &Api, request: &Request) -> ApiResult<Value> 
 /// **The original file is stored with the run**: the FIT file is the source
 /// of truth, and every derived series is recomputable from it.
 ///
-/// **A duplicate is refused.** A file that is the same run as one that is
+/// **A duplicate adds no row.** A file that is the same run as one that is
 /// already there — within two minutes of the start and within two per cent
-/// of the distance — adds no row, and the refusal says which run it is:
-/// "already have this run: 12 Oct 2026, 10.2 km".
+/// of the distance — is refused, and the answer says which run it is: the
+/// run's day and its distance, so the app can say it in one line.
 pub fn auth_fit_import(api: &Api, request: &Request) -> ApiResult<Value> {
     let encoded = request
         .body_str("fit_base64")
@@ -429,18 +432,19 @@ pub fn auth_fit_import(api: &Api, request: &Request) -> ApiResult<Value> {
     let default_date = today(api)?.to_iso();
     let local_date = decoded.local_date.clone().unwrap_or(default_date);
 
-    // The run that is already there, if this file is one of them.
+    // The run that is already there, if this file is one of them. The
+    // duplicate is **reported**, not thrown away silently: the answer says
+    // which run is already in the log, and the app says it in one line.
     if let Some(duplicate) = duplicate_of(api, &decoded)? {
-        let distance = render::distance(Some(duplicate.distance_m))
-            .map(|value| value.text)
-            .unwrap_or_default();
-        let date = match core_date(&duplicate.local_date) {
-            Ok(date) => day_label(date),
-            Err(_) => duplicate.local_date.clone(),
+        let response = FitImport {
+            imported: false,
+            duplicate: true,
+            activity_id: Some(duplicate.id),
+            date: Some(duplicate.local_date),
+            distance: render::distance(Some(duplicate.distance_m)),
+            generated_at: api.generated_at(),
         };
-        return Err(ApiError::bad_request(format!(
-            "already have this run: {date}, {distance}"
-        )));
+        return ok(&response);
     }
 
     let row = NewActivity {
@@ -466,7 +470,10 @@ pub fn auth_fit_import(api: &Api, request: &Request) -> ApiResult<Value> {
         .map_err(|error| api.store_error("the run could not be written", &error))?;
     let response = FitImport {
         imported: true,
-        activity_id,
+        duplicate: false,
+        activity_id: Some(activity_id),
+        date: None,
+        distance: render::distance(Some(decoded.distance_m)),
         generated_at: api.generated_at(),
     };
     ok(&response)
@@ -474,6 +481,8 @@ pub fn auth_fit_import(api: &Api, request: &Request) -> ApiResult<Value> {
 
 /// A run that is already in the store.
 struct Duplicate {
+    /// The run's id.
+    id: i64,
     /// The run's day.
     local_date: String,
     /// The run's distance, in metres.
@@ -516,6 +525,7 @@ fn duplicate_of(api: &Api, decoded: &stride_ingest::FitActivity) -> ApiResult<Op
             continue;
         }
         return Ok(Some(Duplicate {
+            id: run.id,
             local_date: run.local_date.clone(),
             distance_m: run.distance_m,
         }));

@@ -105,7 +105,11 @@ fn declarations() -> BTreeMap<String, Interface> {
         };
         if balanced(&field.1) {
             if let Some(interface) = declared.get_mut(&name) {
-                interface.1.insert(field.0, field.1);
+                // The type is read without its comments: a comment that
+                // trails the type on the same line is still a comment.
+                interface
+                    .1
+                    .insert(field.0, strip_comments(&field.1).trim().to_string());
             }
         } else {
             pending = Some(field);
@@ -147,18 +151,27 @@ fn strip_comments(text: &str) -> String {
     let mut inside = false;
     for line in text.lines() {
         let trimmed = line.trim();
-        if trimmed.starts_with("/*") {
-            inside = !trimmed.contains("*/");
-            continue;
-        }
         if inside {
             if trimmed.contains("*/") {
                 inside = false;
             }
             continue;
         }
-        out.push_str(line);
-        out.push('\n');
+        // A comment may start on a line of its own, or trail the type on
+        // the same line: `sessions: number[]  /** ... */`.
+        match trimmed.find("/*") {
+            Some(at) => {
+                out.push_str(&trimmed[..at]);
+                out.push('\n');
+                if !trimmed[at..].contains("*/") {
+                    inside = true;
+                }
+            }
+            None => {
+                out.push_str(line);
+                out.push('\n');
+            }
+        }
     }
     out
 }
@@ -498,18 +511,78 @@ fn the_settings_carry_the_shape_the_app_declares() {
     let declarations = declarations();
     let harness = common::Harness::seeded("frontend-settings");
     let body = harness.ok_get("/settings");
-    assert_declared(&declarations, "Settings", &body);
+    assert_declared(&declarations, "SettingsState", &body);
+    assert_declared(
+        &declarations,
+        "SettingsGoal",
+        at(&body, &["goal"]).unwrap_or(&Value::Null),
+    );
     if let Some(pause) = at(&body, &["pause"]) {
         if pause.is_object() {
-            assert_declared(&declarations, "Pause", pause);
+            assert_declared(&declarations, "SettingsPause", pause);
         }
     }
+    assert_declared(
+        &declarations,
+        "SettingsStorage",
+        at(&body, &["storage"]).unwrap_or(&Value::Null),
+    );
 }
 
 #[test]
-fn the_notes_carry_the_shape_the_app_declares() {
+fn the_note_carries_the_shape_the_app_declares() {
     let declarations = declarations();
-    let harness = common::Harness::seeded("frontend-notes");
-    let body = harness.ok_get("/notes");
-    assert_declared(&declarations, "Notes", &body);
+    let harness = common::Harness::seeded("frontend-note");
+    let id = harness.write_run(common::run("a-run", "2026-05-10", 10_000.0, 3_000.0));
+    let body = harness.post(&format!("/activities/{id}/note"), "{\"text\":\"a note\"}");
+    assert_declared(&declarations, "NoteResult", &body);
+}
+
+#[test]
+fn the_fit_import_carries_the_shape_the_app_declares() {
+    let declarations = declarations();
+    let harness = common::Harness::seeded("frontend-fit-import");
+    let file = common::corpus_fit("real_garmin_run.fit");
+    let body = harness.post(
+        "/auth/garmin/fit-import",
+        &format!("{{\"fit_base64\":\"{}\"}}", common::base64(&file)),
+    );
+    assert_declared(&declarations, "FitImportResult", &body);
+}
+
+#[test]
+fn the_plan_import_carries_the_shape_the_app_declares() {
+    let declarations = declarations();
+    let harness = common::Harness::seeded("frontend-plan-import");
+    let body = harness.post(
+        "/plan/import",
+        "{\"name\":\"My plan\",\"sessions\":[{\"date\":\"2026-05-12\",\"session_type\":\"easy\",\"target_distance_m\":10000}]}",
+    );
+    assert_declared(&declarations, "PlanImportResult", &body);
+}
+
+#[test]
+fn the_connection_carries_the_shape_the_app_declares() {
+    let declarations = declarations();
+    let harness = common::Harness::seeded("frontend-connection");
+    let body = harness.ok_get("/auth/status");
+    assert_declared(&declarations, "ConnectionStatus", &body);
+}
+
+#[test]
+fn the_service_health_carries_the_shape_the_app_declares() {
+    let declarations = declarations();
+    let harness = common::Harness::seeded("frontend-service-health");
+    let body = harness.ok_get("/health");
+    assert_declared(&declarations, "Health", &body);
+}
+
+#[test]
+fn the_export_and_the_delete_carry_the_shape_the_app_declares() {
+    let declarations = declarations();
+    let harness = common::Harness::seeded("frontend-export");
+    let body = harness.post("/settings/export", "{}");
+    assert_declared(&declarations, "SettingsExportResult", &body);
+    let body = harness.post("/settings/delete", "{\"confirm\":\"DELETE\"}");
+    assert_declared(&declarations, "SettingsDeleteResult", &body);
 }

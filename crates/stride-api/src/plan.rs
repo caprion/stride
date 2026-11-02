@@ -7,9 +7,9 @@
 //!
 //! It decides nothing. There is no rule about what a plan is in here, no
 //! wording of this crate's own, and no second implementation of the
-//! engine's answers — the baseline, the session of a day, the sessions of a
-//! week, the count and the results all come from the core, and this module
-//! only carries them.
+//! engine's answers — the baseline, the session of a day, the sessions of
+//! the week, the count, the status of a session and the results all come
+//! from the core, and this module only carries them.
 //!
 //! ## The two vocabularies
 //!
@@ -23,11 +23,12 @@ use stride_core::date::Date;
 use stride_core::plan::{
     Adherence as CoreAdherence, PlanBlock as CoreBlock, PlanSession as CoreSession,
     PlanSource as CoreSource, RunFact, SessionKind, SessionResult as CoreSessionResult,
+    SessionStatus,
 };
 use stride_store::model::plan_source;
 use stride_store::{PlanBlock as StoredBlock, PlanSession as StoredSession};
 
-use crate::dto::{Adherence, PlanResult, PlanSession};
+use crate::dto::{Adherence, Counts, PlanResult, PlanSession};
 use crate::error::ApiResult;
 use crate::render;
 use crate::state::Api;
@@ -53,6 +54,8 @@ pub struct ActivePlan {
     /// `None` for the baseline: the baseline is inferred, and it is not
     /// stored.
     pub stored: Option<StoredBlock>,
+    /// The store's rows: the session titles and ids, matched by day.
+    pub rows: Vec<StoredSession>,
     /// The source in force.
     pub source: CoreSource,
     /// The block's name.
@@ -78,7 +81,16 @@ impl ActivePlan {
 
     /// The source's name, as the store writes it.
     pub fn source_name(&self) -> &'static str {
-        source_name(self.source)
+        self.source.as_str()
+    }
+
+    /// The store's row for a session, when the plan was written down.
+    ///
+    /// The row carries the title the athlete wrote and the session's id.
+    pub fn row_of(&self, session: &CoreSession) -> Option<&StoredSession> {
+        self.rows.iter().find(|row| {
+            row.date == session.date.to_iso() && kind_of(&row.session_type) == session.kind
+        })
     }
 }
 
@@ -92,7 +104,7 @@ pub fn active(api: &Api) -> ApiResult<Option<ActivePlan>> {
     for source in SOURCES.iter() {
         let stored = api
             .store()
-            .active_plan_block(source_name(*source))
+            .active_plan_block(source.as_str())
             .map_err(|error| api.store_error("the plan could not be read", &error))?;
         if let Some(stored) = stored {
             return Ok(Some(from_stored(api, &stored)?));
@@ -100,12 +112,13 @@ pub fn active(api: &Api) -> ApiResult<Option<ActivePlan>> {
     }
 
     // No plan of the athlete's own: the baseline, read from the athlete's
-    // own history.
+    // own history. The engine says when the history is too thin, and it
+    // says nothing rather than inventing a week.
     let weeks = api.config().baseline_weeks;
     let today = crate::routes::today(api)?;
     let from = today.add_days(-(weeks as i64 * 7)).to_iso();
     let facts = run_facts(api, &from, &today.to_iso())?;
-    let block = match stride_core::plan::baseline_from_history(&facts, weeks) {
+    let block = match stride_core::plan::baseline_from_history_at(&facts, weeks, today) {
         Some(block) => block,
         None => return Ok(None),
     };
@@ -130,11 +143,12 @@ pub fn active(api: &Api) -> ApiResult<Option<ActivePlan>> {
         goal: None,
         baseline_weeks: Some(weeks),
         stored: None,
+        rows: Vec::new(),
         block,
     }))
 }
 
-/// The plan in force, or the failure that says there is none.
+/// The plan in force, or the empty one when there is none.
 ///
 /// The routes that have to answer with something use this one: a plan that
 /// is not there is a fact the app shows, and the answer says it.
@@ -142,12 +156,9 @@ pub fn active_or_empty(api: &Api) -> ApiResult<ActivePlan> {
     match active(api)? {
         Some(plan) => Ok(plan),
         None => Ok(ActivePlan {
-            block: CoreBlock {
-                source: CoreSource::Baseline,
-                name: "No plan".to_string(),
-                sessions: Vec::new(),
-            },
+            block: CoreBlock::new(CoreSource::Baseline, "No plan".to_string(), Vec::new()),
             stored: None,
+            rows: Vec::new(),
             source: CoreSource::Baseline,
             name: "No plan".to_string(),
             start_date: crate::routes::today(api)?.to_iso(),
@@ -160,18 +171,19 @@ pub fn active_or_empty(api: &Api) -> ApiResult<ActivePlan> {
 
 /// The block the athlete's own plan holds, as the core reads it.
 fn from_stored(api: &Api, stored: &StoredBlock) -> ApiResult<ActivePlan> {
-    let sessions = api
+    let rows = api
         .store()
         .plan_sessions_for_block(stored.id)
         .map_err(|error| api.store_error("the plan could not be read", &error))?;
-    let core_sessions: Vec<CoreSession> = sessions.iter().filter_map(core_session).collect();
+    let sessions: Vec<CoreSession> = rows.iter().filter_map(core_session).collect();
     Ok(ActivePlan {
-        block: CoreBlock {
-            source: source_of(stored.source.as_str()),
-            name: stored.name.clone(),
-            sessions: core_sessions,
-        },
+        block: CoreBlock::new(
+            source_of(stored.source.as_str()),
+            stored.name.clone(),
+            sessions,
+        ),
         stored: Some(stored.clone()),
+        rows,
         source: source_of(stored.source.as_str()),
         name: stored.name.clone(),
         start_date: stored.start_date.clone(),
@@ -187,12 +199,19 @@ fn from_stored(api: &Api, stored: &StoredBlock) -> ApiResult<ActivePlan> {
 /// not a session, and the app never invents one.
 fn core_session(session: &StoredSession) -> Option<CoreSession> {
     let date = Date::parse(&session.date)?;
-    Some(CoreSession {
+    let mut core = CoreSession::new(
         date,
-        kind: kind_of(&session.session_type),
-        target_distance_m: session.target_distance_m,
-        label: session.title.clone().unwrap_or_default(),
-    })
+        kind_of(&session.session_type),
+        session.target_distance_m,
+    );
+    // The athlete's own title rides along in the label, and the core's
+    // rendering of the session is what the app reads.
+    if let Some(title) = session.title.as_ref() {
+        if !title.trim().is_empty() {
+            core.label = title.clone();
+        }
+    }
+    Some(core)
 }
 
 /// The core's kind, from the store's word for it.
@@ -210,26 +229,6 @@ pub fn kind_of(session_type: &str) -> SessionKind {
     }
 }
 
-/// The kind's name, as the store writes it.
-pub fn kind_name(kind: &SessionKind) -> String {
-    match kind {
-        SessionKind::Easy => "easy".to_string(),
-        SessionKind::Long => "long".to_string(),
-        SessionKind::Quality => "quality".to_string(),
-        SessionKind::Rest => "rest".to_string(),
-        SessionKind::Other(name) => name.clone(),
-    }
-}
-
-/// The source's name, as the store writes it.
-pub fn source_name(source: CoreSource) -> &'static str {
-    match source {
-        CoreSource::Baseline => plan_source::BASELINE,
-        CoreSource::Prescribed => plan_source::PRESCRIBED,
-        CoreSource::Typed => plan_source::TYPED,
-    }
-}
-
 /// The core's source, from the store's word for it.
 ///
 /// A word the store does not have is the baseline: the app's own inference
@@ -239,6 +238,18 @@ fn source_of(source: &str) -> CoreSource {
         plan_source::PRESCRIBED => CoreSource::Prescribed,
         plan_source::TYPED => CoreSource::Typed,
         _ => CoreSource::Baseline,
+    }
+}
+
+/// The status of a session, as the app reads it.
+///
+/// The core's own statuses, spelled the app's way: `done`, `planned`,
+/// `not_done`.
+pub fn status_name(status: SessionStatus) -> &'static str {
+    match status {
+        SessionStatus::Done => "done",
+        SessionStatus::Planned => "planned",
+        SessionStatus::NotDone => "not_done",
     }
 }
 
@@ -256,10 +267,7 @@ pub fn run_facts(api: &Api, from: &str, to: &str) -> ApiResult<Vec<RunFact>> {
             Some(date) => date,
             None => continue,
         };
-        facts.push(RunFact {
-            date,
-            distance_m: Some(run.distance_m),
-        });
+        facts.push(RunFact::new(date, Some(run.distance_m)));
     }
     Ok(facts)
 }
@@ -283,64 +291,49 @@ pub fn distance_on(api: &Api, date: &str) -> ApiResult<Option<f64>> {
 
 /// One session of the plan, as the answer carries it.
 ///
-/// The label and the wording are the core's, the target and the actual are
-/// the core's rendering of the numbers, and **the status is the core's
-/// answer**: *done*, *not done* or *planned*.
-pub fn session_of(
-    session: &CoreSession,
-    date: Date,
-    source: CoreSource,
-    current: Date,
-    facts: &[RunFact],
-    actual_m: Option<f64>,
-    ran: bool,
-) -> PlanSession {
-    let label = stride_core::plan::session_label(session);
-    let sentence = crate::routes::session_sentence(date, current, &label);
+/// The sentence is the core's wording, the target and the actual are the
+/// core's rendering of the numbers, and the status is the core's answer.
+pub fn session_of(plan: &ActivePlan, result: &CoreSessionResult, today: Date) -> PlanSession {
+    let date = result.session.date;
+    let sentence = crate::routes::session_sentence(date, today, &result.session.label);
     PlanSession {
         date: date.to_iso(),
-        session_type: kind_name(&session.kind),
-        title: Some(session.label.clone()).filter(|title| !title.is_empty()),
-        label,
+        session_type: result.session.kind.word(),
+        title: plan
+            .row_of(&result.session)
+            .and_then(|row| row.title.clone())
+            .filter(|title| !title.trim().is_empty()),
         sentence,
-        target: render::distance(session.target_distance_m),
-        actual: render::distance(actual_m),
-        status: status_of(source, session, facts).to_string(),
-        ran,
-        source: source_name(source).to_string(),
-    }
-}
-
-/// The status of one session: *done*, *not done* or *planned*.
-///
-/// **The core's answer.** The engine is asked about the session on its own,
-/// and it answers with the same rule it uses for the count — so a session's
-/// status and the block's count can never disagree, and the rule lives in
-/// one place.
-///
-/// A **baseline** never says "not done": an inferred week is not a
-/// prescription, and that is the engine's rule and not this crate's.
-pub fn status_of(source: CoreSource, session: &CoreSession, facts: &[RunFact]) -> &'static str {
-    let one = CoreBlock {
-        source,
-        name: String::new(),
-        sessions: vec![session.clone()],
-    };
-    let count = stride_core::plan::adherence_of(&one, facts);
-    if count.done > 0 {
-        "done"
-    } else if count.not_done > 0 {
-        "not_done"
-    } else {
-        "planned"
+        target: render::distance(result.session.target_distance_m),
+        actual: render::distance(result.actual),
+        status: status_name(result.status).to_string(),
+        source: plan.source_name().to_string(),
     }
 }
 
 /// The count, as the answer carries it.
+///
+/// The core's count: how many were run and how many the plan holds.
 pub fn adherence_of(adherence: CoreAdherence) -> Adherence {
     Adherence {
         done: adherence.done,
         planned: adherence.planned,
+    }
+}
+
+/// The count by status: done, planned and not done.
+///
+/// The three are the three statuses, so they add up to the number of
+/// sessions in the plan. The core's count is of the same three facts: its
+/// `planned` is the number of sessions the plan holds, and the ones still
+/// to come are what is left after the done and the not done.
+pub fn counts_of(adherence: CoreAdherence) -> Counts {
+    Counts {
+        done: adherence.done,
+        planned: adherence
+            .planned
+            .saturating_sub(adherence.done)
+            .saturating_sub(adherence.not_done),
         not_done: adherence.not_done,
     }
 }
@@ -349,42 +342,27 @@ pub fn adherence_of(adherence: CoreAdherence) -> Adherence {
 ///
 /// The intent, what happened and the difference between the two — the
 /// difference as the core states it, and only when there is one to state.
-pub fn results_of(api: &Api, plan: &ActivePlan, facts: &[RunFact]) -> ApiResult<Vec<PlanResult>> {
-    let source = plan.source;
-    let results: Vec<CoreSessionResult> = stride_core::plan::results_of(&plan.block, facts);
-    // The ids belong to the store: a session that was written down has one,
-    // and a session of the baseline does not.
-    let stored: Vec<(String, i64)> = match plan.stored.as_ref() {
-        Some(block) => api
-            .store()
-            .plan_sessions_for_block(block.id)
-            .map_err(|error| api.store_error("the plan could not be read", &error))?
-            .iter()
-            .map(|session| (session.date.clone(), session.id))
-            .collect(),
-        None => Vec::new(),
-    };
+pub fn results_of(plan: &ActivePlan, facts: &[RunFact], today: Date) -> Vec<PlanResult> {
+    let results: Vec<CoreSessionResult> =
+        stride_core::plan::results_of_at(&plan.block, facts, today);
     let mut rendered: Vec<PlanResult> = Vec::with_capacity(results.len());
     for result in results.iter() {
-        // The core's SessionResult carries the intent inside it; the app's
-        // shape is flat, so the mapping is here - and only here.
-        let session = &result.session;
-        let date = session.date.to_iso();
-        let actual_m = result.actual;
-        let session_id = stored
+        let date = result.session.date.to_iso();
+        let session_id = plan
+            .rows
             .iter()
-            .find(|(stored_date, _)| *stored_date == date)
-            .map(|(_, id)| *id);
+            .find(|row| row.date == date && kind_of(&row.session_type) == result.session.kind)
+            .map(|row| row.id);
         rendered.push(PlanResult {
             session_id,
             date: date.clone(),
-            session_type: kind_name(&session.kind),
-            label: stride_core::plan::session_label(session),
-            status: status_of(source, session, facts).to_string(),
-            target: render::distance(session.target_distance_m),
-            actual: render::distance(actual_m),
-            difference: stride_core::plan::distance_comparison(actual_m, session.target_distance_m),
+            session_type: result.session.kind.word(),
+            label: result.session.label.clone(),
+            status: status_name(result.status).to_string(),
+            target: render::distance(result.session.target_distance_m),
+            actual: render::distance(result.actual),
+            difference: result.difference.clone(),
         });
     }
-    Ok(rendered)
+    rendered
 }

@@ -333,14 +333,44 @@ fn the_plan_routes_carry_their_shapes() {
         &[
             "adherence",
             "block_name",
+            "counts",
             "sessions",
             "source",
             "target",
+            "today",
             "week_end",
             "week_start",
         ],
         "/plan/week",
     );
+    assert_keys(
+        &week["counts"],
+        &["done", "not_done", "planned"],
+        "/plan/week: the counts",
+    );
+    assert_keys(
+        &week["adherence"],
+        &["done", "planned"],
+        "/plan/week: the adherence",
+    );
+
+    let sessions = week["sessions"].as_array().cloned().unwrap_or_default();
+    if let Some(session) = sessions.first() {
+        assert_keys(
+            session,
+            &[
+                "actual",
+                "date",
+                "sentence",
+                "session_type",
+                "source",
+                "status",
+                "target",
+                "title",
+            ],
+            "/plan/week: a session",
+        );
+    }
 
     let blocks = harness.ok_get("/plan/blocks");
     assert_keys(&blocks, &["blocks", "generated_at"], "/plan/blocks");
@@ -377,6 +407,7 @@ fn the_plan_routes_carry_their_shapes() {
         &adherence,
         &[
             "adherence",
+            "counts",
             "generated_at",
             "suspended",
             "suspension_reason",
@@ -386,8 +417,13 @@ fn the_plan_routes_carry_their_shapes() {
     );
     assert_keys(
         &adherence["adherence"],
-        &["done", "not_done", "planned"],
+        &["done", "planned"],
         "/plan/adherence: the count",
+    );
+    assert_keys(
+        &adherence["counts"],
+        &["done", "not_done", "planned"],
+        "/plan/adherence: the counts by status",
     );
 
     let results = harness.ok_get("/plan/results");
@@ -408,6 +444,7 @@ fn the_plan_routes_carry_their_shapes() {
     );
 }
 
+/// The settings' own shapes.
 #[test]
 fn the_settings_routes_carry_their_shapes() {
     let harness = common::Harness::seeded("shape-settings");
@@ -415,26 +452,45 @@ fn the_settings_routes_carry_their_shapes() {
     let settings = harness.ok_get("/settings");
     assert_keys(
         &settings,
-        &["generated_at", "goal", "pause", "paused"],
+        &["generated_at", "goal", "pause", "storage"],
         "/settings",
     );
+    assert_keys(&settings["goal"], &["km", "value"], "/settings: the goal");
+    assert_keys(
+        &settings["storage"],
+        &[
+            "activity_count",
+            "note_count",
+            "plan_session_count",
+            "size",
+            "wellness_day_count",
+        ],
+        "/settings: the storage",
+    );
 
-    let notes = harness.ok_get("/notes");
-    assert_keys(&notes, &["generated_at", "notes"], "/notes");
+    let export = harness.post("/settings/export", "{}");
+    assert_keys(
+        &export,
+        &["exported", "generated_at", "size"],
+        "/settings/export",
+    );
+
+    let delete = harness.post("/settings/delete", "{\"confirm\":\"DELETE\"}");
+    assert_keys(&delete, &["deleted", "generated_at"], "/settings/delete");
+
+    let id = harness.write_run(common::run("a-run", "2026-05-10", 10_000.0, 3_000.0));
+    let note = harness.post(&format!("/activities/{id}/note"), "{\"text\":\"a note\"}");
+    assert_keys(&note, &["generated_at", "note"], "/activities/{id}/note");
 }
 
 #[test]
-fn the_export_routes_carry_their_shapes() {
+fn the_import_route_carries_its_shape() {
     let harness = common::Harness::seeded("shape-export");
 
-    // The export needs a directory the host chose, and a key: without
-    // them the route says so, and the shape of the refusal is the shape of
+    // The import needs a directory the host chose, and a key: without them
+    // the route says so, and the shape of the refusal is the shape of
     // every other failure.
-    let answer = harness.router.call("POST", "/data/export", Some("{}"));
-    assert!(!answer.is_ok());
-    assert_eq!(answer.body["code"], "bad_request");
-
-    let answer = harness.router.call("POST", "/data/import", Some("{}"));
+    let answer = harness.router.call("POST", "/settings/import", Some("{}"));
     assert!(!answer.is_ok());
     assert_eq!(answer.body["code"], "bad_request");
 }
@@ -477,6 +533,7 @@ fn the_insight_routes_carry_their_shapes() {
             "sessions_per_week",
             "typical_week",
             "weekly_volume",
+            "weeks_needed",
         ],
         "/insights/progress",
     );
@@ -584,6 +641,7 @@ fn the_app_routes_carry_their_shapes() {
         &[
             "connected",
             "generated_at",
+            "key_last4",
             "key_source",
             "last_sync_at",
             "method",

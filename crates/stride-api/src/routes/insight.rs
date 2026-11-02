@@ -36,21 +36,17 @@ pub fn today(api: &Api, request: &Request) -> ApiResult<Value> {
     let current = super::today(api)?;
     let active = crate::plan::active_or_empty(api)?;
     let facts = crate::plan::run_facts(api, "0000-01-01", &current.to_iso())?;
+    let week_start = super::week_start(current);
+    let week_end = week_start.add_days(6);
 
     let mut planned = None;
     let mut options = Vec::new();
-    for session in stride_core::plan::week_of(&active.block, current).iter() {
-        let actual = crate::plan::distance_on(api, &session.date.to_iso())?;
-        let rendered = crate::plan::session_of(
-            session,
-            session.date,
-            active.source,
-            current,
-            &facts,
-            actual,
-            actual.is_some(),
-        );
-        if session.date == current {
+    for result in stride_core::plan::results_of_at(&active.block, &facts, current).iter() {
+        if result.session.date < week_start || result.session.date > week_end {
+            continue;
+        }
+        let rendered = crate::plan::session_of(&active, result, current);
+        if result.session.date == current {
             if planned.is_none() {
                 planned = Some(rendered);
             }
@@ -58,7 +54,7 @@ pub fn today(api: &Api, request: &Request) -> ApiResult<Value> {
         }
         // A rest day is not an alternative to run: the options are the
         // sessions the athlete could choose instead.
-        if crate::plan::kind_name(&session.kind) == "rest" {
+        if result.session.kind == stride_core::plan::SessionKind::Rest {
             continue;
         }
         options.push(rendered);
@@ -200,6 +196,7 @@ pub fn progress(api: &Api, request: &Request) -> ApiResult<Value> {
         consistency,
         sessions_per_week,
         adherence,
+        weeks_needed: None,
     };
     ok(&response)
 }
