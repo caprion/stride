@@ -461,6 +461,11 @@ pub struct ZoneBand {
     pub label: String,
     /// The band's range, in the core's words: "154-166 bpm".
     pub range: Option<String>,
+    /// The band's lower edge, in beats per minute — the number the core
+    /// rendered the range from, for a chart to draw.
+    pub from_bpm: Option<i64>,
+    /// The band's upper edge, in beats per minute.
+    pub to_bpm: Option<i64>,
     /// The time spent in the band, as the core renders it: "12 m".
     pub time: Option<RenderedValue>,
 }

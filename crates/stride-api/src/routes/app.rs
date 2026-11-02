@@ -200,7 +200,11 @@ pub fn sync_run(api: &Api, request: &Request) -> ApiResult<Value> {
             };
             listed.insert(activity_id.clone());
             // A run the athlete deleted on Garmin stays deleted.
-            if cursor.gone.contains(&activity_id) {
+            let is_deleted = api
+                .store()
+                .activity_is_deleted(&activity_id)
+                .map_err(|error| api.store_error("the run could not be read", &error))?;
+            if is_deleted {
                 continue;
             }
             let stored = api
@@ -258,14 +262,24 @@ pub fn sync_run(api: &Api, request: &Request) -> ApiResult<Value> {
             .store()
             .garmin_external_ids_between(&from, &to)
             .map_err(|error| api.store_error("the runs could not be read", &error))?;
-        for id in stored_ids {
-            if !listed.contains(&id) && !cursor.gone.contains(&id) {
-                api.store()
-                    .delete_activity_by_external(source::GARMIN_PERSONAL, &id)
-                    .map_err(|error| api.store_error("the run could not be removed", &error))?;
-                cursor.gone.push(id);
-                deleted += 1;
+        for (id, local_date) in stored_ids {
+            if listed.contains(&id) {
+                continue;
             }
+            let is_deleted = api
+                .store()
+                .activity_is_deleted(&id)
+                .map_err(|error| api.store_error("the run could not be read", &error))?;
+            if is_deleted {
+                continue;
+            }
+            api.store()
+                .delete_activity_by_external(source::GARMIN_PERSONAL, &id)
+                .map_err(|error| api.store_error("the run could not be removed", &error))?;
+            api.store()
+                .mark_activity_deleted(&id, &local_date, api.now())
+                .map_err(|error| api.store_error("the run could not be marked", &error))?;
+            deleted += 1;
         }
     }
 
@@ -770,8 +784,9 @@ fn write_state(
 ///
 /// It lives in the `sync_state` row for `activities`, in the opaque cursor
 /// column. The cursor's meaning is the api's: the newest Garmin activity id
-/// already pulled, the counts of the last pull, and the tombstones of the
-/// runs Garmin no longer lists.
+/// already pulled, and the counts of the last pull. The tombstones of the
+/// runs Garmin no longer lists live in their own table
+/// (`deleted_garmin_activities`), not here.
 #[derive(Clone, Debug, Default, Serialize, Deserialize)]
 struct ActivityCursor {
     /// The newest Garmin activity id already pulled.
@@ -782,9 +797,6 @@ struct ActivityCursor {
     skipped: i64,
     /// The runs Garmin no longer lists, marked and not resurrected.
     deleted: i64,
-    /// The ids of the runs Garmin no longer lists. A run on this list is
-    /// never re-added, even if Garmin lists it again later.
-    gone: Vec<String>,
 }
 
 /// Read the activity cursor, or the empty one when there is none yet.

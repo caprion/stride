@@ -109,6 +109,7 @@ fn the_store_creates_the_contract_s_schema() -> Result<()> {
         vec![
             "activities".to_string(),
             "activity_samples".to_string(),
+            "deleted_garmin_activities".to_string(),
             "ix_activities_local_date".to_string(),
             "ix_activities_sport".to_string(),
             "ix_activities_start".to_string(),
@@ -170,6 +171,7 @@ fn the_tables_are_created_in_the_contract_s_order() -> Result<()> {
             "plan_sessions".to_string(),
             "notes".to_string(),
             "sync_state".to_string(),
+            "deleted_garmin_activities".to_string(),
         ]
     );
     drop(dir);
@@ -207,7 +209,7 @@ fn the_migration_is_idempotent() -> Result<()> {
     assert_eq!(store.schema_version()?, schema::SCHEMA_VERSION);
 
     let tables = store.with_connection(schema::table_names)?;
-    assert_eq!(tables.len(), 7);
+    assert_eq!(tables.len(), 8);
     drop(dir);
     Ok(())
 }
@@ -224,7 +226,7 @@ fn a_database_opened_again_keeps_its_schema_version() -> Result<()> {
         let store = Store::open_and_migrate(&path, &common::key()?)?;
         assert_eq!(store.schema_version()?, schema::SCHEMA_VERSION);
         let tables = store.with_connection(schema::table_names)?;
-        assert_eq!(tables.len(), 7);
+        assert_eq!(tables.len(), 8);
     }
     Ok(())
 }

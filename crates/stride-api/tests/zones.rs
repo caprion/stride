@@ -82,10 +82,21 @@ fn the_bands_are_tenths_of_the_maximum_heart_rate() {
     let first = &zones[0];
     let expected = stride_core::units::render_heart_rate_range(Some(0.5 * max), Some(0.6 * max));
     assert_eq!(first["range"].as_str(), expected.as_deref());
+    // The edges the words were rendered from, for the chart to draw.
+    let (lower, upper) =
+        stride_core::units::render_heart_rate_range_edges(Some(0.5 * max), Some(0.6 * max))
+            .unwrap_or((0, 0));
+    assert_eq!(first["from_bpm"].as_i64(), Some(lower));
+    assert_eq!(first["to_bpm"].as_i64(), Some(upper));
     // The last band ends at the maximum itself.
     let last = &zones[4];
     let expected = stride_core::units::render_heart_rate_range(Some(0.9 * max), Some(max));
     assert_eq!(last["range"].as_str(), expected.as_deref());
+    let (lower, upper) =
+        stride_core::units::render_heart_rate_range_edges(Some(0.9 * max), Some(max))
+            .unwrap_or((0, 0));
+    assert_eq!(last["from_bpm"].as_i64(), Some(lower));
+    assert_eq!(last["to_bpm"].as_i64(), Some(upper));
 }
 
 #[test]

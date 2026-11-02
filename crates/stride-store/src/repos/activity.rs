@@ -339,14 +339,19 @@ impl Store {
         Ok(removed)
     }
 
-    /// The Garmin runs that fall inside a date window, as external ids.
+    /// The Garmin runs that fall inside a date window, as external id and
+    /// day.
     ///
     /// The pull uses this to find the runs Garmin no longer lists: a stored
     /// run whose day is inside the window but whose id is not in the list is
     /// gone.
-    pub fn garmin_external_ids_between(&self, from: &str, to: &str) -> Result<Vec<String>> {
+    pub fn garmin_external_ids_between(
+        &self,
+        from: &str,
+        to: &str,
+    ) -> Result<Vec<(String, String)>> {
         let conn = self.lock()?;
-        let sql = "SELECT external_id FROM activities
+        let sql = "SELECT external_id, local_date FROM activities
                     WHERE source = ?1 AND local_date >= ?2 AND local_date <= ?3
                     ORDER BY external_id ASC";
         let mut statement = conn
@@ -355,7 +360,7 @@ impl Store {
         let mapped = statement
             .query_map(
                 params![crate::model::source::GARMIN_PERSONAL, from, to],
-                |row| row.get::<_, String>(0),
+                |row| Ok((row.get::<_, String>(0)?, row.get::<_, String>(1)?)),
             )
             .map_err(|source| StoreError::query("garmin external ids between", source))?;
         collect(mapped)

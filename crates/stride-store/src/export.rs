@@ -478,11 +478,20 @@ const SYNC_STATE: FrozenTable = FrozenTable {
     columns: "PRAGMA main.table_info(\"sync_state\")",
 };
 
+/// `deleted_garmin_activities`.
+const DELETED_GARMIN_ACTIVITIES: FrozenTable = FrozenTable {
+    name: "deleted_garmin_activities",
+    select: "SELECT external_id, local_date, marked_at FROM deleted_garmin_activities",
+    insert: "INSERT INTO deleted_garmin_activities (external_id, local_date, marked_at) \
+              VALUES (:external_id, :local_date, :marked_at)",
+    columns: "PRAGMA main.table_info(\"deleted_garmin_activities\")",
+};
+
 /// The tables of the frozen schema, in the schema's order.
 ///
 /// The order is the schema's: parents before children, so a child never
 /// arrives before its parent.
-const FROZEN_TABLES: [FrozenTable; 7] = [
+const FROZEN_TABLES: [FrozenTable; 8] = [
     ACTIVITIES,
     ACTIVITY_SAMPLES,
     WELLNESS_DAILY,
@@ -490,6 +499,7 @@ const FROZEN_TABLES: [FrozenTable; 7] = [
     PLAN_SESSIONS,
     NOTES,
     SYNC_STATE,
+    DELETED_GARMIN_ACTIVITIES,
 ];
 
 /// Copy every row of the schema from one database to another.
@@ -808,6 +818,24 @@ fn merge(source: &Connection, destination: &Connection) -> Result<ImportReport> 
                 ],
             )
             .map_err(|error| StoreError::query("the sync cursor", error))?;
+        report.rows += 1;
+    }
+
+    // The tombstones. A tombstone is immutable, so it is inserted once and
+    // never overwritten: a deleted run stays deleted across an import.
+    for row in read_rows(source, &DELETED_GARMIN_ACTIVITIES)? {
+        transaction
+            .execute(
+                "INSERT INTO deleted_garmin_activities (external_id, local_date, marked_at)
+                 VALUES (?1, ?2, ?3)
+                 ON CONFLICT(external_id) DO NOTHING",
+                rusqlite::params![
+                    text_of(&row, "external_id"),
+                    text_of(&row, "local_date"),
+                    text_of(&row, "marked_at"),
+                ],
+            )
+            .map_err(|error| StoreError::query("the tombstone", error))?;
         report.rows += 1;
     }
 

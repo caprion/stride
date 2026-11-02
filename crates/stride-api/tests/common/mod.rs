@@ -412,6 +412,33 @@ pub fn base64(bytes: &[u8]) -> String {
     out
 }
 
+/// Decode base64 text back into bytes.
+pub fn base64_decode(text: &str) -> Vec<u8> {
+    const ALPHABET: &[u8; 64] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+    let mut out = Vec::new();
+    let mut buffer: u32 = 0;
+    let mut bits: u32 = 0;
+    for character in text.chars() {
+        if character == '=' || character.is_whitespace() {
+            continue;
+        }
+        let value = ALPHABET
+            .iter()
+            .position(|byte| *byte as char == character)
+            .map(|index| index as u32);
+        let Some(value) = value else {
+            continue;
+        };
+        buffer = (buffer << 6) | value;
+        bits += 6;
+        if bits >= 8 {
+            bits -= 8;
+            out.push(((buffer >> bits) & 0xFF) as u8);
+        }
+    }
+    out
+}
+
 /// A corpus FIT file, read from the repository.
 pub fn corpus_fit(name: &str) -> Vec<u8> {
     let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))

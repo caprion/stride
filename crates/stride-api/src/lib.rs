@@ -143,5 +143,5 @@ pub mod state;
 
 pub use dto::RenderedValue;
 pub use error::{ApiError, ApiResult, ErrorEnvelope, ErrorKind};
-pub use router::{Method, Request, Response, Route, Router, ROUTES};
+pub use router::{Method, RawBody, RawRoute, Request, Response, Route, Router, RAW_ROUTES, ROUTES};
 pub use state::{Api, Clock, Config, FixedClock, GarminKey, SystemClock};

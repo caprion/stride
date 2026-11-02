@@ -194,12 +194,26 @@ impl Request {
     }
 }
 
+/// A binary answer: a file, not JSON.
+#[derive(Clone, Debug, PartialEq)]
+pub struct RawBody {
+    /// The MIME type the file travels under.
+    pub content_type: &'static str,
+    /// The file, byte for byte.
+    pub bytes: Vec<u8>,
+}
+
 /// One answer.
 ///
 /// **The answer is the body.** The body is the DTO, and nothing around it:
 /// the host puts the status in the status line — the desktop's HTTP layer
 /// in the status line, the phone's bridge by rejecting the call. A body
 /// that says `{"error": …}` with a 200 is never the shape.
+///
+/// A route that answers with a **file** carries [`Response::raw`] instead:
+/// the body is the file's bytes, and the content type names them. The
+/// desktop puts those bytes on the wire; the phone's envelope carries them
+/// base64, because JSON cannot hold a file.
 ///
 /// [`Response::envelope`] is the FFI's own: the phone's seam reads an
 /// envelope and hands the app the body inside it, so that the two hosts
@@ -210,6 +224,8 @@ pub struct Response {
     pub status: u16,
     /// The body of a success, or the error object of a failure.
     pub body: Value,
+    /// A file body, when the answer is a file and not JSON.
+    pub raw: Option<RawBody>,
 }
 
 impl Response {
@@ -224,12 +240,23 @@ impl Response {
     /// {"ok": true,  "status": 200, "body": { ... }}
     /// {"ok": false, "status": 404, "error": {"code": "not_found", "detail": "…"}}
     /// ```
+    ///
+    /// A file answer carries its bytes base64, because JSON cannot hold a
+    /// file: the body is `{"content_type": … , "base64": …}`, and the
+    /// phone's shell decodes it back to the file's bytes.
     pub fn envelope(&self) -> Value {
         if self.is_ok() {
+            let body = match &self.raw {
+                Some(raw) => serde_json::json!({
+                    "content_type": raw.content_type,
+                    "base64": base64_encode(&raw.bytes),
+                }),
+                None => self.body.clone(),
+            };
             serde_json::json!({
                 "ok": true,
                 "status": self.status,
-                "body": self.body,
+                "body": body,
             })
         } else {
             serde_json::json!({
@@ -244,6 +271,9 @@ impl Response {
 /// What a handler does.
 pub type Handler = fn(&Api, &Request) -> ApiResult<Value>;
 
+/// A handler that answers with a file, not JSON.
+pub type RawHandler = fn(&Api, &Request) -> ApiResult<RawBody>;
+
 /// One route of the frozen table.
 #[derive(Clone, Copy, Debug)]
 pub struct Route {
@@ -253,6 +283,17 @@ pub struct Route {
     pub method: Method,
     /// The handler that answers it.
     pub handler: Handler,
+}
+
+/// One route that answers with a file.
+#[derive(Clone, Copy, Debug)]
+pub struct RawRoute {
+    /// The route's pattern: `/activities/{id}/fit`.
+    pub pattern: &'static str,
+    /// The method the route answers.
+    pub method: Method,
+    /// The handler that answers it.
+    pub handler: RawHandler,
 }
 
 /// The frozen route table.
@@ -513,6 +554,17 @@ pub const ROUTES: &[Route] = &[
     },
 ];
 
+/// The routes that answer with a file, not JSON.
+///
+/// These are the frozen table's own routes — they live beside [`ROUTES`]
+/// because their answer is bytes, not a DTO. A path that names one of
+/// these is matched here before the JSON table.
+pub const RAW_ROUTES: &[RawRoute] = &[RawRoute {
+    pattern: "/activities/{id}/fit",
+    method: Method::Get,
+    handler: crate::routes::data::activity_fit,
+}];
+
 /// The router.
 pub struct Router {
     api: std::sync::Arc<Api>,
@@ -572,6 +624,25 @@ impl Router {
             },
         };
 
+        // A file route answers with bytes, not JSON.
+        if let Some((raw_route, params)) = match_raw_route(method, &path) {
+            let request = Request {
+                method,
+                path: path.clone(),
+                query: query.clone(),
+                params,
+                body: body.clone(),
+            };
+            return match (raw_route.handler)(&self.api, &request) {
+                Ok(raw) => Response {
+                    status: 200,
+                    body: Value::Null,
+                    raw: Some(raw),
+                },
+                Err(error) => failure(&error),
+            };
+        }
+
         let found = match_route(method, &path);
         let (route, params) = match found {
             Some(found) => found,
@@ -600,21 +671,25 @@ impl Router {
             Ok(value) => Response {
                 status: 200,
                 body: value,
+                raw: None,
             },
             Err(error) => failure(&error),
         }
     }
 
-    /// The route a path names, whatever the method.
+    /// Whether a path names a route, whatever the method.
     ///
     /// The path may carry a query string and the desktop's prefix: both
     /// are cut before the route is matched.
-    pub fn route_at(&self, path: &str) -> Option<&'static Route> {
+    pub fn route_at(&self, path: &str) -> bool {
         let (path, _) = split_query(path);
         let path = self.strip_prefix(&path);
         ROUTES
             .iter()
-            .find(|route| capture(route.pattern, &path).is_some())
+            .any(|route| capture(route.pattern, &path).is_some())
+            || RAW_ROUTES
+                .iter()
+                .any(|route| capture(route.pattern, &path).is_some())
     }
 
     /// Cut the desktop's prefix off a path.
@@ -641,7 +716,33 @@ pub fn failure(error: &ApiError) -> Response {
         body: serde_json::to_value(envelope).unwrap_or_else(|_| {
             serde_json::json!({"code": "internal", "detail": "the request could not be completed"})
         }),
+        raw: None,
     }
+}
+
+/// Encode bytes as base64, for the phone's envelope.
+pub fn base64_encode(bytes: &[u8]) -> String {
+    const ALPHABET: &[u8; 64] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+    let mut out = String::with_capacity(bytes.len().div_ceil(3) * 4);
+    for chunk in bytes.chunks(3) {
+        let first = chunk[0] as u32;
+        let second = *chunk.get(1).unwrap_or(&0) as u32;
+        let third = *chunk.get(2).unwrap_or(&0) as u32;
+        let triple = (first << 16) | (second << 8) | third;
+        out.push(ALPHABET[((triple >> 18) & 0x3F) as usize] as char);
+        out.push(ALPHABET[((triple >> 12) & 0x3F) as usize] as char);
+        if chunk.len() > 1 {
+            out.push(ALPHABET[((triple >> 6) & 0x3F) as usize] as char);
+        } else {
+            out.push('=');
+        }
+        if chunk.len() > 2 {
+            out.push(ALPHABET[(triple & 0x3F) as usize] as char);
+        } else {
+            out.push('=');
+        }
+    }
+    out
 }
 
 /// The success, as a response.
@@ -678,6 +779,28 @@ fn path_route_exists(path: &str) -> bool {
     ROUTES
         .iter()
         .any(|route| capture(route.pattern, path).is_some())
+        || RAW_ROUTES
+            .iter()
+            .any(|route| capture(route.pattern, path).is_some())
+}
+
+/// The raw route a path names, and the value of its placeholder.
+fn match_raw_route(
+    method: Method,
+    path: &str,
+) -> Option<(&'static RawRoute, Vec<(String, String)>)> {
+    RAW_ROUTES.iter().find_map(|route| {
+        if route.method != method {
+            return None;
+        }
+        capture(route.pattern, path).map(|captured| {
+            let params = match captured {
+                Some(value) => vec![(placeholder(route.pattern), value)],
+                None => Vec::new(),
+            };
+            (route, params)
+        })
+    })
 }
 
 /// The name of a route's placeholder.

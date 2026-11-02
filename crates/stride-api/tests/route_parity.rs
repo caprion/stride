@@ -173,7 +173,7 @@ fn the_contract_names_the_routes_the_router_has() {
     let router = common::Harness::empty("route-parity");
     let mut missing: Vec<String> = Vec::new();
     for route in contract.iter() {
-        if router.router.route_at(&concrete(route)).is_none() {
+        if !router.router.route_at(&concrete(route)) {
             missing.push(route.clone());
         }
     }
@@ -188,6 +188,11 @@ fn the_router_has_no_route_the_contract_does_not_name() {
     let contract = contract_routes();
     let mut extra: Vec<String> = Vec::new();
     for route in stride_api::ROUTES.iter() {
+        if !contract.contains(route.pattern) {
+            extra.push(route.pattern.to_string());
+        }
+    }
+    for route in stride_api::RAW_ROUTES.iter() {
         if !contract.contains(route.pattern) {
             extra.push(route.pattern.to_string());
         }
@@ -224,7 +229,7 @@ fn the_cut_routes_never_come_back() {
     let harness = common::Harness::empty("cut-routes");
     for route in cut.iter() {
         assert!(
-            harness.router.route_at(route).is_none(),
+            !harness.router.route_at(route),
             "the cut route {route} is in the router again"
         );
         let answer = harness.router.call("GET", route, None);
@@ -254,7 +259,7 @@ fn a_path_that_is_not_a_route_is_not_answered() {
         "/plan",
     ] {
         assert!(
-            harness.router.route_at(path).is_none(),
+            !harness.router.route_at(path),
             "the path {path} names a route"
         );
         let answer = harness.router.call("GET", path, None);
@@ -271,7 +276,7 @@ fn the_query_string_is_not_part_of_the_route() {
         .router
         .call("GET", "/activities?limit=5&since=2026-01-01", None);
     assert_eq!(plain.status, with_query.status);
-    assert!(harness.router.route_at("/activities?x=1").is_some());
+    assert!(harness.router.route_at("/activities?x=1"));
 }
 
 #[test]

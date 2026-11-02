@@ -159,6 +159,30 @@ pub fn activity(api: &Api, request: &Request) -> ApiResult<Value> {
     ok(&detail)
 }
 
+/// The run's original FIT file, byte for byte.
+///
+/// The FIT is the source of truth, and this is it — the file Garmin served,
+/// downloaded to the athlete's own machine and uploaded nowhere.
+pub fn activity_fit(api: &Api, request: &Request) -> ApiResult<crate::router::RawBody> {
+    let id = request.param_id("id")?;
+    let run = api
+        .store()
+        .activity(id)
+        .map_err(|error| api.store_error("the run could not be read", &error))?;
+    let run = match run {
+        Some(run) => run,
+        None => {
+            return Err(ApiError::not_found(format!(
+                "there is no run with the id {id}"
+            )))
+        }
+    };
+    Ok(crate::router::RawBody {
+        content_type: "application/octet-stream",
+        bytes: run.fit_blob,
+    })
+}
+
 /// The plan's line under a run: what was planned and what was run.
 fn plan_line(api: &Api, date: &str, actual_m: f64) -> ApiResult<Option<crate::dto::PlanLine>> {
     let sessions = api
@@ -657,10 +681,20 @@ fn zones_of(activity: &stride_ingest::FitActivity) -> FitnessZones {
     }
 
     let zones = (0..BANDS)
-        .map(|index| ZoneBand {
-            label: format!("Z{}", index + 1),
-            range: band_range(index, max_heart_rate),
-            time: render::duration(Some(time_in_band[index])),
+        .map(|index| {
+            let (from, to) = band_edges(index, max_heart_rate);
+            // The edges are the same truncated pair the words were rendered
+            // from — the core truncates both, once, so the chart and the
+            // words cannot disagree.
+            let edges = stride_core::units::render_heart_rate_range_edges(Some(from), Some(to));
+            ZoneBand {
+                label: stride_core::units::render_zone_label(index + 1)
+                    .unwrap_or_else(|| format!("Z{}", index + 1)),
+                range: stride_core::units::render_heart_rate_range(Some(from), Some(to)),
+                from_bpm: edges.map(|(lower, _)| lower),
+                to_bpm: edges.map(|(_, upper)| upper),
+                time: render::duration(Some(time_in_band[index])),
+            }
         })
         .collect();
 
@@ -700,21 +734,18 @@ fn band_index(rate: f64, max_heart_rate: f64) -> usize {
     }
 }
 
-/// The band's range, in the core's words: "154-166 bpm".
+/// The band's edges, in beats per minute.
 ///
-/// The bounds are the core's truncation of the band's share of the maximum
-/// heart rate, rendered by the core — the api never writes it itself.
-fn band_range(index: usize, max_heart_rate: f64) -> Option<String> {
+/// The same numbers the core rendered the range from: the words pass them to
+/// the core's renderer, and the chart draws them — no second computation.
+fn band_edges(index: usize, max_heart_rate: f64) -> (f64, f64) {
     let lower_ratio = 0.5 + 0.1 * index as f64;
     let upper_ratio = if index == 4 {
         1.0
     } else {
         0.6 + 0.1 * index as f64
     };
-    stride_core::units::render_heart_rate_range(
-        Some(lower_ratio * max_heart_rate),
-        Some(upper_ratio * max_heart_rate),
-    )
+    (lower_ratio * max_heart_rate, upper_ratio * max_heart_rate)
 }
 
 // -------------------------------------------------------------------- stats

@@ -21,10 +21,12 @@
 //! | [`plan`] | `plan_blocks`, `plan_sessions` |
 //! | [`notes`] | `notes` |
 //! | [`sync`] | `sync_state` |
+//! | [`deleted`] | `deleted_garmin_activities` |
 
 use crate::error::{Result, StoreError};
 
 pub mod activity;
+pub mod deleted;
 pub mod notes;
 pub mod plan;
 pub mod sync;
