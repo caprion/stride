@@ -128,6 +128,10 @@ fn a_band_is_named_and_its_edges_are_the_same_numbers() {
         units::render_heart_rate_range(Some(154.9), Some(166.9)),
         Some("154-166 bpm".to_string())
     );
+    assert_eq!(
+        units::render_heart_rate_range_edges(Some(154.9), Some(166.9)),
+        Some((154, 166))
+    );
 }
 
 #[test]

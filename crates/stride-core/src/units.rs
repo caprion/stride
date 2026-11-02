@@ -428,6 +428,21 @@ mod tests {
     }
 
     #[test]
+    fn a_band_s_label_and_its_edges_come_from_the_same_numbers() {
+        // The words are what the athlete reads; the numbers are what the
+        // chart draws; they are the same pair.
+        assert_eq!(
+            render_heart_rate_range(Some(154.9), Some(166.9)),
+            Some("154-166 bpm".to_string())
+        );
+        assert_eq!(
+            render_heart_rate_range_edges(Some(154.9), Some(166.9)),
+            Some((154, 166))
+        );
+        assert_eq!(render_heart_rate_range_edges(Some(154.0), None), None);
+    }
+
+    #[test]
     fn a_band_is_named_from_its_number() {
         assert_eq!(render_zone_label(1), Some("Z1".to_string()));
         assert_eq!(render_zone_label(5), Some("Z5".to_string()));
