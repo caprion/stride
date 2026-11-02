@@ -534,16 +534,17 @@ export const connectionHeldFixture: ConnectionStatus = {
 /**
  * The heart-rate zones of a run.
  *
- * The seeded store holds no samples, so the router answers the honest
- * one: the bands cannot be computed, and the core says why. The bands
- * themselves are the api's — the app draws what it is given.
+ * The seeded store holds no FIT file, so the router answers the honest
+ * one: the bands cannot be computed, and the core says why — "the run
+ * has no heart-rate samples". The bands themselves are the api's — the
+ * app draws what it is given.
  */
 export const zonesFixture: FitnessZones = {
   basis: null,
   max_heart_rate: null,
   zones: [],
   without_heart_rate: null,
-  unavailable: 'zones unavailable — no stored max or threshold heart rate',
+  unavailable: 'zones unavailable — the run has no heart-rate samples',
 }
 
 /** The service's own health — and the version, for About. */
@@ -664,15 +665,47 @@ export const planImportFixture: PlanImportResult = {
 /**
  * The vitals with nothing behind them.
  *
- * No nights, no band and no direction: the reading is there, and there is
- * nothing to compare it with. **No invented numbers** — the history is
- * empty, not zero.
+ * The router's shape is frozen: **three vitals, one per kind**, and when
+ * there is no data each one carries a null value and the status the core
+ * writes for a comparison it cannot make. The rest line carries the same
+ * status. **No invented numbers** — the history is empty, not zero.
  */
 export const vitalsEmptyFixture: VitalsSnapshot = {
   date: TODAY,
   generated_at: '2026-05-13T06:30:00Z',
-  rest: { label: 'Rest', line: null },
-  vitals: [],
+  rest: { label: 'Rest', line: 'not enough data for a comparison yet' },
+  vitals: [
+    {
+      key: 'sleep',
+      label: 'Sleep',
+      value_text: null,
+      direction_text: null,
+      deviation_text: null,
+      travel_text: null,
+      status_text: 'not enough data for a comparison yet',
+      band: null,
+    },
+    {
+      key: 'hrv',
+      label: 'HRV',
+      value_text: null,
+      direction_text: null,
+      deviation_text: null,
+      travel_text: null,
+      status_text: 'not enough data for a comparison yet',
+      band: null,
+    },
+    {
+      key: 'resting_hr',
+      label: 'Resting HR',
+      value_text: null,
+      direction_text: null,
+      deviation_text: null,
+      travel_text: null,
+      status_text: 'not enough data for a comparison yet',
+      band: null,
+    },
+  ],
   history: { sleep: [], hrv: [], resting_hr: [] },
   patterns: [],
 }
@@ -686,7 +719,7 @@ export const vitalsEmptyFixture: VitalsSnapshot = {
 export const vitalsNotEnoughFixture: VitalsSnapshot = {
   date: TODAY,
   generated_at: '2026-05-13T06:30:00Z',
-  rest: { label: 'Rest', line: 'not enough data yet' },
+  rest: { label: 'Rest', line: 'not enough data for a comparison yet' },
   vitals: [
     {
       key: 'sleep',

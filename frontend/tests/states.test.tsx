@@ -41,20 +41,25 @@ describe('Today, with nothing in it', () => {
     expect(container.querySelector('[data-testid="today-vitals"]')).toBeNull()
     expect(container.querySelector('[data-testid="today-session"]')).toBeNull()
     expect(container.querySelector('[data-testid="today-last-run"]')).toBeNull()
+    // And the connect card is not a row of "not enough data": the three
+    // null-vitalled rows the router sends are hidden behind the card.
+    expect(container.textContent).not.toContain('not enough data for a comparison yet')
   })
 
   it('says what is missing when the app has synced but the wellness has not come', async () => {
     window.history.pushState({}, '', '/?fixtures=nowellness')
     const { container } = renderApp('/')
     await waitFor(() =>
-      expect(container.querySelector('[data-testid="today-no-vitals"]')).toBeTruthy(),
+      expect(container.querySelector('[data-testid="today-vitals"]')).toBeTruthy(),
     )
 
-    expect(container.textContent).toContain('No wellness data yet')
-    expect(container.textContent).toContain('appear after the first sync')
+    // The router always answers three vitals, with null values and the
+    // core's status when there is nothing to compare — the app shows them
+    // as they come, and does not invent a "no wellness" row of its own.
+    expect(container.textContent).toContain('not enough data for a comparison yet')
+    expect(container.querySelector('[data-testid="today-no-vitals"]')).toBeNull()
     // The wellness is missing, and only the wellness: the runs and the
     // plan are the router's, and they are still there.
-    expect(container.querySelector('[data-testid="today-vitals"]')).toBeNull()
     expect(container.querySelector('[data-testid="today-session"]')).toBeTruthy()
     expect(container.querySelector('[data-testid="today-last-run"]')).toBeTruthy()
   })

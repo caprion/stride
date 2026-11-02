@@ -112,8 +112,13 @@ export function TodayPage() {
   //
   // The sync state alone does not decide this: a store can hold runs and
   // no sync row (the api's own seed is one), and the numbers are there.
+  // The router's shape is frozen — three vitals, one per kind, with null
+  // values when there is no data — so the empty state is the one where
+  // there is no last run **and** no vital has a value.
   const nothingToShow =
-    !insight || !snapshot || (snapshot.vitals.length === 0 && !insight.last_run)
+    !insight ||
+    !snapshot ||
+    (!insight.last_run && snapshot.vitals.every((vital) => vital.value_text === null))
 
   if (nothingToShow) {
     return (
@@ -217,31 +222,30 @@ export function TodayPage() {
       ) : null}
 
       {/* --------------------------------------------------- the vitals */}
-      {readings.length === 0 ? (
-        <section className="card mt-3 px-4 py-6 text-center" data-testid="today-no-vitals">
-          <p className="text-[15px] font-semibold text-ink">{t('today.state.noVitals')}</p>
-          <p className="mt-1 text-[13px] text-ink-muted">{t('today.state.noVitalsBody')}</p>
-        </section>
-      ) : (
-        <section
-          className={`card mt-3 px-4 py-1 ${failed ? 'opacity-60' : ''}`}
-          data-testid="today-vitals"
-        >
-          {readings.map((vital) => (
-            <VitalRow key={vital.key} vital={vital}>
-              <div className="mt-2">
-                <Sparkline
-                  values={snapshot.history[vital.key]
-                    .map((point) => point.value)
-                    .filter((value): value is number => value !== null)}
-                  band={vital.band}
-                  label={t('body.history.label', { n: nights })}
-                />
-              </div>
-            </VitalRow>
-          ))}
-        </section>
-      )}
+      {/*
+        The router always answers three vitals — one per kind — with a
+        null value and the core's "not enough data" status when there is
+        nothing behind them. So the rows are always here; the empty state
+        above is the only case that hides them.
+      */}
+      <section
+        className={`card mt-3 px-4 py-1 ${failed ? 'opacity-60' : ''}`}
+        data-testid="today-vitals"
+      >
+        {readings.map((vital) => (
+          <VitalRow key={vital.key} vital={vital}>
+            <div className="mt-2">
+              <Sparkline
+                values={snapshot.history[vital.key]
+                  .map((point) => point.value)
+                  .filter((value): value is number => value !== null)}
+                band={vital.band}
+                label={t('body.history.label', { n: nights })}
+              />
+            </div>
+          </VitalRow>
+        ))}
+      </section>
 
       {/* -------------------------------------------- the plan's session */}
       {insight.planned ? (
