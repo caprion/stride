@@ -14,6 +14,7 @@ import {
   CartesianGrid,
   Line,
   LineChart,
+  ReferenceArea,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -21,6 +22,7 @@ import {
 } from 'recharts'
 import { api } from '../lib/api'
 import { axisTicks } from '../lib/chart'
+import { canDeliverFile, downloadFile, fileName } from '../lib/download'
 import { formatDateMedium, renderedText, sportLabel } from '../lib/format'
 import { t } from '../i18n'
 import { axisTick } from '../components/ChartAxis'
@@ -31,14 +33,30 @@ export function ActivityPage({ id }: { id: string }) {
   const [elevationOpen, setElevationOpen] = useState(false)
   const [noteOpen, setNoteOpen] = useState(false)
   const [note, setNote] = useState('')
+  const [fitNotice, setFitNotice] = useState<string | null>(null)
   const client = useQueryClient()
 
   const activity = useQuery({ queryKey: ['activity', id], queryFn: () => api.activity(id) })
+  const zones = useQuery({
+    queryKey: ['fitness-zones', id],
+    queryFn: () => api.fitnessZones(id),
+  })
   const data = activity.data
 
   useEffect(() => {
     if (data?.note !== undefined && data?.note !== null) setNote(data.note)
   }, [data?.note])
+
+  const exportFit = useMutation({
+    mutationFn: () => api.activityFit(id),
+    onSuccess: (bytes) => {
+      downloadFile(fileName('activity', 'fit'), bytes, 'application/octet-stream')
+      setFitNotice(t('activity.exported'))
+    },
+    onError: () => {
+      setFitNotice(t('activity.exportFailed'))
+    },
+  })
 
   const saveNote = useMutation({
     mutationFn: (value: string | null) => api.saveNote(id, value),
@@ -169,6 +187,25 @@ export function ActivityPage({ id }: { id: string }) {
                 axisLine={false}
                 domain={['dataMin - 5', 'dataMax + 5']}
               />
+              {/*
+                The athlete's own zones: the bands the core computed, on
+                the numbers the core rendered the words from. They are
+                bands of the athlete's history, not a judgement — nothing
+                here says what the run should have been.
+              */}
+              {(zones.data?.zones ?? [])
+                .filter((band) => band.from_bpm !== null && band.to_bpm !== null)
+                .map((band) => (
+                  <ReferenceArea
+                    key={band.label}
+                    y1={band.from_bpm ?? 0}
+                    y2={band.to_bpm ?? 0}
+                    fill="#D6E6F3"
+                    fillOpacity={0.35}
+                    stroke="#A9C9E2"
+                    strokeOpacity={0.8}
+                  />
+                ))}
               <Tooltip
                 formatter={(_value, _name, item) => {
                   const payload = item?.payload as
@@ -190,6 +227,22 @@ export function ActivityPage({ id }: { id: string }) {
             </LineChart>
           </ResponsiveContainer>
         </div>
+        {zones.data && zones.data.zones.length > 0 ? (
+          <ul className="mt-2 flex flex-wrap gap-x-4 gap-y-1" data-testid="activity-zones">
+            {zones.data.zones.map((band) => (
+              <li key={band.label} className="text-[12px] text-ink-muted">
+                <span className="font-semibold text-ink-soft">{band.label}</span>
+                {band.range ? <span> · {band.range}</span> : null}
+                {band.time ? <span> · {renderedText(band.time)}</span> : null}
+              </li>
+            ))}
+          </ul>
+        ) : null}
+        {zones.data?.unavailable ? (
+          <p className="mt-2 text-[12px] text-ink-faint" data-testid="activity-zones-unavailable">
+            {zones.data.unavailable}
+          </p>
+        ) : null}
         <p className="mb-1 mt-3 text-[12px] font-medium text-ink-muted">{t('vital.pace')}</p>
         <div style={{ width: '100%', height: 120 }}>
           <ResponsiveContainer width="100%" height="100%">
@@ -389,11 +442,11 @@ export function ActivityPage({ id }: { id: string }) {
 
       {/* --------------------------------------------------------- actions */}
       {/*
-        The note and the comparison are here. The third action the plan
-        names — "Export FIT" — is **not**: the router has no route that
-        serves the FIT blob, and a control that promises a thing and does
-        nothing is worse than an absent one. It returns when the router
-        grows the route.
+        The note and the comparison are here, and the FIT file — the
+        run's original bytes, the source of truth — where the host can
+        deliver a file: a download on the desktop, the native share sheet
+        on the phone. The phone's sheet is not there yet, so the control
+        is only where it can deliver something.
       */}
       <div className="mt-3 flex flex-wrap gap-4 pb-2">
         <a
@@ -411,6 +464,25 @@ export function ActivityPage({ id }: { id: string }) {
         >
           {t('runs.addNote')}
         </button>
+        {canDeliverFile() ? (
+          <button
+            type="button"
+            data-testid="activity-export"
+            className="tap-inline text-[13px] font-medium text-ink-muted underline underline-offset-2 disabled:opacity-50"
+            disabled={exportFit.isPending}
+            onClick={() => {
+              setFitNotice(null)
+              exportFit.mutate()
+            }}
+          >
+            {t('activity.export')}
+          </button>
+        ) : null}
+        {fitNotice ? (
+          <p className="w-full text-[13px] text-ink-muted" data-testid="activity-export-notice">
+            {fitNotice}
+          </p>
+        ) : null}
       </div>
     </div>
   )

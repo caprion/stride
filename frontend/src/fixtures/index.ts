@@ -32,6 +32,7 @@ import type {
   CompareResponse,
   ConnectionStatus,
   FitImportResult,
+  FitnessZones,
   Health,
   HealthDaily,
   KeyConnectResult,
@@ -788,6 +789,49 @@ export const connectionEmptyFixture: ConnectionStatus = {
 }
 
 /** The service's own health — and the version, for About. */
+/**
+ * The heart-rate zones of a run.
+ *
+ * The bands the core computed, with the words and the numbers they came
+ * from: the chart draws the edges, and the legend reads the range.
+ */
+export const zonesFixture: FitnessZones = {
+  basis: 'moving',
+  max_heart_rate: value('182 bpm', 182),
+  zones: [
+    {
+      label: 'Z1',
+      range: '120-136 bpm',
+      time: value('4 m', 240),
+      from_bpm: 120,
+      to_bpm: 136,
+    },
+    {
+      label: 'Z2',
+      range: '137-151 bpm',
+      time: value('18 m', 1_080),
+      from_bpm: 137,
+      to_bpm: 151,
+    },
+    {
+      label: 'Z3',
+      range: '152-166 bpm',
+      time: value('12 m', 720),
+      from_bpm: 152,
+      to_bpm: 166,
+    },
+    {
+      label: 'Z4',
+      range: '167-180 bpm',
+      time: value('3 m', 180),
+      from_bpm: 167,
+      to_bpm: 180,
+    },
+  ],
+  without_heart_rate: value('1 m', 60),
+  unavailable: null,
+}
+
 export const healthFixture: Health = {
   ok: true,
   service: 'stride',
@@ -1131,6 +1175,13 @@ export function fixtureResponse(
         : activitiesFixture
     case '/activities/101':
       return activityDetailFixture
+    case '/activities/101/fit':
+      // The run's original file: the header of a FIT file, byte for
+      // byte. The fixture set is synthetic, and a file is no less so
+      // than a run.
+      return [
+        14, 0, 0, 0, 16, 32, 0, 0, 46, 70, 73, 84, 0, 0,
+      ]
     case '/plan/week':
       if (
         variant === 'empty' ||
@@ -1162,6 +1213,8 @@ export function fixtureResponse(
       return syncStatusFixture
     case '/health/daily':
       return variant === 'stale' ? healthDailyStaleFixture : healthDailyFixture
+    case '/fitness/zones':
+      return zonesFixture
     case '/health':
       return healthFixture
     case '/auth/status':

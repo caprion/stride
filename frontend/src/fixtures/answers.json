@@ -2516,7 +2516,7 @@
       }
     ],
     "/sync/status": {
-      "last_sync_at": "2026-11-02T02:53:04.786Z",
+      "last_sync_at": "2026-11-02T02:59:01.925Z",
       "last_error": null,
       "activity_count": 42,
       "cursor": "106",
@@ -2544,7 +2544,7 @@
       "method": "personal_key",
       "key_source": "personal_key",
       "key_last4": "4F2A",
-      "last_sync_at": "2026-11-02T02:53:04.786Z",
+      "last_sync_at": "2026-11-02T02:59:01.925Z",
       "generated_at": "2026-05-13T06:30:00Z"
     },
     "/settings": {

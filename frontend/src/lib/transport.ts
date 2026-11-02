@@ -32,6 +32,14 @@ export interface ApiRequest {
   /** The path, with the API base already on it. */
   path: string
   body?: unknown
+  /**
+   * Whether the answer is bytes rather than JSON.
+   *
+   * The FIT file is the run's original bytes — the source of truth — and
+   * a file is not JSON. The bridge carries JSON, so the phone cannot
+   * fetch one yet; the desktop can.
+   */
+  bytes?: boolean
 }
 
 /**
@@ -206,6 +214,11 @@ export const httpTransport = async (request: ApiRequest): Promise<unknown> => {
       failure.detail ?? `the request failed (${response.status})`,
       response.status,
     )
+  }
+  if (request.bytes) {
+    // The file, byte for byte as the router served it.
+    const bytes = await response.arrayBuffer()
+    return bytes
   }
   const text = await response.text()
   if (!text) return null

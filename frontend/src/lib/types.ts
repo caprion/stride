@@ -398,6 +398,15 @@ export interface ZoneBand {
   to_bpm: number | null
   /** The time spent in the band, as the core renders it: "12 m". */
   time: RenderedValue | null
+  /**
+   * The band's lower edge, in beats per minute.
+   *
+   * The chart draws the band, so it needs the number the core rendered
+   * the words from — and it is the same number, not a second one.
+   */
+  from_bpm: number | null
+  /** The band's upper edge, in beats per minute. */
+  to_bpm: number | null
 }
 
 /**

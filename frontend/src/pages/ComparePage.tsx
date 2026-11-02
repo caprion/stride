@@ -28,7 +28,9 @@ import {
 } from 'recharts'
 import { api } from '../lib/api'
 import { axisTicks } from '../lib/chart'
+import { canDeliverFile, downloadFile, fileName } from '../lib/download'
 import { formatDateMedium, renderedText } from '../lib/format'
+import { comparisonDocument } from '../lib/share'
 import { useStaleness } from '../lib/staleness'
 import type { CompareCandidate, CompareMetric, CompareSeriesPoint } from '../lib/types'
 import { t } from '../i18n'
@@ -339,6 +341,32 @@ export function ComparePage({ id }: { id: string }) {
           </div>
         </div>
       </section>
+
+      {/* ------------------------------------------------- the actions */}
+      <div className="mt-3 flex flex-wrap gap-4">
+        {/*
+          The share makes the comparison into a file the athlete keeps,
+          and the host delivers it: a download on the desktop, the native
+          share sheet on the phone. The phone's sheet is not there yet,
+          so the control is only where it can deliver something.
+        */}
+        {canDeliverFile() ? (
+          <button
+            type="button"
+            data-testid="compare-share"
+            className="tap-inline text-[13px] font-medium text-ink-muted underline underline-offset-2"
+            onClick={() => {
+              downloadFile(
+                fileName(t('compare.share.file'), 'html'),
+                comparisonDocument(data),
+                'text/html',
+              )
+            }}
+          >
+            {t('compare.share')}
+          </button>
+        ) : null}
+      </div>
 
       {/* --------------------------------------------- the other runs */}
       <div className="mt-3">

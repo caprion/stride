@@ -14,6 +14,7 @@ import type {
   CompareResponse,
   ConnectionStatus,
   FitImportResult,
+  FitnessZones,
   Health,
   HealthDaily,
   KeyConnectResult,
@@ -54,6 +55,7 @@ export const API_BASE = import.meta.env.VITE_API_BASE ?? '/api/v1'
 export const ROUTES = {
   activities: '/activities',
   activity: '/activities/{id}',
+  activityFit: '/activities/{id}/fit',
 
   physiologyDaily: '/physiology/daily',
   physiologySleep: '/physiology/sleep',
@@ -157,6 +159,7 @@ async function request<T>(
   path: string,
   body?: unknown,
   params?: Record<string, string | number | undefined>,
+  bytes = false,
 ): Promise<T> {
   const query = new URLSearchParams()
   for (const [key, value] of Object.entries(params ?? {})) {
@@ -181,15 +184,23 @@ async function request<T>(
     if (answer instanceof FixtureFailure) {
       throw new ApiError(answer.kind, answer.detail, answer.status)
     }
+    if (bytes && Array.isArray(answer)) {
+      // A file is bytes, not JSON: the fixture's answer is the byte
+      // list, and the app gets the bytes.
+      return new Uint8Array(answer as number[]).buffer as T
+    }
     return answer as T
   }
 
-  const apiRequest: ApiRequest = { method, path: url, body }
+  const apiRequest: ApiRequest = { method, path: url, body, bytes }
   return (await transport(apiRequest)) as T
 }
 
 const get = <T>(path: string, params?: Record<string, string | number | undefined>) =>
   request<T>('GET', path, undefined, params)
+
+/** A GET whose answer is bytes rather than JSON. */
+const getBytes = (path: string) => request<ArrayBuffer>('GET', path, undefined, undefined, true)
 
 const post = <T>(path: string, body?: unknown) => request<T>('POST', path, body)
 
@@ -204,6 +215,15 @@ export const api = {
   /** One run. */
   activity: (id: number | string) => get<ActivityDetail>(route('activity', { id })),
 
+  /**
+   * The run's original FIT file, byte for byte.
+   *
+   * The source of truth, downloaded to the athlete's own machine and
+   * uploaded nowhere. The phone's bridge carries JSON, so it cannot
+   * fetch a file yet; the desktop can.
+   */
+  activityFit: (id: number | string) => getBytes(route('activityFit', { id })),
+
   /** The vitals and their directions — the snapshot Today and Body read. */
   vitals: () => get<VitalsSnapshot>(ROUTES.physiologyVitals),
   physiologyDaily: () => get<unknown>(ROUTES.physiologyDaily),
@@ -214,7 +234,14 @@ export const api = {
 
   fitnessFingerprint: () => get<unknown>(ROUTES.fitnessFingerprint),
   fitnessTrends: () => get<unknown>(ROUTES.fitnessTrends),
-  fitnessZones: () => get<unknown>(ROUTES.fitnessZones),
+  /**
+   * The heart-rate zones of one run.
+   *
+   * The route takes the run's id: the bands belong to a run, and the
+   * chart draws them.
+   */
+  fitnessZones: (id: number | string) =>
+    get<FitnessZones>(ROUTES.fitnessZones, { id: String(id) }),
 
   statsSummary: () => get<unknown>(ROUTES.statsSummary),
   statsWeekly: () => get<unknown>(ROUTES.statsWeekly),

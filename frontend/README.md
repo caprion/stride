@@ -40,7 +40,7 @@ sideways, and every tap target is at least 44px tall at compact.
 | `/progress` | **Progress** — the trajectory, forgivingly; no percentage without a real baseline |
 | `/body` | **Body** — the same values and directions as Today, plus the patterns, each with its n |
 | `/plan` | **Plan week** — the week, and today's plan: *done · planned · not done* |
-| `/compare/:id` | **Compare** — `metric · A · B · Δ`, the basis always named, swapping A and B flipping every delta |
+| `/compare/:id` | **Compare** — `metric · A · B · Δ`, the basis always named, swapping A and B flipping every delta; the runs are the athlete's own, from the candidates route |
 | `/settings` | **Settings** — the goal, the pause, the connection, the import, the storage and About |
 | `/connect` | **Connect** — the first run. It stands alone: no chrome, no tabs, no destinations |
 
@@ -65,6 +65,49 @@ connection. Everything else there is plumbing.
   destructive action: *delete all data*, behind the typed word, and it
   says exactly what it deletes.
 - **About** carries the version, the licence, the promise and the source.
+  The version is the one `/health` answered — the app holds no version of
+  its own, and there is one version string in the source.
+
+### Compare
+
+The runs are the athlete's own: the screen asks the **candidates route**
+which runs there are, leaves out the one it is already on, and puts the
+nearest distances first. The picker ("Choose a different run") opens and
+the chosen pair is what the table renders — the earlier run is A and the
+later one B, so the delta reads forward in time, and the swap turns it
+round.
+
+No run id is written into the screen. The one pair the app made up was a
+mock that could be anything; the pair is now the app's question and the
+api's answer.
+
+### The charts' axes
+
+Every axis is labelled with the **core's own rendering** of the number:
+*"148 bpm"*, *"5:24 /km"*, *"38.6 km"*. A bare number on an axis — the
+pace axis used to be raw seconds — is the app printing a domain number
+of its own, which is what §8 of the core contract forbids. The axis's
+ticks are the values the api sent, and their labels are its words.
+
+The viewport matrix checks it in the browser, where a chart has a size:
+every axis label must carry a unit.
+
+### The files the app makes
+
+The plan's two file-making actions are real, and they are offered **only
+where the host can deliver a file**:
+
+- **Share the comparison** (Compare) writes the comparison as an HTML
+  document — the basis, the metric diff and the two runs, in the core's
+  words — and the desktop downloads it. The phone's native share sheet
+  brings it back.
+- **Export FIT** (Activity) fetches `/activities/{id}/fit` and hands the
+  run's original bytes to the host. The bridge carries JSON, so the
+  phone cannot fetch a file yet.
+
+A control that promises a thing and does nothing is worse than an absent
+one, so there is no control on a host that cannot deliver it — and a test
+holds that no button in the app has no action.
 
 ### Connect
 
@@ -361,6 +404,31 @@ The fixture's rendered values are written out the same way — "12.4 km",
 **The fixture set holds no key.** The connection's answer carries the last
 four characters — an identifier, four characters cannot be a Garmin
 Personal API key — and nothing else.
+
+### The fixture set, and the file the api reads
+
+The app's fixture set is a TypeScript module: the screens render from it
+and the tests assert against it. The api's test has to read **the same
+answers**, byte for byte, and compare them with the router's — so the
+answers are written down in machine-readable files, and a test holds that
+the files and the module agree:
+
+| file | what it holds |
+|---|---|
+| `src/fixtures/answers.json` | every answer the app renders, and the seed they come from: the runs, the nights and the plan sessions |
+| `src/fixtures/captured.json` | one captured answer, exactly as the router answered it, for the pair the demo shows |
+| `src/fixtures/compare-answers.json` | the compare answer for every pair the screen can ask about |
+
+They are generated, never hand-edited:
+
+```
+npm --prefix frontend run fixtures:export   # the answers and the seed
+npm --prefix frontend run fixtures:compare  # the compare answers, and the captured one
+```
+
+The api's test reads `captured.json` and `answers.json` — **not a copy of
+them** — so the fixture stops being a mock someone wrote and becomes an
+answer the test keeps true.
 
 ## The checks
 
