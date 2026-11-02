@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    The notification icon.
+
+    Android draws a notification icon as a silhouette. This is the app's
+    own three-stride mark in that form — the product's icon, not a system
+    icon borrowed from another app.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M4,6 L10,6 L10,9 L4,9 Z" />
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M4,11 L14,11 L14,14 L4,14 Z" />
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M7,16 L17,16 L17,19 L7,19 Z" />
+</vector>

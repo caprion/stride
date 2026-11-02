@@ -61,5 +61,9 @@ fn the_stub_says_it_is_a_stub() {
     let answer = uniffi_stride::stride_status();
     let parsed: Value = serde_json::from_str(&answer).expect("the answer is JSON");
     assert_eq!(parsed["body"]["backend"], serde_json::json!("stub"));
+    assert_eq!(
+        parsed["body"]["backend_marker"],
+        serde_json::json!("stride-backend:stub")
+    );
     assert_eq!(parsed["body"]["open"], serde_json::json!(false));
 }

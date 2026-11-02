@@ -17,6 +17,33 @@
 
 use serde_json::{json, Value};
 
+/// The backend name carried by the real core's status.
+pub const BACKEND_STRIDE_API: &str = "stride-api";
+
+/// The backend name carried by the stub's status.
+pub const BACKEND_STUB: &str = "stub";
+
+/// The backend compiled into this seam.
+#[cfg(feature = "real-core")]
+pub const COMPILED_BACKEND: &str = BACKEND_STRIDE_API;
+
+/// The backend compiled into this seam.
+#[cfg(not(feature = "real-core"))]
+pub const COMPILED_BACKEND: &str = BACKEND_STUB;
+
+/// A marker that is unique to the compiled backend.
+///
+/// The release build reads this marker out of the shared object it is
+/// about to package. It answers the same question as the status body's
+/// `backend` field, but it can be read from a cross-compiled library on a
+/// build machine without running Android.
+#[cfg(feature = "real-core")]
+pub const COMPILED_BACKEND_MARKER: &str = "stride-backend:stride-api";
+
+/// The marker carried by a stub build.
+#[cfg(not(feature = "real-core"))]
+pub const COMPILED_BACKEND_MARKER: &str = "stride-backend:stub";
+
 /// What the core has to be able to do for the phone.
 ///
 /// Every method answers with the envelope:

@@ -2,10 +2,10 @@ package app.stride.running.sync
 
 import android.content.Context
 import android.content.pm.ServiceInfo
-import android.os.Build
 import androidx.work.ForegroundInfo
 import androidx.work.Worker
 import androidx.work.WorkerParameters
+import app.stride.running.R
 import app.stride.running.core.StrideCore
 import app.stride.running.security.DeviceCredential
 import app.stride.running.settings.AppSettings
@@ -36,6 +36,15 @@ class GarminSyncWorker(
 
     override fun doWork(): Result {
         val context = applicationContext
+        val settings = AppSettings(context)
+
+        // The job runs around fixed local boundaries. Once it starts, the
+        // boundary it just handled is behind it, so the phone names the
+        // following one when it reports a failure.
+        settings.nextPullAtMillis = SyncSchedule.nextBoundary(
+            nowMillis = System.currentTimeMillis(),
+            intervalHours = settings.syncIntervalHours.toLong(),
+        )
 
         // A pull can outlast the system's patience with a background job, so
         // the job holds a foreground notification while it runs: that is the
@@ -55,10 +64,13 @@ class GarminSyncWorker(
         // background has to refuse it too, or the rule only holds while
         // somebody is watching.
         if (!DeviceCredential.hasCredential(context)) {
-            val message = "This phone has no screen lock, so real runs are not pulled."
             SyncNotifications.finished(
                 context,
-                SyncOutcome(ok = false, message = message, error = "no screen lock"),
+                SyncOutcome(
+                    ok = false,
+                    message = context.getString(R.string.sync_error_no_screen_lock),
+                    error = SyncEngine.ERROR_FAILED,
+                ),
             )
             return Result.failure()
         }
@@ -67,9 +79,13 @@ class GarminSyncWorker(
         if (problem != null) {
             SyncNotifications.finished(
                 context,
-                SyncOutcome(ok = false, message = problem, error = problem),
+                SyncOutcome(
+                    ok = false,
+                    message = context.getString(R.string.sync_error_local),
+                    error = SyncEngine.ERROR_FAILED,
+                ),
             )
-            return Result.retry()
+            return Result.failure()
         }
 
         // The window travels with the job; the default is the setting.
@@ -80,29 +96,23 @@ class GarminSyncWorker(
 
         SyncNotifications.finished(context, outcome)
 
-        return when {
-            outcome.ok -> Result.success()
-            // A locked phone or a Garmin that could not be reached comes
-            // back later; a refused key does not — the engine has already
-            // re-exchanged it once and tried again, and the answer is the
-            // same.
-            outcome.error == SyncEngine.ERROR_LOCKED || outcome.error == SyncEngine.ERROR_FAILED ->
-                Result.retry()
-            else -> Result.failure()
+        return when (SyncWorkerDecision.decide(outcome)) {
+            SyncWorkerDecision.Decision.Success -> Result.success()
+            // A locked phone did not start an exchange, so it can wait for
+            // the phone to become usable. Every other failure has already
+            // had the shell's one retry and stops this run.
+            SyncWorkerDecision.Decision.WaitForUnlock -> Result.retry()
+            SyncWorkerDecision.Decision.Failure -> Result.failure()
         }
     }
 
     /** The notification the job holds while it runs. */
     private fun foregroundInfo(): ForegroundInfo {
         val notification = SyncNotifications.progress(applicationContext)
-        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            ForegroundInfo(
-                SyncNotifications.PROGRESS_ID,
-                notification,
-                ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC,
-            )
-        } else {
-            ForegroundInfo(SyncNotifications.PROGRESS_ID, notification)
-        }
+        return ForegroundInfo(
+            SyncNotifications.PROGRESS_ID,
+            notification,
+            ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC,
+        )
     }
 }

@@ -1,8 +1,10 @@
 package app.stride.running.setup
 
+import android.Manifest
 import android.app.Application
 import android.content.ActivityNotFoundException
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Bundle
 import android.text.method.PasswordTransformationMethod
@@ -13,10 +15,14 @@ import android.widget.EditText
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.OnBackPressedCallback
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.browser.customtabs.CustomTabsIntent
+import androidx.core.content.ContextCompat
+import androidx.core.net.toUri
 import app.stride.running.R
 import app.stride.running.security.DeviceCredential
+import app.stride.running.security.KeyIdentifier
 import app.stride.running.security.Secrets
 import app.stride.running.settings.AppSettings
 import app.stride.running.sync.SyncEngine
@@ -56,11 +62,21 @@ class GarminSetupActivity : AppCompatActivity(), SetupRunner.Listener {
     private lateinit var keyField: EditText
     private lateinit var status: TextView
     private lateinit var progress: TextView
+    private lateinit var keyIdentifier: TextView
     private lateinit var connect: Button
     private lateinit var forget: Button
     private lateinit var notNow: Button
 
     private lateinit var runner: SetupRunner
+
+    /**
+     * Ask for notification permission once the connection exists.
+     *
+     * A refused permission never changes the import or the pull; it only
+     * means the phone stays quiet.
+     */
+    private val notificationPermission =
+        registerForActivityResult(ActivityResultContracts.RequestPermission()) { }
 
     /** Whether a Garmin key is on the phone. */
     private var connected = false
@@ -87,6 +103,7 @@ class GarminSetupActivity : AppCompatActivity(), SetupRunner.Listener {
         keyField = findViewById(R.id.garmin_key)
         status = findViewById(R.id.garmin_status)
         progress = findViewById(R.id.garmin_progress)
+        keyIdentifier = findViewById(R.id.garmin_key_identifier)
         connect = findViewById(R.id.garmin_connect)
         forget = findViewById(R.id.garmin_forget)
         notNow = findViewById(R.id.garmin_not_now)
@@ -105,7 +122,7 @@ class GarminSetupActivity : AppCompatActivity(), SetupRunner.Listener {
         findViewById<TextView>(R.id.garmin_open_garmin).setOnClickListener {
             openGarmin()
         }
-        connect.setOnClickListener { withCredential { connect() } }
+        connect.setOnClickListener { withCredential { testKey() } }
         forget.setOnClickListener { withCredential { forget() } }
         notNow.setOnClickListener { dismissSetup() }
 
@@ -125,6 +142,10 @@ class GarminSetupActivity : AppCompatActivity(), SetupRunner.Listener {
     }
 
     override fun onDestroy() {
+        // The field is not part of the activity's saved state and does not
+        // outlive the screen. The key itself is already in the Keystore, or
+        // it was never accepted.
+        keyField.setText("")
         runner.close()
         super.onDestroy()
     }
@@ -148,7 +169,9 @@ class GarminSetupActivity : AppCompatActivity(), SetupRunner.Listener {
 
     /** What the screen shows when it opens. */
     private fun refresh() {
-        connected = hasKey()
+        val key = savedKey()
+        connected = !key.isNullOrBlank()
+        showIdentifier(key)
         if (connected) {
             // The phone has a key: the screen says so, and counts the runs
             // in the background rather than blocking the first frame.
@@ -162,13 +185,30 @@ class GarminSetupActivity : AppCompatActivity(), SetupRunner.Listener {
         }
     }
 
-    /** Whether the phone holds a Garmin key. */
-    private fun hasKey(): Boolean = try {
-        !Secrets.garminKey(this).isNullOrBlank()
+    /** The saved key, read only long enough to learn whether there is one. */
+    private fun savedKey(): String? = try {
+        Secrets.garminKey(this)
     } catch (_: Exception) {
         // A locked phone cannot read the key. It has not got one as far as
         // the screen is concerned, and the athlete is asked for it again.
-        false
+        null
+    }
+
+    /**
+     * Show the key's identifier, never the key.
+     *
+     * This is a native surface. The WebView cannot reach it, and the only
+     * part of the key on the screen is its last four characters.
+     */
+    private fun showIdentifier(key: String?) {
+        val identifier = KeyIdentifier.lastFour(key)
+        if (identifier == null) {
+            keyIdentifier.visibility = View.GONE
+            keyIdentifier.text = ""
+        } else {
+            keyIdentifier.visibility = View.VISIBLE
+            keyIdentifier.text = getString(R.string.garmin_key_identifier, identifier)
+        }
     }
 
     /**
@@ -184,7 +224,7 @@ class GarminSetupActivity : AppCompatActivity(), SetupRunner.Listener {
      * view instead: it is worse, and it is better than nothing.
      */
     private fun openGarmin() {
-        val url = Uri.parse(GarminKeyPage.URL)
+        val url = GarminKeyPage.URL.toUri()
         try {
             CustomTabsIntent.Builder()
                 .setShowTitle(true)
@@ -209,7 +249,7 @@ class GarminSetupActivity : AppCompatActivity(), SetupRunner.Listener {
      *
      * The runner does the work and reports the states; this is the button.
      */
-    private fun connect() {
+    private fun testKey() {
         val key = keyField.text?.toString()?.trim().orEmpty()
         if (key.length < 20) {
             status.text = getString(R.string.garmin_key_too_short)
@@ -220,9 +260,16 @@ class GarminSetupActivity : AppCompatActivity(), SetupRunner.Listener {
 
     /** Forget the key. The imported runs stay on the phone. */
     private fun forget() {
-        runner.forget()
-        connected = false
-        show(SetupUi(SetupPhase.Idle))
+        try {
+            runner.forget()
+            connected = false
+            AppSettings(this).connectionChanged = true
+            showIdentifier(null)
+            show(SetupUi(SetupPhase.Idle))
+            Toast.makeText(this, R.string.forget_key_result, Toast.LENGTH_LONG).show()
+        } catch (_: Throwable) {
+            Toast.makeText(this, R.string.forget_key_incomplete, Toast.LENGTH_LONG).show()
+        }
     }
 
     /**
@@ -233,6 +280,7 @@ class GarminSetupActivity : AppCompatActivity(), SetupRunner.Listener {
      */
     private fun dismissSetup() {
         AppSettings(this).setupDismissed = true
+        Toast.makeText(this, R.string.garmin_not_now_result, Toast.LENGTH_LONG).show()
         finish()
     }
 
@@ -248,6 +296,9 @@ class GarminSetupActivity : AppCompatActivity(), SetupRunner.Listener {
             // A key is on the phone, so the screen has nothing left to ask
             // for.
             AppSettings(this).setupDismissed = true
+            AppSettings(this).connectionChanged = true
+            showIdentifier(savedKey())
+            askForNotificationPermission()
         }
         show(ui)
         if (ui.phase == SetupPhase.Connected) {
@@ -259,17 +310,18 @@ class GarminSetupActivity : AppCompatActivity(), SetupRunner.Listener {
     /** Show a state. */
     private fun show(ui: SetupUi) {
         status.text = render(SetupCopy.status(ui))
-        val line = SetupCopy.progress(ui)
+        val progressLine = SetupCopy.progress(ui)
+        val detailLine = SetupCopy.detail(ui)
         when {
             // The count, while the pull runs.
-            line != null -> {
+            progressLine != null -> {
                 progress.visibility = View.VISIBLE
-                progress.text = render(line)
+                progress.text = render(progressLine)
             }
             // The reason, when there is one.
-            ui.detail != null -> {
+            detailLine != null -> {
                 progress.visibility = View.VISIBLE
-                progress.text = ui.detail
+                progress.text = render(detailLine)
             }
             else -> progress.visibility = View.GONE
         }
@@ -279,7 +331,16 @@ class GarminSetupActivity : AppCompatActivity(), SetupRunner.Listener {
         keyField.isEnabled = !working
         forget.visibility = if (connected) View.VISIBLE else View.GONE
         notNow.visibility = if (connected || working) View.GONE else View.VISIBLE
-        connect.setText(if (connected) R.string.garmin_save_key else R.string.garmin_connect)
+        connect.setText(R.string.garmin_test_key)
+    }
+
+    /** Ask for notification permission, if the phone has not answered it. */
+    private fun askForNotificationPermission() {
+        val granted = ContextCompat.checkSelfPermission(
+            this,
+            Manifest.permission.POST_NOTIFICATIONS,
+        ) == PackageManager.PERMISSION_GRANTED
+        if (!granted) notificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
     }
 
     /** A line of the screen: the words, and the number they count. */

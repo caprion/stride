@@ -133,7 +133,25 @@ impl Core for ApiCore {
 
     /// What the core is, and whether it is open.
     fn status(&self) -> Value {
-        stride_api::ffi::status_value()
+        let mut answer = stride_api::ffi::status_value();
+        if answer.get("ok").and_then(Value::as_bool).unwrap_or(false) {
+            if let Some(body) = answer.get_mut("body").and_then(Value::as_object_mut) {
+                body.insert(
+                    "backend".to_string(),
+                    Value::String(crate::seam::BACKEND_STRIDE_API.to_string()),
+                );
+                body.insert(
+                    "backend_marker".to_string(),
+                    Value::String(crate::seam::COMPILED_BACKEND_MARKER.to_string()),
+                );
+            }
+            answer
+        } else {
+            // The status answers what is compiled in even before the local
+            // database is open. A release build can therefore ask what it
+            // is carrying without first opening a database on a device.
+            crate::status_envelope(false)
+        }
     }
 }
 

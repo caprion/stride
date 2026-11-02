@@ -1,6 +1,5 @@
 package app.stride.running.security
 
-import android.os.Build
 import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyProperties
 import java.security.KeyStore
@@ -66,11 +65,9 @@ object KeystoreKeys {
             .setKeySize(256)
             .setRandomizedEncryptionRequired(true)
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-            // The key is unusable while the phone is locked. The background
-            // worker checks the lock state and defers rather than failing.
-            builder.setUnlockedDeviceRequired(true)
-        }
+        // The key is unusable while the phone is locked. The background
+        // worker checks the lock state and defers rather than failing.
+        builder.setUnlockedDeviceRequired(true)
 
         generator.init(builder.build())
         return generator.generateKey()
@@ -115,11 +112,16 @@ object KeystoreKeys {
         return keyStore.containsAlias(alias)
     }
 
-    /** Forget a wrapping key. The envelope it protected becomes unreadable. */
-    fun delete(alias: String) {
+    /**
+     * Forget a wrapping key. The envelope it protected becomes unreadable.
+     *
+     * The answer says whether the alias is gone. An alias that was not
+     * there counts as removed: there is nothing left to use.
+     */
+    fun delete(alias: String): Boolean {
         val keyStore = KeyStore.getInstance(ANDROID_KEYSTORE).apply { load(null) }
-        if (keyStore.containsAlias(alias)) {
-            keyStore.deleteEntry(alias)
-        }
+        if (!keyStore.containsAlias(alias)) return true
+        keyStore.deleteEntry(alias)
+        return !keyStore.containsAlias(alias)
     }
 }

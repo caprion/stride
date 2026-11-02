@@ -3,21 +3,24 @@ package app.stride.running.sync
 import android.app.KeyguardManager
 import android.content.Context
 import android.util.Log
+import app.stride.running.R
 import app.stride.running.core.StrideCore
+import app.stride.running.security.CredentialUnavailable
+import app.stride.running.security.CredentialUnreadable
 import app.stride.running.security.Secrets
 import org.json.JSONObject
 
 /**
  * The pull itself.
  *
- * The same code answers the "Sync now" button, the background worker and the
- * setup screen, so the three cannot drift apart.
+ * The same code answers the "Sync now" button, the background worker and
+ * the setup screen, so the three cannot drift apart.
  *
- * **The rule about a refused key lives in [PullPolicy].** The core performs
- * one token exchange and one attempt per call and answers `needs_reconnect`
- * when the token has expired; this engine may make **one** more attempt, and
- * then it stops. See `docs/contract/core-contract.md` §7 — "The retry rule,
- * and who owns it".
+ * **The rule about a failed attempt lives in [PullPolicy].** The core
+ * performs one token exchange and one attempt per call and answers
+ * `needs_reconnect` when the token has expired; this engine may make **one**
+ * more attempt, and then it stops. See
+ * `docs/contract/core-contract.md` §7 — "The retry rule, and who owns it".
  */
 object SyncEngine {
 
@@ -38,35 +41,64 @@ object SyncEngine {
     /**
      * Run a pull.
      *
-     * The pull is attempted, and a refusal is answered with one re-exchange
-     * and one retry. The count of exchanges is what the policy reads, so the
+     * The pull is attempted, and a failed exchange is answered with one
+     * more attempt. The count of attempts is what the policy reads, so the
      * rule cannot be broken by a second attempt sneaking in.
      */
     fun run(context: Context, days: Long): SyncOutcome {
+        val window = PullWindow.bounded(days)
+
         val problem = StrideCore.ensureOpen(context)
         if (problem != null) {
-            return SyncOutcome(ok = false, message = problem, error = problem)
-        }
-
-        val key = Secrets.garminKey(context)
-        if (key.isNullOrBlank()) {
             return SyncOutcome(
                 ok = false,
-                message = "Garmin is not connected on this phone.",
-                error = ERROR_NOT_CONNECTED,
+                message = context.getString(R.string.sync_error_local),
+                error = ERROR_FAILED,
             )
         }
 
         if (isLocked(context)) {
             return SyncOutcome(
                 ok = false,
-                message = "The phone is locked. The pull will run when you unlock it.",
+                message = context.getString(R.string.sync_error_locked),
                 error = ERROR_LOCKED,
             )
         }
 
+        val savedKey = try {
+            Secrets.garminKey(context)
+        } catch (_: CredentialUnavailable) {
+            return SyncOutcome(
+                ok = false,
+                message = context.getString(R.string.sync_error_locked),
+                error = ERROR_LOCKED,
+            )
+        } catch (_: CredentialUnreadable) {
+            return SyncOutcome(
+                ok = false,
+                message = context.getString(R.string.sync_error_local),
+                error = ERROR_FAILED,
+            )
+        }
+
+        if (savedKey.isNullOrBlank()) {
+            return SyncOutcome(
+                ok = false,
+                message = context.getString(R.string.sync_error_not_connected),
+                error = ERROR_NOT_CONNECTED,
+            )
+        }
+
+        val attemptKey = savedKey
         // The retry is the policy's, and the policy has no Android in it.
-        return PullPolicy.drive { _ -> attempt(context, key, days) }
+        val outcome = PullPolicy.drive { _ -> attempt(context, attemptKey, window) }
+        // The exchange dropped the core's temporary key. The credential is
+        // still in the Keystore, so the core is told the separate fact that
+        // the phone remains connected.
+        StrideCore.setGarminConnected(true)
+        // The plaintext key is no longer needed by the shell. The copy in
+        // the Keystore is the one that lasts.
+        return outcome
     }
 
     /**
@@ -78,12 +110,14 @@ object SyncEngine {
      */
     private fun attempt(context: Context, key: String, days: Long): SyncOutcome = try {
         val answer = StrideCore.garminSync(key, days)
-        parse(answer, days)
-    } catch (error: Throwable) {
-        Log.w(TAG, "the pull failed: ${error.message}")
+        parse(context, answer)
+    } catch (_: Throwable) {
+        // The exception's message is not logged: it may carry a value from
+        // the exchange.
+        Log.w(TAG, "the pull could not be completed")
         SyncOutcome(
             ok = false,
-            message = error.message ?: "Garmin could not be reached.",
+            message = context.getString(R.string.sync_error_unreachable),
             error = ERROR_FAILED,
         )
     }
@@ -110,7 +144,7 @@ object SyncEngine {
     fun runCount(context: Context): Int {
         val problem = StrideCore.ensureOpen(context)
         if (problem != null) {
-            Log.i(TAG, "the runs cannot be counted: $problem")
+            Log.i(TAG, "the runs cannot be counted")
             return 0
         }
         return try {
@@ -120,41 +154,52 @@ object SyncEngine {
             } else {
                 SyncResult.storedRuns(envelope.optJSONObject("body"))
             }
-        } catch (error: Throwable) {
-            Log.w(TAG, "the runs could not be counted: ${error.message}")
+        } catch (_: Throwable) {
+            Log.w(TAG, "the runs could not be counted")
             0
         }
     }
 
     /** Read the core's answer. */
-    private fun parse(answer: String, days: Long): SyncOutcome {
+    private fun parse(context: Context, answer: String): SyncOutcome {
         val envelope = JSONObject(answer)
         if (!envelope.optBoolean("ok")) {
             val status = envelope.optInt("status", 0)
             val error = envelope.optJSONObject("error")
-            val detail = error?.optString("detail") ?: "Garmin could not be reached."
+            val detail = error?.optString("detail").orEmpty()
             val code = error?.optString("code")
-            return SyncOutcome(
-                ok = false,
-                message = detail,
-                // A refusal is a refusal whatever shape it takes: the typed
-                // failure the contract names, or a plain 401.
-                error = if (PullPolicy.isRefusal(status, code)) ERROR_REFUSED else ERROR_FAILED,
-            )
+
+            return when (GarminFailure.classify(status, code, detail)) {
+                GarminFailure.Kind.KeyRejected -> SyncOutcome(
+                    ok = false,
+                    message = context.getString(R.string.sync_error_refused),
+                    error = ERROR_REFUSED,
+                )
+                GarminFailure.Kind.Unreachable -> SyncOutcome(
+                    ok = false,
+                    message = context.getString(R.string.sync_error_unreachable),
+                    error = ERROR_FAILED,
+                )
+                GarminFailure.Kind.RateLimited -> SyncOutcome(
+                    ok = false,
+                    message = context.getString(R.string.sync_error_rate_limited),
+                    error = ERROR_FAILED,
+                )
+                GarminFailure.Kind.Unknown -> SyncOutcome(
+                    ok = false,
+                    message = context.getString(R.string.sync_error_failed),
+                    error = ERROR_FAILED,
+                )
+            }
         }
+
         // The api's `SyncRun`: { activities, wellness_days, finished_at,
         // generated_at }. Those are the fields it has, and the only ones
         // read here — see SyncResult.
         val counts = SyncResult.counts(envelope.optJSONObject("body"))
-        val message = when {
-            counts.activities == 0 && counts.wellnessDays == 0 ->
-                "Garmin had nothing new in the last $days days."
-            else -> "Imported ${counts.activities} new runs and " +
-                "${counts.wellnessDays} days of wellness."
-        }
         return SyncOutcome(
             ok = true,
-            message = message,
+            message = context.getString(R.string.sync_pull_finished),
             activities = counts.activities,
             wellnessDays = counts.wellnessDays,
         )

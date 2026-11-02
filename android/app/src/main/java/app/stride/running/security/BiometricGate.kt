@@ -1,7 +1,5 @@
 package app.stride.running.security
 
-import android.os.Build
-import androidx.annotation.RequiresApi
 import androidx.biometric.BiometricManager
 import androidx.biometric.BiometricPrompt
 import androidx.core.content.ContextCompat
@@ -20,7 +18,6 @@ import app.stride.running.R
  * the screen lock. Which one is offered is the phone's business, not the
  * app's; the app only asks the device to say yes or no.
  */
-@RequiresApi(Build.VERSION_CODES.P)
 object BiometricGate {
 
     /** Ask the phone who is holding it. */

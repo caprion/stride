@@ -15,29 +15,68 @@ import app.stride.running.security.Secrets
  *    use it.
  *
  * **The runs stay.** Forgetting the key is not forgetting the data: the
- * activities live in the phone's own database, and nothing here deletes one.
- * The path from the key to the database does not exist.
+ * activities, wellness and plans live in the phone's own database, and
+ * nothing here deletes one. The database has its own Keystore-wrapped key,
+ * which this operation never touches.
  *
  * The order is the order of the blast radius: the work stops first, so no
  * new pull can start while the key is being taken away; the envelope goes
  * next; the core's copy goes last, because the core is what a pull reads
  * from.
  *
- * Nothing here returns, logs or transmits the key. These three steps are
- * about the key's *existence*, and the key itself is never in this file's
- * hands: the envelope is cleared, not read.
+ * Nothing here returns, logs or transmits the key. These steps are about
+ * the key's *existence*, and the key itself is never in this file's hands:
+ * the envelope is cleared, not read.
  */
 object ForgetGarminKey {
 
     /**
+     * What the operation removed, and what it deliberately kept.
+     *
+     * The report is made from the steps that actually ran. It never
+     * contains the key or any part of it other than the identifier the
+     * native settings surface may already have shown.
+     */
+    data class Report(
+        /** The scheduled and queued Garmin work was cancelled. */
+        val scheduledPullsStopped: Boolean,
+
+        /** The encrypted Garmin credential envelope is gone. */
+        val credentialEnvelopeRemoved: Boolean,
+
+        /** The non-exportable Keystore alias is gone. */
+        val wrappingKeyRemoved: Boolean,
+
+        /** The core's temporary in-memory copy is gone. */
+        val memoryCopyCleared: Boolean,
+
+        /** The local database, runs, wellness and plans are still here. */
+        val databaseKept: Boolean = true,
+    )
+
+    /**
      * Forget the key on the phone.
      *
-     * The Android that carries the three steps out.
+     * The Android that carries the three steps out. Every step is
+     * attempted, even if an earlier one fails, so one broken part cannot
+     * leave the credential in another part of the process.
      */
-    fun onPhone(context: Context) {
+    fun onPhone(context: Context): Report {
+        var scheduledPullsStopped = false
+        var envelopeRemoved = false
+        var wrappingKeyRemoved = false
+        var memoryCopyCleared = false
+
         run(
-            stopScheduledWork = { SyncScheduler.cancel(context) },
-            clearEnvelope = { Secrets.forgetGarminKey(context) },
+            stopScheduledWork = {
+                SyncScheduler.cancel(context)
+                scheduledPullsStopped = true
+            },
+            clearEnvelope = {
+                val removal = Secrets.forgetGarminKey(context)
+                envelopeRemoved = removal.envelopeRemoved
+                wrappingKeyRemoved = removal.wrappingKeyRemoved
+            },
             clearCoreKey = {
                 // Two things: the copy in the core's memory goes, and the
                 // phone says it is not connected any more. Clearing the copy
@@ -45,7 +84,15 @@ object ForgetGarminKey {
                 // the Keystore is for — so the fact is said separately.
                 StrideCore.setGarminKey("")
                 StrideCore.setGarminConnected(false)
+                memoryCopyCleared = true
             },
+        )
+
+        return Report(
+            scheduledPullsStopped = scheduledPullsStopped,
+            credentialEnvelopeRemoved = envelopeRemoved,
+            wrappingKeyRemoved = wrappingKeyRemoved,
+            memoryCopyCleared = memoryCopyCleared,
         )
     }
 
@@ -55,8 +102,8 @@ object ForgetGarminKey {
      * The order is what the test pins down. **All three are attempted**, even
      * if one of them fails: a Keystore that refuses the envelope must not
      * leave the key in the core's memory, and a work queue that will not
-     * cancel must not leave the envelope in place. The first failure is the
-     * one reported.
+     * cancel must not leave the envelope in place. The first failure is
+     * the one reported.
      */
     fun run(
         stopScheduledWork: () -> Unit,

@@ -1,7 +1,6 @@
 package app.stride.running.core
 
 import android.content.Context
-import android.os.Build
 import android.util.Log
 import app.stride.running.security.CredentialUnavailable
 import app.stride.running.security.CredentialUnreadable
@@ -63,8 +62,8 @@ object StrideCore {
         if (open) return null
         try {
             loadLibrary()
-        } catch (error: UnsatisfiedLinkError) {
-            return "the Stride core could not be loaded: ${error.message}"
+        } catch (_: UnsatisfiedLinkError) {
+            return "the Stride core could not be loaded"
         }
 
         val database = File(context.noBackupFilesDir, DATABASE).absolutePath
@@ -75,8 +74,8 @@ object StrideCore {
             // it was; come back when the phone is unlocked.
             Log.i(TAG, "the database key cannot be used while the phone is locked")
             return "the phone is locked. Unlock it and try again — your runs are still here."
-        } catch (error: CredentialUnreadable) {
-            Log.w(TAG, "the database key is gone: ${error.message}")
+        } catch (_: CredentialUnreadable) {
+            Log.w(TAG, "the database key is gone")
             return "this phone's key store was reset, so the local database cannot be opened. " +
                 "Reconnect Garmin and import again."
         } catch (error: Exception) {
@@ -92,7 +91,7 @@ object StrideCore {
         val parsed = JSONObject(answer)
         if (parsed.optBoolean("ok")) {
             open = true
-            Log.i(TAG, "the core is open on ${parsed.optJSONObject("body")?.optString("db")}")
+            Log.i(TAG, "the core is open")
             return null
         }
         parsed.optJSONObject("error")?.optString("detail")
@@ -166,10 +165,6 @@ object StrideCore {
     private fun lockedOrBroken(error: Exception): String {
         val name = error.javaClass.simpleName
         Log.w(TAG, "the Keystore refused the key: $name")
-        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            "the phone is locked, or the key was invalidated — unlock the phone and try again"
-        } else {
-            "the Stride key store is not available"
-        }
+        return "the phone is locked, or the key was invalidated — unlock the phone and try again"
     }
 }

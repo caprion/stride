@@ -40,8 +40,33 @@ enum class SetupPhase {
 data class SetupUi(
     val phase: SetupPhase,
     val runs: Int = 0,
-    val detail: String? = null,
+    val reason: SetupFailure? = null,
 )
+
+/**
+ * Why a setup attempt did not finish.
+ *
+ * The screen carries a reason, never an error message. An exception message
+ * can carry anything the failing code was holding, and this screen was
+ * holding a Garmin key. The reason chooses a line from the native string
+ * catalogue; the raw failure never reaches the screen or a log.
+ */
+enum class SetupFailure {
+    /** The phone's local store could not be opened or written. */
+    LocalStore,
+
+    /** Garmin did not answer the key check. */
+    GarminUnreachable,
+
+    /** Garmin is rate limiting the phone. */
+    RateLimited,
+
+    /** Garmin answered, but not with a decision about the key. */
+    KeyCheckFailed,
+
+    /** The key was accepted, but the pull did not finish. */
+    PullFailed,
+}
 
 /**
  * One line of the screen: a string resource, and the number it counts.
@@ -105,5 +130,20 @@ object SetupCopy {
     fun progress(ui: SetupUi): Line? = when (ui.phase) {
         SetupPhase.Syncing -> Line(R.plurals.garmin_runs, ui.runs, plural = true)
         else -> null
+    }
+
+    /**
+     * The line under the state, when there is a reason to add one.
+     *
+     * A failed setup says what happened and what remains available. It never
+     * carries a stack trace, a response body or an exception message.
+     */
+    fun detail(ui: SetupUi): Line? = when (ui.reason) {
+        SetupFailure.LocalStore -> Line(R.string.garmin_failed_local)
+        SetupFailure.GarminUnreachable -> Line(R.string.garmin_failed_unreachable)
+        SetupFailure.RateLimited -> Line(R.string.garmin_failed_rate_limited)
+        SetupFailure.KeyCheckFailed -> Line(R.string.garmin_failed_key_check)
+        SetupFailure.PullFailed -> Line(R.string.garmin_failed_pull)
+        null -> null
     }
 }

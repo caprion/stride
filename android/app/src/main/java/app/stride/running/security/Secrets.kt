@@ -1,6 +1,7 @@
 package app.stride.running.security
 
 import android.content.Context
+import java.io.IOException
 import java.security.SecureRandom
 
 /**
@@ -80,9 +81,35 @@ object Secrets {
         credential(context).writeString(key.trim())
     }
 
-    /** Forget the Garmin Personal API key and its wrapping key. */
-    fun forgetGarminKey(context: Context) {
-        credential(context).clear()
-        KeystoreKeys.delete(KeystoreKeys.ALIAS_GARMIN)
+    /**
+     * Forget the Garmin Personal API key and its wrapping key.
+     *
+     * The envelope goes first. If the filesystem refuses to remove it, the
+     * call fails rather than claiming that a credential is gone while its
+     * encrypted envelope is still on disk. The wrapping key is then
+     * removed as well; the report says whether both are gone.
+     */
+    fun forgetGarminKey(context: Context): Removal {
+        val envelopeRemoved = credential(context).clear()
+        if (!envelopeRemoved) {
+            throw IOException("the encrypted Garmin credential could not be removed")
+        }
+        val wrappingKeyRemoved = KeystoreKeys.delete(KeystoreKeys.ALIAS_GARMIN)
+        if (!wrappingKeyRemoved) {
+            throw IOException("the Garmin credential's Keystore protection could not be removed")
+        }
+        return Removal(
+            envelopeRemoved = envelopeRemoved,
+            wrappingKeyRemoved = wrappingKeyRemoved,
+        )
     }
+
+    /** What was removed from the phone's credential store. */
+    data class Removal(
+        /** The encrypted credential file is gone. */
+        val envelopeRemoved: Boolean,
+
+        /** The non-exportable Keystore alias is gone. */
+        val wrappingKeyRemoved: Boolean,
+    )
 }

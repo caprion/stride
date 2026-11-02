@@ -1,5 +1,6 @@
 package app.stride.running.setup
 
+import app.stride.running.R
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
@@ -60,5 +61,21 @@ class SetupTest {
     fun `the connected line without a count says only that it is connected`() {
         val line = SetupCopy.status(SetupUi(SetupPhase.Connected, runs = -1))
         assertEquals(null, line.count)
+    }
+
+    @Test
+    fun `a refused key has its own actionable line`() {
+        val line = SetupCopy.status(SetupUi(SetupPhase.Refused))
+        assertEquals(R.string.garmin_refused, line.resource)
+        assertEquals(null, SetupCopy.detail(SetupUi(SetupPhase.Refused)))
+    }
+
+    @Test
+    fun `a failure chooses a catalogue line instead of carrying an exception`() {
+        val line = SetupCopy.detail(
+            SetupUi(SetupPhase.Failed, reason = SetupFailure.GarminUnreachable),
+        )
+        assertNotNull(line)
+        assertEquals(R.string.garmin_failed_unreachable, line?.resource)
     }
 }
