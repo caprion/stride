@@ -35,7 +35,7 @@ sideways, and every tap target is at least 44px tall at compact.
 | route | screen |
 |---|---|
 | `/` | **Today** — the vitals, each with its value, its direction word and the muted arithmetic; then the Rest summary; then the plan's own session and its other options, unranked and unlinked |
-| `/runs` | **Runs** — the feed; every row carries a sentence about what the run meant |
+| `/runs` | **Runs** — the feed. The sentence about what a run meant is the **core's** to write, and the core has no story engine yet: the router answers null and the row carries no sentence of its own |
 | `/runs/:id` | **Activity** — the run, its story, its splits, its elevation |
 | `/progress` | **Progress** — the trajectory, forgivingly; no percentage without a real baseline |
 | `/body` | **Body** — the same values and directions as Today, plus the patterns, each with its n |
@@ -406,6 +406,12 @@ four characters — an identifier, four characters cannot be a Garmin
 Personal API key — and nothing else.
 
 ### The fixture set, and the file the api reads
+
+The fixture set is **the router's answers**, not a mock someone wrote:
+the stories are null because the core has no story engine yet, the plan's
+line is absent because the plan has no session on the run's day, and the
+pace's raw number is the core's own rounding. The api's parity test
+proves it, byte for byte, against a seeded store.
 
 The app's fixture set is a TypeScript module: the screens render from it
 and the tests assert against it. The api's test has to read **the same

@@ -191,18 +191,15 @@ describe('Compare', () => {
     expect(heart).toContain('+2 bpm')
   })
 
-  it('shows the plan’s line under the run as the core states it', async () => {
+  it('shows no plan line when the plan has no session on the run\'s day', async () => {
     const { container } = renderApp('/runs/101')
     await waitFor(() =>
-      expect(container.querySelector('[data-testid="activity-plan-line"]')).toBeTruthy(),
+      expect(container.querySelector('[data-testid="activity-detail"]')).toBeTruthy(),
     )
-    // The core's own statement of the result: what was run, against the
-    // target — "12.4 km of a 10 km target". The *gap* ("2.4 km more than the
-    // 10 km target") is the distance comparison, and it belongs on Today,
-    // where it appears only when the gap is beyond ten per cent.
-    expect(
-      container.querySelector('[data-testid="activity-plan-line"]')?.textContent,
-    ).toContain('12.4 km of a 10 km target')
+    // The plan's line under a run is the core's statement, and the plan
+    // has no session on the 10 May — so the router answers null and the
+    // screen says nothing. The app does not write a line of its own.
+    expect(container.querySelector('[data-testid="activity-plan-line"]')).toBeNull()
   })
 
   it('shows the values the API sent, word for word', async () => {

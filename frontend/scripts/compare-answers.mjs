@@ -132,9 +132,14 @@ function basisText(a, b) {
   return `Same distance, ${Math.round(days / 7)} weeks apart`
 }
 
-/** The pace of a run, in seconds per kilometre. */
+/**
+ * The pace of a run, in seconds per kilometre.
+ *
+ * The core rounds it to two decimals, half to even, and the router
+ * answers that number: the raw beside the words is the same one.
+ */
 function paceOf(run) {
-  return run.duration.raw / (run.distance.raw / 1000)
+  return roundHalfEven(run.duration.raw / (run.distance.raw / 1000), 2)
 }
 
 /**
@@ -177,14 +182,16 @@ for (const a of runs) {
         label: a.name,
         date: a.local_date,
         distance: a.distance,
-        story: a.story,
+        // The core has no story engine yet: the router answers null, and
+        // so does the capture.
+        story: null,
       },
       b: {
         id: b.id,
         label: b.name,
         date: b.local_date,
         distance: b.distance,
-        story: b.story,
+        story: null,
       },
     }
   }
@@ -194,28 +201,3 @@ const outPath = join(root, 'src', 'fixtures', 'compare-answers.json')
 writeFileSync(outPath, `${JSON.stringify(answers, null, 2)}\n`, 'utf8')
 console.log(`fixtures: ${Object.keys(answers).length} compare answers written to ${outPath}`)
 
-/**
- * The captured answer for the pair the app's demo shows.
- *
- * One answer, exactly as the router answered it — the api's test reads
- * this file, seeds the matching store, calls the real router and
- * compares the two byte for byte. So the fixture stops being a mock
- * someone wrote and becomes an answer the test keeps true.
- */
-const demoPair = '102:101'
-const demo = answers[demoPair]
-const capturedPath = join(root, 'src', 'fixtures', 'captured.json')
-writeFileSync(
-  capturedPath,
-  `${JSON.stringify(
-    {
-      route: '/compare',
-      query: { a: '102', b: '101' },
-      answer: { ...demo, series: { a: captured.a, b: captured.b } },
-    },
-    null,
-    2,
-  )}\n`,
-  'utf8',
-)
-console.log(`fixtures: the captured answer written to ${capturedPath}`)

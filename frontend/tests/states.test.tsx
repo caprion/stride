@@ -194,14 +194,15 @@ describe('the Runs page', () => {
 })
 
 describe('the Activity page', () => {
-  it('shows the note, and the line against the plan', async () => {
+  it('shows the note, and no plan line when there is none', async () => {
     const { container } = renderApp('/runs/101')
     await waitFor(() =>
       expect(container.querySelector('[data-testid="activity-detail"]')).toBeTruthy(),
     )
 
-    // The plan line, when there is a plan.
-    expect(container.textContent).toContain('of a 10 km target')
+    // The plan line, when the plan has a session on the run's day. This
+    // one has not, so the router answers null and the screen is quiet.
+    expect(container.querySelector('[data-testid="activity-plan-line"]')).toBeNull()
     // The note is the athlete's own words, and it is edited here.
     expect(container.querySelector('[data-testid="activity-note"]')).toBeTruthy()
     expect(container.textContent).toContain('No note on this run')

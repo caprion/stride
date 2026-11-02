@@ -82,3 +82,43 @@ describe("the fixture set's export", () => {
     expect(exported().version).toBe(1)
   })
 })
+
+describe('the captured answer', () => {
+  it('is the shape the api\'s parity test reads', () => {
+    const captured = JSON.parse(
+      readFileSync(join(here, '..', 'src', 'fixtures', 'captured.json'), 'utf8'),
+    ) as { route: string; body: Record<string, unknown> }
+
+    expect(typeof captured.route).toBe('string')
+    expect(captured.body).toBeTruthy()
+  })
+
+  it('carries the delta pull\'s fields, with the router\'s nullability', () => {
+    // The four fields the router added, and the nullability it answers
+    // them with: the cursor is a string or nothing, the three counts are
+    // numbers or nothing.
+    const captured = JSON.parse(
+      readFileSync(join(here, '..', 'src', 'fixtures', 'captured.json'), 'utf8'),
+    ) as { body: Record<string, unknown> }
+
+    expect(captured.body.cursor === null || typeof captured.body.cursor === 'string').toBe(true)
+    for (const field of ['pulled', 'skipped', 'deleted']) {
+      expect(captured.body[field] === null || typeof captured.body[field] === 'number').toBe(true)
+    }
+  })
+
+  it('is the answer the router gives for the store the api\'s test seeds', () => {
+    // The api's seeded harness holds one run and no cursor, so the
+    // router answers these numbers — and the capture has to be the same
+    // answer, byte for byte, or the parity test fails.
+    const captured = JSON.parse(
+      readFileSync(join(here, '..', 'src', 'fixtures', 'captured.json'), 'utf8'),
+    ) as { body: Record<string, unknown> }
+
+    expect(captured.body.activity_count).toBe(1)
+    expect(captured.body.cursor).toBeNull()
+    expect(captured.body.pulled).toBe(0)
+    expect(captured.body.skipped).toBe(0)
+    expect(captured.body.deleted).toBe(0)
+  })
+})

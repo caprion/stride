@@ -364,7 +364,6 @@ function activity(
   distance: RenderedValue,
   duration: RenderedValue,
   pace: RenderedValue,
-  story: string,
   group: typeof THIS_WEEK,
   heartRate: RenderedValue = value('148 bpm', 148),
 ): ActivitySummary {
@@ -380,7 +379,11 @@ function activity(
     pace,
     elevation_gain: value('42 m', 42),
     group,
-    story,
+    // The story is the core's sentence, and the core has no story engine
+    // yet: **the router answers null, so the fixture answers null.** A
+    // sentence the app made up would be a second implementation of the
+    // core's words.
+    story: null,
     geo_points: [],
   }
 }
@@ -392,7 +395,6 @@ export const activityFixtures: ActivitySummary[] = [
     value('12.4 km', 12_400),
     value('1 h 7 m', 4_020),
     value('5:24 /km', 324.19),
-    '12.4 km, 2.4 km more than your usual Wednesday',
     THIS_WEEK,
   ),
   activity(
@@ -401,7 +403,6 @@ export const activityFixtures: ActivitySummary[] = [
     value('10.2 km', 10_200),
     value('55 m', 3_320),
     value('5:25 /km', 325.49),
-    '10.2 km, about your usual Saturday',
     THIS_WEEK,
     value('146 bpm', 146),
   ),
@@ -411,7 +412,6 @@ export const activityFixtures: ActivitySummary[] = [
     value('8.4 km', 8_400),
     value('42 m', 2_520),
     value('5:00 /km', 300),
-    '8.4 km, a bit shorter than your usual Wednesday',
     THIS_WEEK,
   ),
   activity(
@@ -420,7 +420,6 @@ export const activityFixtures: ActivitySummary[] = [
     value('5 km', 5_000),
     value('27 m', 1_620),
     value('5:24 /km', 324),
-    '5 km, your shortest run in three weeks',
     THIS_WEEK,
   ),
   activity(
@@ -429,7 +428,6 @@ export const activityFixtures: ActivitySummary[] = [
     value('16.1 km', 16_100),
     value('1 h 25 m', 5_072),
     value('5:15 /km', 315.03),
-    '16.1 km, your longest run this month',
     LONG_RUN_DAY,
   ),
   activity(
@@ -438,7 +436,6 @@ export const activityFixtures: ActivitySummary[] = [
     value('6.3 km', 6_300),
     value('35 m', 2_080),
     value('5:30 /km', 330.16),
-    '6.3 km, about your usual Monday',
     MONDAY,
   ),
 ]
@@ -487,7 +484,9 @@ export const activityDetailFixture: ActivityDetail = {
     { offset_s: 360, pace: value('5:26 /km', 326), heart_rate: value('141 bpm', 141) },
     { offset_s: 420, pace: value('5:36 /km', 336), heart_rate: value('139 bpm', 139) },
   ],
-  plan_line: { text: '12.4 km of a 10 km target' },
+  // The plan's line under the run is the core's statement — and the plan
+  // has no session on the run's day, so the router answers null.
+  plan_line: null,
   note: null,
 }
 
@@ -743,11 +742,13 @@ export const syncStatusFixture: SyncStatus = {
   // Two hours ago, so the rig shows a fresh sync rather than a stale one.
   last_sync_at: new Date(Date.now() - 2 * 3_600_000).toISOString(),
   last_error: null,
-  activity_count: 42,
+  activity_count: 6,
   // The delta pull: the cursor says where the next pull starts, and the
-  // three counts say what the last one did.
-  cursor: '106',
-  pulled: 42,
+  // three counts say what the last one did. **The store has no cursor
+  // yet**, so the router answers null and three zeroes — and so does the
+  // fixture.
+  cursor: null,
+  pulled: 0,
   skipped: 0,
   deleted: 0,
 }
@@ -1079,9 +1080,9 @@ export const progressNoPlanFixture: ProgressInsight = {
 export const syncStatusStaleFixture: SyncStatus = {
   last_sync_at: new Date(Date.now() - 3 * 86_400_000).toISOString(),
   last_error: null,
-  activity_count: 42,
-  cursor: '106',
-  pulled: 42,
+  activity_count: 6,
+  cursor: null,
+  pulled: 0,
   skipped: 0,
   deleted: 0,
 }
@@ -1098,9 +1099,9 @@ export const syncStatusFreshFixture: SyncStatus = {
   activity_count: 0,
   // Nothing has been pulled, so there is no cursor and nothing to count.
   cursor: null,
-  pulled: null,
-  skipped: null,
-  deleted: null,
+  pulled: 0,
+  skipped: 0,
+  deleted: 0,
 }
 
 /**
@@ -1112,11 +1113,13 @@ export const syncStatusFreshFixture: SyncStatus = {
 export const syncStatusFailedFixture: SyncStatus = {
   last_sync_at: new Date(Date.now() - 2 * 3_600_000).toISOString(),
   last_error: 'Garmin refused the token',
-  activity_count: 42,
-  cursor: '106',
-  pulled: null,
-  skipped: null,
-  deleted: null,
+  activity_count: 6,
+  // The cursor stays where it was — a failed pull never advances it — and
+  // the counts are the ones the last pull that finished made.
+  cursor: null,
+  pulled: 0,
+  skipped: 0,
+  deleted: 0,
 }
 
 /** The health of a sync window that has gone stale. */

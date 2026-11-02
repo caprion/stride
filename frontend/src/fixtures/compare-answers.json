@@ -39,15 +39,15 @@
         "label_key": "vital.pace",
         "a": {
           "text": "5:24 /km",
-          "raw": 324.19354838709677
+          "raw": 324.19
         },
         "b": {
           "text": "5:25 /km",
-          "raw": 325.4901960784314
+          "raw": 325.49
         },
         "delta": {
           "text": "+1 s/km",
-          "raw": 1.2966476913346128
+          "raw": 1.3000000000000114
         }
       },
       {
@@ -75,7 +75,7 @@
         "text": "12.4 km",
         "raw": 12400
       },
-      "story": "12.4 km, 2.4 km more than your usual Wednesday"
+      "story": null
     },
     "b": {
       "id": 102,
@@ -85,7 +85,7 @@
         "text": "10.2 km",
         "raw": 10200
       },
-      "story": "10.2 km, about your usual Saturday"
+      "story": null
     }
   },
   "101:103": {
@@ -128,7 +128,7 @@
         "label_key": "vital.pace",
         "a": {
           "text": "5:24 /km",
-          "raw": 324.19354838709677
+          "raw": 324.19
         },
         "b": {
           "text": "5:00 /km",
@@ -136,7 +136,7 @@
         },
         "delta": {
           "text": "−24 s/km",
-          "raw": -24.19354838709677
+          "raw": -24.189999999999998
         }
       },
       {
@@ -164,7 +164,7 @@
         "text": "12.4 km",
         "raw": 12400
       },
-      "story": "12.4 km, 2.4 km more than your usual Wednesday"
+      "story": null
     },
     "b": {
       "id": 103,
@@ -174,7 +174,7 @@
         "text": "8.4 km",
         "raw": 8400
       },
-      "story": "8.4 km, a bit shorter than your usual Wednesday"
+      "story": null
     }
   },
   "101:104": {
@@ -217,7 +217,7 @@
         "label_key": "vital.pace",
         "a": {
           "text": "5:24 /km",
-          "raw": 324.19354838709677
+          "raw": 324.19
         },
         "b": {
           "text": "5:24 /km",
@@ -225,7 +225,7 @@
         },
         "delta": {
           "text": "−0 s/km",
-          "raw": -0.1935483870967687
+          "raw": -0.18999999999999773
         }
       },
       {
@@ -253,7 +253,7 @@
         "text": "12.4 km",
         "raw": 12400
       },
-      "story": "12.4 km, 2.4 km more than your usual Wednesday"
+      "story": null
     },
     "b": {
       "id": 104,
@@ -263,7 +263,7 @@
         "text": "5 km",
         "raw": 5000
       },
-      "story": "5 km, your shortest run in three weeks"
+      "story": null
     }
   },
   "101:105": {
@@ -306,15 +306,15 @@
         "label_key": "vital.pace",
         "a": {
           "text": "5:24 /km",
-          "raw": 324.19354838709677
+          "raw": 324.19
         },
         "b": {
           "text": "5:15 /km",
-          "raw": 315.0310559006211
+          "raw": 315.03
         },
         "delta": {
           "text": "−9 s/km",
-          "raw": -9.162492486475685
+          "raw": -9.160000000000025
         }
       },
       {
@@ -325,12 +325,11 @@
           "raw": 148
         },
         "b": {
-          "text": "148 bpm",
-          "raw": 148
+          "text": "NaN bpm"
         },
         "delta": {
-          "text": "0 bpm",
-          "raw": 0
+          "text": "NaN bpm",
+          "raw": null
         }
       }
     ],
@@ -342,7 +341,7 @@
         "text": "12.4 km",
         "raw": 12400
       },
-      "story": "12.4 km, 2.4 km more than your usual Wednesday"
+      "story": null
     },
     "b": {
       "id": 105,
@@ -352,7 +351,7 @@
         "text": "16.1 km",
         "raw": 16100
       },
-      "story": "16.1 km, your longest run this month"
+      "story": null
     }
   },
   "101:106": {
@@ -395,15 +394,15 @@
         "label_key": "vital.pace",
         "a": {
           "text": "5:24 /km",
-          "raw": 324.19354838709677
+          "raw": 324.19
         },
         "b": {
           "text": "5:30 /km",
-          "raw": 330.1587301587302
+          "raw": 330.16
         },
         "delta": {
           "text": "+6 s/km",
-          "raw": 5.965181771633411
+          "raw": 5.970000000000027
         }
       },
       {
@@ -414,12 +413,11 @@
           "raw": 148
         },
         "b": {
-          "text": "148 bpm",
-          "raw": 148
+          "text": "NaN bpm"
         },
         "delta": {
-          "text": "0 bpm",
-          "raw": 0
+          "text": "NaN bpm",
+          "raw": null
         }
       }
     ],
@@ -431,7 +429,7 @@
         "text": "12.4 km",
         "raw": 12400
       },
-      "story": "12.4 km, 2.4 km more than your usual Wednesday"
+      "story": null
     },
     "b": {
       "id": 106,
@@ -441,7 +439,7 @@
         "text": "6.3 km",
         "raw": 6300
       },
-      "story": "6.3 km, about your usual Monday"
+      "story": null
     }
   },
   "102:101": {
@@ -484,15 +482,15 @@
         "label_key": "vital.pace",
         "a": {
           "text": "5:25 /km",
-          "raw": 325.4901960784314
+          "raw": 325.49
         },
         "b": {
           "text": "5:24 /km",
-          "raw": 324.19354838709677
+          "raw": 324.19
         },
         "delta": {
           "text": "−1 s/km",
-          "raw": -1.2966476913346128
+          "raw": -1.3000000000000114
         }
       },
       {
@@ -520,7 +518,7 @@
         "text": "10.2 km",
         "raw": 10200
       },
-      "story": "10.2 km, about your usual Saturday"
+      "story": null
     },
     "b": {
       "id": 101,
@@ -530,7 +528,7 @@
         "text": "12.4 km",
         "raw": 12400
       },
-      "story": "12.4 km, 2.4 km more than your usual Wednesday"
+      "story": null
     }
   },
   "102:103": {
@@ -573,7 +571,7 @@
         "label_key": "vital.pace",
         "a": {
           "text": "5:25 /km",
-          "raw": 325.4901960784314
+          "raw": 325.49
         },
         "b": {
           "text": "5:00 /km",
@@ -581,7 +579,7 @@
         },
         "delta": {
           "text": "−25 s/km",
-          "raw": -25.49019607843138
+          "raw": -25.49000000000001
         }
       },
       {
@@ -609,7 +607,7 @@
         "text": "10.2 km",
         "raw": 10200
       },
-      "story": "10.2 km, about your usual Saturday"
+      "story": null
     },
     "b": {
       "id": 103,
@@ -619,7 +617,7 @@
         "text": "8.4 km",
         "raw": 8400
       },
-      "story": "8.4 km, a bit shorter than your usual Wednesday"
+      "story": null
     }
   },
   "102:104": {
@@ -662,7 +660,7 @@
         "label_key": "vital.pace",
         "a": {
           "text": "5:25 /km",
-          "raw": 325.4901960784314
+          "raw": 325.49
         },
         "b": {
           "text": "5:24 /km",
@@ -670,7 +668,7 @@
         },
         "delta": {
           "text": "−1 s/km",
-          "raw": -1.4901960784313815
+          "raw": -1.490000000000009
         }
       },
       {
@@ -698,7 +696,7 @@
         "text": "10.2 km",
         "raw": 10200
       },
-      "story": "10.2 km, about your usual Saturday"
+      "story": null
     },
     "b": {
       "id": 104,
@@ -708,7 +706,7 @@
         "text": "5 km",
         "raw": 5000
       },
-      "story": "5 km, your shortest run in three weeks"
+      "story": null
     }
   },
   "102:105": {
@@ -751,15 +749,15 @@
         "label_key": "vital.pace",
         "a": {
           "text": "5:25 /km",
-          "raw": 325.4901960784314
+          "raw": 325.49
         },
         "b": {
           "text": "5:15 /km",
-          "raw": 315.0310559006211
+          "raw": 315.03
         },
         "delta": {
           "text": "−10 s/km",
-          "raw": -10.459140177810298
+          "raw": -10.460000000000036
         }
       },
       {
@@ -770,12 +768,11 @@
           "raw": 146
         },
         "b": {
-          "text": "148 bpm",
-          "raw": 148
+          "text": "NaN bpm"
         },
         "delta": {
-          "text": "+2 bpm",
-          "raw": 2
+          "text": "NaN bpm",
+          "raw": null
         }
       }
     ],
@@ -787,7 +784,7 @@
         "text": "10.2 km",
         "raw": 10200
       },
-      "story": "10.2 km, about your usual Saturday"
+      "story": null
     },
     "b": {
       "id": 105,
@@ -797,7 +794,7 @@
         "text": "16.1 km",
         "raw": 16100
       },
-      "story": "16.1 km, your longest run this month"
+      "story": null
     }
   },
   "102:106": {
@@ -840,15 +837,15 @@
         "label_key": "vital.pace",
         "a": {
           "text": "5:25 /km",
-          "raw": 325.4901960784314
+          "raw": 325.49
         },
         "b": {
           "text": "5:30 /km",
-          "raw": 330.1587301587302
+          "raw": 330.16
         },
         "delta": {
           "text": "+5 s/km",
-          "raw": 4.668534080298798
+          "raw": 4.670000000000016
         }
       },
       {
@@ -859,12 +856,11 @@
           "raw": 146
         },
         "b": {
-          "text": "148 bpm",
-          "raw": 148
+          "text": "NaN bpm"
         },
         "delta": {
-          "text": "+2 bpm",
-          "raw": 2
+          "text": "NaN bpm",
+          "raw": null
         }
       }
     ],
@@ -876,7 +872,7 @@
         "text": "10.2 km",
         "raw": 10200
       },
-      "story": "10.2 km, about your usual Saturday"
+      "story": null
     },
     "b": {
       "id": 106,
@@ -886,7 +882,7 @@
         "text": "6.3 km",
         "raw": 6300
       },
-      "story": "6.3 km, about your usual Monday"
+      "story": null
     }
   },
   "103:101": {
@@ -933,11 +929,11 @@
         },
         "b": {
           "text": "5:24 /km",
-          "raw": 324.19354838709677
+          "raw": 324.19
         },
         "delta": {
           "text": "+24 s/km",
-          "raw": 24.19354838709677
+          "raw": 24.189999999999998
         }
       },
       {
@@ -965,7 +961,7 @@
         "text": "8.4 km",
         "raw": 8400
       },
-      "story": "8.4 km, a bit shorter than your usual Wednesday"
+      "story": null
     },
     "b": {
       "id": 101,
@@ -975,7 +971,7 @@
         "text": "12.4 km",
         "raw": 12400
       },
-      "story": "12.4 km, 2.4 km more than your usual Wednesday"
+      "story": null
     }
   },
   "103:102": {
@@ -1022,11 +1018,11 @@
         },
         "b": {
           "text": "5:25 /km",
-          "raw": 325.4901960784314
+          "raw": 325.49
         },
         "delta": {
           "text": "+25 s/km",
-          "raw": 25.49019607843138
+          "raw": 25.49000000000001
         }
       },
       {
@@ -1054,7 +1050,7 @@
         "text": "8.4 km",
         "raw": 8400
       },
-      "story": "8.4 km, a bit shorter than your usual Wednesday"
+      "story": null
     },
     "b": {
       "id": 102,
@@ -1064,7 +1060,7 @@
         "text": "10.2 km",
         "raw": 10200
       },
-      "story": "10.2 km, about your usual Saturday"
+      "story": null
     }
   },
   "103:104": {
@@ -1143,7 +1139,7 @@
         "text": "8.4 km",
         "raw": 8400
       },
-      "story": "8.4 km, a bit shorter than your usual Wednesday"
+      "story": null
     },
     "b": {
       "id": 104,
@@ -1153,7 +1149,7 @@
         "text": "5 km",
         "raw": 5000
       },
-      "story": "5 km, your shortest run in three weeks"
+      "story": null
     }
   },
   "103:105": {
@@ -1200,11 +1196,11 @@
         },
         "b": {
           "text": "5:15 /km",
-          "raw": 315.0310559006211
+          "raw": 315.03
         },
         "delta": {
           "text": "+15 s/km",
-          "raw": 15.031055900621084
+          "raw": 15.029999999999973
         }
       },
       {
@@ -1215,12 +1211,11 @@
           "raw": 148
         },
         "b": {
-          "text": "148 bpm",
-          "raw": 148
+          "text": "NaN bpm"
         },
         "delta": {
-          "text": "0 bpm",
-          "raw": 0
+          "text": "NaN bpm",
+          "raw": null
         }
       }
     ],
@@ -1232,7 +1227,7 @@
         "text": "8.4 km",
         "raw": 8400
       },
-      "story": "8.4 km, a bit shorter than your usual Wednesday"
+      "story": null
     },
     "b": {
       "id": 105,
@@ -1242,7 +1237,7 @@
         "text": "16.1 km",
         "raw": 16100
       },
-      "story": "16.1 km, your longest run this month"
+      "story": null
     }
   },
   "103:106": {
@@ -1289,11 +1284,11 @@
         },
         "b": {
           "text": "5:30 /km",
-          "raw": 330.1587301587302
+          "raw": 330.16
         },
         "delta": {
           "text": "+30 s/km",
-          "raw": 30.15873015873018
+          "raw": 30.160000000000025
         }
       },
       {
@@ -1304,12 +1299,11 @@
           "raw": 148
         },
         "b": {
-          "text": "148 bpm",
-          "raw": 148
+          "text": "NaN bpm"
         },
         "delta": {
-          "text": "0 bpm",
-          "raw": 0
+          "text": "NaN bpm",
+          "raw": null
         }
       }
     ],
@@ -1321,7 +1315,7 @@
         "text": "8.4 km",
         "raw": 8400
       },
-      "story": "8.4 km, a bit shorter than your usual Wednesday"
+      "story": null
     },
     "b": {
       "id": 106,
@@ -1331,7 +1325,7 @@
         "text": "6.3 km",
         "raw": 6300
       },
-      "story": "6.3 km, about your usual Monday"
+      "story": null
     }
   },
   "104:101": {
@@ -1378,11 +1372,11 @@
         },
         "b": {
           "text": "5:24 /km",
-          "raw": 324.19354838709677
+          "raw": 324.19
         },
         "delta": {
           "text": "+0 s/km",
-          "raw": 0.1935483870967687
+          "raw": 0.18999999999999773
         }
       },
       {
@@ -1410,7 +1404,7 @@
         "text": "5 km",
         "raw": 5000
       },
-      "story": "5 km, your shortest run in three weeks"
+      "story": null
     },
     "b": {
       "id": 101,
@@ -1420,7 +1414,7 @@
         "text": "12.4 km",
         "raw": 12400
       },
-      "story": "12.4 km, 2.4 km more than your usual Wednesday"
+      "story": null
     }
   },
   "104:102": {
@@ -1467,11 +1461,11 @@
         },
         "b": {
           "text": "5:25 /km",
-          "raw": 325.4901960784314
+          "raw": 325.49
         },
         "delta": {
           "text": "+1 s/km",
-          "raw": 1.4901960784313815
+          "raw": 1.490000000000009
         }
       },
       {
@@ -1499,7 +1493,7 @@
         "text": "5 km",
         "raw": 5000
       },
-      "story": "5 km, your shortest run in three weeks"
+      "story": null
     },
     "b": {
       "id": 102,
@@ -1509,7 +1503,7 @@
         "text": "10.2 km",
         "raw": 10200
       },
-      "story": "10.2 km, about your usual Saturday"
+      "story": null
     }
   },
   "104:103": {
@@ -1588,7 +1582,7 @@
         "text": "5 km",
         "raw": 5000
       },
-      "story": "5 km, your shortest run in three weeks"
+      "story": null
     },
     "b": {
       "id": 103,
@@ -1598,7 +1592,7 @@
         "text": "8.4 km",
         "raw": 8400
       },
-      "story": "8.4 km, a bit shorter than your usual Wednesday"
+      "story": null
     }
   },
   "104:105": {
@@ -1645,11 +1639,11 @@
         },
         "b": {
           "text": "5:15 /km",
-          "raw": 315.0310559006211
+          "raw": 315.03
         },
         "delta": {
           "text": "−9 s/km",
-          "raw": -8.968944099378916
+          "raw": -8.970000000000027
         }
       },
       {
@@ -1660,12 +1654,11 @@
           "raw": 148
         },
         "b": {
-          "text": "148 bpm",
-          "raw": 148
+          "text": "NaN bpm"
         },
         "delta": {
-          "text": "0 bpm",
-          "raw": 0
+          "text": "NaN bpm",
+          "raw": null
         }
       }
     ],
@@ -1677,7 +1670,7 @@
         "text": "5 km",
         "raw": 5000
       },
-      "story": "5 km, your shortest run in three weeks"
+      "story": null
     },
     "b": {
       "id": 105,
@@ -1687,7 +1680,7 @@
         "text": "16.1 km",
         "raw": 16100
       },
-      "story": "16.1 km, your longest run this month"
+      "story": null
     }
   },
   "104:106": {
@@ -1734,11 +1727,11 @@
         },
         "b": {
           "text": "5:30 /km",
-          "raw": 330.1587301587302
+          "raw": 330.16
         },
         "delta": {
           "text": "+6 s/km",
-          "raw": 6.1587301587301795
+          "raw": 6.160000000000025
         }
       },
       {
@@ -1749,12 +1742,11 @@
           "raw": 148
         },
         "b": {
-          "text": "148 bpm",
-          "raw": 148
+          "text": "NaN bpm"
         },
         "delta": {
-          "text": "0 bpm",
-          "raw": 0
+          "text": "NaN bpm",
+          "raw": null
         }
       }
     ],
@@ -1766,7 +1758,7 @@
         "text": "5 km",
         "raw": 5000
       },
-      "story": "5 km, your shortest run in three weeks"
+      "story": null
     },
     "b": {
       "id": 106,
@@ -1776,7 +1768,7 @@
         "text": "6.3 km",
         "raw": 6300
       },
-      "story": "6.3 km, about your usual Monday"
+      "story": null
     }
   },
   "105:101": {
@@ -1819,31 +1811,30 @@
         "label_key": "vital.pace",
         "a": {
           "text": "5:15 /km",
-          "raw": 315.0310559006211
+          "raw": 315.03
         },
         "b": {
           "text": "5:24 /km",
-          "raw": 324.19354838709677
+          "raw": 324.19
         },
         "delta": {
           "text": "+9 s/km",
-          "raw": 9.162492486475685
+          "raw": 9.160000000000025
         }
       },
       {
         "key": "hr",
         "label_key": "vital.heartRate",
         "a": {
-          "text": "148 bpm",
-          "raw": 148
+          "text": "NaN bpm"
         },
         "b": {
           "text": "148 bpm",
           "raw": 148
         },
         "delta": {
-          "text": "0 bpm",
-          "raw": 0
+          "text": "NaN bpm",
+          "raw": null
         }
       }
     ],
@@ -1855,7 +1846,7 @@
         "text": "16.1 km",
         "raw": 16100
       },
-      "story": "16.1 km, your longest run this month"
+      "story": null
     },
     "b": {
       "id": 101,
@@ -1865,7 +1856,7 @@
         "text": "12.4 km",
         "raw": 12400
       },
-      "story": "12.4 km, 2.4 km more than your usual Wednesday"
+      "story": null
     }
   },
   "105:102": {
@@ -1908,31 +1899,30 @@
         "label_key": "vital.pace",
         "a": {
           "text": "5:15 /km",
-          "raw": 315.0310559006211
+          "raw": 315.03
         },
         "b": {
           "text": "5:25 /km",
-          "raw": 325.4901960784314
+          "raw": 325.49
         },
         "delta": {
           "text": "+10 s/km",
-          "raw": 10.459140177810298
+          "raw": 10.460000000000036
         }
       },
       {
         "key": "hr",
         "label_key": "vital.heartRate",
         "a": {
-          "text": "148 bpm",
-          "raw": 148
+          "text": "NaN bpm"
         },
         "b": {
           "text": "146 bpm",
           "raw": 146
         },
         "delta": {
-          "text": "−2 bpm",
-          "raw": -2
+          "text": "NaN bpm",
+          "raw": null
         }
       }
     ],
@@ -1944,7 +1934,7 @@
         "text": "16.1 km",
         "raw": 16100
       },
-      "story": "16.1 km, your longest run this month"
+      "story": null
     },
     "b": {
       "id": 102,
@@ -1954,7 +1944,7 @@
         "text": "10.2 km",
         "raw": 10200
       },
-      "story": "10.2 km, about your usual Saturday"
+      "story": null
     }
   },
   "105:103": {
@@ -1997,7 +1987,7 @@
         "label_key": "vital.pace",
         "a": {
           "text": "5:15 /km",
-          "raw": 315.0310559006211
+          "raw": 315.03
         },
         "b": {
           "text": "5:00 /km",
@@ -2005,23 +1995,22 @@
         },
         "delta": {
           "text": "−15 s/km",
-          "raw": -15.031055900621084
+          "raw": -15.029999999999973
         }
       },
       {
         "key": "hr",
         "label_key": "vital.heartRate",
         "a": {
-          "text": "148 bpm",
-          "raw": 148
+          "text": "NaN bpm"
         },
         "b": {
           "text": "148 bpm",
           "raw": 148
         },
         "delta": {
-          "text": "0 bpm",
-          "raw": 0
+          "text": "NaN bpm",
+          "raw": null
         }
       }
     ],
@@ -2033,7 +2022,7 @@
         "text": "16.1 km",
         "raw": 16100
       },
-      "story": "16.1 km, your longest run this month"
+      "story": null
     },
     "b": {
       "id": 103,
@@ -2043,7 +2032,7 @@
         "text": "8.4 km",
         "raw": 8400
       },
-      "story": "8.4 km, a bit shorter than your usual Wednesday"
+      "story": null
     }
   },
   "105:104": {
@@ -2086,7 +2075,7 @@
         "label_key": "vital.pace",
         "a": {
           "text": "5:15 /km",
-          "raw": 315.0310559006211
+          "raw": 315.03
         },
         "b": {
           "text": "5:24 /km",
@@ -2094,23 +2083,22 @@
         },
         "delta": {
           "text": "+9 s/km",
-          "raw": 8.968944099378916
+          "raw": 8.970000000000027
         }
       },
       {
         "key": "hr",
         "label_key": "vital.heartRate",
         "a": {
-          "text": "148 bpm",
-          "raw": 148
+          "text": "NaN bpm"
         },
         "b": {
           "text": "148 bpm",
           "raw": 148
         },
         "delta": {
-          "text": "0 bpm",
-          "raw": 0
+          "text": "NaN bpm",
+          "raw": null
         }
       }
     ],
@@ -2122,7 +2110,7 @@
         "text": "16.1 km",
         "raw": 16100
       },
-      "story": "16.1 km, your longest run this month"
+      "story": null
     },
     "b": {
       "id": 104,
@@ -2132,7 +2120,7 @@
         "text": "5 km",
         "raw": 5000
       },
-      "story": "5 km, your shortest run in three weeks"
+      "story": null
     }
   },
   "105:106": {
@@ -2175,31 +2163,29 @@
         "label_key": "vital.pace",
         "a": {
           "text": "5:15 /km",
-          "raw": 315.0310559006211
+          "raw": 315.03
         },
         "b": {
           "text": "5:30 /km",
-          "raw": 330.1587301587302
+          "raw": 330.16
         },
         "delta": {
           "text": "+15 s/km",
-          "raw": 15.127674258109096
+          "raw": 15.130000000000052
         }
       },
       {
         "key": "hr",
         "label_key": "vital.heartRate",
         "a": {
-          "text": "148 bpm",
-          "raw": 148
+          "text": "NaN bpm"
         },
         "b": {
-          "text": "148 bpm",
-          "raw": 148
+          "text": "NaN bpm"
         },
         "delta": {
-          "text": "0 bpm",
-          "raw": 0
+          "text": "NaN bpm",
+          "raw": null
         }
       }
     ],
@@ -2211,7 +2197,7 @@
         "text": "16.1 km",
         "raw": 16100
       },
-      "story": "16.1 km, your longest run this month"
+      "story": null
     },
     "b": {
       "id": 106,
@@ -2221,7 +2207,7 @@
         "text": "6.3 km",
         "raw": 6300
       },
-      "story": "6.3 km, about your usual Monday"
+      "story": null
     }
   },
   "106:101": {
@@ -2264,31 +2250,30 @@
         "label_key": "vital.pace",
         "a": {
           "text": "5:30 /km",
-          "raw": 330.1587301587302
+          "raw": 330.16
         },
         "b": {
           "text": "5:24 /km",
-          "raw": 324.19354838709677
+          "raw": 324.19
         },
         "delta": {
           "text": "−6 s/km",
-          "raw": -5.965181771633411
+          "raw": -5.970000000000027
         }
       },
       {
         "key": "hr",
         "label_key": "vital.heartRate",
         "a": {
-          "text": "148 bpm",
-          "raw": 148
+          "text": "NaN bpm"
         },
         "b": {
           "text": "148 bpm",
           "raw": 148
         },
         "delta": {
-          "text": "0 bpm",
-          "raw": 0
+          "text": "NaN bpm",
+          "raw": null
         }
       }
     ],
@@ -2300,7 +2285,7 @@
         "text": "6.3 km",
         "raw": 6300
       },
-      "story": "6.3 km, about your usual Monday"
+      "story": null
     },
     "b": {
       "id": 101,
@@ -2310,7 +2295,7 @@
         "text": "12.4 km",
         "raw": 12400
       },
-      "story": "12.4 km, 2.4 km more than your usual Wednesday"
+      "story": null
     }
   },
   "106:102": {
@@ -2353,31 +2338,30 @@
         "label_key": "vital.pace",
         "a": {
           "text": "5:30 /km",
-          "raw": 330.1587301587302
+          "raw": 330.16
         },
         "b": {
           "text": "5:25 /km",
-          "raw": 325.4901960784314
+          "raw": 325.49
         },
         "delta": {
           "text": "−5 s/km",
-          "raw": -4.668534080298798
+          "raw": -4.670000000000016
         }
       },
       {
         "key": "hr",
         "label_key": "vital.heartRate",
         "a": {
-          "text": "148 bpm",
-          "raw": 148
+          "text": "NaN bpm"
         },
         "b": {
           "text": "146 bpm",
           "raw": 146
         },
         "delta": {
-          "text": "−2 bpm",
-          "raw": -2
+          "text": "NaN bpm",
+          "raw": null
         }
       }
     ],
@@ -2389,7 +2373,7 @@
         "text": "6.3 km",
         "raw": 6300
       },
-      "story": "6.3 km, about your usual Monday"
+      "story": null
     },
     "b": {
       "id": 102,
@@ -2399,7 +2383,7 @@
         "text": "10.2 km",
         "raw": 10200
       },
-      "story": "10.2 km, about your usual Saturday"
+      "story": null
     }
   },
   "106:103": {
@@ -2442,7 +2426,7 @@
         "label_key": "vital.pace",
         "a": {
           "text": "5:30 /km",
-          "raw": 330.1587301587302
+          "raw": 330.16
         },
         "b": {
           "text": "5:00 /km",
@@ -2450,23 +2434,22 @@
         },
         "delta": {
           "text": "−30 s/km",
-          "raw": -30.15873015873018
+          "raw": -30.160000000000025
         }
       },
       {
         "key": "hr",
         "label_key": "vital.heartRate",
         "a": {
-          "text": "148 bpm",
-          "raw": 148
+          "text": "NaN bpm"
         },
         "b": {
           "text": "148 bpm",
           "raw": 148
         },
         "delta": {
-          "text": "0 bpm",
-          "raw": 0
+          "text": "NaN bpm",
+          "raw": null
         }
       }
     ],
@@ -2478,7 +2461,7 @@
         "text": "6.3 km",
         "raw": 6300
       },
-      "story": "6.3 km, about your usual Monday"
+      "story": null
     },
     "b": {
       "id": 103,
@@ -2488,7 +2471,7 @@
         "text": "8.4 km",
         "raw": 8400
       },
-      "story": "8.4 km, a bit shorter than your usual Wednesday"
+      "story": null
     }
   },
   "106:104": {
@@ -2531,7 +2514,7 @@
         "label_key": "vital.pace",
         "a": {
           "text": "5:30 /km",
-          "raw": 330.1587301587302
+          "raw": 330.16
         },
         "b": {
           "text": "5:24 /km",
@@ -2539,23 +2522,22 @@
         },
         "delta": {
           "text": "−6 s/km",
-          "raw": -6.1587301587301795
+          "raw": -6.160000000000025
         }
       },
       {
         "key": "hr",
         "label_key": "vital.heartRate",
         "a": {
-          "text": "148 bpm",
-          "raw": 148
+          "text": "NaN bpm"
         },
         "b": {
           "text": "148 bpm",
           "raw": 148
         },
         "delta": {
-          "text": "0 bpm",
-          "raw": 0
+          "text": "NaN bpm",
+          "raw": null
         }
       }
     ],
@@ -2567,7 +2549,7 @@
         "text": "6.3 km",
         "raw": 6300
       },
-      "story": "6.3 km, about your usual Monday"
+      "story": null
     },
     "b": {
       "id": 104,
@@ -2577,7 +2559,7 @@
         "text": "5 km",
         "raw": 5000
       },
-      "story": "5 km, your shortest run in three weeks"
+      "story": null
     }
   },
   "106:105": {
@@ -2620,31 +2602,29 @@
         "label_key": "vital.pace",
         "a": {
           "text": "5:30 /km",
-          "raw": 330.1587301587302
+          "raw": 330.16
         },
         "b": {
           "text": "5:15 /km",
-          "raw": 315.0310559006211
+          "raw": 315.03
         },
         "delta": {
           "text": "−15 s/km",
-          "raw": -15.127674258109096
+          "raw": -15.130000000000052
         }
       },
       {
         "key": "hr",
         "label_key": "vital.heartRate",
         "a": {
-          "text": "148 bpm",
-          "raw": 148
+          "text": "NaN bpm"
         },
         "b": {
-          "text": "148 bpm",
-          "raw": 148
+          "text": "NaN bpm"
         },
         "delta": {
-          "text": "0 bpm",
-          "raw": 0
+          "text": "NaN bpm",
+          "raw": null
         }
       }
     ],
@@ -2656,7 +2636,7 @@
         "text": "6.3 km",
         "raw": 6300
       },
-      "story": "6.3 km, about your usual Monday"
+      "story": null
     },
     "b": {
       "id": 105,
@@ -2666,7 +2646,7 @@
         "text": "16.1 km",
         "raw": 16100
       },
-      "story": "16.1 km, your longest run this month"
+      "story": null
     }
   }
 }
