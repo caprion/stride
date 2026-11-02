@@ -39,7 +39,6 @@ import type {
   KeyTestResult,
   NoteResult,
   PlanImportResult,
-  PlanSession,
   PlanWeek,
   ProgressInsight,
   RenderedValue,
@@ -63,6 +62,15 @@ import compareAnswerData from './compare-answers.json'
  * it, calls the real router and compares the answers value for value.
  */
 const routerAnswers = answersData.answers as Record<string, unknown>
+
+/**
+ * The router's answers for the baseline variant.
+ *
+ * The same seed, with no plan block: the router infers the baseline from
+ * the athlete's own history and answers the plan, the Today screen, the
+ * progress and the health accordingly.
+ */
+const baselineAnswers = (answersData as { baseline?: Record<string, unknown> }).baseline ?? {}
 
 /**
  * A failure the fixture set answers with.
@@ -214,21 +222,12 @@ export const planWeekFixture = routerAnswers['/plan/week'] as PlanWeek
 /**
  * The plan's week, inferred from the athlete's own history.
  *
- * A baseline is what the athlete usually does — it is not a prescription,
- * and it never produces a "not done". The days that were not run are
- * "planned", because nothing was prescribed.
+ * The baseline is the router's own answer — the same seed with no plan
+ * block, so the core reads the athlete's history and infers what it can.
+ * The app does not infer a plan of its own; that would be a second
+ * implementation of the core's plan engine.
  */
-export const planWeekBaselineFixture: PlanWeek = {
-  ...planWeekFixture,
-  block_name: 'Base block',
-  source: 'baseline',
-  sessions: (planWeekFixture.sessions as PlanSession[]).map((session) => ({
-    ...session,
-    status: session.status === 'done' ? ('done' as const) : ('planned' as const),
-    source: 'baseline' as const,
-  })),
-  counts: { done: 0, planned: 7, not_done: 0 },
-}
+export const planWeekBaselineFixture = baselineAnswers['/plan/week'] as PlanWeek
 
 // -------------------------------------------------------------- activities
 
@@ -311,6 +310,9 @@ export const activityDetailFixture = routerAnswers['/activities/101'] as Activit
 /** Today: the router's answer. */
 export const todayFixture = routerAnswers['/insights/today'] as TodayInsight
 
+/** Today, with no plan: the router's answer for the baseline seed. */
+export const baselineTodayFixture = baselineAnswers['/insights/today'] as TodayInsight
+
 /**
  * A route, for the screens that draw one.
  *
@@ -356,6 +358,9 @@ function withRoute(activity: ActivitySummary): ActivitySummary {
 
 /** Progress: the router's answer. */
 export const progressFixture = routerAnswers['/insights/progress'] as ProgressInsight
+
+/** Progress, with no plan: the router's answer for the baseline seed. */
+export const baselineProgressFixture = baselineAnswers['/insights/progress'] as ProgressInsight
 
 // --------------------------------------------------------------- compare
 
@@ -544,6 +549,9 @@ export const zonesFixture: FitnessZones = {
 /** The service's own health — and the version, for About. */
 export const healthFixture = routerAnswers['/health'] as Health
 
+/** The service's health, with no plan: the router's answer for the baseline seed. */
+export const baselineHealthFixture = baselineAnswers['/health'] as Health
+
 /**
  * The settings.
  *
@@ -553,6 +561,9 @@ export const healthFixture = routerAnswers['/health'] as Health
  */
 /** The settings: the router's answer. */
 export const settingsFixture = routerAnswers['/settings'] as SettingsState
+
+/** The settings, with no plan: the router's answer for the baseline seed. */
+export const baselineSettingsFixture = baselineAnswers['/settings'] as SettingsState
 
 /** The settings with nothing set: no goal, no pause, an empty log. */
 export const settingsEmptyFixture: SettingsState = {
@@ -858,6 +869,9 @@ export function fixtureResponse(
       // plan are the router's.
       if (variant === 'nowellness') return todayFixture
       if (variant === 'noplan') return { ...todayFixture, planned: null, options: [] }
+      // No plan block: the router inferred the baseline from the
+      // athlete's history, and Today shows what it inferred.
+      if (variant === 'baseline') return baselineTodayFixture
       // The gap is not news: the last run is inside ten per cent of the
       // target, so there is no comparison to state.
       if (variant === 'noclose') {
@@ -920,6 +934,9 @@ export function fixtureResponse(
       if (variant === 'empty' || variant === 'fresh' || variant === 'noplan') {
         return progressNoPlanFixture
       }
+      // No plan block: the router's progress has no adherence card, and
+      // the counts are the ones the history produced.
+      if (variant === 'baseline') return baselineProgressFixture
       return progressFixture
     case '/compare': {
       // Which run is A is the API's business: the app asks, and the API
@@ -938,6 +955,7 @@ export function fixtureResponse(
     case '/fitness/zones':
       return zonesFixture
     case '/health':
+      if (variant === 'baseline') return baselineHealthFixture
       return healthFixture
     case '/auth/status':
       if (variant === 'empty' || variant === 'fresh') return connectionEmptyFixture
@@ -946,6 +964,7 @@ export function fixtureResponse(
     case '/settings':
       if (variant === 'empty' || variant === 'fresh') return settingsEmptyFixture
       if (variant === 'paused') return settingsPausedFixture
+      if (variant === 'baseline') return baselineSettingsFixture
       return settingsFixture
     case '/settings/export':
       return exportFixture

@@ -98,6 +98,7 @@ fn one_run_carries_the_shape_the_app_reads() {
             "splits",
             "start_time",
             "story",
+            "why",
         ],
         "/activities/{id}",
     );
