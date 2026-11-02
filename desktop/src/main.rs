@@ -73,7 +73,7 @@ fn run(arguments: &[String]) -> Result<i32> {
             Ok(0)
         }
         "version" | "--version" | "-V" => {
-            println!("stride-desktop {}", env!("CARGO_PKG_VERSION"));
+            println!("stride-desktop {}", stride_api::VERSION);
             Ok(0)
         }
         other => Err(Error::config(format!(
@@ -170,7 +170,7 @@ fn serve(arguments: &[String]) -> Result<i32> {
     let router: Arc<dyn Router> = Arc::new(ApiRouter::over(&host)?);
     let server = Server::with_workspace(trust, router, spa, workspace);
 
-    println!("stride {}", env!("CARGO_PKG_VERSION"));
+    println!("stride {}", stride_api::VERSION);
     println!("the app is on http://{served}");
     println!("the database is at {}", database.display());
     println!("{}", trust_line(server.trust()));
@@ -367,7 +367,7 @@ fn doctor(arguments: &[String]) -> Result<i32> {
     let database_key = paths::database_key_path(&directory);
     let garmin_key_file = paths::garmin_key_path(&directory);
 
-    println!("stride-desktop {}", env!("CARGO_PKG_VERSION"));
+    println!("stride-desktop {}", stride_api::VERSION);
     println!();
     println!("the data directory   {}", directory.display());
     println!(

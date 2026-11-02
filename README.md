@@ -76,8 +76,20 @@ SHA-256 — this file deliberately does not repeat them, because a document
 that copies a changing fact is a document that is wrong on the next release.
 
 Every release is signed with the same certificate, so a v2 build installs
-**over** the app you already have: no uninstall, and the data you already
-synced stays where it is.
+**over** the app you already have: no uninstall, and the file and the key
+survive.
+
+**But the history does not, by itself.** The v2 database is a new, frozen
+schema, and the previous version's tables are a different schema again.
+Installing v2 over v1 keeps the container and the key; **it does not carry
+the old rows across** — an importer is being built for that, and the release
+notes for the version that carries it say exactly what was carried and what
+was left behind. Until then, the old history is still in the file: nothing
+deletes it.
+
+What Garmin restores, on a re-sync, is what Garmin's Personal API window
+holds — a bounded number of recent runs and a bounded number of recent
+wellness days — and not the years before that.
 
 | | |
 |---|---|

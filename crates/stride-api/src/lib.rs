@@ -118,6 +118,19 @@
 
 #![deny(missing_docs)]
 
+/// The version of this build.
+///
+/// **One source of truth.** The release stamps the version into the build
+/// environment, so the app, the rig and the release page all say the same
+/// thing; without that, the About card showed the workspace's version while
+/// the release was called something else.
+///
+/// The crate's own version is the fallback, for a build that is not a release.
+pub const VERSION: &str = match option_env!("STRIDE_VERSION") {
+    Some(version) => version,
+    None => env!("CARGO_PKG_VERSION"),
+};
+
 pub mod dto;
 pub mod error;
 pub mod ffi;

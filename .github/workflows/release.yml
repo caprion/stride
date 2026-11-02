@@ -301,6 +301,10 @@ jobs:
       - name: Build the release APK
         working-directory: android
         env:
+          # The version the core will report in /health and in the About card.
+          # It comes from the tag, so the app, the rig and the release page
+          # cannot disagree.
+          STRIDE_VERSION: ${{ steps.version.outputs.name }}
           ANDROID_HOME: /usr/local/lib/android/sdk
           ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
           ANDROID_NDK_HOME: /usr/local/lib/android/sdk/ndk/27.2.12479018

@@ -175,7 +175,7 @@ pub fn status_value() -> Value {
     guarded("status", || match installed() {
         Some(router) => ok_envelope(json!({
             "core": "stride-api",
-            "version": env!("CARGO_PKG_VERSION"),
+            "version": crate::VERSION,
             "open": true,
             // **The marker.** The phone's stub answers "backend": "stub",
             // so a shell that asks the core what it is can tell a stub

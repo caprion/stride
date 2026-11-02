@@ -39,7 +39,7 @@ pub fn health(api: &Api, request: &Request) -> ApiResult<Value> {
     let response = Health {
         ok: true,
         service: "stride".to_string(),
-        version: env!("CARGO_PKG_VERSION").to_string(),
+        version: crate::VERSION.to_string(),
         garmin_connected: api.garmin_connected(),
         activities,
         wellness_days,
