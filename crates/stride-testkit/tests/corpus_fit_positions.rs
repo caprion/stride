@@ -39,10 +39,11 @@ fn every_fit_in_the_repository() -> Vec<PathBuf> {
             if path.is_dir() {
                 // The build tree and the dependency caches are not part of
                 // the repository, and there is nothing to learn from them.
-                let name = path
-                    .file_name()
-                    .map(|n| n.to_string_lossy().to_string());
-                if matches!(name.as_deref(), Some("target") | Some("node_modules") | Some(".git")) {
+                let name = path.file_name().map(|n| n.to_string_lossy().to_string());
+                if matches!(
+                    name.as_deref(),
+                    Some("target") | Some("node_modules") | Some(".git")
+                ) {
                     continue;
                 }
                 stack.push(path);
