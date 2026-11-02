@@ -135,6 +135,19 @@ CREATE TABLE sync_state (
     updated_at        DATETIME NOT NULL
 );
 
+-- Old: (nothing - the old app never learned that a run was deleted).
+-- v2: a run Garmin no longer lists is **marked**, not forgotten and not
+-- resurrected. A pull that cannot find a stored run in Garmin's list writes a
+-- tombstone here; a later pull that sees the run again does not bring it
+-- back, because Garmin's list is not proof that a run came back - it is proof
+-- that the run is still there, and the tombstone says we already accounted
+-- for it.
+CREATE TABLE deleted_garmin_activities (
+    external_id  VARCHAR(64) NOT NULL PRIMARY KEY,  -- the Garmin activity id
+    local_date   VARCHAR(10) NOT NULL,               -- the run's day
+    marked_at    DATETIME NOT NULL                  -- when the pull marked it
+);
+
 -- Indexes, created after the tables, in this order.
 CREATE INDEX ix_activities_local_date ON activities (local_date);
 CREATE INDEX ix_activities_sport      ON activities (sport_type);
