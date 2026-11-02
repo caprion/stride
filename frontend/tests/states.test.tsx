@@ -322,7 +322,7 @@ describe('the Compare page', () => {
     )
 
     expect(container.querySelector('[data-testid="compare-row-pace"]')?.textContent).toContain(
-      '-11 s/km',
+      '−11 s/km',
     )
 
     await user.click(screen.getByTestId('compare-swap'))
