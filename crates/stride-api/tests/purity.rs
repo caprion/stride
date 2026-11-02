@@ -86,7 +86,7 @@ fn a_reading_route_leaves_the_store_as_it_was() {
         "/physiology/sources",
         "/fitness/fingerprint",
         "/fitness/trends",
-        "/fitness/zones",
+        "/fitness/zones?id=1",
         "/stats/summary",
         "/stats/weekly",
         "/stats/pace-trends",

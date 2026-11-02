@@ -1,6 +1,9 @@
 //! The app routes: the health, the sync, the connection and the calendar.
 
-use chrono::{NaiveDate, NaiveDateTime};
+use std::collections::BTreeSet;
+
+use chrono::{DateTime, NaiveDate, NaiveDateTime, Utc};
+use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use stride_store::model::{note_kind, source, sync_kind};
 use stride_store::{NewActivity, SyncState};
@@ -22,6 +25,18 @@ const DUPLICATE_START_SECONDS: i64 = 120;
 /// How far apart two distances may be and still be the same run: two per
 /// cent.
 const DUPLICATE_DISTANCE: f64 = 0.02;
+
+/// The page size the pull asks Garmin for.
+const SYNC_PAGE_SIZE: u32 = 100;
+
+/// Garmin's own ceiling on a search window.
+const SYNC_MAX_ACTIVITIES: u32 = 300;
+
+/// How far apart two distances may be and still count as the same run.
+const SAME_DISTANCE_M: f64 = 1.0;
+
+/// How far apart two start times may be and still count as the same run.
+const SAME_START_S: i64 = 1;
 
 /// The liveness of the app.
 pub fn health(api: &Api, request: &Request) -> ApiResult<Value> {
@@ -88,10 +103,15 @@ pub fn sync_status(api: &Api, request: &Request) -> ApiResult<Value> {
     let activity_count = store
         .count_activities()
         .map_err(|error| api.store_error("the runs could not be counted", &error))?;
+    let cursor = read_activity_cursor(api)?;
     let response = SyncStatus {
         last_sync_at,
         last_error: api.garmin_last_error(),
         activity_count,
+        cursor: cursor.newest.clone(),
+        pulled: Some(cursor.pulled),
+        skipped: Some(cursor.skipped),
+        deleted: Some(cursor.deleted),
     };
     ok(&response)
 }
@@ -128,105 +148,125 @@ pub fn sync_run(api: &Api, request: &Request) -> ApiResult<Value> {
     let to = current.to_iso();
     let from = current.add_days(-days).to_iso();
 
-    let activities = client
-        .activities(0, 100, Some(&from), Some(&to))
-        .map_err(|error| api.garmin_error(&error))?;
-    // **Garmin answers the search with a list.** Some of its routes wrap
-    // their payload in an object and some do not, so the reading here takes
-    // both: a list is a list, and an object with an "activityList" in it
-    // is the same list.
-    let list = match &activities {
-        Value::Array(items) => items.clone(),
-        Value::Object(_) => activities
-            .get("activityList")
-            .and_then(|value| value.as_array())
-            .cloned()
-            .unwrap_or_default(),
-        _ => Vec::new(),
-    };
-
-    // **A pull is bounded.** Garmin's Personal API answers a few requests
-    // a minute, so a pull that asked for everything would spend the whole
-    // limit and come back with half of it. The bound is the configuration's,
-    // and the next pull takes the next runs.
-    let activity_budget = api.config().max_activities_per_sync;
+    // The resume point and the last pull's tallies live in the sync cursor.
+    // The cursor is the newest Garmin activity id already pulled, plus the
+    // counts of the last pull and the tombstones of the runs Garmin no
+    // longer lists.
+    let mut cursor = read_activity_cursor(api)?;
+    let budget = api.config().max_activities_per_sync;
     let mut pulled = 0usize;
-    let mut newest: Option<String> = None;
-    let mut attempts = 0usize;
+    let mut skipped = 0usize;
+    let mut deleted = 0usize;
+    let mut newest_seen: Option<String> = None;
+    let mut listed: BTreeSet<String> = BTreeSet::new();
     let mut stopped: Option<String> = None;
-    for entry in list.iter() {
-        if attempts >= activity_budget {
+
+    // Walk Garmin's pages newest-first. The budget is spent on FIT
+    // downloads, not on list requests, so a stored and unchanged run costs
+    // nothing and the pull keeps going until it has spent the budget on
+    // runs that are new or changed.
+    let mut start = 0u32;
+    loop {
+        if pulled >= budget {
             break;
         }
-        let activity_id = match entry
-            .get("activityId")
-            .and_then(|value| value.as_u64())
-            .map(|value| value.to_string())
-        {
-            Some(id) => id,
-            None => continue,
-        };
-        if newest.is_none() {
-            newest = Some(activity_id.clone());
-        }
-        attempts += 1;
-        let blob = match client.activity_fit(&activity_id) {
-            Ok(blob) => blob,
+        let page = match client.activity_search(start, SYNC_PAGE_SIZE, Some(&from), Some(&to)) {
+            Ok(page) => page,
             Err(error) => {
-                // A rate limit or a lost connection ends the pull: asking
-                // again would spend the limit on the same answer.
-                if stops_the_pull(&error) {
-                    stopped = Some(error.to_string());
-                    break;
+                // The first page proves the session and the key; its
+                // failure is the pull's failure. A later page's failure
+                // ends the pull early, keeping what was written.
+                if start == 0 {
+                    return Err(api.garmin_error(&error));
                 }
-                continue;
+                stopped = Some(error.to_string());
+                break;
             }
         };
-        let fit = match stride_ingest::extract_fit(&blob, &activity_id) {
-            Ok(fit) => fit,
-            Err(_) => continue,
-        };
-        let decoded = match stride_ingest::decode_fit(&fit, "activity.fit") {
-            Ok(decoded) => decoded,
-            Err(_) => continue,
-        };
-        let name = entry
-            .get("activityName")
-            .and_then(|value| value.as_str())
-            .map(|text| text.to_string())
-            .unwrap_or_else(|| decoded.name.clone());
-        let local_date = decoded
-            .local_date
-            .clone()
-            .or_else(|| {
-                entry
-                    .get("startTimeLocal")
-                    .and_then(|value| value.as_str())
-                    .map(|text| text.chars().take(10).collect())
-            })
-            .unwrap_or_else(|| to.clone());
-        let start_time = decoded.start_time.unwrap_or(api.now());
-        let row = NewActivity {
-            source: source::GARMIN_PERSONAL.to_string(),
-            external_id: activity_id,
-            name,
-            sport_type: decoded.sport_type.clone(),
-            start_time,
-            local_date,
-            distance_m: decoded.distance_m,
-            moving_time_s: decoded.moving_time_s,
-            elapsed_time_s: decoded.elapsed_time_s,
-            elevation_gain_m: decoded.elevation_gain_m,
-            avg_hr: decoded.avg_hr.map(|rate| rate as f64),
-            max_hr: decoded.max_hr.map(|rate| rate as f64),
-            fit_blob: fit,
-            created_at: api.now(),
-            updated_at: api.now(),
-        };
-        api.store()
-            .upsert_activity(&row)
-            .map_err(|error| api.store_error("the run could not be written", &error))?;
-        pulled += 1;
+        let list = extract_list(&page);
+        if list.is_empty() {
+            break;
+        }
+        if newest_seen.is_none() {
+            newest_seen = entry_id(&list[0]);
+        }
+        for entry in &list {
+            if pulled >= budget {
+                break;
+            }
+            let activity_id = match entry_id(entry) {
+                Some(id) => id,
+                None => continue,
+            };
+            listed.insert(activity_id.clone());
+            // A run the athlete deleted on Garmin stays deleted.
+            if cursor.gone.contains(&activity_id) {
+                continue;
+            }
+            let stored = api
+                .store()
+                .activity_by_external(source::GARMIN_PERSONAL, &activity_id)
+                .map_err(|error| api.store_error("the runs could not be read", &error))?;
+            match stored {
+                Some(existing) if !changed(&existing, entry) => {
+                    // Known and unchanged: nothing to download.
+                    skipped += 1;
+                }
+                Some(_) | None => {
+                    let blob = match client.activity_fit(&activity_id) {
+                        Ok(blob) => blob,
+                        Err(error) => {
+                            if stops_the_pull(&error) {
+                                stopped = Some(error.to_string());
+                                break;
+                            }
+                            continue;
+                        }
+                    };
+                    let fit = match stride_ingest::extract_fit(&blob, &activity_id) {
+                        Ok(fit) => fit,
+                        Err(_) => continue,
+                    };
+                    let decoded = match stride_ingest::decode_fit(&fit, "activity.fit") {
+                        Ok(decoded) => decoded,
+                        Err(_) => continue,
+                    };
+                    let row = new_activity(api, entry, &decoded, &fit, &activity_id, &to);
+                    api.store()
+                        .upsert_activity(&row)
+                        .map_err(|error| api.store_error("the run could not be written", &error))?;
+                    pulled += 1;
+                }
+            }
+        }
+        if stopped.is_some() {
+            break;
+        }
+        if (list.len() as u32) < SYNC_PAGE_SIZE {
+            break;
+        }
+        start += SYNC_PAGE_SIZE;
+        if start >= SYNC_MAX_ACTIVITIES {
+            break;
+        }
+    }
+
+    // Only a walk that finished can mark runs as gone: a half walk would
+    // mistake "not reached yet" for "no longer listed".
+    if stopped.is_none() {
+        let stored_ids = api
+            .store()
+            .garmin_external_ids_between(&from, &to)
+            .map_err(|error| api.store_error("the runs could not be read", &error))?;
+        for id in stored_ids {
+            if !listed.contains(&id) && !cursor.gone.contains(&id) {
+                api.store()
+                    .delete_activity_by_external(source::GARMIN_PERSONAL, &id)
+                    .map_err(|error| api.store_error("the run could not be removed", &error))?;
+                cursor.gone.push(id);
+                deleted += 1;
+            }
+        }
     }
 
     // The wellness of the last few days, and no more than the bound: the
@@ -252,7 +292,18 @@ pub fn sync_run(api: &Api, request: &Request) -> ApiResult<Value> {
     }
 
     let finished_at = api.now();
-    write_state(api, sync_kind::ACTIVITIES, newest, finished_at)?;
+    // The cursor advances only when the walk finished: an interrupted pull
+    // resumes from the same point, and the next pull continues rather than
+    // starting over.
+    if stopped.is_none() {
+        if let Some(newest) = newest_seen {
+            cursor.newest = Some(newest);
+        }
+    }
+    cursor.pulled = pulled as i64;
+    cursor.skipped = skipped as i64;
+    cursor.deleted = deleted as i64;
+    write_activity_cursor(api, &cursor, finished_at)?;
     write_state(api, sync_kind::WELLNESS, None, finished_at)?;
     match &stopped {
         Some(error) => api.set_garmin_last_error(Some(error.clone())),
@@ -261,6 +312,8 @@ pub fn sync_run(api: &Api, request: &Request) -> ApiResult<Value> {
 
     let response = SyncRun {
         activities: pulled,
+        skipped,
+        deleted,
         wellness_days,
         finished_at: crate::state::format_instant(finished_at),
         generated_at: api.generated_at(),
@@ -711,6 +764,167 @@ fn write_state(
     api.store()
         .write_sync_state(&state)
         .map_err(|error| api.store_error("the sync state could not be written", &error))
+}
+
+/// The resume point and the last pull's tallies of the activity sync.
+///
+/// It lives in the `sync_state` row for `activities`, in the opaque cursor
+/// column. The cursor's meaning is the api's: the newest Garmin activity id
+/// already pulled, the counts of the last pull, and the tombstones of the
+/// runs Garmin no longer lists.
+#[derive(Clone, Debug, Default, Serialize, Deserialize)]
+struct ActivityCursor {
+    /// The newest Garmin activity id already pulled.
+    newest: Option<String>,
+    /// The runs the last pull downloaded.
+    pulled: i64,
+    /// The runs the last pull recognised and did not download again.
+    skipped: i64,
+    /// The runs Garmin no longer lists, marked and not resurrected.
+    deleted: i64,
+    /// The ids of the runs Garmin no longer lists. A run on this list is
+    /// never re-added, even if Garmin lists it again later.
+    gone: Vec<String>,
+}
+
+/// Read the activity cursor, or the empty one when there is none yet.
+fn read_activity_cursor(api: &Api) -> ApiResult<ActivityCursor> {
+    let state = api
+        .store()
+        .sync_state(sync_kind::ACTIVITIES)
+        .map_err(|error| api.store_error("the sync state could not be read", &error))?;
+    match state.and_then(|state| state.cursor) {
+        Some(text) => serde_json::from_str(&text)
+            .map_err(|_| ApiError::internal("the sync cursor could not be read")),
+        None => Ok(ActivityCursor::default()),
+    }
+}
+
+/// Write the activity cursor into the sync state.
+fn write_activity_cursor(api: &Api, cursor: &ActivityCursor, at: DateTime<Utc>) -> ApiResult<()> {
+    let text = serde_json::to_string(cursor)
+        .map_err(|_| ApiError::internal("the sync cursor could not be written"))?;
+    let previous = api
+        .store()
+        .sync_state(sync_kind::ACTIVITIES)
+        .map_err(|error| api.store_error("the sync state could not be read", &error))?;
+    let previous_expiry = previous.and_then(|state| state.token_expires_at);
+    let state = SyncState {
+        kind: sync_kind::ACTIVITIES.to_string(),
+        cursor: Some(text),
+        last_success_at: Some(at),
+        token_expires_at: previous_expiry,
+        updated_at: at,
+    };
+    api.store()
+        .write_sync_state(&state)
+        .map_err(|error| api.store_error("the sync state could not be written", &error))
+}
+
+/// The list Garmin answers with, whichever shape it used.
+fn extract_list(value: &Value) -> Vec<Value> {
+    match value {
+        Value::Array(items) => items.clone(),
+        Value::Object(_) => value
+            .get("activityList")
+            .and_then(|value| value.as_array())
+            .cloned()
+            .unwrap_or_default(),
+        _ => Vec::new(),
+    }
+}
+
+/// The Garmin activity id of a list entry.
+fn entry_id(entry: &Value) -> Option<String> {
+    entry
+        .get("activityId")
+        .and_then(|value| value.as_u64())
+        .map(|value| value.to_string())
+        .or_else(|| {
+            entry
+                .get("activityId")
+                .and_then(|value| value.as_str())
+                .map(|value| value.to_string())
+        })
+}
+
+/// The distance a list entry carries, in metres.
+fn entry_distance(entry: &Value) -> Option<f64> {
+    entry.get("distance").and_then(|value| value.as_f64())
+}
+
+/// The start time a list entry carries, in UTC.
+fn entry_start_time(entry: &Value) -> Option<DateTime<Utc>> {
+    let text = entry
+        .get("startTimeGMT")
+        .or_else(|| entry.get("startTimeLocal"))
+        .and_then(|value| value.as_str())?;
+    DateTime::parse_from_rfc3339(text)
+        .ok()
+        .map(|value| value.with_timezone(&Utc))
+}
+
+/// Whether a stored run no longer matches what the list says.
+///
+/// Garmin's list carries the activity's own numbers. When the stored
+/// distance or start time has moved, the run changed on Garmin's side and
+/// the FIT is downloaded again.
+fn changed(existing: &stride_store::Activity, entry: &Value) -> bool {
+    if let Some(distance) = entry_distance(entry) {
+        if (existing.distance_m - distance).abs() > SAME_DISTANCE_M {
+            return true;
+        }
+    }
+    if let Some(start) = entry_start_time(entry) {
+        if (existing.start_time - start).num_seconds().abs() > SAME_START_S {
+            return true;
+        }
+    }
+    false
+}
+
+/// One run, as it arrives from a pull.
+fn new_activity(
+    api: &Api,
+    entry: &Value,
+    decoded: &stride_ingest::FitActivity,
+    fit: &[u8],
+    activity_id: &str,
+    fallback_date: &str,
+) -> NewActivity {
+    let name = entry
+        .get("activityName")
+        .and_then(|value| value.as_str())
+        .map(|text| text.to_string())
+        .unwrap_or_else(|| decoded.name.clone());
+    let local_date = decoded
+        .local_date
+        .clone()
+        .or_else(|| {
+            entry
+                .get("startTimeLocal")
+                .and_then(|value| value.as_str())
+                .map(|text| text.chars().take(10).collect())
+        })
+        .unwrap_or_else(|| fallback_date.to_string());
+    let start_time = decoded.start_time.unwrap_or(api.now());
+    NewActivity {
+        source: source::GARMIN_PERSONAL.to_string(),
+        external_id: activity_id.to_string(),
+        name,
+        sport_type: decoded.sport_type.clone(),
+        start_time,
+        local_date,
+        distance_m: decoded.distance_m,
+        moving_time_s: decoded.moving_time_s,
+        elapsed_time_s: decoded.elapsed_time_s,
+        elevation_gain_m: decoded.elevation_gain_m,
+        avg_hr: decoded.avg_hr.map(|rate| rate as f64),
+        max_hr: decoded.max_hr.map(|rate| rate as f64),
+        fit_blob: fit.to_vec(),
+        created_at: api.now(),
+        updated_at: api.now(),
+    }
 }
 
 /// Decode a base64 document.

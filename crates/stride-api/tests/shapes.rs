@@ -226,10 +226,16 @@ fn the_fitness_routes_carry_their_shapes() {
         "/fitness/trends: a trend",
     );
 
-    let zones = harness.ok_get("/fitness/zones");
+    let zones = harness.ok_get("/fitness/zones?id=1");
     assert_keys(
         &zones,
-        &["generated_at", "total_time_s", "zones"],
+        &[
+            "basis",
+            "max_heart_rate",
+            "unavailable",
+            "without_heart_rate",
+            "zones",
+        ],
         "/fitness/zones",
     );
 }
@@ -613,7 +619,15 @@ fn the_app_routes_carry_their_shapes() {
     let status = harness.ok_get("/sync/status");
     assert_keys(
         &status,
-        &["activity_count", "last_error", "last_sync_at"],
+        &[
+            "activity_count",
+            "cursor",
+            "deleted",
+            "last_error",
+            "last_sync_at",
+            "pulled",
+            "skipped",
+        ],
         "/sync/status",
     );
 

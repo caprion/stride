@@ -318,6 +318,49 @@ impl Store {
             .map_err(|source| StoreError::query("activity by source and external id", source))
     }
 
+    /// Delete one run, by the vendor's id.
+    ///
+    /// This is what "Garmin no longer lists this run" becomes: the row goes,
+    /// and a tombstone elsewhere keeps it from being resurrected on a later
+    /// pull.
+    ///
+    /// Returns how many rows went — one when the run was there, none when it
+    /// already was not.
+    pub fn delete_activity_by_external(&self, source: &str, external_id: &str) -> Result<usize> {
+        let conn = self.lock()?;
+        let removed = conn
+            .execute(
+                "DELETE FROM activities WHERE source = ?1 AND external_id = ?2",
+                params![source, external_id],
+            )
+            .map_err(|source| {
+                StoreError::query("delete activity by source and external id", source)
+            })?;
+        Ok(removed)
+    }
+
+    /// The Garmin runs that fall inside a date window, as external ids.
+    ///
+    /// The pull uses this to find the runs Garmin no longer lists: a stored
+    /// run whose day is inside the window but whose id is not in the list is
+    /// gone.
+    pub fn garmin_external_ids_between(&self, from: &str, to: &str) -> Result<Vec<String>> {
+        let conn = self.lock()?;
+        let sql = "SELECT external_id FROM activities
+                    WHERE source = ?1 AND local_date >= ?2 AND local_date <= ?3
+                    ORDER BY external_id ASC";
+        let mut statement = conn
+            .prepare(sql)
+            .map_err(|source| StoreError::query("garmin external ids between", source))?;
+        let mapped = statement
+            .query_map(
+                params![crate::model::source::GARMIN_PERSONAL, from, to],
+                |row| row.get::<_, String>(0),
+            )
+            .map_err(|source| StoreError::query("garmin external ids between", source))?;
+        collect(mapped)
+    }
+
     /// One page of the activity feed, newest first.
     ///
     /// `after` is the cursor of the last row of the previous page; `None`
