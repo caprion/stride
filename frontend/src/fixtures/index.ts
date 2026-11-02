@@ -51,7 +51,18 @@ import type {
   VitalsSnapshot,
 } from '../lib/types'
 import type { ApiErrorKind } from '../lib/transport'
+import answersData from './answers.json'
 import compareAnswerData from './compare-answers.json'
+
+/**
+ * The router's answers, by the route that answers them.
+ *
+ * **The fixture is the router's answer, not a mock.** The file is written
+ * from the router's own dump (`fixtures:export`), and the api's parity
+ * test holds it true: it seeds a store from the seed that travels with
+ * it, calls the real router and compares the answers value for value.
+ */
+const routerAnswers = answersData.answers as Record<string, unknown>
 
 /**
  * A failure the fixture set answers with.
@@ -114,7 +125,7 @@ function buildNights(): {
   resting_hr: number
 }[] {
   const nights: { date: string; sleep_s: number; hrv_ms: number; resting_hr: number }[] = []
-  const start = new Date(Date.UTC(2026, 3, 13))
+  const start = new Date(Date.UTC(2026, 3, 14))
   for (let index = 0; index < 29; index += 1) {
     const date = new Date(start.getTime() + index * 86_400_000).toISOString().slice(0, 10)
     nights.push({
@@ -147,144 +158,46 @@ const history = nights.slice(0, 29)
 /**
  * The vitals — the snapshot Today and Body both read.
  *
- * The bands are the median ± 1.5 × MAD of the nights before the day
- * itself: sleep 26 400 ± 3 600 s, HRV 62 ± 6 ms, resting heart rate
- * 58 ± 6 bpm. The sentences are the core's answers for those numbers.
+ * The band is the median ± 1.5 × MAD of the nights before the day
+ * itself, and **the router computes it**: the snapshot below is the
+ * router's answer, with the band it worked out (sleep 26 400 ± 2 700 s,
+ * HRV 62 ± 6 ms, resting heart rate 58 ± 6 bpm) and the sentences it
+ * wrote for those numbers.
  */
-export const vitalsFixture: VitalsSnapshot = {
-  date: TODAY,
-  generated_at: '2026-05-13T06:30:00Z',
-  rest: {
-    label: 'Rest',
-    line: 'could be better · 2 of 3 signals below your usual',
-  },
-  vitals: [
-    {
-      key: 'sleep',
-      label: 'Sleep',
-      value_text: '6 h 10 m',
-      direction_text: 'could be better',
-      deviation_text: '1 h 10 m less than your usual',
-      travel_text: '6th night down',
-      status_text: null,
-      band: { lower: 22_800, upper: 30_000, nights: 29 },
-    },
-    {
-      key: 'hrv',
-      label: 'HRV',
-      value_text: '48 ms',
-      direction_text: 'could be better',
-      deviation_text: '14 below your usual',
-      travel_text: '3rd night down',
-      status_text: null,
-      band: { lower: 56, upper: 68, nights: 29 },
-    },
-    {
-      key: 'resting_hr',
-      label: 'Resting HR',
-      value_text: '63 bpm',
-      direction_text: 'about usual',
-      deviation_text: '5 above your usual',
-      travel_text: null,
-      status_text: null,
-      band: { lower: 52, upper: 64, nights: 29 },
-    },
-  ],
-  history: {
-    sleep: history.map((night) => ({ date: night.date, value: night.sleep_s })),
-    hrv: history.map((night) => ({ date: night.date, value: night.hrv_ms })),
-    resting_hr: history.map((night) => ({ date: night.date, value: night.resting_hr })),
-  },
-  patterns: [
-    {
-      id: 'hrv-below',
-      text: 'your HRV has been below your usual for 3 nights',
-      sample_size: 3,
-    },
-    {
-      id: 'sleep-low-distance',
-      text: 'the 5 other times your sleep was below your usual, you ran 8 km or less',
-      sample_size: 5,
-    },
-  ],
-}
+/** The vitals: the router's answer. */
+export const vitalsFixture = routerAnswers['/physiology/vitals'] as VitalsSnapshot
 
 // ------------------------------------------------------------------ plan
 
-const planSessions: PlanSession[] = [
-  {
-    date: '2026-05-11',
-    session_type: 'easy',
-    title: 'Easy 8',
-    sentence: '11 May 2026 — 8 km · easy',
-    target: value('8 km', 8_000),
-    actual: value('8.1 km', 8_100),
-    status: 'done',
-    source: 'prescribed',
-  },
-  {
-    // The Monday before the 12th: planned, and the day went by without
-    // it. **Not done** is the plain fact, and it is one of the three
-    // counts the week shows.
-    date: '2026-05-12',
-    session_type: 'easy',
-    title: 'Easy 10',
-    sentence: '12 May 2026 — 10 km · easy',
-    target: value('10 km', 10_000),
-    actual: null,
-    status: 'not_done',
-    source: 'prescribed',
-  },
-  {
-    date: '2026-05-13',
-    session_type: 'easy',
-    title: 'Easy 10',
-    sentence: 'Today — 10 km · easy',
-    target: value('10 km', 10_000),
-    actual: null,
-    status: 'planned',
-    source: 'prescribed',
-  },
-  {
-    date: '2026-05-14',
-    session_type: 'easy',
-    title: 'Easy 5',
-    sentence: '14 May 2026 — 5 km · easy',
-    target: value('5 km', 5_000),
-    actual: null,
-    status: 'planned',
-    source: 'prescribed',
-  },
-  {
-    date: '2026-05-15',
-    session_type: 'long',
-    title: 'Long 16',
-    sentence: '15 May 2026 — 16 km · long',
-    target: value('16 km', 16_000),
-    actual: null,
-    status: 'planned',
-    source: 'prescribed',
-  },
-  {
-    date: '2026-05-16',
-    session_type: 'easy',
-    title: 'Easy 30 minutes',
-    sentence: '16 May 2026 — easy',
-    target: null,
-    actual: null,
-    status: 'planned',
-    source: 'prescribed',
-  },
-  {
-    date: '2026-05-17',
-    session_type: 'easy',
-    title: 'Easy 6',
-    sentence: '17 May 2026 — 6 km · easy',
-    target: value('6 km', 6_000),
-    actual: null,
-    status: 'planned',
-    source: 'prescribed',
-  },
+/**
+ * A session, as the seed carries it.
+ *
+ * The seed is what a store has to hold for the router to answer the same
+ * way: the day, the kind of session, its title and its target.
+ *
+ * **The status, the actual distance and the sentence are the router's.**
+ * The router reads them from the store and writes them, and the app shows
+ * them as they come — so the seed does not carry them. A seed that said
+ * a session was run would be a second answer, and it would disagree with
+ * the router's.
+ */
+export interface SeedPlanSession {
+  date: string
+  session_type: string
+  title: string
+  target: RenderedValue | null
+}
+
+const planSessions: SeedPlanSession[] = [
+  { date: '2026-05-11', session_type: 'easy', title: 'Easy 8', target: value('8 km', 8_000) },
+  { date: '2026-05-12', session_type: 'easy', title: 'Easy 10', target: value('10 km', 10_000) },
+  { date: '2026-05-13', session_type: 'easy', title: 'Easy 10', target: value('10 km', 10_000) },
+  { date: '2026-05-14', session_type: 'easy', title: 'Easy 5', target: value('5 km', 5_000) },
+  { date: '2026-05-15', session_type: 'long', title: 'Long 16', target: value('16 km', 16_000) },
+  // A session with no distance target: the time is the target, and the
+  // router says so in its own words.
+  { date: '2026-05-16', session_type: 'easy', title: 'Easy 30 minutes', target: null },
+  { date: '2026-05-17', session_type: 'easy', title: 'Easy 6', target: value('6 km', 6_000) },
 ]
 
 /**
@@ -293,27 +206,10 @@ const planSessions: PlanSession[] = [
  * The api's test seeds a store from the fixture set, and these are the
  * plan it seeds.
  */
-export const planSessionsFixture: PlanSession[] = planSessions
+export const planSessionsFixture: SeedPlanSession[] = planSessions
 
-/** The plan's week. */
-export const planWeekFixture: PlanWeek = {
-  block_name: 'Base block',
-  source: 'prescribed',
-  week_start: '2026-05-11',
-  week_end: '2026-05-17',
-  /**
-   * The athlete's day, as the api counts it.
-   *
-   * The app highlights it inside the week, and the app does not keep its
-   * own clock for it: the api's day is the athlete's day, with their
-   * timezone in it.
-   */
-  today: TODAY,
-  target: value('25 km', 25_000),
-  sessions: planSessions,
-  adherence: { done: 1, planned: 7 },
-  counts: { done: 1, planned: 5, not_done: 1 },
-}
+/** The plan's week: the router's answer. */
+export const planWeekFixture = routerAnswers['/plan/week'] as PlanWeek
 
 /**
  * The plan's week, inferred from the athlete's own history.
@@ -326,36 +222,37 @@ export const planWeekBaselineFixture: PlanWeek = {
   ...planWeekFixture,
   block_name: 'Base block',
   source: 'baseline',
-  sessions: planSessions.map((session) => ({
+  sessions: (planWeekFixture.sessions as PlanSession[]).map((session) => ({
     ...session,
     status: session.status === 'done' ? ('done' as const) : ('planned' as const),
     source: 'baseline' as const,
   })),
-  counts: { done: 1, planned: 6, not_done: 0 },
+  counts: { done: 0, planned: 7, not_done: 0 },
 }
 
 // -------------------------------------------------------------- activities
 
 /**
- * The feed's groups.
+ * A run, as the seed carries it.
  *
- * The API groups the feed — it is the API that knows the totals — and the
- * app labels the groups. The key is the date the group starts.
+ * The seed is what a store has to hold: the day it happened, how far it
+ * was, how long it took, and the heart rate it averaged. **The pace, the
+ * group, the story and the route are the router's** — it computes them
+ * from the run and writes them, so the seed does not carry them: a seed
+ * that carried a pace would be a second implementation of the core's
+ * arithmetic, and a seed that carried a group would be a second
+ * implementation of the api's.
  */
-const THIS_WEEK = {
-  key: '2026-05-06',
-  distance: value('36 km', 36_000),
-  duration: value('3 h 11 m', 11_480),
-}
-const LONG_RUN_DAY = {
-  key: '2026-05-04',
-  distance: value('16.1 km', 16_100),
-  duration: value('1 h 25 m', 5_072),
-}
-const MONDAY = {
-  key: '2026-05-03',
-  distance: value('6.3 km', 6_300),
-  duration: value('35 m', 2_080),
+export interface SeedActivity {
+  id: number
+  name: string
+  sport_type: string
+  start_time: string
+  local_date: string
+  distance: RenderedValue
+  duration: RenderedValue
+  elevation_gain: RenderedValue
+  heart_rate: RenderedValue
 }
 
 function activity(
@@ -363,10 +260,8 @@ function activity(
   date: string,
   distance: RenderedValue,
   duration: RenderedValue,
-  pace: RenderedValue,
-  group: typeof THIS_WEEK,
   heartRate: RenderedValue = value('148 bpm', 148),
-): ActivitySummary {
+): SeedActivity {
   return {
     id,
     name: 'Run',
@@ -376,222 +271,91 @@ function activity(
     distance,
     duration,
     heart_rate: heartRate,
-    pace,
     elevation_gain: value('42 m', 42),
-    group,
-    // The story is the core's sentence, and the core has no story engine
-    // yet: **the router answers null, so the fixture answers null.** A
-    // sentence the app made up would be a second implementation of the
-    // core's words.
-    story: null,
-    geo_points: [],
   }
 }
 
-export const activityFixtures: ActivitySummary[] = [
-  activity(
-    101,
-    '2026-05-10',
-    value('12.4 km', 12_400),
-    value('1 h 7 m', 4_020),
-    value('5:24 /km', 324.19),
-    THIS_WEEK,
-  ),
+export const activityFixtures: SeedActivity[] = [
+  activity(101, '2026-05-10', value('12.4 km', 12_400), value('1 h 7 m', 4_020)),
   activity(
     102,
     '2026-05-09',
     value('10.2 km', 10_200),
     value('55 m', 3_320),
-    value('5:25 /km', 325.49),
-    THIS_WEEK,
     value('146 bpm', 146),
   ),
-  activity(
-    103,
-    '2026-05-07',
-    value('8.4 km', 8_400),
-    value('42 m', 2_520),
-    value('5:00 /km', 300),
-    THIS_WEEK,
-  ),
-  activity(
-    104,
-    '2026-05-06',
-    value('5 km', 5_000),
-    value('27 m', 1_620),
-    value('5:24 /km', 324),
-    THIS_WEEK,
-  ),
-  activity(
-    105,
-    '2026-05-04',
-    value('16.1 km', 16_100),
-    value('1 h 25 m', 5_072),
-    value('5:15 /km', 315.03),
-    LONG_RUN_DAY,
-  ),
-  activity(
-    106,
-    '2026-05-03',
-    value('6.3 km', 6_300),
-    value('35 m', 2_080),
-    value('5:30 /km', 330.16),
-    MONDAY,
-  ),
+  activity(103, '2026-05-07', value('8.4 km', 8_400), value('42 m', 2_520)),
+  activity(104, '2026-05-06', value('5 km', 5_000), value('27 m', 1_620)),
+  activity(105, '2026-05-04', value('16.1 km', 16_100), value('1 h 25 m', 5_072)),
+  activity(106, '2026-05-03', value('6.3 km', 6_300), value('35 m', 2_080)),
 ]
 
-export const activitiesFixture: ActivityListResponse = {
-  activities: activityFixtures,
-  next_cursor: null,
-  generated_at: '2026-05-13T06:30:00Z',
+/** The feed: the router's answer. */
+export const activitiesFixture = routerAnswers['/activities'] as ActivityListResponse
+
+/**
+ * A run out of the feed, as the router answered it.
+ *
+ * The feed is the router's, so a run taken out of it carries everything
+ * the router said about it — the group, the pace, the story.
+ */
+function runById(id: number): ActivitySummary | null {
+  return (activitiesFixture.activities.find((run) => run.id === id) ?? null) as ActivitySummary | null
 }
 
-export const activityDetailFixture: ActivityDetail = {
-  ...(activityFixtures[0] as ActivitySummary),
-  splits: [
-    { index: 1, distance: value('1 km', 1_000), duration: value('5 m', 322), heart_rate: value('149 bpm', 149) },
-    { index: 2, distance: value('1 km', 1_000), duration: value('5 m', 318), heart_rate: value('151 bpm', 151) },
-    { index: 3, distance: value('1 km', 1_000), duration: value('5 m', 315), heart_rate: value('152 bpm', 152) },
-    { index: 4, distance: value('1 km', 1_000), duration: value('5 m', 320), heart_rate: value('153 bpm', 153) },
-    { index: 5, distance: value('1 km', 1_000), duration: value('5 m', 326), heart_rate: value('154 bpm', 154) },
-    { index: 6, distance: value('1 km', 1_000), duration: value('5 m', 330), heart_rate: value('155 bpm', 155) },
-    { index: 7, distance: value('1 km', 1_000), duration: value('5 m', 334), heart_rate: value('156 bpm', 156) },
-    { index: 8, distance: value('1 km', 1_000), duration: value('5 m', 336), heart_rate: value('158 bpm', 158) },
-    { index: 9, distance: value('1 km', 1_000), duration: value('5 m', 335), heart_rate: value('157 bpm', 157) },
-    { index: 10, distance: value('1 km', 1_000), duration: value('5 m', 337), heart_rate: value('158 bpm', 158) },
-    { index: 11, distance: value('1 km', 1_000), duration: value('5 m', 341), heart_rate: value('159 bpm', 159) },
-    { index: 12, distance: value('1 km', 1_000), duration: value('5 m', 338), heart_rate: value('158 bpm', 158) },
-    { index: 13, distance: value('400 m', 400), duration: value('2 m', 138), heart_rate: value('156 bpm', 156) },
-  ],
-  elevation: [
-    { distance: value('0 km', 0), elevation: value('40 m', 40) },
-    { distance: value('1.5 km', 1_500), elevation: value('51 m', 51) },
-    { distance: value('3 km', 3_000), elevation: value('40 m', 40) },
-    { distance: value('4.5 km', 4_500), elevation: value('29 m', 29) },
-    { distance: value('6 km', 6_000), elevation: value('40 m', 40) },
-    { distance: value('7.5 km', 7_500), elevation: value('51 m', 51) },
-    { distance: value('9 km', 9_000), elevation: value('40 m', 40) },
-    { distance: value('10.5 km', 10_500), elevation: value('29 m', 29) },
-    { distance: value('12 km', 12_000), elevation: value('40 m', 40) },
-  ],
-  samples: [
-    { offset_s: 0, pace: value('5:24 /km', 324), heart_rate: value('140 bpm', 140) },
-    { offset_s: 60, pace: value('5:13 /km', 313), heart_rate: value('154 bpm', 154) },
-    { offset_s: 120, pace: value('5:04 /km', 304), heart_rate: value('156 bpm', 156) },
-    { offset_s: 180, pace: value('5:00 /km', 300), heart_rate: value('152 bpm', 152) },
-    { offset_s: 240, pace: value('5:05 /km', 305), heart_rate: value('147 bpm', 147) },
-    { offset_s: 300, pace: value('5:15 /km', 315), heart_rate: value('144 bpm', 144) },
-    { offset_s: 360, pace: value('5:26 /km', 326), heart_rate: value('141 bpm', 141) },
-    { offset_s: 420, pace: value('5:36 /km', 336), heart_rate: value('139 bpm', 139) },
-  ],
-  // The plan's line under the run is the core's statement — and the plan
-  // has no session on the run's day, so the router answers null.
-  plan_line: null,
-  note: null,
-}
+/** One run, in full: the router's answer. */
+export const activityDetailFixture = routerAnswers['/activities/101'] as ActivityDetail
 
 // ----------------------------------------------------------------- today
 
-function todayInsight(
-  lastRun: ActivitySummary,
-  distanceComparison: string | null,
-): TodayInsight {
-  return {
-    generated_at: '2026-05-13T06:30:00Z',
-    date: TODAY,
-    planned: planSessions[2] as PlanSession,
-    options: [planSessions[3] as PlanSession, planSessions[5] as PlanSession],
-    last_run: lastRun,
-    distance_comparison: distanceComparison,
-    week: { distance: value('20.6 km', 20_600), sessions: 2 },
-  }
+/** Today: the router's answer. */
+export const todayFixture = routerAnswers['/insights/today'] as TodayInsight
+
+/**
+ * A route, for the screens that draw one.
+ *
+ * The seeded store holds no FIT file, so **the router answers no points**
+ * and the app draws nothing — which is the honest answer. These
+ * coordinates are the `route` variant's own: a loop around the
+ * repository's synthetic anchor — the South Pacific, far from any coast
+ * and from any real route — so that the map, the thumbnail and the mini
+ * thumbnail can be seen and reviewed without a real run. They mean
+ * nothing.
+ */
+const SYNTHETIC_ROUTE: [number, number][] = [
+  [-35.0, -139.99],
+  [-34.99562, -139.98895],
+  [-34.99126, -139.98992],
+  [-34.98869, -139.99274],
+  [-34.98841, -139.99608],
+  [-34.98907, -139.99884],
+  [-34.98907, -140.00116],
+  [-34.98841, -140.00392],
+  [-34.98869, -140.00726],
+  [-34.99126, -140.01008],
+  [-34.99562, -140.01105],
+  [-35.0, -140.01],
+  [-35.00323, -140.00814],
+  [-35.00585, -140.00675],
+  [-35.0091, -140.00584],
+  [-35.01297, -140.00439],
+  [-35.01579, -140.00168],
+  [-35.01579, -139.99832],
+  [-35.01297, -139.99561],
+  [-35.0091, -139.99416],
+  [-35.00585, -139.99325],
+  [-35.00323, -139.99186],
+]
+
+/** A run, with the route on it. */
+function withRoute(activity: ActivitySummary): ActivitySummary {
+  return { ...activity, geo_points: SYNTHETIC_ROUTE }
 }
-
-/**
- * Today, with a last run inside 10% of the target.
- *
- * The distance comparison is absent here, and that is the rule: 10.2 km
- * against a 10 km target is not news.
- */
-export const todayFixture: TodayInsight = todayInsight(
-  activityFixtures[1] as ActivitySummary,
-  null,
-)
-
-/**
- * Today, with a last run 24% beyond the target.
- *
- * The distance comparison appears here, stated neutrally.
- */
-export const todayOverFixture: TodayInsight = todayInsight(
-  activityFixtures[0] as ActivitySummary,
-  '2.4 km more than the 10 km target',
-)
 
 // --------------------------------------------------------------- progress
 
-export const progressFixture: ProgressInsight = {
-  generated_at: '2026-05-13T06:30:00Z',
-  headline: 'fitter than 8 weeks ago',
-  headline_note: 'same heart rate, 24 s/km faster',
-  weekly_volume: [
-    { week_start: '2026-03-16', distance: value('24.1 km', 24_100) },
-    { week_start: '2026-03-23', distance: value('27.4 km', 27_400) },
-    { week_start: '2026-03-30', distance: value('21.8 km', 21_800) },
-    { week_start: '2026-04-06', distance: value('31.2 km', 31_200) },
-    { week_start: '2026-04-13', distance: value('28.9 km', 28_900) },
-    { week_start: '2026-04-20', distance: value('35.4 km', 35_400) },
-    { week_start: '2026-04-27', distance: value('30.1 km', 30_100) },
-    { week_start: '2026-05-04', distance: value('38.6 km', 38_600) },
-    { week_start: '2026-05-11', distance: value('20.6 km', 20_600) },
-  ],
-  typical_week: value('30 km', 30_000),
-  pace_at_hr: [
-    {
-      week_start: '2026-03-16',
-      pace: value('5:36 /km', 336),
-      heart_rate: value('150 bpm', 150),
-    },
-    {
-      week_start: '2026-03-30',
-      pace: value('5:30 /km', 330),
-      heart_rate: value('150 bpm', 150),
-    },
-    {
-      week_start: '2026-04-13',
-      pace: value('5:24 /km', 324),
-      heart_rate: value('150 bpm', 150),
-    },
-    {
-      week_start: '2026-04-27',
-      pace: value('5:18 /km', 318),
-      heart_rate: value('150 bpm', 150),
-    },
-    {
-      week_start: '2026-05-11',
-      pace: value('5:12 /km', 312),
-      heart_rate: value('150 bpm', 150),
-    },
-  ],
-  bests: [
-    { key: 'progress.best.5k', value: '19:48', date: '2026-04-27' },
-    { key: 'progress.best.10k', value: '41:12', date: '2026-05-04' },
-    { key: 'progress.best.longest', value: '16.1 km', date: '2026-05-04' },
-  ],
-  consistency: [
-    { week_start: '2026-03-16', sessions: 3 },
-    { week_start: '2026-03-23', sessions: 4 },
-    { week_start: '2026-03-30', sessions: 2 },
-    { week_start: '2026-04-06', sessions: 4 },
-    { week_start: '2026-04-13', sessions: 3 },
-    { week_start: '2026-04-20', sessions: 5 },
-    { week_start: '2026-04-27', sessions: 4 },
-    { week_start: '2026-05-11', sessions: 2 },
-  ],
-  sessions_per_week: value('3.4', 3.4),
-  adherence: { done: 7, planned: 8 },
-  weeks_needed: null,
-}
+/** Progress: the router's answer. */
+export const progressFixture = routerAnswers['/insights/progress'] as ProgressInsight
 
 // --------------------------------------------------------------- compare
 
@@ -698,16 +462,7 @@ export const SERIES_B: CompareSeriesPoint[] = [
  * fixture set has; the other runs have no samples in the store, so their
  * series is empty — the way the router would answer it.
  */
-const compareAnswers = compareAnswerData as Record<
-  string,
-  Omit<CompareResponse, 'series'>
->
-
-/** The effort series each captured run has. */
-const SERIES_BY_RUN: Record<number, CompareSeriesPoint[]> = {
-  102: SERIES_A,
-  101: SERIES_B,
-}
+const compareAnswers = compareAnswerData as unknown as Record<string, CompareResponse>
 
 /**
  * The answer for a pair.
@@ -716,48 +471,18 @@ const SERIES_BY_RUN: Record<number, CompareSeriesPoint[]> = {
  * for two runs and shows the answer as it comes.
  */
 export function compareAnswer(a: string, b: string): CompareResponse | undefined {
-  const answer = compareAnswers[`${a}:${b}`]
-  if (!answer) return undefined
-  const first = activityFixtures.find((run) => String(run.id) === a)
-  const second = activityFixtures.find((run) => String(run.id) === b)
-  return {
-    ...answer,
-    series: {
-      a: (first && SERIES_BY_RUN[first.id]) || [],
-      b: (second && SERIES_BY_RUN[second.id]) || [],
-    },
-  }
+  return compareAnswers[`${a}:${b}`]
 }
 
-export const compareCandidatesFixture: CompareCandidate[] = activityFixtures.map((entry) => ({
-  id: entry.id,
-  label: entry.name,
-  date: entry.local_date,
-  distance: entry.distance,
-}))
-
+/** The runs the Compare screen can offer: the router's answer. */
+export const compareCandidatesFixture = routerAnswers['/compare/candidates'] as CompareCandidate[]
 // ------------------------------------------------------------------ sync
 
-export const syncStatusFixture: SyncStatus = {
-  // Two hours ago, so the rig shows a fresh sync rather than a stale one.
-  last_sync_at: new Date(Date.now() - 2 * 3_600_000).toISOString(),
-  last_error: null,
-  activity_count: 6,
-  // The delta pull: the cursor says where the next pull starts, and the
-  // three counts say what the last one did. **The store has no cursor
-  // yet**, so the router answers null and three zeroes — and so does the
-  // fixture.
-  cursor: null,
-  pulled: 0,
-  skipped: 0,
-  deleted: 0,
-}
+/** The state of the last sync: the router's answer. */
+export const syncStatusFixture = routerAnswers['/sync/status'] as SyncStatus
 
-export const healthDailyFixture: HealthDaily = {
-  date: TODAY,
-  generated_at: '2026-05-13T06:30:00Z',
-  stale: false,
-}
+/** The health of the sync window: the router's answer. */
+export const healthDailyFixture = routerAnswers['/health/daily'] as HealthDaily
 
 // ------------------------------------------------------- the app's own facts
 
@@ -770,14 +495,8 @@ export const healthDailyFixture: HealthDaily = {
  * key, so the fixture holds no credential and no fragment of one that
  * could be used.
  */
-export const connectionFixture: ConnectionStatus = {
-  connected: true,
-  method: 'personal_key',
-  key_source: 'personal_key',
-  key_last4: '4F2A',
-  last_sync_at: new Date(Date.now() - 2 * 3_600_000).toISOString(),
-  generated_at: '2026-05-13T06:30:00Z',
-}
+/** The connection: the router's answer. */
+export const connectionFixture = routerAnswers['/auth/status'] as ConnectionStatus
 
 /** The connection, with no key held. */
 export const connectionEmptyFixture: ConnectionStatus = {
@@ -789,62 +508,41 @@ export const connectionEmptyFixture: ConnectionStatus = {
   generated_at: '2026-05-13T06:30:00Z',
 }
 
-/** The service's own health — and the version, for About. */
+/**
+ * The connection, with a key held.
+ *
+ * The seeded store holds no key, so the router answers "not connected" —
+ * and the app says so. This is the other state: a key has been taken, and
+ * the answer carries the last four characters of it. **The key itself is
+ * not here and never will be**: four characters cannot be a Garmin
+ * Personal API key.
+ */
+export const connectionHeldFixture: ConnectionStatus = {
+  connected: true,
+  method: 'personal_key',
+  key_source: 'personal_key',
+  key_last4: '4F2A',
+  last_sync_at: '2026-05-13T04:30:00Z',
+  generated_at: '2026-05-13T06:30:00Z',
+}
+
 /**
  * The heart-rate zones of a run.
  *
- * The bands the core computed, with the words and the numbers they came
- * from: the chart draws the edges, and the legend reads the range.
+ * The seeded store holds no samples, so the router answers the honest
+ * one: the bands cannot be computed, and the core says why. The bands
+ * themselves are the api's — the app draws what it is given.
  */
 export const zonesFixture: FitnessZones = {
-  basis: 'moving',
-  max_heart_rate: value('182 bpm', 182),
-  zones: [
-    {
-      label: 'Z1',
-      range: '120-136 bpm',
-      time: value('4 m', 240),
-      from_bpm: 120,
-      to_bpm: 136,
-    },
-    {
-      label: 'Z2',
-      range: '137-151 bpm',
-      time: value('18 m', 1_080),
-      from_bpm: 137,
-      to_bpm: 151,
-    },
-    {
-      label: 'Z3',
-      range: '152-166 bpm',
-      time: value('12 m', 720),
-      from_bpm: 152,
-      to_bpm: 166,
-    },
-    {
-      label: 'Z4',
-      range: '167-180 bpm',
-      time: value('3 m', 180),
-      from_bpm: 167,
-      to_bpm: 180,
-    },
-  ],
-  without_heart_rate: value('1 m', 60),
-  unavailable: null,
+  basis: null,
+  max_heart_rate: null,
+  zones: [],
+  without_heart_rate: null,
+  unavailable: 'zones unavailable — no stored max or threshold heart rate',
 }
 
-export const healthFixture: Health = {
-  ok: true,
-  service: 'stride',
-  // The version is the binary's, and the binary's is the only version
-  // string in the app: the About card shows what `/health` says.
-  version: '0.10.0',
-  garmin_connected: true,
-  activities: 42,
-  wellness_days: 29,
-  plan_sessions: 7,
-  generated_at: '2026-05-13T06:30:00Z',
-}
+/** The service's own health — and the version, for About. */
+export const healthFixture = routerAnswers['/health'] as Health
 
 /**
  * The settings.
@@ -853,18 +551,8 @@ export const healthFixture: Health = {
  * couple of megabytes. The goal is a number the athlete wrote; the app
  * never invents one.
  */
-export const settingsFixture: SettingsState = {
-  goal: { value: value('40 km', 40_000), km: 40 },
-  pause: null,
-  storage: {
-    size: value('2.4 MB', 2_516_582),
-    activity_count: 42,
-    wellness_day_count: 29,
-    plan_session_count: 7,
-    note_count: 1,
-  },
-  generated_at: '2026-05-13T06:30:00Z',
-}
+/** The settings: the router's answer. */
+export const settingsFixture = routerAnswers['/settings'] as SettingsState
 
 /** The settings with nothing set: no goal, no pause, an empty log. */
 export const settingsEmptyFixture: SettingsState = {
@@ -1143,9 +831,12 @@ export const healthDailyStaleFixture: HealthDaily = {
  * |---|---|
  * | `1` (or empty) | everything present |
  * | `over` | the last run beyond 10% of the plan's target |
+ * | `noclose` | the last run inside 10% of the target: no comparison |
  * | `empty` | no runs, no wellness, no plan, and nothing ever synced |
  * | `nowellness` | synced, but no wellness data yet |
  * | `fresh` | no key yet: the first-run page is the one that takes it |
+ * | `connected` | a key has been taken: the app is connected |
+ * | `route` | the runs carry a route, so the map can be seen |
  * | `stale` | the last sync three days old |
  * | `failed` | the last sync did not finish |
  * | `baseline` | a plan inferred from the athlete's history |
@@ -1161,22 +852,50 @@ export function fixtureResponse(
   body?: unknown,
 ): unknown {
   switch (path) {
-    case '/insights/today':
+    case '/insights/today': {
       if (variant === 'empty' || variant === 'fresh') return todayEmptyFixture
-      if (variant === 'nowellness') return todayEmptyFixture
+      // The wellness has not come, but the runs have: the run and the
+      // plan are the router's.
+      if (variant === 'nowellness') return todayFixture
       if (variant === 'noplan') return { ...todayFixture, planned: null, options: [] }
+      // The gap is not news: the last run is inside ten per cent of the
+      // target, so there is no comparison to state.
+      if (variant === 'noclose') {
+        return {
+          ...todayFixture,
+          last_run: runById(102),
+          distance_comparison: null,
+        }
+      }
       if (variant === 'paused') return { ...todayFixture, options: [] }
-      return variant === 'over' ? todayOverFixture : todayFixture
+      // The run carries a route, so the mini thumbnail has something to
+      // draw.
+      if (variant === 'route') {
+        return {
+          ...todayFixture,
+          last_run: todayFixture.last_run ? withRoute(todayFixture.last_run) : null,
+        }
+      }
+      return todayFixture
+    }
     case '/physiology/vitals':
       if (variant === 'empty' || variant === 'fresh') return vitalsEmptyFixture
       if (variant === 'nowellness') return vitalsEmptyFixture
       if (variant === 'notenough') return vitalsNotEnoughFixture
       return vitalsFixture
-    case '/activities':
-      return variant === 'empty' || variant === 'fresh'
-        ? activitiesEmptyFixture
-        : activitiesFixture
+    case '/activities': {
+      const answer =
+        variant === 'empty' || variant === 'fresh' ? activitiesEmptyFixture : activitiesFixture
+      if (variant !== 'route') return answer
+      return {
+        ...answer,
+        activities: answer.activities.map(withRoute),
+      }
+    }
     case '/activities/101':
+      if (variant === 'route') {
+        return { ...activityDetailFixture, geo_points: SYNTHETIC_ROUTE }
+      }
       return activityDetailFixture
     case '/activities/101/fit':
       // The run's original file: the header of a FIT file, byte for
@@ -1222,6 +941,7 @@ export function fixtureResponse(
       return healthFixture
     case '/auth/status':
       if (variant === 'empty' || variant === 'fresh') return connectionEmptyFixture
+      if (variant === 'connected') return connectionHeldFixture
       return connectionFixture
     case '/settings':
       if (variant === 'empty' || variant === 'fresh') return settingsEmptyFixture

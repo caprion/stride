@@ -98,7 +98,9 @@ describe('the first-run page', () => {
   })
 
   it('disappears once the app is connected', async () => {
-    // The fixture set's default is a connected app.
+    // A key has been taken: the app is connected, and the first-run page
+    // is not a page inside the app.
+    window.history.pushState({}, '', '/?fixtures=connected')
     const { container } = renderApp('/connect')
     await waitFor(() =>
       expect(container.querySelector('[data-testid="today-session"]')).toBeTruthy(),

@@ -82,13 +82,6 @@ export function formatCount(count: number | null | undefined): string {
   return String(count)
 }
 
-/** The plan's own vocabulary for a session type, read as the plan reads it. */
-export function sessionTypeLabel(sessionType: string | null | undefined): string {
-  if (!sessionType) return 'Unknown'
-  if (sessionType === 'unknown') return 'Unknown'
-  return sessionType.replace(/_/g, ' ')
-}
-
 /** The sport's own name, read as the athlete reads it. */
 export function sportLabel(sport: string | null | undefined): string {
   if (!sport) return 'Run'

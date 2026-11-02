@@ -1,1228 +1,1241 @@
 {
   "version": 1,
   "answers": {
-    "/compare": {
-      "basis_text": "Different distances — read with care",
-      "metrics": [
-        {
-          "key": "distance",
-          "label_key": "vital.distance",
-          "a": {
-            "text": "10.2 km",
-            "raw": 10200
-          },
-          "b": {
-            "text": "12.4 km",
-            "raw": 12400
-          },
-          "delta": {
-            "text": "+2.2 km",
-            "raw": 2200
-          }
-        },
-        {
-          "key": "time",
-          "label_key": "vital.time",
-          "a": {
-            "text": "55 m",
-            "raw": 3320
-          },
-          "b": {
-            "text": "1 h 7 m",
-            "raw": 4020
-          },
-          "delta": {
-            "text": "+12 m",
-            "raw": 700
-          }
-        },
-        {
-          "key": "pace",
-          "label_key": "vital.pace",
-          "a": {
-            "text": "5:25 /km",
-            "raw": 325.49
-          },
-          "b": {
-            "text": "5:24 /km",
-            "raw": 324.19
-          },
-          "delta": {
-            "text": "−1 s/km",
-            "raw": -1.3000000000000114
-          }
-        },
-        {
-          "key": "hr",
-          "label_key": "vital.heartRate",
-          "a": {
-            "text": "146 bpm",
-            "raw": 146
-          },
-          "b": {
-            "text": "148 bpm",
-            "raw": 148
-          },
-          "delta": {
-            "text": "+2 bpm",
-            "raw": 2
-          }
-        }
-      ],
-      "a": {
-        "id": 102,
-        "label": "Run",
-        "date": "2026-05-09",
-        "distance": {
-          "text": "10.2 km",
-          "raw": 10200
-        },
-        "story": null
-      },
-      "b": {
-        "id": 101,
-        "label": "Run",
-        "date": "2026-05-10",
-        "distance": {
-          "text": "12.4 km",
-          "raw": 12400
-        },
-        "story": null
-      },
-      "series": {
-        "a": [
-          {
-            "offset_s": 0,
-            "pace": {
-              "text": "5:17 /km",
-              "raw": 317
-            },
-            "heart_rate": {
-              "text": "149 bpm",
-              "raw": 149
-            }
-          },
-          {
-            "offset_s": 60,
-            "pace": {
-              "text": "5:19 /km",
-              "raw": 319
-            },
-            "heart_rate": {
-              "text": "151 bpm",
-              "raw": 151
-            }
-          },
-          {
-            "offset_s": 120,
-            "pace": {
-              "text": "5:22 /km",
-              "raw": 322
-            },
-            "heart_rate": {
-              "text": "153 bpm",
-              "raw": 153
-            }
-          },
-          {
-            "offset_s": 180,
-            "pace": {
-              "text": "5:24 /km",
-              "raw": 324
-            },
-            "heart_rate": {
-              "text": "155 bpm",
-              "raw": 155
-            }
-          },
-          {
-            "offset_s": 240,
-            "pace": {
-              "text": "5:26 /km",
-              "raw": 326
-            },
-            "heart_rate": {
-              "text": "157 bpm",
-              "raw": 157
-            }
-          },
-          {
-            "offset_s": 300,
-            "pace": {
-              "text": "5:27 /km",
-              "raw": 327
-            },
-            "heart_rate": {
-              "text": "158 bpm",
-              "raw": 158
-            }
-          },
-          {
-            "offset_s": 360,
-            "pace": {
-              "text": "5:28 /km",
-              "raw": 328
-            },
-            "heart_rate": {
-              "text": "160 bpm",
-              "raw": 160
-            }
-          },
-          {
-            "offset_s": 420,
-            "pace": {
-              "text": "5:29 /km",
-              "raw": 329
-            },
-            "heart_rate": {
-              "text": "161 bpm",
-              "raw": 161
-            }
-          },
-          {
-            "offset_s": 480,
-            "pace": {
-              "text": "5:29 /km",
-              "raw": 329
-            },
-            "heart_rate": {
-              "text": "162 bpm",
-              "raw": 162
-            }
-          },
-          {
-            "offset_s": 540,
-            "pace": {
-              "text": "5:29 /km",
-              "raw": 329
-            },
-            "heart_rate": {
-              "text": "162 bpm",
-              "raw": 162
-            }
-          },
-          {
-            "offset_s": 600,
-            "pace": {
-              "text": "5:28 /km",
-              "raw": 328
-            },
-            "heart_rate": {
-              "text": "163 bpm",
-              "raw": 163
-            }
-          },
-          {
-            "offset_s": 660,
-            "pace": {
-              "text": "5:27 /km",
-              "raw": 327
-            },
-            "heart_rate": {
-              "text": "163 bpm",
-              "raw": 163
-            }
-          },
-          {
-            "offset_s": 720,
-            "pace": {
-              "text": "5:25 /km",
-              "raw": 325
-            },
-            "heart_rate": {
-              "text": "163 bpm",
-              "raw": 163
-            }
-          },
-          {
-            "offset_s": 780,
-            "pace": {
-              "text": "5:23 /km",
-              "raw": 323
-            },
-            "heart_rate": {
-              "text": "162 bpm",
-              "raw": 162
-            }
-          },
-          {
-            "offset_s": 840,
-            "pace": {
-              "text": "5:21 /km",
-              "raw": 321
-            },
-            "heart_rate": {
-              "text": "162 bpm",
-              "raw": 162
-            }
-          },
-          {
-            "offset_s": 900,
-            "pace": {
-              "text": "5:19 /km",
-              "raw": 319
-            },
-            "heart_rate": {
-              "text": "161 bpm",
-              "raw": 161
-            }
-          },
-          {
-            "offset_s": 960,
-            "pace": {
-              "text": "5:16 /km",
-              "raw": 316
-            },
-            "heart_rate": {
-              "text": "160 bpm",
-              "raw": 160
-            }
-          },
-          {
-            "offset_s": 1020,
-            "pace": {
-              "text": "5:14 /km",
-              "raw": 314
-            },
-            "heart_rate": {
-              "text": "158 bpm",
-              "raw": 158
-            }
-          },
-          {
-            "offset_s": 1080,
-            "pace": {
-              "text": "5:12 /km",
-              "raw": 312
-            },
-            "heart_rate": {
-              "text": "157 bpm",
-              "raw": 157
-            }
-          },
-          {
-            "offset_s": 1140,
-            "pace": {
-              "text": "5:10 /km",
-              "raw": 310
-            },
-            "heart_rate": {
-              "text": "155 bpm",
-              "raw": 155
-            }
-          },
-          {
-            "offset_s": 1200,
-            "pace": {
-              "text": "5:08 /km",
-              "raw": 308
-            },
-            "heart_rate": {
-              "text": "153 bpm",
-              "raw": 153
-            }
-          },
-          {
-            "offset_s": 1260,
-            "pace": {
-              "text": "5:07 /km",
-              "raw": 307
-            },
-            "heart_rate": {
-              "text": "151 bpm",
-              "raw": 151
-            }
-          },
-          {
-            "offset_s": 1320,
-            "pace": {
-              "text": "5:06 /km",
-              "raw": 306
-            },
-            "heart_rate": {
-              "text": "149 bpm",
-              "raw": 149
-            }
-          },
-          {
-            "offset_s": 1380,
-            "pace": {
-              "text": "5:05 /km",
-              "raw": 305
-            },
-            "heart_rate": {
-              "text": "147 bpm",
-              "raw": 147
-            }
-          },
-          {
-            "offset_s": 1440,
-            "pace": {
-              "text": "5:05 /km",
-              "raw": 305
-            },
-            "heart_rate": {
-              "text": "145 bpm",
-              "raw": 145
-            }
-          },
-          {
-            "offset_s": 1500,
-            "pace": {
-              "text": "5:05 /km",
-              "raw": 305
-            },
-            "heart_rate": {
-              "text": "143 bpm",
-              "raw": 143
-            }
-          },
-          {
-            "offset_s": 1560,
-            "pace": {
-              "text": "5:06 /km",
-              "raw": 306
-            },
-            "heart_rate": {
-              "text": "141 bpm",
-              "raw": 141
-            }
-          },
-          {
-            "offset_s": 1620,
-            "pace": {
-              "text": "5:08 /km",
-              "raw": 308
-            },
-            "heart_rate": {
-              "text": "140 bpm",
-              "raw": 140
-            }
-          },
-          {
-            "offset_s": 1680,
-            "pace": {
-              "text": "5:09 /km",
-              "raw": 309
-            },
-            "heart_rate": {
-              "text": "138 bpm",
-              "raw": 138
-            }
-          },
-          {
-            "offset_s": 1740,
-            "pace": {
-              "text": "5:11 /km",
-              "raw": 311
-            },
-            "heart_rate": {
-              "text": "137 bpm",
-              "raw": 137
-            }
-          },
-          {
-            "offset_s": 1800,
-            "pace": {
-              "text": "5:14 /km",
-              "raw": 314
-            },
-            "heart_rate": {
-              "text": "136 bpm",
-              "raw": 136
-            }
-          },
-          {
-            "offset_s": 1860,
-            "pace": {
-              "text": "5:16 /km",
-              "raw": 316
-            },
-            "heart_rate": {
-              "text": "136 bpm",
-              "raw": 136
-            }
-          },
-          {
-            "offset_s": 1920,
-            "pace": {
-              "text": "5:18 /km",
-              "raw": 318
-            },
-            "heart_rate": {
-              "text": "135 bpm",
-              "raw": 135
-            }
-          },
-          {
-            "offset_s": 1980,
-            "pace": {
-              "text": "5:21 /km",
-              "raw": 321
-            },
-            "heart_rate": {
-              "text": "135 bpm",
-              "raw": 135
-            }
-          },
-          {
-            "offset_s": 2040,
-            "pace": {
-              "text": "5:23 /km",
-              "raw": 323
-            },
-            "heart_rate": {
-              "text": "135 bpm",
-              "raw": 135
-            }
-          },
-          {
-            "offset_s": 2100,
-            "pace": {
-              "text": "5:25 /km",
-              "raw": 325
-            },
-            "heart_rate": {
-              "text": "136 bpm",
-              "raw": 136
-            }
-          },
-          {
-            "offset_s": 2160,
-            "pace": {
-              "text": "5:27 /km",
-              "raw": 327
-            },
-            "heart_rate": {
-              "text": "136 bpm",
-              "raw": 136
-            }
-          },
-          {
-            "offset_s": 2220,
-            "pace": {
-              "text": "5:28 /km",
-              "raw": 328
-            },
-            "heart_rate": {
-              "text": "137 bpm",
-              "raw": 137
-            }
-          },
-          {
-            "offset_s": 2280,
-            "pace": {
-              "text": "5:29 /km",
-              "raw": 329
-            },
-            "heart_rate": {
-              "text": "138 bpm",
-              "raw": 138
-            }
-          },
-          {
-            "offset_s": 2340,
-            "pace": {
-              "text": "5:29 /km",
-              "raw": 329
-            },
-            "heart_rate": {
-              "text": "140 bpm",
-              "raw": 140
-            }
-          }
-        ],
-        "b": [
-          {
-            "offset_s": 0,
-            "pace": {
-              "text": "5:06 /km",
-              "raw": 306
-            },
-            "heart_rate": {
-              "text": "146 bpm",
-              "raw": 146
-            }
-          },
-          {
-            "offset_s": 60,
-            "pace": {
-              "text": "5:08 /km",
-              "raw": 308
-            },
-            "heart_rate": {
-              "text": "148 bpm",
-              "raw": 148
-            }
-          },
-          {
-            "offset_s": 120,
-            "pace": {
-              "text": "5:11 /km",
-              "raw": 311
-            },
-            "heart_rate": {
-              "text": "150 bpm",
-              "raw": 150
-            }
-          },
-          {
-            "offset_s": 180,
-            "pace": {
-              "text": "5:13 /km",
-              "raw": 313
-            },
-            "heart_rate": {
-              "text": "152 bpm",
-              "raw": 152
-            }
-          },
-          {
-            "offset_s": 240,
-            "pace": {
-              "text": "5:15 /km",
-              "raw": 315
-            },
-            "heart_rate": {
-              "text": "154 bpm",
-              "raw": 154
-            }
-          },
-          {
-            "offset_s": 300,
-            "pace": {
-              "text": "5:16 /km",
-              "raw": 316
-            },
-            "heart_rate": {
-              "text": "155 bpm",
-              "raw": 155
-            }
-          },
-          {
-            "offset_s": 360,
-            "pace": {
-              "text": "5:17 /km",
-              "raw": 317
-            },
-            "heart_rate": {
-              "text": "157 bpm",
-              "raw": 157
-            }
-          },
-          {
-            "offset_s": 420,
-            "pace": {
-              "text": "5:18 /km",
-              "raw": 318
-            },
-            "heart_rate": {
-              "text": "158 bpm",
-              "raw": 158
-            }
-          },
-          {
-            "offset_s": 480,
-            "pace": {
-              "text": "5:18 /km",
-              "raw": 318
-            },
-            "heart_rate": {
-              "text": "159 bpm",
-              "raw": 159
-            }
-          },
-          {
-            "offset_s": 540,
-            "pace": {
-              "text": "5:18 /km",
-              "raw": 318
-            },
-            "heart_rate": {
-              "text": "159 bpm",
-              "raw": 159
-            }
-          },
-          {
-            "offset_s": 600,
-            "pace": {
-              "text": "5:17 /km",
-              "raw": 317
-            },
-            "heart_rate": {
-              "text": "160 bpm",
-              "raw": 160
-            }
-          },
-          {
-            "offset_s": 660,
-            "pace": {
-              "text": "5:16 /km",
-              "raw": 316
-            },
-            "heart_rate": {
-              "text": "160 bpm",
-              "raw": 160
-            }
-          },
-          {
-            "offset_s": 720,
-            "pace": {
-              "text": "5:14 /km",
-              "raw": 314
-            },
-            "heart_rate": {
-              "text": "160 bpm",
-              "raw": 160
-            }
-          },
-          {
-            "offset_s": 780,
-            "pace": {
-              "text": "5:12 /km",
-              "raw": 312
-            },
-            "heart_rate": {
-              "text": "159 bpm",
-              "raw": 159
-            }
-          },
-          {
-            "offset_s": 840,
-            "pace": {
-              "text": "5:10 /km",
-              "raw": 310
-            },
-            "heart_rate": {
-              "text": "159 bpm",
-              "raw": 159
-            }
-          },
-          {
-            "offset_s": 900,
-            "pace": {
-              "text": "5:08 /km",
-              "raw": 308
-            },
-            "heart_rate": {
-              "text": "158 bpm",
-              "raw": 158
-            }
-          },
-          {
-            "offset_s": 960,
-            "pace": {
-              "text": "5:05 /km",
-              "raw": 305
-            },
-            "heart_rate": {
-              "text": "157 bpm",
-              "raw": 157
-            }
-          },
-          {
-            "offset_s": 1020,
-            "pace": {
-              "text": "5:03 /km",
-              "raw": 303
-            },
-            "heart_rate": {
-              "text": "155 bpm",
-              "raw": 155
-            }
-          },
-          {
-            "offset_s": 1080,
-            "pace": {
-              "text": "5:01 /km",
-              "raw": 301
-            },
-            "heart_rate": {
-              "text": "154 bpm",
-              "raw": 154
-            }
-          },
-          {
-            "offset_s": 1140,
-            "pace": {
-              "text": "4:59 /km",
-              "raw": 299
-            },
-            "heart_rate": {
-              "text": "152 bpm",
-              "raw": 152
-            }
-          },
-          {
-            "offset_s": 1200,
-            "pace": {
-              "text": "4:57 /km",
-              "raw": 297
-            },
-            "heart_rate": {
-              "text": "150 bpm",
-              "raw": 150
-            }
-          },
-          {
-            "offset_s": 1260,
-            "pace": {
-              "text": "4:56 /km",
-              "raw": 296
-            },
-            "heart_rate": {
-              "text": "148 bpm",
-              "raw": 148
-            }
-          },
-          {
-            "offset_s": 1320,
-            "pace": {
-              "text": "4:55 /km",
-              "raw": 295
-            },
-            "heart_rate": {
-              "text": "146 bpm",
-              "raw": 146
-            }
-          },
-          {
-            "offset_s": 1380,
-            "pace": {
-              "text": "4:54 /km",
-              "raw": 294
-            },
-            "heart_rate": {
-              "text": "144 bpm",
-              "raw": 144
-            }
-          },
-          {
-            "offset_s": 1440,
-            "pace": {
-              "text": "4:54 /km",
-              "raw": 294
-            },
-            "heart_rate": {
-              "text": "142 bpm",
-              "raw": 142
-            }
-          },
-          {
-            "offset_s": 1500,
-            "pace": {
-              "text": "4:54 /km",
-              "raw": 294
-            },
-            "heart_rate": {
-              "text": "140 bpm",
-              "raw": 140
-            }
-          },
-          {
-            "offset_s": 1560,
-            "pace": {
-              "text": "4:55 /km",
-              "raw": 295
-            },
-            "heart_rate": {
-              "text": "138 bpm",
-              "raw": 138
-            }
-          },
-          {
-            "offset_s": 1620,
-            "pace": {
-              "text": "4:57 /km",
-              "raw": 297
-            },
-            "heart_rate": {
-              "text": "137 bpm",
-              "raw": 137
-            }
-          },
-          {
-            "offset_s": 1680,
-            "pace": {
-              "text": "4:58 /km",
-              "raw": 298
-            },
-            "heart_rate": {
-              "text": "135 bpm",
-              "raw": 135
-            }
-          },
-          {
-            "offset_s": 1740,
-            "pace": {
-              "text": "5:00 /km",
-              "raw": 300
-            },
-            "heart_rate": {
-              "text": "134 bpm",
-              "raw": 134
-            }
-          },
-          {
-            "offset_s": 1800,
-            "pace": {
-              "text": "5:03 /km",
-              "raw": 303
-            },
-            "heart_rate": {
-              "text": "133 bpm",
-              "raw": 133
-            }
-          },
-          {
-            "offset_s": 1860,
-            "pace": {
-              "text": "5:05 /km",
-              "raw": 305
-            },
-            "heart_rate": {
-              "text": "133 bpm",
-              "raw": 133
-            }
-          },
-          {
-            "offset_s": 1920,
-            "pace": {
-              "text": "5:07 /km",
-              "raw": 307
-            },
-            "heart_rate": {
-              "text": "132 bpm",
-              "raw": 132
-            }
-          },
-          {
-            "offset_s": 1980,
-            "pace": {
-              "text": "5:10 /km",
-              "raw": 310
-            },
-            "heart_rate": {
-              "text": "132 bpm",
-              "raw": 132
-            }
-          },
-          {
-            "offset_s": 2040,
-            "pace": {
-              "text": "5:12 /km",
-              "raw": 312
-            },
-            "heart_rate": {
-              "text": "132 bpm",
-              "raw": 132
-            }
-          },
-          {
-            "offset_s": 2100,
-            "pace": {
-              "text": "5:14 /km",
-              "raw": 314
-            },
-            "heart_rate": {
-              "text": "133 bpm",
-              "raw": 133
-            }
-          },
-          {
-            "offset_s": 2160,
-            "pace": {
-              "text": "5:16 /km",
-              "raw": 316
-            },
-            "heart_rate": {
-              "text": "133 bpm",
-              "raw": 133
-            }
-          },
-          {
-            "offset_s": 2220,
-            "pace": {
-              "text": "5:17 /km",
-              "raw": 317
-            },
-            "heart_rate": {
-              "text": "134 bpm",
-              "raw": 134
-            }
-          },
-          {
-            "offset_s": 2280,
-            "pace": {
-              "text": "5:18 /km",
-              "raw": 318
-            },
-            "heart_rate": {
-              "text": "135 bpm",
-              "raw": 135
-            }
-          },
-          {
-            "offset_s": 2340,
-            "pace": {
-              "text": "5:18 /km",
-              "raw": 318
-            },
-            "heart_rate": {
-              "text": "137 bpm",
-              "raw": 137
-            }
-          }
-        ]
-      }
-    },
     "/activities": {
       "activities": [
         {
+          "distance": {
+            "raw": 12400,
+            "text": "12.4 km"
+          },
+          "duration": {
+            "raw": 4020,
+            "text": "1 h 7 m"
+          },
+          "elevation_gain": {
+            "raw": 42,
+            "text": "42 m"
+          },
+          "geo_points": [],
+          "group": {
+            "distance": {
+              "raw": 52100,
+              "text": "52.1 km"
+            },
+            "duration": {
+              "raw": 16552,
+              "text": "4 h 36 m"
+            },
+            "key": "2026-05-04"
+          },
+          "heart_rate": {
+            "raw": 148,
+            "text": "148 bpm"
+          },
           "id": 101,
+          "local_date": "2026-05-10",
           "name": "Run",
+          "pace": {
+            "raw": 324.19,
+            "text": "5:24 /km"
+          },
           "sport_type": "running",
           "start_time": "2026-05-10T07:10:00Z",
-          "local_date": "2026-05-10",
-          "distance": {
-            "text": "12.4 km",
-            "raw": 12400
-          },
-          "duration": {
-            "text": "1 h 7 m",
-            "raw": 4020
-          },
-          "heart_rate": {
-            "text": "148 bpm",
-            "raw": 148
-          },
-          "pace": {
-            "text": "5:24 /km",
-            "raw": 324.19
-          },
-          "elevation_gain": {
-            "text": "42 m",
-            "raw": 42
-          },
-          "group": {
-            "key": "2026-05-06",
-            "distance": {
-              "text": "36 km",
-              "raw": 36000
-            },
-            "duration": {
-              "text": "3 h 11 m",
-              "raw": 11480
-            }
-          },
-          "story": null,
-          "geo_points": []
+          "story": null
         },
         {
+          "distance": {
+            "raw": 10200,
+            "text": "10.2 km"
+          },
+          "duration": {
+            "raw": 3320,
+            "text": "55 m"
+          },
+          "elevation_gain": {
+            "raw": 42,
+            "text": "42 m"
+          },
+          "geo_points": [],
+          "group": {
+            "distance": {
+              "raw": 52100,
+              "text": "52.1 km"
+            },
+            "duration": {
+              "raw": 16552,
+              "text": "4 h 36 m"
+            },
+            "key": "2026-05-04"
+          },
+          "heart_rate": {
+            "raw": 146,
+            "text": "146 bpm"
+          },
           "id": 102,
+          "local_date": "2026-05-09",
           "name": "Run",
+          "pace": {
+            "raw": 325.49,
+            "text": "5:25 /km"
+          },
           "sport_type": "running",
           "start_time": "2026-05-09T07:10:00Z",
-          "local_date": "2026-05-09",
-          "distance": {
-            "text": "10.2 km",
-            "raw": 10200
-          },
-          "duration": {
-            "text": "55 m",
-            "raw": 3320
-          },
-          "heart_rate": {
-            "text": "146 bpm",
-            "raw": 146
-          },
-          "pace": {
-            "text": "5:25 /km",
-            "raw": 325.49
-          },
-          "elevation_gain": {
-            "text": "42 m",
-            "raw": 42
-          },
-          "group": {
-            "key": "2026-05-06",
-            "distance": {
-              "text": "36 km",
-              "raw": 36000
-            },
-            "duration": {
-              "text": "3 h 11 m",
-              "raw": 11480
-            }
-          },
-          "story": null,
-          "geo_points": []
+          "story": null
         },
         {
+          "distance": {
+            "raw": 8400,
+            "text": "8.4 km"
+          },
+          "duration": {
+            "raw": 2520,
+            "text": "42 m"
+          },
+          "elevation_gain": {
+            "raw": 42,
+            "text": "42 m"
+          },
+          "geo_points": [],
+          "group": {
+            "distance": {
+              "raw": 52100,
+              "text": "52.1 km"
+            },
+            "duration": {
+              "raw": 16552,
+              "text": "4 h 36 m"
+            },
+            "key": "2026-05-04"
+          },
+          "heart_rate": {
+            "raw": 148,
+            "text": "148 bpm"
+          },
           "id": 103,
+          "local_date": "2026-05-07",
           "name": "Run",
+          "pace": {
+            "raw": 300,
+            "text": "5:00 /km"
+          },
           "sport_type": "running",
           "start_time": "2026-05-07T07:10:00Z",
-          "local_date": "2026-05-07",
-          "distance": {
-            "text": "8.4 km",
-            "raw": 8400
-          },
-          "duration": {
-            "text": "42 m",
-            "raw": 2520
-          },
-          "heart_rate": {
-            "text": "148 bpm",
-            "raw": 148
-          },
-          "pace": {
-            "text": "5:00 /km",
-            "raw": 300
-          },
-          "elevation_gain": {
-            "text": "42 m",
-            "raw": 42
-          },
-          "group": {
-            "key": "2026-05-06",
-            "distance": {
-              "text": "36 km",
-              "raw": 36000
-            },
-            "duration": {
-              "text": "3 h 11 m",
-              "raw": 11480
-            }
-          },
-          "story": null,
-          "geo_points": []
+          "story": null
         },
         {
+          "distance": {
+            "raw": 5000,
+            "text": "5 km"
+          },
+          "duration": {
+            "raw": 1620,
+            "text": "27 m"
+          },
+          "elevation_gain": {
+            "raw": 42,
+            "text": "42 m"
+          },
+          "geo_points": [],
+          "group": {
+            "distance": {
+              "raw": 52100,
+              "text": "52.1 km"
+            },
+            "duration": {
+              "raw": 16552,
+              "text": "4 h 36 m"
+            },
+            "key": "2026-05-04"
+          },
+          "heart_rate": {
+            "raw": 148,
+            "text": "148 bpm"
+          },
           "id": 104,
+          "local_date": "2026-05-06",
           "name": "Run",
+          "pace": {
+            "raw": 324,
+            "text": "5:24 /km"
+          },
           "sport_type": "running",
           "start_time": "2026-05-06T07:10:00Z",
-          "local_date": "2026-05-06",
-          "distance": {
-            "text": "5 km",
-            "raw": 5000
-          },
-          "duration": {
-            "text": "27 m",
-            "raw": 1620
-          },
-          "heart_rate": {
-            "text": "148 bpm",
-            "raw": 148
-          },
-          "pace": {
-            "text": "5:24 /km",
-            "raw": 324
-          },
-          "elevation_gain": {
-            "text": "42 m",
-            "raw": 42
-          },
-          "group": {
-            "key": "2026-05-06",
-            "distance": {
-              "text": "36 km",
-              "raw": 36000
-            },
-            "duration": {
-              "text": "3 h 11 m",
-              "raw": 11480
-            }
-          },
-          "story": null,
-          "geo_points": []
+          "story": null
         },
         {
+          "distance": {
+            "raw": 16100,
+            "text": "16.1 km"
+          },
+          "duration": {
+            "raw": 5072,
+            "text": "1 h 25 m"
+          },
+          "elevation_gain": {
+            "raw": 42,
+            "text": "42 m"
+          },
+          "geo_points": [],
+          "group": {
+            "distance": {
+              "raw": 52100,
+              "text": "52.1 km"
+            },
+            "duration": {
+              "raw": 16552,
+              "text": "4 h 36 m"
+            },
+            "key": "2026-05-04"
+          },
+          "heart_rate": {
+            "raw": 148,
+            "text": "148 bpm"
+          },
           "id": 105,
+          "local_date": "2026-05-04",
           "name": "Run",
+          "pace": {
+            "raw": 315.03,
+            "text": "5:15 /km"
+          },
           "sport_type": "running",
           "start_time": "2026-05-04T07:10:00Z",
-          "local_date": "2026-05-04",
-          "distance": {
-            "text": "16.1 km",
-            "raw": 16100
-          },
-          "duration": {
-            "text": "1 h 25 m",
-            "raw": 5072
-          },
-          "heart_rate": {
-            "text": "148 bpm",
-            "raw": 148
-          },
-          "pace": {
-            "text": "5:15 /km",
-            "raw": 315.03
-          },
-          "elevation_gain": {
-            "text": "42 m",
-            "raw": 42
-          },
-          "group": {
-            "key": "2026-05-04",
-            "distance": {
-              "text": "16.1 km",
-              "raw": 16100
-            },
-            "duration": {
-              "text": "1 h 25 m",
-              "raw": 5072
-            }
-          },
-          "story": null,
-          "geo_points": []
+          "story": null
         },
         {
-          "id": 106,
-          "name": "Run",
-          "sport_type": "running",
-          "start_time": "2026-05-03T07:10:00Z",
-          "local_date": "2026-05-03",
           "distance": {
-            "text": "6.3 km",
-            "raw": 6300
+            "raw": 6300,
+            "text": "6.3 km"
           },
           "duration": {
-            "text": "35 m",
-            "raw": 2080
-          },
-          "heart_rate": {
-            "text": "148 bpm",
-            "raw": 148
-          },
-          "pace": {
-            "text": "5:30 /km",
-            "raw": 330.16
+            "raw": 2080,
+            "text": "35 m"
           },
           "elevation_gain": {
-            "text": "42 m",
-            "raw": 42
+            "raw": 42,
+            "text": "42 m"
           },
+          "geo_points": [],
           "group": {
-            "key": "2026-05-03",
             "distance": {
-              "text": "6.3 km",
-              "raw": 6300
+              "raw": 6300,
+              "text": "6.3 km"
             },
             "duration": {
-              "text": "35 m",
-              "raw": 2080
-            }
+              "raw": 2080,
+              "text": "35 m"
+            },
+            "key": "2026-04-27"
           },
-          "story": null,
-          "geo_points": []
+          "heart_rate": {
+            "raw": 148,
+            "text": "148 bpm"
+          },
+          "id": 106,
+          "local_date": "2026-05-03",
+          "name": "Run",
+          "pace": {
+            "raw": 330.16,
+            "text": "5:30 /km"
+          },
+          "sport_type": "running",
+          "start_time": "2026-05-03T07:10:00Z",
+          "story": null
         }
       ],
-      "next_cursor": null,
-      "generated_at": "2026-05-13T06:30:00Z"
+      "generated_at": "2026-05-13T06:30:00Z",
+      "next_cursor": null
     },
     "/activities/101": {
+      "distance": {
+        "raw": 12400,
+        "text": "12.4 km"
+      },
+      "duration": {
+        "raw": 4020,
+        "text": "1 h 7 m"
+      },
+      "elevation": [],
+      "elevation_gain": {
+        "raw": 42,
+        "text": "42 m"
+      },
+      "geo_points": [],
+      "group": {
+        "distance": {
+          "raw": 52100,
+          "text": "52.1 km"
+        },
+        "duration": {
+          "raw": 16552,
+          "text": "4 h 36 m"
+        },
+        "key": "2026-05-04"
+      },
+      "heart_rate": {
+        "raw": 148,
+        "text": "148 bpm"
+      },
+      "id": 101,
+      "local_date": "2026-05-10",
+      "name": "Run",
+      "note": null,
+      "pace": {
+        "raw": 324.19,
+        "text": "5:24 /km"
+      },
+      "plan_line": null,
+      "samples": [],
+      "splits": [],
+      "sport_type": "running",
+      "start_time": "2026-05-10T07:10:00Z",
+      "story": null
+    },
+    "/auth/status": {
+      "connected": false,
+      "generated_at": "2026-05-13T06:30:00Z",
+      "key_last4": null,
+      "key_source": "none",
+      "last_sync_at": null,
+      "method": null
+    },
+    "/compare": {
+      "a": {
+        "date": "2026-05-09",
+        "distance": {
+          "raw": 10200,
+          "text": "10.2 km"
+        },
+        "id": 102,
+        "label": "Run",
+        "story": null
+      },
+      "b": {
+        "date": "2026-05-10",
+        "distance": {
+          "raw": 12400,
+          "text": "12.4 km"
+        },
+        "id": 101,
+        "label": "Run",
+        "story": null
+      },
+      "basis_text": "Different distances — read with care",
+      "metrics": [
+        {
+          "a": {
+            "raw": 10200,
+            "text": "10.2 km"
+          },
+          "b": {
+            "raw": 12400,
+            "text": "12.4 km"
+          },
+          "delta": {
+            "raw": 2200,
+            "text": "+2.2 km"
+          },
+          "key": "distance",
+          "label_key": "vital.distance"
+        },
+        {
+          "a": {
+            "raw": 3320,
+            "text": "55 m"
+          },
+          "b": {
+            "raw": 4020,
+            "text": "1 h 7 m"
+          },
+          "delta": {
+            "raw": 700,
+            "text": "+12 m"
+          },
+          "key": "time",
+          "label_key": "vital.time"
+        },
+        {
+          "a": {
+            "raw": 325.49,
+            "text": "5:25 /km"
+          },
+          "b": {
+            "raw": 324.19,
+            "text": "5:24 /km"
+          },
+          "delta": {
+            "raw": -1.3000000000000114,
+            "text": "−1 s/km"
+          },
+          "key": "pace",
+          "label_key": "vital.pace"
+        },
+        {
+          "a": {
+            "raw": 146,
+            "text": "146 bpm"
+          },
+          "b": {
+            "raw": 148,
+            "text": "148 bpm"
+          },
+          "delta": {
+            "raw": 2,
+            "text": "+2 bpm"
+          },
+          "key": "hr",
+          "label_key": "vital.heartRate"
+        }
+      ],
+      "series": {
+        "a": [],
+        "b": []
+      }
+    },
+    "/compare/candidates": [
+      {
+        "date": "2026-05-10",
+        "distance": {
+          "raw": 12400,
+          "text": "12.4 km"
+        },
+        "id": 101,
+        "label": "Run"
+      },
+      {
+        "date": "2026-05-09",
+        "distance": {
+          "raw": 10200,
+          "text": "10.2 km"
+        },
+        "id": 102,
+        "label": "Run"
+      },
+      {
+        "date": "2026-05-07",
+        "distance": {
+          "raw": 8400,
+          "text": "8.4 km"
+        },
+        "id": 103,
+        "label": "Run"
+      },
+      {
+        "date": "2026-05-06",
+        "distance": {
+          "raw": 5000,
+          "text": "5 km"
+        },
+        "id": 104,
+        "label": "Run"
+      },
+      {
+        "date": "2026-05-04",
+        "distance": {
+          "raw": 16100,
+          "text": "16.1 km"
+        },
+        "id": 105,
+        "label": "Run"
+      },
+      {
+        "date": "2026-05-03",
+        "distance": {
+          "raw": 6300,
+          "text": "6.3 km"
+        },
+        "id": 106,
+        "label": "Run"
+      }
+    ],
+    "/health": {
+      "activities": 6,
+      "garmin_connected": false,
+      "generated_at": "2026-05-13T06:30:00Z",
+      "ok": true,
+      "plan_sessions": 7,
+      "service": "stride",
+      "version": "0.1.0",
+      "wellness_days": 30
+    },
+    "/health/daily": {
+      "date": "2026-05-13",
+      "generated_at": "2026-05-13T06:30:00Z",
+      "stale": true
+    },
+    "/insights/progress": {
+      "adherence": {
+        "done": 0,
+        "planned": 7
+      },
+      "bests": [
+        {
+          "date": "2026-05-04",
+          "key": "progress.best.longest",
+          "value": "16.1 km"
+        }
+      ],
+      "consistency": [
+        {
+          "sessions": 1,
+          "week_start": "2026-04-27"
+        },
+        {
+          "sessions": 5,
+          "week_start": "2026-05-04"
+        }
+      ],
+      "generated_at": "2026-05-13T06:30:00Z",
+      "headline": "not enough data yet",
+      "headline_note": null,
+      "pace_at_hr": [
+        {
+          "heart_rate": {
+            "raw": 148,
+            "text": "148 bpm"
+          },
+          "pace": {
+            "raw": 330.16,
+            "text": "5:30 /km"
+          },
+          "week_start": "2026-04-27"
+        },
+        {
+          "heart_rate": {
+            "raw": 148,
+            "text": "148 bpm"
+          },
+          "pace": {
+            "raw": 324,
+            "text": "5:24 /km"
+          },
+          "week_start": "2026-05-04"
+        }
+      ],
+      "sessions_per_week": null,
+      "typical_week": {
+        "raw": 29200,
+        "text": "29.2 km"
+      },
+      "weekly_volume": [
+        {
+          "distance": {
+            "raw": 6300,
+            "text": "6.3 km"
+          },
+          "week_start": "2026-04-27"
+        },
+        {
+          "distance": {
+            "raw": 52100,
+            "text": "52.1 km"
+          },
+          "week_start": "2026-05-04"
+        }
+      ],
+      "weeks_needed": null
+    },
+    "/insights/today": {
+      "date": "2026-05-13",
+      "distance_comparison": "2.4 km more than the 10 km target",
+      "generated_at": "2026-05-13T06:30:00Z",
+      "last_run": {
+        "distance": {
+          "raw": 12400,
+          "text": "12.4 km"
+        },
+        "duration": {
+          "raw": 4020,
+          "text": "1 h 7 m"
+        },
+        "elevation_gain": {
+          "raw": 42,
+          "text": "42 m"
+        },
+        "geo_points": [],
+        "group": {
+          "distance": {
+            "raw": 52100,
+            "text": "52.1 km"
+          },
+          "duration": {
+            "raw": 16552,
+            "text": "4 h 36 m"
+          },
+          "key": "2026-05-04"
+        },
+        "heart_rate": {
+          "raw": 148,
+          "text": "148 bpm"
+        },
+        "id": 101,
+        "local_date": "2026-05-10",
+        "name": "Run",
+        "pace": {
+          "raw": 324.19,
+          "text": "5:24 /km"
+        },
+        "sport_type": "running",
+        "start_time": "2026-05-10T07:10:00Z",
+        "story": null
+      },
+      "options": [
+        {
+          "actual": null,
+          "date": "2026-05-11",
+          "sentence": "11 May 2026 — 8 km · easy",
+          "session_type": "easy",
+          "source": "prescribed",
+          "status": "not_done",
+          "target": {
+            "raw": 8000,
+            "text": "8 km"
+          },
+          "title": "Easy 8"
+        },
+        {
+          "actual": null,
+          "date": "2026-05-12",
+          "sentence": "12 May 2026 — 10 km · easy",
+          "session_type": "easy",
+          "source": "prescribed",
+          "status": "not_done",
+          "target": {
+            "raw": 10000,
+            "text": "10 km"
+          },
+          "title": "Easy 10"
+        },
+        {
+          "actual": null,
+          "date": "2026-05-14",
+          "sentence": "14 May 2026 — 5 km · easy",
+          "session_type": "easy",
+          "source": "prescribed",
+          "status": "planned",
+          "target": {
+            "raw": 5000,
+            "text": "5 km"
+          },
+          "title": "Easy 5"
+        },
+        {
+          "actual": null,
+          "date": "2026-05-15",
+          "sentence": "15 May 2026 — 16 km · long",
+          "session_type": "long",
+          "source": "prescribed",
+          "status": "planned",
+          "target": {
+            "raw": 16000,
+            "text": "16 km"
+          },
+          "title": "Long 16"
+        },
+        {
+          "actual": null,
+          "date": "2026-05-16",
+          "sentence": "16 May 2026 — easy · no distance target",
+          "session_type": "easy",
+          "source": "prescribed",
+          "status": "planned",
+          "target": null,
+          "title": "Easy 30 minutes"
+        },
+        {
+          "actual": null,
+          "date": "2026-05-17",
+          "sentence": "17 May 2026 — 6 km · easy",
+          "session_type": "easy",
+          "source": "prescribed",
+          "status": "planned",
+          "target": {
+            "raw": 6000,
+            "text": "6 km"
+          },
+          "title": "Easy 6"
+        }
+      ],
+      "planned": {
+        "actual": null,
+        "date": "2026-05-13",
+        "sentence": "Today — 10 km · easy",
+        "session_type": "easy",
+        "source": "prescribed",
+        "status": "planned",
+        "target": {
+          "raw": 10000,
+          "text": "10 km"
+        },
+        "title": "Easy 10"
+      },
+      "week": {
+        "distance": {
+          "raw": 0,
+          "text": "0 km"
+        },
+        "sessions": 0
+      }
+    },
+    "/physiology/vitals": {
+      "date": "2026-05-13",
+      "generated_at": "2026-05-13T06:30:00Z",
+      "history": {
+        "hrv": [
+          {
+            "date": "2026-04-14",
+            "value": 62.0
+          },
+          {
+            "date": "2026-04-15",
+            "value": 66.0
+          },
+          {
+            "date": "2026-04-16",
+            "value": 58.0
+          },
+          {
+            "date": "2026-04-17",
+            "value": 70.0
+          },
+          {
+            "date": "2026-04-18",
+            "value": 62.0
+          },
+          {
+            "date": "2026-04-19",
+            "value": 54.0
+          },
+          {
+            "date": "2026-04-20",
+            "value": 66.0
+          },
+          {
+            "date": "2026-04-21",
+            "value": 58.0
+          },
+          {
+            "date": "2026-04-22",
+            "value": 74.0
+          },
+          {
+            "date": "2026-04-23",
+            "value": 62.0
+          },
+          {
+            "date": "2026-04-24",
+            "value": 54.0
+          },
+          {
+            "date": "2026-04-25",
+            "value": 66.0
+          },
+          {
+            "date": "2026-04-26",
+            "value": 50.0
+          },
+          {
+            "date": "2026-04-27",
+            "value": 70.0
+          },
+          {
+            "date": "2026-04-28",
+            "value": 62.0
+          },
+          {
+            "date": "2026-04-29",
+            "value": 58.0
+          },
+          {
+            "date": "2026-04-30",
+            "value": 54.0
+          },
+          {
+            "date": "2026-05-01",
+            "value": 74.0
+          },
+          {
+            "date": "2026-05-02",
+            "value": 62.0
+          },
+          {
+            "date": "2026-05-03",
+            "value": 58.0
+          },
+          {
+            "date": "2026-05-04",
+            "value": 66.0
+          },
+          {
+            "date": "2026-05-05",
+            "value": 46.0
+          },
+          {
+            "date": "2026-05-06",
+            "value": 54.0
+          },
+          {
+            "date": "2026-05-07",
+            "value": 78.0
+          },
+          {
+            "date": "2026-05-08",
+            "value": 62.0
+          },
+          {
+            "date": "2026-05-09",
+            "value": 58.0
+          },
+          {
+            "date": "2026-05-10",
+            "value": 58.0
+          },
+          {
+            "date": "2026-05-11",
+            "value": 54.0
+          },
+          {
+            "date": "2026-05-12",
+            "value": 50.0
+          }
+        ],
+        "resting_hr": [
+          {
+            "date": "2026-04-14",
+            "value": 58.0
+          },
+          {
+            "date": "2026-04-15",
+            "value": 60.0
+          },
+          {
+            "date": "2026-04-16",
+            "value": 56.0
+          },
+          {
+            "date": "2026-04-17",
+            "value": 62.0
+          },
+          {
+            "date": "2026-04-18",
+            "value": 58.0
+          },
+          {
+            "date": "2026-04-19",
+            "value": 54.0
+          },
+          {
+            "date": "2026-04-20",
+            "value": 60.0
+          },
+          {
+            "date": "2026-04-21",
+            "value": 56.0
+          },
+          {
+            "date": "2026-04-22",
+            "value": 52.0
+          },
+          {
+            "date": "2026-04-23",
+            "value": 58.0
+          },
+          {
+            "date": "2026-04-24",
+            "value": 54.0
+          },
+          {
+            "date": "2026-04-25",
+            "value": 60.0
+          },
+          {
+            "date": "2026-04-26",
+            "value": 52.0
+          },
+          {
+            "date": "2026-04-27",
+            "value": 62.0
+          },
+          {
+            "date": "2026-04-28",
+            "value": 58.0
+          },
+          {
+            "date": "2026-04-29",
+            "value": 56.0
+          },
+          {
+            "date": "2026-04-30",
+            "value": 54.0
+          },
+          {
+            "date": "2026-05-01",
+            "value": 52.0
+          },
+          {
+            "date": "2026-05-02",
+            "value": 58.0
+          },
+          {
+            "date": "2026-05-03",
+            "value": 60.0
+          },
+          {
+            "date": "2026-05-04",
+            "value": 54.0
+          },
+          {
+            "date": "2026-05-05",
+            "value": 52.0
+          },
+          {
+            "date": "2026-05-06",
+            "value": 50.0
+          },
+          {
+            "date": "2026-05-07",
+            "value": 66.0
+          },
+          {
+            "date": "2026-05-08",
+            "value": 58.0
+          },
+          {
+            "date": "2026-05-09",
+            "value": 62.0
+          },
+          {
+            "date": "2026-05-10",
+            "value": 56.0
+          },
+          {
+            "date": "2026-05-11",
+            "value": 52.0
+          },
+          {
+            "date": "2026-05-12",
+            "value": 63.0
+          }
+        ],
+        "sleep": [
+          {
+            "date": "2026-04-14",
+            "value": 26400.0
+          },
+          {
+            "date": "2026-04-15",
+            "value": 27600.0
+          },
+          {
+            "date": "2026-04-16",
+            "value": 25200.0
+          },
+          {
+            "date": "2026-04-17",
+            "value": 28800.0
+          },
+          {
+            "date": "2026-04-18",
+            "value": 26400.0
+          },
+          {
+            "date": "2026-04-19",
+            "value": 24000.0
+          },
+          {
+            "date": "2026-04-20",
+            "value": 27600.0
+          },
+          {
+            "date": "2026-04-21",
+            "value": 25200.0
+          },
+          {
+            "date": "2026-04-22",
+            "value": 30000.0
+          },
+          {
+            "date": "2026-04-23",
+            "value": 26400.0
+          },
+          {
+            "date": "2026-04-24",
+            "value": 24000.0
+          },
+          {
+            "date": "2026-04-25",
+            "value": 27600.0
+          },
+          {
+            "date": "2026-04-26",
+            "value": 22800.0
+          },
+          {
+            "date": "2026-04-27",
+            "value": 28800.0
+          },
+          {
+            "date": "2026-04-28",
+            "value": 26400.0
+          },
+          {
+            "date": "2026-04-29",
+            "value": 25200.0
+          },
+          {
+            "date": "2026-04-30",
+            "value": 24000.0
+          },
+          {
+            "date": "2026-05-01",
+            "value": 30000.0
+          },
+          {
+            "date": "2026-05-02",
+            "value": 26400.0
+          },
+          {
+            "date": "2026-05-03",
+            "value": 25200.0
+          },
+          {
+            "date": "2026-05-04",
+            "value": 28800.0
+          },
+          {
+            "date": "2026-05-05",
+            "value": 21600.0
+          },
+          {
+            "date": "2026-05-06",
+            "value": 24000.0
+          },
+          {
+            "date": "2026-05-07",
+            "value": 31200.0
+          },
+          {
+            "date": "2026-05-08",
+            "value": 26400.0
+          },
+          {
+            "date": "2026-05-09",
+            "value": 25200.0
+          },
+          {
+            "date": "2026-05-10",
+            "value": 24600.0
+          },
+          {
+            "date": "2026-05-11",
+            "value": 23800.0
+          },
+          {
+            "date": "2026-05-12",
+            "value": 23000.0
+          }
+        ]
+      },
+      "patterns": [
+        {
+          "id": "usual_streak.sleep.below",
+          "sample_size": 3,
+          "text": "your sleep has been below your usual for 3 nights"
+        },
+        {
+          "id": "usual_streak.hrv.below",
+          "sample_size": 3,
+          "text": "your HRV has been below your usual for 3 nights"
+        }
+      ],
+      "rest": {
+        "label": "Rest",
+        "line": "could be better · 2 of 3 signals below your usual"
+      },
+      "vitals": [
+        {
+          "band": {
+            "lower": 23700.0,
+            "nights": 29,
+            "upper": 29100.0
+          },
+          "deviation_text": "1 h 10 m less than your usual",
+          "direction_text": "could be better",
+          "key": "sleep",
+          "label": "Sleep",
+          "status_text": null,
+          "travel_text": "6th night down",
+          "value_text": "6 h 10 m"
+        },
+        {
+          "band": {
+            "lower": 56.0,
+            "nights": 29,
+            "upper": 68.0
+          },
+          "deviation_text": "14 below your usual",
+          "direction_text": "could be better",
+          "key": "hrv",
+          "label": "HRV",
+          "status_text": null,
+          "travel_text": "3rd night down",
+          "value_text": "48 ms"
+        },
+        {
+          "band": {
+            "lower": 52.0,
+            "nights": 29,
+            "upper": 64.0
+          },
+          "deviation_text": "5 above your usual",
+          "direction_text": "about usual",
+          "key": "resting_hr",
+          "label": "Resting HR",
+          "status_text": null,
+          "travel_text": null,
+          "value_text": "63 bpm"
+        }
+      ]
+    },
+    "/plan/week": {
+      "adherence": {
+        "done": 0,
+        "planned": 7
+      },
+      "block_name": "Base block",
+      "counts": {
+        "done": 0,
+        "not_done": 2,
+        "planned": 5
+      },
+      "sessions": [
+        {
+          "actual": null,
+          "date": "2026-05-11",
+          "sentence": "11 May 2026 — 8 km · easy",
+          "session_type": "easy",
+          "source": "prescribed",
+          "status": "not_done",
+          "target": {
+            "raw": 8000,
+            "text": "8 km"
+          },
+          "title": "Easy 8"
+        },
+        {
+          "actual": null,
+          "date": "2026-05-12",
+          "sentence": "12 May 2026 — 10 km · easy",
+          "session_type": "easy",
+          "source": "prescribed",
+          "status": "not_done",
+          "target": {
+            "raw": 10000,
+            "text": "10 km"
+          },
+          "title": "Easy 10"
+        },
+        {
+          "actual": null,
+          "date": "2026-05-13",
+          "sentence": "Today — 10 km · easy",
+          "session_type": "easy",
+          "source": "prescribed",
+          "status": "planned",
+          "target": {
+            "raw": 10000,
+            "text": "10 km"
+          },
+          "title": "Easy 10"
+        },
+        {
+          "actual": null,
+          "date": "2026-05-14",
+          "sentence": "14 May 2026 — 5 km · easy",
+          "session_type": "easy",
+          "source": "prescribed",
+          "status": "planned",
+          "target": {
+            "raw": 5000,
+            "text": "5 km"
+          },
+          "title": "Easy 5"
+        },
+        {
+          "actual": null,
+          "date": "2026-05-15",
+          "sentence": "15 May 2026 — 16 km · long",
+          "session_type": "long",
+          "source": "prescribed",
+          "status": "planned",
+          "target": {
+            "raw": 16000,
+            "text": "16 km"
+          },
+          "title": "Long 16"
+        },
+        {
+          "actual": null,
+          "date": "2026-05-16",
+          "sentence": "16 May 2026 — easy · no distance target",
+          "session_type": "easy",
+          "source": "prescribed",
+          "status": "planned",
+          "target": null,
+          "title": "Easy 30 minutes"
+        },
+        {
+          "actual": null,
+          "date": "2026-05-17",
+          "sentence": "17 May 2026 — 6 km · easy",
+          "session_type": "easy",
+          "source": "prescribed",
+          "status": "planned",
+          "target": {
+            "raw": 6000,
+            "text": "6 km"
+          },
+          "title": "Easy 6"
+        }
+      ],
+      "source": "prescribed",
+      "target": {
+        "raw": 55000,
+        "text": "55 km"
+      },
+      "today": "2026-05-13",
+      "week_end": "2026-05-17",
+      "week_start": "2026-05-11"
+    },
+    "/settings": {
+      "generated_at": "2026-05-13T06:30:00Z",
+      "goal": {
+        "km": null,
+        "value": null
+      },
+      "pause": null,
+      "storage": {
+        "activity_count": 6,
+        "note_count": 0,
+        "plan_session_count": 7,
+        "size": null,
+        "wellness_day_count": 30
+      }
+    },
+    "/sync/status": {
+      "activity_count": 6,
+      "cursor": null,
+      "deleted": 0,
+      "last_error": null,
+      "last_sync_at": null,
+      "pulled": 0,
+      "skipped": 0
+    }
+  },
+  "seed": {
+  "activities": [
+    {
       "id": 101,
       "name": "Run",
       "sport_type": "running",
@@ -1240,1850 +1253,370 @@
         "text": "148 bpm",
         "raw": 148
       },
-      "pace": {
-        "text": "5:24 /km",
-        "raw": 324.19
+      "elevation_gain": {
+        "text": "42 m",
+        "raw": 42
+      }
+    },
+    {
+      "id": 102,
+      "name": "Run",
+      "sport_type": "running",
+      "start_time": "2026-05-09T07:10:00Z",
+      "local_date": "2026-05-09",
+      "distance": {
+        "text": "10.2 km",
+        "raw": 10200
+      },
+      "duration": {
+        "text": "55 m",
+        "raw": 3320
+      },
+      "heart_rate": {
+        "text": "146 bpm",
+        "raw": 146
       },
       "elevation_gain": {
         "text": "42 m",
         "raw": 42
-      },
-      "group": {
-        "key": "2026-05-06",
-        "distance": {
-          "text": "36 km",
-          "raw": 36000
-        },
-        "duration": {
-          "text": "3 h 11 m",
-          "raw": 11480
-        }
-      },
-      "story": null,
-      "geo_points": [],
-      "splits": [
-        {
-          "index": 1,
-          "distance": {
-            "text": "1 km",
-            "raw": 1000
-          },
-          "duration": {
-            "text": "5 m",
-            "raw": 322
-          },
-          "heart_rate": {
-            "text": "149 bpm",
-            "raw": 149
-          }
-        },
-        {
-          "index": 2,
-          "distance": {
-            "text": "1 km",
-            "raw": 1000
-          },
-          "duration": {
-            "text": "5 m",
-            "raw": 318
-          },
-          "heart_rate": {
-            "text": "151 bpm",
-            "raw": 151
-          }
-        },
-        {
-          "index": 3,
-          "distance": {
-            "text": "1 km",
-            "raw": 1000
-          },
-          "duration": {
-            "text": "5 m",
-            "raw": 315
-          },
-          "heart_rate": {
-            "text": "152 bpm",
-            "raw": 152
-          }
-        },
-        {
-          "index": 4,
-          "distance": {
-            "text": "1 km",
-            "raw": 1000
-          },
-          "duration": {
-            "text": "5 m",
-            "raw": 320
-          },
-          "heart_rate": {
-            "text": "153 bpm",
-            "raw": 153
-          }
-        },
-        {
-          "index": 5,
-          "distance": {
-            "text": "1 km",
-            "raw": 1000
-          },
-          "duration": {
-            "text": "5 m",
-            "raw": 326
-          },
-          "heart_rate": {
-            "text": "154 bpm",
-            "raw": 154
-          }
-        },
-        {
-          "index": 6,
-          "distance": {
-            "text": "1 km",
-            "raw": 1000
-          },
-          "duration": {
-            "text": "5 m",
-            "raw": 330
-          },
-          "heart_rate": {
-            "text": "155 bpm",
-            "raw": 155
-          }
-        },
-        {
-          "index": 7,
-          "distance": {
-            "text": "1 km",
-            "raw": 1000
-          },
-          "duration": {
-            "text": "5 m",
-            "raw": 334
-          },
-          "heart_rate": {
-            "text": "156 bpm",
-            "raw": 156
-          }
-        },
-        {
-          "index": 8,
-          "distance": {
-            "text": "1 km",
-            "raw": 1000
-          },
-          "duration": {
-            "text": "5 m",
-            "raw": 336
-          },
-          "heart_rate": {
-            "text": "158 bpm",
-            "raw": 158
-          }
-        },
-        {
-          "index": 9,
-          "distance": {
-            "text": "1 km",
-            "raw": 1000
-          },
-          "duration": {
-            "text": "5 m",
-            "raw": 335
-          },
-          "heart_rate": {
-            "text": "157 bpm",
-            "raw": 157
-          }
-        },
-        {
-          "index": 10,
-          "distance": {
-            "text": "1 km",
-            "raw": 1000
-          },
-          "duration": {
-            "text": "5 m",
-            "raw": 337
-          },
-          "heart_rate": {
-            "text": "158 bpm",
-            "raw": 158
-          }
-        },
-        {
-          "index": 11,
-          "distance": {
-            "text": "1 km",
-            "raw": 1000
-          },
-          "duration": {
-            "text": "5 m",
-            "raw": 341
-          },
-          "heart_rate": {
-            "text": "159 bpm",
-            "raw": 159
-          }
-        },
-        {
-          "index": 12,
-          "distance": {
-            "text": "1 km",
-            "raw": 1000
-          },
-          "duration": {
-            "text": "5 m",
-            "raw": 338
-          },
-          "heart_rate": {
-            "text": "158 bpm",
-            "raw": 158
-          }
-        },
-        {
-          "index": 13,
-          "distance": {
-            "text": "400 m",
-            "raw": 400
-          },
-          "duration": {
-            "text": "2 m",
-            "raw": 138
-          },
-          "heart_rate": {
-            "text": "156 bpm",
-            "raw": 156
-          }
-        }
-      ],
-      "elevation": [
-        {
-          "distance": {
-            "text": "0 km",
-            "raw": 0
-          },
-          "elevation": {
-            "text": "40 m",
-            "raw": 40
-          }
-        },
-        {
-          "distance": {
-            "text": "1.5 km",
-            "raw": 1500
-          },
-          "elevation": {
-            "text": "51 m",
-            "raw": 51
-          }
-        },
-        {
-          "distance": {
-            "text": "3 km",
-            "raw": 3000
-          },
-          "elevation": {
-            "text": "40 m",
-            "raw": 40
-          }
-        },
-        {
-          "distance": {
-            "text": "4.5 km",
-            "raw": 4500
-          },
-          "elevation": {
-            "text": "29 m",
-            "raw": 29
-          }
-        },
-        {
-          "distance": {
-            "text": "6 km",
-            "raw": 6000
-          },
-          "elevation": {
-            "text": "40 m",
-            "raw": 40
-          }
-        },
-        {
-          "distance": {
-            "text": "7.5 km",
-            "raw": 7500
-          },
-          "elevation": {
-            "text": "51 m",
-            "raw": 51
-          }
-        },
-        {
-          "distance": {
-            "text": "9 km",
-            "raw": 9000
-          },
-          "elevation": {
-            "text": "40 m",
-            "raw": 40
-          }
-        },
-        {
-          "distance": {
-            "text": "10.5 km",
-            "raw": 10500
-          },
-          "elevation": {
-            "text": "29 m",
-            "raw": 29
-          }
-        },
-        {
-          "distance": {
-            "text": "12 km",
-            "raw": 12000
-          },
-          "elevation": {
-            "text": "40 m",
-            "raw": 40
-          }
-        }
-      ],
-      "samples": [
-        {
-          "offset_s": 0,
-          "pace": {
-            "text": "5:24 /km",
-            "raw": 324
-          },
-          "heart_rate": {
-            "text": "140 bpm",
-            "raw": 140
-          }
-        },
-        {
-          "offset_s": 60,
-          "pace": {
-            "text": "5:13 /km",
-            "raw": 313
-          },
-          "heart_rate": {
-            "text": "154 bpm",
-            "raw": 154
-          }
-        },
-        {
-          "offset_s": 120,
-          "pace": {
-            "text": "5:04 /km",
-            "raw": 304
-          },
-          "heart_rate": {
-            "text": "156 bpm",
-            "raw": 156
-          }
-        },
-        {
-          "offset_s": 180,
-          "pace": {
-            "text": "5:00 /km",
-            "raw": 300
-          },
-          "heart_rate": {
-            "text": "152 bpm",
-            "raw": 152
-          }
-        },
-        {
-          "offset_s": 240,
-          "pace": {
-            "text": "5:05 /km",
-            "raw": 305
-          },
-          "heart_rate": {
-            "text": "147 bpm",
-            "raw": 147
-          }
-        },
-        {
-          "offset_s": 300,
-          "pace": {
-            "text": "5:15 /km",
-            "raw": 315
-          },
-          "heart_rate": {
-            "text": "144 bpm",
-            "raw": 144
-          }
-        },
-        {
-          "offset_s": 360,
-          "pace": {
-            "text": "5:26 /km",
-            "raw": 326
-          },
-          "heart_rate": {
-            "text": "141 bpm",
-            "raw": 141
-          }
-        },
-        {
-          "offset_s": 420,
-          "pace": {
-            "text": "5:36 /km",
-            "raw": 336
-          },
-          "heart_rate": {
-            "text": "139 bpm",
-            "raw": 139
-          }
-        }
-      ],
-      "plan_line": null,
-      "note": null
-    },
-    "/physiology/vitals": {
-      "date": "2026-05-13",
-      "generated_at": "2026-05-13T06:30:00Z",
-      "rest": {
-        "label": "Rest",
-        "line": "could be better · 2 of 3 signals below your usual"
-      },
-      "vitals": [
-        {
-          "key": "sleep",
-          "label": "Sleep",
-          "value_text": "6 h 10 m",
-          "direction_text": "could be better",
-          "deviation_text": "1 h 10 m less than your usual",
-          "travel_text": "6th night down",
-          "status_text": null,
-          "band": {
-            "lower": 22800,
-            "upper": 30000,
-            "nights": 29
-          }
-        },
-        {
-          "key": "hrv",
-          "label": "HRV",
-          "value_text": "48 ms",
-          "direction_text": "could be better",
-          "deviation_text": "14 below your usual",
-          "travel_text": "3rd night down",
-          "status_text": null,
-          "band": {
-            "lower": 56,
-            "upper": 68,
-            "nights": 29
-          }
-        },
-        {
-          "key": "resting_hr",
-          "label": "Resting HR",
-          "value_text": "63 bpm",
-          "direction_text": "about usual",
-          "deviation_text": "5 above your usual",
-          "travel_text": null,
-          "status_text": null,
-          "band": {
-            "lower": 52,
-            "upper": 64,
-            "nights": 29
-          }
-        }
-      ],
-      "history": {
-        "sleep": [
-          {
-            "date": "2026-04-13",
-            "value": 26400
-          },
-          {
-            "date": "2026-04-14",
-            "value": 27600
-          },
-          {
-            "date": "2026-04-15",
-            "value": 25200
-          },
-          {
-            "date": "2026-04-16",
-            "value": 28800
-          },
-          {
-            "date": "2026-04-17",
-            "value": 26400
-          },
-          {
-            "date": "2026-04-18",
-            "value": 24000
-          },
-          {
-            "date": "2026-04-19",
-            "value": 27600
-          },
-          {
-            "date": "2026-04-20",
-            "value": 25200
-          },
-          {
-            "date": "2026-04-21",
-            "value": 30000
-          },
-          {
-            "date": "2026-04-22",
-            "value": 26400
-          },
-          {
-            "date": "2026-04-23",
-            "value": 24000
-          },
-          {
-            "date": "2026-04-24",
-            "value": 27600
-          },
-          {
-            "date": "2026-04-25",
-            "value": 22800
-          },
-          {
-            "date": "2026-04-26",
-            "value": 28800
-          },
-          {
-            "date": "2026-04-27",
-            "value": 26400
-          },
-          {
-            "date": "2026-04-28",
-            "value": 25200
-          },
-          {
-            "date": "2026-04-29",
-            "value": 24000
-          },
-          {
-            "date": "2026-04-30",
-            "value": 30000
-          },
-          {
-            "date": "2026-05-01",
-            "value": 26400
-          },
-          {
-            "date": "2026-05-02",
-            "value": 25200
-          },
-          {
-            "date": "2026-05-03",
-            "value": 28800
-          },
-          {
-            "date": "2026-05-04",
-            "value": 21600
-          },
-          {
-            "date": "2026-05-05",
-            "value": 24000
-          },
-          {
-            "date": "2026-05-06",
-            "value": 31200
-          },
-          {
-            "date": "2026-05-07",
-            "value": 26400
-          },
-          {
-            "date": "2026-05-08",
-            "value": 25200
-          },
-          {
-            "date": "2026-05-09",
-            "value": 24600
-          },
-          {
-            "date": "2026-05-10",
-            "value": 23800
-          },
-          {
-            "date": "2026-05-11",
-            "value": 23000
-          }
-        ],
-        "hrv": [
-          {
-            "date": "2026-04-13",
-            "value": 62
-          },
-          {
-            "date": "2026-04-14",
-            "value": 66
-          },
-          {
-            "date": "2026-04-15",
-            "value": 58
-          },
-          {
-            "date": "2026-04-16",
-            "value": 70
-          },
-          {
-            "date": "2026-04-17",
-            "value": 62
-          },
-          {
-            "date": "2026-04-18",
-            "value": 54
-          },
-          {
-            "date": "2026-04-19",
-            "value": 66
-          },
-          {
-            "date": "2026-04-20",
-            "value": 58
-          },
-          {
-            "date": "2026-04-21",
-            "value": 74
-          },
-          {
-            "date": "2026-04-22",
-            "value": 62
-          },
-          {
-            "date": "2026-04-23",
-            "value": 54
-          },
-          {
-            "date": "2026-04-24",
-            "value": 66
-          },
-          {
-            "date": "2026-04-25",
-            "value": 50
-          },
-          {
-            "date": "2026-04-26",
-            "value": 70
-          },
-          {
-            "date": "2026-04-27",
-            "value": 62
-          },
-          {
-            "date": "2026-04-28",
-            "value": 58
-          },
-          {
-            "date": "2026-04-29",
-            "value": 54
-          },
-          {
-            "date": "2026-04-30",
-            "value": 74
-          },
-          {
-            "date": "2026-05-01",
-            "value": 62
-          },
-          {
-            "date": "2026-05-02",
-            "value": 58
-          },
-          {
-            "date": "2026-05-03",
-            "value": 66
-          },
-          {
-            "date": "2026-05-04",
-            "value": 46
-          },
-          {
-            "date": "2026-05-05",
-            "value": 54
-          },
-          {
-            "date": "2026-05-06",
-            "value": 78
-          },
-          {
-            "date": "2026-05-07",
-            "value": 62
-          },
-          {
-            "date": "2026-05-08",
-            "value": 58
-          },
-          {
-            "date": "2026-05-09",
-            "value": 58
-          },
-          {
-            "date": "2026-05-10",
-            "value": 54
-          },
-          {
-            "date": "2026-05-11",
-            "value": 50
-          }
-        ],
-        "resting_hr": [
-          {
-            "date": "2026-04-13",
-            "value": 58
-          },
-          {
-            "date": "2026-04-14",
-            "value": 60
-          },
-          {
-            "date": "2026-04-15",
-            "value": 56
-          },
-          {
-            "date": "2026-04-16",
-            "value": 62
-          },
-          {
-            "date": "2026-04-17",
-            "value": 58
-          },
-          {
-            "date": "2026-04-18",
-            "value": 54
-          },
-          {
-            "date": "2026-04-19",
-            "value": 60
-          },
-          {
-            "date": "2026-04-20",
-            "value": 56
-          },
-          {
-            "date": "2026-04-21",
-            "value": 52
-          },
-          {
-            "date": "2026-04-22",
-            "value": 58
-          },
-          {
-            "date": "2026-04-23",
-            "value": 54
-          },
-          {
-            "date": "2026-04-24",
-            "value": 60
-          },
-          {
-            "date": "2026-04-25",
-            "value": 52
-          },
-          {
-            "date": "2026-04-26",
-            "value": 62
-          },
-          {
-            "date": "2026-04-27",
-            "value": 58
-          },
-          {
-            "date": "2026-04-28",
-            "value": 56
-          },
-          {
-            "date": "2026-04-29",
-            "value": 54
-          },
-          {
-            "date": "2026-04-30",
-            "value": 52
-          },
-          {
-            "date": "2026-05-01",
-            "value": 58
-          },
-          {
-            "date": "2026-05-02",
-            "value": 60
-          },
-          {
-            "date": "2026-05-03",
-            "value": 54
-          },
-          {
-            "date": "2026-05-04",
-            "value": 52
-          },
-          {
-            "date": "2026-05-05",
-            "value": 50
-          },
-          {
-            "date": "2026-05-06",
-            "value": 66
-          },
-          {
-            "date": "2026-05-07",
-            "value": 58
-          },
-          {
-            "date": "2026-05-08",
-            "value": 62
-          },
-          {
-            "date": "2026-05-09",
-            "value": 56
-          },
-          {
-            "date": "2026-05-10",
-            "value": 52
-          },
-          {
-            "date": "2026-05-11",
-            "value": 63
-          }
-        ]
-      },
-      "patterns": [
-        {
-          "id": "hrv-below",
-          "text": "your HRV has been below your usual for 3 nights",
-          "sample_size": 3
-        },
-        {
-          "id": "sleep-low-distance",
-          "text": "the 5 other times your sleep was below your usual, you ran 8 km or less",
-          "sample_size": 5
-        }
-      ]
-    },
-    "/plan/week": {
-      "block_name": "Base block",
-      "source": "prescribed",
-      "week_start": "2026-05-11",
-      "week_end": "2026-05-17",
-      "today": "2026-05-13",
-      "target": {
-        "text": "25 km",
-        "raw": 25000
-      },
-      "sessions": [
-        {
-          "date": "2026-05-11",
-          "session_type": "easy",
-          "title": "Easy 8",
-          "sentence": "11 May 2026 — 8 km · easy",
-          "target": {
-            "text": "8 km",
-            "raw": 8000
-          },
-          "actual": {
-            "text": "8.1 km",
-            "raw": 8100
-          },
-          "status": "done",
-          "source": "prescribed"
-        },
-        {
-          "date": "2026-05-12",
-          "session_type": "easy",
-          "title": "Easy 10",
-          "sentence": "12 May 2026 — 10 km · easy",
-          "target": {
-            "text": "10 km",
-            "raw": 10000
-          },
-          "actual": null,
-          "status": "not_done",
-          "source": "prescribed"
-        },
-        {
-          "date": "2026-05-13",
-          "session_type": "easy",
-          "title": "Easy 10",
-          "sentence": "Today — 10 km · easy",
-          "target": {
-            "text": "10 km",
-            "raw": 10000
-          },
-          "actual": null,
-          "status": "planned",
-          "source": "prescribed"
-        },
-        {
-          "date": "2026-05-14",
-          "session_type": "easy",
-          "title": "Easy 5",
-          "sentence": "14 May 2026 — 5 km · easy",
-          "target": {
-            "text": "5 km",
-            "raw": 5000
-          },
-          "actual": null,
-          "status": "planned",
-          "source": "prescribed"
-        },
-        {
-          "date": "2026-05-15",
-          "session_type": "long",
-          "title": "Long 16",
-          "sentence": "15 May 2026 — 16 km · long",
-          "target": {
-            "text": "16 km",
-            "raw": 16000
-          },
-          "actual": null,
-          "status": "planned",
-          "source": "prescribed"
-        },
-        {
-          "date": "2026-05-16",
-          "session_type": "easy",
-          "title": "Easy 30 minutes",
-          "sentence": "16 May 2026 — easy",
-          "target": null,
-          "actual": null,
-          "status": "planned",
-          "source": "prescribed"
-        },
-        {
-          "date": "2026-05-17",
-          "session_type": "easy",
-          "title": "Easy 6",
-          "sentence": "17 May 2026 — 6 km · easy",
-          "target": {
-            "text": "6 km",
-            "raw": 6000
-          },
-          "actual": null,
-          "status": "planned",
-          "source": "prescribed"
-        }
-      ],
-      "adherence": {
-        "done": 1,
-        "planned": 7
-      },
-      "counts": {
-        "done": 1,
-        "planned": 5,
-        "not_done": 1
       }
     },
-    "/insights/today": {
-      "generated_at": "2026-05-13T06:30:00Z",
-      "date": "2026-05-13",
-      "planned": {
-        "date": "2026-05-13",
-        "session_type": "easy",
-        "title": "Easy 10",
-        "sentence": "Today — 10 km · easy",
-        "target": {
-          "text": "10 km",
-          "raw": 10000
-        },
-        "actual": null,
-        "status": "planned",
-        "source": "prescribed"
+    {
+      "id": 103,
+      "name": "Run",
+      "sport_type": "running",
+      "start_time": "2026-05-07T07:10:00Z",
+      "local_date": "2026-05-07",
+      "distance": {
+        "text": "8.4 km",
+        "raw": 8400
       },
-      "options": [
-        {
-          "date": "2026-05-14",
-          "session_type": "easy",
-          "title": "Easy 5",
-          "sentence": "14 May 2026 — 5 km · easy",
-          "target": {
-            "text": "5 km",
-            "raw": 5000
-          },
-          "actual": null,
-          "status": "planned",
-          "source": "prescribed"
-        },
-        {
-          "date": "2026-05-16",
-          "session_type": "easy",
-          "title": "Easy 30 minutes",
-          "sentence": "16 May 2026 — easy",
-          "target": null,
-          "actual": null,
-          "status": "planned",
-          "source": "prescribed"
-        }
-      ],
-      "last_run": {
-        "id": 102,
-        "name": "Run",
-        "sport_type": "running",
-        "start_time": "2026-05-09T07:10:00Z",
-        "local_date": "2026-05-09",
-        "distance": {
-          "text": "10.2 km",
-          "raw": 10200
-        },
-        "duration": {
-          "text": "55 m",
-          "raw": 3320
-        },
-        "heart_rate": {
-          "text": "146 bpm",
-          "raw": 146
-        },
-        "pace": {
-          "text": "5:25 /km",
-          "raw": 325.49
-        },
-        "elevation_gain": {
-          "text": "42 m",
-          "raw": 42
-        },
-        "group": {
-          "key": "2026-05-06",
-          "distance": {
-            "text": "36 km",
-            "raw": 36000
-          },
-          "duration": {
-            "text": "3 h 11 m",
-            "raw": 11480
-          }
-        },
-        "story": null,
-        "geo_points": []
+      "duration": {
+        "text": "42 m",
+        "raw": 2520
       },
-      "distance_comparison": null,
-      "week": {
-        "distance": {
-          "text": "20.6 km",
-          "raw": 20600
-        },
-        "sessions": 2
+      "heart_rate": {
+        "text": "148 bpm",
+        "raw": 148
+      },
+      "elevation_gain": {
+        "text": "42 m",
+        "raw": 42
       }
     },
-    "/insights/progress": {
-      "generated_at": "2026-05-13T06:30:00Z",
-      "headline": "fitter than 8 weeks ago",
-      "headline_note": "same heart rate, 24 s/km faster",
-      "weekly_volume": [
-        {
-          "week_start": "2026-03-16",
-          "distance": {
-            "text": "24.1 km",
-            "raw": 24100
-          }
-        },
-        {
-          "week_start": "2026-03-23",
-          "distance": {
-            "text": "27.4 km",
-            "raw": 27400
-          }
-        },
-        {
-          "week_start": "2026-03-30",
-          "distance": {
-            "text": "21.8 km",
-            "raw": 21800
-          }
-        },
-        {
-          "week_start": "2026-04-06",
-          "distance": {
-            "text": "31.2 km",
-            "raw": 31200
-          }
-        },
-        {
-          "week_start": "2026-04-13",
-          "distance": {
-            "text": "28.9 km",
-            "raw": 28900
-          }
-        },
-        {
-          "week_start": "2026-04-20",
-          "distance": {
-            "text": "35.4 km",
-            "raw": 35400
-          }
-        },
-        {
-          "week_start": "2026-04-27",
-          "distance": {
-            "text": "30.1 km",
-            "raw": 30100
-          }
-        },
-        {
-          "week_start": "2026-05-04",
-          "distance": {
-            "text": "38.6 km",
-            "raw": 38600
-          }
-        },
-        {
-          "week_start": "2026-05-11",
-          "distance": {
-            "text": "20.6 km",
-            "raw": 20600
-          }
-        }
-      ],
-      "typical_week": {
-        "text": "30 km",
-        "raw": 30000
+    {
+      "id": 104,
+      "name": "Run",
+      "sport_type": "running",
+      "start_time": "2026-05-06T07:10:00Z",
+      "local_date": "2026-05-06",
+      "distance": {
+        "text": "5 km",
+        "raw": 5000
       },
-      "pace_at_hr": [
-        {
-          "week_start": "2026-03-16",
-          "pace": {
-            "text": "5:36 /km",
-            "raw": 336
-          },
-          "heart_rate": {
-            "text": "150 bpm",
-            "raw": 150
-          }
-        },
-        {
-          "week_start": "2026-03-30",
-          "pace": {
-            "text": "5:30 /km",
-            "raw": 330
-          },
-          "heart_rate": {
-            "text": "150 bpm",
-            "raw": 150
-          }
-        },
-        {
-          "week_start": "2026-04-13",
-          "pace": {
-            "text": "5:24 /km",
-            "raw": 324
-          },
-          "heart_rate": {
-            "text": "150 bpm",
-            "raw": 150
-          }
-        },
-        {
-          "week_start": "2026-04-27",
-          "pace": {
-            "text": "5:18 /km",
-            "raw": 318
-          },
-          "heart_rate": {
-            "text": "150 bpm",
-            "raw": 150
-          }
-        },
-        {
-          "week_start": "2026-05-11",
-          "pace": {
-            "text": "5:12 /km",
-            "raw": 312
-          },
-          "heart_rate": {
-            "text": "150 bpm",
-            "raw": 150
-          }
-        }
-      ],
-      "bests": [
-        {
-          "key": "progress.best.5k",
-          "value": "19:48",
-          "date": "2026-04-27"
-        },
-        {
-          "key": "progress.best.10k",
-          "value": "41:12",
-          "date": "2026-05-04"
-        },
-        {
-          "key": "progress.best.longest",
-          "value": "16.1 km",
-          "date": "2026-05-04"
-        }
-      ],
-      "consistency": [
-        {
-          "week_start": "2026-03-16",
-          "sessions": 3
-        },
-        {
-          "week_start": "2026-03-23",
-          "sessions": 4
-        },
-        {
-          "week_start": "2026-03-30",
-          "sessions": 2
-        },
-        {
-          "week_start": "2026-04-06",
-          "sessions": 4
-        },
-        {
-          "week_start": "2026-04-13",
-          "sessions": 3
-        },
-        {
-          "week_start": "2026-04-20",
-          "sessions": 5
-        },
-        {
-          "week_start": "2026-04-27",
-          "sessions": 4
-        },
-        {
-          "week_start": "2026-05-11",
-          "sessions": 2
-        }
-      ],
-      "sessions_per_week": {
-        "text": "3.4",
-        "raw": 3.4
+      "duration": {
+        "text": "27 m",
+        "raw": 1620
       },
-      "adherence": {
-        "done": 7,
-        "planned": 8
+      "heart_rate": {
+        "text": "148 bpm",
+        "raw": 148
       },
-      "weeks_needed": null
-    },
-    "/compare/candidates": [
-      {
-        "id": 101,
-        "label": "Run",
-        "date": "2026-05-10",
-        "distance": {
-          "text": "12.4 km",
-          "raw": 12400
-        }
-      },
-      {
-        "id": 102,
-        "label": "Run",
-        "date": "2026-05-09",
-        "distance": {
-          "text": "10.2 km",
-          "raw": 10200
-        }
-      },
-      {
-        "id": 103,
-        "label": "Run",
-        "date": "2026-05-07",
-        "distance": {
-          "text": "8.4 km",
-          "raw": 8400
-        }
-      },
-      {
-        "id": 104,
-        "label": "Run",
-        "date": "2026-05-06",
-        "distance": {
-          "text": "5 km",
-          "raw": 5000
-        }
-      },
-      {
-        "id": 105,
-        "label": "Run",
-        "date": "2026-05-04",
-        "distance": {
-          "text": "16.1 km",
-          "raw": 16100
-        }
-      },
-      {
-        "id": 106,
-        "label": "Run",
-        "date": "2026-05-03",
-        "distance": {
-          "text": "6.3 km",
-          "raw": 6300
-        }
+      "elevation_gain": {
+        "text": "42 m",
+        "raw": 42
       }
-    ],
-    "/sync/status": {
-      "last_sync_at": "2026-11-02T05:06:10.165Z",
-      "last_error": null,
-      "activity_count": 6,
-      "cursor": null,
-      "pulled": 0,
-      "skipped": 0,
-      "deleted": 0
     },
-    "/health": {
-      "ok": true,
-      "service": "stride",
-      "version": "0.10.0",
-      "garmin_connected": true,
-      "activities": 42,
-      "wellness_days": 29,
-      "plan_sessions": 7,
-      "generated_at": "2026-05-13T06:30:00Z"
-    },
-    "/health/daily": {
-      "date": "2026-05-13",
-      "generated_at": "2026-05-13T06:30:00Z",
-      "stale": false
-    },
-    "/auth/status": {
-      "connected": true,
-      "method": "personal_key",
-      "key_source": "personal_key",
-      "key_last4": "4F2A",
-      "last_sync_at": "2026-11-02T05:06:10.165Z",
-      "generated_at": "2026-05-13T06:30:00Z"
-    },
-    "/settings": {
-      "goal": {
-        "value": {
-          "text": "40 km",
-          "raw": 40000
-        },
-        "km": 40
+    {
+      "id": 105,
+      "name": "Run",
+      "sport_type": "running",
+      "start_time": "2026-05-04T07:10:00Z",
+      "local_date": "2026-05-04",
+      "distance": {
+        "text": "16.1 km",
+        "raw": 16100
       },
-      "pause": null,
-      "storage": {
-        "size": {
-          "text": "2.4 MB",
-          "raw": 2516582
-        },
-        "activity_count": 42,
-        "wellness_day_count": 29,
-        "plan_session_count": 7,
-        "note_count": 1
+      "duration": {
+        "text": "1 h 25 m",
+        "raw": 5072
       },
-      "generated_at": "2026-05-13T06:30:00Z"
+      "heart_rate": {
+        "text": "148 bpm",
+        "raw": 148
+      },
+      "elevation_gain": {
+        "text": "42 m",
+        "raw": 42
+      }
+    },
+    {
+      "id": 106,
+      "name": "Run",
+      "sport_type": "running",
+      "start_time": "2026-05-03T07:10:00Z",
+      "local_date": "2026-05-03",
+      "distance": {
+        "text": "6.3 km",
+        "raw": 6300
+      },
+      "duration": {
+        "text": "35 m",
+        "raw": 2080
+      },
+      "heart_rate": {
+        "text": "148 bpm",
+        "raw": 148
+      },
+      "elevation_gain": {
+        "text": "42 m",
+        "raw": 42
+      }
     }
-  },
-  "seed": {
-    "activities": [
-      {
-        "id": 101,
-        "name": "Run",
-        "sport_type": "running",
-        "start_time": "2026-05-10T07:10:00Z",
-        "local_date": "2026-05-10",
-        "distance": {
-          "text": "12.4 km",
-          "raw": 12400
-        },
-        "duration": {
-          "text": "1 h 7 m",
-          "raw": 4020
-        },
-        "heart_rate": {
-          "text": "148 bpm",
-          "raw": 148
-        },
-        "pace": {
-          "text": "5:24 /km",
-          "raw": 324.19
-        },
-        "elevation_gain": {
-          "text": "42 m",
-          "raw": 42
-        },
-        "group": {
-          "key": "2026-05-06",
-          "distance": {
-            "text": "36 km",
-            "raw": 36000
-          },
-          "duration": {
-            "text": "3 h 11 m",
-            "raw": 11480
-          }
-        },
-        "story": null,
-        "geo_points": []
-      },
-      {
-        "id": 102,
-        "name": "Run",
-        "sport_type": "running",
-        "start_time": "2026-05-09T07:10:00Z",
-        "local_date": "2026-05-09",
-        "distance": {
-          "text": "10.2 km",
-          "raw": 10200
-        },
-        "duration": {
-          "text": "55 m",
-          "raw": 3320
-        },
-        "heart_rate": {
-          "text": "146 bpm",
-          "raw": 146
-        },
-        "pace": {
-          "text": "5:25 /km",
-          "raw": 325.49
-        },
-        "elevation_gain": {
-          "text": "42 m",
-          "raw": 42
-        },
-        "group": {
-          "key": "2026-05-06",
-          "distance": {
-            "text": "36 km",
-            "raw": 36000
-          },
-          "duration": {
-            "text": "3 h 11 m",
-            "raw": 11480
-          }
-        },
-        "story": null,
-        "geo_points": []
-      },
-      {
-        "id": 103,
-        "name": "Run",
-        "sport_type": "running",
-        "start_time": "2026-05-07T07:10:00Z",
-        "local_date": "2026-05-07",
-        "distance": {
-          "text": "8.4 km",
-          "raw": 8400
-        },
-        "duration": {
-          "text": "42 m",
-          "raw": 2520
-        },
-        "heart_rate": {
-          "text": "148 bpm",
-          "raw": 148
-        },
-        "pace": {
-          "text": "5:00 /km",
-          "raw": 300
-        },
-        "elevation_gain": {
-          "text": "42 m",
-          "raw": 42
-        },
-        "group": {
-          "key": "2026-05-06",
-          "distance": {
-            "text": "36 km",
-            "raw": 36000
-          },
-          "duration": {
-            "text": "3 h 11 m",
-            "raw": 11480
-          }
-        },
-        "story": null,
-        "geo_points": []
-      },
-      {
-        "id": 104,
-        "name": "Run",
-        "sport_type": "running",
-        "start_time": "2026-05-06T07:10:00Z",
-        "local_date": "2026-05-06",
-        "distance": {
-          "text": "5 km",
-          "raw": 5000
-        },
-        "duration": {
-          "text": "27 m",
-          "raw": 1620
-        },
-        "heart_rate": {
-          "text": "148 bpm",
-          "raw": 148
-        },
-        "pace": {
-          "text": "5:24 /km",
-          "raw": 324
-        },
-        "elevation_gain": {
-          "text": "42 m",
-          "raw": 42
-        },
-        "group": {
-          "key": "2026-05-06",
-          "distance": {
-            "text": "36 km",
-            "raw": 36000
-          },
-          "duration": {
-            "text": "3 h 11 m",
-            "raw": 11480
-          }
-        },
-        "story": null,
-        "geo_points": []
-      },
-      {
-        "id": 105,
-        "name": "Run",
-        "sport_type": "running",
-        "start_time": "2026-05-04T07:10:00Z",
-        "local_date": "2026-05-04",
-        "distance": {
-          "text": "16.1 km",
-          "raw": 16100
-        },
-        "duration": {
-          "text": "1 h 25 m",
-          "raw": 5072
-        },
-        "heart_rate": {
-          "text": "148 bpm",
-          "raw": 148
-        },
-        "pace": {
-          "text": "5:15 /km",
-          "raw": 315.03
-        },
-        "elevation_gain": {
-          "text": "42 m",
-          "raw": 42
-        },
-        "group": {
-          "key": "2026-05-04",
-          "distance": {
-            "text": "16.1 km",
-            "raw": 16100
-          },
-          "duration": {
-            "text": "1 h 25 m",
-            "raw": 5072
-          }
-        },
-        "story": null,
-        "geo_points": []
-      },
-      {
-        "id": 106,
-        "name": "Run",
-        "sport_type": "running",
-        "start_time": "2026-05-03T07:10:00Z",
-        "local_date": "2026-05-03",
-        "distance": {
-          "text": "6.3 km",
-          "raw": 6300
-        },
-        "duration": {
-          "text": "35 m",
-          "raw": 2080
-        },
-        "heart_rate": {
-          "text": "148 bpm",
-          "raw": 148
-        },
-        "pace": {
-          "text": "5:30 /km",
-          "raw": 330.16
-        },
-        "elevation_gain": {
-          "text": "42 m",
-          "raw": 42
-        },
-        "group": {
-          "key": "2026-05-03",
-          "distance": {
-            "text": "6.3 km",
-            "raw": 6300
-          },
-          "duration": {
-            "text": "35 m",
-            "raw": 2080
-          }
-        },
-        "story": null,
-        "geo_points": []
+  ],
+  "nights": [
+    {
+      "date": "2026-04-14",
+      "sleep_s": 26400,
+      "hrv_ms": 62,
+      "resting_hr": 58
+    },
+    {
+      "date": "2026-04-15",
+      "sleep_s": 27600,
+      "hrv_ms": 66,
+      "resting_hr": 60
+    },
+    {
+      "date": "2026-04-16",
+      "sleep_s": 25200,
+      "hrv_ms": 58,
+      "resting_hr": 56
+    },
+    {
+      "date": "2026-04-17",
+      "sleep_s": 28800,
+      "hrv_ms": 70,
+      "resting_hr": 62
+    },
+    {
+      "date": "2026-04-18",
+      "sleep_s": 26400,
+      "hrv_ms": 62,
+      "resting_hr": 58
+    },
+    {
+      "date": "2026-04-19",
+      "sleep_s": 24000,
+      "hrv_ms": 54,
+      "resting_hr": 54
+    },
+    {
+      "date": "2026-04-20",
+      "sleep_s": 27600,
+      "hrv_ms": 66,
+      "resting_hr": 60
+    },
+    {
+      "date": "2026-04-21",
+      "sleep_s": 25200,
+      "hrv_ms": 58,
+      "resting_hr": 56
+    },
+    {
+      "date": "2026-04-22",
+      "sleep_s": 30000,
+      "hrv_ms": 74,
+      "resting_hr": 52
+    },
+    {
+      "date": "2026-04-23",
+      "sleep_s": 26400,
+      "hrv_ms": 62,
+      "resting_hr": 58
+    },
+    {
+      "date": "2026-04-24",
+      "sleep_s": 24000,
+      "hrv_ms": 54,
+      "resting_hr": 54
+    },
+    {
+      "date": "2026-04-25",
+      "sleep_s": 27600,
+      "hrv_ms": 66,
+      "resting_hr": 60
+    },
+    {
+      "date": "2026-04-26",
+      "sleep_s": 22800,
+      "hrv_ms": 50,
+      "resting_hr": 52
+    },
+    {
+      "date": "2026-04-27",
+      "sleep_s": 28800,
+      "hrv_ms": 70,
+      "resting_hr": 62
+    },
+    {
+      "date": "2026-04-28",
+      "sleep_s": 26400,
+      "hrv_ms": 62,
+      "resting_hr": 58
+    },
+    {
+      "date": "2026-04-29",
+      "sleep_s": 25200,
+      "hrv_ms": 58,
+      "resting_hr": 56
+    },
+    {
+      "date": "2026-04-30",
+      "sleep_s": 24000,
+      "hrv_ms": 54,
+      "resting_hr": 54
+    },
+    {
+      "date": "2026-05-01",
+      "sleep_s": 30000,
+      "hrv_ms": 74,
+      "resting_hr": 52
+    },
+    {
+      "date": "2026-05-02",
+      "sleep_s": 26400,
+      "hrv_ms": 62,
+      "resting_hr": 58
+    },
+    {
+      "date": "2026-05-03",
+      "sleep_s": 25200,
+      "hrv_ms": 58,
+      "resting_hr": 60
+    },
+    {
+      "date": "2026-05-04",
+      "sleep_s": 28800,
+      "hrv_ms": 66,
+      "resting_hr": 54
+    },
+    {
+      "date": "2026-05-05",
+      "sleep_s": 21600,
+      "hrv_ms": 46,
+      "resting_hr": 52
+    },
+    {
+      "date": "2026-05-06",
+      "sleep_s": 24000,
+      "hrv_ms": 54,
+      "resting_hr": 50
+    },
+    {
+      "date": "2026-05-07",
+      "sleep_s": 31200,
+      "hrv_ms": 78,
+      "resting_hr": 66
+    },
+    {
+      "date": "2026-05-08",
+      "sleep_s": 26400,
+      "hrv_ms": 62,
+      "resting_hr": 58
+    },
+    {
+      "date": "2026-05-09",
+      "sleep_s": 25200,
+      "hrv_ms": 58,
+      "resting_hr": 62
+    },
+    {
+      "date": "2026-05-10",
+      "sleep_s": 24600,
+      "hrv_ms": 58,
+      "resting_hr": 56
+    },
+    {
+      "date": "2026-05-11",
+      "sleep_s": 23800,
+      "hrv_ms": 54,
+      "resting_hr": 52
+    },
+    {
+      "date": "2026-05-12",
+      "sleep_s": 23000,
+      "hrv_ms": 50,
+      "resting_hr": 63
+    },
+    {
+      "date": "2026-05-13",
+      "sleep_s": 22200,
+      "hrv_ms": 48,
+      "resting_hr": 63
+    }
+  ],
+  "plan_sessions": [
+    {
+      "date": "2026-05-11",
+      "session_type": "easy",
+      "title": "Easy 8",
+      "target": {
+        "text": "8 km",
+        "raw": 8000
       }
-    ],
-    "nights": [
-      {
-        "date": "2026-04-13",
-        "sleep_s": 26400,
-        "hrv_ms": 62,
-        "resting_hr": 58
-      },
-      {
-        "date": "2026-04-14",
-        "sleep_s": 27600,
-        "hrv_ms": 66,
-        "resting_hr": 60
-      },
-      {
-        "date": "2026-04-15",
-        "sleep_s": 25200,
-        "hrv_ms": 58,
-        "resting_hr": 56
-      },
-      {
-        "date": "2026-04-16",
-        "sleep_s": 28800,
-        "hrv_ms": 70,
-        "resting_hr": 62
-      },
-      {
-        "date": "2026-04-17",
-        "sleep_s": 26400,
-        "hrv_ms": 62,
-        "resting_hr": 58
-      },
-      {
-        "date": "2026-04-18",
-        "sleep_s": 24000,
-        "hrv_ms": 54,
-        "resting_hr": 54
-      },
-      {
-        "date": "2026-04-19",
-        "sleep_s": 27600,
-        "hrv_ms": 66,
-        "resting_hr": 60
-      },
-      {
-        "date": "2026-04-20",
-        "sleep_s": 25200,
-        "hrv_ms": 58,
-        "resting_hr": 56
-      },
-      {
-        "date": "2026-04-21",
-        "sleep_s": 30000,
-        "hrv_ms": 74,
-        "resting_hr": 52
-      },
-      {
-        "date": "2026-04-22",
-        "sleep_s": 26400,
-        "hrv_ms": 62,
-        "resting_hr": 58
-      },
-      {
-        "date": "2026-04-23",
-        "sleep_s": 24000,
-        "hrv_ms": 54,
-        "resting_hr": 54
-      },
-      {
-        "date": "2026-04-24",
-        "sleep_s": 27600,
-        "hrv_ms": 66,
-        "resting_hr": 60
-      },
-      {
-        "date": "2026-04-25",
-        "sleep_s": 22800,
-        "hrv_ms": 50,
-        "resting_hr": 52
-      },
-      {
-        "date": "2026-04-26",
-        "sleep_s": 28800,
-        "hrv_ms": 70,
-        "resting_hr": 62
-      },
-      {
-        "date": "2026-04-27",
-        "sleep_s": 26400,
-        "hrv_ms": 62,
-        "resting_hr": 58
-      },
-      {
-        "date": "2026-04-28",
-        "sleep_s": 25200,
-        "hrv_ms": 58,
-        "resting_hr": 56
-      },
-      {
-        "date": "2026-04-29",
-        "sleep_s": 24000,
-        "hrv_ms": 54,
-        "resting_hr": 54
-      },
-      {
-        "date": "2026-04-30",
-        "sleep_s": 30000,
-        "hrv_ms": 74,
-        "resting_hr": 52
-      },
-      {
-        "date": "2026-05-01",
-        "sleep_s": 26400,
-        "hrv_ms": 62,
-        "resting_hr": 58
-      },
-      {
-        "date": "2026-05-02",
-        "sleep_s": 25200,
-        "hrv_ms": 58,
-        "resting_hr": 60
-      },
-      {
-        "date": "2026-05-03",
-        "sleep_s": 28800,
-        "hrv_ms": 66,
-        "resting_hr": 54
-      },
-      {
-        "date": "2026-05-04",
-        "sleep_s": 21600,
-        "hrv_ms": 46,
-        "resting_hr": 52
-      },
-      {
-        "date": "2026-05-05",
-        "sleep_s": 24000,
-        "hrv_ms": 54,
-        "resting_hr": 50
-      },
-      {
-        "date": "2026-05-06",
-        "sleep_s": 31200,
-        "hrv_ms": 78,
-        "resting_hr": 66
-      },
-      {
-        "date": "2026-05-07",
-        "sleep_s": 26400,
-        "hrv_ms": 62,
-        "resting_hr": 58
-      },
-      {
-        "date": "2026-05-08",
-        "sleep_s": 25200,
-        "hrv_ms": 58,
-        "resting_hr": 62
-      },
-      {
-        "date": "2026-05-09",
-        "sleep_s": 24600,
-        "hrv_ms": 58,
-        "resting_hr": 56
-      },
-      {
-        "date": "2026-05-10",
-        "sleep_s": 23800,
-        "hrv_ms": 54,
-        "resting_hr": 52
-      },
-      {
-        "date": "2026-05-11",
-        "sleep_s": 23000,
-        "hrv_ms": 50,
-        "resting_hr": 63
-      },
-      {
-        "date": "2026-05-12",
-        "sleep_s": 22200,
-        "hrv_ms": 48,
-        "resting_hr": 63
+    },
+    {
+      "date": "2026-05-12",
+      "session_type": "easy",
+      "title": "Easy 10",
+      "target": {
+        "text": "10 km",
+        "raw": 10000
       }
-    ],
-    "plan_sessions": [
-      {
-        "date": "2026-05-11",
-        "session_type": "easy",
-        "title": "Easy 8",
-        "sentence": "11 May 2026 — 8 km · easy",
-        "target": {
-          "text": "8 km",
-          "raw": 8000
-        },
-        "actual": {
-          "text": "8.1 km",
-          "raw": 8100
-        },
-        "status": "done",
-        "source": "prescribed"
-      },
-      {
-        "date": "2026-05-12",
-        "session_type": "easy",
-        "title": "Easy 10",
-        "sentence": "12 May 2026 — 10 km · easy",
-        "target": {
-          "text": "10 km",
-          "raw": 10000
-        },
-        "actual": null,
-        "status": "not_done",
-        "source": "prescribed"
-      },
-      {
-        "date": "2026-05-13",
-        "session_type": "easy",
-        "title": "Easy 10",
-        "sentence": "Today — 10 km · easy",
-        "target": {
-          "text": "10 km",
-          "raw": 10000
-        },
-        "actual": null,
-        "status": "planned",
-        "source": "prescribed"
-      },
-      {
-        "date": "2026-05-14",
-        "session_type": "easy",
-        "title": "Easy 5",
-        "sentence": "14 May 2026 — 5 km · easy",
-        "target": {
-          "text": "5 km",
-          "raw": 5000
-        },
-        "actual": null,
-        "status": "planned",
-        "source": "prescribed"
-      },
-      {
-        "date": "2026-05-15",
-        "session_type": "long",
-        "title": "Long 16",
-        "sentence": "15 May 2026 — 16 km · long",
-        "target": {
-          "text": "16 km",
-          "raw": 16000
-        },
-        "actual": null,
-        "status": "planned",
-        "source": "prescribed"
-      },
-      {
-        "date": "2026-05-16",
-        "session_type": "easy",
-        "title": "Easy 30 minutes",
-        "sentence": "16 May 2026 — easy",
-        "target": null,
-        "actual": null,
-        "status": "planned",
-        "source": "prescribed"
-      },
-      {
-        "date": "2026-05-17",
-        "session_type": "easy",
-        "title": "Easy 6",
-        "sentence": "17 May 2026 — 6 km · easy",
-        "target": {
-          "text": "6 km",
-          "raw": 6000
-        },
-        "actual": null,
-        "status": "planned",
-        "source": "prescribed"
+    },
+    {
+      "date": "2026-05-13",
+      "session_type": "easy",
+      "title": "Easy 10",
+      "target": {
+        "text": "10 km",
+        "raw": 10000
       }
-    ]
-  }
+    },
+    {
+      "date": "2026-05-14",
+      "session_type": "easy",
+      "title": "Easy 5",
+      "target": {
+        "text": "5 km",
+        "raw": 5000
+      }
+    },
+    {
+      "date": "2026-05-15",
+      "session_type": "long",
+      "title": "Long 16",
+      "target": {
+        "text": "16 km",
+        "raw": 16000
+      }
+    },
+    {
+      "date": "2026-05-16",
+      "session_type": "easy",
+      "title": "Easy 30 minutes",
+      "target": null
+    },
+    {
+      "date": "2026-05-17",
+      "session_type": "easy",
+      "title": "Easy 6",
+      "target": {
+        "text": "6 km",
+        "raw": 6000
+      }
+    }
+  ]
+}
 }

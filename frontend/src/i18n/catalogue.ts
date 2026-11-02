@@ -218,6 +218,17 @@ export const catalogue = {
   'activity.splits.heading': { type: 'status', text: 'Splits' },
   'activity.elevation.heading': { type: 'status', text: 'Elevation' },
   'activity.route.heading': { type: 'status', text: 'Route' },
+  /**
+   * The route, for a screen reader.
+   *
+   * The drawing is the route and the two dots are where it started and
+   * where it ended; this says so in one line, because a picture of a
+   * line with two dots says nothing to anyone who cannot see it.
+   */
+  'activity.route.alt': {
+    type: 'status',
+    text: 'The route of the run, from the start to the finish',
+  },
   'activity.plan.heading': { type: 'status', text: 'Against the plan' },
   'activity.export': { type: 'status', text: 'Export FIT' },
   'activity.exported': { type: 'status', text: 'The file is downloaded' },

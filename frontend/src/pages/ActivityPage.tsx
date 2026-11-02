@@ -26,6 +26,7 @@ import { canDeliverFile, downloadFile, fileName } from '../lib/download'
 import { formatDateMedium, renderedText, sportLabel } from '../lib/format'
 import { t } from '../i18n'
 import { axisTick } from '../components/ChartAxis'
+import { RouteMap } from '../components/RouteMap'
 import { PageHeader } from '../ui/layout/PageHeader'
 
 export function ActivityPage({ id }: { id: string }) {
@@ -165,6 +166,24 @@ export function ActivityPage({ id }: { id: string }) {
             {t('activity.story.heading')}
           </h2>
           <p className="mt-1 text-[14.5px] text-ink-soft">{data.story}</p>
+        </section>
+      ) : null}
+
+      {/* ----------------------------------------------------------- map */}
+      {/*
+        The route, with a marker where it started and one where it
+        ended. The points are the API's — the app draws them and nothing
+        else — and there is no map server behind them: the drawing is
+        made here, on the device, from the points the API sent.
+      */}
+      {data.geo_points.length > 1 ? (
+        <section className="card mt-3 px-4 py-3" data-testid="activity-route">
+          <h2 className="text-[12px] font-semibold uppercase tracking-[0.07em] text-ink-faint">
+            {t('activity.route.heading')}
+          </h2>
+          <div className="mt-2">
+            <RouteMap points={data.geo_points} variant="full" />
+          </div>
         </section>
       ) : null}
 

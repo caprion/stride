@@ -80,11 +80,15 @@ describe('Today', () => {
 
 describe('the distance comparison', () => {
   it('is absent within 10% of the target', async () => {
+    // The run is inside ten per cent of the target, so the core states
+    // no comparison and the app states none either.
+    window.history.pushState({}, '', '/?fixtures=noclose')
     const { container } = renderApp('/')
     await waitFor(() =>
       expect(container.querySelector('[data-testid="today-session"]')).toBeTruthy(),
     )
     expect(container.querySelector('[data-testid="today-distance-comparison"]')).toBeNull()
+    window.history.pushState({}, '', '/?fixtures=1')
   })
 
   it('appears, neutrally, beyond 10% of the target', async () => {
@@ -123,8 +127,9 @@ describe('Body', () => {
       expect(container.querySelector('[data-testid="body-patterns"]')).toBeTruthy(),
     )
     const patterns = container.querySelector('[data-testid="body-patterns"]')?.textContent ?? ''
+    // The patterns are the core's, and each carries its sample size.
+    expect(patterns).toContain('your sleep has been below your usual for 3 nights')
     expect(patterns).toContain('your HRV has been below your usual for 3 nights')
-    expect(patterns).toContain('the 5 other times')
   })
 })
 

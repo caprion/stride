@@ -43,8 +43,20 @@ const VIEWPORTS = [
  */
 const ROUTES = [
   { path: '/', name: 'Today', primary: '[data-testid="today-session"]' },
-  { path: '/runs', name: 'Runs', primary: '[data-testid="run-101"]' },
-  { path: '/runs/101', name: 'Activity', primary: '[data-testid="activity-detail"]' },
+  {
+    path: '/runs',
+    name: 'Runs',
+    primary: '[data-testid="run-101"]',
+    // The feed with a route on it, so the thumbnail is in the layout.
+    fixture: 'route',
+    wideOnly: '[data-testid="run-route"]',
+  },
+  {
+    path: '/runs/101',
+    name: 'Activity',
+    primary: '[data-testid="activity-detail"]',
+    fixture: 'route',
+  },
   { path: '/progress', name: 'Progress', primary: '[data-testid="progress-headline"]' },
   { path: '/body', name: 'Body', primary: '[data-testid="body-signals"]' },
   { path: '/plan', name: 'Plan week', primary: '[data-testid="plan-week"]' },
@@ -61,6 +73,14 @@ const ROUTES = [
 
 /** The four destinations — the set that must never change. */
 const DESTINATIONS = ['/', '/runs', '/progress', '/body']
+
+/**
+ * The width the app calls wide.
+ *
+ * The shell's wide arrangement — the left rail — begins here, and it is
+ * where the blocks that need room for themselves appear.
+ */
+const WIDE = 1024
 
 // ------------------------------------------------------------------ build
 
@@ -286,6 +306,19 @@ async function main() {
           const box = await primary.boundingBox()
           if (!box || box.x + box.width > viewport.width + 1) {
             failures.push(`${label}: the primary action is outside the viewport`)
+          }
+        }
+
+        // A block that belongs to the wide widths only: it is there when
+        // there is room for it, and it is not there when there is not.
+        if (route.wideOnly) {
+          const element = await page.$(route.wideOnly)
+          const shown = element ? await element.isVisible() : false
+          if (viewport.width >= WIDE && !shown) {
+            failures.push(`${label}: ${route.wideOnly} is not shown at the wide widths`)
+          }
+          if (viewport.width < WIDE && shown) {
+            failures.push(`${label}: ${route.wideOnly} is shown at the narrow widths`)
           }
         }
       }

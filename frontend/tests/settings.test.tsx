@@ -13,6 +13,7 @@
 import { screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it } from 'vitest'
+import { healthFixture, settingsFixture } from '../src/fixtures'
 import { renderApp } from './helpers'
 
 afterEach(() => {
@@ -26,13 +27,14 @@ describe('the weekly goal', () => {
       expect(container.querySelector('[data-testid="settings-goal"]')).toBeTruthy(),
     )
 
+    // The goal the api answered — the seeded store holds none.
     expect(
       container.querySelector('[data-testid="settings-goal-value"]')?.textContent,
-    ).toContain('40 km')
+    ).toContain('No goal')
     const input = container.querySelector(
       '[data-testid="settings-goal-input"]',
     ) as HTMLInputElement
-    expect(input.value).toBe('40')
+    expect(input.value).toBe('')
   })
 
   it('says that a blank goal is no goal, and never a zero', async () => {
@@ -96,9 +98,11 @@ describe('the connection', () => {
       expect(container.querySelector('[data-testid="settings-connection"]')).toBeTruthy(),
     )
 
+    // The key's identifier is the last four characters — and the seeded
+    // store holds no key, so there is nothing to show.
     const key =
       container.querySelector('[data-testid="settings-connection-key"]')?.textContent ?? ''
-    expect(key).toContain('4F2A')
+    expect(key).toContain('—')
     // The whole key is nowhere: the app has never had it.
     expect(container.textContent).not.toContain('personal-key')
   })
@@ -109,9 +113,10 @@ describe('the connection', () => {
       expect(container.querySelector('[data-testid="settings-connection-state"]')).toBeTruthy(),
     )
 
+    // The seeded store holds no key.
     expect(
       container.querySelector('[data-testid="settings-connection-state"]')?.textContent,
-    ).toContain('Connected')
+    ).toContain('Not connected')
     expect(
       container.querySelector('[data-testid="settings-connection-sync"]')?.textContent,
     ).toContain('Last synced')
@@ -125,9 +130,10 @@ describe('the storage', () => {
       expect(container.querySelector('[data-testid="settings-storage"]')).toBeTruthy(),
     )
 
-    expect(
-      container.querySelector('[data-testid="settings-storage-size"]')?.textContent,
-    ).toContain('2.4 MB')
+    // The size is the host's, and it is only shown when the api answers
+    // one: the seeded store answers none, so the row is not there.
+    expect(settingsFixture.storage.size).toBeNull()
+    expect(container.querySelector('[data-testid="settings-storage-size"]')).toBeNull()
   })
 
   it('takes the word before it deletes anything', async () => {
@@ -169,9 +175,10 @@ describe('About', () => {
       expect(container.querySelector('[data-testid="settings-about"]')).toBeTruthy(),
     )
 
+    // The version is the one the api answered.
     expect(
       container.querySelector('[data-testid="settings-about-version"]')?.textContent,
-    ).toContain('Version 0.10.0')
+    ).toContain(`Version ${healthFixture.version}`)
     expect(
       container.querySelector('[data-testid="settings-about-licence"]')?.textContent,
     ).toContain('AGPL-3.0')

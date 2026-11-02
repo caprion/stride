@@ -140,9 +140,12 @@ looked at and tested:
 ```
 ?fixtures=1          everything present
 ?fixtures=over       the last run beyond 10% of the plan's target
+?fixtures=noclose    the last run inside 10% of the target: no comparison
 ?fixtures=empty      nothing at all: no key, nothing ever synced
 ?fixtures=nowellness synced, but no wellness data yet
 ?fixtures=fresh      no key yet: the first-run page takes it
+?fixtures=connected  a key has been taken: the app is connected
+?fixtures=route      the runs carry a route, so the map can be seen
 ?fixtures=stale      the last sync three days old
 ?fixtures=failed     the last sync did not finish
 ?fixtures=baseline   a plan inferred from the athlete's history
@@ -390,11 +393,12 @@ real numbers, no real dates. With `?fixtures=1` the app answers from the
 fixtures instead of the network, so every screen can be rendered, reviewed
 and tested without a backend.
 
-**The variants are the states** — `empty`, `nowellness`, `fresh`, `stale`,
-`failed`, `baseline`, `noplan`, `notenough`, `paused`, `duplicate` and
-`over` (the one whose last run is beyond 10% of the plan's target — the
-only fixture where the distance comparison appears). The list is at the
-top of the fixture file.
+**The variants are the states** — `empty`, `nowellness`, `fresh`, `connected`,
+`route`, `stale`, `failed`, `baseline`, `noplan`, `notenough`, `paused`,
+`duplicate`, `over` (the one whose last run is beyond 10% of the plan's
+target — the only fixture where the distance comparison appears) and
+`noclose` (the one inside 10%, where it does not). The list is at the top
+of the fixture file.
 
 The fixture's sentences are the core's, written out: the fixture is a
 captured answer, not a computation, so the app has nothing to recompute.
@@ -428,13 +432,45 @@ the files and the module agree:
 They are generated, never hand-edited:
 
 ```
-npm --prefix frontend run fixtures:export   # the answers and the seed
-npm --prefix frontend run fixtures:compare  # the compare answers, and the captured one
+# 1. write the seed — the runs, the nights and the plan sessions — from
+#    the app's own fixture module
+npm --prefix frontend run fixtures:export -- --seed
+
+# 2. ask the router: the api's parity test seeds a store from that seed
+#    and writes the router's answers
+STRIDE_FIXTURES_OUT=/tmp/router-answers.json \
+STRIDE_COMPARE_OUT=/tmp/router-compare.json \
+  cargo test -p stride-api --test fixture_parity
+
+# 3. write the router's answers, with the seed they came from
+npm --prefix frontend run fixtures:export -- \
+  /tmp/router-answers.json /tmp/router-compare.json
 ```
+
+**The seed is the app's, and the answers are the router's.** The seed is
+what a store has to hold for the router to answer the same way, and it is
+written from `src/fixtures/index.ts` — so the seed and the screens cannot
+drift apart. The answers are the router's own text, copied out of its
+dump and not re-serialised: the router writes `62.0` where a JavaScript
+`JSON.stringify` writes `62`, and the api's test compares the answers
+value for value.
+
+The export refuses to write a dump that was taken from another seed: the
+answers would be about a different store.
 
 The api's test reads `captured.json` and `answers.json` — **not a copy of
 them** — so the fixture stops being a mock someone wrote and becomes an
 answer the test keeps true.
+
+### The route
+
+The seeded store holds no FIT file, so **the router answers no points**
+and the app draws no route: that is the honest answer. The `route`
+variant puts a route on the runs — a loop around nowhere, whose
+coordinates mean nothing — so that the map, the feed's thumbnail and
+Today's mini thumbnail can be seen and reviewed. The drawing is the app's
+own SVG: no map library, no tiles, no server, because the route never
+leaves the device and the map does not either.
 
 ## The checks
 
