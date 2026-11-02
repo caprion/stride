@@ -316,33 +316,35 @@ export const todayFixture = routerAnswers['/insights/today'] as TodayInsight
  *
  * The seeded store holds no FIT file, so **the router answers no points**
  * and the app draws nothing — which is the honest answer. These
- * coordinates are the `route` variant's own: a loop around nowhere, so
- * that the route, the thumbnail and the mini thumbnail can be seen and
- * reviewed without a real run. They mean nothing.
+ * coordinates are the `route` variant's own: a loop around the
+ * repository's synthetic anchor — the South Pacific, far from any coast
+ * and from any real route — so that the map, the thumbnail and the mini
+ * thumbnail can be seen and reviewed without a real run. They mean
+ * nothing.
  */
 const SYNTHETIC_ROUTE: [number, number][] = [
-  [41.9, 12.51],
-  [41.90438, 12.51105],
-  [41.90874, 12.51008],
-  [41.91131, 12.50726],
-  [41.91159, 12.50392],
-  [41.91093, 12.50116],
-  [41.91093, 12.49884],
-  [41.91159, 12.49608],
-  [41.91131, 12.49274],
-  [41.90874, 12.48992],
-  [41.90438, 12.48895],
-  [41.9, 12.49],
-  [41.89677, 12.49186],
-  [41.89415, 12.49325],
-  [41.8909, 12.49416],
-  [41.88703, 12.49561],
-  [41.88421, 12.49832],
-  [41.88421, 12.50168],
-  [41.88703, 12.50439],
-  [41.8909, 12.50584],
-  [41.89415, 12.50675],
-  [41.89677, 12.50814],
+  [-35.0, -139.99],
+  [-34.99562, -139.98895],
+  [-34.99126, -139.98992],
+  [-34.98869, -139.99274],
+  [-34.98841, -139.99608],
+  [-34.98907, -139.99884],
+  [-34.98907, -140.00116],
+  [-34.98841, -140.00392],
+  [-34.98869, -140.00726],
+  [-34.99126, -140.01008],
+  [-34.99562, -140.01105],
+  [-35.0, -140.01],
+  [-35.00323, -140.00814],
+  [-35.00585, -140.00675],
+  [-35.0091, -140.00584],
+  [-35.01297, -140.00439],
+  [-35.01579, -140.00168],
+  [-35.01579, -139.99832],
+  [-35.01297, -139.99561],
+  [-35.0091, -139.99416],
+  [-35.00585, -139.99325],
+  [-35.00323, -139.99186],
 ]
 
 /** A run, with the route on it. */
