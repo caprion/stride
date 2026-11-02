@@ -97,6 +97,27 @@ def rustTargetOverride = (project.findProperty('strideTargetDir') ?: System.gete
 def rustTargetDir = rustTargetOverride ? file(rustTargetOverride) : new File(rustWorkspaceDir, 'target')
 
 /**
+ * The shared object cargo-ndk builds.
+ *
+ * cargo-ndk 4.1.2 writes it to `target/<triple>/release/` — the triple for
+ * `arm64-v8a` is `aarch64-linux-android`, and there is **no ABI directory
+ * in between**. This is the one place the path is named: the copy task
+ * reads it here, and `scripts/check_apk.py` reads the same path
+ * (`target/{triple}/release/libuniffi_stride.so`). A change to cargo-ndk's
+ * layout is a change here *and* there, and the checker is what proves the
+ * two still agree.
+ */
+def rustLibOutput = new File(rustTargetDir, "${rustTriple(targetAbis[0])}/release/libuniffi_stride.so")
+
+/** The SHA-256 of a file, for the stamp that marks one cargo build. */
+def sha256Hex = { File f ->
+    java.security.MessageDigest.getInstance('SHA-256')
+        .digest(f.bytes)
+        .collect { String.format('%02x', it) }
+        .join('')
+}
+
+/**
  * Whether the real Rust core is in this build.
  *
  * The core is `crates/stride-api` in the workspace above, and the FFI seam
@@ -149,6 +170,18 @@ def rustCoreMode = {
 def allowStubCore = (project.findProperty('strideAllowStubCore') ?: 'false').toString().toBoolean()
 
 /**
+ * The stamp that marks one cargo build.
+ *
+ * It lives in the build directory, **not** the cargo target directory:
+ * Gradle deletes a task's previous outputs when it re-runs the task, and
+ * the cargo target directory belongs to cargo. Its content is the .so's
+ * digest, so the copy task that reads it re-runs exactly when cargo
+ * rebuilds. It is declared here, once, so the task that produces it and
+ * the task that consumes it cannot name two different files.
+ */
+def cargoStamp = layout.buildDirectory.file("rust/cargo-ndk-${targetAbis[0]}-${rustCoreMode}.stamp")
+
+/**
  * Generate the Kotlin bindings for the Rust core.
  *
  * UniFFI's CLI is not published as a binary for this version, so the build
@@ -178,7 +211,7 @@ tasks.register('uniffiGenerateKotlin', Exec) {
  * `cargo-ndk` cross-compiles for the ABI. Only `libuniffi_stride.so` is
  * packaged: the shared objects of the path dependencies do not ride along.
  */
-tasks.register('cargoNdkBuild', Exec) {
+def cargoNdkBuildTask = tasks.register('cargoNdkBuild', Exec) {
     group = 'stride'
     description = "Builds the Rust core for ${targetAbis.join(',')}."
     dependsOn 'uniffiGenerateKotlin'
@@ -207,22 +240,37 @@ tasks.register('cargoNdkBuild', Exec) {
     inputs.files(fileTree(rustWorkspaceDir) {
         include 'crates/*/src/**'
         include 'crates/*/Cargo.toml'
+        include 'crates/*/build.rs'
     })
     inputs.property('abi', targetAbis[0])
     inputs.property('core', rustCoreMode)
+    // **The version is an input.** The core reads it with `option_env!`,
+    // and `crates/stride-api/build.rs` declares `rerun-if-env-changed` for
+    // it — but Gradle has to know it too. Without this, a version change
+    // does not re-run cargo, and the APK ships the previous build's
+    // version. The sentinel keeps the property non-null so Gradle can hash
+    // it.
+    inputs.property('STRIDE_VERSION', System.getenv('STRIDE_VERSION') ?: '(unset)')
+    inputs.property('STRIDE_CORE', System.getenv('STRIDE_CORE') ?: '(unset)')
     // The stamp lives in the build directory, **not** in the cargo target
     // directory: Gradle deletes a task's previous outputs when it re-runs
-    // the task, and the cargo target directory belongs to cargo.
-    outputs.file layout.buildDirectory.file("rust/cargo-ndk-${targetAbis[0]}-${rustCoreMode}.stamp")
-    // **The library is an input as well.** The stamp says "cargo ran", and
-    // cargo's output lives in the target directory — which any other build
-    // on this machine may clean. Without this, a wiped target directory
-    // leaves the stamp behind, Gradle considers the task done, and the APK
-    // ships the core from an earlier build. A missing input is a missing
-    // input: the task is out of date and cargo runs again.
-    inputs.files(fileTree(rustTargetDir) {
-        include "**/${rustTriple(targetAbis[0])}/release/libuniffi_stride.so"
-    })
+    // the task, and the cargo target directory belongs to cargo. Its
+    // content is the .so's digest, so the copy task that reads it re-runs
+    // exactly when cargo rebuilds.
+    outputs.file cargoStamp
+    // **The library itself is an output too.** If it is gone — a wiped
+    // target directory — Gradle sees a missing output and re-runs cargo,
+    // instead of trusting a stamp that claims the core was built. It is
+    // the same file `scripts/check_apk.py` compares, so the build and the
+    // checker agree on one path.
+    outputs.file rustLibOutput
+    doLast {
+        if (!rustLibOutput.isFile()) {
+            throw new GradleException("cargo-ndk did not build ${rustLibOutput}")
+        }
+        cargoStamp.get().asFile.parentFile.mkdirs()
+        cargoStamp.get().asFile.text = sha256Hex(rustLibOutput)
+    }
     if (rustTargetOverride) {
         environment 'CARGO_TARGET_DIR', rustTargetDir.absolutePath
     }
@@ -239,29 +287,22 @@ tasks.register('cargoNdkBuild', Exec) {
 tasks.register('copyRustLibrary') {
     group = 'stride'
     description = "Packages the Rust core as lib/${targetAbis[0]}/libuniffi_stride.so."
-    dependsOn 'cargoNdkBuild'
-    inputs.property('abi', targetAbis[0])
-    inputs.property('core', rustCoreMode)
-    // **The library itself is an input.** Without this Gradle asks only
-    // whether the ABI changed, finds that it did not, and considers the copy
-    // up to date — so a cargo rebuild is invisible to it and the APK ships
-    // the core from an earlier build.
-    inputs.files(fileTree(rustTargetDir) {
-        include "**/${rustTriple(targetAbis[0])}/release/libuniffi_stride.so"
-    })
+    dependsOn cargoNdkBuildTask
+    // **The stamp is the input, not the library itself.** The library is
+    // produced by the task this one depends on, so Gradle would snapshot
+    // it *before* cargo re-ran and consider the copy up to date — leaving a
+    // stale core in jniLibs. The stamp's content is the library's digest,
+    // so it changes exactly when cargo rebuilds, and the copy re-runs
+    // exactly then. It is the same file cargoNdkBuild declares as its
+    // output, so Gradle knows this task depends on that one.
+    inputs.file cargoStamp
     outputs.dir new File(rustJniLibsDir.get().asFile, targetAbis[0])
     doLast {
-        def triple = rustTriple(targetAbis[0])
-        // The seam is a member of the repository's workspace, so cargo puts
-        // its output in the workspace's target directory and nowhere else.
-        def candidates = [
-                file("${rustTargetDir}/${triple}/release"),
-        ]
-        def source = candidates.find { new File(it, 'libuniffi_stride.so').exists() }
-        if (!source) {
+        if (!rustLibOutput.isFile()) {
             throw new GradleException(
-                    "cargo-ndk has not built ${triple}. Looked in:\n  " +
-                    candidates.collect { it.absolutePath }.join("\n  "))
+                    "cargo-ndk has not built ${rustTriple(targetAbis[0])} " +
+                    "(looked in ${rustLibOutput}). The target directory may have been " +
+                    'cleaned; run a clean build.')
         }
         // Only the core's own library ships. A shared object left over from
         // an earlier build — `libstride_api.so`, say — would be packaged
@@ -272,10 +313,10 @@ tasks.register('copyRustLibrary') {
         delete destination
         destination.mkdirs()
         copy {
-            from new File(source, 'libuniffi_stride.so')
+            from rustLibOutput
             into destination
         }
-        logger.lifecycle("packaged the Rust core: ${source}/libuniffi_stride.so")
+        logger.lifecycle("packaged the Rust core: ${rustLibOutput}")
     }
 }
 
