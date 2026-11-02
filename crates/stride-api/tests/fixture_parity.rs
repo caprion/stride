@@ -57,7 +57,7 @@ fn fixture_path(name: &str) -> std::path::PathBuf {
 }
 
 /// The router over a store seeded from the fixture's own seed.
-fn fixture_router() -> (Router, Arc<Store>) {
+fn fixture_router() -> (ScratchDir, Router, Arc<Store>) {
     let dir = ScratchDir::new("fixture-set").unwrap_or_else(|_| panic!("scratch"));
     let key = DatabaseKey::from_text("the database key of a test").unwrap();
     let store = Arc::new(Store::open_and_migrate(&dir.file("stride.db"), &key).unwrap());
@@ -74,11 +74,16 @@ fn fixture_router() -> (Router, Arc<Store>) {
         Arc::new(clock),
         garmin,
     ));
-    (Router::new(api), store)
+    (dir, Router::new(api), store)
 }
 
 /// Seed the store from the fixture's seed.
-fn seed(store: &Store, seed: &Value) {
+///
+/// `with_plan` controls whether the prescribed plan block and its sessions
+/// are written. The baseline variant — a store with no plan block, so the
+/// router infers the baseline from the athlete's own history — is the same
+/// seed with `with_plan` off.
+fn seed(store: &Store, seed: &Value, with_plan: bool) {
     let now = DateTime::parse_from_rfc3339(common::NOW)
         .unwrap()
         .with_timezone(&Utc);
@@ -157,46 +162,48 @@ fn seed(store: &Store, seed: &Value) {
         }
     }
 
-    if let Some(sessions) = seed.get("plan_sessions").and_then(|value| value.as_array()) {
-        let start = sessions
-            .first()
-            .and_then(|session| session.get("date"))
-            .and_then(|value| value.as_str())
-            .unwrap_or(FIXTURE_TODAY)
-            .to_string();
-        let block = NewPlanBlock {
-            name: "Base block".to_string(),
-            source: "prescribed".to_string(),
-            start_date: start,
-            end_date: None,
-            goal: None,
-            status: "active".to_string(),
-            notes: None,
-            created_at: now,
-        };
-        let block_id = store
-            .upsert_plan_block(&block)
-            .unwrap_or_else(|error| panic!("the plan block could not be seeded: {error}"));
-        for session in sessions {
-            let planned = NewPlanSession {
-                block_id,
-                date: text(session, "date"),
-                session_type: text(session, "session_type"),
-                title: session
-                    .get("title")
-                    .and_then(|value| value.as_str())
-                    .map(|value| value.to_string()),
-                details: None,
-                target_distance_m: session
-                    .get("target")
-                    .and_then(|value| value.get("raw"))
-                    .and_then(|value| value.as_f64()),
-                pace_low_s_km: None,
-                pace_high_s_km: None,
+    if with_plan {
+        if let Some(sessions) = seed.get("plan_sessions").and_then(|value| value.as_array()) {
+            let start = sessions
+                .first()
+                .and_then(|session| session.get("date"))
+                .and_then(|value| value.as_str())
+                .unwrap_or(FIXTURE_TODAY)
+                .to_string();
+            let block = NewPlanBlock {
+                name: "Base block".to_string(),
+                source: "prescribed".to_string(),
+                start_date: start,
+                end_date: None,
+                goal: None,
+                status: "active".to_string(),
+                notes: None,
+                created_at: now,
             };
-            store
-                .upsert_plan_session(&planned)
-                .unwrap_or_else(|error| panic!("the plan session could not be seeded: {error}"));
+            let block_id = store
+                .upsert_plan_block(&block)
+                .unwrap_or_else(|error| panic!("the plan block could not be seeded: {error}"));
+            for session in sessions {
+                let planned = NewPlanSession {
+                    block_id,
+                    date: text(session, "date"),
+                    session_type: text(session, "session_type"),
+                    title: session
+                        .get("title")
+                        .and_then(|value| value.as_str())
+                        .map(|value| value.to_string()),
+                    details: None,
+                    target_distance_m: session
+                        .get("target")
+                        .and_then(|value| value.get("raw"))
+                        .and_then(|value| value.as_f64()),
+                    pace_low_s_km: None,
+                    pace_high_s_km: None,
+                };
+                store.upsert_plan_session(&planned).unwrap_or_else(|error| {
+                    panic!("the plan session could not be seeded: {error}")
+                });
+            }
         }
     }
 }
@@ -277,17 +284,26 @@ fn every_captured_answer_is_the_routers_answer() {
         Some(data) => data,
         None => return skip(&answers_path()),
     };
-    let (router, store) = fixture_router();
-    seed(&store, data.get("seed").unwrap_or(&Value::Null));
+    let seed_value = data.get("seed").cloned().unwrap_or(Value::Null);
+    let (_dir, router, store) = fixture_router();
+    seed(&store, &seed_value, true);
 
     if let Ok(out) = std::env::var("STRIDE_FIXTURES_OUT") {
+        // The prescribed variant.
+        let answers = router_answers(&router);
+        // The baseline variant: the same seed, no plan block, so the router
+        // infers the baseline from the athlete's own history.
+        let (_bdir, brouter, bstore) = fixture_router();
+        seed(&bstore, &seed_value, false);
+        let baseline = router_answers(&brouter);
         std::fs::write(
             &out,
             format!(
                 "{}\n",
                 serde_json::to_string_pretty(&json!({
                     "version": 1,
-                    "answers": router_answers(&router),
+                    "answers": answers,
+                    "baseline": baseline,
                     "seed": data.get("seed"),
                 }))
                 .unwrap_or_default()
@@ -302,6 +318,25 @@ fn every_captured_answer_is_the_routers_answer() {
         .get("answers")
         .and_then(|value| value.as_object())
         .unwrap_or_else(|| panic!("the captured answers have no answers map"));
+    let mut disagreements = compare(&router, expected);
+
+    // The baseline variant, when the fixture carries it.
+    if let Some(expected_baseline) = data.get("baseline").and_then(|value| value.as_object()) {
+        let (_bdir, brouter, bstore) = fixture_router();
+        seed(&bstore, &seed_value, false);
+        disagreements.extend(compare(&brouter, expected_baseline));
+    }
+
+    assert!(
+        disagreements.is_empty(),
+        "{} answer(s) disagreed:\n{}",
+        disagreements.len(),
+        disagreements.join("\n")
+    );
+}
+
+/// Compare the router's answers with the captured ones, route by route.
+fn compare(router: &Router, expected: &serde_json::Map<String, Value>) -> Vec<String> {
     let mut disagreements = Vec::new();
     for (route, wanted) in expected {
         let answer = router.call("GET", &route_to_path(route), None);
@@ -319,12 +354,7 @@ fn every_captured_answer_is_the_routers_answer() {
             eprintln!("--- {route} disagrees ---\nrouter: {mine}\napp:    {theirs}\n");
         }
     }
-    assert!(
-        disagreements.is_empty(),
-        "{} answer(s) disagreed:\n{}",
-        disagreements.len(),
-        disagreements.join("\n")
-    );
+    disagreements
 }
 
 /// Every Compare pair the app can show is the router's answer.
@@ -334,8 +364,8 @@ fn every_compare_pair_is_the_routers_answer() {
         Some(data) => data,
         None => return skip(&answers_path()),
     };
-    let (router, store) = fixture_router();
-    seed(&store, data.get("seed").unwrap_or(&Value::Null));
+    let (_dir, router, store) = fixture_router();
+    seed(&store, data.get("seed").unwrap_or(&Value::Null), true);
     let ids: Vec<i64> = data
         .get("seed")
         .and_then(|value| value.get("activities"))
