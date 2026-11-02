@@ -171,7 +171,7 @@ pub struct Entry {
 }
 
 /// The catalogue.
-pub const CATALOGUE: [Entry; 81] = [
+pub const CATALOGUE: [Entry; 82] = [
     // The vitals.
     Entry {
         id: "vital.sleep.label",
@@ -681,6 +681,15 @@ pub const CATALOGUE: [Entry; 81] = [
         kind: StringKind::Status,
         role: None,
         template: "not enough data yet",
+    },
+    Entry {
+        // The version's label. The version itself is not the core's business —
+        // it comes from the build environment — but how it is shown is, and
+        // this is the only place a version string is put together.
+        id: "status.version",
+        kind: StringKind::Status,
+        role: None,
+        template: "Version {version}",
     },
 ];
 

@@ -402,6 +402,18 @@ mod tests {
     }
 
     #[test]
+    fn the_version_is_shown_with_its_label() {
+        assert_eq!(render_version("0.10.0"), Some("Version 0.10.0".to_string()));
+        assert_eq!(
+            render_version("  0.10.0  "),
+            Some("Version 0.10.0".to_string())
+        );
+        // No version, no sentence.
+        assert_eq!(render_version(""), None);
+        assert_eq!(render_version("   "), None);
+    }
+
+    #[test]
     fn a_missing_value_renders_nothing_at_all() {
         assert_eq!(render_distance(None), None);
         assert_eq!(render_duration(None), None);
