@@ -12,6 +12,24 @@
 //! series. They are written together or not at all: a run whose series failed
 //! to write is not a run with a missing series, it is a run that was not
 //! written.
+//!
+//! ## What the series blob is
+//!
+//! `activity_samples.series` is a **cache** of what the FIT file derives, not
+//! a second source of truth. The derived series — the per-second samples, the
+//! splits, the elevation profile — are computed from the file *on read*; the
+//! table only saves the work of computing them again, and the api layer
+//! answers from the file whether the cache is there or not. It may therefore
+//! be pruned, and re-derived, at any time, and nothing is lost but the time.
+//!
+//! **The store treats the blob as opaque bytes**: it writes them, returns
+//! them, and hashes the *decompressed* series (`sha256`) so that a cache can
+//! be checked against what it claims to be. The encoding of the blob is the
+//! store's own business — the contract fixes the *meaning* (a cache of the
+//! FIT's series) and not the bytes — and it is not frozen yet: a cache
+//! written by one build must not be read as though another build had written
+//! it. Until the encoding is fixed, the cache is an optimisation, and a
+//! reader that does not understand it falls back to the file.
 
 use rusqlite::{params, OptionalExtension, Row, TransactionBehavior};
 

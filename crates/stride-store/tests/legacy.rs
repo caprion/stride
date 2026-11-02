@@ -43,7 +43,7 @@ fn old_run() -> OldActivity {
     OldActivity {
         id: 1,
         source: "garmin".to_string(),
-        external_id: "test-run".to_string(),
+        external_id: "fake-3117001".to_string(),
         name: "a morning run".to_string(),
         sport_type: "trail_running".to_string(),
         start_time: "2024-05-10 06:30:15.123456".to_string(),
@@ -143,7 +143,7 @@ fn populated(dir: &common::ScratchDir) -> Result<Store> {
 fn a_run_maps_to_the_new_shape() -> Result<()> {
     let new = map_activity(&old_run())?;
     assert_eq!(new.source, "garmin_personal");
-    assert_eq!(new.external_id, "test-run");
+    assert_eq!(new.external_id, "fake-3117001");
     assert_eq!(new.name, "a morning run");
     // The old vocabulary kept the flavours of running apart; this one does not.
     assert_eq!(new.sport_type, "running");
@@ -316,7 +316,7 @@ fn the_history_is_carried_across() -> Result<()> {
     assert_eq!(report.already_there, 0);
 
     // The run.
-    let run = store.activity_by_external("garmin_personal", "test-run")?;
+    let run = store.activity_by_external("garmin_personal", "fake-3117001")?;
     let run = match run {
         Some(run) => run,
         None => {
@@ -480,7 +480,7 @@ fn the_synthetic_rows_of_an_older_install_are_not_carried() -> Result<()> {
     let mut demo = old_run();
     demo.id = 2;
     demo.source = "demo".to_string();
-    demo.external_id = "test-demo".to_string();
+    demo.external_id = "fake-3117002".to_string();
     write_old_run(&store, &demo)?;
     write_old_run(&store, &old_run())?;
     let store = migrated(&dir)?;
@@ -502,7 +502,7 @@ fn a_run_a_pull_had_marked_deleted_is_not_brought_back() -> Result<()> {
         connection
             .execute(
                 "INSERT INTO deleted_garmin_activities (external_id, local_date, marked_at)
-                 VALUES ('test-run', '2024-05-10', '2024-05-11 09:00:00.000000')",
+                 VALUES ('fake-3117001', '2024-05-10', '2024-05-11 09:00:00.000000')",
                 [],
             )
             .map_err(|error| stride_store::StoreError::query("the tombstone", error))?;
