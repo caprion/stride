@@ -21,9 +21,13 @@
 //!
 //! 1. **against the athlete's own usual** — "10.2 km, 2.4 km more than your
 //!    usual Wednesday";
-//! 2. **the run's own shape** — "the last 3 km were the slowest of the run";
-//! 3. **the numbers** — "6.4 km in 41 m, at an average of 162 bpm";
-//! 4. **nothing to say** — "nothing unusual about this one".
+//! 2. **the numbers** — "6.4 km in 41 m, at an average of 162 bpm";
+//! 3. **nothing to say** — "nothing unusual about this one".
+//!
+//! And beside the sentence, the **why**: the one extra fact the detail knows
+//! and the feed does not — the run's own shape, "the last 3 km were the
+//! slowest of the run". The feed has no splits, so the why is absent there
+//! and the detail says it.
 //!
 //! Every sentence comes out of the catalogue, so the lint holds it to the
 //! voice: no imperative, no verdict, no score.
@@ -117,14 +121,35 @@ impl RunFacts {
 /// `history` is the athlete's own earlier runs — the story compares a run with
 /// the athlete's history and with nothing else. Runs on the same day as the
 /// run itself are ignored, so a run can never be compared with itself.
+///
+/// This is the feed's line: the sentence alone. The detail knows more — the
+/// run's splits — and says the extra fact in [`story_with_why`].
 pub fn story(run: &RunFacts, history: &[RunFacts]) -> String {
+    sentence(run, history)
+}
+
+/// The sentence, and the one extra fact the detail knows.
+///
+/// The sentence is what the feed shows. The **why** is the run's own shape —
+/// the slowest split, the fastest one — the fact the detail knows and the
+/// feed does not, because the feed has no splits. It is `None` when there is
+/// nothing extra to say.
+pub fn story_with_why(run: &RunFacts, history: &[RunFacts]) -> (String, Option<String>) {
+    (sentence(run, history), why(run))
+}
+
+/// The sentence: what the run was, and how it sat against the athlete's own
+/// usual.
+fn sentence(run: &RunFacts, history: &[RunFacts]) -> String {
     if let Some(sentence) = usual_sentence(run, history) {
         return sentence;
     }
-    if let Some(sentence) = split_sentence(run) {
-        return sentence;
-    }
     plain_sentence(run)
+}
+
+/// The why: the run's own shape.
+fn why(run: &RunFacts) -> Option<String> {
+    split_sentence(run)
 }
 
 /// The story against the athlete's own usual on that weekday.
@@ -175,7 +200,8 @@ fn usual_on_weekday(run: &RunFacts, history: &[RunFacts]) -> Option<f64> {
 
 /// The story from the run's own shape: the slowest or the fastest split.
 ///
-/// "the last 3 km were the slowest of the run".
+/// "the last 3 km were the slowest of the run". This is the **why**: the fact
+/// the detail knows and the feed does not, because the feed has no splits.
 fn split_sentence(run: &RunFacts) -> Option<String> {
     let paces: Vec<f64> = run
         .splits
@@ -235,10 +261,10 @@ fn split_phrase(split: Split, position: Position, speed: Speed) -> Option<String
     // kilometre or less is one distance, not several.
     let one = split.distance_m <= 1000.0;
     let id = match (position, speed, one) {
-        (Position::Last, Speed::Slowest, false) => "story.slowest_split",
-        (Position::Last, Speed::Slowest, true) => "story.slowest_split_one",
-        (Position::First, Speed::Fastest, false) => "story.fastest_split",
-        (Position::First, Speed::Fastest, true) => "story.fastest_split_one",
+        (Position::Last, Speed::Slowest, false) => "why.slowest_split",
+        (Position::Last, Speed::Slowest, true) => "why.slowest_split_one",
+        (Position::First, Speed::Fastest, false) => "why.fastest_split",
+        (Position::First, Speed::Fastest, true) => "why.fastest_split_one",
         _ => return None,
     };
     strings::render(id, &[("distance", &distance)])
