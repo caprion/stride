@@ -364,6 +364,51 @@ export interface SyncStatus {
   last_sync_at: string | null
   last_error: string | null
   activity_count: number
+  /**
+   * The newest Garmin activity the app has already pulled.
+   *
+   * The pull is a delta: the next one asks Garmin for what is after this, so
+   * a known run is never downloaded twice.
+   */
+  cursor: string | null
+  /** The runs the last pull downloaded. */
+  pulled: number | null
+  /** The runs the last pull recognised and did not download again. */
+  skipped: number | null
+  /** The runs Garmin no longer lists, marked and not resurrected. */
+  deleted: number | null
+}
+
+/**
+ * One heart-rate band of a run.
+ */
+export interface ZoneBand {
+  /** The band's name, as the core names it: "Z2". */
+  label: string
+  /** The band's range, in the core's words: "154-166 bpm". */
+  range: string | null
+  /** The time spent in the band, as the core renders it: "12 m". */
+  time: RenderedValue | null
+}
+
+/**
+ * The heart-rate zones of a run, computed from the samples that carry a heart
+ * rate.
+ *
+ * When there is not enough to compute them, the answer says so in words
+ * rather than inventing bands.
+ */
+export interface FitnessZones {
+  /** The basis the bands were computed on: "moving" or "elapsed". */
+  basis: string | null
+  /** The maximum heart rate the bands came from: "182 bpm". */
+  max_heart_rate: RenderedValue | null
+  /** The bands, empty when they could not be computed. */
+  zones: ZoneBand[]
+  /** The time with no heart rate, counted separately: "3 m". */
+  without_heart_rate: RenderedValue | null
+  /** Why there are no bands, in the core's words. */
+  unavailable: string | null
 }
 
 /** The health of the sync window. */
