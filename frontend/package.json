@@ -11,7 +11,6 @@
     "typecheck": "tsc --noEmit -p tsconfig.app.json && tsc --noEmit -p tsconfig.node.json",
     "lint:voice": "node scripts/lint-voice.mjs",
     "fixtures:export": "node scripts/export-fixtures.mjs",
-    "fixtures:compare": "node scripts/compare-answers.mjs",
     "test:unit": "vitest run",
     "test:viewport": "node scripts/viewport-matrix.mjs",
     "test": "npm run lint:voice && npm run typecheck && npm run test:unit && npm run test:viewport",

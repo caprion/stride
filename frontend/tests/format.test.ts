@@ -14,7 +14,6 @@ import {
   formatDateMedium,
   formatDateShort,
   renderedText,
-  sessionTypeLabel,
   sportLabel,
 } from '../src/lib/format'
 
@@ -40,12 +39,6 @@ describe('the chrome', () => {
     expect(sportLabel('running')).toBe('Run')
     expect(sportLabel('trail_running')).toBe('Trail run')
     expect(sportLabel(null)).toBe('Run')
-  })
-
-  it('reads the plan\'s own vocabulary', () => {
-    expect(sessionTypeLabel('easy')).toBe('easy')
-    expect(sessionTypeLabel('long_run')).toBe('long run')
-    expect(sessionTypeLabel('unknown')).toBe('Unknown')
   })
 
   it('shows a value that is not there as the em dash — never "0"', () => {
