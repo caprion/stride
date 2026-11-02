@@ -307,7 +307,7 @@ describe('the Compare page', () => {
     )
 
     expect(container.querySelector('[data-testid="compare-basis"]')?.textContent).toContain(
-      'Same distance, 3 weeks apart',
+      'Different distances — read with care',
     )
     expect(container.querySelector('[data-testid="compare-row-pace"]')?.textContent).toContain(
       'Pace',
@@ -322,7 +322,7 @@ describe('the Compare page', () => {
     )
 
     expect(container.querySelector('[data-testid="compare-row-pace"]')?.textContent).toContain(
-      '−11 s/km',
+      '−1 s/km',
     )
 
     await user.click(screen.getByTestId('compare-swap'))
@@ -330,7 +330,7 @@ describe('the Compare page', () => {
     await waitFor(() =>
       expect(
         container.querySelector('[data-testid="compare-row-pace"]')?.textContent,
-      ).toContain('+11 s/km'),
+      ).toContain('+1 s/km'),
     )
   })
 })
