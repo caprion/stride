@@ -795,6 +795,10 @@ export const syncStatusFixture: SyncStatus = {
   last_sync_at: new Date(Date.now() - 2 * 3_600_000).toISOString(),
   last_error: null,
   activity_count: 42,
+  cursor: null,
+  pulled: null,
+  skipped: null,
+  deleted: null,
 }
 
 export const healthDailyFixture: HealthDaily = {

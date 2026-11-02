@@ -1247,6 +1247,17 @@ pub struct SyncStatus {
     pub last_error: Option<String>,
     /// How many runs are stored.
     pub activity_count: i64,
+    /// The newest Garmin activity the app has already pulled.
+    ///
+    /// The pull is a delta: the next one asks Garmin for what is after
+    /// this, so a known run is never downloaded twice.
+    pub cursor: Option<String>,
+    /// The runs the last pull downloaded.
+    pub pulled: Option<i64>,
+    /// The runs the last pull recognised and did not download again.
+    pub skipped: Option<i64>,
+    /// The runs Garmin no longer lists, marked and not resurrected.
+    pub deleted: Option<i64>,
 }
 
 /// What a pull brought in.
