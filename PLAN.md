@@ -253,7 +253,7 @@ states each must cover:
 | **4** | the app's screens: Settings, Connect, and the states on every screen | the viewport matrix passes at six widths; the lint passes; no screen invents a number |
 | **5** | the phone's first run, its notifications, and the key's whole life | the key goes in, the pull lands the runs, the app says so; "forget the key" keeps the history |
 | **6** | the rig: the connect page, the export, the import, the stranger's README | a stranger clones it, runs it, gives it a key and sees their own runs |
-| **7** | the second review, and the release that carries it | an independent review of the whole product, and a v0.10.0 an Instinct can install |
+| **7** | the second review, and the release that carries it | an independent review of the whole product, and a release an Instinct can install |
 
 Slices 2 to 6 run in parallel where they touch different crates. 3 and 4 meet at the shapes — the app's
 declarations are the contract, and the api is held to them — and 5 and 6 are independent of everything but the

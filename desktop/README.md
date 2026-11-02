@@ -147,7 +147,7 @@ still private data: the key and the athlete's rows travel together.
 
 Keep the whole folder off public storage. To put it on the phone, copy the
 folder over a private channel such as a USB cable or a local file share. The
-current v0.9.0 phone app does not yet have a bulk desktop-export import
+current phone app does not yet have a bulk desktop-export import
 screen, so keep the bundle as the portable copy until that screen exists;
 individual FIT files can already be imported on the phone.
 
