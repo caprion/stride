@@ -29,6 +29,7 @@
 //! | [`repos`] | one repository per table |
 //! | [`sync`] | the cursor rule: it advances only after a successful parse |
 //! | [`export`] | export, import, and the plaintext → SQLCipher conversion |
+//! | [`legacy`] | the one-time importer: the previous version's history |
 //! | [`model`] | the rows |
 //! | [`hash`] | SHA-256, for the FIT blob's content hash |
 //! | [`logging`] | the store's log, and the sink a test reads |
@@ -53,6 +54,7 @@ pub mod error;
 pub mod export;
 pub mod hash;
 pub mod key;
+pub mod legacy;
 pub mod logging;
 pub mod model;
 pub mod repos;
@@ -64,6 +66,9 @@ pub mod sync;
 pub use error::{Result, StoreError};
 pub use export::{ConversionReport, ExportManifest, ImportReport};
 pub use key::DatabaseKey;
+pub use legacy::{
+    detect_schema, detect_schema_file, import_legacy, LeftBehind, LegacyImportReport, SchemaKind,
+};
 pub use model::{
     Activity, ActivitySamples, ActivitySummary, NewActivity, NewActivitySamples, NewNote,
     NewPlanBlock, NewPlanSession, Note, PlanBlock, PlanSession, SyncState, WellnessDaily,
