@@ -29,7 +29,7 @@ use rusqlite::Connection;
 use crate::error::{Result, StoreError};
 
 /// The version of the schema this build reads and writes.
-pub const SCHEMA_VERSION: i64 = 1;
+pub const SCHEMA_VERSION: i64 = 2;
 
 /// The statements that create the tables, in creation order.
 ///
@@ -128,6 +128,21 @@ pub const TABLE_STATEMENTS: &[&str] = &[
     updated_at        DATETIME NOT NULL
 );
 "#,
+    // The table added in version 2: tombstones for the runs Garmin no
+    // longer lists.
+    r#"-- Old: (nothing - the old app never learned that a run was deleted).
+-- v2: a run Garmin no longer lists is **marked**, not forgotten and not
+-- resurrected. A pull that cannot find a stored run in Garmin's list writes a
+-- tombstone here; a later pull that sees the run again does not bring it
+-- back, because Garmin's list is not proof that a run came back - it is proof
+-- that the run is still there, and the tombstone says we already accounted
+-- for it.
+CREATE TABLE deleted_garmin_activities (
+    external_id  VARCHAR(64) NOT NULL PRIMARY KEY,  -- the Garmin activity id
+    local_date   VARCHAR(10) NOT NULL,               -- the run's day
+    marked_at    DATETIME NOT NULL                  -- when the pull marked it
+);
+"#,
 ];
 
 /// The statements that create the indexes, in creation order.
@@ -168,14 +183,27 @@ pub struct Migration {
 
 /// The migration ladder, in order.
 ///
-/// There is one step today: the schema of the contract. It is written as a
-/// ladder rather than a single call so that the next version of the schema
-/// has somewhere to go.
+/// Version 1 is the schema of the original freeze. Version 2 adds the
+/// tombstone table for the runs Garmin no longer lists. A database at an
+/// older version gets the missing steps, each in its own transaction.
+///
+/// The first seven tables of [`TABLE_STATEMENTS`] are version 1; the eighth
+/// — the tombstone table — is version 2.
 pub fn migrations() -> Vec<Migration> {
-    vec![Migration {
-        version: SCHEMA_VERSION,
-        statements: all_statements(),
-    }]
+    vec![
+        Migration {
+            version: 1,
+            statements: TABLE_STATEMENTS[..7]
+                .iter()
+                .chain(INDEX_STATEMENTS.iter())
+                .copied()
+                .collect(),
+        },
+        Migration {
+            version: SCHEMA_VERSION,
+            statements: TABLE_STATEMENTS[7..].to_vec(),
+        },
+    ]
 }
 
 /// The schema version of a database.

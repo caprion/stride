@@ -451,30 +451,38 @@ pub struct Trends {
     pub generated_at: String,
 }
 
-/// One heart-rate zone.
+/// One heart-rate band of a run.
+///
+/// The bands are computed from the samples that carry a heart rate, and
+/// from nothing else.
 #[derive(Clone, Debug, PartialEq, Serialize)]
-pub struct HeartRateZone {
-    /// The zone's number, from one.
-    pub zone_no: u8,
-    /// The zone's name.
-    pub name: String,
-    /// The lower edge, in beats per minute.
-    pub low_bpm: Option<f64>,
-    /// The upper edge, in beats per minute.
-    pub high_bpm: Option<f64>,
-    /// The time in the zone, in seconds.
-    pub time_s: f64,
+pub struct ZoneBand {
+    /// The band's name, as the core names it: "Z2".
+    pub label: String,
+    /// The band's range, in the core's words: "154-166 bpm".
+    pub range: Option<String>,
+    /// The band's lower edge, in beats per minute — the number the core
+    /// rendered the range from, for a chart to draw.
+    pub from_bpm: Option<i64>,
+    /// The band's upper edge, in beats per minute.
+    pub to_bpm: Option<i64>,
+    /// The time spent in the band, as the core renders it: "12 m".
+    pub time: Option<RenderedValue>,
 }
 
-/// The heart-rate zones.
+/// The heart-rate zones of a run.
 #[derive(Clone, Debug, PartialEq, Serialize)]
-pub struct Zones {
-    /// The zones.
-    pub zones: Vec<HeartRateZone>,
-    /// The time in the zones, in seconds.
-    pub total_time_s: f64,
-    /// When this answer was produced.
-    pub generated_at: String,
+pub struct FitnessZones {
+    /// The basis the bands were computed on: "moving" or "elapsed".
+    pub basis: Option<String>,
+    /// The maximum heart rate the bands came from: "182 bpm".
+    pub max_heart_rate: Option<RenderedValue>,
+    /// The bands, empty when they could not be computed.
+    pub zones: Vec<ZoneBand>,
+    /// The time with no heart rate, counted separately: "3 m".
+    pub without_heart_rate: Option<RenderedValue>,
+    /// Why there are no bands, in the core's words.
+    pub unavailable: Option<String>,
 }
 
 // -------------------------------------------------------------------- stats
@@ -1265,6 +1273,10 @@ pub struct SyncStatus {
 pub struct SyncRun {
     /// How many runs the pull brought in.
     pub activities: usize,
+    /// The runs the pull recognised and did not download again.
+    pub skipped: usize,
+    /// The runs Garmin no longer lists, marked and not resurrected.
+    pub deleted: usize,
     /// How many days of wellness the pull brought in.
     pub wellness_days: usize,
     /// When the pull finished.

@@ -102,7 +102,7 @@ fn an_import_refuses_an_export_of_another_schema_version() -> Result<()> {
     // The manifest says a schema this build does not read.
     let path = target.join("manifest.json");
     let text = common::read_text(&path)?;
-    let text = text.replace("\"schema_version\": 1", "\"schema_version\": 99");
+    let text = text.replace("\"schema_version\": 2", "\"schema_version\": 99");
     common::write(&path, &text)?;
 
     let other = Store::open_and_migrate(&dir.file("other.db"), &common::key()?)?;
@@ -121,7 +121,7 @@ fn an_import_refuses_an_export_of_another_schema_version() -> Result<()> {
         "the error does not say the version: {text}"
     );
     assert!(
-        text.contains("1"),
+        text.contains("2"),
         "the error does not say the version: {text}"
     );
 
@@ -197,7 +197,7 @@ fn a_plain_database_is_converted_into_an_encrypted_one() -> Result<()> {
 
     let report = export::convert_plaintext_to_encrypted(&path, &common::key()?)?;
 
-    assert_eq!(report.tables.len(), 7);
+    assert_eq!(report.tables.len(), 8);
     assert_eq!(report.rows, 1);
     assert!(
         report.schema_matches,

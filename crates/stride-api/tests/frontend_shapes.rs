@@ -499,6 +499,21 @@ fn the_sync_status_carries_the_shape_the_app_declares() {
 }
 
 #[test]
+fn the_zones_carry_the_shape_the_app_declares() {
+    let declarations = declarations();
+    let harness = common::Harness::seeded("frontend-zones");
+    let body = harness.ok_get("/fitness/zones?id=1");
+    assert_declared(&declarations, "FitnessZones", &body);
+    if let Some(zone) = body
+        .get("zones")
+        .and_then(|zones| zones.as_array())
+        .and_then(|zones| zones.first())
+    {
+        assert_declared(&declarations, "ZoneBand", zone);
+    }
+}
+
+#[test]
 fn the_health_carries_the_shape_the_app_declares() {
     let declarations = declarations();
     let harness = common::Harness::seeded("frontend-health");

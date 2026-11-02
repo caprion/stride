@@ -70,6 +70,40 @@ fn an_activity_answers_with_the_run() {
 }
 
 #[test]
+fn the_fit_route_serves_the_original_file_byte_for_byte() {
+    let harness = common::Harness::empty("route-activity-fit");
+    let fit = common::corpus_fit("real_garmin_run.fit");
+    let mut run = common::run("a-run", "2026-05-10", 10_000.0, 3_000.0);
+    run.fit_blob = fit.clone();
+    let id = harness.write_run(run);
+
+    let answer = harness
+        .router
+        .call("GET", &format!("/activities/{id}/fit"), None);
+    assert!(answer.is_ok());
+    let raw = answer.raw.as_ref().expect("the FIT route is a file answer");
+    assert_eq!(raw.content_type, "application/octet-stream");
+    assert_eq!(raw.bytes, fit, "the file is the one Garmin served");
+
+    // The phone's envelope carries the same bytes, base64.
+    let envelope = answer.envelope();
+    assert_eq!(
+        envelope["body"]["content_type"].as_str(),
+        Some("application/octet-stream")
+    );
+    let decoded = common::base64_decode(envelope["body"]["base64"].as_str().unwrap());
+    assert_eq!(decoded, fit);
+}
+
+#[test]
+fn the_fit_route_needs_a_run() {
+    let harness = common::Harness::empty("route-activity-fit-missing");
+    let answer = harness.router.call("GET", "/activities/9999/fit", None);
+    assert_eq!(answer.status, 404);
+    assert_eq!(answer.body["code"].as_str(), Some("not_found"));
+}
+
+#[test]
 fn physiology_daily_answers_with_the_days() {
     let harness = common::Harness::seeded("route-physiology-daily");
     let body = harness.ok_get("/physiology/daily");
@@ -155,9 +189,13 @@ fn fitness_trends_answers_with_the_trends() {
 #[test]
 fn fitness_zones_answers_with_the_zones() {
     let harness = common::Harness::seeded("route-fitness-zones");
-    let body = harness.ok_get("/fitness/zones");
+    // The seeded run has no FIT file, so there is nothing to compute from:
+    // the answer says so in the core's words, and the bands are empty.
+    let body = harness.ok_get("/fitness/zones?id=1");
     assert!(body["zones"].is_array());
-    assert_eq!(body["total_time_s"].as_f64(), Some(0.0));
+    assert!(body["zones"].as_array().unwrap().is_empty());
+    assert!(body["unavailable"].as_str().is_some());
+    assert!(body["max_heart_rate"].is_null());
 }
 
 #[test]

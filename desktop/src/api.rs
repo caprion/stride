@@ -235,6 +235,11 @@ impl Router for ApiRouter {
             return failure;
         }
 
+        // A file answer goes on the wire as bytes, not JSON.
+        if let Some(raw) = &answer.raw {
+            return Response::new(answer.status, raw.content_type, raw.bytes.clone());
+        }
+
         // **The answer is the body, byte for byte.** The router's status
         // goes in the status line, and its body goes on the wire as it is:
         // the rig does not wrap it, and it does not add a field to it.
