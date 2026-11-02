@@ -685,21 +685,21 @@ export const compareFixture: CompareResponse = {
       label_key: 'vital.time',
       a: value('55 m', 3_300),
       b: value('54 m', 3_240),
-      delta: value('-1 m', -60),
+      delta: value('−1 m', -60),
     },
     {
       key: 'pace',
       label_key: 'vital.pace',
       a: value('5:17 /km', 317),
       b: value('5:06 /km', 306),
-      delta: value('-11 s/km', -11),
+      delta: value('−11 s/km', -11),
     },
     {
       key: 'hr',
       label_key: 'vital.heartRate',
       a: value('149 bpm', 149),
       b: value('146 bpm', 146),
-      delta: value('-3 bpm', -3),
+      delta: value('−3 bpm', -3),
     },
   ],
   a: {
@@ -737,7 +737,7 @@ export const compareSwappedFixture: CompareResponse = {
       label_key: 'vital.distance',
       a: value('10.6 km', 10_600),
       b: value('10.4 km', 10_400),
-      delta: value('-0.2 km', -200),
+      delta: value('−0.2 km', -200),
     },
     {
       key: 'time',

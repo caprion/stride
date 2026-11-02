@@ -196,11 +196,13 @@ describe('Compare', () => {
     await waitFor(() =>
       expect(container.querySelector('[data-testid="activity-plan-line"]')).toBeTruthy(),
     )
-    // The core's whole statement: the distance, then the gap against the
-    // target — "12.4 km · 2.4 km more than the 10 km target".
+    // The core's own statement of the result: what was run, against the
+    // target — "12.4 km of a 10 km target". The *gap* ("2.4 km more than the
+    // 10 km target") is the distance comparison, and it belongs on Today,
+    // where it appears only when the gap is beyond ten per cent.
     expect(
       container.querySelector('[data-testid="activity-plan-line"]')?.textContent,
-    ).toContain('12.4 km · 2.4 km more than the 10 km target')
+    ).toContain('12.4 km of a 10 km target')
   })
 
   it('shows the values the API sent, word for word', async () => {
