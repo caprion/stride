@@ -23,6 +23,7 @@ import {
 } from 'recharts'
 import { api } from '../lib/api'
 import { formatDateMedium, renderedText } from '../lib/format'
+import { useStaleness } from '../lib/staleness'
 import type { CompareMetric, CompareSeriesPoint } from '../lib/types'
 import { t } from '../i18n'
 import { PageHeader } from '../ui/layout/PageHeader'
@@ -100,6 +101,7 @@ function EffortChart({
 export function ComparePage({ id }: { id: string }) {
   const [swapped, setSwapped] = useState(false)
   const [chart, setChart] = useState<'a' | 'b'>('a')
+  const stale = useStaleness()
 
   /**
    * Which run is A is the API's business.
@@ -132,10 +134,25 @@ export function ComparePage({ id }: { id: string }) {
   const rows = data.metrics
   const chartSeries = { a: data.series.a, b: data.series.b }
 
+  // Not enough to compare: the honest version of the empty state, where a
+  // comparison is impossible. No numbers are invented to fill the gap.
+  if (!runA || !runB || rows.length === 0) {
+    return (
+      <div>
+        <PageHeader title={t('compare.heading')} />
+        <div className="card px-4 py-8 text-center" data-testid="compare-none">
+          <p className="text-[15px] font-semibold text-ink">{t('compare.state.none')}</p>
+          <p className="mt-1 text-[13px] text-ink-muted">{t('compare.state.noneBody')}</p>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div>
       <PageHeader
         title={t('compare.heading')}
+        meta={stale ? <span className="text-ink-faint">{stale}</span> : null}
         action={
           <button
             type="button"

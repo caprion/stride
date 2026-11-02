@@ -62,6 +62,9 @@ export const SAMPLE_SIZE = /\b\d+\b|\{n\}/
 export const SAMPLE_NOUN =
   /\b(times|nights|days|runs|weeks|sessions|months|cases|comparables)\b/
 
+/** A hole in a sentence: a placeholder waiting for a value. */
+export const HOLE = /\{[^{}]*\}/
+
 /** The banned words inside a piece of text. */
 export function bannedWords(text) {
   const found = []
@@ -120,6 +123,18 @@ export function checkCatalogue(entries, directionWords, vitalWords = []) {
     if (entry.type !== 'pattern') continue
     if (!SAMPLE_SIZE.test(entry.text) || !SAMPLE_NOUN.test(entry.text)) {
       failures.push(`catalogue.${key}: is a pattern without a sample size — "${entry.text}"`)
+    }
+  }
+
+  // A statement is a whole sentence: it never carries a hole.
+  //
+  // The values a statement talks about are already in it — "2.4 km more
+  // than the 10 km target" — and a hole is where a second implementation
+  // grows back: a template that some other screen fills in differently.
+  for (const [key, entry] of Object.entries(entries)) {
+    if (entry.type !== 'statement') continue
+    if (HOLE.test(entry.text)) {
+      failures.push(`catalogue.${key}: is a statement with a hole in it — "${entry.text}"`)
     }
   }
 

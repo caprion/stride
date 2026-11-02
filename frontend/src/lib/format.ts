@@ -50,6 +50,19 @@ export function formatDateMedium(iso: string | null | undefined): string {
   return format(date, 'd MMM yyyy')
 }
 
+/**
+ * An ISO date -> "12 Oct".
+ *
+ * The day and the month, without the weekday: the short form the app
+ * uses inside a line — "Already have this run (12 Oct, 10.2 km)".
+ */
+export function formatDayMonth(iso: string | null | undefined): string {
+  if (!iso) return ABSENT
+  const date = parseISO(iso)
+  if (Number.isNaN(date.getTime())) return ABSENT
+  return format(date, 'd MMM')
+}
+
 /** An ISO timestamp -> "2 days ago". */
 export function formatRelative(iso: string | null | undefined): string {
   if (!iso) return 'never'

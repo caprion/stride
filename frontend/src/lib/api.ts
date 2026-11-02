@@ -6,15 +6,25 @@
  * only says how each frozen route is called and what it answers.
  */
 
-import { fixtureResponse } from '../fixtures'
+import { fixtureResponse, FixtureFailure } from '../fixtures'
 import type {
   ActivityDetail,
   ActivityListResponse,
   CompareCandidate,
   CompareResponse,
+  ConnectionStatus,
+  FitImportResult,
+  Health,
   HealthDaily,
+  KeyConnectResult,
+  KeyTestResult,
+  NoteResult,
+  PlanImportResult,
   PlanWeek,
   ProgressInsight,
+  SettingsDeleteResult,
+  SettingsExportResult,
+  SettingsState,
   SyncStatus,
   TodayInsight,
   VitalsSnapshot,
@@ -93,6 +103,21 @@ export const ROUTES = {
   authGarminFitImport: '/auth/garmin/fit-import',
   authGarminLogout: '/auth/garmin/logout',
 
+  /*
+    The settings, the note and the two storage actions.
+
+    These four are the routes the Settings screen needs and the frozen
+    table does not yet carry. The app's declarations are the contract
+    (`src/lib/types.ts`), and the api is held to them by
+    `crates/stride-api/tests/frontend_shapes.rs` — so they are declared
+    here, and every one of them has to be written into
+    `docs/contract/api-paths.md` in the same pull request.
+  */
+  settings: '/settings',
+  settingsExport: '/settings/export',
+  settingsDelete: '/settings/delete',
+  activityNote: '/activities/{id}/note',
+
   calendar: '/calendar',
 } as const
 
@@ -145,9 +170,16 @@ async function request<T>(
       path,
       Object.fromEntries(query.entries()),
       fixtureVariant() ?? '',
+      body,
     )
     if (answer === undefined) {
       throw new ApiError('not_found', `no fixture for ${path}`, 404)
+    }
+    // A fixture may answer with a failure, the way the router answers
+    // with one: the plan is not there, the data is stale, the history is
+    // too short. The screen reads the kind, not a generic error.
+    if (answer instanceof FixtureFailure) {
+      throw new ApiError(answer.kind, answer.detail, answer.status)
     }
     return answer as T
   }
@@ -197,7 +229,7 @@ export const api = {
   planSources: () => get<unknown>(ROUTES.planSources),
   planAdherence: () => get<unknown>(ROUTES.planAdherence),
   planResults: () => get<unknown>(ROUTES.planResults),
-  planImport: () => post<unknown>(ROUTES.planImport),
+  planImport: (payload: unknown) => post<PlanImportResult>(ROUTES.planImport, payload),
 
   /** Today's readout. */
   insightsToday: () => get<TodayInsight>(ROUTES.insightsToday),
@@ -211,7 +243,7 @@ export const api = {
   compareCandidates: (id: number | string) =>
     get<CompareCandidate[]>(ROUTES.compareCandidates, { id: String(id) }),
 
-  health: () => get<unknown>(ROUTES.health),
+  health: () => get<Health>(ROUTES.health),
   healthDaily: () => get<HealthDaily>(ROUTES.healthDaily),
 
   syncStatus: () => get<SyncStatus>(ROUTES.syncStatus),
@@ -220,7 +252,7 @@ export const api = {
   syncHistory: () => get<unknown>(ROUTES.syncHistory),
   syncSettings: () => get<unknown>(ROUTES.syncSettings),
 
-  authStatus: () => get<unknown>(ROUTES.authStatus),
+  authStatus: () => get<ConnectionStatus>(ROUTES.authStatus),
 
   /**
    * The Garmin key, typed into the desktop.
@@ -234,7 +266,7 @@ export const api = {
     if (currentHost() === 'native') {
       throw new ApiError('garmin_rejected', 'the key is typed on the phone', 0)
     }
-    return post<unknown>(ROUTES.authGarminPersonalKey, { key })
+    return post<KeyConnectResult>(ROUTES.authGarminPersonalKey, { key })
   },
 
   /**
@@ -247,7 +279,7 @@ export const api = {
     if (currentHost() === 'native') {
       throw new ApiError('garmin_rejected', 'the key is typed on the phone', 0)
     }
-    return post<unknown>(ROUTES.authGarminPersonalKeyTest, { key })
+    return post<KeyTestResult>(ROUTES.authGarminPersonalKeyTest, { key })
   },
 
   /**
@@ -279,7 +311,39 @@ export const api = {
     }
   },
 
-  importFit: (payload: unknown) => post<unknown>(ROUTES.authGarminFitImport, payload),
-  garminLogout: () => post<unknown>(ROUTES.authGarminLogout),
+  importFit: (payload: unknown) => post<FitImportResult>(ROUTES.authGarminFitImport, payload),
+  garminLogout: () => post<KeyConnectResult>(ROUTES.authGarminLogout),
   calendar: () => get<unknown>(ROUTES.calendar),
+
+  /**
+   * The settings: the weekly goal, the pause and the storage.
+   *
+   * The goal and the pause are written through the same route, and the
+   * answer is the whole state — so the screen never has to guess what
+   * the api did with the number it sent.
+   */
+  settings: () => get<SettingsState>(ROUTES.settings),
+  saveSettings: (change: {
+    /** The weekly goal in kilometres. Null clears the goal. */
+    goal_km?: number | null
+    /** The pause. Null clears the pause. */
+    pause?: { start_date: string; end_date: string; reason: string | null } | null
+  }) => post<SettingsState>(ROUTES.settings, change),
+
+  /** A backup, written by the host. */
+  exportBackup: () => post<SettingsExportResult>(ROUTES.settingsExport),
+
+  /**
+   * Everything, deleted.
+   *
+   * The word has to travel with the request: the api refuses the call
+   * unless it carries the confirmation, so a delete cannot happen by
+   * accident.
+   */
+  deleteEverything: (confirmation: string) =>
+    post<SettingsDeleteResult>(ROUTES.settingsDelete, { confirm: confirmation }),
+
+  /** A note on a run — the only free text the product stores. */
+  saveNote: (id: number | string, text: string | null) =>
+    post<NoteResult>(route('activityNote', { id }), { text }),
 }

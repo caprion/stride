@@ -34,7 +34,13 @@ const VIEWPORTS = [
   { name: '1280x800 desktop', width: 1280, height: 800 },
 ]
 
-/** The screens the gate runs at. */
+/**
+ * The screens the gate runs at.
+ *
+ * `chrome: false` is the first-run page: it stands alone, with no app
+ * chrome and no destinations, so the destination set does not apply to
+ * it. `fixture` is the state the screen is reviewed in.
+ */
 const ROUTES = [
   { path: '/', name: 'Today', primary: '[data-testid="today-session"]' },
   { path: '/runs', name: 'Runs', primary: '[data-testid="run-101"]' },
@@ -43,6 +49,14 @@ const ROUTES = [
   { path: '/body', name: 'Body', primary: '[data-testid="body-signals"]' },
   { path: '/plan', name: 'Plan week', primary: '[data-testid="plan-week"]' },
   { path: '/compare/101', name: 'Compare', primary: '[data-testid="compare-metrics"]' },
+  { path: '/settings', name: 'Settings', primary: '[data-testid="settings-goal"]' },
+  {
+    path: '/connect',
+    name: 'Connect',
+    primary: '[data-testid="key-input"]',
+    chrome: false,
+    fixture: 'fresh',
+  },
 ]
 
 /** The four destinations — the set that must never change. */
@@ -227,9 +241,11 @@ async function main() {
       )
 
       for (const route of ROUTES) {
-        const url = `${base}${route.path}?fixtures=1`
+        const url = `${base}${route.path}?fixtures=${route.fixture ?? 1}`
         await page.goto(url, { waitUntil: 'networkidle' })
-        await page.waitForSelector('.shell', { state: 'attached', timeout: 10_000 })
+        if (route.chrome !== false) {
+          await page.waitForSelector('.shell', { state: 'attached', timeout: 10_000 })
+        }
         await page.waitForTimeout(150)
 
         const result = await page.evaluate(`(${IN_PAGE_CHECKS})()`)
@@ -240,13 +256,16 @@ async function main() {
           failures.push(`${label}: ${problem}`)
         }
 
-        // The destination set is identical at every width.
-        if (result.unique.join(',') !== DESTINATIONS.slice().sort().join(',')) {
-          failures.push(
-            `${label}: the destination set is [${result.unique.join(', ')}], expected [${DESTINATIONS.join(', ')}]`,
-          )
+        // The destination set is identical at every width. The first-run
+        // page has no destinations at all — it stands alone.
+        if (route.chrome !== false) {
+          if (result.unique.join(',') !== DESTINATIONS.slice().sort().join(',')) {
+            failures.push(
+              `${label}: the destination set is [${result.unique.join(', ')}], expected [${DESTINATIONS.join(', ')}]`,
+            )
+          }
+          seenDestinations.set(viewport.name, result.unique.join(','))
         }
-        seenDestinations.set(viewport.name, result.unique.join(','))
 
         // The primary action is reachable without a horizontal scroll.
         const primary = await page.$(route.primary)

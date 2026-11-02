@@ -4,14 +4,25 @@
  * Every row carries a sentence about what the run meant; a row without one
  * is a spreadsheet. The feed is windowed by date and loads more on demand.
  * There is no "missed" badge anywhere: activities are facts.
+ *
+ * The states:
+ *
+ *   - **empty** — "No activities yet", with the two actions that fill it:
+ *     the key and the file;
+ *   - **importing** — an inline row on the list, never a modal;
+ *   - **a duplicate** — one line, once: "Already have this run (12 Oct,
+ *     10.2 km)".
  */
 
-import { useQuery } from '@tanstack/react-query'
+import { useInfiniteQuery } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
 import { api } from '../lib/api'
+import { connectGarmin } from '../lib/connect'
 import { formatDateShort, renderedText, sportLabel } from '../lib/format'
+import { useStaleness } from '../lib/staleness'
 import type { ActivitySummary } from '../lib/types'
 import { t } from '../i18n'
+import { FitImport } from '../components/FitImport'
 import { PageHeader } from '../ui/layout/PageHeader'
 
 /** The chips under a run's title. */
@@ -61,12 +72,12 @@ function ActivityRow({ activity }: { activity: ActivitySummary }) {
         >
           {t('runs.compareWith')}
         </Link>
-        <button
-          type="button"
+        <Link
+          to={`/runs/${activity.id}`}
           className="tap-inline text-[12.5px] font-medium text-ink-muted underline underline-offset-2"
         >
           {t('runs.addNote')}
-        </button>
+        </Link>
       </div>
     </li>
   )
@@ -87,12 +98,18 @@ function groupLabel(key: string, today: string): string {
 }
 
 export function RunsPage() {
-  const activities = useQuery({
+  // The feed is windowed by date: a page of forty runs, and the next
+  // page when the athlete asks for it. It never loads everything.
+  const feed = useInfiniteQuery({
     queryKey: ['activities'],
-    queryFn: () => api.activities({ limit: 40 }),
+    queryFn: ({ pageParam }) =>
+      api.activities({ limit: 40, cursor: pageParam as string | undefined }),
+    initialPageParam: undefined as string | undefined,
+    getNextPageParam: (last) => last.next_cursor ?? undefined,
   })
+  const stale = useStaleness()
 
-  const rows = activities.data?.activities ?? []
+  const rows = feed.data?.pages.flatMap((page) => page.activities) ?? []
   const today = rows[0]?.local_date ?? new Date().toISOString().slice(0, 10)
 
   const groups: { label: string; totals: ActivitySummary['group']; activities: ActivitySummary[] }[] =
@@ -108,21 +125,28 @@ export function RunsPage() {
     <div>
       <PageHeader
         title={t('runs.heading')}
-        action={
-          <button
-            type="button"
-            data-testid="runs-import"
-            className="tap inline-flex items-center rounded-md border border-edge bg-surface px-3 text-[13px] font-semibold text-ink-soft"
-          >
-            {t('runs.import')}
-          </button>
-        }
+        meta={stale ? <span className="text-ink-faint">{stale}</span> : null}
       />
 
+      {/* The import entry: a picker on the phone, a drop target on the
+          desktop. */}
+      <div className="mb-3">
+        <FitImport />
+      </div>
+
       {rows.length === 0 ? (
-        <div className="card px-4 py-8 text-center">
+        <div className="card px-4 py-8 text-center" data-testid="runs-empty">
           <p className="text-[15px] font-semibold text-ink">{t('runs.empty.title')}</p>
           <p className="mt-1 text-[13px] text-ink-muted">{t('runs.empty.body')}</p>
+          <button
+            type="button"
+            className="tap mt-3 inline-flex items-center rounded-md border border-edge bg-surface px-4 text-[14px] font-semibold text-ink-soft"
+            onClick={() => {
+              void connectGarmin()
+            }}
+          >
+            {t('today.state.noDataAction')}
+          </button>
         </div>
       ) : (
         <div className="space-y-4">
@@ -146,12 +170,18 @@ export function RunsPage() {
               </ul>
             </section>
           ))}
-          <button
-            type="button"
-            className="tap w-full rounded-md border border-edge bg-surface py-2 text-[13px] font-semibold text-ink-soft"
-          >
-            {t('runs.loadMore')}
-          </button>
+          {feed.hasNextPage ? (
+            <button
+              type="button"
+              className="tap w-full rounded-md border border-edge bg-surface py-2 text-[13px] font-semibold text-ink-soft"
+              data-testid="runs-load-more"
+              onClick={() => {
+                feed.fetchNextPage()
+              }}
+            >
+              {t('runs.loadMore')}
+            </button>
+          ) : null}
         </div>
       )}
     </div>

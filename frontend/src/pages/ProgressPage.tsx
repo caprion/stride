@@ -7,6 +7,7 @@
  */
 
 import { useQuery } from '@tanstack/react-query'
+import { useState } from 'react'
 import {
   Bar,
   BarChart,
@@ -20,7 +21,8 @@ import {
   YAxis,
 } from 'recharts'
 import { api } from '../lib/api'
-import { formatCount, formatDateShort } from '../lib/format'
+import { formatCount, formatDateShort, renderedText } from '../lib/format'
+import { useStaleness } from '../lib/staleness'
 import { t } from '../i18n'
 import { PageHeader } from '../ui/layout/PageHeader'
 
@@ -36,8 +38,19 @@ function ChartCard({ title, children }: { title: string; children: React.ReactNo
   )
 }
 
+/**
+ * The ranges the charts can show.
+ *
+ * **The range is the chart's own business** — the api sends the weeks it
+ * has, and the app draws the window the athlete asks for. A chart with
+ * less behind it shows less; it never invents a week.
+ */
+const RANGES = [4, 8, 12, 26] as const
+
 export function ProgressPage() {
   const progress = useQuery({ queryKey: ['insights-progress'], queryFn: api.insightsProgress })
+  const stale = useStaleness()
+  const [range, setRange] = useState<number>(12)
   const data = progress.data
 
   if (!data) {
@@ -49,28 +62,50 @@ export function ProgressPage() {
     )
   }
 
-  const volume = data.weekly_volume.map((week) => ({
-    ...week,
-    km: (week.distance.raw ?? 0) / 1000,
-    distanceText: week.distance.text,
-    label: formatDateShort(week.week_start),
-  }))
-  const pace = data.pace_at_hr.map((week) => ({
-    ...week,
-    label: formatDateShort(week.week_start),
-    paceValue: week.pace?.raw ?? null,
-    paceText: week.pace?.text ?? null,
-    hrValue: week.heart_rate?.raw ?? null,
-    hrText: week.heart_rate?.text ?? null,
-  }))
-  const consistency = data.consistency.map((week) => ({
-    ...week,
-    label: formatDateShort(week.week_start),
-  }))
+  // Nothing to draw yet: the screen says so, and invents no numbers.
+  if (data.weekly_volume.length === 0) {
+    return (
+      <div>
+        <PageHeader title={t('progress.heading')} />
+        <div className="card px-4 py-8 text-center" data-testid="progress-empty">
+          <p className="text-[15px] font-semibold text-ink">{t('progress.empty.title')}</p>
+          <p className="mt-1 text-[13px] text-ink-muted">{t('progress.empty.body')}</p>
+        </div>
+      </div>
+    )
+  }
+
+  const volume = data.weekly_volume
+    .slice(-range)
+    .map((week) => ({
+      ...week,
+      km: (week.distance.raw ?? 0) / 1000,
+      distanceText: week.distance.text,
+      label: formatDateShort(week.week_start),
+    }))
+  const pace = data.pace_at_hr
+    .slice(-range)
+    .map((week) => ({
+      ...week,
+      label: formatDateShort(week.week_start),
+      paceValue: week.pace?.raw ?? null,
+      paceText: week.pace?.text ?? null,
+      hrValue: week.heart_rate?.raw ?? null,
+      hrText: week.heart_rate?.text ?? null,
+    }))
+  const consistency = data.consistency
+    .slice(-range)
+    .map((week) => ({
+      ...week,
+      label: formatDateShort(week.week_start),
+    }))
 
   return (
     <div>
-      <PageHeader title={t('progress.heading')} />
+      <PageHeader
+        title={t('progress.heading')}
+        meta={stale ? <span className="text-ink-faint">{stale}</span> : null}
+      />
 
       {/* ------------------------------------------------- the headline */}
       <section className="card px-4 py-3" data-testid="progress-headline">
@@ -81,7 +116,41 @@ export function ProgressPage() {
         {data.headline_note ? (
           <p className="mt-0.5 text-[13.5px] text-ink-muted">{data.headline_note}</p>
         ) : null}
+        {/*
+          Not enough history: the charts show what there is, and the note
+          says how much more the core wants. No percentage is drawn — a
+          percentage from a near-zero baseline is the old bug.
+        */}
+        {data.weeks_needed !== null ? (
+          <p className="mt-1 text-[13px] text-ink-muted" data-testid="progress-needs-more">
+            {t('progress.needsMore', { n: data.weeks_needed })}
+          </p>
+        ) : null}
       </section>
+
+      {/* --------------------------------------------- the range selector */}
+      <div className="mt-3 flex flex-wrap items-center gap-2" data-testid="progress-range">
+        <span className="text-[12px] font-semibold uppercase tracking-[0.07em] text-ink-faint">
+          {t('progress.range.label')}
+        </span>
+        <div className="flex flex-wrap gap-1">
+          {RANGES.map((weeks) => (
+            <button
+              key={weeks}
+              type="button"
+              onClick={() => {
+                setRange(weeks)
+              }}
+              data-testid={`progress-range-${weeks}`}
+              className={`tap rounded-md px-2.5 text-[12.5px] font-semibold ${
+                range === weeks ? 'bg-brand-50 text-brand-700' : 'text-ink-muted'
+              }`}
+            >
+              {t('progress.range.weeks', { n: weeks })}
+            </button>
+          ))}
+        </div>
+      </div>
 
       <div className="mt-3 grid grid-cols-1 gap-3 progress-grid">
         {/* --------------------------------------------- weekly volume */}
@@ -106,18 +175,19 @@ export function ProgressPage() {
                     y={(data.typical_week.raw ?? 0) / 1000}
                     stroke="#93A6B7"
                     strokeDasharray="4 3"
-                    label={{
-                      value: t('progress.typicalWeek'),
-                      position: 'insideTopRight',
-                      fontSize: 10,
-                      fill: '#93A6B7',
-                    }}
                   />
                 ) : null}
                 <Bar dataKey="km" fill="#1E5E96" />
               </BarChart>
             </ResponsiveContainer>
           </div>
+          {/* The band, named below the chart rather than inside it: a
+              label on the line itself is cut off on a narrow screen. */}
+          {data.typical_week !== null ? (
+            <p className="mt-1 text-[12px] text-ink-faint" data-testid="progress-typical-week">
+              {t('progress.typicalWeek')} · {renderedText(data.typical_week)}
+            </p>
+          ) : null}
         </ChartCard>
 
         {/* -------------------------------------------- pace at heart rate */}

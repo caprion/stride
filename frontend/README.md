@@ -41,6 +41,73 @@ sideways, and every tap target is at least 44px tall at compact.
 | `/body` | **Body** — the same values and directions as Today, plus the patterns, each with its n |
 | `/plan` | **Plan week** — the week, and today's plan: *done · planned · not done* |
 | `/compare/:id` | **Compare** — `metric · A · B · Δ`, the basis always named, swapping A and B flipping every delta |
+| `/settings` | **Settings** — the goal, the pause, the connection, the import, the storage and About |
+| `/connect` | **Connect** — the first run. It stands alone: no chrome, no tabs, no destinations |
+
+### Settings
+
+Three inputs change what the app says: the weekly goal, a pause, and the
+connection. Everything else there is plumbing.
+
+- **the goal** is one number, and **a blank is no goal**. The app never
+  invents a default, and a goal of zero would read as a failure rather
+  than as the absence of one. The number in the field is the api's, in
+  kilometres, and the app sends it back unchanged.
+- **the pause** is a start, an end and one of three reasons — travel,
+  sick, injured. While it is on, the app says the plan is paused: *"paused
+  until 19 May · travel"*. The reason is not free text: a run's note is
+  the only free text the product stores.
+- **the connection** shows Garmin's state, the **last four characters** of
+  the key and nothing else, and the last sync. The key action opens the
+  **native setup screen on the phone** — the field is the desktop's alone,
+  because the phone's bridge refuses the key routes by design.
+- **the storage** shows the size of the database, an export, and the one
+  destructive action: *delete all data*, behind the typed word, and it
+  says exactly what it deletes.
+- **About** carries the version, the licence, the promise and the source.
+
+### Connect
+
+The first run, and **not a page inside the app**: it stands alone, with no
+chrome and no tabs, and it disappears once the app is connected. It is
+**the desktop's page** — the phone's first run is a native screen, because
+the key never enters a WebView.
+
+It states the promise in one line, takes the key in a masked field, offers
+*test the key* and *connect*, and offers *not now* — which leaves the app
+in an honest empty state, with no invented numbers anywhere.
+
+## The states
+
+Every screen has states, and the states are what a reviewer tries first.
+They are in the screens, not in a branch of them:
+
+| state | what the screen says |
+|---|---|
+| **empty** | what is missing and what to do — *"Connect your Garmin key to see today's numbers"*, *"No activities yet"*, *"No plan is active"* — and no invented numbers |
+| **not enough data** | the honest empty state: *"not enough data for a comparison yet"*, the value alone, and how many more weeks the core wants |
+| **stale** | when it was last synced, and which day the numbers are from |
+| **the sync failed** | the reason and a retry; the numbers are the last good ones, greyed with their date |
+| **the plan's states** | a baseline, an imported plan and no plan at all, each named as the source it is |
+| **a duplicate import** | one line, once: *"Already have this run (9 May, 10.2 km)"* |
+
+The fixture set holds the states as **variants**, so each one can be
+looked at and tested:
+
+```
+?fixtures=1          everything present
+?fixtures=over       the last run beyond 10% of the plan's target
+?fixtures=empty      nothing at all: no key, nothing ever synced
+?fixtures=nowellness synced, but no wellness data yet
+?fixtures=fresh      no key yet: the first-run page takes it
+?fixtures=stale      the last sync three days old
+?fixtures=failed     the last sync did not finish
+?fixtures=baseline   a plan inferred from the athlete's history
+?fixtures=noplan     no plan at all
+?fixtures=notenough  too little history to compare anything
+?fixtures=paused     the plan is paused until the 19th, for travel
+?fixtures=duplicate  a FIT file that is already in the log
+```
 
 ## Who owns the sentences and the rounding
 
@@ -99,13 +166,6 @@ Two hosts that disagree about a number is a bug. Two hosts that disagree
 about a *sentence* is the same bug, and it is worse, because a sentence is
 what the athlete reads.
 
-**And the difference is the core's too.** `CompareMetric.delta` is a
-`RenderedValue`: the core's rendering of `B − A`, sign and all. A negative
-difference is written with the typographic minus (U+2212) — `−0.2 km`, not
-`-0.2 km`. The app shows the sign it is given, and `tests/ownership.test.ts`
-fails if the app's own code ever carries that character: the app may not
-sign a number the core has already signed.
-
 ### And the test that holds the line
 
 A convention is not a rule. The port of `units.rs` was exact, and it still
@@ -140,6 +200,8 @@ The lint (`npm --prefix frontend run lint:voice`) fails the build on:
 - a `direction` string outside the closed set — *better than usual · about
   usual · could be better*;
 - a `pattern` string with no sample size;
+- a `statement` string with a hole in it — a statement is a whole
+  sentence, and the values it talks about are already in it;
 - an `option` string that mentions a vital (an option is never linked to a
   vital);
 - a banned word written inline in a component instead of in the catalogue.
@@ -246,35 +308,59 @@ the three sentences the core does not have a template for yet — the distance
 comparison, the Progress headline and the Compare basis — and the frontend
 shows what it is given.
 
+### The routes the Settings and Connect screens added
+
+The route table is frozen, and these four routes are **not** in it yet.
+The app's declarations are the contract (`src/lib/types.ts`), and the api
+is held to them by `crates/stride-api/tests/frontend_shapes.rs` — so they
+are declared here, and every one of them has to be written into
+`docs/contract/api-paths.md` in the same pull request.
+
+| route | answer |
+|---|---|
+| `GET /settings` | `SettingsState` — the goal, the pause and the storage |
+| `POST /settings` | `SettingsState` — the goal and/or the pause are written; `null` clears |
+| `POST /settings/export` | `SettingsExportResult` — the host writes the backup |
+| `POST /settings/delete` | `SettingsDeleteResult` — the word travels with the request |
+| `POST /activities/{id}/note` | `NoteResult` — the note on a run |
+
+And three answers that changed:
+
+| route | what changed |
+|---|---|
+| `/auth/status` | gains `key_last4` — four characters, never the key |
+| `/auth/garmin/fit-import` | answers with the duplicate: `duplicate`, `date` and the rendered `distance` |
+| `/plan/week` | gains the week's three `counts` and the athlete's `today` |
+| `/insights/progress` | gains `weeks_needed` — how many more weeks the core wants |
+
+**A failure is typed, and the app reads the kind.** The router's answer
+names it — `no_plan`, `stale_data`, `not_enough_history`, `garmin_rejected`
+— and the transport reads that code out of the body, because a plan that is
+not there and a run that is not there are both a 404. The phone's bridge
+carries the status and the message but not the code, so on the phone the
+kind falls back to the status.
+
 ## The fixtures
 
 `src/fixtures/index.ts` is a synthetic, typed fixture set — no athlete, no
 real numbers, no real dates. With `?fixtures=1` the app answers from the
 fixtures instead of the network, so every screen can be rendered, reviewed
-and tested without a backend. `?fixtures=over` selects the one variant whose
-last run is beyond 10% of the plan's target — the only fixture where the
-distance comparison appears.
+and tested without a backend.
+
+**The variants are the states** — `empty`, `nowellness`, `fresh`, `stale`,
+`failed`, `baseline`, `noplan`, `notenough`, `paused`, `duplicate` and
+`over` (the one whose last run is beyond 10% of the plan's target — the
+only fixture where the distance comparison appears). The list is at the
+top of the fixture file.
 
 The fixture's sentences are the core's, written out: the fixture is a
 captured answer, not a computation, so the app has nothing to recompute.
 The fixture's rendered values are written out the same way — "12.4 km",
 "1 h 7 m", "148 bpm", "5:24 /km" — next to the number a chart draws.
 
-**Every word in it is a word the core can produce.** A negative difference
-carries the core's typographic minus (`−0.2 km`, not `-0.2 km`); the plan's
-line under a run is the core's whole statement ("12.4 km · 2.4 km more than
-the 10 km target"); a record's time is the core's duration ("20 m"),
-because the core renders a duration in minutes and has no clock for a race;
-and the sessions a week is absent, because the core has no renderer for the
-average of a count and the API sends nothing there — the app shows the em
-dash, which is what the real app shows too.
-
-The one thing in the fixture that is **not** the core's is the story
-sentence under a run: the core has no story engine yet — PLAN.md's slice 5
-asks for one, and the API answers `story: null` until it exists — so the
-fixture's stories are the app's stand-ins for that field, and they say so.
-They are replaced by captured core sentences the day the core grows the
-engine.
+**The fixture set holds no key.** The connection's answer carries the last
+four characters — an identifier, four characters cannot be a Garmin
+Personal API key — and nothing else.
 
 ## The checks
 
@@ -287,12 +373,24 @@ npm --prefix frontend test               # all four, in that order
 npm --prefix frontend run build          # the bundle
 ```
 
-The **viewport matrix** (`scripts/viewport-matrix.mjs`) runs seven screens at
+The **viewport matrix** (`scripts/viewport-matrix.mjs`) runs nine screens at
 six widths — 360×640, 390×844, 430×932, 768×1024, 1024×768, 1280×800 — in
 Chromium, and asserts: no horizontal page scroll, no content column scroll,
 nothing sticking out past the right edge, no clipped labels, tap targets of
 at least 44px at compact, the same four destinations at every width, and
 the screen's primary action reachable without a sideways scroll.
 
+The first-run page is in the matrix too, with `chrome: false`: it stands
+alone, so it has no destinations and the destination set does not apply to
+it.
+
 It needs a browser: `npx playwright install chromium` (the `playwright-core`
 in `devDependencies` does not download one by itself).
+
+`scripts/shots.mjs` is a development aid, not a gate: it writes a
+screenshot of every screen at a width, so a change can be looked at rather
+than imagined.
+
+```
+node scripts/shots.mjs 390 empty   # the screens at 390 px, in the empty state
+```
