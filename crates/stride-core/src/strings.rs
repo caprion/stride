@@ -171,7 +171,7 @@ pub struct Entry {
 }
 
 /// The catalogue.
-pub const CATALOGUE: [Entry; 78] = [
+pub const CATALOGUE: [Entry; 82] = [
     // The vitals.
     Entry {
         id: "vital.sleep.label",
@@ -196,6 +196,18 @@ pub const CATALOGUE: [Entry; 78] = [
         kind: StringKind::Vital,
         role: None,
         template: "Rest",
+    },
+    Entry {
+        // The heading of the reading. It names the *source* of the numbers —
+        // the night they were taken in — and never interprets them: "Rest —
+        // could be better" can be heard as an instruction, and the app
+        // informs and never instructs. The "Rest" label above stays the label
+        // of the summary row; the contract bans "rest" as a command, never as
+        // the noun.
+        id: "vital.rest.heading",
+        kind: StringKind::Vital,
+        role: None,
+        template: "Last night",
     },
     Entry {
         id: "vital.sleep.value",
@@ -387,6 +399,20 @@ pub const CATALOGUE: [Entry; 78] = [
         kind: StringKind::Statement,
         role: None,
         template: "{value} s/km",
+    },
+    Entry {
+        // The heart-rate bands: the range, and the honest answer when the
+        // bands cannot be computed at all.
+        id: "value.heart_rate_range",
+        kind: StringKind::Statement,
+        role: None,
+        template: "{from}-{to} bpm",
+    },
+    Entry {
+        id: "zones.unavailable",
+        kind: StringKind::Statement,
+        role: None,
+        template: "zones unavailable — no stored max or threshold heart rate",
     },
     // The plan's statements: what the athlete intended, what happened, and
     // where the intent came from. They are facts, never verdicts.
@@ -655,6 +681,15 @@ pub const CATALOGUE: [Entry; 78] = [
         kind: StringKind::Status,
         role: None,
         template: "not enough data yet",
+    },
+    Entry {
+        // The version's label. The version itself is not the core's business —
+        // it comes from the build environment — but how it is shown is, and
+        // this is the only place a version string is put together.
+        id: "status.version",
+        kind: StringKind::Status,
+        role: None,
+        template: "Version {version}",
     },
 ];
 

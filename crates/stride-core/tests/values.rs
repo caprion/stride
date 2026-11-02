@@ -104,6 +104,30 @@ fn a_difference_is_signed_and_in_the_metrics_own_unit() {
 }
 
 #[test]
+fn a_heart_rate_band_is_written_from_the_lower_end_to_the_upper() {
+    assert_eq!(
+        units::render_heart_rate_range(Some(154.0), Some(166.0)),
+        Some("154-166 bpm".to_string())
+    );
+    // Truncated, never rounded.
+    assert_eq!(
+        units::render_heart_rate_range(Some(154.9), Some(166.9)),
+        Some("154-166 bpm".to_string())
+    );
+    // A band with no end is no value at all.
+    assert_eq!(units::render_heart_rate_range(Some(154.0), None), None);
+}
+
+#[test]
+fn the_version_is_shown_with_its_label() {
+    assert_eq!(
+        units::render_version("0.10.0"),
+        Some("Version 0.10.0".to_string())
+    );
+    assert_eq!(units::render_version(""), None);
+}
+
+#[test]
 fn a_rendered_value_is_a_catalogued_string() {
     // Every rendered value is a catalogue entry with the value already in it:
     // the API sends "8.4 km", not a template with a hole in it.
@@ -126,5 +150,13 @@ fn a_rendered_value_is_a_catalogued_string() {
     assert_eq!(
         stride_core::strings::text("value.elevation"),
         Some("{value} m")
+    );
+    assert_eq!(
+        stride_core::strings::text("value.heart_rate_range"),
+        Some("{from}-{to} bpm")
+    );
+    assert_eq!(
+        stride_core::strings::text("status.version"),
+        Some("Version {version}")
     );
 }
