@@ -381,7 +381,24 @@ jobs:
       # The action uses the workflow's own token (`github.token`), which
       # the job's `contents: write` permission carries. There is no secret
       # reference in this file at all.
+      # The release's notes are **the repository's**, not a generated summary:
+      # they say what an upgrade really carries, table by table, and the
+      # generated notes are appended below them.
+      - name: The release's notes
+        id: notes
+        run: |
+          if [ -f "docs/release-notes-${{ github.ref_name }}.md" ]; then
+            {
+              echo "## What this release carries"
+              echo
+              cat "docs/release-notes-${{ github.ref_name }}.md"
+            } > "$RUNNER_TEMP/notes.md"
+          else
+            echo "no notes for this tag" >&2
+            exit 1
+          fi
+
       - uses: softprops/action-gh-release@v2
         with:
           files: dist/*.apk
-          generate_release_notes: true
+          body_path: ${{ runner.temp }}/notes.md
