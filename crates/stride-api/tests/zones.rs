@@ -112,7 +112,7 @@ fn a_run_with_no_heart_rate_says_so_in_the_cores_words() {
     // The reason is the core's sentence, not this crate's.
     assert_eq!(
         body["unavailable"].as_str(),
-        Some("zones unavailable — no stored max or threshold heart rate")
+        Some("zones unavailable — the run has no heart-rate samples")
     );
 }
 
