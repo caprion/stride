@@ -1,0 +1,2672 @@
+{
+  "101:102": {
+    "basis_text": "Different distances — read with care",
+    "metrics": [
+      {
+        "key": "distance",
+        "label_key": "vital.distance",
+        "a": {
+          "text": "12.4 km",
+          "raw": 12400
+        },
+        "b": {
+          "text": "10.2 km",
+          "raw": 10200
+        },
+        "delta": {
+          "text": "−2.2 km",
+          "raw": -2200
+        }
+      },
+      {
+        "key": "time",
+        "label_key": "vital.time",
+        "a": {
+          "text": "1 h 7 m",
+          "raw": 4020
+        },
+        "b": {
+          "text": "55 m",
+          "raw": 3320
+        },
+        "delta": {
+          "text": "−12 m",
+          "raw": -700
+        }
+      },
+      {
+        "key": "pace",
+        "label_key": "vital.pace",
+        "a": {
+          "text": "5:24 /km",
+          "raw": 324.19354838709677
+        },
+        "b": {
+          "text": "5:25 /km",
+          "raw": 325.4901960784314
+        },
+        "delta": {
+          "text": "+1 s/km",
+          "raw": 1.2966476913346128
+        }
+      },
+      {
+        "key": "hr",
+        "label_key": "vital.heartRate",
+        "a": {
+          "text": "148 bpm",
+          "raw": 148
+        },
+        "b": {
+          "text": "146 bpm",
+          "raw": 146
+        },
+        "delta": {
+          "text": "−2 bpm",
+          "raw": -2
+        }
+      }
+    ],
+    "a": {
+      "id": 101,
+      "label": "Run",
+      "date": "2026-05-10",
+      "distance": {
+        "text": "12.4 km",
+        "raw": 12400
+      },
+      "story": "12.4 km, 2.4 km more than your usual Wednesday"
+    },
+    "b": {
+      "id": 102,
+      "label": "Run",
+      "date": "2026-05-09",
+      "distance": {
+        "text": "10.2 km",
+        "raw": 10200
+      },
+      "story": "10.2 km, about your usual Saturday"
+    }
+  },
+  "101:103": {
+    "basis_text": "Different distances — read with care",
+    "metrics": [
+      {
+        "key": "distance",
+        "label_key": "vital.distance",
+        "a": {
+          "text": "12.4 km",
+          "raw": 12400
+        },
+        "b": {
+          "text": "8.4 km",
+          "raw": 8400
+        },
+        "delta": {
+          "text": "−4 km",
+          "raw": -4000
+        }
+      },
+      {
+        "key": "time",
+        "label_key": "vital.time",
+        "a": {
+          "text": "1 h 7 m",
+          "raw": 4020
+        },
+        "b": {
+          "text": "42 m",
+          "raw": 2520
+        },
+        "delta": {
+          "text": "−25 m",
+          "raw": -1500
+        }
+      },
+      {
+        "key": "pace",
+        "label_key": "vital.pace",
+        "a": {
+          "text": "5:24 /km",
+          "raw": 324.19354838709677
+        },
+        "b": {
+          "text": "5:00 /km",
+          "raw": 300
+        },
+        "delta": {
+          "text": "−24 s/km",
+          "raw": -24.19354838709677
+        }
+      },
+      {
+        "key": "hr",
+        "label_key": "vital.heartRate",
+        "a": {
+          "text": "148 bpm",
+          "raw": 148
+        },
+        "b": {
+          "text": "148 bpm",
+          "raw": 148
+        },
+        "delta": {
+          "text": "0 bpm",
+          "raw": 0
+        }
+      }
+    ],
+    "a": {
+      "id": 101,
+      "label": "Run",
+      "date": "2026-05-10",
+      "distance": {
+        "text": "12.4 km",
+        "raw": 12400
+      },
+      "story": "12.4 km, 2.4 km more than your usual Wednesday"
+    },
+    "b": {
+      "id": 103,
+      "label": "Run",
+      "date": "2026-05-07",
+      "distance": {
+        "text": "8.4 km",
+        "raw": 8400
+      },
+      "story": "8.4 km, a bit shorter than your usual Wednesday"
+    }
+  },
+  "101:104": {
+    "basis_text": "Different distances — read with care",
+    "metrics": [
+      {
+        "key": "distance",
+        "label_key": "vital.distance",
+        "a": {
+          "text": "12.4 km",
+          "raw": 12400
+        },
+        "b": {
+          "text": "5 km",
+          "raw": 5000
+        },
+        "delta": {
+          "text": "−7.4 km",
+          "raw": -7400
+        }
+      },
+      {
+        "key": "time",
+        "label_key": "vital.time",
+        "a": {
+          "text": "1 h 7 m",
+          "raw": 4020
+        },
+        "b": {
+          "text": "27 m",
+          "raw": 1620
+        },
+        "delta": {
+          "text": "−40 m",
+          "raw": -2400
+        }
+      },
+      {
+        "key": "pace",
+        "label_key": "vital.pace",
+        "a": {
+          "text": "5:24 /km",
+          "raw": 324.19354838709677
+        },
+        "b": {
+          "text": "5:24 /km",
+          "raw": 324
+        },
+        "delta": {
+          "text": "−0 s/km",
+          "raw": -0.1935483870967687
+        }
+      },
+      {
+        "key": "hr",
+        "label_key": "vital.heartRate",
+        "a": {
+          "text": "148 bpm",
+          "raw": 148
+        },
+        "b": {
+          "text": "148 bpm",
+          "raw": 148
+        },
+        "delta": {
+          "text": "0 bpm",
+          "raw": 0
+        }
+      }
+    ],
+    "a": {
+      "id": 101,
+      "label": "Run",
+      "date": "2026-05-10",
+      "distance": {
+        "text": "12.4 km",
+        "raw": 12400
+      },
+      "story": "12.4 km, 2.4 km more than your usual Wednesday"
+    },
+    "b": {
+      "id": 104,
+      "label": "Run",
+      "date": "2026-05-06",
+      "distance": {
+        "text": "5 km",
+        "raw": 5000
+      },
+      "story": "5 km, your shortest run in three weeks"
+    }
+  },
+  "101:105": {
+    "basis_text": "Different distances — read with care",
+    "metrics": [
+      {
+        "key": "distance",
+        "label_key": "vital.distance",
+        "a": {
+          "text": "12.4 km",
+          "raw": 12400
+        },
+        "b": {
+          "text": "16.1 km",
+          "raw": 16100
+        },
+        "delta": {
+          "text": "+3.7 km",
+          "raw": 3700
+        }
+      },
+      {
+        "key": "time",
+        "label_key": "vital.time",
+        "a": {
+          "text": "1 h 7 m",
+          "raw": 4020
+        },
+        "b": {
+          "text": "1 h 25 m",
+          "raw": 5072
+        },
+        "delta": {
+          "text": "+18 m",
+          "raw": 1052
+        }
+      },
+      {
+        "key": "pace",
+        "label_key": "vital.pace",
+        "a": {
+          "text": "5:24 /km",
+          "raw": 324.19354838709677
+        },
+        "b": {
+          "text": "5:15 /km",
+          "raw": 315.0310559006211
+        },
+        "delta": {
+          "text": "−9 s/km",
+          "raw": -9.162492486475685
+        }
+      },
+      {
+        "key": "hr",
+        "label_key": "vital.heartRate",
+        "a": {
+          "text": "148 bpm",
+          "raw": 148
+        },
+        "b": {
+          "text": "148 bpm",
+          "raw": 148
+        },
+        "delta": {
+          "text": "0 bpm",
+          "raw": 0
+        }
+      }
+    ],
+    "a": {
+      "id": 101,
+      "label": "Run",
+      "date": "2026-05-10",
+      "distance": {
+        "text": "12.4 km",
+        "raw": 12400
+      },
+      "story": "12.4 km, 2.4 km more than your usual Wednesday"
+    },
+    "b": {
+      "id": 105,
+      "label": "Run",
+      "date": "2026-05-04",
+      "distance": {
+        "text": "16.1 km",
+        "raw": 16100
+      },
+      "story": "16.1 km, your longest run this month"
+    }
+  },
+  "101:106": {
+    "basis_text": "Different distances — read with care",
+    "metrics": [
+      {
+        "key": "distance",
+        "label_key": "vital.distance",
+        "a": {
+          "text": "12.4 km",
+          "raw": 12400
+        },
+        "b": {
+          "text": "6.3 km",
+          "raw": 6300
+        },
+        "delta": {
+          "text": "−6.1 km",
+          "raw": -6100
+        }
+      },
+      {
+        "key": "time",
+        "label_key": "vital.time",
+        "a": {
+          "text": "1 h 7 m",
+          "raw": 4020
+        },
+        "b": {
+          "text": "35 m",
+          "raw": 2080
+        },
+        "delta": {
+          "text": "−32 m",
+          "raw": -1940
+        }
+      },
+      {
+        "key": "pace",
+        "label_key": "vital.pace",
+        "a": {
+          "text": "5:24 /km",
+          "raw": 324.19354838709677
+        },
+        "b": {
+          "text": "5:30 /km",
+          "raw": 330.1587301587302
+        },
+        "delta": {
+          "text": "+6 s/km",
+          "raw": 5.965181771633411
+        }
+      },
+      {
+        "key": "hr",
+        "label_key": "vital.heartRate",
+        "a": {
+          "text": "148 bpm",
+          "raw": 148
+        },
+        "b": {
+          "text": "148 bpm",
+          "raw": 148
+        },
+        "delta": {
+          "text": "0 bpm",
+          "raw": 0
+        }
+      }
+    ],
+    "a": {
+      "id": 101,
+      "label": "Run",
+      "date": "2026-05-10",
+      "distance": {
+        "text": "12.4 km",
+        "raw": 12400
+      },
+      "story": "12.4 km, 2.4 km more than your usual Wednesday"
+    },
+    "b": {
+      "id": 106,
+      "label": "Run",
+      "date": "2026-05-03",
+      "distance": {
+        "text": "6.3 km",
+        "raw": 6300
+      },
+      "story": "6.3 km, about your usual Monday"
+    }
+  },
+  "102:101": {
+    "basis_text": "Different distances — read with care",
+    "metrics": [
+      {
+        "key": "distance",
+        "label_key": "vital.distance",
+        "a": {
+          "text": "10.2 km",
+          "raw": 10200
+        },
+        "b": {
+          "text": "12.4 km",
+          "raw": 12400
+        },
+        "delta": {
+          "text": "+2.2 km",
+          "raw": 2200
+        }
+      },
+      {
+        "key": "time",
+        "label_key": "vital.time",
+        "a": {
+          "text": "55 m",
+          "raw": 3320
+        },
+        "b": {
+          "text": "1 h 7 m",
+          "raw": 4020
+        },
+        "delta": {
+          "text": "+12 m",
+          "raw": 700
+        }
+      },
+      {
+        "key": "pace",
+        "label_key": "vital.pace",
+        "a": {
+          "text": "5:25 /km",
+          "raw": 325.4901960784314
+        },
+        "b": {
+          "text": "5:24 /km",
+          "raw": 324.19354838709677
+        },
+        "delta": {
+          "text": "−1 s/km",
+          "raw": -1.2966476913346128
+        }
+      },
+      {
+        "key": "hr",
+        "label_key": "vital.heartRate",
+        "a": {
+          "text": "146 bpm",
+          "raw": 146
+        },
+        "b": {
+          "text": "148 bpm",
+          "raw": 148
+        },
+        "delta": {
+          "text": "+2 bpm",
+          "raw": 2
+        }
+      }
+    ],
+    "a": {
+      "id": 102,
+      "label": "Run",
+      "date": "2026-05-09",
+      "distance": {
+        "text": "10.2 km",
+        "raw": 10200
+      },
+      "story": "10.2 km, about your usual Saturday"
+    },
+    "b": {
+      "id": 101,
+      "label": "Run",
+      "date": "2026-05-10",
+      "distance": {
+        "text": "12.4 km",
+        "raw": 12400
+      },
+      "story": "12.4 km, 2.4 km more than your usual Wednesday"
+    }
+  },
+  "102:103": {
+    "basis_text": "Different distances — read with care",
+    "metrics": [
+      {
+        "key": "distance",
+        "label_key": "vital.distance",
+        "a": {
+          "text": "10.2 km",
+          "raw": 10200
+        },
+        "b": {
+          "text": "8.4 km",
+          "raw": 8400
+        },
+        "delta": {
+          "text": "−1.8 km",
+          "raw": -1800
+        }
+      },
+      {
+        "key": "time",
+        "label_key": "vital.time",
+        "a": {
+          "text": "55 m",
+          "raw": 3320
+        },
+        "b": {
+          "text": "42 m",
+          "raw": 2520
+        },
+        "delta": {
+          "text": "−13 m",
+          "raw": -800
+        }
+      },
+      {
+        "key": "pace",
+        "label_key": "vital.pace",
+        "a": {
+          "text": "5:25 /km",
+          "raw": 325.4901960784314
+        },
+        "b": {
+          "text": "5:00 /km",
+          "raw": 300
+        },
+        "delta": {
+          "text": "−25 s/km",
+          "raw": -25.49019607843138
+        }
+      },
+      {
+        "key": "hr",
+        "label_key": "vital.heartRate",
+        "a": {
+          "text": "146 bpm",
+          "raw": 146
+        },
+        "b": {
+          "text": "148 bpm",
+          "raw": 148
+        },
+        "delta": {
+          "text": "+2 bpm",
+          "raw": 2
+        }
+      }
+    ],
+    "a": {
+      "id": 102,
+      "label": "Run",
+      "date": "2026-05-09",
+      "distance": {
+        "text": "10.2 km",
+        "raw": 10200
+      },
+      "story": "10.2 km, about your usual Saturday"
+    },
+    "b": {
+      "id": 103,
+      "label": "Run",
+      "date": "2026-05-07",
+      "distance": {
+        "text": "8.4 km",
+        "raw": 8400
+      },
+      "story": "8.4 km, a bit shorter than your usual Wednesday"
+    }
+  },
+  "102:104": {
+    "basis_text": "Different distances — read with care",
+    "metrics": [
+      {
+        "key": "distance",
+        "label_key": "vital.distance",
+        "a": {
+          "text": "10.2 km",
+          "raw": 10200
+        },
+        "b": {
+          "text": "5 km",
+          "raw": 5000
+        },
+        "delta": {
+          "text": "−5.2 km",
+          "raw": -5200
+        }
+      },
+      {
+        "key": "time",
+        "label_key": "vital.time",
+        "a": {
+          "text": "55 m",
+          "raw": 3320
+        },
+        "b": {
+          "text": "27 m",
+          "raw": 1620
+        },
+        "delta": {
+          "text": "−28 m",
+          "raw": -1700
+        }
+      },
+      {
+        "key": "pace",
+        "label_key": "vital.pace",
+        "a": {
+          "text": "5:25 /km",
+          "raw": 325.4901960784314
+        },
+        "b": {
+          "text": "5:24 /km",
+          "raw": 324
+        },
+        "delta": {
+          "text": "−1 s/km",
+          "raw": -1.4901960784313815
+        }
+      },
+      {
+        "key": "hr",
+        "label_key": "vital.heartRate",
+        "a": {
+          "text": "146 bpm",
+          "raw": 146
+        },
+        "b": {
+          "text": "148 bpm",
+          "raw": 148
+        },
+        "delta": {
+          "text": "+2 bpm",
+          "raw": 2
+        }
+      }
+    ],
+    "a": {
+      "id": 102,
+      "label": "Run",
+      "date": "2026-05-09",
+      "distance": {
+        "text": "10.2 km",
+        "raw": 10200
+      },
+      "story": "10.2 km, about your usual Saturday"
+    },
+    "b": {
+      "id": 104,
+      "label": "Run",
+      "date": "2026-05-06",
+      "distance": {
+        "text": "5 km",
+        "raw": 5000
+      },
+      "story": "5 km, your shortest run in three weeks"
+    }
+  },
+  "102:105": {
+    "basis_text": "Different distances — read with care",
+    "metrics": [
+      {
+        "key": "distance",
+        "label_key": "vital.distance",
+        "a": {
+          "text": "10.2 km",
+          "raw": 10200
+        },
+        "b": {
+          "text": "16.1 km",
+          "raw": 16100
+        },
+        "delta": {
+          "text": "+5.9 km",
+          "raw": 5900
+        }
+      },
+      {
+        "key": "time",
+        "label_key": "vital.time",
+        "a": {
+          "text": "55 m",
+          "raw": 3320
+        },
+        "b": {
+          "text": "1 h 25 m",
+          "raw": 5072
+        },
+        "delta": {
+          "text": "+29 m",
+          "raw": 1752
+        }
+      },
+      {
+        "key": "pace",
+        "label_key": "vital.pace",
+        "a": {
+          "text": "5:25 /km",
+          "raw": 325.4901960784314
+        },
+        "b": {
+          "text": "5:15 /km",
+          "raw": 315.0310559006211
+        },
+        "delta": {
+          "text": "−10 s/km",
+          "raw": -10.459140177810298
+        }
+      },
+      {
+        "key": "hr",
+        "label_key": "vital.heartRate",
+        "a": {
+          "text": "146 bpm",
+          "raw": 146
+        },
+        "b": {
+          "text": "148 bpm",
+          "raw": 148
+        },
+        "delta": {
+          "text": "+2 bpm",
+          "raw": 2
+        }
+      }
+    ],
+    "a": {
+      "id": 102,
+      "label": "Run",
+      "date": "2026-05-09",
+      "distance": {
+        "text": "10.2 km",
+        "raw": 10200
+      },
+      "story": "10.2 km, about your usual Saturday"
+    },
+    "b": {
+      "id": 105,
+      "label": "Run",
+      "date": "2026-05-04",
+      "distance": {
+        "text": "16.1 km",
+        "raw": 16100
+      },
+      "story": "16.1 km, your longest run this month"
+    }
+  },
+  "102:106": {
+    "basis_text": "Different distances — read with care",
+    "metrics": [
+      {
+        "key": "distance",
+        "label_key": "vital.distance",
+        "a": {
+          "text": "10.2 km",
+          "raw": 10200
+        },
+        "b": {
+          "text": "6.3 km",
+          "raw": 6300
+        },
+        "delta": {
+          "text": "−3.9 km",
+          "raw": -3900
+        }
+      },
+      {
+        "key": "time",
+        "label_key": "vital.time",
+        "a": {
+          "text": "55 m",
+          "raw": 3320
+        },
+        "b": {
+          "text": "35 m",
+          "raw": 2080
+        },
+        "delta": {
+          "text": "−21 m",
+          "raw": -1240
+        }
+      },
+      {
+        "key": "pace",
+        "label_key": "vital.pace",
+        "a": {
+          "text": "5:25 /km",
+          "raw": 325.4901960784314
+        },
+        "b": {
+          "text": "5:30 /km",
+          "raw": 330.1587301587302
+        },
+        "delta": {
+          "text": "+5 s/km",
+          "raw": 4.668534080298798
+        }
+      },
+      {
+        "key": "hr",
+        "label_key": "vital.heartRate",
+        "a": {
+          "text": "146 bpm",
+          "raw": 146
+        },
+        "b": {
+          "text": "148 bpm",
+          "raw": 148
+        },
+        "delta": {
+          "text": "+2 bpm",
+          "raw": 2
+        }
+      }
+    ],
+    "a": {
+      "id": 102,
+      "label": "Run",
+      "date": "2026-05-09",
+      "distance": {
+        "text": "10.2 km",
+        "raw": 10200
+      },
+      "story": "10.2 km, about your usual Saturday"
+    },
+    "b": {
+      "id": 106,
+      "label": "Run",
+      "date": "2026-05-03",
+      "distance": {
+        "text": "6.3 km",
+        "raw": 6300
+      },
+      "story": "6.3 km, about your usual Monday"
+    }
+  },
+  "103:101": {
+    "basis_text": "Different distances — read with care",
+    "metrics": [
+      {
+        "key": "distance",
+        "label_key": "vital.distance",
+        "a": {
+          "text": "8.4 km",
+          "raw": 8400
+        },
+        "b": {
+          "text": "12.4 km",
+          "raw": 12400
+        },
+        "delta": {
+          "text": "+4 km",
+          "raw": 4000
+        }
+      },
+      {
+        "key": "time",
+        "label_key": "vital.time",
+        "a": {
+          "text": "42 m",
+          "raw": 2520
+        },
+        "b": {
+          "text": "1 h 7 m",
+          "raw": 4020
+        },
+        "delta": {
+          "text": "+25 m",
+          "raw": 1500
+        }
+      },
+      {
+        "key": "pace",
+        "label_key": "vital.pace",
+        "a": {
+          "text": "5:00 /km",
+          "raw": 300
+        },
+        "b": {
+          "text": "5:24 /km",
+          "raw": 324.19354838709677
+        },
+        "delta": {
+          "text": "+24 s/km",
+          "raw": 24.19354838709677
+        }
+      },
+      {
+        "key": "hr",
+        "label_key": "vital.heartRate",
+        "a": {
+          "text": "148 bpm",
+          "raw": 148
+        },
+        "b": {
+          "text": "148 bpm",
+          "raw": 148
+        },
+        "delta": {
+          "text": "0 bpm",
+          "raw": 0
+        }
+      }
+    ],
+    "a": {
+      "id": 103,
+      "label": "Run",
+      "date": "2026-05-07",
+      "distance": {
+        "text": "8.4 km",
+        "raw": 8400
+      },
+      "story": "8.4 km, a bit shorter than your usual Wednesday"
+    },
+    "b": {
+      "id": 101,
+      "label": "Run",
+      "date": "2026-05-10",
+      "distance": {
+        "text": "12.4 km",
+        "raw": 12400
+      },
+      "story": "12.4 km, 2.4 km more than your usual Wednesday"
+    }
+  },
+  "103:102": {
+    "basis_text": "Different distances — read with care",
+    "metrics": [
+      {
+        "key": "distance",
+        "label_key": "vital.distance",
+        "a": {
+          "text": "8.4 km",
+          "raw": 8400
+        },
+        "b": {
+          "text": "10.2 km",
+          "raw": 10200
+        },
+        "delta": {
+          "text": "+1.8 km",
+          "raw": 1800
+        }
+      },
+      {
+        "key": "time",
+        "label_key": "vital.time",
+        "a": {
+          "text": "42 m",
+          "raw": 2520
+        },
+        "b": {
+          "text": "55 m",
+          "raw": 3320
+        },
+        "delta": {
+          "text": "+13 m",
+          "raw": 800
+        }
+      },
+      {
+        "key": "pace",
+        "label_key": "vital.pace",
+        "a": {
+          "text": "5:00 /km",
+          "raw": 300
+        },
+        "b": {
+          "text": "5:25 /km",
+          "raw": 325.4901960784314
+        },
+        "delta": {
+          "text": "+25 s/km",
+          "raw": 25.49019607843138
+        }
+      },
+      {
+        "key": "hr",
+        "label_key": "vital.heartRate",
+        "a": {
+          "text": "148 bpm",
+          "raw": 148
+        },
+        "b": {
+          "text": "146 bpm",
+          "raw": 146
+        },
+        "delta": {
+          "text": "−2 bpm",
+          "raw": -2
+        }
+      }
+    ],
+    "a": {
+      "id": 103,
+      "label": "Run",
+      "date": "2026-05-07",
+      "distance": {
+        "text": "8.4 km",
+        "raw": 8400
+      },
+      "story": "8.4 km, a bit shorter than your usual Wednesday"
+    },
+    "b": {
+      "id": 102,
+      "label": "Run",
+      "date": "2026-05-09",
+      "distance": {
+        "text": "10.2 km",
+        "raw": 10200
+      },
+      "story": "10.2 km, about your usual Saturday"
+    }
+  },
+  "103:104": {
+    "basis_text": "Different distances — read with care",
+    "metrics": [
+      {
+        "key": "distance",
+        "label_key": "vital.distance",
+        "a": {
+          "text": "8.4 km",
+          "raw": 8400
+        },
+        "b": {
+          "text": "5 km",
+          "raw": 5000
+        },
+        "delta": {
+          "text": "−3.4 km",
+          "raw": -3400
+        }
+      },
+      {
+        "key": "time",
+        "label_key": "vital.time",
+        "a": {
+          "text": "42 m",
+          "raw": 2520
+        },
+        "b": {
+          "text": "27 m",
+          "raw": 1620
+        },
+        "delta": {
+          "text": "−15 m",
+          "raw": -900
+        }
+      },
+      {
+        "key": "pace",
+        "label_key": "vital.pace",
+        "a": {
+          "text": "5:00 /km",
+          "raw": 300
+        },
+        "b": {
+          "text": "5:24 /km",
+          "raw": 324
+        },
+        "delta": {
+          "text": "+24 s/km",
+          "raw": 24
+        }
+      },
+      {
+        "key": "hr",
+        "label_key": "vital.heartRate",
+        "a": {
+          "text": "148 bpm",
+          "raw": 148
+        },
+        "b": {
+          "text": "148 bpm",
+          "raw": 148
+        },
+        "delta": {
+          "text": "0 bpm",
+          "raw": 0
+        }
+      }
+    ],
+    "a": {
+      "id": 103,
+      "label": "Run",
+      "date": "2026-05-07",
+      "distance": {
+        "text": "8.4 km",
+        "raw": 8400
+      },
+      "story": "8.4 km, a bit shorter than your usual Wednesday"
+    },
+    "b": {
+      "id": 104,
+      "label": "Run",
+      "date": "2026-05-06",
+      "distance": {
+        "text": "5 km",
+        "raw": 5000
+      },
+      "story": "5 km, your shortest run in three weeks"
+    }
+  },
+  "103:105": {
+    "basis_text": "Different distances — read with care",
+    "metrics": [
+      {
+        "key": "distance",
+        "label_key": "vital.distance",
+        "a": {
+          "text": "8.4 km",
+          "raw": 8400
+        },
+        "b": {
+          "text": "16.1 km",
+          "raw": 16100
+        },
+        "delta": {
+          "text": "+7.7 km",
+          "raw": 7700
+        }
+      },
+      {
+        "key": "time",
+        "label_key": "vital.time",
+        "a": {
+          "text": "42 m",
+          "raw": 2520
+        },
+        "b": {
+          "text": "1 h 25 m",
+          "raw": 5072
+        },
+        "delta": {
+          "text": "+43 m",
+          "raw": 2552
+        }
+      },
+      {
+        "key": "pace",
+        "label_key": "vital.pace",
+        "a": {
+          "text": "5:00 /km",
+          "raw": 300
+        },
+        "b": {
+          "text": "5:15 /km",
+          "raw": 315.0310559006211
+        },
+        "delta": {
+          "text": "+15 s/km",
+          "raw": 15.031055900621084
+        }
+      },
+      {
+        "key": "hr",
+        "label_key": "vital.heartRate",
+        "a": {
+          "text": "148 bpm",
+          "raw": 148
+        },
+        "b": {
+          "text": "148 bpm",
+          "raw": 148
+        },
+        "delta": {
+          "text": "0 bpm",
+          "raw": 0
+        }
+      }
+    ],
+    "a": {
+      "id": 103,
+      "label": "Run",
+      "date": "2026-05-07",
+      "distance": {
+        "text": "8.4 km",
+        "raw": 8400
+      },
+      "story": "8.4 km, a bit shorter than your usual Wednesday"
+    },
+    "b": {
+      "id": 105,
+      "label": "Run",
+      "date": "2026-05-04",
+      "distance": {
+        "text": "16.1 km",
+        "raw": 16100
+      },
+      "story": "16.1 km, your longest run this month"
+    }
+  },
+  "103:106": {
+    "basis_text": "Different distances — read with care",
+    "metrics": [
+      {
+        "key": "distance",
+        "label_key": "vital.distance",
+        "a": {
+          "text": "8.4 km",
+          "raw": 8400
+        },
+        "b": {
+          "text": "6.3 km",
+          "raw": 6300
+        },
+        "delta": {
+          "text": "−2.1 km",
+          "raw": -2100
+        }
+      },
+      {
+        "key": "time",
+        "label_key": "vital.time",
+        "a": {
+          "text": "42 m",
+          "raw": 2520
+        },
+        "b": {
+          "text": "35 m",
+          "raw": 2080
+        },
+        "delta": {
+          "text": "−7 m",
+          "raw": -440
+        }
+      },
+      {
+        "key": "pace",
+        "label_key": "vital.pace",
+        "a": {
+          "text": "5:00 /km",
+          "raw": 300
+        },
+        "b": {
+          "text": "5:30 /km",
+          "raw": 330.1587301587302
+        },
+        "delta": {
+          "text": "+30 s/km",
+          "raw": 30.15873015873018
+        }
+      },
+      {
+        "key": "hr",
+        "label_key": "vital.heartRate",
+        "a": {
+          "text": "148 bpm",
+          "raw": 148
+        },
+        "b": {
+          "text": "148 bpm",
+          "raw": 148
+        },
+        "delta": {
+          "text": "0 bpm",
+          "raw": 0
+        }
+      }
+    ],
+    "a": {
+      "id": 103,
+      "label": "Run",
+      "date": "2026-05-07",
+      "distance": {
+        "text": "8.4 km",
+        "raw": 8400
+      },
+      "story": "8.4 km, a bit shorter than your usual Wednesday"
+    },
+    "b": {
+      "id": 106,
+      "label": "Run",
+      "date": "2026-05-03",
+      "distance": {
+        "text": "6.3 km",
+        "raw": 6300
+      },
+      "story": "6.3 km, about your usual Monday"
+    }
+  },
+  "104:101": {
+    "basis_text": "Different distances — read with care",
+    "metrics": [
+      {
+        "key": "distance",
+        "label_key": "vital.distance",
+        "a": {
+          "text": "5 km",
+          "raw": 5000
+        },
+        "b": {
+          "text": "12.4 km",
+          "raw": 12400
+        },
+        "delta": {
+          "text": "+7.4 km",
+          "raw": 7400
+        }
+      },
+      {
+        "key": "time",
+        "label_key": "vital.time",
+        "a": {
+          "text": "27 m",
+          "raw": 1620
+        },
+        "b": {
+          "text": "1 h 7 m",
+          "raw": 4020
+        },
+        "delta": {
+          "text": "+40 m",
+          "raw": 2400
+        }
+      },
+      {
+        "key": "pace",
+        "label_key": "vital.pace",
+        "a": {
+          "text": "5:24 /km",
+          "raw": 324
+        },
+        "b": {
+          "text": "5:24 /km",
+          "raw": 324.19354838709677
+        },
+        "delta": {
+          "text": "+0 s/km",
+          "raw": 0.1935483870967687
+        }
+      },
+      {
+        "key": "hr",
+        "label_key": "vital.heartRate",
+        "a": {
+          "text": "148 bpm",
+          "raw": 148
+        },
+        "b": {
+          "text": "148 bpm",
+          "raw": 148
+        },
+        "delta": {
+          "text": "0 bpm",
+          "raw": 0
+        }
+      }
+    ],
+    "a": {
+      "id": 104,
+      "label": "Run",
+      "date": "2026-05-06",
+      "distance": {
+        "text": "5 km",
+        "raw": 5000
+      },
+      "story": "5 km, your shortest run in three weeks"
+    },
+    "b": {
+      "id": 101,
+      "label": "Run",
+      "date": "2026-05-10",
+      "distance": {
+        "text": "12.4 km",
+        "raw": 12400
+      },
+      "story": "12.4 km, 2.4 km more than your usual Wednesday"
+    }
+  },
+  "104:102": {
+    "basis_text": "Different distances — read with care",
+    "metrics": [
+      {
+        "key": "distance",
+        "label_key": "vital.distance",
+        "a": {
+          "text": "5 km",
+          "raw": 5000
+        },
+        "b": {
+          "text": "10.2 km",
+          "raw": 10200
+        },
+        "delta": {
+          "text": "+5.2 km",
+          "raw": 5200
+        }
+      },
+      {
+        "key": "time",
+        "label_key": "vital.time",
+        "a": {
+          "text": "27 m",
+          "raw": 1620
+        },
+        "b": {
+          "text": "55 m",
+          "raw": 3320
+        },
+        "delta": {
+          "text": "+28 m",
+          "raw": 1700
+        }
+      },
+      {
+        "key": "pace",
+        "label_key": "vital.pace",
+        "a": {
+          "text": "5:24 /km",
+          "raw": 324
+        },
+        "b": {
+          "text": "5:25 /km",
+          "raw": 325.4901960784314
+        },
+        "delta": {
+          "text": "+1 s/km",
+          "raw": 1.4901960784313815
+        }
+      },
+      {
+        "key": "hr",
+        "label_key": "vital.heartRate",
+        "a": {
+          "text": "148 bpm",
+          "raw": 148
+        },
+        "b": {
+          "text": "146 bpm",
+          "raw": 146
+        },
+        "delta": {
+          "text": "−2 bpm",
+          "raw": -2
+        }
+      }
+    ],
+    "a": {
+      "id": 104,
+      "label": "Run",
+      "date": "2026-05-06",
+      "distance": {
+        "text": "5 km",
+        "raw": 5000
+      },
+      "story": "5 km, your shortest run in three weeks"
+    },
+    "b": {
+      "id": 102,
+      "label": "Run",
+      "date": "2026-05-09",
+      "distance": {
+        "text": "10.2 km",
+        "raw": 10200
+      },
+      "story": "10.2 km, about your usual Saturday"
+    }
+  },
+  "104:103": {
+    "basis_text": "Different distances — read with care",
+    "metrics": [
+      {
+        "key": "distance",
+        "label_key": "vital.distance",
+        "a": {
+          "text": "5 km",
+          "raw": 5000
+        },
+        "b": {
+          "text": "8.4 km",
+          "raw": 8400
+        },
+        "delta": {
+          "text": "+3.4 km",
+          "raw": 3400
+        }
+      },
+      {
+        "key": "time",
+        "label_key": "vital.time",
+        "a": {
+          "text": "27 m",
+          "raw": 1620
+        },
+        "b": {
+          "text": "42 m",
+          "raw": 2520
+        },
+        "delta": {
+          "text": "+15 m",
+          "raw": 900
+        }
+      },
+      {
+        "key": "pace",
+        "label_key": "vital.pace",
+        "a": {
+          "text": "5:24 /km",
+          "raw": 324
+        },
+        "b": {
+          "text": "5:00 /km",
+          "raw": 300
+        },
+        "delta": {
+          "text": "−24 s/km",
+          "raw": -24
+        }
+      },
+      {
+        "key": "hr",
+        "label_key": "vital.heartRate",
+        "a": {
+          "text": "148 bpm",
+          "raw": 148
+        },
+        "b": {
+          "text": "148 bpm",
+          "raw": 148
+        },
+        "delta": {
+          "text": "0 bpm",
+          "raw": 0
+        }
+      }
+    ],
+    "a": {
+      "id": 104,
+      "label": "Run",
+      "date": "2026-05-06",
+      "distance": {
+        "text": "5 km",
+        "raw": 5000
+      },
+      "story": "5 km, your shortest run in three weeks"
+    },
+    "b": {
+      "id": 103,
+      "label": "Run",
+      "date": "2026-05-07",
+      "distance": {
+        "text": "8.4 km",
+        "raw": 8400
+      },
+      "story": "8.4 km, a bit shorter than your usual Wednesday"
+    }
+  },
+  "104:105": {
+    "basis_text": "Different distances — read with care",
+    "metrics": [
+      {
+        "key": "distance",
+        "label_key": "vital.distance",
+        "a": {
+          "text": "5 km",
+          "raw": 5000
+        },
+        "b": {
+          "text": "16.1 km",
+          "raw": 16100
+        },
+        "delta": {
+          "text": "+11.1 km",
+          "raw": 11100
+        }
+      },
+      {
+        "key": "time",
+        "label_key": "vital.time",
+        "a": {
+          "text": "27 m",
+          "raw": 1620
+        },
+        "b": {
+          "text": "1 h 25 m",
+          "raw": 5072
+        },
+        "delta": {
+          "text": "+58 m",
+          "raw": 3452
+        }
+      },
+      {
+        "key": "pace",
+        "label_key": "vital.pace",
+        "a": {
+          "text": "5:24 /km",
+          "raw": 324
+        },
+        "b": {
+          "text": "5:15 /km",
+          "raw": 315.0310559006211
+        },
+        "delta": {
+          "text": "−9 s/km",
+          "raw": -8.968944099378916
+        }
+      },
+      {
+        "key": "hr",
+        "label_key": "vital.heartRate",
+        "a": {
+          "text": "148 bpm",
+          "raw": 148
+        },
+        "b": {
+          "text": "148 bpm",
+          "raw": 148
+        },
+        "delta": {
+          "text": "0 bpm",
+          "raw": 0
+        }
+      }
+    ],
+    "a": {
+      "id": 104,
+      "label": "Run",
+      "date": "2026-05-06",
+      "distance": {
+        "text": "5 km",
+        "raw": 5000
+      },
+      "story": "5 km, your shortest run in three weeks"
+    },
+    "b": {
+      "id": 105,
+      "label": "Run",
+      "date": "2026-05-04",
+      "distance": {
+        "text": "16.1 km",
+        "raw": 16100
+      },
+      "story": "16.1 km, your longest run this month"
+    }
+  },
+  "104:106": {
+    "basis_text": "Different distances — read with care",
+    "metrics": [
+      {
+        "key": "distance",
+        "label_key": "vital.distance",
+        "a": {
+          "text": "5 km",
+          "raw": 5000
+        },
+        "b": {
+          "text": "6.3 km",
+          "raw": 6300
+        },
+        "delta": {
+          "text": "+1.3 km",
+          "raw": 1300
+        }
+      },
+      {
+        "key": "time",
+        "label_key": "vital.time",
+        "a": {
+          "text": "27 m",
+          "raw": 1620
+        },
+        "b": {
+          "text": "35 m",
+          "raw": 2080
+        },
+        "delta": {
+          "text": "+8 m",
+          "raw": 460
+        }
+      },
+      {
+        "key": "pace",
+        "label_key": "vital.pace",
+        "a": {
+          "text": "5:24 /km",
+          "raw": 324
+        },
+        "b": {
+          "text": "5:30 /km",
+          "raw": 330.1587301587302
+        },
+        "delta": {
+          "text": "+6 s/km",
+          "raw": 6.1587301587301795
+        }
+      },
+      {
+        "key": "hr",
+        "label_key": "vital.heartRate",
+        "a": {
+          "text": "148 bpm",
+          "raw": 148
+        },
+        "b": {
+          "text": "148 bpm",
+          "raw": 148
+        },
+        "delta": {
+          "text": "0 bpm",
+          "raw": 0
+        }
+      }
+    ],
+    "a": {
+      "id": 104,
+      "label": "Run",
+      "date": "2026-05-06",
+      "distance": {
+        "text": "5 km",
+        "raw": 5000
+      },
+      "story": "5 km, your shortest run in three weeks"
+    },
+    "b": {
+      "id": 106,
+      "label": "Run",
+      "date": "2026-05-03",
+      "distance": {
+        "text": "6.3 km",
+        "raw": 6300
+      },
+      "story": "6.3 km, about your usual Monday"
+    }
+  },
+  "105:101": {
+    "basis_text": "Different distances — read with care",
+    "metrics": [
+      {
+        "key": "distance",
+        "label_key": "vital.distance",
+        "a": {
+          "text": "16.1 km",
+          "raw": 16100
+        },
+        "b": {
+          "text": "12.4 km",
+          "raw": 12400
+        },
+        "delta": {
+          "text": "−3.7 km",
+          "raw": -3700
+        }
+      },
+      {
+        "key": "time",
+        "label_key": "vital.time",
+        "a": {
+          "text": "1 h 25 m",
+          "raw": 5072
+        },
+        "b": {
+          "text": "1 h 7 m",
+          "raw": 4020
+        },
+        "delta": {
+          "text": "−18 m",
+          "raw": -1052
+        }
+      },
+      {
+        "key": "pace",
+        "label_key": "vital.pace",
+        "a": {
+          "text": "5:15 /km",
+          "raw": 315.0310559006211
+        },
+        "b": {
+          "text": "5:24 /km",
+          "raw": 324.19354838709677
+        },
+        "delta": {
+          "text": "+9 s/km",
+          "raw": 9.162492486475685
+        }
+      },
+      {
+        "key": "hr",
+        "label_key": "vital.heartRate",
+        "a": {
+          "text": "148 bpm",
+          "raw": 148
+        },
+        "b": {
+          "text": "148 bpm",
+          "raw": 148
+        },
+        "delta": {
+          "text": "0 bpm",
+          "raw": 0
+        }
+      }
+    ],
+    "a": {
+      "id": 105,
+      "label": "Run",
+      "date": "2026-05-04",
+      "distance": {
+        "text": "16.1 km",
+        "raw": 16100
+      },
+      "story": "16.1 km, your longest run this month"
+    },
+    "b": {
+      "id": 101,
+      "label": "Run",
+      "date": "2026-05-10",
+      "distance": {
+        "text": "12.4 km",
+        "raw": 12400
+      },
+      "story": "12.4 km, 2.4 km more than your usual Wednesday"
+    }
+  },
+  "105:102": {
+    "basis_text": "Different distances — read with care",
+    "metrics": [
+      {
+        "key": "distance",
+        "label_key": "vital.distance",
+        "a": {
+          "text": "16.1 km",
+          "raw": 16100
+        },
+        "b": {
+          "text": "10.2 km",
+          "raw": 10200
+        },
+        "delta": {
+          "text": "−5.9 km",
+          "raw": -5900
+        }
+      },
+      {
+        "key": "time",
+        "label_key": "vital.time",
+        "a": {
+          "text": "1 h 25 m",
+          "raw": 5072
+        },
+        "b": {
+          "text": "55 m",
+          "raw": 3320
+        },
+        "delta": {
+          "text": "−29 m",
+          "raw": -1752
+        }
+      },
+      {
+        "key": "pace",
+        "label_key": "vital.pace",
+        "a": {
+          "text": "5:15 /km",
+          "raw": 315.0310559006211
+        },
+        "b": {
+          "text": "5:25 /km",
+          "raw": 325.4901960784314
+        },
+        "delta": {
+          "text": "+10 s/km",
+          "raw": 10.459140177810298
+        }
+      },
+      {
+        "key": "hr",
+        "label_key": "vital.heartRate",
+        "a": {
+          "text": "148 bpm",
+          "raw": 148
+        },
+        "b": {
+          "text": "146 bpm",
+          "raw": 146
+        },
+        "delta": {
+          "text": "−2 bpm",
+          "raw": -2
+        }
+      }
+    ],
+    "a": {
+      "id": 105,
+      "label": "Run",
+      "date": "2026-05-04",
+      "distance": {
+        "text": "16.1 km",
+        "raw": 16100
+      },
+      "story": "16.1 km, your longest run this month"
+    },
+    "b": {
+      "id": 102,
+      "label": "Run",
+      "date": "2026-05-09",
+      "distance": {
+        "text": "10.2 km",
+        "raw": 10200
+      },
+      "story": "10.2 km, about your usual Saturday"
+    }
+  },
+  "105:103": {
+    "basis_text": "Different distances — read with care",
+    "metrics": [
+      {
+        "key": "distance",
+        "label_key": "vital.distance",
+        "a": {
+          "text": "16.1 km",
+          "raw": 16100
+        },
+        "b": {
+          "text": "8.4 km",
+          "raw": 8400
+        },
+        "delta": {
+          "text": "−7.7 km",
+          "raw": -7700
+        }
+      },
+      {
+        "key": "time",
+        "label_key": "vital.time",
+        "a": {
+          "text": "1 h 25 m",
+          "raw": 5072
+        },
+        "b": {
+          "text": "42 m",
+          "raw": 2520
+        },
+        "delta": {
+          "text": "−43 m",
+          "raw": -2552
+        }
+      },
+      {
+        "key": "pace",
+        "label_key": "vital.pace",
+        "a": {
+          "text": "5:15 /km",
+          "raw": 315.0310559006211
+        },
+        "b": {
+          "text": "5:00 /km",
+          "raw": 300
+        },
+        "delta": {
+          "text": "−15 s/km",
+          "raw": -15.031055900621084
+        }
+      },
+      {
+        "key": "hr",
+        "label_key": "vital.heartRate",
+        "a": {
+          "text": "148 bpm",
+          "raw": 148
+        },
+        "b": {
+          "text": "148 bpm",
+          "raw": 148
+        },
+        "delta": {
+          "text": "0 bpm",
+          "raw": 0
+        }
+      }
+    ],
+    "a": {
+      "id": 105,
+      "label": "Run",
+      "date": "2026-05-04",
+      "distance": {
+        "text": "16.1 km",
+        "raw": 16100
+      },
+      "story": "16.1 km, your longest run this month"
+    },
+    "b": {
+      "id": 103,
+      "label": "Run",
+      "date": "2026-05-07",
+      "distance": {
+        "text": "8.4 km",
+        "raw": 8400
+      },
+      "story": "8.4 km, a bit shorter than your usual Wednesday"
+    }
+  },
+  "105:104": {
+    "basis_text": "Different distances — read with care",
+    "metrics": [
+      {
+        "key": "distance",
+        "label_key": "vital.distance",
+        "a": {
+          "text": "16.1 km",
+          "raw": 16100
+        },
+        "b": {
+          "text": "5 km",
+          "raw": 5000
+        },
+        "delta": {
+          "text": "−11.1 km",
+          "raw": -11100
+        }
+      },
+      {
+        "key": "time",
+        "label_key": "vital.time",
+        "a": {
+          "text": "1 h 25 m",
+          "raw": 5072
+        },
+        "b": {
+          "text": "27 m",
+          "raw": 1620
+        },
+        "delta": {
+          "text": "−58 m",
+          "raw": -3452
+        }
+      },
+      {
+        "key": "pace",
+        "label_key": "vital.pace",
+        "a": {
+          "text": "5:15 /km",
+          "raw": 315.0310559006211
+        },
+        "b": {
+          "text": "5:24 /km",
+          "raw": 324
+        },
+        "delta": {
+          "text": "+9 s/km",
+          "raw": 8.968944099378916
+        }
+      },
+      {
+        "key": "hr",
+        "label_key": "vital.heartRate",
+        "a": {
+          "text": "148 bpm",
+          "raw": 148
+        },
+        "b": {
+          "text": "148 bpm",
+          "raw": 148
+        },
+        "delta": {
+          "text": "0 bpm",
+          "raw": 0
+        }
+      }
+    ],
+    "a": {
+      "id": 105,
+      "label": "Run",
+      "date": "2026-05-04",
+      "distance": {
+        "text": "16.1 km",
+        "raw": 16100
+      },
+      "story": "16.1 km, your longest run this month"
+    },
+    "b": {
+      "id": 104,
+      "label": "Run",
+      "date": "2026-05-06",
+      "distance": {
+        "text": "5 km",
+        "raw": 5000
+      },
+      "story": "5 km, your shortest run in three weeks"
+    }
+  },
+  "105:106": {
+    "basis_text": "Different distances — read with care",
+    "metrics": [
+      {
+        "key": "distance",
+        "label_key": "vital.distance",
+        "a": {
+          "text": "16.1 km",
+          "raw": 16100
+        },
+        "b": {
+          "text": "6.3 km",
+          "raw": 6300
+        },
+        "delta": {
+          "text": "−9.8 km",
+          "raw": -9800
+        }
+      },
+      {
+        "key": "time",
+        "label_key": "vital.time",
+        "a": {
+          "text": "1 h 25 m",
+          "raw": 5072
+        },
+        "b": {
+          "text": "35 m",
+          "raw": 2080
+        },
+        "delta": {
+          "text": "−50 m",
+          "raw": -2992
+        }
+      },
+      {
+        "key": "pace",
+        "label_key": "vital.pace",
+        "a": {
+          "text": "5:15 /km",
+          "raw": 315.0310559006211
+        },
+        "b": {
+          "text": "5:30 /km",
+          "raw": 330.1587301587302
+        },
+        "delta": {
+          "text": "+15 s/km",
+          "raw": 15.127674258109096
+        }
+      },
+      {
+        "key": "hr",
+        "label_key": "vital.heartRate",
+        "a": {
+          "text": "148 bpm",
+          "raw": 148
+        },
+        "b": {
+          "text": "148 bpm",
+          "raw": 148
+        },
+        "delta": {
+          "text": "0 bpm",
+          "raw": 0
+        }
+      }
+    ],
+    "a": {
+      "id": 105,
+      "label": "Run",
+      "date": "2026-05-04",
+      "distance": {
+        "text": "16.1 km",
+        "raw": 16100
+      },
+      "story": "16.1 km, your longest run this month"
+    },
+    "b": {
+      "id": 106,
+      "label": "Run",
+      "date": "2026-05-03",
+      "distance": {
+        "text": "6.3 km",
+        "raw": 6300
+      },
+      "story": "6.3 km, about your usual Monday"
+    }
+  },
+  "106:101": {
+    "basis_text": "Different distances — read with care",
+    "metrics": [
+      {
+        "key": "distance",
+        "label_key": "vital.distance",
+        "a": {
+          "text": "6.3 km",
+          "raw": 6300
+        },
+        "b": {
+          "text": "12.4 km",
+          "raw": 12400
+        },
+        "delta": {
+          "text": "+6.1 km",
+          "raw": 6100
+        }
+      },
+      {
+        "key": "time",
+        "label_key": "vital.time",
+        "a": {
+          "text": "35 m",
+          "raw": 2080
+        },
+        "b": {
+          "text": "1 h 7 m",
+          "raw": 4020
+        },
+        "delta": {
+          "text": "+32 m",
+          "raw": 1940
+        }
+      },
+      {
+        "key": "pace",
+        "label_key": "vital.pace",
+        "a": {
+          "text": "5:30 /km",
+          "raw": 330.1587301587302
+        },
+        "b": {
+          "text": "5:24 /km",
+          "raw": 324.19354838709677
+        },
+        "delta": {
+          "text": "−6 s/km",
+          "raw": -5.965181771633411
+        }
+      },
+      {
+        "key": "hr",
+        "label_key": "vital.heartRate",
+        "a": {
+          "text": "148 bpm",
+          "raw": 148
+        },
+        "b": {
+          "text": "148 bpm",
+          "raw": 148
+        },
+        "delta": {
+          "text": "0 bpm",
+          "raw": 0
+        }
+      }
+    ],
+    "a": {
+      "id": 106,
+      "label": "Run",
+      "date": "2026-05-03",
+      "distance": {
+        "text": "6.3 km",
+        "raw": 6300
+      },
+      "story": "6.3 km, about your usual Monday"
+    },
+    "b": {
+      "id": 101,
+      "label": "Run",
+      "date": "2026-05-10",
+      "distance": {
+        "text": "12.4 km",
+        "raw": 12400
+      },
+      "story": "12.4 km, 2.4 km more than your usual Wednesday"
+    }
+  },
+  "106:102": {
+    "basis_text": "Different distances — read with care",
+    "metrics": [
+      {
+        "key": "distance",
+        "label_key": "vital.distance",
+        "a": {
+          "text": "6.3 km",
+          "raw": 6300
+        },
+        "b": {
+          "text": "10.2 km",
+          "raw": 10200
+        },
+        "delta": {
+          "text": "+3.9 km",
+          "raw": 3900
+        }
+      },
+      {
+        "key": "time",
+        "label_key": "vital.time",
+        "a": {
+          "text": "35 m",
+          "raw": 2080
+        },
+        "b": {
+          "text": "55 m",
+          "raw": 3320
+        },
+        "delta": {
+          "text": "+21 m",
+          "raw": 1240
+        }
+      },
+      {
+        "key": "pace",
+        "label_key": "vital.pace",
+        "a": {
+          "text": "5:30 /km",
+          "raw": 330.1587301587302
+        },
+        "b": {
+          "text": "5:25 /km",
+          "raw": 325.4901960784314
+        },
+        "delta": {
+          "text": "−5 s/km",
+          "raw": -4.668534080298798
+        }
+      },
+      {
+        "key": "hr",
+        "label_key": "vital.heartRate",
+        "a": {
+          "text": "148 bpm",
+          "raw": 148
+        },
+        "b": {
+          "text": "146 bpm",
+          "raw": 146
+        },
+        "delta": {
+          "text": "−2 bpm",
+          "raw": -2
+        }
+      }
+    ],
+    "a": {
+      "id": 106,
+      "label": "Run",
+      "date": "2026-05-03",
+      "distance": {
+        "text": "6.3 km",
+        "raw": 6300
+      },
+      "story": "6.3 km, about your usual Monday"
+    },
+    "b": {
+      "id": 102,
+      "label": "Run",
+      "date": "2026-05-09",
+      "distance": {
+        "text": "10.2 km",
+        "raw": 10200
+      },
+      "story": "10.2 km, about your usual Saturday"
+    }
+  },
+  "106:103": {
+    "basis_text": "Different distances — read with care",
+    "metrics": [
+      {
+        "key": "distance",
+        "label_key": "vital.distance",
+        "a": {
+          "text": "6.3 km",
+          "raw": 6300
+        },
+        "b": {
+          "text": "8.4 km",
+          "raw": 8400
+        },
+        "delta": {
+          "text": "+2.1 km",
+          "raw": 2100
+        }
+      },
+      {
+        "key": "time",
+        "label_key": "vital.time",
+        "a": {
+          "text": "35 m",
+          "raw": 2080
+        },
+        "b": {
+          "text": "42 m",
+          "raw": 2520
+        },
+        "delta": {
+          "text": "+7 m",
+          "raw": 440
+        }
+      },
+      {
+        "key": "pace",
+        "label_key": "vital.pace",
+        "a": {
+          "text": "5:30 /km",
+          "raw": 330.1587301587302
+        },
+        "b": {
+          "text": "5:00 /km",
+          "raw": 300
+        },
+        "delta": {
+          "text": "−30 s/km",
+          "raw": -30.15873015873018
+        }
+      },
+      {
+        "key": "hr",
+        "label_key": "vital.heartRate",
+        "a": {
+          "text": "148 bpm",
+          "raw": 148
+        },
+        "b": {
+          "text": "148 bpm",
+          "raw": 148
+        },
+        "delta": {
+          "text": "0 bpm",
+          "raw": 0
+        }
+      }
+    ],
+    "a": {
+      "id": 106,
+      "label": "Run",
+      "date": "2026-05-03",
+      "distance": {
+        "text": "6.3 km",
+        "raw": 6300
+      },
+      "story": "6.3 km, about your usual Monday"
+    },
+    "b": {
+      "id": 103,
+      "label": "Run",
+      "date": "2026-05-07",
+      "distance": {
+        "text": "8.4 km",
+        "raw": 8400
+      },
+      "story": "8.4 km, a bit shorter than your usual Wednesday"
+    }
+  },
+  "106:104": {
+    "basis_text": "Different distances — read with care",
+    "metrics": [
+      {
+        "key": "distance",
+        "label_key": "vital.distance",
+        "a": {
+          "text": "6.3 km",
+          "raw": 6300
+        },
+        "b": {
+          "text": "5 km",
+          "raw": 5000
+        },
+        "delta": {
+          "text": "−1.3 km",
+          "raw": -1300
+        }
+      },
+      {
+        "key": "time",
+        "label_key": "vital.time",
+        "a": {
+          "text": "35 m",
+          "raw": 2080
+        },
+        "b": {
+          "text": "27 m",
+          "raw": 1620
+        },
+        "delta": {
+          "text": "−8 m",
+          "raw": -460
+        }
+      },
+      {
+        "key": "pace",
+        "label_key": "vital.pace",
+        "a": {
+          "text": "5:30 /km",
+          "raw": 330.1587301587302
+        },
+        "b": {
+          "text": "5:24 /km",
+          "raw": 324
+        },
+        "delta": {
+          "text": "−6 s/km",
+          "raw": -6.1587301587301795
+        }
+      },
+      {
+        "key": "hr",
+        "label_key": "vital.heartRate",
+        "a": {
+          "text": "148 bpm",
+          "raw": 148
+        },
+        "b": {
+          "text": "148 bpm",
+          "raw": 148
+        },
+        "delta": {
+          "text": "0 bpm",
+          "raw": 0
+        }
+      }
+    ],
+    "a": {
+      "id": 106,
+      "label": "Run",
+      "date": "2026-05-03",
+      "distance": {
+        "text": "6.3 km",
+        "raw": 6300
+      },
+      "story": "6.3 km, about your usual Monday"
+    },
+    "b": {
+      "id": 104,
+      "label": "Run",
+      "date": "2026-05-06",
+      "distance": {
+        "text": "5 km",
+        "raw": 5000
+      },
+      "story": "5 km, your shortest run in three weeks"
+    }
+  },
+  "106:105": {
+    "basis_text": "Different distances — read with care",
+    "metrics": [
+      {
+        "key": "distance",
+        "label_key": "vital.distance",
+        "a": {
+          "text": "6.3 km",
+          "raw": 6300
+        },
+        "b": {
+          "text": "16.1 km",
+          "raw": 16100
+        },
+        "delta": {
+          "text": "+9.8 km",
+          "raw": 9800
+        }
+      },
+      {
+        "key": "time",
+        "label_key": "vital.time",
+        "a": {
+          "text": "35 m",
+          "raw": 2080
+        },
+        "b": {
+          "text": "1 h 25 m",
+          "raw": 5072
+        },
+        "delta": {
+          "text": "+50 m",
+          "raw": 2992
+        }
+      },
+      {
+        "key": "pace",
+        "label_key": "vital.pace",
+        "a": {
+          "text": "5:30 /km",
+          "raw": 330.1587301587302
+        },
+        "b": {
+          "text": "5:15 /km",
+          "raw": 315.0310559006211
+        },
+        "delta": {
+          "text": "−15 s/km",
+          "raw": -15.127674258109096
+        }
+      },
+      {
+        "key": "hr",
+        "label_key": "vital.heartRate",
+        "a": {
+          "text": "148 bpm",
+          "raw": 148
+        },
+        "b": {
+          "text": "148 bpm",
+          "raw": 148
+        },
+        "delta": {
+          "text": "0 bpm",
+          "raw": 0
+        }
+      }
+    ],
+    "a": {
+      "id": 106,
+      "label": "Run",
+      "date": "2026-05-03",
+      "distance": {
+        "text": "6.3 km",
+        "raw": 6300
+      },
+      "story": "6.3 km, about your usual Monday"
+    },
+    "b": {
+      "id": 105,
+      "label": "Run",
+      "date": "2026-05-04",
+      "distance": {
+        "text": "16.1 km",
+        "raw": 16100
+      },
+      "story": "16.1 km, your longest run this month"
+    }
+  }
+}

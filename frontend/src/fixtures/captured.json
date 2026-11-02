@@ -1,0 +1,982 @@
+{
+  "route": "/compare",
+  "query": {
+    "a": "102",
+    "b": "101"
+  },
+  "answer": {
+    "basis_text": "Different distances — read with care",
+    "metrics": [
+      {
+        "key": "distance",
+        "label_key": "vital.distance",
+        "a": {
+          "text": "10.2 km",
+          "raw": 10200
+        },
+        "b": {
+          "text": "12.4 km",
+          "raw": 12400
+        },
+        "delta": {
+          "text": "+2.2 km",
+          "raw": 2200
+        }
+      },
+      {
+        "key": "time",
+        "label_key": "vital.time",
+        "a": {
+          "text": "55 m",
+          "raw": 3320
+        },
+        "b": {
+          "text": "1 h 7 m",
+          "raw": 4020
+        },
+        "delta": {
+          "text": "+12 m",
+          "raw": 700
+        }
+      },
+      {
+        "key": "pace",
+        "label_key": "vital.pace",
+        "a": {
+          "text": "5:25 /km",
+          "raw": 325.4901960784314
+        },
+        "b": {
+          "text": "5:24 /km",
+          "raw": 324.19354838709677
+        },
+        "delta": {
+          "text": "−1 s/km",
+          "raw": -1.2966476913346128
+        }
+      },
+      {
+        "key": "hr",
+        "label_key": "vital.heartRate",
+        "a": {
+          "text": "146 bpm",
+          "raw": 146
+        },
+        "b": {
+          "text": "148 bpm",
+          "raw": 148
+        },
+        "delta": {
+          "text": "+2 bpm",
+          "raw": 2
+        }
+      }
+    ],
+    "a": {
+      "id": 102,
+      "label": "Run",
+      "date": "2026-05-09",
+      "distance": {
+        "text": "10.2 km",
+        "raw": 10200
+      },
+      "story": "10.2 km, about your usual Saturday"
+    },
+    "b": {
+      "id": 101,
+      "label": "Run",
+      "date": "2026-05-10",
+      "distance": {
+        "text": "12.4 km",
+        "raw": 12400
+      },
+      "story": "12.4 km, 2.4 km more than your usual Wednesday"
+    },
+    "series": {
+      "a": [
+        {
+          "offset_s": 0,
+          "pace": {
+            "text": "5:17 /km",
+            "raw": 317
+          },
+          "heart_rate": {
+            "text": "149 bpm",
+            "raw": 149
+          }
+        },
+        {
+          "offset_s": 60,
+          "pace": {
+            "text": "5:19 /km",
+            "raw": 319
+          },
+          "heart_rate": {
+            "text": "151 bpm",
+            "raw": 151
+          }
+        },
+        {
+          "offset_s": 120,
+          "pace": {
+            "text": "5:22 /km",
+            "raw": 322
+          },
+          "heart_rate": {
+            "text": "153 bpm",
+            "raw": 153
+          }
+        },
+        {
+          "offset_s": 180,
+          "pace": {
+            "text": "5:24 /km",
+            "raw": 324
+          },
+          "heart_rate": {
+            "text": "155 bpm",
+            "raw": 155
+          }
+        },
+        {
+          "offset_s": 240,
+          "pace": {
+            "text": "5:26 /km",
+            "raw": 326
+          },
+          "heart_rate": {
+            "text": "157 bpm",
+            "raw": 157
+          }
+        },
+        {
+          "offset_s": 300,
+          "pace": {
+            "text": "5:27 /km",
+            "raw": 327
+          },
+          "heart_rate": {
+            "text": "158 bpm",
+            "raw": 158
+          }
+        },
+        {
+          "offset_s": 360,
+          "pace": {
+            "text": "5:28 /km",
+            "raw": 328
+          },
+          "heart_rate": {
+            "text": "160 bpm",
+            "raw": 160
+          }
+        },
+        {
+          "offset_s": 420,
+          "pace": {
+            "text": "5:29 /km",
+            "raw": 329
+          },
+          "heart_rate": {
+            "text": "161 bpm",
+            "raw": 161
+          }
+        },
+        {
+          "offset_s": 480,
+          "pace": {
+            "text": "5:29 /km",
+            "raw": 329
+          },
+          "heart_rate": {
+            "text": "162 bpm",
+            "raw": 162
+          }
+        },
+        {
+          "offset_s": 540,
+          "pace": {
+            "text": "5:29 /km",
+            "raw": 329
+          },
+          "heart_rate": {
+            "text": "162 bpm",
+            "raw": 162
+          }
+        },
+        {
+          "offset_s": 600,
+          "pace": {
+            "text": "5:28 /km",
+            "raw": 328
+          },
+          "heart_rate": {
+            "text": "163 bpm",
+            "raw": 163
+          }
+        },
+        {
+          "offset_s": 660,
+          "pace": {
+            "text": "5:27 /km",
+            "raw": 327
+          },
+          "heart_rate": {
+            "text": "163 bpm",
+            "raw": 163
+          }
+        },
+        {
+          "offset_s": 720,
+          "pace": {
+            "text": "5:25 /km",
+            "raw": 325
+          },
+          "heart_rate": {
+            "text": "163 bpm",
+            "raw": 163
+          }
+        },
+        {
+          "offset_s": 780,
+          "pace": {
+            "text": "5:23 /km",
+            "raw": 323
+          },
+          "heart_rate": {
+            "text": "162 bpm",
+            "raw": 162
+          }
+        },
+        {
+          "offset_s": 840,
+          "pace": {
+            "text": "5:21 /km",
+            "raw": 321
+          },
+          "heart_rate": {
+            "text": "162 bpm",
+            "raw": 162
+          }
+        },
+        {
+          "offset_s": 900,
+          "pace": {
+            "text": "5:19 /km",
+            "raw": 319
+          },
+          "heart_rate": {
+            "text": "161 bpm",
+            "raw": 161
+          }
+        },
+        {
+          "offset_s": 960,
+          "pace": {
+            "text": "5:16 /km",
+            "raw": 316
+          },
+          "heart_rate": {
+            "text": "160 bpm",
+            "raw": 160
+          }
+        },
+        {
+          "offset_s": 1020,
+          "pace": {
+            "text": "5:14 /km",
+            "raw": 314
+          },
+          "heart_rate": {
+            "text": "158 bpm",
+            "raw": 158
+          }
+        },
+        {
+          "offset_s": 1080,
+          "pace": {
+            "text": "5:12 /km",
+            "raw": 312
+          },
+          "heart_rate": {
+            "text": "157 bpm",
+            "raw": 157
+          }
+        },
+        {
+          "offset_s": 1140,
+          "pace": {
+            "text": "5:10 /km",
+            "raw": 310
+          },
+          "heart_rate": {
+            "text": "155 bpm",
+            "raw": 155
+          }
+        },
+        {
+          "offset_s": 1200,
+          "pace": {
+            "text": "5:08 /km",
+            "raw": 308
+          },
+          "heart_rate": {
+            "text": "153 bpm",
+            "raw": 153
+          }
+        },
+        {
+          "offset_s": 1260,
+          "pace": {
+            "text": "5:07 /km",
+            "raw": 307
+          },
+          "heart_rate": {
+            "text": "151 bpm",
+            "raw": 151
+          }
+        },
+        {
+          "offset_s": 1320,
+          "pace": {
+            "text": "5:06 /km",
+            "raw": 306
+          },
+          "heart_rate": {
+            "text": "149 bpm",
+            "raw": 149
+          }
+        },
+        {
+          "offset_s": 1380,
+          "pace": {
+            "text": "5:05 /km",
+            "raw": 305
+          },
+          "heart_rate": {
+            "text": "147 bpm",
+            "raw": 147
+          }
+        },
+        {
+          "offset_s": 1440,
+          "pace": {
+            "text": "5:05 /km",
+            "raw": 305
+          },
+          "heart_rate": {
+            "text": "145 bpm",
+            "raw": 145
+          }
+        },
+        {
+          "offset_s": 1500,
+          "pace": {
+            "text": "5:05 /km",
+            "raw": 305
+          },
+          "heart_rate": {
+            "text": "143 bpm",
+            "raw": 143
+          }
+        },
+        {
+          "offset_s": 1560,
+          "pace": {
+            "text": "5:06 /km",
+            "raw": 306
+          },
+          "heart_rate": {
+            "text": "141 bpm",
+            "raw": 141
+          }
+        },
+        {
+          "offset_s": 1620,
+          "pace": {
+            "text": "5:08 /km",
+            "raw": 308
+          },
+          "heart_rate": {
+            "text": "140 bpm",
+            "raw": 140
+          }
+        },
+        {
+          "offset_s": 1680,
+          "pace": {
+            "text": "5:09 /km",
+            "raw": 309
+          },
+          "heart_rate": {
+            "text": "138 bpm",
+            "raw": 138
+          }
+        },
+        {
+          "offset_s": 1740,
+          "pace": {
+            "text": "5:11 /km",
+            "raw": 311
+          },
+          "heart_rate": {
+            "text": "137 bpm",
+            "raw": 137
+          }
+        },
+        {
+          "offset_s": 1800,
+          "pace": {
+            "text": "5:14 /km",
+            "raw": 314
+          },
+          "heart_rate": {
+            "text": "136 bpm",
+            "raw": 136
+          }
+        },
+        {
+          "offset_s": 1860,
+          "pace": {
+            "text": "5:16 /km",
+            "raw": 316
+          },
+          "heart_rate": {
+            "text": "136 bpm",
+            "raw": 136
+          }
+        },
+        {
+          "offset_s": 1920,
+          "pace": {
+            "text": "5:18 /km",
+            "raw": 318
+          },
+          "heart_rate": {
+            "text": "135 bpm",
+            "raw": 135
+          }
+        },
+        {
+          "offset_s": 1980,
+          "pace": {
+            "text": "5:21 /km",
+            "raw": 321
+          },
+          "heart_rate": {
+            "text": "135 bpm",
+            "raw": 135
+          }
+        },
+        {
+          "offset_s": 2040,
+          "pace": {
+            "text": "5:23 /km",
+            "raw": 323
+          },
+          "heart_rate": {
+            "text": "135 bpm",
+            "raw": 135
+          }
+        },
+        {
+          "offset_s": 2100,
+          "pace": {
+            "text": "5:25 /km",
+            "raw": 325
+          },
+          "heart_rate": {
+            "text": "136 bpm",
+            "raw": 136
+          }
+        },
+        {
+          "offset_s": 2160,
+          "pace": {
+            "text": "5:27 /km",
+            "raw": 327
+          },
+          "heart_rate": {
+            "text": "136 bpm",
+            "raw": 136
+          }
+        },
+        {
+          "offset_s": 2220,
+          "pace": {
+            "text": "5:28 /km",
+            "raw": 328
+          },
+          "heart_rate": {
+            "text": "137 bpm",
+            "raw": 137
+          }
+        },
+        {
+          "offset_s": 2280,
+          "pace": {
+            "text": "5:29 /km",
+            "raw": 329
+          },
+          "heart_rate": {
+            "text": "138 bpm",
+            "raw": 138
+          }
+        },
+        {
+          "offset_s": 2340,
+          "pace": {
+            "text": "5:29 /km",
+            "raw": 329
+          },
+          "heart_rate": {
+            "text": "140 bpm",
+            "raw": 140
+          }
+        }
+      ],
+      "b": [
+        {
+          "offset_s": 0,
+          "pace": {
+            "text": "5:06 /km",
+            "raw": 306
+          },
+          "heart_rate": {
+            "text": "146 bpm",
+            "raw": 146
+          }
+        },
+        {
+          "offset_s": 60,
+          "pace": {
+            "text": "5:08 /km",
+            "raw": 308
+          },
+          "heart_rate": {
+            "text": "148 bpm",
+            "raw": 148
+          }
+        },
+        {
+          "offset_s": 120,
+          "pace": {
+            "text": "5:11 /km",
+            "raw": 311
+          },
+          "heart_rate": {
+            "text": "150 bpm",
+            "raw": 150
+          }
+        },
+        {
+          "offset_s": 180,
+          "pace": {
+            "text": "5:13 /km",
+            "raw": 313
+          },
+          "heart_rate": {
+            "text": "152 bpm",
+            "raw": 152
+          }
+        },
+        {
+          "offset_s": 240,
+          "pace": {
+            "text": "5:15 /km",
+            "raw": 315
+          },
+          "heart_rate": {
+            "text": "154 bpm",
+            "raw": 154
+          }
+        },
+        {
+          "offset_s": 300,
+          "pace": {
+            "text": "5:16 /km",
+            "raw": 316
+          },
+          "heart_rate": {
+            "text": "155 bpm",
+            "raw": 155
+          }
+        },
+        {
+          "offset_s": 360,
+          "pace": {
+            "text": "5:17 /km",
+            "raw": 317
+          },
+          "heart_rate": {
+            "text": "157 bpm",
+            "raw": 157
+          }
+        },
+        {
+          "offset_s": 420,
+          "pace": {
+            "text": "5:18 /km",
+            "raw": 318
+          },
+          "heart_rate": {
+            "text": "158 bpm",
+            "raw": 158
+          }
+        },
+        {
+          "offset_s": 480,
+          "pace": {
+            "text": "5:18 /km",
+            "raw": 318
+          },
+          "heart_rate": {
+            "text": "159 bpm",
+            "raw": 159
+          }
+        },
+        {
+          "offset_s": 540,
+          "pace": {
+            "text": "5:18 /km",
+            "raw": 318
+          },
+          "heart_rate": {
+            "text": "159 bpm",
+            "raw": 159
+          }
+        },
+        {
+          "offset_s": 600,
+          "pace": {
+            "text": "5:17 /km",
+            "raw": 317
+          },
+          "heart_rate": {
+            "text": "160 bpm",
+            "raw": 160
+          }
+        },
+        {
+          "offset_s": 660,
+          "pace": {
+            "text": "5:16 /km",
+            "raw": 316
+          },
+          "heart_rate": {
+            "text": "160 bpm",
+            "raw": 160
+          }
+        },
+        {
+          "offset_s": 720,
+          "pace": {
+            "text": "5:14 /km",
+            "raw": 314
+          },
+          "heart_rate": {
+            "text": "160 bpm",
+            "raw": 160
+          }
+        },
+        {
+          "offset_s": 780,
+          "pace": {
+            "text": "5:12 /km",
+            "raw": 312
+          },
+          "heart_rate": {
+            "text": "159 bpm",
+            "raw": 159
+          }
+        },
+        {
+          "offset_s": 840,
+          "pace": {
+            "text": "5:10 /km",
+            "raw": 310
+          },
+          "heart_rate": {
+            "text": "159 bpm",
+            "raw": 159
+          }
+        },
+        {
+          "offset_s": 900,
+          "pace": {
+            "text": "5:08 /km",
+            "raw": 308
+          },
+          "heart_rate": {
+            "text": "158 bpm",
+            "raw": 158
+          }
+        },
+        {
+          "offset_s": 960,
+          "pace": {
+            "text": "5:05 /km",
+            "raw": 305
+          },
+          "heart_rate": {
+            "text": "157 bpm",
+            "raw": 157
+          }
+        },
+        {
+          "offset_s": 1020,
+          "pace": {
+            "text": "5:03 /km",
+            "raw": 303
+          },
+          "heart_rate": {
+            "text": "155 bpm",
+            "raw": 155
+          }
+        },
+        {
+          "offset_s": 1080,
+          "pace": {
+            "text": "5:01 /km",
+            "raw": 301
+          },
+          "heart_rate": {
+            "text": "154 bpm",
+            "raw": 154
+          }
+        },
+        {
+          "offset_s": 1140,
+          "pace": {
+            "text": "4:59 /km",
+            "raw": 299
+          },
+          "heart_rate": {
+            "text": "152 bpm",
+            "raw": 152
+          }
+        },
+        {
+          "offset_s": 1200,
+          "pace": {
+            "text": "4:57 /km",
+            "raw": 297
+          },
+          "heart_rate": {
+            "text": "150 bpm",
+            "raw": 150
+          }
+        },
+        {
+          "offset_s": 1260,
+          "pace": {
+            "text": "4:56 /km",
+            "raw": 296
+          },
+          "heart_rate": {
+            "text": "148 bpm",
+            "raw": 148
+          }
+        },
+        {
+          "offset_s": 1320,
+          "pace": {
+            "text": "4:55 /km",
+            "raw": 295
+          },
+          "heart_rate": {
+            "text": "146 bpm",
+            "raw": 146
+          }
+        },
+        {
+          "offset_s": 1380,
+          "pace": {
+            "text": "4:54 /km",
+            "raw": 294
+          },
+          "heart_rate": {
+            "text": "144 bpm",
+            "raw": 144
+          }
+        },
+        {
+          "offset_s": 1440,
+          "pace": {
+            "text": "4:54 /km",
+            "raw": 294
+          },
+          "heart_rate": {
+            "text": "142 bpm",
+            "raw": 142
+          }
+        },
+        {
+          "offset_s": 1500,
+          "pace": {
+            "text": "4:54 /km",
+            "raw": 294
+          },
+          "heart_rate": {
+            "text": "140 bpm",
+            "raw": 140
+          }
+        },
+        {
+          "offset_s": 1560,
+          "pace": {
+            "text": "4:55 /km",
+            "raw": 295
+          },
+          "heart_rate": {
+            "text": "138 bpm",
+            "raw": 138
+          }
+        },
+        {
+          "offset_s": 1620,
+          "pace": {
+            "text": "4:57 /km",
+            "raw": 297
+          },
+          "heart_rate": {
+            "text": "137 bpm",
+            "raw": 137
+          }
+        },
+        {
+          "offset_s": 1680,
+          "pace": {
+            "text": "4:58 /km",
+            "raw": 298
+          },
+          "heart_rate": {
+            "text": "135 bpm",
+            "raw": 135
+          }
+        },
+        {
+          "offset_s": 1740,
+          "pace": {
+            "text": "5:00 /km",
+            "raw": 300
+          },
+          "heart_rate": {
+            "text": "134 bpm",
+            "raw": 134
+          }
+        },
+        {
+          "offset_s": 1800,
+          "pace": {
+            "text": "5:03 /km",
+            "raw": 303
+          },
+          "heart_rate": {
+            "text": "133 bpm",
+            "raw": 133
+          }
+        },
+        {
+          "offset_s": 1860,
+          "pace": {
+            "text": "5:05 /km",
+            "raw": 305
+          },
+          "heart_rate": {
+            "text": "133 bpm",
+            "raw": 133
+          }
+        },
+        {
+          "offset_s": 1920,
+          "pace": {
+            "text": "5:07 /km",
+            "raw": 307
+          },
+          "heart_rate": {
+            "text": "132 bpm",
+            "raw": 132
+          }
+        },
+        {
+          "offset_s": 1980,
+          "pace": {
+            "text": "5:10 /km",
+            "raw": 310
+          },
+          "heart_rate": {
+            "text": "132 bpm",
+            "raw": 132
+          }
+        },
+        {
+          "offset_s": 2040,
+          "pace": {
+            "text": "5:12 /km",
+            "raw": 312
+          },
+          "heart_rate": {
+            "text": "132 bpm",
+            "raw": 132
+          }
+        },
+        {
+          "offset_s": 2100,
+          "pace": {
+            "text": "5:14 /km",
+            "raw": 314
+          },
+          "heart_rate": {
+            "text": "133 bpm",
+            "raw": 133
+          }
+        },
+        {
+          "offset_s": 2160,
+          "pace": {
+            "text": "5:16 /km",
+            "raw": 316
+          },
+          "heart_rate": {
+            "text": "133 bpm",
+            "raw": 133
+          }
+        },
+        {
+          "offset_s": 2220,
+          "pace": {
+            "text": "5:17 /km",
+            "raw": 317
+          },
+          "heart_rate": {
+            "text": "134 bpm",
+            "raw": 134
+          }
+        },
+        {
+          "offset_s": 2280,
+          "pace": {
+            "text": "5:18 /km",
+            "raw": 318
+          },
+          "heart_rate": {
+            "text": "135 bpm",
+            "raw": 135
+          }
+        },
+        {
+          "offset_s": 2340,
+          "pace": {
+            "text": "5:18 /km",
+            "raw": 318
+          },
+          "heart_rate": {
+            "text": "137 bpm",
+            "raw": 137
+          }
+        }
+      ]
+    }
+  }
+}

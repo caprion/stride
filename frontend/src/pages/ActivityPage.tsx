@@ -388,6 +388,13 @@ export function ActivityPage({ id }: { id: string }) {
       </section>
 
       {/* --------------------------------------------------------- actions */}
+      {/*
+        The note and the comparison are here. The third action the plan
+        names — "Export FIT" — is **not**: the router has no route that
+        serves the FIT blob, and a control that promises a thing and does
+        nothing is worse than an absent one. It returns when the router
+        grows the route.
+      */}
       <div className="mt-3 flex flex-wrap gap-4 pb-2">
         <a
           href={`/compare/${data.id}`}
@@ -403,12 +410,6 @@ export function ActivityPage({ id }: { id: string }) {
           }}
         >
           {t('runs.addNote')}
-        </button>
-        <button
-          type="button"
-          className="tap-inline text-[13px] font-medium text-ink-muted underline underline-offset-2"
-        >
-          {t('activity.export')}
         </button>
       </div>
     </div>

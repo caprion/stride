@@ -181,7 +181,6 @@ export const catalogue = {
   'compare.column.delta': { type: 'status', text: 'Difference' },
   'compare.swap': { type: 'status', text: 'Swap A and B' },
   'compare.chooseOther': { type: 'status', text: 'Choose a different run' },
-  'compare.share': { type: 'status', text: 'Share' },
   'compare.chart.toggle': { type: 'status', text: 'Show' },
   'compare.run.label': { type: 'status', text: 'Run' },
 
@@ -212,7 +211,6 @@ export const catalogue = {
   'activity.elevation.heading': { type: 'status', text: 'Elevation' },
   'activity.route.heading': { type: 'status', text: 'Route' },
   'activity.plan.heading': { type: 'status', text: 'Against the plan' },
-  'activity.export': { type: 'status', text: 'Export FIT' },
   'activity.showSplits': { type: 'status', text: 'Show splits' },
   'activity.hideSplits': { type: 'status', text: 'Hide splits' },
   'activity.showElevation': { type: 'status', text: 'Show elevation' },

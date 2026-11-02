@@ -50,6 +50,7 @@ import type {
   VitalsSnapshot,
 } from '../lib/types'
 import type { ApiErrorKind } from '../lib/transport'
+import compareAnswerData from './compare-answers.json'
 
 /**
  * A failure the fixture set answers with.
@@ -130,6 +131,14 @@ function buildNights(): {
 }
 
 const nights = buildNights()
+
+/**
+ * The nights, as the seed carries them.
+ *
+ * The api's test seeds a store from the fixture set, and the nights are
+ * what it seeds the wellness with.
+ */
+export const nightsFixture = nights
 
 /** The previous nights, the day itself excluded — the band's window. */
 const history = nights.slice(0, 29)
@@ -276,6 +285,14 @@ const planSessions: PlanSession[] = [
     source: 'prescribed',
   },
 ]
+
+/**
+ * The plan's sessions, as the seed carries them.
+ *
+ * The api's test seeds a store from the fixture set, and these are the
+ * plan it seeds.
+ */
+export const planSessionsFixture: PlanSession[] = planSessions
 
 /** The plan's week. */
 export const planWeekFixture: PlanWeek = {
@@ -586,7 +603,7 @@ export const progressFixture: ProgressInsight = {
  * computed, because a fixture that computed its own values would be a
  * second implementation of the core's rules.
  */
-const SERIES_A: CompareSeriesPoint[] = [
+export const SERIES_A: CompareSeriesPoint[] = [
     { offset_s: 0, pace: { text: '5:17 /km', raw: 317 }, heart_rate: { text: '149 bpm', raw: 149 } },
     { offset_s: 60, pace: { text: '5:19 /km', raw: 319 }, heart_rate: { text: '151 bpm', raw: 151 } },
     { offset_s: 120, pace: { text: '5:22 /km', raw: 322 }, heart_rate: { text: '153 bpm', raw: 153 } },
@@ -629,7 +646,7 @@ const SERIES_A: CompareSeriesPoint[] = [
     { offset_s: 2340, pace: { text: '5:29 /km', raw: 329 }, heart_rate: { text: '140 bpm', raw: 140 } },
 ]
 
-const SERIES_B: CompareSeriesPoint[] = [
+export const SERIES_B: CompareSeriesPoint[] = [
     { offset_s: 0, pace: { text: '5:06 /km', raw: 306 }, heart_rate: { text: '146 bpm', raw: 146 } },
     { offset_s: 60, pace: { text: '5:08 /km', raw: 308 }, heart_rate: { text: '148 bpm', raw: 148 } },
     { offset_s: 120, pace: { text: '5:11 /km', raw: 311 }, heart_rate: { text: '150 bpm', raw: 150 } },
@@ -672,117 +689,44 @@ const SERIES_B: CompareSeriesPoint[] = [
     { offset_s: 2340, pace: { text: '5:18 /km', raw: 318 }, heart_rate: { text: '137 bpm', raw: 137 } },
 ]
 
-export const compareFixture: CompareResponse = {
-  // The two runs are the ones in the log: the 9 May run and the 10 May
-  // one. They are not the same distance, and the basis says so.
-  basis_text: 'Different distances — read with care',
-  metrics: [
-    {
-      key: 'distance',
-      label_key: 'vital.distance',
-      a: value('10.2 km', 10_200),
-      b: value('12.4 km', 12_400),
-      delta: value('+2.2 km', 2_200),
-    },
-    {
-      key: 'time',
-      label_key: 'vital.time',
-      a: value('55 m', 3_320),
-      b: value('1 h 7 m', 4_020),
-      delta: value('+12 m', 700),
-    },
-    {
-      key: 'pace',
-      label_key: 'vital.pace',
-      a: value('5:25 /km', 325),
-      b: value('5:24 /km', 324),
-      delta: value('−1 s/km', -1),
-    },
-    {
-      key: 'hr',
-      label_key: 'vital.heartRate',
-      a: value('146 bpm', 146),
-      b: value('148 bpm', 148),
-      delta: value('+2 bpm', 2),
-    },
-  ],
-  a: {
-    id: 102,
-    label: 'Run',
-    date: '2026-05-09',
-    distance: value('10.2 km', 10_200),
-    story: '10.2 km, about your usual Saturday',
-  },
-  b: {
-    id: 101,
-    label: 'Run',
-    date: '2026-05-10',
-    distance: value('12.4 km', 12_400),
-    story: '12.4 km, 2.4 km more than your usual Wednesday',
-  },
-  series: {
-    a: SERIES_A,
-    b: SERIES_B,
-  },
+/**
+ * The compare answers, one for every pair the screen can ask about.
+ *
+ * They are **data**: the router's answers, written down, and the api's
+ * test holds that they are the router's, byte for byte, against the
+ * store the fixture set describes. The effort series are the two the
+ * fixture set has; the other runs have no samples in the store, so their
+ * series is empty — the way the router would answer it.
+ */
+const compareAnswers = compareAnswerData as Record<
+  string,
+  Omit<CompareResponse, 'series'>
+>
+
+/** The effort series each captured run has. */
+const SERIES_BY_RUN: Record<number, CompareSeriesPoint[]> = {
+  102: SERIES_A,
+  101: SERIES_B,
 }
 
 /**
- * The comparison the other way round.
+ * The answer for a pair.
  *
- * Asking for the newer run as A is a different question, and the API
- * answers it — the app does not swap the columns itself: the delta's sign
- * is the core's arithmetic, and the app cannot un-render a word.
+ * The pair is the app's question and the api's business: the app asks
+ * for two runs and shows the answer as it comes.
  */
-export const compareSwappedFixture: CompareResponse = {
-  basis_text: 'Different distances — read with care',
-  metrics: [
-    {
-      key: 'distance',
-      label_key: 'vital.distance',
-      a: value('12.4 km', 12_400),
-      b: value('10.2 km', 10_200),
-      delta: value('−2.2 km', -2_200),
+export function compareAnswer(a: string, b: string): CompareResponse | undefined {
+  const answer = compareAnswers[`${a}:${b}`]
+  if (!answer) return undefined
+  const first = activityFixtures.find((run) => String(run.id) === a)
+  const second = activityFixtures.find((run) => String(run.id) === b)
+  return {
+    ...answer,
+    series: {
+      a: (first && SERIES_BY_RUN[first.id]) || [],
+      b: (second && SERIES_BY_RUN[second.id]) || [],
     },
-    {
-      key: 'time',
-      label_key: 'vital.time',
-      a: value('1 h 7 m', 4_020),
-      b: value('55 m', 3_320),
-      delta: value('−12 m', -700),
-    },
-    {
-      key: 'pace',
-      label_key: 'vital.pace',
-      a: value('5:24 /km', 324),
-      b: value('5:25 /km', 325),
-      delta: value('+1 s/km', 1),
-    },
-    {
-      key: 'hr',
-      label_key: 'vital.heartRate',
-      a: value('148 bpm', 148),
-      b: value('146 bpm', 146),
-      delta: value('−2 bpm', -2),
-    },
-  ],
-  a: {
-    id: 101,
-    label: 'Run',
-    date: '2026-05-10',
-    distance: value('12.4 km', 12_400),
-    story: '12.4 km, 2.4 km more than your usual Wednesday',
-  },
-  b: {
-    id: 102,
-    label: 'Run',
-    date: '2026-05-09',
-    distance: value('10.2 km', 10_200),
-    story: '10.2 km, about your usual Saturday',
-  },
-  series: {
-    a: SERIES_B,
-    b: SERIES_A,
-  },
+  }
 }
 
 export const compareCandidatesFixture: CompareCandidate[] = activityFixtures.map((entry) => ({
@@ -1207,7 +1151,7 @@ export function fixtureResponse(
     case '/compare': {
       // Which run is A is the API's business: the app asks, and the API
       // answers the question in that order.
-      return params['a'] === '101' ? compareSwappedFixture : compareFixture
+      return compareAnswer(params['a'] ?? '', params['b'] ?? '')
     }
     case '/compare/candidates':
       return compareCandidatesFixture
