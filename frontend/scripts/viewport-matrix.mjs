@@ -84,11 +84,15 @@ function ensureBuild() {
 
 async function startServer() {
   const vite = join(root, 'node_modules/.bin/vite')
-  const child = spawn(vite, ['preview', '--port', String(port), '--strictPort'], {
-    cwd: root,
-    stdio: ['ignore', 'pipe', 'pipe'],
-    detached: true,
-  })
+  const child = spawn(
+    vite,
+    ['preview', '--port', String(port), '--strictPort', '--host', '127.0.0.1'],
+    {
+      cwd: root,
+      stdio: ['ignore', 'pipe', 'pipe'],
+      detached: true,
+    },
+  )
   child.stdout.on('data', () => {})
   child.stderr.on('data', (chunk) => process.stderr.write(chunk))
 
@@ -100,7 +104,9 @@ async function startServer() {
     }
   }
 
-  for (let attempt = 0; attempt < 100; attempt += 1) {
+  // Twenty seconds is enough on a warm machine and not enough on a cold CI
+  // runner, where the preview server is starting for the first time.
+  for (let attempt = 0; attempt < 300; attempt += 1) {
     try {
       const response = await fetch(base)
       if (response.ok) return { stop }
