@@ -197,12 +197,9 @@ export function TodayPage() {
           <p className="text-[12px] font-semibold uppercase tracking-[0.06em] text-ink-faint">
             {t('vital.rest.heading')}
           </p>
-          <div className="mt-1 flex flex-wrap items-baseline gap-x-2 gap-y-1">
+          <div className="mt-1 flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
             <span className="text-[13px] font-semibold uppercase tracking-[0.06em] text-ink-muted">
               {snapshot.rest.label}
-            </span>
-            <span className="text-ink-faint" aria-hidden="true">
-              ·
             </span>
             <span className="text-[13px] text-ink-muted">{snapshot.rest.line}</span>
           </div>
