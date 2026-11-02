@@ -98,10 +98,30 @@ export const catalogue = {
   'today.state.noPlan': { type: 'status', text: 'No plan is active for today' },
 
   // ------------------------------------------------------ the vitals
+  /**
+   * The labels of the readings.
+   *
+   * The first one is the heading of the card on Today: it names **when
+   * the numbers are from** — the sleep of last night, the night's
+   * heart-rate variability, the night's resting heart rate — and it
+   * interprets nothing. A card headed with the single word "Rest" reads
+   * as an instruction; this one does not. The core's own catalogue
+   * carries the same words.
+   */
+  'vital.rest.heading': { type: 'vital', text: 'Last night' },
   'vital.distance': { type: 'vital', text: 'Distance' },
   'vital.time': { type: 'vital', text: 'Time' },
   'vital.pace': { type: 'vital', text: 'Pace' },
   'vital.heartRate': { type: 'vital', text: 'Heart rate' },
+
+  /**
+   * The version, as the app words it.
+   *
+   * The number is the api's — the binary's — and the app holds no version
+   * of its own: there is one version string in the app, and it is the
+   * one the api answered.
+   */
+  'status.version': { type: 'status', text: 'Version {version}' },
 
   // ------------------------------------------------------------- runs
   'runs.heading': { type: 'status', text: 'Runs' },
@@ -126,6 +146,7 @@ export const catalogue = {
   'progress.paceAtHr.heading': { type: 'status', text: 'Pace at heart rate' },
   'progress.bests.heading': { type: 'status', text: 'Bests & milestones' },
   'progress.consistency.heading': { type: 'status', text: 'Consistency' },
+  'progress.consistency.unit': { type: 'status', text: 'sessions a week' },
   'progress.adherence.heading': { type: 'status', text: 'Adherence' },
   'progress.adherence.count': { type: 'status', text: '{done} of {planned} sessions run' },
   'progress.range.label': { type: 'status', text: 'Range' },
@@ -273,7 +294,6 @@ export const catalogue = {
 
   // About: the version, the licence, the promise and the source.
   'settings.about.heading': { type: 'status', text: 'About' },
-  'settings.about.version': { type: 'status', text: 'Version' },
   'settings.about.licence': { type: 'status', text: 'Licence' },
   'settings.about.licenceValue': { type: 'status', text: 'AGPL-3.0' },
   'settings.about.source': { type: 'status', text: 'Source' },

@@ -20,8 +20,10 @@ import {
   YAxis,
 } from 'recharts'
 import { api } from '../lib/api'
+import { axisTicks } from '../lib/chart'
 import { formatDateMedium, renderedText, sportLabel } from '../lib/format'
 import { t } from '../i18n'
+import { axisTick } from '../components/ChartAxis'
 import { PageHeader } from '../ui/layout/PageHeader'
 
 export function ActivityPage({ id }: { id: string }) {
@@ -66,6 +68,25 @@ export function ActivityPage({ id }: { id: string }) {
     pace: sample.pace?.raw ?? null,
     paceText: sample.pace?.text ?? null,
   }))
+  /**
+   * The axes' labels.
+   *
+   * They are the core's own words — "148 bpm", "5:24 /km" — so every
+   * label carries its unit. A bare number on the pace axis would be the
+   * app printing a domain number on its own.
+   */
+  const heartRateTicks = axisTicks(
+    data.samples.map((sample) => ({
+      value: sample.heart_rate?.raw ?? null,
+      text: sample.heart_rate?.text ?? null,
+    })),
+  )
+  const paceTicks = axisTicks(
+    data.samples.map((sample) => ({
+      value: sample.pace?.raw ?? null,
+      text: sample.pace?.text ?? null,
+    })),
+  )
   const elevation = data.elevation.map((point) => ({
     // The chart's own scale: the distance along the run, in kilometres.
     // The words beside it are the core's — the tooltip shows the text the
@@ -74,6 +95,13 @@ export function ActivityPage({ id }: { id: string }) {
     m: point.elevation.raw ?? 0,
     elevationText: point.elevation.text,
   }))
+  // The elevation's axis, in the core's words: "40 m".
+  const elevationTicks = axisTicks(
+    data.elevation.map((point) => ({
+      value: point.elevation.raw,
+      text: point.elevation.text,
+    })),
+  )
 
   return (
     <div>
@@ -123,48 +151,70 @@ export function ActivityPage({ id }: { id: string }) {
       ) : null}
 
       {/* --------------------------------------------------------- effort */}
-      <section className="card mt-3 px-4 py-3">
+      <section className="card mt-3 px-4 py-3" data-testid="activity-effort">
         <h2 className="mb-2 text-[12px] font-semibold uppercase tracking-[0.07em] text-ink-faint">
           {t('activity.effort.heading')}
         </h2>
+        <p className="mb-1 text-[12px] font-medium text-ink-muted">{t('vital.heartRate')}</p>
         <div style={{ width: '100%', height: 150 }}>
           <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={samples} margin={{ top: 4, right: 4, bottom: 0, left: -20 }}>
+            <LineChart data={samples} margin={{ top: 4, right: 4, bottom: 0, left: 0 }}>
               <CartesianGrid stroke="#E4EBF0" vertical={false} />
               <XAxis dataKey="minute" tick={{ fontSize: 11, fill: '#61788D' }} />
-              <YAxis tick={{ fontSize: 11, fill: '#61788D' }} width={38} />
+              <YAxis
+                ticks={heartRateTicks.map((tick) => tick.value)}
+                tick={axisTick(heartRateTicks)}
+                width={64}
+                tickLine={false}
+                axisLine={false}
+                domain={['dataMin - 5', 'dataMax + 5']}
+              />
               <Tooltip
-                formatter={(_value, name, item) => {
+                formatter={(_value, _name, item) => {
                   const payload = item?.payload as
                     | { hrText?: string | null; paceText?: string | null }
                     | undefined
                   // The tooltip shows the core's words, not the chart's
                   // numbers.
-                  if (name === 'hr') return payload?.hrText ?? ''
-                  return payload?.paceText ?? ''
+                  return payload?.hrText ?? ''
                 }}
               />
-              <Line type="monotone" dataKey="hr" stroke="#1E5E96" strokeWidth={2} dot={false} />
+              <Line
+                type="monotone"
+                name={t('vital.heartRate')}
+                dataKey="hr"
+                stroke="#1E5E96"
+                strokeWidth={2}
+                dot={false}
+              />
             </LineChart>
           </ResponsiveContainer>
         </div>
-        <div style={{ width: '100%', height: 120 }} className="mt-2">
+        <p className="mb-1 mt-3 text-[12px] font-medium text-ink-muted">{t('vital.pace')}</p>
+        <div style={{ width: '100%', height: 120 }}>
           <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={samples} margin={{ top: 4, right: 4, bottom: 0, left: -20 }}>
+            <LineChart data={samples} margin={{ top: 4, right: 4, bottom: 0, left: 0 }}>
               <CartesianGrid stroke="#E4EBF0" vertical={false} />
               <XAxis dataKey="minute" tick={{ fontSize: 11, fill: '#61788D' }} />
-              <YAxis tick={{ fontSize: 11, fill: '#61788D' }} width={38} />
+              <YAxis
+                ticks={paceTicks.map((tick) => tick.value)}
+                tick={axisTick(paceTicks)}
+                width={64}
+                tickLine={false}
+                axisLine={false}
+                domain={['dataMin - 5', 'dataMax + 5']}
+              />
               <Tooltip
-                formatter={(_value, name, item) => {
+                formatter={(_value, _name, item) => {
                   const payload = item?.payload as
                     | { hrText?: string | null; paceText?: string | null }
                     | undefined
-                  if (name === 'hr') return payload?.hrText ?? ''
                   return payload?.paceText ?? ''
                 }}
               />
               <Line
                 type="monotone"
+                name={t('vital.pace')}
                 dataKey="pace"
                 stroke="#D99A0B"
                 strokeWidth={2}
@@ -228,16 +278,29 @@ export function ActivityPage({ id }: { id: string }) {
         {elevationOpen ? (
           <div style={{ width: '100%', height: 140 }} className="mt-2">
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={elevation} margin={{ top: 4, right: 4, bottom: 0, left: -14 }}>
+              <AreaChart data={elevation} margin={{ top: 4, right: 4, bottom: 0, left: 0 }}>
                 <CartesianGrid stroke="#E4EBF0" vertical={false} />
                 <XAxis dataKey="km" tick={{ fontSize: 11, fill: '#61788D' }} />
-                <YAxis tick={{ fontSize: 11, fill: '#61788D' }} width={40} />
+                <YAxis
+                  ticks={elevationTicks.map((tick) => tick.value)}
+                  tick={axisTick(elevationTicks)}
+                  width={64}
+                  tickLine={false}
+                  axisLine={false}
+                  domain={['dataMin - 5', 'dataMax + 5']}
+                />
                 <Tooltip
                   formatter={(_value, _name, item) =>
                     (item?.payload as { elevationText?: string } | undefined)?.elevationText ?? ''
                   }
                 />
-                <Area type="monotone" dataKey="m" stroke="#3F6E9E" fill="#D6E6F3" />
+                <Area
+                  type="monotone"
+                  name={t('activity.elevation.heading')}
+                  dataKey="m"
+                  stroke="#3F6E9E"
+                  fill="#D6E6F3"
+                />
               </AreaChart>
             </ResponsiveContainer>
           </div>

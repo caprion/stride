@@ -135,7 +135,7 @@ describe('Compare', () => {
       expect(container.querySelector('[data-testid="compare-metrics"]')).toBeTruthy(),
     )
     expect(container.querySelector('[data-testid="compare-basis"]')?.textContent).toContain(
-      'Same distance, 3 weeks apart',
+      'Different distances — read with care',
     )
     const pace = container.querySelector('[data-testid="compare-row-pace"]')?.textContent
     expect(pace).toContain('Pace')
@@ -153,13 +153,13 @@ describe('Compare', () => {
     // it: it asks the API for the other order, and shows the answer.
     const before =
       container.querySelector('[data-testid="compare-row-pace"]')?.textContent ?? ''
-    expect(before).toContain('−11 s/km')
+    expect(before).toContain('−1 s/km')
 
     await user.click(screen.getByTestId('compare-swap'))
 
     await waitFor(() =>
       expect(container.querySelector('[data-testid="compare-row-pace"]')?.textContent).toContain(
-        '+11 s/km',
+        '+1 s/km',
       ),
     )
   })
@@ -174,21 +174,21 @@ describe('Compare', () => {
     // (U+2212), and the app shows the sign it was given — it is neither
     // the em dash of an absent value nor the hyphen of a keyboard.
     const row = container.querySelector('[data-testid="compare-row-pace"]')?.textContent ?? ''
-    expect(row).toContain('−11 s/km')
-    expect(row).not.toContain('-11 s/km')
+    expect(row).toContain('−1 s/km')
+    expect(row).not.toContain('-1 s/km')
     expect(row).not.toContain('—')
 
     // The same rule for the other metrics: the core's sign, in the
     // metric's own unit.
     const distance = container.querySelector('[data-testid="compare-row-distance"]')
       ?.textContent ?? ''
-    expect(distance).toContain('+0.2 km')
+    expect(distance).toContain('+2.2 km')
 
     const time = container.querySelector('[data-testid="compare-row-time"]')?.textContent ?? ''
-    expect(time).toContain('−1 m')
+    expect(time).toContain('+12 m')
 
     const heart = container.querySelector('[data-testid="compare-row-hr"]')?.textContent ?? ''
-    expect(heart).toContain('−3 bpm')
+    expect(heart).toContain('+2 bpm')
   })
 
   it('shows the plan’s line under the run as the core states it', async () => {

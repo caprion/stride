@@ -189,7 +189,15 @@ export function TodayPage() {
         </section>
       ) : snapshot.rest.line ? (
         <section className="card px-4 py-3" data-testid="today-state-line">
-          <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+          {/*
+            The heading names when the numbers are from, and interprets
+            nothing. The core's own label for the summary row stays below
+            it: "Rest" is the name of a row, not an instruction.
+          */}
+          <p className="text-[12px] font-semibold uppercase tracking-[0.06em] text-ink-faint">
+            {t('vital.rest.heading')}
+          </p>
+          <div className="mt-1 flex flex-wrap items-baseline gap-x-2 gap-y-1">
             <span className="text-[13px] font-semibold uppercase tracking-[0.06em] text-ink-muted">
               {snapshot.rest.label}
             </span>

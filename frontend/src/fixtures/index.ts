@@ -348,6 +348,7 @@ function activity(
   pace: RenderedValue,
   story: string,
   group: typeof THIS_WEEK,
+  heartRate: RenderedValue = value('148 bpm', 148),
 ): ActivitySummary {
   return {
     id,
@@ -357,7 +358,7 @@ function activity(
     local_date: date,
     distance,
     duration,
-    heart_rate: value('148 bpm', 148),
+    heart_rate: heartRate,
     pace,
     elevation_gain: value('42 m', 42),
     group,
@@ -384,6 +385,7 @@ export const activityFixtures: ActivitySummary[] = [
     value('5:25 /km', 325.49),
     '10.2 km, about your usual Saturday',
     THIS_WEEK,
+    value('146 bpm', 146),
   ),
   activity(
     103,
@@ -671,50 +673,52 @@ const SERIES_B: CompareSeriesPoint[] = [
 ]
 
 export const compareFixture: CompareResponse = {
-  basis_text: 'Same distance, 3 weeks apart',
+  // The two runs are the ones in the log: the 9 May run and the 10 May
+  // one. They are not the same distance, and the basis says so.
+  basis_text: 'Different distances — read with care',
   metrics: [
     {
       key: 'distance',
       label_key: 'vital.distance',
-      a: value('10.4 km', 10_400),
-      b: value('10.6 km', 10_600),
-      delta: value('+0.2 km', 200),
+      a: value('10.2 km', 10_200),
+      b: value('12.4 km', 12_400),
+      delta: value('+2.2 km', 2_200),
     },
     {
       key: 'time',
       label_key: 'vital.time',
-      a: value('55 m', 3_300),
-      b: value('54 m', 3_240),
-      delta: value('−1 m', -60),
+      a: value('55 m', 3_320),
+      b: value('1 h 7 m', 4_020),
+      delta: value('+12 m', 700),
     },
     {
       key: 'pace',
       label_key: 'vital.pace',
-      a: value('5:17 /km', 317),
-      b: value('5:06 /km', 306),
-      delta: value('−11 s/km', -11),
+      a: value('5:25 /km', 325),
+      b: value('5:24 /km', 324),
+      delta: value('−1 s/km', -1),
     },
     {
       key: 'hr',
       label_key: 'vital.heartRate',
-      a: value('149 bpm', 149),
-      b: value('146 bpm', 146),
-      delta: value('−3 bpm', -3),
+      a: value('146 bpm', 146),
+      b: value('148 bpm', 148),
+      delta: value('+2 bpm', 2),
     },
   ],
   a: {
     id: 102,
     label: 'Run',
-    date: '2026-04-19',
-    distance: value('10.4 km', 10_400),
-    story: '10.4 km, about your usual Saturday',
+    date: '2026-05-09',
+    distance: value('10.2 km', 10_200),
+    story: '10.2 km, about your usual Saturday',
   },
   b: {
     id: 101,
     label: 'Run',
     date: '2026-05-10',
-    distance: value('10.6 km', 10_600),
-    story: '10.6 km, a little more than your usual Saturday',
+    distance: value('12.4 km', 12_400),
+    story: '12.4 km, 2.4 km more than your usual Wednesday',
   },
   series: {
     a: SERIES_A,
@@ -730,50 +734,50 @@ export const compareFixture: CompareResponse = {
  * is the core's arithmetic, and the app cannot un-render a word.
  */
 export const compareSwappedFixture: CompareResponse = {
-  basis_text: 'Same distance, 3 weeks apart',
+  basis_text: 'Different distances — read with care',
   metrics: [
     {
       key: 'distance',
       label_key: 'vital.distance',
-      a: value('10.6 km', 10_600),
-      b: value('10.4 km', 10_400),
-      delta: value('−0.2 km', -200),
+      a: value('12.4 km', 12_400),
+      b: value('10.2 km', 10_200),
+      delta: value('−2.2 km', -2_200),
     },
     {
       key: 'time',
       label_key: 'vital.time',
-      a: value('54 m', 3_240),
-      b: value('55 m', 3_300),
-      delta: value('+1 m', 60),
+      a: value('1 h 7 m', 4_020),
+      b: value('55 m', 3_320),
+      delta: value('−12 m', -700),
     },
     {
       key: 'pace',
       label_key: 'vital.pace',
-      a: value('5:06 /km', 306),
-      b: value('5:17 /km', 317),
-      delta: value('+11 s/km', 11),
+      a: value('5:24 /km', 324),
+      b: value('5:25 /km', 325),
+      delta: value('+1 s/km', 1),
     },
     {
       key: 'hr',
       label_key: 'vital.heartRate',
-      a: value('146 bpm', 146),
-      b: value('149 bpm', 149),
-      delta: value('+3 bpm', 3),
+      a: value('148 bpm', 148),
+      b: value('146 bpm', 146),
+      delta: value('−2 bpm', -2),
     },
   ],
   a: {
     id: 101,
     label: 'Run',
     date: '2026-05-10',
-    distance: value('10.6 km', 10_600),
-    story: '10.6 km, a little more than your usual Saturday',
+    distance: value('12.4 km', 12_400),
+    story: '12.4 km, 2.4 km more than your usual Wednesday',
   },
   b: {
     id: 102,
     label: 'Run',
-    date: '2026-04-19',
-    distance: value('10.4 km', 10_400),
-    story: '10.4 km, about your usual Saturday',
+    date: '2026-05-09',
+    distance: value('10.2 km', 10_200),
+    story: '10.2 km, about your usual Saturday',
   },
   series: {
     a: SERIES_B,
@@ -795,10 +799,12 @@ export const syncStatusFixture: SyncStatus = {
   last_sync_at: new Date(Date.now() - 2 * 3_600_000).toISOString(),
   last_error: null,
   activity_count: 42,
-  cursor: null,
-  pulled: null,
-  skipped: null,
-  deleted: null,
+  // The delta pull: the cursor says where the next pull starts, and the
+  // three counts say what the last one did.
+  cursor: '106',
+  pulled: 42,
+  skipped: 0,
+  deleted: 0,
 }
 
 export const healthDailyFixture: HealthDaily = {
@@ -841,7 +847,9 @@ export const connectionEmptyFixture: ConnectionStatus = {
 export const healthFixture: Health = {
   ok: true,
   service: 'stride',
-  version: '0.9.0',
+  // The version is the binary's, and the binary's is the only version
+  // string in the app: the About card shows what `/health` says.
+  version: '0.10.0',
   garmin_connected: true,
   activities: 42,
   wellness_days: 29,
@@ -1084,10 +1092,10 @@ export const syncStatusStaleFixture: SyncStatus = {
   last_sync_at: new Date(Date.now() - 3 * 86_400_000).toISOString(),
   last_error: null,
   activity_count: 42,
-  cursor: null,
-  pulled: null,
-  skipped: null,
-  deleted: null,
+  cursor: '106',
+  pulled: 42,
+  skipped: 0,
+  deleted: 0,
 }
 
 /**
@@ -1100,18 +1108,24 @@ export const syncStatusFreshFixture: SyncStatus = {
   last_sync_at: null,
   last_error: null,
   activity_count: 0,
+  // Nothing has been pulled, so there is no cursor and nothing to count.
   cursor: null,
   pulled: null,
   skipped: null,
   deleted: null,
 }
 
-/** A sync that did not finish. */
+/**
+ * A sync that did not finish.
+ *
+ * The cursor stays where it was — a failed pull never advances it — and
+ * the counts are not known, because the pull never finished.
+ */
 export const syncStatusFailedFixture: SyncStatus = {
   last_sync_at: new Date(Date.now() - 2 * 3_600_000).toISOString(),
   last_error: 'Garmin refused the token',
   activity_count: 42,
-  cursor: null,
+  cursor: '106',
   pulled: null,
   skipped: null,
   deleted: null,

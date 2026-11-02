@@ -197,7 +197,18 @@ const IN_PAGE_CHECKS = `
     }
   }
 
-  // 6. The destination set.
+  // 6. Every chart's axis label carries a unit, and the unit is the
+  //    core's own words ("148 bpm", "5:24 /km"). A bare number on an
+  //    axis is the app printing a domain number on its own.
+  for (const label of document.querySelectorAll('[data-testid="chart-axis-label"]')) {
+    const text = (label.textContent ?? '').trim()
+    if (!/[a-z/]+$/i.test(text)) {
+      problems.push('a chart axis label carries no unit: "' + text + '"')
+      break
+    }
+  }
+
+  // 7. The destination set.
   const destinations = [...document.querySelectorAll('[data-destination]')]
     .filter(visible)
     .map((element) => element.getAttribute('data-destination'))

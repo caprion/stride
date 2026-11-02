@@ -554,7 +554,7 @@ export interface Health {
   ok: boolean
   /** The service's name: "stride". */
   service: string
-  /** The version: "0.9.0". */
+  /** The version, as the build's environment has it. */
   version: string
   /** Whether a Garmin key is held. */
   garmin_connected: boolean
