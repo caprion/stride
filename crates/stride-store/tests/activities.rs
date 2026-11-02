@@ -291,3 +291,54 @@ fn the_runs_of_a_date_and_of_a_sport_are_readable() -> Result<()> {
     drop(dir);
     Ok(())
 }
+
+#[test]
+fn everything_can_be_deleted_in_one_go() -> Result<()> {
+    let (dir, store) = common::store("delete-everything")?;
+    let activity_id = store.upsert_activity(&common::activity("run-1", "2026-05-10"))?;
+    store.upsert_wellness_daily(&common::wellness("2026-05-10"))?;
+    let block_id = store.upsert_plan_block(&stride_store::NewPlanBlock {
+        name: "A plan".to_string(),
+        source: "prescribed".to_string(),
+        start_date: "2026-05-10".to_string(),
+        end_date: None,
+        goal: None,
+        status: "active".to_string(),
+        notes: None,
+        created_at: common::instant(),
+    })?;
+    store.upsert_plan_session(&stride_store::NewPlanSession {
+        block_id,
+        date: "2026-05-10".to_string(),
+        session_type: "easy".to_string(),
+        title: None,
+        details: None,
+        target_distance_m: Some(10_000.0),
+        pace_low_s_km: None,
+        pace_high_s_km: None,
+    })?;
+    store.upsert_note(&stride_store::NewNote {
+        kind: "note".to_string(),
+        activity_id: Some(activity_id),
+        text: Some("a note about the run".to_string()),
+        value: None,
+        start_date: None,
+        end_date: None,
+        created_at: common::instant(),
+    })?;
+
+    assert_eq!(store.count_activities()?, 1);
+    assert_eq!(store.count_wellness_daily()?, 1);
+
+    // The note about the run goes with the run itself: the foreign key
+    // cascades, and the note's own delete finds nothing left to remove.
+    let deleted = store.delete_everything()?;
+    assert!(deleted >= 4, "only {deleted} rows went");
+
+    assert_eq!(store.count_activities()?, 0);
+    assert_eq!(store.count_wellness_daily()?, 0);
+    assert_eq!(store.count_plan_sessions()?, 0);
+    assert_eq!(store.count_notes()?, 0);
+    drop(dir);
+    Ok(())
+}

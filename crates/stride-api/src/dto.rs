@@ -604,13 +604,17 @@ pub struct PersonalRecords {
 // --------------------------------------------------------------------- plan
 
 /// One planned session.
+///
+/// The app's shape, field for field: the session's own title, the session
+/// already rendered by the core, the target and the actual as rendered
+/// values, and the plain status — *done*, *planned* or *not done*.
 #[derive(Clone, Debug, PartialEq, Serialize)]
 pub struct PlanSession {
     /// The day of the session.
     pub date: String,
     /// The plan's own vocabulary: `easy`, `long`, `tempo`, `rest`.
     pub session_type: String,
-    /// The session's title.
+    /// The session's own title, in the athlete's words.
     pub title: Option<String>,
     /// The session, already rendered: "Today — 10 km · easy".
     pub sentence: String,
@@ -627,8 +631,8 @@ pub struct PlanSession {
 /// One plan block.
 #[derive(Clone, Debug, PartialEq, Serialize)]
 pub struct PlanBlock {
-    /// The block's id.
-    pub id: i64,
+    /// The block's id. `null` for the baseline, which is not stored.
+    pub id: Option<i64>,
     /// The block's name.
     pub name: String,
     /// Where the block came from.
@@ -643,6 +647,12 @@ pub struct PlanBlock {
     pub status: String,
     /// How many sessions the block holds.
     pub session_count: usize,
+    /// Whether the block is a **baseline**: inferred from the athlete's own
+    /// history rather than written down.
+    ///
+    /// It changes what the app may say about the plan: a baseline is a
+    /// source, not a prescription.
+    pub is_baseline: bool,
 }
 
 /// The plan's week.
@@ -656,21 +666,50 @@ pub struct PlanWeek {
     pub week_start: String,
     /// The last day of the week.
     pub week_end: String,
+    /// The athlete's day, as the api counts it.
+    ///
+    /// The app highlights it inside the week, and the app does not keep a
+    /// clock of its own for it: the api's day is the athlete's day.
+    pub today: String,
     /// The week's target, as the core renders it.
     pub target: Option<RenderedValue>,
     /// The week's sessions, in the order they fall.
     pub sessions: Vec<PlanSession>,
     /// How many of the week's sessions were run.
     pub adherence: Option<Adherence>,
+    /// The week's counts, by status.
+    ///
+    /// Three numbers and never a percentage: the api counts them, so the
+    /// app never counts the plan's sessions itself.
+    pub counts: Counts,
 }
 
 /// How many of the planned sessions were run.
+///
+/// A count, never a score: there is no percentage and no grade.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize)]
 pub struct Adherence {
     /// How many were run.
     pub done: usize,
     /// How many were planned.
     pub planned: usize,
+}
+
+/// The count by status: planned, done and not done.
+///
+/// Three numbers and never a percentage: a percentage hides the count, and
+/// the count is the fact.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize)]
+pub struct Counts {
+    /// How many were run.
+    pub done: usize,
+    /// How many were planned.
+    pub planned: usize,
+    /// How many were planned and did not happen.
+    ///
+    /// A **baseline** never counts here: an inferred week is not a
+    /// prescription.
+    pub not_done: usize,
 }
 
 /// The plan's blocks.
@@ -687,6 +726,18 @@ pub struct PlanBlocks {
 pub struct CurrentPlan {
     /// The block in force. `null` when there is none.
     pub block: Option<PlanBlock>,
+    /// The source of the plan in force, always named.
+    ///
+    /// `baseline` when the athlete has no plan of their own: the baseline is
+    /// what the app infers from the athlete's own history, and it is a
+    /// source rather than a prescription.
+    pub source: String,
+    /// Whether the plan in force is a baseline.
+    pub is_baseline: bool,
+    /// How many weeks of history the baseline was read from.
+    ///
+    /// `null` when the plan is not a baseline.
+    pub baseline_weeks: Option<usize>,
     /// When this answer was produced.
     pub generated_at: String,
 }
@@ -718,6 +769,8 @@ pub struct PlanSource {
 pub struct PlanSources {
     /// The sources.
     pub sources: Vec<PlanSource>,
+    /// The source in force, always named.
+    pub active_source: String,
     /// When this answer was produced.
     pub generated_at: String,
 }
@@ -727,8 +780,18 @@ pub struct PlanSources {
 pub struct PlanAdherence {
     /// How many of the planned sessions were run.
     pub adherence: Adherence,
+    /// The count by status: planned, done and not done.
+    pub counts: Counts,
     /// The weeks of the window.
     pub weeks: Vec<AdherenceWeek>,
+    /// Whether the adherence is suspended.
+    ///
+    /// A pause suspends the count: the sessions of a paused week were not
+    /// missed, and the answer says so rather than counting them.
+    pub suspended: bool,
+    /// Why the adherence is suspended, in the athlete's own word: `travel`,
+    /// `sick` or `injured`.
+    pub suspension_reason: Option<String>,
     /// When this answer was produced.
     pub generated_at: String,
 }
@@ -742,23 +805,36 @@ pub struct AdherenceWeek {
     pub done: usize,
     /// How many the week planned.
     pub planned: usize,
+    /// How many the week planned and did not happen.
+    pub not_done: usize,
 }
 
 /// One planned session and what happened.
 #[derive(Clone, Debug, PartialEq, Serialize)]
 pub struct PlanResult {
     /// The session's id.
-    pub session_id: i64,
+    ///
+    /// `null` for a session of the baseline: the baseline is inferred, and
+    /// it is not stored.
+    pub session_id: Option<i64>,
     /// The day of the session.
     pub date: String,
     /// The plan's own vocabulary.
     pub session_type: String,
+    /// The session's label, as the core renders it.
+    pub label: String,
     /// `done`, `planned` or `not_done`.
     pub status: String,
     /// The distance that was planned, as the core renders it.
     pub target: Option<RenderedValue>,
     /// The distance that was run, as the core renders it.
     pub actual: Option<RenderedValue>,
+    /// The difference between the two, as the core states it.
+    ///
+    /// "2.4 km more than the 10 km target" — and nothing at all when the
+    /// gap is within ten per cent: 10.2 km against a 10 km target is not
+    /// news, and neither more nor less is good or bad.
+    pub difference: Option<String>,
 }
 
 /// The plan's results.
@@ -776,9 +852,158 @@ pub struct PlanImport {
     /// Whether the plan was imported.
     pub imported: bool,
     /// The block that was written.
-    pub block_id: i64,
+    ///
+    /// `null` when nothing was written.
+    pub block_id: Option<i64>,
     /// How many sessions were written.
     pub sessions: usize,
+    /// When this answer was produced.
+    pub generated_at: String,
+}
+
+// ----------------------------------------------------------------- settings
+
+/// The weekly goal.
+///
+/// **Blank means no goal.** There is no default: the app never invents a
+/// number the athlete did not write, and a goal of zero would read as a
+/// failure rather than as the absence of one.
+#[derive(Clone, Debug, PartialEq, Serialize)]
+pub struct SettingsGoal {
+    /// The goal, as the core renders it: "40 km".
+    ///
+    /// `null` when there is no goal.
+    pub value: Option<RenderedValue>,
+    /// The goal in kilometres, for the field: 40.
+    ///
+    /// `null` when there is no goal.
+    pub km: Option<f64>,
+}
+
+/// A pause in the plan: a start, an end and a reason.
+///
+/// The reason is one of three words, not free text: a run's note is the
+/// only free text the product stores.
+#[derive(Clone, Debug, PartialEq, Serialize)]
+pub struct SettingsPause {
+    /// The first day of the pause.
+    pub start_date: String,
+    /// The last day of the pause.
+    pub end_date: String,
+    /// Why: `travel`, `sick` or `injured`. `null` when there is no reason.
+    pub reason: Option<String>,
+}
+
+/// The storage: what is on the device, and how big it is.
+#[derive(Clone, Debug, PartialEq, Serialize)]
+pub struct SettingsStorage {
+    /// The size of the database, as the host renders it: "2.4 MB".
+    pub size: Option<RenderedValue>,
+    /// How many runs are in it.
+    pub activity_count: i64,
+    /// How many wellness days are in it.
+    pub wellness_day_count: i64,
+    /// How many planned sessions are in it.
+    pub plan_session_count: i64,
+    /// How many notes are in it — the only free text the app stores.
+    pub note_count: i64,
+}
+
+/// The settings the athlete has set.
+///
+/// The goal, the pause and the storage. The connection is not here: it lives
+/// on `/auth/status`, which owns it.
+#[derive(Clone, Debug, PartialEq, Serialize)]
+pub struct SettingsState {
+    /// The weekly goal.
+    pub goal: SettingsGoal,
+    /// The pause, when there is one.
+    pub pause: Option<SettingsPause>,
+    /// The storage.
+    pub storage: SettingsStorage,
+    /// When this answer was produced.
+    pub generated_at: String,
+}
+
+/// The answer to exporting a backup.
+#[derive(Clone, Debug, PartialEq, Serialize)]
+pub struct SettingsExportResult {
+    /// Whether the backup was written.
+    pub exported: bool,
+    /// How big it is, as the host renders it: "2.4 MB".
+    pub size: Option<RenderedValue>,
+    /// When this answer was produced.
+    pub generated_at: String,
+}
+
+/// The answer to deleting everything.
+///
+/// The typed confirmation is the caller's: the word has to arrive with the
+/// request, so the answer can only say what happened.
+#[derive(Clone, Debug, PartialEq, Serialize)]
+pub struct SettingsDeleteResult {
+    /// Whether the data was deleted.
+    pub deleted: bool,
+    /// When this answer was produced.
+    pub generated_at: String,
+}
+
+/// The answer to writing a note on a run.
+///
+/// A note is the only free text the product stores, and it belongs to the
+/// run it is about.
+#[derive(Clone, Debug, PartialEq, Serialize)]
+pub struct NoteResult {
+    /// The note as it stands now: the athlete's own words.
+    pub note: Option<String>,
+    /// When this answer was produced.
+    pub generated_at: String,
+}
+
+// ------------------------------------------------------------------- export
+
+/// The export that was written.
+///
+/// The router's own shape: the rig is the one that reads an export back,
+/// and it wants to know what was written and where.
+#[derive(Clone, Debug, PartialEq, Serialize)]
+pub struct ExportWritten {
+    /// The name of the directory the export was written into.
+    ///
+    /// The name, not the path: the path is the rig's own, and the athlete
+    /// moves the file, not the router.
+    pub directory: String,
+    /// How many rows the export holds.
+    pub rows: i64,
+    /// How many rows each table holds.
+    pub tables: std::collections::BTreeMap<String, i64>,
+    /// The schema version of the export.
+    pub schema_version: i64,
+    /// The size of the exported database, in bytes.
+    pub database_bytes: u64,
+    /// The SHA-256 of the exported database.
+    pub database_sha256: String,
+    /// When the export was made.
+    pub created_at: String,
+    /// When this answer was produced.
+    pub generated_at: String,
+}
+
+/// What an import read.
+#[derive(Clone, Debug, PartialEq, Serialize)]
+pub struct ImportRead {
+    /// How many runs were written.
+    pub activities: usize,
+    /// How many days of wellness were written.
+    pub wellness: usize,
+    /// How many plan blocks were written.
+    pub plan_blocks: usize,
+    /// How many planned sessions were written.
+    pub plan_sessions: usize,
+    /// How many notes were written.
+    pub notes: usize,
+    /// How many rows there were in all.
+    pub rows: usize,
     /// When this answer was produced.
     pub generated_at: String,
 }
@@ -880,6 +1105,12 @@ pub struct ProgressInsight {
     pub sessions_per_week: Option<RenderedValue>,
     /// The plan's adherence.
     pub adherence: Option<Adherence>,
+    /// How many more weeks the charts need before they can draw a trend.
+    ///
+    /// `null` when they have what they need — and `null` until the core
+    /// has a rule for how long a trend is: the number is the core's rule,
+    /// and this crate does not keep a second one.
+    pub weeks_needed: Option<i64>,
 }
 
 /// One chip about a run.
@@ -1097,6 +1328,10 @@ pub struct AuthStatus {
     pub method: Option<String>,
     /// Where the key comes from.
     pub key_source: String,
+    /// The last four characters of the key — and never the key.
+    ///
+    /// `null` when no key is held.
+    pub key_last4: Option<String>,
     /// When the last sync succeeded.
     pub last_sync_at: Option<String>,
     /// When this answer was produced.
@@ -1123,13 +1358,22 @@ pub struct AuthTest {
     pub generated_at: String,
 }
 
-/// The answer to an import.
+/// The answer to importing a FIT file.
+///
+/// A file that is already in the log is a duplicate, and a duplicate adds
+/// no row — it is reported, once, in one line.
 #[derive(Clone, Debug, PartialEq, Serialize)]
 pub struct FitImport {
-    /// Whether the file was imported.
+    /// Whether the file became a run.
     pub imported: bool,
-    /// The run the file became.
-    pub activity_id: i64,
+    /// Whether the file was a run that is already in the log.
+    pub duplicate: bool,
+    /// The run the file is: the one it became, or the one already there.
+    pub activity_id: Option<i64>,
+    /// The run's day, when the file was a duplicate.
+    pub date: Option<String>,
+    /// The run's distance, as the core renders it: "10.2 km".
+    pub distance: Option<RenderedValue>,
     /// When this answer was produced.
     pub generated_at: String,
 }

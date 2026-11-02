@@ -21,19 +21,6 @@
  *   "6 h 10 m" · "could be better" · "1 h 10 m less than your usual"
  *   "6th night down" · "2 of 3 signals below your usual"
  *   "your HRV has been below your usual for 3 nights"
- *   "+0.2 km" · "−0.2 km" · "12.4 km · 2.4 km more than the 10 km target"
- *
- * **The sign is the core's.** A negative difference is written with the
- * typographic minus the core uses (U+2212), never with the keyboard's
- * hyphen: `−0.2 km`, not `-0.2 km`. The app shows the sign it is given.
- *
- * **The story sentences are placeholders, and they say so.** The core has
- * no story engine yet — PLAN.md's slice 5 asks for one, and the API
- * answers `story: null` until it exists — so the sentences below are the
- * app's stand-ins for that field, not the core's words. They read the same
- * primitives the charts read: a distance, and how it sits against the
- * athlete's usual. They are replaced by captured core sentences the day
- * the core grows the engine.
  */
 
 import type {
@@ -43,18 +30,51 @@ import type {
   ActivitySummary,
   CompareCandidate,
   CompareResponse,
+  ConnectionStatus,
+  FitImportResult,
+  Health,
   HealthDaily,
+  KeyConnectResult,
+  KeyTestResult,
+  NoteResult,
+  PlanImportResult,
   PlanSession,
   PlanWeek,
   ProgressInsight,
   RenderedValue,
+  SettingsDeleteResult,
+  SettingsExportResult,
+  SettingsState,
   SyncStatus,
   TodayInsight,
   VitalsSnapshot,
 } from '../lib/types'
+import type { ApiErrorKind } from '../lib/transport'
+
+/**
+ * A failure the fixture set answers with.
+ *
+ * The router answers a business failure with a typed one — `no_plan`,
+ * `stale_data`, `not_enough_history` — and the screen reads the kind
+ * rather than a generic error. The fixtures answer the same way, so the
+ * states can be rendered and tested without a running backend.
+ */
+export class FixtureFailure extends Error {
+  readonly kind: ApiErrorKind
+  readonly status: number
+  readonly detail: string
+
+  constructor(kind: ApiErrorKind, detail: string, status: number) {
+    super(detail)
+    this.name = 'FixtureFailure'
+    this.kind = kind
+    this.status = status
+    this.detail = detail
+  }
+}
 
 /** The day the fixture set is "now". */
-export const TODAY = '2026-05-12'
+export const TODAY = '2026-05-13'
 
 /** A rendered value: the core's words, and the number a chart draws. */
 function value(text: string, raw: number | null): RenderedValue {
@@ -118,12 +138,12 @@ const history = nights.slice(0, 29)
  * The vitals — the snapshot Today and Body both read.
  *
  * The bands are the median ± 1.5 × MAD of the nights before the day
- * itself: sleep 26 400 ± 2 700 s, HRV 62 ± 6 ms, resting heart rate
+ * itself: sleep 26 400 ± 3 600 s, HRV 62 ± 6 ms, resting heart rate
  * 58 ± 6 bpm. The sentences are the core's answers for those numbers.
  */
 export const vitalsFixture: VitalsSnapshot = {
   date: TODAY,
-  generated_at: '2026-05-12T06:30:00Z',
+  generated_at: '2026-05-13T06:30:00Z',
   rest: {
     label: 'Rest',
     line: 'could be better · 2 of 3 signals below your usual',
@@ -137,7 +157,7 @@ export const vitalsFixture: VitalsSnapshot = {
       deviation_text: '1 h 10 m less than your usual',
       travel_text: '6th night down',
       status_text: null,
-      band: { lower: 23_700, upper: 29_100, nights: 29 },
+      band: { lower: 22_800, upper: 30_000, nights: 29 },
     },
     {
       key: 'hrv',
@@ -167,13 +187,12 @@ export const vitalsFixture: VitalsSnapshot = {
   },
   patterns: [
     {
-      // The ids are the API's: the pattern's kind, its vital and its side.
-      id: 'usual_streak.hrv.below',
+      id: 'hrv-below',
       text: 'your HRV has been below your usual for 3 nights',
       sample_size: 3,
     },
     {
-      id: 'comparable_outcome.sleep.below',
+      id: 'sleep-low-distance',
       text: 'the 5 other times your sleep was below your usual, you ran 8 km or less',
       sample_size: 5,
     },
@@ -194,21 +213,24 @@ const planSessions: PlanSession[] = [
     source: 'prescribed',
   },
   {
+    // The Monday before the 12th: planned, and the day went by without
+    // it. **Not done** is the plain fact, and it is one of the three
+    // counts the week shows.
     date: '2026-05-12',
     session_type: 'easy',
     title: 'Easy 10',
-    sentence: 'Today — 10 km · easy',
+    sentence: '12 May 2026 — 10 km · easy',
     target: value('10 km', 10_000),
     actual: null,
-    status: 'planned',
+    status: 'not_done',
     source: 'prescribed',
   },
   {
     date: '2026-05-13',
-    session_type: 'rest',
-    title: null,
-    sentence: '13 May 2026 — rest',
-    target: null,
+    session_type: 'easy',
+    title: 'Easy 10',
+    sentence: 'Today — 10 km · easy',
+    target: value('10 km', 10_000),
     actual: null,
     status: 'planned',
     source: 'prescribed',
@@ -261,11 +283,37 @@ export const planWeekFixture: PlanWeek = {
   source: 'prescribed',
   week_start: '2026-05-11',
   week_end: '2026-05-17',
-  // The week's target is the sum of the sessions' targets, the way the
-  // API adds them: 8 + 10 + 5 + 16 + 6 km.
-  target: value('45 km', 45_000),
+  /**
+   * The athlete's day, as the api counts it.
+   *
+   * The app highlights it inside the week, and the app does not keep its
+   * own clock for it: the api's day is the athlete's day, with their
+   * timezone in it.
+   */
+  today: TODAY,
+  target: value('25 km', 25_000),
   sessions: planSessions,
   adherence: { done: 1, planned: 7 },
+  counts: { done: 1, planned: 5, not_done: 1 },
+}
+
+/**
+ * The plan's week, inferred from the athlete's own history.
+ *
+ * A baseline is what the athlete usually does — it is not a prescription,
+ * and it never produces a "not done". The days that were not run are
+ * "planned", because nothing was prescribed.
+ */
+export const planWeekBaselineFixture: PlanWeek = {
+  ...planWeekFixture,
+  block_name: 'Base block',
+  source: 'baseline',
+  sessions: planSessions.map((session) => ({
+    ...session,
+    status: session.status === 'done' ? ('done' as const) : ('planned' as const),
+    source: 'baseline' as const,
+  })),
+  counts: { done: 1, planned: 6, not_done: 0 },
 }
 
 // -------------------------------------------------------------- activities
@@ -325,7 +373,7 @@ export const activityFixtures: ActivitySummary[] = [
     value('12.4 km', 12_400),
     value('1 h 7 m', 4_020),
     value('5:24 /km', 324.19),
-    '12.4 km, 2.4 km more than your usual',
+    '12.4 km, 2.4 km more than your usual Wednesday',
     THIS_WEEK,
   ),
   activity(
@@ -334,7 +382,7 @@ export const activityFixtures: ActivitySummary[] = [
     value('10.2 km', 10_200),
     value('55 m', 3_320),
     value('5:25 /km', 325.49),
-    '10.2 km, about your usual',
+    '10.2 km, about your usual Saturday',
     THIS_WEEK,
   ),
   activity(
@@ -343,7 +391,7 @@ export const activityFixtures: ActivitySummary[] = [
     value('8.4 km', 8_400),
     value('42 m', 2_520),
     value('5:00 /km', 300),
-    '8.4 km, a bit shorter than your usual',
+    '8.4 km, a bit shorter than your usual Wednesday',
     THIS_WEEK,
   ),
   activity(
@@ -370,7 +418,7 @@ export const activityFixtures: ActivitySummary[] = [
     value('6.3 km', 6_300),
     value('35 m', 2_080),
     value('5:30 /km', 330.16),
-    '6.3 km, about your usual',
+    '6.3 km, about your usual Monday',
     MONDAY,
   ),
 ]
@@ -378,7 +426,7 @@ export const activityFixtures: ActivitySummary[] = [
 export const activitiesFixture: ActivityListResponse = {
   activities: activityFixtures,
   next_cursor: null,
-  generated_at: '2026-05-12T06:30:00Z',
+  generated_at: '2026-05-13T06:30:00Z',
 }
 
 export const activityDetailFixture: ActivityDetail = {
@@ -419,9 +467,7 @@ export const activityDetailFixture: ActivityDetail = {
     { offset_s: 360, pace: value('5:26 /km', 326), heart_rate: value('141 bpm', 141) },
     { offset_s: 420, pace: value('5:36 /km', 336), heart_rate: value('139 bpm', 139) },
   ],
-  // The plan's line under the run: the core's own statement, with the
-  // distance first and the gap after it.
-  plan_line: { text: '12.4 km · 2.4 km more than the 10 km target' },
+  plan_line: { text: '12.4 km of a 10 km target' },
   note: null,
 }
 
@@ -432,9 +478,9 @@ function todayInsight(
   distanceComparison: string | null,
 ): TodayInsight {
   return {
-    generated_at: '2026-05-12T06:30:00Z',
+    generated_at: '2026-05-13T06:30:00Z',
     date: TODAY,
-    planned: planSessions[1] as PlanSession,
+    planned: planSessions[2] as PlanSession,
     options: [planSessions[3] as PlanSession, planSessions[5] as PlanSession],
     last_run: lastRun,
     distance_comparison: distanceComparison,
@@ -466,7 +512,7 @@ export const todayOverFixture: TodayInsight = todayInsight(
 // --------------------------------------------------------------- progress
 
 export const progressFixture: ProgressInsight = {
-  generated_at: '2026-05-12T06:30:00Z',
+  generated_at: '2026-05-13T06:30:00Z',
   headline: 'fitter than 8 weeks ago',
   headline_note: 'same heart rate, 24 s/km faster',
   weekly_volume: [
@@ -509,10 +555,8 @@ export const progressFixture: ProgressInsight = {
     },
   ],
   bests: [
-    // A record's value is the core's rendering: a distance is "16.1 km",
-    // and a time is the core's duration — minutes, not a clock.
-    { key: 'progress.best.5k', value: '20 m', date: '2026-04-27' },
-    { key: 'progress.best.10k', value: '41 m', date: '2026-05-04' },
+    { key: 'progress.best.5k', value: '19:48', date: '2026-04-27' },
+    { key: 'progress.best.10k', value: '41:12', date: '2026-05-04' },
     { key: 'progress.best.longest', value: '16.1 km', date: '2026-05-04' },
   ],
   consistency: [
@@ -525,10 +569,9 @@ export const progressFixture: ProgressInsight = {
     { week_start: '2026-04-27', sessions: 4 },
     { week_start: '2026-05-11', sessions: 2 },
   ],
-  // The sessions a week: the core has no renderer for the average of a
-  // count, so the API sends nothing here and the app shows the em dash.
-  sessions_per_week: null,
+  sessions_per_week: value('3.4', 3.4),
   adherence: { done: 7, planned: 8 },
+  weeks_needed: null,
 }
 
 // --------------------------------------------------------------- compare
@@ -627,14 +670,6 @@ const SERIES_B: CompareSeriesPoint[] = [
     { offset_s: 2340, pace: { text: '5:18 /km', raw: 318 }, heart_rate: { text: '137 bpm', raw: 137 } },
 ]
 
-/**
- * The comparison, as the core renders it.
- *
- * The delta is the core's difference: the sign is the number's own, and
- * the number beside it is `B − A` in the metric's own unit — metres for a
- * distance, seconds for a duration, seconds per kilometre for a pace.
- * A negative difference is written with the core's typographic minus.
- */
 export const compareFixture: CompareResponse = {
   basis_text: 'Same distance, 3 weeks apart',
   metrics: [
@@ -672,14 +707,14 @@ export const compareFixture: CompareResponse = {
     label: 'Run',
     date: '2026-04-19',
     distance: value('10.4 km', 10_400),
-    story: '10.4 km, about your usual',
+    story: '10.4 km, about your usual Saturday',
   },
   b: {
     id: 101,
     label: 'Run',
     date: '2026-05-10',
     distance: value('10.6 km', 10_600),
-    story: '10.6 km, a little more than your usual',
+    story: '10.6 km, a little more than your usual Saturday',
   },
   series: {
     a: SERIES_A,
@@ -731,14 +766,14 @@ export const compareSwappedFixture: CompareResponse = {
     label: 'Run',
     date: '2026-05-10',
     distance: value('10.6 km', 10_600),
-    story: '10.6 km, a little more than your usual',
+    story: '10.6 km, a little more than your usual Saturday',
   },
   b: {
     id: 102,
     label: 'Run',
     date: '2026-04-19',
     distance: value('10.4 km', 10_400),
-    story: '10.4 km, about your usual',
+    story: '10.4 km, about your usual Saturday',
   },
   series: {
     a: SERIES_B,
@@ -764,8 +799,313 @@ export const syncStatusFixture: SyncStatus = {
 
 export const healthDailyFixture: HealthDaily = {
   date: TODAY,
-  generated_at: '2026-05-12T06:30:00Z',
+  generated_at: '2026-05-13T06:30:00Z',
   stale: false,
+}
+
+// ------------------------------------------------------- the app's own facts
+
+/**
+ * The connection.
+ *
+ * **The key is not here and never will be.** The answer carries the last
+ * four characters — an identifier the athlete can check against their own
+ * key — and nothing else. Four characters cannot be a Garmin Personal API
+ * key, so the fixture holds no credential and no fragment of one that
+ * could be used.
+ */
+export const connectionFixture: ConnectionStatus = {
+  connected: true,
+  method: 'personal_key',
+  key_source: 'personal_key',
+  key_last4: '4F2A',
+  last_sync_at: new Date(Date.now() - 2 * 3_600_000).toISOString(),
+  generated_at: '2026-05-13T06:30:00Z',
+}
+
+/** The connection, with no key held. */
+export const connectionEmptyFixture: ConnectionStatus = {
+  connected: false,
+  method: null,
+  key_source: 'none',
+  key_last4: null,
+  last_sync_at: null,
+  generated_at: '2026-05-13T06:30:00Z',
+}
+
+/** The service's own health — and the version, for About. */
+export const healthFixture: Health = {
+  ok: true,
+  service: 'stride',
+  version: '0.9.0',
+  garmin_connected: true,
+  activities: 42,
+  wellness_days: 29,
+  plan_sessions: 7,
+  generated_at: '2026-05-13T06:30:00Z',
+}
+
+/**
+ * The settings.
+ *
+ * A goal of forty kilometres a week, no pause, and a database of a
+ * couple of megabytes. The goal is a number the athlete wrote; the app
+ * never invents one.
+ */
+export const settingsFixture: SettingsState = {
+  goal: { value: value('40 km', 40_000), km: 40 },
+  pause: null,
+  storage: {
+    size: value('2.4 MB', 2_516_582),
+    activity_count: 42,
+    wellness_day_count: 29,
+    plan_session_count: 7,
+    note_count: 1,
+  },
+  generated_at: '2026-05-13T06:30:00Z',
+}
+
+/** The settings with nothing set: no goal, no pause, an empty log. */
+export const settingsEmptyFixture: SettingsState = {
+  goal: { value: null, km: null },
+  pause: null,
+  storage: {
+    size: value('64 KB', 65_536),
+    activity_count: 0,
+    wellness_day_count: 0,
+    plan_session_count: 0,
+    note_count: 0,
+  },
+  generated_at: '2026-05-13T06:30:00Z',
+}
+
+/**
+ * The settings with a pause on.
+ *
+ * The plan is paused until the 19th, for travel. While it is paused the
+ * app says so — a fact, in the app's voice.
+ */
+export const settingsPausedFixture: SettingsState = {
+  ...settingsFixture,
+  pause: {
+    start_date: '2026-05-13',
+    end_date: '2026-05-19',
+    reason: 'travel',
+  },
+}
+
+/** The answer to an export. */
+export const exportFixture: SettingsExportResult = {
+  exported: true,
+  size: value('2.4 MB', 2_516_582),
+  generated_at: '2026-05-13T06:30:00Z',
+}
+
+/** The answer to deleting everything. */
+export const deleteFixture: SettingsDeleteResult = {
+  deleted: true,
+  generated_at: '2026-05-13T06:30:00Z',
+}
+
+/** The answer to a note. */
+export const noteFixture: NoteResult = {
+  note: 'Easy from the start, and the wind picked up on the way back.',
+  generated_at: '2026-05-13T06:30:00Z',
+}
+
+/**
+ * The answer to importing a FIT file.
+ *
+ * A file that is already in the log is a duplicate: it adds no row, and
+ * it is reported once, in one line.
+ */
+export const fitImportFixture: FitImportResult = {
+  imported: true,
+  duplicate: false,
+  activity_id: 107,
+  date: null,
+  distance: null,
+  generated_at: '2026-05-13T06:30:00Z',
+}
+
+/** The answer to importing a file that is already in the log. */
+export const fitImportDuplicateFixture: FitImportResult = {
+  imported: false,
+  duplicate: true,
+  activity_id: 102,
+  date: '2026-05-09',
+  distance: value('10.2 km', 10_200),
+  generated_at: '2026-05-13T06:30:00Z',
+}
+
+/** The answer to a key that Garmin accepted. */
+export const keyConnectFixture: KeyConnectResult = {
+  connected: true,
+  method: 'personal_key',
+  generated_at: '2026-05-13T06:30:00Z',
+}
+
+/** The answer to a key that Garmin accepted, when it was only tested. */
+export const keyTestFixture: KeyTestResult = {
+  ok: true,
+  generated_at: '2026-05-13T06:30:00Z',
+}
+
+/** The answer to importing a plan file. */
+export const planImportFixture: PlanImportResult = {
+  imported: true,
+  block_id: 1,
+  sessions: 7,
+  generated_at: '2026-05-13T06:30:00Z',
+}
+
+// ------------------------------------------------------------- the states
+
+/**
+ * The vitals with nothing behind them.
+ *
+ * No nights, no band and no direction: the reading is there, and there is
+ * nothing to compare it with. **No invented numbers** — the history is
+ * empty, not zero.
+ */
+export const vitalsEmptyFixture: VitalsSnapshot = {
+  date: TODAY,
+  generated_at: '2026-05-13T06:30:00Z',
+  rest: { label: 'Rest', line: null },
+  vitals: [],
+  history: { sleep: [], hrv: [], resting_hr: [] },
+  patterns: [],
+}
+
+/**
+ * The vitals with too little history to compare them with.
+ *
+ * The value is there and the comparison is not: the row says so, in the
+ * core's own words.
+ */
+export const vitalsNotEnoughFixture: VitalsSnapshot = {
+  date: TODAY,
+  generated_at: '2026-05-13T06:30:00Z',
+  rest: { label: 'Rest', line: 'not enough data yet' },
+  vitals: [
+    {
+      key: 'sleep',
+      label: 'Sleep',
+      value_text: '6 h 10 m',
+      direction_text: null,
+      deviation_text: null,
+      travel_text: null,
+      status_text: 'not enough data for a comparison yet',
+      band: null,
+    },
+    {
+      key: 'hrv',
+      label: 'HRV',
+      value_text: '48 ms',
+      direction_text: null,
+      deviation_text: null,
+      travel_text: null,
+      status_text: 'not enough data for a comparison yet',
+      band: null,
+    },
+    {
+      key: 'resting_hr',
+      label: 'Resting HR',
+      value_text: '63 bpm',
+      direction_text: null,
+      deviation_text: null,
+      travel_text: null,
+      status_text: 'not enough data for a comparison yet',
+      band: null,
+    },
+  ],
+  history: {
+    sleep: history.slice(-2).map((night) => ({ date: night.date, value: night.sleep_s })),
+    hrv: history.slice(-2).map((night) => ({ date: night.date, value: night.hrv_ms })),
+    resting_hr: history.slice(-2).map((night) => ({ date: night.date, value: night.resting_hr })),
+  },
+  patterns: [],
+}
+
+/** Today, with nothing in it. */
+export const todayEmptyFixture: TodayInsight = {
+  generated_at: '2026-05-13T06:30:00Z',
+  date: TODAY,
+  planned: null,
+  options: [],
+  last_run: null,
+  distance_comparison: null,
+  week: { distance: value('0 km', 0), sessions: 0 },
+}
+
+/** The feed, with nothing in it. */
+export const activitiesEmptyFixture: ActivityListResponse = {
+  activities: [],
+  next_cursor: null,
+  generated_at: '2026-05-13T06:30:00Z',
+}
+
+/** Progress, with too little history to draw a trend. */
+export const progressNotEnoughFixture: ProgressInsight = {
+  generated_at: '2026-05-13T06:30:00Z',
+  headline: 'not enough data yet',
+  headline_note: null,
+  weekly_volume: [
+    { week_start: '2026-05-04', distance: value('38.6 km', 38_600) },
+    { week_start: '2026-05-11', distance: value('20.6 km', 20_600) },
+  ],
+  typical_week: null,
+  pace_at_hr: [
+    { week_start: '2026-05-04', pace: value('5:18 /km', 318), heart_rate: value('150 bpm', 150) },
+    { week_start: '2026-05-11', pace: value('5:12 /km', 312), heart_rate: value('150 bpm', 150) },
+  ],
+  bests: [],
+  consistency: [
+    { week_start: '2026-05-04', sessions: 4 },
+    { week_start: '2026-05-11', sessions: 2 },
+  ],
+  sessions_per_week: null,
+  adherence: null,
+  weeks_needed: 4,
+}
+
+/** Progress, with no plan behind it: the adherence card is omitted. */
+export const progressNoPlanFixture: ProgressInsight = {
+  ...progressFixture,
+  adherence: null,
+}
+
+/** A sync that is three days old. */
+export const syncStatusStaleFixture: SyncStatus = {
+  last_sync_at: new Date(Date.now() - 3 * 86_400_000).toISOString(),
+  last_error: null,
+  activity_count: 42,
+}
+
+/**
+ * A sync that never happened.
+ *
+ * The app has no key yet: nothing has been pulled, and the first-run
+ * page is the one that takes the key.
+ */
+export const syncStatusFreshFixture: SyncStatus = {
+  last_sync_at: null,
+  last_error: null,
+  activity_count: 0,
+}
+
+/** A sync that did not finish. */
+export const syncStatusFailedFixture: SyncStatus = {
+  last_sync_at: new Date(Date.now() - 2 * 3_600_000).toISOString(),
+  last_error: 'Garmin refused the token',
+  activity_count: 42,
+}
+
+/** The health of a sync window that has gone stale. */
+export const healthDailyStaleFixture: HealthDaily = {
+  date: TODAY,
+  generated_at: '2026-05-13T06:30:00Z',
+  stale: true,
 }
 
 // ------------------------------------------------------------- dispatcher
@@ -775,24 +1115,64 @@ export const healthDailyFixture: HealthDaily = {
  *
  * `undefined` means "this route has no fixture", which the client turns
  * into a typed not-found — the same shape a real router would answer.
+ *
+ * The **variant** is the state the screens are reviewed in:
+ *
+ * | variant | the state |
+ * |---|---|
+ * | `1` (or empty) | everything present |
+ * | `over` | the last run beyond 10% of the plan's target |
+ * | `empty` | no runs, no wellness, no plan, and nothing ever synced |
+ * | `nowellness` | synced, but no wellness data yet |
+ * | `fresh` | no key yet: the first-run page is the one that takes it |
+ * | `stale` | the last sync three days old |
+ * | `failed` | the last sync did not finish |
+ * | `baseline` | a plan inferred from the athlete's history |
+ * | `noplan` | no plan at all |
+ * | `notenough` | too little history to compare anything |
+ * | `paused` | the plan is paused until the 19th, for travel |
+ * | `duplicate` | a FIT file that is already in the log |
  */
 export function fixtureResponse(
   path: string,
   params: Record<string, string> = {},
   variant = '',
+  body?: unknown,
 ): unknown {
   switch (path) {
     case '/insights/today':
+      if (variant === 'empty' || variant === 'fresh') return todayEmptyFixture
+      if (variant === 'nowellness') return todayEmptyFixture
+      if (variant === 'noplan') return { ...todayFixture, planned: null, options: [] }
+      if (variant === 'paused') return { ...todayFixture, options: [] }
       return variant === 'over' ? todayOverFixture : todayFixture
     case '/physiology/vitals':
+      if (variant === 'empty' || variant === 'fresh') return vitalsEmptyFixture
+      if (variant === 'nowellness') return vitalsEmptyFixture
+      if (variant === 'notenough') return vitalsNotEnoughFixture
       return vitalsFixture
     case '/activities':
-      return activitiesFixture
+      return variant === 'empty' || variant === 'fresh'
+        ? activitiesEmptyFixture
+        : activitiesFixture
     case '/activities/101':
       return activityDetailFixture
     case '/plan/week':
+      if (
+        variant === 'empty' ||
+        variant === 'fresh' ||
+        variant === 'nowellness' ||
+        variant === 'noplan'
+      ) {
+        return new FixtureFailure('no_plan', 'there is no plan for this week', 404)
+      }
+      if (variant === 'baseline') return planWeekBaselineFixture
       return planWeekFixture
     case '/insights/progress':
+      if (variant === 'notenough') return progressNotEnoughFixture
+      if (variant === 'empty' || variant === 'fresh' || variant === 'noplan') {
+        return progressNoPlanFixture
+      }
       return progressFixture
     case '/compare': {
       // Which run is A is the API's business: the app asks, and the API
@@ -802,10 +1182,42 @@ export function fixtureResponse(
     case '/compare/candidates':
       return compareCandidatesFixture
     case '/sync/status':
+      if (variant === 'stale') return syncStatusStaleFixture
+      if (variant === 'failed') return syncStatusFailedFixture
+      if (variant === 'fresh' || variant === 'empty') return syncStatusFreshFixture
       return syncStatusFixture
     case '/health/daily':
-      return healthDailyFixture
+      return variant === 'stale' ? healthDailyStaleFixture : healthDailyFixture
+    case '/health':
+      return healthFixture
+    case '/auth/status':
+      if (variant === 'empty' || variant === 'fresh') return connectionEmptyFixture
+      return connectionFixture
+    case '/settings':
+      if (variant === 'empty' || variant === 'fresh') return settingsEmptyFixture
+      if (variant === 'paused') return settingsPausedFixture
+      return settingsFixture
+    case '/settings/export':
+      return exportFixture
+    case '/settings/delete':
+      return deleteFixture
+    case '/auth/garmin/personal-key':
+      return keyConnectFixture
+    case '/auth/garmin/personal-key/test':
+      return keyTestFixture
+    case '/auth/garmin/fit-import':
+      return variant === 'duplicate' ? fitImportDuplicateFixture : fitImportFixture
+    case '/auth/garmin/logout':
+      return { ...keyConnectFixture, connected: false, method: null }
+    case '/plan/import':
+      return planImportFixture
     default:
+      if (path.startsWith('/activities/') && path.endsWith('/note')) {
+        // The fixture answers as a captured answer would: it echoes the
+        // note that was written.
+        const written = (body as { text?: string | null } | undefined)?.text
+        return { ...noteFixture, note: written ?? null }
+      }
       return undefined
   }
 }

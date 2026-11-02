@@ -596,6 +596,7 @@ fn merge(source: &Connection, destination: &Connection) -> Result<ImportReport> 
             activity_ids.insert(old, id);
         }
         report.activities += 1;
+        report.rows += 1;
     }
 
     // The derived series, against the runs' new ids.

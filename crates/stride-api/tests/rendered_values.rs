@@ -138,3 +138,13 @@ fn no_answer_carries_a_format_hint() {
         );
     }
 }
+
+#[test]
+fn a_total_of_nothing_is_zero_and_not_a_negative_zero() {
+    // An empty sum in Rust starts at `-0.0`, and the core renders that as
+    // "-0 km" — a distance the athlete never ran.
+    let harness = common::Harness::empty("rendered-empty-total");
+    let body = harness.ok_get("/insights/today");
+    assert_eq!(body["week"]["distance"]["text"].as_str(), Some("0 km"));
+    assert_eq!(body["week"]["distance"]["raw"].as_f64(), Some(0.0));
+}

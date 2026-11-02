@@ -1,21 +1,20 @@
 //! The insight routes: Today, Progress, the chips of a run, and Compare.
 
 use serde_json::Value;
-use stride_core::plan::distance_comparison;
 use stride_core::statement;
 use stride_core::units;
 use stride_core::ValueUnit;
 
 use crate::dto::{
-    Adherence, Best, Chips, CompareCandidate, CompareMetric, CompareResponse, CompareRun,
-    CompareSeries, Consistency, PaceAtHr, ProgressInsight, TodayInsight, WeekRunning, WeeklyVolume,
+    Best, Chips, CompareCandidate, CompareMetric, CompareResponse, CompareRun, CompareSeries,
+    Consistency, PaceAtHr, ProgressInsight, TodayInsight, WeekRunning, WeeklyVolume,
 };
 use crate::error::{ApiError, ApiResult};
 use crate::render;
 use crate::router::Request;
 use crate::state::Api;
 
-use super::{core_date, ok, personal_records, runs_on, session_sentence, week_start};
+use super::{core_date, ok, personal_records};
 
 /// How far apart two runs may be and still be "the same distance".
 const SAME_DISTANCE_TOLERANCE: f64 = 0.1;
@@ -27,35 +26,37 @@ const WEEKS_APART: usize = 8;
 const SAME_HEART_RATE_TOLERANCE: f64 = 3.0;
 
 /// Today's readout.
+///
+/// The plan's own session for the day, and the plan's other sessions —
+/// unranked, and never linked to the vitals. The plan comes from the
+/// core's engine, so the block in force is the only block that is read.
 pub fn today(api: &Api, request: &Request) -> ApiResult<Value> {
     let _ = request;
     let current = super::today(api)?;
-    let sessions = api
-        .store()
-        .plan_sessions_for_day(&current.to_iso())
-        .map_err(|error| api.store_error("the plan could not be read", &error))?;
-    let source = plan_source_of(api, &sessions);
+    let active = crate::plan::active_or_empty(api)?;
+    let facts = crate::plan::run_facts(api, "0000-01-01", &current.to_iso())?;
+    let week_start = super::week_start(current);
+    let week_end = week_start.add_days(6);
 
     let mut planned = None;
     let mut options = Vec::new();
-    let week_end = week_start(current).add_days(6);
-    let week_sessions = api
-        .store()
-        .plan_sessions_between(&week_start(current).to_iso(), &week_end.to_iso())
-        .map_err(|error| api.store_error("the plan could not be read", &error))?;
-    for session in week_sessions.iter() {
-        if session.date == current.to_iso() {
+    for result in stride_core::plan::results_of_at(&active.block, &facts, current).iter() {
+        if result.session.date < week_start || result.session.date > week_end {
+            continue;
+        }
+        let rendered = crate::plan::session_of(&active, result, current);
+        if result.session.date == current {
             if planned.is_none() {
-                planned = Some(render_session(api, session, &source, current)?);
+                planned = Some(rendered);
             }
             continue;
         }
         // A rest day is not an alternative to run: the options are the
         // sessions the athlete could choose instead.
-        if session.session_type == "rest" {
+        if result.session.kind == stride_core::plan::SessionKind::Rest {
             continue;
         }
-        options.push(render_session(api, session, &source, current)?);
+        options.push(rendered);
     }
 
     let runs = api
@@ -67,15 +68,15 @@ pub fn today(api: &Api, request: &Request) -> ApiResult<Value> {
 
     let week_runs = api
         .store()
-        .activities_between(&week_start(current).to_iso(), &current.to_iso())
+        .activities_between(&super::week_start(current).to_iso(), &current.to_iso())
         .map_err(|error| api.store_error("the runs could not be read", &error))?;
     let week = WeekRunning {
-        distance: render::distance_of(week_runs.iter().map(|run| run.distance_m).sum()),
+        distance: render::distance_of(render::total_of(week_runs.iter().map(|run| run.distance_m))),
         sessions: week_runs.len(),
     };
 
     let distance_comparison = match (&planned, &last_run) {
-        (Some(session), Some(run)) => distance_comparison(
+        (Some(session), Some(run)) => stride_core::plan::distance_comparison(
             run.distance.raw,
             session.target.as_ref().and_then(|value| value.raw),
         ),
@@ -107,7 +108,7 @@ pub fn progress(api: &Api, request: &Request) -> ApiResult<Value> {
     let mut pace_at_hr: Vec<PaceAtHr> = Vec::new();
     let mut consistency: Vec<Consistency> = Vec::new();
     for (week, week_runs) in super::weeks(&runs) {
-        let distance_m: f64 = week_runs.iter().map(|run| run.distance_m).sum();
+        let distance_m: f64 = render::total_of(week_runs.iter().map(|run| run.distance_m));
         weekly_volume.push(WeeklyVolume {
             week_start: week.to_iso(),
             distance: render::distance_of(distance_m),
@@ -149,27 +150,19 @@ pub fn progress(api: &Api, request: &Request) -> ApiResult<Value> {
         })
         .collect();
 
-    let adherence = api
-        .store()
-        .active_plan_block(stride_store::model::plan_source::PRESCRIBED)
-        .ok()
-        .flatten()
-        .map(|block| {
-            let sessions = api
-                .store()
-                .plan_sessions_for_block(block.id)
-                .unwrap_or_default();
-            let mut done = 0usize;
-            for session in sessions.iter() {
-                if !runs_on(api, &session.date).unwrap_or_default().is_empty() {
-                    done += 1;
-                }
-            }
-            Adherence {
-                done,
-                planned: sessions.len(),
-            }
-        });
+    // The plan's adherence: the count of the block in force, and the
+    // count is the engine's.
+    let adherence = match crate::plan::active_or_empty(api) {
+        Ok(active) => {
+            let facts =
+                crate::plan::run_facts(api, "0000-01-01", &current.to_iso()).unwrap_or_default();
+            Some(crate::plan::adherence_of(stride_core::plan::adherence_of(
+                &active.block,
+                &facts,
+            )))
+        }
+        Err(_) => None,
+    };
 
     // The headline is the core's statement: it compares the pace at the
     // same heart rate now and then, and it says so plainly when there is
@@ -202,6 +195,7 @@ pub fn progress(api: &Api, request: &Request) -> ApiResult<Value> {
         consistency,
         sessions_per_week,
         adherence,
+        weeks_needed: None,
     };
     ok(&response)
 }
@@ -456,52 +450,4 @@ fn read_run(api: &Api, id: i64) -> ApiResult<stride_store::Activity> {
             "there is no run with the id {id}"
         ))),
     }
-}
-
-/// The source the plan's sessions came from.
-fn plan_source_of(api: &Api, sessions: &[stride_store::PlanSession]) -> String {
-    if sessions.is_empty() {
-        return stride_store::model::plan_source::TYPED.to_string();
-    }
-    let block_id = sessions[0].block_id;
-    match api.store().plan_blocks() {
-        Ok(blocks) => blocks
-            .iter()
-            .find(|block| block.id == block_id)
-            .map(|block| block.source.clone())
-            .unwrap_or_else(|| stride_store::model::plan_source::TYPED.to_string()),
-        Err(_) => stride_store::model::plan_source::TYPED.to_string(),
-    }
-}
-
-/// One session, as it travels.
-fn render_session(
-    api: &Api,
-    session: &stride_store::PlanSession,
-    source: &str,
-    current: stride_core::date::Date,
-) -> ApiResult<crate::dto::PlanSession> {
-    let date = core_date(&session.date)?;
-    let runs = runs_on(api, &session.date)?;
-    let actual_distance_m = if runs.is_empty() {
-        None
-    } else {
-        Some(runs.iter().filter_map(|run| run.distance.raw).sum())
-    };
-    let status = super::session_status(date, current, source, !runs.is_empty());
-    Ok(crate::dto::PlanSession {
-        date: session.date.clone(),
-        session_type: session.session_type.clone(),
-        title: session.title.clone(),
-        sentence: session_sentence(
-            date,
-            current,
-            session.target_distance_m,
-            &session.session_type,
-        ),
-        target: render::distance(session.target_distance_m),
-        actual: render::distance(actual_distance_m),
-        status: status.to_string(),
-        source: source.to_string(),
-    })
 }

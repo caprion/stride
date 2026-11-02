@@ -5,75 +5,96 @@
 //! a session should have happened — the word "missed" does not exist in
 //! this crate.
 //!
-//! The status of a session is **computed on read**, from the session's
-//! date, the runs of that day and the block's source. A stored verdict
-//! would be a judgement the plan forbids, and a baseline never yields
-//! "not done": an inferred baseline is not a prescription.
+//! ## The engine is the core's
+//!
+//! Every answer here is the core's: the baseline, the session of the day,
+//! the sessions of the week, the count, the status of a session and the
+//! results. This crate reads the store, hands the core the domain types it
+//! works on, and carries the core's answers back. The status of a session
+//! is **computed on read** and never stored — a stored verdict would be a
+//! judgement the plan forbids, and a baseline never yields "not done": an
+//! inferred baseline is not a prescription.
+//!
+//! ## The sources
+//!
+//! Three: a plan the athlete **imported** (`prescribed`), a plan the
+//! athlete **typed** in (`typed`), and the **baseline** the app inferred
+//! from the athlete's own history (`baseline`). The source is always named
+//! in every answer, so the app never shows a plan without saying where it
+//! came from.
+
+use std::collections::BTreeMap;
 
 use serde_json::Value;
-use stride_core::date::Date;
+use stride_core::plan::PlanBlock as CoreBlock;
 use stride_store::model::{plan_source, plan_status};
-use stride_store::{
-    NewPlanBlock, NewPlanSession, PlanBlock as StoredBlock, PlanSession as StoredSession,
-};
+use stride_store::{NewPlanBlock, NewPlanSession};
 
 use crate::dto::{
-    Adherence, AdherenceWeek, CurrentPlan, PlanAdherence, PlanBlock, PlanBlocks, PlanImport,
+    AdherenceWeek, Counts, CurrentPlan, PlanAdherence, PlanBlock, PlanBlocks, PlanImport,
     PlanResult, PlanResults, PlanSession, PlanSource, PlanSources, PlanToday, PlanWeek,
 };
 use crate::error::{ApiError, ApiResult};
+use crate::plan;
+use crate::planfile::{self, FileSession};
 use crate::render;
 use crate::router::Request;
 use crate::state::Api;
 
-use super::{core_date, ok, runs_on, session_sentence, session_status, week_start};
-
-/// The sources a plan may come from, in the order the app prefers them.
-///
-/// The athlete's own plan comes first: a plan the athlete wrote or imported
-/// is the plan in force; a baseline is what the app inferred, and it is
-/// the last thing the app offers.
-const SOURCES: [&str; 3] = [
-    plan_source::PRESCRIBED,
-    plan_source::TYPED,
-    plan_source::BASELINE,
-];
+use super::{core_date, ok, week_start};
 
 /// The block in force.
+///
+/// Its source, its name, its date range, and **whether it is a baseline** —
+/// which changes what the app may say about it: a baseline is a source,
+/// not a prescription.
 pub fn current(api: &Api, request: &Request) -> ApiResult<Value> {
     let _ = request;
-    let block = active_block(api)?;
+    let active = plan::active(api)?;
     let response = CurrentPlan {
-        block: match block {
-            Some(block) => Some(block_of(api, &block)?),
-            None => None,
-        },
+        block: active.as_ref().map(block_of),
+        source: active
+            .as_ref()
+            .map(|active| active.source_name())
+            .unwrap_or_else(|| plan_source::BASELINE)
+            .to_string(),
+        is_baseline: active
+            .as_ref()
+            .map(|active| active.is_baseline())
+            .unwrap_or(false),
+        baseline_weeks: active.as_ref().and_then(|active| active.baseline_weeks),
         generated_at: api.generated_at(),
     };
     ok(&response)
 }
 
 /// The plan's day.
+///
+/// Today's session, with the core's label ("10 km · easy") and the core's
+/// wording ("Today — 10 km · easy").
 pub fn today(api: &Api, _request: &Request) -> ApiResult<Value> {
     let current = super::today(api)?;
-    let sessions = api
-        .store()
-        .plan_sessions_for_day(&current.to_iso())
-        .map_err(|error| api.store_error("the plan could not be read", &error))?;
-    let source = source_of_sessions(api, &sessions);
-    let mut rendered: Vec<PlanSession> = Vec::new();
-    for session in sessions.iter() {
-        rendered.push(session_of(api, session, &source, current)?);
-    }
+    let active = plan::active_or_empty(api)?;
+    let facts = plan::run_facts(api, "0000-01-01", &current.to_iso())?;
+    let results = stride_core::plan::results_of_at(&active.block, &facts, current);
+    let planned = results
+        .iter()
+        .find(|result| result.session.date == current)
+        .map(|result| plan::session_of(&active, result, current));
     let response = PlanToday {
         date: current.to_iso(),
-        session: rendered.into_iter().next(),
+        session: planned,
         generated_at: api.generated_at(),
     };
     ok(&response)
 }
 
 /// The plan's week.
+///
+/// The seven days: each with its date, its kind, its target — the core's
+/// rendered text, not a number the app has to format — and the plain
+/// status of the session. The week's counts are the api's count of the
+/// core's statuses.
 pub fn week(api: &Api, request: &Request) -> ApiResult<Value> {
     let day = match request.query.get("date") {
         Some(text) if !text.trim().is_empty() => core_date(text.trim())?,
@@ -81,52 +102,86 @@ pub fn week(api: &Api, request: &Request) -> ApiResult<Value> {
     };
     let start = week_start(day);
     let end = start.add_days(6);
-    let sessions = api
-        .store()
-        .plan_sessions_between(&start.to_iso(), &end.to_iso())
-        .map_err(|error| api.store_error("the plan could not be read", &error))?;
-    let source = source_of_sessions(api, &sessions);
-    let mut rendered: Vec<PlanSession> = Vec::new();
-    for session in sessions.iter() {
-        rendered.push(session_of(api, session, &source, day)?);
-    }
-    let done = rendered
+    let active = plan::active_or_empty(api)?;
+    let facts = plan::run_facts(api, "0000-01-01", &end.to_iso())?;
+
+    let results = stride_core::plan::results_of_at(&active.block, &facts, day);
+    let rendered: Vec<PlanSession> = results
         .iter()
-        .filter(|session| session.status == "done")
-        .count();
-    let target = {
-        let metres: f64 = rendered
+        .filter(|result| result.session.date >= start && result.session.date <= end)
+        .map(|result| plan::session_of(&active, result, day))
+        .collect();
+
+    // The week's counts: the api counts the core's statuses, so the app
+    // never counts the plan's sessions itself.
+    let counts = Counts {
+        done: rendered
             .iter()
-            .filter_map(|session| session.target.as_ref().and_then(|value| value.raw))
-            .sum();
-        render::distance(if metres > 0.0 { Some(metres) } else { None })
+            .filter(|session| session.status == "done")
+            .count(),
+        planned: rendered
+            .iter()
+            .filter(|session| session.status == "planned")
+            .count(),
+        not_done: rendered
+            .iter()
+            .filter(|session| session.status == "not_done")
+            .count(),
     };
-    let block_name = block_name_of(api, &sessions)?;
+
+    // The week's target: the sum of the sessions' targets, as the core
+    // renders it.
+    let metres: f64 = render::total_of(
+        rendered
+            .iter()
+            .filter_map(|session| session.target.as_ref().and_then(|value| value.raw)),
+    );
+    let target = render::distance(if metres > 0.0 { Some(metres) } else { None });
+
     let response = PlanWeek {
-        block_name,
-        source,
+        block_name: active.name.clone(),
+        source: active.source_name().to_string(),
         week_start: start.to_iso(),
         week_end: end.to_iso(),
+        today: super::today(api)?.to_iso(),
         target,
-        adherence: Some(Adherence {
-            done,
-            planned: rendered.len(),
+        adherence: Some(crate::dto::Adherence {
+            done: counts.done,
+            planned: counts.done + counts.planned + counts.not_done,
         }),
+        counts,
         sessions: rendered,
     };
     ok(&response)
 }
 
 /// The plan's blocks.
+///
+/// The blocks that were written down. The baseline is not one of them: it
+/// is inferred, and it is never stored.
 pub fn blocks(api: &Api, request: &Request) -> ApiResult<Value> {
     let _ = request;
     let blocks = api
         .store()
         .plan_blocks()
         .map_err(|error| api.store_error("the plan could not be read", &error))?;
-    let mut rendered: Vec<PlanBlock> = Vec::new();
+    let mut rendered: Vec<PlanBlock> = Vec::with_capacity(blocks.len());
     for block in blocks.iter() {
-        rendered.push(block_of(api, block)?);
+        let sessions = api
+            .store()
+            .plan_sessions_for_block(block.id)
+            .map_err(|error| api.store_error("the plan could not be read", &error))?;
+        rendered.push(PlanBlock {
+            id: Some(block.id),
+            name: block.name.clone(),
+            source: block.source.clone(),
+            start_date: block.start_date.clone(),
+            end_date: block.end_date.clone(),
+            goal: block.goal.clone(),
+            status: block.status.clone(),
+            session_count: sessions.len(),
+            is_baseline: block.source == plan_source::BASELINE,
+        });
     }
     let response = PlanBlocks {
         blocks: rendered,
@@ -136,28 +191,44 @@ pub fn blocks(api: &Api, request: &Request) -> ApiResult<Value> {
 }
 
 /// The plan's sources.
+///
+/// The three sources and which one is in force. **The source is always
+/// named** — there is no answer that leaves the app without saying where
+/// the plan came from.
 pub fn sources(api: &Api, request: &Request) -> ApiResult<Value> {
     let _ = request;
     let blocks = api
         .store()
         .plan_blocks()
         .map_err(|error| api.store_error("the plan could not be read", &error))?;
-    let mut rendered: Vec<PlanSource> = Vec::new();
-    for source in SOURCES.iter() {
-        let of_source: Vec<&StoredBlock> = blocks
+    let active = plan::active(api)?;
+    let mut rendered: Vec<PlanSource> = Vec::with_capacity(plan::SOURCES.len());
+    for source in plan::SOURCES.iter() {
+        let name = source.as_str();
+        let of_source: Vec<&stride_store::PlanBlock> =
+            blocks.iter().filter(|block| block.source == name).collect();
+        let stored_active = of_source
             .iter()
-            .filter(|block| block.source == *source)
-            .collect();
+            .any(|block| block.status == plan_status::ACTIVE);
+        // The baseline is in force when the app inferred it — there is no
+        // block of it in the store, and it is in force all the same.
+        let inferred = active
+            .as_ref()
+            .map(|active| active.is_baseline())
+            .unwrap_or(false);
         rendered.push(PlanSource {
-            name: source.to_string(),
+            name: name.to_string(),
             blocks: of_source.len(),
-            active: of_source
-                .iter()
-                .any(|block| block.status == plan_status::ACTIVE),
+            active: stored_active || (inferred && name == plan_source::BASELINE),
         });
     }
     let response = PlanSources {
         sources: rendered,
+        active_source: active
+            .as_ref()
+            .map(|active| active.source_name())
+            .unwrap_or_else(|| plan_source::BASELINE)
+            .to_string(),
         generated_at: api.generated_at(),
     };
     ok(&response)
@@ -166,91 +237,58 @@ pub fn sources(api: &Api, request: &Request) -> ApiResult<Value> {
 /// The adherence: how many of the planned sessions were run.
 ///
 /// A **count**, never a percentage: the contract drops the old adherence
-/// percentage, and "7 of 8 sessions run" is a fact.
+/// percentage, and "7 of 8 sessions run" is a fact. While the plan is
+/// paused the count is suspended, and the answer says so.
 pub fn adherence(api: &Api, request: &Request) -> ApiResult<Value> {
     let _ = request;
     let current = super::today(api)?;
-    let block = active_block(api)?;
-    let sessions = match &block {
-        Some(block) => api
-            .store()
-            .plan_sessions_for_block(block.id)
-            .map_err(|error| api.store_error("the plan could not be read", &error))?,
-        None => Vec::new(),
-    };
-    let source = block
-        .as_ref()
-        .map(|block| block.source.clone())
-        .unwrap_or_else(|| plan_source::TYPED.to_string());
-    let mut rendered: Vec<PlanSession> = Vec::new();
-    for session in sessions.iter() {
-        rendered.push(session_of(api, session, &source, current)?);
-    }
-    let done = rendered
-        .iter()
-        .filter(|session| session.status == "done")
-        .count();
+    let active = plan::active_or_empty(api)?;
+    let facts = plan::run_facts(api, "0000-01-01", &current.to_iso())?;
+    let count = stride_core::plan::adherence_of_at(&active.block, &facts, current);
 
-    let mut weeks: Vec<AdherenceWeek> = Vec::new();
-    for session in rendered.iter() {
-        let start = match core_date(&session.date) {
-            Ok(date) => week_start(date),
-            Err(_) => continue,
-        };
-        let key = start.to_iso();
-        match weeks.iter_mut().find(|week| week.week_start == key) {
-            Some(week) => {
-                week.planned += 1;
-                if session.status == "done" {
-                    week.done += 1;
-                }
-            }
-            None => weeks.push(AdherenceWeek {
-                week_start: key,
-                done: usize::from(session.status == "done"),
-                planned: 1,
-            }),
-        }
+    // The weeks of the block, each counted by the engine.
+    let mut by_week: BTreeMap<String, Vec<stride_core::plan::PlanSession>> = BTreeMap::new();
+    for session in active.block.sessions.iter() {
+        by_week
+            .entry(week_start(session.date).to_iso())
+            .or_default()
+            .push(session.clone());
     }
+    let mut weeks: Vec<AdherenceWeek> = Vec::with_capacity(by_week.len());
+    for (week, sessions) in by_week.iter() {
+        let week_block = CoreBlock::new(active.source, active.name.clone(), sessions.clone());
+        let week_count = stride_core::plan::adherence_of_at(&week_block, &facts, current);
+        let counts = plan::counts_of(week_count);
+        weeks.push(AdherenceWeek {
+            week_start: week.clone(),
+            done: counts.done,
+            planned: counts.done + counts.planned + counts.not_done,
+            not_done: counts.not_done,
+        });
+    }
+
+    let reason = crate::routes::settings::suspension_reason(api, current)?;
     let response = PlanAdherence {
-        adherence: Adherence {
-            done,
-            planned: rendered.len(),
-        },
+        adherence: plan::adherence_of(count),
+        counts: plan::counts_of(count),
         weeks,
+        suspended: reason.is_some(),
+        suspension_reason: reason,
         generated_at: api.generated_at(),
     };
     ok(&response)
 }
 
 /// The plan's results: every session, and what happened.
+///
+/// The intent, the actual, and the difference between the two — stated
+/// neutrally, and only when there is a difference to state.
 pub fn results(api: &Api, request: &Request) -> ApiResult<Value> {
     let _ = request;
     let current = super::today(api)?;
-    let block = active_block(api)?;
-    let sessions = match &block {
-        Some(block) => api
-            .store()
-            .plan_sessions_for_block(block.id)
-            .map_err(|error| api.store_error("the plan could not be read", &error))?,
-        None => Vec::new(),
-    };
-    let source = block
-        .as_ref()
-        .map(|block| block.source.clone())
-        .unwrap_or_else(|| plan_source::TYPED.to_string());
-    let mut rendered: Vec<PlanResult> = Vec::new();
-    for session in sessions.iter() {
-        let read = session_of(api, session, &source, current)?;
-        rendered.push(PlanResult {
-            session_id: session.id,
-            date: read.date,
-            session_type: read.session_type,
-            status: read.status,
-            target: read.target,
-            actual: read.actual,
-        });
-    }
+    let active = plan::active_or_empty(api)?;
+    let facts = plan::run_facts(api, "0000-01-01", &current.to_iso())?;
+    let rendered: Vec<PlanResult> = plan::results_of(&active, &facts, current);
     let response = PlanResults {
         results: rendered,
         generated_at: api.generated_at(),
@@ -260,50 +298,32 @@ pub fn results(api: &Api, request: &Request) -> ApiResult<Value> {
 
 /// Import a plan.
 ///
-/// The plan arrives as a block and its sessions, and it is written through
-/// the store — so importing the same plan twice updates the plan that is
-/// already there instead of adding a second one.
+/// Two ways in:
+///
+/// * **a file** — markdown, CSV, JSON, or the Garmin workout schedule. The
+///   plan is recorded as **prescribed**: it was written down somewhere
+///   else.
+/// * **a plan the athlete typed in** — the app's own form. It is recorded
+///   as **typed**.
+///
+/// A file that cannot be read is **refused**: the import says which line it
+/// could not read, and **nothing is written**. A session whose workout the
+/// vocabulary does not know is **unclassified** — it is never given a kind
+/// it did not have.
 pub fn import(api: &Api, request: &Request) -> ApiResult<Value> {
     let body = match &request.body {
         Some(body) => body.clone(),
         None => return Err(ApiError::bad_request("the import has no plan in it")),
     };
-    let name = body
-        .get("name")
-        .and_then(|value| value.as_str())
-        .map(|text| text.trim().to_string())
-        .filter(|text| !text.is_empty())
-        .ok_or_else(|| ApiError::bad_request("the plan has no name"))?;
-    let source = body
-        .get("source")
-        .and_then(|value| value.as_str())
-        .map(|text| text.trim().to_string())
-        .filter(|text| SOURCES.contains(&text.as_str()))
-        .unwrap_or_else(|| plan_source::TYPED.to_string());
-    let default_start = super::today(api)?.to_iso();
-    let start_date = body
-        .get("start_date")
-        .and_then(|value| value.as_str())
-        .map(|text| text.trim().to_string())
-        .filter(|text| !text.is_empty())
-        .unwrap_or(default_start);
-    let start_date = core_date(&start_date)?.to_iso();
-    let end_date = match body.get("end_date").and_then(|value| value.as_str()) {
-        Some(text) if !text.trim().is_empty() => Some(core_date(text.trim())?.to_iso()),
-        _ => None,
-    };
-    let goal = body
-        .get("goal")
-        .and_then(|value| value.as_str())
-        .map(|text| text.trim().to_string())
-        .filter(|text| !text.is_empty());
+
+    let (sessions, source, name, start_date, end_date, goal) = read_plan(api, &body)?;
 
     let block = NewPlanBlock {
         name: name.clone(),
-        source: source.clone(),
+        source: source.to_string(),
         start_date: start_date.clone(),
-        end_date,
-        goal,
+        end_date: end_date.clone(),
+        goal: goal.clone(),
         status: plan_status::ACTIVE.to_string(),
         notes: None,
         created_at: api.now(),
@@ -314,56 +334,26 @@ pub fn import(api: &Api, request: &Request) -> ApiResult<Value> {
         .map_err(|error| api.store_error("the plan could not be written", &error))?;
 
     let mut written = 0usize;
-    if let Some(sessions) = body.get("sessions").and_then(|value| value.as_array()) {
-        for session in sessions.iter() {
-            let date = session
-                .get("date")
-                .and_then(|value| value.as_str())
-                .map(|text| text.trim().to_string())
-                .filter(|text| !text.is_empty())
-                .ok_or_else(|| ApiError::bad_request("a session has no date"))?;
-            let date = core_date(&date)?.to_iso();
-            let session_type = session
-                .get("session_type")
-                .and_then(|value| value.as_str())
-                .map(|text| text.trim().to_string())
-                .filter(|text| !text.is_empty())
-                .unwrap_or_else(|| "unclassified".to_string());
-            let planned = NewPlanSession {
-                block_id,
-                date,
-                session_type,
-                title: session
-                    .get("title")
-                    .and_then(|value| value.as_str())
-                    .map(|text| text.to_string()),
-                details: session
-                    .get("details")
-                    .and_then(|value| value.as_str())
-                    .map(|text| text.to_string()),
-                target_distance_m: session
-                    .get("target_distance_m")
-                    .and_then(|value| value.as_f64())
-                    .filter(|value| value.is_finite() && *value >= 0.0),
-                pace_low_s_km: session
-                    .get("pace_low_s_km")
-                    .and_then(|value| value.as_f64())
-                    .filter(|value| value.is_finite()),
-                pace_high_s_km: session
-                    .get("pace_high_s_km")
-                    .and_then(|value| value.as_f64())
-                    .filter(|value| value.is_finite()),
-            };
-            api.store()
-                .upsert_plan_session(&planned)
-                .map_err(|error| api.store_error("the plan could not be written", &error))?;
-            written += 1;
-        }
+    for session in sessions.iter() {
+        let planned = NewPlanSession {
+            block_id,
+            date: session.date.to_iso(),
+            session_type: session.session_type.clone(),
+            title: session.title.clone(),
+            details: session.details.clone(),
+            target_distance_m: session.target_distance_m,
+            pace_low_s_km: None,
+            pace_high_s_km: None,
+        };
+        api.store()
+            .upsert_plan_session(&planned)
+            .map_err(|error| api.store_error("the plan could not be written", &error))?;
+        written += 1;
     }
 
     let response = PlanImport {
         imported: true,
-        block_id,
+        block_id: Some(block_id),
         sessions: written,
         generated_at: api.generated_at(),
     };
@@ -372,100 +362,192 @@ pub fn import(api: &Api, request: &Request) -> ApiResult<Value> {
 
 // ------------------------------------------------------------------ helpers
 
-/// The block in force: the athlete's own plan, and then the inferred one.
-fn active_block(api: &Api) -> ApiResult<Option<StoredBlock>> {
-    for source in SOURCES.iter() {
-        let block = api
-            .store()
-            .active_plan_block(source)
-            .map_err(|error| api.store_error("the plan could not be read", &error))?;
-        if block.is_some() {
-            return Ok(block);
+/// One block, as it travels.
+fn block_of(active: &plan::ActivePlan) -> PlanBlock {
+    PlanBlock {
+        id: active.stored.as_ref().map(|block| block.id),
+        name: active.name.clone(),
+        source: active.source_name().to_string(),
+        start_date: active.start_date.clone(),
+        end_date: active.end_date.clone(),
+        goal: active.goal.clone(),
+        status: match active.stored.as_ref() {
+            Some(block) => block.status.clone(),
+            None => plan_status::ACTIVE.to_string(),
+        },
+        session_count: active.block.sessions.len(),
+        is_baseline: active.is_baseline(),
+    }
+}
+
+/// The plan in the request: the sessions, and where the plan came from.
+///
+/// The sessions are read whole before anything is written: a plan that
+/// cannot be read changes nothing.
+#[allow(clippy::type_complexity)]
+fn read_plan(
+    api: &Api,
+    body: &serde_json::Value,
+) -> ApiResult<(
+    Vec<FileSession>,
+    &'static str,
+    String,
+    String,
+    Option<String>,
+    Option<String>,
+)> {
+    let today = super::today(api)?;
+    let content = body
+        .get("content")
+        .and_then(|value| value.as_str())
+        .map(|text| text.to_string());
+
+    match content {
+        // A file the athlete imported.
+        Some(content) => {
+            let format = match body.get("format").and_then(|value| value.as_str()) {
+                Some(name) => planfile::Format::from_name(name).ok_or_else(|| {
+                    ApiError::bad_request("the format of the plan could not be read")
+                })?,
+                None => match body
+                    .get("file_name")
+                    .and_then(|value| value.as_str())
+                    .and_then(planfile::Format::from_file_name)
+                {
+                    Some(format) => format,
+                    None => {
+                        return Err(ApiError::bad_request(
+                            "the format of the plan could not be read",
+                        ))
+                    }
+                },
+            };
+            let plan = planfile::read(format, &content)?;
+            let name = body
+                .get("name")
+                .and_then(|value| value.as_str())
+                .map(|text| text.trim().to_string())
+                .filter(|text| !text.is_empty())
+                .or(plan.name)
+                .or_else(|| {
+                    body.get("file_name")
+                        .and_then(|value| value.as_str())
+                        .map(|text| text.trim().to_string())
+                        .filter(|text| !text.is_empty())
+                })
+                .unwrap_or_else(|| "Imported plan".to_string());
+            let start = plan
+                .start_date
+                .or_else(|| {
+                    body.get("start_date")
+                        .and_then(|value| value.as_str())
+                        .map(|text| text.trim().to_string())
+                        .filter(|text| !text.is_empty())
+                })
+                .unwrap_or_else(|| {
+                    plan.sessions
+                        .iter()
+                        .map(|session| session.date)
+                        .min()
+                        .map(|date| date.to_iso())
+                        .unwrap_or_else(|| today.to_iso())
+                });
+            let end = plan.end_date.or_else(|| {
+                body.get("end_date")
+                    .and_then(|value| value.as_str())
+                    .map(|text| text.trim().to_string())
+                    .filter(|text| !text.is_empty())
+            });
+            let goal = plan.goal.or_else(|| {
+                body.get("goal")
+                    .and_then(|value| value.as_str())
+                    .map(|text| text.trim().to_string())
+                    .filter(|text| !text.is_empty())
+            });
+            Ok((
+                plan.sessions,
+                plan_source::PRESCRIBED,
+                name,
+                start,
+                end,
+                goal,
+            ))
+        }
+        // A plan the athlete typed in.
+        None => {
+            let sessions = body
+                .get("sessions")
+                .and_then(|value| value.as_array())
+                .ok_or_else(|| ApiError::bad_request("the import has no plan in it"))?;
+            let mut read: Vec<FileSession> = Vec::with_capacity(sessions.len());
+            for (index, session) in sessions.iter().enumerate() {
+                let date = session
+                    .get("date")
+                    .and_then(|value| value.as_str())
+                    .map(|text| text.trim().to_string())
+                    .filter(|text| !text.is_empty())
+                    .ok_or_else(|| {
+                        ApiError::bad_request(format!(
+                            "the plan could not be read: session {} has no date",
+                            index + 1
+                        ))
+                    })?;
+                let date = core_date(&date)?;
+                let session_type = session
+                    .get("session_type")
+                    .and_then(|value| value.as_str())
+                    .map(|text| text.trim().to_ascii_lowercase())
+                    .filter(|text| !text.is_empty())
+                    .unwrap_or_else(|| "unclassified".to_string());
+                read.push(FileSession {
+                    date,
+                    session_type,
+                    title: session
+                        .get("title")
+                        .and_then(|value| value.as_str())
+                        .map(|text| text.to_string()),
+                    target_distance_m: session
+                        .get("target_distance_m")
+                        .and_then(|value| value.as_f64())
+                        .filter(|value| value.is_finite() && *value >= 0.0),
+                    details: session
+                        .get("details")
+                        .and_then(|value| value.as_str())
+                        .map(|text| text.to_string()),
+                });
+            }
+            if read.is_empty() {
+                return Err(ApiError::bad_request("the import has no plan in it"));
+            }
+            let name = body
+                .get("name")
+                .and_then(|value| value.as_str())
+                .map(|text| text.trim().to_string())
+                .filter(|text| !text.is_empty())
+                .unwrap_or_else(|| "Typed plan".to_string());
+            let start = body
+                .get("start_date")
+                .and_then(|value| value.as_str())
+                .map(|text| text.trim().to_string())
+                .filter(|text| !text.is_empty())
+                .unwrap_or_else(|| {
+                    read.iter()
+                        .map(|session| session.date)
+                        .min()
+                        .map(|date| date.to_iso())
+                        .unwrap_or_else(|| today.to_iso())
+                });
+            let end = body
+                .get("end_date")
+                .and_then(|value| value.as_str())
+                .map(|text| text.trim().to_string())
+                .filter(|text| !text.is_empty());
+            let goal = body
+                .get("goal")
+                .and_then(|value| value.as_str())
+                .map(|text| text.trim().to_string())
+                .filter(|text| !text.is_empty());
+            Ok((read, plan_source::TYPED, name, start, end, goal))
         }
     }
-    Ok(None)
-}
-
-/// One block, as it travels.
-fn block_of(api: &Api, block: &StoredBlock) -> ApiResult<PlanBlock> {
-    let sessions = api
-        .store()
-        .plan_sessions_for_block(block.id)
-        .map_err(|error| api.store_error("the plan could not be read", &error))?;
-    Ok(PlanBlock {
-        id: block.id,
-        name: block.name.clone(),
-        source: block.source.clone(),
-        start_date: block.start_date.clone(),
-        end_date: block.end_date.clone(),
-        goal: block.goal.clone(),
-        status: block.status.clone(),
-        session_count: sessions.len(),
-    })
-}
-
-/// The source the sessions of a block came from.
-fn source_of_sessions(api: &Api, sessions: &[StoredSession]) -> String {
-    if sessions.is_empty() {
-        return plan_source::TYPED.to_string();
-    }
-    let block_id = sessions[0].block_id;
-    let blocks = api.store().plan_blocks();
-    match blocks {
-        Ok(blocks) => blocks
-            .iter()
-            .find(|block| block.id == block_id)
-            .map(|block| block.source.clone())
-            .unwrap_or_else(|| plan_source::TYPED.to_string()),
-        Err(_) => plan_source::TYPED.to_string(),
-    }
-}
-
-/// The name of the block the sessions came from.
-fn block_name_of(api: &Api, sessions: &[StoredSession]) -> ApiResult<String> {
-    if sessions.is_empty() {
-        return Ok("No plan".to_string());
-    }
-    let block_id = sessions[0].block_id;
-    let blocks = api
-        .store()
-        .plan_blocks()
-        .map_err(|error| api.store_error("the plan could not be read", &error))?;
-    Ok(blocks
-        .iter()
-        .find(|block| block.id == block_id)
-        .map(|block| block.name.clone())
-        .unwrap_or_else(|| "No plan".to_string()))
-}
-
-/// One session, as it travels.
-fn session_of(
-    api: &Api,
-    session: &StoredSession,
-    source: &str,
-    current: Date,
-) -> ApiResult<PlanSession> {
-    let date = core_date(&session.date)?;
-    let runs = runs_on(api, &session.date)?;
-    let actual_distance_m = if runs.is_empty() {
-        None
-    } else {
-        Some(runs.iter().filter_map(|run| run.distance.raw).sum())
-    };
-    let status = session_status(date, current, source, !runs.is_empty());
-    Ok(PlanSession {
-        date: session.date.clone(),
-        session_type: session.session_type.clone(),
-        title: session.title.clone(),
-        sentence: session_sentence(
-            date,
-            current,
-            session.target_distance_m,
-            &session.session_type,
-        ),
-        target: render::distance(session.target_distance_m),
-        actual: render::distance(actual_distance_m),
-        status: status.to_string(),
-        source: source.to_string(),
-    })
 }

@@ -14,9 +14,11 @@
 
 pub mod app;
 pub mod data;
+pub mod export;
 pub mod insight;
 pub mod plan;
 pub mod series;
+pub mod settings;
 
 use std::collections::BTreeMap;
 
@@ -173,8 +175,8 @@ pub fn group_totals(api: &Api, key: &str) -> ApiResult<crate::dto::ActivityGroup
         .store()
         .activities_between(key, &end.to_iso())
         .map_err(|error| api.store_error("the runs could not be read", &error))?;
-    let distance_m: f64 = runs.iter().map(|run| run.distance_m).sum();
-    let moving_time_s: f64 = runs.iter().map(|run| run.moving_time_s).sum();
+    let distance_m: f64 = render::total_of(runs.iter().map(|run| run.distance_m));
+    let moving_time_s: f64 = render::total_of(runs.iter().map(|run| run.moving_time_s));
     Ok(crate::dto::ActivityGroupTotals {
         key: key.to_string(),
         distance: render::distance_of(distance_m),
@@ -222,7 +224,7 @@ pub fn distance_on(api: &Api, date: &str) -> ApiResult<f64> {
         .store()
         .activities_for_date(date)
         .map_err(|_| ApiError::internal("the runs could not be read"))?;
-    Ok(runs.iter().map(|run| run.distance_m).sum())
+    Ok(render::total_of(runs.iter().map(|run| run.distance_m)))
 }
 
 /// The median of a sample, as the core reads it.
@@ -230,57 +232,26 @@ pub fn median(values: &[f64]) -> Option<f64> {
     band::median(values)
 }
 
-/// The summary of a planned session — "10 km · easy".
-///
-/// The distance is the core's own rendering of it, and the session type is
-/// the plan's own vocabulary.
-pub fn session_summary(target_distance_m: Option<f64>, session_type: &str) -> String {
-    match render::distance(target_distance_m) {
-        Some(distance) => format!("{} · {session_type}", distance.text),
-        None => session_type.to_string(),
-    }
-}
-
 /// The sentence of a planned session.
 ///
 /// The wording is the catalogue's: "Today — 10 km · easy" for the day
-/// itself, "11 May 2026 — 8 km · easy" for another day. The catalogue's
-/// templates take the summary as an argument, and the summary is the
-/// distance the core's units render and the plan's own vocabulary.
-pub fn session_sentence(
-    day: Date,
-    today: Date,
-    target_distance_m: Option<f64>,
-    session_type: &str,
-) -> String {
-    let summary = session_summary(target_distance_m, session_type);
+/// itself, "11 May 2026 — 8 km · easy" for another day. The summary is the
+/// core's own label of the session, and the template is the core's
+/// catalogue: there is no wording of this crate's own here.
+pub fn session_sentence(day: Date, today: Date, summary: &str) -> String {
     if day == today {
-        return stride_core::strings::render("option.today_session", &[("summary", &summary)])
-            .unwrap_or(summary);
+        return stride_core::strings::render("option.today_session", &[("summary", summary)])
+            .unwrap_or_else(|| summary.to_string());
     }
     let label = day_label(day);
     stride_core::strings::render(
         "option.other_session",
-        &[("day", &label), ("summary", &summary)],
+        &[("day", &label), ("summary", summary)],
     )
-    .unwrap_or(summary)
+    .unwrap_or_else(|| summary.to_string())
 }
 
-/// Whether a planned session was run.
-///
-/// The status is computed on read: a stored verdict would be a judgement
-/// the plan forbids. A **baseline** never yields "not done" — an inferred
-/// baseline is not a prescription, and the plan says so.
-pub fn session_status(date: Date, today: Date, source: &str, ran: bool) -> &'static str {
-    if ran {
-        return "done";
-    }
-    if date < today && source != stride_store::model::plan_source::BASELINE {
-        return "not_done";
-    }
-    "planned"
-}
-
+/// The runs of every week, oldest first.
 /// The runs of every week, oldest first.
 pub fn weeks(runs: &[StoredActivity]) -> Vec<(Date, Vec<&StoredActivity>)> {
     let mut grouped: BTreeMap<String, Vec<&StoredActivity>> = BTreeMap::new();

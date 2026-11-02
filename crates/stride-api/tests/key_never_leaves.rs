@@ -72,6 +72,12 @@ fn calls() -> Vec<(&'static str, &'static str, Option<&'static str>)> {
         ("POST", "/auth/garmin/fit-import", Some("{}")),
         ("POST", "/auth/garmin/logout", Some("{}")),
         ("GET", "/calendar", None),
+        ("GET", "/settings", None),
+        ("POST", "/settings", Some("{}")),
+        ("POST", "/settings/export", Some("{}")),
+        ("POST", "/settings/delete", Some("{}")),
+        ("POST", "/settings/import", Some("{}")),
+        ("POST", "/activities/1/note", Some("{}")),
     ]
 }
 

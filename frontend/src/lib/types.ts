@@ -154,10 +154,27 @@ export interface PlanWeek {
   source: 'baseline' | 'prescribed' | 'typed'
   week_start: string
   week_end: string
+  /**
+   * The athlete's day, as the api counts it: "2026-05-13".
+   *
+   * The app highlights it inside the week, and the app does not keep a
+   * clock of its own for it: the api's day is the athlete's day, with
+   * their timezone in it.
+   */
+  today: string
   /** The week's target, as the core renders it: "40 km". */
   target: RenderedValue | null
   sessions: PlanSession[]
   adherence: { done: number; planned: number } | null
+  /**
+   * The week's counts, by status.
+   *
+   * Three numbers and never a percentage: a percentage hides the count,
+   * and the count is the fact. **The api counts them** — the app does not
+   * count the plan's sessions itself, because a count the app makes is a
+   * second answer to the same question.
+   */
+  counts: { done: number; planned: number; not_done: number }
 }
 
 /**
@@ -325,8 +342,7 @@ export interface ProgressInsight {
     heart_rate: RenderedValue | null
   }[]
   bests: { key: CatalogueKey; value: string; date: string }[]
-  consistency: { week_start: string; sessions: number }[]
-  /**
+  consistency: { week_start: string; sessions: number }[]  /**
    * The sessions a week, as the core averages and renders them: "3.4".
    *
    * The average and its rounding are the core's; the label beside it —
@@ -334,6 +350,13 @@ export interface ProgressInsight {
    */
   sessions_per_week: RenderedValue | null
   adherence: { done: number; planned: number } | null
+  /**
+   * How many more weeks the charts need before they can draw a trend.
+   *
+   * Null when they have what they need. **The number is the core's
+   * rule** — how long a trend is — and the app does not decide it.
+   */
+  weeks_needed: number | null
 }
 
 /** The connection and sync state. */
@@ -348,4 +371,238 @@ export interface HealthDaily {
   date: string
   generated_at: string
   stale: boolean
+}
+
+// ---------------------------------------------------------------- the app
+//
+// The settings, the connection and the app's own facts. These are the
+// shapes the Settings screen reads and the Connect screen writes.
+//
+// The route table is frozen (`docs/contract/api-paths.md`), and the routes
+// below are the ones the app needs and the table does not yet carry:
+// `/settings`, `/settings/export`, `/settings/delete` and
+// `/activities/{id}/note`. They are declared here because **the app's
+// declarations are the contract** — the api is held to this file by
+// `crates/stride-api/tests/frontend_shapes.rs` — and every one of them
+// has to be written into `docs/contract/api-paths.md` in the same pull
+// request.
+
+/**
+ * The connection: Garmin's state, the key's identifier, the last sync.
+ *
+ * **The key never crosses this boundary.** The answer carries the last
+ * four characters of the key and nothing else — an identifier the athlete
+ * can check against their own key, not a credential. The plan's rule is
+ * absolute: no endpoint returns the key, and no screen renders it.
+ */
+export interface ConnectionStatus {
+  /** Whether a key is held. */
+  connected: boolean
+  /** The method the key is used with: "personal_key". */
+  method: string | null
+  /** Where the key comes from: "personal_key", or "none". */
+  key_source: string
+  /**
+   * The last four characters of the key — and never the key.
+   *
+   * Null when no key is held.
+   */
+  key_last4: string | null
+  /** When the last sync succeeded. */
+  last_sync_at: string | null
+  /** When this answer was produced. */
+  generated_at: string
+}
+
+/** The answer to holding a key. */
+export interface KeyConnectResult {
+  /** Whether a key is held. */
+  connected: boolean
+  /** The method the key is used with. */
+  method: string | null
+  /** When this answer was produced. */
+  generated_at: string
+}
+
+/**
+ * The answer to checking a key.
+ *
+ * The key is checked and not held: the check exchanges one token and
+ * drops it. A key Garmin refuses is a typed failure, not a `false`.
+ */
+export interface KeyTestResult {
+  /** Whether Garmin accepted the key. */
+  ok: boolean
+  /** When this answer was produced. */
+  generated_at: string
+}
+
+/**
+ * The answer to importing a FIT file.
+ *
+ * A file that is already in the log is a duplicate, and a duplicate adds
+ * no row — it is reported, once, in one line.
+ */
+export interface FitImportResult {
+  /** Whether the file became a run. */
+  imported: boolean
+  /** Whether the file was a run that is already in the log. */
+  duplicate: boolean
+  /** The run the file is: the one it became, or the one already there. */
+  activity_id: number | null
+  /** The run's day, when the file was a duplicate. */
+  date: string | null
+  /** The run's distance, as the core renders it: "10.2 km". */
+  distance: RenderedValue | null
+  /** When this answer was produced. */
+  generated_at: string
+}
+
+/**
+ * The answer to importing a plan file.
+ *
+ * The plan's source is named by the block, not by the file: a file with no
+ * recognisable workout keywords is unclassified, never "easy".
+ */
+export interface PlanImportResult {
+  /** Whether the plan was imported. */
+  imported: boolean
+  /** The block that was written. */
+  block_id: number | null
+  /** How many sessions were written. */
+  sessions: number
+  /** When this answer was produced. */
+  generated_at: string
+}
+
+/**
+ * The answer to writing a note on a run.
+ *
+ * A note is the only free text the product stores, and it belongs to the
+ * run it is about — not to the settings.
+ */
+export interface NoteResult {
+  /** The note as it stands now: the athlete's own words. */
+  note: string | null
+  /** When this answer was produced. */
+  generated_at: string
+}
+
+/**
+ * The service's own health — and the app's version, for About.
+ *
+ * The version is the binary's, so it is asked for rather than written in
+ * the bundle: the rig and the phone are the same app, and they say the
+ * same version.
+ */
+export interface Health {
+  /** Whether the router is answering. */
+  ok: boolean
+  /** The service's name: "stride". */
+  service: string
+  /** The version: "0.9.0". */
+  version: string
+  /** Whether a Garmin key is held. */
+  garmin_connected: boolean
+  /** How many runs are stored. */
+  activities: number
+  /** How many wellness days are stored. */
+  wellness_days: number
+  /** How many planned sessions are stored. */
+  plan_sessions: number
+  /** When this answer was produced. */
+  generated_at: string
+}
+
+/**
+ * The weekly goal.
+ *
+ * **Blank means no goal.** There is no default: the app never invents a
+ * number the athlete did not write, and a goal of zero would read as a
+ * failure rather than as the absence of one.
+ */
+export interface SettingsGoal {
+  /** The goal, as the core renders it: "40 km". Null when there is none. */
+  value: RenderedValue | null
+  /**
+   * The goal in kilometres, for the field: 40.
+   *
+   * The unit is the API's and the core's; the app puts this number in a
+   * number field and sends it back unchanged. It never converts a
+   * distance of its own.
+   */
+  km: number | null
+}
+
+/**
+ * Why the plan is paused.
+ *
+ * The reason is one of three words, not free text: a run's note is the
+ * only free text the product stores.
+ */
+export type PauseReason = 'travel' | 'sick' | 'injured'
+
+/** A pause in the plan: a start, an end and a reason. */
+export interface SettingsPause {
+  /** The first day of the pause: "2026-05-12". */
+  start_date: string
+  /** The last day of the pause: "2026-05-19". */
+  end_date: string
+  /** The reason: travel, sick or injured. Null when there is none. */
+  reason: PauseReason | null
+}
+
+/** The storage: what is on the device, and how big it is. */
+export interface SettingsStorage {
+  /** The size of the database, as the host renders it: "2.4 MB". */
+  size: RenderedValue | null
+  /** How many runs are in it. */
+  activity_count: number
+  /** How many wellness days are in it. */
+  wellness_day_count: number
+  /** How many planned sessions are in it. */
+  plan_session_count: number
+  /** How many notes are in it — the only free text the app stores. */
+  note_count: number
+}
+
+/**
+ * The settings the athlete has set.
+ *
+ * The goal, the pause and the storage. The connection is not here: it
+ * lives on `/auth/status`, which owns it, and the app's version lives on
+ * `/health`, which owns it.
+ */
+export interface SettingsState {
+  /** The weekly goal. */
+  goal: SettingsGoal
+  /** The pause, when there is one. */
+  pause: SettingsPause | null
+  /** The storage. */
+  storage: SettingsStorage
+  /** When this answer was produced. */
+  generated_at: string
+}
+
+/** The answer to exporting a backup. */
+export interface SettingsExportResult {
+  /** Whether the backup was written. */
+  exported: boolean
+  /** How big it is, as the host renders it: "2.4 MB". */
+  size: RenderedValue | null
+  /** When this answer was produced. */
+  generated_at: string
+}
+
+/**
+ * The answer to deleting everything.
+ *
+ * The typed confirmation is the caller's: the word has to arrive with the
+ * request, so the answer can only say what happened.
+ */
+export interface SettingsDeleteResult {
+  /** Whether the data was deleted. */
+  deleted: boolean
+  /** When this answer was produced. */
+  generated_at: string
 }

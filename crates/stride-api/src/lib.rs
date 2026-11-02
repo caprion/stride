@@ -16,6 +16,8 @@
 //! | [`error`] | the typed failures and the envelope they travel in |
 //! | [`ffi`] | the FFI surface: JSON in, JSON out, and the panic boundary |
 //! | [`routes`] | the handlers, and the helpers they share |
+//! | [`plan`] | the seam to the core's plan engine: the store's rows in, the core's answers out |
+//! | [`planfile`] | the plan files the athlete may import: markdown, CSV, JSON, the Garmin schedule |
 //!
 //! ## The rules this crate keeps
 //!
@@ -119,6 +121,8 @@
 pub mod dto;
 pub mod error;
 pub mod ffi;
+pub mod plan;
+pub mod planfile;
 pub mod render;
 pub mod router;
 pub mod routes;

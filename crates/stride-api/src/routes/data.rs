@@ -621,8 +621,8 @@ pub fn stats_summary(api: &Api, request: &Request) -> ApiResult<Value> {
 /// The totals of a set of runs.
 fn totals<'a>(runs: impl IntoIterator<Item = &'a StoredActivity>) -> Totals {
     let runs: Vec<&StoredActivity> = runs.into_iter().collect();
-    let distance_m: f64 = runs.iter().map(|run| run.distance_m).sum();
-    let moving_time_s: f64 = runs.iter().map(|run| run.moving_time_s).sum();
+    let distance_m: f64 = render::total_of(runs.iter().map(|run| run.distance_m));
+    let moving_time_s: f64 = render::total_of(runs.iter().map(|run| run.moving_time_s));
     let hearts: Vec<f64> = runs.iter().filter_map(|run| run.avg_hr).collect();
     let avg_pace_s_per_km = if distance_m > 0.0 {
         Some(units::round_pace_s_per_km(
@@ -634,7 +634,9 @@ fn totals<'a>(runs: impl IntoIterator<Item = &'a StoredActivity>) -> Totals {
     Totals {
         activity_count: runs.len() as i64,
         distance: render::distance(Some(distance_m)),
-        elevation_gain: render::elevation(Some(runs.iter().map(|run| run.elevation_gain_m).sum())),
+        elevation_gain: render::elevation(Some(render::total_of(
+            runs.iter().map(|run| run.elevation_gain_m),
+        ))),
         duration: render::duration(Some(moving_time_s)),
         avg_pace: render::pace(avg_pace_s_per_km),
         heart_rate: render::heart_rate(if hearts.is_empty() {
@@ -654,16 +656,17 @@ pub fn stats_weekly(api: &Api, request: &Request) -> ApiResult<Value> {
     let weeks: Vec<WeekTotals> = super::weeks(&runs)
         .into_iter()
         .map(|(week, week_runs)| {
-            let distance_m: f64 = week_runs.iter().map(|run| run.distance_m).sum();
-            let moving_time_s: f64 = week_runs.iter().map(|run| run.moving_time_s).sum();
+            let distance_m: f64 = render::total_of(week_runs.iter().map(|run| run.distance_m));
+            let moving_time_s: f64 =
+                render::total_of(week_runs.iter().map(|run| run.moving_time_s));
             WeekTotals {
                 week_start: week.to_iso(),
                 activity_count: week_runs.len() as i64,
                 distance: render::distance(Some(distance_m)),
                 duration: render::duration(Some(moving_time_s)),
-                elevation_gain: render::elevation(Some(
-                    week_runs.iter().map(|run| run.elevation_gain_m).sum(),
-                )),
+                elevation_gain: render::elevation(Some(render::total_of(
+                    week_runs.iter().map(|run| run.elevation_gain_m),
+                ))),
                 avg_pace: render::pace(if distance_m > 0.0 {
                     Some(units::round_pace_s_per_km(
                         moving_time_s / (distance_m / 1000.0),
@@ -724,9 +727,9 @@ pub fn stats_elevation(api: &Api, request: &Request) -> ApiResult<Value> {
         .into_iter()
         .map(|(week, week_runs)| ElevationWeek {
             week_start: week.to_iso(),
-            elevation_gain: render::elevation(Some(
-                week_runs.iter().map(|run| run.elevation_gain_m).sum(),
-            )),
+            elevation_gain: render::elevation(Some(render::total_of(
+                week_runs.iter().map(|run| run.elevation_gain_m),
+            ))),
         })
         .collect();
     let response = ElevationStats {

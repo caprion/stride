@@ -59,6 +59,14 @@ pub struct Harness {
 impl Harness {
     /// The state, with an empty database.
     pub fn empty(prefix: &str) -> Harness {
+        Harness::with_config(prefix, Config::default())
+    }
+
+    /// The state, with a configuration of the caller's choosing.
+    ///
+    /// The export routes need a directory the host chose, and this is how
+    /// a test gives them one.
+    pub fn with_config(prefix: &str, config: Config) -> Harness {
         let dir = match ScratchDir::new(prefix) {
             Ok(dir) => dir,
             Err(_) => panic!("the scratch directory could be made"),
@@ -76,7 +84,7 @@ impl Harness {
         let garmin = Arc::new(FakeGarmin::new());
         let api = Arc::new(Api::with_transport(
             store.clone(),
-            Config::default(),
+            config,
             Arc::new(FixedClock::new(instant())),
             garmin.clone(),
         ));

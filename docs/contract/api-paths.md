@@ -40,6 +40,15 @@ reference only).
 | `/sync/{status,run,runs,history,settings}` | incremental sync |
 | `/auth/{status,garmin/personal-key,garmin/personal-key/test,garmin/fit-import,garmin/logout}` | the one credential |
 | `/calendar` | the local month calendar (activities per day) — **not** Garmin's scheduled-workout calendar |
+| `/settings` | the weekly goal, the pause and the storage — the inputs that change what the app says |
+| `/settings/export` | write a backup of the database |
+| `/settings/delete` | delete everything, with the typed confirmation the request carries |
+| `/settings/import` | read an export back into the database (the rig's own) |
+| `/activities/{id}/note` | the athlete's note on a run — the only free text the product stores |
+
+The last five rows arrived with the settings slice (PLAN.md §8, slice 8), and they are
+the first change to the frozen table since the freeze. They travel with the plan edit
+in the same pull request, as the freeze requires.
 
 ## Cut from the old table
 
@@ -120,9 +129,17 @@ Two rules hold for every shape below.
 | `/activities` | `activities: ActivitySummary[]`, `next_cursor: string \| null`, `generated_at: string` |
 | `/activities/{id}` | `ActivitySummary` and `splits: {index, distance, duration, heart_rate}[]`, `elevation: {distance, elevation}[]`, `samples: {offset_s, pace, heart_rate}[]`, `plan_line: {text} \| null`, `note: string \| null` |
 | `/physiology/vitals` | `date`, `generated_at`, `rest: {label, line}`, `vitals: {key, label, value_text, direction_text, deviation_text, travel_text, status_text, band}[]`, `history: {sleep, hrv, resting_hr}`, `patterns: {id, text, sample_size}[]` |
-| `/plan/week` | `block_name`, `source`, `week_start`, `week_end`, `target`, `sessions: {date, session_type, title, sentence, target, actual, status, source}[]`, `adherence: {done, planned} \| null` |
+| `/plan/week` | `block_name`, `source`, `week_start`, `week_end`, `today`, `target`, `sessions: {date, session_type, title, sentence, target, actual, status, source}[]`, `adherence: {done, planned} \| null`, `counts: {done, planned, not_done}` |
+| `/settings` | `goal: {value: {text, raw} \| null, km: number \| null}`, `pause: {start_date, end_date, reason} \| null`, `storage: {size, activity_count, wellness_day_count, plan_session_count, note_count}`, `generated_at` |
+| `/settings/export` | `exported: boolean`, `size: {text, raw} \| null`, `generated_at` |
+| `/settings/delete` | `deleted: boolean`, `generated_at` |
+| `/settings/import` | `activities`, `wellness`, `plan_blocks`, `plan_sessions`, `notes`, `rows`, `generated_at` |
+| `/activities/{id}/note` | `note: string \| null`, `generated_at` |
 | `/insights/today` | `generated_at`, `date`, `planned`, `options`, `last_run`, `distance_comparison: string \| null`, `week: {distance, sessions}` |
 | `/insights/progress` | `generated_at`, `headline`, `headline_note`, `weekly_volume`, `typical_week`, `pace_at_hr`, `bests`, `consistency`, `sessions_per_week`, `adherence` |
+| `/auth/status` | `connected`, `method`, `key_source`, `key_last4`, `last_sync_at`, `generated_at` |
+| `/auth/garmin/fit-import` | `imported`, `duplicate`, `activity_id`, `date`, `distance`, `generated_at` |
+| `/plan/import` | `imported`, `block_id`, `sessions`, `generated_at` |
 | `/compare` | `basis_text`, `metrics: {key, label_key, a, b, delta}[]`, `a: CompareRun`, `b: CompareRun`, `series: {a: {offset_s, pace, heart_rate}[], b: …}` |
 | `/compare/candidates` | a list of `{id, label, date, distance}` |
 | `/sync/status` | `last_sync_at: string \| null`, `last_error: string \| null`, `activity_count: number` |
@@ -143,3 +160,27 @@ The routes the app does not type — `/physiology/{daily,sleep,hrv,latest,source
 `/calendar` — are the router's own, and they are written down in
 `crates/stride-api/src/dto.rs`. They follow the same two rules: a domain
 value is a rendered value, and a sentence is a sentence.
+
+### The settings, the goal and the pause
+
+Four inputs change what the app says, and three of them live in the `notes` table
+(the schema is frozen, and it holds them already).
+
+- **The goal** is a weekly distance, in kilometres — the schema's own unit. **A
+  blank goal is no goal**: the answer carries `null`, never a zero that reads
+  as a failure. The rendered value's `raw` is in metres, like every other
+  distance the app draws, and `km` is the number the field holds.
+- **The pause** is a start, an end and one of the athlete's own three reasons —
+  `travel`, `sick` or `injured`. A reason outside that set is refused.
+- **While the plan is paused**, the adherence is suspended: `/plan/adherence`
+  carries `suspended: true` and the reason, and the count is not a verdict
+  about a week the athlete was not running.
+- **The note** is the only free text the product stores. A run carries one; a
+  new note replaces it.
+- **The storage** is what is on the device: the size of the database and the
+  number of runs, wellness days, planned sessions and notes in it. The size is
+  rendered by the **host** — the core has no unit for bytes, and a file's size
+  is not one of its values.
+- **The delete** refuses the call unless the request carries the word that
+  confirms it, and it deletes the data in one transaction. The sync cursors go
+  with it: they point at runs that are no longer there.

@@ -27,6 +27,57 @@ use stride_core::ValueUnit;
 
 use crate::dto::RenderedValue;
 
+/// The size of a file, as the host renders it: "2.4 MB".
+///
+/// **This is the host's rendering, not the core's.** The core has no unit
+/// for bytes — its units are metres, seconds, beats per minute and
+/// milliseconds — and a file's size is not one of its values. The app's own
+/// declaration says the size is rendered by the host, and this is the host.
+///
+/// The number beside the text is the size in bytes, for anything that
+/// wants to draw it.
+pub fn bytes(size: Option<u64>) -> Option<RenderedValue> {
+    let size = size?;
+    const KIBIBYTE: f64 = 1024.0;
+    const MEBIBYTE: f64 = 1024.0 * 1024.0;
+    const GIBIBYTE: f64 = 1024.0 * 1024.0 * 1024.0;
+    let value = size as f64;
+    let (text, _) = if value < KIBIBYTE {
+        (format!("{size} B"), value)
+    } else if value < MEBIBYTE {
+        let kilobytes = value / KIBIBYTE;
+        (format!("{} KB", round_whole(kilobytes)), value)
+    } else if value < GIBIBYTE {
+        let megabytes = value / MEBIBYTE;
+        (format!("{megabytes:.1} MB"), value)
+    } else {
+        let gigabytes = value / GIBIBYTE;
+        (format!("{gigabytes:.1} GB"), value)
+    };
+    Some(RenderedValue {
+        text,
+        raw: Some(value),
+    })
+}
+
+/// A number, with no decimals when it is whole and one when it is not.
+fn round_whole(value: f64) -> String {
+    if (value.fract()).abs() < f64::EPSILON {
+        format!("{}", value as i64)
+    } else {
+        format!("{value:.1}")
+    }
+}
+
+/// The total of a set of measurements.
+///
+/// **The total of nothing is zero**, and not a negative zero: an empty sum
+/// in Rust starts at `-0.0`, and the core renders that as "-0 km" — a
+/// number the athlete never ran.
+pub fn total_of(values: impl IntoIterator<Item = f64>) -> f64 {
+    values.into_iter().fold(0.0, |total, value| total + value)
+}
+
 /// A distance that is always there, as the core renders it.
 ///
 /// A run always has a distance, and a group always has a total, so the
