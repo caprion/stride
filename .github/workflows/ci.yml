@@ -33,6 +33,10 @@ jobs:
       # the unit tests and the six-width viewport matrix. A banned word or a
       # viewport regression must not merge green.
       - run: npm --prefix frontend ci
+      # The viewport matrix drives a real browser, and the runner has none.
+      # Without it the app's layout gate cannot run, and the app's layout is
+      # the product's central design constraint.
+      - run: npx --prefix frontend playwright-core install chromium
       # rust-toolchain.toml pins stable + rustfmt + clippy; rustup installs them.
       - run: bash scripts/gate.sh
 
