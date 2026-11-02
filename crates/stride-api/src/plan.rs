@@ -199,19 +199,14 @@ fn from_stored(api: &Api, stored: &StoredBlock) -> ApiResult<ActivePlan> {
 /// not a session, and the app never invents one.
 fn core_session(session: &StoredSession) -> Option<CoreSession> {
     let date = Date::parse(&session.date)?;
-    let mut core = CoreSession::new(
+    // The label is the core's own rendering of the session — "10 km · easy"
+    // — not the athlete's title. The title rides beside it in the DTO, never
+    // in the sentence.
+    Some(CoreSession::new(
         date,
         kind_of(&session.session_type),
         session.target_distance_m,
-    );
-    // The athlete's own title rides along in the label, and the core's
-    // rendering of the session is what the app reads.
-    if let Some(title) = session.title.as_ref() {
-        if !title.trim().is_empty() {
-            core.label = title.clone();
-        }
-    }
-    Some(core)
+    ))
 }
 
 /// The core's kind, from the store's word for it.
