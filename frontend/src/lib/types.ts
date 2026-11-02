@@ -387,6 +387,15 @@ export interface ZoneBand {
   label: string
   /** The band's range, in the core's words: "154-166 bpm". */
   range: string | null
+  /**
+   * The band's edges, as numbers — for **drawing** the band on a chart.
+   *
+   * The words are what the athlete reads; the numbers are what the chart
+   * draws. Both come from the core: the words are rendered there, and the
+   * edges are the same numbers it rendered them from.
+   */
+  from_bpm: number | null
+  to_bpm: number | null
   /** The time spent in the band, as the core renders it: "12 m". */
   time: RenderedValue | null
 }

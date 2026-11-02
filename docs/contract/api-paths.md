@@ -19,6 +19,7 @@ reference only).
 |---|---|
 | `/activities` | the feed, windowed by date |
 | `/activities/{id}` | one run |
+| `/activities/{id}/fit` | the run's **original FIT file** — the source of truth, byte for byte as Garmin served it | the athlete's own file, downloaded to their own machine; the app never uploads it anywhere |
 | `/physiology/{daily,sleep,hrv,vitals,latest,sources}` | Body inputs: the vitals and their directions (no score) |
 | `/fitness/{fingerprint,trends,zones}` | `fingerprint` is **endpoint-only**: the data is already synced, but it has **no screen**, and the OpenAPI document must say so |
 | `/stats/{summary,weekly,pace-trends,elevation,personal-records}` | Progress |
