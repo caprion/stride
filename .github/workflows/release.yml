@@ -48,11 +48,24 @@ jobs:
   gate:
     # The repository's gate: the same command a human runs. It must pass
     # before anything is built, and it needs no secret and no permission.
+    #
+    # The whole history, because the gate includes the history scan, and a
+    # shallow clone would let it walk one commit and call it clean.
     runs-on: ubuntu-latest
     permissions:
       contents: read
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      # The app's own gates are part of the gate.
+      - run: npm --prefix frontend ci
+      - run: npx --prefix frontend playwright-core install chromium
       - run: bash scripts/gate.sh
 
   apk:
