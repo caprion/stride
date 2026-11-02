@@ -1,0 +1,12 @@
+{
+  "route": "/sync/status",
+  "body": {
+    "last_sync_at": null,
+    "last_error": null,
+    "activity_count": 1,
+    "cursor": null,
+    "pulled": 0,
+    "skipped": 0,
+    "deleted": 0
+  }
+}

@@ -341,9 +341,12 @@ export function SettingsPage() {
 
         {/* -------------------------------------------------- about */}
         <SettingsGroup title={t('settings.about.heading')} testId="settings-about">
+          {/*
+            The version, in the app's own words and the api's own number:
+            the app holds no version of its own.
+          */}
           <SettingRow
-            label={t('settings.about.version')}
-            value={version ?? '—'}
+            label={t('status.version', { version: version ?? '—' })}
             testId="settings-about-version"
           />
           <SettingRow

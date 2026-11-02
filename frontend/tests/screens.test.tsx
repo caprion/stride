@@ -135,7 +135,7 @@ describe('Compare', () => {
       expect(container.querySelector('[data-testid="compare-metrics"]')).toBeTruthy(),
     )
     expect(container.querySelector('[data-testid="compare-basis"]')?.textContent).toContain(
-      'Same distance, 3 weeks apart',
+      'Different distances — read with care',
     )
     const pace = container.querySelector('[data-testid="compare-row-pace"]')?.textContent
     expect(pace).toContain('Pace')
@@ -153,13 +153,13 @@ describe('Compare', () => {
     // it: it asks the API for the other order, and shows the answer.
     const before =
       container.querySelector('[data-testid="compare-row-pace"]')?.textContent ?? ''
-    expect(before).toContain('−11 s/km')
+    expect(before).toContain('−1 s/km')
 
     await user.click(screen.getByTestId('compare-swap'))
 
     await waitFor(() =>
       expect(container.querySelector('[data-testid="compare-row-pace"]')?.textContent).toContain(
-        '+11 s/km',
+        '+1 s/km',
       ),
     )
   })
@@ -174,35 +174,32 @@ describe('Compare', () => {
     // (U+2212), and the app shows the sign it was given — it is neither
     // the em dash of an absent value nor the hyphen of a keyboard.
     const row = container.querySelector('[data-testid="compare-row-pace"]')?.textContent ?? ''
-    expect(row).toContain('−11 s/km')
-    expect(row).not.toContain('-11 s/km')
+    expect(row).toContain('−1 s/km')
+    expect(row).not.toContain('-1 s/km')
     expect(row).not.toContain('—')
 
     // The same rule for the other metrics: the core's sign, in the
     // metric's own unit.
     const distance = container.querySelector('[data-testid="compare-row-distance"]')
       ?.textContent ?? ''
-    expect(distance).toContain('+0.2 km')
+    expect(distance).toContain('+2.2 km')
 
     const time = container.querySelector('[data-testid="compare-row-time"]')?.textContent ?? ''
-    expect(time).toContain('−1 m')
+    expect(time).toContain('+12 m')
 
     const heart = container.querySelector('[data-testid="compare-row-hr"]')?.textContent ?? ''
-    expect(heart).toContain('−3 bpm')
+    expect(heart).toContain('+2 bpm')
   })
 
-  it('shows the plan’s line under the run as the core states it', async () => {
+  it('shows no plan line when the plan has no session on the run\'s day', async () => {
     const { container } = renderApp('/runs/101')
     await waitFor(() =>
-      expect(container.querySelector('[data-testid="activity-plan-line"]')).toBeTruthy(),
+      expect(container.querySelector('[data-testid="activity-detail"]')).toBeTruthy(),
     )
-    // The core's own statement of the result: what was run, against the
-    // target — "12.4 km of a 10 km target". The *gap* ("2.4 km more than the
-    // 10 km target") is the distance comparison, and it belongs on Today,
-    // where it appears only when the gap is beyond ten per cent.
-    expect(
-      container.querySelector('[data-testid="activity-plan-line"]')?.textContent,
-    ).toContain('12.4 km of a 10 km target')
+    // The plan's line under a run is the core's statement, and the plan
+    // has no session on the 10 May — so the router answers null and the
+    // screen says nothing. The app does not write a line of its own.
+    expect(container.querySelector('[data-testid="activity-plan-line"]')).toBeNull()
   })
 
   it('shows the values the API sent, word for word', async () => {

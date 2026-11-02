@@ -171,7 +171,7 @@ describe('About', () => {
 
     expect(
       container.querySelector('[data-testid="settings-about-version"]')?.textContent,
-    ).toContain('0.9.0')
+    ).toContain('Version 0.10.0')
     expect(
       container.querySelector('[data-testid="settings-about-licence"]')?.textContent,
     ).toContain('AGPL-3.0')

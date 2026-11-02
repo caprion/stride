@@ -32,6 +32,7 @@ import type {
   CompareResponse,
   ConnectionStatus,
   FitImportResult,
+  FitnessZones,
   Health,
   HealthDaily,
   KeyConnectResult,
@@ -50,6 +51,7 @@ import type {
   VitalsSnapshot,
 } from '../lib/types'
 import type { ApiErrorKind } from '../lib/transport'
+import compareAnswerData from './compare-answers.json'
 
 /**
  * A failure the fixture set answers with.
@@ -130,6 +132,14 @@ function buildNights(): {
 }
 
 const nights = buildNights()
+
+/**
+ * The nights, as the seed carries them.
+ *
+ * The api's test seeds a store from the fixture set, and the nights are
+ * what it seeds the wellness with.
+ */
+export const nightsFixture = nights
 
 /** The previous nights, the day itself excluded — the band's window. */
 const history = nights.slice(0, 29)
@@ -277,6 +287,14 @@ const planSessions: PlanSession[] = [
   },
 ]
 
+/**
+ * The plan's sessions, as the seed carries them.
+ *
+ * The api's test seeds a store from the fixture set, and these are the
+ * plan it seeds.
+ */
+export const planSessionsFixture: PlanSession[] = planSessions
+
 /** The plan's week. */
 export const planWeekFixture: PlanWeek = {
   block_name: 'Base block',
@@ -346,8 +364,8 @@ function activity(
   distance: RenderedValue,
   duration: RenderedValue,
   pace: RenderedValue,
-  story: string,
   group: typeof THIS_WEEK,
+  heartRate: RenderedValue = value('148 bpm', 148),
 ): ActivitySummary {
   return {
     id,
@@ -357,11 +375,15 @@ function activity(
     local_date: date,
     distance,
     duration,
-    heart_rate: value('148 bpm', 148),
+    heart_rate: heartRate,
     pace,
     elevation_gain: value('42 m', 42),
     group,
-    story,
+    // The story is the core's sentence, and the core has no story engine
+    // yet: **the router answers null, so the fixture answers null.** A
+    // sentence the app made up would be a second implementation of the
+    // core's words.
+    story: null,
     geo_points: [],
   }
 }
@@ -373,7 +395,6 @@ export const activityFixtures: ActivitySummary[] = [
     value('12.4 km', 12_400),
     value('1 h 7 m', 4_020),
     value('5:24 /km', 324.19),
-    '12.4 km, 2.4 km more than your usual Wednesday',
     THIS_WEEK,
   ),
   activity(
@@ -382,8 +403,8 @@ export const activityFixtures: ActivitySummary[] = [
     value('10.2 km', 10_200),
     value('55 m', 3_320),
     value('5:25 /km', 325.49),
-    '10.2 km, about your usual Saturday',
     THIS_WEEK,
+    value('146 bpm', 146),
   ),
   activity(
     103,
@@ -391,7 +412,6 @@ export const activityFixtures: ActivitySummary[] = [
     value('8.4 km', 8_400),
     value('42 m', 2_520),
     value('5:00 /km', 300),
-    '8.4 km, a bit shorter than your usual Wednesday',
     THIS_WEEK,
   ),
   activity(
@@ -400,7 +420,6 @@ export const activityFixtures: ActivitySummary[] = [
     value('5 km', 5_000),
     value('27 m', 1_620),
     value('5:24 /km', 324),
-    '5 km, your shortest run in three weeks',
     THIS_WEEK,
   ),
   activity(
@@ -409,7 +428,6 @@ export const activityFixtures: ActivitySummary[] = [
     value('16.1 km', 16_100),
     value('1 h 25 m', 5_072),
     value('5:15 /km', 315.03),
-    '16.1 km, your longest run this month',
     LONG_RUN_DAY,
   ),
   activity(
@@ -418,7 +436,6 @@ export const activityFixtures: ActivitySummary[] = [
     value('6.3 km', 6_300),
     value('35 m', 2_080),
     value('5:30 /km', 330.16),
-    '6.3 km, about your usual Monday',
     MONDAY,
   ),
 ]
@@ -467,7 +484,9 @@ export const activityDetailFixture: ActivityDetail = {
     { offset_s: 360, pace: value('5:26 /km', 326), heart_rate: value('141 bpm', 141) },
     { offset_s: 420, pace: value('5:36 /km', 336), heart_rate: value('139 bpm', 139) },
   ],
-  plan_line: { text: '12.4 km of a 10 km target' },
+  // The plan's line under the run is the core's statement — and the plan
+  // has no session on the run's day, so the router answers null.
+  plan_line: null,
   note: null,
 }
 
@@ -584,7 +603,7 @@ export const progressFixture: ProgressInsight = {
  * computed, because a fixture that computed its own values would be a
  * second implementation of the core's rules.
  */
-const SERIES_A: CompareSeriesPoint[] = [
+export const SERIES_A: CompareSeriesPoint[] = [
     { offset_s: 0, pace: { text: '5:17 /km', raw: 317 }, heart_rate: { text: '149 bpm', raw: 149 } },
     { offset_s: 60, pace: { text: '5:19 /km', raw: 319 }, heart_rate: { text: '151 bpm', raw: 151 } },
     { offset_s: 120, pace: { text: '5:22 /km', raw: 322 }, heart_rate: { text: '153 bpm', raw: 153 } },
@@ -627,7 +646,7 @@ const SERIES_A: CompareSeriesPoint[] = [
     { offset_s: 2340, pace: { text: '5:29 /km', raw: 329 }, heart_rate: { text: '140 bpm', raw: 140 } },
 ]
 
-const SERIES_B: CompareSeriesPoint[] = [
+export const SERIES_B: CompareSeriesPoint[] = [
     { offset_s: 0, pace: { text: '5:06 /km', raw: 306 }, heart_rate: { text: '146 bpm', raw: 146 } },
     { offset_s: 60, pace: { text: '5:08 /km', raw: 308 }, heart_rate: { text: '148 bpm', raw: 148 } },
     { offset_s: 120, pace: { text: '5:11 /km', raw: 311 }, heart_rate: { text: '150 bpm', raw: 150 } },
@@ -670,115 +689,44 @@ const SERIES_B: CompareSeriesPoint[] = [
     { offset_s: 2340, pace: { text: '5:18 /km', raw: 318 }, heart_rate: { text: '137 bpm', raw: 137 } },
 ]
 
-export const compareFixture: CompareResponse = {
-  basis_text: 'Same distance, 3 weeks apart',
-  metrics: [
-    {
-      key: 'distance',
-      label_key: 'vital.distance',
-      a: value('10.4 km', 10_400),
-      b: value('10.6 km', 10_600),
-      delta: value('+0.2 km', 200),
-    },
-    {
-      key: 'time',
-      label_key: 'vital.time',
-      a: value('55 m', 3_300),
-      b: value('54 m', 3_240),
-      delta: value('−1 m', -60),
-    },
-    {
-      key: 'pace',
-      label_key: 'vital.pace',
-      a: value('5:17 /km', 317),
-      b: value('5:06 /km', 306),
-      delta: value('−11 s/km', -11),
-    },
-    {
-      key: 'hr',
-      label_key: 'vital.heartRate',
-      a: value('149 bpm', 149),
-      b: value('146 bpm', 146),
-      delta: value('−3 bpm', -3),
-    },
-  ],
-  a: {
-    id: 102,
-    label: 'Run',
-    date: '2026-04-19',
-    distance: value('10.4 km', 10_400),
-    story: '10.4 km, about your usual Saturday',
-  },
-  b: {
-    id: 101,
-    label: 'Run',
-    date: '2026-05-10',
-    distance: value('10.6 km', 10_600),
-    story: '10.6 km, a little more than your usual Saturday',
-  },
-  series: {
-    a: SERIES_A,
-    b: SERIES_B,
-  },
+/**
+ * The compare answers, one for every pair the screen can ask about.
+ *
+ * They are **data**: the router's answers, written down, and the api's
+ * test holds that they are the router's, byte for byte, against the
+ * store the fixture set describes. The effort series are the two the
+ * fixture set has; the other runs have no samples in the store, so their
+ * series is empty — the way the router would answer it.
+ */
+const compareAnswers = compareAnswerData as Record<
+  string,
+  Omit<CompareResponse, 'series'>
+>
+
+/** The effort series each captured run has. */
+const SERIES_BY_RUN: Record<number, CompareSeriesPoint[]> = {
+  102: SERIES_A,
+  101: SERIES_B,
 }
 
 /**
- * The comparison the other way round.
+ * The answer for a pair.
  *
- * Asking for the newer run as A is a different question, and the API
- * answers it — the app does not swap the columns itself: the delta's sign
- * is the core's arithmetic, and the app cannot un-render a word.
+ * The pair is the app's question and the api's business: the app asks
+ * for two runs and shows the answer as it comes.
  */
-export const compareSwappedFixture: CompareResponse = {
-  basis_text: 'Same distance, 3 weeks apart',
-  metrics: [
-    {
-      key: 'distance',
-      label_key: 'vital.distance',
-      a: value('10.6 km', 10_600),
-      b: value('10.4 km', 10_400),
-      delta: value('−0.2 km', -200),
+export function compareAnswer(a: string, b: string): CompareResponse | undefined {
+  const answer = compareAnswers[`${a}:${b}`]
+  if (!answer) return undefined
+  const first = activityFixtures.find((run) => String(run.id) === a)
+  const second = activityFixtures.find((run) => String(run.id) === b)
+  return {
+    ...answer,
+    series: {
+      a: (first && SERIES_BY_RUN[first.id]) || [],
+      b: (second && SERIES_BY_RUN[second.id]) || [],
     },
-    {
-      key: 'time',
-      label_key: 'vital.time',
-      a: value('54 m', 3_240),
-      b: value('55 m', 3_300),
-      delta: value('+1 m', 60),
-    },
-    {
-      key: 'pace',
-      label_key: 'vital.pace',
-      a: value('5:06 /km', 306),
-      b: value('5:17 /km', 317),
-      delta: value('+11 s/km', 11),
-    },
-    {
-      key: 'hr',
-      label_key: 'vital.heartRate',
-      a: value('146 bpm', 146),
-      b: value('149 bpm', 149),
-      delta: value('+3 bpm', 3),
-    },
-  ],
-  a: {
-    id: 101,
-    label: 'Run',
-    date: '2026-05-10',
-    distance: value('10.6 km', 10_600),
-    story: '10.6 km, a little more than your usual Saturday',
-  },
-  b: {
-    id: 102,
-    label: 'Run',
-    date: '2026-04-19',
-    distance: value('10.4 km', 10_400),
-    story: '10.4 km, about your usual Saturday',
-  },
-  series: {
-    a: SERIES_B,
-    b: SERIES_A,
-  },
+  }
 }
 
 export const compareCandidatesFixture: CompareCandidate[] = activityFixtures.map((entry) => ({
@@ -794,11 +742,15 @@ export const syncStatusFixture: SyncStatus = {
   // Two hours ago, so the rig shows a fresh sync rather than a stale one.
   last_sync_at: new Date(Date.now() - 2 * 3_600_000).toISOString(),
   last_error: null,
-  activity_count: 42,
+  activity_count: 6,
+  // The delta pull: the cursor says where the next pull starts, and the
+  // three counts say what the last one did. **The store has no cursor
+  // yet**, so the router answers null and three zeroes — and so does the
+  // fixture.
   cursor: null,
-  pulled: null,
-  skipped: null,
-  deleted: null,
+  pulled: 0,
+  skipped: 0,
+  deleted: 0,
 }
 
 export const healthDailyFixture: HealthDaily = {
@@ -838,10 +790,55 @@ export const connectionEmptyFixture: ConnectionStatus = {
 }
 
 /** The service's own health — and the version, for About. */
+/**
+ * The heart-rate zones of a run.
+ *
+ * The bands the core computed, with the words and the numbers they came
+ * from: the chart draws the edges, and the legend reads the range.
+ */
+export const zonesFixture: FitnessZones = {
+  basis: 'moving',
+  max_heart_rate: value('182 bpm', 182),
+  zones: [
+    {
+      label: 'Z1',
+      range: '120-136 bpm',
+      time: value('4 m', 240),
+      from_bpm: 120,
+      to_bpm: 136,
+    },
+    {
+      label: 'Z2',
+      range: '137-151 bpm',
+      time: value('18 m', 1_080),
+      from_bpm: 137,
+      to_bpm: 151,
+    },
+    {
+      label: 'Z3',
+      range: '152-166 bpm',
+      time: value('12 m', 720),
+      from_bpm: 152,
+      to_bpm: 166,
+    },
+    {
+      label: 'Z4',
+      range: '167-180 bpm',
+      time: value('3 m', 180),
+      from_bpm: 167,
+      to_bpm: 180,
+    },
+  ],
+  without_heart_rate: value('1 m', 60),
+  unavailable: null,
+}
+
 export const healthFixture: Health = {
   ok: true,
   service: 'stride',
-  version: '0.9.0',
+  // The version is the binary's, and the binary's is the only version
+  // string in the app: the About card shows what `/health` says.
+  version: '0.10.0',
   garmin_connected: true,
   activities: 42,
   wellness_days: 29,
@@ -1083,11 +1080,11 @@ export const progressNoPlanFixture: ProgressInsight = {
 export const syncStatusStaleFixture: SyncStatus = {
   last_sync_at: new Date(Date.now() - 3 * 86_400_000).toISOString(),
   last_error: null,
-  activity_count: 42,
+  activity_count: 6,
   cursor: null,
-  pulled: null,
-  skipped: null,
-  deleted: null,
+  pulled: 0,
+  skipped: 0,
+  deleted: 0,
 }
 
 /**
@@ -1100,21 +1097,29 @@ export const syncStatusFreshFixture: SyncStatus = {
   last_sync_at: null,
   last_error: null,
   activity_count: 0,
+  // Nothing has been pulled, so there is no cursor and nothing to count.
   cursor: null,
-  pulled: null,
-  skipped: null,
-  deleted: null,
+  pulled: 0,
+  skipped: 0,
+  deleted: 0,
 }
 
-/** A sync that did not finish. */
+/**
+ * A sync that did not finish.
+ *
+ * The cursor stays where it was — a failed pull never advances it — and
+ * the counts are not known, because the pull never finished.
+ */
 export const syncStatusFailedFixture: SyncStatus = {
   last_sync_at: new Date(Date.now() - 2 * 3_600_000).toISOString(),
   last_error: 'Garmin refused the token',
-  activity_count: 42,
+  activity_count: 6,
+  // The cursor stays where it was — a failed pull never advances it — and
+  // the counts are the ones the last pull that finished made.
   cursor: null,
-  pulled: null,
-  skipped: null,
-  deleted: null,
+  pulled: 0,
+  skipped: 0,
+  deleted: 0,
 }
 
 /** The health of a sync window that has gone stale. */
@@ -1173,6 +1178,13 @@ export function fixtureResponse(
         : activitiesFixture
     case '/activities/101':
       return activityDetailFixture
+    case '/activities/101/fit':
+      // The run's original file: the header of a FIT file, byte for
+      // byte. The fixture set is synthetic, and a file is no less so
+      // than a run.
+      return [
+        14, 0, 0, 0, 16, 32, 0, 0, 46, 70, 73, 84, 0, 0,
+      ]
     case '/plan/week':
       if (
         variant === 'empty' ||
@@ -1193,7 +1205,7 @@ export function fixtureResponse(
     case '/compare': {
       // Which run is A is the API's business: the app asks, and the API
       // answers the question in that order.
-      return params['a'] === '101' ? compareSwappedFixture : compareFixture
+      return compareAnswer(params['a'] ?? '', params['b'] ?? '')
     }
     case '/compare/candidates':
       return compareCandidatesFixture
@@ -1204,6 +1216,8 @@ export function fixtureResponse(
       return syncStatusFixture
     case '/health/daily':
       return variant === 'stale' ? healthDailyStaleFixture : healthDailyFixture
+    case '/fitness/zones':
+      return zonesFixture
     case '/health':
       return healthFixture
     case '/auth/status':

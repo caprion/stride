@@ -21,9 +21,11 @@ import {
   YAxis,
 } from 'recharts'
 import { api } from '../lib/api'
+import { axisTicks } from '../lib/chart'
 import { formatCount, formatDateShort, renderedText } from '../lib/format'
 import { useStaleness } from '../lib/staleness'
 import { t } from '../i18n'
+import { axisTick } from '../components/ChartAxis'
 import { PageHeader } from '../ui/layout/PageHeader'
 
 /** A chart card with a fixed, legible height. */
@@ -100,6 +102,20 @@ export function ProgressPage() {
       label: formatDateShort(week.week_start),
     }))
 
+  /**
+   * The axes' labels.
+   *
+   * The volume's and the pace's are the core's own words — "38.6 km",
+   * "5:12 /km" — so every label carries its unit. The sessions are a
+   * count the api sends as a plain number, so their unit is the app's.
+   */
+  const volumeTicks = axisTicks(
+    volume.map((week) => ({ value: week.km, text: week.distanceText })),
+  )
+  const paceTicks = axisTicks(
+    pace.map((week) => ({ value: week.paceValue ?? null, text: week.paceText ?? null })),
+  )
+
   return (
     <div>
       <PageHeader
@@ -164,7 +180,14 @@ export function ProgressPage() {
                   tick={{ fontSize: 11, fill: '#61788D' }}
                   interval="preserveStartEnd"
                 />
-                <YAxis tick={{ fontSize: 11, fill: '#61788D' }} width={44} />
+                <YAxis
+                  ticks={volumeTicks.map((tick) => tick.value)}
+                  tick={axisTick(volumeTicks)}
+                  width={64}
+                  tickLine={false}
+                  axisLine={false}
+                  domain={['dataMin - 2', 'dataMax + 2']}
+                />
                 <Tooltip
                   formatter={(_value, _name, item) =>
                     (item?.payload as { distanceText?: string } | undefined)?.distanceText ?? ''
@@ -177,7 +200,7 @@ export function ProgressPage() {
                     strokeDasharray="4 3"
                   />
                 ) : null}
-                <Bar dataKey="km" fill="#1E5E96" />
+                <Bar name={t('vital.distance')} dataKey="km" fill="#1E5E96" />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -202,22 +225,25 @@ export function ProgressPage() {
                   interval="preserveStartEnd"
                 />
                 <YAxis
-                  tick={{ fontSize: 11, fill: '#61788D' }}
-                  width={44}
+                  ticks={paceTicks.map((tick) => tick.value)}
+                  tick={axisTick(paceTicks)}
+                  width={64}
+                  tickLine={false}
+                  axisLine={false}
                   domain={['dataMin - 10', 'dataMax + 10']}
                 />
                 <Tooltip
-                  formatter={(_value, name, item) => {
+                  formatter={(_value, _name, item) => {
                     const payload = item?.payload as
                       | { paceText?: string | null; hrText?: string | null }
                       | undefined
                     // The tooltip shows the core's words.
-                    if (name === 'pace') return payload?.paceText ?? ''
-                    return payload?.hrText ?? ''
+                    return payload?.paceText ?? ''
                   }}
                 />
                 <Line
                   type="monotone"
+                  name={t('vital.pace')}
                   dataKey="paceValue"
                   stroke="#1E5E96"
                   strokeWidth={2}
@@ -256,11 +282,21 @@ export function ProgressPage() {
                 />
                 <YAxis
                   tick={{ fontSize: 11, fill: '#61788D' }}
-                  width={36}
+                  width={64}
                   allowDecimals={false}
+                  label={{
+                    value: t('progress.consistency.unit'),
+                    angle: -90,
+                    position: 'insideLeft',
+                    style: { fontSize: 11, fill: '#61788D' },
+                  }}
                 />
                 <Tooltip />
-                <Bar dataKey="sessions" fill="#7BA8CD" />
+                <Bar
+                  name={t('progress.consistency.unit')}
+                  dataKey="sessions"
+                  fill="#7BA8CD"
+                />
               </BarChart>
             </ResponsiveContainer>
           </div>
