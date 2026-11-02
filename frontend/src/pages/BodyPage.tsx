@@ -36,8 +36,10 @@ export function BodyPage() {
   const nights = snapshot.history.sleep.length
 
   // No wellness yet: the screen says what is missing and what to do,
-  // and it draws no chart of nothing.
-  if (snapshot.vitals.length === 0) {
+  // and it draws no chart of nothing. The router always answers three
+  // vitals — one per kind — with null values when there is no data, so
+  // the empty state is the one where no vital has a value.
+  if (snapshot.vitals.every((vital) => vital.value_text === null)) {
     return (
       <div>
         <PageHeader
