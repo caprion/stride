@@ -240,3 +240,24 @@ mechanism that prevents it is the same in both cases: **the catalogue with
 its rules** (the export the frontend's lint reads) and **the contract's
 single owner** for a rule. When you find yourself writing a rule twice, you
 have found the bug — put it in the core and read it from there.
+
+## 9. The FIT file, the series, and a carried run
+
+**The FIT file is the source of truth.** The derived series — the per-second
+samples, the splits, the elevation profile — are computed from it *on read*.
+The `activity_samples` table is a **cache** of what the file derives, not a
+second source of truth, and its encoding is the store's business rather than
+the contract's.
+
+Two consequences, both settled here because the importer raised them:
+
+- **An empty `fit_blob` means "no file".** The previous version's database kept
+  no FIT file, so a run carried across from it arrives with an empty blob and
+  the honest hash of an empty file. The app never tries to decode an empty
+  blob; a run without a file shows what it has (its distances, its times, its
+  heart rates) and says it has no file.
+- **A run without a file is re-downloaded by the first pull.** The pull skips a
+  run it already holds **and has the file for**. A carried run keeps its Garmin
+  activity id, so the pull recognises it, sees that the file is missing, and
+  fetches the file once. After that the run is complete and is never fetched
+  again.
