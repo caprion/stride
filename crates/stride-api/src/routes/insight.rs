@@ -1,7 +1,6 @@
 //! The insight routes: Today, Progress, the chips of a run, and Compare.
 
 use serde_json::Value;
-use stride_core::plan::distance_comparison;
 use stride_core::statement;
 use stride_core::units;
 use stride_core::ValueUnit;
