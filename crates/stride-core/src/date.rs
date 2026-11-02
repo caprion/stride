@@ -57,6 +57,25 @@ impl Date {
         civil_from_days(self.days).2
     }
 
+    /// The day of the week.
+    ///
+    /// Monday is the first day: the athlete's week starts on Monday, and
+    /// "your usual Wednesday" is a fact about their own history.
+    pub fn weekday(&self) -> Weekday {
+        // 1970-01-01 was a Thursday, which is the fourth day of a week that
+        // starts on Monday.
+        let index = (self.epoch_day() + 3).rem_euclid(7);
+        match index {
+            0 => Weekday::Monday,
+            1 => Weekday::Tuesday,
+            2 => Weekday::Wednesday,
+            3 => Weekday::Thursday,
+            4 => Weekday::Friday,
+            5 => Weekday::Saturday,
+            _ => Weekday::Sunday,
+        }
+    }
+
     /// The date as `YYYY-MM-DD`.
     pub fn to_iso(&self) -> String {
         let (year, month, day) = civil_from_days(self.days);
@@ -93,6 +112,44 @@ impl std::str::FromStr for Date {
 
     fn from_str(text: &str) -> Result<Self, Self::Err> {
         Date::parse(text).ok_or(DateError)
+    }
+}
+
+/// The day of the week.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
+pub enum Weekday {
+    /// Monday.
+    Monday,
+    /// Tuesday.
+    Tuesday,
+    /// Wednesday.
+    Wednesday,
+    /// Thursday.
+    Thursday,
+    /// Friday.
+    Friday,
+    /// Saturday.
+    Saturday,
+    /// Sunday.
+    Sunday,
+}
+
+impl Weekday {
+    /// The day's name, as the app writes it: "Wednesday".
+    ///
+    /// The word is the catalogue's — the core owns every word the app says —
+    /// and the name is here because the date is here.
+    pub fn name(&self) -> &'static str {
+        let id = match self {
+            Weekday::Monday => "weekday.monday",
+            Weekday::Tuesday => "weekday.tuesday",
+            Weekday::Wednesday => "weekday.wednesday",
+            Weekday::Thursday => "weekday.thursday",
+            Weekday::Friday => "weekday.friday",
+            Weekday::Saturday => "weekday.saturday",
+            Weekday::Sunday => "weekday.sunday",
+        };
+        crate::strings::text(id).unwrap_or("")
     }
 }
 

@@ -253,17 +253,26 @@ mod tests {
             Some(distance) => distance,
             None => return,
         };
+        // The contract says the comparison is symmetric for over and under.
         let under = match distance(8.9) {
             Some(distance) => distance,
             None => return,
         };
-        assert_eq!(distance_comparison(under, target), None);
+        assert_eq!(
+            distance_comparison(under, target).as_deref(),
+            Some("1.1 km less than the 10 km target")
+        );
         // Exactly ten per cent is not "beyond" ten per cent.
         let edge = match distance(11.0) {
             Some(distance) => distance,
             None => return,
         };
         assert_eq!(distance_comparison(edge, target), None);
+        let under_edge = match distance(9.0) {
+            Some(distance) => distance,
+            None => return,
+        };
+        assert_eq!(distance_comparison(under_edge, target), None);
     }
 
     #[test]

@@ -507,27 +507,33 @@ fn result_line(ran: bool, actual_m: Option<f64>, target_m: Option<f64>) -> Optio
 
 /// The distance comparison, when there is one.
 ///
-/// The comparison states an overshoot neutrally: "2.4 km more than the 10 km
-/// target". It is absent when either value is absent, when the run did not
-/// reach the target, and when the gap is within ten per cent of the target.
-/// A run below the target is stated by the result line itself; the
-/// comparison is not a shortfall.
+/// The comparison states the gap neutrally: "2.4 km more than the 10 km
+/// target", and "1.4 km less than the 10 km target" for a run that fell
+/// short. It is absent when either value is absent and when the gap is within
+/// ten per cent of the target — 10.2 km against 10 km is not news, and neither
+/// more nor less is good or bad.
+///
+/// The contract says the comparison is symmetric for over and under, and this
+/// is the one place the rule lives: [`crate::statement::distance_comparison`]
+/// reaches it from here.
 pub fn distance_comparison(actual_m: Option<f64>, target_m: Option<f64>) -> Option<String> {
     let actual = actual_m?;
     let target = target_m?;
     if !actual.is_finite() || !target.is_finite() || actual < 0.0 || target <= 0.0 {
         return None;
     }
-    let gap = actual - target;
-    if gap <= 0.0 || gap / target <= DISTANCE_COMPARISON_THRESHOLD {
+    let gap = (actual - target).abs();
+    if gap / target <= DISTANCE_COMPARISON_THRESHOLD {
         return None;
     }
     let gap_text = format!("{} km", units::format_distance_km_short(gap));
     let target_text = format!("{} km", units::format_distance_km_short(target));
-    strings::render(
-        "statement.distance.more",
-        &[("gap", &gap_text), ("target", &target_text)],
-    )
+    let id = if actual >= target {
+        "statement.distance.more"
+    } else {
+        "statement.distance.less"
+    };
+    strings::render(id, &[("gap", &gap_text), ("target", &target_text)])
 }
 
 /// The distance comparison with the actual distance in front of it:
