@@ -134,6 +134,7 @@ while IFS= read -r line; do
 done < <(printf '%s\n' "$PHONE_LINES")
 
 while IFS= read -r line; do
+  file="${line%%$'\t'*}"
   text="${line#*$'\t'}"
   printf '%s' "$text" | grep -qP -- "$privacy_email_re" \
     && fail "an email address was added — ${line%%$'\t'*}"
