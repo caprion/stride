@@ -23,6 +23,7 @@ import { useStaleness } from '../lib/staleness'
 import type { ActivitySummary } from '../lib/types'
 import { t } from '../i18n'
 import { FitImport } from '../components/FitImport'
+import { RouteMap } from '../components/RouteMap'
 import { PageHeader } from '../ui/layout/PageHeader'
 
 /** The chips under a run's title. */
@@ -52,18 +53,32 @@ function ActivityRow({ activity }: { activity: ActivitySummary }) {
         data-testid={`run-${activity.id}`}
         className="tap block px-4 py-3 transition-colors hover:bg-surface-soft"
       >
-        <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
-          <span className="text-[14px] font-semibold text-ink">
-            {sportLabel(activity.sport_type)}
-          </span>
-          <span className="text-[12.5px] text-ink-faint">
-            {formatDateShort(activity.local_date)} · {renderedText(activity.duration)}
-          </span>
+        {/*
+          The row, and — at the wide widths, where there is room for it —
+          the route as a thumbnail. The thumbnail is the API's points
+          drawn small; there is no map server behind it.
+        */}
+        <div className="flex items-start gap-3">
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
+              <span className="text-[14px] font-semibold text-ink">
+                {sportLabel(activity.sport_type)}
+              </span>
+              <span className="text-[12.5px] text-ink-faint">
+                {formatDateShort(activity.local_date)} · {renderedText(activity.duration)}
+              </span>
+            </div>
+            <Chips activity={activity} />
+            {activity.story ? (
+              <p className="mt-1 line-clamp-2 text-[13px] text-ink-soft">{activity.story}</p>
+            ) : null}
+          </div>
+          {activity.geo_points.length > 1 ? (
+            <span className="hidden w-[104px] shrink-0 lg:block" data-testid="run-route">
+              <RouteMap points={activity.geo_points} variant="thumb" />
+            </span>
+          ) : null}
         </div>
-        <Chips activity={activity} />
-        {activity.story ? (
-          <p className="mt-1 line-clamp-2 text-[13px] text-ink-soft">{activity.story}</p>
-        ) : null}
       </Link>
       <div className="flex flex-wrap items-center gap-x-4 gap-y-1 px-4 pb-3 pt-1">
         <Link

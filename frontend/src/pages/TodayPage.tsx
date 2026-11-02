@@ -36,6 +36,7 @@ import { stalenessText } from '../lib/staleness'
 import type { PlanSession } from '../lib/types'
 import { t } from '../i18n'
 import { Sparkline } from '../components/Sparkline'
+import { RouteMap } from '../components/RouteMap'
 import { VitalRow } from '../components/VitalRow'
 import { PageHeader } from '../ui/layout/PageHeader'
 
@@ -272,6 +273,12 @@ export function TodayPage() {
       {/* --------------------------------------------------- the last run */}
       {lastRun ? (
         <section className="mt-3">
+          {/*
+            The last run, and — at the wide widths, where there is room
+            for it — a mini thumbnail of its route. The thumbnail is the
+            API's own points, drawn small; nothing goes anywhere to make
+            it.
+          */}
           <Link
             to={`/runs/${lastRun.id}`}
             className="tap card flex flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3 transition-shadow hover:shadow-lift"
@@ -286,6 +293,11 @@ export function TodayPage() {
                 {formatDateMedium(lastRun.local_date)}
               </span>
             </span>
+            {lastRun.geo_points.length > 1 ? (
+              <span className="hidden w-[112px] shrink-0 lg:block" data-testid="today-route">
+                <RouteMap points={lastRun.geo_points} variant="mini" />
+              </span>
+            ) : null}
           </Link>
         </section>
       ) : null}
