@@ -52,11 +52,11 @@ The repository's CI runs, on every pull request:
 
 - the Rust test suite, with `unwrap`, `expect` and `panic` denied in library code;
 - **corpus integrity** — the frozen FIT files match their recorded SHA-256, and the privacy gate
-  decodes every FIT position (the full golden-parity differ arrives with Slice 2);
+  decodes every FIT position, and the corpus's SHA-256s are checked;
 - a **secret scan** — no key, token, keystore or database file may be tracked or printed;
 - a **privacy scan** — no real coordinates, athlete names, device names or notes in tracked files.
 
-The **viewport matrix** (six-width UI checks) lands with Slice 9; it is not a gate yet.
+The **viewport matrix** — the UI checks at six widths, in a real browser — is a gate.
 
 Release-only: the check that the published APK carries the Rust core it was built with, and that it is
 signed with the certificate published in `android/assetlinks.json`. Both exist — they are `scripts/check_apk.py`

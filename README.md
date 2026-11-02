@@ -55,8 +55,8 @@ sync, the run in the encrypted database, the readout, and the phone showing it.
 |---|---|
 | design | [PLAN.md](PLAN.md) — features, architecture, delivery plan |
 | screens | [docs/plan.html](docs/plan.html) — every screen, every width, before any code |
-| the release | the **latest** one — v0.9.0 is the first v2 build, signed with the same certificate as v0.8.0 |
-| the code | 51 commits, every one behind a gate and an independent review |
+| the release | the **latest** one — v0.11.0 carries the delta pull, the computed zones, Compare for real and the one-time importer |
+| the code | every commit behind a gate and an independent review |
 
 The desktop is a **development rig and a community tool**, not a product surface: it is the same Rust
 core, one binary, and the phone app is the product.
@@ -81,11 +81,15 @@ survive.
 
 **But the history does not, by itself.** The v2 database is a new, frozen
 schema, and the previous version's tables are a different schema again.
-Installing v2 over v1 keeps the container and the key; **it does not carry
-the old rows across** — an importer is being built for that, and the release
-notes for the version that carries it say exactly what was carried and what
-was left behind. Until then, the old history is still in the file: nothing
-deletes it.
+Installing v2 over v1 keeps the container and the key; it does not, on its
+own, carry the old rows across.
+
+**Since v0.11.0 there is a one-time importer**, and it does: it detects the
+previous version's database by its tables, carries the runs, the notes, the
+wellness and the plan across in one transaction, and leaves everything that is
+derived from the FIT to be derived. The release notes say exactly what is
+carried and what is left behind — table by table. Nothing is moved and
+nothing is deleted: the old tables are still in the file afterwards.
 
 What Garmin restores, on a re-sync, is what Garmin's Personal API window
 holds — a bounded number of recent runs and a bounded number of recent
