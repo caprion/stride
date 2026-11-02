@@ -475,25 +475,27 @@ pub const CATALOGUE: [Entry; 103] = [
         template: "{distance}, {gap} less than your usual {weekday}",
     },
     Entry {
-        id: "story.slowest_split",
+        // The why: the run's own shape, the fact the detail knows and the
+        // feed does not.
+        id: "why.slowest_split",
         kind: StringKind::Statement,
         role: None,
         template: "the last {distance} were the slowest of the run",
     },
     Entry {
-        id: "story.slowest_split_one",
+        id: "why.slowest_split_one",
         kind: StringKind::Statement,
         role: None,
         template: "the last {distance} was the slowest of the run",
     },
     Entry {
-        id: "story.fastest_split",
+        id: "why.fastest_split",
         kind: StringKind::Statement,
         role: None,
         template: "the first {distance} were the fastest of the run",
     },
     Entry {
-        id: "story.fastest_split_one",
+        id: "why.fastest_split_one",
         kind: StringKind::Statement,
         role: None,
         template: "the first {distance} was the fastest of the run",
