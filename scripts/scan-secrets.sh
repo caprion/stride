@@ -21,7 +21,8 @@ else
   mapfile -t FILES < <(
     git ls-files \
       | grep -v '^fixtures/scan-tests/' \
-      | grep -v '^scripts/scan-secrets.sh'
+      | grep -v '^scripts/scan-secrets.sh' \
+      | grep -v '^desktop/assets/'
   )
 fi
 

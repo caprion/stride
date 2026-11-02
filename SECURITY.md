@@ -58,7 +58,7 @@ The repository's CI runs, on every pull request:
 
 The **viewport matrix** (six-width UI checks) lands with Slice 9; it is not a gate yet.
 
-Release-only, and landing with Slice 10 (the Android pipeline): the check that the published APK carries the
-Rust core it was built with, and the live security check against the trust model. Neither exists yet — the
-release workflow is a placeholder that runs the gate and refuses a tag off `master`. This paragraph says so, so
-that no reader is told about a gate that is not there.
+Release-only: the check that the published APK carries the Rust core it was built with, and that it is
+signed with the certificate published in `android/assetlinks.json`. Both exist — they are `scripts/check_apk.py`
+and the release workflow — and they produced v0.9.0. The live security check against the trust model is the
+rig's own test (`desktop/tests/`), not a release step.

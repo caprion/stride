@@ -8,6 +8,7 @@ one catches what the previous one cannot.
 | 1 | `bash scripts/gate.sh` | a broken build, a broken lint, a broken test, a broken corpus, a scanner that stopped working | CI, and every agent locally |
 | 2 | `scripts/scan-pr.sh` | a credential, a coordinate, a Garmin profile value, a free-text note, an unexplained dependency or an unprovenanced file **in the change itself** | CI, on every pull request |
 | 3 | the contract greps | a route that reintroduces pairing or a QR; string-built SQL; `unsafe` outside the FFI | CI (`scripts/check-contract-greps.sh`) |
+| 3b | the history scan | a credential, a coordinate, a name or a note that a commit added and a later commit removed | CI (`scripts/scan-history.sh`) |
 | 4 | an independent review | a **reachable** problem the tests do not cover — a wrong number, a wrong rounding, a missing guard, a false claim in a document | a second agent, on a clean clone, with the brief "report, do not fix" |
 | 5 | the integrator's own read of the diff | the things a reviewer and a scanner both miss: a design that does not match the plan, an API shape that drifted, a sentence that breaks the voice | the integrator, every time, before approving the merge |
 | 6 | the plan | a change that ought to be a plan change | a plan edit travels in the same pull request, or it does not happen |
@@ -38,7 +39,10 @@ Concretely, before a pull request is merged:
    changed, in `fixtures/README.md`. A corpus file changed without that log
    fails `scan-pr.sh`.
 4. **The repository history** carries no personal data — checked on every
-   ref, not just the tip. This repository was born clean; a regression here is
+   ref, not just the tip, by `scripts/scan-history.sh`, which walks every
+   commit on every ref and applies the same rules to the lines each commit
+   added. A leak that was added and later removed is exactly what the tree
+   scanners cannot see. This repository was born clean; a regression here is
    severe, because the previous implementation's public history carried the
    athlete's real coordinate pair, name and Garmin id.
 5. **The build threads never saw the key.** The Garmin Personal API key is

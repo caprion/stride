@@ -49,6 +49,24 @@ done
 bash scripts/scan-privacy.sh fixtures/scan-tests/privacy-good.txt
 echo "scanner self-tests passed"
 
+step "history scan"
+# Every commit on every ref, every added line, the same rules. A leak that was
+# added and later removed is exactly what the tree scanners cannot see.
+bash scripts/scan-history.sh
+
+step "the app: voice, types, tests and the viewport matrix"
+# The app's own gates: the voice lint, the type check, the unit tests and the
+# six-width viewport matrix. The voice is the product's central design
+# constraint, so it is machine-enforced and not merely reviewed.
+if [ ! -d frontend/node_modules ]; then
+  echo "gate: frontend/node_modules is missing - run: npm --prefix frontend ci" >&2
+  exit 1
+fi
+npm --prefix frontend run lint:voice
+npm --prefix frontend run typecheck
+npm --prefix frontend run test:unit
+npm --prefix frontend run test:viewport
+
 step "pull-request scanner self-test"
 bash scripts/scan-pr-self-test.sh
 

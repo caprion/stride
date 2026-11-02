@@ -106,7 +106,10 @@ privacy_check_line() {
 
   # The patterns live in variables: inside [[ =~ ]] an unquoted variable is
   # the pattern, and it may contain quotes without any escaping dance.
-  local RE_COORD='["'"'"']?([A-Za-z0-9_.-]+)["'"'"']?[[:space:]]*[:=][[:space:]]*["'"'"']?(-?[0-9]{1,3}\.[0-9]+)'
+  # The value may be a whole number - a coarse coordinate, where the key is
+  # the evidence. (The example is written without the key, because the key is
+  # what the rule looks for.)
+  local RE_COORD='["'"'"']?([A-Za-z0-9_.-]+)["'"'"']?[[:space:]]*[:=][[:space:]]*["'"'"']?(-?[0-9]{1,3}(\.[0-9]+)?)'
   # Two decimals is the floor. One decimal is mostly noise — a table of
   # medians reads as "3.0, 2.0" — and a real coordinate is written with
   # more precision than that. Two decimals still catches the coarse case
@@ -237,6 +240,36 @@ privacy_check_line() {
     done
   fi
 
+  # --- 5b. a name that may carry a place ---------------------------------
+  #
+  # Garmin's activity name is free text the athlete wrote, and it is where a
+  # city hides: "Morning run in Pune". The rule is an **allowlist**: the
+  # synthetic names the corpus uses, and nothing else. The files it applies to
+  # are the data files - the app's own source strings are chrome.
+  if [[ "$file" == *fixtures/* || "$file" == *.json || "$file" == *.csv ]]; then
+    # The pattern lives in a variable: an inline one with quotes inside it is
+    # parsed by the shell before the regex engine ever sees it, and the match
+    # silently stops working.
+    #
+    # Only Garmin's *activity* name: a bare "name" or "title" is far too
+    # common to be evidence of anything (an OpenAPI document is full of
+    # them), while "activityName" is free text the athlete wrote.
+    local RE_NAME='(^|[^A-Za-z0-9_])["'"'"']?(activityName|activity_name|activityTitle|activity_title)["'"'"']?[[:space:]]*[:=][[:space:]]*["'"'"']([^"'"'"']{2,})["'"'"']'
+    rest="$text"
+    while [[ "$rest" =~ $RE_NAME ]]; do
+      local m="${BASH_REMATCH[0]}" key="${BASH_REMATCH[2]}" value="${BASH_REMATCH[3]}"
+      rest="${rest#*"$m"}"
+      privacy_is_placeholder "$value" && continue
+      case "${value,,}" in
+        "bare array run"|"hidden run"|"morning run"|"trail loop"|"aerobic"|"cycling"|"gaps"|"hilly"|"hr gps run"|"low resolution"|"mixed run"|"no cadence"|"real garmin gap"|"real garmin nulls"|"real garmin run"|"short effort"|"treadmill"|"vendor coros export"|"vendor strava export"|"vendor wahoo export"|"stretching"|"yoga"|"walk"|"run") continue ;;
+      esac
+      # "Morning run in Pune" has a capitalised place word after a place word.
+      if [[ "$value" =~ (in|near|at)[[:space:]]+[A-Z] ]]; then
+        out+="$file: a name that may carry a place ('$value')"$'\n'
+      fi
+    done
+  fi
+
   # --- 6. an email address (reserved TLDs are not personal data) ---------
   local RE_EMAIL_RESERVED='[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.(invalid|example|test|localhost)'
   local RE_EMAIL='[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}'
@@ -257,7 +290,17 @@ privacy_check_line() {
   fi
 
   # --- 8. a free-text note ------------------------------------------------
-  if [[ "$frozen" != "1" && "$text" =~ $RE_NOTE ]]; then
+  # A note is the athlete's own free text. It is caught where a note would
+  # be *data* - the corpus, the tests, a data file - and not in the app's own
+  # source, where a note is a string the app shows and the voice lint governs.
+  # The athlete's data can only be in the **corpus** or in a **test**. The
+  # app's own source — including the app's own sample data — is the app's
+  # words, and the voice lint governs those.
+  local note_is_data=0
+  case "$file" in
+    fixtures/*|crates/*/tests/*|desktop/tests/*) note_is_data=1 ;;
+  esac
+  if [[ "$frozen" != "1" && "$note_is_data" == "1" && "$text" =~ $RE_NOTE ]]; then
     out+="$file: a free-text note — the only free text the product stores is the athlete's own; if this is a fixture, use a placeholder"$'\n'
   fi
 
@@ -270,7 +313,7 @@ privacy_check_line() {
 #   The cheap filter: only these lines can match. One grep for the file.
 # ---------------------------------------------------------------------------
 privacy_candidate_lines() {
-  grep -inE 'lat|lon|displayname|fullname|nickname|username|athlete_name|devicename|device_name|serialnumber|serial_number|external_id|unit_id|unitid|product_number|part_number|note|comment|remark|@|degree|semicircle|position' "$1" 2>/dev/null | cut -d: -f2-
+  grep -inE 'lat|lon|displayname|fullname|nickname|username|athlete_name|devicename|device_name|serialnumber|serial_number|external_id|unit_id|unitid|product_number|part_number|note|comment|remark|@|degree|semicircle|position|activityname|activity_name|activitytitle|activity_title' "$1" 2>/dev/null | cut -d: -f2-
 }
 
 # The lines that could hold a phone number: an international prefix, or a key

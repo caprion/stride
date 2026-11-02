@@ -55,7 +55,7 @@ sync, the run in the encrypted database, the readout, and the phone showing it.
 |---|---|
 | design | [PLAN.md](PLAN.md) — features, architecture, delivery plan |
 | screens | [docs/plan.html](docs/plan.html) — every screen, every width, before any code |
-| the release | **v0.9.0** — the first v2 build, signed with the same certificate as v0.8.0 |
+| the release | the **latest** one — v0.9.0 is the first v2 build, signed with the same certificate as v0.8.0 |
 | the code | 51 commits, every one behind a gate and an independent review |
 
 The desktop is a **development rig and a community tool**, not a product surface: it is the same Rust
@@ -65,22 +65,24 @@ core, one binary, and the phone app is the product.
 
 **If you were using Stride before, the app you had is still here.**
 
-v2 is being built, slice by slice, and until it is finished the phone app
-people already have is **v0.8.0** — the last v1 build. It is published in
-this repository, under the same release tag, and it is signed with the same
-certificate, so the v2 builds that follow will install over it on the phone
-without an uninstall and without losing your data.
+The **latest release** is the one to install:
 
 ```bash
-gh release download v0.9.0 --repo caprion/stride --pattern '*.apk'
+gh release download --repo caprion/stride --pattern '*.apk' -D .
 ```
+
+The release page is the authority on the artefact's name, its size and its
+SHA-256 — this file deliberately does not repeat them, because a document
+that copies a changing fact is a document that is wrong on the next release.
+
+Every release is signed with the same certificate, so a v2 build installs
+**over** the app you already have: no uninstall, and the data you already
+synced stays where it is.
 
 | | |
 |---|---|
-| the APK | **8.4 MB** (`stride-v0.8.0.apk`, arm64-v8a) |
-| the package | `app.stride.running` · versionName `0.8.0` |
-| SHA-256 | `095ff9cdfebccba9c470444d23bbdaa71b63ec28268835c9200f2c9a0e858f84` |
-| signing certificate | `87:E5:7B:81:F8:ED:7C:FE:1B:A6:0B:8F:B5:E2:E7:3F:B3:E6:41:C8:71:08:46:ED:87:74:1B:7B:9B:23:BC:26` |
+| the package | `app.stride.running` |
+| the signing certificate | `87:E5:7B:81:F8:ED:7C:FE:1B:A6:0B:8F:B5:E2:E7:3F:B3:E6:41:C8:71:08:46:ED:87:74:1B:7B:9B:23:BC:26` |
 
 Install it on the phone (allow installs from that source), open it, and paste
 your Garmin Personal API key into the one native screen that asks for it.

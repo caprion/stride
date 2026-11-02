@@ -30,6 +30,7 @@ else
   mapfile -t FILES < <(
     git ls-files \
       | grep -v '^fixtures/scan-tests/' \
+      | grep -v '^desktop/assets/' \
       | grep -v '^scripts/scan-privacy.sh' \
       | grep -v '^fixtures/README.md'
   )

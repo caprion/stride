@@ -112,7 +112,7 @@ done < <(printf '%s\n' "$ADDED")
 #     keyword, so the filter is on the shape of the numbers;
 #   * the *keyword* filter for the rules that need a key.
 CANDIDATES=$(printf '%s\n' "$ADDED" | grep -E '[0-9]\.[0-9]+[[:space:]]*,[[:space:]]*[-0-9]*[0-9]\.[0-9]+' || true)
-KEY_LINES=$(printf '%s\n' "$ADDED" | grep -iE 'lat|lon|displayname|fullname|nickname|username|athlete_name|devicename|device_name|serialnumber|serial_number|external_id|unit_id|unitid|product_number|part_number|note|comment|remark|@|degree|semicircle|position' || true)
+KEY_LINES=$(printf '%s\n' "$ADDED" | grep -iE 'lat|lon|displayname|fullname|nickname|username|athlete_name|devicename|device_name|serialnumber|serial_number|external_id|unit_id|unitid|product_number|part_number|note|comment|remark|@|degree|semicircle|position|activityname|activity_name|activitytitle|activity_title' || true)
 PHONE_LINES=$(printf '%s\n' "$ADDED" | grep -E '\+[0-9]{1,3}([-. ][0-9]{2,4}){1,4}|(phone|mobile|tel|telephone|phone_number|mobile_number)' || true)
 
 while IFS= read -r line; do

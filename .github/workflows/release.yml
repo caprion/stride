@@ -78,6 +78,11 @@ jobs:
     environment: release
     steps:
       - uses: actions/checkout@v4
+        with:
+          # The version code is the commit count, and a shallow clone counts
+          # one commit. A version code that never increases means an upgrade
+          # over an older install is a coincidence rather than a guarantee.
+          fetch-depth: 0
 
       - uses: actions/setup-node@v4
         with:

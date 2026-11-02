@@ -21,3 +21,9 @@ near 48.9, 2.3 here
 
 A note that is not JSON — a TOML value:
 note = "my run felt great today"
+
+A whole-number coordinate, where the key is the evidence:
+"latitude": 15
+
+An activity's own name, which is where a city hides:
+"activityName": "Morning run in Pune"

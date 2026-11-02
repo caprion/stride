@@ -15,16 +15,58 @@ fn fixtures_dir() -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../fixtures")
 }
 
+/// Every `.fit` file in the repository, wherever it is.
+///
+/// Not just `fixtures/fit/`: a FIT file committed anywhere else — under a
+/// test's own directory, under the phone's shell, in a scratch folder — is
+/// just as able to carry a real route, and a gate that only looks in one
+/// place would never decode it. The corpus's SHA-256 index covers
+/// `fixtures/`; **this** covers the whole tree.
+fn every_fit_in_the_repository() -> Vec<PathBuf> {
+    let root = fixtures_dir()
+        .parent()
+        .expect("the fixtures directory has a parent")
+        .to_path_buf();
+    let mut files = Vec::new();
+    let mut stack = vec![root.clone()];
+    while let Some(directory) = stack.pop() {
+        let entries = match std::fs::read_dir(&directory) {
+            Ok(entries) => entries,
+            Err(_) => continue,
+        };
+        for entry in entries.flatten() {
+            let path = entry.path();
+            if path.is_dir() {
+                // The build tree and the dependency caches are not part of
+                // the repository, and there is nothing to learn from them.
+                let name = path
+                    .file_name()
+                    .map(|n| n.to_string_lossy().to_string());
+                if matches!(name.as_deref(), Some("target") | Some("node_modules") | Some(".git")) {
+                    continue;
+                }
+                stack.push(path);
+            } else if path.extension().is_some_and(|x| x == "fit") {
+                // The deliberate bad fixture carries a coordinate that is
+                // *meant* to be caught - it is the gate's own proof - so it
+                // is not one of the files that must be at the anchor.
+                let text = path.to_string_lossy().to_string();
+                if text.contains("/fixtures/scan-tests/") {
+                    continue;
+                }
+                files.push(path);
+            }
+        }
+    }
+    files.sort();
+    files
+}
+
 #[test]
 fn every_corpus_fit_position_is_the_synthetic_anchor() {
-    let fit_dir = fixtures_dir().join("fit");
-    let files: Vec<PathBuf> = std::fs::read_dir(&fit_dir)
-        .unwrap_or_else(|e| panic!("cannot read {}: {e}", fit_dir.display()))
-        .map(|e| e.expect("read_dir entry").path())
-        .filter(|p| p.extension().is_some_and(|x| x == "fit"))
-        .collect();
+    let files = every_fit_in_the_repository();
 
-    assert!(!files.is_empty(), "no corpus FIT files found");
+    assert!(!files.is_empty(), "no FIT files found in the repository");
 
     for path in &files {
         let positions = fit_position::positions_in(path)

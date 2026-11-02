@@ -24,6 +24,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      # The app's gates are part of the gate: the voice lint, the type check,
+      # the unit tests and the six-width viewport matrix. A banned word or a
+      # viewport regression must not merge green.
+      - run: npm --prefix frontend ci
       # rust-toolchain.toml pins stable + rustfmt + clippy; rustup installs them.
       - run: bash scripts/gate.sh
 

@@ -50,9 +50,12 @@ import glob
 import hashlib
 import json
 import os
+import shutil
 import struct
+import subprocess
 import sys
 import zipfile
+from pathlib import Path
 
 REQUIRED = [
     "lib/arm64-v8a/libuniffi_stride.so",
@@ -286,6 +289,39 @@ def _published_packages(path: str = ASSET_LINKS) -> set[str]:
     return packages
 
 
+
+def _apksigner_verify(apk: str) -> list[str]:
+    """Ask apksigner whether the signature is valid over the bytes.
+
+    apksigner ships with the Android SDK's build-tools. When it is not on the
+    path the check cannot run, and it says so rather than pretending the
+    signature was verified - the caller decides whether that is acceptable.
+    """
+    tool = os.environ.get("APKSIGNER")
+    if not tool:
+        found = shutil.which("apksigner")
+        if found is None:
+            for candidate in sorted(
+                Path.home().glob("android-sdk/build-tools/*/apksigner")
+            ):
+                tool = str(candidate)
+                break
+    if not tool:
+        return []
+    if not os.path.isfile(tool):
+        return []
+
+    result = subprocess.run(
+        [tool, "verify", "--print-certs", apk],
+        capture_output=True,
+        text=True,
+    )
+    if result.returncode == 0:
+        return []
+    detail = (result.stderr or result.stdout or "").strip().splitlines()
+    return [detail[0] if detail else "the signature did not verify"]
+
+
 def _signature_problems(apk: str, path: str = ASSET_LINKS) -> list[str]:
     """The problems with the APK's signature.
 
@@ -310,6 +346,17 @@ def _signature_problems(apk: str, path: str = ASSET_LINKS) -> list[str]:
     if PACKAGE_NAME not in packages:
         problems.append(
             f"{path} does not name the package {PACKAGE_NAME} (found {sorted(packages)})"
+        )
+
+    # **Verify the signature**, not merely find a certificate. A certificate in
+    # the signing block proves who *claims* to have signed; only apksigner can
+    # say whether the signature is actually valid over the bytes. An APK whose
+    # signature is broken would install nowhere, so publishing it would be a
+    # release that fails on the phone.
+    if _apksigner_verify(apk):
+        problems.extend(
+            f"apksigner refuses the APK: {problem}"
+            for problem in _apksigner_verify(apk)
         )
 
     certificates = _signing_certificates(apk)
