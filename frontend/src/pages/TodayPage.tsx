@@ -106,13 +106,15 @@ export function TodayPage() {
     )
   }
 
-  // Nothing has ever been synced: there is no number to show, and the
-  // app never makes one up. It says what is missing and what to do.
-  const neverSynced = sync.isSuccess && sync.data?.last_sync_at === null
+  // Nothing to show: there is no number, and the app never makes one up.
+  // It says what is missing and what to do.
+  //
+  // The sync state alone does not decide this: a store can hold runs and
+  // no sync row (the api's own seed is one), and the numbers are there.
+  const nothingToShow =
+    !insight || !snapshot || (snapshot.vitals.length === 0 && !insight.last_run)
 
-  if (neverSynced || !insight || !snapshot) {
-    // Nothing has come back yet: there is no number to show, and the app
-    // never makes one up.
+  if (nothingToShow) {
     return (
       <div>
         <PageHeader title={t('today.heading')} />
@@ -272,15 +274,17 @@ export function TodayPage() {
         <section className="mt-3">
           <Link
             to={`/runs/${lastRun.id}`}
-            className="tap card flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1 px-4 py-3 transition-shadow hover:shadow-lift"
+            className="tap card flex flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3 transition-shadow hover:shadow-lift"
             data-testid="today-last-run"
           >
-            <span className="text-[13px] font-semibold uppercase tracking-[0.06em] text-ink-muted">
-              {t('today.lastRun.label')}
-            </span>
-            <span className="text-[14px] text-ink">
-              {renderedText(lastRun.distance)} · {renderedText(lastRun.duration)} ·{' '}
-              {formatDateMedium(lastRun.local_date)}
+            <span className="min-w-0 flex-1">
+              <span className="block text-[13px] font-semibold uppercase tracking-[0.06em] text-ink-muted">
+                {t('today.lastRun.label')}
+              </span>
+              <span className="mt-0.5 block text-[14px] text-ink">
+                {renderedText(lastRun.distance)} · {renderedText(lastRun.duration)} ·{' '}
+                {formatDateMedium(lastRun.local_date)}
+              </span>
             </span>
           </Link>
         </section>

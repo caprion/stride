@@ -375,11 +375,18 @@ export function SettingsPage() {
 
         {/* ----------------------------------------------- the storage */}
         <SettingsGroup title={t('settings.storage.heading')} testId="settings-storage">
-          <SettingRow
-            label={t('settings.storage.size')}
-            value={renderedText(state.storage.size)}
-            testId="settings-storage-size"
-          />
+          {/*
+            The database's size is a fact about the host's disk, and it is
+            only shown when the api answers it: a size that changes from
+            one moment to the next is not a fact the app can hold.
+          */}
+          {state.storage.size ? (
+            <SettingRow
+              label={t('settings.storage.size')}
+              value={renderedText(state.storage.size)}
+              testId="settings-storage-size"
+            />
+          ) : null}
           <div className="mt-2 flex flex-wrap items-center gap-3">
             <button
               type="button"

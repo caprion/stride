@@ -21,6 +21,7 @@ import { screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { api } from '../src/lib/api'
+import { healthFixture } from '../src/fixtures'
 import { renderApp } from './helpers'
 
 const here = dirname(fileURLToPath(import.meta.url))
@@ -69,7 +70,7 @@ describe('the version', () => {
     // The api's answer is the only source: the card shows what /health
     // said, and the app holds no version of its own.
     expect(container.querySelector('[data-testid="settings-about-version"]')?.textContent).toContain(
-      'Version 0.10.0',
+      `Version ${healthFixture.version}`,
     )
   })
 

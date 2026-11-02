@@ -52,9 +52,11 @@ describe('Today, with nothing in it', () => {
 
     expect(container.textContent).toContain('No wellness data yet')
     expect(container.textContent).toContain('appear after the first sync')
+    // The wellness is missing, and only the wellness: the runs and the
+    // plan are the router's, and they are still there.
     expect(container.querySelector('[data-testid="today-vitals"]')).toBeNull()
-    expect(container.querySelector('[data-testid="today-session"]')).toBeNull()
-    expect(container.querySelector('[data-testid="today-last-run"]')).toBeNull()
+    expect(container.querySelector('[data-testid="today-session"]')).toBeTruthy()
+    expect(container.querySelector('[data-testid="today-last-run"]')).toBeTruthy()
   })
 })
 
@@ -251,15 +253,17 @@ describe('the Plan week', () => {
     )
 
     // The counts, and never a percentage that hides them.
+    // The counts are the router's: the seeded plan has no run on its days
+    // yet, and the three counts say so.
     expect(container.querySelector('[data-testid="plan-count-done"]')?.textContent).toContain(
-      '1 done',
+      '0 done',
     )
     expect(
       container.querySelector('[data-testid="plan-count-planned"]')?.textContent,
     ).toContain('5 planned')
     expect(
       container.querySelector('[data-testid="plan-count-not-done"]')?.textContent,
-    ).toContain('1 not done')
+    ).toContain('2 not done')
     expect(container.textContent).not.toContain('%')
   })
 
