@@ -171,7 +171,7 @@ pub struct Entry {
 }
 
 /// The catalogue.
-pub const CATALOGUE: [Entry; 82] = [
+pub const CATALOGUE: [Entry; 83] = [
     // The vitals.
     Entry {
         id: "vital.sleep.label",
@@ -407,6 +407,15 @@ pub const CATALOGUE: [Entry; 82] = [
         kind: StringKind::Statement,
         role: None,
         template: "{from}-{to} bpm",
+    },
+    Entry {
+        // The band's name: "Z1" … "Z5". The number is the api's, the word is
+        // the core's — a label composed from an index is a second place where
+        // a word is put together.
+        id: "value.zone_label",
+        kind: StringKind::Statement,
+        role: None,
+        template: "Z{index}",
     },
     Entry {
         id: "zones.unavailable",

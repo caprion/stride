@@ -62,5 +62,6 @@ pub use types::{
 };
 pub use units::{
     render_difference, render_distance, render_duration, render_elevation, render_heart_rate,
-    render_heart_rate_range, render_pace, render_version, ValueUnit,
+    render_heart_rate_range, render_heart_rate_range_edges, render_pace, render_version,
+    render_zone_label, ValueUnit,
 };
