@@ -230,11 +230,13 @@ fn crate_instant(instant: DateTime<Utc>) -> String {
 
 /// The route a captured answer answers at.
 fn route_to_path(route: &str) -> String {
-    if route == "/compare" {
+    match route {
         // The export script asked the fixture for the pair (102, 101).
-        return "/compare?a=102&b=101".to_string();
+        "/compare" => "/compare?a=102&b=101".to_string(),
+        // The zones are of one run; the fixture's first run is 101.
+        "/fitness/zones" => "/fitness/zones?id=101".to_string(),
+        other => other.to_string(),
     }
-    route.to_string()
 }
 
 /// The router's answers, for the fixture's seed, keyed by route.
@@ -245,6 +247,7 @@ fn router_answers(router: &Router) -> serde_json::Map<String, Value> {
         "/activities",
         "/activities/101",
         "/physiology/vitals",
+        "/fitness/zones",
         "/plan/week",
         "/insights/today",
         "/insights/progress",
