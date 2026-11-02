@@ -171,7 +171,7 @@ pub struct Entry {
 }
 
 /// The catalogue.
-pub const CATALOGUE: [Entry; 78] = [
+pub const CATALOGUE: [Entry; 80] = [
     // The vitals.
     Entry {
         id: "vital.sleep.label",
@@ -387,6 +387,20 @@ pub const CATALOGUE: [Entry; 78] = [
         kind: StringKind::Statement,
         role: None,
         template: "{value} s/km",
+    },
+    Entry {
+        // The heart-rate bands: the range, and the honest answer when the
+        // bands cannot be computed at all.
+        id: "value.heart_rate_range",
+        kind: StringKind::Statement,
+        role: None,
+        template: "{from}-{to} bpm",
+    },
+    Entry {
+        id: "zones.unavailable",
+        kind: StringKind::Statement,
+        role: None,
+        template: "zones unavailable — no stored max or threshold heart rate",
     },
     // The plan's statements: what the athlete intended, what happened, and
     // where the intent came from. They are facts, never verdicts.

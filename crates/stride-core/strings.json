@@ -42,6 +42,8 @@
     { "id": "value.elevation", "kind": "statement", "role": null, "template": "{value} m" },
     { "id": "value.difference", "kind": "statement", "role": null, "template": "{sign}{value}" },
     { "id": "value.pace_difference", "kind": "statement", "role": null, "template": "{value} s/km" },
+    { "id": "value.heart_rate_range", "kind": "statement", "role": null, "template": "{from}-{to} bpm" },
+    { "id": "zones.unavailable", "kind": "statement", "role": null, "template": "zones unavailable — no stored max or threshold heart rate" },
     { "id": "statement.plan.source.baseline", "kind": "statement", "role": null, "template": "your usual week, inferred from your history" },
     { "id": "statement.plan.source.prescribed", "kind": "statement", "role": null, "template": "from your imported plan" },
     { "id": "statement.plan.source.typed", "kind": "statement", "role": null, "template": "from your typed plan" },

@@ -223,6 +223,41 @@ pub fn render_elevation(metres: Option<f64>) -> Option<String> {
     strings::render("value.elevation", &[("value", &value)])
 }
 
+/// The rendered heart-rate band: "154-166 bpm".
+///
+/// The rule: both ends are truncated to an integer — a heart rate is
+/// truncated, never rounded (contract §3) — and the band is written from the
+/// lower end to the upper. A band with no lower end or no upper end is no
+/// value at all: the bands cannot be computed, and the caller says so with
+/// `zones.unavailable`.
+pub fn render_heart_rate_range(from: Option<f64>, to: Option<f64>) -> Option<String> {
+    let from = from?;
+    let to = to?;
+    if !from.is_finite() || !to.is_finite() {
+        return None;
+    }
+    let lower = format_truncated(from);
+    let upper = format_truncated(to);
+    strings::render(
+        "value.heart_rate_range",
+        &[("from", &lower), ("to", &upper)],
+    )
+}
+
+/// The rendered version: "Version 0.10.0".
+///
+/// The version is not a unit and not the core's business — it comes from the
+/// build environment, and the server owns where it comes from. *How it is
+/// shown* is the core's: the wording lives in the catalogue, and this is the
+/// only place a version string is put together.
+pub fn render_version(version: &str) -> Option<String> {
+    let version = version.trim();
+    if version.is_empty() {
+        return None;
+    }
+    strings::render("status.version", &[("version", version)])
+}
+
 /// The unit a metric is measured in.
 ///
 /// A difference between two values is rendered in the unit of the metric it
@@ -347,6 +382,23 @@ mod tests {
             Some("+3".to_string())
         );
         assert_eq!(render_difference(None, ValueUnit::Distance), None);
+    }
+
+    #[test]
+    fn a_heart_rate_band_is_written_from_the_lower_end_to_the_upper() {
+        assert_eq!(
+            render_heart_rate_range(Some(154.0), Some(166.0)),
+            Some("154-166 bpm".to_string())
+        );
+        // Truncated, never rounded: 154.9 is 154.
+        assert_eq!(
+            render_heart_rate_range(Some(154.9), Some(166.9)),
+            Some("154-166 bpm".to_string())
+        );
+        // A band with no end is no value at all: the bands are unavailable.
+        assert_eq!(render_heart_rate_range(Some(154.0), None), None);
+        assert_eq!(render_heart_rate_range(None, Some(166.0)), None);
+        assert_eq!(render_heart_rate_range(None, None), None);
     }
 
     #[test]
