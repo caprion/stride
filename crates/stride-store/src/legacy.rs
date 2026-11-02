@@ -757,27 +757,49 @@ pub fn import_legacy(store: &Store) -> Result<LegacyImportReport> {
 
 /// How many runs a pull has marked deleted.
 fn marked_count(transaction: &Transaction<'_>) -> Result<i64> {
+    if !has_tombstones(transaction)? {
+        return Ok(0);
+    }
     transaction
         .query_row(TOMBSTONED_RUNS_COUNT, [], |row| row.get::<_, i64>(0))
         .map_err(|source| StoreError::query("count the tombstones", source))
 }
 
+/// Whether the database has the tombstone table.
+///
+/// The table arrived with the second version of the schema. A database from
+/// before it has no tombstones, and no tombstones is not an error.
+fn has_tombstones(transaction: &Transaction<'_>) -> Result<bool> {
+    let count: i64 = transaction
+        .query_row(
+            "SELECT count(*) FROM sqlite_master
+             WHERE type = 'table' AND name = 'deleted_garmin_activities'",
+            [],
+            |row| row.get(0),
+        )
+        .map_err(|source| StoreError::query("sqlite_master", source))?;
+    Ok(count > 0)
+}
+
 /// Carry the runs across, and the notes that were on them.
 fn import_runs(transaction: &Transaction<'_>, report: &mut LegacyImportReport) -> Result<()> {
     // The runs a pull has already marked deleted: the import leaves them
-    // alone, so that it does not bring back what was accounted for.
+    // alone, so that it does not bring back what was accounted for. A
+    // database from before the tombstones existed has none, and that is
+    // simply an empty set.
     let mut marked: std::collections::HashSet<String> = std::collections::HashSet::new();
-    let mut statement = transaction
-        .prepare(TOMBSTONED_RUNS)
-        .map_err(|source| StoreError::query("the tombstones", source))?;
-    let rows = statement
-        .query_map([], |row| row.get::<_, String>(0))
-        .map_err(|source| StoreError::query("the tombstones", source))?;
-    for row in rows {
-        let external_id = row.map_err(|source| StoreError::query("the tombstones", source))?;
-        marked.insert(external_id);
+    if has_tombstones(transaction)? {
+        let mut statement = transaction
+            .prepare(TOMBSTONED_RUNS)
+            .map_err(|source| StoreError::query("the tombstones", source))?;
+        let rows = statement
+            .query_map([], |row| row.get::<_, String>(0))
+            .map_err(|source| StoreError::query("the tombstones", source))?;
+        for row in rows {
+            let external_id = row.map_err(|source| StoreError::query("the tombstones", source))?;
+            marked.insert(external_id);
+        }
     }
-    drop(statement);
 
     let mut statement = transaction
         .prepare(OLD_RUNS)
