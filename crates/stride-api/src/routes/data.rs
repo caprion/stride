@@ -134,20 +134,20 @@ pub fn activity(api: &Api, request: &Request) -> ApiResult<Value> {
     let mut splits = Vec::new();
     let mut elevation = Vec::new();
     let mut samples = Vec::new();
-    let why = None;
+    let mut why = None;
     if let Some(decoded) = series::decoded(api, id) {
         summary.geo_points = series::geo_points(&decoded);
         splits = series::splits(&decoded);
         elevation = series::elevation(&decoded, api.config().max_samples_in_response);
         samples = series::samples(&decoded, api.config().max_samples_in_response);
-        // The detail knows the run's own shape, so its sentence is the
-        // core's story for the run **with** its splits — the feed's was for
-        // the run without them.
+        // The detail knows the run's own shape: the why is the core's,
+        // beside the same sentence the feed shows.
         let history = crate::story::history_facts(api)?;
         let facts =
             crate::story::run_facts_of(&run.summary(), crate::story::story_splits(&decoded));
         if let Some(facts) = facts {
-            summary.story = crate::story::story_of(&facts, &history);
+            let (_, the_why) = crate::story::story_with_why_of(&facts, &history);
+            why = the_why;
         }
     }
 

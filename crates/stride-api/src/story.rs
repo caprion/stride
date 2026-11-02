@@ -48,6 +48,15 @@ pub fn story_of(run: &RunFacts, history: &[RunFacts]) -> String {
     stride_core::story::story(run, history)
 }
 
+/// The story, and the one extra fact the detail knows.
+///
+/// The sentence is what the feed shows; the why is the run's own shape —
+/// the slowest split, the fastest one — and it is the core's, never this
+/// crate's.
+pub fn story_with_why_of(run: &RunFacts, history: &[RunFacts]) -> (String, Option<String>) {
+    stride_core::story::story_with_why(run, history)
+}
+
 /// The sentence for a run whose facts cannot be read.
 ///
 /// The core's own wording — the api never writes a sentence of its own.
