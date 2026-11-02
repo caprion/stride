@@ -18,6 +18,10 @@ stride-store = { path = "../stride-store" }
 # `DateTime<Utc>`. Nothing else is needed: the router has no HTTP server of
 # its own, and the FFI surface speaks JSON.
 serde = { version = "1", features = ["derive"] }
-serde_json = "1"
+# `float_roundtrip` is not a nicety: serde_json's fast float parser reads the
+# router's -24.189999999999998 as the neighbouring double and serialises it as
+# -24.19, so a comparison of the app's fixture against the router's answer
+# fails by one unit. With the feature the parse round-trips exactly.
+serde_json = { version = "1", features = ["float_roundtrip"] }
 chrono = { version = "0.4", features = ["serde"] }
 thiserror = "1"
