@@ -211,8 +211,14 @@ export interface ActivitySummary {
   elevation_gain: RenderedValue | null
   /** The group the run is in, and that group's totals. */
   group: ActivityGroupTotals
-  /** The one sentence about what the run meant. */
-  story: string | null
+  /**
+   * The one sentence about what the run meant.
+   *
+   * Never empty: the core always has a sentence, and the fallback shape is
+   * catalogued like every other one. A row without a sentence is the
+   * "spreadsheet" the plan forbids.
+   */
+  story: string
   geo_points: [number, number][]
 }
 
@@ -235,6 +241,14 @@ export interface ActivityDetail extends ActivitySummary {
   samples: { offset_s: number; pace: RenderedValue | null; heart_rate: RenderedValue | null }[]
   /** The line against the plan, already written: "8.4 km of a 10 km target". */
   plan_line: { text: string } | null
+  /**
+   * The one extra fact the detail knows and the feed does not: the run's own
+   * shape — "the last 1 km was the slowest of the run".
+   *
+   * It is said only when it is worth a sentence: when the slowest or fastest
+   * split stands out from the run's average pace by more than ten per cent.
+   */
+  why: string | null
   note: string | null
 }
 
