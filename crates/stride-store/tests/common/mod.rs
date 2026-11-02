@@ -6,9 +6,11 @@
 
 #![allow(dead_code)]
 
+pub mod old_schema;
+
 use std::path::{Path, PathBuf};
 
-use stride_store::scratch::ScratchDir;
+pub use stride_store::scratch::ScratchDir;
 use stride_store::{DatabaseKey, Result, Store};
 
 /// The key the tests use.
