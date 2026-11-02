@@ -60,7 +60,16 @@ pub struct RestSummary {
 
 impl RestSummary {
     /// The count: "2 of 3 signals below your usual".
+    ///
+    /// `None` when nothing could be compared at all. A summary of nothing is
+    /// not a summary, and "0 of 0 signals about your usual" reads as if a
+    /// comparison had happened when none did — so the row says nothing here,
+    /// and the caller answers with the honest sentence ("not enough data for
+    /// a comparison yet").
     pub fn phrase(&self) -> Option<String> {
+        if self.considered == 0 {
+            return None;
+        }
         let count = self.counted.to_string();
         let total = self.considered.to_string();
         strings::render(self.sides.id(), &[("count", &count), ("total", &total)])
@@ -74,7 +83,8 @@ impl RestSummary {
     /// The whole row: the direction, then the count.
     ///
     /// The Rest row has no value of its own — it is a summary of the three
-    /// vitals — so the line is the row.
+    /// vitals — so the line is the row. It is **empty** when nothing could be
+    /// compared: the caller then says the honest thing instead.
     pub fn line(&self) -> String {
         let mut parts: Vec<String> = Vec::new();
         if let Some(direction) = self.direction_text() {
@@ -311,10 +321,47 @@ mod tests {
             summary.status_text(),
             Some("not enough data for a comparison yet".to_string())
         );
-        assert_eq!(
-            summary.phrase(),
-            Some("0 of 0 signals about your usual".to_string())
-        );
+        // A summary of nothing is not a summary: the row has no phrase, and
+        // the caller answers with the honest sentence.
+        assert_eq!(summary.phrase(), None);
+        assert_eq!(summary.line(), "");
+    }
+
+    #[test]
+    fn no_summary_ever_renders_a_count_of_zero() {
+        // Every summary the engine can produce, over every combination of
+        // the three vitals' directions.
+        let directions = [
+            None,
+            Some(Direction::BetterThanUsual),
+            Some(Direction::AboutUsual),
+            Some(Direction::CouldBeBetter),
+        ];
+        let mut checked = 0usize;
+        for sleep in directions {
+            for hrv in directions {
+                for resting in directions {
+                    let summary = summarize(&[
+                        vital(VitalKind::Sleep, sleep, None),
+                        vital(VitalKind::Hrv, hrv, None),
+                        vital(VitalKind::RestingHr, resting, None),
+                    ]);
+                    match summary.phrase() {
+                        None => assert_eq!(summary.considered, 0),
+                        Some(phrase) => {
+                            assert!(summary.considered > 0);
+                            assert!(summary.counted > 0);
+                            assert!(
+                                !phrase.starts_with("0 of "),
+                                "the summary rendered a count of zero: \"{phrase}\""
+                            );
+                        }
+                    }
+                    checked += 1;
+                }
+            }
+        }
+        assert!(checked >= 64, "the sweep should cover every combination");
     }
 
     #[test]
