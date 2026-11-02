@@ -212,11 +212,16 @@ pub fn sync_run(api: &Api, request: &Request) -> ApiResult<Value> {
                 .activity_by_external(source::GARMIN_PERSONAL, &activity_id)
                 .map_err(|error| api.store_error("the runs could not be read", &error))?;
             match stored {
-                Some(existing) if !changed(&existing, entry) => {
-                    // Known and unchanged: nothing to download.
+                Some(existing) if !changed(&existing, entry) && !existing.fit_blob.is_empty() => {
+                    // Known, unchanged, and the file is held: nothing to
+                    // download.
                     skipped += 1;
                 }
                 Some(_) | None => {
+                    // A run the importer carried across has no FIT file: it
+                    // is downloaded once, because the file is the source of
+                    // truth and a run without one has no series, splits or
+                    // elevation.
                     let blob = match client.activity_fit(&activity_id) {
                         Ok(blob) => blob,
                         Err(error) => {

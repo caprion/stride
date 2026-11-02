@@ -241,6 +241,21 @@ impl PullHarness {
     }
 
     fn seed(&self, id: &str, distance_m: f64, start: DateTime<Utc>) {
+        self.seed_with(
+            id,
+            distance_m,
+            start,
+            vec![
+                0x0E, 0x10, 0x00, 0x00, 0x2E, 0x46, 0x49, 0x54, 0x00, 0x00, 0x00, 0x00,
+            ],
+        )
+    }
+
+    fn seed_without_file(&self, id: &str, distance_m: f64, start: DateTime<Utc>) {
+        self.seed_with(id, distance_m, start, Vec::new())
+    }
+
+    fn seed_with(&self, id: &str, distance_m: f64, start: DateTime<Utc>, fit_blob: Vec<u8>) {
         self.store
             .upsert_activity(&NewActivity {
                 source: "garmin_personal".to_string(),
@@ -255,7 +270,7 @@ impl PullHarness {
                 elevation_gain_m: 0.0,
                 avg_hr: Some(150.0),
                 max_hr: Some(170.0),
-                fit_blob: Vec::new(),
+                fit_blob,
                 created_at: instant(),
                 updated_at: instant(),
             })
@@ -285,6 +300,41 @@ fn a_known_run_is_not_downloaded_twice() {
     assert_eq!(body["activities"].as_u64(), Some(0));
     assert_eq!(body["skipped"].as_u64(), Some(1));
     assert_eq!(harness.garmin.downloads(), 0);
+}
+
+#[test]
+fn a_known_run_without_its_file_is_downloaded_once() {
+    let (fit, distance, start) = decoded_truth();
+    let harness = PullHarness::new(
+        vec![PullHarness::listed("100", distance, &start.to_rfc3339())],
+        fit,
+    );
+    // The importer carries a run across with no FIT file.
+    harness.seed_without_file("100", distance, start);
+    let stored = harness
+        .store
+        .activity_by_external("garmin_personal", "100")
+        .unwrap_or(None)
+        .unwrap_or_else(|| panic!("the run was not seeded"));
+    assert!(stored.fit_blob.is_empty(), "the seed should carry no file");
+
+    // The first pull fetches the file, because the file is the source of
+    // truth and a run without one has no series.
+    let body = harness.pull(30);
+    assert_eq!(body["activities"].as_u64(), Some(1));
+    assert_eq!(harness.garmin.downloads(), 1);
+    let stored = harness
+        .store
+        .activity_by_external("garmin_personal", "100")
+        .unwrap_or(None)
+        .unwrap_or_else(|| panic!("the run was not kept"));
+    assert!(!stored.fit_blob.is_empty(), "the run now has its file");
+
+    // The second pull skips it: the file is held.
+    let body = harness.pull(30);
+    assert_eq!(body["activities"].as_u64(), Some(0));
+    assert_eq!(body["skipped"].as_u64(), Some(1));
+    assert_eq!(harness.garmin.downloads(), 1);
 }
 
 #[test]
