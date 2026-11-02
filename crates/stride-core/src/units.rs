@@ -230,18 +230,44 @@ pub fn render_elevation(metres: Option<f64>) -> Option<String> {
 /// lower end to the upper. A band with no lower end or no upper end is no
 /// value at all: the bands cannot be computed, and the caller says so with
 /// `zones.unavailable`.
+///
+/// The words and the numbers the chart draws come from the same pair — see
+/// [`render_heart_rate_range_edges`] — so the label and the band on the chart
+/// cannot disagree.
 pub fn render_heart_rate_range(from: Option<f64>, to: Option<f64>) -> Option<String> {
+    let (lower, upper) = render_heart_rate_range_edges(from, to)?;
+    let lower = format_truncated(lower as f64);
+    let upper = format_truncated(upper as f64);
+    strings::render(
+        "value.heart_rate_range",
+        &[("from", &lower), ("to", &upper)],
+    )
+}
+
+/// The edges of a heart-rate band, as the numbers: `(154, 166)`.
+///
+/// These are the numbers the words were rendered from — the same truncation,
+/// decided in one place — so the band on the chart and the band the athlete
+/// reads are the same band. `None` when either edge is missing.
+pub fn render_heart_rate_range_edges(from: Option<f64>, to: Option<f64>) -> Option<(i64, i64)> {
     let from = from?;
     let to = to?;
     if !from.is_finite() || !to.is_finite() {
         return None;
     }
-    let lower = format_truncated(from);
-    let upper = format_truncated(to);
-    strings::render(
-        "value.heart_rate_range",
-        &[("from", &lower), ("to", &upper)],
-    )
+    Some((truncate_heart_rate(from), truncate_heart_rate(to)))
+}
+
+/// The rendered name of a band: "Z1".
+///
+/// The bands are numbered from one, so a band with no number has no label.
+/// The number is the api's; the word is the core's.
+pub fn render_zone_label(index: usize) -> Option<String> {
+    if index == 0 {
+        return None;
+    }
+    let index = index.to_string();
+    strings::render("value.zone_label", &[("index", &index)])
 }
 
 /// The rendered version: "Version 0.10.0".
@@ -399,6 +425,14 @@ mod tests {
         assert_eq!(render_heart_rate_range(Some(154.0), None), None);
         assert_eq!(render_heart_rate_range(None, Some(166.0)), None);
         assert_eq!(render_heart_rate_range(None, None), None);
+    }
+
+    #[test]
+    fn a_band_is_named_from_its_number() {
+        assert_eq!(render_zone_label(1), Some("Z1".to_string()));
+        assert_eq!(render_zone_label(5), Some("Z5".to_string()));
+        // The bands are numbered from one.
+        assert_eq!(render_zone_label(0), None);
     }
 
     #[test]

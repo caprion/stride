@@ -119,6 +119,18 @@ fn a_heart_rate_band_is_written_from_the_lower_end_to_the_upper() {
 }
 
 #[test]
+fn a_band_is_named_and_its_edges_are_the_same_numbers() {
+    assert_eq!(units::render_zone_label(1), Some("Z1".to_string()));
+    assert_eq!(units::render_zone_label(5), Some("Z5".to_string()));
+    assert_eq!(units::render_zone_label(0), None);
+    // The words and the chart's edges are the same pair.
+    assert_eq!(
+        units::render_heart_rate_range(Some(154.9), Some(166.9)),
+        Some("154-166 bpm".to_string())
+    );
+}
+
+#[test]
 fn the_version_is_shown_with_its_label() {
     assert_eq!(
         units::render_version("0.10.0"),
@@ -154,6 +166,10 @@ fn a_rendered_value_is_a_catalogued_string() {
     assert_eq!(
         stride_core::strings::text("value.heart_rate_range"),
         Some("{from}-{to} bpm")
+    );
+    assert_eq!(
+        stride_core::strings::text("value.zone_label"),
+        Some("Z{index}")
     );
     assert_eq!(
         stride_core::strings::text("status.version"),
