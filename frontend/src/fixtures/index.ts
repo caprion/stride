@@ -1084,6 +1084,10 @@ export const syncStatusStaleFixture: SyncStatus = {
   last_sync_at: new Date(Date.now() - 3 * 86_400_000).toISOString(),
   last_error: null,
   activity_count: 42,
+  cursor: null,
+  pulled: null,
+  skipped: null,
+  deleted: null,
 }
 
 /**
@@ -1096,6 +1100,10 @@ export const syncStatusFreshFixture: SyncStatus = {
   last_sync_at: null,
   last_error: null,
   activity_count: 0,
+  cursor: null,
+  pulled: null,
+  skipped: null,
+  deleted: null,
 }
 
 /** A sync that did not finish. */
@@ -1103,6 +1111,10 @@ export const syncStatusFailedFixture: SyncStatus = {
   last_sync_at: new Date(Date.now() - 2 * 3_600_000).toISOString(),
   last_error: 'Garmin refused the token',
   activity_count: 42,
+  cursor: null,
+  pulled: null,
+  skipped: null,
+  deleted: null,
 }
 
 /** The health of a sync window that has gone stale. */
