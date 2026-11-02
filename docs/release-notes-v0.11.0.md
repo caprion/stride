@@ -43,6 +43,27 @@ headed **"Last night"** — it names the source of the numbers and interprets no
 **The version is right.** The About card showed 0.1.0 while the release was 0.10.0. There
 is one source of truth now, and it is the build.
 
+**Every run has a sentence.** The feed's central line was absent — the router
+answered `null` and the app showed none, so the feed was a spreadsheet of numbers.
+There is now a **story engine** in the core: it describes what a run *was*, from
+the same numbers the charts read, in one sentence, and it never evaluates. "10.2
+km, 3.2 km more than your usual Wednesday", "the last 1 km was the slowest of
+the run", "6.4 km in 41 m, at an average of 162 bpm" — and when there is
+nothing to say, it says so plainly. The detail shows the sentence and **the
+why**; the feed shows the sentence. Every word a sentence can use is a word the
+app holds, so a verdict cannot get in.
+
+**The route is drawn.** The map was specified, the data was computed, and
+nothing rendered it. It is now a line over the run's own points, with a start
+and an end marker — no tile server, no map library, nothing in the phone's
+WebView that could phone home. The data never leaves the device, so the map
+does not either.
+
+**The distance comparison is symmetric.** The frozen contract said "symmetric
+for over and under"; the code only ever rendered the overshoot, and the
+template for the other half sat unused in the catalogue. Now an under-run beyond
+ten per cent says so, too.
+
 ---
 
 ## Upgrading from v0.8.0: what is carried across
