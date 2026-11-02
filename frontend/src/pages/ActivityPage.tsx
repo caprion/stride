@@ -232,7 +232,9 @@ export function ActivityPage({ id }: { id: string }) {
           <h2 className="text-[12px] font-semibold uppercase tracking-[0.07em] text-ink-faint">
             {t('activity.plan.heading')}
           </h2>
-          <p className="mt-1 text-[14px] text-ink-soft">{data.plan_line.text}</p>
+          <p className="mt-1 text-[14px] text-ink-soft" data-testid="activity-plan-line">
+            {data.plan_line.text}
+          </p>
         </section>
       ) : null}
 

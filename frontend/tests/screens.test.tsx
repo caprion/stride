@@ -153,7 +153,7 @@ describe('Compare', () => {
     // it: it asks the API for the other order, and shows the answer.
     const before =
       container.querySelector('[data-testid="compare-row-pace"]')?.textContent ?? ''
-    expect(before).toContain('-11 s/km')
+    expect(before).toContain('−11 s/km')
 
     await user.click(screen.getByTestId('compare-swap'))
 
@@ -162,6 +162,45 @@ describe('Compare', () => {
         '+11 s/km',
       ),
     )
+  })
+
+  it('shows the signed difference the API sent, in the core’s own words', async () => {
+    const { container } = renderApp('/compare/101')
+    await waitFor(() =>
+      expect(container.querySelector('[data-testid="compare-row-pace"]')).toBeTruthy(),
+    )
+
+    // The core writes a negative difference with the typographic minus
+    // (U+2212), and the app shows the sign it was given — it is neither
+    // the em dash of an absent value nor the hyphen of a keyboard.
+    const row = container.querySelector('[data-testid="compare-row-pace"]')?.textContent ?? ''
+    expect(row).toContain('−11 s/km')
+    expect(row).not.toContain('-11 s/km')
+    expect(row).not.toContain('—')
+
+    // The same rule for the other metrics: the core's sign, in the
+    // metric's own unit.
+    const distance = container.querySelector('[data-testid="compare-row-distance"]')
+      ?.textContent ?? ''
+    expect(distance).toContain('+0.2 km')
+
+    const time = container.querySelector('[data-testid="compare-row-time"]')?.textContent ?? ''
+    expect(time).toContain('−1 m')
+
+    const heart = container.querySelector('[data-testid="compare-row-hr"]')?.textContent ?? ''
+    expect(heart).toContain('−3 bpm')
+  })
+
+  it('shows the plan’s line under the run as the core states it', async () => {
+    const { container } = renderApp('/runs/101')
+    await waitFor(() =>
+      expect(container.querySelector('[data-testid="activity-plan-line"]')).toBeTruthy(),
+    )
+    // The core's whole statement: the distance, then the gap against the
+    // target — "12.4 km · 2.4 km more than the 10 km target".
+    expect(
+      container.querySelector('[data-testid="activity-plan-line"]')?.textContent,
+    ).toContain('12.4 km · 2.4 km more than the 10 km target')
   })
 
   it('shows the values the API sent, word for word', async () => {

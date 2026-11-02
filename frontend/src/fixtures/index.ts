@@ -21,6 +21,19 @@
  *   "6 h 10 m" · "could be better" · "1 h 10 m less than your usual"
  *   "6th night down" · "2 of 3 signals below your usual"
  *   "your HRV has been below your usual for 3 nights"
+ *   "+0.2 km" · "−0.2 km" · "12.4 km · 2.4 km more than the 10 km target"
+ *
+ * **The sign is the core's.** A negative difference is written with the
+ * typographic minus the core uses (U+2212), never with the keyboard's
+ * hyphen: `−0.2 km`, not `-0.2 km`. The app shows the sign it is given.
+ *
+ * **The story sentences are placeholders, and they say so.** The core has
+ * no story engine yet — PLAN.md's slice 5 asks for one, and the API
+ * answers `story: null` until it exists — so the sentences below are the
+ * app's stand-ins for that field, not the core's words. They read the same
+ * primitives the charts read: a distance, and how it sits against the
+ * athlete's usual. They are replaced by captured core sentences the day
+ * the core grows the engine.
  */
 
 import type {
@@ -105,7 +118,7 @@ const history = nights.slice(0, 29)
  * The vitals — the snapshot Today and Body both read.
  *
  * The bands are the median ± 1.5 × MAD of the nights before the day
- * itself: sleep 26 400 ± 3 600 s, HRV 62 ± 6 ms, resting heart rate
+ * itself: sleep 26 400 ± 2 700 s, HRV 62 ± 6 ms, resting heart rate
  * 58 ± 6 bpm. The sentences are the core's answers for those numbers.
  */
 export const vitalsFixture: VitalsSnapshot = {
@@ -124,7 +137,7 @@ export const vitalsFixture: VitalsSnapshot = {
       deviation_text: '1 h 10 m less than your usual',
       travel_text: '6th night down',
       status_text: null,
-      band: { lower: 22_800, upper: 30_000, nights: 29 },
+      band: { lower: 23_700, upper: 29_100, nights: 29 },
     },
     {
       key: 'hrv',
@@ -154,12 +167,13 @@ export const vitalsFixture: VitalsSnapshot = {
   },
   patterns: [
     {
-      id: 'hrv-below',
+      // The ids are the API's: the pattern's kind, its vital and its side.
+      id: 'usual_streak.hrv.below',
       text: 'your HRV has been below your usual for 3 nights',
       sample_size: 3,
     },
     {
-      id: 'sleep-low-distance',
+      id: 'comparable_outcome.sleep.below',
       text: 'the 5 other times your sleep was below your usual, you ran 8 km or less',
       sample_size: 5,
     },
@@ -247,7 +261,9 @@ export const planWeekFixture: PlanWeek = {
   source: 'prescribed',
   week_start: '2026-05-11',
   week_end: '2026-05-17',
-  target: value('25 km', 25_000),
+  // The week's target is the sum of the sessions' targets, the way the
+  // API adds them: 8 + 10 + 5 + 16 + 6 km.
+  target: value('45 km', 45_000),
   sessions: planSessions,
   adherence: { done: 1, planned: 7 },
 }
@@ -309,7 +325,7 @@ export const activityFixtures: ActivitySummary[] = [
     value('12.4 km', 12_400),
     value('1 h 7 m', 4_020),
     value('5:24 /km', 324.19),
-    '12.4 km, 2.4 km more than your usual Wednesday',
+    '12.4 km, 2.4 km more than your usual',
     THIS_WEEK,
   ),
   activity(
@@ -318,7 +334,7 @@ export const activityFixtures: ActivitySummary[] = [
     value('10.2 km', 10_200),
     value('55 m', 3_320),
     value('5:25 /km', 325.49),
-    '10.2 km, about your usual Saturday',
+    '10.2 km, about your usual',
     THIS_WEEK,
   ),
   activity(
@@ -327,7 +343,7 @@ export const activityFixtures: ActivitySummary[] = [
     value('8.4 km', 8_400),
     value('42 m', 2_520),
     value('5:00 /km', 300),
-    '8.4 km, a bit shorter than your usual Wednesday',
+    '8.4 km, a bit shorter than your usual',
     THIS_WEEK,
   ),
   activity(
@@ -354,7 +370,7 @@ export const activityFixtures: ActivitySummary[] = [
     value('6.3 km', 6_300),
     value('35 m', 2_080),
     value('5:30 /km', 330.16),
-    '6.3 km, about your usual Monday',
+    '6.3 km, about your usual',
     MONDAY,
   ),
 ]
@@ -403,7 +419,9 @@ export const activityDetailFixture: ActivityDetail = {
     { offset_s: 360, pace: value('5:26 /km', 326), heart_rate: value('141 bpm', 141) },
     { offset_s: 420, pace: value('5:36 /km', 336), heart_rate: value('139 bpm', 139) },
   ],
-  plan_line: { text: '12.4 km of a 10 km target' },
+  // The plan's line under the run: the core's own statement, with the
+  // distance first and the gap after it.
+  plan_line: { text: '12.4 km · 2.4 km more than the 10 km target' },
   note: null,
 }
 
@@ -491,8 +509,10 @@ export const progressFixture: ProgressInsight = {
     },
   ],
   bests: [
-    { key: 'progress.best.5k', value: '19:48', date: '2026-04-27' },
-    { key: 'progress.best.10k', value: '41:12', date: '2026-05-04' },
+    // A record's value is the core's rendering: a distance is "16.1 km",
+    // and a time is the core's duration — minutes, not a clock.
+    { key: 'progress.best.5k', value: '20 m', date: '2026-04-27' },
+    { key: 'progress.best.10k', value: '41 m', date: '2026-05-04' },
     { key: 'progress.best.longest', value: '16.1 km', date: '2026-05-04' },
   ],
   consistency: [
@@ -505,7 +525,9 @@ export const progressFixture: ProgressInsight = {
     { week_start: '2026-04-27', sessions: 4 },
     { week_start: '2026-05-11', sessions: 2 },
   ],
-  sessions_per_week: value('3.4', 3.4),
+  // The sessions a week: the core has no renderer for the average of a
+  // count, so the API sends nothing here and the app shows the em dash.
+  sessions_per_week: null,
   adherence: { done: 7, planned: 8 },
 }
 
@@ -605,6 +627,14 @@ const SERIES_B: CompareSeriesPoint[] = [
     { offset_s: 2340, pace: { text: '5:18 /km', raw: 318 }, heart_rate: { text: '137 bpm', raw: 137 } },
 ]
 
+/**
+ * The comparison, as the core renders it.
+ *
+ * The delta is the core's difference: the sign is the number's own, and
+ * the number beside it is `B − A` in the metric's own unit — metres for a
+ * distance, seconds for a duration, seconds per kilometre for a pace.
+ * A negative difference is written with the core's typographic minus.
+ */
 export const compareFixture: CompareResponse = {
   basis_text: 'Same distance, 3 weeks apart',
   metrics: [
@@ -620,21 +650,21 @@ export const compareFixture: CompareResponse = {
       label_key: 'vital.time',
       a: value('55 m', 3_300),
       b: value('54 m', 3_240),
-      delta: value('-1 m', -60),
+      delta: value('−1 m', -60),
     },
     {
       key: 'pace',
       label_key: 'vital.pace',
       a: value('5:17 /km', 317),
       b: value('5:06 /km', 306),
-      delta: value('-11 s/km', -11),
+      delta: value('−11 s/km', -11),
     },
     {
       key: 'hr',
       label_key: 'vital.heartRate',
       a: value('149 bpm', 149),
       b: value('146 bpm', 146),
-      delta: value('-3 bpm', -3),
+      delta: value('−3 bpm', -3),
     },
   ],
   a: {
@@ -642,14 +672,14 @@ export const compareFixture: CompareResponse = {
     label: 'Run',
     date: '2026-04-19',
     distance: value('10.4 km', 10_400),
-    story: '10.4 km, about your usual Saturday',
+    story: '10.4 km, about your usual',
   },
   b: {
     id: 101,
     label: 'Run',
     date: '2026-05-10',
     distance: value('10.6 km', 10_600),
-    story: '10.6 km, a little more than your usual Saturday',
+    story: '10.6 km, a little more than your usual',
   },
   series: {
     a: SERIES_A,
@@ -672,7 +702,7 @@ export const compareSwappedFixture: CompareResponse = {
       label_key: 'vital.distance',
       a: value('10.6 km', 10_600),
       b: value('10.4 km', 10_400),
-      delta: value('-0.2 km', -200),
+      delta: value('−0.2 km', -200),
     },
     {
       key: 'time',
@@ -701,14 +731,14 @@ export const compareSwappedFixture: CompareResponse = {
     label: 'Run',
     date: '2026-05-10',
     distance: value('10.6 km', 10_600),
-    story: '10.6 km, a little more than your usual Saturday',
+    story: '10.6 km, a little more than your usual',
   },
   b: {
     id: 102,
     label: 'Run',
     date: '2026-04-19',
     distance: value('10.4 km', 10_400),
-    story: '10.4 km, about your usual Saturday',
+    story: '10.4 km, about your usual',
   },
   series: {
     a: SERIES_B,
