@@ -124,7 +124,7 @@ android/…/stride-ffi   UniFFI bindings, panic catching, JSON in / JSON out
 | pattern | the athlete's own history of comparable states; always carries its n; never from fewer than three cases; lives on Body, not Today |
 | today's state | vitals first, then the plan's own options. No commands, no verdicts, no conclusions, no link between an option and a vital. Today and Body read the same **values and directions** from the core |
 | plan | plain fact: *done* · *not done* · *planned*. Never a red "missed". An inferred baseline never yields "not done" |
-| story | descriptive, never evaluative; reads the same primitives the charts read |
+| story | descriptive, never evaluative; reads the same primitives the charts read; the feed shows the sentence, the detail shows it plus the why |
 | fitness | no trend percentage without a real baseline; consistency is stated, never graded |
 | compare | the basis is always stated; swapping A and B flips every delta |
 
