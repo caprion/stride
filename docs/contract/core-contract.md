@@ -261,3 +261,31 @@ Two consequences, both settled here because the importer raised them:
   activity id, so the pull recognises it, sees that the file is missing, and
   fetches the file once. After that the run is complete and is never fetched
   again.
+
+## 10. The story — the sentence every run carries
+
+The story is the core's, and it is the only thing in the app that describes a
+whole run in words. It is **descriptive and never evaluative**: it says what
+the run *was*, built from the same primitives the charts read, so a sentence can
+never contradict a chart.
+
+- **The feed shows the sentence. The detail shows the sentence and the why.**
+  The feed has no splits (decoding forty FIT files for a feed page is not free)
+  and the detail does, so the two differ by design: the **why** is the run's own
+  shape — the slowest split, the fastest one.
+- **The why is said only when it is worth a sentence**: when the slowest or
+  fastest split stands out from the run's average pace by more than ten per
+  cent. Every run has a slowest split; naming it when it is like the rest is
+  noise.
+- **"Your usual Wednesday" is the median** of the athlete's earlier Wednesdays —
+  the same measure the band uses (the median of the last thirty nights), not
+  the last one and not the average.
+- **Every word a sentence uses is a word the catalogue holds**, because the
+  engine renders whole sentences out of the catalogue. So not only the banned
+  words, but any word the app does not hold — "good", "great", anything else —
+  cannot be said. The proof runs over the output, over every combination of the
+  facts.
+- **The previous implementation's story is an oracle for *what* a story can say,
+  never for how it says it.** It emitted clauses with a chip and a tone
+  ("good", "warn", "neutral") and advised the athlete ("keep the next few days
+  easy"). v2 drops the chips, the tone and the advice.
