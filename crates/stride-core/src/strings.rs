@@ -418,10 +418,14 @@ pub const CATALOGUE: [Entry; 83] = [
         template: "Z{index}",
     },
     Entry {
+        // The honest answer when the bands cannot be computed. The maximum is
+        // *derived* from the run's own samples, not stored, and no threshold
+        // is stored either: what is missing is a sample that carries a heart
+        // rate, so no maximum can be read.
         id: "zones.unavailable",
         kind: StringKind::Statement,
         role: None,
-        template: "zones unavailable — no stored max or threshold heart rate",
+        template: "zones unavailable — the run has no heart-rate samples",
     },
     // The plan's statements: what the athlete intended, what happened, and
     // where the intent came from. They are facts, never verdicts.
@@ -1081,6 +1085,16 @@ mod tests {
         assert_eq!(text("direction.could_be_better"), Some("could be better"));
         // The set cannot grow: a fourth word is not in the catalogue.
         assert!(text("direction.much_worse").is_none());
+    }
+
+    #[test]
+    fn the_zones_s_honest_answer_says_what_is_actually_missing() {
+        // The maximum is derived from the run's own samples and no threshold
+        // is stored: what is missing is a sample that carries a heart rate.
+        assert_eq!(
+            text("zones.unavailable"),
+            Some("zones unavailable — the run has no heart-rate samples")
+        );
     }
 
     #[test]
