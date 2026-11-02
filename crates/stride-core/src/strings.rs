@@ -171,7 +171,7 @@ pub struct Entry {
 }
 
 /// The catalogue.
-pub const CATALOGUE: [Entry; 80] = [
+pub const CATALOGUE: [Entry; 81] = [
     // The vitals.
     Entry {
         id: "vital.sleep.label",
@@ -196,6 +196,18 @@ pub const CATALOGUE: [Entry; 80] = [
         kind: StringKind::Vital,
         role: None,
         template: "Rest",
+    },
+    Entry {
+        // The heading of the reading. It names the *source* of the numbers —
+        // the night they were taken in — and never interprets them: "Rest —
+        // could be better" can be heard as an instruction, and the app
+        // informs and never instructs. The "Rest" label above stays the label
+        // of the summary row; the contract bans "rest" as a command, never as
+        // the noun.
+        id: "vital.rest.heading",
+        kind: StringKind::Vital,
+        role: None,
+        template: "Last night",
     },
     Entry {
         id: "vital.sleep.value",

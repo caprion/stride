@@ -12,6 +12,7 @@
     { "id": "vital.hrv.label", "kind": "vital", "role": null, "template": "HRV" },
     { "id": "vital.resting_hr.label", "kind": "vital", "role": null, "template": "Resting HR" },
     { "id": "vital.rest.label", "kind": "vital", "role": null, "template": "Rest" },
+    { "id": "vital.rest.heading", "kind": "vital", "role": null, "template": "Last night" },
     { "id": "vital.sleep.value", "kind": "vital", "role": null, "template": "{value}" },
     { "id": "vital.hrv.value", "kind": "vital", "role": null, "template": "{value} ms" },
     { "id": "vital.resting_hr.value", "kind": "vital", "role": null, "template": "{value} bpm" },
