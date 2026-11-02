@@ -139,8 +139,19 @@ while IFS= read -r line; do
     && fail "an email address was added — ${line%%$'\t'*}"
   printf '%s' "$text" | grep -qP -- "$privacy_phone_re" \
     && fail "a phone number was added — ${line%%$'\t'*}"
-  printf '%s' "$text" | grep -qP -- "$privacy_note_re" \
-    && fail "a free-text note was added — the only free text the product stores is the athlete's own; if this is a fixture, use a placeholder"
+  # A note is the athlete's own free text, and it can only be in the corpus
+  # or in a test. The app's own source is the app's words, and the voice lint
+  # governs those.
+  case "$file" in
+    frontend/src/*)
+      # The app's own source is the app's words, and the voice lint governs
+      # those.
+      ;;
+    fixtures/*|crates/*/tests/*|desktop/tests/*|*/tests/*|*.json|*.csv|*.toml)
+      printf '%s' "$text" | grep -qP -- "$privacy_note_re" \
+        && fail "a free-text note was added — the only free text the product stores is the athlete's own; if this is a fixture, use a placeholder"
+      ;;
+  esac
 done < <(printf '%s\n' "$ADDED")
 
 # ------------------------------------------------------------ 3. dependencies

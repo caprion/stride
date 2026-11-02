@@ -296,9 +296,17 @@ privacy_check_line() {
   # The athlete's data can only be in the **corpus** or in a **test**. The
   # app's own source — including the app's own sample data — is the app's
   # words, and the voice lint governs those.
-  local note_is_data=0
   case "$file" in
-    fixtures/*|crates/*/tests/*|desktop/tests/*) note_is_data=1 ;;
+    fixtures/*|crates/*/tests/*|desktop/tests/*|*/tests/*|*.json|*.csv|*.toml)
+      note_is_data=1
+      ;;
+    frontend/src/*)
+      # The app's own source is the app's words.
+      note_is_data=0
+      ;;
+    *)
+      note_is_data=0
+      ;;
   esac
   if [[ "$frozen" != "1" && "$note_is_data" == "1" && "$text" =~ $RE_NOTE ]]; then
     out+="$file: a free-text note — the only free text the product stores is the athlete's own; if this is a fixture, use a placeholder"$'\n'
