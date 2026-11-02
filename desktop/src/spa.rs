@@ -1,9 +1,10 @@
 //! The app, and the files it is made of.
 //!
-//! **One bundle, built once, embedded in the binary.** The frontend is
-//! built with `npm --prefix frontend run build`, and the result is compiled
-//! into the rig, so `cargo run -p stride-desktop` needs no node, no
-//! `node_modules`, and no second process to keep alive.
+//! **One bundle, embedded in the binary.** A clean checkout carries the
+//! released bundle in `desktop/assets`, so `cargo run -p stride-desktop`
+//! needs no Node, no `node_modules`, and no second process to keep alive.
+//! A developer checkout may have `frontend/dist`; that bundle is preferred
+//! while it is there, which keeps the normal edit-reload loop working.
 //!
 //! ## The guard
 //!
@@ -35,17 +36,30 @@ use rust_embed::RustEmbed;
 
 use crate::http::Response;
 
-/// The bundle, embedded in the binary.
+/// The development bundle, embedded in the binary.
 ///
 /// The path is relative to this crate: `desktop/../frontend/dist` is the
-/// bundle the build script made sure is there.
+/// bundle the frontend's build makes.
 #[derive(RustEmbed)]
 #[folder = "../frontend/dist"]
-struct Assets;
+struct DevelopmentAssets;
+
+/// The released bundle, embedded in the binary.
+///
+/// This is what a clean Rust-only checkout carries. It is the same app,
+/// built from the frontend at the commit that produced this bundle.
+#[derive(RustEmbed)]
+#[folder = "assets"]
+struct ReleasedAssets;
 
 /// Was the bundle there when this binary was built?
 pub fn bundle_is_built() -> bool {
     env!("STRIDE_FRONTEND_BUILT") == "1"
+}
+
+/// Is the development bundle the one to serve?
+fn use_development_bundle() -> bool {
+    env!("STRIDE_USE_DEVELOPMENT_BUNDLE") == "1"
 }
 
 /// The app: the embedded bundle, and a directory to serve from disk.
@@ -103,7 +117,12 @@ impl Spa {
         }
 
         let relative = path.trim_start_matches('/');
-        if let Some(file) = Assets::get(relative) {
+        let file = if use_development_bundle() {
+            DevelopmentAssets::get(relative)
+        } else {
+            ReleasedAssets::get(relative)
+        };
+        if let Some(file) = file {
             return Response::bytes(200, content_type_for(relative), file.data.into_owned());
         }
 
@@ -121,7 +140,12 @@ impl Spa {
 
     /// The app's `index.html`.
     pub fn index(&self) -> Response {
-        match Assets::get("index.html") {
+        let file = if use_development_bundle() {
+            DevelopmentAssets::get("index.html")
+        } else {
+            ReleasedAssets::get("index.html")
+        };
+        match file {
             Some(file) => {
                 Response::bytes(200, content_type_for("index.html"), file.data.into_owned())
             }
@@ -139,11 +163,8 @@ impl Spa {
              <body style=\"font-family: system-ui, sans-serif; margin: 3rem auto; max-width: 40rem; \
              line-height: 1.5\">\n\
              <h1>The app was not built</h1>\n\
-             <p>This binary was compiled without the frontend bundle, so there is nothing to \
-             serve yet. Build the bundle once, then run the rig again:</p>\n\
-             <pre style=\"background: #f4f4f4; padding: 0.75rem; border-radius: 6px\">\
-             npm --prefix frontend run build</pre>\n\
-             <p>Then <code>cargo run -p stride-desktop</code>.</p>\n\
+             <p>This binary was compiled without the app bundle, so there is nothing to serve \
+             yet. Build the rig again from a checkout that carries the released bundle.</p>\n\
              </body></html>\n",
         )
     }

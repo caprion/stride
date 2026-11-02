@@ -39,6 +39,7 @@ use stride_store::export::{ConversionReport, Format};
 use stride_store::DatabaseKey;
 
 use crate::error::{Error, Result};
+use crate::paths;
 
 /// The length of the raw SQLCipher key, in bytes.
 pub const KEY_LENGTH: usize = 32;
@@ -144,14 +145,45 @@ pub fn convert_plaintext_database(
     database: &Path,
     database_key: &DatabaseSecret,
 ) -> Result<Option<ConversionReport>> {
+    // An empty file is a database that has not been opened yet, not an old
+    // plaintext database. Converting it would leave a pointless plain copy.
+    if let Ok(metadata) = std::fs::metadata(database) {
+        if metadata.is_file() && metadata.len() == 0 {
+            return Ok(None);
+        }
+    }
     match stride_store::export::detect_format(database)? {
         Format::Plaintext => {
             let key = database_key.store_key()?;
             let report = stride_store::export::convert_plaintext_to_encrypted(database, &key)?;
+            protect_database_files(database)?;
             Ok(Some(report))
         }
         Format::Encrypted | Format::Missing => Ok(None),
     }
+}
+
+/// Keep every file beside the database readable by its owner only.
+///
+/// SQLite may replace the database and its write-ahead files while a
+/// conversion or a migration runs. The data directory is private, but the
+/// files themselves are tightened again as well.
+pub fn protect_database_files(database: &Path) -> Result<()> {
+    paths::set_private_mode(database)?;
+    for suffix in ["-wal", "-shm", PLAIN_BACKUP_SUFFIX] {
+        let path = with_suffix(database, suffix);
+        if path.exists() {
+            paths::set_private_mode(&path)?;
+        }
+    }
+    Ok(())
+}
+
+/// A path beside the database with one more suffix.
+fn with_suffix(database: &Path, suffix: &str) -> std::path::PathBuf {
+    let mut name = database.as_os_str().to_os_string();
+    name.push(suffix);
+    std::path::PathBuf::from(name)
 }
 
 /// Where the plain copy of a converted database is kept.

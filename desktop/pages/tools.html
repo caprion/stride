@@ -1,0 +1,334 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<title>Stride rig tools</title>
+<style>
+  :root {
+    color-scheme: light dark;
+    --paper: #f7f7f4;
+    --card: #ffffff;
+    --ink: #171918;
+    --muted: #5d625f;
+    --line: #d8dcd8;
+    --accent: #126e52;
+    --accent-ink: #ffffff;
+    --error: #8b2635;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --paper: #151816;
+      --card: #1d211f;
+      --ink: #edf1ee;
+      --muted: #aeb8b1;
+      --line: #3a423d;
+      --accent: #63d6a9;
+      --accent-ink: #102019;
+      --error: #ff9eaa;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    min-height: 100dvh;
+    background: var(--paper);
+    color: var(--ink);
+    font: 16px/1.5 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  }
+  main { width: min(100%, 860px); margin: 0 auto; padding: 42px 22px 64px; }
+  .mark { margin: 0 0 8px; color: var(--accent); font-size: 13px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; }
+  h1 { margin: 0 0 8px; font-size: clamp(30px, 6vw, 44px); letter-spacing: -.025em; }
+  h2 { margin: 0 0 8px; font-size: 20px; }
+  .lede { margin: 0 0 30px; color: var(--muted); }
+  section { margin-top: 18px; padding: 22px; border: 1px solid var(--line); border-radius: 14px; background: var(--card); }
+  p { margin: 0 0 14px; }
+  .muted { color: var(--muted); font-size: 14px; }
+  button, input {
+    min-height: 44px;
+    border-radius: 8px;
+    font: inherit;
+  }
+  button { padding: 9px 15px; border: 1px solid var(--accent); background: var(--accent); color: var(--accent-ink); font-weight: 650; cursor: pointer; }
+  button.secondary { border-color: var(--line); background: transparent; color: var(--ink); }
+  button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  input { width: min(100%, 560px); padding: 9px 11px; border: 1px solid var(--line); background: var(--paper); color: var(--ink); }
+  .row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+  .drop {
+    display: grid;
+    place-items: center;
+    min-height: 128px;
+    padding: 20px;
+    border: 1px dashed var(--line);
+    border-radius: 10px;
+    color: var(--muted);
+    text-align: center;
+  }
+  .drop[data-active="true"] { border-color: var(--accent); color: var(--ink); }
+  output {
+    display: block;
+    margin-top: 16px;
+    padding: 12px;
+    border-radius: 8px;
+    background: var(--paper);
+    color: var(--muted);
+    font: 13px/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+  }
+  output[data-kind="error"] { color: var(--error); }
+  code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+  .privacy { border-left: 3px solid var(--accent); padding-left: 12px; }
+</style>
+</head>
+<body>
+<main>
+  <p class="mark">Stride · development rig</p>
+  <h1>Rig tools</h1>
+  <p class="lede">Move a verified copy of the local log, or bring in a FIT file. These tools work on this rig only.</p>
+
+  <section>
+    <h2>Export</h2>
+    <p class="muted">Writes an encrypted database, a manifest with the row counts and digest, and a separate key for that export.</p>
+    <div class="row"><button id="export-button" type="button">Write an export</button></div>
+    <output id="export-output" aria-live="polite"></output>
+  </section>
+
+  <section>
+    <h2>Import an export</h2>
+    <p class="muted">The import is a merge. Rows already here are updated, new rows are added, and importing the same bundle twice adds nothing.</p>
+    <form id="import-form">
+      <label for="import-path">Export directory on this machine</label>
+      <div class="row">
+        <input id="import-path" name="path" type="text" autocomplete="off" spellcheck="false" placeholder="/path/to/stride-export">
+        <button type="submit">Import</button>
+      </div>
+    </form>
+    <div class="drop" id="export-drop" tabindex="0" aria-label="Drop an export folder here">
+      Drop an export folder here, or choose it below.
+      <input id="export-files" type="file" multiple>
+    </div>
+    <output id="import-output" aria-live="polite"></output>
+  </section>
+
+  <section>
+    <h2>Import a FIT file</h2>
+    <p class="muted">The API decodes the file and decides whether it is already in the log.</p>
+    <div class="drop" id="fit-drop" tabindex="0" aria-label="Drop a FIT file here">
+      Drop one FIT file here, or choose it below.
+      <input id="fit-file" type="file" accept=".fit,application/octet-stream">
+    </div>
+    <output id="fit-output" aria-live="polite"></output>
+  </section>
+
+  <section class="privacy">
+    <h2>Keep an export private</h2>
+    <p class="muted">An export contains the athlete's runs, wellness days, plans and notes. Copy the whole folder over a private channel such as a USB cable or a local file share. Do not put it in public storage. The Garmin key is never in an export.</p>
+  </section>
+</main>
+
+<script>
+(() => {
+  'use strict'
+
+  const show = (element, text, kind = 'state') => {
+    element.textContent = text
+    element.dataset.kind = kind
+  }
+
+  const jsonPost = async (path, body) => {
+    const response = await fetch(path, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(body),
+    })
+    const answer = await response.json().catch(() => ({}))
+    if (!response.ok) {
+      const problem = new Error(answer.detail || `the request failed (${response.status})`)
+      problem.status = response.status
+      throw problem
+    }
+    return answer
+  }
+
+  const exportButton = document.getElementById('export-button')
+  const exportOutput = document.getElementById('export-output')
+  exportButton.addEventListener('click', async () => {
+    exportButton.disabled = true
+    show(exportOutput, 'Writing the export…')
+    try {
+      const answer = await jsonPost('/rig/export', {})
+      show(exportOutput, [
+        `Export: ${answer.path}`,
+        `Rows: ${answer.rows}`,
+        `Format version: ${answer.format_version} · schema version: ${answer.schema_version}`,
+        'The folder contains your runs. Keep it off public storage; copy it to the phone over a private channel.',
+      ].join('\n'))
+    } catch (problem) {
+      show(exportOutput, problem.message, 'error')
+    } finally {
+      exportButton.disabled = false
+    }
+  })
+
+  const importForm = document.getElementById('import-form')
+  const importPath = document.getElementById('import-path')
+  const importOutput = document.getElementById('import-output')
+  importForm.addEventListener('submit', async (event) => {
+    event.preventDefault()
+    const path = importPath.value.trim()
+    if (!path) {
+      show(importOutput, 'Type the export directory first.', 'error')
+      return
+    }
+    show(importOutput, 'Reading the export…')
+    try {
+      const answer = await jsonPost('/rig/import', { path })
+      show(importOutput, [
+        `Rows read: ${answer.rows}`,
+        `Format version: ${answer.format_version} · schema version: ${answer.schema_version}`,
+        `Runs: ${answer.activities} · wellness days: ${answer.wellness} · plan blocks: ${answer.plan_blocks} · planned sessions: ${answer.plan_sessions} · notes: ${answer.notes}`,
+        `Refused: ${answer.refused.length ? answer.refused.join('; ') : 'nothing'}`,
+      ].join('\n'))
+    } catch (problem) {
+      show(importOutput, `The import was refused: ${problem.message}`, 'error')
+    }
+  })
+
+  const readEntry = async (entry, prefix = '') => {
+    if (entry.isFile) {
+      const file = await new Promise((resolve, reject) => entry.file(resolve, reject))
+      return [{ file, name: file.name }]
+    }
+    if (!entry.isDirectory) return []
+    const reader = entry.createReader()
+    const children = []
+    while (true) {
+      const batch = await new Promise((resolve, reject) => reader.readEntries(resolve, reject))
+      if (!batch.length) break
+      children.push(...batch)
+    }
+    const files = []
+    for (const child of children) {
+      files.push(...await readEntry(child, prefix + entry.name + '/'))
+    }
+    return files
+  }
+
+  const filesFromDrop = async (event) => {
+    const entries = []
+    for (const item of event.dataTransfer.items) {
+      if (item.kind !== 'file') continue
+      const entry = item.webkitGetAsEntry ? item.webkitGetAsEntry() : null
+      if (entry) entries.push(entry)
+    }
+    if (!entries.length) {
+      return Array.from(event.dataTransfer.files).map((file) => ({ file, name: file.name }))
+    }
+    const files = []
+    for (const entry of entries) files.push(...await readEntry(entry))
+    return files
+  }
+
+  const uploadExport = async (files) => {
+    const wanted = new Set(['manifest.json', 'stride.db', 'db.key'])
+    const selected = files.filter((item) => wanted.has(item.name))
+    if (!selected.some((item) => item.name === 'manifest.json') || !selected.some((item) => item.name === 'stride.db')) {
+      throw new Error('the drop needs an export folder with manifest.json and stride.db in it')
+    }
+    const started = await jsonPost('/rig/import/start', {})
+    for (const item of selected) {
+      const query = new URLSearchParams({ upload: started.upload_id, name: item.name })
+      const response = await fetch(`/rig/import/file?${query}`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/octet-stream' },
+        body: item.file,
+      })
+      if (!response.ok) {
+        const body = await response.json().catch(() => ({}))
+        throw new Error(body.detail || `the upload failed (${response.status})`)
+      }
+    }
+    const query = new URLSearchParams({ upload: started.upload_id })
+    const response = await fetch(`/rig/import/finish?${query}`, { method: 'POST' })
+    const answer = await response.json().catch(() => ({}))
+    if (!response.ok) throw new Error(answer.detail || `the import failed (${response.status})`)
+    return answer
+  }
+
+  const importDrop = document.getElementById('export-drop')
+  const importFiles = document.getElementById('export-files')
+  const handleImportFiles = async (files) => {
+    show(importOutput, 'Uploading the export…')
+    try {
+      const answer = await uploadExport(files)
+      show(importOutput, [
+        `Rows read: ${answer.rows}`,
+        `Format version: ${answer.format_version} · schema version: ${answer.schema_version}`,
+        `Runs: ${answer.activities} · wellness days: ${answer.wellness} · plan blocks: ${answer.plan_blocks} · planned sessions: ${answer.plan_sessions} · notes: ${answer.notes}`,
+        `Refused: ${answer.refused.length ? answer.refused.join('; ') : 'nothing'}`,
+      ].join('\n'))
+    } catch (problem) {
+      show(importOutput, `The import was refused: ${problem.message}`, 'error')
+    }
+  }
+  importDrop.addEventListener('dragover', (event) => {
+    event.preventDefault()
+    importDrop.dataset.active = 'true'
+  })
+  importDrop.addEventListener('dragleave', () => { importDrop.dataset.active = 'false' })
+  importDrop.addEventListener('drop', async (event) => {
+    event.preventDefault()
+    importDrop.dataset.active = 'false'
+    await handleImportFiles(await filesFromDrop(event))
+  })
+  importFiles.addEventListener('change', async () => {
+    await handleImportFiles(Array.from(importFiles.files).map((file) => ({ file, name: file.name })))
+  })
+
+  const fitDrop = document.getElementById('fit-drop')
+  const fitFile = document.getElementById('fit-file')
+  const fitOutput = document.getElementById('fit-output')
+  const shortDate = (value) => {
+    const date = new Date(`${value}T00:00:00Z`)
+    if (!Number.isFinite(date.getTime())) return value
+    return new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', timeZone: 'UTC' }).format(date)
+  }
+  const importFit = async (file) => {
+    show(fitOutput, 'Reading the FIT file…')
+    try {
+      const response = await fetch('/rig/fit-import', {
+        method: 'POST',
+        headers: { 'content-type': 'application/octet-stream' },
+        body: file,
+      })
+      const answer = await response.json().catch(() => ({}))
+      if (!response.ok) throw new Error(answer.detail || `the import failed (${response.status})`)
+      const date = shortDate(answer.date)
+      const message = answer.duplicate
+        ? `already have this run: ${date}, ${answer.distance}`
+        : `Imported: ${date}, ${answer.distance}`
+      show(fitOutput, message)
+    } catch (problem) {
+      show(fitOutput, `The FIT file was refused: ${problem.message}`, 'error')
+    }
+  }
+  fitDrop.addEventListener('dragover', (event) => {
+    event.preventDefault()
+    fitDrop.dataset.active = 'true'
+  })
+  fitDrop.addEventListener('dragleave', () => { fitDrop.dataset.active = 'false' })
+  fitDrop.addEventListener('drop', async (event) => {
+    event.preventDefault()
+    fitDrop.dataset.active = 'false'
+    const files = await filesFromDrop(event)
+    if (files.length) await importFit(files[0].file)
+  })
+  fitFile.addEventListener('change', () => {
+    if (fitFile.files.length) importFit(fitFile.files[0])
+  })
+})()
+</script>
+</body>
+</html>

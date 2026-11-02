@@ -165,6 +165,8 @@ fn a_plain_database_is_converted_and_the_plain_copy_is_kept() -> Result<()> {
         stride_store::export::detect_format(&backup)?,
         stride_store::export::Format::Plaintext
     );
+    #[cfg(unix)]
+    assert_eq!(mode_of(&backup)?, 0o600, "the plain copy is not private");
 
     // And a second run does not convert it again.
     assert!(dbkey::convert_plaintext_database(&database, &database_key)?.is_none());

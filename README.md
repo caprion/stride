@@ -90,6 +90,43 @@ The key is wrapped by a non-exportable Keystore key and never enters the
 WebView. There is no server to reach, no account to create and nothing to sign
 up for — it works on a plane, with this VM switched off.
 
+## The desktop rig — a community tool
+
+The desktop rig is a **development rig and a community tool, not the
+product**. It is one Rust binary that serves the same app and router as the
+phone, against a local encrypted database.
+
+1. **Build and run it with one command.** After cloning, run
+   `cargo run -p stride-desktop`. There is no Python environment, Node, npm,
+   or second server process; the app bundle is already in the repository and
+   is compiled into the binary.
+2. **Give it a Garmin Personal API key.** The first-run Connect page asks for
+   the consumer key, tests it with Garmin, and then keeps it on this machine
+   in a private file (`0600` on POSIX systems). The key is never put in a URL,
+   a log line, an API
+   response, or another page. `cf-garmin env -- cargo run -p stride-desktop`
+   supplies a development key in memory.
+3. **The trust model is three lines.** The loopback is always answered; an
+   address inside a CIDR in `STRIDE_TRUSTED_NETWORKS` is answered; everything
+   else is refused with a message naming that variable. To use the rig from a
+   phone on the athlete's own network, trust the phone's CIDR and serve TLS
+   with a certificate the phone trusts. The full command is in the
+   [rig guide](desktop/README.md).
+4. **Move the data with the export.** `stride-desktop export` writes a
+   verified, encrypted bundle and prints its path. The bundle holds the runs,
+   wellness days, plans, notes and sync state, but not the Garmin key. Keep
+   it off public storage and copy the whole folder over a private channel.
+   The current phone app does not yet have a bulk desktop-export import
+   screen, so the bundle is the portable copy until that screen exists.
+   `stride-desktop import <directory>` or the rig's drop target reads it back
+   and reports the rows, versions and refusals.
+5. **The phone app is the product.** The rig is the fast loop, the reference
+   host and a community tool around the same Rust core. It never becomes a
+   second product.
+
+See [the rig guide](desktop/README.md) for the exact first-run steps, the
+network command, what an export contains, and what the import refuses.
+
 ## Building
 
 The core is Rust; the UI is React; the phone shell is Kotlin + Capacitor.

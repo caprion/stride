@@ -10,10 +10,12 @@
 //!
 //! * **in memory**, for the length of the session — the app's field posts
 //!   it, and the rig holds it until it is forgotten;
-//! * **an environment variable** — `STRIDE_GARMIN_KEY` — for a rig that a
+//! * **an environment variable** — `STRIDE_GARMIN_KEY` (or the
+//!   `GARMIN_API_KEY` that `cf-garmin env` provides) — for a rig that a
 //!   script starts;
 //! * **a file with `0600`** in the data directory — for a rig that is
-//!   restarted often.
+//!   restarted often. The first-run page writes this file only after Garmin
+//!   has accepted the key and the athlete has asked to connect.
 //!
 //! ## What it never does
 //!
@@ -33,13 +35,19 @@
 //! string that can be printed, and a printed key is a leaked key.
 
 use std::fmt;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::sync::Mutex;
 
 use crate::error::{Error, Result};
 
 /// The environment variable the Garmin key may be in.
 pub const GARMIN_KEY_VARIABLE: &str = "STRIDE_GARMIN_KEY";
+
+/// The environment variable `cf-garmin env` provides.
+///
+/// It is accepted as a second name so the development helper works without
+/// a wrapper that copies the secret from one variable to another.
+pub const GARMIN_API_KEY_VARIABLE: &str = "GARMIN_API_KEY";
 
 /// A Garmin Personal API key.
 ///
@@ -111,6 +119,7 @@ impl Source {
 #[derive(Debug, Default)]
 pub struct KeyStore {
     inner: Mutex<Inner>,
+    persist_path: Option<PathBuf>,
 }
 
 #[derive(Debug, Default)]
@@ -124,7 +133,19 @@ impl KeyStore {
     pub fn empty() -> KeyStore {
         KeyStore {
             inner: Mutex::new(Inner::default()),
+            persist_path: None,
         }
+    }
+
+    /// The store that may keep the key in a private file.
+    ///
+    /// The path is only a destination. Nothing is written until
+    /// [`KeyStore::persist`] is called, and that happens only after the
+    /// first-run flow has accepted the key.
+    pub fn with_persist_path(path: impl Into<PathBuf>) -> KeyStore {
+        let mut store = KeyStore::empty();
+        store.persist_path = Some(path.into());
+        store
     }
 
     /// A store that holds the key in `STRIDE_GARMIN_KEY`.
@@ -133,13 +154,10 @@ impl KeyStore {
     /// an error, it is the state before the athlete connects.
     pub fn from_environment() -> Result<KeyStore> {
         let store = KeyStore::empty();
-        let value = match std::env::var(GARMIN_KEY_VARIABLE) {
-            Ok(value) => value,
-            Err(_) => return Ok(store),
+        let value = match environment_value() {
+            Some(value) => value,
+            None => return Ok(store),
         };
-        if value.trim().is_empty() {
-            return Ok(store);
-        }
         store.set(&value)?;
         store.mark(Source::Environment);
         Ok(store)
@@ -153,7 +171,7 @@ impl KeyStore {
     pub fn from_file(path: &Path) -> Result<KeyStore> {
         check_private_file(path)?;
         let text = std::fs::read_to_string(path).map_err(|source| Error::io(path, source))?;
-        let store = KeyStore::empty();
+        let store = KeyStore::with_persist_path(path);
         store.set(&text)?;
         store.mark(Source::File);
         Ok(store)
@@ -175,6 +193,40 @@ impl KeyStore {
         if let Ok(mut inner) = self.inner.lock() {
             inner.key = None;
             inner.source = None;
+        }
+    }
+
+    /// Keep the key in the private file this store was given.
+    ///
+    /// A store with no destination keeps the key in memory, which is what a
+    /// test and a short-lived process want. The bytes are written through
+    /// the paths helper, which creates the file with `0600` and replaces it
+    /// atomically.
+    pub fn persist(&self) -> Result<()> {
+        let Some(path) = &self.persist_path else {
+            return Ok(());
+        };
+        let value = match self.with_secret(|secret| secret.to_string()) {
+            Some(value) => value,
+            None => return Err(Error::key("there is no Garmin key to keep")),
+        };
+        crate::paths::write_private_atomic(path, value.as_bytes())?;
+        self.mark(Source::File);
+        Ok(())
+    }
+
+    /// Remove the private file this store may have written.
+    ///
+    /// A file that is not there is not an error: forgetting a key that was
+    /// never written down is complete.
+    pub fn remove_persisted(&self) -> Result<()> {
+        let Some(path) = &self.persist_path else {
+            return Ok(());
+        };
+        match std::fs::remove_file(path) {
+            Ok(()) => Ok(()),
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound => Ok(()),
+            Err(source) => Err(Error::io(path, source)),
         }
     }
 
@@ -214,6 +266,22 @@ impl KeyStore {
             .lock()
             .map_err(|_| Error::key("the key store's lock was poisoned"))
     }
+}
+
+/// The first non-empty environment variable that may hold the key.
+///
+/// `STRIDE_GARMIN_KEY` is the rig's own name. `GARMIN_API_KEY` is what
+/// `cf-garmin env` sets, and accepting it means the development helper
+/// works with the command exactly as its help says.
+fn environment_value() -> Option<String> {
+    for name in [GARMIN_KEY_VARIABLE, GARMIN_API_KEY_VARIABLE] {
+        if let Ok(value) = std::env::var(name) {
+            if !value.trim().is_empty() {
+                return Some(value);
+            }
+        }
+    }
+    None
 }
 
 /// Is this file readable by its owner only?
@@ -268,6 +336,30 @@ mod tests {
         assert!(store.is_set());
         store.forget();
         assert!(!store.is_set());
+        Ok(())
+    }
+
+    #[test]
+    fn a_kept_key_is_private() -> Result<()> {
+        let directory = std::env::temp_dir().join("stride-key-persist-test");
+        let _ = std::fs::remove_dir_all(&directory);
+        std::fs::create_dir_all(&directory)?;
+        let path = directory.join("garmin.key");
+        let store = KeyStore::with_persist_path(&path);
+        store.set("test-value")?;
+        store.persist()?;
+
+        assert_eq!(std::fs::read_to_string(&path)?, "test-value");
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt;
+            let mode = std::fs::metadata(&path)?.permissions().mode() & 0o777;
+            assert_eq!(mode, 0o600);
+        }
+        store.remove_persisted()?;
+        assert!(!path.exists());
+
+        let _ = std::fs::remove_dir_all(&directory);
         Ok(())
     }
 }
