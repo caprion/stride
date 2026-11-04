@@ -191,6 +191,36 @@ and retry twice, and the "exactly one" guarantee would be a coincidence
 rather than a rule. Both sides assert it: the client test asserts one
 exchange per call, and the shell's test asserts one retry per sync.
 
+### Bounded history continuation (2026-11-04)
+
+`POST /sync/run` takes `days` (a whole-number lookback from 1 to 3650,
+default 365) and optional `backfill: true`. An ordinary pull refreshes recent
+dates; backfill resumes the persisted dated windows without repeatedly
+refreshing today. A smaller subsequent request does not erase an already
+accepted older target.
+
+Activity and wellness checkpoints are separate. A completed activity listing
+may reconcile only its fully enumerated dated range. A capped range is narrowed;
+a single day exceeding the traversal cap fails explicitly. A wellness day
+advances only after all three endpoint calls succeed, including successful
+no-data responses. Its observations and checkpoint commit atomically.
+Coverage means dates checked, not that Garmin supplies measurements for them.
+
+Actual HTTP attempts, response-body bytes and elapsed time are bounded per
+attempt, including authentication and redirects. A byte/time pause refuses the
+next request, not an already bounded in-flight response. A paused job reports
+`more_pending`; it does not fabricate completion or a provider failure.
+`failure` describes a partial provider/data failure even when some records landed.
+Provider `Retry-After` is persisted and prevents an early new network attempt.
+
+Android exposes the separate native `stride_garmin_backfill` function. All
+foreground, setup and background pulls share the native serialized engine, with
+a second non-blocking API ownership guard (`sync_busy`, status 409). Credentials
+are request-local and never placed in WorkManager data or returned to the page.
+The existing shell-owned immediate retry remains bounded to one; rate limits
+instead defer. One unique history worker resumes with WorkManager backoff while
+network/auto-sync/battery/unlock policies allow it. Invalid credentials and
+permanent data failures stop that worker.
 
 ## 8. One owner for the sentences and the rounding
 

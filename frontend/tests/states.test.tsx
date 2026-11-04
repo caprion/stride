@@ -51,7 +51,10 @@ describe('Today, with nothing in it', () => {
     )
 
     expect(container.textContent).toContain('No wellness data yet')
-    expect(container.textContent).toContain('appear after the first sync')
+    expect(container.textContent).toContain('appear after they arrive in a sync')
+    expect(
+      container.querySelector<HTMLDetailsElement>('[data-testid="today-no-vitals"]')?.open,
+    ).toBe(false)
     // The wellness is missing, and only the wellness: the runs and the
     // plan are the router's, and they are still there.
     expect(container.querySelector('[data-testid="today-vitals"]')).toBeNull()

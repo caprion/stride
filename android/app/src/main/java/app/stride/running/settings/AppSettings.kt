@@ -38,7 +38,7 @@ class AppSettings(context: Context) {
             preferences.edit { putString(KEY_SERVER_URL, trimmed) }
         }
 
-    /** How many days a pull covers. */
+    /** The dated import target; per-job download limits live in the core. */
     var syncDays: Int
         get() = preferences.getInt(KEY_SYNC_DAYS, PullWindow.DEFAULT_DAYS.toInt())
         set(value) = preferences.edit {
@@ -119,7 +119,9 @@ class AppSettings(context: Context) {
         private const val NO_NEXT_PULL = -1L
         private const val NAME = "stride.settings"
         private const val KEY_SERVER_URL = "server_url"
-        private const val KEY_SYNC_DAYS = "sync_days"
+        // The old sync_days preference bounded a single recent pull. Preserve
+        // that legacy value rather than reinterpreting it as a history target.
+        private const val KEY_SYNC_DAYS = "history_days"
         private const val KEY_AUTO_SYNC = "auto_sync"
         private const val KEY_SYNC_INTERVAL = "sync_interval_hours"
         private const val KEY_NETWORK = "network_enabled"

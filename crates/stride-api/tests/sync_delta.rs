@@ -15,8 +15,8 @@
 mod common;
 
 use std::collections::BTreeMap;
-use std::sync::atomic::{AtomicUsize, Ordering};
-use std::sync::{Arc, Mutex};
+use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
+use std::sync::{Arc, Barrier, Mutex};
 
 use chrono::{DateTime, Utc};
 use serde_json::{json, Value};
@@ -62,6 +62,9 @@ struct SyncGarmin {
     listed: Mutex<Vec<Listed>>,
     fit: Vec<u8>,
     rate_limit_after_pages: AtomicUsize,
+    hrv_failure_status: AtomicUsize,
+    retry_after_seconds: AtomicUsize,
+    filter_dates: AtomicBool,
     inner: Mutex<Inner>,
 }
 
@@ -76,6 +79,9 @@ impl SyncGarmin {
             listed: Mutex::new(listed),
             fit,
             rate_limit_after_pages: AtomicUsize::new(usize::MAX),
+            hrv_failure_status: AtomicUsize::new(0),
+            retry_after_seconds: AtomicUsize::new(0),
+            filter_dates: AtomicBool::new(false),
             inner: Mutex::new(Inner::default()),
         }
     }
@@ -152,6 +158,16 @@ impl HttpTransport for SyncGarmin {
                 .clone();
             let page: Vec<Value> = listed
                 .iter()
+                .filter(|entry| {
+                    if !self.filter_dates.load(Ordering::SeqCst) {
+                        return true;
+                    }
+                    let date = &entry.start[..10];
+                    params
+                        .get("startDate")
+                        .map_or(true, |from| date >= from.as_str())
+                        && params.get("endDate").map_or(true, |to| date <= to.as_str())
+                })
                 .skip(start)
                 .take(limit)
                 .map(|entry| {
@@ -179,6 +195,32 @@ impl HttpTransport for SyncGarmin {
             });
         }
 
+        let is_hrv = path.starts_with(&format!("{}/", stride_ingest::HRV_DAILY_PATH));
+        if is_hrv && self.hrv_failure_status.load(Ordering::SeqCst) != 0 {
+            let retry_after = self.retry_after_seconds.load(Ordering::SeqCst);
+            return Ok(HttpResponse {
+                status: self.hrv_failure_status.load(Ordering::SeqCst) as u16,
+                headers: if retry_after > 0 {
+                    vec![("Retry-After".to_string(), retry_after.to_string())]
+                } else {
+                    Vec::new()
+                },
+                body: Vec::new(),
+            });
+        }
+        if is_hrv
+            || [
+                stride_ingest::garmin::SLEEP_DAILY_PATH,
+                stride_ingest::garmin::USER_SUMMARY_PATH,
+            ]
+            .contains(&path.as_str())
+        {
+            return Ok(HttpResponse {
+                status: 204,
+                headers: Vec::new(),
+                body: Vec::new(),
+            });
+        }
         Ok(HttpResponse {
             status: 404,
             headers: Vec::new(),
@@ -206,14 +248,23 @@ struct PullHarness {
 
 impl PullHarness {
     fn with_budget(listed: Vec<Listed>, fit: Vec<u8>, budget: usize) -> Self {
+        Self::with_config(
+            listed,
+            fit,
+            Config {
+                max_activities_per_sync: budget,
+                max_sync_requests: usize::MAX,
+                max_sync_response_bytes: usize::MAX,
+                ..Config::default()
+            },
+        )
+    }
+
+    fn with_config(listed: Vec<Listed>, fit: Vec<u8>, config: Config) -> Self {
         let dir = ScratchDir::new("sync-delta").unwrap_or_else(|_| panic!("scratch"));
         let key = DatabaseKey::from_text("the database key of a test").unwrap();
         let store = Arc::new(Store::open_and_migrate(&dir.file("stride.db"), &key).unwrap());
         let garmin = Arc::new(SyncGarmin::new(listed, fit));
-        let config = Config {
-            max_activities_per_sync: budget,
-            ..Config::default()
-        };
         let api = Arc::new(Api::with_transport(
             store.clone(),
             config,
@@ -284,6 +335,16 @@ impl PullHarness {
 
     fn status(&self) -> Value {
         self.router.call("GET", "/sync/status", None).body
+    }
+
+    fn backfill(&self, days: i64) -> Value {
+        self.router
+            .call(
+                "POST",
+                "/sync/run",
+                Some(&format!("{{\"days\":{days},\"backfill\":true}}")),
+            )
+            .body
     }
 }
 
@@ -412,6 +473,61 @@ fn the_pull_is_bounded_by_the_budget() {
 }
 
 #[test]
+fn a_budget_stop_never_deletes_unseen_runs_or_advances_the_cursor() {
+    let (fit, distance, start) = decoded_truth();
+    let listed = (0..5)
+        .map(|index| {
+            PullHarness::listed(&format!("{}", 200 - index), distance, &start.to_rfc3339())
+        })
+        .collect();
+    let harness = PullHarness::with_budget(listed, fit, 2);
+    harness.seed("196", distance, start);
+    harness.seed("195", distance, start);
+
+    let result = harness.pull(30);
+    assert_eq!(result["activities"].as_u64(), Some(2));
+    assert_eq!(result["deleted"].as_u64(), Some(0));
+    assert!(harness.status()["cursor"].is_null());
+    for id in ["196", "195"] {
+        assert!(harness
+            .store
+            .activity_by_external("garmin_personal", id)
+            .unwrap()
+            .is_some());
+        assert!(!harness.store.activity_is_deleted(id).unwrap());
+    }
+
+    let complete = harness.pull(30);
+    assert_eq!(complete["deleted"].as_u64(), Some(1));
+    assert!(harness
+        .store
+        .activity_by_external("garmin_personal", "196")
+        .unwrap()
+        .is_some());
+}
+
+#[test]
+fn a_provider_page_cap_does_not_authorize_deletion() {
+    let (fit, distance, start) = decoded_truth();
+    let listed = (0..300)
+        .map(|index| {
+            PullHarness::listed(&format!("{}", 1000 - index), distance, &start.to_rfc3339())
+        })
+        .collect();
+    let harness = PullHarness::with_budget(listed, fit, 400);
+    harness.seed("100", distance, start);
+
+    let result = harness.pull(30);
+    assert_eq!(result["deleted"].as_u64(), Some(0));
+    assert!(harness
+        .store
+        .activity_by_external("garmin_personal", "100")
+        .unwrap()
+        .is_some());
+    assert!(harness.status()["cursor"].is_null());
+}
+
+#[test]
 fn no_starvation_the_budget_goes_to_unpulled_runs() {
     let (fit, distance, start) = decoded_truth();
     let mut listed = Vec::new();
@@ -530,4 +646,344 @@ fn the_cursor_is_the_newest_activity_pulled() {
     assert_eq!(status["cursor"].as_str(), Some("102"));
     assert_eq!(status["pulled"].as_u64(), Some(3));
     assert_eq!(status["skipped"].as_u64(), Some(0));
+}
+
+#[test]
+fn a_partial_activity_walk_does_not_stamp_a_successful_scan() {
+    let (fit, distance, start) = decoded_truth();
+    let harness = PullHarness::with_budget(
+        vec![
+            PullHarness::listed("102", distance, &start.to_rfc3339()),
+            PullHarness::listed("101", distance, &start.to_rfc3339()),
+        ],
+        fit,
+        1,
+    );
+    harness.pull(30);
+    let state = harness.store.sync_state("activities").unwrap().unwrap();
+    assert!(state.last_success_at.is_none());
+    assert_eq!(harness.status()["more_pending"], true);
+    assert!(harness.status()["last_error"].is_null());
+
+    harness.pull(30);
+    harness.pull(30);
+    let state = harness.store.sync_state("activities").unwrap().unwrap();
+    assert_eq!(state.last_success_at, Some(instant()));
+    assert!(harness.status()["last_error"].is_null());
+}
+
+#[test]
+fn an_hrv_failure_preserves_the_previous_wellness_success_and_stops_requests() {
+    let (fit, _, _) = decoded_truth();
+    let harness = PullHarness::new(Vec::new(), fit);
+    let previous = instant() - chrono::Duration::days(1);
+    harness
+        .store
+        .write_sync_state(&stride_store::SyncState {
+            kind: "wellness".to_string(),
+            cursor: None,
+            last_success_at: Some(previous),
+            token_expires_at: None,
+            updated_at: previous,
+        })
+        .unwrap();
+    harness
+        .garmin
+        .hrv_failure_status
+        .store(429, Ordering::SeqCst);
+    harness.pull(30);
+    let state = harness.store.sync_state("wellness").unwrap().unwrap();
+    assert_eq!(state.last_success_at, Some(previous));
+    assert!(harness.status()["last_error"].is_string());
+    assert!(harness
+        .garmin
+        .requests()
+        .iter()
+        .any(|(path, _)| path.starts_with(stride_ingest::HRV_DAILY_PATH)));
+    assert!(!harness
+        .garmin
+        .requests()
+        .iter()
+        .any(|(path, _)| path == stride_ingest::USER_SUMMARY_PATH));
+    let activities = harness.store.sync_state("activities").unwrap().unwrap();
+    assert_eq!(activities.last_success_at, Some(instant()));
+}
+
+#[test]
+fn history_continues_across_api_recreation_without_refetching_recent_days() {
+    let (fit, _, _) = decoded_truth();
+    let harness = PullHarness::new(Vec::new(), fit);
+    assert_eq!(harness.pull(365)["more_pending"], true);
+    let status = harness.status();
+    assert_eq!(
+        status["history"]["activities"]["checked_from"],
+        "2026-04-29"
+    );
+    assert_eq!(status["history"]["wellness"]["next_date"], "2026-05-09");
+    assert_eq!(harness.store.count_wellness_daily().unwrap(), 0);
+
+    let api = Arc::new(Api::with_transport(
+        harness.store.clone(),
+        Config::default(),
+        Arc::new(FixedClock::new(instant())),
+        harness.garmin.clone(),
+    ));
+    api.set_garmin_key(GARMIN_KEY);
+    let restarted = Router::new(api);
+    let body = restarted
+        .call(
+            "POST",
+            "/sync/run",
+            Some("{\"days\":365,\"backfill\":true}"),
+        )
+        .body;
+    assert_eq!(body["more_pending"], true);
+    let status = restarted.call("GET", "/sync/status", None).body;
+    assert_eq!(status["history"]["activities"]["next_date"], "2026-03-31");
+    assert_eq!(status["history"]["wellness"]["next_date"], "2026-04-25");
+    assert_eq!(harness.store.count_wellness_daily().unwrap(), 0);
+    let searches: Vec<_> = harness
+        .garmin
+        .requests()
+        .into_iter()
+        .filter(|(path, _)| path == ACTIVITIES_PATH)
+        .collect();
+    assert!(searches[1].1.contains("endDate=2026-04-28"));
+}
+
+#[test]
+fn no_data_is_checked_to_the_target_not_treated_as_end_of_history() {
+    let (fit, _, _) = decoded_truth();
+    let harness = PullHarness::new(Vec::new(), fit);
+    harness.pull(30);
+    let first = harness.backfill(30);
+    assert_eq!(first["complete"], false);
+    assert_eq!(first["more_pending"], true);
+    let second = harness.backfill(30);
+    assert_eq!(second["complete"], true);
+    assert_eq!(second["more_pending"], false);
+    assert_eq!(
+        harness.status()["history"]["wellness"]["checked_from"],
+        "2026-04-12"
+    );
+    assert_eq!(harness.store.count_wellness_daily().unwrap(), 0);
+}
+
+#[test]
+fn a_request_budget_pauses_before_another_attempt_and_retries_the_unchecked_day() {
+    let (fit, _, _) = decoded_truth();
+    let harness = PullHarness::with_config(
+        Vec::new(),
+        fit,
+        Config {
+            max_sync_requests: 4,
+            ..Config::default()
+        },
+    );
+    let result = harness.pull(365);
+    assert_eq!(harness.garmin.requests().len(), 4);
+    assert_eq!(result["more_pending"], true);
+    assert!(result["failure"].is_null());
+    assert_eq!(
+        harness.status()["history"]["wellness"]["next_date"],
+        "2026-05-12"
+    );
+    assert!(harness
+        .store
+        .sync_state("wellness")
+        .unwrap()
+        .unwrap()
+        .last_success_at
+        .is_none());
+    assert_eq!(
+        harness.status()["history"]["activities"]["next_date"],
+        "2026-04-28"
+    );
+    harness.backfill(365);
+    assert_eq!(harness.garmin.requests().len(), 8);
+    assert_eq!(
+        harness.status()["history"]["wellness"]["next_date"],
+        "2026-05-12"
+    );
+}
+
+#[test]
+fn a_byte_budget_stops_after_the_bounded_in_flight_response() {
+    let (fit, _, _) = decoded_truth();
+    let harness = PullHarness::with_config(
+        Vec::new(),
+        fit,
+        Config {
+            max_sync_response_bytes: 1,
+            ..Config::default()
+        },
+    );
+    let result = harness.pull(365);
+    assert_eq!(result["more_pending"], true);
+    assert!(result["failure"].is_null());
+    assert_eq!(harness.garmin.requests().len(), 1);
+    assert!(harness.status()["history"]["activities"]["checked_from"].is_null());
+}
+
+#[test]
+fn a_partial_failure_is_explicit_and_survives_api_recreation() {
+    let (fit, _, _) = decoded_truth();
+    let harness = PullHarness::new(Vec::new(), fit);
+    harness
+        .garmin
+        .hrv_failure_status
+        .store(429, Ordering::SeqCst);
+    let result = harness.pull(365);
+    assert_eq!(result["failure"]["status"], 429);
+    assert_eq!(result["complete"], false);
+    let api = Arc::new(Api::with_transport(
+        harness.store.clone(),
+        Config::default(),
+        Arc::new(FixedClock::new(instant())),
+        harness.garmin.clone(),
+    ));
+    assert!(Router::new(api).call("GET", "/sync/status", None).body["last_error"].is_string());
+}
+
+#[test]
+fn retry_after_survives_restart_and_blocks_another_provider_attempt() {
+    let (fit, _, _) = decoded_truth();
+    let harness = PullHarness::new(Vec::new(), fit);
+    harness
+        .garmin
+        .hrv_failure_status
+        .store(429, Ordering::SeqCst);
+    harness
+        .garmin
+        .retry_after_seconds
+        .store(120, Ordering::SeqCst);
+    let result = harness.pull(30);
+    assert_eq!(result["failure"]["retry_after_seconds"], 120);
+    let before = harness.garmin.requests().len();
+    let api = Arc::new(Api::with_transport(
+        harness.store.clone(),
+        Config::default(),
+        Arc::new(FixedClock::new(instant())),
+        harness.garmin.clone(),
+    ));
+    api.set_garmin_key(GARMIN_KEY);
+    let answer = Router::new(api).call("POST", "/sync/run", Some("{\"days\":30}"));
+    assert_eq!(answer.status, 429);
+    assert_eq!(answer.body["code"], "rate_limited");
+    assert_eq!(harness.garmin.requests().len(), before);
+}
+
+#[test]
+fn a_capped_listing_narrows_the_dated_window_until_it_can_finish() {
+    let (fit, distance, _) = decoded_truth();
+    let listed = (0..300)
+        .map(|index| {
+            PullHarness::listed(
+                &format!("{}", 1000 - index),
+                distance,
+                "2026-05-01T06:00:00Z",
+            )
+        })
+        .collect();
+    let harness = PullHarness::with_budget(listed, fit, 400);
+    harness.garmin.filter_dates.store(true, Ordering::SeqCst);
+    harness.pull(30);
+    assert!(harness.status()["history"]["activities"]["checked_from"].is_null());
+    harness.backfill(30);
+    assert_eq!(
+        harness.status()["history"]["activities"]["checked_from"],
+        "2026-05-06"
+    );
+    let searches: Vec<_> = harness
+        .garmin
+        .requests()
+        .into_iter()
+        .filter(|(path, _)| path == ACTIVITIES_PATH)
+        .collect();
+    assert!(searches.last().unwrap().1.contains("startDate=2026-05-06"));
+}
+
+#[test]
+fn a_single_day_that_cannot_be_enumerated_is_an_explicit_failure() {
+    let (fit, distance, _) = decoded_truth();
+    let listed = (0..300)
+        .map(|index| {
+            PullHarness::listed(
+                &format!("{}", 1000 - index),
+                distance,
+                "2026-05-01T06:00:00Z",
+            )
+        })
+        .collect();
+    let harness = PullHarness::with_budget(listed, fit, 400);
+    harness.garmin.filter_dates.store(true, Ordering::SeqCst);
+    harness
+        .store
+        .write_sync_state(&stride_store::SyncState {
+            kind: "activities".to_string(),
+            cursor: Some(
+                json!({
+                    "newest": null, "pulled": 0, "skipped": 0, "deleted": 0,
+                    "history": {
+                        "target_from": "2026-04-12", "next_date": "2026-05-01",
+                        "checked_from": "2026-05-02", "checked_to": "2026-05-12", "window_days": 1
+                    }
+                })
+                .to_string(),
+            ),
+            last_success_at: None,
+            token_expires_at: None,
+            updated_at: instant(),
+        })
+        .unwrap();
+    let result = harness.backfill(30);
+    assert_eq!(result["failure"]["status"], 400);
+    assert_eq!(result["complete"], false);
+    assert_eq!(
+        harness.status()["history"]["activities"]["next_date"],
+        "2026-05-01"
+    );
+    assert_eq!(result["deleted"], 0);
+}
+
+#[test]
+fn overlapping_callers_cannot_start_a_second_sync() {
+    struct BlockingTransport {
+        inner: Arc<SyncGarmin>,
+        entered: Arc<Barrier>,
+        release: Arc<Barrier>,
+    }
+    impl HttpTransport for BlockingTransport {
+        fn execute(&self, request: &HttpRequest) -> Result<HttpResponse, TransportError> {
+            if request.url.path() == TOKEN_PATH {
+                self.entered.wait();
+                self.release.wait();
+            }
+            self.inner.execute(request)
+        }
+    }
+    let (fit, _, _) = decoded_truth();
+    let harness = PullHarness::new(Vec::new(), fit);
+    let entered = Arc::new(Barrier::new(2));
+    let release = Arc::new(Barrier::new(2));
+    let api = Arc::new(Api::with_transport(
+        harness.store.clone(),
+        Config::default(),
+        Arc::new(FixedClock::new(instant())),
+        Arc::new(BlockingTransport {
+            inner: harness.garmin.clone(),
+            entered: entered.clone(),
+            release: release.clone(),
+        }),
+    ));
+    api.set_garmin_key(GARMIN_KEY);
+    let router = Arc::new(Router::new(api));
+    let first = router.clone();
+    let owner = std::thread::spawn(move || first.call("POST", "/sync/run", Some("{\"days\":30}")));
+    entered.wait();
+    let duplicate = router.call("POST", "/sync/run", Some("{\"days\":30}"));
+    release.wait();
+    assert_eq!(duplicate.status, 409);
+    assert_eq!(duplicate.body["code"], "sync_busy");
+    assert!(owner.join().unwrap().is_ok());
 }

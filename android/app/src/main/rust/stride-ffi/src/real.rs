@@ -60,6 +60,13 @@ impl ApiCore {
     pub fn with_clock(clock: Arc<dyn Clock>) -> ApiCore {
         ApiCore { clock }
     }
+
+    fn pull(&self, key: &str, days: i64, backfill: bool) -> Value {
+        // Keep the credential request-local, including on an error or panic.
+        // A competing caller cannot replace or clear another pull's key.
+        let body = json!({"key": key, "days": days, "backfill": backfill}).to_string();
+        stride_api::ffi::call_value("POST", "/sync/run", Some(&body))
+    }
 }
 
 impl Default for ApiCore {
@@ -109,13 +116,11 @@ impl Core for ApiCore {
     ///
     /// The key is in memory for the length of the pull and no longer.
     fn garmin_sync(&self, key: &str, days: i64) -> Value {
-        stride_api::ffi::set_garmin_key_value(key);
-        let body = json!({"days": days}).to_string();
-        let answer = stride_api::ffi::call_value("POST", "/sync/run", Some(&body));
-        // The key is dropped again: the copy in the Keystore is the one
-        // that lasts.
-        stride_api::ffi::set_garmin_connected_value(false);
-        answer
+        self.pull(key, days, false)
+    }
+
+    fn garmin_backfill(&self, key: &str, days: i64) -> Value {
+        self.pull(key, days, true)
     }
 
     /// Put the Garmin key in memory, or take it out again.
@@ -156,7 +161,7 @@ impl Core for ApiCore {
 }
 
 /// Decode a hexadecimal key.
-fn decode_hex(text: &str) -> Option<Vec<u8>> {
+pub(crate) fn decode_hex(text: &str) -> Option<Vec<u8>> {
     let bytes = text.as_bytes();
     if bytes.is_empty() || bytes.len() % 2 != 0 {
         return None;

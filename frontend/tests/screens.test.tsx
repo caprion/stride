@@ -24,7 +24,19 @@ function vitalReading(container: HTMLElement, key: string) {
 }
 
 describe('Today', () => {
-  it('leads with the vitals: value, direction, and the muted arithmetic', async () => {
+  it('leads with recorded weekly activity before the vitals', async () => {
+    const { container } = renderApp('/')
+    const week = await screen.findByTestId('today-week')
+    expect(week.textContent).toContain('This week')
+    expect(week.querySelector('a')?.getAttribute('href')).toBe('/runs')
+    expect(week.querySelectorAll('ol li')).toHaveLength(7)
+    expect(week.querySelector('[aria-current="date"]')).toBeTruthy()
+    const vitals = container.querySelector('[data-testid="today-vitals"]')
+    expect(vitals).toBeTruthy()
+    expect(week.compareDocumentPosition(vitals!)).toBe(Node.DOCUMENT_POSITION_FOLLOWING)
+  })
+
+  it('shows the vitals: value, direction, and the muted arithmetic', async () => {
     const { container } = renderApp('/')
     await waitFor(() => expect(container.querySelector('[data-vital="sleep"]')).toBeTruthy())
 
@@ -163,9 +175,9 @@ describe('Compare', () => {
     await user.click(screen.getByTestId('compare-swap'))
 
     await waitFor(() =>
-      expect(container.querySelector('[data-testid="compare-row-pace"]')?.textContent).toContain(
-        '+1 s/km',
-      ),
+      expect(
+        container.querySelector('[data-testid="compare-row-pace"]')?.textContent,
+      ).toContain('+1 s/km'),
     )
   })
 
@@ -185,8 +197,8 @@ describe('Compare', () => {
 
     // The same rule for the other metrics: the core's sign, in the
     // metric's own unit.
-    const distance = container.querySelector('[data-testid="compare-row-distance"]')
-      ?.textContent ?? ''
+    const distance =
+      container.querySelector('[data-testid="compare-row-distance"]')?.textContent ?? ''
     expect(distance).toContain('+2.2 km')
 
     const time = container.querySelector('[data-testid="compare-row-time"]')?.textContent ?? ''
@@ -196,7 +208,7 @@ describe('Compare', () => {
     expect(heart).toContain('+2 bpm')
   })
 
-  it('shows no plan line when the plan has no session on the run\'s day', async () => {
+  it("shows no plan line when the plan has no session on the run's day", async () => {
     const { container } = renderApp('/runs/101')
     await waitFor(() =>
       expect(container.querySelector('[data-testid="activity-detail"]')).toBeTruthy(),

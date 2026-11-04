@@ -35,9 +35,11 @@ export function VitalRow({
         <span className="text-[13px] font-semibold uppercase tracking-[0.06em] text-ink-muted">
           {vital.label}
         </span>
-        <span className="text-[17px] font-semibold text-ink" data-vital-value={vital.key}>
-          {vital.value_text ?? '—'}
-        </span>
+        {vital.value_text !== null ? (
+          <span className="text-[17px] font-semibold text-ink" data-vital-value={vital.key}>
+            {vital.value_text}
+          </span>
+        ) : null}
       </div>
       <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[12.5px]">
         {vital.direction_text ? <DirectionText text={vital.direction_text} /> : null}

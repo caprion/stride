@@ -17,7 +17,8 @@
 
 use std::fmt;
 use std::path::PathBuf;
-use std::sync::{Arc, Mutex, MutexGuard};
+use std::sync::atomic::{AtomicI32, Ordering};
+use std::sync::{Arc, Mutex, MutexGuard, TryLockError};
 
 use chrono::{DateTime, SecondsFormat, Utc};
 use stride_ingest::{GarminClient, HttpTransport, ReqwestTransport, TransportError};
@@ -170,6 +171,12 @@ pub struct Config {
     /// requests, and a pull that reads a year of it is a rate limit spent
     /// before anything has landed.
     pub max_wellness_days_per_sync: i64,
+    /// Maximum HTTP attempts, including authentication and redirects, per job.
+    pub max_sync_requests: usize,
+    /// Soft response-body byte limit; a bounded in-flight response may cross it.
+    pub max_sync_response_bytes: usize,
+    /// Soft elapsed-time limit before starting another request.
+    pub max_sync_seconds: u64,
     /// How many months of history the settings say the app keeps.
     pub history_months: i64,
     /// How many days of health data the settings say the app keeps.
@@ -205,9 +212,12 @@ impl Default for Config {
             api_prefix: "/api/v1".to_string(),
             feed_page_size: 50,
             max_feed_page: 200,
-            sync_days: 30,
+            sync_days: 365,
             max_activities_per_sync: 20,
             max_wellness_days_per_sync: 14,
+            max_sync_requests: 80,
+            max_sync_response_bytes: 32 * 1024 * 1024,
+            max_sync_seconds: 45,
             history_months: 12,
             health_history_days: 90,
             stale_after_hours: 36,
@@ -224,10 +234,12 @@ impl Default for Config {
 pub struct Api {
     store: Arc<Store>,
     config: Config,
+    utc_offset_minutes: AtomicI32,
     clock: Arc<dyn Clock>,
     garmin: Mutex<GarminState>,
     transport: Arc<dyn HttpTransport>,
     export: Mutex<Option<DatabaseKey>>,
+    sync: Mutex<()>,
 }
 
 impl fmt::Debug for Api {
@@ -262,11 +274,13 @@ impl Api {
     ) -> Self {
         Self {
             store,
+            utc_offset_minutes: AtomicI32::new(config.utc_offset_minutes),
             config,
             clock,
             garmin: Mutex::new(GarminState::default()),
             transport,
             export: Mutex::new(None),
+            sync: Mutex::new(()),
         }
     }
 
@@ -280,6 +294,20 @@ impl Api {
         &self.config
     }
 
+    /// The host's current calendar offset, including daylight-saving changes.
+    pub fn utc_offset_minutes(&self) -> i32 {
+        self.utc_offset_minutes.load(Ordering::Relaxed)
+    }
+
+    /// Update the host calendar without reopening the store or interrupting sync.
+    pub fn set_utc_offset_minutes(&self, minutes: i32) -> ApiResult<()> {
+        if !(-840..=840).contains(&minutes) {
+            return Err(ApiError::bad_request("the calendar offset is outside -840 to 840 minutes"));
+        }
+        self.utc_offset_minutes.store(minutes, Ordering::Relaxed);
+        Ok(())
+    }
+
     /// The clock.
     pub fn clock(&self) -> &Arc<dyn Clock> {
         &self.clock
@@ -288,6 +316,29 @@ impl Api {
     /// The transport the Garmin client uses.
     pub fn transport(&self) -> &Arc<dyn HttpTransport> {
         &self.transport
+    }
+
+    pub(crate) fn begin_sync(&self) -> ApiResult<MutexGuard<'_, ()>> {
+        self.sync.try_lock().map_err(|error| match error {
+            TryLockError::WouldBlock => ApiError::new(
+                crate::error::ErrorKind::SyncBusy,
+                "a Garmin sync is already running",
+            ),
+            TryLockError::Poisoned(_) => {
+                ApiError::internal("the sync coordinator could not be opened")
+            }
+        })
+    }
+
+    pub(crate) fn sync_client(
+        &self,
+        key: Option<&str>,
+        transport: Arc<dyn HttpTransport>,
+    ) -> Option<GarminClient> {
+        match key {
+            Some(key) => Some(GarminKey::new(key).client(transport)),
+            None => self.garmin().key.as_ref().map(|key| key.client(transport)),
+        }
     }
 
     /// The current instant, as the injected clock reads it.
@@ -407,9 +458,12 @@ impl Api {
                 "the Garmin session ended; a new Personal API key is needed",
             ),
             GarminError::RateLimited { .. } => {
-                ApiError::garmin_rejected("Garmin is rate limiting the request")
+                ApiError::rate_limited("Garmin is rate limiting the request")
             }
             GarminError::Transport(_) => ApiError::garmin_rejected("Garmin could not be reached"),
+            GarminError::Http { status, .. } if *status >= 500 => {
+                ApiError::garmin_rejected("Garmin could not be reached")
+            }
             _ => ApiError::garmin_rejected("Garmin refused the request"),
         }
     }

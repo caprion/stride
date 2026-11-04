@@ -7,7 +7,7 @@ use stride_core::ValueUnit;
 
 use crate::dto::{
     Best, Chips, CompareCandidate, CompareMetric, CompareResponse, CompareRun, CompareSeries,
-    Consistency, PaceAtHr, ProgressInsight, TodayInsight, WeekRunning, WeeklyVolume,
+    Consistency, PaceAtHr, ProgressInsight, RunningDay, TodayInsight, WeekRunning, WeeklyVolume,
 };
 use crate::error::{ApiError, ApiResult};
 use crate::render;
@@ -18,12 +18,6 @@ use super::{core_date, ok, personal_records};
 
 /// How far apart two runs may be and still be "the same distance".
 const SAME_DISTANCE_TOLERANCE: f64 = 0.1;
-
-/// How many weeks back the fitness comparison looks.
-const WEEKS_APART: usize = 8;
-
-/// How far apart two heart rates may be and still be the same heart rate.
-const SAME_HEART_RATE_TOLERANCE: f64 = 3.0;
 
 /// Today's readout.
 ///
@@ -41,6 +35,9 @@ pub fn today(api: &Api, request: &Request) -> ApiResult<Value> {
     let mut planned = None;
     let mut options = Vec::new();
     for result in stride_core::plan::results_of_at(&active.block, &facts, current).iter() {
+        if active.is_baseline() {
+            break;
+        }
         if result.session.date < week_start || result.session.date > week_end {
             continue;
         }
@@ -73,11 +70,23 @@ pub fn today(api: &Api, request: &Request) -> ApiResult<Value> {
     let week = WeekRunning {
         distance: render::distance_of(render::total_of(week_runs.iter().map(|run| run.distance_m))),
         sessions: week_runs.len(),
+        days: (0..7)
+            .map(|offset| {
+                let date = week_start.add_days(offset).to_iso();
+                RunningDay {
+                    sessions: week_runs
+                        .iter()
+                        .filter(|run| run.local_date == date)
+                        .count(),
+                    date,
+                }
+            })
+            .collect(),
     };
 
-    let distance_comparison = match (&planned, &last_run) {
-        (Some(session), Some(run)) => stride_core::plan::distance_comparison(
-            run.distance.raw,
+    let distance_comparison = match &planned {
+        Some(session) => stride_core::plan::distance_comparison(
+            session.actual.as_ref().and_then(|value| value.raw),
             session.target.as_ref().and_then(|value| value.raw),
         ),
         _ => None,
@@ -153,7 +162,7 @@ pub fn progress(api: &Api, request: &Request) -> ApiResult<Value> {
     // The plan's adherence: the count of the block in force, and the
     // count is the engine's.
     let adherence = match crate::plan::active_or_empty(api) {
-        Ok(active) => {
+        Ok(active) if !active.is_baseline() => {
             let facts =
                 crate::plan::run_facts(api, "0000-01-01", &current.to_iso()).unwrap_or_default();
             Some(crate::plan::adherence_of(stride_core::plan::adherence_of(
@@ -161,13 +170,11 @@ pub fn progress(api: &Api, request: &Request) -> ApiResult<Value> {
                 &facts,
             )))
         }
-        Err(_) => None,
+        _ => None,
     };
 
-    // The headline is the core's statement: it compares the pace at the
-    // same heart rate now and then, and it says so plainly when there is
-    // not enough history to compare.
-    let headline = statement::progress_headline(pace_at_hr_comparison(&pace_at_hr));
+    // Independent weekly medians are descriptive, not matched-effort evidence.
+    let headline = statement::progress_headline(None);
     let headline_note = headline.evidence.clone();
 
     // The sessions a week, as the core renders them.
@@ -186,6 +193,7 @@ pub fn progress(api: &Api, request: &Request) -> ApiResult<Value> {
 
     let response = ProgressInsight {
         generated_at: api.generated_at(),
+        date: current.to_iso(),
         headline: headline.headline,
         headline_note,
         weekly_volume,
@@ -366,47 +374,6 @@ pub fn compare_candidates(api: &Api, request: &Request) -> ApiResult<Value> {
 }
 
 // ------------------------------------------------------------------ helpers
-
-/// The pace at the same heart rate, now and then.
-///
-/// The core renders the Progress headline from this: a lower pace at the
-/// same heart rate is a fitter athlete, and a higher one is not. The
-/// comparison needs two weeks at the same heart rate, so it is made only
-/// when the history has them.
-fn pace_at_hr_comparison(weeks: &[PaceAtHr]) -> Option<statement::PaceAtHr> {
-    let mut now_index = None;
-    for (index, week) in weeks.iter().enumerate().rev() {
-        let has_pace = week.pace.as_ref().and_then(|value| value.raw).is_some();
-        let has_heart_rate = week
-            .heart_rate
-            .as_ref()
-            .and_then(|value| value.raw)
-            .is_some();
-        if has_pace && has_heart_rate {
-            now_index = Some(index);
-            break;
-        }
-    }
-    let now_index = now_index?;
-    let now = weeks.get(now_index)?;
-    let now_hr = now.heart_rate.as_ref().and_then(|value| value.raw)?;
-    let now_pace = now.pace.as_ref().and_then(|value| value.raw)?;
-
-    // Eight weeks back, if there were eight weeks and the heart rate was
-    // the same then.
-    let then_index = now_index.checked_sub(WEEKS_APART)?;
-    let then = weeks.get(then_index)?;
-    let then_hr = then.heart_rate.as_ref().and_then(|value| value.raw)?;
-    let then_pace = then.pace.as_ref().and_then(|value| value.raw)?;
-    if (then_hr - now_hr).abs() > SAME_HEART_RATE_TOLERANCE {
-        return None;
-    }
-    Some(statement::PaceAtHr {
-        now_s_per_km: now_pace,
-        then_s_per_km: then_pace,
-        weeks: (now_index - then_index) as u32,
-    })
-}
 
 /// One row of the diff.
 ///

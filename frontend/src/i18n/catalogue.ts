@@ -83,17 +83,22 @@ export const catalogue = {
   'today.options.heading': { type: 'status', text: 'Also in your plan' },
   'today.lastRun.label': { type: 'status', text: 'Last run' },
   'today.week.heading': { type: 'status', text: 'This week' },
+  'today.week.recordedDays': { type: 'status', text: 'Recorded sessions this week' },
   'today.week.sessions': { type: 'status', text: '{n} sessions' },
   'today.state.noData': {
     type: 'status',
     text: "Connect your Garmin key to see today's numbers",
   },
   'today.state.noDataAction': { type: 'status', text: 'Connect Garmin' },
-  'today.state.connectFailed': { type: 'status', text: "The setup screen did not open" },
+  'today.state.connectFailed': { type: 'status', text: 'The setup screen did not open' },
   'today.state.stale.days': { type: 'status', text: 'last synced {n} days ago' },
   'today.state.stale.hours': { type: 'status', text: 'last synced {n} hours ago' },
   'today.state.stale.minutes': { type: 'status', text: 'last synced {n} minutes ago' },
   'today.state.syncIncomplete': { type: 'status', text: 'The last sync did not complete' },
+  'today.state.historyPending': {
+    type: 'status',
+    text: 'Older history is still being checked',
+  },
   'today.state.retry': { type: 'status', text: 'Try again' },
   'today.state.noPlan': { type: 'status', text: 'No plan is active for today' },
 
@@ -113,6 +118,9 @@ export const catalogue = {
   'vital.time': { type: 'vital', text: 'Time' },
   'vital.pace': { type: 'vital', text: 'Pace' },
   'vital.heartRate': { type: 'vital', text: 'Heart rate' },
+  'vital.sleep': { type: 'vital', text: 'Sleep' },
+  'vital.hrv': { type: 'vital', text: 'HRV' },
+  'vital.restingHr': { type: 'vital', text: 'Resting HR' },
 
   /**
    * The version, as the app words it.
@@ -143,7 +151,7 @@ export const catalogue = {
   // --------------------------------------------------------- progress
   'progress.heading': { type: 'status', text: 'Progress' },
   'progress.volume.heading': { type: 'status', text: 'Weekly volume' },
-  'progress.paceAtHr.heading': { type: 'status', text: 'Pace at heart rate' },
+  'progress.paceAtHr.heading': { type: 'status', text: 'Weekly median pace' },
   'progress.bests.heading': { type: 'status', text: 'Bests & milestones' },
   'progress.consistency.heading': { type: 'status', text: 'Consistency' },
   'progress.consistency.unit': { type: 'status', text: 'sessions a week' },
@@ -159,10 +167,20 @@ export const catalogue = {
 
   // ------------------------------------------------------------- body
   'body.heading': { type: 'status', text: 'Body' },
+  'body.additional.heading': { type: 'status', text: 'More measurements' },
+  'body.history.controls': { type: 'status', text: 'Explore recorded history' },
+  'body.history.date': { type: 'status', text: 'Date' },
+  'body.history.range': { type: 'status', text: 'History window' },
+  'body.history.days': { type: 'status', text: '{n} days' },
+  'body.history.latest': { type: 'status', text: 'Latest' },
+  'body.additional.body': {
+    type: 'status',
+    text: 'Other readings appear after they arrive in a sync. A missing reading does not establish that the source cannot supply it.',
+  },
   'body.howToRead.heading': { type: 'status', text: 'How to read this' },
   'body.howToRead.band': {
     type: 'status',
-    text: 'The band is the middle of your last {n} nights',
+    text: 'The band is the recent usual range for the selected date, not a medical reference range',
   },
   'body.howToRead.inside': {
     type: 'status',
@@ -297,6 +315,7 @@ export const catalogue = {
 
   // The storage: the size, a backup, and the one destructive action.
   'settings.storage.heading': { type: 'status', text: 'Storage' },
+  'settings.storage.yourData': { type: 'status', text: 'Backup, restore and export' },
   'settings.storage.size': { type: 'status', text: 'Database size' },
   'settings.storage.export': { type: 'status', text: 'Export a backup' },
   'settings.storage.exported': { type: 'status', text: 'The backup is written' },

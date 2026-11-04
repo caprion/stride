@@ -52,6 +52,10 @@ pub enum ErrorKind {
     /// core is asked for anything; this is the same refusal, seen from
     /// here: the database key is not available.
     Locked,
+    /// Another caller already owns the bounded Garmin sync attempt.
+    SyncBusy,
+    /// Garmin requires a pause before another attempt.
+    RateLimited,
     /// The router itself could not answer.
     ///
     /// This one is a bug, not a business failure: it is the only kind that
@@ -76,6 +80,8 @@ impl ErrorKind {
             ErrorKind::NotFound => "not_found",
             ErrorKind::BadRequest => "bad_request",
             ErrorKind::Locked => "locked",
+            ErrorKind::SyncBusy => "sync_busy",
+            ErrorKind::RateLimited => "rate_limited",
             ErrorKind::Internal => "internal",
         }
     }
@@ -91,6 +97,8 @@ impl ErrorKind {
             ErrorKind::NotFound => 404,
             ErrorKind::BadRequest => 400,
             ErrorKind::Locked => 403,
+            ErrorKind::SyncBusy => 409,
+            ErrorKind::RateLimited => 429,
             ErrorKind::Internal => 500,
         }
     }
@@ -131,6 +139,11 @@ impl ApiError {
     /// Garmin refused the key.
     pub fn garmin_rejected(detail: impl Into<String>) -> Self {
         Self::new(ErrorKind::GarminRejected, detail)
+    }
+
+    /// Garmin requires a pause before another attempt.
+    pub fn rate_limited(detail: impl Into<String>) -> Self {
+        Self::new(ErrorKind::RateLimited, detail)
     }
 
     /// The Garmin session ended.

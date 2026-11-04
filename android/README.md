@@ -12,16 +12,70 @@ Garmin pull and the background work.
 | The Garmin key is typed into a **native** field and never enters the WebView | `setup/GarminSetupActivity.kt`, `bridge/PhoneRoutes.kt` |
 | The key is wrapped by a **non-exportable** Keystore AES-GCM key and lives in `noBackupFilesDir` | `security/KeystoreKeys.kt`, `security/EnvelopeFile.kt` |
 | The key's identifier is only its **last four characters**, on a native surface | `security/KeyIdentifier.kt`, `setup/GarminSetupActivity.kt` |
-| The bridge has **one** method, `apiCall(path, body)`, and may call the frozen routes only | `bridge/StrideApiPlugin.kt`, `bridge/PhoneRoutes.kt` |
+| API requests use `apiCall(path, body)` and the frozen routes only; `openData()` opens the guarded native file screen | `bridge/StrideApiPlugin.kt`, `bridge/PhoneRoutes.kt` |
 | The Garmin-key routes are refused, **including the query-string forms** | `bridge/PhoneRoutes.kt` (and its test) |
 | A locked screen gets no real data | `bridge/StrideApiPlugin.kt`, `security/AppLock.kt` |
-| The pull is **bounded** to the phone's thirty-day window | `sync/PullWindow.kt`, `sync/SyncScheduler.kt` |
+| The 365-day history target arrives in bounded, resumable jobs | `sync/PullWindow.kt`, `sync/SyncScheduler.kt`, core-contract section 7 |
 | A failed exchange gets **exactly one** shell-owned retry; the second attempt stops | `sync/SyncEngine.kt`, `sync/PullPolicy.kt` |
 | "Synced 12 activities" is the notification, and it says nothing about the athlete | `sync/SyncNotifications.kt` |
 | A failed pull says what stopped it and when the next pull is due | `sync/SyncSchedule.kt`, `sync/SyncNotifications.kt` |
 | `FLAG_SECURE`, `allowBackup=false`, backup rules, minimal intent filters, nothing exported but the launcher | `MainActivity.kt`, `AndroidManifest.xml`, `res/xml/` |
 | A release carries the **real** core, checked from the seam's own backend marker | `app/build.gradle`, `app/src/main/rust/stride-ffi/` |
 | `unsafe` is allowed in the FFI seam and nowhere else | `app/src/main/rust/stride-ffi/` |
+
+Foreground, setup and background pulls use one serialized `SyncEngine`. The
+separate `stride-garmin-history` worker continues stored date checkpoints rather
+than fetching recent wellness repeatedly. It requires enabled network/auto-sync,
+allows mobile data, waits for battery and unlock, and uses WorkManager backoff;
+the first-year import can span days. Rate limits defer without an immediate
+retry. Invalid credentials and permanent data failures stop automatic work.
+
+The new `history_days` preference defaults to 365. The old `sync_days` preference
+described a single recent pull and is left intact, not repurposed as this target.
+The native bridge receives only successful core response DTOs; a partial
+failure is surfaced as a failure, even when some history landed.
+
+## Backup, restore and readable exports
+
+Settings opens **Backup, restore and export** on a native screen. Passphrases
+never enter the WebView, saved state or preferences. The phone needs a screen
+lock and the Stride gate must be open.
+
+An encrypted backup contains the shared core's SQLCipher export and manifest,
+plus versioned recovery metadata. PBKDF2-HMAC-SHA256 with a fresh 32-byte salt,
+210,000 iterations and a 256-bit result derives an independent recovery key.
+The user supplies and confirms a passphrase of at least 12 characters. Losing
+it makes the backup unrecoverable; the original phone's Keystore cannot recover
+it. The Android document picker chooses the destination outside the sandbox.
+
+Restore validates the archive's fixed entry names, size limits, manifest, digest
+and schema before merging through the existing core importer. It does not replace
+the phone's database key or transfer the Garmin credential. Matching records
+may be updated; unmatched records remain. Restore and Garmin sync cannot own the
+core simultaneously. Failed or cancelled file operations never report success.
+After a successful restore, returning to the app reloads its displayed history.
+
+Dated CSV and JSON exports contain recorded activity and health observations,
+with explicit units and missing values. These are **unencrypted readable files**,
+not recovery backups. They exclude names, coordinates, notes and credentials.
+This export scope does not hide available heart rate or routes in the app.
+Readable contents stay in native memory until the user chooses a destination.
+
+The archive and isolated cross-key restore tests are automated. Document-provider
+permissions, cancellation, process death, locking during transfer and restoration
+on a second physical phone still require device acceptance before release.
+
+Pending encrypted backups can resume through activity recreation using only a
+confined staging-directory identifier. Restore passphrases and readable contents
+are not persisted; an interrupted operation asks the user to start again. Process
+death during preparation can still leave encrypted staging files behind.
+
+The actual app and native setup/data screens default to Azure light. The native
+core still starts with the default UTC calendar offset rather than the phone's
+timezone; timezone plumbing and local-midnight acceptance remain release gaps.
+Debug and unsigned release assembly are not production-signature acceptance.
+The current API gate also isolates three pre-existing frontend-shape test failures;
+an isolated passing run does not mean the complete release gate is green.
 
 ## The first run and the key's life
 
@@ -63,11 +117,14 @@ so the plugin proxy the shim calls already exists, and **before the app's
 own scripts**, so the app's first request finds the bridge. The native side
 asks for the injection in `StrideApiPlugin.load()`.
 
-The shim does two things and nothing else: it moves the `method` into the
+For API requests the shim moves the `method` into the
 body (the plugin's contract is `apiCall(path, body)`), and it hands the
 plugin's answer back. **It adds no capability**: the route table, the
 refusal of the Garmin-key routes, the lock check and the redaction are all
 in the plugin it calls.
+
+`window.__stride_bridge__.openData()` opens the native file screen. It accepts
+no passphrase, file path or archive bytes and returns no account data.
 
 The answer the app is handed is the **response body**, as a JSON string —
 the same bytes the desktop's router puts on the wire — so the two hosts

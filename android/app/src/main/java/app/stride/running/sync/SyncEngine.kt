@@ -4,10 +4,12 @@ import android.app.KeyguardManager
 import android.content.Context
 import android.util.Log
 import app.stride.running.R
+import app.stride.running.bridge.KeyGuard
 import app.stride.running.core.StrideCore
 import app.stride.running.security.CredentialUnavailable
 import app.stride.running.security.CredentialUnreadable
 import app.stride.running.security.Secrets
+import app.stride.running.settings.AppSettings
 import org.json.JSONObject
 
 /**
@@ -45,8 +47,12 @@ object SyncEngine {
      * more attempt. The count of attempts is what the policy reads, so the
      * rule cannot be broken by a second attempt sneaking in.
      */
-    fun run(context: Context, days: Long): SyncOutcome {
+    @Synchronized
+    fun run(context: Context, days: Long, backfill: Boolean = false): SyncOutcome {
         val window = PullWindow.bounded(days)
+        if (!AppSettings(context).networkEnabled) {
+            return SyncOutcome(false, context.getString(R.string.sync_error_network_disabled))
+        }
 
         val problem = StrideCore.ensureOpen(context)
         if (problem != null) {
@@ -91,11 +97,14 @@ object SyncEngine {
 
         val attemptKey = savedKey
         // The retry is the policy's, and the policy has no Android in it.
-        val outcome = PullPolicy.drive { _ -> attempt(context, attemptKey, window) }
+        val outcome = PullPolicy.drive { _ -> attempt(context, attemptKey, window, backfill) }
         // The exchange dropped the core's temporary key. The credential is
         // still in the Keystore, so the core is told the separate fact that
         // the phone remains connected.
         StrideCore.setGarminConnected(true)
+        if (!backfill && ((outcome.ok && outcome.morePending) || outcome.retryable)) {
+            SyncScheduler.continueHistory(context, window.toInt())
+        }
         // The plaintext key is no longer needed by the shell. The copy in
         // the Keystore is the one that lasts.
         return outcome
@@ -108,9 +117,9 @@ object SyncEngine {
      * attempt, and that the answer may be `needs_reconnect` — the policy
      * reads that and decides whether there is one more attempt.
      */
-    private fun attempt(context: Context, key: String, days: Long): SyncOutcome = try {
-        val answer = StrideCore.garminSync(key, days)
-        parse(context, answer)
+    private fun attempt(context: Context, key: String, days: Long, backfill: Boolean): SyncOutcome = try {
+        val answer = if (backfill) StrideCore.garminBackfill(key, days) else StrideCore.garminSync(key, days)
+        parse(context, KeyGuard.redact(answer, key))
     } catch (_: Throwable) {
         // The exception's message is not logged: it may carry a value from
         // the exchange.
@@ -169,7 +178,32 @@ object SyncEngine {
             val detail = error?.optString("detail").orEmpty()
             val code = error?.optString("code")
 
-            return when (GarminFailure.classify(status, code, detail)) {
+            return failure(context, status, code, detail)
+        }
+
+        val body = envelope.getJSONObject("body")
+        val counts = SyncResult.counts(body)
+        val progress = SyncResult.progress(body)
+        val partialFailure = progress.failure
+        if (partialFailure != null) {
+            return failure(context, partialFailure.status, partialFailure.code, partialFailure.detail)
+                .copy(activities = counts.activities, wellnessDays = counts.wellnessDays, morePending = progress.morePending)
+        }
+        return SyncOutcome(
+            ok = true,
+            message = context.getString(if (progress.morePending) R.string.sync_history_pending else R.string.sync_pull_finished),
+            activities = counts.activities,
+            wellnessDays = counts.wellnessDays,
+            morePending = progress.morePending,
+            responseBody = body.toString(),
+        )
+    }
+
+    private fun failure(context: Context, status: Int, code: String?, detail: String): SyncOutcome {
+        if (code == "sync_busy") {
+            return SyncOutcome(false, context.getString(R.string.sync_error_busy), error = SyncErrors.BUSY, retryable = true)
+        }
+        return when (GarminFailure.classify(status, code, detail)) {
                 GarminFailure.Kind.KeyRejected -> SyncOutcome(
                     ok = false,
                     message = context.getString(R.string.sync_error_refused),
@@ -179,29 +213,19 @@ object SyncEngine {
                     ok = false,
                     message = context.getString(R.string.sync_error_unreachable),
                     error = ERROR_FAILED,
+                    retryable = true,
                 )
                 GarminFailure.Kind.RateLimited -> SyncOutcome(
                     ok = false,
                     message = context.getString(R.string.sync_error_rate_limited),
-                    error = ERROR_FAILED,
+                    error = SyncErrors.RATE_LIMITED,
+                    retryable = true,
                 )
                 GarminFailure.Kind.Unknown -> SyncOutcome(
                     ok = false,
                     message = context.getString(R.string.sync_error_failed),
                     error = ERROR_FAILED,
                 )
-            }
         }
-
-        // The api's `SyncRun`: { activities, wellness_days, finished_at,
-        // generated_at }. Those are the fields it has, and the only ones
-        // read here — see SyncResult.
-        val counts = SyncResult.counts(envelope.optJSONObject("body"))
-        return SyncOutcome(
-            ok = true,
-            message = context.getString(R.string.sync_pull_finished),
-            activities = counts.activities,
-            wellnessDays = counts.wellnessDays,
-        )
     }
 }

@@ -190,10 +190,25 @@ export interface SeedPlanSession {
 
 const planSessions: SeedPlanSession[] = [
   { date: '2026-05-11', session_type: 'easy', title: 'Easy 8', target: value('8 km', 8_000) },
-  { date: '2026-05-12', session_type: 'easy', title: 'Easy 10', target: value('10 km', 10_000) },
-  { date: '2026-05-13', session_type: 'easy', title: 'Easy 10', target: value('10 km', 10_000) },
+  {
+    date: '2026-05-12',
+    session_type: 'easy',
+    title: 'Easy 10',
+    target: value('10 km', 10_000),
+  },
+  {
+    date: '2026-05-13',
+    session_type: 'easy',
+    title: 'Easy 10',
+    target: value('10 km', 10_000),
+  },
   { date: '2026-05-14', session_type: 'easy', title: 'Easy 5', target: value('5 km', 5_000) },
-  { date: '2026-05-15', session_type: 'long', title: 'Long 16', target: value('16 km', 16_000) },
+  {
+    date: '2026-05-15',
+    session_type: 'long',
+    title: 'Long 16',
+    target: value('16 km', 16_000),
+  },
   // A session with no distance target: the time is the target, and the
   // router says so in its own words.
   { date: '2026-05-16', session_type: 'easy', title: 'Easy 30 minutes', target: null },
@@ -300,7 +315,8 @@ export const activitiesFixture = routerAnswers['/activities'] as ActivityListRes
  * the router said about it — the group, the pace, the story.
  */
 function runById(id: number): ActivitySummary | null {
-  return (activitiesFixture.activities.find((run) => run.id === id) ?? null) as ActivitySummary | null
+  return (activitiesFixture.activities.find((run) => run.id === id) ??
+    null) as ActivitySummary | null
 }
 
 /** One run, in full: the router's answer. */
@@ -368,89 +384,409 @@ export const progressFixture = routerAnswers['/insights/progress'] as ProgressIn
  * second implementation of the core's rules.
  */
 export const SERIES_A: CompareSeriesPoint[] = [
-    { offset_s: 0, pace: { text: '5:17 /km', raw: 317 }, heart_rate: { text: '149 bpm', raw: 149 } },
-    { offset_s: 60, pace: { text: '5:19 /km', raw: 319 }, heart_rate: { text: '151 bpm', raw: 151 } },
-    { offset_s: 120, pace: { text: '5:22 /km', raw: 322 }, heart_rate: { text: '153 bpm', raw: 153 } },
-    { offset_s: 180, pace: { text: '5:24 /km', raw: 324 }, heart_rate: { text: '155 bpm', raw: 155 } },
-    { offset_s: 240, pace: { text: '5:26 /km', raw: 326 }, heart_rate: { text: '157 bpm', raw: 157 } },
-    { offset_s: 300, pace: { text: '5:27 /km', raw: 327 }, heart_rate: { text: '158 bpm', raw: 158 } },
-    { offset_s: 360, pace: { text: '5:28 /km', raw: 328 }, heart_rate: { text: '160 bpm', raw: 160 } },
-    { offset_s: 420, pace: { text: '5:29 /km', raw: 329 }, heart_rate: { text: '161 bpm', raw: 161 } },
-    { offset_s: 480, pace: { text: '5:29 /km', raw: 329 }, heart_rate: { text: '162 bpm', raw: 162 } },
-    { offset_s: 540, pace: { text: '5:29 /km', raw: 329 }, heart_rate: { text: '162 bpm', raw: 162 } },
-    { offset_s: 600, pace: { text: '5:28 /km', raw: 328 }, heart_rate: { text: '163 bpm', raw: 163 } },
-    { offset_s: 660, pace: { text: '5:27 /km', raw: 327 }, heart_rate: { text: '163 bpm', raw: 163 } },
-    { offset_s: 720, pace: { text: '5:25 /km', raw: 325 }, heart_rate: { text: '163 bpm', raw: 163 } },
-    { offset_s: 780, pace: { text: '5:23 /km', raw: 323 }, heart_rate: { text: '162 bpm', raw: 162 } },
-    { offset_s: 840, pace: { text: '5:21 /km', raw: 321 }, heart_rate: { text: '162 bpm', raw: 162 } },
-    { offset_s: 900, pace: { text: '5:19 /km', raw: 319 }, heart_rate: { text: '161 bpm', raw: 161 } },
-    { offset_s: 960, pace: { text: '5:16 /km', raw: 316 }, heart_rate: { text: '160 bpm', raw: 160 } },
-    { offset_s: 1020, pace: { text: '5:14 /km', raw: 314 }, heart_rate: { text: '158 bpm', raw: 158 } },
-    { offset_s: 1080, pace: { text: '5:12 /km', raw: 312 }, heart_rate: { text: '157 bpm', raw: 157 } },
-    { offset_s: 1140, pace: { text: '5:10 /km', raw: 310 }, heart_rate: { text: '155 bpm', raw: 155 } },
-    { offset_s: 1200, pace: { text: '5:08 /km', raw: 308 }, heart_rate: { text: '153 bpm', raw: 153 } },
-    { offset_s: 1260, pace: { text: '5:07 /km', raw: 307 }, heart_rate: { text: '151 bpm', raw: 151 } },
-    { offset_s: 1320, pace: { text: '5:06 /km', raw: 306 }, heart_rate: { text: '149 bpm', raw: 149 } },
-    { offset_s: 1380, pace: { text: '5:05 /km', raw: 305 }, heart_rate: { text: '147 bpm', raw: 147 } },
-    { offset_s: 1440, pace: { text: '5:05 /km', raw: 305 }, heart_rate: { text: '145 bpm', raw: 145 } },
-    { offset_s: 1500, pace: { text: '5:05 /km', raw: 305 }, heart_rate: { text: '143 bpm', raw: 143 } },
-    { offset_s: 1560, pace: { text: '5:06 /km', raw: 306 }, heart_rate: { text: '141 bpm', raw: 141 } },
-    { offset_s: 1620, pace: { text: '5:08 /km', raw: 308 }, heart_rate: { text: '140 bpm', raw: 140 } },
-    { offset_s: 1680, pace: { text: '5:09 /km', raw: 309 }, heart_rate: { text: '138 bpm', raw: 138 } },
-    { offset_s: 1740, pace: { text: '5:11 /km', raw: 311 }, heart_rate: { text: '137 bpm', raw: 137 } },
-    { offset_s: 1800, pace: { text: '5:14 /km', raw: 314 }, heart_rate: { text: '136 bpm', raw: 136 } },
-    { offset_s: 1860, pace: { text: '5:16 /km', raw: 316 }, heart_rate: { text: '136 bpm', raw: 136 } },
-    { offset_s: 1920, pace: { text: '5:18 /km', raw: 318 }, heart_rate: { text: '135 bpm', raw: 135 } },
-    { offset_s: 1980, pace: { text: '5:21 /km', raw: 321 }, heart_rate: { text: '135 bpm', raw: 135 } },
-    { offset_s: 2040, pace: { text: '5:23 /km', raw: 323 }, heart_rate: { text: '135 bpm', raw: 135 } },
-    { offset_s: 2100, pace: { text: '5:25 /km', raw: 325 }, heart_rate: { text: '136 bpm', raw: 136 } },
-    { offset_s: 2160, pace: { text: '5:27 /km', raw: 327 }, heart_rate: { text: '136 bpm', raw: 136 } },
-    { offset_s: 2220, pace: { text: '5:28 /km', raw: 328 }, heart_rate: { text: '137 bpm', raw: 137 } },
-    { offset_s: 2280, pace: { text: '5:29 /km', raw: 329 }, heart_rate: { text: '138 bpm', raw: 138 } },
-    { offset_s: 2340, pace: { text: '5:29 /km', raw: 329 }, heart_rate: { text: '140 bpm', raw: 140 } },
+  {
+    offset_s: 0,
+    pace: { text: '5:17 /km', raw: 317 },
+    heart_rate: { text: '149 bpm', raw: 149 },
+  },
+  {
+    offset_s: 60,
+    pace: { text: '5:19 /km', raw: 319 },
+    heart_rate: { text: '151 bpm', raw: 151 },
+  },
+  {
+    offset_s: 120,
+    pace: { text: '5:22 /km', raw: 322 },
+    heart_rate: { text: '153 bpm', raw: 153 },
+  },
+  {
+    offset_s: 180,
+    pace: { text: '5:24 /km', raw: 324 },
+    heart_rate: { text: '155 bpm', raw: 155 },
+  },
+  {
+    offset_s: 240,
+    pace: { text: '5:26 /km', raw: 326 },
+    heart_rate: { text: '157 bpm', raw: 157 },
+  },
+  {
+    offset_s: 300,
+    pace: { text: '5:27 /km', raw: 327 },
+    heart_rate: { text: '158 bpm', raw: 158 },
+  },
+  {
+    offset_s: 360,
+    pace: { text: '5:28 /km', raw: 328 },
+    heart_rate: { text: '160 bpm', raw: 160 },
+  },
+  {
+    offset_s: 420,
+    pace: { text: '5:29 /km', raw: 329 },
+    heart_rate: { text: '161 bpm', raw: 161 },
+  },
+  {
+    offset_s: 480,
+    pace: { text: '5:29 /km', raw: 329 },
+    heart_rate: { text: '162 bpm', raw: 162 },
+  },
+  {
+    offset_s: 540,
+    pace: { text: '5:29 /km', raw: 329 },
+    heart_rate: { text: '162 bpm', raw: 162 },
+  },
+  {
+    offset_s: 600,
+    pace: { text: '5:28 /km', raw: 328 },
+    heart_rate: { text: '163 bpm', raw: 163 },
+  },
+  {
+    offset_s: 660,
+    pace: { text: '5:27 /km', raw: 327 },
+    heart_rate: { text: '163 bpm', raw: 163 },
+  },
+  {
+    offset_s: 720,
+    pace: { text: '5:25 /km', raw: 325 },
+    heart_rate: { text: '163 bpm', raw: 163 },
+  },
+  {
+    offset_s: 780,
+    pace: { text: '5:23 /km', raw: 323 },
+    heart_rate: { text: '162 bpm', raw: 162 },
+  },
+  {
+    offset_s: 840,
+    pace: { text: '5:21 /km', raw: 321 },
+    heart_rate: { text: '162 bpm', raw: 162 },
+  },
+  {
+    offset_s: 900,
+    pace: { text: '5:19 /km', raw: 319 },
+    heart_rate: { text: '161 bpm', raw: 161 },
+  },
+  {
+    offset_s: 960,
+    pace: { text: '5:16 /km', raw: 316 },
+    heart_rate: { text: '160 bpm', raw: 160 },
+  },
+  {
+    offset_s: 1020,
+    pace: { text: '5:14 /km', raw: 314 },
+    heart_rate: { text: '158 bpm', raw: 158 },
+  },
+  {
+    offset_s: 1080,
+    pace: { text: '5:12 /km', raw: 312 },
+    heart_rate: { text: '157 bpm', raw: 157 },
+  },
+  {
+    offset_s: 1140,
+    pace: { text: '5:10 /km', raw: 310 },
+    heart_rate: { text: '155 bpm', raw: 155 },
+  },
+  {
+    offset_s: 1200,
+    pace: { text: '5:08 /km', raw: 308 },
+    heart_rate: { text: '153 bpm', raw: 153 },
+  },
+  {
+    offset_s: 1260,
+    pace: { text: '5:07 /km', raw: 307 },
+    heart_rate: { text: '151 bpm', raw: 151 },
+  },
+  {
+    offset_s: 1320,
+    pace: { text: '5:06 /km', raw: 306 },
+    heart_rate: { text: '149 bpm', raw: 149 },
+  },
+  {
+    offset_s: 1380,
+    pace: { text: '5:05 /km', raw: 305 },
+    heart_rate: { text: '147 bpm', raw: 147 },
+  },
+  {
+    offset_s: 1440,
+    pace: { text: '5:05 /km', raw: 305 },
+    heart_rate: { text: '145 bpm', raw: 145 },
+  },
+  {
+    offset_s: 1500,
+    pace: { text: '5:05 /km', raw: 305 },
+    heart_rate: { text: '143 bpm', raw: 143 },
+  },
+  {
+    offset_s: 1560,
+    pace: { text: '5:06 /km', raw: 306 },
+    heart_rate: { text: '141 bpm', raw: 141 },
+  },
+  {
+    offset_s: 1620,
+    pace: { text: '5:08 /km', raw: 308 },
+    heart_rate: { text: '140 bpm', raw: 140 },
+  },
+  {
+    offset_s: 1680,
+    pace: { text: '5:09 /km', raw: 309 },
+    heart_rate: { text: '138 bpm', raw: 138 },
+  },
+  {
+    offset_s: 1740,
+    pace: { text: '5:11 /km', raw: 311 },
+    heart_rate: { text: '137 bpm', raw: 137 },
+  },
+  {
+    offset_s: 1800,
+    pace: { text: '5:14 /km', raw: 314 },
+    heart_rate: { text: '136 bpm', raw: 136 },
+  },
+  {
+    offset_s: 1860,
+    pace: { text: '5:16 /km', raw: 316 },
+    heart_rate: { text: '136 bpm', raw: 136 },
+  },
+  {
+    offset_s: 1920,
+    pace: { text: '5:18 /km', raw: 318 },
+    heart_rate: { text: '135 bpm', raw: 135 },
+  },
+  {
+    offset_s: 1980,
+    pace: { text: '5:21 /km', raw: 321 },
+    heart_rate: { text: '135 bpm', raw: 135 },
+  },
+  {
+    offset_s: 2040,
+    pace: { text: '5:23 /km', raw: 323 },
+    heart_rate: { text: '135 bpm', raw: 135 },
+  },
+  {
+    offset_s: 2100,
+    pace: { text: '5:25 /km', raw: 325 },
+    heart_rate: { text: '136 bpm', raw: 136 },
+  },
+  {
+    offset_s: 2160,
+    pace: { text: '5:27 /km', raw: 327 },
+    heart_rate: { text: '136 bpm', raw: 136 },
+  },
+  {
+    offset_s: 2220,
+    pace: { text: '5:28 /km', raw: 328 },
+    heart_rate: { text: '137 bpm', raw: 137 },
+  },
+  {
+    offset_s: 2280,
+    pace: { text: '5:29 /km', raw: 329 },
+    heart_rate: { text: '138 bpm', raw: 138 },
+  },
+  {
+    offset_s: 2340,
+    pace: { text: '5:29 /km', raw: 329 },
+    heart_rate: { text: '140 bpm', raw: 140 },
+  },
 ]
 
 export const SERIES_B: CompareSeriesPoint[] = [
-    { offset_s: 0, pace: { text: '5:06 /km', raw: 306 }, heart_rate: { text: '146 bpm', raw: 146 } },
-    { offset_s: 60, pace: { text: '5:08 /km', raw: 308 }, heart_rate: { text: '148 bpm', raw: 148 } },
-    { offset_s: 120, pace: { text: '5:11 /km', raw: 311 }, heart_rate: { text: '150 bpm', raw: 150 } },
-    { offset_s: 180, pace: { text: '5:13 /km', raw: 313 }, heart_rate: { text: '152 bpm', raw: 152 } },
-    { offset_s: 240, pace: { text: '5:15 /km', raw: 315 }, heart_rate: { text: '154 bpm', raw: 154 } },
-    { offset_s: 300, pace: { text: '5:16 /km', raw: 316 }, heart_rate: { text: '155 bpm', raw: 155 } },
-    { offset_s: 360, pace: { text: '5:17 /km', raw: 317 }, heart_rate: { text: '157 bpm', raw: 157 } },
-    { offset_s: 420, pace: { text: '5:18 /km', raw: 318 }, heart_rate: { text: '158 bpm', raw: 158 } },
-    { offset_s: 480, pace: { text: '5:18 /km', raw: 318 }, heart_rate: { text: '159 bpm', raw: 159 } },
-    { offset_s: 540, pace: { text: '5:18 /km', raw: 318 }, heart_rate: { text: '159 bpm', raw: 159 } },
-    { offset_s: 600, pace: { text: '5:17 /km', raw: 317 }, heart_rate: { text: '160 bpm', raw: 160 } },
-    { offset_s: 660, pace: { text: '5:16 /km', raw: 316 }, heart_rate: { text: '160 bpm', raw: 160 } },
-    { offset_s: 720, pace: { text: '5:14 /km', raw: 314 }, heart_rate: { text: '160 bpm', raw: 160 } },
-    { offset_s: 780, pace: { text: '5:12 /km', raw: 312 }, heart_rate: { text: '159 bpm', raw: 159 } },
-    { offset_s: 840, pace: { text: '5:10 /km', raw: 310 }, heart_rate: { text: '159 bpm', raw: 159 } },
-    { offset_s: 900, pace: { text: '5:08 /km', raw: 308 }, heart_rate: { text: '158 bpm', raw: 158 } },
-    { offset_s: 960, pace: { text: '5:05 /km', raw: 305 }, heart_rate: { text: '157 bpm', raw: 157 } },
-    { offset_s: 1020, pace: { text: '5:03 /km', raw: 303 }, heart_rate: { text: '155 bpm', raw: 155 } },
-    { offset_s: 1080, pace: { text: '5:01 /km', raw: 301 }, heart_rate: { text: '154 bpm', raw: 154 } },
-    { offset_s: 1140, pace: { text: '4:59 /km', raw: 299 }, heart_rate: { text: '152 bpm', raw: 152 } },
-    { offset_s: 1200, pace: { text: '4:57 /km', raw: 297 }, heart_rate: { text: '150 bpm', raw: 150 } },
-    { offset_s: 1260, pace: { text: '4:56 /km', raw: 296 }, heart_rate: { text: '148 bpm', raw: 148 } },
-    { offset_s: 1320, pace: { text: '4:55 /km', raw: 295 }, heart_rate: { text: '146 bpm', raw: 146 } },
-    { offset_s: 1380, pace: { text: '4:54 /km', raw: 294 }, heart_rate: { text: '144 bpm', raw: 144 } },
-    { offset_s: 1440, pace: { text: '4:54 /km', raw: 294 }, heart_rate: { text: '142 bpm', raw: 142 } },
-    { offset_s: 1500, pace: { text: '4:54 /km', raw: 294 }, heart_rate: { text: '140 bpm', raw: 140 } },
-    { offset_s: 1560, pace: { text: '4:55 /km', raw: 295 }, heart_rate: { text: '138 bpm', raw: 138 } },
-    { offset_s: 1620, pace: { text: '4:57 /km', raw: 297 }, heart_rate: { text: '137 bpm', raw: 137 } },
-    { offset_s: 1680, pace: { text: '4:58 /km', raw: 298 }, heart_rate: { text: '135 bpm', raw: 135 } },
-    { offset_s: 1740, pace: { text: '5:00 /km', raw: 300 }, heart_rate: { text: '134 bpm', raw: 134 } },
-    { offset_s: 1800, pace: { text: '5:03 /km', raw: 303 }, heart_rate: { text: '133 bpm', raw: 133 } },
-    { offset_s: 1860, pace: { text: '5:05 /km', raw: 305 }, heart_rate: { text: '133 bpm', raw: 133 } },
-    { offset_s: 1920, pace: { text: '5:07 /km', raw: 307 }, heart_rate: { text: '132 bpm', raw: 132 } },
-    { offset_s: 1980, pace: { text: '5:10 /km', raw: 310 }, heart_rate: { text: '132 bpm', raw: 132 } },
-    { offset_s: 2040, pace: { text: '5:12 /km', raw: 312 }, heart_rate: { text: '132 bpm', raw: 132 } },
-    { offset_s: 2100, pace: { text: '5:14 /km', raw: 314 }, heart_rate: { text: '133 bpm', raw: 133 } },
-    { offset_s: 2160, pace: { text: '5:16 /km', raw: 316 }, heart_rate: { text: '133 bpm', raw: 133 } },
-    { offset_s: 2220, pace: { text: '5:17 /km', raw: 317 }, heart_rate: { text: '134 bpm', raw: 134 } },
-    { offset_s: 2280, pace: { text: '5:18 /km', raw: 318 }, heart_rate: { text: '135 bpm', raw: 135 } },
-    { offset_s: 2340, pace: { text: '5:18 /km', raw: 318 }, heart_rate: { text: '137 bpm', raw: 137 } },
+  {
+    offset_s: 0,
+    pace: { text: '5:06 /km', raw: 306 },
+    heart_rate: { text: '146 bpm', raw: 146 },
+  },
+  {
+    offset_s: 60,
+    pace: { text: '5:08 /km', raw: 308 },
+    heart_rate: { text: '148 bpm', raw: 148 },
+  },
+  {
+    offset_s: 120,
+    pace: { text: '5:11 /km', raw: 311 },
+    heart_rate: { text: '150 bpm', raw: 150 },
+  },
+  {
+    offset_s: 180,
+    pace: { text: '5:13 /km', raw: 313 },
+    heart_rate: { text: '152 bpm', raw: 152 },
+  },
+  {
+    offset_s: 240,
+    pace: { text: '5:15 /km', raw: 315 },
+    heart_rate: { text: '154 bpm', raw: 154 },
+  },
+  {
+    offset_s: 300,
+    pace: { text: '5:16 /km', raw: 316 },
+    heart_rate: { text: '155 bpm', raw: 155 },
+  },
+  {
+    offset_s: 360,
+    pace: { text: '5:17 /km', raw: 317 },
+    heart_rate: { text: '157 bpm', raw: 157 },
+  },
+  {
+    offset_s: 420,
+    pace: { text: '5:18 /km', raw: 318 },
+    heart_rate: { text: '158 bpm', raw: 158 },
+  },
+  {
+    offset_s: 480,
+    pace: { text: '5:18 /km', raw: 318 },
+    heart_rate: { text: '159 bpm', raw: 159 },
+  },
+  {
+    offset_s: 540,
+    pace: { text: '5:18 /km', raw: 318 },
+    heart_rate: { text: '159 bpm', raw: 159 },
+  },
+  {
+    offset_s: 600,
+    pace: { text: '5:17 /km', raw: 317 },
+    heart_rate: { text: '160 bpm', raw: 160 },
+  },
+  {
+    offset_s: 660,
+    pace: { text: '5:16 /km', raw: 316 },
+    heart_rate: { text: '160 bpm', raw: 160 },
+  },
+  {
+    offset_s: 720,
+    pace: { text: '5:14 /km', raw: 314 },
+    heart_rate: { text: '160 bpm', raw: 160 },
+  },
+  {
+    offset_s: 780,
+    pace: { text: '5:12 /km', raw: 312 },
+    heart_rate: { text: '159 bpm', raw: 159 },
+  },
+  {
+    offset_s: 840,
+    pace: { text: '5:10 /km', raw: 310 },
+    heart_rate: { text: '159 bpm', raw: 159 },
+  },
+  {
+    offset_s: 900,
+    pace: { text: '5:08 /km', raw: 308 },
+    heart_rate: { text: '158 bpm', raw: 158 },
+  },
+  {
+    offset_s: 960,
+    pace: { text: '5:05 /km', raw: 305 },
+    heart_rate: { text: '157 bpm', raw: 157 },
+  },
+  {
+    offset_s: 1020,
+    pace: { text: '5:03 /km', raw: 303 },
+    heart_rate: { text: '155 bpm', raw: 155 },
+  },
+  {
+    offset_s: 1080,
+    pace: { text: '5:01 /km', raw: 301 },
+    heart_rate: { text: '154 bpm', raw: 154 },
+  },
+  {
+    offset_s: 1140,
+    pace: { text: '4:59 /km', raw: 299 },
+    heart_rate: { text: '152 bpm', raw: 152 },
+  },
+  {
+    offset_s: 1200,
+    pace: { text: '4:57 /km', raw: 297 },
+    heart_rate: { text: '150 bpm', raw: 150 },
+  },
+  {
+    offset_s: 1260,
+    pace: { text: '4:56 /km', raw: 296 },
+    heart_rate: { text: '148 bpm', raw: 148 },
+  },
+  {
+    offset_s: 1320,
+    pace: { text: '4:55 /km', raw: 295 },
+    heart_rate: { text: '146 bpm', raw: 146 },
+  },
+  {
+    offset_s: 1380,
+    pace: { text: '4:54 /km', raw: 294 },
+    heart_rate: { text: '144 bpm', raw: 144 },
+  },
+  {
+    offset_s: 1440,
+    pace: { text: '4:54 /km', raw: 294 },
+    heart_rate: { text: '142 bpm', raw: 142 },
+  },
+  {
+    offset_s: 1500,
+    pace: { text: '4:54 /km', raw: 294 },
+    heart_rate: { text: '140 bpm', raw: 140 },
+  },
+  {
+    offset_s: 1560,
+    pace: { text: '4:55 /km', raw: 295 },
+    heart_rate: { text: '138 bpm', raw: 138 },
+  },
+  {
+    offset_s: 1620,
+    pace: { text: '4:57 /km', raw: 297 },
+    heart_rate: { text: '137 bpm', raw: 137 },
+  },
+  {
+    offset_s: 1680,
+    pace: { text: '4:58 /km', raw: 298 },
+    heart_rate: { text: '135 bpm', raw: 135 },
+  },
+  {
+    offset_s: 1740,
+    pace: { text: '5:00 /km', raw: 300 },
+    heart_rate: { text: '134 bpm', raw: 134 },
+  },
+  {
+    offset_s: 1800,
+    pace: { text: '5:03 /km', raw: 303 },
+    heart_rate: { text: '133 bpm', raw: 133 },
+  },
+  {
+    offset_s: 1860,
+    pace: { text: '5:05 /km', raw: 305 },
+    heart_rate: { text: '133 bpm', raw: 133 },
+  },
+  {
+    offset_s: 1920,
+    pace: { text: '5:07 /km', raw: 307 },
+    heart_rate: { text: '132 bpm', raw: 132 },
+  },
+  {
+    offset_s: 1980,
+    pace: { text: '5:10 /km', raw: 310 },
+    heart_rate: { text: '132 bpm', raw: 132 },
+  },
+  {
+    offset_s: 2040,
+    pace: { text: '5:12 /km', raw: 312 },
+    heart_rate: { text: '132 bpm', raw: 132 },
+  },
+  {
+    offset_s: 2100,
+    pace: { text: '5:14 /km', raw: 314 },
+    heart_rate: { text: '133 bpm', raw: 133 },
+  },
+  {
+    offset_s: 2160,
+    pace: { text: '5:16 /km', raw: 316 },
+    heart_rate: { text: '133 bpm', raw: 133 },
+  },
+  {
+    offset_s: 2220,
+    pace: { text: '5:17 /km', raw: 317 },
+    heart_rate: { text: '134 bpm', raw: 134 },
+  },
+  {
+    offset_s: 2280,
+    pace: { text: '5:18 /km', raw: 318 },
+    heart_rate: { text: '135 bpm', raw: 135 },
+  },
+  {
+    offset_s: 2340,
+    pace: { text: '5:18 /km', raw: 318 },
+    heart_rate: { text: '137 bpm', raw: 137 },
+  },
 ]
 
 /**
@@ -475,7 +811,9 @@ export function compareAnswer(a: string, b: string): CompareResponse | undefined
 }
 
 /** The runs the Compare screen can offer: the router's answer. */
-export const compareCandidatesFixture = routerAnswers['/compare/candidates'] as CompareCandidate[]
+export const compareCandidatesFixture = routerAnswers[
+  '/compare/candidates'
+] as CompareCandidate[]
 // ------------------------------------------------------------------ sync
 
 /** The state of the last sync: the router's answer. */
@@ -711,7 +1049,9 @@ export const vitalsNotEnoughFixture: VitalsSnapshot = {
   history: {
     sleep: history.slice(-2).map((night) => ({ date: night.date, value: night.sleep_s })),
     hrv: history.slice(-2).map((night) => ({ date: night.date, value: night.hrv_ms })),
-    resting_hr: history.slice(-2).map((night) => ({ date: night.date, value: night.resting_hr })),
+    resting_hr: history
+      .slice(-2)
+      .map((night) => ({ date: night.date, value: night.resting_hr })),
   },
   patterns: [],
 }
@@ -724,7 +1064,7 @@ export const todayEmptyFixture: TodayInsight = {
   options: [],
   last_run: null,
   distance_comparison: null,
-  week: { distance: value('0 km', 0), sessions: 0 },
+  week: { distance: value('0 km', 0), sessions: 0, days: [] },
 }
 
 /** The feed, with nothing in it. */
@@ -737,6 +1077,7 @@ export const activitiesEmptyFixture: ActivityListResponse = {
 /** Progress, with too little history to draw a trend. */
 export const progressNotEnoughFixture: ProgressInsight = {
   generated_at: '2026-05-13T06:30:00Z',
+  date: '2026-05-13',
   headline: 'not enough data yet',
   headline_note: null,
   weekly_volume: [
@@ -745,8 +1086,16 @@ export const progressNotEnoughFixture: ProgressInsight = {
   ],
   typical_week: null,
   pace_at_hr: [
-    { week_start: '2026-05-04', pace: value('5:18 /km', 318), heart_rate: value('150 bpm', 150) },
-    { week_start: '2026-05-11', pace: value('5:12 /km', 312), heart_rate: value('150 bpm', 150) },
+    {
+      week_start: '2026-05-04',
+      pace: value('5:18 /km', 318),
+      heart_rate: value('150 bpm', 150),
+    },
+    {
+      week_start: '2026-05-11',
+      pace: value('5:12 /km', 312),
+      heart_rate: value('150 bpm', 150),
+    },
   ],
   bests: [],
   consistency: [
@@ -766,6 +1115,8 @@ export const progressNoPlanFixture: ProgressInsight = {
 
 /** A sync that is three days old. */
 export const syncStatusStaleFixture: SyncStatus = {
+  history: null,
+  more_pending: false,
   last_sync_at: new Date(Date.now() - 3 * 86_400_000).toISOString(),
   last_error: null,
   activity_count: 6,
@@ -782,6 +1133,8 @@ export const syncStatusStaleFixture: SyncStatus = {
  * page is the one that takes the key.
  */
 export const syncStatusFreshFixture: SyncStatus = {
+  history: null,
+  more_pending: false,
   last_sync_at: null,
   last_error: null,
   activity_count: 0,
@@ -799,6 +1152,8 @@ export const syncStatusFreshFixture: SyncStatus = {
  * the counts are not known, because the pull never finished.
  */
 export const syncStatusFailedFixture: SyncStatus = {
+  history: null,
+  more_pending: false,
   last_sync_at: new Date(Date.now() - 2 * 3_600_000).toISOString(),
   last_error: 'Garmin refused the token',
   activity_count: 6,
@@ -901,9 +1256,7 @@ export function fixtureResponse(
       // The run's original file: the header of a FIT file, byte for
       // byte. The fixture set is synthetic, and a file is no less so
       // than a run.
-      return [
-        14, 0, 0, 0, 16, 32, 0, 0, 46, 70, 73, 84, 0, 0,
-      ]
+      return [14, 0, 0, 0, 16, 32, 0, 0, 46, 70, 73, 84, 0, 0]
     case '/plan/week':
       if (
         variant === 'empty' ||

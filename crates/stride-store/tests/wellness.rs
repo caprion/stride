@@ -110,3 +110,69 @@ fn a_day_with_no_reading_is_absent_and_not_zero() -> Result<()> {
     drop(dir);
     Ok(())
 }
+
+#[test]
+fn a_provider_checkpoint_preserves_missing_fields_and_records_no_data_days() -> Result<()> {
+    let (_dir, store) = common::store("wellness-checkpoint")?;
+    let mut row = common::wellness("2026-05-10");
+    store.upsert_wellness_daily(&row)?;
+    let mut checkpoint = stride_store::SyncState {
+        kind: "wellness".to_string(),
+        cursor: Some("checked-2026-05-10".to_string()),
+        last_success_at: None,
+        token_expires_at: None,
+        updated_at: row.updated_at,
+    };
+    row.hrv_ms = None;
+    row.sleep_s = Some(21_000.0);
+    store.write_wellness_checkpoint(Some(&row), &checkpoint)?;
+    let read = store.wellness_daily("2026-05-10")?;
+    assert_eq!(read.as_ref().and_then(|row| row.hrv_ms), Some(48.0));
+    assert_eq!(read.as_ref().and_then(|row| row.sleep_s), Some(21_000.0));
+    checkpoint.cursor = Some("checked-2026-05-09".to_string());
+    store.write_wellness_checkpoint(None, &checkpoint)?;
+    assert_eq!(store.count_wellness_daily()?, 1);
+    assert_eq!(
+        store.sync_state("wellness")?.and_then(|state| state.cursor),
+        checkpoint.cursor
+    );
+    checkpoint.kind = "activities".to_string();
+    row.sleep_s = Some(1.0);
+    assert!(store
+        .write_wellness_checkpoint(Some(&row), &checkpoint)
+        .is_err());
+    assert_eq!(
+        store
+            .wellness_daily("2026-05-10")?
+            .and_then(|row| row.sleep_s),
+        Some(21_000.0)
+    );
+    Ok(())
+}
+
+#[test]
+fn a_failed_checkpoint_rolls_back_the_wellness_write() -> Result<()> {
+    let (_dir, store) = common::store("wellness-checkpoint-rollback")?;
+    let row = common::wellness("2026-05-10");
+    store.with_connection(|connection| {
+        connection
+            .execute_batch(
+                "CREATE TRIGGER refuse_checkpoint BEFORE INSERT ON sync_state
+             BEGIN SELECT RAISE(ABORT, 'no checkpoint'); END;",
+            )
+            .map_err(|error| stride_store::StoreError::query("the trigger", error))
+    })?;
+    let checkpoint = stride_store::SyncState {
+        kind: "wellness".to_string(),
+        cursor: Some("checked".to_string()),
+        last_success_at: None,
+        token_expires_at: None,
+        updated_at: row.updated_at,
+    };
+    assert!(store
+        .write_wellness_checkpoint(Some(&row), &checkpoint)
+        .is_err());
+    assert!(store.wellness_daily("2026-05-10")?.is_none());
+    assert!(store.sync_state("wellness")?.is_none());
+    Ok(())
+}

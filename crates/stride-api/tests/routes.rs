@@ -428,6 +428,31 @@ fn insights_today_answers_with_the_readout() {
     assert!(body["last_run"].is_object());
     assert_eq!(body["week"]["sessions"].as_u64(), Some(1));
     assert_eq!(body["week"]["distance"]["raw"].as_f64(), Some(9_000.0));
+    let days = body["week"]["days"].as_array().unwrap();
+    assert_eq!(days.len(), 7);
+    assert_eq!(days[0]["date"], "2026-05-11");
+    assert_eq!(days[1]["sessions"], 1);
+    assert_eq!(days[6]["date"], "2026-05-17");
+}
+
+#[test]
+fn vital_history_uses_calendar_days_and_keeps_missing_dates() {
+    let harness = common::Harness::seeded("calendar-vital-history");
+    let snapshot = harness.ok_get("/physiology/vitals?date=2026-05-11&days=7");
+    let history = snapshot["history"]["sleep"].as_array().unwrap();
+    assert_eq!(history.len(), 7);
+    assert_eq!(history[0]["date"], "2026-05-05");
+    assert!(history[0]["value"].is_null());
+    assert_eq!(history[6]["date"], "2026-05-11");
+    assert!(history[6]["value"].is_number());
+    assert_eq!(snapshot["date"], "2026-05-11");
+    assert_eq!(
+        harness
+            .router
+            .call("GET", "/physiology/vitals?days=367", None)
+            .status,
+        400
+    );
 }
 
 #[test]
@@ -447,12 +472,48 @@ fn insights_today_states_the_distance_comparison_only_beyond_ten_per_cent() {
         body["distance_comparison"]
     );
 
-    // 12.4 km against a 10 km target is 24% over: news.
+    // An older run is never the result of today's session.
     harness.write_run(common::run("b-run", "2026-05-10", 12_400.0, 4_020.0));
+    let body = harness.ok_get("/insights/today");
+    assert!(body["distance_comparison"].is_null());
+
+    harness.write_run(common::run("today-run", TODAY, 12_400.0, 4_020.0));
     let body = harness.ok_get("/insights/today");
     assert_eq!(
         body["distance_comparison"].as_str(),
         Some("2.4 km more than the 10 km target")
+    );
+}
+
+#[test]
+fn progress_dates_follow_the_configured_local_week_across_utc_midnight() {
+    let harness = common::Harness::empty("progress-local-week");
+    harness.write_run(common::run(
+        "local-monday-run",
+        "2026-11-02",
+        5_000.0,
+        1_500.0,
+    ));
+    let clock = stride_api::FixedClock::new(
+        chrono::DateTime::parse_from_rfc3339("2026-11-01T20:00:00Z")
+            .unwrap()
+            .with_timezone(&chrono::Utc),
+    );
+    let api = stride_api::Api::with_transport(
+        std::sync::Arc::clone(&harness.store),
+        stride_api::Config {
+            utc_offset_minutes: 330,
+            ..Default::default()
+        },
+        std::sync::Arc::new(clock),
+        harness.garmin.clone(),
+    );
+    let response =
+        stride_api::Router::new(std::sync::Arc::new(api)).call("GET", "/insights/progress", None);
+    assert_eq!(response.body["date"], "2026-11-02");
+    assert_eq!(
+        response.body["weekly_volume"][0]["week_start"],
+        "2026-11-02"
     );
 }
 
@@ -622,7 +683,7 @@ fn sync_history_answers_with_the_state_of_each_kind() {
 fn sync_settings_answers_with_the_windows() {
     let harness = common::Harness::empty("route-sync-settings");
     let body = harness.ok_get("/sync/settings");
-    assert_eq!(body["sync_days"].as_i64(), Some(30));
+    assert_eq!(body["sync_days"].as_i64(), Some(365));
     assert_eq!(body["history_months"].as_i64(), Some(12));
     assert_eq!(body["health_history_days"].as_i64(), Some(90));
 }

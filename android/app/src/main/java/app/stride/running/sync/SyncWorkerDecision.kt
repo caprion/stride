@@ -20,12 +20,17 @@ object SyncWorkerDecision {
 
         /** No exchange happened because the phone was locked. */
         WaitForUnlock,
+
+        /** Resume a bounded history job or a transient failure after backoff. */
+        Continue,
     }
 
     /** The decision for a pull's outcome. */
-    fun decide(outcome: SyncOutcome): Decision = when {
+    fun decide(outcome: SyncOutcome, backfill: Boolean = false): Decision = when {
+        outcome.ok && outcome.morePending && backfill -> Decision.Continue
         outcome.ok -> Decision.Success
         outcome.error == SyncErrors.LOCKED -> Decision.WaitForUnlock
+        outcome.retryable -> Decision.Continue
         else -> Decision.Failure
     }
 }

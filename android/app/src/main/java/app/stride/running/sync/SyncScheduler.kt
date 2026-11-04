@@ -36,6 +36,11 @@ object SyncScheduler {
     /** The name of the one-shot work. Unique. */
     const val ONESHOT_NAME = "stride-garmin-sync-now"
 
+    /** One resumable history owner; retries resume the persisted dated cursor. */
+    const val HISTORY_NAME = "stride-garmin-history"
+
+    const val KEY_BACKFILL = "backfill"
+
     /** The work data key for the window. A number of days; not a secret. */
     const val KEY_DAYS = "days"
 
@@ -146,10 +151,29 @@ object SyncScheduler {
         )
     }
 
+    fun continueHistory(context: Context, days: Int = AppSettings(context).syncDays) {
+        val settings = AppSettings(context)
+        if (!settings.autoSync || !settings.networkEnabled) return
+        val constraints = Constraints.Builder()
+            .setRequiredNetworkType(androidx.work.NetworkType.CONNECTED)
+            .setRequiresBatteryNotLow(true)
+            .build()
+        val request = OneTimeWorkRequestBuilder<GarminSyncWorker>()
+            .setConstraints(constraints)
+            .setInputData(workDataOf(KEY_DAYS to PullWindow.bounded(days.toLong()).toInt(), KEY_BACKFILL to true))
+            .setInitialDelay(15, TimeUnit.MINUTES)
+            .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 15, TimeUnit.MINUTES)
+            .addTag(PERIODIC_NAME)
+            .addTag(HISTORY_NAME)
+            .build()
+        WorkManager.getInstance(context).enqueueUniqueWork(HISTORY_NAME, ExistingWorkPolicy.KEEP, request)
+    }
+
     /** Stop pulling: the key is gone, so there is nothing to pull with. */
     fun cancel(context: Context) {
         WorkManager.getInstance(context).cancelUniqueWork(PERIODIC_NAME)
         WorkManager.getInstance(context).cancelUniqueWork(ONESHOT_NAME)
+        WorkManager.getInstance(context).cancelUniqueWork(HISTORY_NAME)
         AppSettings(context).nextPullAtMillis = null
     }
 }

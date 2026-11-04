@@ -27,11 +27,13 @@ import type {
   SettingsExportResult,
   SettingsState,
   SyncStatus,
+  SyncRunResult,
   TodayInsight,
   VitalsSnapshot,
 } from './types'
 import {
   ApiError,
+  API_ERROR_KINDS,
   currentHost,
   selectTransport,
   type ApiRequest,
@@ -225,7 +227,8 @@ export const api = {
   activityFit: (id: number | string) => getBytes(route('activityFit', { id })),
 
   /** The vitals and their directions — the snapshot Today and Body read. */
-  vitals: () => get<VitalsSnapshot>(ROUTES.physiologyVitals),
+  vitals: (params?: { date?: string; days?: number }) =>
+    get<VitalsSnapshot>(ROUTES.physiologyVitals, params),
   physiologyDaily: () => get<unknown>(ROUTES.physiologyDaily),
   physiologySleep: () => get<unknown>(ROUTES.physiologySleep),
   physiologyHrv: () => get<unknown>(ROUTES.physiologyHrv),
@@ -274,7 +277,15 @@ export const api = {
   healthDaily: () => get<HealthDaily>(ROUTES.healthDaily),
 
   syncStatus: () => get<SyncStatus>(ROUTES.syncStatus),
-  syncRun: () => post<unknown>(ROUTES.syncRun),
+  syncRun: async (): Promise<unknown> => {
+    const result = await post<SyncRunResult | { queued: true }>(ROUTES.syncRun)
+    if (!('queued' in result) && result.failure) {
+      const failure = result.failure
+      const kind = API_ERROR_KINDS.find((kind) => kind === failure.code) ?? 'unknown'
+      throw new ApiError(kind, failure.detail, failure.status)
+    }
+    return result
+  },
   syncRuns: () => get<unknown>(ROUTES.syncRuns),
   syncHistory: () => get<unknown>(ROUTES.syncHistory),
   syncSettings: () => get<unknown>(ROUTES.syncSettings),

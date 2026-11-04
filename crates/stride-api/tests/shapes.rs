@@ -521,7 +521,7 @@ fn the_insight_routes_carry_their_shapes() {
     );
     assert_keys(
         &today["week"],
-        &["distance", "sessions"],
+        &["days", "distance", "sessions"],
         "/insights/today: week",
     );
 
@@ -532,6 +532,7 @@ fn the_insight_routes_carry_their_shapes() {
             "adherence",
             "bests",
             "consistency",
+            "date",
             "generated_at",
             "headline",
             "headline_note",
@@ -623,8 +624,10 @@ fn the_app_routes_carry_their_shapes() {
             "activity_count",
             "cursor",
             "deleted",
+            "history",
             "last_error",
             "last_sync_at",
+            "more_pending",
             "pulled",
             "skipped",
         ],

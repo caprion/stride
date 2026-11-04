@@ -8,11 +8,11 @@
 //! A missing measurement is `NULL`, never `0`. A night with no HRV reading
 //! has no HRV, and a resting heart rate of zero is not a heart rate.
 
-use rusqlite::{params, OptionalExtension, Row};
+use rusqlite::{params, Connection, OptionalExtension, Row};
 
 use crate::datetimes::DbDateTime;
 use crate::error::{Result, StoreError};
-use crate::model::WellnessDaily;
+use crate::model::{SyncState, WellnessDaily};
 use crate::repos::collect;
 use crate::store::Store;
 
@@ -37,26 +37,25 @@ fn map_wellness(row: &Row<'_>) -> rusqlite::Result<WellnessDaily> {
     })
 }
 
-impl Store {
-    /// Write one day of wellness.
-    ///
-    /// The date is the key: a day that is already there is updated in place.
-    pub fn upsert_wellness_daily(&self, wellness: &WellnessDaily) -> Result<()> {
-        let conn = self.lock()?;
-        conn.execute(
+fn write_wellness(
+    conn: &Connection,
+    wellness: &WellnessDaily,
+    preserve_missing: bool,
+) -> Result<()> {
+    conn.execute(
             "INSERT INTO wellness_daily (
                 date, sleep_s, deep_sleep_s, rem_s, light_sleep_s, awake_s,
                 hrv_ms, resting_hr, stress_avg, source, updated_at
              ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11)
              ON CONFLICT(date) DO UPDATE SET
-                sleep_s = excluded.sleep_s,
-                deep_sleep_s = excluded.deep_sleep_s,
-                rem_s = excluded.rem_s,
-                light_sleep_s = excluded.light_sleep_s,
-                awake_s = excluded.awake_s,
-                hrv_ms = excluded.hrv_ms,
-                resting_hr = excluded.resting_hr,
-                stress_avg = excluded.stress_avg,
+                sleep_s = CASE WHEN ?12 THEN COALESCE(excluded.sleep_s, wellness_daily.sleep_s) ELSE excluded.sleep_s END,
+                deep_sleep_s = CASE WHEN ?12 THEN COALESCE(excluded.deep_sleep_s, wellness_daily.deep_sleep_s) ELSE excluded.deep_sleep_s END,
+                rem_s = CASE WHEN ?12 THEN COALESCE(excluded.rem_s, wellness_daily.rem_s) ELSE excluded.rem_s END,
+                light_sleep_s = CASE WHEN ?12 THEN COALESCE(excluded.light_sleep_s, wellness_daily.light_sleep_s) ELSE excluded.light_sleep_s END,
+                awake_s = CASE WHEN ?12 THEN COALESCE(excluded.awake_s, wellness_daily.awake_s) ELSE excluded.awake_s END,
+                hrv_ms = CASE WHEN ?12 THEN COALESCE(excluded.hrv_ms, wellness_daily.hrv_ms) ELSE excluded.hrv_ms END,
+                resting_hr = CASE WHEN ?12 THEN COALESCE(excluded.resting_hr, wellness_daily.resting_hr) ELSE excluded.resting_hr END,
+                stress_avg = CASE WHEN ?12 THEN COALESCE(excluded.stress_avg, wellness_daily.stress_avg) ELSE excluded.stress_avg END,
                 source = excluded.source,
                 updated_at = excluded.updated_at",
             params![
@@ -71,10 +70,45 @@ impl Store {
                 wellness.stress_avg,
                 wellness.source,
                 DbDateTime(wellness.updated_at),
+                preserve_missing,
             ],
         )
         .map_err(|source| StoreError::query("upsert wellness_daily", source))?;
-        Ok(())
+    Ok(())
+}
+
+impl Store {
+    /// Write one day of wellness, replacing nullable fields as supplied.
+    pub fn upsert_wellness_daily(&self, wellness: &WellnessDaily) -> Result<()> {
+        let conn = self.lock()?;
+        write_wellness(&conn, wellness, false)
+    }
+
+    /// Commit a provider day and its checked-date cursor together.
+    ///
+    /// Missing provider fields preserve stored observations. `None` records a
+    /// successful no-data response without inventing a wellness row.
+    pub fn write_wellness_checkpoint(
+        &self,
+        wellness: Option<&WellnessDaily>,
+        state: &SyncState,
+    ) -> Result<()> {
+        if state.kind != crate::model::sync_kind::WELLNESS {
+            return Err(StoreError::Invariant(
+                "a wellness checkpoint has the wrong kind".to_string(),
+            ));
+        }
+        let mut conn = self.lock()?;
+        let transaction = conn
+            .transaction()
+            .map_err(|source| StoreError::query("begin wellness checkpoint", source))?;
+        if let Some(wellness) = wellness {
+            write_wellness(&transaction, wellness, true)?;
+        }
+        super::sync::write_state(&transaction, state)?;
+        transaction
+            .commit()
+            .map_err(|source| StoreError::query("commit wellness checkpoint", source))
     }
 
     /// One day of wellness.

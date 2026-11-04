@@ -94,6 +94,13 @@
   }
 
   global.__stride_bridge__ = {
+    openData: function () {
+      var native = nativePlugin();
+      if (!native || typeof native.openData !== 'function') {
+        return failed(new Error('the native data screen is not available'));
+      }
+      return native.openData({});
+    },
     /**
      * Call a route in the Rust core.
      *

@@ -1,6 +1,7 @@
 //! The app routes: the health, the sync, the connection and the calendar.
 
 use std::collections::BTreeSet;
+use std::sync::Arc;
 
 use chrono::{DateTime, NaiveDate, NaiveDateTime, Utc};
 use serde::{Deserialize, Serialize};
@@ -9,13 +10,15 @@ use stride_store::model::{note_kind, source, sync_kind};
 use stride_store::{NewActivity, SyncState};
 
 use crate::dto::{
-    AuthConnect, AuthStatus, AuthTest, Calendar, CalendarDay, FitImport, Health, SyncHistory,
-    SyncHistoryEntry, SyncRun, SyncSettings, SyncStatus, SyncedRun, SyncedRuns,
+    AuthConnect, AuthStatus, AuthTest, Calendar, CalendarDay, FitImport, Health, SyncFailure,
+    SyncHistory, SyncHistoryCoverage, SyncHistoryEntry, SyncResourceCoverage, SyncRun,
+    SyncSettings, SyncStatus, SyncedRun, SyncedRuns,
 };
 use crate::error::{ApiError, ApiResult};
 use crate::render;
 use crate::router::Request;
 use crate::state::Api;
+use crate::sync::{BudgetTransport, HistoryProgress};
 
 use super::{core_date, ok, today};
 
@@ -29,7 +32,7 @@ const DUPLICATE_DISTANCE: f64 = 0.02;
 /// The page size the pull asks Garmin for.
 const SYNC_PAGE_SIZE: u32 = 100;
 
-/// Garmin's own ceiling on a search window.
+/// The application's safety cap for activity search pagination.
 const SYNC_MAX_ACTIVITIES: u32 = 300;
 
 /// How far apart two distances may be and still count as the same run.
@@ -104,14 +107,23 @@ pub fn sync_status(api: &Api, request: &Request) -> ApiResult<Value> {
         .count_activities()
         .map_err(|error| api.store_error("the runs could not be counted", &error))?;
     let cursor = read_activity_cursor(api)?;
+    let wellness = read_wellness_progress(api)?;
     let response = SyncStatus {
         last_sync_at,
-        last_error: api.garmin_last_error(),
+        last_error: api
+            .garmin_last_error()
+            .or_else(|| cursor.failure.as_ref().map(|error| error.detail.clone())),
         activity_count,
         cursor: cursor.newest.clone(),
         pulled: Some(cursor.pulled),
         skipped: Some(cursor.skipped),
         deleted: Some(cursor.deleted),
+        history: coverage(cursor.history.as_ref(), wellness.as_ref()),
+        more_pending: cursor
+            .history
+            .as_ref()
+            .is_some_and(HistoryProgress::pending)
+            || wellness.as_ref().is_some_and(HistoryProgress::pending),
     };
     ok(&response)
 }
@@ -127,76 +139,117 @@ pub fn sync_status(api: &Api, request: &Request) -> ApiResult<Value> {
 /// The key is an argument: it is used for the calls that need it, and it is
 /// not returned, not logged and not embedded in an error.
 pub fn sync_run(api: &Api, request: &Request) -> ApiResult<Value> {
+    let _owner = api.begin_sync()?;
     let key = key_of(api, request)?;
     let days = match request.body_f64("days")? {
-        Some(value) if value > 0.0 => value as i64,
-        _ => api.config().sync_days,
+        Some(value) if (1.0..=3650.0).contains(&value) && value.fract() == 0.0 => value as i64,
+        Some(_) => {
+            return Err(ApiError::bad_request(
+                "the history window is not a whole number between 1 and 3650",
+            ))
+        }
+        None => api.config().sync_days,
     };
-    let client = match key {
-        Some(key) => api.garmin_client_for(&key),
-        None => match api.garmin_client() {
-            Some(client) => client,
-            None => {
-                return Err(ApiError::garmin_rejected(
-                    "there is no Garmin key to pull with",
-                ))
-            }
-        },
+    let history_only = match request.body.as_ref().and_then(|body| body.get("backfill")) {
+        None | Some(Value::Bool(false)) => false,
+        Some(Value::Bool(true)) => true,
+        Some(_) => return Err(ApiError::bad_request("the backfill flag is not a boolean")),
     };
+    let mut cursor = read_activity_cursor(api)?;
+    if cursor.retry_not_before.is_some_and(|at| at > api.now()) {
+        return Err(ApiError::rate_limited(
+            "Garmin is rate limiting the request",
+        ));
+    }
+    let transport = Arc::new(BudgetTransport::new(
+        api.transport().clone(),
+        api.config().max_sync_requests,
+        api.config().max_sync_response_bytes,
+        api.config().max_sync_seconds,
+    ));
+    let client = api
+        .sync_client(key.as_deref(), transport.clone())
+        .ok_or_else(|| ApiError::garmin_rejected("there is no Garmin key to pull with"))?;
 
     let current = today(api)?;
-    let to = current.to_iso();
-    let from = current.add_days(-days).to_iso();
+    let target_from = current.add_days(-days).to_iso();
 
     // The resume point and the last pull's tallies live in the sync cursor.
     // The cursor is the newest Garmin activity id already pulled, plus the
     // counts of the last pull and the tombstones of the runs Garmin no
     // longer lists.
-    let mut cursor = read_activity_cursor(api)?;
+    let mut history = cursor
+        .history
+        .clone()
+        .unwrap_or_else(|| HistoryProgress::new(&target_from, current));
+    history.extend(&target_from, current)?;
+    let window = if history_only {
+        history.window()?
+    } else {
+        Some((current.add_days(-days.min(13)).to_iso(), current.to_iso()))
+    };
+    let (from, to) = window
+        .clone()
+        .unwrap_or_else(|| (current.to_iso(), current.to_iso()));
     let budget = api.config().max_activities_per_sync;
+    let mut attempted = 0usize;
     let mut pulled = 0usize;
     let mut skipped = 0usize;
     let mut deleted = 0usize;
     let mut newest_seen: Option<String> = None;
     let mut listed: BTreeSet<String> = BTreeSet::new();
-    let mut stopped: Option<String> = None;
+    let mut failure = None;
+    let mut listing_complete = window.is_none();
+    let mut page_cap_reached = false;
 
     // Walk Garmin's pages newest-first. The budget is spent on FIT
     // downloads, not on list requests, so a stored and unchanged run costs
     // nothing and the pull keeps going until it has spent the budget on
     // runs that are new or changed.
     let mut start = 0u32;
-    loop {
-        if pulled >= budget {
-            break;
-        }
+    while window.is_some() {
         let page = match client.activity_search(start, SYNC_PAGE_SIZE, Some(&from), Some(&to)) {
             Ok(page) => page,
             Err(error) => {
                 // The first page proves the session and the key; its
                 // failure is the pull's failure. A later page's failure
                 // ends the pull early, keeping what was written.
-                if start == 0 {
-                    return Err(api.garmin_error(&error));
+                if !transport.paused()? {
+                    failure = Some(sync_failure(api, &error));
+                    if start == 0 {
+                        cursor.history = Some(history);
+                        save_sync_failure(api, &mut cursor, failure)?;
+                        return Err(api.garmin_error(&error));
+                    }
                 }
-                stopped = Some(error.to_string());
                 break;
             }
         };
-        let list = extract_list(&page);
+        let list = match extract_list(&page) {
+            Ok(list) => list,
+            Err(error) => {
+                failure = Some(local_sync_failure(error.detail()));
+                break;
+            }
+        };
         if list.is_empty() {
+            listing_complete = true;
             break;
         }
         if newest_seen.is_none() {
             newest_seen = entry_id(&list[0]);
         }
+        let mut page_complete = true;
         for entry in &list {
-            if pulled >= budget {
-                break;
-            }
             let activity_id = match entry_id(entry) {
                 Some(id) => id,
-                None => continue,
+                None => {
+                    failure = Some(local_sync_failure(
+                        "the activity listing has an unreadable id",
+                    ));
+                    page_complete = false;
+                    break;
+                }
             };
             listed.insert(activity_id.clone());
             // A run the athlete deleted on Garmin stays deleted.
@@ -218,27 +271,42 @@ pub fn sync_run(api: &Api, request: &Request) -> ApiResult<Value> {
                     skipped += 1;
                 }
                 Some(_) | None => {
+                    if attempted >= budget {
+                        page_complete = false;
+                        break;
+                    }
                     // A run the importer carried across has no FIT file: it
                     // is downloaded once, because the file is the source of
                     // truth and a run without one has no series, splits or
                     // elevation.
+                    attempted += 1;
                     let blob = match client.activity_fit(&activity_id) {
                         Ok(blob) => blob,
                         Err(error) => {
-                            if stops_the_pull(&error) {
-                                stopped = Some(error.to_string());
-                                break;
+                            if !transport.paused()? {
+                                failure = Some(sync_failure(api, &error));
                             }
-                            continue;
+                            page_complete = false;
+                            break;
                         }
                     };
                     let fit = match stride_ingest::extract_fit(&blob, &activity_id) {
                         Ok(fit) => fit,
-                        Err(_) => continue,
+                        Err(_) => {
+                            failure =
+                                Some(local_sync_failure("the activity file could not be read"));
+                            page_complete = false;
+                            break;
+                        }
                     };
                     let decoded = match stride_ingest::decode_fit(&fit, "activity.fit") {
                         Ok(decoded) => decoded,
-                        Err(_) => continue,
+                        Err(_) => {
+                            failure =
+                                Some(local_sync_failure("the activity file could not be decoded"));
+                            page_complete = false;
+                            break;
+                        }
                     };
                     let row = new_activity(api, entry, &decoded, &fit, &activity_id, &to);
                     api.store()
@@ -248,21 +316,23 @@ pub fn sync_run(api: &Api, request: &Request) -> ApiResult<Value> {
                 }
             }
         }
-        if stopped.is_some() {
+        if !page_complete {
             break;
         }
-        if (list.len() as u32) < SYNC_PAGE_SIZE {
+        if page_complete && (list.len() as u32) < SYNC_PAGE_SIZE {
+            listing_complete = true;
             break;
         }
         start += SYNC_PAGE_SIZE;
         if start >= SYNC_MAX_ACTIVITIES {
+            page_cap_reached = true;
             break;
         }
     }
 
     // Only a walk that finished can mark runs as gone: a half walk would
     // mistake "not reached yet" for "no longer listed".
-    if stopped.is_none() {
+    if window.is_some() && listing_complete && failure.is_none() {
         let stored_ids = api
             .store()
             .garmin_external_ids_between(&from, &to)
@@ -288,24 +358,92 @@ pub fn sync_run(api: &Api, request: &Request) -> ApiResult<Value> {
         }
     }
 
-    // The wellness of the last few days, and no more than the bound: the
-    // wellness of a day is three requests, and a year of it is a rate
-    // limit spent before anything has landed.
-    let wellness_window = days.min(api.config().max_wellness_days_per_sync);
+    let activities_complete = listing_complete && failure.is_none();
+    if window.is_some() && activities_complete {
+        history.confirm(&from, &to)?;
+    } else if page_cap_reached {
+        if from == to {
+            failure = Some(local_sync_failure(
+                "one day exceeds the activity listing limit",
+            ));
+        } else {
+            if history.next_date.as_deref() != Some(to.as_str()) {
+                history.checked_from = None;
+                history.checked_to = None;
+            }
+            history.next_date = Some(to.clone());
+            history.narrow_window(&from, &to)?;
+        }
+    }
+
+    let mut wellness =
+        read_wellness_progress(api)?.unwrap_or_else(|| HistoryProgress::new(&target_from, current));
+    wellness.extend(&target_from, current)?;
+    let previous_wellness = api
+        .store()
+        .sync_state(sync_kind::WELLNESS)
+        .map_err(|error| api.store_error("the sync state could not be read", &error))?;
+    let mut checkpoint = SyncState {
+        kind: sync_kind::WELLNESS.to_string(),
+        cursor: Some(
+            serde_json::to_string(&wellness)
+                .map_err(|_| ApiError::internal("the wellness cursor could not be written"))?,
+        ),
+        last_success_at: previous_wellness
+            .as_ref()
+            .and_then(|state| state.last_success_at),
+        token_expires_at: previous_wellness
+            .as_ref()
+            .and_then(|state| state.token_expires_at),
+        updated_at: api.now(),
+    };
+    api.store()
+        .write_wellness_checkpoint(None, &checkpoint)
+        .map_err(|error| api.store_error("the wellness checkpoint could not be written", &error))?;
+    let wellness_end = if history_only {
+        wellness.next_date.as_deref().map(core_date).transpose()?
+    } else {
+        Some(current)
+    };
+    let wellness_window = if history_only {
+        api.config().max_wellness_days_per_sync
+    } else {
+        days.min(3).min(api.config().max_wellness_days_per_sync)
+    };
     let mut wellness_days = 0usize;
+    let mut wellness_complete = wellness_window > 0;
     for offset in 0..wellness_window {
-        let date = current.add_days(-offset).to_iso();
-        let row = match wellness_of(&client, &date) {
+        if failure.is_some() || transport.paused()? {
+            wellness_complete = false;
+            break;
+        }
+        let Some(end) = wellness_end else { break };
+        let date = end.add_days(-offset).to_iso();
+        if date < wellness.target_from {
+            break;
+        }
+        let row = match wellness_of(&client, &date, api.now()) {
             Ok(row) => row,
             Err(error) => {
-                stopped = Some(error.to_string());
+                if !transport.paused()? {
+                    failure = Some(sync_failure(api, &error));
+                }
+                wellness_complete = false;
                 break;
             }
         };
-        if let Some(row) = row {
-            api.store()
-                .upsert_wellness_daily(&row)
-                .map_err(|error| api.store_error("the wellness could not be written", &error))?;
+        wellness.confirm(&date, &date)?;
+        checkpoint.cursor = Some(
+            serde_json::to_string(&wellness)
+                .map_err(|_| ApiError::internal("the wellness cursor could not be written"))?,
+        );
+        checkpoint.updated_at = api.now();
+        api.store()
+            .write_wellness_checkpoint(row.as_ref(), &checkpoint)
+            .map_err(|error| {
+                api.store_error("the wellness checkpoint could not be written", &error)
+            })?;
+        if row.is_some() {
             wellness_days += 1;
         }
     }
@@ -314,7 +452,7 @@ pub fn sync_run(api: &Api, request: &Request) -> ApiResult<Value> {
     // The cursor advances only when the walk finished: an interrupted pull
     // resumes from the same point, and the next pull continues rather than
     // starting over.
-    if stopped.is_none() {
+    if activities_complete && (!history_only || cursor.newest.is_none()) {
         if let Some(newest) = newest_seen {
             cursor.newest = Some(newest);
         }
@@ -322,11 +460,20 @@ pub fn sync_run(api: &Api, request: &Request) -> ApiResult<Value> {
     cursor.pulled = pulled as i64;
     cursor.skipped = skipped as i64;
     cursor.deleted = deleted as i64;
-    write_activity_cursor(api, &cursor, finished_at)?;
-    write_state(api, sync_kind::WELLNESS, None, finished_at)?;
-    match &stopped {
-        Some(error) => api.set_garmin_last_error(Some(error.clone())),
-        None => api.set_garmin_last_error(None),
+    let more_pending =
+        history.pending() || wellness.pending() || !activities_complete || !wellness_complete;
+    cursor.history = Some(history);
+    set_cursor_failure(api, &mut cursor, failure.clone())?;
+    write_activity_cursor(
+        api,
+        &cursor,
+        finished_at,
+        activities_complete && !history_only,
+    )?;
+    if wellness_complete && !history_only {
+        let checkpoint = serde_json::to_string(&wellness)
+            .map_err(|_| ApiError::internal("the wellness cursor could not be written"))?;
+        write_state(api, sync_kind::WELLNESS, Some(checkpoint), finished_at)?;
     }
 
     let response = SyncRun {
@@ -334,6 +481,9 @@ pub fn sync_run(api: &Api, request: &Request) -> ApiResult<Value> {
         skipped,
         deleted,
         wellness_days,
+        complete: !more_pending && failure.is_none(),
+        more_pending,
+        failure,
         finished_at: crate::state::format_instant(finished_at),
         generated_at: api.generated_at(),
     };
@@ -698,14 +848,11 @@ fn key_of(api: &Api, request: &Request) -> ApiResult<Option<String>> {
 fn wellness_of(
     client: &stride_ingest::GarminClient,
     date: &str,
+    updated_at: DateTime<Utc>,
 ) -> Result<Option<stride_store::WellnessDaily>, stride_ingest::GarminError> {
-    let sleep = match client.sleep_daily(date) {
-        Ok(value) => value,
-        Err(error) if stops_the_pull(&error) => return Err(error),
-        Err(_) => Value::Null,
-    };
-    let hrv = client.hrv_daily(date).unwrap_or(Value::Null);
-    let summary = client.daily_summary(date).unwrap_or(Value::Null);
+    let sleep = client.sleep_daily(date)?;
+    let hrv = client.hrv_daily(date)?;
+    let summary = client.daily_summary(date)?;
     let sleep_s = field(&sleep, "dailySleep", "sleepTimeSeconds").and_then(|v| v.as_f64());
     let deep_sleep_s = field(&sleep, "dailySleep", "deepSleepSeconds").and_then(|v| v.as_f64());
     let rem_s = field(&sleep, "dailySleep", "remSleepSeconds").and_then(|v| v.as_f64());
@@ -728,7 +875,7 @@ fn wellness_of(
         resting_hr,
         stress_avg,
         source: source::GARMIN_PERSONAL.to_string(),
-        updated_at: chrono::Utc::now(),
+        updated_at,
     }))
 }
 
@@ -747,17 +894,98 @@ fn field<'a>(value: &'a Value, wrapper: &str, name: &str) -> Option<&'a Value> {
     value.get(name)
 }
 
-/// Whether a Garmin failure ends the pull.
-///
-/// A rate limit and a lost connection do: the answer will not change by
-/// asking again, and the rate limit is a budget. A refused key and a
-/// missing file do not: the pull carries on with the next run.
-fn stops_the_pull(error: &stride_ingest::GarminError) -> bool {
+fn sync_failure(api: &Api, error: &stride_ingest::GarminError) -> SyncFailure {
     use stride_ingest::GarminError;
-    matches!(
-        error,
-        GarminError::RateLimited { .. } | GarminError::Transport(_) | GarminError::NeedsReconnect
-    )
+    let mapped = api.garmin_error(error);
+    let status = match error {
+        GarminError::RateLimited { .. } => 429,
+        GarminError::Transport(_) => 503,
+        GarminError::Http { status, .. } => *status,
+        _ => mapped.status(),
+    };
+    SyncFailure {
+        code: mapped.code().to_string(),
+        detail: mapped.detail().to_string(),
+        status,
+        retry_after_seconds: match error {
+            GarminError::RateLimited { retry_after_secs } => *retry_after_secs,
+            _ => None,
+        },
+    }
+}
+
+fn local_sync_failure(detail: &str) -> SyncFailure {
+    SyncFailure {
+        code: "bad_request".to_string(),
+        detail: detail.to_string(),
+        status: 400,
+        retry_after_seconds: None,
+    }
+}
+
+fn set_cursor_failure(
+    api: &Api,
+    cursor: &mut ActivityCursor,
+    failure: Option<SyncFailure>,
+) -> ApiResult<()> {
+    cursor.retry_not_before = failure
+        .as_ref()
+        .and_then(|error| error.retry_after_seconds)
+        .map(|seconds| {
+            let delay = chrono::Duration::from_std(std::time::Duration::from_secs(seconds))
+                .map_err(|_| ApiError::internal("the retry delay is too large"))?;
+            api.now()
+                .checked_add_signed(delay)
+                .ok_or_else(|| ApiError::internal("the retry date is too large"))
+        })
+        .transpose()?;
+    api.set_garmin_last_error(failure.as_ref().map(|error| error.detail.clone()));
+    cursor.failure = failure;
+    Ok(())
+}
+
+fn save_sync_failure(
+    api: &Api,
+    cursor: &mut ActivityCursor,
+    failure: Option<SyncFailure>,
+) -> ApiResult<()> {
+    set_cursor_failure(api, cursor, failure)?;
+    write_activity_cursor(api, cursor, api.now(), false)
+}
+
+fn read_wellness_progress(api: &Api) -> ApiResult<Option<HistoryProgress>> {
+    let state = api
+        .store()
+        .sync_state(sync_kind::WELLNESS)
+        .map_err(|error| api.store_error("the wellness cursor could not be read", &error))?;
+    state
+        .and_then(|state| state.cursor)
+        .map(|cursor| {
+            let progress: HistoryProgress = serde_json::from_str(&cursor)
+                .map_err(|_| ApiError::internal("the wellness cursor could not be read"))?;
+            progress.validate()?;
+            Ok(progress)
+        })
+        .transpose()
+}
+
+fn coverage(
+    activities: Option<&HistoryProgress>,
+    wellness: Option<&HistoryProgress>,
+) -> Option<SyncHistoryCoverage> {
+    if activities.is_none() && wellness.is_none() {
+        return None;
+    }
+    let resource = |history: &HistoryProgress| SyncResourceCoverage {
+        target_from: history.target_from.clone(),
+        checked_from: history.checked_from.clone(),
+        checked_to: history.checked_to.clone(),
+        next_date: history.next_date.clone(),
+    };
+    Some(SyncHistoryCoverage {
+        activities: activities.map(resource),
+        wellness: wellness.map(resource),
+    })
 }
 
 /// Write the state of one kind of sync.
@@ -802,6 +1030,12 @@ struct ActivityCursor {
     skipped: i64,
     /// The runs Garmin no longer lists, marked and not resurrected.
     deleted: i64,
+    #[serde(default)]
+    history: Option<HistoryProgress>,
+    #[serde(default)]
+    failure: Option<SyncFailure>,
+    #[serde(default)]
+    retry_not_before: Option<DateTime<Utc>>,
 }
 
 /// Read the activity cursor, or the empty one when there is none yet.
@@ -818,18 +1052,28 @@ fn read_activity_cursor(api: &Api) -> ApiResult<ActivityCursor> {
 }
 
 /// Write the activity cursor into the sync state.
-fn write_activity_cursor(api: &Api, cursor: &ActivityCursor, at: DateTime<Utc>) -> ApiResult<()> {
+fn write_activity_cursor(
+    api: &Api,
+    cursor: &ActivityCursor,
+    at: DateTime<Utc>,
+    succeeded: bool,
+) -> ApiResult<()> {
     let text = serde_json::to_string(cursor)
         .map_err(|_| ApiError::internal("the sync cursor could not be written"))?;
     let previous = api
         .store()
         .sync_state(sync_kind::ACTIVITIES)
         .map_err(|error| api.store_error("the sync state could not be read", &error))?;
+    let previous_success = previous.as_ref().and_then(|state| state.last_success_at);
     let previous_expiry = previous.and_then(|state| state.token_expires_at);
     let state = SyncState {
         kind: sync_kind::ACTIVITIES.to_string(),
         cursor: Some(text),
-        last_success_at: Some(at),
+        last_success_at: if succeeded {
+            Some(at)
+        } else {
+            previous_success
+        },
         token_expires_at: previous_expiry,
         updated_at: at,
     };
@@ -839,15 +1083,17 @@ fn write_activity_cursor(api: &Api, cursor: &ActivityCursor, at: DateTime<Utc>) 
 }
 
 /// The list Garmin answers with, whichever shape it used.
-fn extract_list(value: &Value) -> Vec<Value> {
+fn extract_list(value: &Value) -> ApiResult<Vec<Value>> {
     match value {
-        Value::Array(items) => items.clone(),
+        Value::Array(items) => Ok(items.clone()),
         Value::Object(_) => value
             .get("activityList")
             .and_then(|value| value.as_array())
             .cloned()
-            .unwrap_or_default(),
-        _ => Vec::new(),
+            .ok_or_else(|| ApiError::bad_request("the activity listing could not be read")),
+        _ => Err(ApiError::bad_request(
+            "the activity listing could not be read",
+        )),
     }
 }
 

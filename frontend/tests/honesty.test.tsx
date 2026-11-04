@@ -17,12 +17,18 @@
 import { readdirSync, readFileSync, statSync } from 'node:fs'
 import { dirname, join, relative } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { screen, waitFor } from '@testing-library/react'
+import { fireEvent, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { api } from '../src/lib/api'
-import { healthFixture } from '../src/fixtures'
-import { renderApp } from './helpers'
+import { Sparkline } from '../src/components/Sparkline'
+import {
+  healthFixture,
+  syncStatusFailedFixture,
+  syncStatusFreshFixture,
+  vitalsFixture,
+} from '../src/fixtures'
+import { renderApp, renderWith } from './helpers'
 
 const here = dirname(fileURLToPath(import.meta.url))
 const src = join(here, '..', 'src')
@@ -43,6 +49,119 @@ afterEach(() => {
   vi.restoreAllMocks()
 })
 
+describe('missing readings', () => {
+  it('requests the selected health date and calendar window', async () => {
+    const vitals = vi.spyOn(api, 'vitals').mockImplementation(async (params) => ({
+      ...vitalsFixture,
+      date: params?.date ?? vitalsFixture.date,
+    }))
+    renderApp('/body')
+    await userEvent.selectOptions(await screen.findByLabelText('History window'), '90')
+    await waitFor(() => expect(vitals).toHaveBeenLastCalledWith({ date: undefined, days: 90 }))
+    fireEvent.change(screen.getByLabelText('Date'), { target: { value: '2026-04-15' } })
+    await waitFor(() =>
+      expect(vitals).toHaveBeenLastCalledWith({ date: '2026-04-15', days: 90 }),
+    )
+  })
+
+  it.each(['/', '/body'])(
+    'keeps absent signals secondary on %s and restores them when data arrives',
+    async (route) => {
+      const absent = {
+        ...vitalsFixture,
+        vitals: vitalsFixture.vitals.filter((vital) => vital.key !== 'hrv'),
+        history: {
+          ...vitalsFixture.history,
+          hrv: vitalsFixture.history.hrv.map((point) => ({ ...point, value: null })),
+        },
+      }
+      const vitals = vi.spyOn(api, 'vitals').mockResolvedValue(absent)
+      const view = renderApp(route)
+      await screen.findByTestId(route === '/' ? 'today-vitals' : 'body-signals')
+      expect(view.container.querySelector('[data-vital=hrv]')).toBeNull()
+      const additional = screen.getByTestId('additional-measurements')
+      expect(additional).not.toHaveAttribute('open')
+      expect(additional).toHaveTextContent('HRV')
+      expect(view.container.querySelector('[data-vital=sleep]')).not.toBeNull()
+      view.unmount()
+      vitals.mockResolvedValue(vitalsFixture)
+      const restored = renderApp(route)
+      await waitFor(() =>
+        expect(restored.container.querySelector('[data-vital=hrv]')).not.toBeNull(),
+      )
+    },
+  )
+
+  it.each(['/', '/body'])(
+    'retains recorded history on %s when the latest reading is absent',
+    async (route) => {
+      vi.spyOn(api, 'vitals').mockResolvedValue({
+        ...vitalsFixture,
+        vitals: vitalsFixture.vitals.filter((vital) => vital.key !== 'hrv'),
+      })
+      const { container } = renderApp(route)
+      await screen.findByTestId(route === '/' ? 'today-vitals' : 'body-signals')
+      expect(container.querySelector('[data-vital=hrv] svg')).not.toBeNull()
+      expect(container.querySelector('[data-vital-value=hrv]')).toBeNull()
+    },
+  )
+
+  it('breaks a sparkline at missing values and retains their horizontal positions', () => {
+    const { container } = renderWith(<Sparkline values={[null, 10, 20, null, 30, null]} />)
+    const lines = [...container.querySelectorAll('polyline')]
+    expect(lines).toHaveLength(2)
+    expect(
+      lines[0]
+        ?.getAttribute('points')
+        ?.split(' ')
+        .map((point) => point.split(',')[0]),
+    ).toEqual(['24', '48'])
+    expect(lines[1]?.getAttribute('points')?.split(',')[0]).toBe('96')
+  })
+})
+
+describe('screen loading failures', () => {
+  it.each([
+    ['/', 'insightsToday'],
+    ['/body', 'vitals'],
+    ['/progress', 'insightsProgress'],
+  ] as const)(
+    'shows a retry rather than empty data or endless loading on %s',
+    async (route, method) => {
+      vi.spyOn(api, method).mockRejectedValue(new Error('synthetic unavailable store'))
+      renderApp(route)
+      expect(await screen.findByRole('alert')).toHaveTextContent('This did not load')
+      expect(screen.getByRole('button', { name: 'Try again' })).toBeVisible()
+    },
+  )
+
+  describe('manual sync', () => {
+    it('labels pending history separately from a failed pull', async () => {
+      vi.spyOn(api, 'syncStatus').mockResolvedValue({
+        ...syncStatusFreshFixture,
+        activity_count: 6,
+        more_pending: true,
+      })
+      renderApp('/')
+      expect(await screen.findByTestId('today-history-pending')).toHaveTextContent(
+        'Older history is still being checked',
+      )
+      expect(screen.queryByTestId('today-sync-failed')).not.toBeInTheDocument()
+    })
+
+    it('refreshes the last sync state after a successful retry', async () => {
+      vi.spyOn(api, 'syncStatus')
+        .mockResolvedValueOnce(syncStatusFailedFixture)
+        .mockResolvedValue(syncStatusFreshFixture)
+      vi.spyOn(api, 'syncRun').mockResolvedValue({})
+      renderApp('/')
+      await screen.findByTestId('today-sync-failed')
+      await userEvent.click(screen.getByRole('button', { name: 'Try again' }))
+      await waitFor(() => expect(screen.queryByTestId('today-sync-failed')).toBeNull())
+    })
+  })
+})
+
 describe("the reading's heading", () => {
   it('names when the readings are from, and is not advice', async () => {
     const { container } = renderApp('/')
@@ -50,7 +169,8 @@ describe("the reading's heading", () => {
       expect(container.querySelector('[data-testid="today-state-line"]')).toBeTruthy(),
     )
 
-    const heading = container.querySelector('[data-testid="today-state-line"]')?.textContent ?? ''
+    const heading =
+      container.querySelector('[data-testid="today-state-line"]')?.textContent ?? ''
     expect(heading).toContain('Last night')
     // The heading is not "Rest": a card headed with the single word can
     // be heard as an instruction. The core's own label for the summary
@@ -69,9 +189,9 @@ describe('the version', () => {
 
     // The api's answer is the only source: the card shows what /health
     // said, and the app holds no version of its own.
-    expect(container.querySelector('[data-testid="settings-about-version"]')?.textContent).toContain(
-      `Version ${healthFixture.version}`,
-    )
+    expect(
+      container.querySelector('[data-testid="settings-about-version"]')?.textContent,
+    ).toContain(`Version ${healthFixture.version}`)
   })
 
   it('is the only version string in the app', () => {
@@ -125,7 +245,9 @@ describe('the Compare screen', () => {
 
     // The 3 May run is in the list; choosing it asks the api for that
     // pair — the earlier run is A, and the app does not decide that.
-    await user.click(container.querySelector('[data-testid="compare-candidate-106"]') as HTMLElement)
+    await user.click(
+      container.querySelector('[data-testid="compare-candidate-106"]') as HTMLElement,
+    )
 
     await waitFor(() => expect(compare).toHaveBeenCalled())
     const asked = compare.mock.calls.at(-1)

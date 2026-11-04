@@ -80,6 +80,13 @@
             android:label="@string/garmin_title"
             android:theme="@style/AppTheme.GarminSetup" />
 
+        <activity
+            android:name=".data.YourDataActivity"
+            android:configChanges="orientation|keyboardHidden|keyboard|screenSize|screenLayout|smallestScreenSize|uiMode|density"
+            android:exported="false"
+            android:label="@string/data_title"
+            android:theme="@style/AppTheme.GarminSetup" />
+
         <!--
             The foreground service for a long pull.
 

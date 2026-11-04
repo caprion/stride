@@ -96,6 +96,21 @@ class PhoneRoutesTest {
         assertTrue(PhoneRoutes.decide("GET", "/activities/17").known)
         assertFalse(PhoneRoutes.decide("GET", "/activities/17/laps").known)
         assertFalse(PhoneRoutes.decide("GET", "/activities/17/17").known)
+        assertTrue(PhoneRoutes.decide("POST", "/activities/17/note").known)
+        assertFalse(PhoneRoutes.decide("POST", "/activities//note").known)
+        assertFalse(PhoneRoutes.decide("POST", "/activities/17/note/other").known)
+    }
+
+    @Test
+    fun `settings and notes retain data and write lock classification`() {
+        for (path in listOf("/settings", "/settings/export", "/settings/import", "/settings/delete", "/activities/17/note")) {
+            for (method in listOf("GET", "POST")) {
+                val decision = PhoneRoutes.decide(method, "/api/v1$path?source=phone")
+                assertTrue(decision.known)
+                assertTrue(decision.carriesData)
+                assertEquals(if (method == "GET") PhoneRoutes.Kind.Data else PhoneRoutes.Kind.Write, decision.kind)
+            }
+        }
     }
 
     /**

@@ -8,11 +8,14 @@ import app.stride.running.security.Secrets
 import org.json.JSONObject
 import uniffi.stride.strideCall
 import uniffi.stride.strideGarminSync
+import uniffi.stride.strideGarminBackfill
 import uniffi.stride.strideOpen
 import uniffi.stride.strideSetGarminConnected
 import uniffi.stride.strideSetGarminKey
+import uniffi.stride.strideSetUtcOffset
 import uniffi.stride.strideStatus
 import java.io.File
+import java.util.TimeZone
 
 /**
  * The Rust core, in this process.
@@ -48,6 +51,14 @@ object StrideCore {
     @Volatile
     private var open = false
 
+    @Volatile
+    var historyRevision: Long = 0
+        private set
+
+    fun historyChanged() {
+        synchronized(lock) { historyRevision += 1 }
+    }
+
     /** Whether the core has been asked for anything yet. */
     fun isOpen(): Boolean = open
 
@@ -59,7 +70,7 @@ object StrideCore {
      * not be opened" rather than pretending.
      */
     fun ensureOpen(context: Context): String? = synchronized(lock) {
-        if (open) return null
+        if (open) return refreshCalendar()
         try {
             loadLibrary()
         } catch (_: UnsatisfiedLinkError) {
@@ -90,6 +101,7 @@ object StrideCore {
 
         val parsed = JSONObject(answer)
         if (parsed.optBoolean("ok")) {
+            refreshCalendar()?.let { return it }
             open = true
             Log.i(TAG, "the core is open")
             return null
@@ -108,8 +120,10 @@ object StrideCore {
      * {"ok": false, "status": 404, "error": {"detail": "..."}}
      * ```
      */
-    fun call(method: String, path: String, body: String?): String =
-        strideCall(method, path, body)
+    fun call(method: String, path: String, body: String?): String {
+        checkCalendar()
+        return strideCall(method, path, body)
+    }
 
     /**
      * Pull from Garmin.
@@ -117,7 +131,26 @@ object StrideCore {
      * The key is used for the exchange and then dropped by the caller. The
      * bearer token stays in the core's memory.
      */
-    fun garminSync(key: String, days: Long): String = strideGarminSync(key, days)
+    fun garminSync(key: String, days: Long): String {
+        checkCalendar()
+        return strideGarminSync(key, days)
+    }
+
+    /** Continue the stored history cursor without repeating the recent pull. */
+    fun garminBackfill(key: String, days: Long): String {
+        checkCalendar()
+        return strideGarminBackfill(key, days)
+    }
+
+    private fun refreshCalendar(): String? {
+        val minutes = TimeZone.getDefault().getOffset(System.currentTimeMillis()) / 60_000
+        val answer = JSONObject(strideSetUtcOffset(minutes))
+        return if (answer.optBoolean("ok")) null else "the phone calendar could not be updated"
+    }
+
+    private fun checkCalendar() {
+        refreshCalendar()?.let { error(it) }
+    }
 
     /**
      * Put the Garmin key in the core's memory, or take it out again.

@@ -42,6 +42,10 @@ impl Core for StubCore {
         not_built_envelope()
     }
 
+    fn garmin_backfill(&self, _key: &str, _days: i64) -> Value {
+        not_built_envelope()
+    }
+
     fn set_garmin_key(&self, key: &str) -> Value {
         // The key is never echoed back, not even by the stub: the answer
         // says whether there is a key in memory, and nothing else.

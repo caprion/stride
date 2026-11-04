@@ -25,6 +25,20 @@ import org.junit.Test
 class SyncResultTest {
 
     @Test
+    fun `partial failure and pending history are read separately from landed counts`() {
+        val body = JSONObject("""{"activities":2,"wellness_days":1,"more_pending":true,"failure":{"status":429,"code":"garmin_rejected","detail":"Garmin is rate limiting the request"}}""")
+        val progress = SyncResult.progress(body)
+        assertEquals(true, progress.morePending)
+        assertEquals(429, progress.failure?.status)
+        assertEquals(2, SyncResult.counts(body).activities)
+    }
+
+    @Test(expected = org.json.JSONException::class)
+    fun `missing progress is not a successful completed import`() {
+        SyncResult.progress(JSONObject("""{"activities":0,"wellness_days":0}"""))
+    }
+
+    @Test
     fun `a pull's counts come from the DTO's fields`() {
         val body = JSONObject(
             """{"activities":12,"wellness_days":30,"finished_at":"2026-03-07T12:00:00Z","generated_at":"2026-03-07T12:00:01Z"}""",

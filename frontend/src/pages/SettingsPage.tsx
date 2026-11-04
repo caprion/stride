@@ -75,12 +75,22 @@ export function SettingsPage() {
   })
 
   const exportBackup = useMutation({
-    mutationFn: () => api.exportBackup(),
+    mutationFn: async () => {
+      if (currentHost() === 'native') {
+        const open = window.__stride_bridge__?.openData
+        if (!open) throw new Error(t('settings.storage.exportFailed'))
+        await open()
+        return null
+      }
+      return api.exportBackup()
+    },
     onSuccess: (result) => {
+      if (result === null) return
       setNotice(
         result.exported ? t('settings.storage.exported') : t('settings.storage.exportFailed'),
       )
     },
+    onError: () => setNotice(t('settings.storage.exportFailed')),
   })
 
   const deleteAll = useMutation({
@@ -398,7 +408,9 @@ export function SettingsPage() {
                 exportBackup.mutate()
               }}
             >
-              {t('settings.storage.export')}
+              {currentHost() === 'native'
+                ? t('settings.storage.yourData')
+                : t('settings.storage.export')}
             </button>
           </div>
 

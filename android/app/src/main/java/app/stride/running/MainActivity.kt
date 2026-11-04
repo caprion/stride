@@ -132,7 +132,13 @@ class MainActivity : BridgeActivity() {
     override fun onResume() {
         super.onResume()
         reloadIfTheConnectionChanged()
+        if (historyRevision != StrideCore.historyRevision) {
+            historyRevision = StrideCore.historyRevision
+            bridge?.webView?.reload()
+        }
     }
+
+    private var historyRevision = StrideCore.historyRevision
 
     override fun onStop() {
         gate.onBackground()

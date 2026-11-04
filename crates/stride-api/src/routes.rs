@@ -55,7 +55,7 @@ pub fn core_date(iso: &str) -> ApiResult<Date> {
 /// athlete's days are counted in. The clock is injected, so the day is
 /// reproducible: the tests hold the clock still.
 pub fn today(api: &Api) -> ApiResult<Date> {
-    let offset = chrono::Duration::minutes(api.config().utc_offset_minutes as i64);
+    let offset = chrono::Duration::minutes(api.utc_offset_minutes() as i64);
     let shifted = api.now() + offset;
     let naive = shifted.naive_utc();
     core_date(&naive.format("%Y-%m-%d").to_string())

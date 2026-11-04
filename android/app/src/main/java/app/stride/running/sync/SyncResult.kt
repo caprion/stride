@@ -28,6 +28,20 @@ import org.json.JSONObject
  */
 object SyncResult {
 
+    data class Failure(val status: Int, val code: String, val detail: String)
+
+    data class Progress(val morePending: Boolean, val failure: Failure?)
+
+    /** Required core fields: a malformed success must not become a zero-count success. */
+    fun progress(body: JSONObject): Progress {
+        val pending = body.getBoolean("more_pending")
+        val failure = if (body.isNull("failure")) null else {
+            val error = body.getJSONObject("failure")
+            Failure(error.getInt("status"), error.getString("code"), error.getString("detail"))
+        }
+        return Progress(pending, failure)
+    }
+
     /**
      * What a pull brought in.
      *

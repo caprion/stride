@@ -136,14 +136,15 @@ Two rules hold for every shape below.
 | `/settings/delete` | `deleted: boolean`, `generated_at` |
 | `/settings/import` | `activities`, `wellness`, `plan_blocks`, `plan_sessions`, `notes`, `rows`, `generated_at` |
 | `/activities/{id}/note` | `note: string \| null`, `generated_at` |
-| `/insights/today` | `generated_at`, `date`, `planned`, `options`, `last_run`, `distance_comparison: string \| null`, `week: {distance, sessions}` |
-| `/insights/progress` | `generated_at`, `headline`, `headline_note`, `weekly_volume`, `typical_week`, `pace_at_hr`, `bests`, `consistency`, `sessions_per_week`, `adherence` |
+| `/insights/today` | `generated_at`, `date`, `planned`, `options`, `last_run`, `distance_comparison: string \| null`, `week: {distance, sessions, days: {date, sessions}[]}` |
+| `/insights/progress` | `generated_at`, `date` (the core's local calendar date), `headline`, `headline_note`, `weekly_volume`, `typical_week`, `pace_at_hr`, `bests`, `consistency`, `sessions_per_week`, `adherence` |
 | `/auth/status` | `connected`, `method`, `key_source`, `key_last4`, `last_sync_at`, `generated_at` |
 | `/auth/garmin/fit-import` | `imported`, `duplicate`, `activity_id`, `date`, `distance`, `generated_at` |
 | `/plan/import` | `imported`, `block_id`, `sessions`, `generated_at` |
 | `/compare` | `basis_text`, `metrics: {key, label_key, a, b, delta}[]`, `a: CompareRun`, `b: CompareRun`, `series: {a: {offset_s, pace, heart_rate}[], b: …}` |
 | `/compare/candidates` | a list of `{id, label, date, distance}` |
-| `/sync/status` | `last_sync_at: string \| null`, `last_error: string \| null`, `activity_count: number` |
+| `/sync/status` | `last_sync_at: string \| null`, `last_error: string \| null`, `activity_count: number`, `cursor`, `pulled`, `skipped`, `deleted`, `more_pending: boolean`, `history: {activities, wellness} \| null` |
+| `/sync/run` | `activities`, `wellness_days`, `skipped`, `deleted`, `complete: boolean`, `more_pending: boolean`, `failure: {code, detail, status, retry_after_seconds} \| null`, `finished_at`, `generated_at` |
 | `/health/daily` | `date`, `generated_at`, `stale: boolean` |
 
 The app's own declarations are in `frontend/src/lib/types.ts`, and
@@ -157,10 +158,28 @@ other**: a contract that is not checked is a document, not a gate.
 
 The routes the app does not type — `/physiology/{daily,sleep,hrv,latest,sources}`,
 `/fitness/*`, `/stats/*`, `/plan/{current,today,blocks,sources,adherence,results,import}`,
-`/insights/chips`, `/sync/{run,runs,history,settings}`, `/auth/*`,
+`/insights/chips`, `/sync/{runs,history,settings}`, `/auth/*`,
 `/calendar` — are the router's own, and they are written down in
 `crates/stride-api/src/dto.rs`. They follow the same two rules: a domain
 value is a rendered value, and a sentence is a sentence.
+
+Each non-null sync history resource has `target_from`, nullable `checked_from`,
+nullable `checked_to` and nullable `next_date`. These describe one contiguous
+checked range and the next older date, not guaranteed provider availability.
+`complete` is true only when the requested history is exhausted without failure.
+A normal bounded pause has `more_pending: true` and `failure: null`; clients must
+surface a non-null partial failure even when HTTP succeeded and records landed.
+The API rejects a concurrent owner with `sync_busy` (409). A provider rate limit
+or an unexpired persisted retry delay returns `rate_limited` (429), not a refused
+key. The persisted delay prevents another provider request after process restart.
+See core-contract section 7 for recent refresh, historical continuation and retry
+ownership.
+
+Vitals accept an optional ISO `date` and `days` between 1 and 366 (default 28).
+History contains one entry per calendar day ending on that date, including null
+entries for missing observations. Changing the chart window does not change the
+baseline's own calculation window. Weekly markers count recorded sessions, not
+proof that a day was completely checked or that an empty day was a rest day.
 
 ### The settings, the goal and the pause
 

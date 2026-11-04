@@ -75,6 +75,9 @@ pub trait Core: Send + Sync {
     /// no refresh token, so a second exchange is a second call with the key.
     fn garmin_sync(&self, key: &str, days: i64) -> Value;
 
+    /// Continue dated history without repeating the recent refresh.
+    fn garmin_backfill(&self, key: &str, days: i64) -> Value;
+
     /// Put the Garmin key in memory, or take it out again.
     fn set_garmin_key(&self, key: &str) -> Value;
 

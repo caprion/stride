@@ -9,6 +9,12 @@ import org.junit.Test
 class GarminFailureTest {
 
     @Test
+    fun `a partial missing file is not a rejected key`() {
+        assertEquals(GarminFailure.Kind.Unknown, GarminFailure.classify(404, "garmin_rejected", "Garmin refused the request"))
+        assertEquals(GarminFailure.Kind.RateLimited, GarminFailure.classify(429, "garmin_rejected", "paused"))
+    }
+
+    @Test
     fun `a refused key is a refused key`() {
         assertEquals(
             GarminFailure.Kind.KeyRejected,

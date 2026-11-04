@@ -15,6 +15,32 @@
 <resources>
     <string name="app_name">Stride</string>
     <string name="title_activity_main">Stride</string>
+    <string name="data_title">Your data</string>
+    <string name="data_explanation">Save an encrypted backup outside this app. Use a passphrase of at least 12 characters, preferably several words. Stride does not save it. The backup and this passphrase can restore history on another phone; losing the passphrase makes the backup unrecoverable.</string>
+    <string name="data_passphrase">Backup passphrase</string>
+    <string name="data_confirm">Confirm passphrase for a new backup</string>
+    <string name="data_backup">Create encrypted backup</string>
+    <string name="data_restore">Choose backup and restore</string>
+    <string name="data_restore_explanation">Restore merges runs, health history, plans and notes into this phone. Matching records may be updated from the backup. Existing unmatched records stay. Garmin credentials are not transferred.</string>
+    <string name="data_ready">Files leave the app only when you choose a destination.</string>
+    <string name="data_passphrase_short">The passphrase needs at least 12 characters.</string>
+    <string name="data_mismatch">The two passphrases do not match.</string>
+    <string name="data_working">Preparing your data...</string>
+    <string name="data_choose_destination">Backup prepared. Choose where to save it.</string>
+    <string name="data_saved">Encrypted backup saved to your chosen destination.</string>
+    <string name="data_restored">Backup restored. Return to Today to see the refreshed history.</string>
+    <string name="data_export_explanation">Readable exports contain recorded activity and health observations in the chosen date range, with units in the column names. Missing values stay empty. They exclude routes, names, notes and credentials. CSV and JSON files are not encrypted; choose their destination deliberately. They are not recovery backups.</string>
+    <string name="data_from">From date (YYYY-MM-DD)</string>
+    <string name="data_to">To date (YYYY-MM-DD)</string>
+    <string name="data_csv">Export dated CSV</string>
+    <string name="data_json">Export dated JSON</string>
+    <string name="data_invalid_dates">Enter valid dates as YYYY-MM-DD, with the start no later than the end.</string>
+    <string name="data_choose_export_destination">Export prepared. Choose where to save the unencrypted file.</string>
+    <string name="data_export_saved">Readable export saved to your chosen destination.</string>
+    <string name="data_cancelled">Cancelled. No external file was saved or restored.</string>
+    <string name="data_no_picker">No document picker is available on this phone.</string>
+    <string name="data_failed">The operation did not complete. Check the file, passphrase, available storage and destination, then try again.</string>
+    <string name="data_interrupted">The file operation was interrupted. Enter the passphrase again for restore, or prepare the export again. A destination file may be empty or incomplete; no completed transfer is confirmed.</string>
 
     <!--
         The native Garmin screen.
@@ -133,4 +159,7 @@
     <string name="sync_error_failed">Garmin did not complete the pull.</string>
     <string name="sync_error_no_screen_lock">This phone has no screen lock, so Stride does not pull real activities.</string>
     <string name="sync_pull_finished">The pull finished.</string>
+    <string name="sync_history_pending">This pull finished. Older history is still being checked.</string>
+    <string name="sync_error_busy">Another Garmin pull is running. This pull waits for it to finish.</string>
+    <string name="sync_error_network_disabled">Network access is turned off in Stride.</string>
 </resources>

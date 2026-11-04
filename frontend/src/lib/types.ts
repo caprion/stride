@@ -271,7 +271,11 @@ export interface TodayInsight {
    */
   distance_comparison: string | null
   /** This week's running, as the core renders it. */
-  week: { distance: RenderedValue; sessions: number }
+  week: {
+    distance: RenderedValue
+    sessions: number
+    days: { date: string; sessions: number }[]
+  }
 }
 
 /** One row of the metric diff. */
@@ -338,6 +342,7 @@ export interface CompareCandidate {
 /** The Progress screen's data. */
 export interface ProgressInsight {
   generated_at: string
+  date: string
   /** The headline, already written: "fitter than 8 weeks ago". */
   headline: string
   /** The evidence under it: "same heart rate, 24 s/km faster". */
@@ -356,7 +361,7 @@ export interface ProgressInsight {
     heart_rate: RenderedValue | null
   }[]
   bests: { key: CatalogueKey; value: string; date: string }[]
-  consistency: { week_start: string; sessions: number }[]  /**
+  consistency: { week_start: string; sessions: number }[] /**
    * The sessions a week, as the core averages and renders them: "3.4".
    *
    * The average and its rounding are the core's; the label beside it —
@@ -391,6 +396,33 @@ export interface SyncStatus {
   skipped: number | null
   /** The runs Garmin no longer lists, marked and not resurrected. */
   deleted: number | null
+  more_pending: boolean
+  history: {
+    activities: SyncResourceCoverage | null
+    wellness: SyncResourceCoverage | null
+  } | null
+}
+
+export interface SyncResourceCoverage {
+  target_from: string
+  checked_from: string | null
+  checked_to: string | null
+  next_date: string | null
+}
+
+export interface SyncRunResult {
+  activities: number
+  wellness_days: number
+  more_pending: boolean
+  complete: boolean
+  failure: {
+    code: string
+    detail: string
+    status: number
+    retry_after_seconds: number | null
+  } | null
+  finished_at: string
+  generated_at: string
 }
 
 /**

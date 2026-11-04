@@ -7,10 +7,22 @@
  */
 
 import { describe, expect, it } from 'vitest'
-import { axisLabels, axisTicks } from '../src/lib/chart'
+import { axisLabels, axisTicks, calendarWeekStarts } from '../src/lib/chart'
+
+describe('calendar chart windows', () => {
+  it('uses consecutive calendar weeks even across month and year boundaries', () => {
+    expect(calendarWeekStarts('2026-01-06T06:30:00Z', 4)).toEqual([
+      '2025-12-15',
+      '2025-12-22',
+      '2025-12-29',
+      '2026-01-05',
+    ])
+    expect(calendarWeekStarts('2026-05-17', 1)).toEqual(['2026-05-11'])
+  })
+})
 
 describe("a chart's axis", () => {
-  it('labels every tick with the core\'s own words', () => {
+  it("labels every tick with the core's own words", () => {
     const ticks = axisTicks([
       { value: 148, text: '148 bpm' },
       { value: 152, text: '152 bpm' },
@@ -46,7 +58,7 @@ describe("a chart's axis", () => {
     expect(ticks[0]?.text).toBe('148 bpm')
   })
 
-  it('finds a label by the chart\'s own number', () => {
+  it("finds a label by the chart's own number", () => {
     const labels = axisLabels([
       { value: 324, text: '5:24 /km' },
       { value: 306, text: '5:06 /km' },

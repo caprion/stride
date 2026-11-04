@@ -131,6 +131,61 @@ pub fn stride_call(method: String, path: String, body: Option<String>) -> String
     .to_string()
 }
 
+/// Refresh the phone's calendar without replacing the open core.
+pub fn stride_set_utc_offset(minutes: i32) -> String {
+    boundary::guarded("calendar", || {
+        #[cfg(feature = "real-core")]
+        {
+            stride_api::ffi::set_utc_offset_value(minutes)
+        }
+        #[cfg(not(feature = "real-core"))]
+        {
+            let _ = minutes;
+            seam::not_built_envelope()
+        }
+    })
+    .to_string()
+}
+
+/// Native backup screen only; the passphrase-derived key never enters the SPA.
+pub fn stride_backup(directory: String, key_hex: String, restore: bool) -> String {
+    boundary::guarded("backup", || {
+        #[cfg(feature = "real-core")]
+        {
+            let key = real::decode_hex(&key_hex)
+                .filter(|bytes| bytes.len() == 32)
+                .and_then(|bytes| stride_store::DatabaseKey::from_bytes(bytes).ok());
+            match key {
+                Some(key) => {
+                    stride_api::ffi::backup_value(std::path::Path::new(&directory), &key, restore)
+                }
+                None => error_envelope(400, "bad_request", "The backup key is invalid."),
+            }
+        }
+        #[cfg(not(feature = "real-core"))]
+        {
+            let _ = (directory, key_hex, restore);
+            seam::not_built_envelope()
+        }
+    })
+    .to_string()
+}
+
+/// Native-only readable file delivery.
+pub fn stride_history_export(from: String, to: String, format: String) -> String {
+    boundary::guarded("history export", || {
+        #[cfg(feature = "real-core")]
+        {
+            stride_api::ffi::history_export_value(&from, &to, &format)
+        }
+        #[cfg(not(feature = "real-core"))]
+        {
+            let _ = (from, to, format);
+            seam::not_built_envelope()
+        }
+    })
+    .to_string()
+}
 /// Pull from Garmin into the phone's database.
 ///
 /// The pull itself is the core's: the same one the desktop runs, over the
@@ -149,6 +204,11 @@ pub fn stride_call(method: String, path: String, body: Option<String>) -> String
 /// scheduled sync tries again.
 pub fn stride_garmin_sync(key: String, days: i64) -> String {
     boundary::guarded("sync", || installed().garmin_sync(&key, days)).to_string()
+}
+
+/// Continue one bounded, checkpointed history pull without refreshing today.
+pub fn stride_garmin_backfill(key: String, days: i64) -> String {
+    boundary::guarded("sync", || installed().garmin_backfill(&key, days)).to_string()
 }
 
 /// Put the Garmin key in memory, or take it out again.

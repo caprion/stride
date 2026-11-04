@@ -21,6 +21,17 @@ import org.junit.Test
  */
 class PullPolicyTest {
 
+    @Test
+    fun `a rate limit defers instead of immediately re-exchanging`() {
+        var attempts = 0
+        val outcome = PullPolicy.drive {
+            attempts += 1
+            SyncOutcome(false, "rate limited", error = SyncErrors.RATE_LIMITED, retryable = true)
+        }
+        assertEquals(1, attempts)
+        assertTrue(outcome.retryable)
+    }
+
     /** An attempt that was refused. */
     private fun refused(): SyncOutcome =
         SyncOutcome(ok = false, message = "the token has expired", error = SyncErrors.REFUSED)

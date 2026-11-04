@@ -9,6 +9,25 @@ import org.junit.Test
 class SyncWorkerDecisionTest {
 
     @Test
+    fun `only the history worker resumes a normal budget pause`() {
+        val outcome = SyncOutcome(ok = true, message = "more history", morePending = true)
+        assertEquals(SyncWorkerDecision.Decision.Success, SyncWorkerDecision.decide(outcome))
+        assertEquals(SyncWorkerDecision.Decision.Continue, SyncWorkerDecision.decide(outcome, backfill = true))
+    }
+
+    @Test
+    fun `a transient failure waits while a refusal stops`() {
+        assertEquals(
+            SyncWorkerDecision.Decision.Continue,
+            SyncWorkerDecision.decide(SyncOutcome(false, "rate limited", error = SyncErrors.RATE_LIMITED, retryable = true)),
+        )
+        assertEquals(
+            SyncWorkerDecision.Decision.Failure,
+            SyncWorkerDecision.decide(SyncOutcome(false, "refused", error = SyncErrors.REFUSED)),
+        )
+    }
+
+    @Test
     fun `a finished pull succeeds`() {
         assertEquals(
             SyncWorkerDecision.Decision.Success,

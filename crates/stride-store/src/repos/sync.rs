@@ -9,7 +9,7 @@
 //! [`crate::sync`] for the rule.
 
 use chrono::{DateTime, Utc};
-use rusqlite::{params, OptionalExtension, Row};
+use rusqlite::{params, Connection, OptionalExtension, Row};
 
 use crate::datetimes::DbDateTime;
 use crate::error::{Result, StoreError};
@@ -19,6 +19,27 @@ use crate::store::Store;
 
 /// The columns of `sync_state`.
 const COLUMNS: &str = "kind, cursor, last_success_at, token_expires_at, updated_at";
+
+pub(super) fn write_state(conn: &Connection, state: &SyncState) -> Result<()> {
+    conn.execute(
+        "INSERT INTO sync_state (kind, cursor, last_success_at, token_expires_at, updated_at)
+         VALUES (?1, ?2, ?3, ?4, ?5)
+         ON CONFLICT(kind) DO UPDATE SET
+            cursor = excluded.cursor,
+            last_success_at = excluded.last_success_at,
+            token_expires_at = excluded.token_expires_at,
+            updated_at = excluded.updated_at",
+        params![
+            state.kind,
+            state.cursor,
+            state.last_success_at.map(DbDateTime),
+            state.token_expires_at.map(DbDateTime),
+            DbDateTime(state.updated_at),
+        ],
+    )
+    .map_err(|source| StoreError::query("upsert sync_state", source))?;
+    Ok(())
+}
 
 /// Read one row of `sync_state`.
 fn map_state(row: &Row<'_>) -> rusqlite::Result<SyncState> {
@@ -61,24 +82,7 @@ impl Store {
     /// Write the state of one kind of sync.
     pub fn write_sync_state(&self, state: &SyncState) -> Result<()> {
         let conn = self.lock()?;
-        conn.execute(
-            "INSERT INTO sync_state (kind, cursor, last_success_at, token_expires_at, updated_at)
-             VALUES (?1, ?2, ?3, ?4, ?5)
-             ON CONFLICT(kind) DO UPDATE SET
-                cursor = excluded.cursor,
-                last_success_at = excluded.last_success_at,
-                token_expires_at = excluded.token_expires_at,
-                updated_at = excluded.updated_at",
-            params![
-                state.kind,
-                state.cursor,
-                state.last_success_at.map(DbDateTime),
-                state.token_expires_at.map(DbDateTime),
-                DbDateTime(state.updated_at),
-            ],
-        )
-        .map_err(|source| StoreError::query("upsert sync_state", source))?;
-        Ok(())
+        write_state(&conn, state)
     }
 
     /// Move the cursor of one kind of sync.

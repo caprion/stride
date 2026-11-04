@@ -140,6 +140,7 @@ pub mod render;
 pub mod router;
 pub mod routes;
 pub mod state;
+mod sync;
 
 pub use dto::RenderedValue;
 pub use error::{ApiError, ApiResult, ErrorEnvelope, ErrorKind};

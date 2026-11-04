@@ -12,17 +12,42 @@
  */
 
 import { useQuery } from '@tanstack/react-query'
+import { useState } from 'react'
 import { api } from '../lib/api'
 import { useStaleness } from '../lib/staleness'
 import { t } from '../i18n'
-import { Sparkline } from '../components/Sparkline'
-import { VitalRow } from '../components/VitalRow'
+import { VitalReadings } from '../components/VitalReadings'
 import { PageHeader } from '../ui/layout/PageHeader'
 
 export function BodyPage() {
-  const vitals = useQuery({ queryKey: ['physiology-vitals'], queryFn: api.vitals })
+  const [date, setDate] = useState('')
+  const [days, setDays] = useState(28)
+  const vitals = useQuery({
+    queryKey: date || days !== 28 ? ['physiology-vitals', date, days] : ['physiology-vitals'],
+    queryFn: () => api.vitals({ date: date || undefined, days }),
+  })
   const stale = useStaleness()
   const snapshot = vitals.data
+
+  if (vitals.isError) {
+    return (
+      <div>
+        <PageHeader title={t('body.heading')} />
+        <section className="card px-4 py-4" role="alert">
+          <p>{t('common.error')}</p>
+          <button
+            type="button"
+            className="tap mt-2 rounded-md border border-edge px-3"
+            onClick={() => {
+              void vitals.refetch()
+            }}
+          >
+            {t('today.state.retry')}
+          </button>
+        </section>
+      </div>
+    )
+  }
 
   if (!snapshot) {
     return (
@@ -33,17 +58,61 @@ export function BodyPage() {
     )
   }
 
-  const nights = snapshot.history.sleep.length
+  const controls = (
+    <section
+      className="card mb-3 flex flex-wrap items-end gap-3 px-4 py-3"
+      aria-label={t('body.history.controls')}
+    >
+      <label className="flex flex-col gap-1 text-[13px] text-ink-muted">
+        {t('body.history.date')}
+        <input
+          type="date"
+          value={date || snapshot.date}
+          onChange={(event) => setDate(event.target.value)}
+          className="tap rounded-md border border-edge bg-surface px-2 text-ink"
+        />
+      </label>
+      <label className="flex flex-col gap-1 text-[13px] text-ink-muted">
+        {t('body.history.range')}
+        <select
+          value={days}
+          onChange={(event) => setDays(Number(event.target.value))}
+          className="tap rounded-md border border-edge bg-surface px-2 text-ink"
+        >
+          {[7, 28, 90, 365].map((range) => (
+            <option key={range} value={range}>
+              {t('body.history.days', { n: range })}
+            </option>
+          ))}
+        </select>
+      </label>
+      {date ? (
+        <button
+          className="tap-inline text-[13px] font-medium text-brand-700 underline"
+          type="button"
+          onClick={() => setDate('')}
+        >
+          {t('body.history.latest')}
+        </button>
+      ) : null}
+    </section>
+  )
 
   // No wellness yet: the screen says what is missing and what to do,
   // and it draws no chart of nothing.
-  if (snapshot.vitals.length === 0) {
+  if (
+    !snapshot.vitals.some((vital) => vital.value_text !== null) &&
+    !Object.values(snapshot.history).some((history) =>
+      history.some((point) => Number.isFinite(point.value)),
+    )
+  ) {
     return (
       <div>
         <PageHeader
           title={t('body.heading')}
           meta={stale ? <span className="text-ink-faint">{stale}</span> : null}
         />
+        {controls}
         <div className="card px-4 py-8 text-center" data-testid="body-empty">
           <p className="text-[15px] font-semibold text-ink">{t('body.state.empty')}</p>
           <p className="mt-1 text-[13px] text-ink-muted">{t('body.state.emptyBody')}</p>
@@ -58,35 +127,17 @@ export function BodyPage() {
         title={t('body.heading')}
         meta={stale ? <span className="text-ink-faint">{stale}</span> : null}
       />
+      {controls}
 
       {/* --------------------------------------------- the three signals */}
-      <section className="signal-grid" data-testid="body-signals">
-        {snapshot.vitals.map((vital) => (
-          <div key={vital.key} className="card px-4 py-2">
-            <VitalRow vital={vital}>
-              <div className="mt-2">
-                <Sparkline
-                  values={snapshot.history[vital.key]
-                    .map((point) => point.value)
-                    .filter((value): value is number => value !== null)}
-                  band={vital.band}
-                  height={44}
-                  label={t('body.history.label', { n: nights })}
-                />
-              </div>
-            </VitalRow>
-          </div>
-        ))}
-      </section>
+      <VitalReadings snapshot={snapshot} layout="cards" />
 
       {/* --------------------------------------------- how to read this */}
       <section className="card mt-3 px-4 py-3">
         <h2 className="text-[12px] font-semibold uppercase tracking-[0.07em] text-ink-faint">
           {t('body.howToRead.heading')}
         </h2>
-        <p className="mt-1 text-[13.5px] text-ink-soft">
-          {t('body.howToRead.band', { n: nights })}
-        </p>
+        <p className="mt-1 text-[13.5px] text-ink-soft">{t('body.howToRead.band')}</p>
         <p className="text-[13.5px] text-ink-soft">{t('body.howToRead.inside')}</p>
       </section>
 

@@ -154,6 +154,7 @@ object PhoneRoutes {
         // Data
         "/activities",
         "/activities/{id}",
+        "/activities/{id}/note",
         "/physiology/daily",
         "/physiology/sleep",
         "/physiology/hrv",
@@ -196,6 +197,10 @@ object PhoneRoutes {
         "/auth/garmin/fit-import",
         "/auth/garmin/logout",
         "/calendar",
+        "/settings",
+        "/settings/export",
+        "/settings/import",
+        "/settings/delete",
     )
 
     /**
@@ -209,11 +214,11 @@ object PhoneRoutes {
         if (!pattern.contains('{')) {
             pattern == route
         } else {
-            val head = pattern.substringBefore('{').trimEnd('/')
-            val tail = pattern.substringAfter('}').substringAfter('/')
-            route.startsWith(head + "/") &&
-                !route.removePrefix(head + "/").contains('/') &&
-                (tail.isEmpty() || route.endsWith("/$tail"))
+            val expected = pattern.split('/')
+            val actual = route.split('/')
+            expected.size == actual.size && expected.zip(actual).all { (part, value) ->
+                if (part == "{id}") value.isNotEmpty() else part == value
+            }
         }
     }
 

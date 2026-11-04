@@ -23,7 +23,7 @@
 //! types a route, this crate answers with exactly that shape — the same
 //! keys, the same nullability — so the two cannot drift.
 
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
 /// A domain value, as the core renders it.
 ///
@@ -1048,6 +1048,17 @@ pub struct WeekRunning {
     pub distance: RenderedValue,
     /// How many runs there were.
     pub sessions: usize,
+    /// Recorded activity counts for each calendar day, including future days.
+    pub days: Vec<RunningDay>,
+}
+
+/// One marker in the current calendar week.
+#[derive(Clone, Debug, PartialEq, Serialize)]
+pub struct RunningDay {
+    /// The local date.
+    pub date: String,
+    /// Runs already recorded on this day, not a coverage or rest-day claim.
+    pub sessions: usize,
 }
 
 /// One week of volume.
@@ -1095,6 +1106,8 @@ pub struct Consistency {
 pub struct ProgressInsight {
     /// When this answer was produced.
     pub generated_at: String,
+    /// The local calendar date used by the core's weekly grouping.
+    pub date: String,
     /// The headline, already written.
     pub headline: String,
     /// The evidence under it.
@@ -1266,6 +1279,45 @@ pub struct SyncStatus {
     pub skipped: Option<i64>,
     /// The runs Garmin no longer lists, marked and not resurrected.
     pub deleted: Option<i64>,
+    /// Checked date ranges, including successful no-data days.
+    pub history: Option<SyncHistoryCoverage>,
+    /// Whether a bounded history job still has dated work to do.
+    pub more_pending: bool,
+}
+
+/// Independently checkpointed import resources.
+#[derive(Clone, Debug, PartialEq, Serialize)]
+pub struct SyncHistoryCoverage {
+    /// Activity listing coverage, not an upstream retention guarantee.
+    pub activities: Option<SyncResourceCoverage>,
+    /// Wellness endpoint coverage, not measurement availability.
+    pub wellness: Option<SyncResourceCoverage>,
+}
+
+/// One contiguous checked range and its next older date.
+#[derive(Clone, Debug, PartialEq, Serialize)]
+pub struct SyncResourceCoverage {
+    /// The fixed oldest requested date.
+    pub target_from: String,
+    /// The oldest date checked without a gap.
+    pub checked_from: Option<String>,
+    /// The newest date checked.
+    pub checked_to: Option<String>,
+    /// The next date to check, or null when the target is exhausted.
+    pub next_date: Option<String>,
+}
+
+/// A surfaced failure after partial data has landed.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct SyncFailure {
+    /// The router error code.
+    pub code: String,
+    /// A credential-free explanation.
+    pub detail: String,
+    /// The status used by the native failure classifier.
+    pub status: u16,
+    /// A provider-supplied retry delay, when present.
+    pub retry_after_seconds: Option<u64>,
 }
 
 /// What a pull brought in.
@@ -1279,6 +1331,12 @@ pub struct SyncRun {
     pub deleted: usize,
     /// How many days of wellness the pull brought in.
     pub wellness_days: usize,
+    /// Whether all requested dated history is checked without a failure.
+    pub complete: bool,
+    /// Whether another bounded history job is needed.
+    pub more_pending: bool,
+    /// A partial failure; normal budget pauses are not failures.
+    pub failure: Option<SyncFailure>,
     /// When the pull finished.
     pub finished_at: String,
     /// When this answer was produced.

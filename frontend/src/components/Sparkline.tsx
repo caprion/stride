@@ -11,14 +11,16 @@ export function Sparkline({
   height = 34,
   label,
 }: {
-  values: number[]
+  values: (number | null)[]
   band?: { lower: number; upper: number } | null
   height?: number
   label?: string
 }) {
   const width = 120
-  const points = values.filter((value) => Number.isFinite(value))
-  if (points.length < 2) {
+  const points = values.filter(
+    (value): value is number => value !== null && Number.isFinite(value),
+  )
+  if (points.length === 0) {
     return <div style={{ height }} aria-hidden="true" />
   }
 
@@ -26,14 +28,21 @@ export function Sparkline({
   const min = Math.min(...lows)
   const max = Math.max(...lows)
   const span = max - min || 1
-  const x = (index: number) => (index / (points.length - 1)) * width
+  const x = (index: number) => (index / Math.max(1, values.length - 1)) * width
   const y = (value: number) => height - ((value - min) / span) * (height - 4) - 2
 
-  const line = points
-    .map((value, index) => `${x(index).toFixed(2)},${y(value).toFixed(2)}`)
-    .join(' ')
-  const lastX = x(points.length - 1)
-  const lastY = y(points[points.length - 1] as number)
+  let segment: { x: number; y: number }[] = []
+  const segments = [segment]
+  values.forEach((value, index) => {
+    if (value === null || !Number.isFinite(value)) {
+      if (segment.length > 0) {
+        segment = []
+        segments.push(segment)
+      }
+    } else {
+      segment.push({ x: x(index), y: y(value) })
+    }
+  })
 
   return (
     <svg
@@ -53,8 +62,21 @@ export function Sparkline({
           fill="#E4EBF0"
         />
       ) : null}
-      <polyline points={line} fill="none" stroke="#1E5E96" strokeWidth="1.5" />
-      <circle cx={lastX} cy={lastY} r="2" fill="#1E5E96" />
+      {segments.map((segment, index) => {
+        const last = segment[segment.length - 1]
+        if (!last) return null
+        return (
+          <g key={index}>
+            <polyline
+              points={segment.map((point) => `${point.x},${point.y}`).join(' ')}
+              fill="none"
+              stroke="#1E5E96"
+              strokeWidth="1.5"
+            />
+            <circle cx={last.x} cy={last.y} r="2" fill="#1E5E96" />
+          </g>
+        )
+      })}
     </svg>
   )
 }

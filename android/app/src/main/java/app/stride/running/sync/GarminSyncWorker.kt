@@ -37,6 +37,10 @@ class GarminSyncWorker(
     override fun doWork(): Result {
         val context = applicationContext
         val settings = AppSettings(context)
+        val backfill = inputData.getBoolean(SyncScheduler.KEY_BACKFILL, false)
+        if (!settings.networkEnabled || (backfill && !settings.autoSync)) {
+            return Result.success()
+        }
 
         // The job runs around fixed local boundaries. Once it starts, the
         // boundary it just handled is behind it, so the phone names the
@@ -92,16 +96,17 @@ class GarminSyncWorker(
         val days = inputData.getInt(SyncScheduler.KEY_DAYS, 0)
             .takeIf { it > 0 }
             ?: AppSettings(context).syncDays
-        val outcome = SyncEngine.run(context, days.toLong())
+        val outcome = SyncEngine.run(context, days.toLong(), backfill)
 
         SyncNotifications.finished(context, outcome)
 
-        return when (SyncWorkerDecision.decide(outcome)) {
+        return when (SyncWorkerDecision.decide(outcome, backfill)) {
             SyncWorkerDecision.Decision.Success -> Result.success()
             // A locked phone did not start an exchange, so it can wait for
             // the phone to become usable. Every other failure has already
             // had the shell's one retry and stops this run.
             SyncWorkerDecision.Decision.WaitForUnlock -> Result.retry()
+            SyncWorkerDecision.Decision.Continue -> Result.retry()
             SyncWorkerDecision.Decision.Failure -> Result.failure()
         }
     }

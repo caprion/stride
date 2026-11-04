@@ -12,12 +12,42 @@
 
 import { screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { healthFixture, settingsFixture } from '../src/fixtures'
 import { renderApp } from './helpers'
 
 afterEach(() => {
+  delete window.__stride_bridge__
   window.history.pushState({}, '', '/?fixtures=1')
+})
+
+describe('phone data ownership', () => {
+  it('opens the native data screen without collecting a passphrase in the page', async () => {
+    const openData = vi.fn().mockResolvedValue(undefined)
+    window.__stride_bridge__ = { apiCall: vi.fn(), openData }
+    renderApp('/settings')
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Backup, restore and export' }),
+    )
+    await waitFor(() => expect(openData).toHaveBeenCalledOnce())
+    expect(screen.queryByLabelText(/passphrase/i)).toBeNull()
+  })
+
+  it('shows a native data screen failure instead of claiming a saved backup', async () => {
+    window.__stride_bridge__ = {
+      apiCall: vi.fn(),
+      openData: vi.fn().mockRejectedValue(new Error('locked')),
+    }
+    renderApp('/settings')
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Backup, restore and export' }),
+    )
+    await waitFor(() =>
+      expect(screen.getByTestId('settings-notice')).toHaveTextContent(
+        'The backup was not written',
+      ),
+    )
+  })
 })
 
 describe('the weekly goal', () => {

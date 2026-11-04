@@ -73,6 +73,20 @@ fn with_no_plan_of_their_own_the_plan_is_the_baseline() {
 }
 
 #[test]
+fn an_inferred_habit_is_not_a_daily_prescription_or_an_adherence_target() {
+    let harness = common::Harness::empty("plan-baseline-insights");
+    history(&harness);
+    assert_eq!(
+        harness.ok_get("/plan/current")["source"].as_str(),
+        Some("baseline")
+    );
+    let today = harness.ok_get("/insights/today");
+    assert!(today["planned"].is_null());
+    assert!(today["options"].as_array().unwrap().is_empty());
+    assert!(harness.ok_get("/insights/progress")["adherence"].is_null());
+}
+
+#[test]
 fn a_plan_of_the_athletes_own_is_the_plan_in_force() {
     let harness = common::Harness::empty("plan-own");
     history(&harness);

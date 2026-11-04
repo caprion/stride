@@ -8,9 +8,16 @@
         surface. The window is the app's own surface colour, so the launch
         does not flash a white screen before the app's colours arrive.
     -->
-    <style name="AppTheme" parent="Theme.AppCompat.DayNight.NoActionBar">
+    <style name="AppTheme" parent="Theme.AppCompat.Light.NoActionBar">
         <item name="android:windowBackground">@color/stride_surface</item>
         <item name="android:colorBackground">@color/stride_surface</item>
+        <item name="android:textColorPrimary">@color/stride_on_surface</item>
+        <item name="android:textColorSecondary">@color/stride_muted</item>
+        <item name="colorAccent">@color/stride_brand</item>
+        <item name="android:statusBarColor">@color/stride_surface</item>
+        <item name="android:navigationBarColor">@color/stride_surface</item>
+        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:windowLightNavigationBar">true</item>
     </style>
 
     <!--
@@ -21,10 +28,5 @@
         is turned: a pull can take a while, and the count should not be lost
         to a rotation.
     -->
-    <style name="AppTheme.GarminSetup" parent="Theme.AppCompat.DayNight.NoActionBar">
-        <item name="android:windowBackground">@color/stride_surface</item>
-        <item name="android:colorBackground">@color/stride_surface</item>
-        <item name="android:textColorPrimary">@color/stride_on_surface</item>
-        <item name="android:textColorSecondary">@color/stride_muted</item>
-    </style>
+    <style name="AppTheme.GarminSetup" parent="AppTheme" />
 </resources>

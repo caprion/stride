@@ -110,6 +110,163 @@ pub fn call_value(method: &str, path: &str, body: Option<&str>) -> Value {
     })
 }
 
+/// Native host calendar update; no WebView route or store reopen is involved.
+pub fn set_utc_offset_value(minutes: i32) -> Value {
+    guarded("calendar", || match installed() {
+        Some(router) => match router.api().set_utc_offset_minutes(minutes) {
+            Ok(()) => json!({"ok": true, "status": 200, "body": {"utc_offset_minutes": minutes}}),
+            Err(error) => json!({
+                "ok": false, "status": error.status(),
+                "error": {"code": error.kind().code(), "detail": error.detail()}
+            }),
+        },
+        None => not_open_envelope(),
+    })
+}
+
+/// Native-only file handoff. The independently supplied recovery key is never
+/// installed as the device key or exposed through a WebView route.
+pub fn backup_value(
+    directory: &std::path::Path,
+    key: &stride_store::DatabaseKey,
+    restore: bool,
+) -> Value {
+    guarded("backup", || {
+        let Some(router) = installed() else {
+            return not_open_envelope();
+        };
+        let _owner = match router.api().begin_sync() {
+            Ok(owner) => owner,
+            Err(error) => {
+                return json!({
+                    "ok": false, "status": error.status(),
+                    "error": {"code": error.kind().code(), "detail": error.detail()}
+                })
+            }
+        };
+        let store = router.api().store();
+        if restore {
+            match stride_store::export::import(store, directory, key) {
+                Ok(report) => ok_envelope(json!({"rows": report.rows})),
+                Err(_) => json!({
+                    "ok": false, "status": 400,
+                    "error": {"code": "bad_request", "detail": "The backup is invalid, incompatible, or the passphrase does not open it. No data was restored."}
+                }),
+            }
+        } else {
+            match stride_store::export::export(store, directory, key) {
+                Ok(manifest) => ok_envelope(json!({"rows": manifest.rows})),
+                Err(_) => json!({
+                    "ok": false, "status": 500,
+                    "error": {"code": "unknown", "detail": "The backup could not be written."}
+                }),
+            }
+        }
+    })
+}
+
+/// Readable, date-bounded observations. These files are not recovery backups.
+pub fn history_export_value(from: &str, to: &str, format: &str) -> Value {
+    guarded("history export", || {
+        let invalid = || {
+            json!({
+                "ok": false, "status": 400,
+                "error": {"code": "bad_request", "detail": "Choose valid dates and CSV or JSON."}
+            })
+        };
+        let dates = (
+            chrono::NaiveDate::parse_from_str(from, "%Y-%m-%d"),
+            chrono::NaiveDate::parse_from_str(to, "%Y-%m-%d"),
+        );
+        match dates {
+            (Ok(start), Ok(end))
+                if start <= end
+                    && (end - start).num_days() <= 36600
+                    && start.to_string() == from
+                    && end.to_string() == to => {}
+            _ => return invalid(),
+        }
+        if !matches!(format, "csv" | "json") {
+            return invalid();
+        }
+        let Some(router) = installed() else {
+            return not_open_envelope();
+        };
+        let store = router.api().store();
+        let observations = store.activities_between(from, to).and_then(|runs| {
+            let wellness = store.wellness_between(from, to)?;
+            let mut rows = Vec::with_capacity(runs.len() + wellness.len());
+            for run in runs {
+                rows.push(json!({
+                    "kind": "activity", "date": run.local_date,
+                    "distance_m": run.distance_m, "moving_time_s": run.moving_time_s,
+                    "elapsed_time_s": run.elapsed_time_s, "elevation_gain_m": run.elevation_gain_m,
+                    "average_hr_bpm": run.avg_hr, "maximum_hr_bpm": run.max_hr
+                }));
+            }
+            for day in wellness {
+                rows.push(json!({
+                    "kind": "wellness", "date": day.date, "sleep_s": day.sleep_s,
+                    "deep_sleep_s": day.deep_sleep_s, "rem_sleep_s": day.rem_s,
+                    "light_sleep_s": day.light_sleep_s, "awake_s": day.awake_s,
+                    "hrv_ms": day.hrv_ms, "resting_hr_bpm": day.resting_hr
+                }));
+            }
+            Ok(rows)
+        });
+        let rows = match observations {
+            Ok(rows) if rows.len() <= 100_000 => rows,
+            _ => {
+                return json!({
+                    "ok": false, "status": 500,
+                    "error": {"code": "unknown", "detail": "The history export could not be prepared. Try a shorter date range."}
+                })
+            }
+        };
+        let content = if format == "json" {
+            json!({
+                "format": "stride-observations", "version": 1, "from": from, "to": to,
+                "generated_at": router.api().generated_at(), "observations": rows
+            })
+            .to_string()
+        } else {
+            let columns = [
+                "kind",
+                "date",
+                "distance_m",
+                "moving_time_s",
+                "elapsed_time_s",
+                "elevation_gain_m",
+                "average_hr_bpm",
+                "maximum_hr_bpm",
+                "sleep_s",
+                "deep_sleep_s",
+                "rem_sleep_s",
+                "light_sleep_s",
+                "awake_s",
+                "hrv_ms",
+                "resting_hr_bpm",
+            ];
+            let mut text = columns.join(",") + "\r\n";
+            for row in rows {
+                let values: Vec<String> = columns
+                    .iter()
+                    .map(|column| match &row[*column] {
+                        Value::String(value) => format!("\"{}\"", value.replace('"', "\"\"")),
+                        Value::Number(value) => value.to_string(),
+                        _ => String::new(),
+                    })
+                    .collect();
+                text.push_str(&(values.join(",") + "\r\n"));
+            }
+            text
+        };
+        ok_envelope(json!({
+            "content": content,
+            "filename": format!("stride-history-{from}-to-{to}.{format}")
+        }))
+    })
+}
 /// Put the Garmin key in memory, or take it out again.
 ///
 /// The key is in memory for the length of a pull and no longer. An empty

@@ -11,6 +11,7 @@
 
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { ApiError, httpTransport, nativeTransport } from '../src/lib/transport'
+import { api } from '../src/lib/api'
 
 const request = { method: 'GET' as const, path: '/api/v1/insights/today' }
 
@@ -21,9 +22,44 @@ afterEach(() => {
 })
 
 describe('the native transport', () => {
+  it('surfaces a partial sync failure rather than a successful zero-count pull', async () => {
+    const previousUrl = window.location.href
+    window.history.pushState({}, '', '/')
+    try {
+      vi.stubGlobal(
+        'fetch',
+        vi.fn().mockResolvedValue(
+          new Response(
+            JSON.stringify({
+              activities: 2,
+              wellness_days: 0,
+              more_pending: true,
+              complete: false,
+              failure: {
+                code: 'garmin_rejected',
+                status: 429,
+                detail: 'Garmin is rate limiting the request',
+                retry_after_seconds: 60,
+              },
+            }),
+            { status: 200 },
+          ),
+        ),
+      )
+      await expect(api.syncRun()).rejects.toMatchObject({
+        kind: 'garmin_rejected',
+        status: 429,
+      })
+    } finally {
+      window.history.pushState({}, '', previousUrl)
+    }
+  })
+
   it('hands the app the body, with nothing around it', async () => {
     window.__stride_bridge__ = {
-      apiCall: vi.fn().mockResolvedValue('{"value_text":"6 h 10 m","direction_text":"about usual"}'),
+      apiCall: vi
+        .fn()
+        .mockResolvedValue('{"value_text":"6 h 10 m","direction_text":"about usual"}'),
     }
 
     const answer = await nativeTransport(request)

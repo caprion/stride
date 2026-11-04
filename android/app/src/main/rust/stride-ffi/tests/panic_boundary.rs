@@ -31,6 +31,10 @@ impl Core for PanickingCore {
         panic!("the core panicked on sync");
     }
 
+    fn garmin_backfill(&self, _key: &str, _days: i64) -> Value {
+        panic!("the core panicked on backfill");
+    }
+
     fn set_garmin_key(&self, _key: &str) -> Value {
         panic!("the core panicked on set_garmin_key");
     }
@@ -52,6 +56,7 @@ fn a_panic_in_the_core_is_an_error_and_not_a_kill() {
         uniffi_stride::stride_call("GET".to_string(), "/activities".to_string(), None),
         uniffi_stride::stride_open("/tmp/stride.db".to_string(), "00".repeat(32)),
         uniffi_stride::stride_garmin_sync("the-key".to_string(), 30),
+        uniffi_stride::stride_garmin_backfill("the-key".to_string(), 365),
         uniffi_stride::stride_set_garmin_key("the-key".to_string()),
         uniffi_stride::stride_set_garmin_connected(true),
         uniffi_stride::stride_status(),

@@ -1,22 +1,16 @@
 package app.stride.running.sync
 
 /**
- * How much history one pull may ask Garmin for.
- *
- * Garmin's Personal API answers only a few requests a minute. The shell's
- * window is therefore bounded before the request reaches the core, and the
- * core bounds the activities and wellness days inside that window as well.
- *
- * The phone asks for the ordinary thirty-day window. A pull that reached
- * for everything would spend the request limit before any run had landed.
+ * The history target, not the amount downloaded in one job.
+ * The core checkpoints dated work and separately bounds each HTTP attempt.
  */
 object PullWindow {
 
-    /** The ordinary number of days one pull covers. */
-    const val DEFAULT_DAYS = 30L
+    /** Approximately twelve months, with older history requested explicitly. */
+    const val DEFAULT_DAYS = 365L
 
     /** The largest window the phone asks for. */
-    const val MAX_DAYS = 30L
+    const val MAX_DAYS = 3650L
 
     /** The smallest useful window. */
     const val MIN_DAYS = 1L

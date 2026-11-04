@@ -7,6 +7,8 @@
     "cursor": null,
     "pulled": 0,
     "skipped": 0,
-    "deleted": 0
+    "deleted": 0,
+    "history": null,
+    "more_pending": false
   }
 }

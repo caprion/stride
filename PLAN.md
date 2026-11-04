@@ -13,6 +13,68 @@ gates) is merged; so are the domain, the store, the Garmin client and the FIT de
 the app, the phone's shell and the desktop rig. What is left is the wiring — the router hosted by
 both hosts — and the first vertical line: key → sync → one run → today's readout.
 
+### Approved product-reset amendments (2026-11-04)
+
+The user approved a staged, in-place reset retaining the local Rust foundation,
+Android-first delivery and original azure/amber identity. The historical design
+below remains applicable except where these amendments explicitly supersede it.
+This approval is not permission to publish, install, migrate or sync production data.
+
+- Today leads with recorded weekly activity on phone and desktop. Only an
+  explicitly imported or typed plan supplies sessions; inferred habits are not
+  prescriptions. A session comparison uses its matched actual result, never an
+  unrelated last run.
+- Independent weekly pace/heart-rate medians remain descriptive. They cannot
+  substantiate a matched-effort fitness headline; no such claim is emitted without
+  validated paired evidence. Chart windows use calendar weeks and preserve missing
+  observations rather than compressing gaps or substituting zero.
+- An incomplete listing never authorizes deletion or a successful activity-scan
+  timestamp. Wellness failures are surfaced, preserve previous successful coverage,
+  and stop subsequent provider requests instead of masquerading as absent readings.
+- Initial history targets the last 12 months, arriving incrementally; mobile data
+  is permitted and older history is on request. The import now stores dated
+  checkpoints independently for activities and wellness. Each job is bounded;
+  Android continues unfinished history through one separate WorkManager owner.
+  This is implementation progress, not production/device acceptance.
+- Azure evolved light is the accepted default, including native setup/data
+  screens. Available measurements lead; wholly absent signals stay in collapsed
+  disclosure, while historical readings and available activity details remain.
+- Phone backup/restore now uses a native user-chosen passphrase independent of
+  the original device key and Android document delivery. Separate dated CSV/JSON
+  exports are readable, not recovery backups. Isolated recovery tests do not
+  establish physical-device document-provider or process-death acceptance.
+- Body explores selected dates and 7/28/90/365 calendar-day windows, preserving
+  gaps. Today shows recorded-session dates, not inferred rest days. Progress uses
+  the core's calendar anchor and offers 52 weeks; native phone-timezone plumbing
+  remains outstanding, so current Android core dates still use default UTC.
+
+The initial target is a 365-day lookback, approximately twelve months, inclusive
+of today. A foreground pull checks the latest fourteen activity dates and up to
+three wellness dates; continuation visits older checkpointed dates. The target
+can be extended explicitly to 3650 days without resetting completed history.
+Default per-attempt bounds are 20 FIT download attempts, 14 historical wellness
+dates, 80 actual HTTP attempts, 32 MiB response-body bytes and 45 seconds. Byte
+and elapsed-time limits stop the next request; an already bounded in-flight
+response can exceed those soft limits. They are not wire-byte measurements.
+
+Successful no-data days count as checked dates, not measurements or a provider
+retention guarantee. Wellness data and its cursor commit together; missing
+provider fields preserve existing observations. Activity reconciliation requires
+an entirely enumerated dated window. Capped windows shrink, and an unenumerable
+single day produces an explicit failure instead of an endless automatic loop.
+Partial provider failures remain failures even when some data landed.
+
+The Android `history_days` preference is new. The former `sync_days` value
+bounded a single recent pull and is preserved, not reinterpreted or overwritten.
+Automatic history continuation requires enabled network and auto-sync, allows
+mobile data and waits for sufficient battery and an unlocked phone. WorkManager
+backoff paces continuations, so completion is inexact and can span days. A failed
+key stops automatic retries; rate limits and connection failures defer instead.
+No publish, install or production-data pull is part of verification.
+
+Optional explainable nudges are accepted product direction, but no new nudge
+contract or wording is introduced by this slice; existing voice checks remain.
+
 ---
 
 ## 0. The voice — vitals, direction, options; no verdicts

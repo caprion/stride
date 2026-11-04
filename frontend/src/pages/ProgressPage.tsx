@@ -21,7 +21,7 @@ import {
   YAxis,
 } from 'recharts'
 import { api } from '../lib/api'
-import { axisTicks } from '../lib/chart'
+import { axisTicks, calendarWeekStarts } from '../lib/chart'
 import { formatCount, formatDateShort, renderedText } from '../lib/format'
 import { useStaleness } from '../lib/staleness'
 import { t } from '../i18n'
@@ -47,13 +47,33 @@ function ChartCard({ title, children }: { title: string; children: React.ReactNo
  * has, and the app draws the window the athlete asks for. A chart with
  * less behind it shows less; it never invents a week.
  */
-const RANGES = [4, 8, 12, 26] as const
+const RANGES = [4, 8, 12, 26, 52] as const
 
 export function ProgressPage() {
   const progress = useQuery({ queryKey: ['insights-progress'], queryFn: api.insightsProgress })
   const stale = useStaleness()
   const [range, setRange] = useState<number>(12)
   const data = progress.data
+
+  if (progress.isError) {
+    return (
+      <div>
+        <PageHeader title={t('progress.heading')} />
+        <section className="card px-4 py-4" role="alert">
+          <p>{t('common.error')}</p>
+          <button
+            type="button"
+            className="tap mt-2 rounded-md border border-edge px-3"
+            onClick={() => {
+              void progress.refetch()
+            }}
+          >
+            {t('today.state.retry')}
+          </button>
+        </section>
+      </div>
+    )
+  }
 
   if (!data) {
     return (
@@ -77,30 +97,29 @@ export function ProgressPage() {
     )
   }
 
-  const volume = data.weekly_volume
-    .slice(-range)
-    .map((week) => ({
-      ...week,
-      km: (week.distance.raw ?? 0) / 1000,
-      distanceText: week.distance.text,
-      label: formatDateShort(week.week_start),
-    }))
-  const pace = data.pace_at_hr
-    .slice(-range)
-    .map((week) => ({
-      ...week,
-      label: formatDateShort(week.week_start),
-      paceValue: week.pace?.raw ?? null,
-      paceText: week.pace?.text ?? null,
-      hrValue: week.heart_rate?.raw ?? null,
-      hrText: week.heart_rate?.text ?? null,
-    }))
-  const consistency = data.consistency
-    .slice(-range)
-    .map((week) => ({
-      ...week,
-      label: formatDateShort(week.week_start),
-    }))
+  const weeks = calendarWeekStarts(data.date, range)
+  const volume = weeks.map((date) => {
+    const week = data.weekly_volume.find((entry) => entry.week_start === date)
+    return {
+      label: formatDateShort(date),
+      km: week?.distance.raw == null ? null : week.distance.raw / 1000,
+      distanceText: week?.distance.text ?? null,
+    }
+  })
+  const pace = weeks.map((date) => {
+    const week = data.pace_at_hr.find((entry) => entry.week_start === date)
+    return {
+      label: formatDateShort(date),
+      paceValue: week?.pace?.raw ?? null,
+      paceText: week?.pace?.text ?? null,
+      hrValue: week?.heart_rate?.raw ?? null,
+      hrText: week?.heart_rate?.text ?? null,
+    }
+  })
+  const consistency = weeks.map((date) => ({
+    label: formatDateShort(date),
+    sessions: data.consistency.find((entry) => entry.week_start === date)?.sessions ?? null,
+  }))
 
   /**
    * The axes' labels.
@@ -126,9 +145,7 @@ export function ProgressPage() {
       {/* ------------------------------------------------- the headline */}
       <section className="card px-4 py-3" data-testid="progress-headline">
         {/* The headline is the core's sentence (core-contract §8). */}
-        <p className="text-[19px] font-semibold leading-tight text-ink">
-          {data.headline}
-        </p>
+        <p className="text-[19px] font-semibold leading-tight text-ink">{data.headline}</p>
         {data.headline_note ? (
           <p className="mt-0.5 text-[13.5px] text-ink-muted">{data.headline_note}</p>
         ) : null}
@@ -235,8 +252,7 @@ export function ProgressPage() {
                 <Tooltip
                   formatter={(_value, _name, item) => {
                     const payload = item?.payload as
-                      | { paceText?: string | null; hrText?: string | null }
-                      | undefined
+                      { paceText?: string | null; hrText?: string | null } | undefined
                     // The tooltip shows the core's words.
                     return payload?.paceText ?? ''
                   }}
@@ -292,11 +308,7 @@ export function ProgressPage() {
                   }}
                 />
                 <Tooltip />
-                <Bar
-                  name={t('progress.consistency.unit')}
-                  dataKey="sessions"
-                  fill="#7BA8CD"
-                />
+                <Bar name={t('progress.consistency.unit')} dataKey="sessions" fill="#7BA8CD" />
               </BarChart>
             </ResponsiveContainer>
           </div>

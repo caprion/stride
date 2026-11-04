@@ -32,18 +32,18 @@ export default {
         },
         // Ink — a blue-black, so text sits in the same world as the chrome.
         ink: {
-          DEFAULT: '#0B1B27',
+          DEFAULT: '#112B40',
           soft: '#31465A',
-          muted: '#61788D',
-          faint: '#93A6B7',
+          muted: '#4E6577',
+          faint: '#586F82',
         },
         surface: {
           DEFAULT: '#FFFFFF',
-          soft: '#F4F7FA',
+          soft: '#F1F5F8',
           raised: '#FAFCFD',
           sunken: '#E9EFF4',
         },
-        edge: '#DEE7EE',
+        edge: '#CEDAE4',
         // The only "positive"/"negative" tones in the app are for the
         // direction words, and they are never red: nothing is a failure.
         better: '#2E8B7A',
@@ -53,7 +53,7 @@ export default {
       },
       fontFamily: {
         sans: [
-          'Inter',
+          'system-ui',
           '-apple-system',
           'BlinkMacSystemFont',
           '"Segoe UI"',
@@ -70,7 +70,7 @@ export default {
         nav: '0 1px 0 rgba(11,27,39,0.08)',
       },
       borderRadius: {
-        card: '10px',
+        card: '14px',
       },
       keyframes: {
         'fade-up': {

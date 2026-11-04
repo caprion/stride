@@ -25,6 +25,12 @@ data class SyncOutcome(
     val wellnessDays: Int = 0,
     /** The failure, if there was one. */
     val error: String? = null,
+    /** Dated history remains; a successful bounded job is not the whole import. */
+    val morePending: Boolean = false,
+    /** The scheduler may retry a transient failure after backoff. */
+    val retryable: Boolean = false,
+    /** The successful core DTO, for the native bridge; never a request or credential. */
+    val responseBody: String? = null,
 )
 
 /**
@@ -43,6 +49,12 @@ object SyncErrors {
 
     /** Garmin could not be reached. */
     const val FAILED = "failed"
+
+    /** Garmin asked for a pause; no immediate re-exchange is appropriate. */
+    const val RATE_LIMITED = "rate limited"
+
+    /** Another caller owns the native sync. */
+    const val BUSY = "busy"
 
     /** There is no key on the phone. */
     const val NOT_CONNECTED = "not connected"

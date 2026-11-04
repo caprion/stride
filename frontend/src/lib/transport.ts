@@ -51,6 +51,7 @@ export interface ApiRequest {
  */
 export interface StrideNativeBridge {
   apiCall(request: { method: HttpMethod; path: string; body?: unknown }): Promise<string>
+  openData?(): Promise<unknown>
 }
 
 declare global {
@@ -72,6 +73,8 @@ export type ApiErrorKind =
   | 'not_found'
   /** The phone's screen lock: the shell refuses the data routes. */
   | 'locked'
+  | 'sync_busy'
+  | 'rate_limited'
   | 'transport'
   | 'unknown'
 
@@ -85,6 +88,8 @@ export const API_ERROR_KINDS: readonly ApiErrorKind[] = [
   'bad_request',
   'not_found',
   'locked',
+  'sync_busy',
+  'rate_limited',
   'unknown',
 ]
 
@@ -263,11 +268,7 @@ function kindForStatus(status: number, host: Host): ApiErrorKind {
  * The phone's bridge carries the status and the message but not the
  * code, so on the phone the kind falls back to the status.
  */
-function kindForCode(
-  code: string | undefined,
-  status: number,
-  host: Host,
-): ApiErrorKind {
+function kindForCode(code: string | undefined, status: number, host: Host): ApiErrorKind {
   if (code && (API_ERROR_KINDS as readonly string[]).includes(code)) {
     return code as ApiErrorKind
   }

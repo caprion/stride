@@ -323,31 +323,39 @@ pub fn physiology_vitals(api: &Api, request: &Request) -> ApiResult<Value> {
         }
     };
 
+    let history_window_days = match request.query.integer("days")? {
+        Some(days) if (1..=366).contains(&days) => days,
+        Some(_) => {
+            return Err(ApiError::bad_request(
+                "the history window is outside 1 to 366 days",
+            ))
+        }
+        None => band::BAND_WINDOW_NIGHTS,
+    };
+    let history_from = day.add_days(1 - history_window_days);
     let history_rows = api
         .store()
-        .wellness_before(&day.to_iso(), band::BAND_WINDOW_NIGHTS)
+        .wellness_between(&history_from.to_iso(), &day.to_iso())
         .map_err(|error| api.store_error("the history could not be read", &error))?;
+    let history_point = |offset: i64, value: fn(&WellnessDaily) -> Option<f64>| {
+        let date = history_from.add_days(offset).to_iso();
+        crate::dto::HistoryPoint {
+            value: history_rows
+                .iter()
+                .find(|row| row.date == date)
+                .and_then(value),
+            date,
+        }
+    };
     let charts = VitalsHistory {
-        sleep: history_rows
-            .iter()
-            .map(|row| crate::dto::HistoryPoint {
-                date: row.date.clone(),
-                value: row.sleep_s,
-            })
+        sleep: (0..history_window_days)
+            .map(|offset| history_point(offset, |row| row.sleep_s))
             .collect(),
-        hrv: history_rows
-            .iter()
-            .map(|row| crate::dto::HistoryPoint {
-                date: row.date.clone(),
-                value: row.hrv_ms,
-            })
+        hrv: (0..history_window_days)
+            .map(|offset| history_point(offset, |row| row.hrv_ms))
             .collect(),
-        resting_hr: history_rows
-            .iter()
-            .map(|row| crate::dto::HistoryPoint {
-                date: row.date.clone(),
-                value: row.resting_hr,
-            })
+        resting_hr: (0..history_window_days)
+            .map(|offset| history_point(offset, |row| row.resting_hr))
             .collect(),
     };
 

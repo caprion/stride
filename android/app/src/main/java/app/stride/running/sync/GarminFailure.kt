@@ -40,13 +40,13 @@ object GarminFailure {
      */
     fun classify(status: Int, code: String?, detail: String): Kind {
         val text = detail.trim()
-        if (text.contains("rate limit", ignoreCase = true)) return Kind.RateLimited
+        if (status == 429 || text.contains("rate limit", ignoreCase = true)) return Kind.RateLimited
         if (text.contains("could not be reached", ignoreCase = true)) return Kind.Unreachable
 
         if (code.equals(PullPolicy.NEEDS_RECONNECT, ignoreCase = true)) {
             return Kind.KeyRejected
         }
-        if (status == 401 || code.equals(PullPolicy.GARMIN_REJECTED, ignoreCase = true)) {
+        if (status == 401 || status == 403 || (status == 0 && code.equals(PullPolicy.GARMIN_REJECTED, ignoreCase = true))) {
             return Kind.KeyRejected
         }
         return Kind.Unknown

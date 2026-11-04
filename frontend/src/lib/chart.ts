@@ -11,6 +11,16 @@
  * domain number without its unit, which is the contract's §8 saying no.
  */
 
+import { eachWeekOfInterval, format, parseISO, startOfWeek, subWeeks } from 'date-fns'
+
+/** Calendar weeks, including dates for which the store has no observations. */
+export function calendarWeekStarts(date: string, count: number): string[] {
+  const end = startOfWeek(parseISO(date.slice(0, 10)), { weekStartsOn: 1 })
+  return eachWeekOfInterval({ start: subWeeks(end, count - 1), end }, { weekStartsOn: 1 }).map(
+    (week) => format(week, 'yyyy-MM-dd'),
+  )
+}
+
 /** One tick of a chart's axis. */
 export interface AxisTick {
   /** The chart's own number for the tick. */

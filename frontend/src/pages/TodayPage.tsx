@@ -3,7 +3,7 @@
  *
  * A readout, not an instruction. The order is fixed:
  *
- *   the state line → the three vitals → the plan's own session → the
+ *   the actual week → the state line → the three vitals → the plan's own session → the
  *   plan's other options → the last run.
  *
  * Nothing here instructs, grades, ranks or concludes. The plan's sessions
@@ -27,7 +27,7 @@
  *     alone.
  */
 
-import { useMutation, useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
 import { api } from '../lib/api'
 import { connectGarmin } from '../lib/connect'
@@ -35,9 +35,8 @@ import { formatDateMedium, formatDateShort, renderedText } from '../lib/format'
 import { stalenessText } from '../lib/staleness'
 import type { PlanSession } from '../lib/types'
 import { t } from '../i18n'
-import { Sparkline } from '../components/Sparkline'
 import { RouteMap } from '../components/RouteMap'
-import { VitalRow } from '../components/VitalRow'
+import { VitalReadings } from '../components/VitalReadings'
 import { PageHeader } from '../ui/layout/PageHeader'
 
 function SessionCard({
@@ -88,12 +87,16 @@ function SessionCard({
 }
 
 export function TodayPage() {
+  const queryClient = useQueryClient()
   const today = useQuery({ queryKey: ['insights-today'], queryFn: api.insightsToday })
-  const vitals = useQuery({ queryKey: ['physiology-vitals'], queryFn: api.vitals })
+  const vitals = useQuery({ queryKey: ['physiology-vitals'], queryFn: () => api.vitals() })
   const sync = useQuery({ queryKey: ['sync-status'], queryFn: api.syncStatus })
   const settings = useQuery({ queryKey: ['settings'], queryFn: api.settings })
   const connect = useMutation({ mutationFn: () => connectGarmin() })
-  const runSync = useMutation({ mutationFn: () => api.syncRun() })
+  const runSync = useMutation({
+    mutationFn: () => api.syncRun(),
+    onSuccess: () => queryClient.invalidateQueries(),
+  })
 
   const insight = today.data
   const snapshot = vitals.data
@@ -107,13 +110,41 @@ export function TodayPage() {
     )
   }
 
+  if (today.isError || vitals.isError || sync.isError) {
+    return (
+      <div>
+        <PageHeader title={t('today.heading')} />
+        <section className="card px-4 py-4" role="alert">
+          <p>{t('common.error')}</p>
+          <button
+            type="button"
+            className="tap mt-2 rounded-md border border-edge px-3"
+            onClick={() => {
+              void today.refetch()
+              void vitals.refetch()
+              void sync.refetch()
+            }}
+          >
+            {t('today.state.retry')}
+          </button>
+        </section>
+      </div>
+    )
+  }
+
   // Nothing to show: there is no number, and the app never makes one up.
   // It says what is missing and what to do.
   //
   // The sync state alone does not decide this: a store can hold runs and
   // no sync row (the api's own seed is one), and the numbers are there.
   const nothingToShow =
-    !insight || !snapshot || (snapshot.vitals.length === 0 && !insight.last_run)
+    !insight ||
+    !snapshot ||
+    (!snapshot.vitals.some((vital) => vital.value_text !== null) &&
+      !Object.values(snapshot.history).some((history) =>
+        history.some((point) => Number.isFinite(point.value)),
+      ) &&
+      !insight.last_run)
 
   if (nothingToShow) {
     return (
@@ -141,8 +172,7 @@ export function TodayPage() {
   const lastRun = insight.last_run
   const stale = stalenessText(sync.data?.last_sync_at)
   const failed = sync.data?.last_error ?? null
-  const nights = snapshot.history.sleep.length
-  const readings = snapshot.vitals
+  const readings = snapshot.vitals.filter((vital) => vital.value_text !== null)
   const paused = settings.data?.pause
     ? settings.data.pause.reason
       ? t('common.paused.untilReason', {
@@ -170,7 +200,43 @@ export function TodayPage() {
         }
       />
 
+      <section className="card hero-card mb-3 px-5 py-5" data-testid="today-week">
+        <h2 className="text-[12px] font-semibold uppercase tracking-[0.06em] text-ink-faint">
+          {t('today.week.heading')}
+        </h2>
+        <Link to="/runs" className="tap mt-1 flex items-baseline justify-between gap-3">
+          <span className="text-[48px] font-semibold leading-tight tracking-tight tabular-nums text-brand-700">
+            {renderedText(insight.week.distance)}
+          </span>
+          <span className="text-[13px] text-ink-muted">
+            {t('today.week.sessions', { n: insight.week.sessions })}
+          </span>
+        </Link>
+        <ol className="mt-4 grid grid-cols-7 gap-1" aria-label={t('today.week.recordedDays')}>
+          {insight.week.days.map((day) => (
+            <li
+              key={day.date}
+              className="flex flex-col items-center gap-1 text-[12px]"
+              aria-label={`${formatDateShort(day.date)}: ${t('today.week.sessions', { n: day.sessions })}`}
+            >
+              <span className="text-ink-muted">{formatDateShort(day.date).slice(0, 3)}</span>
+              <span
+                aria-current={day.date === insight.date ? 'date' : undefined}
+                className={`flex h-7 w-7 items-center justify-center rounded-full border text-[12px] font-semibold tabular-nums ${day.date === insight.date ? 'border-accent-500 bg-accent-100 text-brand-800' : day.sessions > 0 ? 'border-brand-600 bg-brand-600 text-white' : 'border-edge text-ink-muted'}`}
+              >
+                {day.sessions > 0 ? day.sessions : <span aria-hidden="true">&middot;</span>}
+              </span>
+            </li>
+          ))}
+        </ol>
+      </section>
+
       {/* ---------------------------------------------- the state line */}
+      {sync.data?.more_pending ? (
+        <p className="mb-3 text-[13px] text-ink-muted" data-testid="today-history-pending">
+          {t('today.state.historyPending')}
+        </p>
+      ) : null}
       {failed ? (
         // The sync did not finish. The reason and a retry, and the
         // numbers below are greyed with their date: they are the last
@@ -182,6 +248,8 @@ export function TodayPage() {
           <p className="mt-0.5 text-[13px] text-ink-muted">{failed}</p>
           <button
             type="button"
+            disabled={runSync.isPending}
+            aria-busy={runSync.isPending}
             className="tap mt-2 inline-flex items-center rounded-md border border-edge bg-surface px-3 text-[13px] font-semibold text-ink-soft"
             onClick={() => {
               runSync.mutate()
@@ -189,6 +257,7 @@ export function TodayPage() {
           >
             {t('today.state.retry')}
           </button>
+          {runSync.isError ? <p role="alert">{t('common.error')}</p> : null}
         </section>
       ) : snapshot.rest.line ? (
         <section className="card px-4 py-3" data-testid="today-state-line">
@@ -217,31 +286,7 @@ export function TodayPage() {
       ) : null}
 
       {/* --------------------------------------------------- the vitals */}
-      {readings.length === 0 ? (
-        <section className="card mt-3 px-4 py-6 text-center" data-testid="today-no-vitals">
-          <p className="text-[15px] font-semibold text-ink">{t('today.state.noVitals')}</p>
-          <p className="mt-1 text-[13px] text-ink-muted">{t('today.state.noVitalsBody')}</p>
-        </section>
-      ) : (
-        <section
-          className={`card mt-3 px-4 py-1 ${failed ? 'opacity-60' : ''}`}
-          data-testid="today-vitals"
-        >
-          {readings.map((vital) => (
-            <VitalRow key={vital.key} vital={vital}>
-              <div className="mt-2">
-                <Sparkline
-                  values={snapshot.history[vital.key]
-                    .map((point) => point.value)
-                    .filter((value): value is number => value !== null)}
-                  band={vital.band}
-                  label={t('body.history.label', { n: nights })}
-                />
-              </div>
-            </VitalRow>
-          ))}
-        </section>
-      )}
+      <VitalReadings snapshot={snapshot} layout="rows" muted={Boolean(failed)} />
 
       {/* -------------------------------------------- the plan's session */}
       {insight.planned ? (
@@ -300,14 +345,6 @@ export function TodayPage() {
             ) : null}
           </Link>
         </section>
-      ) : null}
-
-      {/* ------------------------------------------- this week, at medium */}
-      {insight.week.sessions > 0 ? (
-        <p className="today-week mt-3 text-[12.5px] text-ink-faint" data-testid="today-week">
-          {t('today.week.heading')} · {renderedText(insight.week.distance)} ·{' '}
-          {t('today.week.sessions', { n: insight.week.sessions })}
-        </p>
       ) : null}
     </div>
   )

@@ -9,14 +9,14 @@ import org.junit.Test
 class PullWindowTest {
 
     @Test
-    fun `the ordinary window is thirty days`() {
-        assertEquals(30L, PullWindow.DEFAULT_DAYS)
+    fun `the ordinary history target is about twelve months`() {
+        assertEquals(365L, PullWindow.DEFAULT_DAYS)
         assertEquals(30L, PullWindow.bounded(30L))
     }
 
     @Test
     fun `a wider request is bounded`() {
-        assertEquals(PullWindow.MAX_DAYS, PullWindow.bounded(365L))
+        assertEquals(PullWindow.MAX_DAYS, PullWindow.bounded(10000L))
     }
 
     @Test

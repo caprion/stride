@@ -16,6 +16,7 @@ import app.stride.running.setup.GarminSetupActivity
 import app.stride.running.sync.ForgetGarminKey
 import app.stride.running.sync.PullWindow
 import app.stride.running.sync.SyncScheduler
+import app.stride.running.sync.SyncEngine
 import com.getcapacitor.JSObject
 import com.getcapacitor.Plugin
 import com.getcapacitor.PluginCall
@@ -82,6 +83,19 @@ class StrideApiPlugin : Plugin() {
      */
     override fun load() {
         bridge?.injectScriptBeforeLoad(SHIM)
+    }
+
+    @PluginMethod
+    fun openData(call: PluginCall) {
+        val host = activity
+        if (host == null || !AppLock.isUnlocked() || !DeviceCredential.hasCredential(host)) {
+            call.reject("Unlock Stride before opening your data.", "403")
+            return
+        }
+        host.runOnUiThread {
+            host.startActivity(Intent(host, app.stride.running.data.YourDataActivity::class.java))
+            call.resolve(JSObject())
+        }
     }
 
     /**
@@ -173,68 +187,30 @@ class StrideApiPlugin : Plugin() {
                     return@execute
                 }
 
-                // The Garmin key is needed for a pull and for nothing else.
-                // The Kotlin side unwraps it from the Keystore for the length
-                // of the call and hands it over; the core drops it again as
-                // soon as the call is over.
-                var key: String? = null
-                when (decision.kind) {
-                    PhoneRoutes.Kind.Pull -> {
-                        // A pull needs the Garmin key, and the key comes
-                        // from the Keystore — never from the page.
-                        key = try {
-                            Secrets.garminKey(context)
-                        } catch (error: CredentialUnavailable) {
-                            call.reject(context.getString(R.string.garmin_key_locked), "503")
-                            return@execute
-                        } catch (error: CredentialUnreadable) {
-                            call.reject(context.getString(R.string.garmin_key_gone), "403")
-                            return@execute
-                        }
-                        if (key.isNullOrBlank()) {
-                            call.reject(context.getString(R.string.garmin_not_connected_error), "400")
-                            return@execute
-                        }
-                        if (isBackgroundPull(request.body)) {
-                            // A background pull is a job: it survives the app
-                            // being killed, and the phone has one scheduler
-                            // for it. The job unwraps the key from the
-                            // Keystore itself, so nothing about the
-                            // credential is in WorkManager's database.
-                            //
-                            // The page is answered now, with the fact that
-                            // the work is queued — the count of runs arrives
-                            // by itself, in the notification, when the pull
-                            // has landed them.
-                            SyncScheduler.pullNow(context, requestedDays(context, request.body))
-                            call.resolve(
-                                JSObject().put(
-                                    "json",
-                                    """{"queued":true}""",
-                                ),
-                            )
-                            return@execute
+                if (decision.kind == PhoneRoutes.Kind.Pull) {
+                    if (isBackgroundPull(request.body)) {
+                        SyncScheduler.pullNow(context, requestedDays(context, request.body))
+                        call.resolve(JSObject().put("json", """{"queued":true}"""))
+                    } else {
+                        val outcome = SyncEngine.run(context, requestedDays(context, request.body).toLong())
+                        val body = outcome.responseBody
+                        if (!outcome.ok || body == null) {
+                            call.reject(outcome.message, if (outcome.error == SyncEngine.ERROR_REFUSED) "401" else "503")
                         } else {
-                            // A pull the athlete is watching happens now, and
-                            // the core needs the key for it.
-                            StrideCore.setGarminKey(key)
+                            call.resolve(JSObject().put("json", body))
                         }
                     }
-
-                    else -> Unit
+                    return@execute
                 }
 
                 val isLogout = decision.kind == PhoneRoutes.Kind.Logout
 
                 try {
                     val answer = StrideCore.call(request.method, path, request.body)
-                    // The last line of defence: an answer that carries the
-                    // key does not reach the page.
-                    val safe = KeyGuard.redact(answer, key)
                     // The app is handed the response body — the same bytes
                     // the desktop's router puts on the wire — and a failure
                     // is a failure, not a body.
-                    val answered = BridgeAnswerShape.of(safe)
+                    val answered = BridgeAnswerShape.of(answer)
                     if (answered.ok) {
                         call.resolve(JSObject().put("json", answered.text))
                     } else {
@@ -244,15 +220,6 @@ class StrideApiPlugin : Plugin() {
                         )
                     }
                 } finally {
-                    if (decision.kind == PhoneRoutes.Kind.Pull) {
-                        // The key was in the core's memory for the pull and
-                        // no longer: the copy in the Keystore is the one
-                        // that lasts. Clearing that temporary copy also
-                        // clears the core's connection fact, so the fact is
-                        // restored separately — without another key copy.
-                        StrideCore.setGarminKey("")
-                        StrideCore.setGarminConnected(true)
-                    }
                     if (isLogout) {
                         // The credential lives in the Keystore, so the
                         // shell is what forgets it. The core's copy goes
