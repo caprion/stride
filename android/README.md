@@ -67,15 +67,18 @@ on a second physical phone still require device acceptance before release.
 
 Pending encrypted backups can resume through activity recreation using only a
 confined staging-directory identifier. Restore passphrases and readable contents
-are not persisted; an interrupted operation asks the user to start again. Process
-death during preparation can still leave encrypted staging files behind.
+are not persisted; an interrupted operation asks the user to start again.
+Preparation interrupted by process death can leave encrypted staging behind.
+On opening this screen, orphaned staging older than one day is removed; active
+stages and the saved pending archive are excluded.
 
 The actual app and native setup/data screens default to Azure light. The native
-core still starts with the default UTC calendar offset rather than the phone's
-timezone; timezone plumbing and local-midnight acceptance remain release gaps.
+core receives the current phone offset before requests and sync, including
+daylight-saving or timezone changes, without reopening the store. Native tests
+cross local midnight and change offsets in the same open core.
 Debug and unsigned release assembly are not production-signature acceptance.
-The current API gate also isolates three pre-existing frontend-shape test failures;
-an isolated passing run does not mean the complete release gate is green.
+The signed testing build is published as a GitHub pre-release until the physical
+phone checks above pass; it does not replace the stable release.
 
 ## The first run and the key's life
 

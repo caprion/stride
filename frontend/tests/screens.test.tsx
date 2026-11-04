@@ -12,8 +12,12 @@
 
 import { screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
+import { api } from '../src/lib/api'
+import { todayFixture } from '../src/fixtures'
 import { renderApp } from './helpers'
+
+afterEach(() => vi.restoreAllMocks())
 
 function vitalReading(container: HTMLElement, key: string) {
   const row = container.querySelector(`[data-vital="${key}"]`)
@@ -103,8 +107,11 @@ describe('the distance comparison', () => {
     window.history.pushState({}, '', '/?fixtures=1')
   })
 
-  it('appears, neutrally, beyond 10% of the target', async () => {
-    window.history.pushState({}, '', '/?fixtures=over')
+  it('renders the core comparison when supplied', async () => {
+    vi.spyOn(api, 'insightsToday').mockResolvedValue({
+      ...todayFixture,
+      distance_comparison: '2.4 km more than the 10 km target',
+    })
     const { container } = renderApp('/')
     await waitFor(() =>
       expect(container.querySelector('[data-testid="today-distance-comparison"]')).toBeTruthy(),
@@ -114,6 +121,12 @@ describe('the distance comparison', () => {
     )?.textContent
     expect(line).toContain('2.4 km more than the 10 km target')
     window.history.pushState({}, '', '/?fixtures=1')
+  })
+
+  it('does not compare an earlier run with today’s target', async () => {
+    const { container } = renderApp('/')
+    await screen.findByTestId('today-session')
+    expect(container.querySelector('[data-testid="today-distance-comparison"]')).toBeNull()
   })
 })
 

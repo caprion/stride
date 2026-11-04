@@ -370,6 +370,7 @@ export const catalogue = {
   'connect.testRefused': { type: 'status', text: 'Garmin refused the key' },
 
   // -------------------------------------------------- the empty states
+  'today.state.noVitals': { type: 'status', text: 'No wellness data yet' },
   'today.state.noRuns': { type: 'status', text: 'No runs yet' },
   'today.state.from': { type: 'status', text: 'From {when}' },
   'runs.import.drop': { type: 'status', text: 'Drop a FIT file here' },

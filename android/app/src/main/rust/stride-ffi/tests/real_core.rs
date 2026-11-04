@@ -110,17 +110,27 @@ fn native_calendar_updates_cross_midnight_without_reopening_the_database() {
     let _lock = alone();
     let (path, bytes) = database("calendar");
     let hex: String = bytes.iter().map(|byte| format!("{byte:02x}")).collect();
-    let instant = chrono::DateTime::parse_from_rfc3339("2026-11-01T20:00:00Z").unwrap().into();
-    let core = uniffi_stride::real::ApiCore::with_clock(Arc::new(stride_api::FixedClock::new(instant)));
+    let instant = chrono::DateTime::parse_from_rfc3339("2026-11-01T20:00:00Z")
+        .unwrap()
+        .into();
+    let core =
+        uniffi_stride::real::ApiCore::with_clock(Arc::new(stride_api::FixedClock::new(instant)));
     core.open(&path, &hex).unwrap();
     for (offset, expected) in [(330, "2026-11-02"), (-300, "2026-11-01")] {
-        let updated: Value = serde_json::from_str(&uniffi_stride::stride_set_utc_offset(offset)).unwrap();
+        let updated: Value =
+            serde_json::from_str(&uniffi_stride::stride_set_utc_offset(offset)).unwrap();
         assert_eq!(updated["ok"], true);
-        assert_eq!(core.call("GET", "/insights/progress", None)["body"]["date"], expected);
+        assert_eq!(
+            core.call("GET", "/insights/progress", None)["body"]["date"],
+            expected
+        );
     }
     let refused: Value = serde_json::from_str(&uniffi_stride::stride_set_utc_offset(841)).unwrap();
     assert_eq!(refused["ok"], false);
-    assert_eq!(core.call("GET", "/insights/progress", None)["body"]["date"], "2026-11-01");
+    assert_eq!(
+        core.call("GET", "/insights/progress", None)["body"]["date"],
+        "2026-11-01"
+    );
 }
 
 #[test]

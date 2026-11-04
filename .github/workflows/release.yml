@@ -406,3 +406,4 @@ jobs:
         with:
           files: dist/*.apk
           body_path: ${{ runner.temp }}/notes.md
+          prerelease: ${{ contains(github.ref_name, '-') }}

@@ -45,8 +45,11 @@ This approval is not permission to publish, install, migrate or sync production 
   establish physical-device document-provider or process-death acceptance.
 - Body explores selected dates and 7/28/90/365 calendar-day windows, preserving
   gaps. Today shows recorded-session dates, not inferred rest days. Progress uses
-  the core's calendar anchor and offers 52 weeks; native phone-timezone plumbing
-  remains outstanding, so current Android core dates still use default UTC.
+  the core's calendar anchor and offers 52 weeks. Android refreshes the current
+  phone offset before requests and sync without reopening the store.
+
+The user authorized publishing a signed GitHub pre-release for physical-phone
+testing. This does not establish device acceptance or promote the build to stable.
 
 The initial target is a 365-day lookback, approximately twelve months, inclusive
 of today. A foreground pull checks the latest fourteen activity dates and up to

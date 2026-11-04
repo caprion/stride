@@ -216,7 +216,12 @@ class YourDataActivity : AppCompatActivity() {
                 message(R.string.data_no_picker)
             }
         }) {
-            val stage = BackupArchive.createStage(noBackupFilesDir)
+            val stage = try {
+                BackupArchive.createStage(noBackupFilesDir)
+            } catch (error: Exception) {
+                phrase.fill('\u0000')
+                throw error
+            }
             try {
                 ensureCore()
                 val data = File(stage, "data")
@@ -242,7 +247,12 @@ class YourDataActivity : AppCompatActivity() {
 
     private fun restore(uri: Uri, password: CharArray) {
         task {
-            val stage = BackupArchive.createStage(noBackupFilesDir)
+            val stage = try {
+                BackupArchive.createStage(noBackupFilesDir)
+            } catch (error: Exception) {
+                password.fill('\u0000')
+                throw error
+            }
             try {
                 ensureCore()
                 val input = contentResolver.openInputStream(uri) ?: error("No input")

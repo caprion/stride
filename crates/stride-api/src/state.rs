@@ -302,7 +302,9 @@ impl Api {
     /// Update the host calendar without reopening the store or interrupting sync.
     pub fn set_utc_offset_minutes(&self, minutes: i32) -> ApiResult<()> {
         if !(-840..=840).contains(&minutes) {
-            return Err(ApiError::bad_request("the calendar offset is outside -840 to 840 minutes"));
+            return Err(ApiError::bad_request(
+                "the calendar offset is outside -840 to 840 minutes",
+            ));
         }
         self.utc_offset_minutes.store(minutes, Ordering::Relaxed);
         Ok(())
