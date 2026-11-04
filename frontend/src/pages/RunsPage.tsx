@@ -69,9 +69,11 @@ function ActivityRow({ activity }: { activity: ActivitySummary }) {
               </span>
             </div>
             <Chips activity={activity} />
-            {activity.story ? (
-              <p className="mt-1 line-clamp-2 text-[13px] text-ink-soft">{activity.story}</p>
-            ) : null}
+            {/*
+              The story is never empty: the core always has a sentence,
+              and a row without one is the spreadsheet the plan forbids.
+            */}
+            <p className="mt-1 line-clamp-2 text-[13px] text-ink-soft">{activity.story}</p>
           </div>
           {activity.geo_points.length > 1 ? (
             <span className="hidden w-[104px] shrink-0 lg:block" data-testid="run-route">

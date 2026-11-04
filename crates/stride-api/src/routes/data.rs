@@ -134,11 +134,21 @@ pub fn activity(api: &Api, request: &Request) -> ApiResult<Value> {
     let mut splits = Vec::new();
     let mut elevation = Vec::new();
     let mut samples = Vec::new();
+    let mut why = None;
     if let Some(decoded) = series::decoded(api, id) {
         summary.geo_points = series::geo_points(&decoded);
         splits = series::splits(&decoded);
         elevation = series::elevation(&decoded, api.config().max_samples_in_response);
         samples = series::samples(&decoded, api.config().max_samples_in_response);
+        // The detail knows the run's own shape: the why is the core's,
+        // beside the same sentence the feed shows.
+        let history = crate::story::history_facts(api)?;
+        let facts =
+            crate::story::run_facts_of(&run.summary(), crate::story::story_splits(&decoded));
+        if let Some(facts) = facts {
+            let (_, the_why) = crate::story::story_with_why_of(&facts, &history);
+            why = the_why;
+        }
     }
 
     let plan_line = plan_line(api, &run.local_date, run.distance_m)?;
@@ -155,6 +165,7 @@ pub fn activity(api: &Api, request: &Request) -> ApiResult<Value> {
         samples,
         plan_line,
         note,
+        why,
     };
     ok(&detail)
 }

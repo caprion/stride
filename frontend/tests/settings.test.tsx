@@ -160,10 +160,12 @@ describe('the storage', () => {
       expect(container.querySelector('[data-testid="settings-storage"]')).toBeTruthy(),
     )
 
-    // The size is the host's, and it is only shown when the api answers
-    // one: the seeded store answers none, so the row is not there.
-    expect(settingsFixture.storage.size).toBeNull()
-    expect(container.querySelector('[data-testid="settings-storage-size"]')).toBeNull()
+    // The size is the host's, answered by the api — and it is shown as
+    // the api answered it, in the api's own words.
+    expect(settingsFixture.storage.size).toEqual({ raw: 601_336, text: '587.2 KB' })
+    expect(container.querySelector('[data-testid="settings-storage-size"]')?.textContent).toContain(
+      '587.2 KB',
+    )
   })
 
   it('takes the word before it deletes anything', async () => {

@@ -35,7 +35,7 @@ sideways, and every tap target is at least 44px tall at compact.
 | route | screen |
 |---|---|
 | `/` | **Today** — the vitals, each with its value, its direction word and the muted arithmetic; then the Rest summary; then the plan's own session and its other options, unranked and unlinked |
-| `/runs` | **Runs** — the feed. The sentence about what a run meant is the **core's** to write, and the core has no story engine yet: the router answers null and the row carries no sentence of its own |
+| `/runs` | **Runs** — the feed. The sentence about what a run was is the **core's** to write, and it is never empty: every row carries it |
 | `/runs/:id` | **Activity** — the run, its story, its splits, its elevation |
 | `/progress` | **Progress** — the trajectory, forgivingly; no percentage without a real baseline |
 | `/body` | **Body** — the same values and directions as Today, plus the patterns, each with its n |
@@ -412,10 +412,11 @@ Personal API key — and nothing else.
 ### The fixture set, and the file the api reads
 
 The fixture set is **the router's answers**, not a mock someone wrote:
-the stories are null because the core has no story engine yet, the plan's
-line is absent because the plan has no session on the run's day, and the
-pace's raw number is the core's own rounding. The api's parity test
-proves it, byte for byte, against a seeded store.
+the stories are the core's own sentences (never empty — a row without one
+is the spreadsheet the plan forbids), the plan's line is absent because
+the plan has no session on the run's day, and the pace's raw number is
+the core's own rounding. The api's parity test proves it, byte for byte,
+against a seeded store.
 
 The app's fixture set is a TypeScript module: the screens render from it
 and the tests assert against it. The api's test has to read **the same
@@ -425,7 +426,7 @@ the files and the module agree:
 
 | file | what it holds |
 |---|---|
-| `src/fixtures/answers.json` | every answer the app renders, and the seed they come from: the runs, the nights and the plan sessions |
+| `src/fixtures/answers.json` | every answer the app renders — the prescribed variant and the baseline variant — and the seed they come from: the runs, the nights and the plan sessions |
 | `src/fixtures/captured.json` | one captured answer, exactly as the router answered it, for the pair the demo shows |
 | `src/fixtures/compare-answers.json` | the compare answer for every pair the screen can ask about |
 
@@ -453,7 +454,9 @@ written from `src/fixtures/index.ts` — so the seed and the screens cannot
 drift apart. The answers are the router's own text, copied out of its
 dump and not re-serialised: the router writes `62.0` where a JavaScript
 `JSON.stringify` writes `62`, and the api's test compares the answers
-value for value.
+value for value. The baseline variant — the same seed with no plan block,
+so the router infers the baseline from the athlete's own history — travels
+with them.
 
 The export refuses to write a dump that was taken from another seed: the
 answers would be about a different store.

@@ -41,6 +41,9 @@ describe('Today, with nothing in it', () => {
     expect(container.querySelector('[data-testid="today-vitals"]')).toBeNull()
     expect(container.querySelector('[data-testid="today-session"]')).toBeNull()
     expect(container.querySelector('[data-testid="today-last-run"]')).toBeNull()
+    // And the connect card is not a row of "not enough data": the three
+    // null-vitalled rows the router sends are hidden behind the card.
+    expect(container.textContent).not.toContain('not enough data for a comparison yet')
   })
 
   it('says what is missing when the app has synced but the wellness has not come', async () => {
@@ -57,7 +60,6 @@ describe('Today, with nothing in it', () => {
     ).toBe(false)
     // The wellness is missing, and only the wellness: the runs and the
     // plan are the router's, and they are still there.
-    expect(container.querySelector('[data-testid="today-vitals"]')).toBeNull()
     expect(container.querySelector('[data-testid="today-session"]')).toBeTruthy()
     expect(container.querySelector('[data-testid="today-last-run"]')).toBeTruthy()
   })
@@ -199,6 +201,21 @@ describe('the Runs page', () => {
 })
 
 describe('the Activity page', () => {
+  it('shows the story, and the why only when the core says one', async () => {
+    const { container } = renderApp('/runs/101')
+    await waitFor(() =>
+      expect(container.querySelector('[data-testid="activity-detail"]')).toBeTruthy(),
+    )
+
+    // The sentence is the core's and is never empty: the feed's line, on
+    // the run's own page.
+    expect(container.textContent).toContain('12.4 km in 1 h 7 m, at an average of 148 bpm')
+    // The why is the one extra fact the detail knows — the run's own
+    // shape — and the seeded run has no splits to stand out, so the
+    // router answers null and the screen says nothing more.
+    expect(container.querySelector('[data-testid="activity-why"]')).toBeNull()
+  })
+
   it('shows the note, and no plan line when there is none', async () => {
     const { container } = renderApp('/runs/101')
     await waitFor(() =>

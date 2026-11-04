@@ -91,11 +91,11 @@ pub struct ActivitySummary {
     pub pace: Option<RenderedValue>,
     /// The group the run is in, and that group's totals.
     pub group: ActivityGroupTotals,
-    /// The one sentence about what the run meant.
+    /// The one sentence about what the run was.
     ///
-    /// `null` until the core has a story engine: the sentence is the core's
-    /// to write, and this crate does not write one of its own.
-    pub story: Option<String>,
+    /// The core's story engine writes it — descriptive, never a verdict —
+    /// and it is never empty: a row without a sentence is a spreadsheet.
+    pub story: String,
     /// The route, as `[latitude, longitude]` pairs.
     pub geo_points: Vec<[f64; 2]>,
 }
@@ -186,6 +186,10 @@ pub struct ActivityDetail {
     pub plan_line: Option<PlanLine>,
     /// The athlete's own note about the run.
     pub note: Option<String>,
+    /// The one extra thing the detail knows: the run's own shape, in the
+    /// core's words. `null` when there is nothing more to say than the
+    /// sentence.
+    pub why: Option<String>,
 }
 
 // --------------------------------------------------------------- physiology

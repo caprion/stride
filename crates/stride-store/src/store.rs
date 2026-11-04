@@ -233,14 +233,21 @@ impl Store {
         Ok(deleted)
     }
 
-    /// The size of the database file, in bytes.
+    /// The size of the database on disk, in bytes.
     ///
-    /// `None` when the file cannot be read: a size that is not there is
-    /// not a zero.
+    /// The size is the database file and its write-ahead log together: in WAL
+    /// mode the main file can be smaller than the database while the log
+    /// holds the rest, and a size that ignored the log would understate the
+    /// database. `None` only when the file cannot be read — never a zero.
     pub fn size_bytes(&self) -> Option<u64> {
-        std::fs::metadata(&self.path)
-            .ok()
-            .map(|metadata| metadata.len())
+        let mut total = std::fs::metadata(&self.path).ok()?.len();
+        for suffix in ["-wal", "-shm"] {
+            let sidecar = PathBuf::from(format!("{}{suffix}", self.path.display()));
+            if let Ok(metadata) = std::fs::metadata(&sidecar) {
+                total += metadata.len();
+            }
+        }
+        Some(total)
     }
 
     /// Say something in the store's log.

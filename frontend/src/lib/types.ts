@@ -252,6 +252,11 @@ export interface ActivityDetail extends ActivitySummary {
   note: string | null
 }
 
+export interface RunningDay {
+  date: string
+  sessions: number
+}
+
 /** What the Today screen reads. */
 export interface TodayInsight {
   generated_at: string
@@ -274,7 +279,7 @@ export interface TodayInsight {
   week: {
     distance: RenderedValue
     sessions: number
-    days: { date: string; sessions: number }[]
+    days: RunningDay[]
   }
 }
 

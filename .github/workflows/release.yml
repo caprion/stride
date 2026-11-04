@@ -128,13 +128,17 @@ jobs:
           rustup toolchain install stable --profile minimal
           rustup target add aarch64-linux-android
 
-      # The prebuilt cargo-ndk. `cargo install cargo-ndk` works too, but it
-      # spends minutes compiling a build script the runner does not need to
-      # compile.
+      # The prebuilt cargo-ndk, **pinned to the version the build was
+      # verified against**. Its output layout is part of the build's
+      # contract: `cargo ndk` writes the core to
+      # `target/<triple>/release/libuniffi_stride.so`, and both the copy
+      # task and `scripts/check_apk.py` read that path. A newer cargo-ndk
+      # that changed the layout would silently break the release check, so
+      # the version is fixed rather than left to whatever `latest` means.
       - name: Install cargo-ndk
         uses: taiki-e/install-action@v2
         with:
-          tool: cargo-ndk
+          tool: cargo-ndk@4.1.2
 
       - name: Check the toolchain
         run: cargo ndk --version && rustup target list --installed

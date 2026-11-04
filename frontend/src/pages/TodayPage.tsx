@@ -137,6 +137,9 @@ export function TodayPage() {
   //
   // The sync state alone does not decide this: a store can hold runs and
   // no sync row (the api's own seed is one), and the numbers are there.
+  // The router's shape is frozen — three vitals, one per kind, with null
+  // values when there is no data — so the empty state is the one where
+  // there is no last run **and** no vital has a value.
   const nothingToShow =
     !insight ||
     !snapshot ||

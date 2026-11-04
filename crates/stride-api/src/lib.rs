@@ -140,6 +140,7 @@ pub mod render;
 pub mod router;
 pub mod routes;
 pub mod state;
+pub mod story;
 mod sync;
 
 pub use dto::RenderedValue;

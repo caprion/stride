@@ -141,10 +141,12 @@ pub fn pace_of(distance_m: f64, moving_time_s: f64) -> Option<f64> {
 /// One run, as the feed shows it.
 ///
 /// Every measurement in the row is the core's rendering of it, with the
-/// number beside it for the chart. Nothing here formats a value.
+/// number beside it for the chart. The story is the core's own sentence
+/// about the run.
 pub fn activity_summary(
     activity: &StoredActivity,
     group: crate::dto::ActivityGroupTotals,
+    story: String,
 ) -> ActivitySummary {
     ActivitySummary {
         id: activity.id,
@@ -158,7 +160,7 @@ pub fn activity_summary(
         elevation_gain: render::elevation(Some(activity.elevation_gain_m)),
         pace: render::pace(pace_of(activity.distance_m, activity.moving_time_s)),
         group,
-        story: None,
+        story,
         geo_points: Vec::new(),
     }
 }
@@ -186,6 +188,7 @@ pub fn group_totals(api: &Api, key: &str) -> ApiResult<crate::dto::ActivityGroup
 
 /// The runs as the feed shows them, each with the group it belongs to.
 pub fn summaries(api: &Api, runs: &[StoredActivity]) -> ApiResult<Vec<ActivitySummary>> {
+    let history = crate::story::history_facts(api)?;
     let mut groups: BTreeMap<String, crate::dto::ActivityGroupTotals> = BTreeMap::new();
     let mut out: Vec<ActivitySummary> = Vec::with_capacity(runs.len());
     for run in runs {
@@ -198,7 +201,11 @@ pub fn summaries(api: &Api, runs: &[StoredActivity]) -> ApiResult<Vec<ActivitySu
                 group
             }
         };
-        out.push(activity_summary(run, group));
+        let story = match crate::story::run_facts_of(run, Vec::new()) {
+            Some(facts) => crate::story::story_of(&facts, &history),
+            None => crate::story::no_story(),
+        };
+        out.push(activity_summary(run, group, story));
     }
     Ok(out)
 }

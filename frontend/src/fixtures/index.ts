@@ -39,7 +39,6 @@ import type {
   KeyTestResult,
   NoteResult,
   PlanImportResult,
-  PlanSession,
   PlanWeek,
   ProgressInsight,
   RenderedValue,
@@ -63,6 +62,15 @@ import compareAnswerData from './compare-answers.json'
  * it, calls the real router and compares the answers value for value.
  */
 const routerAnswers = answersData.answers as Record<string, unknown>
+
+/**
+ * The router's answers for the baseline variant.
+ *
+ * The same seed, with no plan block: the router infers the baseline from
+ * the athlete's own history and answers the plan, the Today screen, the
+ * progress and the health accordingly.
+ */
+const baselineAnswers = (answersData as { baseline?: Record<string, unknown> }).baseline ?? {}
 
 /**
  * A failure the fixture set answers with.
@@ -229,21 +237,12 @@ export const planWeekFixture = routerAnswers['/plan/week'] as PlanWeek
 /**
  * The plan's week, inferred from the athlete's own history.
  *
- * A baseline is what the athlete usually does — it is not a prescription,
- * and it never produces a "not done". The days that were not run are
- * "planned", because nothing was prescribed.
+ * The baseline is the router's own answer — the same seed with no plan
+ * block, so the core reads the athlete's history and infers what it can.
+ * The app does not infer a plan of its own; that would be a second
+ * implementation of the core's plan engine.
  */
-export const planWeekBaselineFixture: PlanWeek = {
-  ...planWeekFixture,
-  block_name: 'Base block',
-  source: 'baseline',
-  sessions: (planWeekFixture.sessions as PlanSession[]).map((session) => ({
-    ...session,
-    status: session.status === 'done' ? ('done' as const) : ('planned' as const),
-    source: 'baseline' as const,
-  })),
-  counts: { done: 0, planned: 7, not_done: 0 },
-}
+export const planWeekBaselineFixture = baselineAnswers['/plan/week'] as PlanWeek
 
 // -------------------------------------------------------------- activities
 
@@ -327,6 +326,9 @@ export const activityDetailFixture = routerAnswers['/activities/101'] as Activit
 /** Today: the router's answer. */
 export const todayFixture = routerAnswers['/insights/today'] as TodayInsight
 
+/** Today, with no plan: the router's answer for the baseline seed. */
+export const baselineTodayFixture = baselineAnswers['/insights/today'] as TodayInsight
+
 /**
  * A route, for the screens that draw one.
  *
@@ -372,6 +374,9 @@ function withRoute(activity: ActivitySummary): ActivitySummary {
 
 /** Progress: the router's answer. */
 export const progressFixture = routerAnswers['/insights/progress'] as ProgressInsight
+
+/** Progress, with no plan: the router's answer for the baseline seed. */
+export const baselineProgressFixture = baselineAnswers['/insights/progress'] as ProgressInsight
 
 // --------------------------------------------------------------- compare
 
@@ -867,20 +872,24 @@ export const connectionHeldFixture: ConnectionStatus = {
 /**
  * The heart-rate zones of a run.
  *
- * The seeded store holds no samples, so the router answers the honest
- * one: the bands cannot be computed, and the core says why. The bands
- * themselves are the api's — the app draws what it is given.
+ * The seeded store holds no FIT file, so the router answers the honest
+ * one: the bands cannot be computed, and the core says why — "the run
+ * has no heart-rate samples". The bands themselves are the api's — the
+ * app draws what it is given.
  */
 export const zonesFixture: FitnessZones = {
   basis: null,
   max_heart_rate: null,
   zones: [],
   without_heart_rate: null,
-  unavailable: 'zones unavailable — no stored max or threshold heart rate',
+  unavailable: 'zones unavailable — the run has no heart-rate samples',
 }
 
 /** The service's own health — and the version, for About. */
 export const healthFixture = routerAnswers['/health'] as Health
+
+/** The service's health, with no plan: the router's answer for the baseline seed. */
+export const baselineHealthFixture = baselineAnswers['/health'] as Health
 
 /**
  * The settings.
@@ -891,6 +900,9 @@ export const healthFixture = routerAnswers['/health'] as Health
  */
 /** The settings: the router's answer. */
 export const settingsFixture = routerAnswers['/settings'] as SettingsState
+
+/** The settings, with no plan: the router's answer for the baseline seed. */
+export const baselineSettingsFixture = baselineAnswers['/settings'] as SettingsState
 
 /** The settings with nothing set: no goal, no pause, an empty log. */
 export const settingsEmptyFixture: SettingsState = {
@@ -991,15 +1003,47 @@ export const planImportFixture: PlanImportResult = {
 /**
  * The vitals with nothing behind them.
  *
- * No nights, no band and no direction: the reading is there, and there is
- * nothing to compare it with. **No invented numbers** — the history is
- * empty, not zero.
+ * The router's shape is frozen: **three vitals, one per kind**, and when
+ * there is no data each one carries a null value and the status the core
+ * writes for a comparison it cannot make. The rest line carries the same
+ * status. **No invented numbers** — the history is empty, not zero.
  */
 export const vitalsEmptyFixture: VitalsSnapshot = {
   date: TODAY,
   generated_at: '2026-05-13T06:30:00Z',
-  rest: { label: 'Rest', line: null },
-  vitals: [],
+  rest: { label: 'Rest', line: 'not enough data for a comparison yet' },
+  vitals: [
+    {
+      key: 'sleep',
+      label: 'Sleep',
+      value_text: null,
+      direction_text: null,
+      deviation_text: null,
+      travel_text: null,
+      status_text: 'not enough data for a comparison yet',
+      band: null,
+    },
+    {
+      key: 'hrv',
+      label: 'HRV',
+      value_text: null,
+      direction_text: null,
+      deviation_text: null,
+      travel_text: null,
+      status_text: 'not enough data for a comparison yet',
+      band: null,
+    },
+    {
+      key: 'resting_hr',
+      label: 'Resting HR',
+      value_text: null,
+      direction_text: null,
+      deviation_text: null,
+      travel_text: null,
+      status_text: 'not enough data for a comparison yet',
+      band: null,
+    },
+  ],
   history: { sleep: [], hrv: [], resting_hr: [] },
   patterns: [],
 }
@@ -1013,7 +1057,7 @@ export const vitalsEmptyFixture: VitalsSnapshot = {
 export const vitalsNotEnoughFixture: VitalsSnapshot = {
   date: TODAY,
   generated_at: '2026-05-13T06:30:00Z',
-  rest: { label: 'Rest', line: 'not enough data yet' },
+  rest: { label: 'Rest', line: 'not enough data for a comparison yet' },
   vitals: [
     {
       key: 'sleep',
@@ -1213,6 +1257,9 @@ export function fixtureResponse(
       // plan are the router's.
       if (variant === 'nowellness') return todayFixture
       if (variant === 'noplan') return { ...todayFixture, planned: null, options: [] }
+      // No plan block: the router inferred the baseline from the
+      // athlete's history, and Today shows what it inferred.
+      if (variant === 'baseline') return baselineTodayFixture
       // The gap is not news: the last run is inside ten per cent of the
       // target, so there is no comparison to state.
       if (variant === 'noclose') {
@@ -1273,6 +1320,9 @@ export function fixtureResponse(
       if (variant === 'empty' || variant === 'fresh' || variant === 'noplan') {
         return progressNoPlanFixture
       }
+      // No plan block: the router's progress has no adherence card, and
+      // the counts are the ones the history produced.
+      if (variant === 'baseline') return baselineProgressFixture
       return progressFixture
     case '/compare': {
       // Which run is A is the API's business: the app asks, and the API
@@ -1291,6 +1341,7 @@ export function fixtureResponse(
     case '/fitness/zones':
       return zonesFixture
     case '/health':
+      if (variant === 'baseline') return baselineHealthFixture
       return healthFixture
     case '/auth/status':
       if (variant === 'empty' || variant === 'fresh') return connectionEmptyFixture
@@ -1299,6 +1350,7 @@ export function fixtureResponse(
     case '/settings':
       if (variant === 'empty' || variant === 'fresh') return settingsEmptyFixture
       if (variant === 'paused') return settingsPausedFixture
+      if (variant === 'baseline') return baselineSettingsFixture
       return settingsFixture
     case '/settings/export':
       return exportFixture

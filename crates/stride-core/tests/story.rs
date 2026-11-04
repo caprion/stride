@@ -5,7 +5,7 @@
 //! against the contract's own ban list.
 
 use stride_core::date::Date;
-use stride_core::story::{story, RunFacts, Split};
+use stride_core::story::{story, story_with_why, RunFacts, Split};
 use stride_core::strings::{lint, CATALOGUE};
 
 /// Every word the catalogue holds: the vocabulary the app may say.
@@ -224,7 +224,16 @@ fn the_split_shape_says_which_part_of_the_run_stood_out() {
     };
     // The average pace is 5:30; the last kilometre took 7:00, which is more
     // than a tenth slower.
-    assert_eq!(story(&run, &[]), "the last 1 km was the slowest of the run");
+    //
+    // The sentence is what the feed shows - the run's numbers - and the why is
+    // the one extra fact the detail knows: the run's own shape.
+    assert_eq!(story(&run, &[]), "4 km in 22 m");
+    let (sentence, why) = story_with_why(&run, &[]);
+    assert_eq!(sentence, "4 km in 22 m");
+    assert_eq!(
+        why.as_deref(),
+        Some("the last 1 km was the slowest of the run")
+    );
 
     // And the other way round: the first kilometre was distinctly quicker.
     let quick = match run_with_splits(
@@ -253,9 +262,11 @@ fn the_split_shape_says_which_part_of_the_run_stood_out() {
         Some(run) => run,
         None => return,
     };
+    let (sentence, why) = story_with_why(&quick, &[]);
+    assert_eq!(sentence, "4 km in 22 m");
     assert_eq!(
-        story(&quick, &[]),
-        "the first 1 km was the fastest of the run"
+        why.as_deref(),
+        Some("the first 1 km was the fastest of the run")
     );
 }
 
@@ -288,6 +299,10 @@ fn a_run_whose_splits_are_even_says_nothing_about_them() {
         None => return,
     };
     assert_eq!(story(&run, &[]), "4 km in 20 m");
+    // And there is no why: the splits are even, so there is nothing to say.
+    let (sentence, why) = story_with_why(&run, &[]);
+    assert_eq!(sentence, "4 km in 20 m");
+    assert_eq!(why, None);
 }
 
 #[test]
@@ -298,49 +313,85 @@ fn the_story_is_never_a_verdict() {
     let distances = [None, Some(0.0), Some(3_000.0), Some(10_200.0)];
     let times = [None, Some(0.0), Some(1_200.0), Some(3_600.0)];
     let heart_rates = [None, Some(0.0), Some(140.0), Some(190.0)];
+    // The splits, so the why is exercised too.
+    let split_sets: [Vec<Split>; 3] = [
+        Vec::new(),
+        vec![
+            Split {
+                distance_m: 1_000.0,
+                moving_time_s: 300.0,
+            },
+            Split {
+                distance_m: 1_000.0,
+                moving_time_s: 420.0,
+            },
+        ],
+        vec![
+            Split {
+                distance_m: 1_000.0,
+                moving_time_s: 240.0,
+            },
+            Split {
+                distance_m: 1_000.0,
+                moving_time_s: 360.0,
+            },
+            Split {
+                distance_m: 1_000.0,
+                moving_time_s: 360.0,
+            },
+        ],
+    ];
     let vocabulary = catalogue_vocabulary();
     let mut checked = 0usize;
     for day in days {
         for distance in distances {
             for time in times {
                 for heart_rate in heart_rates {
-                    let facts = match run(day, distance, time, heart_rate) {
-                        Some(facts) => facts,
-                        None => return,
-                    };
-                    let history = vec![match run("2026-04-15", Some(7_000.0), None, None) {
-                        Some(facts) => facts,
-                        None => return,
-                    }];
-                    let sentence = story(&facts, &history);
-                    assert!(!sentence.is_empty(), "the story is never empty");
-                    // The contract's ban list, checked on the output.
-                    for phrase in lint::banned_phrases() {
-                        assert!(
-                            !lint::contains_phrase(&sentence, phrase),
-                            "the story says \"{phrase}\": \"{sentence}\""
-                        );
-                    }
-                    // And the stronger claim: every word the sentence uses is
-                    // a word the catalogue holds. The engine renders whole
-                    // sentences out of the catalogue, so a word the
-                    // catalogue does not hold cannot be said - not "good",
-                    // not "great", not anything else at all.
-                    for word in sentence.split(|character: char| !character.is_alphanumeric()) {
-                        if word.is_empty()
-                            || word.chars().all(|character| character.is_ascii_digit())
-                        {
-                            continue;
+                    for splits in &split_sets {
+                        let mut facts = match run(day, distance, time, heart_rate) {
+                            Some(facts) => facts,
+                            None => return,
+                        };
+                        facts.splits = splits.clone();
+                        let history = vec![match run("2026-04-15", Some(7_000.0), None, None) {
+                            Some(facts) => facts,
+                            None => return,
+                        }];
+                        let (sentence, why) = story_with_why(&facts, &history);
+                        assert!(!sentence.is_empty(), "the story is never empty");
+                        // The contract's ban list, checked on the output.
+                        for phrase in lint::banned_phrases() {
+                            assert!(
+                                !lint::contains_phrase(&sentence, phrase),
+                                "the story says \"{phrase}\": \"{sentence}\""
+                            );
                         }
-                        assert!(
+                        // And the stronger claim: every word the sentence uses is
+                        // a word the catalogue holds. The engine renders whole
+                        // sentences out of the catalogue, so a word the
+                        // catalogue does not hold cannot be said - not "good",
+                        // not "great", not anything else at all.
+                        let sentences = [Some(sentence), why];
+                        for sentence in sentences.into_iter().flatten() {
+                            for word in
+                                sentence.split(|character: char| !character.is_alphanumeric())
+                            {
+                                if word.is_empty()
+                                    || word.chars().all(|character| character.is_ascii_digit())
+                                {
+                                    continue;
+                                }
+                                assert!(
                             vocabulary.contains(&word.to_lowercase()),
                             "the story says \"{word}\", which the catalogue does not hold: \"{sentence}\""
                         );
+                            }
+                        }
+                        checked += 1;
                     }
-                    checked += 1;
                 }
             }
         }
     }
-    assert!(checked > 50, "the sweep should cover a spread of facts");
+    assert!(checked > 100, "the sweep should cover a spread of facts");
 }
