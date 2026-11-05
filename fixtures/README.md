@@ -2,10 +2,10 @@
 
 This directory freezes the observable behaviour of Stride's domain logic as
 **data**, so that the v2 Rust core can be *proved* equal to the old core instead
-of believed equal to it. Every file here came out of `/home/sumit/stride` (the
-parity oracle) and was **sanitised before it was committed**, except the
-explicitly marked v2 synthetic regression fixture. Nothing here is generated
-at build time, and nothing here is Python.
+of believed equal to it. The original oracle files came from the previous
+implementation and were **sanitised before they were committed**. New scanner
+fixtures and the v2 synthetic regression fixture are identified below.
+The golden corpus is frozen data, not generated at build time.
 
 The scanner gate that keeps it clean is `scripts/scan-privacy.sh` (plus
 `scripts/scan-secrets.sh`). The standard it enforces is the same one the old
@@ -14,7 +14,7 @@ carry a real name, or carry a Garmin identifier.
 
 ## Layout and provenance
 
-| path | source in `/home/sumit/stride` | what it is |
+| path | source in the previous implementation | what it is |
 |---|---|---|
 | `fit/*.fit` | `backend/tests/golden/fixtures/*.fit` plus one v2 synthetic regression | the 16 synthetic FIT inputs |
 | `golden/cases.json` | `backend/tests/golden/cases.json` | the frozen index of every input (sha256, size, sport, device, dates) |
@@ -28,9 +28,10 @@ carry a real name, or carry a Garmin identifier.
 | `scan-tests/*` | new (not from the old repo) | the deliberate bad/good fixtures that prove the scanners work |
 
 The old repo's generator scripts (`make_fixtures.py`, `fit_writer.py`,
-`make_expected.py`, `record_*.py`) are **Python and are not copied** — the rule
-is no Python in this tree. They live in the old repo, which is the oracle. The
-procedure below is the shell equivalent for re-extraction.
+`make_expected.py`, `record_*.py`) were **not copied**. They are historical
+oracle tooling, not runtime dependencies. This does not prohibit current host
+tooling such as `scripts/check_apk.py`. The shell procedure below documents
+re-extraction; it is not part of a normal build.
 
 ## What was sanitised, and how
 
@@ -80,9 +81,12 @@ keeps it, with the specific values replaced by fictional ones:
   reappear — in the old repo it was a test; here it is `scripts/scan-privacy.sh`,
   which runs in CI on every push and PR.
 
-## Re-extracting (repeatable, no Python)
+## Historical re-extraction
 
-Run from `/home/sumit/stride-v2`, with the old repo at `/home/sumit/stride`:
+The commands below record the original extraction paths, not a required
+developer setup. Only a maintainer with the private parity oracle can repeat
+them; use an isolated checkout and never overwrite accepted goldens to make
+tests pass. Ordinary builds and tests use the committed corpus.
 
 ```bash
 mkdir -p fixtures/{fit,golden/golden,golden/scenarios,stride-core/plan_sources,stride-garmin,stride-api}
@@ -159,3 +163,10 @@ records carry the corpus anchor position. There is no route, name, device id,
 serial or other personal data in the file. Its SHA-256 is frozen in
 `golden/cases.json`; changing one byte requires regenerating that hash and
 reviewing this provenance note.
+
+## Public demonstration media
+
+The [current demo and screenshots](../docs/media/README.md) are a separate,
+freshly generated dataset, not new golden expectations. They do not replace or
+modify this corpus. Their illustrative public-park GPS is fabricated rather
+than copied from an athlete, and map attribution is retained in the captures.

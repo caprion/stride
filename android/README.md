@@ -1,9 +1,14 @@
 # Stride — the Android phone shell
 
-The phone is the product. This directory is the shell around it: a
+Android is the primary release target. This directory contains a
 **Capacitor 8** WebView that hosts the web app, and the **Kotlin** that
 owns everything the page must not touch — the credential, the database, the
 Garmin pull and the background work.
+
+Release channels and installation guidance are in the [main README](../README.md#status).
+The [short demo and screenshot gallery](../docs/media/README.md) show the shared
+rc.3 interface with fictional data, including HR, HRV and a street map. Compact
+browser captures do not establish physical-phone acceptance.
 
 ## The rules this shell keeps
 
@@ -63,7 +68,7 @@ Readable contents stay in native memory until the user chooses a destination.
 
 The archive and isolated cross-key restore tests are automated. Document-provider
 permissions, cancellation, process death, locking during transfer and restoration
-on a second physical phone still require device acceptance before release.
+on a second physical phone still require device acceptance before stable promotion.
 
 Pending encrypted backups can resume through activity recreation using only a
 confined staging-directory identifier. Restore passphrases and readable contents
@@ -252,11 +257,11 @@ assets:
 ./sync-web.sh ../frontend/dist
 ```
 
-Then the build, under the host's heavy lock:
+Then build from `android/`:
 
 ```bash
-flock /run/user/$(id -u)/cf-heavy.lock ./gradlew assembleDebug
-flock /run/user/$(id -u)/cf-heavy.lock ./gradlew testDebugUnitTest
+./gradlew assembleDebug
+./gradlew testDebugUnitTest
 ```
 
 `assembleDebug` also cross-compiles the Rust core for `arm64-v8a` with
@@ -288,8 +293,9 @@ answers every route with a sentence saying so — a stub can refuse, but it
 cannot be wrong. The release build refuses to be assembled against the
 stub.
 
-The seam is six functions, all of them answering with the same JSON
-envelope, and a panic boundary in front of every one of them: a panic in the
+The seam's current functions are defined in `app/src/main/rust/stride-ffi/src/stride.udl`.
+They include UTC-offset refresh, bounded history continuation and native file
+workflows, with a JSON envelope and panic boundary: a panic in the
 core becomes an error the app can show, never a process kill. The panic's
 *payload* is not logged — a payload is whatever the failing code was
 holding, and that might be the key.
@@ -300,9 +306,10 @@ sees it: `cargo fmt --all -- --check`, `cargo clippy --workspace
 seam.
 
 **The retry rule has one owner: the shell.** The Garmin client performs
-exactly one token exchange and one HTTP attempt per call and answers the
-typed failure `needs_reconnect` when the token has expired; the caller —
-`PullPolicy` — may make **one** more attempt, and then it stops. A network
+one bounded sync attempt, which can include multiple endpoint requests, and
+answers the typed failure `needs_reconnect` when the token has expired. It does
+not add a hidden re-exchange/retry loop; the caller (`PullPolicy`) may make
+**one** more attempt, and then it stops. A network
 failure follows the same rule: one retry inside the pull, no second
 WorkManager retry, and the next scheduled pull carries on. See
 `docs/contract/core-contract.md` §7.
@@ -315,7 +322,7 @@ provide.
 The unit tests are plain JVM tests and need no phone:
 
 ```bash
-flock /run/user/$(id -u)/cf-heavy.lock ./gradlew testDebugUnitTest
+./gradlew testDebugUnitTest
 ```
 
 They cover the route table (including the query-string forms of the key

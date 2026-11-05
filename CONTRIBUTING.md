@@ -6,9 +6,10 @@ is about the *how*.
 ## Before you start
 
 Read [PLAN.md](PLAN.md). It is the plan of record: the scope, the architecture, the ten slices, and the
-design rules that the code is measured against. The screen specifications in
-[docs/plan.html](docs/plan.html) are the contract for the UI — if a screen does not exist there, do not
-invent one in a pull request.
+design rules that the code is measured against. Its approved amendments
+supersede the [original HTML wireframes](docs/plan.html). Use the
+[current screenshot gallery](docs/media/README.md) to understand the implemented
+UI; a new screen or capability needs an explicit plan change.
 
 Two rules are not negotiable:
 
@@ -19,24 +20,20 @@ Two rules are not negotiable:
 
 ## Credentials for development
 
-**The Garmin Personal API key is never written to disk, in this repository or in yours.**
+Use synthetic fixtures for normal development. A live provider check needs
+explicitly supplied credentials, never a key copied into source, `.env`, tests,
+shell commands, logs or an agent transcript.
 
-For development on the VM, the key is fetched from **Azure Key Vault** at runtime through the machine's
-managed identity, and it lives in that process's memory only:
+Use the host's setup UI or a secret manager that injects credentials into the
+child process without printing them. The desktop recognizes `STRIDE_GARMIN_KEY`
+and `GARMIN_API_KEY`; site-specific vault launchers are not public prerequisites.
+An injected key is process-scoped. A key accepted through desktop setup is
+deliberately stored in a private host file; Android uses Keystore-wrapped storage.
+See [the security model](SECURITY.md) for those distinct persistence boundaries.
 
-```bash
-cf-garmin env -- <command>      # runs the command with GARMIN_API_KEY set
-cf-garmin test                   # proves the key is accepted by Garmin; the token is discarded
-cf-garmin doctor                 # vault access and secret metadata, no value
-```
-
-Never: write the key into a file, a `.env`, a fixture, a test, a commit, a shell history, a chat message
-or an agent's prompt. An agent's transcript is a log file — a secret printed into one ends up in the
-thread storage, in the CLI error log, and in anything pasted out of it. If a task needs the key, it needs
-`cf-garmin env --`.
-
-The scanner in `scripts/scan-secrets.sh` is the backstop for the cases where somebody forgets. It is not
-the primary control; the primary control is that the key never lands on a filesystem.
+`scripts/scan-secrets.sh` is a backstop, not permission to handle a credential
+carelessly. Public screenshots, recordings and bug reports must use synthetic
+data, including invented HR, HRV and routes, rather than personal observations.
 
 ## Building
 
@@ -68,10 +65,14 @@ build steps are:
 ```bash
 sdkmanager "platforms;android-36" "build-tools;36.0.0" "ndk;27.2.12479018"
 rustup target add aarch64-linux-android
-cd android && ./gradlew assembleRelease
 npm --prefix frontend ci
 npm --prefix frontend run build
+(cd android && ./fetch-capacitor.sh && ./sync-web.sh ../frontend/dist && ./gradlew assembleDebug)
 ```
+
+Android also needs a compatible JDK and `cargo-ndk`. See
+[the Android build/release guide](android/README.md) for signing and native checks.
+Build and synchronize the frontend before assembling an APK.
 
 ## The gates
 
@@ -84,8 +85,9 @@ Every pull request runs:
 | the secret scan | no credential, keystore or database in the tree |
 | the privacy scan | no real coordinates, names, notes or device names |
 
-The **golden parity** differ (every computed number matches the frozen corpus) arrives with Slice 2, and
-the **viewport matrix** (six widths, one information architecture) with Slice 9 — neither is a gate yet.
+Golden parity and the six-width responsive matrix are implemented gates.
+`bash scripts/gate.sh` is the authoritative local/CI list; it also checks
+frontend types, voice, tests, scanner self-tests and repository history.
 
 A pull request that turns a gate off will not be merged. If a gate is wrong, fix the gate and the code
 together.
@@ -119,7 +121,7 @@ The privacy scan fails the build if a tracked file contains anything that looks 
   plain `cargo build` succeeds and it is CI's `-D warnings` that enforces them. A crate may not override
   the workspace lint table (a check asserts it). Test code opts out with a module-level
   `#![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]` — the one sanctioned place. `unsafe`
-  is forbidden outside the FFI crate (a check asserts it); the FFI crate is exempt once it lands.
+  is forbidden outside the implemented FFI crate (a check asserts it).
 - The core is **pure**: no I/O, no clock, no randomness. Time is injected. That is what makes the corpus
   reproducible.
 - Every query is parameterised. There is no string-built SQL anywhere.

@@ -1,14 +1,17 @@
-# The desktop rig
+# Stride on desktop
 
 ## 1. What this is
 
-The desktop rig is a **development rig and a community tool**. It is one Rust
+The desktop host is one Rust
 binary that serves the same app and the same router as the phone, against a
 local encrypted database.
 
-It is **not the product**. The phone app is the product. The rig is where the
-Rust core can be run quickly, where the API can be exercised, and where a
-stranger can use the same local log without an account or a cloud service.
+It runs the shared responsive application, supports local development and lets
+someone use the same running log without a Stride account or hosted data store.
+Android remains the primary release target; desktop is not a second UI.
+
+[Watch the short demo and browse current screenshots](../docs/media/README.md).
+All public media uses fictional HR, HRV, sleep and GPS, not personal history.
 
 ## 2. Build it and run it
 
@@ -70,22 +73,11 @@ The key is never put in a URL, a log line, an API response, a fixture, or any
 other page. The Connect field is the only surface that shows it, and it is a
 password field.
 
-A script can supply the key without a file:
-
-```bash
-STRIDE_GARMIN_KEY=… cargo run -p stride-desktop
-```
-
-On the development VM, `cf-garmin env -- <command>` fetches the key from Azure
-Key Vault into that command's environment. The rig also accepts the
-`GARMIN_API_KEY` name that helper provides:
-
-```bash
-cf-garmin env -- cargo run -p stride-desktop
-```
-
-An environment key is held in that process's memory and is not written to a
-file by the rig.
+Automation can inject `STRIDE_GARMIN_KEY` or `GARMIN_API_KEY` into the child
+process using a secret manager. Do not type a literal credential into a shell
+command, `.env`, source file or transcript. An injected environment key is not
+persisted by the host. Maintainer-specific vault launchers are not required for
+the first-run UI and are not shipped in this repository.
 
 ## 4. The trust model and the phone
 
@@ -120,8 +112,9 @@ the rig says in its output that it made that choice.
 
 ## 5. Move the data: export and import
 
-The rig tools are at <http://127.0.0.1:8080/rig>. The same operations are
-available from the command line.
+Open **Data & connection > Backup, restore and export** to reach the host-owned
+tools at <http://127.0.0.1:8080/rig>. The same operations are available from the
+command line.
 
 ### Export
 
@@ -145,11 +138,11 @@ It does **not** contain the Garmin key.
 folder can therefore open the export without opening the live database. It is
 still private data: the key and the athlete's rows travel together.
 
-Keep the whole folder off public storage. To put it on the phone, copy the
-folder over a private channel such as a USB cable or a local file share. The
-current phone app does not yet have a bulk desktop-export import
-screen, so keep the bundle as the portable copy until that screen exists;
-individual FIT files can already be imported on the phone.
+Keep the whole folder off public storage and move it only over a private
+channel. Android has a native passphrase-encrypted recovery archive workflow,
+but that ZIP has additional recovery metadata and is not this desktop directory
+format. Do not assume the desktop bundle can be opened by the phone's restore
+picker. See the [Android format and acceptance boundaries](../android/README.md#backup-restore-and-readable-exports).
 
 ### Import an export
 
@@ -196,12 +189,13 @@ already have this run: 12 Oct, 10.2 km
 A duplicate adds no row. A file that is not a readable FIT file, or one over
 20 MiB, is refused with a sentence rather than a stack trace.
 
-## 6. The phone app is the product
+## 6. Shared screens and platform boundaries
 
-The phone app is the product. The desktop rig is a development rig and a
-community tool around the same Rust core. It does not grow a second product:
-the app's four destinations, its router and its numbers are the same ones the
-phone uses.
+Today, Runs, Progress and Body are shared at every width, with contextual Plan
+and Compare. Wider screens use columns and a navigation rail; compact screens
+use bottom navigation. Host capabilities differ: Android owns Keystore,
+locking, background work and document delivery; desktop owns its local HTTP
+server and directory-based tools.
 
 ## Where the files are
 
@@ -229,7 +223,6 @@ other.
 - **not a second implementation.** Every number comes from `stride-core`, every
   reading from `stride-store`, and every product request goes through
   `stride-api`'s router. The rig is a host, not a brain.
-- **not a product surface.** The app's information architecture is the
-  phone's information architecture.
+- **not a standalone PWA.** Opening the browser UI still requires the Rust host.
 - **not a service.** There is no cloud copy, no account and no scheduler. Stop
   the binary and the rig is gone; the data stays in the file.

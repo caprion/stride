@@ -26,7 +26,8 @@ Report a problem to the maintainer privately (GitHub issues do not support priva
 security advisory or the contact in the repository's owner profile). Reports are handled confidentially.
 
 The maintainer is expected to acknowledge a report, and to take reasonable steps to address it. If a report
-concerns the maintainer themselves, it goes to GitHub's support or to the AGPL's own enforcement path.
+concerns the maintainer themselves, use GitHub Support's abuse-reporting channel.
+The software licence is not a conduct-reporting channel.
 
 ## Attribution
 

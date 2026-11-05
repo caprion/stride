@@ -8,7 +8,7 @@ where a panic in the core stops being a process kill.
 
 | file | what it is |
 |---|---|
-| `src/stride.udl` | the surface: six functions, every one answering with a JSON envelope |
+| `src/stride.udl` | the current exported functions, each answering with a JSON envelope |
 | `src/seam.rs` | the trait the core has to meet, and the envelope helpers |
 | `src/boundary.rs` | the panic boundary: a panic becomes an error the app can show |
 | `src/real.rs` | the core: `stride-api`'s router, in this process |
@@ -28,7 +28,7 @@ where a panic in the core stops being a process kill.
   a payload is whatever the failing code was holding, and that might be the
   key. The location is logged; the message is not.
 * **The routes are the frozen ones.** The route table is
-  `docs/contract/api-paths.md` in the repository root. This crate does not
+  [the API contract](../../../../../../docs/contract/api-paths.md). This crate does not
   decide which route a path names — the router does — and it does not add
   one.
 * **`unsafe` is allowed here and nowhere else.** The workspace's lint table
@@ -39,9 +39,10 @@ where a panic in the core stops being a process kill.
 
 ## The retry rule: the shell owns it
 
-**`stride_garmin_sync` is one attempt.** The core performs exactly one
-token exchange and one HTTP attempt and then answers. When the token has
-expired the answer is the typed failure `needs_reconnect`:
+**`stride_garmin_sync` is one bounded sync attempt**, not one HTTP request.
+Activity listings, FIT files and wellness can require multiple endpoint calls.
+The ingest client does not add a hidden credential re-exchange/retry loop.
+When the token has expired the answer is the typed failure `needs_reconnect`:
 
 ```text
 {"ok": false, "status": 401, "error": {"code": "needs_reconnect", "detail": "..."}}
@@ -52,7 +53,7 @@ performs one fresh token exchange. A second failure stops: the caller
 surfaces the error and the next scheduled sync tries again.
 
 This is the contract's rule, not this crate's invention:
-`docs/contract/core-contract.md` §7 — "The retry rule, and who owns it".
+[core-contract section 7](../../../../../../docs/contract/core-contract.md#7-the-retry-rule-and-who-owns-it).
 The client does not re-exchange and try again, because if it did *and* the
 shell did, the phone would exchange and retry twice and "exactly one" would
 be a coincidence rather than a rule.
@@ -70,11 +71,16 @@ pub trait Core: Send + Sync {
     fn open(&self, db_path: &str, db_key_hex: &str) -> Result<Value, String>;
     fn call(&self, method: &str, path: &str, body: Option<&str>) -> Value;
     fn garmin_sync(&self, key: &str, days: i64) -> Value;
+    fn garmin_backfill(&self, key: &str, days: i64) -> Value;
     fn set_garmin_key(&self, key: &str) -> Value;
     fn set_garmin_connected(&self, connected: bool) -> Value;
     fn status(&self) -> Value;
 }
 ```
+
+`src/stride.udl` is authoritative for the public UniFFI surface. It also exposes
+UTC-offset refresh and native backup/history-export functions; those are not
+additional WebView routes.
 
 The envelope is the one the desktop's router answers with, so the phone and
 the desktop cannot disagree about a number:
@@ -120,10 +126,10 @@ cargo clippy --workspace --all-targets -- -D warnings
 cargo test --workspace
 ```
 
-The Gradle build cross-compiles it for the phone, under the host lock:
+From the repository root, Gradle cross-compiles it for the phone:
 
 ```bash
-flock /run/user/$(id -u)/cf-heavy.lock ./gradlew :app:assembleDebug
+(cd android && ./gradlew :app:assembleDebug)
 ```
 
 which runs, in order:

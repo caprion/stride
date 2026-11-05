@@ -2,8 +2,9 @@
 
 FROZEN. Part of the contract freeze (Slice 0). This is the machine-checkable
 half of the voice model in `PLAN.md` §0 and `docs/plan.html` §5.9. Every
-user-facing string lives in one catalogue (to be `strings.toml`/JSON, added in
-Slice 3) and is **typed**. The CI lint fails the build on any violation.
+user-facing string is **typed** in the core or frontend catalogue. The core
+exports strings and shared rules as `crates/stride-core/strings.json`; the
+frontend catalogue lives in `frontend/src/i18n/catalogue.ts`. CI lints both.
 
 The rule in one line: **facts first, no judgements at all** — the vitals, the
 direction each moved, and the plan's own options. The app never tells the

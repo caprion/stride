@@ -1,13 +1,17 @@
 # Stride v2 — the frontend
 
-The phone's screen, written once for every width.
+The shared Android and desktop UI, written once for every width.
+
+[Current screenshots and short demo](../docs/media/README.md) show the real
+rc.3 interface with entirely fabricated observations. The original
+[HTML wireframes](../docs/plan.html) are historical design references.
 
 **Four destinations, always:** Today · Runs · Progress · Body. Compare and
 Plan week are contextual — you reach them from a run or from Today, and they
 are not part of the destination set.
 
 ```
-npm --prefix frontend install
+npm --prefix frontend ci
 npm --prefix frontend run dev          # http://localhost:5173
 npm --prefix frontend run build        # the bundle, in frontend/dist
 ```
@@ -18,7 +22,7 @@ npm --prefix frontend run build        # the bundle, in frontend/dist
 |---|---|---|
 | compact | `< 600px` | a bottom tab bar |
 | medium | `600–1023px` | a top bar, the column capped at 680px |
-| wide | `≥ 1024px` | a left rail, the column capped at 880px |
+| wide | `>= 1024px` | a left rail, content capped at 1240px with page-specific columns |
 
 The band is decided by **container** width, in CSS (`@container shell`), not
 by the viewport: split-screen, an unfolded foldable and a resized window all
@@ -34,20 +38,21 @@ sideways, and every tap target is at least 44px tall at compact.
 
 | route | screen |
 |---|---|
-| `/` | **Today** — the vitals, each with its value, its direction word and the muted arithmetic; then the Rest summary; then the plan's own session and its other options, unranked and unlinked |
-| `/runs` | **Runs** — the feed. The sentence about what a run was is the **core's** to write, and it is never empty: every row carries it |
-| `/runs/:id` | **Activity** — the run, its story, its splits, its elevation |
-| `/progress` | **Progress** — the trajectory, forgivingly; no percentage without a real baseline |
-| `/body` | **Body** — the same values and directions as Today, plus the patterns, each with its n |
+| `/` | **Today**: recorded weekly distance and linked dates, named latest run, plan and available body observations |
+| `/runs` | **Runs**: compact feed, monthly calendar, stored-history date windows, loaded-page text search and two-run comparison selection |
+| `/runs/:id` | **Activity**: actual name, route/optional street map, pace and HR, visible splits/elevation, notes and matching-night sleep |
+| `/progress` | **Progress**: selected-period totals, calendar weeks, saved-history links and separate descriptive pace/HR medians |
+| `/body` | **Body**: URL-selected date, seven-day navigation, inline sleep stages and dated HRV/resting-HR history with gaps |
 | `/plan` | **Plan week** — the week, and today's plan: *done · planned · not done* |
-| `/compare/:id` | **Compare** — `metric · A · B · Δ`, the basis always named, swapping A and B flipping every delta; the runs are the athlete's own, from the candidates route |
-| `/settings` | **Settings** — the goal, the pause, the connection, the import, the storage and About |
+| `/compare/:id` | **Compare**: aligned metric table, named basis, HR/pace signal selection, paired wide charts and compact A/B controls |
+| `/settings` | **Settings**: Data & connection, Training preferences, Import and About sections |
 | `/connect` | **Connect** — the first run. It stands alone: no chrome, no tabs, no destinations |
 
 ### Settings
 
-Three inputs change what the app says: the weekly goal, a pause, and the
-connection. Everything else there is plumbing.
+Settings groups data/connection, training preferences, import and About through
+its section query parameter. Host-owned file actions remain host-owned:
+desktop opens `/rig`; Android opens the guarded native data screen.
 
 - **the goal** is one number, and **a blank is no goal**. The app never
   invents a default, and a goal of zero would read as a failure rather
@@ -56,14 +61,15 @@ connection. Everything else there is plumbing.
 - **the pause** is a start, an end and one of three reasons — travel,
   sick, injured. While it is on, the app says the plan is paused: *"paused
   until 19 May · travel"*. The reason is not free text: a run's note is
-  the only free text the product stores.
-- **the connection** shows Garmin's state, the **last four characters** of
-  the key and nothing else, and the last sync. The key action opens the
+  a separate free-text field.
+- **the connection** shows Garmin's state and the last sync. The key's
+  four-character identifier stays on the native setup surface on Android.
+  The key action opens the
   **native setup screen on the phone** — the field is the desktop's alone,
   because the phone's bridge refuses the key routes by design.
 - **the storage** shows the size of the database, an export, and the one
-  destructive action: *delete all data*, behind the typed word, and it
-  says exactly what it deletes.
+  destructive action: *delete all data*, behind the typed word. Native
+  passphrase recovery and readable exports are separate from desktop bundles.
 - **About** carries the version, the licence, the promise and the source.
   The version is the one `/health` answered — the app holds no version of
   its own, and there is one version string in the source.
@@ -73,24 +79,22 @@ connection. Everything else there is plumbing.
 The runs are the athlete's own: the screen asks the **candidates route**
 which runs there are, leaves out the one it is already on, and puts the
 nearest distances first. The picker ("Choose a different run") opens and
-the chosen pair is what the table renders — the earlier run is A and the
-later one B, so the delta reads forward in time, and the swap turns it
-round.
+the chosen pair is rendered as A and B. The basis is stated and swapping the
+pair reverses its deltas.
 
-No run id is written into the screen. The one pair the app made up was a
-mock that could be anything; the pair is now the app's question and the
-api's answer.
+Runs can also open an explicitly selected pair. Safe return links preserve
+the originating history window. Neither the picker nor the tray invents an id.
 
 ### The charts' axes
 
-Every axis is labelled with the **core's own rendering** of the number:
+Domain-value axes use the **core's own rendering** of the number:
 *"148 bpm"*, *"5:24 /km"*, *"38.6 km"*. A bare number on an axis — the
 pace axis used to be raw seconds — is the app printing a domain number
 of its own, which is what §8 of the core contract forbids. The axis's
 ticks are the values the api sent, and their labels are its words.
 
-The viewport matrix checks it in the browser, where a chart has a size:
-every axis label must carry a unit.
+Elapsed-time scales and chart geometry remain frontend concerns. Their numeric
+ticks are not another implementation of the core's pace or HR renderer.
 
 ### The files the app makes
 
@@ -99,15 +103,15 @@ where the host can deliver a file**:
 
 - **Share the comparison** (Compare) writes the comparison as an HTML
   document — the basis, the metric diff and the two runs, in the core's
-  words — and the desktop downloads it. The phone's native share sheet
-  brings it back.
+  words, and the desktop downloads it. This action is not offered on Android:
+  the generic native share delivery bridge is not implemented.
 - **Export FIT** (Activity) fetches `/activities/{id}/fit` and hands the
   run's original bytes to the host. The bridge carries JSON, so the
   phone cannot fetch a file yet.
 
-A control that promises a thing and does nothing is worse than an absent
-one, so there is no control on a host that cannot deliver it — and a test
-holds that no button in the app has no action.
+A control is hidden where `src/lib/download.ts` cannot deliver it. Android's
+native recovery and dated CSV/JSON export screen is a separate capability,
+not a generic bridge for comparison HTML or original FIT downloads.
 
 ### Connect
 
@@ -334,9 +338,10 @@ host-aware entry a screen calls.
 the phone sends no key with the setup call, and the desktop's key goes to
 its own server.
 
-The contract froze the **routes**; it did not freeze the **response
-bodies**. The shapes this client speaks are written down in
-`src/lib/types.ts`, and they are a proposal for the backend slice to match.
+The route contract and deliberate amendments live in
+[`api-paths.md`](../docs/contract/api-paths.md). The current response shapes are
+implemented in the backend, declared in `src/lib/types.ts` and checked by
+`crates/stride-api/tests/frontend_shapes.rs`; they are not backend proposals.
 The one to look at first is `RenderedValue` — `{ text, raw }` — because it
 is where §8 reaches the numbers: the API sends the core's words beside the
 number, and the app shows `text` and draws `raw`. Three names are worth
@@ -354,13 +359,10 @@ the three sentences the core does not have a template for yet — the distance
 comparison, the Progress headline and the Compare basis — and the frontend
 shows what it is given.
 
-### The routes the Settings and Connect screens added
+### Settings and Connect routes
 
-The route table is frozen, and these four routes are **not** in it yet.
-The app's declarations are the contract (`src/lib/types.ts`), and the api
-is held to them by `crates/stride-api/tests/frontend_shapes.rs` — so they
-are declared here, and every one of them has to be written into
-`docs/contract/api-paths.md` in the same pull request.
+These routes are implemented and recorded in the API contract. Route or DTO
+changes travel with their contract, tests and matching plan amendment.
 
 | route | answer |
 |---|---|
@@ -370,7 +372,7 @@ are declared here, and every one of them has to be written into
 | `POST /settings/delete` | `SettingsDeleteResult` — the word travels with the request |
 | `POST /activities/{id}/note` | `NoteResult` — the note on a run |
 
-And three answers that changed:
+Related response fields:
 
 | route | what changed |
 |---|---|
@@ -471,9 +473,10 @@ The seeded store holds no FIT file, so **the router answers no points**
 and the app draws no route: that is the honest answer. The `route`
 variant puts a route on the runs — a loop around nowhere, whose
 coordinates mean nothing — so that the map, the feed's thumbnail and
-Today's mini thumbnail can be seen and reviewed. The drawing is the app's
-own SVG: no map library, no tiles, no server, because the route never
-leaves the device and the map does not either.
+Today's mini thumbnail can be seen and reviewed. The default outline is the app's own SVG and makes no tile requests. Run detail
+also offers an explicit **Street map** action using Leaflet/OpenStreetMap.
+It discloses the viewed area, keeps attribution visible and falls back to the
+local outline when tiles fail.
 
 ## The checks
 
@@ -486,7 +489,7 @@ npm --prefix frontend test               # all four, in that order
 npm --prefix frontend run build          # the bundle
 ```
 
-The **viewport matrix** (`scripts/viewport-matrix.mjs`) runs nine screens at
+The **viewport matrix** (`scripts/viewport-matrix.mjs`) checks screens and states at
 six widths — 360×640, 390×844, 430×932, 768×1024, 1024×768, 1280×800 — in
 Chromium, and asserts: no horizontal page scroll, no content column scroll,
 nothing sticking out past the right edge, no clipped labels, tap targets of

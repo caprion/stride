@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Stride v2 — the plan of record</title>
+<title>Stride v2 - original design reference</title>
 <style>
   :root{
     --bg:#0e1116; --bg2:#151a21; --bg3:#1c222b; --line:#2a323d; --line2:#39434f;
@@ -93,18 +93,19 @@
 
 <header class="top">
   <div class="wrap">
-    <h1>Stride v2 — the plan of record</h1>
+    <h1>Stride v2 - original design reference</h1>
     <p class="sub">
-      A clean-room re-implementation of Stride in <strong>Rust only</strong>, in a new open-source repository,
-      keeping the mobile app the user already likes. Every screen is designed <em>before</em> code, and every
-      screen is designed to <em>resize</em>: one information architecture, many widths.
+      Historical wireframes and the initial implementation plan, written before the current application.
+      These are not screenshots of the released interface. Approved amendments in
+      <a href="../PLAN.md">PLAN.md</a> supersede this baseline; see the
+      <a href="media/README.md">current screenshots and short video</a> for the implemented screens.
     </p>
     <div class="badges">
-      <span class="badge ok">Rust only — no Python in the tree</span>
+      <span class="badge ok">Historical baseline</span>
       <span class="badge ok">AGPL-3.0</span>
       <span class="badge ok">Public from day one</span>
-      <span class="badge in">Phone = the product</span>
-      <span class="badge in">Desktop = dev rig + community tool</span>
+      <span class="badge in">Current: Android and local desktop hosts</span>
+      <span class="badge in">Current: Rust core + React UI + Kotlin shell</span>
       <span class="badge in">IA constant, layout fluid</span>
       <span class="badge no">Old repo = oracle, then archive</span>
     </div>
@@ -125,6 +126,17 @@
 </div></nav>
 
 <div class="wrap">
+
+<section id="current-status">
+  <h2>Current implementation: v0.12.0-rc.3</h2>
+  <p>The signed testing APK and shared desktop UI include weekly activity-first Today,
+    a run calendar and date filters, OpenStreetMap on explicit request, inline selected-night sleep,
+    period totals, responsive Compare charts and host-owned backup workflows. Stable remains v0.11.0.
+    Physical-phone acceptance and complete Garmin history are still open; a standalone PWA is not delivered.</p>
+  <p>The dark mockups, old width caps, future-tense slices and Rust-only labels below belong to the
+    original proposal, not current setup guidance. The actual interface uses Azure/amber.
+    Contract changes require explicit plan amendments. AGPL source-sharing obligations do not prohibit hosted forks.</p>
+</section>
 
 <!-- ============================ 1 ============================ -->
 <section id="s1">
@@ -1221,16 +1233,16 @@
   </ul>
 
   <div class="callout good">
-    <p><strong>What happens when you say go.</strong> Slice 0 only: create the public repo, extract and sanitise the
+    <p><strong>Original Slice 0 milestone, now completed.</strong> Create the public repo, extract and sanitise the
     frozen corpus, wire the fork-safe CI, the secret scan and the privacy scan, and stand up the workspace with
     empty crates — then stop and show you the result before a single line of product logic is written.</p>
   </div>
 </section>
 
 <footer>
-  <p><b>Stride v2 — the plan of record.</b> Written before code, as agreed. Supersedes the old repo's PLAN.md, which
-  described a system with two implementations; this one describes one. Every screen above is a specification to be
-  measured against, not a description of something that exists.</p>
+  <p><b>Stride v2 - historical design reference.</b> Written before code. The current plan and its
+  approved amendments live in <a href="../PLAN.md">PLAN.md</a>; current screenshots and demo provenance
+  live in <a href="media/README.md">the media gallery</a>. Historical release notes remain unchanged.</p>
 </footer>
 
 </div>

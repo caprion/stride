@@ -1,17 +1,19 @@
 # Stride v2 — the plan of record
 
-> The full, designed version of this plan — including the **screen-by-screen specification**
-> (purpose, why, layout at every width, states, acceptance checks) — is in
-> **[`docs/plan.html`](docs/plan.html)**. Open it in a browser.
+> The approved amendments below govern current behavior.
+> [Current screenshots and demo](docs/media/README.md) show the implemented UI.
+> [`docs/plan.html`](docs/plan.html) preserves the original, historical wireframes.
 
-This is a clean-room re-implementation of Stride in **Rust only**, in a **new open-source repository**,
-keeping the mobile app the user already likes. Every screen is designed before code, and every screen is
-designed to resize: one information architecture, many widths.
+Stride has one Rust core, a responsive React/TypeScript UI, an Android
+Kotlin/Capacitor host and a local desktop HTTP host. One information architecture
+adapts to phone and desktop widths.
 
-**Status:** the plan of record, and the code is following it. Slice 0 (the contracts, the CI and the
-gates) is merged; so are the domain, the store, the Garmin client and the FIT decoder, the router,
-the app, the phone's shell and the desktop rig. What is left is the wiring — the router hosted by
-both hosts — and the first vertical line: key → sync → one run → today's readout.
+**Status (2026-11-05):** signed testing candidate **v0.12.0-rc.3** is published;
+stable remains **v0.11.0**. Both hosts, Garmin sync, local history exploration,
+responsive screens and native recovery workflows are implemented. The original
+vertical line and slice lists below are historical delivery records, not work
+still waiting to be wired. Physical-phone acceptance and complete provider
+history remain open. No standalone PWA is delivered by this release.
 
 ### Approved product-reset amendments (2026-11-04)
 
@@ -183,7 +185,8 @@ normal**, in plain language — and leaves the decision with you.
 
 - **Loop:** Plan → Execute → Understand → Adapt.
 - **Promise:** "Your data stays on this phone." One credential — a Garmin Personal API key — in the Android
-  Keystore. No account, no cloud, no server.
+  Keystore on Android. No Stride account or hosted Stride data store; desktop
+  uses a local HTTP server and Garmin pulls require a network.
 - **Four destinations, at every width:** Today · Runs · Progress · Body. Compare and the Plan week are
   reached **contextually**, never as extra tabs.
 - **The rule that kills drift:** *if a screen cannot exist on the phone, it does not exist.* The desktop is the
@@ -225,7 +228,7 @@ android/…/stride-ffi   UniFFI bindings, panic catching, JSON in / JSON out
 |---|---|
 | vitals & direction | never a 0–100 score, never a grade, never a recommendation — a value and a direction word from a closed set, with the band drawn on the chart |
 | pattern | the athlete's own history of comparable states; always carries its n; never from fewer than three cases; lives on Body, not Today |
-| today's state | vitals first, then the plan's own options. No commands, no verdicts, no conclusions, no link between an option and a vital. Today and Body read the same **values and directions** from the core |
+| today's state | recorded weekly activity first, then the plan and available body observations. No commands, verdicts or link between an option and a vital. Today and Body read the same **values and directions** from the core |
 | plan | plain fact: *done* · *not done* · *planned*. Never a red "missed". An inferred baseline never yields "not done" |
 | story | descriptive, never evaluative; reads the same primitives the charts read; the feed shows the sentence, the detail shows it plus the why |
 | fitness | no trend percentage without a real baseline; consistency is stated, never graded |
@@ -234,7 +237,7 @@ android/…/stride-ffi   UniFFI bindings, panic catching, JSON in / JSON out
 ## 4. The screen system — one IA, every width
 
 **Bands:** compact `<600` (bottom tabs) · medium `600–1023` (top bar, column capped 680 px) ·
-wide `≥1024` (left rail, content column 880 px).
+wide `>=1024` (left rail, content capped at 1240 px with page-specific columns).
 
 Bands are decided by **container** width, not viewport — split-screen, unfolded foldables and resized windows
 all land correctly without a reload.
@@ -247,14 +250,17 @@ native capabilities).
 Each asserts: no horizontal scroll, no clipped labels, tap targets, **identical destination set**, charts
 legible, safe-area applied.
 
-## 5. Screens (specified in full in `docs/plan.html`)
+## 5. Screens
+
+The original specifications remain in `docs/plan.html`; the approved amendments
+and [current media](docs/media/README.md) supersede their layout and old status claims.
 
 Today · Runs · Activity · Progress · Body · Plan week · Compare · Connect · Settings — each with purpose, what
 it must never do, content blocks, layout per width, states, and acceptance checks.
 
-**Today** leads with the vitals: each with its value, its direction word (*better than usual · about usual ·
-could be better*) and the muted arithmetic (*14 below your usual · 3rd night down*), then a **Rest** summary
-(*2 of 3 signals below your usual*), then the plan's own session and its other options, unranked and unlinked.
+**Today** leads with recorded weekly activity and the named latest run, then
+the plan and available body observations. Vitals retain their values, closed-set
+directions and arithmetic; unavailable signals do not become fabricated values.
 The **distance comparison appears only when the gap exceeds 10%**, stated neutrally ("2.4 km more than the 10 km
 target"); within 10% it is absent — 10.2 km against a 10 km target is simply not news, and neither more nor less is
 good or bad.
@@ -266,7 +272,9 @@ and side-by-side charts only when there is room; an A/B chart toggle on narrow s
 
 - Garmin key: native field → non-exportable Keystore key → `noBackupFilesDir`. Never in the WebView, the
   database, or a log. The 24 h token is disposable: a 401 triggers exactly one re-exchange and one retry.
-- Database: SQLCipher, key from the caller, never logged/returned/persisted; every query parameterised.
+- Database: SQLCipher, key from the caller, never logged or API-returned.
+  Android wraps it with Keystore; desktop persists its live key in a private file.
+  Every query is parameterised.
 - **Desktop trust model:** loopback always allowed · explicitly trusted CIDRs via
   `STRIDE_TRUSTED_NETWORKS` · everything else refused with a message naming the variable. No pairing codes, no
   QR, no device tokens — ever.
@@ -278,18 +286,23 @@ personal data from the demo-seed incident). `SECURITY.md`, `CONTRIBUTING.md`, `C
 `SUPPORT.md` ("issues welcome, features are mine").
 
 CI gates from commit #1: cargo test + clippy (deny `unwrap`/`expect`/`panic`) · **corpus integrity** (FIT
-SHA-256) · **secret scan** · **privacy scan**. Later slices add **golden parity** (full engine parity against
-the frozen corpus, Slice 2) and the **viewport matrix** (Slice 9). APK-carries-the-core check and the live
-security check are release-only.
+SHA-256) · **secret scan** · **privacy scan**. Golden parity, frontend checks and
+the responsive viewport matrix are implemented in `scripts/gate.sh`.
+The APK/core/signature checks run in the release pipeline; desktop trust-model
+tests run with the Rust workspace.
 
 > The old repo's `android.yml` is **not** fork-safe — its APK job needs the signing secret, so every outside
 > contributor's build fails, and it grants `contents: write` to pull requests. v2: `contents: read` globally,
 > secrets only in the release job, release only from upstream tags.
 
-Releases ship the signed APK, the desktop binaries, and **generated** release notes (so the notes cannot
-describe a deleted flow — the old notes still told people to run a removed pairing command).
+The current release ships a signed APK with release notes. Desktop can be built
+from source with the checked-in shared UI bundle. Demo videos and screenshots
+are release assets, not additional application binaries.
 
 ## 8. Delivery plan
+
+This is the original implementation sequence. It is not the current backlog;
+see the status and approved amendments above for remaining acceptance boundaries.
 
 | Slice | Content | Done when |
 |---|---|---|
@@ -306,12 +319,14 @@ describe a deleted flow — the old notes still told people to run a removed pai
 | 10 | Release: signed APK, binaries, docs, first public tag | a stranger clones, builds and runs it |
 
 Rules: the old core is the oracle until parity is 100% · one slice at a time · every slice ships and is gated ·
-no Python in the tree · acceptance is a golden assertion wherever possible.
+Rust owns the domain engine; host tooling can use Python or shell.
+Acceptance is a golden assertion wherever possible.
 
 ## 9. Defaults applied
 
 AGPL-3.0 · public from day one · old repo kept private as the oracle, sanitised public archive at the end ·
-Rust only · five crates · desktop as dev rig + community tool (loopback + CIDR allowlist) · four destinations
+Rust core with a shared React UI and native host boundaries · desktop local host
+(loopback + CIDR allowlist) · four destinations
 everywhere with Compare and Plan contextual · Garmin account flow out · MCP out · "issues welcome, features are
 mine" · **voice: vitals, direction (closed set), options — no verdicts** · **distance comparison only beyond a 10% gap**.
 
@@ -320,10 +335,11 @@ the plan-source set · a native phone UI (a separate project, not v2).
 
 ---
 
-## 11 · After the vertical line — the rest of the product
+## 11. Historical post-v0.9 planning notes
 
-The vertical line (slice 1) is merged and released as **v0.9.0**. The plan engine, the settings, the
-notes, the import and the export, and the screens' states are what is left.
+This section records the plan made after the v0.9.0 vertical line. Its slice
+table is retained as history, not a claim that those implemented features are
+still missing from rc.3. The ownership and honest-state rules remain applicable.
 
 ### Two rules this stretch earned
 

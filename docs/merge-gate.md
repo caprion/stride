@@ -19,8 +19,11 @@ one catches what the previous one cannot.
   after Slice 0. A change to one travels with the matching edit to `PLAN.md`
   **and** `docs/plan.html`, in the same pull request, and the reason is written
   down.
-- **The schema does not change.** A desktop export has to open on the phone.
-- **The API shapes do not change.** The frontend consumes them.
+- **Schema compatibility is explicit.** An incompatible change needs a documented
+  migration/format decision and matching host tests. Shared database semantics do
+  not make the desktop directory and Android passphrase ZIP interchangeable.
+- **API shapes do not drift silently.** Deliberate additions travel with the
+  contract, typed frontend consumers and backend shape tests.
 - **No new dependency** without a justification in the pull request description.
 - **The voice is linted, not reviewed.** No imperatives, no verdicts, no score.
   The direction words are a closed set.
@@ -45,8 +48,8 @@ Concretely, before a pull request is merged:
    scanners cannot see. This repository was born clean; a regression here is
    severe, because the previous implementation's public history carried the
    athlete's real coordinate pair, name and Garmin id.
-5. **The build threads never saw the key.** The Garmin Personal API key is
-   fetched at runtime from Azure Key Vault and held in one process's memory.
+5. **The build threads never saw the key.** Live development credentials are
+   injected at runtime by a secret manager and not printed.
    Nothing in the tree, in a fixture, in a test or in a transcript contains it.
 
 ## The reviewer brief

@@ -2,11 +2,11 @@
 
 # Stride
 
-**A private, local-first running log. Rust only. No account, no cloud, no server.**
+**A private, local-first running log for Android and desktop.**
 
-Your numbers, against your own normal — and you decide what to do with them.
+Your running history, sleep and recovery observations, without a training verdict.
 
-[the plan of record](PLAN.md) · [the full design, screen by screen](docs/plan.html) · [AGPL-3.0](LICENSE)
+[Android releases](https://github.com/caprion/stride/releases) | [Desktop setup](desktop/README.md) | [Screenshots](docs/media/README.md) | [AGPL-3.0](LICENSE)
 
 </div>
 
@@ -14,12 +14,40 @@ Your numbers, against your own normal — and you decide what to do with them.
 
 ## What this is
 
-Stride is a running log for **one athlete**. It syncs a Garmin watch over the
-**Connect Personal API** (one long-lived Personal API key), stores everything in a local encrypted
-database, and shows you where you stand: sleep, HRV and resting HR **against your own history**, your
-plan, and what you actually ran.
+Stride stores one athlete's history in a local SQLCipher database. Connect the
+Garmin Personal API to pull supported activity and wellness data, or import FIT
+files. The Rust core powers the same responsive React UI on both hosts: Kotlin
+and Capacitor on Android, a local HTTP server on desktop.
 
-There is no cloud service, no account to create, and nothing to sign up for. It works on a plane.
+There is no Stride account or hosted Stride data store. Saved history can be
+viewed offline; Garmin sync needs a network connection. GPS outlines are local.
+The optional **Street map** view loads OpenStreetMap tiles and reveals the
+viewed area to that provider.
+
+## See it
+
+[![Stride desktop with entirely fictional demo data](https://github.com/caprion/stride/releases/download/v0.12.0-rc.3/stride-today.png)](https://github.com/caprion/stride/releases/download/v0.12.0-rc.3/stride-desktop-demo.mp4)
+
+**[Watch/download the short desktop demo](https://github.com/caprion/stride/releases/download/v0.12.0-rc.3/stride-desktop-demo.mp4)**
+or browse the [desktop and compact screenshot gallery](docs/media/README.md).
+These show the actual rc.3 UI with 23 invented runs and 39 invented nights.
+HR, HRV, sleep and GPS are fabricated, not anonymized personal observations.
+The street map uses an illustrative public-park loop, not an actual recorded run.
+
+## What is available
+
+| Screen | What you can explore |
+|---|---|
+| Today | Recorded weekly distance, linked run dates, the latest run, plan and available body observations |
+| Runs | Monthly calendar, inclusive history date filters, FIT import and two-run selection |
+| Run detail | Route and optional street map, linked pace/HR exploration, splits, elevation, notes and the matching night's sleep |
+| Body | Selected dates, inline sleep stages, HRV and resting HR, with explicit missing observations |
+| Progress | Period totals, weekly history and links back to saved runs |
+| Compare | Aligned metric differences, heart-rate or pace traces, paired desktop charts and compact A/B controls |
+| Plan and Settings | Plan week, local storage, Garmin connection, training preferences and host-owned file workflows |
+
+Today, Runs, Progress and Body remain the four destinations at every width.
+Compare and Plan are contextual. The layouts share the compact Azure/amber style.
 
 ## What it does *not* do
 
@@ -31,69 +59,60 @@ There is no cloud service, no account to create, and nothing to sign up for. It 
 
 ## The voice
 
-Four registers, plus one supporting `status` type — five string types in all:
+Four content registers plus two supporting types: six string types in all.
 
-| register | what it is | example |
+| type | what it is | example |
 |---|---|---|
 | **vital** | the measurement | *Sleep — 6 h 10 m* |
 | **direction** | which way it moved against your own usual | *could be better · 1 h 10 m less than your usual* |
 | **option** | what is in your own plan, unranked | *Today — 10 km · easy · from your imported plan* |
 | **pattern** | what usually happened to you, with its sample size | *the 5 other times your sleep was below your usual, you ran 8.4 km or less* |
 | **statement** | a fact about a comparison | *2.4 km more than the 10 km target* |
+| **status** | connection, sync and empty-state information | *No activities yet* |
 
-`status` is the sixth string type — connect/sync/staleness and empty-state lines. The direction word comes
+`statement` and `status` support the four registers; status covers connect,
+sync, staleness and empty states. The direction word comes
 from a closed set — **better than usual · about usual · could be better** — and every user-facing string
 is typed (`vital · direction · option · pattern · statement · status`) and linted in CI. See
 [the voice rules](PLAN.md#0-the-voice--vitals-direction-options-no-verdicts).
 
 ## Status
 
-**v2 runs.** The vertical line is proven end to end against the real Garmin Personal API: the key, the
-sync, the run in the encrypted database, the readout, and the phone showing it.
+The current testing candidate is **v0.12.0-rc.3**. Stable remains **v0.11.0**.
 
 | | |
 |---|---|
-| design | [PLAN.md](PLAN.md) — features, architecture, delivery plan |
-| screens | [docs/plan.html](docs/plan.html) — every screen, every width, before any code |
-| the release | the **latest** one — v0.11.0 carries the delta pull, the computed zones, Compare for real and the one-time importer |
-| the code | every commit behind a gate and an independent review |
+| Stable | [Latest stable release](https://github.com/caprion/stride/releases/latest) |
+| Testing | [rc.3 APK and release notes](https://github.com/caprion/stride/releases/tag/v0.12.0-rc.3) |
+| Current scope | [PLAN.md](PLAN.md), including the approved responsive-design amendments |
+| Current appearance | [Screenshots and demo provenance](docs/media/README.md) |
+| Original design | [Historical v2 wireframes](docs/plan.html), not current screenshots |
 
-The desktop is a **development rig and a community tool**, not a product surface: it is the same Rust
-core, one binary, and the phone app is the product.
+Browser checks and a signed APK do not establish physical-phone acceptance.
+Upgrade/startup, background work, locking, map gestures and cross-phone recovery
+still need device checks. Historical import is bounded and resumable; its
+365-day target is not a claim that every requested record has arrived.
+
+This release does **not** deliver a standalone installable PWA. The desktop
+browser UI still needs its local Rust host.
 
 ## The phone app
 
-**If you were using Stride before, the app you had is still here.**
-
-The **latest release** is the one to install:
+Choose the release channel deliberately. For the testing candidate:
 
 ```bash
-gh release download --repo caprion/stride --pattern '*.apk' -D .
+gh release download v0.12.0-rc.3 --repo caprion/stride --pattern '*.apk' -D .
 ```
 
 The release page is the authority on the artefact's name, its size and its
 SHA-256 — this file deliberately does not repeat them, because a document
 that copies a changing fact is a document that is wrong on the next release.
 
-Every release is signed with the same certificate, so a v2 build installs
-**over** the app you already have: no uninstall, and the file and the key
-survive.
-
-**But the history does not, by itself.** The v2 database is a new, frozen
-schema, and the previous version's tables are a different schema again.
-Installing v2 over v1 keeps the container and the key; it does not, on its
-own, carry the old rows across.
-
-**Since v0.11.0 there is a one-time importer**, and it does: it detects the
-previous version's database by its tables, carries the runs, the notes, the
-wellness and the plan across in one transaction, and leaves everything that is
-derived from the FIT to be derived. The release notes say exactly what is
-carried and what is left behind — table by table. Nothing is moved and
-nothing is deleted: the old tables are still in the file afterwards.
-
-What Garmin restores, on a re-sync, is what Garmin's Personal API window
-holds — a bounded number of recent runs and a bounded number of recent
-wellness days — and not the years before that.
+The candidate retains the original package and signing certificate. Back up
+important history before upgrading; do not uninstall to work around an upgrade
+error. The [v0.11.0 migration notes](docs/release-notes-v0.11.0.md) describe the
+one-time importer for older tables and its limits. A fresh Garmin pull is not a
+substitute for a backup or proof of complete historical coverage.
 
 | | |
 |---|---|
@@ -103,14 +122,14 @@ wellness days — and not the years before that.
 Install it on the phone (allow installs from that source), open it, and paste
 your Garmin Personal API key into the one native screen that asks for it.
 The key is wrapped by a non-exportable Keystore key and never enters the
-WebView. There is no server to reach, no account to create and nothing to sign
-up for — it works on a plane, with this VM switched off.
+WebView. The phone runs its Rust core in-process and does not depend on the
+desktop. Native passphrase-encrypted recovery backups and dated readable exports
+are described in the [Android guide](android/README.md).
 
-## The desktop rig — a community tool
+## Run on desktop
 
-The desktop rig is a **development rig and a community tool, not the
-product**. It is one Rust binary that serves the same app and router as the
-phone, against a local encrypted database.
+The desktop host serves the shared app and router against its own local
+encrypted database. With Rust and the required native build dependencies:
 
 1. **Build and run it with one command.** After cloning, run
    `cargo run -p stride-desktop`. There is no Python environment, Node, npm,
@@ -120,27 +139,19 @@ phone, against a local encrypted database.
    the consumer key, tests it with Garmin, and then keeps it on this machine
    in a private file (`0600` on POSIX systems). The key is never put in a URL,
    a log line, an API
-   response, or another page. `cf-garmin env -- cargo run -p stride-desktop`
-   supplies a development key in memory.
+   response, or another page.
 3. **The trust model is three lines.** The loopback is always answered; an
    address inside a CIDR in `STRIDE_TRUSTED_NETWORKS` is answered; everything
    else is refused with a message naming that variable. To use the rig from a
    phone on the athlete's own network, trust the phone's CIDR and serve TLS
    with a certificate the phone trusts. The full command is in the
    [rig guide](desktop/README.md).
-4. **Move the data with the export.** `stride-desktop export` writes a
-   verified, encrypted bundle and prints its path. The bundle holds the runs,
-   wellness days, plans, notes and sync state, but not the Garmin key. Keep
-   it off public storage and copy the whole folder over a private channel.
-   The current phone app does not yet have a bulk desktop-export import
-   screen, so the bundle is the portable copy until that screen exists.
-   `stride-desktop import <directory>` or the rig's drop target reads it back
-   and reports the rows, versions and refusals.
-5. **The phone app is the product.** The rig is the fast loop, the reference
-   host and a community tool around the same Rust core. It never becomes a
-   second product.
+4. **Use host-owned backup tools.** Data & connection links to `/rig` for
+   desktop export and merge import. Desktop export directories include an
+   export-only key and must stay private. They are not the Android
+   passphrase-recovery archive format; do not assume interchangeability.
 
-See [the rig guide](desktop/README.md) for the exact first-run steps, the
+See [the desktop guide](desktop/README.md) for the exact first-run steps, the
 network command, what an export contains, and what the import refuses.
 
 ## Building
@@ -167,8 +178,6 @@ Before you open one, read [CONTRIBUTING.md](CONTRIBUTING.md) and [the plan of re
 
 ## Licence
 
-**AGPL-3.0.** Use it, fork it, improve it — but if you offer it over a network, publish your source.
-That is what keeps the "no cloud version of Stride" promise true rather than aspirational.
-
-The product name and the promise in the README are not covered by the licence; see
-[the plan](PLAN.md#8-open-source-posture).
+**[AGPL-3.0](LICENSE).** Its source-sharing obligations also apply to modified
+versions offered over a network. The licence does not prohibit hosted forks;
+local-first storage is this project's product choice.
