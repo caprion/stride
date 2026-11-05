@@ -88,6 +88,9 @@ Every pull request runs:
 Golden parity and the six-width responsive matrix are implemented gates.
 `bash scripts/gate.sh` is the authoritative local/CI list; it also checks
 frontend types, voice, tests, scanner self-tests and repository history.
+CI cancels superseded runs for the same branch or pull request. The diff scanner
+runs on pull requests only; pushes still run the full gate. The signed release
+workflow is separate and is not cancelled by this policy.
 
 A pull request that turns a gate off will not be merged. If a gate is wrong, fix the gate and the code
 together.

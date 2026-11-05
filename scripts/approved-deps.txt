@@ -29,9 +29,6 @@ vite
 tailwindcss
 postcss
 autoprefixer
-clsx
-tailwind-merge
-zustand
 date-fns
 recharts
 lucide-react
