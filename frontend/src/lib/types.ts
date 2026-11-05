@@ -103,6 +103,21 @@ export interface RestReading {
 export interface VitalHistoryPoint {
   date: string
   value: number | null
+  text?: string | null
+}
+
+export interface SleepDay {
+  date: string
+  sleep: RenderedValue | null
+  deep_sleep: RenderedValue | null
+  rem_sleep: RenderedValue | null
+  light_sleep: RenderedValue | null
+  awake: RenderedValue | null
+}
+
+export interface SleepDays {
+  days: SleepDay[]
+  generated_at: string
 }
 
 /**

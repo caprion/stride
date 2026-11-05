@@ -14,9 +14,11 @@ import { screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { healthFixture, settingsFixture } from '../src/fixtures'
+import { api } from '../src/lib/api'
 import { renderApp } from './helpers'
 
 afterEach(() => {
+  vi.restoreAllMocks()
   delete window.__stride_bridge__
   window.history.pushState({}, '', '/?fixtures=1')
 })
@@ -51,6 +53,17 @@ describe('phone data ownership', () => {
 })
 
 describe('the weekly goal', () => {
+  it('keeps unsaved input and never claims success when the save fails', async () => {
+    vi.spyOn(api, 'saveSettings').mockRejectedValue(new Error('synthetic store unavailable'))
+    renderApp('/settings')
+    const input = await screen.findByTestId('settings-goal-input')
+    await userEvent.type(input, '35')
+    await userEvent.click(screen.getByTestId('settings-goal-save'))
+    expect(await screen.findByRole('alert')).toHaveTextContent('This was not saved')
+    expect(input).toHaveValue('35')
+    expect(screen.queryByText('The goal is saved')).toBeNull()
+  })
+
   it('shows the goal the api sent, and the number in the field', async () => {
     const { container } = renderApp('/settings')
     await waitFor(() =>
@@ -122,6 +135,26 @@ describe('the pause', () => {
 })
 
 describe('the connection', () => {
+  it('opens the connection field outside the collapsed details', async () => {
+    renderApp('/settings')
+    await userEvent.click(await screen.findByRole('button', { name: 'Connect to Garmin' }))
+    const input = await screen.findByTestId('key-input')
+    expect(input.closest('details')).toBeNull()
+    expect(input).toBeVisible()
+  })
+
+  it('does not present a failed status check as disconnected or block saved settings', async () => {
+    vi.spyOn(api, 'authStatus').mockRejectedValue(new Error('synthetic status unavailable'))
+    renderApp('/settings')
+    expect(await screen.findByTestId('settings-connection-state')).toHaveTextContent(
+      'could not be checked',
+    )
+    expect(screen.queryByText('Not connected')).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Connect to Garmin' })).toBeNull()
+    expect(screen.getByTestId('settings-goal-input')).toBeInTheDocument()
+    expect(screen.getByText('Your history is stored locally on this device.')).toBeVisible()
+  })
+
   it('shows the key identifier, and never the key', async () => {
     const { container } = renderApp('/settings')
     await waitFor(() =>
@@ -163,9 +196,9 @@ describe('the storage', () => {
     // The size is the host's, answered by the api — and it is shown as
     // the api answered it, in the api's own words.
     expect(settingsFixture.storage.size).toEqual({ raw: 601_336, text: '587.2 KB' })
-    expect(container.querySelector('[data-testid="settings-storage-size"]')?.textContent).toContain(
-      '587.2 KB',
-    )
+    expect(
+      container.querySelector('[data-testid="settings-storage-size"]')?.textContent,
+    ).toContain('587.2 KB')
   })
 
   it('takes the word before it deletes anything', async () => {

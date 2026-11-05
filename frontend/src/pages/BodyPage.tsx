@@ -17,6 +17,8 @@ import { api } from '../lib/api'
 import { useStaleness } from '../lib/staleness'
 import { t } from '../i18n'
 import { VitalReadings } from '../components/VitalReadings'
+import { SleepComposition } from '../components/SleepComposition'
+import { QueryError } from '../components/QueryError'
 import { PageHeader } from '../ui/layout/PageHeader'
 
 export function BodyPage() {
@@ -29,7 +31,7 @@ export function BodyPage() {
   const stale = useStaleness()
   const snapshot = vitals.data
 
-  if (vitals.isError) {
+  if (vitals.isError && !snapshot) {
     return (
       <div>
         <PageHeader title={t('body.heading')} />
@@ -110,7 +112,12 @@ export function BodyPage() {
       <div>
         <PageHeader
           title={t('body.heading')}
-          meta={stale ? <span className="text-ink-faint">{stale}</span> : null}
+          meta={
+            <>
+              {t('body.question')}
+              {stale ? <span className="ml-2 text-ink-faint">{stale}</span> : null}
+            </>
+          }
         />
         {controls}
         <div className="card px-4 py-8 text-center" data-testid="body-empty">
@@ -125,12 +132,25 @@ export function BodyPage() {
     <div>
       <PageHeader
         title={t('body.heading')}
-        meta={stale ? <span className="text-ink-faint">{stale}</span> : null}
+        meta={
+          <>
+            {t('body.question')}
+            {stale ? <span className="ml-2 text-ink-faint">{stale}</span> : null}
+          </>
+        }
       />
       {controls}
+      {vitals.isError ? (
+        <QueryError
+          retry={() => {
+            void vitals.refetch()
+          }}
+        />
+      ) : null}
+      <SleepComposition date={snapshot.date} />
 
       {/* --------------------------------------------- the three signals */}
-      <VitalReadings snapshot={snapshot} layout="cards" />
+      <VitalReadings snapshot={snapshot} layout="cards" onDate={setDate} />
 
       {/* --------------------------------------------- how to read this */}
       <section className="card mt-3 px-4 py-3">

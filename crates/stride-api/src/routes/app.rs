@@ -1045,6 +1045,13 @@ fn read_activity_cursor(api: &Api) -> ApiResult<ActivityCursor> {
         .sync_state(sync_kind::ACTIVITIES)
         .map_err(|error| api.store_error("the sync state could not be read", &error))?;
     match state.and_then(|state| state.cursor) {
+        // Releases before the delta pull stored the bare Garmin activity id.
+        Some(text) if !text.is_empty() && text.bytes().all(|byte| byte.is_ascii_digit()) => {
+            Ok(ActivityCursor {
+                newest: Some(text),
+                ..ActivityCursor::default()
+            })
+        }
         Some(text) => serde_json::from_str(&text)
             .map_err(|_| ApiError::internal("the sync cursor could not be read")),
         None => Ok(ActivityCursor::default()),

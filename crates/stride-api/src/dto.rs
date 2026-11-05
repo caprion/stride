@@ -351,6 +351,8 @@ pub struct HistoryPoint {
     pub date: String,
     /// The value that night. `null` when there was none.
     pub value: Option<f64>,
+    /// The core-rendered value for axes and tooltips, with its unit.
+    pub text: Option<String>,
 }
 
 /// The history of the three vitals.

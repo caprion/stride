@@ -22,7 +22,7 @@ export function renderApp(route = '/') {
       </MemoryRouter>
     </QueryClientProvider>,
   )
-  return result
+  return { ...result, client }
 }
 
 export function renderWith(element: ReactElement, route = '/') {

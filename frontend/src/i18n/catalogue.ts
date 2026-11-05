@@ -73,6 +73,17 @@ export const catalogue = {
   'nav.body': { type: 'status', text: 'Body' },
   'nav.settings': { type: 'status', text: 'Settings' },
   'nav.label': { type: 'status', text: 'Destinations' },
+  'common.local': { type: 'status', text: 'Stored on this device' },
+  'common.saved': { type: 'statement', text: 'Your history is stored locally on this device.' },
+  'common.saving': { type: 'status', text: 'Saving...' },
+  'common.saveFailed': {
+    type: 'status',
+    text: 'This was not saved. Your changes are still here.',
+  },
+  'common.invalidGoal': {
+    type: 'status',
+    text: 'Enter a positive distance, or leave the goal blank.',
+  },
 
   // ------------------------------------------------------------- today
   'today.heading': { type: 'status', text: 'Today' },
@@ -90,6 +101,10 @@ export const catalogue = {
     text: "Connect your Garmin key to see today's numbers",
   },
   'today.state.noDataAction': { type: 'status', text: 'Connect Garmin' },
+  'today.state.noRecords': {
+    type: 'status',
+    text: 'No saved observations yet. Refresh Garmin to check for recent records.',
+  },
   'today.state.connectFailed': { type: 'status', text: 'The setup screen did not open' },
   'today.state.stale.days': { type: 'status', text: 'last synced {n} days ago' },
   'today.state.stale.hours': { type: 'status', text: 'last synced {n} hours ago' },
@@ -97,7 +112,23 @@ export const catalogue = {
   'today.state.syncIncomplete': { type: 'status', text: 'The last sync did not complete' },
   'today.state.historyPending': {
     type: 'status',
-    text: 'Older history is still being checked',
+    text: 'More history is available to check. Saved records remain available.',
+  },
+  'sync.refresh': { type: 'status', text: 'Refresh Garmin' },
+  'sync.refreshing': { type: 'status', text: 'Refreshing...' },
+  'sync.older': { type: 'status', text: 'Check older history' },
+  'sync.coverage': { type: 'status', text: 'History checked' },
+  'sync.coverage.range': { type: 'status', text: '{from} to {to}' },
+  'sync.coverage.unknown': { type: 'status', text: 'Not checked yet' },
+  'sync.activities': { type: 'status', text: 'Runs' },
+  'sync.wellness': { type: 'status', text: 'Body' },
+  'sync.failed': {
+    type: 'status',
+    text: 'The refresh did not finish. Saved records are unchanged.',
+  },
+  'sync.requested': {
+    type: 'status',
+    text: 'Refresh requested. The connection status updates when it finishes.',
   },
   'today.state.retry': { type: 'status', text: 'Try again' },
   'today.state.noPlan': { type: 'status', text: 'No plan is active for today' },
@@ -147,6 +178,18 @@ export const catalogue = {
   'runs.filter.all': { type: 'status', text: 'All' },
   'runs.filter.runs': { type: 'status', text: 'Runs' },
   'runs.filter.other': { type: 'status', text: 'Other' },
+  'runs.search': { type: 'status', text: 'Search saved activities' },
+  'runs.from': { type: 'status', text: 'From date' },
+  'runs.to': { type: 'status', text: 'Through date' },
+  'runs.noMatches': { type: 'status', text: 'No matching activities on the loaded pages.' },
+  'runs.select': { type: 'status', text: 'Select {date} for comparison' },
+  'runs.selected': { type: 'status', text: '{n} of 2 runs selected' },
+  'runs.compareSelected': { type: 'status', text: 'Compare selected runs' },
+  'runs.clearSelection': { type: 'status', text: 'Clear selection' },
+  'runs.filterScope': {
+    type: 'status',
+    text: 'Filters apply to loaded activities. Load more to search further back.',
+  },
 
   // --------------------------------------------------------- progress
   'progress.heading': { type: 'status', text: 'Progress' },
@@ -164,9 +207,46 @@ export const catalogue = {
   'progress.best.5k': { type: 'status', text: 'Fastest 5 km' },
   'progress.best.10k': { type: 'status', text: 'Fastest 10 km' },
   'progress.best.longest': { type: 'status', text: 'Longest run' },
+  'progress.question': { type: 'status', text: 'Am I training consistently?' },
+  'progress.partial': { type: 'status', text: 'Striped bar: this week is still in progress.' },
+  'progress.scope': {
+    type: 'status',
+    text: 'Saved activity history; gaps are not confirmed rest weeks. History may still be arriving.',
+  },
+  'progress.paceNote': {
+    type: 'status',
+    text: 'Weekly pace and heart rate are separate medians, not a same-effort fitness comparison.',
+  },
+  'progress.paceHr': { type: 'status', text: '{pace} at {hr} (separate weekly medians)' },
+  'progress.averageNote': {
+    type: 'status',
+    text: 'Average across weeks with recorded sessions, not all calendar weeks.',
+  },
 
   // ------------------------------------------------------------- body
   'body.heading': { type: 'status', text: 'Body' },
+  'body.question': { type: 'status', text: 'How was my sleep?' },
+  'body.sleep.heading': { type: 'status', text: 'Sleep on {date}' },
+  'body.sleep.deep': { type: 'vital', text: 'Deep' },
+  'body.sleep.rem': { type: 'vital', text: 'REM' },
+  'body.sleep.light': { type: 'vital', text: 'Light' },
+  'body.sleep.awake': { type: 'vital', text: 'Awake' },
+  'body.sleep.composition': { type: 'status', text: 'Recorded sleep-stage durations' },
+  'body.sleep.note': {
+    type: 'status',
+    text: 'Wearable estimates, not a timeline or a sleep-quality score. Duration alone does not describe sleep quality.',
+  },
+  'body.sleep.noStages': {
+    type: 'status',
+    text: 'No sleep-stage breakdown saved for this date.',
+  },
+  'body.sleep.missing': { type: 'status', text: 'Not recorded' },
+  'body.sleep.run': { type: 'status', text: 'Sleep before this run' },
+  'body.history.pick': { type: 'status', text: 'Choose a date to inspect its readings' },
+  'body.history.axis': {
+    type: 'status',
+    text: 'Recorded readings with gaps where data is missing',
+  },
   'body.additional.heading': { type: 'status', text: 'More measurements' },
   'body.history.controls': { type: 'status', text: 'Explore recorded history' },
   'body.history.date': { type: 'status', text: 'Date' },
@@ -254,6 +334,24 @@ export const catalogue = {
   'activity.showSplits': { type: 'status', text: 'Show splits' },
   'activity.hideSplits': { type: 'status', text: 'Hide splits' },
   'activity.showElevation': { type: 'status', text: 'Show elevation' },
+  'activity.hideElevation': { type: 'status', text: 'Hide elevation' },
+  'activity.back': { type: 'status', text: 'Back to runs' },
+  'activity.route.street': { type: 'status', text: 'Street map' },
+  'activity.route.offline': { type: 'status', text: 'GPS outline' },
+  'activity.route.disclosure': {
+    type: 'status',
+    text: 'Street tiles come from OpenStreetMap and reveal the area being viewed. GPS outline stays on this device.',
+  },
+  'activity.route.failed': {
+    type: 'status',
+    text: 'Street tiles did not load. The saved GPS outline is shown instead.',
+  },
+  'activity.route.startEnd': { type: 'status', text: 'Filled marker: start. Ring: finish.' },
+  'activity.effort.cursor': {
+    type: 'status',
+    text: 'Pace and heart rate share the same elapsed-time cursor. Elevation uses distance and is shown separately.',
+  },
+  'activity.effort.minutes': { type: 'status', text: 'Minutes into the run' },
 
   // ----------------------------------------------------------- common
   'common.loading': { type: 'status', text: 'Loading…' },
@@ -268,7 +366,13 @@ export const catalogue = {
   'common.paused.until': { type: 'status', text: 'paused until {date}' },
   'common.paused.untilReason': { type: 'status', text: 'paused until {date} · {reason}' },
   // --------------------------------------------------------- settings
-  'settings.heading': { type: 'status', text: 'Settings' },
+  'settings.heading': { type: 'status', text: 'Data & connection' },
+  'settings.connection.unknown': {
+    type: 'status',
+    text: 'Connection status could not be checked. Saved history is still available.',
+  },
+  'settings.connection.manage': { type: 'status', text: 'Connection details' },
+  'settings.connection.connect': { type: 'status', text: 'Connect to Garmin' },
 
   // The weekly goal: one number, and a blank is no goal.
   'settings.goal.heading': { type: 'status', text: 'Weekly goal' },

@@ -136,7 +136,7 @@ pub fn activity(api: &Api, request: &Request) -> ApiResult<Value> {
     let mut samples = Vec::new();
     let mut why = None;
     if let Some(decoded) = series::decoded(api, id) {
-        summary.geo_points = series::geo_points(&decoded);
+        summary.geo_points = series::geo_points(&decoded, api.config().max_samples_in_response);
         splits = series::splits(&decoded);
         elevation = series::elevation(&decoded, api.config().max_samples_in_response);
         samples = series::samples(&decoded, api.config().max_samples_in_response);
@@ -348,25 +348,47 @@ pub fn physiology_vitals(api: &Api, request: &Request) -> ApiResult<Value> {
         .store()
         .wellness_between(&history_from.to_iso(), &day.to_iso())
         .map_err(|error| api.store_error("the history could not be read", &error))?;
-    let history_point = |offset: i64, value: fn(&WellnessDaily) -> Option<f64>| {
+    let history_point = |offset: i64,
+                         value: fn(&WellnessDaily) -> Option<f64>,
+                         render_value: fn(Option<f64>) -> Option<String>| {
         let date = history_from.add_days(offset).to_iso();
+        let value = history_rows
+            .iter()
+            .find(|row| row.date == date)
+            .and_then(value);
         crate::dto::HistoryPoint {
-            value: history_rows
-                .iter()
-                .find(|row| row.date == date)
-                .and_then(value),
+            value,
+            text: render_value(value),
             date,
         }
     };
     let charts = VitalsHistory {
         sleep: (0..history_window_days)
-            .map(|offset| history_point(offset, |row| row.sleep_s))
+            .map(|offset| {
+                history_point(
+                    offset,
+                    |row| row.sleep_s,
+                    stride_core::units::render_duration,
+                )
+            })
             .collect(),
         hrv: (0..history_window_days)
-            .map(|offset| history_point(offset, |row| row.hrv_ms))
+            .map(|offset| {
+                history_point(
+                    offset,
+                    |row| row.hrv_ms,
+                    |value| render::hrv(value).map(|value| value.text),
+                )
+            })
             .collect(),
         resting_hr: (0..history_window_days)
-            .map(|offset| history_point(offset, |row| row.resting_hr))
+            .map(|offset| {
+                history_point(
+                    offset,
+                    |row| row.resting_hr,
+                    stride_core::units::render_heart_rate,
+                )
+            })
             .collect(),
     };
 

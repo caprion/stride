@@ -45,6 +45,7 @@ import type {
   SettingsDeleteResult,
   SettingsExportResult,
   SettingsState,
+  SleepDays,
   SyncStatus,
   TodayInsight,
   VitalsSnapshot,
@@ -1285,6 +1286,18 @@ export function fixtureResponse(
       if (variant === 'nowellness') return vitalsEmptyFixture
       if (variant === 'notenough') return vitalsNotEnoughFixture
       return vitalsFixture
+    case '/physiology/sleep': {
+      if (['empty', 'fresh', 'nowellness'].includes(variant))
+        return { days: [], generated_at: vitalsFixture.generated_at }
+      const answer = routerAnswers['/physiology/sleep'] as SleepDays
+      return {
+        ...answer,
+        days: answer.days.filter(
+          (day) =>
+            (!params.from || day.date >= params.from) && (!params.to || day.date <= params.to),
+        ),
+      }
+    }
     case '/activities': {
       const answer =
         variant === 'empty' || variant === 'fresh' ? activitiesEmptyFixture : activitiesFixture

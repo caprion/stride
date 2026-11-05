@@ -89,20 +89,28 @@ pub fn samples(activity: &FitActivity, cap: usize) -> Vec<SamplePoint> {
     points
 }
 
-/// The route of a run: the first and the last points the file carries.
-pub fn geo_points(activity: &FitActivity) -> Vec<[f64; 2]> {
-    let mut points: Vec<[f64; 2]> = Vec::new();
-    for point in activity
-        .geo_points
-        .first
-        .iter()
-        .chain(activity.geo_points.last.iter())
-    {
-        let latitude = units::round_gps_degrees(point[0]);
-        let longitude = units::round_gps_degrees(point[1]);
-        points.push([latitude, longitude]);
-    }
-    points
+/// The route over the whole run, bounded without dropping its endpoints.
+pub fn geo_points(activity: &FitActivity, cap: usize) -> Vec<[f64; 2]> {
+    let points = &activity.route_points;
+    let count = if cap == 0 {
+        points.len()
+    } else {
+        points.len().min(cap)
+    };
+    (0..count)
+        .map(|index| {
+            let position = if count < 2 {
+                0
+            } else {
+                index * (points.len() - 1) / (count - 1)
+            };
+            let point = points[position];
+            [
+                units::round_gps_degrees(point[0]),
+                units::round_gps_degrees(point[1]),
+            ]
+        })
+        .collect()
 }
 
 /// The fastest time to cover a distance, in seconds.

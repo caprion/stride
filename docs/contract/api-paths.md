@@ -129,7 +129,7 @@ Two rules hold for every shape below.
 |---|---|
 | `/activities` | `activities: ActivitySummary[]`, `next_cursor: string \| null`, `generated_at: string` |
 | `/activities/{id}` | `ActivitySummary` and `splits: {index, distance, duration, heart_rate}[]`, `elevation: {distance, elevation}[]`, `samples: {offset_s, pace, heart_rate}[]`, `plan_line: {text} \| null`, `note: string \| null` |
-| `/physiology/vitals` | `date`, `generated_at`, `rest: {label, line}`, `vitals: {key, label, value_text, direction_text, deviation_text, travel_text, status_text, band}[]`, `history: {sleep, hrv, resting_hr}`, `patterns: {id, text, sample_size}[]` |
+| `/physiology/vitals` | `date`, `generated_at`, `rest: {label, line}`, `vitals: {key, label, value_text, direction_text, deviation_text, travel_text, status_text, band}[]`, `history: {sleep, hrv, resting_hr}` (each point: `date`, nullable `value`, nullable core-rendered `text` with units), `patterns: {id, text, sample_size}[]` |
 | `/plan/week` | `block_name`, `source`, `week_start`, `week_end`, `today`, `target`, `sessions: {date, session_type, title, sentence, target, actual, status, source}[]`, `adherence: {done, planned} \| null`, `counts: {done, planned, not_done}` |
 | `/settings` | `goal: {value: {text, raw} \| null, km: number \| null}`, `pause: {start_date, end_date, reason} \| null`, `storage: {size, activity_count, wellness_day_count, plan_session_count, note_count}`, `generated_at` |
 | `/settings/export` | `exported: boolean`, `size: {text, raw} \| null`, `generated_at` |

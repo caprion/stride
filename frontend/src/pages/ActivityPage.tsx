@@ -8,6 +8,7 @@
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import {
   Area,
   AreaChart,
@@ -26,7 +27,9 @@ import { canDeliverFile, downloadFile, fileName } from '../lib/download'
 import { formatDateMedium, renderedText, sportLabel } from '../lib/format'
 import { t } from '../i18n'
 import { axisTick } from '../components/ChartAxis'
-import { RouteMap } from '../components/RouteMap'
+import { StreetRouteMap } from '../components/StreetRouteMap'
+import { SleepComposition } from '../components/SleepComposition'
+import { QueryError } from '../components/QueryError'
 import { PageHeader } from '../ui/layout/PageHeader'
 
 export function ActivityPage({ id }: { id: string }) {
@@ -70,6 +73,18 @@ export function ActivityPage({ id }: { id: string }) {
     },
   })
 
+  if (activity.isError && !data) {
+    return (
+      <>
+        <PageHeader title={t('activity.heading')} />
+        <QueryError
+          retry={() => {
+            void activity.refetch()
+          }}
+        />
+      </>
+    )
+  }
   if (!data) {
     return (
       <div>
@@ -81,7 +96,7 @@ export function ActivityPage({ id }: { id: string }) {
 
   const samples = data.samples.map((sample) => ({
     // The chart's own scale: minutes into the run.
-    minute: Math.round(sample.offset_s / 60),
+    minute: sample.offset_s / 60,
     hr: sample.heart_rate?.raw ?? null,
     hrText: sample.heart_rate?.text ?? null,
     pace: sample.pace?.raw ?? null,
@@ -124,270 +139,324 @@ export function ActivityPage({ id }: { id: string }) {
 
   return (
     <div>
+      <Link to="/runs" className="tap-inline mb-2 text-[13px] text-brand-700 underline">
+        {t('activity.back')}
+      </Link>
       <PageHeader
         title={sportLabel(data.sport_type)}
         meta={formatDateMedium(data.local_date)}
       />
+      {activity.isError ? (
+        <QueryError
+          retry={() => {
+            void activity.refetch()
+          }}
+        />
+      ) : null}
 
-      {/* ------------------------------------- the three headline numbers */}
-      <section className="card px-4 py-3" data-testid="activity-detail">
-        <div className="stat-strip">
-          <span>
-            <span className="text-[11px] uppercase tracking-[0.07em] text-ink-faint">
-              {t('vital.distance')}
-            </span>
-            <span className="ml-2 text-[17px] font-semibold tabular-nums text-ink">
-              {renderedText(data.distance)}
-            </span>
-          </span>
-          <span>
-            <span className="text-[11px] uppercase tracking-[0.07em] text-ink-faint">
-              {t('vital.time')}
-            </span>
-            <span className="ml-2 text-[17px] font-semibold tabular-nums text-ink">
-              {renderedText(data.duration)}
-            </span>
-          </span>
-          <span>
-            <span className="text-[11px] uppercase tracking-[0.07em] text-ink-faint">
-              {t('vital.pace')}
-            </span>
-            <span className="ml-2 text-[17px] font-semibold tabular-nums text-ink">
-              {renderedText(data.pace)}
-            </span>
-          </span>
-        </div>
-      </section>
+      <div className="activity-grid">
+        <div>
+          {/* ------------------------------------- the three headline numbers */}
+          <section className="card px-4 py-3" data-testid="activity-detail">
+            <div className="stat-strip">
+              <span>
+                <span className="text-[11px] uppercase tracking-[0.07em] text-ink-faint">
+                  {t('vital.distance')}
+                </span>
+                <span className="ml-2 text-[17px] font-semibold tabular-nums text-ink">
+                  {renderedText(data.distance)}
+                </span>
+              </span>
+              <span>
+                <span className="text-[11px] uppercase tracking-[0.07em] text-ink-faint">
+                  {t('vital.time')}
+                </span>
+                <span className="ml-2 text-[17px] font-semibold tabular-nums text-ink">
+                  {renderedText(data.duration)}
+                </span>
+              </span>
+              <span>
+                <span className="text-[11px] uppercase tracking-[0.07em] text-ink-faint">
+                  {t('vital.pace')}
+                </span>
+                <span className="ml-2 text-[17px] font-semibold tabular-nums text-ink">
+                  {renderedText(data.pace)}
+                </span>
+              </span>
+              {data.heart_rate ? (
+                <span>
+                  <span className="text-[11px] uppercase tracking-[0.07em] text-ink-faint">
+                    {t('vital.heartRate')}
+                  </span>
+                  <span className="ml-2 text-[17px] font-semibold tabular-nums">
+                    {renderedText(data.heart_rate)}
+                  </span>
+                </span>
+              ) : null}
+            </div>
+          </section>
 
-      {/* ------------------------------------------------------- the story */}
-      {/*
+          {/* ------------------------------------------------------- the story */}
+          {/*
         The sentence the feed shows, and the one extra fact the detail
         knows: the run's own shape, in the core's words. The why is said
         only when it is worth a sentence — when a split stands out from
         the run's average pace — so when it is absent, the sentence
         stands alone.
       */}
-      <section className="card mt-3 px-4 py-3">
-        <h2 className="text-[12px] font-semibold uppercase tracking-[0.07em] text-ink-faint">
-          {t('activity.story.heading')}
-        </h2>
-        <p className="mt-1 text-[14.5px] text-ink-soft">{data.story}</p>
-        {data.why ? (
-          <p className="mt-1 text-[14.5px] text-ink-soft" data-testid="activity-why">
-            {data.why}
-          </p>
-        ) : null}
-      </section>
+          <section className="card mt-3 px-4 py-3">
+            <h2 className="text-[12px] font-semibold uppercase tracking-[0.07em] text-ink-faint">
+              {t('activity.story.heading')}
+            </h2>
+            <p className="mt-1 text-[14.5px] text-ink-soft">{data.story}</p>
+            {data.why ? (
+              <p className="mt-1 text-[14.5px] text-ink-soft" data-testid="activity-why">
+                {data.why}
+              </p>
+            ) : null}
+          </section>
 
-      {/* ----------------------------------------------------------- map */}
-      {/*
-        The route, with a marker where it started and one where it
-        ended. The points are the API's — the app draws them and nothing
-        else — and there is no map server behind them: the drawing is
-        made here, on the device, from the points the API sent.
-      */}
-      {data.geo_points.length > 1 ? (
-        <section className="card mt-3 px-4 py-3" data-testid="activity-route">
-          <h2 className="text-[12px] font-semibold uppercase tracking-[0.07em] text-ink-faint">
-            {t('activity.route.heading')}
-          </h2>
-          <div className="mt-2">
-            <RouteMap points={data.geo_points} variant="full" />
-          </div>
-        </section>
-      ) : null}
-
-      {/* --------------------------------------------------------- effort */}
-      <section className="card mt-3 px-4 py-3" data-testid="activity-effort">
-        <h2 className="mb-2 text-[12px] font-semibold uppercase tracking-[0.07em] text-ink-faint">
-          {t('activity.effort.heading')}
-        </h2>
-        <p className="mb-1 text-[12px] font-medium text-ink-muted">{t('vital.heartRate')}</p>
-        <div style={{ width: '100%', height: 150 }}>
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={samples} margin={{ top: 4, right: 4, bottom: 0, left: 0 }}>
-              <CartesianGrid stroke="#E4EBF0" vertical={false} />
-              <XAxis dataKey="minute" tick={{ fontSize: 11, fill: '#61788D' }} />
-              <YAxis
-                ticks={heartRateTicks.map((tick) => tick.value)}
-                tick={axisTick(heartRateTicks)}
-                width={64}
-                tickLine={false}
-                axisLine={false}
-                domain={['dataMin - 5', 'dataMax + 5']}
+          {/* ----------------------------------------------------------- map */}
+          {data.geo_points.length > 1 ? (
+            <section className="card mt-3 px-4 py-3" data-testid="activity-route">
+              <h2 className="text-[12px] font-semibold uppercase tracking-[0.07em] text-ink-faint">
+                {t('activity.route.heading')}
+              </h2>
+              <div className="mt-2">
+                <StreetRouteMap key={id} points={data.geo_points} />
+              </div>
+            </section>
+          ) : null}
+          <SleepComposition date={data.local_date} beforeRun />
+        </div>
+        <div>
+          {/* --------------------------------------------------------- effort */}
+          <section className="card mt-3 px-4 py-3" data-testid="activity-effort">
+            <h2 className="mb-2 text-[12px] font-semibold uppercase tracking-[0.07em] text-ink-faint">
+              {t('activity.effort.heading')}
+            </h2>
+            <p className="mb-3 text-[12px] text-ink-muted">{t('activity.effort.cursor')}</p>
+            {zones.isError ? (
+              <QueryError
+                retry={() => {
+                  void zones.refetch()
+                }}
               />
-              {/*
+            ) : null}
+            <p className="mb-1 text-[12px] font-medium text-ink-muted">
+              {t('vital.heartRate')}
+            </p>
+            <div style={{ width: '100%', height: 150 }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart
+                  data={samples}
+                  syncId={`effort-${id}`}
+                  margin={{ top: 4, right: 4, bottom: 0, left: 0 }}
+                >
+                  <CartesianGrid stroke="#E4EBF0" vertical={false} />
+                  <XAxis
+                    dataKey="minute"
+                    type="number"
+                    domain={[0, 'dataMax']}
+                    tickCount={5}
+                    tick={{ fontSize: 11, fill: '#61788D' }}
+                  />
+                  <YAxis
+                    ticks={heartRateTicks.map((tick) => tick.value)}
+                    tick={axisTick(heartRateTicks)}
+                    width={64}
+                    tickLine={false}
+                    axisLine={false}
+                    domain={['dataMin - 5', 'dataMax + 5']}
+                  />
+                  {/*
                 The athlete's own zones: the bands the core computed, on
                 the numbers the core rendered the words from. They are
                 bands of the athlete's history, not a judgement — nothing
                 here says what the run should have been.
               */}
-              {(zones.data?.zones ?? [])
-                .filter((band) => band.from_bpm !== null && band.to_bpm !== null)
-                .map((band) => (
-                  <ReferenceArea
-                    key={band.label}
-                    y1={band.from_bpm ?? 0}
-                    y2={band.to_bpm ?? 0}
-                    fill="#D6E6F3"
-                    fillOpacity={0.35}
-                    stroke="#A9C9E2"
-                    strokeOpacity={0.8}
+                  {(zones.data?.zones ?? [])
+                    .filter((band) => band.from_bpm !== null && band.to_bpm !== null)
+                    .map((band) => (
+                      <ReferenceArea
+                        key={band.label}
+                        y1={band.from_bpm ?? 0}
+                        y2={band.to_bpm ?? 0}
+                        fill="#D6E6F3"
+                        fillOpacity={0.35}
+                        stroke="#A9C9E2"
+                        strokeOpacity={0.8}
+                      />
+                    ))}
+                  <Tooltip
+                    formatter={(_value, _name, item) => {
+                      const payload = item?.payload as
+                        { hrText?: string | null; paceText?: string | null } | undefined
+                      // The tooltip shows the core's words, not the chart's
+                      // numbers.
+                      return payload?.hrText ?? ''
+                    }}
                   />
+                  <Line
+                    type="monotone"
+                    name={t('vital.heartRate')}
+                    dataKey="hr"
+                    stroke="#1E5E96"
+                    strokeWidth={2}
+                    dot={false}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+            {zones.data && zones.data.zones.length > 0 ? (
+              <ul className="mt-2 flex flex-wrap gap-x-4 gap-y-1" data-testid="activity-zones">
+                {zones.data.zones.map((band) => (
+                  <li key={band.label} className="text-[12px] text-ink-muted">
+                    <span className="font-semibold text-ink-soft">{band.label}</span>
+                    {band.range ? <span> · {band.range}</span> : null}
+                    {band.time ? <span> · {renderedText(band.time)}</span> : null}
+                  </li>
                 ))}
-              <Tooltip
-                formatter={(_value, _name, item) => {
-                  const payload = item?.payload as
-                    | { hrText?: string | null; paceText?: string | null }
-                    | undefined
-                  // The tooltip shows the core's words, not the chart's
-                  // numbers.
-                  return payload?.hrText ?? ''
-                }}
-              />
-              <Line
-                type="monotone"
-                name={t('vital.heartRate')}
-                dataKey="hr"
-                stroke="#1E5E96"
-                strokeWidth={2}
-                dot={false}
-              />
-            </LineChart>
-          </ResponsiveContainer>
-        </div>
-        {zones.data && zones.data.zones.length > 0 ? (
-          <ul className="mt-2 flex flex-wrap gap-x-4 gap-y-1" data-testid="activity-zones">
-            {zones.data.zones.map((band) => (
-              <li key={band.label} className="text-[12px] text-ink-muted">
-                <span className="font-semibold text-ink-soft">{band.label}</span>
-                {band.range ? <span> · {band.range}</span> : null}
-                {band.time ? <span> · {renderedText(band.time)}</span> : null}
-              </li>
-            ))}
-          </ul>
-        ) : null}
-        {zones.data?.unavailable ? (
-          <p className="mt-2 text-[12px] text-ink-faint" data-testid="activity-zones-unavailable">
-            {zones.data.unavailable}
-          </p>
-        ) : null}
-        <p className="mb-1 mt-3 text-[12px] font-medium text-ink-muted">{t('vital.pace')}</p>
-        <div style={{ width: '100%', height: 120 }}>
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={samples} margin={{ top: 4, right: 4, bottom: 0, left: 0 }}>
-              <CartesianGrid stroke="#E4EBF0" vertical={false} />
-              <XAxis dataKey="minute" tick={{ fontSize: 11, fill: '#61788D' }} />
-              <YAxis
-                ticks={paceTicks.map((tick) => tick.value)}
-                tick={axisTick(paceTicks)}
-                width={64}
-                tickLine={false}
-                axisLine={false}
-                domain={['dataMin - 5', 'dataMax + 5']}
-              />
-              <Tooltip
-                formatter={(_value, _name, item) => {
-                  const payload = item?.payload as
-                    | { hrText?: string | null; paceText?: string | null }
-                    | undefined
-                  return payload?.paceText ?? ''
-                }}
-              />
-              <Line
-                type="monotone"
-                name={t('vital.pace')}
-                dataKey="pace"
-                stroke="#D99A0B"
-                strokeWidth={2}
-                dot={false}
-              />
-            </LineChart>
-          </ResponsiveContainer>
-        </div>
-      </section>
-
-      {/* -------------------------------------------------------- splits */}
-      <section className="card mt-3 px-4 py-3">
-        <div className="flex items-center justify-between gap-3">
-          <h2 className="text-[12px] font-semibold uppercase tracking-[0.07em] text-ink-faint">
-            {t('activity.splits.heading')}
-          </h2>
-          <button
-            type="button"
-            onClick={() => setSplitsOpen((open) => !open)}
-            className="tap text-[13px] font-medium text-brand-600 underline underline-offset-2"
-          >
-            {splitsOpen ? t('activity.hideSplits') : t('activity.showSplits')}
-          </button>
-        </div>
-        {splitsOpen ? (
-          <ul className="mt-2">
-            {data.splits.map((split) => (
-              <li
-                key={split.index}
-                className="grid grid-cols-[1fr_auto_auto] items-baseline gap-x-3 border-b border-edge py-1.5 last:border-b-0"
+              </ul>
+            ) : null}
+            {zones.data?.unavailable ? (
+              <p
+                className="mt-2 text-[12px] text-ink-faint"
+                data-testid="activity-zones-unavailable"
               >
-                <span className="text-[13px] text-ink-soft">
-                  {renderedText(split.distance)}
-                </span>
-                <span className="text-[13px] tabular-nums text-ink">
-                  {renderedText(split.duration)}
-                </span>
-                <span className="text-[13px] tabular-nums text-ink-muted">
-                  {renderedText(split.heart_rate)}
-                </span>
-              </li>
-            ))}
-          </ul>
-        ) : null}
-      </section>
+                {zones.data.unavailable}
+              </p>
+            ) : null}
+            <p className="mb-1 mt-3 text-[12px] font-medium text-ink-muted">
+              {t('vital.pace')}
+            </p>
+            <div style={{ width: '100%', height: 120 }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart
+                  data={samples}
+                  syncId={`effort-${id}`}
+                  margin={{ top: 4, right: 4, bottom: 0, left: 0 }}
+                >
+                  <CartesianGrid stroke="#E4EBF0" vertical={false} />
+                  <XAxis
+                    dataKey="minute"
+                    type="number"
+                    domain={[0, 'dataMax']}
+                    tickCount={5}
+                    tick={{ fontSize: 11, fill: '#61788D' }}
+                  />
+                  <YAxis
+                    ticks={paceTicks.map((tick) => tick.value)}
+                    tick={axisTick(paceTicks)}
+                    width={64}
+                    tickLine={false}
+                    axisLine={false}
+                    domain={['dataMin - 5', 'dataMax + 5']}
+                  />
+                  <Tooltip
+                    formatter={(_value, _name, item) => {
+                      const payload = item?.payload as
+                        { hrText?: string | null; paceText?: string | null } | undefined
+                      return payload?.paceText ?? ''
+                    }}
+                  />
+                  <Line
+                    type="monotone"
+                    name={t('vital.pace')}
+                    dataKey="pace"
+                    stroke="#D99A0B"
+                    strokeWidth={2}
+                    dot={false}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          </section>
 
-      {/* ------------------------------------------------------ elevation */}
-      <section className="card mt-3 px-4 py-3">
-        <div className="flex items-center justify-between gap-3">
-          <h2 className="text-[12px] font-semibold uppercase tracking-[0.07em] text-ink-faint">
-            {t('activity.elevation.heading')}
-          </h2>
-          <button
-            type="button"
-            onClick={() => setElevationOpen((open) => !open)}
-            className="tap text-[13px] font-medium text-brand-600 underline underline-offset-2"
-          >
-            {t('activity.showElevation')}
-          </button>
+          {/* -------------------------------------------------------- splits */}
+          <section className="card mt-3 px-4 py-3">
+            <div className="flex items-center justify-between gap-3">
+              <h2 className="text-[12px] font-semibold uppercase tracking-[0.07em] text-ink-faint">
+                {t('activity.splits.heading')}
+              </h2>
+              <button
+                type="button"
+                onClick={() => setSplitsOpen((open) => !open)}
+                className="tap text-[13px] font-medium text-brand-600 underline underline-offset-2"
+              >
+                {splitsOpen ? t('activity.hideSplits') : t('activity.showSplits')}
+              </button>
+            </div>
+            {splitsOpen ? (
+              <ul className="mt-2">
+                {data.splits.map((split) => (
+                  <li
+                    key={split.index}
+                    className="grid grid-cols-[1fr_auto_auto] items-baseline gap-x-3 border-b border-edge py-1.5 last:border-b-0"
+                  >
+                    <span className="text-[13px] text-ink-soft">
+                      {renderedText(split.distance)}
+                    </span>
+                    <span className="text-[13px] tabular-nums text-ink">
+                      {renderedText(split.duration)}
+                    </span>
+                    <span className="text-[13px] tabular-nums text-ink-muted">
+                      {renderedText(split.heart_rate)}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            ) : null}
+          </section>
+
+          {/* ------------------------------------------------------ elevation */}
+          <section className="card mt-3 px-4 py-3">
+            <div className="flex items-center justify-between gap-3">
+              <h2 className="text-[12px] font-semibold uppercase tracking-[0.07em] text-ink-faint">
+                {t('activity.elevation.heading')}
+              </h2>
+              <button
+                type="button"
+                onClick={() => setElevationOpen((open) => !open)}
+                className="tap text-[13px] font-medium text-brand-600 underline underline-offset-2"
+              >
+                {elevationOpen ? t('activity.hideElevation') : t('activity.showElevation')}
+              </button>
+            </div>
+            {elevationOpen ? (
+              <div style={{ width: '100%', height: 140 }} className="mt-2">
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={elevation} margin={{ top: 4, right: 4, bottom: 0, left: 0 }}>
+                    <CartesianGrid stroke="#E4EBF0" vertical={false} />
+                    <XAxis dataKey="km" tick={{ fontSize: 11, fill: '#61788D' }} />
+                    <YAxis
+                      ticks={elevationTicks.map((tick) => tick.value)}
+                      tick={axisTick(elevationTicks)}
+                      width={64}
+                      tickLine={false}
+                      axisLine={false}
+                      domain={['dataMin - 5', 'dataMax + 5']}
+                    />
+                    <Tooltip
+                      formatter={(_value, _name, item) =>
+                        (item?.payload as { elevationText?: string } | undefined)
+                          ?.elevationText ?? ''
+                      }
+                    />
+                    <Area
+                      type="monotone"
+                      name={t('activity.elevation.heading')}
+                      dataKey="m"
+                      stroke="#3F6E9E"
+                      fill="#D6E6F3"
+                    />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
+            ) : null}
+          </section>
         </div>
-        {elevationOpen ? (
-          <div style={{ width: '100%', height: 140 }} className="mt-2">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={elevation} margin={{ top: 4, right: 4, bottom: 0, left: 0 }}>
-                <CartesianGrid stroke="#E4EBF0" vertical={false} />
-                <XAxis dataKey="km" tick={{ fontSize: 11, fill: '#61788D' }} />
-                <YAxis
-                  ticks={elevationTicks.map((tick) => tick.value)}
-                  tick={axisTick(elevationTicks)}
-                  width={64}
-                  tickLine={false}
-                  axisLine={false}
-                  domain={['dataMin - 5', 'dataMax + 5']}
-                />
-                <Tooltip
-                  formatter={(_value, _name, item) =>
-                    (item?.payload as { elevationText?: string } | undefined)?.elevationText ?? ''
-                  }
-                />
-                <Area
-                  type="monotone"
-                  name={t('activity.elevation.heading')}
-                  dataKey="m"
-                  stroke="#3F6E9E"
-                  fill="#D6E6F3"
-                />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
-        ) : null}
-      </section>
+      </div>
 
       {/* -------------------------------------------------- against the plan */}
       {data.plan_line ? (
@@ -426,6 +495,11 @@ export function ActivityPage({ id }: { id: string }) {
 
         {noteOpen ? (
           <div className="mt-2">
+            {saveNote.isError ? (
+              <p role="alert" className="mb-2 text-[13px] text-ink-muted">
+                {t('common.saveFailed')}
+              </p>
+            ) : null}
             <textarea
               value={note}
               rows={3}
@@ -478,12 +552,12 @@ export function ActivityPage({ id }: { id: string }) {
         is only where it can deliver something.
       */}
       <div className="mt-3 flex flex-wrap gap-4 pb-2">
-        <a
-          href={`/compare/${data.id}`}
+        <Link
+          to={`/compare/${data.id}`}
           className="tap-inline text-[13px] font-medium text-brand-600 underline underline-offset-2"
         >
           {t('runs.compareWith')}
-        </a>
+        </Link>
         <button
           type="button"
           className="tap-inline text-[13px] font-medium text-ink-muted underline underline-offset-2"

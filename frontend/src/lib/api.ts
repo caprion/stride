@@ -26,6 +26,7 @@ import type {
   SettingsDeleteResult,
   SettingsExportResult,
   SettingsState,
+  SleepDays,
   SyncStatus,
   SyncRunResult,
   TodayInsight,
@@ -230,7 +231,8 @@ export const api = {
   vitals: (params?: { date?: string; days?: number }) =>
     get<VitalsSnapshot>(ROUTES.physiologyVitals, params),
   physiologyDaily: () => get<unknown>(ROUTES.physiologyDaily),
-  physiologySleep: () => get<unknown>(ROUTES.physiologySleep),
+  physiologySleep: (params?: { from?: string; to?: string }) =>
+    get<SleepDays>(ROUTES.physiologySleep, params),
   physiologyHrv: () => get<unknown>(ROUTES.physiologyHrv),
   physiologyLatest: () => get<unknown>(ROUTES.physiologyLatest),
   physiologySources: () => get<unknown>(ROUTES.physiologySources),
@@ -277,8 +279,11 @@ export const api = {
   healthDaily: () => get<HealthDaily>(ROUTES.healthDaily),
 
   syncStatus: () => get<SyncStatus>(ROUTES.syncStatus),
-  syncRun: async (): Promise<unknown> => {
-    const result = await post<SyncRunResult | { queued: true }>(ROUTES.syncRun)
+  syncRun: async (backfill = false): Promise<unknown> => {
+    const result = await post<SyncRunResult | { queued: true }>(
+      ROUTES.syncRun,
+      backfill ? { backfill: true } : undefined,
+    )
     if (!('queued' in result) && result.failure) {
       const failure = result.failure
       const kind = API_ERROR_KINDS.find((kind) => kind === failure.code) ?? 'unknown'

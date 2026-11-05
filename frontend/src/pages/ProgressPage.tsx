@@ -11,6 +11,7 @@ import { useState } from 'react'
 import {
   Bar,
   BarChart,
+  Cell,
   CartesianGrid,
   Line,
   LineChart,
@@ -27,6 +28,7 @@ import { useStaleness } from '../lib/staleness'
 import { t } from '../i18n'
 import { axisTick } from '../components/ChartAxis'
 import { PageHeader } from '../ui/layout/PageHeader'
+import { QueryError } from '../components/QueryError'
 
 /** A chart card with a fixed, legible height. */
 function ChartCard({ title, children }: { title: string; children: React.ReactNode }) {
@@ -55,7 +57,7 @@ export function ProgressPage() {
   const [range, setRange] = useState<number>(12)
   const data = progress.data
 
-  if (progress.isError) {
+  if (progress.isError && !data) {
     return (
       <div>
         <PageHeader title={t('progress.heading')} />
@@ -139,13 +141,26 @@ export function ProgressPage() {
     <div>
       <PageHeader
         title={t('progress.heading')}
-        meta={stale ? <span className="text-ink-faint">{stale}</span> : null}
+        meta={
+          <>
+            {t('progress.question')}
+            {stale ? <span className="ml-2 text-ink-faint">{stale}</span> : null}
+          </>
+        }
       />
+      {progress.isError ? (
+        <QueryError
+          retry={() => {
+            void progress.refetch()
+          }}
+        />
+      ) : null}
 
       {/* ------------------------------------------------- the headline */}
       <section className="card px-4 py-3" data-testid="progress-headline">
         {/* The headline is the core's sentence (core-contract §8). */}
         <p className="text-[19px] font-semibold leading-tight text-ink">{data.headline}</p>
+        <p className="mt-1 text-[13px] text-ink-muted">{t('progress.scope')}</p>
         {data.headline_note ? (
           <p className="mt-0.5 text-[13.5px] text-ink-muted">{data.headline_note}</p>
         ) : null}
@@ -191,6 +206,18 @@ export function ProgressPage() {
           <div style={{ width: '100%', height: 180 }}>
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={volume} margin={{ top: 4, right: 4, bottom: 0, left: -18 }}>
+                <defs>
+                  <pattern
+                    id="partial-week"
+                    width="6"
+                    height="6"
+                    patternUnits="userSpaceOnUse"
+                    patternTransform="rotate(45)"
+                  >
+                    <rect width="6" height="6" fill="#D6E6F3" />
+                    <rect width="3" height="6" fill="#1E5E96" />
+                  </pattern>
+                </defs>
                 <CartesianGrid stroke="#E4EBF0" vertical={false} />
                 <XAxis
                   dataKey="label"
@@ -203,7 +230,7 @@ export function ProgressPage() {
                   width={64}
                   tickLine={false}
                   axisLine={false}
-                  domain={['dataMin - 2', 'dataMax + 2']}
+                  domain={[0, 'auto']}
                 />
                 <Tooltip
                   formatter={(_value, _name, item) =>
@@ -217,10 +244,23 @@ export function ProgressPage() {
                     strokeDasharray="4 3"
                   />
                 ) : null}
-                <Bar name={t('vital.distance')} dataKey="km" fill="#1E5E96" />
+                <Bar
+                  name={t('vital.distance')}
+                  dataKey="km"
+                  fill="#1E5E96"
+                  isAnimationActive={false}
+                >
+                  {volume.map((week, index) => (
+                    <Cell
+                      key={week.label}
+                      fill={index === volume.length - 1 ? 'url(#partial-week)' : '#1E5E96'}
+                    />
+                  ))}
+                </Bar>
               </BarChart>
             </ResponsiveContainer>
           </div>
+          <p className="mt-2 text-[12px] text-ink-muted">{t('progress.partial')}</p>
           {/* The band, named below the chart rather than inside it: a
               label on the line itself is cut off on a narrow screen. */}
           {data.typical_week !== null ? (
@@ -254,7 +294,10 @@ export function ProgressPage() {
                     const payload = item?.payload as
                       { paceText?: string | null; hrText?: string | null } | undefined
                     // The tooltip shows the core's words.
-                    return payload?.paceText ?? ''
+                    return t('progress.paceHr', {
+                      pace: payload?.paceText ?? '',
+                      hr: payload?.hrText ?? '',
+                    })
                   }}
                 />
                 <Line
@@ -269,6 +312,7 @@ export function ProgressPage() {
               </LineChart>
             </ResponsiveContainer>
           </div>
+          <p className="mt-2 text-[12px] text-ink-muted">{t('progress.paceNote')}</p>
         </ChartCard>
 
         {/* ------------------------------------------ bests & milestones */}
@@ -333,6 +377,7 @@ export function ProgressPage() {
           n: data.sessions_per_week?.text ?? formatCount(null),
         })}
       </p>
+      <p className="mt-1 text-[12px] text-ink-muted">{t('progress.averageNote')}</p>
     </div>
   )
 }

@@ -183,6 +183,9 @@ pub struct FitActivity {
     pub lap_bounds: Vec<f64>,
     /// The first and last GPS points.
     pub geo_points: GeoPoints,
+    /// Every valid GPS point in file order, retained for on-demand route rendering.
+    #[serde(skip)]
+    pub route_points: Vec<[f64; 2]>,
 }
 
 /// The failures the FIT decoder can report.
@@ -1140,6 +1143,7 @@ impl Importer<'_> {
             laps,
             lap_bounds,
             geo_points: geo_points(&self.geo),
+            route_points: self.geo,
         })
     }
 }

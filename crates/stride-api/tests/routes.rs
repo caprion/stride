@@ -96,6 +96,51 @@ fn the_fit_route_serves_the_original_file_byte_for_byte() {
 }
 
 #[test]
+fn activity_routes_span_the_stored_fit_with_bounded_points_and_no_fake_gps() {
+    let config = stride_api::Config {
+        max_samples_in_response: 8,
+        ..Default::default()
+    };
+    let harness = common::Harness::with_config("route-full-gps", config);
+    for file in ["hr_gps_run.fit", "treadmill.fit"] {
+        let fit = common::corpus_fit(file);
+        let decoded = stride_ingest::decode_fit(&fit, file).unwrap();
+        let mut run = common::run(file, "2026-05-10", 10_000.0, 3_000.0);
+        run.fit_blob = fit;
+        let id = harness.write_run(run);
+        let body = harness.ok_get(&format!("/activities/{id}"));
+        let points = body["geo_points"].as_array().unwrap();
+        assert_eq!(points.len(), decoded.route_points.len().min(8));
+        if file == "hr_gps_run.fit" {
+            assert!(
+                points.len() > 6,
+                "the route cannot be just its endpoint fragments"
+            );
+            for (actual, source) in [
+                (
+                    points.first().unwrap(),
+                    decoded.route_points.first().unwrap(),
+                ),
+                (points.last().unwrap(), decoded.route_points.last().unwrap()),
+            ] {
+                assert_eq!(
+                    actual,
+                    &serde_json::json!([
+                        stride_core::units::round_gps_degrees(source[0]),
+                        stride_core::units::round_gps_degrees(source[1])
+                    ])
+                );
+            }
+        } else {
+            assert!(
+                points.is_empty(),
+                "a treadmill activity cannot gain a fictional route"
+            );
+        }
+    }
+}
+
+#[test]
 fn the_fit_route_needs_a_run() {
     let harness = common::Harness::empty("route-activity-fit-missing");
     let answer = harness.router.call("GET", "/activities/9999/fit", None);
@@ -443,8 +488,13 @@ fn vital_history_uses_calendar_days_and_keeps_missing_dates() {
     assert_eq!(history.len(), 7);
     assert_eq!(history[0]["date"], "2026-05-05");
     assert!(history[0]["value"].is_null());
+    assert!(history[0]["text"].is_null());
     assert_eq!(history[6]["date"], "2026-05-11");
     assert!(history[6]["value"].is_number());
+    assert_eq!(
+        history[6]["text"],
+        stride_core::units::render_duration(history[6]["value"].as_f64()).unwrap()
+    );
     assert_eq!(snapshot["date"], "2026-05-11");
     assert_eq!(
         harness
@@ -525,6 +575,21 @@ fn insights_progress_answers_with_the_progress() {
     assert!(body["weekly_volume"].is_array());
     assert!(body["consistency"].is_array());
     assert!(body["bests"].is_array());
+    assert_eq!(body["headline"], "Your saved activity history");
+    assert!(body["headline_note"].is_null());
+    assert!(body["sessions_per_week"]["raw"].as_f64().is_some());
+    assert!(!body["sessions_per_week"]["text"]
+        .as_str()
+        .unwrap()
+        .is_empty());
+}
+
+#[test]
+fn empty_progress_does_not_invent_running_history() {
+    let harness = common::Harness::empty("progress-empty-descriptive");
+    let body = harness.ok_get("/insights/progress");
+    assert_eq!(body["headline"], "not enough data yet");
+    assert!(body["sessions_per_week"].is_null());
 }
 
 #[test]

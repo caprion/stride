@@ -296,20 +296,15 @@ describe('the Plan week', () => {
     expect(container.textContent?.toLowerCase()).not.toContain('missed')
   })
 
-  it('names a baseline plan as the source it is', async () => {
+  it('does not imply an active baseline plan when no sessions were inferred', async () => {
     window.history.pushState({}, '', '/?fixtures=baseline')
     const { container } = renderApp('/plan')
     await waitFor(() =>
-      expect(container.querySelector('[data-testid="plan-week"]')).toBeTruthy(),
+      expect(container.querySelector('[data-testid="plan-none"]')).toBeTruthy(),
     )
 
-    expect(container.querySelector('[data-testid="plan-source"]')?.textContent).toContain(
-      'Baseline (inferred from your history)',
-    )
-    // A baseline is not a prescription, so it never says "not done".
-    expect(
-      container.querySelector('[data-testid="plan-count-not-done"]')?.textContent,
-    ).toContain('0 not done')
+    expect(container.querySelector('[data-testid="plan-source"]')).toBeNull()
+    expect(container.textContent).not.toContain('0 of 0')
   })
 
   it('says when there is no plan at all', async () => {

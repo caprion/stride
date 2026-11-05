@@ -171,7 +171,7 @@ pub struct Entry {
 }
 
 /// The catalogue.
-pub const CATALOGUE: [Entry; 103] = [
+pub const CATALOGUE: [Entry; 104] = [
     // The vitals.
     Entry {
         id: "vital.sleep.label",
@@ -819,6 +819,12 @@ pub const CATALOGUE: [Entry; 103] = [
         kind: StringKind::Status,
         role: None,
         template: "not enough data yet",
+    },
+    Entry {
+        id: "status.saved_running_history",
+        kind: StringKind::Status,
+        role: None,
+        template: "Your saved activity history",
     },
     Entry {
         // The version's label. The version itself is not the core's business —

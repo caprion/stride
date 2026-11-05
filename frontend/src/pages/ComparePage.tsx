@@ -17,6 +17,7 @@
 
 import { useQuery } from '@tanstack/react-query'
 import { useMemo, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import {
   Line,
   LineChart,
@@ -36,6 +37,7 @@ import type { CompareCandidate, CompareMetric, CompareSeriesPoint } from '../lib
 import { t } from '../i18n'
 import { axisTick } from '../components/ChartAxis'
 import { PageHeader } from '../ui/layout/PageHeader'
+import { QueryError } from '../components/QueryError'
 
 /** One row of the diff: the metric, A, B and the delta — the core's words. */
 function MetricRow({ metric }: { metric: CompareMetric }) {
@@ -61,7 +63,7 @@ function MetricRow({ metric }: { metric: CompareMetric }) {
 function EffortChart({ series, name }: { series: CompareSeriesPoint[]; name: string }) {
   const data = series.map((point) => ({
     // The chart's own scale: minutes into the run.
-    minute: Math.round(point.offset_s / 60),
+    minute: point.offset_s / 60,
     hr: point.heart_rate?.raw ?? null,
     hrText: point.heart_rate?.text ?? null,
     pace: point.pace?.raw ?? null,
@@ -83,7 +85,13 @@ function EffortChart({ series, name }: { series: CompareSeriesPoint[]; name: str
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={data} margin={{ top: 4, right: 4, bottom: 0, left: 0 }}>
             <CartesianGrid stroke="#E4EBF0" vertical={false} />
-            <XAxis dataKey="minute" tick={{ fontSize: 11, fill: '#61788D' }} />
+            <XAxis
+              dataKey="minute"
+              type="number"
+              domain={[0, 'dataMax']}
+              tickCount={5}
+              tick={{ fontSize: 11, fill: '#61788D' }}
+            />
             <YAxis
               ticks={ticks.map((tick) => tick.value)}
               tick={axisTick(ticks)}
@@ -150,9 +158,10 @@ function rankCandidates(
 }
 
 export function ComparePage({ id }: { id: string }) {
+  const [params] = useSearchParams()
   const [swapped, setSwapped] = useState(false)
   const [chart, setChart] = useState<'a' | 'b'>('a')
-  const [chosen, setChosen] = useState<string | null>(null)
+  const [chosen, setChosen] = useState<string | null>(params.get('with'))
   const [picking, setPicking] = useState(false)
   const stale = useStaleness()
 
@@ -162,7 +171,7 @@ export function ComparePage({ id }: { id: string }) {
    * The candidates route is the one that knows them; the app asks.
    */
   const candidates = useQuery({
-    queryKey: ['compare-candidates'],
+    queryKey: ['compare-candidates', id],
     queryFn: () => api.compareCandidates(id),
   })
 
@@ -189,9 +198,7 @@ export function ComparePage({ id }: { id: string }) {
     if (!current || !partner) return null
     const earlier = current.date <= partner.date ? current : partner
     const later = current.date <= partner.date ? partner : current
-    return swapped
-      ? { a: later.id, b: earlier.id }
-      : { a: earlier.id, b: later.id }
+    return swapped ? { a: later.id, b: earlier.id } : { a: earlier.id, b: later.id }
   }, [current, partner, swapped])
 
   const comparison = useQuery({
@@ -201,6 +208,30 @@ export function ComparePage({ id }: { id: string }) {
   })
   const data = comparison.data
 
+  if (candidates.isError || comparison.isError) {
+    return (
+      <>
+        <PageHeader title={t('compare.heading')} />
+        <QueryError
+          retry={() => {
+            void candidates.refetch()
+            if (pair) void comparison.refetch()
+          }}
+        />
+      </>
+    )
+  }
+  if (candidates.isSuccess && (!current || !partner)) {
+    return (
+      <>
+        <PageHeader title={t('compare.heading')} />
+        <section className="card px-4 py-6" data-testid="compare-none">
+          <p>{t('compare.state.none')}</p>
+          <p className="mt-1 text-[13px] text-ink-muted">{t('compare.state.noneBody')}</p>
+        </section>
+      </>
+    )
+  }
   if (!data) {
     return (
       <div>
@@ -327,13 +358,19 @@ export function ComparePage({ id }: { id: string }) {
           </div>
         </div>
         <div className="compare-charts grid grid-cols-1 gap-3">
-          <div className={chart === 'a' ? '' : 'compare-hidden'} data-testid="compare-chart-a-panel">
+          <div
+            className={chart === 'a' ? '' : 'compare-hidden'}
+            data-testid="compare-chart-a-panel"
+          >
             <EffortChart
               series={chartSeries.a}
               name={`${t('compare.column.a')} · ${t('vital.heartRate')}`}
             />
           </div>
-          <div className={chart === 'b' ? '' : 'compare-hidden'} data-testid="compare-chart-b-panel">
+          <div
+            className={chart === 'b' ? '' : 'compare-hidden'}
+            data-testid="compare-chart-b-panel"
+          >
             <EffortChart
               series={chartSeries.b}
               name={`${t('compare.column.b')} · ${t('vital.heartRate')}`}

@@ -3,6 +3,7 @@ import { t } from '../i18n'
 import { formatDateShort } from '../lib/format'
 import { Sparkline } from './Sparkline'
 import { VitalRow } from './VitalRow'
+import { HistoryChart } from './HistoryChart'
 
 const signals = [
   { key: 'sleep', label: 'vital.sleep' },
@@ -14,10 +15,12 @@ export function VitalReadings({
   snapshot,
   layout,
   muted = false,
+  onDate,
 }: {
   snapshot: VitalsSnapshot
   layout: 'cards' | 'rows'
   muted?: boolean
+  onDate?: (date: string) => void
 }) {
   const readings = signals.map(({ key, label }) => {
     const vital = snapshot.vitals.find((reading) => reading.key === key)
@@ -45,22 +48,32 @@ export function VitalReadings({
           {available.map((reading) => {
             const first = reading.history[0]
             const last = reading.history[reading.history.length - 1]
-            const chart = reading.hasHistory ? (
-              <div className="mt-2">
-                <Sparkline
-                  values={reading.history.map((point) => point.value)}
+            const chart =
+              reading.hasHistory && layout === 'cards' ? (
+                <HistoryChart
+                  history={reading.history}
                   band={reading.vital?.band ?? null}
-                  height={layout === 'cards' ? 44 : undefined}
-                  label={t('body.history.label', { n: reading.history.length })}
+                  selected={snapshot.date}
+                  onDate={onDate}
                 />
-                {(layout === 'cards' || reading.vital?.value_text == null) && first && last ? (
-                  <p className="mt-2 flex justify-between gap-2 text-[11px] text-ink-muted">
-                    <span>{formatDateShort(first.date)}</span>
-                    <span>{formatDateShort(last.date)}</span>
-                  </p>
-                ) : null}
-              </div>
-            ) : null
+              ) : reading.hasHistory ? (
+                <div className="mt-2">
+                  <Sparkline
+                    values={reading.history.map((point) => point.value)}
+                    band={reading.vital?.band ?? null}
+                    height={layout === 'cards' ? 44 : undefined}
+                    label={t('body.history.label', { n: reading.history.length })}
+                  />
+                  {(layout === 'cards' || reading.vital?.value_text == null) &&
+                  first &&
+                  last ? (
+                    <p className="mt-2 flex justify-between gap-2 text-[11px] text-ink-muted">
+                      <span>{formatDateShort(first.date)}</span>
+                      <span>{formatDateShort(last.date)}</span>
+                    </p>
+                  ) : null}
+                </div>
+              ) : null
             return (
               <div key={reading.key} className={layout === 'cards' ? 'card px-4 py-2' : ''}>
                 {reading.vital ? (

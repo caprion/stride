@@ -349,6 +349,73 @@ impl PullHarness {
 }
 
 #[test]
+fn a_legacy_activity_cursor_survives_status_and_sync() {
+    let (fit, _, _) = decoded_truth();
+    let harness = PullHarness::new(Vec::new(), fit);
+    let legacy_id = "12345678901234567890";
+    let previous = instant() - chrono::Duration::days(1);
+    harness
+        .store
+        .write_sync_state(&stride_store::SyncState {
+            kind: "activities".to_string(),
+            cursor: Some(legacy_id.to_string()),
+            last_success_at: Some(previous),
+            token_expires_at: None,
+            updated_at: previous,
+        })
+        .unwrap();
+
+    let status = harness.router.call("GET", "/sync/status", None);
+    assert_eq!(status.status, 200);
+    assert_eq!(status.body["cursor"], legacy_id);
+    assert_eq!(status.body["pulled"], 0);
+    assert!(status.body["history"].is_null());
+    assert!(harness.garmin.requests().is_empty());
+    let unchanged = harness.store.sync_state("activities").unwrap().unwrap();
+    assert_eq!(unchanged.cursor.as_deref(), Some(legacy_id));
+    assert_eq!(unchanged.last_success_at, Some(previous));
+
+    let pulled = harness
+        .router
+        .call("POST", "/sync/run", Some("{\"days\":1}"));
+    assert_eq!(pulled.status, 200);
+    let state = harness.store.sync_state("activities").unwrap().unwrap();
+    let cursor: Value = serde_json::from_str(state.cursor.as_deref().unwrap()).unwrap();
+    assert_eq!(cursor["newest"], legacy_id);
+    assert!(cursor["history"].is_object());
+    assert_eq!(harness.status()["cursor"], legacy_id);
+}
+
+#[test]
+fn a_malformed_activity_cursor_is_not_silently_reset() {
+    let (fit, _, _) = decoded_truth();
+    let harness = PullHarness::new(Vec::new(), fit);
+    for cursor in ["not-an-id", "{}", "-123", "12.3"] {
+        harness
+            .store
+            .write_sync_state(&stride_store::SyncState {
+                kind: "activities".to_string(),
+                cursor: Some(cursor.to_string()),
+                last_success_at: Some(instant()),
+                token_expires_at: None,
+                updated_at: instant(),
+            })
+            .unwrap();
+        for (method, path, body) in [
+            ("GET", "/sync/status", None),
+            ("POST", "/sync/run", Some("{\"days\":1}")),
+        ] {
+            let response = harness.router.call(method, path, body);
+            assert_eq!(response.status, 500);
+            assert_eq!(response.body["detail"], "the sync cursor could not be read");
+        }
+        let state = harness.store.sync_state("activities").unwrap().unwrap();
+        assert_eq!(state.cursor.as_deref(), Some(cursor));
+    }
+    assert!(harness.garmin.requests().is_empty());
+}
+
+#[test]
 fn a_known_run_is_not_downloaded_twice() {
     let (fit, distance, start) = decoded_truth();
     let harness = PullHarness::new(

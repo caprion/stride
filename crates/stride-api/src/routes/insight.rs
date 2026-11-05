@@ -174,15 +174,15 @@ pub fn progress(api: &Api, request: &Request) -> ApiResult<Value> {
     };
 
     // Independent weekly medians are descriptive, not matched-effort evidence.
-    let headline = statement::progress_headline(None);
-    let headline_note = headline.evidence.clone();
+    let headline = if weekly_volume.is_empty() {
+        statement::progress_headline(None).headline
+    } else {
+        stride_core::strings::text("status.saved_running_history")
+            .unwrap_or_default()
+            .to_string()
+    };
 
     // The sessions a week, as the core renders them.
-    //
-    // The average of a count has no renderer in the core yet — the core
-    // renders a count as a whole number, and an average of 3.4 sessions is
-    // not a whole number of sessions — so the field is there and the value
-    // is absent until the core grows one.
     let sessions_per_week = if consistency.is_empty() {
         None
     } else {
@@ -194,8 +194,8 @@ pub fn progress(api: &Api, request: &Request) -> ApiResult<Value> {
     let response = ProgressInsight {
         generated_at: api.generated_at(),
         date: current.to_iso(),
-        headline: headline.headline,
-        headline_note,
+        headline,
+        headline_note: None,
         weekly_volume,
         typical_week: render::distance(typical_week),
         pace_at_hr,

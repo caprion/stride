@@ -131,6 +131,12 @@ pub fn format_whole(value: f64) -> String {
     format!("{rounded}")
 }
 
+/// An average count, to one decimal using the shared half-even rule.
+pub fn render_average(value: Option<f64>) -> Option<String> {
+    let value = value.filter(|value| value.is_finite() && *value >= 0.0)?;
+    Some(format!("{:.1}", round_half_even(value, 1)))
+}
+
 /// A number truncated to an integer: "148" from 148.7.
 ///
 /// Contract §3: a heart rate is **truncated**, never rounded — 148.7 is 148.
@@ -353,6 +359,15 @@ pub fn ordinal(count: usize) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn averages_preserve_fractional_counts_without_inventing_missing_values() {
+        assert_eq!(render_average(Some(3.25)), Some("3.2".to_string()));
+        assert_eq!(render_average(Some(3.75)), Some("3.8".to_string()));
+        for value in [None, Some(f64::NAN), Some(f64::INFINITY), Some(-1.0)] {
+            assert_eq!(render_average(value), None);
+        }
+    }
 
     #[test]
     fn the_rendered_values_are_the_apps_own_forms() {

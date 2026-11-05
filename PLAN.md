@@ -47,6 +47,34 @@ This approval is not permission to publish, install, migrate or sync production 
   gaps. Today shows recorded-session dates, not inferred rest days. Progress uses
   the core's calendar anchor and offers 52 weeks. Android refreshes the current
   phone offset before requests and sync without reopening the store.
+- Run-detail routes are decoded from every valid position in the stored FIT,
+  bounded by the response sample limit across the full route with endpoints
+  retained. The import summary's first/last GPS metadata is not the route.
+  The GPS outline renders locally without tile requests. An explicit Street map
+  action enables OpenStreetMap tiles with attribution and disclosure of the
+  viewed area, pan/zoom and automatic local-outline fallback on tile failure.
+
+### Runner-first interaction refinement (2026-11-05)
+
+The user accepted Stitch's compact Azure style as a design reference, not its
+invented measurements, diagnostics or unverified capability claims. Apply the
+shared responsive UI to the signed Android testing APK first; assess PWA
+delivery separately afterwards. The same destinations remain available at phone
+and desktop widths.
+
+Body puts selected-date sleep stages inline, with dated charts and explicit
+missing observations. Today and run detail reuse that presentation, with the
+run's night matched to its date. Stages do not establish sleep quality; do not
+invent a score or chronological timeline. Pace and heart rate share an elapsed
+time cursor; distance-based elevation and untimed route geometry remain separate.
+
+Runs supports an explicit two-run comparison tray and filters scoped to loaded
+pages. Progress describes saved activity history, marks the partial current week
+and distinguishes separate weekly medians from matched-effort evidence. Average
+session counts are scoped to recorded weeks. Data & connection leads with
+local storage and actual Garmin status; diagnostics are secondary and connection
+failures are not interpreted as disconnection. Saving and loading failures remain
+visible and do not claim success or replace saved records with invented emptiness.
 
 The user authorized publishing a signed GitHub pre-release for physical-phone
 testing. This does not establish device acceptance or promote the build to stable.

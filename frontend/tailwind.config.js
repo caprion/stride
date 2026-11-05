@@ -70,7 +70,7 @@ export default {
         nav: '0 1px 0 rgba(11,27,39,0.08)',
       },
       borderRadius: {
-        card: '14px',
+        card: '9px',
       },
       keyframes: {
         'fade-up': {

@@ -496,7 +496,7 @@
       ],
       "date": "2026-05-13",
       "generated_at": "2026-05-13T06:30:00Z",
-      "headline": "not enough data yet",
+      "headline": "Your saved activity history",
       "headline_note": null,
       "pace_at_hr": [
         {
@@ -522,7 +522,10 @@
           "week_start": "2026-05-04"
         }
       ],
-      "sessions_per_week": null,
+      "sessions_per_week": {
+        "raw": 3,
+        "text": "3.0"
+      },
       "typical_week": {
         "raw": 29200,
         "text": "29.2 km"
@@ -717,6 +720,341 @@
         "sessions": 0
       }
     },
+    "/physiology/sleep": {
+      "days": [
+        {
+          "awake": null,
+          "date": "2026-04-14",
+          "deep_sleep": null,
+          "light_sleep": null,
+          "rem_sleep": null,
+          "sleep": {
+            "raw": 26400,
+            "text": "7 h 20 m"
+          }
+        },
+        {
+          "awake": null,
+          "date": "2026-04-15",
+          "deep_sleep": null,
+          "light_sleep": null,
+          "rem_sleep": null,
+          "sleep": {
+            "raw": 27600,
+            "text": "7 h 40 m"
+          }
+        },
+        {
+          "awake": null,
+          "date": "2026-04-16",
+          "deep_sleep": null,
+          "light_sleep": null,
+          "rem_sleep": null,
+          "sleep": {
+            "raw": 25200,
+            "text": "7 h"
+          }
+        },
+        {
+          "awake": null,
+          "date": "2026-04-17",
+          "deep_sleep": null,
+          "light_sleep": null,
+          "rem_sleep": null,
+          "sleep": {
+            "raw": 28800,
+            "text": "8 h"
+          }
+        },
+        {
+          "awake": null,
+          "date": "2026-04-18",
+          "deep_sleep": null,
+          "light_sleep": null,
+          "rem_sleep": null,
+          "sleep": {
+            "raw": 26400,
+            "text": "7 h 20 m"
+          }
+        },
+        {
+          "awake": null,
+          "date": "2026-04-19",
+          "deep_sleep": null,
+          "light_sleep": null,
+          "rem_sleep": null,
+          "sleep": {
+            "raw": 24000,
+            "text": "6 h 40 m"
+          }
+        },
+        {
+          "awake": null,
+          "date": "2026-04-20",
+          "deep_sleep": null,
+          "light_sleep": null,
+          "rem_sleep": null,
+          "sleep": {
+            "raw": 27600,
+            "text": "7 h 40 m"
+          }
+        },
+        {
+          "awake": null,
+          "date": "2026-04-21",
+          "deep_sleep": null,
+          "light_sleep": null,
+          "rem_sleep": null,
+          "sleep": {
+            "raw": 25200,
+            "text": "7 h"
+          }
+        },
+        {
+          "awake": null,
+          "date": "2026-04-22",
+          "deep_sleep": null,
+          "light_sleep": null,
+          "rem_sleep": null,
+          "sleep": {
+            "raw": 30000,
+            "text": "8 h 20 m"
+          }
+        },
+        {
+          "awake": null,
+          "date": "2026-04-23",
+          "deep_sleep": null,
+          "light_sleep": null,
+          "rem_sleep": null,
+          "sleep": {
+            "raw": 26400,
+            "text": "7 h 20 m"
+          }
+        },
+        {
+          "awake": null,
+          "date": "2026-04-24",
+          "deep_sleep": null,
+          "light_sleep": null,
+          "rem_sleep": null,
+          "sleep": {
+            "raw": 24000,
+            "text": "6 h 40 m"
+          }
+        },
+        {
+          "awake": null,
+          "date": "2026-04-25",
+          "deep_sleep": null,
+          "light_sleep": null,
+          "rem_sleep": null,
+          "sleep": {
+            "raw": 27600,
+            "text": "7 h 40 m"
+          }
+        },
+        {
+          "awake": null,
+          "date": "2026-04-26",
+          "deep_sleep": null,
+          "light_sleep": null,
+          "rem_sleep": null,
+          "sleep": {
+            "raw": 22800,
+            "text": "6 h 20 m"
+          }
+        },
+        {
+          "awake": null,
+          "date": "2026-04-27",
+          "deep_sleep": null,
+          "light_sleep": null,
+          "rem_sleep": null,
+          "sleep": {
+            "raw": 28800,
+            "text": "8 h"
+          }
+        },
+        {
+          "awake": null,
+          "date": "2026-04-28",
+          "deep_sleep": null,
+          "light_sleep": null,
+          "rem_sleep": null,
+          "sleep": {
+            "raw": 26400,
+            "text": "7 h 20 m"
+          }
+        },
+        {
+          "awake": null,
+          "date": "2026-04-29",
+          "deep_sleep": null,
+          "light_sleep": null,
+          "rem_sleep": null,
+          "sleep": {
+            "raw": 25200,
+            "text": "7 h"
+          }
+        },
+        {
+          "awake": null,
+          "date": "2026-04-30",
+          "deep_sleep": null,
+          "light_sleep": null,
+          "rem_sleep": null,
+          "sleep": {
+            "raw": 24000,
+            "text": "6 h 40 m"
+          }
+        },
+        {
+          "awake": null,
+          "date": "2026-05-01",
+          "deep_sleep": null,
+          "light_sleep": null,
+          "rem_sleep": null,
+          "sleep": {
+            "raw": 30000,
+            "text": "8 h 20 m"
+          }
+        },
+        {
+          "awake": null,
+          "date": "2026-05-02",
+          "deep_sleep": null,
+          "light_sleep": null,
+          "rem_sleep": null,
+          "sleep": {
+            "raw": 26400,
+            "text": "7 h 20 m"
+          }
+        },
+        {
+          "awake": null,
+          "date": "2026-05-03",
+          "deep_sleep": null,
+          "light_sleep": null,
+          "rem_sleep": null,
+          "sleep": {
+            "raw": 25200,
+            "text": "7 h"
+          }
+        },
+        {
+          "awake": null,
+          "date": "2026-05-04",
+          "deep_sleep": null,
+          "light_sleep": null,
+          "rem_sleep": null,
+          "sleep": {
+            "raw": 28800,
+            "text": "8 h"
+          }
+        },
+        {
+          "awake": null,
+          "date": "2026-05-05",
+          "deep_sleep": null,
+          "light_sleep": null,
+          "rem_sleep": null,
+          "sleep": {
+            "raw": 21600,
+            "text": "6 h"
+          }
+        },
+        {
+          "awake": null,
+          "date": "2026-05-06",
+          "deep_sleep": null,
+          "light_sleep": null,
+          "rem_sleep": null,
+          "sleep": {
+            "raw": 24000,
+            "text": "6 h 40 m"
+          }
+        },
+        {
+          "awake": null,
+          "date": "2026-05-07",
+          "deep_sleep": null,
+          "light_sleep": null,
+          "rem_sleep": null,
+          "sleep": {
+            "raw": 31200,
+            "text": "8 h 40 m"
+          }
+        },
+        {
+          "awake": null,
+          "date": "2026-05-08",
+          "deep_sleep": null,
+          "light_sleep": null,
+          "rem_sleep": null,
+          "sleep": {
+            "raw": 26400,
+            "text": "7 h 20 m"
+          }
+        },
+        {
+          "awake": null,
+          "date": "2026-05-09",
+          "deep_sleep": null,
+          "light_sleep": null,
+          "rem_sleep": null,
+          "sleep": {
+            "raw": 25200,
+            "text": "7 h"
+          }
+        },
+        {
+          "awake": null,
+          "date": "2026-05-10",
+          "deep_sleep": null,
+          "light_sleep": null,
+          "rem_sleep": null,
+          "sleep": {
+            "raw": 24600,
+            "text": "6 h 50 m"
+          }
+        },
+        {
+          "awake": null,
+          "date": "2026-05-11",
+          "deep_sleep": null,
+          "light_sleep": null,
+          "rem_sleep": null,
+          "sleep": {
+            "raw": 23800,
+            "text": "6 h 37 m"
+          }
+        },
+        {
+          "awake": null,
+          "date": "2026-05-12",
+          "deep_sleep": null,
+          "light_sleep": null,
+          "rem_sleep": null,
+          "sleep": {
+            "raw": 23000,
+            "text": "6 h 23 m"
+          }
+        },
+        {
+          "awake": null,
+          "date": "2026-05-13",
+          "deep_sleep": null,
+          "light_sleep": null,
+          "rem_sleep": null,
+          "sleep": {
+            "raw": 22200,
+            "text": "6 h 10 m"
+          }
+        }
+      ],
+      "generated_at": "2026-05-13T06:30:00Z"
+    },
     "/physiology/vitals": {
       "date": "2026-05-13",
       "generated_at": "2026-05-13T06:30:00Z",
@@ -724,366 +1062,456 @@
         "hrv": [
           {
             "date": "2026-04-14",
+            "text": "62 ms",
             "value": 62.0
           },
           {
             "date": "2026-04-15",
+            "text": "66 ms",
             "value": 66.0
           },
           {
             "date": "2026-04-16",
+            "text": "58 ms",
             "value": 58.0
           },
           {
             "date": "2026-04-17",
+            "text": "70 ms",
             "value": 70.0
           },
           {
             "date": "2026-04-18",
+            "text": "62 ms",
             "value": 62.0
           },
           {
             "date": "2026-04-19",
+            "text": "54 ms",
             "value": 54.0
           },
           {
             "date": "2026-04-20",
+            "text": "66 ms",
             "value": 66.0
           },
           {
             "date": "2026-04-21",
+            "text": "58 ms",
             "value": 58.0
           },
           {
             "date": "2026-04-22",
+            "text": "74 ms",
             "value": 74.0
           },
           {
             "date": "2026-04-23",
+            "text": "62 ms",
             "value": 62.0
           },
           {
             "date": "2026-04-24",
+            "text": "54 ms",
             "value": 54.0
           },
           {
             "date": "2026-04-25",
+            "text": "66 ms",
             "value": 66.0
           },
           {
             "date": "2026-04-26",
+            "text": "50 ms",
             "value": 50.0
           },
           {
             "date": "2026-04-27",
+            "text": "70 ms",
             "value": 70.0
           },
           {
             "date": "2026-04-28",
+            "text": "62 ms",
             "value": 62.0
           },
           {
             "date": "2026-04-29",
+            "text": "58 ms",
             "value": 58.0
           },
           {
             "date": "2026-04-30",
+            "text": "54 ms",
             "value": 54.0
           },
           {
             "date": "2026-05-01",
+            "text": "74 ms",
             "value": 74.0
           },
           {
             "date": "2026-05-02",
+            "text": "62 ms",
             "value": 62.0
           },
           {
             "date": "2026-05-03",
+            "text": "58 ms",
             "value": 58.0
           },
           {
             "date": "2026-05-04",
+            "text": "66 ms",
             "value": 66.0
           },
           {
             "date": "2026-05-05",
+            "text": "46 ms",
             "value": 46.0
           },
           {
             "date": "2026-05-06",
+            "text": "54 ms",
             "value": 54.0
           },
           {
             "date": "2026-05-07",
+            "text": "78 ms",
             "value": 78.0
           },
           {
             "date": "2026-05-08",
+            "text": "62 ms",
             "value": 62.0
           },
           {
             "date": "2026-05-09",
+            "text": "58 ms",
             "value": 58.0
           },
           {
             "date": "2026-05-10",
+            "text": "58 ms",
             "value": 58.0
           },
           {
             "date": "2026-05-11",
+            "text": "54 ms",
             "value": 54.0
           },
           {
             "date": "2026-05-12",
+            "text": "50 ms",
             "value": 50.0
           },
           {
             "date": "2026-05-13",
+            "text": "48 ms",
             "value": 48.0
           }
         ],
         "resting_hr": [
           {
             "date": "2026-04-14",
+            "text": "58 bpm",
             "value": 58.0
           },
           {
             "date": "2026-04-15",
+            "text": "60 bpm",
             "value": 60.0
           },
           {
             "date": "2026-04-16",
+            "text": "56 bpm",
             "value": 56.0
           },
           {
             "date": "2026-04-17",
+            "text": "62 bpm",
             "value": 62.0
           },
           {
             "date": "2026-04-18",
+            "text": "58 bpm",
             "value": 58.0
           },
           {
             "date": "2026-04-19",
+            "text": "54 bpm",
             "value": 54.0
           },
           {
             "date": "2026-04-20",
+            "text": "60 bpm",
             "value": 60.0
           },
           {
             "date": "2026-04-21",
+            "text": "56 bpm",
             "value": 56.0
           },
           {
             "date": "2026-04-22",
+            "text": "52 bpm",
             "value": 52.0
           },
           {
             "date": "2026-04-23",
+            "text": "58 bpm",
             "value": 58.0
           },
           {
             "date": "2026-04-24",
+            "text": "54 bpm",
             "value": 54.0
           },
           {
             "date": "2026-04-25",
+            "text": "60 bpm",
             "value": 60.0
           },
           {
             "date": "2026-04-26",
+            "text": "52 bpm",
             "value": 52.0
           },
           {
             "date": "2026-04-27",
+            "text": "62 bpm",
             "value": 62.0
           },
           {
             "date": "2026-04-28",
+            "text": "58 bpm",
             "value": 58.0
           },
           {
             "date": "2026-04-29",
+            "text": "56 bpm",
             "value": 56.0
           },
           {
             "date": "2026-04-30",
+            "text": "54 bpm",
             "value": 54.0
           },
           {
             "date": "2026-05-01",
+            "text": "52 bpm",
             "value": 52.0
           },
           {
             "date": "2026-05-02",
+            "text": "58 bpm",
             "value": 58.0
           },
           {
             "date": "2026-05-03",
+            "text": "60 bpm",
             "value": 60.0
           },
           {
             "date": "2026-05-04",
+            "text": "54 bpm",
             "value": 54.0
           },
           {
             "date": "2026-05-05",
+            "text": "52 bpm",
             "value": 52.0
           },
           {
             "date": "2026-05-06",
+            "text": "50 bpm",
             "value": 50.0
           },
           {
             "date": "2026-05-07",
+            "text": "66 bpm",
             "value": 66.0
           },
           {
             "date": "2026-05-08",
+            "text": "58 bpm",
             "value": 58.0
           },
           {
             "date": "2026-05-09",
+            "text": "62 bpm",
             "value": 62.0
           },
           {
             "date": "2026-05-10",
+            "text": "56 bpm",
             "value": 56.0
           },
           {
             "date": "2026-05-11",
+            "text": "52 bpm",
             "value": 52.0
           },
           {
             "date": "2026-05-12",
+            "text": "63 bpm",
             "value": 63.0
           },
           {
             "date": "2026-05-13",
+            "text": "63 bpm",
             "value": 63.0
           }
         ],
         "sleep": [
           {
             "date": "2026-04-14",
+            "text": "7 h 20 m",
             "value": 26400.0
           },
           {
             "date": "2026-04-15",
+            "text": "7 h 40 m",
             "value": 27600.0
           },
           {
             "date": "2026-04-16",
+            "text": "7 h",
             "value": 25200.0
           },
           {
             "date": "2026-04-17",
+            "text": "8 h",
             "value": 28800.0
           },
           {
             "date": "2026-04-18",
+            "text": "7 h 20 m",
             "value": 26400.0
           },
           {
             "date": "2026-04-19",
+            "text": "6 h 40 m",
             "value": 24000.0
           },
           {
             "date": "2026-04-20",
+            "text": "7 h 40 m",
             "value": 27600.0
           },
           {
             "date": "2026-04-21",
+            "text": "7 h",
             "value": 25200.0
           },
           {
             "date": "2026-04-22",
+            "text": "8 h 20 m",
             "value": 30000.0
           },
           {
             "date": "2026-04-23",
+            "text": "7 h 20 m",
             "value": 26400.0
           },
           {
             "date": "2026-04-24",
+            "text": "6 h 40 m",
             "value": 24000.0
           },
           {
             "date": "2026-04-25",
+            "text": "7 h 40 m",
             "value": 27600.0
           },
           {
             "date": "2026-04-26",
+            "text": "6 h 20 m",
             "value": 22800.0
           },
           {
             "date": "2026-04-27",
+            "text": "8 h",
             "value": 28800.0
           },
           {
             "date": "2026-04-28",
+            "text": "7 h 20 m",
             "value": 26400.0
           },
           {
             "date": "2026-04-29",
+            "text": "7 h",
             "value": 25200.0
           },
           {
             "date": "2026-04-30",
+            "text": "6 h 40 m",
             "value": 24000.0
           },
           {
             "date": "2026-05-01",
+            "text": "8 h 20 m",
             "value": 30000.0
           },
           {
             "date": "2026-05-02",
+            "text": "7 h 20 m",
             "value": 26400.0
           },
           {
             "date": "2026-05-03",
+            "text": "7 h",
             "value": 25200.0
           },
           {
             "date": "2026-05-04",
+            "text": "8 h",
             "value": 28800.0
           },
           {
             "date": "2026-05-05",
+            "text": "6 h",
             "value": 21600.0
           },
           {
             "date": "2026-05-06",
+            "text": "6 h 40 m",
             "value": 24000.0
           },
           {
             "date": "2026-05-07",
+            "text": "8 h 40 m",
             "value": 31200.0
           },
           {
             "date": "2026-05-08",
+            "text": "7 h 20 m",
             "value": 26400.0
           },
           {
             "date": "2026-05-09",
+            "text": "7 h",
             "value": 25200.0
           },
           {
             "date": "2026-05-10",
+            "text": "6 h 50 m",
             "value": 24600.0
           },
           {
             "date": "2026-05-11",
+            "text": "6 h 37 m",
             "value": 23800.0
           },
           {
             "date": "2026-05-12",
+            "text": "6 h 23 m",
             "value": 23000.0
           },
           {
             "date": "2026-05-13",
+            "text": "6 h 10 m",
             "value": 22200.0
           }
         ]
@@ -1782,7 +2210,7 @@
       ],
       "date": "2026-05-13",
       "generated_at": "2026-05-13T06:30:00Z",
-      "headline": "not enough data yet",
+      "headline": "Your saved activity history",
       "headline_note": null,
       "pace_at_hr": [
         {
@@ -1808,7 +2236,10 @@
           "week_start": "2026-05-04"
         }
       ],
-      "sessions_per_week": null,
+      "sessions_per_week": {
+        "raw": 3,
+        "text": "3.0"
+      },
       "typical_week": {
         "raw": 29200,
         "text": "29.2 km"
@@ -1915,6 +2346,341 @@
         "sessions": 0
       }
     },
+    "/physiology/sleep": {
+      "days": [
+        {
+          "awake": null,
+          "date": "2026-04-14",
+          "deep_sleep": null,
+          "light_sleep": null,
+          "rem_sleep": null,
+          "sleep": {
+            "raw": 26400,
+            "text": "7 h 20 m"
+          }
+        },
+        {
+          "awake": null,
+          "date": "2026-04-15",
+          "deep_sleep": null,
+          "light_sleep": null,
+          "rem_sleep": null,
+          "sleep": {
+            "raw": 27600,
+            "text": "7 h 40 m"
+          }
+        },
+        {
+          "awake": null,
+          "date": "2026-04-16",
+          "deep_sleep": null,
+          "light_sleep": null,
+          "rem_sleep": null,
+          "sleep": {
+            "raw": 25200,
+            "text": "7 h"
+          }
+        },
+        {
+          "awake": null,
+          "date": "2026-04-17",
+          "deep_sleep": null,
+          "light_sleep": null,
+          "rem_sleep": null,
+          "sleep": {
+            "raw": 28800,
+            "text": "8 h"
+          }
+        },
+        {
+          "awake": null,
+          "date": "2026-04-18",
+          "deep_sleep": null,
+          "light_sleep": null,
+          "rem_sleep": null,
+          "sleep": {
+            "raw": 26400,
+            "text": "7 h 20 m"
+          }
+        },
+        {
+          "awake": null,
+          "date": "2026-04-19",
+          "deep_sleep": null,
+          "light_sleep": null,
+          "rem_sleep": null,
+          "sleep": {
+            "raw": 24000,
+            "text": "6 h 40 m"
+          }
+        },
+        {
+          "awake": null,
+          "date": "2026-04-20",
+          "deep_sleep": null,
+          "light_sleep": null,
+          "rem_sleep": null,
+          "sleep": {
+            "raw": 27600,
+            "text": "7 h 40 m"
+          }
+        },
+        {
+          "awake": null,
+          "date": "2026-04-21",
+          "deep_sleep": null,
+          "light_sleep": null,
+          "rem_sleep": null,
+          "sleep": {
+            "raw": 25200,
+            "text": "7 h"
+          }
+        },
+        {
+          "awake": null,
+          "date": "2026-04-22",
+          "deep_sleep": null,
+          "light_sleep": null,
+          "rem_sleep": null,
+          "sleep": {
+            "raw": 30000,
+            "text": "8 h 20 m"
+          }
+        },
+        {
+          "awake": null,
+          "date": "2026-04-23",
+          "deep_sleep": null,
+          "light_sleep": null,
+          "rem_sleep": null,
+          "sleep": {
+            "raw": 26400,
+            "text": "7 h 20 m"
+          }
+        },
+        {
+          "awake": null,
+          "date": "2026-04-24",
+          "deep_sleep": null,
+          "light_sleep": null,
+          "rem_sleep": null,
+          "sleep": {
+            "raw": 24000,
+            "text": "6 h 40 m"
+          }
+        },
+        {
+          "awake": null,
+          "date": "2026-04-25",
+          "deep_sleep": null,
+          "light_sleep": null,
+          "rem_sleep": null,
+          "sleep": {
+            "raw": 27600,
+            "text": "7 h 40 m"
+          }
+        },
+        {
+          "awake": null,
+          "date": "2026-04-26",
+          "deep_sleep": null,
+          "light_sleep": null,
+          "rem_sleep": null,
+          "sleep": {
+            "raw": 22800,
+            "text": "6 h 20 m"
+          }
+        },
+        {
+          "awake": null,
+          "date": "2026-04-27",
+          "deep_sleep": null,
+          "light_sleep": null,
+          "rem_sleep": null,
+          "sleep": {
+            "raw": 28800,
+            "text": "8 h"
+          }
+        },
+        {
+          "awake": null,
+          "date": "2026-04-28",
+          "deep_sleep": null,
+          "light_sleep": null,
+          "rem_sleep": null,
+          "sleep": {
+            "raw": 26400,
+            "text": "7 h 20 m"
+          }
+        },
+        {
+          "awake": null,
+          "date": "2026-04-29",
+          "deep_sleep": null,
+          "light_sleep": null,
+          "rem_sleep": null,
+          "sleep": {
+            "raw": 25200,
+            "text": "7 h"
+          }
+        },
+        {
+          "awake": null,
+          "date": "2026-04-30",
+          "deep_sleep": null,
+          "light_sleep": null,
+          "rem_sleep": null,
+          "sleep": {
+            "raw": 24000,
+            "text": "6 h 40 m"
+          }
+        },
+        {
+          "awake": null,
+          "date": "2026-05-01",
+          "deep_sleep": null,
+          "light_sleep": null,
+          "rem_sleep": null,
+          "sleep": {
+            "raw": 30000,
+            "text": "8 h 20 m"
+          }
+        },
+        {
+          "awake": null,
+          "date": "2026-05-02",
+          "deep_sleep": null,
+          "light_sleep": null,
+          "rem_sleep": null,
+          "sleep": {
+            "raw": 26400,
+            "text": "7 h 20 m"
+          }
+        },
+        {
+          "awake": null,
+          "date": "2026-05-03",
+          "deep_sleep": null,
+          "light_sleep": null,
+          "rem_sleep": null,
+          "sleep": {
+            "raw": 25200,
+            "text": "7 h"
+          }
+        },
+        {
+          "awake": null,
+          "date": "2026-05-04",
+          "deep_sleep": null,
+          "light_sleep": null,
+          "rem_sleep": null,
+          "sleep": {
+            "raw": 28800,
+            "text": "8 h"
+          }
+        },
+        {
+          "awake": null,
+          "date": "2026-05-05",
+          "deep_sleep": null,
+          "light_sleep": null,
+          "rem_sleep": null,
+          "sleep": {
+            "raw": 21600,
+            "text": "6 h"
+          }
+        },
+        {
+          "awake": null,
+          "date": "2026-05-06",
+          "deep_sleep": null,
+          "light_sleep": null,
+          "rem_sleep": null,
+          "sleep": {
+            "raw": 24000,
+            "text": "6 h 40 m"
+          }
+        },
+        {
+          "awake": null,
+          "date": "2026-05-07",
+          "deep_sleep": null,
+          "light_sleep": null,
+          "rem_sleep": null,
+          "sleep": {
+            "raw": 31200,
+            "text": "8 h 40 m"
+          }
+        },
+        {
+          "awake": null,
+          "date": "2026-05-08",
+          "deep_sleep": null,
+          "light_sleep": null,
+          "rem_sleep": null,
+          "sleep": {
+            "raw": 26400,
+            "text": "7 h 20 m"
+          }
+        },
+        {
+          "awake": null,
+          "date": "2026-05-09",
+          "deep_sleep": null,
+          "light_sleep": null,
+          "rem_sleep": null,
+          "sleep": {
+            "raw": 25200,
+            "text": "7 h"
+          }
+        },
+        {
+          "awake": null,
+          "date": "2026-05-10",
+          "deep_sleep": null,
+          "light_sleep": null,
+          "rem_sleep": null,
+          "sleep": {
+            "raw": 24600,
+            "text": "6 h 50 m"
+          }
+        },
+        {
+          "awake": null,
+          "date": "2026-05-11",
+          "deep_sleep": null,
+          "light_sleep": null,
+          "rem_sleep": null,
+          "sleep": {
+            "raw": 23800,
+            "text": "6 h 37 m"
+          }
+        },
+        {
+          "awake": null,
+          "date": "2026-05-12",
+          "deep_sleep": null,
+          "light_sleep": null,
+          "rem_sleep": null,
+          "sleep": {
+            "raw": 23000,
+            "text": "6 h 23 m"
+          }
+        },
+        {
+          "awake": null,
+          "date": "2026-05-13",
+          "deep_sleep": null,
+          "light_sleep": null,
+          "rem_sleep": null,
+          "sleep": {
+            "raw": 22200,
+            "text": "6 h 10 m"
+          }
+        }
+      ],
+      "generated_at": "2026-05-13T06:30:00Z"
+    },
     "/physiology/vitals": {
       "date": "2026-05-13",
       "generated_at": "2026-05-13T06:30:00Z",
@@ -1922,366 +2688,456 @@
         "hrv": [
           {
             "date": "2026-04-14",
+            "text": "62 ms",
             "value": 62.0
           },
           {
             "date": "2026-04-15",
+            "text": "66 ms",
             "value": 66.0
           },
           {
             "date": "2026-04-16",
+            "text": "58 ms",
             "value": 58.0
           },
           {
             "date": "2026-04-17",
+            "text": "70 ms",
             "value": 70.0
           },
           {
             "date": "2026-04-18",
+            "text": "62 ms",
             "value": 62.0
           },
           {
             "date": "2026-04-19",
+            "text": "54 ms",
             "value": 54.0
           },
           {
             "date": "2026-04-20",
+            "text": "66 ms",
             "value": 66.0
           },
           {
             "date": "2026-04-21",
+            "text": "58 ms",
             "value": 58.0
           },
           {
             "date": "2026-04-22",
+            "text": "74 ms",
             "value": 74.0
           },
           {
             "date": "2026-04-23",
+            "text": "62 ms",
             "value": 62.0
           },
           {
             "date": "2026-04-24",
+            "text": "54 ms",
             "value": 54.0
           },
           {
             "date": "2026-04-25",
+            "text": "66 ms",
             "value": 66.0
           },
           {
             "date": "2026-04-26",
+            "text": "50 ms",
             "value": 50.0
           },
           {
             "date": "2026-04-27",
+            "text": "70 ms",
             "value": 70.0
           },
           {
             "date": "2026-04-28",
+            "text": "62 ms",
             "value": 62.0
           },
           {
             "date": "2026-04-29",
+            "text": "58 ms",
             "value": 58.0
           },
           {
             "date": "2026-04-30",
+            "text": "54 ms",
             "value": 54.0
           },
           {
             "date": "2026-05-01",
+            "text": "74 ms",
             "value": 74.0
           },
           {
             "date": "2026-05-02",
+            "text": "62 ms",
             "value": 62.0
           },
           {
             "date": "2026-05-03",
+            "text": "58 ms",
             "value": 58.0
           },
           {
             "date": "2026-05-04",
+            "text": "66 ms",
             "value": 66.0
           },
           {
             "date": "2026-05-05",
+            "text": "46 ms",
             "value": 46.0
           },
           {
             "date": "2026-05-06",
+            "text": "54 ms",
             "value": 54.0
           },
           {
             "date": "2026-05-07",
+            "text": "78 ms",
             "value": 78.0
           },
           {
             "date": "2026-05-08",
+            "text": "62 ms",
             "value": 62.0
           },
           {
             "date": "2026-05-09",
+            "text": "58 ms",
             "value": 58.0
           },
           {
             "date": "2026-05-10",
+            "text": "58 ms",
             "value": 58.0
           },
           {
             "date": "2026-05-11",
+            "text": "54 ms",
             "value": 54.0
           },
           {
             "date": "2026-05-12",
+            "text": "50 ms",
             "value": 50.0
           },
           {
             "date": "2026-05-13",
+            "text": "48 ms",
             "value": 48.0
           }
         ],
         "resting_hr": [
           {
             "date": "2026-04-14",
+            "text": "58 bpm",
             "value": 58.0
           },
           {
             "date": "2026-04-15",
+            "text": "60 bpm",
             "value": 60.0
           },
           {
             "date": "2026-04-16",
+            "text": "56 bpm",
             "value": 56.0
           },
           {
             "date": "2026-04-17",
+            "text": "62 bpm",
             "value": 62.0
           },
           {
             "date": "2026-04-18",
+            "text": "58 bpm",
             "value": 58.0
           },
           {
             "date": "2026-04-19",
+            "text": "54 bpm",
             "value": 54.0
           },
           {
             "date": "2026-04-20",
+            "text": "60 bpm",
             "value": 60.0
           },
           {
             "date": "2026-04-21",
+            "text": "56 bpm",
             "value": 56.0
           },
           {
             "date": "2026-04-22",
+            "text": "52 bpm",
             "value": 52.0
           },
           {
             "date": "2026-04-23",
+            "text": "58 bpm",
             "value": 58.0
           },
           {
             "date": "2026-04-24",
+            "text": "54 bpm",
             "value": 54.0
           },
           {
             "date": "2026-04-25",
+            "text": "60 bpm",
             "value": 60.0
           },
           {
             "date": "2026-04-26",
+            "text": "52 bpm",
             "value": 52.0
           },
           {
             "date": "2026-04-27",
+            "text": "62 bpm",
             "value": 62.0
           },
           {
             "date": "2026-04-28",
+            "text": "58 bpm",
             "value": 58.0
           },
           {
             "date": "2026-04-29",
+            "text": "56 bpm",
             "value": 56.0
           },
           {
             "date": "2026-04-30",
+            "text": "54 bpm",
             "value": 54.0
           },
           {
             "date": "2026-05-01",
+            "text": "52 bpm",
             "value": 52.0
           },
           {
             "date": "2026-05-02",
+            "text": "58 bpm",
             "value": 58.0
           },
           {
             "date": "2026-05-03",
+            "text": "60 bpm",
             "value": 60.0
           },
           {
             "date": "2026-05-04",
+            "text": "54 bpm",
             "value": 54.0
           },
           {
             "date": "2026-05-05",
+            "text": "52 bpm",
             "value": 52.0
           },
           {
             "date": "2026-05-06",
+            "text": "50 bpm",
             "value": 50.0
           },
           {
             "date": "2026-05-07",
+            "text": "66 bpm",
             "value": 66.0
           },
           {
             "date": "2026-05-08",
+            "text": "58 bpm",
             "value": 58.0
           },
           {
             "date": "2026-05-09",
+            "text": "62 bpm",
             "value": 62.0
           },
           {
             "date": "2026-05-10",
+            "text": "56 bpm",
             "value": 56.0
           },
           {
             "date": "2026-05-11",
+            "text": "52 bpm",
             "value": 52.0
           },
           {
             "date": "2026-05-12",
+            "text": "63 bpm",
             "value": 63.0
           },
           {
             "date": "2026-05-13",
+            "text": "63 bpm",
             "value": 63.0
           }
         ],
         "sleep": [
           {
             "date": "2026-04-14",
+            "text": "7 h 20 m",
             "value": 26400.0
           },
           {
             "date": "2026-04-15",
+            "text": "7 h 40 m",
             "value": 27600.0
           },
           {
             "date": "2026-04-16",
+            "text": "7 h",
             "value": 25200.0
           },
           {
             "date": "2026-04-17",
+            "text": "8 h",
             "value": 28800.0
           },
           {
             "date": "2026-04-18",
+            "text": "7 h 20 m",
             "value": 26400.0
           },
           {
             "date": "2026-04-19",
+            "text": "6 h 40 m",
             "value": 24000.0
           },
           {
             "date": "2026-04-20",
+            "text": "7 h 40 m",
             "value": 27600.0
           },
           {
             "date": "2026-04-21",
+            "text": "7 h",
             "value": 25200.0
           },
           {
             "date": "2026-04-22",
+            "text": "8 h 20 m",
             "value": 30000.0
           },
           {
             "date": "2026-04-23",
+            "text": "7 h 20 m",
             "value": 26400.0
           },
           {
             "date": "2026-04-24",
+            "text": "6 h 40 m",
             "value": 24000.0
           },
           {
             "date": "2026-04-25",
+            "text": "7 h 40 m",
             "value": 27600.0
           },
           {
             "date": "2026-04-26",
+            "text": "6 h 20 m",
             "value": 22800.0
           },
           {
             "date": "2026-04-27",
+            "text": "8 h",
             "value": 28800.0
           },
           {
             "date": "2026-04-28",
+            "text": "7 h 20 m",
             "value": 26400.0
           },
           {
             "date": "2026-04-29",
+            "text": "7 h",
             "value": 25200.0
           },
           {
             "date": "2026-04-30",
+            "text": "6 h 40 m",
             "value": 24000.0
           },
           {
             "date": "2026-05-01",
+            "text": "8 h 20 m",
             "value": 30000.0
           },
           {
             "date": "2026-05-02",
+            "text": "7 h 20 m",
             "value": 26400.0
           },
           {
             "date": "2026-05-03",
+            "text": "7 h",
             "value": 25200.0
           },
           {
             "date": "2026-05-04",
+            "text": "8 h",
             "value": 28800.0
           },
           {
             "date": "2026-05-05",
+            "text": "6 h",
             "value": 21600.0
           },
           {
             "date": "2026-05-06",
+            "text": "6 h 40 m",
             "value": 24000.0
           },
           {
             "date": "2026-05-07",
+            "text": "8 h 40 m",
             "value": 31200.0
           },
           {
             "date": "2026-05-08",
+            "text": "7 h 20 m",
             "value": 26400.0
           },
           {
             "date": "2026-05-09",
+            "text": "7 h",
             "value": 25200.0
           },
           {
             "date": "2026-05-10",
+            "text": "6 h 50 m",
             "value": 24600.0
           },
           {
             "date": "2026-05-11",
+            "text": "6 h 37 m",
             "value": 23800.0
           },
           {
             "date": "2026-05-12",
+            "text": "6 h 23 m",
             "value": 23000.0
           },
           {
             "date": "2026-05-13",
+            "text": "6 h 10 m",
             "value": 22200.0
           }
         ]

@@ -35,6 +35,7 @@ import { FitImport } from '../components/FitImport'
 import { KeyField } from '../components/KeyField'
 import { PlanImport } from '../components/PlanImport'
 import { PageHeader } from '../ui/layout/PageHeader'
+import { SyncControls } from '../components/SyncControls'
 import { Choice, Field, Notice, SettingRow, SettingsGroup } from '../ui/settings/SettingsGroup'
 
 /** The reasons a pause can have. The athlete's own words for it. */
@@ -62,15 +63,32 @@ export function SettingsPage() {
   const [pauseEnd, setPauseEnd] = useState<string | null>(null)
   const [pauseReason, setPauseReason] = useState<string | null>(null)
   const [showKey, setShowKey] = useState(false)
+  const setup = useMutation({ mutationFn: () => connectGarmin() })
   const [confirming, setConfirming] = useState(false)
   const [confirmation, setConfirmation] = useState('')
 
   const save = useMutation({
     mutationFn: (change: Parameters<typeof api.saveSettings>[0]) => api.saveSettings(change),
-    onSuccess: (state) => {
+    onSuccess: (state, change) => {
       // The api answers with the whole state, so the screen never has to
       // guess what it did with the number it sent.
       client.setQueryData(['settings'], state)
+      if ('goal_km' in change) {
+        setGoalNotice(
+          change.goal_km === null ? t('settings.goal.cleared') : t('settings.goal.saved'),
+        )
+        setGoal(null)
+      }
+      if ('pause' in change) {
+        setPauseNotice(
+          change.pause === null ? t('settings.pause.cleared') : t('settings.pause.saved'),
+        )
+        setPauseStart(null)
+        setPauseEnd(null)
+        setPauseReason(null)
+      }
+      void client.invalidateQueries({ queryKey: ['insights-today'] })
+      void client.invalidateQueries({ queryKey: ['plan-week'] })
     },
   })
 
@@ -106,7 +124,7 @@ export function SettingsPage() {
   const link = connection.data
   const version = health.data?.version ?? null
 
-  if (settings.isPending || connection.isPending) {
+  if (settings.isPending) {
     return (
       <div>
         <PageHeader title={t('settings.heading')} />
@@ -150,7 +168,90 @@ export function SettingsPage() {
     <div>
       <PageHeader title={t('settings.heading')} />
 
-      <div className="settings-grid space-y-3">
+      <section className="card mb-3 border-brand-200 bg-brand-50 px-4 py-4">
+        <h2 className="text-[16px] font-semibold text-brand-700">{t('common.local')}</h2>
+        <p className="mt-1 text-[14px] text-ink-soft">{t('common.saved')}</p>
+      </section>
+      <div className="settings-grid">
+        <SettingsGroup title={t('settings.connection.heading')} testId="settings-connection">
+          <SettingRow
+            label={t('settings.connection.status')}
+            value={
+              connection.isError
+                ? t('settings.connection.unknown')
+                : connection.isPending
+                  ? t('common.loading')
+                  : link?.connected
+                    ? t('settings.connection.connected')
+                    : t('settings.connection.notConnected')
+            }
+            testId="settings-connection-state"
+          />
+          <div className="mt-2">
+            <SyncControls details />
+          </div>
+          <details className="mt-2 text-[13px] text-ink-muted">
+            <summary className="tap-inline cursor-pointer">
+              {t('settings.connection.manage')}
+            </summary>
+            <SettingRow
+              label={t('settings.connection.key')}
+              value={link?.key_last4 ?? '—'}
+              testId="settings-connection-key"
+            />
+            <SettingRow
+              label={t('settings.connection.lastSync')}
+              value={
+                link?.last_sync_at
+                  ? formatRelative(link.last_sync_at)
+                  : t('settings.connection.never')
+              }
+              testId="settings-connection-sync"
+            />
+            <p className="mt-1 text-[12.5px] text-ink-faint">
+              {t('settings.connection.keyNote')}
+            </p>
+            {connection.isSuccess && link?.connected && !showKey ? (
+              <div className="mt-2">
+                <button
+                  type="button"
+                  className="tap inline-flex items-center rounded-md border border-edge bg-surface px-4 text-[14px] font-semibold text-ink-soft"
+                  data-testid="settings-reconnect"
+                  onClick={() => {
+                    if (currentHost() === 'native') {
+                      setup.mutate()
+                      return
+                    }
+                    setShowKey(true)
+                  }}
+                >
+                  {currentHost() === 'native'
+                    ? t('settings.connection.setup')
+                    : t('settings.connection.reconnect')}
+                </button>
+              </div>
+            ) : null}
+          </details>
+          {showKey ? (
+            <div className="mt-3">
+              <KeyField />
+            </div>
+          ) : null}
+          {setup.isError ? <p role="alert">{t('today.state.connectFailed')}</p> : null}
+          {connection.isSuccess && !link?.connected && !showKey ? (
+            <button
+              type="button"
+              className="tap mt-2 rounded-md bg-brand-600 px-4 text-[14px] font-semibold text-white"
+              disabled={setup.isPending}
+              onClick={() => {
+                if (currentHost() === 'native') setup.mutate()
+                else setShowKey(true)
+              }}
+            >
+              {t('settings.connection.connect')}
+            </button>
+          ) : null}
+        </SettingsGroup>
         {/* ------------------------------------------------ the goal */}
         <SettingsGroup title={t('settings.goal.heading')} testId="settings-goal">
           <Field
@@ -169,11 +270,11 @@ export function SettingsPage() {
               data-testid="settings-goal-save"
               onClick={() => {
                 const km = goalValue.trim() === '' ? null : Number(goalValue.trim())
-                if (km !== null && !Number.isFinite(km)) return
-                setGoalNotice(
-                  km === null ? t('settings.goal.cleared') : t('settings.goal.saved'),
-                )
-                setGoal(null)
+                if (km !== null && (!Number.isFinite(km) || km <= 0)) {
+                  setGoalNotice(t('common.invalidGoal'))
+                  return
+                }
+                setGoalNotice(null)
                 save.mutate({ goal_km: km })
               }}
             >
@@ -190,6 +291,11 @@ export function SettingsPage() {
             )}
           </div>
           <Notice text={goalNotice} testId="settings-goal-notice" />
+          {save.isError && save.variables && 'goal_km' in save.variables ? (
+            <p role="alert" className="mt-2 text-[13px] text-ink-muted">
+              {t('common.saveFailed')}
+            </p>
+          ) : null}
         </SettingsGroup>
 
         {/* ----------------------------------------------- the pause */}
@@ -244,7 +350,7 @@ export function SettingsPage() {
               disabled={startValue === '' || endValue === '' || save.isPending}
               data-testid="settings-pause-save"
               onClick={() => {
-                setPauseNotice(t('settings.pause.saved'))
+                setPauseNotice(null)
                 save.mutate({
                   pause: {
                     start_date: startValue,
@@ -252,9 +358,6 @@ export function SettingsPage() {
                     reason: reasonValue === '' ? null : (reasonValue as PauseReason),
                   },
                 })
-                setPauseStart(null)
-                setPauseEnd(null)
-                setPauseReason(null)
               }}
             >
               {t('settings.pause.save')}
@@ -265,11 +368,8 @@ export function SettingsPage() {
                 className="tap-inline text-[13.5px] font-medium text-ink-muted underline underline-offset-2"
                 data-testid="settings-pause-clear"
                 onClick={() => {
-                  setPauseNotice(t('settings.pause.cleared'))
+                  setPauseNotice(null)
                   save.mutate({ pause: null })
-                  setPauseStart(null)
-                  setPauseEnd(null)
-                  setPauseReason(null)
                 }}
               >
                 {t('settings.pause.clear')}
@@ -277,64 +377,11 @@ export function SettingsPage() {
             ) : null}
           </div>
           <Notice text={pauseNotice} testId="settings-pause-notice" />
-        </SettingsGroup>
-
-        {/* ------------------------------------------ the connection */}
-        <SettingsGroup title={t('settings.connection.heading')} testId="settings-connection">
-          <SettingRow
-            label={t('settings.connection.status')}
-            value={
-              link?.connected
-                ? t('settings.connection.connected')
-                : t('settings.connection.notConnected')
-            }
-            testId="settings-connection-state"
-          />
-          <SettingRow
-            label={t('settings.connection.key')}
-            value={link?.key_last4 ?? '—'}
-            testId="settings-connection-key"
-          />
-          <SettingRow
-            label={t('settings.connection.lastSync')}
-            value={
-              link?.last_sync_at
-                ? formatRelative(link.last_sync_at)
-                : t('settings.connection.never')
-            }
-            testId="settings-connection-sync"
-          />
-          <p className="mt-1 text-[12.5px] text-ink-faint">
-            {t('settings.connection.keyNote')}
-          </p>
-
-          {showKey ? (
-            <div className="mt-3">
-              <KeyField />
-            </div>
-          ) : (
-            <div className="mt-2">
-              <button
-                type="button"
-                className="tap inline-flex items-center rounded-md border border-edge bg-surface px-4 text-[14px] font-semibold text-ink-soft"
-                data-testid="settings-reconnect"
-                onClick={() => {
-                  // On the phone the key belongs to the native setup
-                  // screen, and the bridge refuses the key routes: so the
-                  // action opens that screen and nothing else.
-                  if (currentHost() === 'native') {
-                    void connectGarmin()
-                    return
-                  }
-                  setShowKey(true)
-                }}
-              >
-                {currentHost() === 'native'
-                  ? t('settings.connection.setup')
-                  : t('settings.connection.reconnect')}
-              </button>
-            </div>
-          )}
+          {save.isError && save.variables && 'pause' in save.variables ? (
+            <p role="alert" className="mt-2 text-[13px] text-ink-muted">
+              {t('common.saveFailed')}
+            </p>
+          ) : null}
         </SettingsGroup>
 
         {/* ----------------------------------------------- the import */}
@@ -471,6 +518,11 @@ export function SettingsPage() {
             )}
           </div>
           <Notice text={notice} testId="settings-notice" />
+          {deleteAll.isError ? (
+            <p role="alert" className="mt-2 text-[13px] text-ink-muted">
+              {t('common.error')}
+            </p>
+          ) : null}
         </SettingsGroup>
       </div>
     </div>

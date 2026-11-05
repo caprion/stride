@@ -24,6 +24,8 @@ import { api } from '../src/lib/api'
 import { Sparkline } from '../src/components/Sparkline'
 import {
   healthFixture,
+  activityDetailFixture,
+  connectionHeldFixture,
   syncStatusFailedFixture,
   syncStatusFreshFixture,
   vitalsFixture,
@@ -45,11 +47,58 @@ function walk(dir: string): string[] {
 }
 
 afterEach(() => {
+  delete window.__stride_bridge__
   window.history.pushState({}, '', '/?fixtures=1')
   vi.restoreAllMocks()
 })
 
 describe('missing readings', () => {
+  it('shows sleep stages inline for the selected date, without inventing missing stages', async () => {
+    vi.spyOn(api, 'vitals').mockImplementation(async (params) => ({
+      ...vitalsFixture,
+      date: params?.date ?? vitalsFixture.date,
+    }))
+    const sleep = vi.spyOn(api, 'physiologySleep').mockImplementation(async (params) => ({
+      generated_at: vitalsFixture.generated_at,
+      days: [
+        {
+          date: params?.from ?? vitalsFixture.date,
+          sleep: { raw: 21600, text: '6 h' },
+          deep_sleep: { raw: 3600, text: '1 h' },
+          rem_sleep: { raw: 5400, text: '1 h 30 m' },
+          light_sleep: { raw: 12600, text: '3 h 30 m' },
+          awake: null,
+        },
+      ],
+    }))
+    renderApp('/body')
+    const stages = await screen.findByTestId('sleep-composition')
+    expect(stages).toHaveTextContent('REM')
+    expect(stages).toHaveTextContent('1 h 30 m')
+    expect(stages).toHaveTextContent('Not recorded')
+    fireEvent.change(screen.getByLabelText('Date'), { target: { value: '2026-04-15' } })
+    await waitFor(() =>
+      expect(screen.getByTestId('sleep-composition')).toHaveAttribute(
+        'data-date',
+        '2026-04-15',
+      ),
+    )
+    expect(sleep).toHaveBeenLastCalledWith({ from: '2026-04-15', to: '2026-04-15' })
+  })
+
+  it('requests the night ending on the run date, not the latest night', async () => {
+    const sleep = vi.spyOn(api, 'physiologySleep')
+    renderApp('/runs/101')
+    await screen.findByTestId('activity-detail')
+    await waitFor(() =>
+      expect(sleep).toHaveBeenCalledWith({
+        from: activityDetailFixture.local_date,
+        to: activityDetailFixture.local_date,
+      }),
+    )
+    expect(sleep).not.toHaveBeenCalledWith({ from: vitalsFixture.date, to: vitalsFixture.date })
+  })
+
   it('requests the selected health date and calendar window', async () => {
     const vitals = vi.spyOn(api, 'vitals').mockImplementation(async (params) => ({
       ...vitalsFixture,
@@ -101,7 +150,11 @@ describe('missing readings', () => {
       })
       const { container } = renderApp(route)
       await screen.findByTestId(route === '/' ? 'today-vitals' : 'body-signals')
-      expect(container.querySelector('[data-vital=hrv] svg')).not.toBeNull()
+      expect(
+        container.querySelector(
+          route === '/body' ? '[data-vital=hrv] [role=group]' : '[data-vital=hrv] svg',
+        ),
+      ).not.toBeNull()
       expect(container.querySelector('[data-vital-value=hrv]')).toBeNull()
     },
   )
@@ -125,6 +178,10 @@ describe('screen loading failures', () => {
     ['/', 'insightsToday'],
     ['/body', 'vitals'],
     ['/progress', 'insightsProgress'],
+    ['/runs', 'activities'],
+    ['/runs/101', 'activity'],
+    ['/compare/101', 'compareCandidates'],
+    ['/plan', 'planWeek'],
   ] as const)(
     'shows a retry rather than empty data or endless loading on %s',
     async (route, method) => {
@@ -136,6 +193,19 @@ describe('screen loading failures', () => {
   )
 
   describe('manual sync', () => {
+    it('reloads displayed observations when native background work records a later sync', async () => {
+      window.__stride_bridge__ = { apiCall: vi.fn() }
+      vi.spyOn(api, 'authStatus').mockResolvedValue(connectionHeldFixture)
+      const status = vi.spyOn(api, 'syncStatus').mockResolvedValue(syncStatusFailedFixture)
+      const readings = vi.spyOn(api, 'vitals')
+      const { client } = renderApp('/')
+      await screen.findByTestId('today-vitals')
+      const before = readings.mock.calls.length
+      status.mockResolvedValue(syncStatusFreshFixture)
+      await client.refetchQueries({ queryKey: ['sync-status'] })
+      await waitFor(() => expect(readings.mock.calls.length).toBeGreaterThan(before))
+    })
+
     it('labels pending history separately from a failed pull', async () => {
       vi.spyOn(api, 'syncStatus').mockResolvedValue({
         ...syncStatusFreshFixture,
@@ -144,7 +214,7 @@ describe('screen loading failures', () => {
       })
       renderApp('/')
       expect(await screen.findByTestId('today-history-pending')).toHaveTextContent(
-        'Older history is still being checked',
+        'More history is available to check',
       )
       expect(screen.queryByTestId('today-sync-failed')).not.toBeInTheDocument()
     })
@@ -211,6 +281,31 @@ describe('the version', () => {
 })
 
 describe('the Compare screen', () => {
+  it('compares the two runs explicitly selected in the feed', async () => {
+    const compare = vi.spyOn(api, 'compare')
+    renderApp('/runs')
+    await screen.findByTestId('run-101')
+    const choices = screen.getAllByRole('checkbox')
+    await userEvent.click(choices[0]!)
+    await userEvent.click(choices[1]!)
+    const link = screen.getByRole('link', { name: 'Compare selected runs' })
+    expect(link).toHaveAttribute('href', '/compare/101?with=102')
+    await userEvent.click(link)
+    await screen.findByTestId('compare-metrics')
+    expect(compare).toHaveBeenLastCalledWith(102, 101)
+  })
+
+  it('shows a real empty comparison rather than waiting forever for a second run', async () => {
+    vi.spyOn(api, 'compareCandidates').mockResolvedValue([
+      { id: 101, label: 'Run', date: '2026-05-10', distance: { raw: 5000, text: '5 km' } },
+    ])
+    renderApp('/compare/101')
+    expect(await screen.findByTestId('compare-none')).toHaveTextContent(
+      'A comparison needs two runs',
+    )
+    expect(screen.queryByText('Loading…')).toBeNull()
+  })
+
   it('compares the runs the candidates route names, not a hardcoded pair', async () => {
     const { container } = renderApp('/compare/101')
     await waitFor(() =>

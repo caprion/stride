@@ -53,6 +53,40 @@ fn parse_case(case: &str) -> FitActivity {
         .unwrap_or_else(|error| panic!("cannot decode {}: {error}", path.display()))
 }
 
+#[test]
+fn routes_retain_all_decoded_positions_without_changing_summary_metadata() {
+    for case in CASES {
+        let activity = parse_case(case);
+        assert_eq!(
+            activity.route_points.len(),
+            activity.geo_points.count,
+            "{case}"
+        );
+        assert_eq!(
+            activity
+                .route_points
+                .iter()
+                .take(3)
+                .copied()
+                .collect::<Vec<_>>(),
+            activity.geo_points.first,
+            "{case}"
+        );
+        assert_eq!(
+            activity
+                .route_points
+                .iter()
+                .rev()
+                .take(3)
+                .rev()
+                .copied()
+                .collect::<Vec<_>>(),
+            activity.geo_points.last,
+            "{case}"
+        );
+    }
+}
+
 fn golden_case(case: &str) -> Value {
     let path = repo_root()
         .join("fixtures")

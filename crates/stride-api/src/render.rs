@@ -191,14 +191,12 @@ pub fn difference(difference: Option<f64>, unit: ValueUnit) -> Option<RenderedVa
     })
 }
 
-/// An average, as the core renders it.
-///
-/// **The core does not render an average yet.** The core reads a count as
-/// a whole number, and an average of 3.4 sessions is not a whole number of
-/// sessions — so the average is absent until the core has a renderer of
-/// its own.
-pub fn average(_average: Option<f64>) -> Option<RenderedValue> {
-    None
+/// An average count, as the core renders it.
+pub fn average(average: Option<f64>) -> Option<RenderedValue> {
+    Some(RenderedValue {
+        text: units::render_average(average)?,
+        raw: average,
+    })
 }
 
 /// A number the core reads as a whole number: "48".

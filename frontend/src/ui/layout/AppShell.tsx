@@ -13,8 +13,8 @@
  * destination set is identical at every width by construction.
  */
 
-import type { ReactNode } from 'react'
-import { NavLink } from 'react-router-dom'
+import { useEffect, useRef, type ReactNode } from 'react'
+import { NavLink, useLocation } from 'react-router-dom'
 import { Settings } from 'lucide-react'
 import { DESTINATIONS, type Destination } from '../../app/destinations'
 import { Brand } from './Brand'
@@ -122,7 +122,9 @@ function SettingsLink({ variant }: { variant: 'bar' | 'rail' }) {
       className={({ isActive }) =>
         [
           'tap flex items-center gap-2.5 rounded-md px-3 text-[14px] font-medium transition-colors',
-          isActive ? 'bg-brand-50 text-brand-700' : 'text-ink-muted hover:bg-surface-soft hover:text-ink',
+          isActive
+            ? 'bg-brand-50 text-brand-700'
+            : 'text-ink-muted hover:bg-surface-soft hover:text-ink',
         ].join(' ')
       }
     >
@@ -192,12 +194,17 @@ function Rail() {
 
 /** The shell every screen renders inside. */
 export function AppShell({ children }: { children: ReactNode }) {
+  const { pathname } = useLocation()
+  const main = useRef<HTMLElement>(null)
+  useEffect(() => {
+    if (main.current) main.current.scrollTop = 0
+  }, [pathname])
   return (
     <div className="shell">
       <TopBar />
       <div className="shell__body">
         <Rail />
-        <main className="shell__main">
+        <main ref={main} className="shell__main">
           <div className="column py-4">{children}</div>
         </main>
       </div>

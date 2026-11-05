@@ -27,6 +27,7 @@ import type { PlanSession } from '../lib/types'
 import { t } from '../i18n'
 import { PlanImport } from '../components/PlanImport'
 import { PageHeader } from '../ui/layout/PageHeader'
+import { QueryError } from '../components/QueryError'
 
 /** The source banner's wording. */
 function sourceText(source: PlanSession['source']): string {
@@ -88,10 +89,9 @@ export function PlanWeekPage() {
   // router saying "there is no plan" — the phone's bridge carries the
   // status and not the code, so both are read as the same fact.
   const failure = plan.error instanceof ApiError ? plan.error : null
-  const noPlan =
-    plan.isError && (failure?.kind === 'no_plan' || failure?.kind === 'not_found')
+  const noPlan = plan.isError && (failure?.kind === 'no_plan' || failure?.kind === 'not_found')
 
-  if (noPlan) {
+  if (noPlan || (data && data.sessions.length === 0)) {
     return (
       <div>
         <PageHeader title={t('plan.heading')} />
@@ -106,6 +106,18 @@ export function PlanWeekPage() {
     )
   }
 
+  if (plan.isError) {
+    return (
+      <>
+        <PageHeader title={t('plan.heading')} />
+        <QueryError
+          retry={() => {
+            void plan.refetch()
+          }}
+        />
+      </>
+    )
+  }
   if (!data) {
     return (
       <div>
@@ -193,9 +205,7 @@ export function PlanWeekPage() {
                 {t('plan.day.today')} · {formatDateMedium(planned.date)}
               </p>
               {/* The session, as the core wrote it. */}
-              <p className="mt-1 text-[16px] font-semibold text-ink">
-                {planned.sentence}
-              </p>
+              <p className="mt-1 text-[16px] font-semibold text-ink">{planned.sentence}</p>
               <p className="mt-0.5 text-[13.5px] text-ink-muted" data-testid="plan-status">
                 {statusText(planned.status)}
                 {planned.actual !== null
