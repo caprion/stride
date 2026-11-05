@@ -78,12 +78,13 @@ is typed (`vital · direction · option · pattern · statement · status`) and 
 
 ## Status
 
-The current testing candidate is **v0.12.0-rc.3**. Stable remains **v0.11.0**.
+The stable release is **v1.0.0**, promoting the v0.12.0-rc.3 application without
+feature changes. The original candidate remains available for reference.
 
 | | |
 |---|---|
-| Stable | [Latest stable release](https://github.com/caprion/stride/releases/latest) |
-| Testing | [rc.3 APK and release notes](https://github.com/caprion/stride/releases/tag/v0.12.0-rc.3) |
+| Stable | [v1.0.0 APK and release notes](https://github.com/caprion/stride/releases/tag/v1.0.0) |
+| Previous candidate | [rc.3 APK and release notes](https://github.com/caprion/stride/releases/tag/v0.12.0-rc.3) |
 | Current scope | [PLAN.md](PLAN.md), including the approved responsive-design amendments |
 | Current appearance | [Screenshots and demo provenance](docs/media/README.md) |
 | Original design | [Historical v2 wireframes](docs/plan.html), not current screenshots |
@@ -98,17 +99,17 @@ browser UI still needs its local Rust host.
 
 ## The phone app
 
-Choose the release channel deliberately. For the testing candidate:
+Download the stable Android release:
 
 ```bash
-gh release download v0.12.0-rc.3 --repo caprion/stride --pattern '*.apk' -D .
+gh release download v1.0.0 --repo caprion/stride --pattern '*.apk' -D .
 ```
 
 The release page is the authority on the artefact's name, its size and its
 SHA-256 — this file deliberately does not repeat them, because a document
 that copies a changing fact is a document that is wrong on the next release.
 
-The candidate retains the original package and signing certificate. Back up
+The release retains the original package and signing certificate. Back up
 important history before upgrading; do not uninstall to work around an upgrade
 error. The [v0.11.0 migration notes](docs/release-notes-v0.11.0.md) describe the
 one-time importer for older tables and its limits. A fresh Garmin pull is not a

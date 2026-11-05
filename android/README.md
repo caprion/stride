@@ -68,7 +68,8 @@ Readable contents stay in native memory until the user chooses a destination.
 
 The archive and isolated cross-key restore tests are automated. Document-provider
 permissions, cancellation, process death, locking during transfer and restoration
-on a second physical phone still require device acceptance before stable promotion.
+on a second physical phone still require device acceptance. Publishing v1.0.0
+does not establish that those checks have passed.
 
 Pending encrypted backups can resume through activity recreation using only a
 confined staging-directory identifier. Restore passphrases and readable contents
@@ -82,8 +83,10 @@ core receives the current phone offset before requests and sync, including
 daylight-saving or timezone changes, without reopening the store. Native tests
 cross local midnight and change offsets in the same open core.
 Debug and unsigned release assembly are not production-signature acceptance.
-The signed testing build is published as a GitHub pre-release until the physical
-phone checks above pass; it does not replace the stable release.
+The stable v1.0.0 release promotes the rc.3 application with a new version name
+and higher Android version code, retaining its package and signing identity.
+The physical-phone checks above remain unverified; the original rc.3 pre-release
+is retained.
 
 ## The first run and the key's life
 

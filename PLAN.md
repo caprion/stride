@@ -8,9 +8,9 @@ Stride has one Rust core, a responsive React/TypeScript UI, an Android
 Kotlin/Capacitor host and a local desktop HTTP host. One information architecture
 adapts to phone and desktop widths.
 
-**Status (2026-11-05):** signed testing candidate **v0.12.0-rc.3** is published;
-stable remains **v0.11.0**. Both hosts, Garmin sync, local history exploration,
-responsive screens and native recovery workflows are implemented. The original
+**Status (2026-11-05):** **v1.0.0** promotes the signed **v0.12.0-rc.3**
+application to stable without feature changes. Both hosts, Garmin sync, local
+history exploration, responsive screens and native recovery workflows are implemented. The original
 vertical line and slice lists below are historical delivery records, not work
 still waiting to be wired. Physical-phone acceptance and complete provider
 history remain open. No standalone PWA is delivered by this release.
@@ -79,8 +79,10 @@ local storage and actual Garmin status; diagnostics are secondary and connection
 failures are not interpreted as disconnection. Saving and loading failures remain
 visible and do not claim success or replace saved records with invented emptiness.
 
-The user authorized publishing a signed GitHub pre-release for physical-phone
-testing. This does not establish device acceptance or promote the build to stable.
+The user initially authorized a signed GitHub pre-release for physical-phone
+testing, then explicitly authorized stable promotion as v1.0.0 on 2026-11-05.
+That promotion does not establish physical-device acceptance or complete
+provider history.
 
 The rc.3 interaction pass adds shared date/history links, monthly run browsing,
 bounded local route previews and preserved history return paths. Progress totals

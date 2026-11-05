@@ -5,6 +5,9 @@ its compact layout. They are not Stitch renders or screenshots of personal
 history. Android uses the same frontend, but browser captures do not establish
 physical-phone acceptance.
 
+The same UI is promoted to stable in **v1.0.0** without feature changes.
+The media retains its original rc.3 capture provenance and asset URLs.
+
 ## Short video
 
 [Watch/download the 52-second screen-focused MP4](https://github.com/caprion/stride/releases/download/v0.12.0-rc.3/stride-desktop-demo.mp4).
