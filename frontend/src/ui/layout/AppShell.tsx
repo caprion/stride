@@ -194,11 +194,11 @@ function Rail() {
 
 /** The shell every screen renders inside. */
 export function AppShell({ children }: { children: ReactNode }) {
-  const { pathname } = useLocation()
+  const { pathname, search } = useLocation()
   const main = useRef<HTMLElement>(null)
   useEffect(() => {
     if (main.current) main.current.scrollTop = 0
-  }, [pathname])
+  }, [pathname, search])
   return (
     <div className="shell">
       <TopBar />

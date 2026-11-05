@@ -128,7 +128,7 @@ Two rules hold for every shape below.
 | route | the fields |
 |---|---|
 | `/activities` | `activities: ActivitySummary[]`, `next_cursor: string \| null`, `generated_at: string` |
-| `/activities/{id}` | `ActivitySummary` and `splits: {index, distance, duration, heart_rate}[]`, `elevation: {distance, elevation}[]`, `samples: {offset_s, pace, heart_rate}[]`, `plan_line: {text} \| null`, `note: string \| null` |
+| `/activities/{id}` | `ActivitySummary` and `splits: {index, distance, duration, pace, heart_rate}[]`, `elevation: {distance, elevation}[]`, `samples: {offset_s, pace, heart_rate}[]`, `plan_line: {text} \| null`, `note: string \| null` |
 | `/physiology/vitals` | `date`, `generated_at`, `rest: {label, line}`, `vitals: {key, label, value_text, direction_text, deviation_text, travel_text, status_text, band}[]`, `history: {sleep, hrv, resting_hr}` (each point: `date`, nullable `value`, nullable core-rendered `text` with units), `patterns: {id, text, sample_size}[]` |
 | `/plan/week` | `block_name`, `source`, `week_start`, `week_end`, `today`, `target`, `sessions: {date, session_type, title, sentence, target, actual, status, source}[]`, `adherence: {done, planned} \| null`, `counts: {done, planned, not_done}` |
 | `/settings` | `goal: {value: {text, raw} \| null, km: number \| null}`, `pause: {start_date, end_date, reason} \| null`, `storage: {size, activity_count, wellness_day_count, plan_session_count, note_count}`, `generated_at` |
@@ -137,7 +137,7 @@ Two rules hold for every shape below.
 | `/settings/import` | `activities`, `wellness`, `plan_blocks`, `plan_sessions`, `notes`, `rows`, `generated_at` |
 | `/activities/{id}/note` | `note: string \| null`, `generated_at` |
 | `/insights/today` | `generated_at`, `date`, `planned`, `options`, `last_run`, `distance_comparison: string \| null`, `week: {distance, sessions, days: {date, sessions}[]}` |
-| `/insights/progress` | `generated_at`, `date` (the core's local calendar date), `headline`, `headline_note`, `weekly_volume`, `typical_week`, `pace_at_hr`, `bests`, `consistency`, `sessions_per_week`, `adherence` |
+| `/insights/progress` | `generated_at`, `date` (the core's local calendar date), `period: {from, to, distance, duration, sessions, recorded_weeks}`, `headline`, `headline_note`, `weekly_volume`, `typical_week`, `pace_at_hr`, `bests`, `consistency`, `sessions_per_week`, `adherence` |
 | `/auth/status` | `connected`, `method`, `key_source`, `key_last4`, `last_sync_at`, `generated_at` |
 | `/auth/garmin/fit-import` | `imported`, `duplicate`, `activity_id`, `date`, `distance`, `generated_at` |
 | `/plan/import` | `imported`, `block_id`, `sessions`, `generated_at` |
@@ -156,10 +156,10 @@ other**: a contract that is not checked is a document, not a gate.
 
 ### The shapes the app does not read
 
-The routes the app does not type — `/physiology/{daily,sleep,hrv,latest,sources}`,
-`/fitness/*`, `/stats/*`, `/plan/{current,today,blocks,sources,adherence,results,import}`,
-`/insights/chips`, `/sync/{runs,history,settings}`, `/auth/*`,
-`/calendar` — are the router's own, and they are written down in
+The routes the app does not type — `/physiology/{daily,hrv,latest,sources}`,
+`/stats/*`, `/plan/{current,today,blocks,sources,adherence,results,import}`,
+`/insights/chips`, `/sync/{runs,history,settings}` and `/auth/*` —
+are the router's own, and they are written down in
 `crates/stride-api/src/dto.rs`. They follow the same two rules: a domain
 value is a rendered value, and a sentence is a sentence.
 
@@ -180,6 +180,21 @@ History contains one entry per calendar day ending on that date, including null
 entries for missing observations. Changing the chart window does not change the
 baseline's own calculation window. Weekly markers count recorded sessions, not
 proof that a day was completely checked or that an empty day was a rest day.
+Each marker also carries its core-rendered recorded `distance`.
+
+The feed accepts inclusive ISO `since` and `until` dates, with the same stable
+date/id cursor within the selected window. Reversed bounds are refused. Date
+filters search stored history, not just already loaded pages; client-side text
+search remains scoped to loaded results. The feed and Today include local FIT
+route previews, uniformly bounded to 64 points with endpoints retained. They
+do not request street tiles or decode every historical route for Today.
+
+Progress accepts `weeks` from 1 to 104 (default 12). Its `period` totals include
+the current partial week and the preceding calendar weeks in the selected
+window. `recorded_weeks` counts weeks with saved sessions, not source coverage.
+Measurements remain core-rendered; no frontend unit formatter is introduced.
+The calendar accepts `year` and `month` and is typed by the frontend for monthly
+history navigation. It describes saved activities, not Garmin's future plan.
 
 ### The settings, the goal and the pause
 

@@ -49,8 +49,22 @@ pub fn activities(api: &Api, request: &Request) -> ApiResult<Value> {
         Some(text) if !text.trim().is_empty() => Some(core_date(text.trim())?.to_iso()),
         _ => None,
     };
+    let until = match request.query.get("until") {
+        Some(text) if !text.trim().is_empty() => Some(core_date(text.trim())?.to_iso()),
+        _ => None,
+    };
+    if matches!((&since, &until), (Some(from), Some(to)) if from > to) {
+        return Err(ApiError::bad_request(
+            "the date window ends before it starts",
+        ));
+    }
 
-    let (runs, next_cursor) = feed(api, cursor, limit, since)?;
+    let (mut runs, next_cursor) = feed(api, cursor, limit, since, until)?;
+    for run in &mut runs {
+        if let Some(decoded) = series::decoded(api, run.id) {
+            run.geo_points = series::geo_points(&decoded, 64);
+        }
+    }
     let response = ActivityListResponse {
         activities: runs,
         next_cursor,
@@ -69,11 +83,12 @@ fn feed(
     cursor: Option<stride_store::FeedCursor>,
     limit: u32,
     since: Option<String>,
+    until: Option<String>,
 ) -> ApiResult<(Vec<ActivitySummary>, Option<String>)> {
     let store = api.store();
     let limit = limit.clamp(1, api.config().max_feed_page);
-    match since {
-        None => {
+    match (since, until) {
+        (None, None) => {
             let page = store
                 .activity_feed(cursor.as_ref(), limit)
                 .map_err(|error| api.store_error("the feed could not be read", &error))?;
@@ -81,8 +96,9 @@ fn feed(
             let runs = super::summaries(api, &page.activities)?;
             Ok((runs, next))
         }
-        Some(from) => {
-            let to = today(api)?.to_iso();
+        (from, to) => {
+            let from = from.unwrap_or_else(|| "0001-01-01".to_string());
+            let to = to.unwrap_or(today(api)?.to_iso());
             let rows = store
                 .activities_between(&from, &to)
                 .map_err(|error| api.store_error("the feed could not be read", &error))?;

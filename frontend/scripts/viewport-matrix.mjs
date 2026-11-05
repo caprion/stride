@@ -61,7 +61,10 @@ const ROUTES = [
   { path: '/body', name: 'Body', primary: '[data-testid="body-signals"]' },
   { path: '/plan', name: 'Plan week', primary: '[data-testid="plan-week"]' },
   { path: '/compare/101', name: 'Compare', primary: '[data-testid="compare-metrics"]' },
-  { path: '/settings', name: 'Settings', primary: '[data-testid="settings-goal"]' },
+  { path: '/settings', name: 'Settings', primary: '[data-testid="settings-connection"]' },
+  { path: '/settings?section=training', name: 'Training preferences', primary: '[data-testid="settings-goal"]' },
+  { path: '/settings?section=files', name: 'Imports', primary: '[data-testid="settings-import"]' },
+  { path: '/settings?section=about', name: 'About', primary: '[data-testid="settings-about"]' },
   {
     path: '/connect',
     name: 'Connect',
@@ -234,6 +237,28 @@ const IN_PAGE_CHECKS = `
     .map((element) => element.getAttribute('data-destination'))
   const unique = [...new Set(destinations)].sort()
 
+  const columns = (selector) => {
+    const node = document.querySelector(selector)
+    return node ? getComputedStyle(node).gridTemplateColumns.split(' ').length : null
+  }
+  if (window.innerWidth >= 1024) {
+    for (const selector of ['.progress-grid', '.compare-grid', '.compare-charts']) {
+      const count = columns(selector)
+      if (count !== null && count !== 2) problems.push(selector + ' must have two desktop columns, got ' + count)
+    }
+    const toggle = document.querySelector('.compare-toggle')
+    if (toggle && visible(toggle)) problems.push('the compact comparison toggle is visible on desktop')
+  }
+  const table = document.querySelector('[data-testid="compare-metrics"] table')
+  if (table) {
+    const positions = [...table.querySelectorAll('thead th')].map((cell) => cell.getBoundingClientRect().right)
+    for (const row of table.querySelectorAll('tbody tr')) {
+      if ([...row.children].some((cell, index) => Math.abs(cell.getBoundingClientRect().right - positions[index]) > 1)) {
+        problems.push('comparison values do not align with their column headers')
+        break
+      }
+    }
+  }
   return { problems, destinations, unique }
 }
 `
@@ -272,7 +297,7 @@ async function main() {
       )
 
       for (const route of ROUTES) {
-        const url = `${base}${route.path}?fixtures=${route.fixture ?? 1}`
+        const url = `${base}${route.path}${route.path.includes('?') ? '&' : '?'}fixtures=${route.fixture ?? 1}`
         await page.goto(url, { waitUntil: 'networkidle' })
         if (route.chrome !== false) {
           await page.waitForSelector('.shell', { state: 'attached', timeout: 10_000 })

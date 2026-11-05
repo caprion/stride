@@ -8,6 +8,7 @@
 
 import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
 import {
   Bar,
   BarChart,
@@ -29,6 +30,7 @@ import { t } from '../i18n'
 import { axisTick } from '../components/ChartAxis'
 import { PageHeader } from '../ui/layout/PageHeader'
 import { QueryError } from '../components/QueryError'
+import { runsPath, shiftDate } from '../lib/history'
 
 /** A chart card with a fixed, legible height. */
 function ChartCard({ title, children }: { title: string; children: React.ReactNode }) {
@@ -52,9 +54,14 @@ function ChartCard({ title, children }: { title: string; children: React.ReactNo
 const RANGES = [4, 8, 12, 26, 52] as const
 
 export function ProgressPage() {
-  const progress = useQuery({ queryKey: ['insights-progress'], queryFn: api.insightsProgress })
-  const stale = useStaleness()
   const [range, setRange] = useState<number>(12)
+  const [chosenWeek, setChosenWeek] = useState('')
+  const navigate = useNavigate()
+  const progress = useQuery({
+    queryKey: ['insights-progress', range],
+    queryFn: () => api.insightsProgress(range),
+  })
+  const stale = useStaleness()
   const data = progress.data
 
   if (progress.isError && !data) {
@@ -100,6 +107,7 @@ export function ProgressPage() {
   }
 
   const weeks = calendarWeekStarts(data.date, range)
+  const selectedWeek = weeks.includes(chosenWeek) ? chosenWeek : weeks[weeks.length - 1]!
   const volume = weeks.map((date) => {
     const week = data.weekly_volume.find((entry) => entry.week_start === date)
     return {
@@ -160,6 +168,30 @@ export function ProgressPage() {
       <section className="card px-4 py-3" data-testid="progress-headline">
         {/* The headline is the core's sentence (core-contract §8). */}
         <p className="text-[19px] font-semibold leading-tight text-ink">{data.headline}</p>
+        <p className="mt-1 text-[12px] text-ink-muted">
+          {formatDateShort(data.period.from)} - {formatDateShort(data.period.to)}
+        </p>
+        <dl
+          className="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-4"
+          data-testid="progress-summary"
+        >
+          {[
+            { label: t('vital.distance'), value: renderedText(data.period.distance) },
+            { label: t('vital.time'), value: renderedText(data.period.duration) },
+            { label: t('progress.summary.sessions'), value: formatCount(data.period.sessions) },
+            {
+              label: t('progress.summary.weeks'),
+              value: formatCount(data.period.recorded_weeks),
+            },
+          ].map(({ label, value }) => (
+            <div key={label}>
+              <dt className="text-[12px] text-ink-muted">{label}</dt>
+              <dd className="mt-1 text-[24px] font-semibold tabular-nums text-brand-700">
+                {value}
+              </dd>
+            </div>
+          ))}
+        </dl>
         <p className="mt-1 text-[13px] text-ink-muted">{t('progress.scope')}</p>
         {data.headline_note ? (
           <p className="mt-0.5 text-[13.5px] text-ink-muted">{data.headline_note}</p>
@@ -189,6 +221,7 @@ export function ProgressPage() {
               onClick={() => {
                 setRange(weeks)
               }}
+              aria-pressed={range === weeks}
               data-testid={`progress-range-${weeks}`}
               className={`tap rounded-md px-2.5 text-[12.5px] font-semibold ${
                 range === weeks ? 'bg-brand-50 text-brand-700' : 'text-ink-muted'
@@ -200,7 +233,32 @@ export function ProgressPage() {
         </div>
       </div>
 
-      <div className="mt-3 grid grid-cols-1 gap-3 progress-grid">
+      <div className="mt-3 flex flex-wrap items-end gap-3">
+        <label className="flex flex-col gap-1 text-[12px] text-ink-muted">
+          {t('progress.exploreWeek')}
+          <select
+            className="tap rounded-md border border-edge bg-surface px-2 text-[13px] text-ink"
+            value={selectedWeek}
+            onChange={(event) => setChosenWeek(event.target.value)}
+          >
+            {weeks
+              .slice()
+              .reverse()
+              .map((date) => (
+                <option key={date} value={date}>
+                  {formatDateShort(date)}
+                </option>
+              ))}
+          </select>
+        </label>
+        <Link
+          className="tap-inline text-[13px] font-medium text-brand-700 underline"
+          to={runsPath(selectedWeek, shiftDate(selectedWeek, 6))}
+        >
+          {t('progress.viewRuns')}
+        </Link>
+      </div>
+      <div className="progress-grid mt-3">
         {/* --------------------------------------------- weekly volume */}
         <ChartCard title={t('progress.volume.heading')}>
           <div style={{ width: '100%', height: 180 }}>
@@ -249,6 +307,11 @@ export function ProgressPage() {
                   dataKey="km"
                   fill="#1E5E96"
                   isAnimationActive={false}
+                  cursor="pointer"
+                  onClick={(_entry, index) => {
+                    const week = weeks[index]
+                    if (week) navigate(runsPath(week, shiftDate(week, 6)))
+                  }}
                 >
                   {volume.map((week, index) => (
                     <Cell

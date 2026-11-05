@@ -17,7 +17,7 @@
 
 import { useQuery } from '@tanstack/react-query'
 import { useMemo, useState } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import {
   Line,
   LineChart,
@@ -38,29 +38,40 @@ import { t } from '../i18n'
 import { axisTick } from '../components/ChartAxis'
 import { PageHeader } from '../ui/layout/PageHeader'
 import { QueryError } from '../components/QueryError'
+import { historyReturn } from '../lib/history'
 
 /** One row of the diff: the metric, A, B and the delta — the core's words. */
 function MetricRow({ metric }: { metric: CompareMetric }) {
   return (
-    <li
-      className="grid grid-cols-[1fr_auto_auto_auto] items-baseline gap-x-3 border-b border-edge px-4 py-2 last:border-b-0"
+    <tr
+      className="border-b border-edge last:border-b-0"
       data-testid={`compare-row-${metric.key}`}
     >
-      <span className="text-[13.5px] text-ink-soft">{t(metric.label_key)}</span>
-      <span className="text-[13.5px] font-semibold tabular-nums text-ink">
+      <th scope="row" className="px-2 py-3 text-left text-[12px] font-medium text-ink-soft">
+        {t(metric.label_key)}
+      </th>
+      <td className="px-2 py-3 text-right text-[12px] font-semibold tabular-nums text-ink">
         {renderedText(metric.a)}
-      </span>
-      <span className="text-[13.5px] font-semibold tabular-nums text-ink">
+      </td>
+      <td className="px-2 py-3 text-right text-[12px] font-semibold tabular-nums text-ink">
         {renderedText(metric.b)}
-      </span>
-      <span className="text-[13.5px] tabular-nums text-ink-muted">
+      </td>
+      <td className="px-2 py-3 text-right text-[12px] tabular-nums text-ink-muted">
         {renderedText(metric.delta)}
-      </span>
-    </li>
+      </td>
+    </tr>
   )
 }
 
-function EffortChart({ series, name }: { series: CompareSeriesPoint[]; name: string }) {
+function EffortChart({
+  series,
+  name,
+  metric,
+}: {
+  series: CompareSeriesPoint[]
+  name: string
+  metric: 'heart_rate' | 'pace'
+}) {
   const data = series.map((point) => ({
     // The chart's own scale: minutes into the run.
     minute: point.offset_s / 60,
@@ -72,8 +83,8 @@ function EffortChart({ series, name }: { series: CompareSeriesPoint[]; name: str
   // The axis's labels are the core's own words: "148 bpm".
   const ticks = axisTicks(
     series.map((point) => ({
-      value: point.heart_rate?.raw ?? null,
-      text: point.heart_rate?.text ?? null,
+      value: point[metric]?.raw ?? null,
+      text: point[metric]?.text ?? null,
     })),
   )
   return (
@@ -99,22 +110,25 @@ function EffortChart({ series, name }: { series: CompareSeriesPoint[]; name: str
               tickLine={false}
               axisLine={false}
               domain={['dataMin - 5', 'dataMax + 5']}
+              reversed={metric === 'pace'}
             />
             <Tooltip
               formatter={(_value, _name, item) => {
-                const payload = item?.payload as { hrText?: string | null } | undefined
+                const payload = item?.payload as
+                  { hrText?: string | null; paceText?: string | null } | undefined
                 // The tooltip shows the core's words, not the chart's
                 // numbers.
-                return payload?.hrText ?? ''
+                return (metric === 'pace' ? payload?.paceText : payload?.hrText) ?? ''
               }}
             />
             <Line
               type="monotone"
-              name={t('vital.heartRate')}
-              dataKey="hr"
-              stroke="#1E5E96"
+              name={t(metric === 'pace' ? 'vital.pace' : 'vital.heartRate')}
+              dataKey={metric === 'pace' ? 'pace' : 'hr'}
+              stroke={metric === 'pace' ? '#D99A0B' : '#1E5E96'}
               strokeWidth={2}
               dot={false}
+              isAnimationActive={false}
             />
           </LineChart>
         </ResponsiveContainer>
@@ -158,12 +172,19 @@ function rankCandidates(
 }
 
 export function ComparePage({ id }: { id: string }) {
-  const [params] = useSearchParams()
+  const [params, setParams] = useSearchParams()
   const [swapped, setSwapped] = useState(false)
   const [chart, setChart] = useState<'a' | 'b'>('a')
-  const [chosen, setChosen] = useState<string | null>(params.get('with'))
+  const chosen = params.get('with')
+  const returnTo = historyReturn(params.get('returnTo'))
+  const [metric, setMetric] = useState<'heart_rate' | 'pace'>('heart_rate')
   const [picking, setPicking] = useState(false)
   const stale = useStaleness()
+  const back = (
+    <Link to={returnTo} className="tap-inline mb-2 text-[13px] text-brand-700 underline">
+      {t('activity.back')}
+    </Link>
+  )
 
   /**
    * The athlete's real runs.
@@ -211,6 +232,7 @@ export function ComparePage({ id }: { id: string }) {
   if (candidates.isError || comparison.isError) {
     return (
       <>
+        {back}
         <PageHeader title={t('compare.heading')} />
         <QueryError
           retry={() => {
@@ -224,6 +246,7 @@ export function ComparePage({ id }: { id: string }) {
   if (candidates.isSuccess && (!current || !partner)) {
     return (
       <>
+        {back}
         <PageHeader title={t('compare.heading')} />
         <section className="card px-4 py-6" data-testid="compare-none">
           <p>{t('compare.state.none')}</p>
@@ -235,6 +258,7 @@ export function ComparePage({ id }: { id: string }) {
   if (!data) {
     return (
       <div>
+        {back}
         <PageHeader title={t('compare.heading')} />
         <p className="text-[14px] text-ink-muted">{t('common.loading')}</p>
       </div>
@@ -251,6 +275,7 @@ export function ComparePage({ id }: { id: string }) {
   if (!runA || !runB || rows.length === 0) {
     return (
       <div>
+        {back}
         <PageHeader title={t('compare.heading')} />
         <div className="card px-4 py-8 text-center" data-testid="compare-none">
           <p className="text-[15px] font-semibold text-ink">{t('compare.state.none')}</p>
@@ -262,6 +287,7 @@ export function ComparePage({ id }: { id: string }) {
 
   return (
     <div>
+      {back}
       <PageHeader
         title={t('compare.heading')}
         meta={stale ? <span className="text-ink-faint">{stale}</span> : null}
@@ -287,29 +313,33 @@ export function ComparePage({ id }: { id: string }) {
 
       {/* ------------------------------------------- the metric diff */}
       <section className="card mt-3 overflow-hidden" data-testid="compare-metrics">
-        <div className="grid grid-cols-[1fr_auto_auto_auto] items-baseline gap-x-3 border-b border-edge bg-surface-soft px-4 py-2">
-          <span className="text-[11px] font-semibold uppercase tracking-[0.07em] text-ink-faint">
-            {t('compare.column.metric')}
-          </span>
-          <span className="text-[11px] font-semibold uppercase tracking-[0.07em] text-ink-faint">
-            {t('compare.column.a')}
-          </span>
-          <span className="text-[11px] font-semibold uppercase tracking-[0.07em] text-ink-faint">
-            {t('compare.column.b')}
-          </span>
-          <span className="text-[11px] font-semibold uppercase tracking-[0.07em] text-ink-faint">
-            {t('compare.column.delta')}
-          </span>
-        </div>
-        <ul>
-          {rows.map((metric) => (
-            <MetricRow key={metric.key} metric={metric} />
-          ))}
-        </ul>
+        <table className="w-full table-fixed">
+          <thead>
+            <tr className="border-b border-edge bg-surface-soft text-[11px] text-ink-muted">
+              <th scope="col" className="w-1/4 px-2 py-2 text-left font-semibold">
+                {t('compare.column.metric')}
+              </th>
+              <th scope="col" className="w-1/4 px-2 py-2 text-right font-semibold">
+                {t('compare.column.a')}
+              </th>
+              <th scope="col" className="w-1/4 px-2 py-2 text-right font-semibold">
+                {t('compare.column.b')}
+              </th>
+              <th scope="col" className="w-1/4 px-2 py-2 text-right font-semibold">
+                {t('compare.column.delta')}
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((metric) => (
+              <MetricRow key={metric.key} metric={metric} />
+            ))}
+          </tbody>
+        </table>
       </section>
 
       {/* ------------------------------------------------ the two runs */}
-      <div className="mt-3 grid grid-cols-1 gap-3 compare-grid" data-testid="compare-runs">
+      <div className="compare-grid mt-3" data-testid="compare-runs">
         {[
           { run: runA, key: 'a' as const },
           { run: runB, key: 'b' as const },
@@ -319,6 +349,14 @@ export function ComparePage({ id }: { id: string }) {
               {t(key === 'a' ? 'compare.column.a' : 'compare.column.b')}
             </p>
             <p className="text-[15px] font-semibold text-ink">
+              <Link
+                to={`/runs/${run.id}?${new URLSearchParams({ returnTo })}`}
+                className="tap-inline text-brand-700 underline"
+              >
+                {run.label}
+              </Link>
+            </p>
+            <p className="text-[13px] text-ink-muted">
               {renderedText(run.distance)} · {formatDateMedium(run.date)}
             </p>
             {run.story ? <p className="mt-0.5 text-[13px] text-ink-soft">{run.story}</p> : null}
@@ -328,13 +366,27 @@ export function ComparePage({ id }: { id: string }) {
 
       {/* --------------------------------------------------- the charts */}
       <section className="card mt-3 px-4 py-3">
-        <div className="mb-2 flex items-center justify-between gap-3">
+        <div className="mb-2 flex flex-wrap items-center justify-between gap-3">
           <h2 className="text-[12px] font-semibold uppercase tracking-[0.07em] text-ink-faint">
-            {t('compare.chart.toggle')}
+            {t('activity.effort.heading')}
           </h2>
+          <div className="flex items-center gap-2 text-[12px] text-ink-muted">
+            <label htmlFor="compare-signal">{t('compare.chart.signal')}</label>
+            <select
+              id="compare-signal"
+              className="tap rounded-md border border-edge bg-surface px-2 text-ink"
+              value={metric}
+              onChange={(event) =>
+                setMetric(event.target.value === 'pace' ? 'pace' : 'heart_rate')
+              }
+            >
+              <option value="heart_rate">{t('vital.heartRate')}</option>
+              <option value="pace">{t('vital.pace')}</option>
+            </select>
+          </div>
           {/* The A/B toggle: one chart on a narrow screen, both when there
               is room. */}
-          <div className="compare-toggle flex gap-1">
+          <div className="compare-toggle gap-1">
             <button
               type="button"
               onClick={() => setChart('a')}
@@ -357,14 +409,15 @@ export function ComparePage({ id }: { id: string }) {
             </button>
           </div>
         </div>
-        <div className="compare-charts grid grid-cols-1 gap-3">
+        <div className="compare-charts">
           <div
             className={chart === 'a' ? '' : 'compare-hidden'}
             data-testid="compare-chart-a-panel"
           >
             <EffortChart
               series={chartSeries.a}
-              name={`${t('compare.column.a')} · ${t('vital.heartRate')}`}
+              name={`${t('compare.column.a')} · ${t(metric === 'pace' ? 'vital.pace' : 'vital.heartRate')}`}
+              metric={metric}
             />
           </div>
           <div
@@ -373,7 +426,8 @@ export function ComparePage({ id }: { id: string }) {
           >
             <EffortChart
               series={chartSeries.b}
-              name={`${t('compare.column.b')} · ${t('vital.heartRate')}`}
+              name={`${t('compare.column.b')} · ${t(metric === 'pace' ? 'vital.pace' : 'vital.heartRate')}`}
+              metric={metric}
             />
           </div>
         </div>
@@ -431,7 +485,10 @@ export function ComparePage({ id }: { id: string }) {
                     data-testid={`compare-candidate-${candidate.id}`}
                     className="tap flex w-full items-baseline justify-between gap-3 py-2 text-left"
                     onClick={() => {
-                      setChosen(String(candidate.id))
+                      setParams((previous) => {
+                        previous.set('with', String(candidate.id))
+                        return previous
+                      })
                       setPicking(false)
                     }}
                   >

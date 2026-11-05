@@ -25,6 +25,7 @@
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
+import { Link, useSearchParams } from 'react-router-dom'
 import { api } from '../lib/api'
 import { connectGarmin } from '../lib/connect'
 import { formatDateShort, formatRelative, renderedText } from '../lib/format'
@@ -50,6 +51,9 @@ const REASONS: { value: string; label: string }[] = [
 const CONFIRMATION = t('settings.delete.word')
 
 export function SettingsPage() {
+  const [params] = useSearchParams()
+  const requested = params.get('section')
+  const section = ['training', 'files', 'about'].includes(requested ?? '') ? requested : 'data'
   const settings = useQuery({ queryKey: ['settings'], queryFn: api.settings })
   const connection = useQuery({ queryKey: ['auth-status'], queryFn: api.authStatus })
   const health = useQuery({ queryKey: ['health'], queryFn: api.health })
@@ -100,13 +104,7 @@ export function SettingsPage() {
         await open()
         return null
       }
-      return api.exportBackup()
-    },
-    onSuccess: (result) => {
-      if (result === null) return
-      setNotice(
-        result.exported ? t('settings.storage.exported') : t('settings.storage.exportFailed'),
-      )
+      throw new Error(t('settings.storage.exportFailed'))
     },
     onError: () => setNotice(t('settings.storage.exportFailed')),
   })
@@ -172,358 +170,400 @@ export function SettingsPage() {
         <h2 className="text-[16px] font-semibold text-brand-700">{t('common.local')}</h2>
         <p className="mt-1 text-[14px] text-ink-soft">{t('common.saved')}</p>
       </section>
+      <nav className="mb-3 flex flex-wrap gap-1" aria-label={t('settings.sections')}>
+        {(
+          [
+            ['data', 'settings.tab.data'],
+            ['training', 'settings.preferences'],
+            ['files', 'settings.import.heading'],
+            ['about', 'settings.about.heading'],
+          ] as const
+        ).map(([key, label]) => (
+          <Link
+            key={key}
+            to={`/settings?section=${key}`}
+            aria-current={section === key ? 'page' : undefined}
+            className={`tap-inline rounded-md px-3 text-[13px] font-semibold ${section === key ? 'bg-brand-600 text-white' : 'text-ink-muted hover:bg-brand-50'}`}
+          >
+            {t(label)}
+          </Link>
+        ))}
+      </nav>
       <div className="settings-grid">
-        <SettingsGroup title={t('settings.connection.heading')} testId="settings-connection">
-          <SettingRow
-            label={t('settings.connection.status')}
-            value={
-              connection.isError
-                ? t('settings.connection.unknown')
-                : connection.isPending
-                  ? t('common.loading')
-                  : link?.connected
-                    ? t('settings.connection.connected')
-                    : t('settings.connection.notConnected')
-            }
-            testId="settings-connection-state"
-          />
-          <div className="mt-2">
-            <SyncControls details />
-          </div>
-          <details className="mt-2 text-[13px] text-ink-muted">
-            <summary className="tap-inline cursor-pointer">
-              {t('settings.connection.manage')}
-            </summary>
+        {section === 'data' ? (
+          <SettingsGroup title={t('settings.connection.heading')} testId="settings-connection">
             <SettingRow
-              label={t('settings.connection.key')}
-              value={link?.key_last4 ?? '—'}
-              testId="settings-connection-key"
-            />
-            <SettingRow
-              label={t('settings.connection.lastSync')}
+              label={t('settings.connection.status')}
               value={
-                link?.last_sync_at
-                  ? formatRelative(link.last_sync_at)
-                  : t('settings.connection.never')
+                connection.isError
+                  ? t('settings.connection.unknown')
+                  : connection.isPending
+                    ? t('common.loading')
+                    : link?.connected
+                      ? t('settings.connection.connected')
+                      : t('settings.connection.notConnected')
               }
-              testId="settings-connection-sync"
+              testId="settings-connection-state"
             />
-            <p className="mt-1 text-[12.5px] text-ink-faint">
-              {t('settings.connection.keyNote')}
-            </p>
-            {connection.isSuccess && link?.connected && !showKey ? (
-              <div className="mt-2">
-                <button
-                  type="button"
-                  className="tap inline-flex items-center rounded-md border border-edge bg-surface px-4 text-[14px] font-semibold text-ink-soft"
-                  data-testid="settings-reconnect"
-                  onClick={() => {
-                    if (currentHost() === 'native') {
-                      setup.mutate()
-                      return
-                    }
-                    setShowKey(true)
-                  }}
-                >
-                  {currentHost() === 'native'
-                    ? t('settings.connection.setup')
-                    : t('settings.connection.reconnect')}
-                </button>
+            <div className="mt-2">
+              <SyncControls details />
+            </div>
+            <details className="mt-2 text-[13px] text-ink-muted">
+              <summary className="tap-inline cursor-pointer">
+                {t('settings.connection.manage')}
+              </summary>
+              <SettingRow
+                label={t('settings.connection.key')}
+                value={link?.key_last4 ?? '—'}
+                testId="settings-connection-key"
+              />
+              <SettingRow
+                label={t('settings.connection.lastSync')}
+                value={
+                  link?.last_sync_at
+                    ? formatRelative(link.last_sync_at)
+                    : t('settings.connection.never')
+                }
+                testId="settings-connection-sync"
+              />
+              <p className="mt-1 text-[12.5px] text-ink-faint">
+                {t('settings.connection.keyNote')}
+              </p>
+              {connection.isSuccess && link?.connected && !showKey ? (
+                <div className="mt-2">
+                  <button
+                    type="button"
+                    className="tap inline-flex items-center rounded-md border border-edge bg-surface px-4 text-[14px] font-semibold text-ink-soft"
+                    data-testid="settings-reconnect"
+                    onClick={() => {
+                      if (currentHost() === 'native') {
+                        setup.mutate()
+                        return
+                      }
+                      setShowKey(true)
+                    }}
+                  >
+                    {currentHost() === 'native'
+                      ? t('settings.connection.setup')
+                      : t('settings.connection.reconnect')}
+                  </button>
+                </div>
+              ) : null}
+            </details>
+            {showKey ? (
+              <div className="mt-3">
+                <KeyField />
               </div>
             ) : null}
-          </details>
-          {showKey ? (
-            <div className="mt-3">
-              <KeyField />
-            </div>
-          ) : null}
-          {setup.isError ? <p role="alert">{t('today.state.connectFailed')}</p> : null}
-          {connection.isSuccess && !link?.connected && !showKey ? (
-            <button
-              type="button"
-              className="tap mt-2 rounded-md bg-brand-600 px-4 text-[14px] font-semibold text-white"
-              disabled={setup.isPending}
-              onClick={() => {
-                if (currentHost() === 'native') setup.mutate()
-                else setShowKey(true)
-              }}
-            >
-              {t('settings.connection.connect')}
-            </button>
-          ) : null}
-        </SettingsGroup>
-        {/* ------------------------------------------------ the goal */}
-        <SettingsGroup title={t('settings.goal.heading')} testId="settings-goal">
-          <Field
-            label={t('settings.goal.unit')}
-            value={goalValue}
-            inputMode="decimal"
-            onChange={setGoal}
-            testId="settings-goal-input"
-          />
-          <p className="mt-1.5 text-[13px] text-ink-muted">{t('settings.goal.empty')}</p>
-          <div className="mt-2 flex flex-wrap items-center gap-3">
-            <button
-              type="button"
-              className="tap inline-flex items-center rounded-md bg-brand-600 px-4 text-[14px] font-semibold text-white disabled:opacity-50"
-              disabled={!goalChanged || save.isPending}
-              data-testid="settings-goal-save"
-              onClick={() => {
-                const km = goalValue.trim() === '' ? null : Number(goalValue.trim())
-                if (km !== null && (!Number.isFinite(km) || km <= 0)) {
-                  setGoalNotice(t('common.invalidGoal'))
-                  return
-                }
-                setGoalNotice(null)
-                save.mutate({ goal_km: km })
-              }}
-            >
-              {t('settings.goal.save')}
-            </button>
-            {state.goal.value ? (
-              <span className="text-[13px] text-ink-muted" data-testid="settings-goal-value">
-                {renderedText(state.goal.value)}
-              </span>
-            ) : (
-              <span className="text-[13px] text-ink-muted" data-testid="settings-goal-value">
-                {t('settings.goal.none')}
-              </span>
-            )}
-          </div>
-          <Notice text={goalNotice} testId="settings-goal-notice" />
-          {save.isError && save.variables && 'goal_km' in save.variables ? (
-            <p role="alert" className="mt-2 text-[13px] text-ink-muted">
-              {t('common.saveFailed')}
-            </p>
-          ) : null}
-        </SettingsGroup>
-
-        {/* ----------------------------------------------- the pause */}
-        <SettingsGroup title={t('settings.pause.heading')} testId="settings-pause">
-          {state.pause ? (
-            <p className="text-[14px] font-medium text-ink" data-testid="settings-pause-state">
-              {state.pause.reason
-                ? t('common.paused.untilReason', {
-                    date: formatDateShort(state.pause.end_date),
-                    reason: t(
-                      state.pause.reason === 'travel'
-                        ? 'settings.pause.reason.travel'
-                        : state.pause.reason === 'sick'
-                          ? 'settings.pause.reason.sick'
-                          : 'settings.pause.reason.injured',
-                    ),
-                  })
-                : t('common.paused.until', { date: formatDateShort(state.pause.end_date) })}
-            </p>
-          ) : null}
-
-          <div className="mt-2 settings-pair">
-            <Field
-              label={t('settings.pause.start')}
-              type="date"
-              value={startValue}
-              onChange={setPauseStart}
-              testId="settings-pause-start"
-            />
-            <Field
-              label={t('settings.pause.end')}
-              type="date"
-              value={endValue}
-              onChange={setPauseEnd}
-              testId="settings-pause-end"
-            />
-          </div>
-          <div className="mt-3">
-            <Choice
-              label={t('settings.pause.reason')}
-              value={reasonValue}
-              options={REASONS}
-              onChange={setPauseReason}
-              testId="settings-pause-reason"
-            />
-          </div>
-
-          <div className="mt-3 flex flex-wrap items-center gap-3">
-            <button
-              type="button"
-              className="tap inline-flex items-center rounded-md bg-brand-600 px-4 text-[14px] font-semibold text-white disabled:opacity-50"
-              disabled={startValue === '' || endValue === '' || save.isPending}
-              data-testid="settings-pause-save"
-              onClick={() => {
-                setPauseNotice(null)
-                save.mutate({
-                  pause: {
-                    start_date: startValue,
-                    end_date: endValue,
-                    reason: reasonValue === '' ? null : (reasonValue as PauseReason),
-                  },
-                })
-              }}
-            >
-              {t('settings.pause.save')}
-            </button>
-            {state.pause ? (
+            {setup.isError ? <p role="alert">{t('today.state.connectFailed')}</p> : null}
+            {connection.isSuccess && !link?.connected && !showKey ? (
               <button
                 type="button"
-                className="tap-inline text-[13.5px] font-medium text-ink-muted underline underline-offset-2"
-                data-testid="settings-pause-clear"
+                className="tap mt-2 rounded-md bg-brand-600 px-4 text-[14px] font-semibold text-white"
+                disabled={setup.isPending}
                 onClick={() => {
-                  setPauseNotice(null)
-                  save.mutate({ pause: null })
+                  if (currentHost() === 'native') setup.mutate()
+                  else setShowKey(true)
                 }}
               >
-                {t('settings.pause.clear')}
+                {t('settings.connection.connect')}
               </button>
             ) : null}
-          </div>
-          <Notice text={pauseNotice} testId="settings-pause-notice" />
-          {save.isError && save.variables && 'pause' in save.variables ? (
-            <p role="alert" className="mt-2 text-[13px] text-ink-muted">
-              {t('common.saveFailed')}
-            </p>
-          ) : null}
-        </SettingsGroup>
+          </SettingsGroup>
+        ) : null}
+        {/* ------------------------------------------------ the goal */}
+        {section === 'training' ? (
+          <SettingsGroup title={t('settings.goal.heading')} testId="settings-goal">
+            <Field
+              label={t('settings.goal.unit')}
+              value={goalValue}
+              inputMode="decimal"
+              onChange={setGoal}
+              testId="settings-goal-input"
+            />
+            <p className="mt-1.5 text-[13px] text-ink-muted">{t('settings.goal.empty')}</p>
+            <div className="mt-2 flex flex-wrap items-center gap-3">
+              <button
+                type="button"
+                className="tap inline-flex items-center rounded-md bg-brand-600 px-4 text-[14px] font-semibold text-white disabled:opacity-50"
+                disabled={!goalChanged || save.isPending}
+                data-testid="settings-goal-save"
+                onClick={() => {
+                  const km = goalValue.trim() === '' ? null : Number(goalValue.trim())
+                  if (km !== null && (!Number.isFinite(km) || km <= 0)) {
+                    setGoalNotice(t('common.invalidGoal'))
+                    return
+                  }
+                  setGoalNotice(null)
+                  save.mutate({ goal_km: km })
+                }}
+              >
+                {t('settings.goal.save')}
+              </button>
+              {state.goal.value ? (
+                <span className="text-[13px] text-ink-muted" data-testid="settings-goal-value">
+                  {renderedText(state.goal.value)}
+                </span>
+              ) : (
+                <span className="text-[13px] text-ink-muted" data-testid="settings-goal-value">
+                  {t('settings.goal.none')}
+                </span>
+              )}
+            </div>
+            <Notice text={goalNotice} testId="settings-goal-notice" />
+            {save.isError && save.variables && 'goal_km' in save.variables ? (
+              <p role="alert" className="mt-2 text-[13px] text-ink-muted">
+                {t('common.saveFailed')}
+              </p>
+            ) : null}
+          </SettingsGroup>
+        ) : null}
+
+        {/* ----------------------------------------------- the pause */}
+        {section === 'training' ? (
+          <SettingsGroup title={t('settings.pause.heading')} testId="settings-pause">
+            {state.pause ? (
+              <p
+                className="text-[14px] font-medium text-ink"
+                data-testid="settings-pause-state"
+              >
+                {state.pause.reason
+                  ? t('common.paused.untilReason', {
+                      date: formatDateShort(state.pause.end_date),
+                      reason: t(
+                        state.pause.reason === 'travel'
+                          ? 'settings.pause.reason.travel'
+                          : state.pause.reason === 'sick'
+                            ? 'settings.pause.reason.sick'
+                            : 'settings.pause.reason.injured',
+                      ),
+                    })
+                  : t('common.paused.until', { date: formatDateShort(state.pause.end_date) })}
+              </p>
+            ) : null}
+
+            <div className="mt-2 settings-pair">
+              <Field
+                label={t('settings.pause.start')}
+                type="date"
+                value={startValue}
+                onChange={setPauseStart}
+                testId="settings-pause-start"
+              />
+              <Field
+                label={t('settings.pause.end')}
+                type="date"
+                value={endValue}
+                onChange={setPauseEnd}
+                testId="settings-pause-end"
+              />
+            </div>
+            <div className="mt-3">
+              <Choice
+                label={t('settings.pause.reason')}
+                value={reasonValue}
+                options={REASONS}
+                onChange={setPauseReason}
+                testId="settings-pause-reason"
+              />
+            </div>
+
+            <div className="mt-3 flex flex-wrap items-center gap-3">
+              <button
+                type="button"
+                className="tap inline-flex items-center rounded-md bg-brand-600 px-4 text-[14px] font-semibold text-white disabled:opacity-50"
+                disabled={startValue === '' || endValue === '' || save.isPending}
+                data-testid="settings-pause-save"
+                onClick={() => {
+                  setPauseNotice(null)
+                  save.mutate({
+                    pause: {
+                      start_date: startValue,
+                      end_date: endValue,
+                      reason: reasonValue === '' ? null : (reasonValue as PauseReason),
+                    },
+                  })
+                }}
+              >
+                {t('settings.pause.save')}
+              </button>
+              {state.pause ? (
+                <button
+                  type="button"
+                  className="tap-inline text-[13.5px] font-medium text-ink-muted underline underline-offset-2"
+                  data-testid="settings-pause-clear"
+                  onClick={() => {
+                    setPauseNotice(null)
+                    save.mutate({ pause: null })
+                  }}
+                >
+                  {t('settings.pause.clear')}
+                </button>
+              ) : null}
+            </div>
+            <Notice text={pauseNotice} testId="settings-pause-notice" />
+            {save.isError && save.variables && 'pause' in save.variables ? (
+              <p role="alert" className="mt-2 text-[13px] text-ink-muted">
+                {t('common.saveFailed')}
+              </p>
+            ) : null}
+          </SettingsGroup>
+        ) : null}
 
         {/* ----------------------------------------------- the import */}
-        <SettingsGroup title={t('settings.import.heading')} testId="settings-import">
-          <p className="mb-2 text-[12px] font-semibold uppercase tracking-[0.06em] text-ink-faint">
-            {t('settings.import.fit')}
-          </p>
-          <FitImport />
-          <p className="mb-2 mt-4 text-[12px] font-semibold uppercase tracking-[0.06em] text-ink-faint">
-            {t('settings.import.plan')}
-          </p>
-          <PlanImport />
-        </SettingsGroup>
+        {section === 'files' ? (
+          <SettingsGroup title={t('settings.import.heading')} testId="settings-import">
+            <p className="mb-2 text-[12px] font-semibold uppercase tracking-[0.06em] text-ink-faint">
+              {t('settings.import.fit')}
+            </p>
+            <FitImport />
+            <p className="mb-2 mt-4 text-[12px] font-semibold uppercase tracking-[0.06em] text-ink-faint">
+              {t('settings.import.plan')}
+            </p>
+            <PlanImport />
+          </SettingsGroup>
+        ) : null}
 
         {/* -------------------------------------------------- about */}
-        <SettingsGroup title={t('settings.about.heading')} testId="settings-about">
-          {/*
+        {section === 'about' ? (
+          <SettingsGroup title={t('settings.about.heading')} testId="settings-about">
+            {/*
             The version, in the app's own words and the api's own number:
             the app holds no version of its own.
           */}
-          <SettingRow
-            label={t('status.version', { version: version ?? '—' })}
-            testId="settings-about-version"
-          />
-          <SettingRow
-            label={t('settings.about.licence')}
-            value={t('settings.about.licenceValue')}
-            testId="settings-about-licence"
-          />
-          <SettingRow
-            label={t('settings.about.source')}
-            value={
-              <a
-                href={t('settings.about.sourceUrl')}
-                target="_blank"
-                rel="noreferrer"
-                className="underline underline-offset-2"
-              >
-                {t('settings.about.sourceValue')}
-              </a>
-            }
-            testId="settings-about-source"
-          />
-          <p className="mt-2 text-[14px] text-ink-soft" data-testid="settings-about-promise">
-            {t('common.promise')}
-          </p>
-        </SettingsGroup>
+            <SettingRow
+              label={t('status.version', { version: version ?? '—' })}
+              testId="settings-about-version"
+            />
+            <SettingRow
+              label={t('settings.about.licence')}
+              value={t('settings.about.licenceValue')}
+              testId="settings-about-licence"
+            />
+            <SettingRow
+              label={t('settings.about.source')}
+              value={
+                <a
+                  href={t('settings.about.sourceUrl')}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="underline underline-offset-2"
+                >
+                  {t('settings.about.sourceValue')}
+                </a>
+              }
+              testId="settings-about-source"
+            />
+            <p className="mt-2 text-[14px] text-ink-soft" data-testid="settings-about-promise">
+              {t('common.promise')}
+            </p>
+          </SettingsGroup>
+        ) : null}
 
         {/* ----------------------------------------------- the storage */}
-        <SettingsGroup title={t('settings.storage.heading')} testId="settings-storage">
-          {/*
+        {section === 'data' ? (
+          <SettingsGroup title={t('settings.storage.heading')} testId="settings-storage">
+            {/*
             The database's size is a fact about the host's disk, and it is
             only shown when the api answers it: a size that changes from
             one moment to the next is not a fact the app can hold.
           */}
-          {state.storage.size ? (
-            <SettingRow
-              label={t('settings.storage.size')}
-              value={renderedText(state.storage.size)}
-              testId="settings-storage-size"
-            />
-          ) : null}
-          <div className="mt-2 flex flex-wrap items-center gap-3">
-            <button
-              type="button"
-              className="tap inline-flex items-center rounded-md border border-edge bg-surface px-4 text-[14px] font-semibold text-ink-soft disabled:opacity-50"
-              disabled={exportBackup.isPending}
-              data-testid="settings-export"
-              onClick={() => {
-                setNotice(null)
-                exportBackup.mutate()
-              }}
-            >
-              {currentHost() === 'native'
-                ? t('settings.storage.yourData')
-                : t('settings.storage.export')}
-            </button>
-          </div>
+            {state.storage.size ? (
+              <SettingRow
+                label={t('settings.storage.size')}
+                value={renderedText(state.storage.size)}
+                testId="settings-storage-size"
+              />
+            ) : null}
+            <div className="mt-2 flex flex-wrap items-center gap-3">
+              {currentHost() === 'http' ? (
+                <a
+                  href="/rig"
+                  data-testid="settings-export"
+                  className="tap-inline rounded-md border border-edge bg-surface px-4 text-[14px] font-semibold text-ink-soft"
+                >
+                  {t('settings.storage.yourData')}
+                </a>
+              ) : (
+                <button
+                  type="button"
+                  className="tap inline-flex items-center rounded-md border border-edge bg-surface px-4 text-[14px] font-semibold text-ink-soft disabled:opacity-50"
+                  disabled={exportBackup.isPending}
+                  data-testid="settings-export"
+                  onClick={() => {
+                    setNotice(null)
+                    exportBackup.mutate()
+                  }}
+                >
+                  {t('settings.storage.yourData')}
+                </button>
+              )}
+            </div>
 
-          {/* The one destructive action, and it is last. */}
-          <div className="mt-4 border-t border-edge pt-3">
-            {confirming ? (
-              <div data-testid="settings-delete-confirm">
-                <p className="text-[13.5px] text-ink-soft">{t('settings.delete.what')}</p>
-                <p className="text-[13.5px] text-ink-soft">{t('settings.delete.undo')}</p>
-                <p className="mt-2 text-[13px] text-ink-muted">
-                  {t('settings.delete.confirm')}
-                </p>
-                <input
-                  type="text"
-                  value={confirmation}
-                  autoComplete="off"
-                  spellCheck={false}
-                  onChange={(event) => setConfirmation(event.target.value)}
-                  data-testid="settings-delete-input"
-                  className="tap mt-1 w-full rounded-md border border-edge bg-surface px-3 font-mono text-[14px] text-ink outline-none focus:border-brand-400"
-                />
-                <div className="mt-3 flex flex-wrap items-center gap-3">
-                  <button
-                    type="button"
-                    className="tap inline-flex items-center rounded-md border border-edge bg-surface px-4 text-[14px] font-semibold text-ink-soft disabled:opacity-50"
-                    disabled={confirmation !== CONFIRMATION || deleteAll.isPending}
-                    data-testid="settings-delete-confirm-button"
-                    onClick={() => {
-                      deleteAll.mutate()
-                    }}
-                  >
-                    {t('settings.delete.action')}
-                  </button>
-                  <button
-                    type="button"
-                    className="tap-inline text-[13.5px] font-medium text-ink-muted underline underline-offset-2"
-                    onClick={() => {
-                      setConfirming(false)
-                      setConfirmation('')
-                    }}
-                  >
-                    {t('common.close')}
-                  </button>
+            {/* The one destructive action, and it is last. */}
+            <div className="mt-4 border-t border-edge pt-3">
+              {confirming ? (
+                <div data-testid="settings-delete-confirm">
+                  <p className="text-[13.5px] text-ink-soft">{t('settings.delete.what')}</p>
+                  <p className="text-[13.5px] text-ink-soft">{t('settings.delete.undo')}</p>
+                  <p className="mt-2 text-[13px] text-ink-muted">
+                    {t('settings.delete.confirm')}
+                  </p>
+                  <input
+                    type="text"
+                    value={confirmation}
+                    autoComplete="off"
+                    spellCheck={false}
+                    onChange={(event) => setConfirmation(event.target.value)}
+                    data-testid="settings-delete-input"
+                    className="tap mt-1 w-full rounded-md border border-edge bg-surface px-3 font-mono text-[14px] text-ink outline-none focus:border-brand-400"
+                  />
+                  <div className="mt-3 flex flex-wrap items-center gap-3">
+                    <button
+                      type="button"
+                      className="tap inline-flex items-center rounded-md border border-edge bg-surface px-4 text-[14px] font-semibold text-ink-soft disabled:opacity-50"
+                      disabled={confirmation !== CONFIRMATION || deleteAll.isPending}
+                      data-testid="settings-delete-confirm-button"
+                      onClick={() => {
+                        deleteAll.mutate()
+                      }}
+                    >
+                      {t('settings.delete.action')}
+                    </button>
+                    <button
+                      type="button"
+                      className="tap-inline text-[13.5px] font-medium text-ink-muted underline underline-offset-2"
+                      onClick={() => {
+                        setConfirming(false)
+                        setConfirmation('')
+                      }}
+                    >
+                      {t('common.close')}
+                    </button>
+                  </div>
                 </div>
-              </div>
-            ) : (
-              <button
-                type="button"
-                className="tap inline-flex items-center rounded-md border border-edge bg-surface px-4 text-[14px] font-semibold text-ink-soft"
-                data-testid="settings-delete"
-                onClick={() => {
-                  setNotice(null)
-                  setConfirming(true)
-                }}
-              >
-                {t('settings.storage.delete')}
-              </button>
-            )}
-          </div>
-          <Notice text={notice} testId="settings-notice" />
-          {deleteAll.isError ? (
-            <p role="alert" className="mt-2 text-[13px] text-ink-muted">
-              {t('common.error')}
-            </p>
-          ) : null}
-        </SettingsGroup>
+              ) : (
+                <button
+                  type="button"
+                  className="tap inline-flex items-center rounded-md border border-edge bg-surface px-4 text-[14px] font-semibold text-ink-soft"
+                  data-testid="settings-delete"
+                  onClick={() => {
+                    setNotice(null)
+                    setConfirming(true)
+                  }}
+                >
+                  {t('settings.storage.delete')}
+                </button>
+              )}
+            </div>
+            <Notice text={notice} testId="settings-notice" />
+            {deleteAll.isError ? (
+              <p role="alert" className="mt-2 text-[13px] text-ink-muted">
+                {t('common.error')}
+              </p>
+            ) : null}
+          </SettingsGroup>
+        ) : null}
       </div>
     </div>
   )

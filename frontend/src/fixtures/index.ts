@@ -25,6 +25,7 @@
 
 import type {
   ActivityDetail,
+  ActivityCalendar,
   CompareSeriesPoint,
   ActivityListResponse,
   ActivitySummary,
@@ -1121,6 +1122,7 @@ export const activitiesEmptyFixture: ActivityListResponse = {
 
 /** Progress, with too little history to draw a trend. */
 export const progressNotEnoughFixture: ProgressInsight = {
+  period: progressFixture.period,
   generated_at: '2026-05-13T06:30:00Z',
   date: '2026-05-13',
   headline: 'not enough data yet',
@@ -1301,10 +1303,49 @@ export function fixtureResponse(
     case '/activities': {
       const answer =
         variant === 'empty' || variant === 'fresh' ? activitiesEmptyFixture : activitiesFixture
-      if (variant !== 'route') return answer
       return {
         ...answer,
-        activities: answer.activities.map(withRoute),
+        activities: answer.activities
+          .filter(
+            (activity) =>
+              (!params.since || activity.local_date >= params.since) &&
+              (!params.until || activity.local_date <= params.until),
+          )
+          .map((activity) => (variant === 'route' ? withRoute(activity) : activity)),
+      }
+    }
+    case '/calendar': {
+      const saved = routerAnswers['/calendar'] as ActivityCalendar
+      const answer = ['empty', 'fresh'].includes(variant)
+        ? {
+            ...saved,
+            days: saved.days.map((day) => ({
+              ...day,
+              activities: [],
+              distance: null,
+              duration: null,
+            })),
+          }
+        : saved
+      if (
+        (!params.year || Number(params.year) === answer.year) &&
+        (!params.month || Number(params.month) === answer.month)
+      )
+        return answer
+      const year = Number(params.year ?? answer.year)
+      const month = Number(params.month ?? answer.month)
+      const count = new Date(Date.UTC(year, month, 0)).getUTCDate()
+      return {
+        year,
+        month,
+        generated_at: answer.generated_at,
+        days: Array.from({ length: count }, (_, index) => ({
+          date: `${year}-${String(month).padStart(2, '0')}-${String(index + 1).padStart(2, '0')}`,
+          day: index + 1,
+          distance: null,
+          duration: null,
+          activities: [],
+        })),
       }
     }
     case '/activities/101':
@@ -1335,8 +1376,11 @@ export function fixtureResponse(
       }
       // No plan block: the router's progress has no adherence card, and
       // the counts are the ones the history produced.
-      if (variant === 'baseline') return baselineProgressFixture
-      return progressFixture
+      if (variant === 'baseline')
+        return (
+          baselineAnswers[`/insights/progress?weeks=${params.weeks}`] ?? baselineProgressFixture
+        )
+      return routerAnswers[`/insights/progress?weeks=${params.weeks}`] ?? progressFixture
     case '/compare': {
       // Which run is A is the API's business: the app asks, and the API
       // answers the question in that order.

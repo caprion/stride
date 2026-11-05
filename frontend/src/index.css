@@ -247,6 +247,10 @@
     gap: 12px;
   }
 
+  .compare-toggle {
+    display: flex;
+  }
+
   .compare-hidden {
     display: none;
   }
@@ -369,8 +373,19 @@
 
   @container shell (min-width: 1024px) {
     .activity-grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: start; }
-    .today-layout { grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr); align-items: start; }
+    .today-layout { grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr); align-items: start; }
     .run-filters { grid-template-columns: 2fr 1fr 1fr; }
     .run-filters > :first-child { grid-column: auto; }
+  }
+
+  .runs-layout { display: grid; gap: 16px; }
+  .run-calendar-days { display: none; }
+  .run-calendar-days.is-open { display: grid; }
+  .runs-list-row { display: flex; align-items: center; gap: 12px; padding: 8px 12px; }
+  @container shell (min-width: 1024px) {
+    .runs-layout { grid-template-columns: 300px minmax(0, 1fr); align-items: start; }
+    .run-calendar-days { display: grid; }
+    .run-calendar-toggle { display: none; }
+    .runs-calendar { position: sticky; top: 0; }
   }
 }

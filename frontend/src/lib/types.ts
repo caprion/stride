@@ -251,6 +251,7 @@ export interface ActivityDetail extends ActivitySummary {
     distance: RenderedValue
     duration: RenderedValue
     heart_rate: RenderedValue | null
+    pace: RenderedValue | null
   }[]
   elevation: { distance: RenderedValue; elevation: RenderedValue }[]
   samples: { offset_s: number; pace: RenderedValue | null; heart_rate: RenderedValue | null }[]
@@ -270,6 +271,7 @@ export interface ActivityDetail extends ActivitySummary {
 export interface RunningDay {
   date: string
   sessions: number
+  distance?: RenderedValue
 }
 
 /** What the Today screen reads. */
@@ -363,6 +365,14 @@ export interface CompareCandidate {
 export interface ProgressInsight {
   generated_at: string
   date: string
+  period: {
+    from: string
+    to: string
+    distance: RenderedValue
+    duration: RenderedValue
+    sessions: number
+    recorded_weeks: number
+  }
   /** The headline, already written: "fitter than 8 weeks ago". */
   headline: string
   /** The evidence under it: "same heart rate, 24 s/km faster". */
@@ -398,6 +408,18 @@ export interface ProgressInsight {
   weeks_needed: number | null
 }
 
+export interface ActivityCalendar {
+  year: number
+  month: number
+  generated_at: string
+  days: {
+    date: string
+    day: number
+    distance: RenderedValue | null
+    duration: RenderedValue | null
+    activities: ActivitySummary[]
+  }[]
+}
 /** The connection and sync state. */
 export interface SyncStatus {
   last_sync_at: string | null

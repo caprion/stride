@@ -43,6 +43,7 @@ pub fn splits(activity: &FitActivity) -> Vec<Split> {
             distance: render::distance_of(lap.distance_m),
             duration: render::duration_of(lap.duration_s),
             heart_rate: render::heart_rate(lap.avg_hr.map(|rate| rate as f64)),
+            pace: render::pace(super::pace_of(lap.distance_m, lap.duration_s)),
         })
         .collect()
 }

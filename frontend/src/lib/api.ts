@@ -8,6 +8,7 @@
 
 import { fixtureResponse, FixtureFailure } from '../fixtures'
 import type {
+  ActivityCalendar,
   ActivityDetail,
   ActivityListResponse,
   CompareCandidate,
@@ -210,7 +211,7 @@ const post = <T>(path: string, body?: unknown) => request<T>('POST', path, body)
 /** The typed client. */
 export const api = {
   /** The feed, windowed by date. */
-  activities: (params?: { cursor?: string; limit?: number; since?: string }) =>
+  activities: (params?: { cursor?: string; limit?: number; since?: string; until?: string }) =>
     get<ActivityListResponse>(
       ROUTES.activities,
       params as Record<string, string | number | undefined>,
@@ -265,7 +266,7 @@ export const api = {
 
   /** Today's readout. */
   insightsToday: () => get<TodayInsight>(ROUTES.insightsToday),
-  insightsProgress: () => get<ProgressInsight>(ROUTES.insightsProgress),
+  insightsProgress: (weeks = 12) => get<ProgressInsight>(ROUTES.insightsProgress, { weeks }),
   insightsChips: (id: number | string) =>
     get<unknown>(ROUTES.insightsChips, { id: String(id) }),
 
@@ -356,7 +357,8 @@ export const api = {
 
   importFit: (payload: unknown) => post<FitImportResult>(ROUTES.authGarminFitImport, payload),
   garminLogout: () => post<KeyConnectResult>(ROUTES.authGarminLogout),
-  calendar: () => get<unknown>(ROUTES.calendar),
+  calendar: (params?: { year?: number; month?: number }) =>
+    get<ActivityCalendar>(ROUTES.calendar, params),
 
   /**
    * The settings: the weekly goal, the pause and the storage.

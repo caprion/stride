@@ -7,27 +7,15 @@
 <title>Connect Stride</title>
 <style>
   :root {
-    color-scheme: light dark;
-    --paper: #f7f7f4;
+    color-scheme: light;
+    --paper: #f4f7fa;
     --card: #ffffff;
-    --ink: #171918;
-    --muted: #5d625f;
-    --line: #d8dcd8;
-    --accent: #126e52;
+    --ink: #17324d;
+    --muted: #61788d;
+    --line: #e4ebf0;
+    --accent: #124a7c;
     --accent-ink: #ffffff;
     --error: #8b2635;
-  }
-  @media (prefers-color-scheme: dark) {
-    :root {
-      --paper: #151816;
-      --card: #1d211f;
-      --ink: #edf1ee;
-      --muted: #aeb8b1;
-      --line: #3a423d;
-      --accent: #63d6a9;
-      --accent-ink: #102019;
-      --error: #ff9eaa;
-    }
   }
   * { box-sizing: border-box; }
   body {
@@ -42,10 +30,10 @@
   }
   main {
     width: 100%;
-    max-width: 30rem;
+    max-width: 29rem;
   }
   .mark {
-    margin: 0 0 28px;
+    margin: 0 0 20px;
     font-size: 13px;
     font-weight: 700;
     letter-spacing: .12em;
@@ -54,7 +42,7 @@
   }
   h1 {
     margin: 0 0 10px;
-    font-size: clamp(28px, 7vw, 40px);
+    font-size: 26px;
     line-height: 1.12;
     letter-spacing: -.025em;
   }
@@ -64,9 +52,9 @@
     font-size: 18px;
   }
   .card {
-    padding: 22px;
+    padding: 20px;
     border: 1px solid var(--line);
-    border-radius: 14px;
+    border-radius: 12px;
     background: var(--card);
   }
   label {
@@ -135,9 +123,9 @@
 </head>
 <body>
 <main>
-  <p class="mark">Stride · development rig</p>
+  <p class="mark">Stride</p>
   <h1>Your data stays on this machine</h1>
-  <p class="promise">Connect a Garmin Personal API key to bring your own runs onto this rig.</p>
+  <p class="promise">Connect Garmin to bring your running history onto this device.</p>
 
   <form class="card" id="connect-form" autocomplete="off">
     <label for="garmin-key">Garmin Personal API key</label>

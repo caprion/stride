@@ -301,6 +301,662 @@
       "last_sync_at": null,
       "method": null
     },
+    "/calendar": {
+      "days": [
+        {
+          "activities": [],
+          "date": "2026-05-01",
+          "day": 1,
+          "distance": {
+            "raw": 0,
+            "text": "0 km"
+          },
+          "duration": {
+            "raw": 0,
+            "text": "0 m"
+          }
+        },
+        {
+          "activities": [],
+          "date": "2026-05-02",
+          "day": 2,
+          "distance": {
+            "raw": 0,
+            "text": "0 km"
+          },
+          "duration": {
+            "raw": 0,
+            "text": "0 m"
+          }
+        },
+        {
+          "activities": [
+            {
+              "distance": {
+                "raw": 6300,
+                "text": "6.3 km"
+              },
+              "duration": {
+                "raw": 2080,
+                "text": "35 m"
+              },
+              "elevation_gain": {
+                "raw": 42,
+                "text": "42 m"
+              },
+              "geo_points": [],
+              "group": {
+                "distance": {
+                  "raw": 6300,
+                  "text": "6.3 km"
+                },
+                "duration": {
+                  "raw": 2080,
+                  "text": "35 m"
+                },
+                "key": "2026-04-27"
+              },
+              "heart_rate": {
+                "raw": 148,
+                "text": "148 bpm"
+              },
+              "id": 106,
+              "local_date": "2026-05-03",
+              "name": "Run",
+              "pace": {
+                "raw": 330.16,
+                "text": "5:30 /km"
+              },
+              "sport_type": "running",
+              "start_time": "2026-05-03T07:10:00Z",
+              "story": "6.3 km in 35 m, at an average of 148 bpm"
+            }
+          ],
+          "date": "2026-05-03",
+          "day": 3,
+          "distance": {
+            "raw": 6300,
+            "text": "6.3 km"
+          },
+          "duration": {
+            "raw": 2080,
+            "text": "35 m"
+          }
+        },
+        {
+          "activities": [
+            {
+              "distance": {
+                "raw": 16100,
+                "text": "16.1 km"
+              },
+              "duration": {
+                "raw": 5072,
+                "text": "1 h 25 m"
+              },
+              "elevation_gain": {
+                "raw": 42,
+                "text": "42 m"
+              },
+              "geo_points": [],
+              "group": {
+                "distance": {
+                  "raw": 52100,
+                  "text": "52.1 km"
+                },
+                "duration": {
+                  "raw": 16552,
+                  "text": "4 h 36 m"
+                },
+                "key": "2026-05-04"
+              },
+              "heart_rate": {
+                "raw": 148,
+                "text": "148 bpm"
+              },
+              "id": 105,
+              "local_date": "2026-05-04",
+              "name": "Run",
+              "pace": {
+                "raw": 315.03,
+                "text": "5:15 /km"
+              },
+              "sport_type": "running",
+              "start_time": "2026-05-04T07:10:00Z",
+              "story": "16.1 km in 1 h 25 m, at an average of 148 bpm"
+            }
+          ],
+          "date": "2026-05-04",
+          "day": 4,
+          "distance": {
+            "raw": 16100,
+            "text": "16.1 km"
+          },
+          "duration": {
+            "raw": 5072,
+            "text": "1 h 25 m"
+          }
+        },
+        {
+          "activities": [],
+          "date": "2026-05-05",
+          "day": 5,
+          "distance": {
+            "raw": 0,
+            "text": "0 km"
+          },
+          "duration": {
+            "raw": 0,
+            "text": "0 m"
+          }
+        },
+        {
+          "activities": [
+            {
+              "distance": {
+                "raw": 5000,
+                "text": "5 km"
+              },
+              "duration": {
+                "raw": 1620,
+                "text": "27 m"
+              },
+              "elevation_gain": {
+                "raw": 42,
+                "text": "42 m"
+              },
+              "geo_points": [],
+              "group": {
+                "distance": {
+                  "raw": 52100,
+                  "text": "52.1 km"
+                },
+                "duration": {
+                  "raw": 16552,
+                  "text": "4 h 36 m"
+                },
+                "key": "2026-05-04"
+              },
+              "heart_rate": {
+                "raw": 148,
+                "text": "148 bpm"
+              },
+              "id": 104,
+              "local_date": "2026-05-06",
+              "name": "Run",
+              "pace": {
+                "raw": 324,
+                "text": "5:24 /km"
+              },
+              "sport_type": "running",
+              "start_time": "2026-05-06T07:10:00Z",
+              "story": "5 km in 27 m, at an average of 148 bpm"
+            }
+          ],
+          "date": "2026-05-06",
+          "day": 6,
+          "distance": {
+            "raw": 5000,
+            "text": "5 km"
+          },
+          "duration": {
+            "raw": 1620,
+            "text": "27 m"
+          }
+        },
+        {
+          "activities": [
+            {
+              "distance": {
+                "raw": 8400,
+                "text": "8.4 km"
+              },
+              "duration": {
+                "raw": 2520,
+                "text": "42 m"
+              },
+              "elevation_gain": {
+                "raw": 42,
+                "text": "42 m"
+              },
+              "geo_points": [],
+              "group": {
+                "distance": {
+                  "raw": 52100,
+                  "text": "52.1 km"
+                },
+                "duration": {
+                  "raw": 16552,
+                  "text": "4 h 36 m"
+                },
+                "key": "2026-05-04"
+              },
+              "heart_rate": {
+                "raw": 148,
+                "text": "148 bpm"
+              },
+              "id": 103,
+              "local_date": "2026-05-07",
+              "name": "Run",
+              "pace": {
+                "raw": 300,
+                "text": "5:00 /km"
+              },
+              "sport_type": "running",
+              "start_time": "2026-05-07T07:10:00Z",
+              "story": "8.4 km in 42 m, at an average of 148 bpm"
+            }
+          ],
+          "date": "2026-05-07",
+          "day": 7,
+          "distance": {
+            "raw": 8400,
+            "text": "8.4 km"
+          },
+          "duration": {
+            "raw": 2520,
+            "text": "42 m"
+          }
+        },
+        {
+          "activities": [],
+          "date": "2026-05-08",
+          "day": 8,
+          "distance": {
+            "raw": 0,
+            "text": "0 km"
+          },
+          "duration": {
+            "raw": 0,
+            "text": "0 m"
+          }
+        },
+        {
+          "activities": [
+            {
+              "distance": {
+                "raw": 10200,
+                "text": "10.2 km"
+              },
+              "duration": {
+                "raw": 3320,
+                "text": "55 m"
+              },
+              "elevation_gain": {
+                "raw": 42,
+                "text": "42 m"
+              },
+              "geo_points": [],
+              "group": {
+                "distance": {
+                  "raw": 52100,
+                  "text": "52.1 km"
+                },
+                "duration": {
+                  "raw": 16552,
+                  "text": "4 h 36 m"
+                },
+                "key": "2026-05-04"
+              },
+              "heart_rate": {
+                "raw": 146,
+                "text": "146 bpm"
+              },
+              "id": 102,
+              "local_date": "2026-05-09",
+              "name": "Run",
+              "pace": {
+                "raw": 325.49,
+                "text": "5:25 /km"
+              },
+              "sport_type": "running",
+              "start_time": "2026-05-09T07:10:00Z",
+              "story": "10.2 km in 55 m, at an average of 146 bpm"
+            }
+          ],
+          "date": "2026-05-09",
+          "day": 9,
+          "distance": {
+            "raw": 10200,
+            "text": "10.2 km"
+          },
+          "duration": {
+            "raw": 3320,
+            "text": "55 m"
+          }
+        },
+        {
+          "activities": [
+            {
+              "distance": {
+                "raw": 12400,
+                "text": "12.4 km"
+              },
+              "duration": {
+                "raw": 4020,
+                "text": "1 h 7 m"
+              },
+              "elevation_gain": {
+                "raw": 42,
+                "text": "42 m"
+              },
+              "geo_points": [],
+              "group": {
+                "distance": {
+                  "raw": 52100,
+                  "text": "52.1 km"
+                },
+                "duration": {
+                  "raw": 16552,
+                  "text": "4 h 36 m"
+                },
+                "key": "2026-05-04"
+              },
+              "heart_rate": {
+                "raw": 148,
+                "text": "148 bpm"
+              },
+              "id": 101,
+              "local_date": "2026-05-10",
+              "name": "Run",
+              "pace": {
+                "raw": 324.19,
+                "text": "5:24 /km"
+              },
+              "sport_type": "running",
+              "start_time": "2026-05-10T07:10:00Z",
+              "story": "12.4 km in 1 h 7 m, at an average of 148 bpm"
+            }
+          ],
+          "date": "2026-05-10",
+          "day": 10,
+          "distance": {
+            "raw": 12400,
+            "text": "12.4 km"
+          },
+          "duration": {
+            "raw": 4020,
+            "text": "1 h 7 m"
+          }
+        },
+        {
+          "activities": [],
+          "date": "2026-05-11",
+          "day": 11,
+          "distance": {
+            "raw": 0,
+            "text": "0 km"
+          },
+          "duration": {
+            "raw": 0,
+            "text": "0 m"
+          }
+        },
+        {
+          "activities": [],
+          "date": "2026-05-12",
+          "day": 12,
+          "distance": {
+            "raw": 0,
+            "text": "0 km"
+          },
+          "duration": {
+            "raw": 0,
+            "text": "0 m"
+          }
+        },
+        {
+          "activities": [],
+          "date": "2026-05-13",
+          "day": 13,
+          "distance": {
+            "raw": 0,
+            "text": "0 km"
+          },
+          "duration": {
+            "raw": 0,
+            "text": "0 m"
+          }
+        },
+        {
+          "activities": [],
+          "date": "2026-05-14",
+          "day": 14,
+          "distance": {
+            "raw": 0,
+            "text": "0 km"
+          },
+          "duration": {
+            "raw": 0,
+            "text": "0 m"
+          }
+        },
+        {
+          "activities": [],
+          "date": "2026-05-15",
+          "day": 15,
+          "distance": {
+            "raw": 0,
+            "text": "0 km"
+          },
+          "duration": {
+            "raw": 0,
+            "text": "0 m"
+          }
+        },
+        {
+          "activities": [],
+          "date": "2026-05-16",
+          "day": 16,
+          "distance": {
+            "raw": 0,
+            "text": "0 km"
+          },
+          "duration": {
+            "raw": 0,
+            "text": "0 m"
+          }
+        },
+        {
+          "activities": [],
+          "date": "2026-05-17",
+          "day": 17,
+          "distance": {
+            "raw": 0,
+            "text": "0 km"
+          },
+          "duration": {
+            "raw": 0,
+            "text": "0 m"
+          }
+        },
+        {
+          "activities": [],
+          "date": "2026-05-18",
+          "day": 18,
+          "distance": {
+            "raw": 0,
+            "text": "0 km"
+          },
+          "duration": {
+            "raw": 0,
+            "text": "0 m"
+          }
+        },
+        {
+          "activities": [],
+          "date": "2026-05-19",
+          "day": 19,
+          "distance": {
+            "raw": 0,
+            "text": "0 km"
+          },
+          "duration": {
+            "raw": 0,
+            "text": "0 m"
+          }
+        },
+        {
+          "activities": [],
+          "date": "2026-05-20",
+          "day": 20,
+          "distance": {
+            "raw": 0,
+            "text": "0 km"
+          },
+          "duration": {
+            "raw": 0,
+            "text": "0 m"
+          }
+        },
+        {
+          "activities": [],
+          "date": "2026-05-21",
+          "day": 21,
+          "distance": {
+            "raw": 0,
+            "text": "0 km"
+          },
+          "duration": {
+            "raw": 0,
+            "text": "0 m"
+          }
+        },
+        {
+          "activities": [],
+          "date": "2026-05-22",
+          "day": 22,
+          "distance": {
+            "raw": 0,
+            "text": "0 km"
+          },
+          "duration": {
+            "raw": 0,
+            "text": "0 m"
+          }
+        },
+        {
+          "activities": [],
+          "date": "2026-05-23",
+          "day": 23,
+          "distance": {
+            "raw": 0,
+            "text": "0 km"
+          },
+          "duration": {
+            "raw": 0,
+            "text": "0 m"
+          }
+        },
+        {
+          "activities": [],
+          "date": "2026-05-24",
+          "day": 24,
+          "distance": {
+            "raw": 0,
+            "text": "0 km"
+          },
+          "duration": {
+            "raw": 0,
+            "text": "0 m"
+          }
+        },
+        {
+          "activities": [],
+          "date": "2026-05-25",
+          "day": 25,
+          "distance": {
+            "raw": 0,
+            "text": "0 km"
+          },
+          "duration": {
+            "raw": 0,
+            "text": "0 m"
+          }
+        },
+        {
+          "activities": [],
+          "date": "2026-05-26",
+          "day": 26,
+          "distance": {
+            "raw": 0,
+            "text": "0 km"
+          },
+          "duration": {
+            "raw": 0,
+            "text": "0 m"
+          }
+        },
+        {
+          "activities": [],
+          "date": "2026-05-27",
+          "day": 27,
+          "distance": {
+            "raw": 0,
+            "text": "0 km"
+          },
+          "duration": {
+            "raw": 0,
+            "text": "0 m"
+          }
+        },
+        {
+          "activities": [],
+          "date": "2026-05-28",
+          "day": 28,
+          "distance": {
+            "raw": 0,
+            "text": "0 km"
+          },
+          "duration": {
+            "raw": 0,
+            "text": "0 m"
+          }
+        },
+        {
+          "activities": [],
+          "date": "2026-05-29",
+          "day": 29,
+          "distance": {
+            "raw": 0,
+            "text": "0 km"
+          },
+          "duration": {
+            "raw": 0,
+            "text": "0 m"
+          }
+        },
+        {
+          "activities": [],
+          "date": "2026-05-30",
+          "day": 30,
+          "distance": {
+            "raw": 0,
+            "text": "0 km"
+          },
+          "duration": {
+            "raw": 0,
+            "text": "0 m"
+          }
+        },
+        {
+          "activities": [],
+          "date": "2026-05-31",
+          "day": 31,
+          "distance": {
+            "raw": 0,
+            "text": "0 km"
+          },
+          "duration": {
+            "raw": 0,
+            "text": "0 m"
+          }
+        }
+      ],
+      "generated_at": "2026-05-13T06:30:00Z",
+      "month": 5,
+      "year": 2026
+    },
     "/compare": {
       "a": {
         "date": "2026-05-09",
@@ -522,6 +1178,380 @@
           "week_start": "2026-05-04"
         }
       ],
+      "period": {
+        "distance": {
+          "raw": 58400,
+          "text": "58.4 km"
+        },
+        "duration": {
+          "raw": 18632,
+          "text": "5 h 11 m"
+        },
+        "from": "2026-02-23",
+        "recorded_weeks": 2,
+        "sessions": 6,
+        "to": "2026-05-13"
+      },
+      "sessions_per_week": {
+        "raw": 3,
+        "text": "3.0"
+      },
+      "typical_week": {
+        "raw": 29200,
+        "text": "29.2 km"
+      },
+      "weekly_volume": [
+        {
+          "distance": {
+            "raw": 6300,
+            "text": "6.3 km"
+          },
+          "week_start": "2026-04-27"
+        },
+        {
+          "distance": {
+            "raw": 52100,
+            "text": "52.1 km"
+          },
+          "week_start": "2026-05-04"
+        }
+      ],
+      "weeks_needed": null
+    },
+    "/insights/progress?weeks=26": {
+      "adherence": {
+        "done": 0,
+        "planned": 7
+      },
+      "bests": [
+        {
+          "date": "2026-05-04",
+          "key": "progress.best.longest",
+          "value": "16.1 km"
+        }
+      ],
+      "consistency": [
+        {
+          "sessions": 1,
+          "week_start": "2026-04-27"
+        },
+        {
+          "sessions": 5,
+          "week_start": "2026-05-04"
+        }
+      ],
+      "date": "2026-05-13",
+      "generated_at": "2026-05-13T06:30:00Z",
+      "headline": "Your saved activity history",
+      "headline_note": null,
+      "pace_at_hr": [
+        {
+          "heart_rate": {
+            "raw": 148,
+            "text": "148 bpm"
+          },
+          "pace": {
+            "raw": 330.16,
+            "text": "5:30 /km"
+          },
+          "week_start": "2026-04-27"
+        },
+        {
+          "heart_rate": {
+            "raw": 148,
+            "text": "148 bpm"
+          },
+          "pace": {
+            "raw": 324,
+            "text": "5:24 /km"
+          },
+          "week_start": "2026-05-04"
+        }
+      ],
+      "period": {
+        "distance": {
+          "raw": 58400,
+          "text": "58.4 km"
+        },
+        "duration": {
+          "raw": 18632,
+          "text": "5 h 11 m"
+        },
+        "from": "2025-11-17",
+        "recorded_weeks": 2,
+        "sessions": 6,
+        "to": "2026-05-13"
+      },
+      "sessions_per_week": {
+        "raw": 3,
+        "text": "3.0"
+      },
+      "typical_week": {
+        "raw": 29200,
+        "text": "29.2 km"
+      },
+      "weekly_volume": [
+        {
+          "distance": {
+            "raw": 6300,
+            "text": "6.3 km"
+          },
+          "week_start": "2026-04-27"
+        },
+        {
+          "distance": {
+            "raw": 52100,
+            "text": "52.1 km"
+          },
+          "week_start": "2026-05-04"
+        }
+      ],
+      "weeks_needed": null
+    },
+    "/insights/progress?weeks=4": {
+      "adherence": {
+        "done": 0,
+        "planned": 7
+      },
+      "bests": [
+        {
+          "date": "2026-05-04",
+          "key": "progress.best.longest",
+          "value": "16.1 km"
+        }
+      ],
+      "consistency": [
+        {
+          "sessions": 1,
+          "week_start": "2026-04-27"
+        },
+        {
+          "sessions": 5,
+          "week_start": "2026-05-04"
+        }
+      ],
+      "date": "2026-05-13",
+      "generated_at": "2026-05-13T06:30:00Z",
+      "headline": "Your saved activity history",
+      "headline_note": null,
+      "pace_at_hr": [
+        {
+          "heart_rate": {
+            "raw": 148,
+            "text": "148 bpm"
+          },
+          "pace": {
+            "raw": 330.16,
+            "text": "5:30 /km"
+          },
+          "week_start": "2026-04-27"
+        },
+        {
+          "heart_rate": {
+            "raw": 148,
+            "text": "148 bpm"
+          },
+          "pace": {
+            "raw": 324,
+            "text": "5:24 /km"
+          },
+          "week_start": "2026-05-04"
+        }
+      ],
+      "period": {
+        "distance": {
+          "raw": 58400,
+          "text": "58.4 km"
+        },
+        "duration": {
+          "raw": 18632,
+          "text": "5 h 11 m"
+        },
+        "from": "2026-04-20",
+        "recorded_weeks": 2,
+        "sessions": 6,
+        "to": "2026-05-13"
+      },
+      "sessions_per_week": {
+        "raw": 3,
+        "text": "3.0"
+      },
+      "typical_week": {
+        "raw": 29200,
+        "text": "29.2 km"
+      },
+      "weekly_volume": [
+        {
+          "distance": {
+            "raw": 6300,
+            "text": "6.3 km"
+          },
+          "week_start": "2026-04-27"
+        },
+        {
+          "distance": {
+            "raw": 52100,
+            "text": "52.1 km"
+          },
+          "week_start": "2026-05-04"
+        }
+      ],
+      "weeks_needed": null
+    },
+    "/insights/progress?weeks=52": {
+      "adherence": {
+        "done": 0,
+        "planned": 7
+      },
+      "bests": [
+        {
+          "date": "2026-05-04",
+          "key": "progress.best.longest",
+          "value": "16.1 km"
+        }
+      ],
+      "consistency": [
+        {
+          "sessions": 1,
+          "week_start": "2026-04-27"
+        },
+        {
+          "sessions": 5,
+          "week_start": "2026-05-04"
+        }
+      ],
+      "date": "2026-05-13",
+      "generated_at": "2026-05-13T06:30:00Z",
+      "headline": "Your saved activity history",
+      "headline_note": null,
+      "pace_at_hr": [
+        {
+          "heart_rate": {
+            "raw": 148,
+            "text": "148 bpm"
+          },
+          "pace": {
+            "raw": 330.16,
+            "text": "5:30 /km"
+          },
+          "week_start": "2026-04-27"
+        },
+        {
+          "heart_rate": {
+            "raw": 148,
+            "text": "148 bpm"
+          },
+          "pace": {
+            "raw": 324,
+            "text": "5:24 /km"
+          },
+          "week_start": "2026-05-04"
+        }
+      ],
+      "period": {
+        "distance": {
+          "raw": 58400,
+          "text": "58.4 km"
+        },
+        "duration": {
+          "raw": 18632,
+          "text": "5 h 11 m"
+        },
+        "from": "2025-05-19",
+        "recorded_weeks": 2,
+        "sessions": 6,
+        "to": "2026-05-13"
+      },
+      "sessions_per_week": {
+        "raw": 3,
+        "text": "3.0"
+      },
+      "typical_week": {
+        "raw": 29200,
+        "text": "29.2 km"
+      },
+      "weekly_volume": [
+        {
+          "distance": {
+            "raw": 6300,
+            "text": "6.3 km"
+          },
+          "week_start": "2026-04-27"
+        },
+        {
+          "distance": {
+            "raw": 52100,
+            "text": "52.1 km"
+          },
+          "week_start": "2026-05-04"
+        }
+      ],
+      "weeks_needed": null
+    },
+    "/insights/progress?weeks=8": {
+      "adherence": {
+        "done": 0,
+        "planned": 7
+      },
+      "bests": [
+        {
+          "date": "2026-05-04",
+          "key": "progress.best.longest",
+          "value": "16.1 km"
+        }
+      ],
+      "consistency": [
+        {
+          "sessions": 1,
+          "week_start": "2026-04-27"
+        },
+        {
+          "sessions": 5,
+          "week_start": "2026-05-04"
+        }
+      ],
+      "date": "2026-05-13",
+      "generated_at": "2026-05-13T06:30:00Z",
+      "headline": "Your saved activity history",
+      "headline_note": null,
+      "pace_at_hr": [
+        {
+          "heart_rate": {
+            "raw": 148,
+            "text": "148 bpm"
+          },
+          "pace": {
+            "raw": 330.16,
+            "text": "5:30 /km"
+          },
+          "week_start": "2026-04-27"
+        },
+        {
+          "heart_rate": {
+            "raw": 148,
+            "text": "148 bpm"
+          },
+          "pace": {
+            "raw": 324,
+            "text": "5:24 /km"
+          },
+          "week_start": "2026-05-04"
+        }
+      ],
+      "period": {
+        "distance": {
+          "raw": 58400,
+          "text": "58.4 km"
+        },
+        "duration": {
+          "raw": 18632,
+          "text": "5 h 11 m"
+        },
+        "from": "2026-03-23",
+        "recorded_weeks": 2,
+        "sessions": 6,
+        "to": "2026-05-13"
+      },
       "sessions_per_week": {
         "raw": 3,
         "text": "3.0"
@@ -686,30 +1716,58 @@
         "days": [
           {
             "date": "2026-05-11",
+            "distance": {
+              "raw": 0,
+              "text": "0 km"
+            },
             "sessions": 0
           },
           {
             "date": "2026-05-12",
+            "distance": {
+              "raw": 0,
+              "text": "0 km"
+            },
             "sessions": 0
           },
           {
             "date": "2026-05-13",
+            "distance": {
+              "raw": 0,
+              "text": "0 km"
+            },
             "sessions": 0
           },
           {
             "date": "2026-05-14",
+            "distance": {
+              "raw": 0,
+              "text": "0 km"
+            },
             "sessions": 0
           },
           {
             "date": "2026-05-15",
+            "distance": {
+              "raw": 0,
+              "text": "0 km"
+            },
             "sessions": 0
           },
           {
             "date": "2026-05-16",
+            "distance": {
+              "raw": 0,
+              "text": "0 km"
+            },
             "sessions": 0
           },
           {
             "date": "2026-05-17",
+            "distance": {
+              "raw": 0,
+              "text": "0 km"
+            },
             "sessions": 0
           }
         ],
@@ -2018,6 +3076,662 @@
       "last_sync_at": null,
       "method": null
     },
+    "/calendar": {
+      "days": [
+        {
+          "activities": [],
+          "date": "2026-05-01",
+          "day": 1,
+          "distance": {
+            "raw": 0,
+            "text": "0 km"
+          },
+          "duration": {
+            "raw": 0,
+            "text": "0 m"
+          }
+        },
+        {
+          "activities": [],
+          "date": "2026-05-02",
+          "day": 2,
+          "distance": {
+            "raw": 0,
+            "text": "0 km"
+          },
+          "duration": {
+            "raw": 0,
+            "text": "0 m"
+          }
+        },
+        {
+          "activities": [
+            {
+              "distance": {
+                "raw": 6300,
+                "text": "6.3 km"
+              },
+              "duration": {
+                "raw": 2080,
+                "text": "35 m"
+              },
+              "elevation_gain": {
+                "raw": 42,
+                "text": "42 m"
+              },
+              "geo_points": [],
+              "group": {
+                "distance": {
+                  "raw": 6300,
+                  "text": "6.3 km"
+                },
+                "duration": {
+                  "raw": 2080,
+                  "text": "35 m"
+                },
+                "key": "2026-04-27"
+              },
+              "heart_rate": {
+                "raw": 148,
+                "text": "148 bpm"
+              },
+              "id": 106,
+              "local_date": "2026-05-03",
+              "name": "Run",
+              "pace": {
+                "raw": 330.16,
+                "text": "5:30 /km"
+              },
+              "sport_type": "running",
+              "start_time": "2026-05-03T07:10:00Z",
+              "story": "6.3 km in 35 m, at an average of 148 bpm"
+            }
+          ],
+          "date": "2026-05-03",
+          "day": 3,
+          "distance": {
+            "raw": 6300,
+            "text": "6.3 km"
+          },
+          "duration": {
+            "raw": 2080,
+            "text": "35 m"
+          }
+        },
+        {
+          "activities": [
+            {
+              "distance": {
+                "raw": 16100,
+                "text": "16.1 km"
+              },
+              "duration": {
+                "raw": 5072,
+                "text": "1 h 25 m"
+              },
+              "elevation_gain": {
+                "raw": 42,
+                "text": "42 m"
+              },
+              "geo_points": [],
+              "group": {
+                "distance": {
+                  "raw": 52100,
+                  "text": "52.1 km"
+                },
+                "duration": {
+                  "raw": 16552,
+                  "text": "4 h 36 m"
+                },
+                "key": "2026-05-04"
+              },
+              "heart_rate": {
+                "raw": 148,
+                "text": "148 bpm"
+              },
+              "id": 105,
+              "local_date": "2026-05-04",
+              "name": "Run",
+              "pace": {
+                "raw": 315.03,
+                "text": "5:15 /km"
+              },
+              "sport_type": "running",
+              "start_time": "2026-05-04T07:10:00Z",
+              "story": "16.1 km in 1 h 25 m, at an average of 148 bpm"
+            }
+          ],
+          "date": "2026-05-04",
+          "day": 4,
+          "distance": {
+            "raw": 16100,
+            "text": "16.1 km"
+          },
+          "duration": {
+            "raw": 5072,
+            "text": "1 h 25 m"
+          }
+        },
+        {
+          "activities": [],
+          "date": "2026-05-05",
+          "day": 5,
+          "distance": {
+            "raw": 0,
+            "text": "0 km"
+          },
+          "duration": {
+            "raw": 0,
+            "text": "0 m"
+          }
+        },
+        {
+          "activities": [
+            {
+              "distance": {
+                "raw": 5000,
+                "text": "5 km"
+              },
+              "duration": {
+                "raw": 1620,
+                "text": "27 m"
+              },
+              "elevation_gain": {
+                "raw": 42,
+                "text": "42 m"
+              },
+              "geo_points": [],
+              "group": {
+                "distance": {
+                  "raw": 52100,
+                  "text": "52.1 km"
+                },
+                "duration": {
+                  "raw": 16552,
+                  "text": "4 h 36 m"
+                },
+                "key": "2026-05-04"
+              },
+              "heart_rate": {
+                "raw": 148,
+                "text": "148 bpm"
+              },
+              "id": 104,
+              "local_date": "2026-05-06",
+              "name": "Run",
+              "pace": {
+                "raw": 324,
+                "text": "5:24 /km"
+              },
+              "sport_type": "running",
+              "start_time": "2026-05-06T07:10:00Z",
+              "story": "5 km in 27 m, at an average of 148 bpm"
+            }
+          ],
+          "date": "2026-05-06",
+          "day": 6,
+          "distance": {
+            "raw": 5000,
+            "text": "5 km"
+          },
+          "duration": {
+            "raw": 1620,
+            "text": "27 m"
+          }
+        },
+        {
+          "activities": [
+            {
+              "distance": {
+                "raw": 8400,
+                "text": "8.4 km"
+              },
+              "duration": {
+                "raw": 2520,
+                "text": "42 m"
+              },
+              "elevation_gain": {
+                "raw": 42,
+                "text": "42 m"
+              },
+              "geo_points": [],
+              "group": {
+                "distance": {
+                  "raw": 52100,
+                  "text": "52.1 km"
+                },
+                "duration": {
+                  "raw": 16552,
+                  "text": "4 h 36 m"
+                },
+                "key": "2026-05-04"
+              },
+              "heart_rate": {
+                "raw": 148,
+                "text": "148 bpm"
+              },
+              "id": 103,
+              "local_date": "2026-05-07",
+              "name": "Run",
+              "pace": {
+                "raw": 300,
+                "text": "5:00 /km"
+              },
+              "sport_type": "running",
+              "start_time": "2026-05-07T07:10:00Z",
+              "story": "8.4 km in 42 m, at an average of 148 bpm"
+            }
+          ],
+          "date": "2026-05-07",
+          "day": 7,
+          "distance": {
+            "raw": 8400,
+            "text": "8.4 km"
+          },
+          "duration": {
+            "raw": 2520,
+            "text": "42 m"
+          }
+        },
+        {
+          "activities": [],
+          "date": "2026-05-08",
+          "day": 8,
+          "distance": {
+            "raw": 0,
+            "text": "0 km"
+          },
+          "duration": {
+            "raw": 0,
+            "text": "0 m"
+          }
+        },
+        {
+          "activities": [
+            {
+              "distance": {
+                "raw": 10200,
+                "text": "10.2 km"
+              },
+              "duration": {
+                "raw": 3320,
+                "text": "55 m"
+              },
+              "elevation_gain": {
+                "raw": 42,
+                "text": "42 m"
+              },
+              "geo_points": [],
+              "group": {
+                "distance": {
+                  "raw": 52100,
+                  "text": "52.1 km"
+                },
+                "duration": {
+                  "raw": 16552,
+                  "text": "4 h 36 m"
+                },
+                "key": "2026-05-04"
+              },
+              "heart_rate": {
+                "raw": 146,
+                "text": "146 bpm"
+              },
+              "id": 102,
+              "local_date": "2026-05-09",
+              "name": "Run",
+              "pace": {
+                "raw": 325.49,
+                "text": "5:25 /km"
+              },
+              "sport_type": "running",
+              "start_time": "2026-05-09T07:10:00Z",
+              "story": "10.2 km in 55 m, at an average of 146 bpm"
+            }
+          ],
+          "date": "2026-05-09",
+          "day": 9,
+          "distance": {
+            "raw": 10200,
+            "text": "10.2 km"
+          },
+          "duration": {
+            "raw": 3320,
+            "text": "55 m"
+          }
+        },
+        {
+          "activities": [
+            {
+              "distance": {
+                "raw": 12400,
+                "text": "12.4 km"
+              },
+              "duration": {
+                "raw": 4020,
+                "text": "1 h 7 m"
+              },
+              "elevation_gain": {
+                "raw": 42,
+                "text": "42 m"
+              },
+              "geo_points": [],
+              "group": {
+                "distance": {
+                  "raw": 52100,
+                  "text": "52.1 km"
+                },
+                "duration": {
+                  "raw": 16552,
+                  "text": "4 h 36 m"
+                },
+                "key": "2026-05-04"
+              },
+              "heart_rate": {
+                "raw": 148,
+                "text": "148 bpm"
+              },
+              "id": 101,
+              "local_date": "2026-05-10",
+              "name": "Run",
+              "pace": {
+                "raw": 324.19,
+                "text": "5:24 /km"
+              },
+              "sport_type": "running",
+              "start_time": "2026-05-10T07:10:00Z",
+              "story": "12.4 km in 1 h 7 m, at an average of 148 bpm"
+            }
+          ],
+          "date": "2026-05-10",
+          "day": 10,
+          "distance": {
+            "raw": 12400,
+            "text": "12.4 km"
+          },
+          "duration": {
+            "raw": 4020,
+            "text": "1 h 7 m"
+          }
+        },
+        {
+          "activities": [],
+          "date": "2026-05-11",
+          "day": 11,
+          "distance": {
+            "raw": 0,
+            "text": "0 km"
+          },
+          "duration": {
+            "raw": 0,
+            "text": "0 m"
+          }
+        },
+        {
+          "activities": [],
+          "date": "2026-05-12",
+          "day": 12,
+          "distance": {
+            "raw": 0,
+            "text": "0 km"
+          },
+          "duration": {
+            "raw": 0,
+            "text": "0 m"
+          }
+        },
+        {
+          "activities": [],
+          "date": "2026-05-13",
+          "day": 13,
+          "distance": {
+            "raw": 0,
+            "text": "0 km"
+          },
+          "duration": {
+            "raw": 0,
+            "text": "0 m"
+          }
+        },
+        {
+          "activities": [],
+          "date": "2026-05-14",
+          "day": 14,
+          "distance": {
+            "raw": 0,
+            "text": "0 km"
+          },
+          "duration": {
+            "raw": 0,
+            "text": "0 m"
+          }
+        },
+        {
+          "activities": [],
+          "date": "2026-05-15",
+          "day": 15,
+          "distance": {
+            "raw": 0,
+            "text": "0 km"
+          },
+          "duration": {
+            "raw": 0,
+            "text": "0 m"
+          }
+        },
+        {
+          "activities": [],
+          "date": "2026-05-16",
+          "day": 16,
+          "distance": {
+            "raw": 0,
+            "text": "0 km"
+          },
+          "duration": {
+            "raw": 0,
+            "text": "0 m"
+          }
+        },
+        {
+          "activities": [],
+          "date": "2026-05-17",
+          "day": 17,
+          "distance": {
+            "raw": 0,
+            "text": "0 km"
+          },
+          "duration": {
+            "raw": 0,
+            "text": "0 m"
+          }
+        },
+        {
+          "activities": [],
+          "date": "2026-05-18",
+          "day": 18,
+          "distance": {
+            "raw": 0,
+            "text": "0 km"
+          },
+          "duration": {
+            "raw": 0,
+            "text": "0 m"
+          }
+        },
+        {
+          "activities": [],
+          "date": "2026-05-19",
+          "day": 19,
+          "distance": {
+            "raw": 0,
+            "text": "0 km"
+          },
+          "duration": {
+            "raw": 0,
+            "text": "0 m"
+          }
+        },
+        {
+          "activities": [],
+          "date": "2026-05-20",
+          "day": 20,
+          "distance": {
+            "raw": 0,
+            "text": "0 km"
+          },
+          "duration": {
+            "raw": 0,
+            "text": "0 m"
+          }
+        },
+        {
+          "activities": [],
+          "date": "2026-05-21",
+          "day": 21,
+          "distance": {
+            "raw": 0,
+            "text": "0 km"
+          },
+          "duration": {
+            "raw": 0,
+            "text": "0 m"
+          }
+        },
+        {
+          "activities": [],
+          "date": "2026-05-22",
+          "day": 22,
+          "distance": {
+            "raw": 0,
+            "text": "0 km"
+          },
+          "duration": {
+            "raw": 0,
+            "text": "0 m"
+          }
+        },
+        {
+          "activities": [],
+          "date": "2026-05-23",
+          "day": 23,
+          "distance": {
+            "raw": 0,
+            "text": "0 km"
+          },
+          "duration": {
+            "raw": 0,
+            "text": "0 m"
+          }
+        },
+        {
+          "activities": [],
+          "date": "2026-05-24",
+          "day": 24,
+          "distance": {
+            "raw": 0,
+            "text": "0 km"
+          },
+          "duration": {
+            "raw": 0,
+            "text": "0 m"
+          }
+        },
+        {
+          "activities": [],
+          "date": "2026-05-25",
+          "day": 25,
+          "distance": {
+            "raw": 0,
+            "text": "0 km"
+          },
+          "duration": {
+            "raw": 0,
+            "text": "0 m"
+          }
+        },
+        {
+          "activities": [],
+          "date": "2026-05-26",
+          "day": 26,
+          "distance": {
+            "raw": 0,
+            "text": "0 km"
+          },
+          "duration": {
+            "raw": 0,
+            "text": "0 m"
+          }
+        },
+        {
+          "activities": [],
+          "date": "2026-05-27",
+          "day": 27,
+          "distance": {
+            "raw": 0,
+            "text": "0 km"
+          },
+          "duration": {
+            "raw": 0,
+            "text": "0 m"
+          }
+        },
+        {
+          "activities": [],
+          "date": "2026-05-28",
+          "day": 28,
+          "distance": {
+            "raw": 0,
+            "text": "0 km"
+          },
+          "duration": {
+            "raw": 0,
+            "text": "0 m"
+          }
+        },
+        {
+          "activities": [],
+          "date": "2026-05-29",
+          "day": 29,
+          "distance": {
+            "raw": 0,
+            "text": "0 km"
+          },
+          "duration": {
+            "raw": 0,
+            "text": "0 m"
+          }
+        },
+        {
+          "activities": [],
+          "date": "2026-05-30",
+          "day": 30,
+          "distance": {
+            "raw": 0,
+            "text": "0 km"
+          },
+          "duration": {
+            "raw": 0,
+            "text": "0 m"
+          }
+        },
+        {
+          "activities": [],
+          "date": "2026-05-31",
+          "day": 31,
+          "distance": {
+            "raw": 0,
+            "text": "0 km"
+          },
+          "duration": {
+            "raw": 0,
+            "text": "0 m"
+          }
+        }
+      ],
+      "generated_at": "2026-05-13T06:30:00Z",
+      "month": 5,
+      "year": 2026
+    },
     "/compare": {
       "a": {
         "date": "2026-05-09",
@@ -2236,6 +3950,368 @@
           "week_start": "2026-05-04"
         }
       ],
+      "period": {
+        "distance": {
+          "raw": 58400,
+          "text": "58.4 km"
+        },
+        "duration": {
+          "raw": 18632,
+          "text": "5 h 11 m"
+        },
+        "from": "2026-02-23",
+        "recorded_weeks": 2,
+        "sessions": 6,
+        "to": "2026-05-13"
+      },
+      "sessions_per_week": {
+        "raw": 3,
+        "text": "3.0"
+      },
+      "typical_week": {
+        "raw": 29200,
+        "text": "29.2 km"
+      },
+      "weekly_volume": [
+        {
+          "distance": {
+            "raw": 6300,
+            "text": "6.3 km"
+          },
+          "week_start": "2026-04-27"
+        },
+        {
+          "distance": {
+            "raw": 52100,
+            "text": "52.1 km"
+          },
+          "week_start": "2026-05-04"
+        }
+      ],
+      "weeks_needed": null
+    },
+    "/insights/progress?weeks=26": {
+      "adherence": null,
+      "bests": [
+        {
+          "date": "2026-05-04",
+          "key": "progress.best.longest",
+          "value": "16.1 km"
+        }
+      ],
+      "consistency": [
+        {
+          "sessions": 1,
+          "week_start": "2026-04-27"
+        },
+        {
+          "sessions": 5,
+          "week_start": "2026-05-04"
+        }
+      ],
+      "date": "2026-05-13",
+      "generated_at": "2026-05-13T06:30:00Z",
+      "headline": "Your saved activity history",
+      "headline_note": null,
+      "pace_at_hr": [
+        {
+          "heart_rate": {
+            "raw": 148,
+            "text": "148 bpm"
+          },
+          "pace": {
+            "raw": 330.16,
+            "text": "5:30 /km"
+          },
+          "week_start": "2026-04-27"
+        },
+        {
+          "heart_rate": {
+            "raw": 148,
+            "text": "148 bpm"
+          },
+          "pace": {
+            "raw": 324,
+            "text": "5:24 /km"
+          },
+          "week_start": "2026-05-04"
+        }
+      ],
+      "period": {
+        "distance": {
+          "raw": 58400,
+          "text": "58.4 km"
+        },
+        "duration": {
+          "raw": 18632,
+          "text": "5 h 11 m"
+        },
+        "from": "2025-11-17",
+        "recorded_weeks": 2,
+        "sessions": 6,
+        "to": "2026-05-13"
+      },
+      "sessions_per_week": {
+        "raw": 3,
+        "text": "3.0"
+      },
+      "typical_week": {
+        "raw": 29200,
+        "text": "29.2 km"
+      },
+      "weekly_volume": [
+        {
+          "distance": {
+            "raw": 6300,
+            "text": "6.3 km"
+          },
+          "week_start": "2026-04-27"
+        },
+        {
+          "distance": {
+            "raw": 52100,
+            "text": "52.1 km"
+          },
+          "week_start": "2026-05-04"
+        }
+      ],
+      "weeks_needed": null
+    },
+    "/insights/progress?weeks=4": {
+      "adherence": null,
+      "bests": [
+        {
+          "date": "2026-05-04",
+          "key": "progress.best.longest",
+          "value": "16.1 km"
+        }
+      ],
+      "consistency": [
+        {
+          "sessions": 1,
+          "week_start": "2026-04-27"
+        },
+        {
+          "sessions": 5,
+          "week_start": "2026-05-04"
+        }
+      ],
+      "date": "2026-05-13",
+      "generated_at": "2026-05-13T06:30:00Z",
+      "headline": "Your saved activity history",
+      "headline_note": null,
+      "pace_at_hr": [
+        {
+          "heart_rate": {
+            "raw": 148,
+            "text": "148 bpm"
+          },
+          "pace": {
+            "raw": 330.16,
+            "text": "5:30 /km"
+          },
+          "week_start": "2026-04-27"
+        },
+        {
+          "heart_rate": {
+            "raw": 148,
+            "text": "148 bpm"
+          },
+          "pace": {
+            "raw": 324,
+            "text": "5:24 /km"
+          },
+          "week_start": "2026-05-04"
+        }
+      ],
+      "period": {
+        "distance": {
+          "raw": 58400,
+          "text": "58.4 km"
+        },
+        "duration": {
+          "raw": 18632,
+          "text": "5 h 11 m"
+        },
+        "from": "2026-04-20",
+        "recorded_weeks": 2,
+        "sessions": 6,
+        "to": "2026-05-13"
+      },
+      "sessions_per_week": {
+        "raw": 3,
+        "text": "3.0"
+      },
+      "typical_week": {
+        "raw": 29200,
+        "text": "29.2 km"
+      },
+      "weekly_volume": [
+        {
+          "distance": {
+            "raw": 6300,
+            "text": "6.3 km"
+          },
+          "week_start": "2026-04-27"
+        },
+        {
+          "distance": {
+            "raw": 52100,
+            "text": "52.1 km"
+          },
+          "week_start": "2026-05-04"
+        }
+      ],
+      "weeks_needed": null
+    },
+    "/insights/progress?weeks=52": {
+      "adherence": null,
+      "bests": [
+        {
+          "date": "2026-05-04",
+          "key": "progress.best.longest",
+          "value": "16.1 km"
+        }
+      ],
+      "consistency": [
+        {
+          "sessions": 1,
+          "week_start": "2026-04-27"
+        },
+        {
+          "sessions": 5,
+          "week_start": "2026-05-04"
+        }
+      ],
+      "date": "2026-05-13",
+      "generated_at": "2026-05-13T06:30:00Z",
+      "headline": "Your saved activity history",
+      "headline_note": null,
+      "pace_at_hr": [
+        {
+          "heart_rate": {
+            "raw": 148,
+            "text": "148 bpm"
+          },
+          "pace": {
+            "raw": 330.16,
+            "text": "5:30 /km"
+          },
+          "week_start": "2026-04-27"
+        },
+        {
+          "heart_rate": {
+            "raw": 148,
+            "text": "148 bpm"
+          },
+          "pace": {
+            "raw": 324,
+            "text": "5:24 /km"
+          },
+          "week_start": "2026-05-04"
+        }
+      ],
+      "period": {
+        "distance": {
+          "raw": 58400,
+          "text": "58.4 km"
+        },
+        "duration": {
+          "raw": 18632,
+          "text": "5 h 11 m"
+        },
+        "from": "2025-05-19",
+        "recorded_weeks": 2,
+        "sessions": 6,
+        "to": "2026-05-13"
+      },
+      "sessions_per_week": {
+        "raw": 3,
+        "text": "3.0"
+      },
+      "typical_week": {
+        "raw": 29200,
+        "text": "29.2 km"
+      },
+      "weekly_volume": [
+        {
+          "distance": {
+            "raw": 6300,
+            "text": "6.3 km"
+          },
+          "week_start": "2026-04-27"
+        },
+        {
+          "distance": {
+            "raw": 52100,
+            "text": "52.1 km"
+          },
+          "week_start": "2026-05-04"
+        }
+      ],
+      "weeks_needed": null
+    },
+    "/insights/progress?weeks=8": {
+      "adherence": null,
+      "bests": [
+        {
+          "date": "2026-05-04",
+          "key": "progress.best.longest",
+          "value": "16.1 km"
+        }
+      ],
+      "consistency": [
+        {
+          "sessions": 1,
+          "week_start": "2026-04-27"
+        },
+        {
+          "sessions": 5,
+          "week_start": "2026-05-04"
+        }
+      ],
+      "date": "2026-05-13",
+      "generated_at": "2026-05-13T06:30:00Z",
+      "headline": "Your saved activity history",
+      "headline_note": null,
+      "pace_at_hr": [
+        {
+          "heart_rate": {
+            "raw": 148,
+            "text": "148 bpm"
+          },
+          "pace": {
+            "raw": 330.16,
+            "text": "5:30 /km"
+          },
+          "week_start": "2026-04-27"
+        },
+        {
+          "heart_rate": {
+            "raw": 148,
+            "text": "148 bpm"
+          },
+          "pace": {
+            "raw": 324,
+            "text": "5:24 /km"
+          },
+          "week_start": "2026-05-04"
+        }
+      ],
+      "period": {
+        "distance": {
+          "raw": 58400,
+          "text": "58.4 km"
+        },
+        "duration": {
+          "raw": 18632,
+          "text": "5 h 11 m"
+        },
+        "from": "2026-03-23",
+        "recorded_weeks": 2,
+        "sessions": 6,
+        "to": "2026-05-13"
+      },
       "sessions_per_week": {
         "raw": 3,
         "text": "3.0"
@@ -2312,30 +4388,58 @@
         "days": [
           {
             "date": "2026-05-11",
+            "distance": {
+              "raw": 0,
+              "text": "0 km"
+            },
             "sessions": 0
           },
           {
             "date": "2026-05-12",
+            "distance": {
+              "raw": 0,
+              "text": "0 km"
+            },
             "sessions": 0
           },
           {
             "date": "2026-05-13",
+            "distance": {
+              "raw": 0,
+              "text": "0 km"
+            },
             "sessions": 0
           },
           {
             "date": "2026-05-14",
+            "distance": {
+              "raw": 0,
+              "text": "0 km"
+            },
             "sessions": 0
           },
           {
             "date": "2026-05-15",
+            "distance": {
+              "raw": 0,
+              "text": "0 km"
+            },
             "sessions": 0
           },
           {
             "date": "2026-05-16",
+            "distance": {
+              "raw": 0,
+              "text": "0 km"
+            },
             "sessions": 0
           },
           {
             "date": "2026-05-17",
+            "distance": {
+              "raw": 0,
+              "text": "0 km"
+            },
             "sessions": 0
           }
         ],

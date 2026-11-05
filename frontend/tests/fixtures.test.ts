@@ -58,11 +58,14 @@ describe("the fixture set's export", () => {
     const file = exported()
 
     for (const [route, answer] of Object.entries(file.answers)) {
+      const [path, query] = route.split('?')
       // The compare route is asked for a pair; the rest are asked for
       // as they are.
       const params: Record<string, string> =
-        route === '/compare' ? { a: '102', b: '101' } : {}
-      const rendered = fixtureResponse(route, params, '1')
+        route === '/compare'
+          ? { a: '102', b: '101' }
+          : Object.fromEntries(new URLSearchParams(query))
+      const rendered = fixtureResponse(path!, params, '1')
       expect(withoutTimestamps(rendered)).toEqual(withoutTimestamps(answer))
     }
   })
@@ -84,7 +87,7 @@ describe("the fixture set's export", () => {
 })
 
 describe('the captured answer', () => {
-  it('is the shape the api\'s parity test reads', () => {
+  it("is the shape the api's parity test reads", () => {
     const captured = JSON.parse(
       readFileSync(join(here, '..', 'src', 'fixtures', 'captured.json'), 'utf8'),
     ) as { route: string; body: Record<string, unknown> }
@@ -93,7 +96,7 @@ describe('the captured answer', () => {
     expect(captured.body).toBeTruthy()
   })
 
-  it('carries the delta pull\'s fields, with the router\'s nullability', () => {
+  it("carries the delta pull's fields, with the router's nullability", () => {
     // The four fields the router added, and the nullability it answers
     // them with: the cursor is a string or nothing, the three counts are
     // numbers or nothing.
@@ -103,11 +106,13 @@ describe('the captured answer', () => {
 
     expect(captured.body.cursor === null || typeof captured.body.cursor === 'string').toBe(true)
     for (const field of ['pulled', 'skipped', 'deleted']) {
-      expect(captured.body[field] === null || typeof captured.body[field] === 'number').toBe(true)
+      expect(captured.body[field] === null || typeof captured.body[field] === 'number').toBe(
+        true,
+      )
     }
   })
 
-  it('is the answer the router gives for the store the api\'s test seeds', () => {
+  it("is the answer the router gives for the store the api's test seeds", () => {
     // The api's seeded harness holds one run and no cursor, so the
     // router answers these numbers — and the capture has to be the same
     // answer, byte for byte, or the parity test fails.

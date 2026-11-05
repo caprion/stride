@@ -252,7 +252,7 @@ describe("the reading's heading", () => {
 
 describe('the version', () => {
   it('is the one the api answered', async () => {
-    const { container } = renderApp('/settings')
+    const { container } = renderApp('/settings?section=about')
     await waitFor(() =>
       expect(container.querySelector('[data-testid="settings-about-version"]')).toBeTruthy(),
     )
@@ -289,7 +289,7 @@ describe('the Compare screen', () => {
     await userEvent.click(choices[0]!)
     await userEvent.click(choices[1]!)
     const link = screen.getByRole('link', { name: 'Compare selected runs' })
-    expect(link).toHaveAttribute('href', '/compare/101?with=102')
+    expect(link).toHaveAttribute('href', '/compare/101?with=102&returnTo=%2Fruns')
     await userEvent.click(link)
     await screen.findByTestId('compare-metrics')
     expect(compare).toHaveBeenLastCalledWith(102, 101)

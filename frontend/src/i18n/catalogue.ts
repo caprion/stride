@@ -75,6 +75,37 @@ export const catalogue = {
   'nav.label': { type: 'status', text: 'Destinations' },
   'common.local': { type: 'status', text: 'Stored on this device' },
   'common.saved': { type: 'statement', text: 'Your history is stored locally on this device.' },
+  'history.previousWeek': { type: 'status', text: 'Previous week' },
+  'history.nextWeek': { type: 'status', text: 'Next week' },
+  'history.previousMonth': { type: 'status', text: 'Previous month' },
+  'history.nextMonth': { type: 'status', text: 'Next month' },
+  'history.invalidRange': {
+    type: 'status',
+    text: 'The through date is before the from date.',
+  },
+  'today.body.open': { type: 'status', text: 'Explore Body' },
+  'today.plan.open': { type: 'status', text: 'View plan' },
+  'body.history.runs': { type: 'status', text: 'Runs on this date' },
+  'runs.allHistory': { type: 'status', text: 'All saved history' },
+  'runs.calendar': { type: 'status', text: 'Browse calendar' },
+  'runs.calendar.hide': { type: 'status', text: 'Hide calendar' },
+  'runs.calendar.note': {
+    type: 'status',
+    text: 'Dots mark saved activities, not complete source coverage.',
+  },
+  'progress.summary.sessions': { type: 'status', text: 'Recorded sessions' },
+  'progress.summary.weeks': { type: 'status', text: 'Weeks with activity' },
+  'progress.exploreWeek': { type: 'status', text: 'Explore a week' },
+  'progress.viewRuns': { type: 'status', text: 'View runs this week' },
+  'activity.zones.basis': {
+    type: 'status',
+    text: "Bands relative to this run's maximum heart rate, not personal training zones.",
+  },
+  'activity.zones.missing': { type: 'status', text: 'Time without heart-rate readings' },
+  'settings.preferences': { type: 'status', text: 'Training preferences' },
+  'settings.files': { type: 'status', text: 'Files and app information' },
+  'settings.sections': { type: 'status', text: 'Settings sections' },
+  'settings.tab.data': { type: 'status', text: 'Data' },
   'common.saving': { type: 'status', text: 'Saving...' },
   'common.saveFailed': {
     type: 'status',
@@ -181,14 +212,14 @@ export const catalogue = {
   'runs.search': { type: 'status', text: 'Search saved activities' },
   'runs.from': { type: 'status', text: 'From date' },
   'runs.to': { type: 'status', text: 'Through date' },
-  'runs.noMatches': { type: 'status', text: 'No matching activities on the loaded pages.' },
+  'runs.noMatches': { type: 'status', text: 'No saved activities match these filters.' },
   'runs.select': { type: 'status', text: 'Select {date} for comparison' },
   'runs.selected': { type: 'status', text: '{n} of 2 runs selected' },
   'runs.compareSelected': { type: 'status', text: 'Compare selected runs' },
   'runs.clearSelection': { type: 'status', text: 'Clear selection' },
   'runs.filterScope': {
     type: 'status',
-    text: 'Filters apply to loaded activities. Load more to search further back.',
+    text: 'Dates search saved history. Text searches loaded results; load more to search further back.',
   },
 
   // --------------------------------------------------------- progress
@@ -288,6 +319,7 @@ export const catalogue = {
   'compare.share': { type: 'status', text: 'Share the comparison' },
   'compare.share.file': { type: 'status', text: 'stride-comparison' },
   'compare.chart.toggle': { type: 'status', text: 'Show' },
+  'compare.chart.signal': { type: 'status', text: 'Signal' },
   'compare.run.label': { type: 'status', text: 'Run' },
 
   // ------------------------------------------------------------- plan
@@ -362,7 +394,10 @@ export const catalogue = {
    *
    * The promise is a `statement`: a whole sentence with no hole in it.
    */
-  'common.promise': { type: 'statement', text: 'Your data stays on this phone.' },
+  'common.promise': {
+    type: 'statement',
+    text: 'Your history is stored locally on this device.',
+  },
   'common.paused.until': { type: 'status', text: 'paused until {date}' },
   'common.paused.untilReason': { type: 'status', text: 'paused until {date} · {reason}' },
   // --------------------------------------------------------- settings
@@ -447,11 +482,14 @@ export const catalogue = {
   },
 
   // ---------------------------------------------------------- connect
-  'connect.promise': { type: 'statement', text: 'Your data stays on this phone.' },
+  'connect.promise': {
+    type: 'statement',
+    text: 'Your history is stored locally on this device.',
+  },
   'connect.key.label': { type: 'status', text: 'Garmin Personal API key' },
   'connect.key.note': {
     type: 'statement',
-    text: 'A key is created on Garmin, and it is never written down anywhere else.',
+    text: 'The Garmin connection is kept on this device and is not included in history backups.',
   },
   'connect.key.link': { type: 'status', text: "Garmin's page for the key" },
   'connect.key.linkUrl': {

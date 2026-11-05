@@ -1,10 +1,8 @@
 /**
  * Today.
  *
- * A readout, not an instruction. The order is fixed:
- *
- *   the actual week → the state line → the three vitals → the plan's own session → the
- *   plan's other options → the last run.
+ * A readout, not an instruction. Recorded running leads, followed by
+ * the athlete's own plan and the evidence behind the morning readings.
  *
  * Nothing here instructs, grades, ranks or concludes. The plan's sessions
  * are listed unranked and are never linked to a vital — that link would
@@ -41,6 +39,7 @@ import { PageHeader } from '../ui/layout/PageHeader'
 import { SleepComposition } from '../components/SleepComposition'
 import { SyncControls } from '../components/SyncControls'
 import { QueryError } from '../components/QueryError'
+import { runsPath, weekDates } from '../lib/history'
 
 function SessionCard({
   planned,
@@ -193,6 +192,9 @@ export function TodayPage() {
             />
           ) : null}
           {runSync.isError ? <p role="alert">{t('sync.failed')}</p> : null}
+          <Link to="/plan" className="tap-inline mt-3 text-[13px] text-brand-700 underline">
+            {t('today.plan.open')}
+          </Link>
         </div>
       </div>
     )
@@ -245,7 +247,10 @@ export function TodayPage() {
             <h2 className="text-[12px] font-semibold uppercase tracking-[0.06em] text-ink-faint">
               {t('today.week.heading')}
             </h2>
-            <Link to="/runs" className="tap mt-1 flex items-baseline justify-between gap-3">
+            <Link
+              to={runsPath(weekDates(insight.date)[0]!, weekDates(insight.date)[6]!)}
+              className="tap mt-1 flex items-baseline justify-between gap-3"
+            >
               <span className="text-[48px] font-semibold leading-tight tracking-tight tabular-nums text-brand-700">
                 {renderedText(insight.week.distance)}
               </span>
@@ -254,27 +259,97 @@ export function TodayPage() {
               </span>
             </Link>
             <ol
-              className="mt-4 grid grid-cols-7 gap-1"
+              className="-mx-5 mt-4 grid grid-cols-7"
               aria-label={t('today.week.recordedDays')}
             >
               {insight.week.days.map((day) => (
-                <li
-                  key={day.date}
-                  className="flex flex-col items-center gap-1 text-[12px]"
-                  aria-label={`${formatDateShort(day.date)}: ${t('today.week.sessions', { n: day.sessions })}`}
-                >
-                  <span className="text-ink-muted">
-                    {formatDateShort(day.date).slice(0, 3)}
-                  </span>
-                  <span
+                <li key={day.date} className="min-w-0">
+                  <Link
+                    to={runsPath(day.date)}
+                    className={`tap flex min-h-[72px] flex-col items-center justify-end gap-1 rounded-md text-[12px] ${day.date === insight.date ? 'bg-accent-100' : 'hover:bg-brand-100'}`}
+                    aria-label={`${formatDateShort(day.date)}: ${t('today.week.sessions', { n: day.sessions })}, ${renderedText(day.distance)}`}
                     aria-current={day.date === insight.date ? 'date' : undefined}
-                    className={`flex h-7 w-7 items-center justify-center rounded-full border text-[12px] font-semibold tabular-nums ${day.date === insight.date ? 'border-accent-500 bg-accent-100 text-brand-800' : day.sessions > 0 ? 'border-brand-600 bg-brand-600 text-white' : 'border-edge text-ink-muted'}`}
                   >
-                    {day.sessions > 0 ? day.sessions : <span aria-hidden="true">&middot;</span>}
-                  </span>
+                    <span
+                      className="w-5 rounded-t bg-brand-600"
+                      style={{
+                        height: `${day.sessions ? Math.max(8, (36 * (day.distance?.raw ?? day.sessions)) / Math.max(1, ...insight.week.days.map((entry) => entry.distance?.raw ?? entry.sessions))) : 2}px`,
+                      }}
+                    />
+                    <span className="text-ink-muted">
+                      {formatDateShort(day.date).slice(0, 3)}
+                    </span>
+                    <span className="font-semibold tabular-nums text-brand-700">
+                      {day.date.slice(-2)}
+                    </span>
+                  </Link>
                 </li>
               ))}
             </ol>
+          </section>
+          {lastRun ? (
+            <Link
+              to={`/runs/${lastRun.id}`}
+              data-testid="today-last-run"
+              className="tap card mb-3 flex items-center gap-4 px-4 py-4 transition-shadow hover:shadow-lift"
+            >
+              <span className="min-w-0 flex-1">
+                <span className="block text-[12px] font-semibold uppercase tracking-wide text-ink-muted">
+                  {t('today.lastRun.label')}
+                </span>
+                <span className="mt-1 block text-[17px] font-semibold text-ink">
+                  {lastRun.name || t('compare.run.label')}
+                </span>
+                <span className="mt-1 block text-[14px] text-ink-soft">
+                  {renderedText(lastRun.distance)} · {renderedText(lastRun.duration)} ·{' '}
+                  {renderedText(lastRun.pace)}
+                </span>
+                <span className="mt-1 block text-[12px] text-ink-muted">
+                  {formatDateMedium(lastRun.local_date)}
+                </span>
+              </span>
+              {lastRun.geo_points.length > 1 ? (
+                <span className="hidden w-[112px] shrink-0 lg:block" data-testid="today-route">
+                  <RouteMap points={lastRun.geo_points} variant="mini" />
+                </span>
+              ) : null}
+            </Link>
+          ) : null}
+          <section className="card mb-3 px-4 py-3">
+            <div className="flex items-center justify-between gap-3">
+              <h2 className="text-[12px] font-semibold uppercase tracking-wide text-ink-muted">
+                {t('plan.heading')}
+              </h2>
+              <Link
+                to="/plan"
+                className="tap-inline text-[13px] font-medium text-brand-700 underline"
+              >
+                {t('today.plan.open')}
+              </Link>
+            </div>
+            {insight.planned ? (
+              <SessionCard
+                planned={insight.planned}
+                comparison={insight.distance_comparison}
+                paused={paused}
+              />
+            ) : (
+              <p className="mt-1 text-[13px] text-ink-muted">{t('today.state.noPlan')}</p>
+            )}
+            {insight.options.length > 0 ? (
+              <div className="mt-3 border-t border-edge pt-3" data-testid="today-options">
+                <h3 className="text-[12px] font-semibold text-ink-muted">
+                  {t('today.options.heading')}
+                </h3>
+                <ul className="mt-1 space-y-1">
+                  {insight.options.map((option) => (
+                    <li key={option.date} className="text-[13px] text-ink-soft">
+                      {option.sentence}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
           </section>
         </div>
         <div>
@@ -338,67 +413,14 @@ export function TodayPage() {
           {/* --------------------------------------------------- the vitals */}
           <VitalReadings snapshot={snapshot} layout="rows" muted={Boolean(failed)} />
           <SleepComposition date={snapshot.date} />
+          <Link
+            to={`/body?date=${snapshot.date}`}
+            className="tap-inline text-[13px] font-medium text-brand-700 underline"
+          >
+            {t('today.body.open')}
+          </Link>
         </div>
       </div>
-
-      {/* -------------------------------------------- the plan's session */}
-      {insight.planned ? (
-        <section className="mt-3">
-          <SessionCard
-            planned={insight.planned}
-            comparison={insight.distance_comparison}
-            paused={paused}
-          />
-        </section>
-      ) : null}
-
-      {/* ---------------------------------------- the plan's other options */}
-      {insight.options.length > 0 ? (
-        <section className="card mt-3 px-4 py-3" data-testid="today-options">
-          <p className="text-[13px] font-semibold uppercase tracking-[0.06em] text-ink-muted">
-            {t('today.options.heading')}
-          </p>
-          <ul className="mt-1.5 space-y-1">
-            {insight.options.map((option) => (
-              <li key={option.date} className="text-[14px] text-ink-soft">
-                {option.sentence}
-              </li>
-            ))}
-          </ul>
-        </section>
-      ) : null}
-
-      {/* --------------------------------------------------- the last run */}
-      {lastRun ? (
-        <section className="mt-3">
-          {/*
-            The last run, and — at the wide widths, where there is room
-            for it — a mini thumbnail of its route. The thumbnail is the
-            API's own points, drawn small; nothing goes anywhere to make
-            it.
-          */}
-          <Link
-            to={`/runs/${lastRun.id}`}
-            className="tap card flex flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3 transition-shadow hover:shadow-lift"
-            data-testid="today-last-run"
-          >
-            <span className="min-w-0 flex-1">
-              <span className="block text-[13px] font-semibold uppercase tracking-[0.06em] text-ink-muted">
-                {t('today.lastRun.label')}
-              </span>
-              <span className="mt-0.5 block text-[14px] text-ink">
-                {renderedText(lastRun.distance)} · {renderedText(lastRun.duration)} ·{' '}
-                {formatDateMedium(lastRun.local_date)}
-              </span>
-            </span>
-            {lastRun.geo_points.length > 1 ? (
-              <span className="hidden w-[112px] shrink-0 lg:block" data-testid="today-route">
-                <RouteMap points={lastRun.geo_points} variant="mini" />
-              </span>
-            ) : null}
-          </Link>
-        </section>
-      ) : null}
     </div>
   )
 }

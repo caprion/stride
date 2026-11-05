@@ -538,6 +538,7 @@ fn the_insight_routes_carry_their_shapes() {
             "headline",
             "headline_note",
             "pace_at_hr",
+            "period",
             "sessions_per_week",
             "typical_week",
             "weekly_volume",

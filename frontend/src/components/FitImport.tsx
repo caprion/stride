@@ -10,7 +10,7 @@
  * 10.2 km)".
  */
 
-import { useMutation } from '@tanstack/react-query'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import { api } from '../lib/api'
 import { fileAsBase64 } from '../lib/files'
@@ -19,12 +19,14 @@ import { currentHost } from '../lib/transport'
 import { t } from '../i18n'
 
 export function FitImport() {
+  const client = useQueryClient()
   const [answer, setAnswer] = useState<string | null>(null)
   const onPhone = currentHost() === 'native'
 
   const send = useMutation({
     mutationFn: async (file: File) => api.importFit({ fit_base64: await fileAsBase64(file) }),
     onSuccess: (result) => {
+      void client.invalidateQueries()
       if (result.duplicate && result.date) {
         setAnswer(
           t('runs.duplicate', {

@@ -38,7 +38,7 @@ describe('the first-run page', () => {
     )
 
     expect(container.querySelector('[data-testid="connect-promise"]')?.textContent).toBe(
-      'Your data stays on this phone.',
+      'Your history is stored locally on this device.',
     )
     // The promise comes before the field.
     const promise = container.querySelector('[data-testid="connect-promise"]') as HTMLElement

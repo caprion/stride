@@ -32,7 +32,9 @@ describe('Today', () => {
     const { container } = renderApp('/')
     const week = await screen.findByTestId('today-week')
     expect(week.textContent).toContain('This week')
-    expect(week.querySelector('a')?.getAttribute('href')).toBe('/runs')
+    expect(week.querySelector('a')?.getAttribute('href')).toBe(
+      '/runs?from=2026-05-11&to=2026-05-17',
+    )
     expect(week.querySelectorAll('ol li')).toHaveLength(7)
     expect(week.querySelector('[aria-current="date"]')).toBeTruthy()
     const vitals = container.querySelector('[data-testid="today-vitals"]')

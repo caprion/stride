@@ -13,6 +13,7 @@
 
 import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
+import { Link, useSearchParams } from 'react-router-dom'
 import { api } from '../lib/api'
 import { useStaleness } from '../lib/staleness'
 import { t } from '../i18n'
@@ -20,9 +21,19 @@ import { VitalReadings } from '../components/VitalReadings'
 import { SleepComposition } from '../components/SleepComposition'
 import { QueryError } from '../components/QueryError'
 import { PageHeader } from '../ui/layout/PageHeader'
+import { DateNavigator } from '../components/DateNavigator'
+import { runsPath, validDate } from '../lib/history'
 
 export function BodyPage() {
-  const [date, setDate] = useState('')
+  const [params, setParams] = useSearchParams()
+  const date = validDate(params.get('date'))
+  const setDate = (next: string) => {
+    setParams((previous) => {
+      if (next) previous.set('date', next)
+      else previous.delete('date')
+      return previous
+    })
+  }
   const [days, setDays] = useState(28)
   const vitals = useQuery({
     queryKey: date || days !== 28 ? ['physiology-vitals', date, days] : ['physiology-vitals'],
@@ -61,43 +72,40 @@ export function BodyPage() {
   }
 
   const controls = (
-    <section
-      className="card mb-3 flex flex-wrap items-end gap-3 px-4 py-3"
-      aria-label={t('body.history.controls')}
-    >
-      <label className="flex flex-col gap-1 text-[13px] text-ink-muted">
-        {t('body.history.date')}
-        <input
-          type="date"
-          value={date || snapshot.date}
-          onChange={(event) => setDate(event.target.value)}
-          className="tap rounded-md border border-edge bg-surface px-2 text-ink"
-        />
-      </label>
-      <label className="flex flex-col gap-1 text-[13px] text-ink-muted">
-        {t('body.history.range')}
-        <select
-          value={days}
-          onChange={(event) => setDays(Number(event.target.value))}
-          className="tap rounded-md border border-edge bg-surface px-2 text-ink"
+    <>
+      <DateNavigator date={date || snapshot.date} onDate={setDate} />
+      <div className="mb-3 flex flex-wrap items-end gap-3">
+        <label className="flex flex-col gap-1 text-[13px] text-ink-muted">
+          {t('body.history.range')}
+          <select
+            value={days}
+            onChange={(event) => setDays(Number(event.target.value))}
+            className="tap rounded-md border border-edge bg-surface px-2 text-ink"
+          >
+            {[7, 28, 90, 365].map((range) => (
+              <option key={range} value={range}>
+                {t('body.history.days', { n: range })}
+              </option>
+            ))}
+          </select>
+        </label>
+        {date ? (
+          <button
+            className="tap-inline text-[13px] font-medium text-brand-700 underline"
+            type="button"
+            onClick={() => setDate('')}
+          >
+            {t('body.history.latest')}
+          </button>
+        ) : null}
+        <Link
+          to={runsPath(date || snapshot.date)}
+          className="tap-inline ml-auto text-[13px] font-medium text-brand-700 underline"
         >
-          {[7, 28, 90, 365].map((range) => (
-            <option key={range} value={range}>
-              {t('body.history.days', { n: range })}
-            </option>
-          ))}
-        </select>
-      </label>
-      {date ? (
-        <button
-          className="tap-inline text-[13px] font-medium text-brand-700 underline"
-          type="button"
-          onClick={() => setDate('')}
-        >
-          {t('body.history.latest')}
-        </button>
-      ) : null}
-    </section>
+          {t('body.history.runs')}
+        </Link>
+      </div>
+    </>
   )
 
   // No wellness yet: the screen says what is missing and what to do,

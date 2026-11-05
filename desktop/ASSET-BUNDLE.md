@@ -1,7 +1,7 @@
 # The app bundle carried by the rig
 
-`desktop/assets/` is the production web bundle built from `frontend/` at commit
-`77dca0f` (the base of this change). It is embedded in `stride-desktop` so a
+`desktop/assets/` is the production web bundle rebuilt from `frontend/` for
+`0.12.0-rc.3`. It is embedded in `stride-desktop` so a
 stranger can clone the repository and build the rig with Rust alone.
 
 A developer checkout with `frontend/dist/` present uses that bundle instead,

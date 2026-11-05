@@ -8,7 +8,7 @@
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import {
   Area,
   AreaChart,
@@ -31,10 +31,13 @@ import { StreetRouteMap } from '../components/StreetRouteMap'
 import { SleepComposition } from '../components/SleepComposition'
 import { QueryError } from '../components/QueryError'
 import { PageHeader } from '../ui/layout/PageHeader'
+import { historyReturn } from '../lib/history'
 
 export function ActivityPage({ id }: { id: string }) {
-  const [splitsOpen, setSplitsOpen] = useState(false)
-  const [elevationOpen, setElevationOpen] = useState(false)
+  const [splitsOpen, setSplitsOpen] = useState(true)
+  const [elevationOpen, setElevationOpen] = useState(true)
+  const [params] = useSearchParams()
+  const returnTo = historyReturn(params.get('returnTo'))
   const [noteOpen, setNoteOpen] = useState(false)
   const [note, setNote] = useState('')
   const [fitNotice, setFitNotice] = useState<string | null>(null)
@@ -73,9 +76,16 @@ export function ActivityPage({ id }: { id: string }) {
     },
   })
 
+  const back = (
+    <Link to={returnTo} className="tap-inline mb-2 text-[13px] text-brand-700 underline">
+      {t('activity.back')}
+    </Link>
+  )
+
   if (activity.isError && !data) {
     return (
       <>
+        {back}
         <PageHeader title={t('activity.heading')} />
         <QueryError
           retry={() => {
@@ -88,6 +98,7 @@ export function ActivityPage({ id }: { id: string }) {
   if (!data) {
     return (
       <div>
+        {back}
         <PageHeader title={t('activity.heading')} />
         <p className="text-[14px] text-ink-muted">{t('common.loading')}</p>
       </div>
@@ -139,13 +150,30 @@ export function ActivityPage({ id }: { id: string }) {
 
   return (
     <div>
-      <Link to="/runs" className="tap-inline mb-2 text-[13px] text-brand-700 underline">
-        {t('activity.back')}
-      </Link>
+      {back}
       <PageHeader
-        title={sportLabel(data.sport_type)}
-        meta={formatDateMedium(data.local_date)}
+        title={data.name || sportLabel(data.sport_type)}
+        meta={`${sportLabel(data.sport_type)} · ${formatDateMedium(data.local_date)}`}
+        action={
+          <Link
+            to={`/compare/${data.id}?${new URLSearchParams({ returnTo })}`}
+            className="tap-inline rounded-md border border-edge bg-surface px-3 text-[13px] font-semibold text-brand-700"
+          >
+            {t('runs.compareWith')}
+          </Link>
+        }
       />
+      <nav className="mb-3 flex flex-wrap gap-4 text-[13px] text-brand-700">
+        <a href="#activity-splits" className="tap-inline underline">
+          {t('activity.splits.heading')}
+        </a>
+        <a href="#activity-note" className="tap-inline underline">
+          {t('activity.note.heading')}
+        </a>
+        <Link to={`/body?date=${data.local_date}`} className="tap-inline underline">
+          {t('today.body.open')}
+        </Link>
+      </nav>
       {activity.isError ? (
         <QueryError
           retry={() => {
@@ -227,7 +255,6 @@ export function ActivityPage({ id }: { id: string }) {
               </div>
             </section>
           ) : null}
-          <SleepComposition date={data.local_date} beforeRun />
         </div>
         <div>
           {/* --------------------------------------------------------- effort */}
@@ -309,15 +336,46 @@ export function ActivityPage({ id }: { id: string }) {
               </ResponsiveContainer>
             </div>
             {zones.data && zones.data.zones.length > 0 ? (
-              <ul className="mt-2 flex flex-wrap gap-x-4 gap-y-1" data-testid="activity-zones">
-                {zones.data.zones.map((band) => (
-                  <li key={band.label} className="text-[12px] text-ink-muted">
-                    <span className="font-semibold text-ink-soft">{band.label}</span>
-                    {band.range ? <span> · {band.range}</span> : null}
-                    {band.time ? <span> · {renderedText(band.time)}</span> : null}
-                  </li>
-                ))}
-              </ul>
+              <div className="mt-3" data-testid="activity-zones">
+                <p className="text-[11px] text-ink-muted">{t('activity.zones.basis')}</p>
+                <ul className="mt-2 space-y-2">
+                  {zones.data.zones.map((band, index) => (
+                    <li
+                      key={band.label}
+                      className="grid grid-cols-[32px_1fr_auto] items-center gap-2 text-[12px] text-ink-muted"
+                    >
+                      <span className="font-semibold text-ink-soft">{band.label}</span>
+                      <span className="min-w-0">
+                        <span className="block h-2 rounded bg-brand-50">
+                          <span
+                            className="block h-full rounded"
+                            style={{
+                              backgroundColor: [
+                                '#A9C9E2',
+                                '#7BA8CD',
+                                '#1E5E96',
+                                '#124A7C',
+                                '#D99A0B',
+                              ][index % 5],
+                              width: `${(100 * Math.max(0, band.time?.raw ?? 0)) / Math.max(1, ...(zones.data?.zones ?? []).map((zone) => zone.time?.raw ?? 0))}%`,
+                            }}
+                          />
+                        </span>
+                        {band.range ? (
+                          <span className="mt-1 block text-[11px]">{band.range}</span>
+                        ) : null}
+                      </span>
+                      <span className="tabular-nums">{renderedText(band.time)}</span>
+                    </li>
+                  ))}
+                </ul>
+                {zones.data.without_heart_rate ? (
+                  <p className="mt-2 text-[11px] text-ink-muted">
+                    {t('activity.zones.missing')} ·{' '}
+                    {renderedText(zones.data.without_heart_rate)}
+                  </p>
+                ) : null}
+              </div>
             ) : null}
             {zones.data?.unavailable ? (
               <p
@@ -374,7 +432,7 @@ export function ActivityPage({ id }: { id: string }) {
           </section>
 
           {/* -------------------------------------------------------- splits */}
-          <section className="card mt-3 px-4 py-3">
+          <section id="activity-splits" className="card mt-3 px-4 py-3">
             <div className="flex items-center justify-between gap-3">
               <h2 className="text-[12px] font-semibold uppercase tracking-[0.07em] text-ink-faint">
                 {t('activity.splits.heading')}
@@ -388,24 +446,42 @@ export function ActivityPage({ id }: { id: string }) {
               </button>
             </div>
             {splitsOpen ? (
-              <ul className="mt-2">
-                {data.splits.map((split) => (
-                  <li
-                    key={split.index}
-                    className="grid grid-cols-[1fr_auto_auto] items-baseline gap-x-3 border-b border-edge py-1.5 last:border-b-0"
-                  >
-                    <span className="text-[13px] text-ink-soft">
-                      {renderedText(split.distance)}
-                    </span>
-                    <span className="text-[13px] tabular-nums text-ink">
-                      {renderedText(split.duration)}
-                    </span>
-                    <span className="text-[13px] tabular-nums text-ink-muted">
-                      {renderedText(split.heart_rate)}
-                    </span>
-                  </li>
-                ))}
-              </ul>
+              <table className="mt-2 w-full table-fixed text-[12px]">
+                <thead>
+                  <tr className="border-b border-edge text-ink-muted">
+                    <th scope="col" className="py-2 text-left font-medium">
+                      {t('vital.distance')}
+                    </th>
+                    <th scope="col" className="py-2 text-right font-medium">
+                      {t('vital.pace')}
+                    </th>
+                    <th scope="col" className="py-2 text-right font-medium">
+                      {t('vital.time')}
+                    </th>
+                    <th scope="col" className="py-2 text-right font-medium">
+                      {t('vital.heartRate')}
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {data.splits.map((split) => (
+                    <tr key={split.index} className="border-b border-edge last:border-b-0">
+                      <th scope="row" className="py-2 text-left font-medium text-ink-soft">
+                        {renderedText(split.distance)}
+                      </th>
+                      <td className="py-2 text-right font-semibold tabular-nums text-brand-700">
+                        {renderedText(split.pace)}
+                      </td>
+                      <td className="py-2 text-right tabular-nums text-ink">
+                        {renderedText(split.duration)}
+                      </td>
+                      <td className="py-2 text-right tabular-nums text-ink-muted">
+                        {renderedText(split.heart_rate)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             ) : null}
           </section>
 
@@ -476,7 +552,7 @@ export function ActivityPage({ id }: { id: string }) {
         to the run it is about. It is edited here, on the run's own page —
         the settings screen holds the settings, not the notes.
       */}
-      <section className="card mt-3 px-4 py-3" data-testid="activity-note">
+      <section id="activity-note" className="card mt-3 px-4 py-3" data-testid="activity-note">
         <div className="flex items-center justify-between gap-3">
           <h2 className="text-[12px] font-semibold uppercase tracking-[0.07em] text-ink-faint">
             {t('activity.note.heading')}
@@ -543,6 +619,7 @@ export function ActivityPage({ id }: { id: string }) {
         )}
       </section>
 
+      <SleepComposition date={data.local_date} beforeRun />
       {/* --------------------------------------------------------- actions */}
       {/*
         The note and the comparison are here, and the FIT file — the
@@ -553,7 +630,7 @@ export function ActivityPage({ id }: { id: string }) {
       */}
       <div className="mt-3 flex flex-wrap gap-4 pb-2">
         <Link
-          to={`/compare/${data.id}`}
+          to={`/compare/${data.id}?${new URLSearchParams({ returnTo })}`}
           className="tap-inline text-[13px] font-medium text-brand-600 underline underline-offset-2"
         >
           {t('runs.compareWith')}

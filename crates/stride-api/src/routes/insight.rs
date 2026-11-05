@@ -60,8 +60,14 @@ pub fn today(api: &Api, request: &Request) -> ApiResult<Value> {
         .store()
         .activities_between("0000-01-01", &current.to_iso())
         .map_err(|error| api.store_error("the runs could not be read", &error))?;
-    let summaries = super::summaries(api, &runs)?;
-    let last_run = summaries.first().cloned();
+    let mut last_run = super::summaries(api, &runs[..runs.len().min(1)])?
+        .into_iter()
+        .next();
+    if let Some(run) = &mut last_run {
+        if let Some(decoded) = super::series::decoded(api, run.id) {
+            run.geo_points = super::series::geo_points(&decoded, 64);
+        }
+    }
 
     let week_runs = api
         .store()
@@ -78,6 +84,12 @@ pub fn today(api: &Api, request: &Request) -> ApiResult<Value> {
                         .iter()
                         .filter(|run| run.local_date == date)
                         .count(),
+                    distance: render::distance_of(render::total_of(
+                        week_runs
+                            .iter()
+                            .filter(|run| run.local_date == date)
+                            .map(|run| run.distance_m),
+                    )),
                     date,
                 }
             })
@@ -106,7 +118,12 @@ pub fn today(api: &Api, request: &Request) -> ApiResult<Value> {
 
 /// The Progress screen's data.
 pub fn progress(api: &Api, request: &Request) -> ApiResult<Value> {
-    let _ = request;
+    let weeks = request.query.integer("weeks")?.unwrap_or(12);
+    if !(1..=104).contains(&weeks) {
+        return Err(ApiError::bad_request(
+            "the progress window is not between 1 and 104 weeks",
+        ));
+    }
     let current = super::today(api)?;
     let runs = api
         .store()
@@ -191,9 +208,29 @@ pub fn progress(api: &Api, request: &Request) -> ApiResult<Value> {
         render::average(Some(average))
     };
 
+    let from = super::week_start(current)
+        .add_days(-7 * (weeks - 1))
+        .to_iso();
+    let period_runs: Vec<_> = runs.iter().filter(|run| run.local_date >= from).collect();
+    let period = crate::dto::ProgressPeriod {
+        from: from.clone(),
+        to: current.to_iso(),
+        distance: render::distance_of(render::total_of(
+            period_runs.iter().map(|run| run.distance_m),
+        )),
+        duration: render::duration_of(render::total_of(
+            period_runs.iter().map(|run| run.moving_time_s),
+        )),
+        sessions: period_runs.len(),
+        recorded_weeks: weekly_volume
+            .iter()
+            .filter(|week| week.week_start >= from)
+            .count(),
+    };
     let response = ProgressInsight {
         generated_at: api.generated_at(),
         date: current.to_iso(),
+        period,
         headline,
         headline_note: None,
         weekly_volume,

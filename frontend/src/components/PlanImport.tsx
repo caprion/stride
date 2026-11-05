@@ -6,19 +6,21 @@
  * session is unclassified, never labelled "easy" by guesswork.
  */
 
-import { useMutation } from '@tanstack/react-query'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import { api } from '../lib/api'
 import { fileAsBase64 } from '../lib/files'
 import { t } from '../i18n'
 
 export function PlanImport() {
+  const client = useQueryClient()
   const [answer, setAnswer] = useState<string | null>(null)
 
   const send = useMutation({
     mutationFn: async (file: File) =>
       api.planImport({ file: await fileAsBase64(file), name: file.name }),
     onSuccess: (result) => {
+      if (result.imported) void client.invalidateQueries()
       setAnswer(result.imported ? t('plan.import.done') : t('runs.import.failed'))
     },
     onError: () => {

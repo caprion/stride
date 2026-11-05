@@ -136,6 +136,8 @@ pub struct Split {
     pub duration: RenderedValue,
     /// The average heart rate over the split, as the core renders it.
     pub heart_rate: Option<RenderedValue>,
+    /// The lap's pace, when it has a positive distance and duration.
+    pub pace: Option<RenderedValue>,
 }
 
 /// One point of the elevation profile.
@@ -1065,6 +1067,8 @@ pub struct RunningDay {
     pub date: String,
     /// Runs already recorded on this day, not a coverage or rest-day claim.
     pub sessions: usize,
+    /// The recorded distance, not a coverage or rest-day claim.
+    pub distance: RenderedValue,
 }
 
 /// One week of volume.
@@ -1114,6 +1118,8 @@ pub struct ProgressInsight {
     pub generated_at: String,
     /// The local calendar date used by the core's weekly grouping.
     pub date: String,
+    /// Totals for the selected calendar-week window.
+    pub period: ProgressPeriod,
     /// The headline, already written.
     pub headline: String,
     /// The evidence under it.
@@ -1138,6 +1144,23 @@ pub struct ProgressInsight {
     /// has a rule for how long a trend is: the number is the core's rule,
     /// and this crate does not keep a second one.
     pub weeks_needed: Option<i64>,
+}
+
+/// Recorded activity within a selected progress window.
+#[derive(Clone, Debug, PartialEq, Serialize)]
+pub struct ProgressPeriod {
+    /// First included local date.
+    pub from: String,
+    /// Last included local date.
+    pub to: String,
+    /// Total recorded distance.
+    pub distance: RenderedValue,
+    /// Total recorded moving time.
+    pub duration: RenderedValue,
+    /// Number of recorded sessions.
+    pub sessions: usize,
+    /// Calendar weeks containing recorded sessions.
+    pub recorded_weeks: usize,
 }
 
 /// One chip about a run.

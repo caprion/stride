@@ -55,6 +55,88 @@ fn activities_pages_with_a_cursor() {
 }
 
 #[test]
+fn activity_date_windows_page_old_history_and_reject_reversed_bounds() {
+    let harness = common::Harness::empty("route-activities-window");
+    for day in 1..=4 {
+        harness.write_run(common::run(
+            &format!("window-{day}"),
+            &format!("2026-05-{day:02}"),
+            5000.0,
+            1800.0,
+        ));
+    }
+    let first = harness.ok_get("/activities?since=2026-05-01&until=2026-05-02&limit=1");
+    assert_eq!(first["activities"][0]["local_date"], "2026-05-02");
+    let cursor = first["next_cursor"].as_str().unwrap();
+    let second = harness.ok_get(&format!(
+        "/activities?since=2026-05-01&until=2026-05-02&limit=1&cursor={cursor}"
+    ));
+    assert_eq!(second["activities"][0]["local_date"], "2026-05-01");
+    assert!(second["next_cursor"].is_null());
+    let invalid = harness
+        .router
+        .call("GET", "/activities?since=2026-05-03&until=2026-05-01", None);
+    assert_eq!(invalid.status, 400);
+}
+
+#[test]
+fn progress_period_totals_follow_the_selected_calendar_window() {
+    let harness = common::Harness::empty("route-progress-window");
+    harness.write_run(common::run("old-window", "2026-04-01", 10000.0, 3600.0));
+    harness.write_run(common::run("new-window", TODAY, 5000.0, 1800.0));
+    let short = harness.ok_get("/insights/progress?weeks=4");
+    assert_eq!(short["period"]["distance"]["text"], "5 km");
+    assert_eq!(short["period"]["sessions"], 1);
+    assert_eq!(short["period"]["recorded_weeks"], 1);
+    let long = harness.ok_get("/insights/progress?weeks=8");
+    assert_eq!(long["period"]["distance"]["text"], "15 km");
+    assert_eq!(long["period"]["sessions"], 2);
+    assert_eq!(long["period"]["recorded_weeks"], 2);
+    assert_eq!(
+        harness
+            .router
+            .call("GET", "/insights/progress?weeks=0", None)
+            .status,
+        400
+    );
+}
+
+#[test]
+fn live_feed_and_today_receive_bounded_route_previews() {
+    let harness = common::Harness::empty("route-live-previews");
+    let mut run = common::run("preview-route", TODAY, 10000.0, 3000.0);
+    run.fit_blob = common::corpus_fit("hr_gps_run.fit");
+    let id = harness.write_run(run);
+    let feed = harness.ok_get("/activities");
+    let points = feed["activities"][0]["geo_points"].as_array().unwrap();
+    assert!((3..=64).contains(&points.len()));
+    let today = harness.ok_get("/insights/today");
+    assert_eq!(today["last_run"]["id"], id);
+    assert_eq!(
+        today["last_run"]["geo_points"],
+        feed["activities"][0]["geo_points"]
+    );
+    assert_eq!(
+        today["week"]["days"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .filter_map(|day| day["distance"]["raw"].as_f64())
+            .sum::<f64>(),
+        10000.0
+    );
+    let detail = harness.ok_get(&format!("/activities/{id}"));
+    let full = detail["geo_points"].as_array().unwrap();
+    assert_eq!(points.first(), full.first());
+    assert_eq!(points.last(), full.last());
+    assert!(detail["splits"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .all(|split| split.get("pace").is_some()));
+}
+
+#[test]
 fn an_activity_answers_with_the_run() {
     let harness = common::Harness::seeded("route-activity");
     let id = harness.write_run(common::run("a-run", "2026-05-10", 10_000.0, 3_000.0));

@@ -68,8 +68,9 @@ run's night matched to its date. Stages do not establish sleep quality; do not
 invent a score or chronological timeline. Pace and heart rate share an elapsed
 time cursor; distance-based elevation and untimed route geometry remain separate.
 
-Runs supports an explicit two-run comparison tray and filters scoped to loaded
-pages. Progress describes saved activity history, marks the partial current week
+Runs supports an explicit two-run comparison tray. Date filters now search stored
+history; text search remains scoped to loaded pages. Progress describes saved
+activity history, marks the partial current week
 and distinguishes separate weekly medians from matched-effort evidence. Average
 session counts are scoped to recorded weeks. Data & connection leads with
 local storage and actual Garmin status; diagnostics are secondary and connection
@@ -78,6 +79,15 @@ visible and do not claim success or replace saved records with invented emptines
 
 The user authorized publishing a signed GitHub pre-release for physical-phone
 testing. This does not establish device acceptance or promote the build to stable.
+
+The rc.3 interaction pass adds shared date/history links, monthly run browsing,
+bounded local route previews and preserved history return paths. Progress totals
+follow the selected period, and its weekly bars open saved runs. Compare uses an
+aligned table, paired desktop charts and compact A/B switches for heart rate or
+pace. Settings separates data, preferences, imports and About; desktop backup
+opens the host-owned tools rather than an unconfigured export destination.
+Desktop/mobile browser acceptance does not establish physical-phone acceptance
+or pixel-identical reproduction of the synthetic Stitch prototype.
 
 The initial target is a 365-day lookback, approximately twelve months, inclusive
 of today. A foreground pull checks the latest fourteen activity dates and up to

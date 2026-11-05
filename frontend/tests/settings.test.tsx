@@ -55,7 +55,7 @@ describe('phone data ownership', () => {
 describe('the weekly goal', () => {
   it('keeps unsaved input and never claims success when the save fails', async () => {
     vi.spyOn(api, 'saveSettings').mockRejectedValue(new Error('synthetic store unavailable'))
-    renderApp('/settings')
+    renderApp('/settings?section=training')
     const input = await screen.findByTestId('settings-goal-input')
     await userEvent.type(input, '35')
     await userEvent.click(screen.getByTestId('settings-goal-save'))
@@ -65,7 +65,7 @@ describe('the weekly goal', () => {
   })
 
   it('shows the goal the api sent, and the number in the field', async () => {
-    const { container } = renderApp('/settings')
+    const { container } = renderApp('/settings?section=training')
     await waitFor(() =>
       expect(container.querySelector('[data-testid="settings-goal"]')).toBeTruthy(),
     )
@@ -81,7 +81,7 @@ describe('the weekly goal', () => {
   })
 
   it('says that a blank goal is no goal, and never a zero', async () => {
-    const { container } = renderApp('/settings')
+    const { container } = renderApp('/settings?section=training')
     await waitFor(() =>
       expect(container.querySelector('[data-testid="settings-goal"]')).toBeTruthy(),
     )
@@ -95,7 +95,7 @@ describe('the weekly goal', () => {
 
   it('says "No goal" when there is no goal', async () => {
     window.history.pushState({}, '', '/?fixtures=empty')
-    const { container } = renderApp('/settings')
+    const { container } = renderApp('/settings?section=training')
     await waitFor(() =>
       expect(container.querySelector('[data-testid="settings-goal"]')).toBeTruthy(),
     )
@@ -109,7 +109,7 @@ describe('the weekly goal', () => {
 describe('the pause', () => {
   it('says the plan is paused, with the date and the reason', async () => {
     window.history.pushState({}, '', '/?fixtures=paused')
-    const { container } = renderApp('/settings')
+    const { container } = renderApp('/settings?section=training')
     await waitFor(() =>
       expect(container.querySelector('[data-testid="settings-pause-state"]')).toBeTruthy(),
     )
@@ -121,7 +121,7 @@ describe('the pause', () => {
   })
 
   it('offers the three reasons, and no free text', async () => {
-    const { container } = renderApp('/settings')
+    const { container } = renderApp('/settings?section=training')
     await waitFor(() =>
       expect(container.querySelector('[data-testid="settings-pause"]')).toBeTruthy(),
     )
@@ -151,7 +151,7 @@ describe('the connection', () => {
     )
     expect(screen.queryByText('Not connected')).toBeNull()
     expect(screen.queryByRole('button', { name: 'Connect to Garmin' })).toBeNull()
-    expect(screen.getByTestId('settings-goal-input')).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Training preferences' })).toBeVisible()
     expect(screen.getByText('Your history is stored locally on this device.')).toBeVisible()
   })
 
@@ -235,7 +235,7 @@ describe('the storage', () => {
 
 describe('About', () => {
   it('carries the version, the licence, the promise and the source', async () => {
-    const { container } = renderApp('/settings')
+    const { container } = renderApp('/settings?section=about')
     await waitFor(() =>
       expect(container.querySelector('[data-testid="settings-about"]')).toBeTruthy(),
     )
@@ -249,7 +249,7 @@ describe('About', () => {
     ).toContain('AGPL-3.0')
     expect(
       container.querySelector('[data-testid="settings-about-promise"]')?.textContent,
-    ).toContain('Your data stays on this phone.')
+    ).toContain('Your history is stored locally on this device.')
     expect(
       container.querySelector('[data-testid="settings-about-source"]')?.textContent,
     ).toContain('github.com/caprion/stride')

@@ -4,30 +4,18 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="referrer" content="no-referrer">
-<title>Stride rig tools</title>
+<title>Stride - Backup and restore</title>
 <style>
   :root {
-    color-scheme: light dark;
-    --paper: #f7f7f4;
+    color-scheme: light;
+    --paper: #f4f7fa;
     --card: #ffffff;
-    --ink: #171918;
-    --muted: #5d625f;
-    --line: #d8dcd8;
-    --accent: #126e52;
+    --ink: #17324d;
+    --muted: #61788d;
+    --line: #e4ebf0;
+    --accent: #124a7c;
     --accent-ink: #ffffff;
     --error: #8b2635;
-  }
-  @media (prefers-color-scheme: dark) {
-    :root {
-      --paper: #151816;
-      --card: #1d211f;
-      --ink: #edf1ee;
-      --muted: #aeb8b1;
-      --line: #3a423d;
-      --accent: #63d6a9;
-      --accent-ink: #102019;
-      --error: #ff9eaa;
-    }
   }
   * { box-sizing: border-box; }
   body {
@@ -37,12 +25,16 @@
     color: var(--ink);
     font: 16px/1.5 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   }
-  main { width: min(100%, 860px); margin: 0 auto; padding: 42px 22px 64px; }
+  main { width: min(100%, 1000px); margin: 0 auto; padding: 24px 16px 48px; }
   .mark { margin: 0 0 8px; color: var(--accent); font-size: 13px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; }
-  h1 { margin: 0 0 8px; font-size: clamp(30px, 6vw, 44px); letter-spacing: -.025em; }
-  h2 { margin: 0 0 8px; font-size: 20px; }
+  h1 { margin: 16px 0 8px; font-size: 28px; letter-spacing: -.025em; }
+  h2 { margin: 0 0 8px; font-size: 17px; }
   .lede { margin: 0 0 30px; color: var(--muted); }
-  section { margin-top: 18px; padding: 22px; border: 1px solid var(--line); border-radius: 14px; background: var(--card); }
+  section { margin-top: 12px; padding: 16px; border: 1px solid var(--line); border-radius: 12px; background: var(--card); }
+  a { color: var(--accent); min-height: 44px; display: inline-flex; align-items: center; }
+  .tool-grid { display: grid; gap: 12px; }
+  .tool-grid > * { min-width: 0; }
+  @media (min-width: 800px) { .tool-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; } }
   p { margin: 0 0 14px; }
   .muted { color: var(--muted); font-size: 14px; }
   button, input {
@@ -84,17 +76,18 @@
 </head>
 <body>
 <main>
-  <p class="mark">Stride · development rig</p>
-  <h1>Rig tools</h1>
-  <p class="lede">Move a verified copy of the local log, or bring in a FIT file. These tools work on this rig only.</p>
+  <a href="/settings">Back to Data &amp; connection</a>
+  <p class="mark">Stride</p>
+  <h1>Backup and restore</h1>
+  <p class="lede">Your history is stored locally on this device. These tools move a private copy between your devices.</p>
 
-  <section>
-    <h2>Export</h2>
+  <div class="tool-grid">
+  <section id="export">
+    <h2>Export a backup</h2>
     <p class="muted">Writes an encrypted database, a manifest with the row counts and digest, and a separate key for that export.</p>
     <div class="row"><button id="export-button" type="button">Write an export</button></div>
     <output id="export-output" aria-live="polite"></output>
   </section>
-
   <section>
     <h2>Import an export</h2>
     <p class="muted">The import is a merge. Rows already here are updated, new rows are added, and importing the same bundle twice adds nothing.</p>
@@ -111,6 +104,7 @@
     </div>
     <output id="import-output" aria-live="polite"></output>
   </section>
+  </div>
 
   <section>
     <h2>Import a FIT file</h2>
