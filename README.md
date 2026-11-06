@@ -86,6 +86,7 @@ feature changes. The original candidate remains available for reference.
 | Stable | [v1.0.0 APK and release notes](https://github.com/caprion/stride/releases/tag/v1.0.0) |
 | Previous candidate | [rc.3 APK and release notes](https://github.com/caprion/stride/releases/tag/v0.12.0-rc.3) |
 | Current scope | [PLAN.md](PLAN.md), including the approved responsive-design amendments |
+| Garmin data | [capabilities and integration gaps](docs/garmin-api-capabilities.md) |
 | Current appearance | [Screenshots and demo provenance](docs/media/README.md) |
 | Original design | [Historical v2 wireframes](docs/plan.html), not current screenshots |
 
