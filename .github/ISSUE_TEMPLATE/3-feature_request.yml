@@ -33,7 +33,7 @@ body:
       required: false
 
   - type: dropdown
-    id: platform
+    id: area
     attributes:
       label: Where
       options:

@@ -43,19 +43,29 @@ each is labelled on arrival — so a report that used one is already sorted.
 
 | | template | what it is for |
 |---|---|---|
-| **Bug** | [open a bug report](https://github.com/caprion/stride/issues/new?template=bug_report.yml) | Something did not do what it should have. |
-| **Feedback** | [give feedback](https://github.com/caprion/stride/issues/new?template=feedback.yml) | What works, what does not, and what it should have said instead. |
-| **Request** | [make a request](https://github.com/caprion/stride/issues/new?template=feature_request.yml) | Something you want the app to do. The scope is the maintainer's call, and "not planned" is a complete answer. |
+| **Bug** | [open a bug report](https://github.com/caprion/stride/issues/new?template=1-bug_report.yml) | Something did not do what it should have. |
+| **Feedback** | [give feedback](https://github.com/caprion/stride/issues/new?template=2-feedback.yml) | What works, what does not, and what it should have said instead. |
+| **Request** | [make a request](https://github.com/caprion/stride/issues/new?template=3-feature_request.yml) | Something you want the app to do. The scope is the maintainer's call, and "not planned" is a complete answer. |
 
 The version and the platform are asked for because they are usually the cause.
 Redact before you attach anything: real routes, health records, credentials,
 backups and database files do not belong in a public tracker.
 
-The template names are stable — `bug_report.yml`, `feedback.yml`,
-`feature_request.yml` — and the fields `platform`, `version` and `kind` are
-public. A link from inside the app can therefore open one of them directly and
-pre-fill the version and the platform, so a report that starts in the app
-arrives with the two facts that matter already filled in.
+## Linking to it from the app
+
+The template names and the field ids are public and stable, so a link from
+inside the app can open one of them directly and pre-fill what the app
+already knows:
+
+```
+https://github.com/caprion/stride/issues/new?template=2-feedback.yml&version=1.0.0&area=Phone%20app%20(Android)
+```
+
+`area`, `version` and `kind` are the ids a report can be pre-filled with;
+`area` matches the label of the option exactly, so the spaces are encoded.
+The app knows the version and the surface it is running on, so a report that
+starts in the app arrives with the two facts that matter already filled in,
+and the person typing it is left with the part only they can write.
 
 ## Reporting a security problem
 

@@ -180,9 +180,9 @@ Before you open one, read [CONTRIBUTING.md](CONTRIBUTING.md) and [the plan of re
 
 To report a bug, leave feedback, or make a request, use the
 [issue templates](https://github.com/caprion/stride/issues/new/choose):
-[a bug](https://github.com/caprion/stride/issues/new?template=bug_report.yml),
-[feedback](https://github.com/caprion/stride/issues/new?template=feedback.yml), or
-[a request](https://github.com/caprion/stride/issues/new?template=feature_request.yml).
+[a bug](https://github.com/caprion/stride/issues/new?template=1-bug_report.yml),
+[feedback](https://github.com/caprion/stride/issues/new?template=2-feedback.yml), or
+[a request](https://github.com/caprion/stride/issues/new?template=3-feature_request.yml).
 Redact before you attach anything — this is a public tracker.
 
 ## Licence

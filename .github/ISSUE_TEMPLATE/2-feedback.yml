@@ -30,7 +30,7 @@ body:
       required: true
 
   - type: dropdown
-    id: platform
+    id: area
     attributes:
       label: Where
       options:

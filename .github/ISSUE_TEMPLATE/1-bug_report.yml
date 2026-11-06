@@ -15,7 +15,7 @@ body:
         A cold start to the problem is worth more than a description of the state you were in.
 
   - type: dropdown
-    id: platform
+    id: area
     attributes:
       label: Where
       options:

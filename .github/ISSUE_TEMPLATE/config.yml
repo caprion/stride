@@ -4,10 +4,14 @@
 # The security link is private on purpose: a vulnerability must not be
 # public, and this is where that rule is made visible rather than implied.
 #
-# The field ids in the templates (platform, version, kind) are stable and
+# The field ids in the templates (area, version, kind) are stable and
 # public: an app can pre-fill them with a query string, so a report that
 # starts inside the app arrives with the version and the platform already
 # filled in.
+#
+# The number prefixes are the chooser order — GitHub lists the templates
+# alphabetically, and the numbers are how that order is chosen rather than
+# inherited.
 blank_issues_enabled: true
 contact_links:
   - name: Security vulnerability
