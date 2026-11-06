@@ -1,0 +1,74 @@
+# A bug: something did not do what it should have.
+#
+# The four things that decide how fast a bug gets read: what you did, what
+# you expected, what happened, and the version. The version is the one
+# people leave out, and it is the one that usually carries the cause.
+name: Bug report
+description: Something did not do what it should have.
+title: "[bug] "
+labels: ["bug", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        What you did, what you expected, what happened, and the version.
+        A cold start to the problem is worth more than a description of the state you were in.
+
+  - type: dropdown
+    id: platform
+    attributes:
+      label: Where
+      options:
+        - label: Phone app (Android)
+          labels: ["area: phone"]
+        - label: Desktop rig
+          labels: ["area: desktop"]
+        - label: Garmin sync, or an import
+          labels: ["area: sync"]
+        - label: The core, or the data
+          labels: ["area: data"]
+        - label: The words on the screen
+          labels: ["area: voice"]
+        - label: Not sure
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: The version in Settings, or the release you installed.
+      placeholder: v1.0.0
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: What did you do?
+      description: The steps that lead to it.
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: What did you expect?
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: What happened?
+    validations:
+      required: true
+
+  - type: textarea
+    id: detail
+    attributes:
+      label: Anything else
+      description: |
+        A screenshot or one log line helps. Redact before you paste: your
+        Garmin key, your routes, your health data, your backups and your
+        database are yours, and this is a public tracker.

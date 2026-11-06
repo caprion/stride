@@ -36,6 +36,27 @@ contract, and no service level. What that means in practice:
    Do not attach real routes, health records, credentials, backups or database files.
    Use synthetic examples or a redacted description.
 
+## The intake
+
+Three templates, one queue. Each asks for what it needs and nothing else, and
+each is labelled on arrival — so a report that used one is already sorted.
+
+| | template | what it is for |
+|---|---|---|
+| **Bug** | [open a bug report](https://github.com/caprion/stride/issues/new?template=bug_report.yml) | Something did not do what it should have. |
+| **Feedback** | [give feedback](https://github.com/caprion/stride/issues/new?template=feedback.yml) | What works, what does not, and what it should have said instead. |
+| **Request** | [make a request](https://github.com/caprion/stride/issues/new?template=feature_request.yml) | Something you want the app to do. The scope is the maintainer's call, and "not planned" is a complete answer. |
+
+The version and the platform are asked for because they are usually the cause.
+Redact before you attach anything: real routes, health records, credentials,
+backups and database files do not belong in a public tracker.
+
+The template names are stable — `bug_report.yml`, `feedback.yml`,
+`feature_request.yml` — and the fields `platform`, `version` and `kind` are
+public. A link from inside the app can therefore open one of them directly and
+pre-fill the version and the platform, so a report that starts in the app
+arrives with the two facts that matter already filled in.
+
 ## Reporting a security problem
 
 Do not open a public issue. Use

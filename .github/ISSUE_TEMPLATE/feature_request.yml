@@ -1,0 +1,58 @@
+# A request: something you want the app to do.
+#
+# The scope is the maintainer's call and it is written down in PLAN.md.
+# A request here is an idea, not a commitment, and "not planned" is a
+# complete answer. The problem is read twice; the proposed solution is
+# read once, and only if the problem is clear.
+name: Feature request
+description: Something you want the app to do.
+title: "[feature] "
+labels: ["enhancement", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        [PLAN.md](https://github.com/caprion/stride/blob/master/PLAN.md) is the
+        plan of record, and it is kept small on purpose. If what you want is
+        already in there, that is the fastest answer you will get.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: What were you trying to do?
+      description: The situation, not the button. "I want to know whether the run I did on Tuesday counted against this week's plan."
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: What would you do instead?
+      description: Optional. Your idea, and it is read as an idea.
+    validations:
+      required: false
+
+  - type: dropdown
+    id: platform
+    attributes:
+      label: Where
+      options:
+        - label: Phone app (Android)
+          labels: ["area: phone"]
+        - label: Desktop rig
+          labels: ["area: desktop"]
+        - label: Garmin sync, or an import
+          labels: ["area: sync"]
+        - label: The core, or the data
+          labels: ["area: data"]
+        - label: The words on the screen
+          labels: ["area: voice"]
+        - label: Not sure
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: What have you used instead?
+      description: Another app, a spreadsheet, a notebook. It is often the most useful part of the request.

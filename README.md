@@ -178,6 +178,13 @@ are welcome if they keep the gates green and the voice intact.
 
 Before you open one, read [CONTRIBUTING.md](CONTRIBUTING.md) and [the plan of record](PLAN.md).
 
+To report a bug, leave feedback, or make a request, use the
+[issue templates](https://github.com/caprion/stride/issues/new/choose):
+[a bug](https://github.com/caprion/stride/issues/new?template=bug_report.yml),
+[feedback](https://github.com/caprion/stride/issues/new?template=feedback.yml), or
+[a request](https://github.com/caprion/stride/issues/new?template=feature_request.yml).
+Redact before you attach anything — this is a public tracker.
+
 ## Licence
 
 **[AGPL-3.0](LICENSE).** Its source-sharing obligations also apply to modified

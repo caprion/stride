@@ -1,0 +1,72 @@
+# Feedback: the app is the thing being talked about.
+#
+# This is the intake the app itself will link to later, so it is the short
+# one. A sentence is enough. What it must not be is the athlete's own data:
+# Stride keeps that locally and this tracker is public.
+name: Feedback
+description: Say what works, what does not, and what it should have said.
+title: "[feedback] "
+labels: ["feedback", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Feedback in any form is useful — a sentence is enough, and "the words
+        on the Run screen confused me" is a better report than nothing.
+        Keep it about the app, and keep your own data out of it.
+
+  - type: dropdown
+    id: kind
+    attributes:
+      label: What kind of feedback is this?
+      options:
+        - label: It is confusing, or wrong
+        - label: It is hard to use
+        - label: It is missing something
+        - label: The words it uses
+        - label: It works well — worth saying
+        - label: Something else
+    validations:
+      required: true
+
+  - type: dropdown
+    id: platform
+    attributes:
+      label: Where
+      options:
+        - label: Phone app (Android)
+          labels: ["area: phone"]
+        - label: Desktop rig
+          labels: ["area: desktop"]
+        - label: Garmin sync, or an import
+          labels: ["area: sync"]
+        - label: The core, or the data
+          labels: ["area: data"]
+        - label: The words on the screen
+          labels: ["area: voice"]
+        - label: Not sure
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: The version in Settings, or the release you installed.
+      placeholder: v1.0.0
+
+  - type: textarea
+    id: feedback
+    attributes:
+      label: What would you like to say?
+      description: What you were trying to do, and how the app got in the way — or what it got right.
+    validations:
+      required: true
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Which screen, and what were you trying to do?
+      description: |
+        Enough to find it: the screen, the run or the day, and what you
+        expected. Redact first — no Garmin key, no routes, no health data.
