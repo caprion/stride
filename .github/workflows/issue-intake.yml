@@ -23,12 +23,23 @@ jobs:
         with:
           script: |
             // `context` is the workflow context; `github` is the API client.
-            const labels = new Set(context.issue.labels.map((l) => l.name));
+            // The issue is read from the API rather than from the event
+            // payload: the payload's label list is not always populated, and
+            // the question here is only whether `triage` is already on.
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const number = context.issue.number;
+            const { data: issue } = await github.rest.issues.get({
+              owner,
+              repo,
+              issue_number: number,
+            });
+            const labels = new Set(issue.labels.map((l) => l.name));
             if (!labels.has('triage')) {
               await github.rest.issues.addLabels({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: context.issue.number,
+                owner,
+                repo,
+                issue_number: number,
                 labels: ['triage'],
               });
             }
