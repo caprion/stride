@@ -29,7 +29,7 @@ use rusqlite::Connection;
 use crate::error::{Result, StoreError};
 
 /// The version of the schema this build reads and writes.
-pub const SCHEMA_VERSION: i64 = 2;
+pub const SCHEMA_VERSION: i64 = 3;
 
 /// The statements that create the tables, in creation order.
 ///
@@ -143,6 +143,29 @@ CREATE TABLE deleted_garmin_activities (
     marked_at    DATETIME NOT NULL                  -- when the pull marked it
 );
 "#,
+    // The table added in version 3: the athlete's heart-rate zone model.
+    // It is the watch's own configuration, read from Garmin — not a series
+    // derived from a run — so it is stored as a dated fact, one row per
+    // model change.
+    r#"-- Old: (nothing - the old app stored per-run zone bands, never the model
+-- they came from). v3: the zone model is the watch's own configuration, read
+-- from Garmin at /biometric-service/heartRateZones/v2 - a dated fact about
+-- the athlete's settings, not a series derived from a run. One row per model
+-- change; read_at is the day the model was read, so an insight can say where
+-- its input came from and when it was read.
+CREATE TABLE hr_zone_models (
+    id               INTEGER NOT NULL PRIMARY KEY,
+    sport            VARCHAR(24) NOT NULL,          -- as Garmin reported it ('DEFAULT')
+    training_method  VARCHAR(24) NOT NULL,          -- HR_MAX | LACTATE_THRESHOLD | HR_RESERVE | CUSTOM
+    max_heart_rate   REAL,                          -- maxHeartRateUsed; NULL = not reported
+    zone1_floor      REAL NOT NULL,                 -- inclusive lower bounds, in bpm
+    zone2_floor      REAL NOT NULL,
+    zone3_floor      REAL NOT NULL,
+    zone4_floor      REAL NOT NULL,
+    zone5_floor      REAL NOT NULL,
+    read_at          DATETIME NOT NULL              -- when the model was read, ISO-8601 UTC
+);
+"#,
 ];
 
 /// The statements that create the indexes, in creation order.
@@ -184,11 +207,13 @@ pub struct Migration {
 /// The migration ladder, in order.
 ///
 /// Version 1 is the schema of the original freeze. Version 2 adds the
-/// tombstone table for the runs Garmin no longer lists. A database at an
-/// older version gets the missing steps, each in its own transaction.
+/// tombstone table for the runs Garmin no longer lists. Version 3 adds the
+/// heart-rate zone model table. A database at an older version gets the
+/// missing steps, each in its own transaction.
 ///
 /// The first seven tables of [`TABLE_STATEMENTS`] are version 1; the eighth
-/// — the tombstone table — is version 2.
+/// — the tombstone table — is version 2; the ninth — the zone model table —
+/// is version 3.
 pub fn migrations() -> Vec<Migration> {
     vec![
         Migration {
@@ -200,8 +225,12 @@ pub fn migrations() -> Vec<Migration> {
                 .collect(),
         },
         Migration {
+            version: 2,
+            statements: TABLE_STATEMENTS[7..8].to_vec(),
+        },
+        Migration {
             version: SCHEMA_VERSION,
-            statements: TABLE_STATEMENTS[7..].to_vec(),
+            statements: TABLE_STATEMENTS[8..].to_vec(),
         },
     ]
 }

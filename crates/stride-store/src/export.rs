@@ -487,11 +487,23 @@ const DELETED_GARMIN_ACTIVITIES: FrozenTable = FrozenTable {
     columns: "PRAGMA main.table_info(\"deleted_garmin_activities\")",
 };
 
+/// `hr_zone_models`.
+const HR_ZONE_MODELS: FrozenTable = FrozenTable {
+    name: "hr_zone_models",
+    select: "SELECT id, sport, training_method, max_heart_rate, zone1_floor, zone2_floor, \
+             zone3_floor, zone4_floor, zone5_floor, read_at FROM hr_zone_models",
+    insert: "INSERT INTO hr_zone_models (id, sport, training_method, max_heart_rate, \
+              zone1_floor, zone2_floor, zone3_floor, zone4_floor, zone5_floor, read_at) \
+              VALUES (:id, :sport, :training_method, :max_heart_rate, :zone1_floor, \
+              :zone2_floor, :zone3_floor, :zone4_floor, :zone5_floor, :read_at)",
+    columns: "PRAGMA main.table_info(\"hr_zone_models\")",
+};
+
 /// The tables of the frozen schema, in the schema's order.
 ///
 /// The order is the schema's: parents before children, so a child never
 /// arrives before its parent.
-const FROZEN_TABLES: [FrozenTable; 8] = [
+const FROZEN_TABLES: [FrozenTable; 9] = [
     ACTIVITIES,
     ACTIVITY_SAMPLES,
     WELLNESS_DAILY,
@@ -500,6 +512,7 @@ const FROZEN_TABLES: [FrozenTable; 8] = [
     NOTES,
     SYNC_STATE,
     DELETED_GARMIN_ACTIVITIES,
+    HR_ZONE_MODELS,
 ];
 
 /// Copy every row of the schema from one database to another.
