@@ -34,7 +34,9 @@ require an `application/json` response for that request.
 
 The normal sync uses activity search and original FIT downloads, plus daily
 sleep, daily HRV and daily user summaries. It persists sleep duration/stages,
-nightly HRV, resting HR and average stress. The profile endpoint is used to
+nightly HRV, resting HR and average stress. It also reads the heart-rate zone
+model (`/biometric-service/heartRateZones/v2`) and stores it as a dated fact —
+the watch's configuration, not a per-run series. The profile endpoint is used to
 test a connection, not as a health-data sync.
 
 The FIT original is retained, allowing future reprocessing of fields the
@@ -46,11 +48,14 @@ Implementation evidence:
 
 - [Transport and endpoint methods](../crates/stride-ingest/src/garmin.rs),
   constants at lines 21-66 and methods at lines 431-575.
-- [Sync and wellness mapping](../crates/stride-api/src/routes/app.rs),
-  activity loop at lines 164-257, wellness loop at lines 291-309 and
-  `wellness_of` at lines 698-736.
-- [Stored activity and wellness fields](../crates/stride-store/src/model.rs),
-  `NewActivity` at lines 175-206 and `WellnessDaily` at lines 244-267.
+- [Sync, wellness and zone-model mapping](../crates/stride-api/src/routes/app.rs),
+  activity loop at lines 164-257, wellness loop at lines 291-309, and
+  `wellness_of` / `zone_model_of` in the helpers below.
+- [Stored activity, wellness and zone-model fields](../crates/stride-store/src/model.rs),
+  `NewActivity` at lines 175-206, `WellnessDaily` at lines 244-267 and
+  `HeartRateZoneModel` at lines 277-325.
+- [Zone-model repository](../crates/stride-store/src/repos/zones.rs),
+  `write_hr_zone_model_if_new` and `current_hr_zone_model`.
 - [Default sync budget](../crates/stride-api/src/state.rs), lines 208-210.
 
 ## Complete upstream inventory
@@ -64,7 +69,7 @@ normal v2 sync, not that no code or test mentions the endpoint.
 | `/activity-service/activity/{activityId}` | Live 200 | Client method exists, not used by normal sync; detailed summary includes optional training effect and recorded effort fields. |
 | `/activity-service/activity/{activityId}/workouts` | Live 200 | Unused. Workout steps associated with an already recorded activity, not the future workout calendar. |
 | `/download-service/files/activity/{activityId}` | Documented; not re-downloaded in this audit | Used by sync. Preserve original FIT bytes; this audit did not repeat downloads. |
-| `/biometric-service/heartRateZones/v2` | Live 200, defaults disabled | Client method exists but is not consumed by sync or the current zone calculation. |
+| `/biometric-service/heartRateZones/v2` | Live 200, defaults disabled | Consumed by sync; stored as a dated fact in `hr_zone_models` (the watch's configuration, one row per model change). Per-run time-in-zone from that stored model is the next item. |
 | `/sleep-service/sleep/dailySleep` | Live 200 | Used; only duration and stages are stored. Timing, confirmation, naps and other optional fields are not preserved. |
 | `/sleep-service/sleep/dailySleepSummariesByDate` | Live 200 with correct range parameters | Client helper exists but sends `date`; documented parameters are `startDate` and `endDate`. Not ready to wire into sync unchanged. |
 | `/hrv-service/hrv/{calendarDate}` | Live 204 in sampled window | Used; extracts `hrvSummary.lastNightAvg`. A no-content response must stay missing, not become zero. |
