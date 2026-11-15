@@ -19,6 +19,8 @@
 //! * [`rest`] — the "Rest" line: a count and a direction, never a verdict.
 //! * [`direction`] — the engine: a vital and its band become one of exactly
 //!   three words, with the arithmetic and the direction of travel beside it.
+//! * [`eddington`] — the Eddington number: consistency over peaks, counted
+//!   from the daily distance in kilometres or miles.
 //! * [`pattern`] — what usually happened, with its sample size, never from
 //!   fewer than three comparable days.
 //! * [`plan`] — the plan engine: the inferred baseline, the week, the
@@ -34,6 +36,7 @@
 pub mod band;
 pub mod date;
 pub mod direction;
+pub mod eddington;
 pub mod pattern;
 pub mod plan;
 pub mod rest;
@@ -46,6 +49,9 @@ pub mod units;
 pub use band::{band_for, Band};
 pub use date::Date;
 pub use direction::{day_directions, DayDirections, Direction, Travel, VitalDirection};
+pub use eddington::{
+    days_needed_for_next, eddington, DailyDistance, Eddington, EddingtonUnit, Period,
+};
 pub use pattern::{patterns, HistoryDay, Pattern, PatternKind};
 pub use plan::{
     adherence_of, adherence_of_at, baseline_from_history, baseline_from_history_at,
