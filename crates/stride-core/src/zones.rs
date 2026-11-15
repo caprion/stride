@@ -1,0 +1,273 @@
+//! The heart-rate zone model and the time-in-zone computation.
+//!
+//! The zone model is a **dated fact about the athlete's configuration**, not
+//! a series derived from a run. Garmin publishes the watch's own zone floors
+//! at `/biometric-service/heartRateZones/v2`; Stride reads them once and
+//! stores them with the day they were read. Recomputing bands per run from
+//! *that run's observed maximum* would give two runs two different scales,
+//! which is how an easy run and a threshold session come out looking alike.
+//!
+//! ## The boundary rule
+//!
+//! A reading **exactly on a floor belongs to the lower zone**: the floor is
+//! the first value of the zone above it, and a reading that lands on it is
+//! still in the zone below. A reading at or below the first floor is below
+//! every zone, and a reading above the top floor is in the top zone. Garmin
+//! reports the floors as the lower boundary of each zone; Stride assigns a
+//! reading exactly on a boundary to the lower of the two adjacent zones, so
+//! the interval of zone *n* is `(floor_n, floor_{n+1}]`.
+//!
+//! A run with **no stored model is not calibrated**: the result is "no
+//! value", never band 1 and never zero.
+
+/// The five inclusive-in-name floor values of a zone model, in beats per
+/// minute.
+///
+/// The floors must be strictly increasing for the model to be usable.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct ZoneFloors {
+    /// The lower boundary Garmin reports for zone 1.
+    pub zone1: f64,
+    /// The lower boundary Garmin reports for zone 2.
+    pub zone2: f64,
+    /// The lower boundary Garmin reports for zone 3.
+    pub zone3: f64,
+    /// The lower boundary Garmin reports for zone 4.
+    pub zone4: f64,
+    /// The lower boundary Garmin reports for zone 5.
+    pub zone5: f64,
+}
+
+impl ZoneFloors {
+    /// Whether the floors are usable: finite and strictly increasing.
+    pub fn is_usable(&self) -> bool {
+        let floors = [self.zone1, self.zone2, self.zone3, self.zone4, self.zone5];
+        floors.iter().all(|floor| floor.is_finite())
+            && floors.windows(2).all(|pair| pair[0] < pair[1])
+    }
+}
+
+/// One heart-rate reading for the zone computation.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct ZoneSample {
+    /// Seconds from the start of the run.
+    pub elapsed_s: f64,
+    /// The heart rate, in beats per minute. `None` = no reading.
+    pub heart_rate_bpm: Option<f64>,
+}
+
+/// The time a run spent in each of the five zones, in seconds.
+///
+/// Every field is a duration: a value can be `0.0` (a real measurement of
+/// no time in that zone), but the whole result is `None` when the run has no
+/// model — "no value" is a different thing from "zero".
+#[derive(Debug, Clone, Copy, PartialEq, Default)]
+pub struct TimeInZone {
+    /// Time in zone 1, in seconds.
+    pub zone1_s: f64,
+    /// Time in zone 2, in seconds.
+    pub zone2_s: f64,
+    /// Time in zone 3, in seconds.
+    pub zone3_s: f64,
+    /// Time in zone 4, in seconds.
+    pub zone4_s: f64,
+    /// Time in zone 5, in seconds.
+    pub zone5_s: f64,
+    /// Time with no heart-rate reading, or at or below the first floor.
+    pub outside_s: f64,
+}
+
+impl TimeInZone {
+    /// The time in each zone, index 0 = zone 1 through index 4 = zone 5.
+    pub fn per_zone(&self) -> [f64; 5] {
+        [
+            self.zone1_s,
+            self.zone2_s,
+            self.zone3_s,
+            self.zone4_s,
+            self.zone5_s,
+        ]
+    }
+}
+
+/// The time a run spent in each of the athlete's zones, from the **stored**
+/// model.
+///
+/// The span attributed to a sample is the time until the next sample; the
+/// last sample carries no span, so a lone sample yields no time anywhere.
+/// A reading exactly on a floor belongs to the lower zone (see the module
+/// docs); a reading with no heart rate, or at or below the first floor, is
+/// counted outside the zones.
+///
+/// `None` when the model is unusable — the floors are not strictly
+/// increasing, or a floor is not finite — which is how "no stored model" is
+/// represented. The result is then "no value", never band 1 and never zero.
+pub fn time_in_zone(floors: ZoneFloors, samples: &[ZoneSample]) -> Option<TimeInZone> {
+    if !floors.is_usable() {
+        return None;
+    }
+
+    let mut time = TimeInZone::default();
+    for window in samples.windows(2) {
+        let span = window[1].elapsed_s - window[0].elapsed_s;
+        if !span.is_finite() || span <= 0.0 {
+            continue;
+        }
+        match window[0].heart_rate_bpm {
+            None => time.outside_s += span,
+            Some(rate) => match zone_index(rate, floors) {
+                None => time.outside_s += span,
+                Some(0) => time.zone1_s += span,
+                Some(1) => time.zone2_s += span,
+                Some(2) => time.zone3_s += span,
+                Some(3) => time.zone4_s += span,
+                _ => time.zone5_s += span,
+            },
+        }
+    }
+    Some(time)
+}
+
+/// The zone a heart rate falls into, as an index from 0 (zone 1) to 4
+/// (zone 5), or `None` when it is at or below the first floor.
+///
+/// A reading exactly on a floor belongs to the lower zone, so the check for
+/// each zone is `rate <= floor` — the reading at `floor_n` is in zone *n-1*,
+/// and only a reading strictly above `floor_n` reaches zone *n*.
+fn zone_index(rate: f64, floors: ZoneFloors) -> Option<usize> {
+    if !rate.is_finite() || rate <= floors.zone1 {
+        return None;
+    }
+    if rate <= floors.zone2 {
+        return Some(0);
+    }
+    if rate <= floors.zone3 {
+        return Some(1);
+    }
+    if rate <= floors.zone4 {
+        return Some(2);
+    }
+    if rate <= floors.zone5 {
+        return Some(3);
+    }
+    Some(4)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn floors() -> ZoneFloors {
+        ZoneFloors {
+            zone1: 100.0,
+            zone2: 120.0,
+            zone3: 140.0,
+            zone4: 160.0,
+            zone5: 175.0,
+        }
+    }
+
+    /// Two samples one second apart: the first carries the reading, and its
+    /// span is the one second until the second sample.
+    fn span(heart_rate_bpm: Option<f64>) -> [ZoneSample; 2] {
+        [
+            ZoneSample {
+                elapsed_s: 0.0,
+                heart_rate_bpm,
+            },
+            ZoneSample {
+                elapsed_s: 1.0,
+                heart_rate_bpm: None,
+            },
+        ]
+    }
+
+    /// The time-in-zone of a usable model. An unusable model here yields the
+    /// default (all zero), which the value assertions below will reject.
+    fn compute(floors: ZoneFloors, samples: &[ZoneSample]) -> TimeInZone {
+        time_in_zone(floors, samples).unwrap_or_default()
+    }
+
+    #[test]
+    fn a_reading_exactly_on_a_floor_belongs_to_the_lower_zone() {
+        // zone2Floor (120) is in zone 1, not zone 2.
+        let time = compute(floors(), &span(Some(120.0)));
+        assert_eq!(time.per_zone(), [1.0, 0.0, 0.0, 0.0, 0.0]);
+
+        // zone3Floor (140) is in zone 2.
+        let time = compute(floors(), &span(Some(140.0)));
+        assert_eq!(time.per_zone(), [0.0, 1.0, 0.0, 0.0, 0.0]);
+
+        // zone5Floor (175) is in zone 4.
+        let time = compute(floors(), &span(Some(175.0)));
+        assert_eq!(time.per_zone(), [0.0, 0.0, 0.0, 1.0, 0.0]);
+    }
+
+    #[test]
+    fn a_reading_at_the_first_floor_is_below_every_zone() {
+        let time = compute(floors(), &span(Some(100.0)));
+        assert_eq!(time.per_zone(), [0.0, 0.0, 0.0, 0.0, 0.0]);
+        assert_eq!(time.outside_s, 1.0);
+    }
+
+    #[test]
+    fn a_reading_below_the_first_floor_is_outside() {
+        let time = compute(floors(), &span(Some(90.0)));
+        assert_eq!(time.per_zone(), [0.0, 0.0, 0.0, 0.0, 0.0]);
+        assert_eq!(time.outside_s, 1.0);
+    }
+
+    #[test]
+    fn a_reading_above_the_top_floor_is_in_zone_five() {
+        let time = compute(floors(), &span(Some(190.0)));
+        assert_eq!(time.per_zone(), [0.0, 0.0, 0.0, 0.0, 1.0]);
+    }
+
+    #[test]
+    fn interior_readings_land_in_their_zone() {
+        let time = compute(floors(), &span(Some(110.0)));
+        assert_eq!(time.per_zone(), [1.0, 0.0, 0.0, 0.0, 0.0]);
+
+        let time = compute(floors(), &span(Some(150.0)));
+        assert_eq!(time.per_zone(), [0.0, 0.0, 1.0, 0.0, 0.0]);
+    }
+
+    #[test]
+    fn a_reading_with_no_heart_rate_is_outside() {
+        let time = compute(floors(), &span(None));
+        assert_eq!(time.per_zone(), [0.0, 0.0, 0.0, 0.0, 0.0]);
+        assert_eq!(time.outside_s, 1.0);
+    }
+
+    #[test]
+    fn a_run_with_no_model_is_not_calibrated() {
+        let unusable = ZoneFloors {
+            zone1: 100.0,
+            zone2: 90.0,
+            zone3: 140.0,
+            zone4: 160.0,
+            zone5: 175.0,
+        };
+        assert!(time_in_zone(unusable, &span(Some(110.0))).is_none());
+
+        let non_finite = ZoneFloors {
+            zone1: f64::NAN,
+            zone2: 120.0,
+            zone3: 140.0,
+            zone4: 160.0,
+            zone5: 175.0,
+        };
+        assert!(time_in_zone(non_finite, &span(Some(110.0))).is_none());
+    }
+
+    #[test]
+    fn a_lone_sample_carries_no_time() {
+        let samples = [ZoneSample {
+            elapsed_s: 0.0,
+            heart_rate_bpm: Some(150.0),
+        }];
+        let time = compute(floors(), &samples);
+        assert_eq!(time.per_zone(), [0.0, 0.0, 0.0, 0.0, 0.0]);
+        assert_eq!(time.outside_s, 0.0);
+    }
+}
