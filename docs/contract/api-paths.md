@@ -137,7 +137,7 @@ Two rules hold for every shape below.
 | `/settings/import` | `activities`, `wellness`, `plan_blocks`, `plan_sessions`, `notes`, `rows`, `generated_at` |
 | `/activities/{id}/note` | `note: string \| null`, `generated_at` |
 | `/insights/today` | `generated_at`, `date`, `planned`, `options`, `last_run`, `distance_comparison: string \| null`, `week: {distance, sessions, days: {date, sessions}[]}` |
-| `/insights/progress` | `generated_at`, `date` (the core's local calendar date), `period: {from, to, distance, duration, sessions, recorded_weeks}`, `headline`, `headline_note`, `weekly_volume`, `typical_week`, `pace_at_hr`, `bests`, `consistency`, `sessions_per_week`, `adherence` |
+| `/insights/progress` | `generated_at`, `date` (the core's local calendar date), `period: {from, to, distance, duration, sessions, recorded_weeks}`, `headline`, `headline_note`, `weekly_volume`, `typical_week`, `pace_at_hr`, `bests`, `consistency`, `sessions_per_week`, `adherence`, `eddington: {number, days_needed_for_next, longest_day} \| null` |
 | `/auth/status` | `connected`, `method`, `key_source`, `key_last4`, `last_sync_at`, `generated_at` |
 | `/auth/garmin/fit-import` | `imported`, `duplicate`, `activity_id`, `date`, `distance`, `generated_at` |
 | `/plan/import` | `imported`, `block_id`, `sessions`, `generated_at` |
@@ -195,6 +195,25 @@ window. `recorded_weeks` counts weeks with saved sessions, not source coverage.
 Measurements remain core-rendered; no frontend unit formatter is introduced.
 The calendar accepts `year` and `month` and is typed by the frontend for monthly
 history navigation. It describes saved activities, not Garmin's future plan.
+
+**The Eddington number travels in the same answer.** The number is the
+largest *E* such that at least *E* days in the selected window covered at
+least *E* **kilometres** — consistency over peaks. It is counted in
+kilometres, the contract's unit; the core's miles variant is not used by
+this route.
+
+* `eddington` is **`null`** when the selected window holds no distance. A
+  window with no distance has no number: that is "no value", never a zero.
+* When it is there it carries `number`, `days_needed_for_next` (the days
+  still needed to reach *E+1*, at *E+1* kilometres) and `longest_day` (the
+  longest distance in a day in the window, as the core renders it — the
+  conversion happens at the display boundary, not inside the arithmetic).
+* The window is the one the answer's `period` names: the same calendar
+  weeks the volume chart draws. The card and the chart therefore cannot
+  disagree about the period they describe.
+
+The number is a fact, not a score: it says how many days reached how many
+kilometres, over which weeks, and the reader decides what it means.
 
 ### The settings, the goal and the pause
 
