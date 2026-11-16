@@ -120,6 +120,34 @@ No publish, install or production-data pull is part of verification.
 Optional explainable nudges are accepted product direction, but no new nudge
 contract or wording is introduced by this slice; existing voice checks remain.
 
+### Proposed amendment — the zone model is a dated fact (2026-11-15)
+
+**Proposal, not approved.** The approvals below are the user's to give. This
+section records the change and the rule it serves; it is not permission to
+ship, publish, migrate or sync production data.
+
+The plan's architecture says every derived series — samples, laps, **zones**,
+fingerprint features — is recomputed on read from the FIT and never stored.
+For zones that premise is wrong. The zone model is **not in the FIT**: it is
+the watch's own configuration, published by Garmin at
+`/biometric-service/heartRateZones/v2`, and it is a **dated fact about the
+athlete's settings, not a series derived from a run**. Recomputing bands per
+run from *that run's observed maximum* gives two runs two different scales,
+which is how an easy run and a threshold session come out looking alike; and
+an insight that cannot say where its input came from and when it was read is
+not inspectable.
+
+The rule this serves: a zone model is read once, stored with the day it was
+read, and reported with its source. One row is written per model change (a
+dated history, not one current row), so a number always names the model it
+used. A read that fails keeps the previous model and its date; absence is not
+zero and not "no model". A run with no stored model is **not calibrated** —
+the result is "no value", never band 1 and never zero. Garmin reports one
+model (one `DEFAULT` sport); no per-sport models are invented.
+
+This travels with the frozen schema change (the `hr_zone_models` table) in
+`docs/contract/schema.sql`.
+
 ---
 
 ## 0. The voice — vitals, direction, options; no verdicts

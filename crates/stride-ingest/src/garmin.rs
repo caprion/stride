@@ -565,8 +565,15 @@ impl GarminClient {
     }
 
     /// The athlete's heart-rate zone model.
+    ///
+    /// `generateDefaults=false` asks for the athlete's own configuration, so
+    /// a model Garmin would invent for an unconfigured account is not
+    /// reported as the athlete's.
     pub fn heart_rate_zones(&self) -> Result<Value, GarminError> {
-        self.get_value(HEART_RATE_ZONES_PATH, &[])
+        self.get_value(
+            HEART_RATE_ZONES_PATH,
+            &[("generateDefaults".to_owned(), "false".to_owned())],
+        )
     }
 
     /// The athlete's Garmin profile.

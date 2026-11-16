@@ -70,8 +70,9 @@ pub use legacy::{
     detect_schema, detect_schema_file, import_legacy, LeftBehind, LegacyImportReport, SchemaKind,
 };
 pub use model::{
-    Activity, ActivitySamples, ActivitySummary, NewActivity, NewActivitySamples, NewNote,
-    NewPlanBlock, NewPlanSession, Note, PlanBlock, PlanSession, SyncState, WellnessDaily,
+    Activity, ActivitySamples, ActivitySummary, HeartRateZoneModel, NewActivity,
+    NewActivitySamples, NewHeartRateZoneModel, NewNote, NewPlanBlock, NewPlanSession, Note,
+    PlanBlock, PlanSession, SyncState, WellnessDaily,
 };
 pub use repos::activity::{FeedCursor, FeedPage};
 pub use schema::SCHEMA_VERSION;

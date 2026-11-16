@@ -148,6 +148,25 @@ CREATE TABLE deleted_garmin_activities (
     marked_at    DATETIME NOT NULL                  -- when the pull marked it
 );
 
+-- Old: (nothing - the old app stored per-run zone bands, never the model
+-- they came from). v3: the zone model is the watch's own configuration, read
+-- from Garmin at /biometric-service/heartRateZones/v2 - a dated fact about
+-- the athlete's settings, not a series derived from a run. One row per model
+-- change; read_at is the day the model was read, so an insight can say where
+-- its input came from and when it was read.
+CREATE TABLE hr_zone_models (
+    id               INTEGER NOT NULL PRIMARY KEY,
+    sport            VARCHAR(24) NOT NULL,          -- as Garmin reported it ('DEFAULT')
+    training_method  VARCHAR(24) NOT NULL,          -- HR_MAX | LACTATE_THRESHOLD | HR_RESERVE | CUSTOM
+    max_heart_rate   REAL,                          -- maxHeartRateUsed; NULL = not reported
+    zone1_floor      REAL NOT NULL,                 -- inclusive lower bounds, in bpm
+    zone2_floor      REAL NOT NULL,
+    zone3_floor      REAL NOT NULL,
+    zone4_floor      REAL NOT NULL,
+    zone5_floor      REAL NOT NULL,
+    read_at          DATETIME NOT NULL              -- when the model was read, ISO-8601 UTC
+);
+
 -- Indexes, created after the tables, in this order.
 CREATE INDEX ix_activities_local_date ON activities (local_date);
 CREATE INDEX ix_activities_sport      ON activities (sport_type);

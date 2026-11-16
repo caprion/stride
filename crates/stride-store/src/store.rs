@@ -226,6 +226,10 @@ impl Store {
             .execute("DELETE FROM sync_state", [])
             .map_err(|source| StoreError::query("sync_state", source))?;
         deleted += removed as i64;
+        let removed = transaction
+            .execute("DELETE FROM hr_zone_models", [])
+            .map_err(|source| StoreError::query("hr_zone_models", source))?;
+        deleted += removed as i64;
 
         transaction
             .commit()

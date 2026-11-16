@@ -110,6 +110,7 @@ fn the_store_creates_the_contract_s_schema() -> Result<()> {
             "activities".to_string(),
             "activity_samples".to_string(),
             "deleted_garmin_activities".to_string(),
+            "hr_zone_models".to_string(),
             "ix_activities_local_date".to_string(),
             "ix_activities_sport".to_string(),
             "ix_activities_start".to_string(),
@@ -172,6 +173,7 @@ fn the_tables_are_created_in_the_contract_s_order() -> Result<()> {
             "notes".to_string(),
             "sync_state".to_string(),
             "deleted_garmin_activities".to_string(),
+            "hr_zone_models".to_string(),
         ]
     );
     drop(dir);
@@ -209,7 +211,40 @@ fn the_migration_is_idempotent() -> Result<()> {
     assert_eq!(store.schema_version()?, schema::SCHEMA_VERSION);
 
     let tables = store.with_connection(schema::table_names)?;
-    assert_eq!(tables.len(), 8);
+    assert_eq!(tables.len(), 9);
+    drop(dir);
+    Ok(())
+}
+
+#[test]
+fn a_version_two_database_migrates_to_version_three() -> Result<()> {
+    let dir = common::scratch("schema-migrate-v2-v3")?;
+    let path = dir.file("stride.db");
+    let store = Store::open(&path, &common::key()?)?;
+
+    // Build the schema as it was at version 2, by running the first two
+    // steps of the ladder and setting the version the store would have set.
+    store.with_connection(|conn| {
+        for migration in schema::migrations()
+            .into_iter()
+            .take_while(|step| step.version <= 2)
+        {
+            for statement in migration.statements {
+                conn.execute_batch(statement)
+                    .map_err(|error| stride_store::StoreError::migration(statement, error))?;
+            }
+            conn.pragma_update(None, "user_version", migration.version)
+                .map_err(|error| stride_store::StoreError::migration("user_version", error))?;
+        }
+        Ok(())
+    })?;
+    assert_eq!(store.schema_version()?, 2);
+
+    // One migrate() brings it to the current version, with the new table.
+    store.migrate()?;
+    assert_eq!(store.schema_version()?, schema::SCHEMA_VERSION);
+    let tables = store.with_connection(schema::table_names)?;
+    assert!(tables.iter().any(|table| table == "hr_zone_models"));
     drop(dir);
     Ok(())
 }
@@ -226,7 +261,7 @@ fn a_database_opened_again_keeps_its_schema_version() -> Result<()> {
         let store = Store::open_and_migrate(&path, &common::key()?)?;
         assert_eq!(store.schema_version()?, schema::SCHEMA_VERSION);
         let tables = store.with_connection(schema::table_names)?;
-        assert_eq!(tables.len(), 8);
+        assert_eq!(tables.len(), 9);
     }
     Ok(())
 }

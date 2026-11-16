@@ -27,6 +27,8 @@
 //!   distance comparison, the Progress headline, the Compare basis.
 //! * [`story`] — the one sentence every run carries: descriptive, never
 //!   evaluative, and read from the same primitives the charts read.
+//! * [`zones`] — the heart-rate zone model and the time-in-zone computation,
+//!   from the athlete's stored configuration, never a run's observed maximum.
 //!
 //! The voice, in one line: facts first, no judgements. The app informs; it
 //! never instructs.
@@ -42,6 +44,7 @@ pub mod story;
 pub mod strings;
 pub mod types;
 pub mod units;
+pub mod zones;
 
 pub use band::{band_for, Band};
 pub use date::Date;
@@ -69,3 +72,4 @@ pub use units::{
     render_heart_rate_range, render_heart_rate_range_edges, render_pace, render_version,
     render_zone_label, ValueUnit,
 };
+pub use zones::{time_in_zone, TimeInZone, ZoneFloors, ZoneSample};
