@@ -266,6 +266,61 @@ pub struct WellnessDaily {
     pub updated_at: DateTime<Utc>,
 }
 
+/// The athlete's heart-rate zone model, as Garmin reported it on one day.
+///
+/// The model is a **dated fact about the athlete's configuration**, not a
+/// series derived from a run: it is the watch's own zone floors, read from
+/// `/biometric-service/heartRateZones/v2`, and kept with the day it was
+/// read. One row is written per model change, so an insight can say where
+/// its input came from and when it was read.
+#[derive(Debug, Clone, PartialEq)]
+pub struct HeartRateZoneModel {
+    /// The row's primary key.
+    pub id: i64,
+    /// The sport Garmin reported the model for, e.g. `DEFAULT`.
+    pub sport: String,
+    /// Garmin's training method: `HR_MAX`, `LACTATE_THRESHOLD`, `HR_RESERVE`
+    /// or `CUSTOM`.
+    pub training_method: String,
+    /// The maximum heart rate the model was built on. `None` = not reported.
+    pub max_heart_rate: Option<f64>,
+    /// The lower boundary of zone 1, in beats per minute.
+    pub zone1_floor: f64,
+    /// The lower boundary of zone 2.
+    pub zone2_floor: f64,
+    /// The lower boundary of zone 3.
+    pub zone3_floor: f64,
+    /// The lower boundary of zone 4.
+    pub zone4_floor: f64,
+    /// The lower boundary of zone 5.
+    pub zone5_floor: f64,
+    /// When the model was read from Garmin.
+    pub read_at: DateTime<Utc>,
+}
+
+/// A heart-rate zone model to write.
+#[derive(Debug, Clone, PartialEq)]
+pub struct NewHeartRateZoneModel {
+    /// The sport Garmin reported the model for.
+    pub sport: String,
+    /// Garmin's training method.
+    pub training_method: String,
+    /// The maximum heart rate the model was built on. `None` = not reported.
+    pub max_heart_rate: Option<f64>,
+    /// The lower boundary of zone 1, in beats per minute.
+    pub zone1_floor: f64,
+    /// The lower boundary of zone 2.
+    pub zone2_floor: f64,
+    /// The lower boundary of zone 3.
+    pub zone3_floor: f64,
+    /// The lower boundary of zone 4.
+    pub zone4_floor: f64,
+    /// The lower boundary of zone 5.
+    pub zone5_floor: f64,
+    /// When the model was read from Garmin.
+    pub read_at: DateTime<Utc>,
+}
+
 /// A plan block.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct PlanBlock {

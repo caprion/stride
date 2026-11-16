@@ -22,6 +22,7 @@
 //! | [`notes`] | `notes` |
 //! | [`sync`] | `sync_state` |
 //! | [`deleted`] | `deleted_garmin_activities` |
+//! | [`zones`] | `hr_zone_models` |
 
 use crate::error::{Result, StoreError};
 
@@ -31,6 +32,7 @@ pub mod notes;
 pub mod plan;
 pub mod sync;
 pub mod wellness;
+pub mod zones;
 
 /// Collect the rows of a query into a vector.
 ///

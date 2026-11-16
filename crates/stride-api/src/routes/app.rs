@@ -448,6 +448,23 @@ pub fn sync_run(api: &Api, request: &Request) -> ApiResult<Value> {
         }
     }
 
+    // The zone model is the athlete's own configuration, read once per pull.
+    // A read that fails, or a payload with no model, is not a change: the
+    // previous model and its date stay in place. It never stops the pull.
+    if failure.is_none() && !transport.paused()? {
+        match zone_model_of(&client, api.now()) {
+            Ok(Some(model)) => {
+                api.store()
+                    .write_hr_zone_model_if_new(&model)
+                    .map_err(|error| {
+                        api.store_error("the zone model could not be written", &error)
+                    })?;
+            }
+            Ok(None) => {}
+            Err(_) => {}
+        }
+    }
+
     let finished_at = api.now();
     // The cursor advances only when the walk finished: an interrupted pull
     // resumes from the same point, and the next pull continues rather than
@@ -892,6 +909,76 @@ fn field<'a>(value: &'a Value, wrapper: &str, name: &str) -> Option<&'a Value> {
         }
     }
     value.get(name)
+}
+
+/// The athlete's heart-rate zone model, as Garmin reports it.
+///
+/// The payload is an array of one entry per sport; Garmin reports one model
+/// (one `DEFAULT` sport). A sport the payload carries is kept as reported;
+/// no per-sport models are invented. A payload with no usable model — no
+/// entry, or no zone floors — is `None`: absence is not zero and not "no
+/// model".
+fn zone_model_of(
+    client: &stride_ingest::GarminClient,
+    read_at: DateTime<Utc>,
+) -> Result<Option<stride_store::NewHeartRateZoneModel>, stride_ingest::GarminError> {
+    let payload = client.heart_rate_zones()?;
+    let entries = payload.as_array().cloned().unwrap_or_default();
+    let entry = entries
+        .iter()
+        .find(|entry| entry.get("sport").and_then(Value::as_str) == Some("DEFAULT"))
+        .or_else(|| entries.first());
+    let Some(entry) = entry else {
+        return Ok(None);
+    };
+
+    let floor = |name: &str| entry.get(name).and_then(Value::as_f64);
+    let (zone1_floor, zone2_floor, zone3_floor, zone4_floor, zone5_floor) = match (
+        floor("zone1Floor"),
+        floor("zone2Floor"),
+        floor("zone3Floor"),
+        floor("zone4Floor"),
+        floor("zone5Floor"),
+    ) {
+        (
+            Some(zone1_floor),
+            Some(zone2_floor),
+            Some(zone3_floor),
+            Some(zone4_floor),
+            Some(zone5_floor),
+        ) => (
+            zone1_floor,
+            zone2_floor,
+            zone3_floor,
+            zone4_floor,
+            zone5_floor,
+        ),
+        _ => return Ok(None),
+    };
+
+    let sport = entry
+        .get("sport")
+        .and_then(Value::as_str)
+        .map(str::to_string)
+        .unwrap_or_else(|| "DEFAULT".to_string());
+    let training_method = entry
+        .get("trainingMethod")
+        .and_then(Value::as_str)
+        .unwrap_or_default()
+        .to_string();
+    let max_heart_rate = entry.get("maxHeartRateUsed").and_then(Value::as_f64);
+
+    Ok(Some(stride_store::NewHeartRateZoneModel {
+        sport,
+        training_method,
+        max_heart_rate,
+        zone1_floor,
+        zone2_floor,
+        zone3_floor,
+        zone4_floor,
+        zone5_floor,
+        read_at,
+    }))
 }
 
 fn sync_failure(api: &Api, error: &stride_ingest::GarminError) -> SyncFailure {
