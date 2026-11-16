@@ -171,7 +171,7 @@ pub struct Entry {
 }
 
 /// The catalogue.
-pub const CATALOGUE: [Entry; 104] = [
+pub const CATALOGUE: [Entry; 106] = [
     // The vitals.
     Entry {
         id: "vital.sleep.label",
@@ -551,6 +551,22 @@ pub const CATALOGUE: [Entry; 104] = [
         kind: StringKind::Statement,
         role: None,
         template: "zones unavailable — the run has no heart-rate samples",
+    },
+    Entry {
+        // No model has been read yet: the run is not calibrated, and the
+        // answer is "no value" — never band 1 and never a zero.
+        id: "zones.no_model",
+        kind: StringKind::Statement,
+        role: None,
+        template: "zones unavailable — no zone model has been read",
+    },
+    Entry {
+        // A model is stored, but its floors are not strictly increasing, so
+        // it cannot be used.
+        id: "zones.unusable_model",
+        kind: StringKind::Statement,
+        role: None,
+        template: "zones unavailable — the stored zone model's floors are not in order",
     },
     // The plan's statements: what the athlete intended, what happened, and
     // where the intent came from. They are facts, never verdicts.
