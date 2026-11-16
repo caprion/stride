@@ -234,11 +234,10 @@ export const catalogue = {
   /**
    * The Eddington number: consistency over peaks.
    *
-   * The number is a count, and a count of what it counts is stated in the
-   * notes beside it: the number is how many days reached that many
-   * kilometres, and the days to the next number are days at one kilometre
-   * more. Neither note carries the number itself, so both stay true when
-   * the window changes.
+   * The number is a count, and the note says what it counts: the number
+   * is how many days reached that many kilometres, and the days to the
+   * next number are days at one kilometre more. The note carries no
+   * number of its own, so it stays true when the window changes.
    */
   'progress.eddington.heading': { type: 'status', text: 'Eddington number' },
   'progress.eddington.note': {
