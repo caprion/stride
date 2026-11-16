@@ -534,6 +534,7 @@ fn the_insight_routes_carry_their_shapes() {
             "bests",
             "consistency",
             "date",
+            "eddington",
             "generated_at",
             "headline",
             "headline_note",

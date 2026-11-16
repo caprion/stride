@@ -1,13 +1,19 @@
 //! The insight routes: Today, Progress, the chips of a run, and Compare.
 
+use std::collections::BTreeMap;
+
 use serde_json::Value;
+use stride_core::date::Date;
+use stride_core::eddington::{DailyDistance, EddingtonUnit, Period};
 use stride_core::statement;
 use stride_core::units;
 use stride_core::ValueUnit;
+use stride_store::ActivitySummary as StoredActivity;
 
 use crate::dto::{
     Best, Chips, CompareCandidate, CompareMetric, CompareResponse, CompareRun, CompareSeries,
-    Consistency, PaceAtHr, ProgressInsight, RunningDay, TodayInsight, WeekRunning, WeeklyVolume,
+    Consistency, PaceAtHr, ProgressEddington, ProgressInsight, RunningDay, TodayInsight,
+    WeekRunning, WeeklyVolume,
 };
 use crate::error::{ApiError, ApiResult};
 use crate::render;
@@ -208,9 +214,8 @@ pub fn progress(api: &Api, request: &Request) -> ApiResult<Value> {
         render::average(Some(average))
     };
 
-    let from = super::week_start(current)
-        .add_days(-7 * (weeks - 1))
-        .to_iso();
+    let window_start = super::week_start(current).add_days(-7 * (weeks - 1));
+    let from = window_start.to_iso();
     let period_runs: Vec<_> = runs.iter().filter(|run| run.local_date >= from).collect();
     let period = crate::dto::ProgressPeriod {
         from: from.clone(),
@@ -241,6 +246,9 @@ pub fn progress(api: &Api, request: &Request) -> ApiResult<Value> {
         sessions_per_week,
         adherence,
         weeks_needed: None,
+        // The number covers the same window the totals do: the card and
+        // the chart cannot disagree about the period they describe.
+        eddington: eddington_of(&period_runs, window_start, current),
     };
     ok(&response)
 }
@@ -408,6 +416,43 @@ pub fn compare_candidates(api: &Api, request: &Request) -> ApiResult<Value> {
     // carries the time the answer was produced.
     serde_json::to_value(candidates)
         .map_err(|_| ApiError::internal("the answer could not be written"))
+}
+
+/// The Eddington number over the progress window.
+///
+/// The window is the one the screen is already showing — the calendar weeks
+/// the volume chart draws — so the card and the chart describe the same
+/// period. The days are the daily totals of the runs inside it, and the
+/// unit is the contract's: kilometres.
+///
+/// A window with no distance has **no number**: the answer carries no
+/// value at all, which is not the same as a number of zero.
+fn eddington_of(runs: &[&StoredActivity], from: Date, to: Date) -> Option<ProgressEddington> {
+    let mut totals: BTreeMap<String, f64> = BTreeMap::new();
+    for run in runs {
+        *totals.entry(run.local_date.clone()).or_insert(0.0) += run.distance_m;
+    }
+    let days: Vec<DailyDistance> = totals
+        .iter()
+        .filter_map(|(date, distance_m)| {
+            // A day with no distance is absent from the list: absence is
+            // not zero, and a day of nothing is not a day of running.
+            if *distance_m <= 0.0 {
+                return None;
+            }
+            let date = Date::parse(date)?;
+            Some(DailyDistance::new(date, *distance_m))
+        })
+        .collect();
+    let number =
+        stride_core::eddington::eddington(&days, Period::new(from, to), EddingtonUnit::Kilometres);
+    // No distance in the window, no number: the value is absent, not zero.
+    let longest_day = number.longest_day_m?;
+    Some(ProgressEddington {
+        number: number.number,
+        days_needed_for_next: number.days_needed_for_next,
+        longest_day: render::distance(Some(longest_day)),
+    })
 }
 
 // ------------------------------------------------------------------ helpers
