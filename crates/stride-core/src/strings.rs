@@ -171,7 +171,7 @@ pub struct Entry {
 }
 
 /// The catalogue.
-pub const CATALOGUE: [Entry; 104] = [
+pub const CATALOGUE: [Entry; 111] = [
     // The vitals.
     Entry {
         id: "vital.sleep.label",
@@ -806,6 +806,50 @@ pub const CATALOGUE: [Entry; 104] = [
         kind: StringKind::Statement,
         role: None,
         template: "Different distances — read with care",
+    },
+    // The training load. A scenario is a statement with its assumption
+    // attached: it says what it assumes, and it never names a verdict.
+    Entry {
+        id: "statement.load.scenario.ratio.now",
+        kind: StringKind::Statement,
+        role: None,
+        template: "the acute-to-chronic ratio is inside {band} now",
+    },
+    Entry {
+        id: "statement.load.scenario.ratio.days",
+        kind: StringKind::Statement,
+        role: None,
+        template: "the acute-to-chronic ratio is expected back inside {band} in {days}",
+    },
+    Entry {
+        id: "statement.load.scenario.ratio.undetermined",
+        kind: StringKind::Statement,
+        role: None,
+        template: "the acute-to-chronic ratio is not back inside {band} within {days} days",
+    },
+    Entry {
+        id: "statement.load.scenario.form.now",
+        kind: StringKind::Statement,
+        role: None,
+        template: "the form is positive now",
+    },
+    Entry {
+        id: "statement.load.scenario.form.days",
+        kind: StringKind::Statement,
+        role: None,
+        template: "the form turns positive in {days}",
+    },
+    Entry {
+        id: "statement.load.scenario.form.undetermined",
+        kind: StringKind::Statement,
+        role: None,
+        template: "the form does not turn positive within {days} days",
+    },
+    Entry {
+        id: "statement.load.assumptions",
+        kind: StringKind::Statement,
+        role: None,
+        template: "no training for {forecast} days · Banister k = {k} · max heart rate {max_hr} from your zone model, read on {date} · acute window {acute} days, chronic window {chronic} days",
     },
     // The statuses.
     Entry {
