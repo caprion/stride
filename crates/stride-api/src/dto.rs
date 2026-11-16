@@ -461,36 +461,88 @@ pub struct Trends {
 
 /// One heart-rate band of a run.
 ///
-/// The bands are computed from the samples that carry a heart rate, and
-/// from nothing else.
+/// The bands are the athlete's own zones: their edges are the floors of
+/// the **stored zone model**, not tenths of this run's maximum heart rate.
 #[derive(Clone, Debug, PartialEq, Serialize)]
 pub struct ZoneBand {
     /// The band's name, as the core names it: "Z2".
     pub label: String,
-    /// The band's range, in the core's words: "154-166 bpm".
+    /// The band's range, in the core's words: "106-121 bpm".
     pub range: Option<String>,
     /// The band's lower edge, in beats per minute — the number the core
     /// rendered the range from, for a chart to draw.
     pub from_bpm: Option<i64>,
-    /// The band's upper edge, in beats per minute.
+    /// The band's upper edge, in beats per minute. `None` for the top band
+    /// when the model carries no maximum heart rate: that band has no
+    /// upper edge.
     pub to_bpm: Option<i64>,
-    /// The time spent in the band, as the core renders it: "12 m".
+    /// The time spent in the band, as the core renders it: "12 m". The
+    /// number beside the words is the time in **seconds**.
     pub time: Option<RenderedValue>,
 }
 
-/// The heart-rate zones of a run.
+/// The heart-rate zones of a run, computed from the athlete's **stored**
+/// zone model.
+///
+/// The model is the athlete's own configuration, read from Garmin and
+/// stored with the day it was read. The payload names it — its sport, its
+/// method, its maximum heart rate, its five floors and the day it was read
+/// — so a number can say where it came from and when.
+///
+/// **No value is the absence of the whole result**: a run with no stored
+/// model has no bands and no time outside them, and says why in the core's
+/// words. It is never band 1 and never a zero.
 #[derive(Clone, Debug, PartialEq, Serialize)]
 pub struct FitnessZones {
-    /// The basis the bands were computed on: "moving" or "elapsed".
+    /// The basis the times were computed on: "moving".
     pub basis: Option<String>,
-    /// The maximum heart rate the bands came from: "182 bpm".
-    pub max_heart_rate: Option<RenderedValue>,
-    /// The bands, empty when they could not be computed.
+    /// The model the times were computed against. `None` when no model has
+    /// been read; present even when the model cannot be used, so the reader
+    /// can see which model was rejected.
+    pub model: Option<ZoneModel>,
+    /// The five bands, each with the time spent in it. Empty when there is
+    /// no value.
     pub zones: Vec<ZoneBand>,
-    /// The time with no heart rate, counted separately: "3 m".
-    pub without_heart_rate: Option<RenderedValue>,
-    /// Why there are no bands, in the core's words.
+    /// The time outside the zones: no heart-rate reading, or a reading at
+    /// or below the first floor. Absent when there is no value.
+    pub outside: Option<RenderedValue>,
+    /// Why there is no value, in the core's words.
     pub unavailable: Option<String>,
+}
+
+/// The athlete's zone model: a dated fact about their configuration.
+#[derive(Clone, Debug, PartialEq, Serialize)]
+pub struct ZoneModel {
+    /// The sport Garmin reported the model for: "DEFAULT".
+    pub sport: String,
+    /// The training method the model was set with: "HR_MAX".
+    pub training_method: String,
+    /// The maximum heart rate the model was built on, when Garmin reported
+    /// one: "178 bpm".
+    pub max_heart_rate: Option<RenderedValue>,
+    /// The five floors, in beats per minute.
+    pub floors: ZoneModelFloors,
+    /// When the model was read from Garmin: "2026-05-10T06:30:00Z".
+    pub read_at: String,
+}
+
+/// The five floors of a zone model.
+///
+/// The floors are the **exclusive lower bounds** of the zones: the interval
+/// of zone *n* is `(floor_n, floor_{n+1}]`, and a reading at or below the
+/// first floor is outside the zones.
+#[derive(Clone, Debug, PartialEq, Serialize)]
+pub struct ZoneModelFloors {
+    /// The floor of zone 1: "106 bpm".
+    pub zone1: RenderedValue,
+    /// The floor of zone 2: "121 bpm".
+    pub zone2: RenderedValue,
+    /// The floor of zone 3: "135 bpm".
+    pub zone3: RenderedValue,
+    /// The floor of zone 4: "149 bpm".
+    pub zone4: RenderedValue,
+    /// The floor of zone 5: "163 bpm".
+    pub zone5: RenderedValue,
 }
 
 // -------------------------------------------------------------------- stats

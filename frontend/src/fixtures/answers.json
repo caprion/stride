@@ -1108,9 +1108,9 @@
     ],
     "/fitness/zones": {
       "basis": null,
-      "max_heart_rate": null,
-      "unavailable": "zones unavailable — the run has no heart-rate samples",
-      "without_heart_rate": null,
+      "model": null,
+      "outside": null,
+      "unavailable": "zones unavailable — no zone model has been read",
       "zones": []
     },
     "/health": {
@@ -3883,9 +3883,9 @@
     ],
     "/fitness/zones": {
       "basis": null,
-      "max_heart_rate": null,
-      "unavailable": "zones unavailable — the run has no heart-rate samples",
-      "without_heart_rate": null,
+      "model": null,
+      "outside": null,
+      "unavailable": "zones unavailable — no zone model has been read",
       "zones": []
     },
     "/health": {

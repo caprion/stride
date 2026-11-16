@@ -230,13 +230,7 @@ fn the_fitness_routes_carry_their_shapes() {
     let zones = harness.ok_get("/fitness/zones?id=1");
     assert_keys(
         &zones,
-        &[
-            "basis",
-            "max_heart_rate",
-            "unavailable",
-            "without_heart_rate",
-            "zones",
-        ],
+        &["basis", "model", "outside", "unavailable", "zones"],
         "/fitness/zones",
     );
 }

@@ -21,7 +21,7 @@ reference only).
 | `/activities/{id}` | one run |
 | `/activities/{id}/fit` | the run's **original FIT file** — the source of truth, byte for byte as Garmin served it | the athlete's own file, downloaded to their own machine; the app never uploads it anywhere |
 | `/physiology/{daily,sleep,hrv,vitals,latest,sources}` | Body inputs: the vitals and their directions (no score) |
-| `/fitness/{fingerprint,trends,zones}` | `fingerprint` is **endpoint-only**: the data is already synced, but it has **no screen**, and the OpenAPI document must say so |
+| `/fitness/{fingerprint,trends,zones}` | `fingerprint` is **endpoint-only**: the data is already synced, but it has **no screen**, and the OpenAPI document must say so. `zones` answers the per-run time in zone from the athlete's **stored zone model**, and names the model with the day it was read (see "The zones and the zone model" below) |
 | `/stats/{summary,weekly,pace-trends,elevation,personal-records}` | Progress |
 
 ## Plan & insight
@@ -146,6 +146,7 @@ Two rules hold for every shape below.
 | `/sync/status` | `last_sync_at: string \| null`, `last_error: string \| null`, `activity_count: number`, `cursor`, `pulled`, `skipped`, `deleted`, `more_pending: boolean`, `history: {activities, wellness} \| null` |
 | `/sync/run` | `activities`, `wellness_days`, `skipped`, `deleted`, `complete: boolean`, `more_pending: boolean`, `failure: {code, detail, status, retry_after_seconds} \| null`, `finished_at`, `generated_at` |
 | `/health/daily` | `date`, `generated_at`, `stale: boolean` |
+| `/fitness/zones` | `basis: string \| null`, `model: ZoneModel \| null`, `zones: ZoneBand[]`, `outside: RenderedValue \| null`, `unavailable: string \| null` |
 
 The app's own declarations are in `frontend/src/lib/types.ts`, and
 `crates/stride-api/tests/frontend_shapes.rs` holds the router to them: it
@@ -219,3 +220,64 @@ Four inputs change what the app says, and three of them live in the `notes` tabl
 - **The delete** refuses the call unless the request carries the word that
   confirms it, and it deletes the data in one transaction. The sync cursors go
   with it: they point at runs that are no longer there.
+
+### The zones and the zone model
+
+`/fitness/zones?id=…` answers one question about one run: **how long was
+the athlete in each of their zones**. The zones are the athlete's own — the
+watch's configuration, read from Garmin at
+`/biometric-service/heartRateZones/v2` and stored with the day it was read.
+The route does not rebuild bands from the run's own maximum heart rate: two
+runs measured on two scales are not comparable, and a band that is not the
+athlete's configuration cannot be named, dated or audited.
+
+The route keeps its name and its place in the table; its **meaning** changed,
+and the old computation is gone rather than left beside the new one.
+
+#### The fields
+
+| field | what it is |
+|---|---|
+| `basis` | the basis the times were computed on: `"moving"` — the moving samples of the run's FIT file |
+| `model` | the zone model the times were computed against, or `null` when no model has been read |
+| `model.sport` | the sport Garmin reported the model for: `"DEFAULT"` |
+| `model.training_method` | the training method the model was set with: `"HR_MAX"`, `"LACTATE_THRESHOLD"`, `"HR_RESERVE"` or `"CUSTOM"` |
+| `model.max_heart_rate` | the maximum heart rate the model was built on, when Garmin reported one: a rendered value |
+| `model.floors.zone1` … `zone5` | the five floors, in beats per minute, as rendered values |
+| `model.read_at` | when the model was read from Garmin: an ISO-8601 UTC instant |
+| `zones` | the five bands, each with the time spent in it: `label`, `range`, `from_bpm`, `to_bpm`, `time` |
+| `zones[].time` | the time in the band, as a rendered value; the number beside the words is the time in **seconds** |
+| `outside` | the time outside the zones — no heart-rate reading, or a reading at or below the first floor — as a rendered value |
+| `unavailable` | why there is no value, in the core's words |
+
+The model's floors are the **exclusive lower bounds** of the zones: the
+interval of zone *n* is `(floor_n, floor_{n+1}]`, and a reading at or below
+the first floor is outside the zones. **A reading exactly on a floor belongs
+to the lower zone** — the reading at `floor_n` is in zone *n−1*, and only a
+reading strictly above `floor_n` reaches zone *n*. The band drawn on a chart
+runs from `floor_n` to `floor_{n+1}`; the top band runs from `floor_5` to the
+maximum heart rate the model was built on, and has no upper edge when the
+model carries no maximum heart rate.
+
+#### No value
+
+**No value is the absence of the whole result**, and it is never band 1 and
+never a zero:
+
+- no model has been read → `model: null`, `zones: []`, `outside: null`, and
+  the reason in the core's words;
+- the stored model's floors are not strictly increasing → the model is named,
+  and there is no value: `zones: []`, `outside: null`, and the reason;
+- the run has no samples to read → no value, and the reason.
+
+The reason is the core's own sentence, asked for out of the core's catalogue
+and passed on. The api never writes a sentence of its own.
+
+#### The samples
+
+The times are computed from the run's own FIT file, decoded on read, and from
+the **moving** samples only — the standing samples are filtered out, exactly
+as they always were, so the numbers stay comparable with what the route
+answered before the model came in. The derived series are recomputed on read
+and never stored; the zone **model** is the exception, because it is not in
+the FIT: it is the watch's configuration, and it is stored, dated.

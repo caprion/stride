@@ -316,13 +316,15 @@ fn fitness_trends_answers_with_the_trends() {
 #[test]
 fn fitness_zones_answers_with_the_zones() {
     let harness = common::Harness::seeded("route-fitness-zones");
-    // The seeded run has no FIT file, so there is nothing to compute from:
-    // the answer says so in the core's words, and the bands are empty.
+    // The seeded store holds no zone model, so there is nothing to compute
+    // from: the answer says so in the core's words, and the bands are
+    // empty.
     let body = harness.ok_get("/fitness/zones?id=1");
     assert!(body["zones"].is_array());
     assert!(body["zones"].as_array().unwrap().is_empty());
     assert!(body["unavailable"].as_str().is_some());
-    assert!(body["max_heart_rate"].is_null());
+    assert!(body["model"].is_null());
+    assert!(body["outside"].is_null());
 }
 
 #[test]

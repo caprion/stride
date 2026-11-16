@@ -99,9 +99,9 @@ export const catalogue = {
   'progress.viewRuns': { type: 'status', text: 'View runs this week' },
   'activity.zones.basis': {
     type: 'status',
-    text: "Bands relative to this run's maximum heart rate, not personal training zones.",
+    text: 'Bands from your own zone model.',
   },
-  'activity.zones.missing': { type: 'status', text: 'Time without heart-rate readings' },
+  'activity.zones.missing': { type: 'status', text: 'Time outside your zones' },
   'settings.preferences': { type: 'status', text: 'Training preferences' },
   'settings.files': { type: 'status', text: 'Files and app information' },
   'settings.sections': { type: 'status', text: 'Settings sections' },
