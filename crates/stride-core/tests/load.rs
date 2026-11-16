@@ -1,9 +1,14 @@
 //! The training load: the series, the missing inputs, and the scenario.
 //!
 //! Every fixture here is synthetic: synthetic zone floors, a synthetic max
-//! heart rate, a synthetic resting heart rate and synthetic dates. Every
-//! expected number is worked out from the definition in the module, not
-//! copied from the implementation.
+//! heart rate, a synthetic resting heart rate and synthetic dates.
+//!
+//! The expected numbers are the **reference implementation's own**: the same
+//! synthetic series through the reference's arithmetic — the TRIMP of the
+//! day over the threshold, the quantised intensity, the seven-day and
+//! forty-two-day weighted averages, the seven-day window and the seven-day
+//! projection — gives exactly these numbers. They are worked out from the
+//! definition in the module, not copied from the implementation.
 
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 
@@ -149,10 +154,10 @@ fn a_series_carries_its_daily_loads_and_its_two_weighted_series() {
     assert_eq!(
         loads(&report),
         vec![
-            ("2026-04-01".to_string(), Some(45.0)),
+            ("2026-04-01".to_string(), Some(44.0)),
             ("2026-04-02".to_string(), Some(48.0)),
             ("2026-04-03".to_string(), Some(0.0)),
-            ("2026-04-04".to_string(), Some(85.0)),
+            ("2026-04-04".to_string(), Some(84.0)),
             ("2026-04-06".to_string(), Some(40.0)),
             ("2026-04-07".to_string(), Some(0.0)),
             ("2026-04-08".to_string(), Some(63.0)),
@@ -161,7 +166,7 @@ fn a_series_carries_its_daily_loads_and_its_two_weighted_series() {
             ("2026-04-11".to_string(), Some(36.0)),
             ("2026-04-12".to_string(), Some(75.0)),
             ("2026-04-13".to_string(), Some(0.0)),
-            ("2026-04-14".to_string(), Some(62.0)),
+            ("2026-04-14".to_string(), Some(61.0)),
         ]
     );
 
@@ -169,23 +174,23 @@ fn a_series_carries_its_daily_loads_and_its_two_weighted_series() {
     // ratio at the last day.
     let last = report.latest_state().expect("a state");
     assert_eq!(last.date, date("2026-04-14"));
-    assert_eq!(last.acute, 38.2);
-    assert_eq!(last.chronic, 42.4);
-    assert_eq!(last.form, 4.3);
-    assert_eq!(last.ratio, 0.9);
+    assert_eq!(last.acute, 37.8);
+    assert_eq!(last.chronic, 41.7);
+    assert_eq!(last.form, 3.8);
+    assert_eq!(last.ratio, 0.91);
 
     // The first day seeds both series with its own load.
     let first = report.states.first().expect("a state");
-    assert_eq!(first.acute, 45.0);
-    assert_eq!(first.chronic, 45.0);
+    assert_eq!(first.acute, 44.0);
+    assert_eq!(first.chronic, 44.0);
     assert_eq!(first.form, 0.0);
     assert_eq!(first.ratio, 1.0);
 
     // The week: the last seven days, 2026-04-08 to 2026-04-14.
     let week = report.week.expect("a week");
-    assert_eq!(week.impulse, 284.0);
+    assert_eq!(week.impulse, 283.0);
     assert_eq!(week.monotony, 1.45);
-    assert_eq!(week.strain, 410.0);
+    assert_eq!(week.strain, 409.0);
 }
 
 #[test]
@@ -233,11 +238,11 @@ fn a_gap_in_the_record_decays_the_two_series_across_it() {
     };
     let report = known(&inputs);
     let last = report.latest_state().expect("a state");
-    // 45 after the first day, decayed over the three days between the two
+    // 44 after the first day, decayed over the three days between the two
     // days of the record and then weighted with the new day's load.
-    assert_eq!(last.acute, 35.3);
-    assert_eq!(last.chronic, 43.0);
-    assert_eq!(last.form, 7.7);
+    assert_eq!(last.acute, 34.5);
+    assert_eq!(last.chronic, 42.0);
+    assert_eq!(last.form, 7.5);
     assert_eq!(last.ratio, 0.82);
 }
 
@@ -264,10 +269,10 @@ fn a_single_activity_is_one_day_of_load() {
         zone_model: Some(zone_model()),
     };
     let report = known(&inputs);
-    assert_eq!(loads(&report), vec![("2026-04-01".to_string(), Some(45.0))]);
+    assert_eq!(loads(&report), vec![("2026-04-01".to_string(), Some(44.0))]);
     let state = report.latest_state().expect("a state");
-    assert_eq!(state.acute, 45.0);
-    assert_eq!(state.chronic, 45.0);
+    assert_eq!(state.acute, 44.0);
+    assert_eq!(state.chronic, 44.0);
     assert_eq!(state.form, 0.0);
     assert_eq!(state.ratio, 1.0);
     // A week needs seven days: one day is not a week.
@@ -335,7 +340,7 @@ fn the_resting_heart_rate_falls_back_to_the_last_reading_on_or_before() {
         zone_model: Some(zone_model()),
     };
     let report = known(&inputs);
-    assert_eq!(loads(&report), vec![("2026-04-02".to_string(), Some(45.0))]);
+    assert_eq!(loads(&report), vec![("2026-04-02".to_string(), Some(44.0))]);
 }
 
 #[test]

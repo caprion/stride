@@ -45,12 +45,16 @@
 //!   was not a rest day and nothing on it could be weighed. The reference
 //!   implementation adds nothing for such an activity and reports the day as
 //!   zero; here it is "no value", because absence is not zero.
-//! * **The intensity is not quantised.** The reference implementation
-//!   rounds the per-activity intensity to a whole percent before the TRIMP
-//!   formula; the model above is the continuous reserve. On a single
-//!   activity the difference is under a per cent of the day's load, and it
-//!   is the difference between a number and the same number with a
-//!   hundredth of a percent of the reserve taken off.
+//! * **A negative intensity.** An activity whose average heart rate is below
+//!   the resting heart rate has no effort to weigh. The reference
+//!   implementation would subtract a little load for it; here it weighs
+//!   zero, because a load below zero is not a thing.
+//!
+//! The **intensity** is otherwise the reference's, quantised to a whole
+//! percent — see [`activity_trimp`]. That is the one place where the
+//! reference's numbers depend on an implementation detail, and this port
+//! keeps it: the rule for this item is to match the reference's *numbers* and
+//! change its *vocabulary*.
 //!
 //! ## The model, in full
 //!
@@ -631,6 +635,14 @@ fn day_load(
 ///
 /// `None` when the threshold cannot be built — the stored model's threshold
 /// is not above the resting heart rate of the day.
+///
+/// The **intensity is quantised to a whole percent** of the reserve, because
+/// the reference implementation's is: its
+/// `ActivityIntensity::calculateHeartRateBased` returns an integer
+/// percentage, and that quantisation is part of its numbers — on a
+/// fourteen-day synthetic history it moved three of thirteen day loads by
+/// one unit. This port keeps the reference's numbers, so it keeps the
+/// quantisation; the rounding itself is half-to-even, the contract's rule.
 fn activity_trimp(
     activity: &ActivityLoad,
     heart_rate: f64,
@@ -643,6 +655,7 @@ fn activity_trimp(
         return None;
     }
     let intensity = (heart_rate - resting_hr) / reserve;
+    let intensity = units::round_half_even(intensity * 100.0, 0) / 100.0;
     if intensity <= 0.0 {
         // The average heart rate was at or below the resting heart rate:
         // there is no effort to weigh, and no negative load.
