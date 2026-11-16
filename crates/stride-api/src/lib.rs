@@ -17,6 +17,7 @@
 //! | [`ffi`] | the FFI surface: JSON in, JSON out, and the panic boundary |
 //! | [`routes`] | the handlers, and the helpers they share |
 //! | [`plan`] | the seam to the core's plan engine: the store's rows in, the core's answers out |
+//! | [`load`] | the seam to the core's training-load engine: the stored zone model, the measured resting heart rate and the stored activities in, the core's series and its scenario out |
 //! | [`planfile`] | the plan files the athlete may import: markdown, CSV, JSON, the Garmin schedule |
 //!
 //! ## The rules this crate keeps
@@ -134,6 +135,7 @@ pub const VERSION: &str = match option_env!("STRIDE_VERSION") {
 pub mod dto;
 pub mod error;
 pub mod ffi;
+pub mod load;
 pub mod plan;
 pub mod planfile;
 pub mod render;
