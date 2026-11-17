@@ -31,6 +31,9 @@
 //!   evaluative, and read from the same primitives the charts read.
 //! * [`zones`] — the heart-rate zone model and the time-in-zone computation,
 //!   from the athlete's stored configuration, never a run's observed maximum.
+//! * [`load`] — the training load: the daily series, the acute and chronic
+//!   loads, the form, the ratio, and the recovery scenario — a scenario
+//!   with its assumption attached, never a verdict.
 //!
 //! The voice, in one line: facts first, no judgements. The app informs; it
 //! never instructs.
@@ -39,6 +42,7 @@ pub mod band;
 pub mod date;
 pub mod direction;
 pub mod eddington;
+pub mod load;
 pub mod pattern;
 pub mod plan;
 pub mod rest;
@@ -54,6 +58,11 @@ pub use date::Date;
 pub use direction::{day_directions, DayDirections, Direction, Travel, VitalDirection};
 pub use eddington::{
     days_needed_for_next, eddington, DailyDistance, Eddington, EddingtonUnit, Period,
+};
+pub use load::{
+    load_report, recovery_scenario, ActivityLoad, DailyLoad, DayInput, LoadAnswer, LoadAssumptions,
+    LoadInputs, LoadReport, LoadState, LoadZoneModel, NoLoadReason, ProjectedDay, RecoveryScenario,
+    RestingHrReading, WeekLoad, BANISTER_K,
 };
 pub use pattern::{patterns, HistoryDay, Pattern, PatternKind};
 pub use plan::{

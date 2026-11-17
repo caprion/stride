@@ -20,11 +20,17 @@
 //! A run with **no stored model is not calibrated**: the result is "no
 //! value", never band 1 and never zero.
 
+use serde::{Deserialize, Serialize};
+
 /// The five inclusive-in-name floor values of a zone model, in beats per
 /// minute.
 ///
 /// The floors must be strictly increasing for the model to be usable.
-#[derive(Debug, Clone, Copy, PartialEq)]
+///
+/// The derives are the domain's, not the storage's: the load model carries a
+/// zone model inside it, and a value that crosses the wire carries its
+/// floors with it.
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
 pub struct ZoneFloors {
     /// The lower boundary Garmin reports for zone 1.
     pub zone1: f64,
