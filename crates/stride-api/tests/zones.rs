@@ -118,6 +118,14 @@ fn a_run_with_a_stored_model_answers_with_the_five_times_and_the_models_date() {
     assert_eq!(named["floors"]["zone4"]["text"].as_str(), Some("149 bpm"));
     assert_eq!(named["floors"]["zone5"]["text"].as_str(), Some("163 bpm"));
     assert_eq!(named["read_at"].as_str(), Some("2026-05-10T06:30:00Z"));
+    // The day the model was read, in the athlete's own calendar and in the
+    // api's own date rendering — not the core's canonical form.
+    assert_eq!(named["read_on"].as_str(), Some("10 May 2026"));
+    // And the model's own source line, in the core's words.
+    assert_eq!(
+        named["source"].as_str(),
+        Some("your zone model · HR_MAX · max heart rate 178 bpm · read on 10 May 2026")
+    );
     assert!(body["unavailable"].is_null());
 
     // The five times are the core's own, in seconds.
@@ -188,6 +196,30 @@ fn a_run_with_no_stored_model_has_no_value() {
     // Never band 1, and never a zero.
     assert!(body["zones"].as_array().unwrap().is_empty());
     assert!(body["outside"].is_null());
+}
+
+#[test]
+fn a_model_with_no_maximum_heart_rate_is_named_without_one() {
+    let harness = common::Harness::empty("zones-no-max");
+    let id = write_fit_run(&harness, "hr_gps_run.fit");
+    let mut stored = model(common::instant());
+    // Garmin reported no maximum heart rate for this model.
+    stored.max_heart_rate = None;
+    harness.store.write_hr_zone_model_if_new(&stored).unwrap();
+
+    let body = harness.ok_get(&format!("/fitness/zones?id={id}"));
+
+    // The model is still named, and the line names no maximum heart rate
+    // that was not reported.
+    let named = &body["model"];
+    assert!(named["max_heart_rate"].is_null());
+    assert_eq!(
+        named["source"].as_str(),
+        Some("your zone model · HR_MAX · read on 12 May 2026")
+    );
+    // And the top band has no upper edge to draw.
+    let zones = body["zones"].as_array().unwrap();
+    assert_eq!(zones[4]["to_bpm"].as_i64(), None);
 }
 
 #[test]
