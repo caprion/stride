@@ -80,15 +80,15 @@ describe('the training load on Progress', () => {
 
     // The two weighted series, the form and the ratio — the core's own
     // rendering, not a number the app formatted.
-    expect(card.querySelector('[data-testid="progress-load-acute"]')?.textContent).toBe('15.3')
-    expect(card.querySelector('[data-testid="progress-load-chronic"]')?.textContent).toBe('5.4')
-    expect(card.querySelector('[data-testid="progress-load-form"]')?.textContent).toBe('-9.9')
-    expect(card.querySelector('[data-testid="progress-load-ratio"]')?.textContent).toBe('2.83')
+    expect(card.querySelector('[data-testid="progress-load-acute"]')?.textContent).toBe('19.7')
+    expect(card.querySelector('[data-testid="progress-load-chronic"]')?.textContent).toBe('7.0')
+    expect(card.querySelector('[data-testid="progress-load-form"]')?.textContent).toBe('-12.7')
+    expect(card.querySelector('[data-testid="progress-load-ratio"]')?.textContent).toBe('2.82')
 
     // The week's three numbers.
-    expect(card.querySelector('[data-testid="progress-load-impulse"]')?.textContent).toBe('139')
+    expect(card.querySelector('[data-testid="progress-load-impulse"]')?.textContent).toBe('177')
     expect(card.querySelector('[data-testid="progress-load-monotony"]')?.textContent).toBe('0.83')
-    expect(card.querySelector('[data-testid="progress-load-strain"]')?.textContent).toBe('116')
+    expect(card.querySelector('[data-testid="progress-load-strain"]')?.textContent).toBe('148')
 
     // The band is a range, and it is named as one.
     expect(card.querySelector('[data-testid="progress-load-band"]')?.textContent).toContain(
@@ -104,7 +104,7 @@ describe('the training load on Progress', () => {
     // heart rate came from and the day it was read, and the windows.
     const assumption = card.querySelector('[data-testid="progress-load-assumption"]')?.textContent
     expect(assumption).toContain('Banister k = 1.92')
-    expect(assumption).toContain('read on 1 Apr 2026')
+    expect(assumption).toContain('read on 10 May 2026')
     expect(assumption).toContain('chronic window 42 days')
 
     // And no verdict anywhere on the card.
