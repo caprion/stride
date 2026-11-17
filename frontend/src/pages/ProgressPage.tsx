@@ -27,10 +27,25 @@ import { axisTicks, calendarWeekStarts } from '../lib/chart'
 import { formatCount, formatDateShort, renderedText } from '../lib/format'
 import { useStaleness } from '../lib/staleness'
 import { t } from '../i18n'
+import type { CatalogueKey } from '../i18n'
 import { axisTick } from '../components/ChartAxis'
 import { PageHeader } from '../ui/layout/PageHeader'
 import { QueryError } from '../components/QueryError'
 import { runsPath, shiftDate } from '../lib/history'
+
+/**
+ * The reasons the load can have no value, and the line each one gets.
+ *
+ * The reasons are the **core's** — the api passes the core's own reasons
+ * on — and the line is the app's chrome. A reason the app does not know
+ * gets the plain one: no value is still no value.
+ */
+const LOAD_EMPTY: Record<string, CatalogueKey> = {
+  no_zone_model: 'progress.load.empty.no_zone_model',
+  no_max_heart_rate: 'progress.load.empty.no_max_heart_rate',
+  unusable_zone_model: 'progress.load.empty.unusable_zone_model',
+  no_history: 'progress.load.empty.no_history',
+}
 
 /** A chart card with a fixed, legible height. */
 function ChartCard({ title, children }: { title: string; children: React.ReactNode }) {
@@ -60,6 +75,12 @@ export function ProgressPage() {
   const progress = useQuery({
     queryKey: ['insights-progress', range],
     queryFn: () => api.insightsProgress(range),
+  })
+  // The load has a route of its own, and it follows the same range: the
+  // number is never read apart from the control that changes it.
+  const load = useQuery({
+    queryKey: ['insights-load', range],
+    queryFn: () => api.insightsLoad(range),
   })
   const stale = useStaleness()
   const data = progress.data
@@ -130,6 +151,18 @@ export function ProgressPage() {
     label: formatDateShort(date),
     sessions: data.consistency.find((entry) => entry.week_start === date)?.sessions ?? null,
   }))
+
+  /**
+   * The load's own answer.
+   *
+   * The state of the two series at the last day of the series is the
+   * load's present, and the seven-day values are the week. The state is
+   * the last day the record covers, which is not always today: the card
+   * says which day it is.
+   */
+  const loadStates = load.data?.load?.states ?? []
+  const lastState = loadStates.length > 0 ? loadStates[loadStates.length - 1]! : undefined
+  const week = load.data?.load?.week ?? null
 
   /**
    * The axes' labels.
@@ -314,6 +347,129 @@ export function ProgressPage() {
           <p className="mt-2 text-[12px] text-ink-faint" data-testid="progress-eddington-window">
             {formatDateShort(data.period.from)} - {formatDateShort(data.period.to)}
           </p>
+        </section>
+
+        {/* ------------------------------------------ the training load */}
+        {/*
+          The load, as values and a scenario.
+
+          The card says what the numbers are, what window they describe
+          and what the model assumed — the coefficient, where the maximum
+          heart rate came from and the day the zone model was read, and
+          the two windows. There is no score, no grade, no verdict and no
+          instruction: the band of the ratio is named as a range, and the
+          reader decides what it means.
+
+          A load with no value says so, with the reason: never a zero.
+        */}
+        <section className="card px-4 py-3" data-testid="progress-load">
+          <h2 className="mb-2 text-[12px] font-semibold uppercase tracking-[0.07em] text-ink-faint">
+            {t('progress.load.heading')}
+          </h2>
+          {load.isError && !load.data ? (
+            <p className="text-[13px] text-ink-muted">{t('common.error')}</p>
+          ) : null}
+          {!load.data ? (
+            <p className="text-[13px] text-ink-muted">{t('common.loading')}</p>
+          ) : null}
+          {load.data?.load ? (
+            <>
+              {lastState ? (
+                <p
+                  className="text-[12px] text-ink-muted"
+                  data-testid="progress-load-as-of"
+                >
+                  {t('progress.load.asOf', { date: lastState.label })}
+                </p>
+              ) : null}
+              <dl
+                className="mt-2 grid grid-cols-2 gap-x-3 gap-y-2"
+                data-testid="progress-load-values"
+              >
+                {[
+                  { key: 'acute', label: t('progress.load.acute'), value: lastState?.acute },
+                  { key: 'chronic', label: t('progress.load.chronic'), value: lastState?.chronic },
+                  { key: 'form', label: t('progress.load.form'), value: lastState?.form },
+                  { key: 'ratio', label: t('progress.load.ratio'), value: lastState?.ratio },
+                ].map(({ key, label, value }) => (
+                  <div key={key}>
+                    <dt className="text-[12px] text-ink-muted">{label}</dt>
+                    <dd
+                      className="mt-0.5 text-[19px] font-semibold tabular-nums text-ink"
+                      data-testid={`progress-load-${key}`}
+                    >
+                      {renderedText(value ?? null)}
+                    </dd>
+                  </div>
+                ))}
+              </dl>
+              {load.data.scenario ? (
+                <p
+                  className="mt-2 text-[12px] text-ink-muted"
+                  data-testid="progress-load-band"
+                >
+                  {t('progress.load.band', { band: load.data.scenario.band })}
+                </p>
+              ) : null}
+              {week ? (
+                <>
+                  <h3 className="mt-3 text-[11px] font-semibold uppercase tracking-[0.07em] text-ink-faint">
+                    {t('progress.load.week.heading')}
+                  </h3>
+                  <dl className="mt-1.5 grid grid-cols-2 gap-x-3 gap-y-2">
+                    {[
+                      { key: 'impulse', label: t('progress.load.impulse'), value: week.impulse },
+                      { key: 'monotony', label: t('progress.load.monotony'), value: week.monotony },
+                      { key: 'strain', label: t('progress.load.strain'), value: week.strain },
+                    ].map(({ key, label, value }) => (
+                      <div key={key}>
+                        <dt className="text-[12px] text-ink-muted">{label}</dt>
+                        <dd
+                          className="mt-0.5 text-[16px] font-semibold tabular-nums text-ink"
+                          data-testid={`progress-load-${key}`}
+                        >
+                          {renderedText(value)}
+                        </dd>
+                      </div>
+                    ))}
+                  </dl>
+                </>
+              ) : null}
+              {/* The scenario and its assumption: the core's own words,
+                  and the assumption travels with them. */}
+              {load.data.scenario ? (
+                <>
+                  <p
+                    className="mt-3 text-[12.5px] text-ink-soft"
+                    data-testid="progress-load-scenario"
+                  >
+                    {load.data.scenario.statement}
+                  </p>
+                  <p
+                    className="mt-1 text-[11.5px] text-ink-faint"
+                    data-testid="progress-load-assumption"
+                  >
+                    {load.data.scenario.assumption}
+                  </p>
+                </>
+              ) : null}
+            </>
+          ) : null}
+          {load.data && !load.data.load ? (
+            /* No value is the absence of the value: the card says why,
+               and shows no number at all. */
+            <p className="text-[13px] text-ink-muted" data-testid="progress-load-empty">
+              {t(LOAD_EMPTY[load.data.unavailable ?? ''] ?? 'progress.load.empty.other')}
+            </p>
+          ) : null}
+          {load.data ? (
+            <p className="mt-2 text-[12px] text-ink-faint" data-testid="progress-load-window">
+              {t('progress.load.window', {
+                from: load.data.window.from_label,
+                to: load.data.window.to_label,
+              })}
+            </p>
+          ) : null}
         </section>
 
         {/* --------------------------------------------- weekly volume */}

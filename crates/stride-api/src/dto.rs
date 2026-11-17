@@ -1601,3 +1601,171 @@ pub struct Calendar {
     /// When this answer was produced.
     pub generated_at: String,
 }
+
+// ------------------------------------------------------------------- load
+
+/// The training load over the selected window.
+///
+/// The load is a **series** and a **scenario**, never a verdict: the
+/// numbers, the assumption they were made under, and what a run of rest
+/// days is expected to do with them. There is no band name, no risk and
+/// nothing that tells the athlete what to do.
+#[derive(Clone, Debug, PartialEq, Serialize)]
+pub struct LoadInsight {
+    /// When this answer was produced.
+    pub generated_at: String,
+    /// The athlete's local date.
+    pub date: String,
+    /// The window the numbers describe.
+    pub window: LoadWindow,
+    /// The load itself.
+    ///
+    /// `None` when the load has no value — and then `unavailable` says
+    /// why. A missing zone model is never a zero and never a guessed
+    /// maximum heart rate.
+    pub load: Option<LoadSeries>,
+    /// Why there is no load. `None` when there is one.
+    pub unavailable: Option<String>,
+    /// The recovery scenario.
+    ///
+    /// `None` when there is no load: there is nothing to project.
+    pub scenario: Option<LoadScenario>,
+}
+
+/// The window the load's numbers describe.
+#[derive(Clone, Debug, PartialEq, Serialize)]
+pub struct LoadWindow {
+    /// The first day of the window, in the athlete's own calendar.
+    pub from: String,
+    /// The first day of the window, as the api writes a date.
+    pub from_label: String,
+    /// The last day of the window, in the athlete's own calendar.
+    pub to: String,
+    /// The last day of the window, as the api writes a date.
+    pub to_label: String,
+    /// How many calendar weeks the window covers.
+    pub weeks: i64,
+    /// How many days of history the series was warmed with, before the
+    /// window.
+    ///
+    /// The chronic series is weighted over forty-two days, so the series
+    /// needs a warm-up: without it the numbers at the start of the window
+    /// would be the numbers of a series that began there. The days are
+    /// read and weighed, and they are not part of the window's series.
+    pub warmup_days: i64,
+}
+
+/// The load of the days in the window.
+#[derive(Clone, Debug, PartialEq, Serialize)]
+pub struct LoadSeries {
+    /// The days of the window the record covers, oldest first.
+    pub days: Vec<LoadDay>,
+    /// The state of the two series at each of those days, oldest first.
+    pub states: Vec<LoadState>,
+    /// The seven-day values at the last day of the series.
+    ///
+    /// `None` when the last seven days are not all there with a load: a
+    /// week with a missing day has no impulse, no monotony and no strain,
+    /// because absence is not zero.
+    pub week: Option<LoadWeek>,
+    /// The assumptions the numbers were made under.
+    pub assumptions: LoadAssumption,
+}
+
+/// One day of the load.
+#[derive(Clone, Debug, PartialEq, Serialize)]
+pub struct LoadDay {
+    /// The day, in the athlete's own calendar.
+    pub date: String,
+    /// The day, as the api writes a date.
+    pub label: String,
+    /// The day's load, as the core renders it.
+    ///
+    /// `None` when the day has no load: it is not covered by the record,
+    /// or nothing on it could be weighed.
+    pub load: Option<RenderedValue>,
+    /// Why the day has no load. `Some` exactly when `load` is `None`.
+    pub reason: Option<String>,
+}
+
+/// The state of the two series at a day.
+#[derive(Clone, Debug, PartialEq, Serialize)]
+pub struct LoadState {
+    /// The day, in the athlete's own calendar.
+    pub date: String,
+    /// The day, as the api writes a date.
+    pub label: String,
+    /// The acute load: the seven-day weighted average.
+    pub acute: RenderedValue,
+    /// The chronic load: the forty-two-day weighted average.
+    pub chronic: RenderedValue,
+    /// The form: the chronic load minus the acute load.
+    pub form: RenderedValue,
+    /// The acute-to-chronic ratio.
+    pub ratio: RenderedValue,
+}
+
+/// The seven-day values.
+#[derive(Clone, Debug, PartialEq, Serialize)]
+pub struct LoadWeek {
+    /// The sum of the seven days' loads.
+    pub impulse: RenderedValue,
+    /// The monotony: the mean of the seven days over their standard
+    /// deviation.
+    pub monotony: RenderedValue,
+    /// The strain: the seven-day sum times the monotony.
+    pub strain: RenderedValue,
+}
+
+/// The assumptions the load's numbers rest on.
+#[derive(Clone, Debug, PartialEq, Serialize)]
+pub struct LoadAssumption {
+    /// The Banister coefficient the model used.
+    pub banister_k: f64,
+    /// The maximum heart rate the zone model was built on.
+    pub max_heart_rate_bpm: f64,
+    /// The threshold heart rate: the zone-5 floor of the stored model.
+    pub threshold_hr_bpm: f64,
+    /// The day the zone model was read, in the athlete's own calendar.
+    pub zone_model_read_on: String,
+    /// The day the zone model was read, as the api writes a date.
+    pub zone_model_read_on_label: String,
+    /// The acute window, in days.
+    pub acute_window_days: i64,
+    /// The chronic window, in days.
+    pub chronic_window_days: i64,
+    /// How many days the scenario projects forward.
+    pub forecast_days: i64,
+    /// The assumptions as a sentence, in the core's own words.
+    pub statement: String,
+}
+
+/// The recovery scenario.
+#[derive(Clone, Debug, PartialEq, Serialize)]
+pub struct LoadScenario {
+    /// How many complete rest days the ratio is expected to need to be back
+    /// inside its band. `None` when seven rest days do not bring it back.
+    pub days_to_ratio_band: Option<u32>,
+    /// How many days the form is expected to need to turn positive.
+    /// `None` when seven rest days do not turn it positive.
+    pub days_to_positive_form: Option<u32>,
+    /// The band of the ratio, as a range: "0.8 to 1.3".
+    pub band: String,
+    /// The scenario as a sentence, in the core's own words.
+    pub statement: String,
+    /// The assumption the scenario rests on, in the core's own words.
+    pub assumption: String,
+    /// The projection itself, one entry per projected day.
+    pub projection: Vec<LoadProjection>,
+}
+
+/// One projected day of the scenario.
+#[derive(Clone, Debug, PartialEq, Serialize)]
+pub struct LoadProjection {
+    /// The day of the projection: one is the day after the series ends.
+    pub day: u32,
+    /// The projected form.
+    pub form: RenderedValue,
+    /// The projected acute-to-chronic ratio.
+    pub ratio: RenderedValue,
+}

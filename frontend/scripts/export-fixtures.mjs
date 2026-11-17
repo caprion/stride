@@ -65,7 +65,7 @@ const seed = {
   activities: fixtures.activityFixtures,
   nights: fixtures.nightsFixture,
   plan_sessions: fixtures.planSessionsFixture,
-  zone_model: fixtures.zoneModelFixture,
+  zone_models: [fixtures.zoneModelFixture],
 }
 
 /**

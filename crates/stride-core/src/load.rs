@@ -288,6 +288,17 @@ pub struct DailyLoad {
     pub reason: Option<NoLoadReason>,
 }
 
+impl DailyLoad {
+    /// The day's load, as the core renders it: "54".
+    ///
+    /// The load is **dimensionless** — there is no unit to write — so the
+    /// number is the value. The precision is the load's own: the day's
+    /// load is a whole number.
+    pub fn load_text(&self) -> Option<String> {
+        self.load.map(units::format_whole)
+    }
+}
+
 /// The state of the two series at a day.
 #[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
 pub struct LoadState {
@@ -303,6 +314,31 @@ pub struct LoadState {
     pub ratio: f64,
 }
 
+impl LoadState {
+    /// The acute load, as the core renders it: "45.2".
+    pub fn acute_text(&self) -> String {
+        units::format_decimal(self.acute, 1)
+    }
+
+    /// The chronic load, as the core renders it: "51.8".
+    pub fn chronic_text(&self) -> String {
+        units::format_decimal(self.chronic, 1)
+    }
+
+    /// The form, as the core renders it: "6.6".
+    ///
+    /// The form can be negative — the acute load above the chronic one —
+    /// and the sign is the number's own.
+    pub fn form_text(&self) -> String {
+        units::format_decimal(self.form, 1)
+    }
+
+    /// The acute-to-chronic ratio, as the core renders it: "0.87".
+    pub fn ratio_text(&self) -> String {
+        units::format_decimal(self.ratio, 2)
+    }
+}
+
 /// The seven-day values.
 #[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
 pub struct WeekLoad {
@@ -313,6 +349,23 @@ pub struct WeekLoad {
     pub monotony: f64,
     /// The strain: the seven-day sum times the monotony.
     pub strain: f64,
+}
+
+impl WeekLoad {
+    /// The weekly impulse, as the core renders it: "320".
+    pub fn impulse_text(&self) -> String {
+        units::format_whole(self.impulse)
+    }
+
+    /// The monotony, as the core renders it: "1.42".
+    pub fn monotony_text(&self) -> String {
+        units::format_decimal(self.monotony, 2)
+    }
+
+    /// The strain, as the core renders it: "454".
+    pub fn strain_text(&self) -> String {
+        units::format_whole(self.strain)
+    }
 }
 
 /// The assumptions every number of a load answer rests on.
@@ -339,11 +392,17 @@ impl LoadAssumptions {
     /// The assumptions as a statement: the assumption of the projection, the
     /// coefficient, where the max heart rate came from and when the model
     /// was read, and the two windows.
-    pub fn statement(&self) -> String {
+    ///
+    /// **The day the model was read is passed in, not rendered here.** The
+    /// core does not know how a screen writes a date — the api does, and the
+    /// api's own rendering is the one the product shows — so the caller
+    /// hands the sentence the day it wants written and the core puts it in
+    /// its own words. A third date format is not introduced here.
+    pub fn statement(&self, zone_model_read_on: &str) -> String {
         let forecast = self.forecast_days.to_string();
         let k = format!("{:.2}", self.banister_k);
         let max_hr = units::render_heart_rate(Some(self.max_heart_rate_bpm)).unwrap_or_default();
-        let date = self.zone_model_read_on.to_iso();
+        let date = zone_model_read_on.to_string();
         let acute = self.acute_window_days.to_string();
         let chronic = self.chronic_window_days.to_string();
         strings::render(
@@ -395,6 +454,19 @@ pub struct ProjectedDay {
     pub ratio: f64,
 }
 
+impl ProjectedDay {
+    /// The projected form, as the core renders it: "6.4".
+    pub fn form_text(&self) -> String {
+        units::format_decimal(self.form, 1)
+    }
+
+    /// The projected acute-to-chronic ratio, as the core renders it:
+    /// "0.85".
+    pub fn ratio_text(&self) -> String {
+        units::format_decimal(self.ratio, 2)
+    }
+}
+
 /// The recovery scenario: what a run of complete rest days is expected to do.
 ///
 /// It is a scenario and not a verdict. It says what it assumes — a complete
@@ -422,8 +494,31 @@ impl RecoveryScenario {
     /// The wording is the product's: values and a direction, no verdict and
     /// no instruction. The assumption travels with it — a scenario that does
     /// not say what it assumed is a verdict in disguise.
-    pub fn statement(&self) -> String {
-        let band = band_text();
+    ///
+    /// The day the zone model was read is **passed in**: see
+    /// [`LoadAssumptions::statement`].
+    pub fn statement(&self, zone_model_read_on: &str) -> String {
+        let mut parts: Vec<String> = Vec::new();
+        for part in self.scenario_parts() {
+            parts.push(part);
+        }
+        parts.push(self.assumptions.statement(zone_model_read_on));
+        parts.join(" · ")
+    }
+
+    /// The scenario on its own, without the assumption.
+    ///
+    /// The same words, without the assumption attached: what the rest days
+    /// are expected to do. The assumption is its own sentence
+    /// ([`LoadAssumptions::statement`]), so a screen can show the two
+    /// apart and neither is read without the other.
+    pub fn scenario_text(&self) -> String {
+        self.scenario_parts().join(" · ")
+    }
+
+    /// The two sentences of the scenario: the ratio and the form.
+    fn scenario_parts(&self) -> Vec<String> {
+        let band = ratio_band_text();
         let ratio = match self.days_to_ratio_band {
             Some(0) => strings::render("statement.load.scenario.ratio.now", &[("band", &band)]),
             Some(days) => {
@@ -459,13 +554,15 @@ impl RecoveryScenario {
         for part in [ratio, form].into_iter().flatten() {
             parts.push(part);
         }
-        parts.push(self.assumptions.statement());
-        parts.join(" · ")
+        parts
     }
 }
 
 /// The band of the acute-to-chronic ratio, as it is written: "0.8 to 1.3".
-fn band_text() -> String {
+///
+/// **A band is a range, and it is named as one.** It is never a verdict
+/// and never a risk: the reader decides what a ratio inside it means.
+pub fn ratio_band_text() -> String {
     format!("{RATIO_BAND_LOW} to {RATIO_BAND_HIGH}")
 }
 

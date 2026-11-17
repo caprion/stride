@@ -131,6 +131,21 @@ pub fn format_whole(value: f64) -> String {
     format!("{rounded}")
 }
 
+/// A number in its own scale, with a fixed number of decimals: "45.2",
+/// "0.87".
+///
+/// The half-even rule of contract §3, and the decimals the caller names.
+/// A negative zero is written as a zero: `-0.0` and `0.0` are the same
+/// number, and only one of them may be shown.
+pub fn format_decimal(value: f64, decimals: usize) -> String {
+    if !value.is_finite() {
+        return String::new();
+    }
+    let rounded = round_half_even(value, decimals);
+    let rounded = if rounded == 0.0 { 0.0 } else { rounded };
+    format!("{rounded:.decimals$}")
+}
+
 /// An average count, to one decimal using the shared half-even rule.
 pub fn render_average(value: Option<f64>) -> Option<String> {
     let value = value.filter(|value| value.is_finite() && *value >= 0.0)?;

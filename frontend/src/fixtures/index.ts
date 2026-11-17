@@ -38,6 +38,7 @@ import type {
   HealthDaily,
   KeyConnectResult,
   KeyTestResult,
+  LoadInsight,
   NoteResult,
   PlanImportResult,
   PlanWeek,
@@ -379,6 +380,17 @@ export const progressFixture = routerAnswers['/insights/progress'] as ProgressIn
 
 /** Progress, with no plan: the router's answer for the baseline seed. */
 export const baselineProgressFixture = baselineAnswers['/insights/progress'] as ProgressInsight
+
+// --------------------------------------------------------------- load
+
+/**
+ * The training load: the router's answer.
+ *
+ * The values, the scenario and the assumption they rest on. The answer
+ * comes from the router's own store — the same seed — so the numbers on
+ * the card are the numbers the api computes.
+ */
+export const loadFixture = routerAnswers['/insights/load'] as LoadInsight
 
 // --------------------------------------------------------------- compare
 
@@ -915,8 +927,6 @@ export const zoneModelFixture: SeedZoneModel = {
  *
  * The bands themselves are the api's: the app draws what it is given.
  */
-export const zonesFixture = routerAnswers['/fitness/zones'] as FitnessZones
-
 /**
  * The zones of a run in a store with **no zone model**.
  *
@@ -925,7 +935,23 @@ export const zonesFixture = routerAnswers['/fitness/zones'] as FitnessZones
  * so the run is not calibrated, there is no value at all, and the core says
  * why.
  */
-export const zonesUncalibratedFixture: FitnessZones = {
+/**
+ * The heart-rate zones of a run: the router's answer.
+ *
+ * The seeded store holds the athlete's own zone model — the watch's
+ * configuration — and the run carries no FIT file, so the router names
+ * the model and says that the run has no heart-rate samples to read. The
+ * bands themselves are the api's: the app draws what it is given.
+ */
+export const zonesFixture: FitnessZones = routerAnswers['/fitness/zones'] as FitnessZones
+
+/**
+ * The zones with no model in the store.
+ *
+ * The run is not calibrated, so there is no value, and the core says why
+ * — "no zone model has been read".
+ */
+export const zonesNoModelFixture: FitnessZones = {
   basis: null,
   model: null,
   zones: [],
@@ -1431,6 +1457,13 @@ export function fixtureResponse(
           baselineAnswers[`/insights/progress?weeks=${params.weeks}`] ?? baselineProgressFixture
         )
       return routerAnswers[`/insights/progress?weeks=${params.weeks}`] ?? progressFixture
+    case '/insights/load':
+      // No zone model in the store: the load has no value, and the card
+      // says why.
+      if (variant === 'noload') {
+        return { ...loadFixture, load: null, scenario: null, unavailable: 'no_zone_model' }
+      }
+      return routerAnswers[`/insights/load?weeks=${params.weeks}`] ?? loadFixture
     case '/compare': {
       // Which run is A is the API's business: the app asks, and the API
       // answers the question in that order.

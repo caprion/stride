@@ -542,6 +542,38 @@ fn the_insight_routes_carry_their_shapes() {
         "/insights/progress",
     );
 
+    // The load has a route of its own, and it answers with the series,
+    // the scenario and the reason there is no value.
+    let load = harness.ok_get("/insights/load");
+    assert_keys(
+        &load,
+        &[
+            "date",
+            "generated_at",
+            "load",
+            "scenario",
+            "unavailable",
+            "window",
+        ],
+        "/insights/load",
+    );
+    assert_keys(
+        &load["window"],
+        &[
+            "from",
+            "from_label",
+            "to",
+            "to_label",
+            "warmup_days",
+            "weeks",
+        ],
+        "/insights/load: window",
+    );
+    // The seeded store holds no zone model, so the load has no value and
+    // the answer says why.
+    assert!(load["load"].is_null());
+    assert_eq!(load["unavailable"], "no_zone_model");
+
     let id = harness.write_run(common::run("a-run", "2026-05-10", 10_000.0, 3_000.0));
     let chips = harness.ok_get(&format!("/insights/chips?id={id}"));
     assert_keys(

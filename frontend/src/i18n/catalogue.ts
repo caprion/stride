@@ -250,6 +250,50 @@ export const catalogue = {
     type: 'status',
     text: 'No recorded distance in this window, so there is no number.',
   },
+  /**
+   * The training load.
+   *
+   * The card is **values and a scenario**: the two weighted series, the
+   * form, the ratio, the week's three numbers, and what a run of rest
+   * days is expected to do with them. There is no score, no grade, no
+   * verdict and no instruction, and the band of the ratio is named as a
+   * range — "0.8 to 1.3" — which the reader may disagree with.
+   *
+   * The sentences themselves are the core's: they arrive written, and the
+   * app shows them as they stand.
+   */
+  'progress.load.heading': { type: 'status', text: 'Training load' },
+  'progress.load.asOf': { type: 'status', text: 'as of {date}' },
+  'progress.load.acute': { type: 'status', text: 'Acute load' },
+  'progress.load.chronic': { type: 'status', text: 'Chronic load' },
+  'progress.load.form': { type: 'status', text: 'Form' },
+  'progress.load.ratio': { type: 'status', text: 'Acute-to-chronic ratio' },
+  'progress.load.band': { type: 'status', text: 'The band is {band}' },
+  'progress.load.week.heading': { type: 'status', text: 'The last seven days' },
+  'progress.load.impulse': { type: 'status', text: 'Weekly impulse' },
+  'progress.load.monotony': { type: 'status', text: 'Monotony' },
+  'progress.load.strain': { type: 'status', text: 'Strain' },
+  'progress.load.window': { type: 'status', text: 'The window: {from} – {to}' },
+  'progress.load.empty.no_zone_model': {
+    type: 'status',
+    text: 'No zone model has been read, so there is no load to show.',
+  },
+  'progress.load.empty.no_max_heart_rate': {
+    type: 'status',
+    text: 'The stored zone model carries no maximum heart rate, so there is no load to show.',
+  },
+  'progress.load.empty.unusable_zone_model': {
+    type: 'status',
+    text: "The stored zone model's floors are not in order, so there is no load to show.",
+  },
+  'progress.load.empty.no_history': {
+    type: 'status',
+    text: 'No recorded days in this window, so there is no load to show.',
+  },
+  'progress.load.empty.other': {
+    type: 'status',
+    text: 'There is no load to show.',
+  },
   'progress.range.label': { type: 'status', text: 'Range' },
   'progress.range.weeks': { type: 'status', text: '{n} weeks' },
   'progress.typicalWeek': { type: 'status', text: 'your typical week' },
