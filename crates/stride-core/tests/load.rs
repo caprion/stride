@@ -191,6 +191,11 @@ fn a_series_carries_its_daily_loads_and_its_two_weighted_series() {
     assert_eq!(week.impulse, 283.0);
     assert_eq!(week.monotony, 1.45);
     assert_eq!(week.strain, 409.0);
+
+    // And the same numbers, written the way the load writes them.
+    assert_eq!(week.impulse_text(), "283");
+    assert_eq!(week.monotony_text(), "1.45");
+    assert_eq!(week.strain_text(), "409");
 }
 
 #[test]
@@ -493,7 +498,10 @@ fn the_scenario_names_its_assumption() {
     };
     let report = known(&inputs);
     let scenario = recovery_scenario(&report).expect("a scenario");
-    let statement = scenario.statement();
+    // The day the model was read is the caller's: the core puts the day it
+    // is given into its own sentence. The api writes dates the way the
+    // product shows them, and the core does not know how.
+    let statement = scenario.statement("12 Mar 2026");
 
     // The wording is stable, and it names what it assumed: the coefficient,
     // where the max heart rate came from and when the model was read, the
@@ -504,12 +512,22 @@ fn the_scenario_names_its_assumption() {
          · the form turns positive in 5 days \
          · no training for 7 days \
          · Banister k = 1.92 \
-         · max heart rate 190 bpm from your zone model, read on 2026-03-12 \
+         · max heart rate 190 bpm from your zone model, read on 12 Mar 2026 \
          · acute window 7 days, chronic window 42 days"
     );
     assert!(statement.contains("1.92"));
-    assert!(statement.contains("2026-03-12"));
+    assert!(statement.contains("12 Mar 2026"));
     assert!(statement.contains("no training"));
+
+    // The scenario on its own, without the assumption attached: the same
+    // two sentences, and no assumption to read them without.
+    let scenario_only = scenario.scenario_text();
+    assert_eq!(
+        scenario_only,
+        "the acute-to-chronic ratio is expected back inside 0.8 to 1.3 in 3 days \
+         · the form turns positive in 5 days"
+    );
+    assert!(!scenario_only.contains("Banister"));
 }
 
 #[test]
@@ -527,8 +545,12 @@ fn a_scenario_that_is_already_inside_its_band_says_so() {
     let scenario = recovery_scenario(&report).expect("a scenario");
     assert_eq!(scenario.days_to_ratio_band, Some(0));
     assert_eq!(scenario.days_to_positive_form, Some(0));
-    assert!(scenario.statement().contains("is inside 0.8 to 1.3 now"));
-    assert!(scenario.statement().contains("the form is positive now"));
+    assert!(scenario
+        .statement("12 Mar 2026")
+        .contains("is inside 0.8 to 1.3 now"));
+    assert!(scenario
+        .statement("12 Mar 2026")
+        .contains("the form is positive now"));
 }
 
 #[test]
@@ -536,4 +558,51 @@ fn the_coefficient_is_the_named_one() {
     // The one modelling constant, named and sourced. If it ever needs to
     // move, it moves here.
     assert_eq!(BANISTER_K, 1.92);
+}
+
+#[test]
+fn the_numbers_are_rendered_at_the_load_s_own_precision() {
+    // The load is dimensionless — there is no unit to write — so the
+    // number is the value, and the precision is the load's own: whole
+    // numbers for the day's load, the impulse and the strain, one decimal
+    // for the acute load, the chronic load and the form, two for the ratio
+    // and the monotony.
+    let inputs = LoadInputs {
+        days: vec![
+            run_day("2026-04-01"),
+            rest_day("2026-04-02"),
+            run_day("2026-04-03"),
+            rest_day("2026-04-04"),
+            run_day("2026-04-05"),
+            rest_day("2026-04-06"),
+            run_day("2026-04-07"),
+        ],
+        activities: vec![
+            activity("2026-04-01", 60.0, 140.0),
+            activity("2026-04-03", 45.0, 155.0),
+            activity("2026-04-05", 90.0, 150.0),
+            activity("2026-04-07", 55.0, 135.0),
+        ],
+        resting_hr: resting_hr_every_day(),
+        zone_model: Some(zone_model()),
+    };
+    let report = known(&inputs);
+
+    // The day's load: a whole number.
+    assert_eq!(report.days[0].load_text(), Some("44".to_string()));
+    assert_eq!(report.days[1].load_text(), Some("0".to_string()));
+
+    // The state: one decimal for the three series, two for the ratio.
+    let state = report.latest_state().expect("a state");
+    assert_eq!(state.acute_text(), "35.5");
+    assert_eq!(state.chronic_text(), "41.9");
+    assert_eq!(state.form_text(), "6.4");
+    assert_eq!(state.ratio_text(), "0.85");
+
+    // The week: whole numbers for the impulse and the strain, two for the
+    // monotony.
+    let week = report.week.expect("a week");
+    assert_eq!(week.impulse_text(), "212");
+    assert_eq!(week.monotony_text(), "1.02");
+    assert_eq!(week.strain_text(), "216");
 }
