@@ -41,6 +41,11 @@ use crate::state::Api;
 /// impulse is measured over needs seven more, so the series is read over
 /// forty-nine days: the chronic load is warm when it is read, and the week
 /// is there.
+///
+/// **This is the shortest read the engine's own week needs.** The window
+/// the screen shows is read with [`LOAD_WARMUP_DAYS`] of history *before*
+/// it — see the constant below — so the numbers at the start of a window
+/// are the numbers of a warmed series.
 pub const LOAD_HISTORY_DAYS: i64 = 49;
 
 /// How many days of history the series is **warmed** with, before the
