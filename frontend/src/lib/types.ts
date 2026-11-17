@@ -469,11 +469,14 @@ export interface SyncRunResult {
 
 /**
  * One heart-rate band of a run.
+ *
+ * The bands are the athlete's own zones: their edges are the floors of the
+ * **stored zone model**, not tenths of this run's maximum heart rate.
  */
 export interface ZoneBand {
   /** The band's name, as the core names it: "Z2". */
   label: string
-  /** The band's range, in the core's words: "154-166 bpm". */
+  /** The band's range, in the core's words: "106-121 bpm". */
   range: string | null
   /**
    * The band's edges, as numbers — for **drawing** the band on a chart.
@@ -484,27 +487,80 @@ export interface ZoneBand {
    */
   from_bpm: number | null
   to_bpm: number | null
-  /** The time spent in the band, as the core renders it: "12 m". */
+  /**
+   * The time spent in the band, as the core renders it: "12 m".
+   *
+   * The number beside the words is the time in **seconds**.
+   */
   time: RenderedValue | null
 }
 
 /**
- * The heart-rate zones of a run, computed from the samples that carry a heart
- * rate.
+ * The athlete's zone model: a dated fact about their configuration.
  *
- * When there is not enough to compute them, the answer says so in words
- * rather than inventing bands.
+ * The model is read from Garmin and stored with the day it was read. It is
+ * named in the payload, so a number can say where its input came from and
+ * when it was read.
+ */
+export interface ZoneModel {
+  /** The sport Garmin reported the model for: "DEFAULT". */
+  sport: string
+  /** The training method the model was set with: "HR_MAX". */
+  training_method: string
+  /** The maximum heart rate the model was built on: "178 bpm". */
+  max_heart_rate: RenderedValue | null
+  /** The five floors, in beats per minute. */
+  floors: ZoneModelFloors
+  /** When the model was read from Garmin: "2026-05-10T06:30:00Z". */
+  read_at: string
+}
+
+/**
+ * The five floors of a zone model.
+ *
+ * The floors are the **exclusive lower bounds** of the zones: the interval
+ * of zone *n* is `(floor_n, floor_{n+1}]`, and a reading at or below the
+ * first floor is outside the zones.
+ */
+export interface ZoneModelFloors {
+  /** The floor of zone 1: "106 bpm". */
+  zone1: RenderedValue
+  /** The floor of zone 2: "121 bpm". */
+  zone2: RenderedValue
+  /** The floor of zone 3: "135 bpm". */
+  zone3: RenderedValue
+  /** The floor of zone 4: "149 bpm". */
+  zone4: RenderedValue
+  /** The floor of zone 5: "163 bpm". */
+  zone5: RenderedValue
+}
+
+/**
+ * The heart-rate zones of a run, computed from the athlete's **stored zone
+ * model**.
+ *
+ * When there is not enough to compute them — no model has been read, or the
+ * stored model cannot be used — the answer says so in words rather than
+ * inventing bands. "No value" is never band 1 and never a zero.
  */
 export interface FitnessZones {
-  /** The basis the bands were computed on: "moving" or "elapsed". */
+  /** The basis the times were computed on: "moving". */
   basis: string | null
-  /** The maximum heart rate the bands came from: "182 bpm". */
-  max_heart_rate: RenderedValue | null
-  /** The bands, empty when they could not be computed. */
+  /**
+   * The model the times were computed against.
+   *
+   * `null` when no model has been read; present even when the model cannot
+   * be used, so the reader can see which model was rejected.
+   */
+  model: ZoneModel | null
+  /** The five bands, each with the time spent in it. */
   zones: ZoneBand[]
-  /** The time with no heart rate, counted separately: "3 m". */
-  without_heart_rate: RenderedValue | null
-  /** Why there are no bands, in the core's words. */
+  /**
+   * The time outside the zones: no heart-rate reading, or a reading at or
+   * below the first floor.
+   */
+  outside: RenderedValue | null
+  /** Why there is no value, in the core's words. */
   unavailable: string | null
 }
 

@@ -148,6 +148,51 @@ model (one `DEFAULT` sport); no per-sport models are invented.
 This travels with the frozen schema change (the `hr_zone_models` table) in
 `docs/contract/schema.sql`.
 
+### Proposed amendment — the zone model on the contract (2026-11-16)
+
+**Proposal, not approved.** The approvals below are the user's to give. This
+section records the change and the rule it serves; it is not permission to
+ship, publish, migrate or sync production data.
+
+The model is stored and read by the sync, and nothing reads it: the route
+that answers "how long was the athlete in each of their zones" rebuilt five
+bands from **each run's own observed maximum heart rate** — a tenth of it,
+from half of it up to all of it. Two runs were therefore measured on two
+different scales, an easy run and a threshold session could land in the same
+bands, and the bands could not be named, dated or audited: they were not the
+athlete's configuration at all.
+
+The rule this serves: **the zone model is a dated fact about the athlete's
+configuration, and every intensity statement is made against it.** A number
+that cannot say where its input came from and when it was read is not
+inspectable, and the product's whole posture is that a number is reported
+with its source.
+
+So `/fitness/zones` changes its meaning, and keeps its name and its place:
+it answers the per-run question from the **stored model**, and the payload
+**names the model** — its sport, its training method, the maximum heart rate
+Garmin reported, its five floors and the day it was read. The old
+computation is gone, not left beside the new one.
+
+The rules the payload follows:
+
+- **No value is the absence of the whole result.** A run with no stored
+  model has no bands and no time outside them, and says why in the core's
+  words. It is never band 1 and never a zero. A stored model whose floors
+  are not strictly increasing cannot be used, and says so the same way.
+- **The boundary rule is one sentence, and it is this one: a reading exactly
+  on a floor belongs to the lower zone** — the floors are exclusive lower
+  bounds, so the interval of zone *n* is `(floor_n, floor_{n+1}]`, and a
+  reading at or below the first floor is outside the zones.
+- **The samples are the run's own**, decoded from its FIT file on read, and
+  only the moving ones — the same filter the route has always used, so the
+  numbers stay comparable with what it answered before.
+- **The run-detail surface is not in this change.** Showing the shares to
+  the athlete with the model's date beside them is the next item, and it
+  reads this payload.
+
+This travels with the route and field tables in `docs/contract/api-paths.md`.
+
 ---
 
 ## 0. The voice — vitals, direction, options; no verdicts

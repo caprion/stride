@@ -874,17 +874,17 @@ export const connectionHeldFixture: ConnectionStatus = {
 /**
  * The heart-rate zones of a run.
  *
- * The seeded store holds no FIT file, so the router answers the honest
- * one: the bands cannot be computed, and the core says why — "the run
- * has no heart-rate samples". The bands themselves are the api's — the
+ * The seeded store holds no zone model, so the router answers the honest
+ * one: the run is not calibrated, there is no value, and the core says why
+ * — "no zone model has been read". The bands themselves are the api's — the
  * app draws what it is given.
  */
 export const zonesFixture: FitnessZones = {
   basis: null,
-  max_heart_rate: null,
+  model: null,
   zones: [],
-  without_heart_rate: null,
-  unavailable: 'zones unavailable — the run has no heart-rate samples',
+  outside: null,
+  unavailable: 'zones unavailable — no zone model has been read',
 }
 
 /** The service's own health — and the version, for About. */

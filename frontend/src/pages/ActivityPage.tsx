@@ -369,10 +369,9 @@ export function ActivityPage({ id }: { id: string }) {
                     </li>
                   ))}
                 </ul>
-                {zones.data.without_heart_rate ? (
+                {zones.data.outside ? (
                   <p className="mt-2 text-[11px] text-ink-muted">
-                    {t('activity.zones.missing')} ·{' '}
-                    {renderedText(zones.data.without_heart_rate)}
+                    {t('activity.zones.missing')} · {renderedText(zones.data.outside)}
                   </p>
                 ) : null}
               </div>

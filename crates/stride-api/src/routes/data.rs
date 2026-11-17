@@ -9,14 +9,15 @@ use stride_core::direction::day_directions;
 use stride_core::pattern::{patterns, HistoryDay, PatternKind};
 use stride_core::types::{Distance, VitalKind};
 use stride_core::units;
-use stride_store::{ActivitySummary as StoredActivity, WellnessDaily};
+use stride_core::zones::{time_in_zone, TimeInZone, ZoneFloors, ZoneSample};
+use stride_store::{ActivitySummary as StoredActivity, HeartRateZoneModel, WellnessDaily};
 
 use crate::dto::{
     ActivityDetail, ActivityListResponse, ActivitySummary, ElevationStats, ElevationWeek,
     Fingerprint, Fingerprints, FitnessZones, HrvDay, HrvDays, LatestPhysiology, PaceTrends,
-    PaceWeek, PersonalRecords, PhysiologyDay, PhysiologyDays, SleepDay, SleepDays, SourceInfo,
-    Sources, StatsSummary, Totals, Trend, TrendPoint, Trends, VitalBand, VitalReading,
-    VitalsHistory, VitalsSnapshot, WeekTotals, WeeklyStats, ZoneBand,
+    PaceWeek, PersonalRecords, PhysiologyDay, PhysiologyDays, RenderedValue, SleepDay, SleepDays,
+    SourceInfo, Sources, StatsSummary, Totals, Trend, TrendPoint, Trends, VitalBand, VitalReading,
+    VitalsHistory, VitalsSnapshot, WeekTotals, WeeklyStats, ZoneBand, ZoneModel, ZoneModelFloors,
 };
 use crate::error::{ApiError, ApiResult};
 use crate::render;
@@ -654,20 +655,24 @@ pub fn fitness_trends(api: &Api, request: &Request) -> ApiResult<Value> {
     ok(&response)
 }
 
-/// The heart-rate zones of a run.
+/// The heart-rate zones of a run, from the athlete's **stored zone model**.
 ///
-/// The zones are computed from the samples that carry a heart rate, and from
-/// nothing else: no stored zone model, no Garmin zone table. Five bands,
-/// each a tenth of the run's maximum heart rate, and the time in each band
-/// is the time spent with a heart rate in it.
+/// The zone model is a dated fact about the athlete's configuration: the
+/// watch's own bands, read from Garmin and stored with the day they were
+/// read. The times in the zones are computed from that model and from the
+/// run's moving samples, and from nothing else — never from the run's own
+/// observed maximum, which would give two runs two different scales.
 ///
-/// The run is named by the query (`?id=…`), like the chips. The time with no
-/// heart rate is counted separately and never folded into a band. The basis
-/// is named — "moving" — and the maximum heart rate the bands came from is
-/// shown, rendered by the core.
+/// The run is named by the query (`?id=…`), like the chips. The basis is
+/// named — "moving" — and the model is named with it: its sport, its
+/// training method, its maximum heart rate, its five floors and **the day
+/// it was read**. A number that cannot say where its input came from and
+/// when it was read is not inspectable.
 ///
-/// When there is not enough to compute them — no sample carries a heart
-/// rate — the answer says so rather than inventing bands.
+/// **No value is the absence of the whole result.** A run with no stored
+/// model has no bands and no time outside them, and says why in the core's
+/// words. It is never band 1 and never a zero. A stored model whose floors
+/// are not strictly increasing cannot be used, and says so the same way.
 pub fn fitness_zones(api: &Api, request: &Request) -> ApiResult<Value> {
     let id = match request.query.integer("id")? {
         Some(id) => id,
@@ -683,126 +688,170 @@ pub fn fitness_zones(api: &Api, request: &Request) -> ApiResult<Value> {
             "there is no run with the id {id}"
         )));
     }
-    let response = match super::series::decoded(api, id) {
-        Some(decoded) => zones_of(&decoded),
-        None => unavailable_zones(),
+
+    // The athlete's model: the one read most recently.
+    let stored = api
+        .store()
+        .current_hr_zone_model()
+        .map_err(|error| api.store_error("the zone model could not be read", &error))?;
+    let Some(stored) = stored else {
+        return ok(&no_value_zones(None, "zones.no_model"));
     };
-    ok(&response)
-}
-
-/// The zones of a decoded run.
-///
-/// The bands are five: each a tenth of the run's maximum heart rate, from
-/// half of it to all of it. The time in a band is the time the athlete's
-/// heart rate sat inside it while moving. The time with no heart rate is
-/// counted on its own.
-fn zones_of(activity: &stride_ingest::FitActivity) -> FitnessZones {
-    let unavailable = unavailable_zones();
-
-    // The moving samples that carry a heart rate.
-    let moving: Vec<&stride_ingest::FitSample> = activity
-        .samples
-        .iter()
-        .filter(|sample| sample.kind != stride_ingest::SegmentKind::Stand)
-        .collect();
-    let max_heart_rate = moving
-        .iter()
-        .filter_map(|sample| sample.heart_rate_bpm)
-        .fold(None, |current: Option<f64>, value| {
-            Some(match current {
-                Some(current) => current.max(value),
-                None => value,
-            })
-        });
-    let max_heart_rate = match max_heart_rate {
-        Some(value) if value > 0.0 => value,
-        _ => return unavailable,
-    };
-
-    // Five bands, each a tenth of the maximum heart rate.
-    const BANDS: usize = 5;
-    let mut time_in_band = [0.0f64; BANDS];
-    let mut without_heart_rate = 0.0f64;
-    for window in moving.windows(2) {
-        let span = window[1].elapsed_s - window[0].elapsed_s;
-        if span <= 0.0 || !span.is_finite() {
-            continue;
-        }
-        match window[0].heart_rate_bpm {
-            None => without_heart_rate += span,
-            Some(rate) => {
-                let index = band_index(rate, max_heart_rate);
-                time_in_band[index] += span;
-            }
-        }
+    let model = zone_model_of(&stored);
+    let floors = floors_of(&stored);
+    if !floors.is_usable() {
+        return ok(&no_value_zones(Some(model), "zones.unusable_model"));
     }
 
-    let zones = (0..BANDS)
-        .map(|index| {
-            let (from, to) = band_edges(index, max_heart_rate);
+    // The samples: the run's own FIT file, decoded on read, and only the
+    // moving ones — the same filter the route has always used, so the
+    // numbers stay comparable with what it answered before.
+    let Some(decoded) = super::series::decoded(api, id) else {
+        return ok(&no_value_zones(Some(model), "zones.unavailable"));
+    };
+    let samples = zone_samples(&decoded);
+    let Some(time) = time_in_zone(floors, &samples) else {
+        return ok(&no_value_zones(Some(model), "zones.unusable_model"));
+    };
+
+    ok(&zones_of(model, &floors, stored.max_heart_rate, &time))
+}
+
+/// The answer when there is no value: no bands, no time outside them, and
+/// the reason in the core's own words.
+///
+/// The api never writes the sentence itself — it asks the core's catalogue
+/// for it and passes it on.
+fn no_value_zones(model: Option<ZoneModel>, reason: &str) -> FitnessZones {
+    FitnessZones {
+        basis: None,
+        model,
+        zones: Vec::new(),
+        outside: None,
+        unavailable: stride_core::strings::render(reason, &[]),
+    }
+}
+
+/// The zones of a run, against the athlete's stored model.
+fn zones_of(
+    model: ZoneModel,
+    floors: &ZoneFloors,
+    max_heart_rate: Option<f64>,
+    time: &TimeInZone,
+) -> FitnessZones {
+    let times = time.per_zone();
+    let edges = floors_of_edges(floors, max_heart_rate);
+    let zones = edges
+        .iter()
+        .enumerate()
+        .map(|(index, (from, to))| {
             // The edges are the same truncated pair the words were rendered
             // from — the core truncates both, once, so the chart and the
             // words cannot disagree.
-            let edges = stride_core::units::render_heart_rate_range_edges(Some(from), Some(to));
+            let rendered = units::render_heart_rate_range_edges(Some(*from), *to);
+            let (from_bpm, to_bpm) = match rendered {
+                Some((lower, upper)) => (Some(lower), Some(upper)),
+                // The top band of a model with no maximum heart rate: it has
+                // a floor, and no upper edge to draw.
+                None => (Some(units::truncate_heart_rate(*from)), None),
+            };
             ZoneBand {
-                label: stride_core::units::render_zone_label(index + 1)
+                label: units::render_zone_label(index + 1)
                     .unwrap_or_else(|| format!("Z{}", index + 1)),
-                range: stride_core::units::render_heart_rate_range(Some(from), Some(to)),
-                from_bpm: edges.map(|(lower, _)| lower),
-                to_bpm: edges.map(|(_, upper)| upper),
-                time: render::duration(Some(time_in_band[index])),
+                range: units::render_heart_rate_range(Some(*from), *to),
+                from_bpm,
+                to_bpm,
+                time: render::duration(Some(times[index])),
             }
         })
         .collect();
 
     FitnessZones {
         basis: Some("moving".to_string()),
-        max_heart_rate: render::heart_rate(Some(max_heart_rate)),
+        model: Some(model),
         zones,
-        without_heart_rate: render::duration(Some(without_heart_rate)),
+        outside: render::duration(Some(time.outside_s)),
         unavailable: None,
     }
 }
 
-/// The answer when the bands cannot be computed.
+/// The five bands' edges, in beats per minute.
 ///
-/// The reason is the core's own sentence, asked for and passed on — the api
-/// never writes it itself.
-fn unavailable_zones() -> FitnessZones {
-    FitnessZones {
-        basis: None,
-        max_heart_rate: None,
-        zones: Vec::new(),
-        without_heart_rate: None,
-        unavailable: stride_core::strings::render("zones.unavailable", &[]),
+/// The bands are the model's own: zone *n* runs from `floor_n` to
+/// `floor_{n+1}`, and the top band runs from `floor_5` to the maximum heart
+/// rate the model was built on — which Garmin may not have reported, in
+/// which case that band has no upper edge.
+fn floors_of_edges(floors: &ZoneFloors, max_heart_rate: Option<f64>) -> [(f64, Option<f64>); 5] {
+    let all = [
+        floors.zone1,
+        floors.zone2,
+        floors.zone3,
+        floors.zone4,
+        floors.zone5,
+    ];
+    let mut edges = [(0.0, None); 5];
+    for (index, from) in all.iter().enumerate() {
+        let to = all.get(index + 1).copied().or(max_heart_rate);
+        edges[index] = (*from, to);
+    }
+    edges
+}
+
+/// The stored model's floors, as the core takes them.
+fn floors_of(model: &HeartRateZoneModel) -> ZoneFloors {
+    ZoneFloors {
+        zone1: model.zone1_floor,
+        zone2: model.zone2_floor,
+        zone3: model.zone3_floor,
+        zone4: model.zone4_floor,
+        zone5: model.zone5_floor,
     }
 }
 
-/// The band a heart rate falls into, from zero to four.
-fn band_index(rate: f64, max_heart_rate: f64) -> usize {
-    let ratio = rate / max_heart_rate;
-    let index = ((ratio - 0.5) / 0.1).floor();
-    if index <= 0.0 {
-        0
-    } else if index >= 4.0 {
-        4
-    } else {
-        index as usize
+/// The model as the payload names it.
+fn zone_model_of(model: &HeartRateZoneModel) -> ZoneModel {
+    ZoneModel {
+        sport: model.sport.clone(),
+        training_method: model.training_method.clone(),
+        max_heart_rate: render::heart_rate(model.max_heart_rate),
+        floors: ZoneModelFloors {
+            zone1: floor_value(model.zone1_floor),
+            zone2: floor_value(model.zone2_floor),
+            zone3: floor_value(model.zone3_floor),
+            zone4: floor_value(model.zone4_floor),
+            zone5: floor_value(model.zone5_floor),
+        },
+        read_at: crate::state::format_instant(model.read_at),
     }
 }
 
-/// The band's edges, in beats per minute.
+/// A floor, as the core renders it.
 ///
-/// The same numbers the core rendered the range from: the words pass them to
-/// the core's renderer, and the chart draws them — no second computation.
-fn band_edges(index: usize, max_heart_rate: f64) -> (f64, f64) {
-    let lower_ratio = 0.5 + 0.1 * index as f64;
-    let upper_ratio = if index == 4 {
-        1.0
-    } else {
-        0.6 + 0.1 * index as f64
-    };
-    (lower_ratio * max_heart_rate, upper_ratio * max_heart_rate)
+/// The store's floors are numbers, and the core renders every one of them;
+/// the fallback is the unreachable case, and it carries the number without
+/// words rather than an invented sentence.
+fn floor_value(bpm: f64) -> RenderedValue {
+    render::heart_rate(Some(bpm)).unwrap_or(RenderedValue {
+        text: String::new(),
+        raw: Some(bpm),
+    })
+}
+
+/// The moving samples of a run, as the core takes them.
+///
+/// **The moving filter stays**: the standing samples are not the athlete
+/// running, and the numbers have to stay comparable with what this route
+/// answered before the model came in.
+fn zone_samples(activity: &stride_ingest::FitActivity) -> Vec<ZoneSample> {
+    activity
+        .samples
+        .iter()
+        .filter(|sample| sample.kind != stride_ingest::SegmentKind::Stand)
+        .map(|sample| ZoneSample {
+            elapsed_s: sample.elapsed_s,
+            heart_rate_bpm: sample.heart_rate_bpm,
+        })
+        .collect()
 }
 
 // -------------------------------------------------------------------- stats
