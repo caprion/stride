@@ -224,6 +224,48 @@ what to do about either.
 This travels with the frozen route change (the `eddington` field of
 `/insights/progress`) in `docs/contract/api-paths.md`.
 
+### Proposed amendment — the zone model's date on the run detail (2026-11-17)
+
+**Proposal, not approved.** The approvals below are the user's to give. This
+section records the change and the rule it serves; it is not permission to
+ship, publish, migrate or sync production data.
+
+The bands are the product's most interpretable intensity statement, and
+since the zone model became a dated fact they are measured against the
+athlete's own configuration. What they did not say is **where that model
+came from and when it was read**: the payload carried all of it — the
+sport, the training method, the maximum heart rate Garmin reported, the
+five floors and the day it was read — and the screen showed none of it.
+
+The rule this serves: **a number is reported with its source.** A band that
+cannot name the model it was measured against is not inspectable, and the
+product's whole posture is that a number is reported with its source. So
+the run detail's Effort panel carries a **source line** under the bands,
+and the honest "no value" line when there is no usable model.
+
+The rules the surface follows:
+
+- **The source line is a source line.** It sits under the bands, in the
+  panel's own weight and spacing, and it is not a card and not a headline.
+- **The date is the api's.** "10 May 2026" — the api's own date
+  rendering, and the same form the run detail already shows for the run's
+  own date. The core's canonical form (`2026-05-12`) stays inside the core:
+  the core's source line is handed the rendered string, and a third form
+  would be a form nobody owns.
+- **The wording is the core's.** The line is a sentence about the data, so
+  the core's catalogue writes it and the app renders it as it arrives. The
+  app writes no sentence of its own.
+- **"No value" is the absence of the whole result.** A run with no stored
+  model has no bands and no time outside them, and says why in the core's
+  own words. It is never band 1 and never a zero.
+- **The model is the current one.** The route answers with the model read
+  most recently, and that stays: a run is scored against the athlete's
+  present configuration. Which model was in force **on the run's date** is
+  a product decision that is not yet made — the store keeps a dated
+  history, so it is possible, and it is not this change's to make.
+
+This travels with the two fields of the `model` — `read_on` and `source` —
+in `docs/contract/api-paths.md`.
 
 ---
 

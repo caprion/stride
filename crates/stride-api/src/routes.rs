@@ -22,7 +22,7 @@ pub mod settings;
 
 use std::collections::BTreeMap;
 
-use chrono::{Datelike, NaiveDate};
+use chrono::{DateTime, Datelike, NaiveDate, Utc};
 use serde::Serialize;
 use serde_json::Value;
 use stride_core::band;
@@ -55,9 +55,18 @@ pub fn core_date(iso: &str) -> ApiResult<Date> {
 /// athlete's days are counted in. The clock is injected, so the day is
 /// reproducible: the tests hold the clock still.
 pub fn today(api: &Api) -> ApiResult<Date> {
+    day_of(api, api.now())
+}
+
+/// The athlete's day of an instant.
+///
+/// The same rule as `today`, applied to a moment that has passed: the
+/// instant's own day, moved by the offset the host says the athlete's days
+/// are counted in. A model read at 23:30 UTC belongs to the athlete's day,
+/// not to the UTC one.
+pub fn day_of(api: &Api, instant: DateTime<Utc>) -> ApiResult<Date> {
     let offset = chrono::Duration::minutes(api.utc_offset_minutes() as i64);
-    let shifted = api.now() + offset;
-    let naive = shifted.naive_utc();
+    let naive = (instant + offset).naive_utc();
     core_date(&naive.format("%Y-%m-%d").to_string())
 }
 

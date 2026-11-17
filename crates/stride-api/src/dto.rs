@@ -524,6 +524,17 @@ pub struct ZoneModel {
     pub floors: ZoneModelFloors,
     /// When the model was read from Garmin: "2026-05-10T06:30:00Z".
     pub read_at: String,
+    /// The day the model was read, in the athlete's own calendar, in the
+    /// api's own date rendering: "10 May 2026".
+    ///
+    /// The api renders the day; the core's canonical form stays inside the
+    /// core, and the surface shows the api's.
+    pub read_on: String,
+    /// The model's own source line, in the core's words: the method it was
+    /// set with, the maximum heart rate it was built on and the day it was
+    /// read — "your zone model · HR_MAX · max heart rate 178 bpm · read on
+    /// 10 May 2026".
+    pub source: Option<String>,
 }
 
 /// The five floors of a zone model.

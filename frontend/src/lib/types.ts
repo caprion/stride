@@ -526,6 +526,23 @@ export interface ZoneModel {
   floors: ZoneModelFloors
   /** When the model was read from Garmin: "2026-05-10T06:30:00Z". */
   read_at: string
+  /**
+   * The **day** the model was read, in the athlete's own calendar.
+   *
+   * The api renders the day, in the api's own form — "10 May 2026", the
+   * form the run detail already uses for the run's own date. The core's
+   * canonical form stays inside the core, and the app never formats a
+   * date of its own.
+   */
+  read_on: string
+  /**
+   * The model's own source line, in the core's words: where the bands
+   * came from and when the model was read.
+   *
+   * It is a sentence the core rendered, so the app shows it as it
+   * arrives.
+   */
+  source: string | null
 }
 
 /**

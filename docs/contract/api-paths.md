@@ -264,6 +264,8 @@ and the old computation is gone rather than left beside the new one.
 | `model.max_heart_rate` | the maximum heart rate the model was built on, when Garmin reported one: a rendered value |
 | `model.floors.zone1` … `zone5` | the five floors, in beats per minute, as rendered values |
 | `model.read_at` | when the model was read from Garmin: an ISO-8601 UTC instant |
+| `model.read_on` | the **day** the model was read, in the athlete's own calendar, in the api's own date rendering: "10 May 2026" |
+| `model.source` | the model's own source line, in the core's words: the method it was set with, the maximum heart rate it was built on and the day it was read |
 | `zones` | the five bands, each with the time spent in it: `label`, `range`, `from_bpm`, `to_bpm`, `time` |
 | `zones[].time` | the time in the band, as a rendered value; the number beside the words is the time in **seconds** |
 | `outside` | the time outside the zones — no heart-rate reading, or a reading at or below the first floor — as a rendered value |
@@ -277,6 +279,14 @@ reading strictly above `floor_n` reaches zone *n*. The band drawn on a chart
 runs from `floor_n` to `floor_{n+1}`; the top band runs from `floor_5` to the
 maximum heart rate the model was built on, and has no upper edge when the
 model carries no maximum heart rate.
+
+#### The date of the model
+
+The day the model was read is rendered by the **api**, in the api's own
+form — "10 May 2026", the form the run detail already uses for the run's
+own date. The core's canonical form (`2026-05-12`) stays inside the core:
+the core's source line is handed the rendered string and never formats a
+date for a screen, and a third form would be a form nobody owns.
 
 #### No value
 

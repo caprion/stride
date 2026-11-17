@@ -22,6 +22,9 @@
 
 use serde::{Deserialize, Serialize};
 
+use crate::strings;
+use crate::units;
+
 /// The five inclusive-in-name floor values of a zone model, in beats per
 /// minute.
 ///
@@ -132,6 +135,34 @@ pub fn time_in_zone(floors: ZoneFloors, samples: &[ZoneSample]) -> Option<TimeIn
         }
     }
     Some(time)
+}
+
+/// The model's own source line: the method it was set with, the maximum
+/// heart rate it was built on, and the day it was read.
+///
+/// A number that cannot say where its input came from and when it was read
+/// is not inspectable, and the bands are the product's most interpretable
+/// intensity statement: this is the line that names the model they were
+/// measured against.
+///
+/// The day is **rendered by the caller**. The api renders it in the api's
+/// own form ("10 May 2026") and passes the string in, because the core does
+/// not format a date for a screen — its own canonical form stays inside it,
+/// and a third form would be a format nobody owns.
+///
+/// A model with no maximum heart rate — Garmin reported none — is described
+/// without one: the method and the day are still the model's own.
+pub fn model_source(method: &str, max_heart_rate: Option<f64>, read_on: &str) -> Option<String> {
+    match units::render_heart_rate(max_heart_rate) {
+        Some(max_hr) => strings::render(
+            "zones.model.source",
+            &[("method", method), ("max_hr", &max_hr), ("date", read_on)],
+        ),
+        None => strings::render(
+            "zones.model.source.no_max",
+            &[("method", method), ("date", read_on)],
+        ),
+    }
 }
 
 /// The zone a heart rate falls into, as an index from 0 (zone 1) to 4
@@ -264,6 +295,29 @@ mod tests {
             zone5: 175.0,
         };
         assert!(time_in_zone(non_finite, &span(Some(110.0))).is_none());
+    }
+
+    #[test]
+    fn the_source_line_names_the_model_and_the_day_it_was_read() {
+        // The day is the caller's: the api renders it in its own form and
+        // passes the string in, so the core never formats a date for a
+        // screen.
+        let line = model_source("HR_MAX", Some(178.0), "10 May 2026");
+        assert_eq!(
+            line,
+            Some(
+                "your zone model · HR_MAX · max heart rate 178 bpm · read on 10 May 2026"
+                    .to_string()
+            )
+        );
+    }
+
+    #[test]
+    fn a_model_with_no_maximum_heart_rate_is_described_without_one() {
+        assert_eq!(
+            model_source("HR_MAX", None, "10 May 2026"),
+            Some("your zone model · HR_MAX · read on 10 May 2026".to_string())
+        );
     }
 
     #[test]

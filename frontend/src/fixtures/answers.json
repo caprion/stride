@@ -1108,9 +1108,41 @@
     ],
     "/fitness/zones": {
       "basis": null,
-      "model": null,
+      "model": {
+        "floors": {
+          "zone1": {
+            "raw": 106,
+            "text": "106 bpm"
+          },
+          "zone2": {
+            "raw": 121,
+            "text": "121 bpm"
+          },
+          "zone3": {
+            "raw": 135,
+            "text": "135 bpm"
+          },
+          "zone4": {
+            "raw": 149,
+            "text": "149 bpm"
+          },
+          "zone5": {
+            "raw": 163,
+            "text": "163 bpm"
+          }
+        },
+        "max_heart_rate": {
+          "raw": 178,
+          "text": "178 bpm"
+        },
+        "read_at": "2026-05-10T06:30:00Z",
+        "read_on": "10 May 2026",
+        "source": "your zone model · HR_MAX · max heart rate 178 bpm · read on 10 May 2026",
+        "sport": "DEFAULT",
+        "training_method": "HR_MAX"
+      },
       "outside": null,
-      "unavailable": "zones unavailable — no zone model has been read",
+      "unavailable": "zones unavailable — the run has no heart-rate samples",
       "zones": []
     },
     "/health": {
@@ -2797,8 +2829,8 @@
         "note_count": 0,
         "plan_session_count": 7,
         "size": {
-          "raw": 617816,
-          "text": "603.3 KB"
+          "raw": 621936,
+          "text": "607.4 KB"
         },
         "wellness_day_count": 30
       }
@@ -3923,9 +3955,41 @@
     ],
     "/fitness/zones": {
       "basis": null,
-      "model": null,
+      "model": {
+        "floors": {
+          "zone1": {
+            "raw": 106,
+            "text": "106 bpm"
+          },
+          "zone2": {
+            "raw": 121,
+            "text": "121 bpm"
+          },
+          "zone3": {
+            "raw": 135,
+            "text": "135 bpm"
+          },
+          "zone4": {
+            "raw": 149,
+            "text": "149 bpm"
+          },
+          "zone5": {
+            "raw": 163,
+            "text": "163 bpm"
+          }
+        },
+        "max_heart_rate": {
+          "raw": 178,
+          "text": "178 bpm"
+        },
+        "read_at": "2026-05-10T06:30:00Z",
+        "read_on": "10 May 2026",
+        "source": "your zone model · HR_MAX · max heart rate 178 bpm · read on 10 May 2026",
+        "sport": "DEFAULT",
+        "training_method": "HR_MAX"
+      },
       "outside": null,
-      "unavailable": "zones unavailable — no zone model has been read",
+      "unavailable": "zones unavailable — the run has no heart-rate samples",
       "zones": []
     },
     "/health": {
@@ -5417,8 +5481,8 @@
         "note_count": 0,
         "plan_session_count": 0,
         "size": {
-          "raw": 523056,
-          "text": "510.8 KB"
+          "raw": 527176,
+          "text": "514.8 KB"
         },
         "wellness_day_count": 30
       }
@@ -5819,6 +5883,17 @@
         "raw": 6000
       }
     }
-  ]
+  ],
+  "zone_model": {
+    "sport": "DEFAULT",
+    "training_method": "HR_MAX",
+    "max_heart_rate": 178,
+    "zone1_floor": 106,
+    "zone2_floor": 121,
+    "zone3_floor": 135,
+    "zone4_floor": 149,
+    "zone5_floor": 163,
+    "read_at": "2026-05-10T06:30:00Z"
+  }
 }
 }

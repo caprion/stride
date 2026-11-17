@@ -25,7 +25,7 @@ use crate::router::Request;
 use crate::state::Api;
 
 use super::series;
-use super::{core_date, ok, pace_of, today, week_start};
+use super::{core_date, day_label, day_of, ok, pace_of, today, week_start};
 
 /// The most runs one answer may carry.
 const MAX_RUNS_IN_ANSWER: usize = 500;
@@ -697,7 +697,10 @@ pub fn fitness_zones(api: &Api, request: &Request) -> ApiResult<Value> {
     let Some(stored) = stored else {
         return ok(&no_value_zones(None, "zones.no_model"));
     };
-    let model = zone_model_of(&stored);
+    // The day the model was read, in the athlete's own calendar and in the
+    // api's own date rendering: "10 May 2026".
+    let read_on = day_label(day_of(api, stored.read_at)?);
+    let model = zone_model_of(&stored, &read_on);
     let floors = floors_of(&stored);
     if !floors.is_usable() {
         return ok(&no_value_zones(Some(model), "zones.unusable_model"));
@@ -809,7 +812,13 @@ fn floors_of(model: &HeartRateZoneModel) -> ZoneFloors {
 }
 
 /// The model as the payload names it.
-fn zone_model_of(model: &HeartRateZoneModel) -> ZoneModel {
+///
+/// The date the model was read is the **api's** rendering of it: the day,
+/// in the athlete's own calendar, written the way the api writes a day —
+/// "10 May 2026". The core's canonical form stays inside the core, so the
+/// source line the core renders carries the api's form and not a third
+/// one.
+fn zone_model_of(model: &HeartRateZoneModel, read_on: &str) -> ZoneModel {
     ZoneModel {
         sport: model.sport.clone(),
         training_method: model.training_method.clone(),
@@ -822,6 +831,8 @@ fn zone_model_of(model: &HeartRateZoneModel) -> ZoneModel {
             zone5: floor_value(model.zone5_floor),
         },
         read_at: crate::state::format_instant(model.read_at),
+        read_on: read_on.to_string(),
+        source: stride_core::model_source(&model.training_method, model.max_heart_rate, read_on),
     }
 }
 
