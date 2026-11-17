@@ -43,6 +43,23 @@ use crate::state::Api;
 /// is there.
 pub const LOAD_HISTORY_DAYS: i64 = 49;
 
+/// How many days of history the series is **warmed** with, before the
+/// window the screen is showing.
+///
+/// The two series are exponentially weighted, and the chronic one is
+/// weighted over forty-two days: a series that begins at the window's
+/// first day has a chronic load of zero there, and the numbers at the
+/// start of the window would be the numbers of a series that began there.
+/// So the series is read over the window **plus** this many days, and the
+/// window's own numbers are the ones the warmed series gives.
+///
+/// The number is the reference implementation's own: it warms its
+/// exponentially weighted series with 210 days before the window it draws
+/// (`TrainingLoadChart::EMA_WARMUP_DAYS`), and after 210 days the weight
+/// still carried by the first day's seed is `exp(−210/42)`, about two
+/// thirds of one per cent.
+pub const LOAD_WARMUP_DAYS: i64 = 210;
+
 /// The load of the days from `from` to `to`, read from the store.
 pub fn load_report(api: &Api, from: Date, to: Date) -> ApiResult<LoadAnswer> {
     let inputs = load_inputs(api, from, to)?;

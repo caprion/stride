@@ -33,7 +33,9 @@ use chrono::{DateTime, Utc};
 use serde_json::{json, Value};
 use stride_api::{Api, Config, FixedClock, Router};
 use stride_store::scratch::ScratchDir;
-use stride_store::{DatabaseKey, NewPlanBlock, NewPlanSession, Store, WellnessDaily};
+use stride_store::{
+    DatabaseKey, NewHeartRateZoneModel, NewPlanBlock, NewPlanSession, Store, WellnessDaily,
+};
 
 /// The day the fixture renders: the app's "today".
 const FIXTURE_TODAY: &str = "2026-05-13";
@@ -162,6 +164,27 @@ fn seed(store: &Store, seed: &Value, with_plan: bool) {
         }
     }
 
+    if let Some(models) = seed.get("zone_models").and_then(|value| value.as_array()) {
+        for model in models {
+            let row = NewHeartRateZoneModel {
+                sport: text(model, "sport"),
+                training_method: text(model, "training_method"),
+                max_heart_rate: model.get("max_heart_rate").and_then(|value| value.as_f64()),
+                zone1_floor: number(model, "zone1_floor"),
+                zone2_floor: number(model, "zone2_floor"),
+                zone3_floor: number(model, "zone3_floor"),
+                zone4_floor: number(model, "zone4_floor"),
+                zone5_floor: number(model, "zone5_floor"),
+                read_at: DateTime::parse_from_rfc3339(&text(model, "read_at"))
+                    .unwrap_or_else(|_| panic!("the zone model's read time could not be read"))
+                    .with_timezone(&Utc),
+            };
+            store
+                .write_hr_zone_model_if_new(&row)
+                .unwrap_or_else(|error| panic!("the zone model could not be seeded: {error}"));
+        }
+    }
+
     if with_plan {
         if let Some(sessions) = seed.get("plan_sessions").and_then(|value| value.as_array()) {
             let start = sessions
@@ -216,6 +239,14 @@ fn text(value: &Value, name: &str) -> String {
         .to_string()
 }
 
+/// A plain number out of the seed.
+fn number(value: &Value, name: &str) -> f64 {
+    value
+        .get(name)
+        .and_then(|value| value.as_f64())
+        .unwrap_or_default()
+}
+
 fn raw(value: &Value, name: &str) -> f64 {
     value
         .get(name)
@@ -256,6 +287,11 @@ fn router_answers(router: &Router) -> serde_json::Map<String, Value> {
         "/insights/progress?weeks=8",
         "/insights/progress?weeks=26",
         "/insights/progress?weeks=52",
+        "/insights/load",
+        "/insights/load?weeks=4",
+        "/insights/load?weeks=8",
+        "/insights/load?weeks=26",
+        "/insights/load?weeks=52",
         "/calendar",
         "/compare/candidates",
         "/sync/status",

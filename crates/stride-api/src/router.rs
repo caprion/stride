@@ -440,6 +440,11 @@ pub const ROUTES: &[Route] = &[
         handler: crate::routes::insight::progress,
     },
     Route {
+        pattern: "/insights/load",
+        method: Method::Get,
+        handler: crate::routes::load::load,
+    },
+    Route {
         pattern: "/insights/chips",
         method: Method::Get,
         handler: crate::routes::insight::chips,

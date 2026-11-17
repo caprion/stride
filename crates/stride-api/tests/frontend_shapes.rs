@@ -460,6 +460,50 @@ fn progress_carries_the_shape_the_app_declares() {
 }
 
 #[test]
+fn the_load_carries_the_shape_the_app_declares() {
+    let declarations = declarations();
+    let harness = common::Harness::seeded("frontend-load");
+    // The load needs the athlete's zone model: without one it has no
+    // value, and the answer is the reason and not the numbers.
+    harness
+        .store
+        .write_hr_zone_model_if_new(&stride_store::NewHeartRateZoneModel {
+            sport: "DEFAULT".to_string(),
+            training_method: "HR_MAX".to_string(),
+            max_heart_rate: Some(190.0),
+            zone1_floor: 100.0,
+            zone2_floor: 120.0,
+            zone3_floor: 140.0,
+            zone4_floor: 160.0,
+            zone5_floor: 175.0,
+            read_at: common::instant(),
+        })
+        .expect("the zone model could be written");
+    let body = harness.ok_get("/insights/load");
+    assert_declared(&declarations, "LoadInsight", &body);
+    if let Some(load) = at(&body, &["load"]) {
+        if load.is_object() {
+            assert_declared(&declarations, "LoadSeries", load);
+            if let Some(week) = at(load, &["week"]) {
+                if week.is_object() {
+                    assert_declared(&declarations, "LoadWeek", week);
+                }
+            }
+            if let Some(assumptions) = at(load, &["assumptions"]) {
+                if assumptions.is_object() {
+                    assert_declared(&declarations, "LoadAssumption", assumptions);
+                }
+            }
+        }
+    }
+    if let Some(scenario) = at(&body, &["scenario"]) {
+        if scenario.is_object() {
+            assert_declared(&declarations, "LoadScenario", scenario);
+        }
+    }
+}
+
+#[test]
 fn compare_carries_the_shape_the_app_declares() {
     let declarations = declarations();
     let harness = common::Harness::seeded("frontend-compare");
