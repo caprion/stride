@@ -68,6 +68,8 @@
     { "id": "zones.unavailable", "kind": "statement", "role": null, "template": "zones unavailable — the run has no heart-rate samples" },
     { "id": "zones.no_model", "kind": "statement", "role": null, "template": "zones unavailable — no zone model has been read" },
     { "id": "zones.unusable_model", "kind": "statement", "role": null, "template": "zones unavailable — the stored zone model's floors are not in order" },
+    { "id": "zones.model.source", "kind": "statement", "role": null, "template": "your zone model · {method} · max heart rate {max_hr} · read on {date}" },
+    { "id": "zones.model.source.no_max", "kind": "statement", "role": null, "template": "your zone model · {method} · read on {date}" },
     { "id": "statement.plan.source.baseline", "kind": "statement", "role": null, "template": "your usual week, inferred from your history" },
     { "id": "statement.plan.source.prescribed", "kind": "statement", "role": null, "template": "from your imported plan" },
     { "id": "statement.plan.source.typed", "kind": "statement", "role": null, "template": "from your typed plan" },

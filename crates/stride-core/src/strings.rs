@@ -171,7 +171,7 @@ pub struct Entry {
 }
 
 /// The catalogue.
-pub const CATALOGUE: [Entry; 113] = [
+pub const CATALOGUE: [Entry; 115] = [
     // The vitals.
     Entry {
         id: "vital.sleep.label",
@@ -567,6 +567,27 @@ pub const CATALOGUE: [Entry; 113] = [
         kind: StringKind::Statement,
         role: None,
         template: "zones unavailable — the stored zone model's floors are not in order",
+    },
+    Entry {
+        // The model's own source line: where the bands came from and when
+        // the model was read.
+        //
+        // The date is **rendered by the caller** — the api renders it in the
+        // api's own form ("10 May 2026") and passes the string in. The core
+        // does not format a date for a screen: its own canonical form stays
+        // inside it.
+        id: "zones.model.source",
+        kind: StringKind::Statement,
+        role: None,
+        template: "your zone model · {method} · max heart rate {max_hr} · read on {date}",
+    },
+    Entry {
+        // The same line for a model Garmin reported no maximum heart rate
+        // for: the method and the day are still the model's own.
+        id: "zones.model.source.no_max",
+        kind: StringKind::Statement,
+        role: None,
+        template: "your zone model · {method} · read on {date}",
     },
     // The plan's statements: what the athlete intended, what happened, and
     // where the intent came from. They are facts, never verdicts.

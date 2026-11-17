@@ -87,4 +87,4 @@ pub use units::{
     render_heart_rate_range, render_heart_rate_range_edges, render_pace, render_version,
     render_zone_label, ValueUnit,
 };
-pub use zones::{time_in_zone, TimeInZone, ZoneFloors, ZoneSample};
+pub use zones::{model_source, time_in_zone, TimeInZone, ZoneFloors, ZoneSample};
