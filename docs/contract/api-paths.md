@@ -29,7 +29,7 @@ reference only).
 | Route | Notes |
 |---|---|
 | `/plan/{current,today,week,blocks,sources,adherence,results,import}` | the plan engine |
-| `/insights/{today,progress,chips}` | Today and the feed chips |
+| `/insights/{today,progress,load,chips}` | Today and the feed chips; `progress` is the Progress screen's answer and `load` is the training load over the same window (see "The training load" below) |
 | `/compare` | the metric diff |
 | `/compare/candidates` | the runs you can compare against (the Compare screen's "choose a different run" action) |
 
@@ -138,6 +138,7 @@ Two rules hold for every shape below.
 | `/activities/{id}/note` | `note: string \| null`, `generated_at` |
 | `/insights/today` | `generated_at`, `date`, `planned`, `options`, `last_run`, `distance_comparison: string \| null`, `week: {distance, sessions, days: {date, sessions}[]}` |
 | `/insights/progress` | `generated_at`, `date` (the core's local calendar date), `period: {from, to, distance, duration, sessions, recorded_weeks}`, `headline`, `headline_note`, `weekly_volume`, `typical_week`, `pace_at_hr`, `bests`, `consistency`, `sessions_per_week`, `adherence`, `eddington: {number, days_needed_for_next, longest_day} \| null` |
+| `/insights/load` | `generated_at`, `date`, `window: {from, from_label, to, to_label, weeks, warmup_days}`, `load: LoadSeries \| null`, `unavailable: string \| null`, `scenario: LoadScenario \| null` |
 | `/auth/status` | `connected`, `method`, `key_source`, `key_last4`, `last_sync_at`, `generated_at` |
 | `/auth/garmin/fit-import` | `imported`, `duplicate`, `activity_id`, `date`, `distance`, `generated_at` |
 | `/plan/import` | `imported`, `block_id`, `sessions`, `generated_at` |
@@ -215,6 +216,88 @@ this route.
 
 The number is a fact, not a score: it says how many days reached how many
 kilometres, over which weeks, and the reader decides what it means.
+
+### The training load
+
+`/insights/load?weeks=N` answers with the **training load** over a window:
+the daily series, the two exponentially weighted series, the form, the
+ratio, the week's impulse, monotony and strain, and the recovery scenario
+with the assumption it rests on.
+
+It is a route of its own, and not another field on `/insights/progress`:
+the load needs its own window and its own "no value" reasons, and the
+progress payload is already wide.
+
+**The numbers are the core's.** The route reads them through the api's seam
+(`crates/stride-api/src/load.rs`), which hands the core the athlete's
+stored zone model, the measured resting heart rate of the daily summary and
+the stored activities. The daily loads, the acute and chronic loads, the
+form, the ratio, the week and the scenario all come from
+`stride-core`'s load engine; the route writes them as they are.
+
+#### The window and the warm-up
+
+The window is the Progress window: the same `weeks` parameter (1 to 104,
+default 12) and the same calendar weeks the volume chart draws, the
+current partial week included.
+
+The load's own constant is longer than most windows — the chronic series is
+weighted over **forty-two** days — so the series is **warmed** with
+`window.warmup_days` (210) days of history read *before* the window. The
+warm-up's days are weighed and are not part of the window's series; without
+them the numbers at the start of a window would be the numbers of a series
+that began there. The warm-up is the reference implementation's own
+(`TrainingLoadChart::EMA_WARMUP_DAYS`).
+
+#### The fields
+
+| field | what it is |
+|---|---|
+| `window.from` · `window.to` | the first and last day of the window, in the athlete's own calendar |
+| `window.from_label` · `window.to_label` | the same days, **as the api writes a date**: "4 May 2026" |
+| `window.weeks` | how many calendar weeks the window covers |
+| `window.warmup_days` | how many days of history the series was warmed with |
+| `load.days[]` | one day of the window: `date`, `label`, `load` (a rendered value) and `reason` |
+| `load.states[]` | the state of the two series at each of those days: `acute`, `chronic`, `form`, `ratio` |
+| `load.week` | the seven-day values: `impulse`, `monotony`, `strain` — `null` when the week is not complete |
+| `load.assumptions` | the assumption the numbers rest on: the coefficient, the maximum heart rate, the threshold, the day the zone model was read, the two windows and `statement` |
+| `scenario` | the recovery scenario: `days_to_ratio_band`, `days_to_positive_form`, `band`, `statement`, `assumption`, `projection` |
+| `unavailable` | why there is no load, or `null` when there is one |
+
+The load is **dimensionless** — there is no unit to write — so the number is
+the value, and every one of them crosses as a rendered value with the core's
+own precision: whole numbers for the day's load, the impulse and the
+strain, one decimal for the acute load, the chronic load and the form, two
+for the ratio and the monotony.
+
+#### No value
+
+**No value is the absence of the value**, and it is never a zero:
+
+- no zone model has been read → `load: null`, `scenario: null`, and the
+  reason in `unavailable`. Never a guessed maximum heart rate, never an age
+  formula, never a zero;
+- the stored model carries no maximum heart rate, or its floors do not
+  increase → the same shape, and the reason;
+- the window holds no recorded day → `load: null`, `scenario: null`, and
+  the reason.
+
+A day inside the window that holds nothing which could be weighed carries
+`load: null` and its own `reason` — a day is not a zero because nothing on
+it could be weighed. A week that is not complete carries no `week` at all:
+no impulse, no monotony and no strain.
+
+The reasons are the **core's own** — the api maps the core's reasons onto
+stable keys and never writes a reason of its own.
+
+#### The voice
+
+The load is the product's most misused number, so the route carries **no
+verdict**: no band name, no "high risk", no "optimal", no traffic light and
+nothing that tells the athlete what to do. The band of the ratio is named as
+a **range** — `0.8 to 1.3` — and the scenario says what it assumes: a
+complete rest day, the Banister coefficient, the zone model the maximum
+heart rate came from and the day it was read, and the two windows.
 
 ### The settings, the goal and the pause
 

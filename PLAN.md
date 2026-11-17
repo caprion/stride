@@ -224,6 +224,66 @@ what to do about either.
 This travels with the frozen route change (the `eddington` field of
 `/insights/progress`) in `docs/contract/api-paths.md`.
 
+### Proposed amendment — the training load on Progress (2026-11-17)
+
+**Proposal, not approved.** The approvals below are the user's to give.
+This section records the change and the rule it serves; it is not permission
+to ship, publish, migrate or sync production data.
+
+Every other dashboard calls the training load "high risk" or "optimal" or
+"accumulated fatigue" — verdicts about a person, produced by a model whose
+assumptions are nowhere on the screen. What is worth keeping is the
+**scenario**: with a complete rest day, the ratio is expected back inside
+its usual band by about a day, and the form turns positive after about
+three. A scenario says what it assumes and lets the reader decide.
+
+The rule this serves: **a number is only a fact against a stated period,
+and a model that produces numbers states its assumptions where the numbers
+are read.** So the load travels as values and a scenario — never as a
+verdict — and the assumption travels with it: the coefficient it used
+(`k = 1.92`), where the maximum heart rate came from (the athlete's stored
+zone model, and the day it was read) and the two time constants.
+
+So:
+
+* **The load lives on Progress**, beside the Eddington card, under the
+  range selector, so the number is never read apart from the control that
+  changes it. Progress is the screen about a window of history, and the
+  load is a series over weeks.
+* **It is a derived series, and not an "HR-zone page".** §2 defers the
+  HR-zone pages; what is deferred is a page of the athlete's zone
+  distribution — the zones are already on the contract (`/fitness/zones`)
+  and on the run detail. A derived series computed on read from the stored
+  facts is neither of those things, and this amendment says so explicitly
+  because the plan's §3 lists the derived series (samples, laps, zones,
+  fingerprint features) as things recomputed on read.
+* **It has a route of its own** — `/insights/load?weeks=N`, the same
+  parameter and the same bound as the Progress route — and not another
+  field on `/insights/progress`: the load needs its own window and its own
+  "no value" reasons, and the progress payload is already wide.
+* **The window and the constant.** The chronic series is weighted over
+  forty-two days, which is longer than most windows, so the series is
+  warmed with 210 days of history read before the window — the reference
+  implementation's own warm-up. Without it the numbers at the start of a
+  window would be the numbers of a series that began there. The window's
+  days are the window's days; the warm-up's are weighed and are not shown.
+* **No value is the absence of the value.** A store with no zone model
+  answers with the reason and no numbers: never a zero, never a guessed
+  maximum heart rate. A day with nothing that could be weighed carries its
+  own reason, and a week that is not complete carries no impulse, no
+  monotony and no strain.
+* **No age, no date of birth, no sex, no athlete table, no FTP and no
+  power.** The inputs are facts: the maximum heart rate and the threshold
+  from the stored zone model, the resting heart rate from the measured
+  daily summary.
+
+The voice is the plan's: values and directions, and **no verdict** — no band
+name, no risk, no traffic light and nothing that tells the athlete what to
+do. The band of the ratio is named as a **range** ("0.8 to 1.3").
+
+This travels with the route and the field tables in
+`docs/contract/api-paths.md`.
+
 
 ---
 
