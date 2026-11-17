@@ -185,7 +185,8 @@ fn seed(store: &Store, seed: &Value, with_plan: bool) {
             store
                 .write_hr_zone_model_if_new(&row)
                 .unwrap_or_else(|error| panic!("the zone model could not be seeded: {error}"));
-        }    }
+        }
+    }
 
     if with_plan {
         if let Some(sessions) = seed.get("plan_sessions").and_then(|value| value.as_array()) {
