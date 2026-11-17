@@ -872,14 +872,60 @@ export const connectionHeldFixture: ConnectionStatus = {
 }
 
 /**
+ * The zone model, as the seed carries it.
+ *
+ * The watch's own configuration, read from Garmin and stored with the day
+ * it was read. The api's test seeds a store from the fixture set, so the
+ * router answers with a model it can name — and with the day it was read.
+ *
+ * The values are invented: the repository is public, and no athlete's real
+ * floors belong in a fixture.
+ */
+export interface SeedZoneModel {
+  sport: string
+  training_method: string
+  max_heart_rate: number | null
+  zone1_floor: number
+  zone2_floor: number
+  zone3_floor: number
+  zone4_floor: number
+  zone5_floor: number
+  read_at: string
+}
+
+export const zoneModelFixture: SeedZoneModel = {
+  sport: 'DEFAULT',
+  training_method: 'HR_MAX',
+  max_heart_rate: 178,
+  zone1_floor: 106,
+  zone2_floor: 121,
+  zone3_floor: 135,
+  zone4_floor: 149,
+  zone5_floor: 163,
+  read_at: '2026-05-10T06:30:00Z',
+}
+
+/**
  * The heart-rate zones of a run.
  *
- * The seeded store holds no zone model, so the router answers the honest
- * one: the run is not calibrated, there is no value, and the core says why
- * — "no zone model has been read". The bands themselves are the api's — the
- * app draws what it is given.
+ * The router's answer for the seeded store: the athlete's stored zone
+ * model — its sport, its method, the maximum heart rate it was built on,
+ * its five floors and **the day it was read** — and the honest answer for
+ * the run itself, which has no heart-rate samples to read.
+ *
+ * The bands themselves are the api's: the app draws what it is given.
  */
-export const zonesFixture: FitnessZones = {
+export const zonesFixture = routerAnswers['/fitness/zones'] as FitnessZones
+
+/**
+ * The zones of a run in a store with **no zone model**.
+ *
+ * The seeded store holds one — the athlete's watch configuration — and the
+ * router answers from it. This is the other state: no model has been read,
+ * so the run is not calibrated, there is no value at all, and the core says
+ * why.
+ */
+export const zonesUncalibratedFixture: FitnessZones = {
   basis: null,
   model: null,
   zones: [],
@@ -1249,6 +1295,7 @@ export const healthDailyStaleFixture: HealthDaily = {
  * | `notenough` | too little history to compare anything |
  * | `paused` | the plan is paused until the 19th, for travel |
  * | `duplicate` | a FIT file that is already in the log |
+ * | `uncalibrated` | no zone model has been read, so the bands have no value |
  */
 export function fixtureResponse(
   path: string,
@@ -1399,6 +1446,7 @@ export function fixtureResponse(
     case '/health/daily':
       return variant === 'stale' ? healthDailyStaleFixture : healthDailyFixture
     case '/fitness/zones':
+      if (variant === 'uncalibrated') return zonesUncalibratedFixture
       return zonesFixture
     case '/health':
       if (variant === 'baseline') return baselineHealthFixture

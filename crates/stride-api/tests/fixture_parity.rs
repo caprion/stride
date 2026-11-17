@@ -8,10 +8,11 @@
 //! passes while the numbers are invented is the same gap in a new coat.
 //!
 //! The test seeds the store from the fixture's own seed (`seed.activities`,
-//! `seed.nights`, `seed.plan_sessions`), calls the real router, and compares
-//! the whole answer — the run's distance, the direction word, the delta's
-//! sign, the Rest line. If the router's answer and the app's fixture
-//! disagree, this test names the route; it is never tuned to pass.
+//! `seed.nights`, `seed.plan_sessions`, `seed.zone_model`), calls the real
+//! router, and compares the whole answer — the run's distance, the direction
+//! word, the delta's sign, the Rest line. If the router's answer and the
+//! app's fixture disagree, this test names the route; it is never tuned to
+//! pass.
 //!
 //! ## The dump
 //!
@@ -33,7 +34,9 @@ use chrono::{DateTime, Utc};
 use serde_json::{json, Value};
 use stride_api::{Api, Config, FixedClock, Router};
 use stride_store::scratch::ScratchDir;
-use stride_store::{DatabaseKey, NewPlanBlock, NewPlanSession, Store, WellnessDaily};
+use stride_store::{
+    DatabaseKey, NewHeartRateZoneModel, NewPlanBlock, NewPlanSession, Store, WellnessDaily,
+};
 
 /// The day the fixture renders: the app's "today".
 const FIXTURE_TODAY: &str = "2026-05-13";
@@ -162,6 +165,27 @@ fn seed(store: &Store, seed: &Value, with_plan: bool) {
         }
     }
 
+    if let Some(model) = seed.get("zone_model") {
+        // The athlete's zone model: the watch's own configuration, with
+        // the day it was read. It is what the bands are measured against.
+        let stored = NewHeartRateZoneModel {
+            sport: text(model, "sport"),
+            training_method: text(model, "training_method"),
+            max_heart_rate: model.get("max_heart_rate").and_then(|value| value.as_f64()),
+            zone1_floor: number(model, "zone1_floor"),
+            zone2_floor: number(model, "zone2_floor"),
+            zone3_floor: number(model, "zone3_floor"),
+            zone4_floor: number(model, "zone4_floor"),
+            zone5_floor: number(model, "zone5_floor"),
+            read_at: DateTime::parse_from_rfc3339(&text(model, "read_at"))
+                .unwrap()
+                .with_timezone(&Utc),
+        };
+        store
+            .write_hr_zone_model_if_new(&stored)
+            .unwrap_or_else(|error| panic!("the zone model could not be seeded: {error}"));
+    }
+
     if with_plan {
         if let Some(sessions) = seed.get("plan_sessions").and_then(|value| value.as_array()) {
             let start = sessions
@@ -220,6 +244,14 @@ fn raw(value: &Value, name: &str) -> f64 {
     value
         .get(name)
         .and_then(|value| value.get("raw"))
+        .and_then(|value| value.as_f64())
+        .unwrap_or_default()
+}
+
+/// A plain number from the seed — the zone model's floors.
+fn number(value: &Value, name: &str) -> f64 {
+    value
+        .get(name)
         .and_then(|value| value.as_f64())
         .unwrap_or_default()
 }

@@ -376,6 +376,19 @@ export function ActivityPage({ id }: { id: string }) {
                 ) : null}
               </div>
             ) : null}
+            {/*
+        The model's own source line: where the bands came from, and the
+        day the model was read. It is the core's sentence — the app shows
+        it as it arrives — and it is a line under the bands, not a card.
+      */}
+            {zones.data?.model?.source ? (
+              <p
+                className="mt-2 text-[11px] text-ink-muted"
+                data-testid="activity-zones-source"
+              >
+                {zones.data.model.source}
+              </p>
+            ) : null}
             {zones.data?.unavailable ? (
               <p
                 className="mt-2 text-[12px] text-ink-faint"
