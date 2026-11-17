@@ -951,7 +951,7 @@ export const zonesFixture: FitnessZones = routerAnswers['/fitness/zones'] as Fit
  * The run is not calibrated, so there is no value, and the core says why
  * — "no zone model has been read".
  */
-export const zonesNoModelFixture: FitnessZones = {
+export const zonesUncalibratedFixture: FitnessZones = {
   basis: null,
   model: null,
   zones: [],
