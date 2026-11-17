@@ -1196,6 +1196,29 @@ pub struct ProgressInsight {
     /// has a rule for how long a trend is: the number is the core's rule,
     /// and this crate does not keep a second one.
     pub weeks_needed: Option<i64>,
+    /// The Eddington number, over the window the screen is showing.
+    ///
+    /// `None` when the window holds no distance: a window with no
+    /// distance has no number, and absence is not zero.
+    pub eddington: Option<ProgressEddington>,
+}
+
+/// The Eddington number and its two companions, over the Progress window.
+///
+/// The number is the largest *E* such that at least *E* days in the window
+/// covered at least *E* kilometres — consistency over peaks. It is counted
+/// in kilometres, the contract's unit, and the count travels with the
+/// days still needed for the next number and the longest distance in a
+/// day.
+#[derive(Clone, Debug, PartialEq, Serialize)]
+pub struct ProgressEddington {
+    /// The number: the largest *E* with at least *E* days at or above *E*
+    /// kilometres in the window.
+    pub number: u32,
+    /// The days still needed to reach the next number.
+    pub days_needed_for_next: u32,
+    /// The longest distance in a day in the window, as the core renders it.
+    pub longest_day: Option<RenderedValue>,
 }
 
 /// Recorded activity within a selected progress window.

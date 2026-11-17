@@ -259,6 +259,63 @@ export function ProgressPage() {
         </Link>
       </div>
       <div className="progress-grid mt-3">
+        {/* ------------------------------------------ the Eddington number */}
+        {/*
+          The number, the days still needed for the next one and the
+          longest distance in a day — over the window the screen is
+          showing. The window is named on the card, so the number is never
+          read apart from the period it covers.
+        */}
+        <section className="card px-4 py-3" data-testid="progress-eddington">
+          <h2 className="mb-2 text-[12px] font-semibold uppercase tracking-[0.07em] text-ink-faint">
+            {t('progress.eddington.heading')}
+          </h2>
+          {data.eddington ? (
+            <>
+              <p
+                className="text-[24px] font-semibold tabular-nums text-brand-700"
+                data-testid="progress-eddington-number"
+              >
+                {formatCount(data.eddington.number)}
+              </p>
+              <p className="mt-1 text-[12px] text-ink-muted">{t('progress.eddington.note')}</p>
+              <ul className="mt-3 space-y-1.5">
+                <li className="flex items-baseline justify-between gap-3">
+                  <span className="text-[13.5px] text-ink-soft">
+                    {t('progress.eddington.daysToNext')}
+                  </span>
+                  <span
+                    className="text-[13.5px] font-semibold tabular-nums text-ink"
+                    data-testid="progress-eddington-days"
+                  >
+                    {formatCount(data.eddington.days_needed_for_next)}
+                  </span>
+                </li>
+                <li className="flex items-baseline justify-between gap-3">
+                  <span className="text-[13.5px] text-ink-soft">
+                    {t('progress.eddington.longestDay')}
+                  </span>
+                  <span
+                    className="text-[13.5px] font-semibold tabular-nums text-ink"
+                    data-testid="progress-eddington-longest"
+                  >
+                    {renderedText(data.eddington.longest_day)}
+                  </span>
+                </li>
+              </ul>
+            </>
+          ) : (
+            /* No distance in the window: there is no number, and the card
+               says so rather than showing a zero. */
+            <p className="text-[13px] text-ink-muted" data-testid="progress-eddington-empty">
+              {t('progress.eddington.empty')}
+            </p>
+          )}
+          <p className="mt-2 text-[12px] text-ink-faint" data-testid="progress-eddington-window">
+            {formatDateShort(data.period.from)} - {formatDateShort(data.period.to)}
+          </p>
+        </section>
+
         {/* --------------------------------------------- weekly volume */}
         <ChartCard title={t('progress.volume.heading')}>
           <div style={{ width: '100%', height: 180 }}>

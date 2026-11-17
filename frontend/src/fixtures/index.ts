@@ -1152,6 +1152,9 @@ export const progressNotEnoughFixture: ProgressInsight = {
   sessions_per_week: null,
   adherence: null,
   weeks_needed: 4,
+  // The number over the same window: this variant is about the headline,
+  // not about the days.
+  eddington: progressFixture.eddington,
 }
 
 /** Progress, with no plan behind it: the adherence card is omitted. */

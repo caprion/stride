@@ -231,6 +231,25 @@ export const catalogue = {
   'progress.consistency.unit': { type: 'status', text: 'sessions a week' },
   'progress.adherence.heading': { type: 'status', text: 'Adherence' },
   'progress.adherence.count': { type: 'status', text: '{done} of {planned} sessions run' },
+  /**
+   * The Eddington number: consistency over peaks.
+   *
+   * The number is a count, and the note says what it counts: the number
+   * is how many days reached that many kilometres, and the days to the
+   * next number are days at one kilometre more. The note carries no
+   * number of its own, so it stays true when the window changes.
+   */
+  'progress.eddington.heading': { type: 'status', text: 'Eddington number' },
+  'progress.eddington.note': {
+    type: 'status',
+    text: 'The number counts the days you covered at least that many kilometres. The days to the next number are days at one kilometre more.',
+  },
+  'progress.eddington.daysToNext': { type: 'status', text: 'Days to the next number' },
+  'progress.eddington.longestDay': { type: 'status', text: 'Longest distance in a day' },
+  'progress.eddington.empty': {
+    type: 'status',
+    text: 'No recorded distance in this window, so there is no number.',
+  },
   'progress.range.label': { type: 'status', text: 'Range' },
   'progress.range.weeks': { type: 'status', text: '{n} weeks' },
   'progress.typicalWeek': { type: 'status', text: 'your typical week' },

@@ -193,6 +193,38 @@ The rules the payload follows:
 
 This travels with the route and field tables in `docs/contract/api-paths.md`.
 
+### Proposed amendment — the Eddington number on Progress (2026-11-16)
+
+**Proposal, not approved.** The approvals below are the user's to give. This
+section records the change and the rule it serves; it is not permission to
+ship, publish, migrate or sync production data.
+
+A running log has one question it can answer exactly, and the Progress
+screen does not answer it yet: *how consistently has this been done?* The
+Eddington number is the largest *E* such that the athlete covered at least
+*E* units of distance on at least *E* days inside a period. It counts the
+habit, not the peak, and it needs no new input: the daily distance is
+already stored.
+
+The rule this serves: **a number is only a fact against a stated period.**
+So the number travels over the window the screen is already showing — the
+same calendar weeks the volume chart draws — and the card names that window.
+It is counted in **kilometres**, the contract's unit; the miles variant of
+the engine stays unused, because a unit preference is a later decision and
+not this one. A window with no distance has **no number at all**: that is
+"no value", never a zero.
+
+The number is not a score, a grade, a verdict or a traffic light. It says
+what happened — how many days reached how many kilometres, over which
+weeks — and the athlete reads what it means. The days still needed for the
+next number and the longest distance in a day travel beside it, so the
+number has a reference point and a direction of travel without being told
+what to do about either.
+
+This travels with the frozen route change (the `eddington` field of
+`/insights/progress`) in `docs/contract/api-paths.md`.
+
+
 ---
 
 ## 0. The voice — vitals, direction, options; no verdicts

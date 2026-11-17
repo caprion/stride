@@ -406,6 +406,19 @@ export interface ProgressInsight {
    * rule** — how long a trend is — and the app does not decide it.
    */
   weeks_needed: number | null
+  /**
+   * The Eddington number over the window the screen is showing.
+   *
+   * **Null when the window holds no distance** — that is no value, not
+   * zero. The number is counted in kilometres, the contract's unit, and
+   * it travels with the days still needed for the next number and the
+   * longest distance in a day.
+   */
+  eddington: {
+    number: number
+    days_needed_for_next: number
+    longest_day: RenderedValue | null
+  } | null
 }
 
 export interface ActivityCalendar {
