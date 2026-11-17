@@ -20,6 +20,7 @@ import type {
   HealthDaily,
   KeyConnectResult,
   KeyTestResult,
+  LoadInsight,
   NoteResult,
   PlanImportResult,
   PlanWeek,
@@ -89,6 +90,7 @@ export const ROUTES = {
 
   insightsToday: '/insights/today',
   insightsProgress: '/insights/progress',
+  insightsLoad: '/insights/load',
   insightsChips: '/insights/chips',
 
   compare: '/compare',
@@ -267,6 +269,13 @@ export const api = {
   /** Today's readout. */
   insightsToday: () => get<TodayInsight>(ROUTES.insightsToday),
   insightsProgress: (weeks = 12) => get<ProgressInsight>(ROUTES.insightsProgress, { weeks }),
+  /**
+   * The training load over the same window.
+   *
+   * A route of its own: the load needs its own window and its own "no
+   * value" reasons, and it carries the assumption its numbers rest on.
+   */
+  insightsLoad: (weeks = 12) => get<LoadInsight>(ROUTES.insightsLoad, { weeks }),
   insightsChips: (id: number | string) =>
     get<unknown>(ROUTES.insightsChips, { id: String(id) }),
 

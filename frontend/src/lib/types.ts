@@ -421,6 +421,147 @@ export interface ProgressInsight {
   } | null
 }
 
+/**
+ * The training load over the selected window.
+ *
+ * **Values and a scenario, never a verdict.** There is no band name, no
+ * risk and nothing that tells the athlete what to do: the numbers, the
+ * assumption they were made under, and what a run of rest days is expected
+ * to do with them.
+ */
+export interface LoadInsight {
+  generated_at: string
+  date: string
+  /** The window the numbers describe. */
+  window: {
+    /** The first day of the window, in the athlete's own calendar. */
+    from: string
+    /** The same day, as the api writes a date: "4 May 2026". */
+    from_label: string
+    /** The last day of the window, in the athlete's own calendar. */
+    to: string
+    /** The same day, as the api writes a date: "12 May 2026". */
+    to_label: string
+    /** How many calendar weeks the window covers. */
+    weeks: number
+    /**
+     * How many days of history the series was warmed with, before the
+     * window: the chronic series is weighted over forty-two days, and
+     * without the warm-up the numbers at the start of the window would be
+     * the numbers of a series that began there.
+     */
+    warmup_days: number
+  }
+  /**
+   * The load itself.
+   *
+   * **Null when the load has no value** — and then `unavailable` says
+   * why. A missing zone model is never a zero and never a guessed
+   * maximum heart rate.
+   */
+  load: LoadSeries | null
+  /** Why there is no load, or null when there is one. */
+  unavailable: string | null
+  /** The recovery scenario, or null when there is no load. */
+  scenario: LoadScenario | null
+}
+
+/** The load of the days in the window. */
+export interface LoadSeries {
+  /** The days of the window the record covers, oldest first. */
+  days: {
+    /** The day, in the athlete's own calendar. */
+    date: string
+    /** The same day, as the api writes a date. */
+    label: string
+    /** The day's load, as the core renders it — null when the day has none. */
+    load: RenderedValue | null
+    /** Why the day has no load, or null when it has one. */
+    reason: string | null
+  }[]
+  /** The state of the two series at each of those days, oldest first. */
+  states: {
+    date: string
+    label: string
+    /** The acute load: the seven-day weighted average. */
+    acute: RenderedValue
+    /** The chronic load: the forty-two-day weighted average. */
+    chronic: RenderedValue
+    /** The form: the chronic load minus the acute load. */
+    form: RenderedValue
+    /** The acute-to-chronic ratio. */
+    ratio: RenderedValue
+  }[]
+  /**
+   * The seven-day values.
+   *
+   * **Null when the week is not complete** — a week with a missing day
+   * has no impulse, no monotony and no strain, because absence is not
+   * zero.
+   */
+  week: LoadWeek | null
+  /** The assumption the numbers rest on. */
+  assumptions: LoadAssumption
+}
+
+/** The seven-day values of the load. */
+export interface LoadWeek {
+  /** The sum of the seven days' loads. */
+  impulse: RenderedValue
+  /** The monotony: the mean of the seven days over their standard deviation. */
+  monotony: RenderedValue
+  /** The strain: the seven-day sum times the monotony. */
+  strain: RenderedValue
+}
+
+/** The assumption the load's numbers rest on. */
+export interface LoadAssumption {
+  /** The Banister coefficient the model used. */
+  banister_k: number
+  /** The maximum heart rate the zone model was built on. */
+  max_heart_rate_bpm: number
+  /** The threshold heart rate: the zone-5 floor of the stored model. */
+  threshold_hr_bpm: number
+  /** The day the zone model was read, in the athlete's own calendar. */
+  zone_model_read_on: string
+  /** The same day, as the api writes a date. */
+  zone_model_read_on_label: string
+  /** The acute window, in days. */
+  acute_window_days: number
+  /** The chronic window, in days. */
+  chronic_window_days: number
+  /** How many days the scenario projects forward. */
+  forecast_days: number
+  /** The assumptions as a sentence, in the core's own words. */
+  statement: string
+}
+
+/** The recovery scenario. */
+export interface LoadScenario {
+  /**
+   * How many complete rest days the ratio is expected to need to be back
+   * inside its band — null when seven rest days do not bring it back.
+   */
+  days_to_ratio_band: number | null
+  /**
+   * How many days the form is expected to need to turn positive — null
+   * when seven rest days do not turn it positive.
+   */
+  days_to_positive_form: number | null
+  /** The band of the ratio, as a range: "0.8 to 1.3". */
+  band: string
+  /** The scenario as a sentence, in the core's own words. */
+  statement: string
+  /** The assumption the scenario rests on, in the core's own words. */
+  assumption: string
+  /** The projection itself, one entry per projected day. */
+  projection: {
+    day: number
+    form: RenderedValue
+    ratio: RenderedValue
+  }[]
+}
+
 export interface ActivityCalendar {
   year: number
   month: number

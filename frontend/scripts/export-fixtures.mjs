@@ -60,11 +60,12 @@ const fixtures = await import(
   `data:text/javascript;base64,${Buffer.from(code).toString('base64')}`
 )
 
-/** The seed: the runs, the nights and the plan sessions. */
+/** The seed: the runs, the nights, the plan sessions and the zone model. */
 const seed = {
   activities: fixtures.activityFixtures,
   nights: fixtures.nightsFixture,
   plan_sessions: fixtures.planSessionsFixture,
+  zone_models: [fixtures.zoneModelFixture],
 }
 
 /**
