@@ -491,7 +491,7 @@ export function ActivityPage({ id }: { id: string }) {
                 </thead>
                 <tbody>
                   {data.splits.map((split) => (
-                    <tr key={split.index} className="border-b border-edge last:border-b-0">
+                    <tr key={split.lap_index} className="border-b border-edge last:border-b-0">
                       <th scope="row" className="py-2 text-left font-medium text-ink-soft">
                         {renderedText(split.distance)}
                       </th>

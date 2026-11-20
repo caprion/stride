@@ -77,7 +77,7 @@ pub fn splits(activity: &FitActivity) -> Vec<Split> {
         .laps
         .iter()
         .map(|lap| Split {
-            index: lap.lap_index,
+            lap_index: lap.lap_index,
             distance: render::distance_of(lap.distance_m),
             duration: render::duration_of(lap.duration_s),
             heart_rate: render::heart_rate(lap.avg_hr.map(|rate| rate as f64)),
@@ -203,7 +203,7 @@ pub fn film_splits(activity: &FitActivity) -> Vec<FilmSplit> {
         .enumerate()
         .map(|(index, lap)| {
             let split = FilmSplit {
-                index: lap.lap_index,
+                lap_index: lap.lap_index,
                 offset_s: units::round_time_s(offset_s),
                 distance: render::distance_of(lap.distance_m),
                 duration: render::duration_of(lap.duration_s),

@@ -1156,7 +1156,7 @@ const FILM_GROUND: FilmGround[] = [
 
 const FILM_SPLITS: FilmSplit[] = [
   {
-    index: 1,
+    lap_index: 1,
     offset_s: 0,
     distance: { text: '3.2 km', raw: 3219.26 },
     duration: { text: '18 m', raw: 1080 },
@@ -1164,7 +1164,7 @@ const FILM_SPLITS: FilmSplit[] = [
     heart_rate: { text: '144 bpm', raw: 144 },
   },
   {
-    index: 2,
+    lap_index: 2,
     offset_s: 1080,
     distance: { text: '3.1 km', raw: 3113.15 },
     duration: { text: '17 m', raw: 1020 },
@@ -1172,7 +1172,7 @@ const FILM_SPLITS: FilmSplit[] = [
     heart_rate: { text: '152 bpm', raw: 152 },
   },
   {
-    index: 3,
+    lap_index: 3,
     offset_s: 2100,
     distance: { text: '3 km', raw: 2997.36 },
     duration: { text: '16 m', raw: 960 },
@@ -1180,7 +1180,7 @@ const FILM_SPLITS: FilmSplit[] = [
     heart_rate: { text: '159 bpm', raw: 159 },
   },
   {
-    index: 4,
+    lap_index: 4,
     offset_s: 3060,
     distance: { text: '3.1 km', raw: 3070.23 },
     duration: { text: '16 m', raw: 960 },

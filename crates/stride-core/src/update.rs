@@ -212,8 +212,12 @@ pub struct Fact {
 /// One split of the payload.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct SplitFact {
-    /// The split's number, from one.
-    pub index: usize,
+    /// The lap's number, from one.
+    ///
+    /// It counts the laps the watch recorded. It is **not** a kilometre
+    /// marker, and the payload says so, so that no model reads a lap's
+    /// number as a distance.
+    pub lap_index: usize,
     /// The distance, rendered.
     pub distance: String,
     /// The pace, rendered.
@@ -283,8 +287,8 @@ impl Payload {
             out.push_str(&format!("{}\n", heading("update.payload.splits")));
             for split in &self.splits {
                 out.push_str(&format!(
-                    "{} — {} — {} — {}\n",
-                    split.index, split.distance, split.pace, split.heart_rate
+                    "lap {} — {} — {} — {}\n",
+                    split.lap_index, split.distance, split.pace, split.heart_rate
                 ));
             }
         }
@@ -395,8 +399,8 @@ pub struct UpdateInput {
 /// One split of the input.
 #[derive(Clone, Copy, Debug, Default, PartialEq)]
 pub struct SplitInput {
-    /// The split's number, from one.
-    pub index: usize,
+    /// The lap's number, from one — a lap, not a kilometre marker.
+    pub lap_index: usize,
     /// The distance, in metres.
     pub distance_m: f64,
     /// The pace, in seconds per kilometre.
@@ -471,7 +475,7 @@ pub fn payload(input: &UpdateInput) -> Option<Payload> {
         .splits
         .iter()
         .map(|split| SplitFact {
-            index: split.index,
+            lap_index: split.lap_index,
             distance: units::render_distance(Some(split.distance_m)).unwrap_or_default(),
             pace: units::render_pace(split.pace_s_km).unwrap_or_default(),
             heart_rate: units::render_heart_rate(split.heart_rate).unwrap_or_default(),
@@ -871,7 +875,7 @@ mod tests {
             highest_heart_rate: Some(171.0),
             elevation_gain_m: Some(42.0),
             splits: vec![SplitInput {
-                index: 1,
+                lap_index: 1,
                 distance_m: 1_000.0,
                 pace_s_km: Some(320.0),
                 heart_rate: Some(150.0),

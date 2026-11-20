@@ -143,8 +143,8 @@ Two rules hold for every shape below.
 | route | the fields |
 |---|---|
 | `/activities` | `activities: ActivitySummary[]`, `next_cursor: string \| null`, `generated_at: string` |
-| `/activities/{id}` | `ActivitySummary` and `splits: {index, distance, duration, pace, heart_rate}[]`, `elevation: {distance, elevation}[]`, `samples: {offset_s, pace, heart_rate}[]`, `plan_line: {text} \| null`, `note: string \| null` |
-| `/activities/{id}/film` | `activity_id`, `local_date`, `basis: string \| null`, `model: ZoneModel \| null`, `zones: {label, range, from_bpm, to_bpm}[]`, `outside_label: string \| null`, `samples: {elapsed, distance, pace, heart_rate, zone}[]`, `ground: {offset_s, elevation}[]`, `splits: {index, offset_s, distance, duration, pace, heart_rate}[]`, `unavailable: string \| null`, `zones_unavailable: string \| null`, `generated_at` |
+| `/activities/{id}` | `ActivitySummary` and `splits: {lap_index, distance, duration, pace, heart_rate}[]`, `elevation: {distance, elevation}[]`, `samples: {offset_s, pace, heart_rate}[]`, `plan_line: {text} \| null`, `note: string \| null` |
+| `/activities/{id}/film` | `activity_id`, `local_date`, `basis: string \| null`, `model: ZoneModel \| null`, `zones: {label, range, from_bpm, to_bpm}[]`, `outside_label: string \| null`, `samples: {elapsed, distance, pace, heart_rate, zone}[]`, `ground: {offset_s, elevation}[]`, `splits: {lap_index, offset_s, distance, duration, pace, heart_rate}[]`, `unavailable: string \| null`, `zones_unavailable: string \| null`, `generated_at` |
 | `/physiology/vitals` | `date`, `generated_at`, `rest: {label, line}`, `vitals: {key, label, value_text, direction_text, deviation_text, travel_text, status_text, band}[]`, `history: {sleep, hrv, resting_hr}` (each point: `date`, nullable `value`, nullable core-rendered `text` with units), `patterns: {id, text, sample_size}[]` |
 | `/plan/week` | `block_name`, `source`, `week_start`, `week_end`, `today`, `target`, `sessions: {date, session_type, title, sentence, target, actual, status, source}[]`, `adherence: {done, planned} \| null`, `counts: {done, planned, not_done}` |
 | `/settings` | `goal: {value: {text, raw} \| null, km: number \| null}`, `pause: {start_date, end_date, reason} \| null`, `storage: {size, activity_count, wellness_day_count, plan_session_count, note_count}`, `generated_at` |
@@ -155,7 +155,7 @@ Two rules hold for every shape below.
 | `/insights/today` | `generated_at`, `date`, `planned`, `options`, `last_run`, `distance_comparison: string \| null`, `week: {distance, sessions, days: {date, sessions}[], previous: {from, to, distance, sessions}, difference: RenderedValue \| null}` |
 
 | `/activities/{id}/update` | `activity_id`, `update: RunUpdate \| null` (each: `writer`, `reviewer`, `payload_hash`, `draft`, `checks: {check, findings: string[]}[]`, `verdict`, `created_at`), `generated_at` |
-| `/activities/{id}/update/payload` | `activity_id`, `payload_hash: string \| null`, `payload: UpdatePayload \| null` (each: `model`, `read_on`, `facts: {label, value}[]`, `splits: {index, distance, pace, heart_rate}[]`, `zones: {label, time, share}[]`, `observations: {label, value, direction, signed, quantity}[]`), `text`, `unavailable: string \| null`, `generated_at` |
+| `/activities/{id}/update/payload` | `activity_id`, `payload_hash: string \| null`, `payload: UpdatePayload \| null` (each: `model`, `read_on`, `facts: {label, value}[]`, `splits: {lap_index, distance, pace, heart_rate}[]`, `zones: {label, time, share}[]`, `observations: {label, value, direction, signed, quantity}[]`), `text`, `unavailable: string \| null`, `generated_at` |
 | `/activities/{id}/update/request` | `role`, `prompt`, `payload_hash`, `payload`, `findings: string[]`, `generated_at` |
 | `/update/settings` | `enabled`, `allow_remote`, `writer_model`, `writer_family`, `writer_base_url`, `reviewer_model`, `reviewer_family`, `reviewer_base_url`, `key_env`, `updated_at`, `generated_at` |
 | `/insights/today` | `generated_at`, `date`, `planned`, `options`, `last_run`, `distance_comparison: string \| null`, `week: {distance, sessions, days: {date, sessions}[]}` |
@@ -911,7 +911,7 @@ named and dated, exactly as it travels with `/fitness/zones`.
 | `samples[].distance` | the distance from the start, as the core renders it: "3.2 km". The number beside the words is the distance in **metres** |
 | `samples[].zone` | the zone the sample sits in: the index of the band in `zones`, counted from zero. `null` when the reading is outside the zones |
 | `ground` | the run's ground: `offset_s` (the seconds from the start) and `elevation` |
-| `splits` | the run's splits: `index`, `offset_s` (the seconds from the start **to the beginning of the split**), `distance`, `duration`, `pace` and `heart_rate` |
+| `splits` | the run's splits: `lap_index` (the lap's number — a lap, not a kilometre), `offset_s` (the seconds from the start **to the beginning of the split**), `distance`, `duration`, `pace` and `heart_rate` |
 | `unavailable` | why there is no film at all, in the core's words |
 | `zones_unavailable` | why the zones have no value, in the core's words. The film itself may still be there: the pace, the heart rate and the ground do not need a zone model |
 | `generated_at` | when the answer was produced |

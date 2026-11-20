@@ -128,8 +128,12 @@ pub struct ActivityListResponse {
 /// One split of a run.
 #[derive(Clone, Debug, PartialEq, Serialize)]
 pub struct Split {
-    /// The split's number, from one.
-    pub index: i64,
+    /// The lap's number, from one.
+    ///
+    /// It is a **lap**, not a kilometre: the number counts the laps the
+    /// watch recorded, and a lap is not a distance. The field says which,
+    /// because the reader of the answer should not have to know.
+    pub lap_index: i64,
     /// The split's distance, as the core renders it.
     pub distance: RenderedValue,
     /// The split's duration, as the core renders it.
@@ -662,8 +666,8 @@ pub struct FilmGround {
 /// timeline, and the film can be played from it.
 #[derive(Clone, Debug, PartialEq, Serialize)]
 pub struct FilmSplit {
-    /// The split's number, from one.
-    pub index: i64,
+    /// The lap's number, from one — a lap, not a kilometre marker.
+    pub lap_index: i64,
     /// The seconds from the start of the run to the start of the split.
     pub offset_s: f64,
     /// The split's distance, as the core renders it.

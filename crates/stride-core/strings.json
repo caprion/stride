@@ -181,7 +181,7 @@
     { "id": "update.payload.heart_rate", "kind": "statement", "role": null, "template": "Average heart rate" },
     { "id": "update.payload.highest_heart_rate", "kind": "statement", "role": null, "template": "Highest heart rate" },
     { "id": "update.payload.elevation", "kind": "statement", "role": null, "template": "Elevation gain" },
-    { "id": "update.payload.splits", "kind": "statement", "role": null, "template": "Splits" },
+    { "id": "update.payload.splits", "kind": "statement", "role": null, "template": "The laps" },
     { "id": "update.payload.zones", "kind": "statement", "role": null, "template": "Zones" },
     { "id": "update.payload.observations", "kind": "statement", "role": null, "template": "Observations" },
     { "id": "update.direction.faster", "kind": "statement", "role": null, "template": "faster" },

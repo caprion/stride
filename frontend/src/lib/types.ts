@@ -247,7 +247,8 @@ export interface ActivityListResponse {
 /** One run, in full. */
 export interface ActivityDetail extends ActivitySummary {
   splits: {
-    index: number
+    /** The lap's number, from one — a lap, not a kilometre. */
+    lap_index: number
     distance: RenderedValue
     duration: RenderedValue
     heart_rate: RenderedValue | null
@@ -1704,8 +1705,8 @@ export interface FilmGround {
  * timeline, and the film can be played from it.
  */
 export interface FilmSplit {
-  /** The split's number, from one. */
-  index: number
+  /** The lap's number, from one — a lap, not a kilometre. */
+  lap_index: number
   /** The seconds from the start of the run to the start of the split. */
   offset_s: number
   /** The split's distance, as the core renders it. */
@@ -1890,8 +1891,8 @@ export interface UpdateFact {
  * One split of the payload.
  */
 export interface UpdateSplit {
-  /** The split's number, from one. */
-  index: number
+  /** The lap's number, from one — a lap, not a kilometre marker. */
+  lap_index: number
   /** The distance, as the core renders it. */
   distance: string
   /** The pace, as the core renders it. */

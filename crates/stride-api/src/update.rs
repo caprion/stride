@@ -75,7 +75,7 @@ pub fn payload(api: &Api, activity_id: i64) -> ApiResult<Option<RunPayload>> {
         Some(decoded) => series::splits(decoded)
             .into_iter()
             .map(|split| SplitInput {
-                index: split.index.max(1) as usize,
+                lap_index: split.lap_index.max(1) as usize,
                 distance_m: split.distance.raw.unwrap_or_default(),
                 pace_s_km: split.pace.as_ref().and_then(|pace| pace.raw),
                 heart_rate: split.heart_rate.as_ref().and_then(|rate| rate.raw),

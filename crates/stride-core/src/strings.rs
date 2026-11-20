@@ -1314,7 +1314,7 @@ pub const CATALOGUE: [Entry; 187] = [
         id: "update.payload.splits",
         kind: StringKind::Statement,
         role: None,
-        template: "Splits",
+        template: "The laps",
     },
     Entry {
         id: "update.payload.zones",

@@ -213,18 +213,18 @@ export function FilmPage({ id }: { id: string }) {
                 </thead>
                 <tbody>
                   {data.splits.map((split) => (
-                    <tr key={split.index} className="border-b border-edge last:border-b-0">
+                    <tr key={split.lap_index} className="border-b border-edge last:border-b-0">
                       <th scope="row" className="py-1 text-left font-medium text-ink-soft">
                         <button
                           type="button"
                           className="tap inline-flex items-center justify-center rounded-md border border-edge bg-surface px-2 text-[12px] font-semibold text-brand-700"
                           aria-label={t('film.splits.jump')}
-                          data-testid={`film-split-${split.index}`}
+                          data-testid={`film-split-${split.lap_index}`}
                           onClick={() => {
                             scrub(split.offset_s)
                           }}
                         >
-                          {split.index}
+                          {split.lap_index}
                         </button>
                       </th>
                       <td className="py-2 text-right tabular-nums text-ink">
