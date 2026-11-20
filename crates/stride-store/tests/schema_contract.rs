@@ -331,7 +331,9 @@ fn a_version_four_database_migrates_to_version_five() -> Result<()> {
     assert!(tables.iter().any(|table| table == "run_updates"));
     assert!(tables.iter().any(|table| table == "update_settings"));
     let indexes = store.with_connection(schema::index_names)?;
-    assert!(indexes.iter().any(|index| index == "ix_run_updates_activity"));
+    assert!(indexes
+        .iter()
+        .any(|index| index == "ix_run_updates_activity"));
     drop(dir);
     Ok(())
 }

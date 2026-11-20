@@ -119,14 +119,14 @@ pub use types::{
     BetterSide, Distance, Duration, Effort, HeartRate, Hrv, RestingHr, Sleep, VitalKind, Vitals,
     WellnessDay,
 };
-pub use update::{
-    check_draft, payload, Check, Fact, Finding, ObservationFact, ObservationInput, Payload,
-    Quantity, Report, SplitFact, SplitInput, UpdateInput, ZoneFact, ZoneInput, VERDICTS,
-};
 pub use units::{
     render_cadence, render_difference, render_distance, render_duration, render_efficiency,
     render_elevation, render_heart_rate, render_heart_rate_range, render_heart_rate_range_edges,
     render_length_cm, render_pace, render_percent, render_share, render_version, render_zone_label,
     ValueUnit,
+};
+pub use update::{
+    check_draft, payload, Check, Fact, Finding, ObservationFact, ObservationInput, Payload,
+    Quantity, Report, SplitFact, SplitInput, UpdateInput, ZoneFact, ZoneInput, VERDICTS,
 };
 pub use zones::{model_source, time_in_zone, zone_edges, TimeInZone, ZoneFloors, ZoneSample};

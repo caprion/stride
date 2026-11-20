@@ -256,11 +256,7 @@ fn write_draft(
         .as_str()
         .ok_or_else(|| Error::http("the router answered without a prompt"))?
         .to_string();
-    model.complete(
-        &settings.writer_base_url,
-        &settings.writer_model,
-        &prompt,
-    )
+    model.complete(&settings.writer_base_url, &settings.writer_model, &prompt)
 }
 
 /// The reviewer's answer, and what it found.

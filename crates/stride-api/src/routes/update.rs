@@ -149,10 +149,7 @@ pub fn model_request(api: &Api, request: &Request) -> ApiResult<Value> {
     };
 
     let prompt = match role.as_str() {
-        "writer" => strings::render(
-            "update.prompt.writer",
-            &[("payload", payload.text())],
-        ),
+        "writer" => strings::render("update.prompt.writer", &[("payload", payload.text())]),
         "reviewer" => strings::render(
             "update.prompt.reviewer",
             &[
@@ -238,7 +235,11 @@ pub fn record(api: &Api, request: &Request) -> ApiResult<Value> {
 
     let report = check_draft(&payload.payload, &draft);
     let checks = checks_of_report(&report);
-    let verdict = if report.passed() { verdict } else { "discard".to_string() };
+    let verdict = if report.passed() {
+        verdict
+    } else {
+        "discard".to_string()
+    };
 
     if !report.passed() || verdict != "ship" {
         // Nothing is kept: a draft that does not pass the checks, and one
@@ -341,7 +342,9 @@ pub fn write_settings(api: &Api, request: &Request) -> ApiResult<Value> {
     // The reviewer's family has to differ from the writer's: a reviewer of
     // the writer's own family repeats the writer's misreadings.
     if !writer_family.trim().is_empty()
-        && writer_family.trim().eq_ignore_ascii_case(reviewer_family.trim())
+        && writer_family
+            .trim()
+            .eq_ignore_ascii_case(reviewer_family.trim())
     {
         return Err(ApiError::bad_request(
             "the reviewer's family is the writer's family",

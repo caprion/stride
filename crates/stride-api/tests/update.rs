@@ -66,10 +66,7 @@ fn write_settings(harness: &common::Harness) {
         key_env: "STRIDE_MODEL_KEY".to_string(),
         updated_at: common::instant(),
     };
-    harness
-        .store
-        .write_update_settings(&settings)
-        .unwrap();
+    harness.store.write_update_settings(&settings).unwrap();
 }
 
 #[test]
@@ -91,8 +88,14 @@ fn the_payload_carries_the_facts_and_nothing_else() {
 
     // The payload is the run's own facts.
     let text = body["text"].as_str().unwrap();
-    assert!(text.contains("10 km"), "the payload has no distance: {text}");
-    assert!(text.contains("150 bpm"), "the payload has no heart rate: {text}");
+    assert!(
+        text.contains("10 km"),
+        "the payload has no distance: {text}"
+    );
+    assert!(
+        text.contains("150 bpm"),
+        "the payload has no heart rate: {text}"
+    );
     assert!(text.contains("Z1"), "the payload has no zones: {text}");
 
     // And nothing else: no position, no note, no name, no plan.
@@ -142,7 +145,10 @@ fn the_prompt_is_the_core_s_own_instruction() {
     assert!(prompt.contains("Use only the numbers in the payload"));
     assert!(prompt.contains("no verdict"));
     // The payload travels with it.
-    assert!(prompt.contains("10 km"), "the prompt has no payload: {prompt}");
+    assert!(
+        prompt.contains("10 km"),
+        "the prompt has no payload: {prompt}"
+    );
 
     // The reviewer's prompt asks for a verdict, and names the three.
     let body = harness.post(

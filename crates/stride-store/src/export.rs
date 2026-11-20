@@ -997,7 +997,9 @@ fn merge(source: &Connection, destination: &Connection) -> Result<ImportReport> 
                     key_env = excluded.key_env,
                     updated_at = excluded.updated_at",
                 rusqlite::params![
-                    row.get("enabled").and_then(|value| value.as_i64()).unwrap_or_default(),
+                    row.get("enabled")
+                        .and_then(|value| value.as_i64())
+                        .unwrap_or_default(),
                     row.get("allow_remote")
                         .and_then(|value| value.as_i64())
                         .unwrap_or_default(),

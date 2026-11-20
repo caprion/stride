@@ -93,7 +93,9 @@ impl ChatClient {
         let client = reqwest::blocking::Client::builder()
             .timeout(TIMEOUT)
             .build()
-            .map_err(|error| Error::http(format!("the model client could not be built: {error}")))?;
+            .map_err(|error| {
+                Error::http(format!("the model client could not be built: {error}"))
+            })?;
         Ok(ChatClient { client, key })
     }
 
@@ -136,9 +138,9 @@ impl ChatModel for ChatClient {
             .send()
             .map_err(|error| Error::http(format!("the model could not be reached: {error}")))?;
         let status = answer.status();
-        let text = answer
-            .text()
-            .map_err(|error| Error::http(format!("the model's answer could not be read: {error}")))?;
+        let text = answer.text().map_err(|error| {
+            Error::http(format!("the model's answer could not be read: {error}"))
+        })?;
         if !status.is_success() {
             // The status is said; the body is not, because it may carry
             // something the athlete did not ask to be logged.

@@ -164,7 +164,10 @@ fn the_settings_are_off_until_the_athlete_turns_them_on() -> Result<()> {
     let (dir, store) = common::store("update-settings-off")?;
     let settings = store.update_settings(common::instant())?;
     assert!(!settings.enabled, "the feature is off by default");
-    assert!(!settings.allow_remote, "nothing leaves the machine by default");
+    assert!(
+        !settings.allow_remote,
+        "nothing leaves the machine by default"
+    );
     assert_eq!(settings.writer_model, "");
     assert_eq!(settings.reviewer_model, "");
     assert_eq!(settings.key_env, "STRIDE_MODEL_KEY");

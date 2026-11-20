@@ -305,10 +305,9 @@ impl Payload {
                         "{} — {} — {}\n",
                         observation.label, observation.value, direction
                     )),
-                    None => out.push_str(&format!(
-                        "{} — {}\n",
-                        observation.label, observation.value
-                    )),
+                    None => {
+                        out.push_str(&format!("{} — {}\n", observation.label, observation.value))
+                    }
                 }
             }
         }
@@ -500,7 +499,9 @@ pub fn payload(input: &UpdateInput) -> Option<Payload> {
                 _ => None,
             },
             signed: observation.signed,
-            quantity: observation.quantity.map(|quantity| quantity.name().to_string()),
+            quantity: observation
+                .quantity
+                .map(|quantity| quantity.name().to_string()),
         })
         .collect();
 
@@ -552,11 +553,8 @@ fn groundedness(payload: &Payload, draft: &str) -> Vec<Finding> {
         if given.contains(&number) {
             continue;
         }
-        let detail = strings::render(
-            "update.check.groundedness",
-            &[("value", &number)],
-        )
-        .unwrap_or_else(|| format!("the number {number} is not in the payload"));
+        let detail = strings::render("update.check.groundedness", &[("value", &number)])
+            .unwrap_or_else(|| format!("the number {number} is not in the payload"));
         findings.push(Finding {
             check: Check::Groundedness,
             detail,
@@ -593,9 +591,7 @@ fn direction(payload: &Payload, draft: &str) -> Vec<Finding> {
             if words.is_empty() {
                 continue;
             }
-            let agrees = words
-                .iter()
-                .any(|word| agrees_with(word, stated, quantity));
+            let agrees = words.iter().any(|word| agrees_with(word, stated, quantity));
             if agrees {
                 continue;
             }
@@ -608,10 +604,7 @@ fn direction(payload: &Payload, draft: &str) -> Vec<Finding> {
                 ],
             )
             .unwrap_or_else(|| {
-                format!(
-                    "the draft says {}, and the payload says {stated}",
-                    words[0]
-                )
+                format!("the draft says {}, and the payload says {stated}", words[0])
             });
             findings.push(Finding {
                 check: Check::Direction,

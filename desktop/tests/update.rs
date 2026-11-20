@@ -43,7 +43,10 @@ impl FakeModel {
 
     /// The models that were asked, in order.
     fn calls(&self) -> Vec<String> {
-        self.calls.lock().map(|calls| calls.clone()).unwrap_or_default()
+        self.calls
+            .lock()
+            .map(|calls| calls.clone())
+            .unwrap_or_default()
     }
 }
 
@@ -53,7 +56,9 @@ impl ChatModel for FakeModel {
             calls.push(model.to_string());
         }
         if self.refuse {
-            return Err(stride_desktop::error::Error::http("the model could not be reached"));
+            return Err(stride_desktop::error::Error::http(
+                "the model could not be reached",
+            ));
         }
         let mut answers = match self.answers.lock() {
             Ok(guard) => guard,
@@ -158,10 +163,7 @@ fn settings() -> ModelSettings {
 #[test]
 fn the_writer_is_called_once_and_the_reviewer_once() {
     let router = FakeRouter::new(true);
-    let model = FakeModel::new(vec![
-        "The run was 10 km in 50 m.",
-        "ship",
-    ]);
+    let model = FakeModel::new(vec!["The run was 10 km in 50 m.", "ship"]);
 
     let written = update::write_update(&router, &model, &settings(), 1).unwrap();
 

@@ -437,7 +437,9 @@ impl Server {
                         }
                     )),
                 },
-                Err(error) => log::log(&format!("the update of the run {id} could not be written: {error}")),
+                Err(error) => log::log(&format!(
+                    "the update of the run {id} could not be written: {error}"
+                )),
             }
         }
     }

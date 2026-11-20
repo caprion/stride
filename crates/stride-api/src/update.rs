@@ -12,10 +12,10 @@
 //! the core's payload and hashes it, so that the update can be checked
 //! against exactly what the model was given.
 
+use stride_core::units;
 use stride_core::update::{
     payload as core_payload, ObservationInput, Quantity, SplitInput, UpdateInput, ZoneInput,
 };
-use stride_core::units;
 
 use crate::dto::Fingerprint;
 use crate::error::ApiResult;
@@ -116,7 +116,11 @@ pub fn payload(api: &Api, activity_id: i64) -> ApiResult<Option<RunPayload>> {
     };
     let text = payload.text();
     let hash = stride_store::hash::sha256_hex(text.as_bytes());
-    Ok(Some(RunPayload { payload, text, hash }))
+    Ok(Some(RunPayload {
+        payload,
+        text,
+        hash,
+    }))
 }
 
 /// The day the run was read, in the api's own rendering.
@@ -136,7 +140,11 @@ fn zone_inputs(print: &Fingerprint) -> Vec<ZoneInput> {
         .enumerate()
         .map(|(index, share)| ZoneInput {
             index: index + 1,
-            seconds: share.time.as_ref().and_then(|time| time.raw).unwrap_or_default(),
+            seconds: share
+                .time
+                .as_ref()
+                .and_then(|time| time.raw)
+                .unwrap_or_default(),
             share_pct: share.share.raw,
         })
         .collect()
