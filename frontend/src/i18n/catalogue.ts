@@ -492,6 +492,7 @@ export const catalogue = {
     text: 'The update was dismissed. It is still stored.',
   },
   'activity.update.showAgain': { type: 'status', text: 'Show it again' },
+  'activity.update.sent.heading': { type: 'status', text: 'What the model was given' },
   /**
    * The route, for a screen reader.
    *

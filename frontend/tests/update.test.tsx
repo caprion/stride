@@ -55,6 +55,22 @@ describe("the run's update", () => {
     expect(checks?.textContent).toContain('No word the app does not use')
   })
 
+  it('shows what the model was given', async () => {
+    vi.spyOn(api, 'activityUpdate').mockResolvedValue(update)
+    vi.spyOn(api, 'activityUpdatePayload').mockResolvedValue({
+      activity_id: 101,
+      payload_hash: 'a-hash',
+      payload: null,
+      text: 'Distance — 10 km\nDuration — 50 m',
+      unavailable: null,
+      generated_at: '2026-05-13T06:30:00Z',
+    })
+    renderApp('/runs/101')
+
+    const payload = await screen.findByTestId('activity-update-payload')
+    expect(payload.textContent).toContain('Distance — 10 km')
+  })
+
   it('says what a check found', async () => {
     vi.spyOn(api, 'activityUpdate').mockResolvedValue({
       ...update,

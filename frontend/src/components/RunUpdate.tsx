@@ -41,6 +41,12 @@ export function RunUpdate({ id }: { id: string }) {
     queryKey: ['activity-update', id],
     queryFn: () => api.activityUpdate(id),
   })
+  // The payload the model was given: the athlete can read it, so the
+  // reading is never a black box.
+  const payload = useQuery({
+    queryKey: ['activity-update-payload', id],
+    queryFn: () => api.activityUpdatePayload(id),
+  })
 
   const update = query.data?.update
   if (!update) return null
@@ -90,6 +96,20 @@ export function RunUpdate({ id }: { id: string }) {
           reviewer: update.reviewer,
         })}
       </p>
+
+      {payload.data?.text ? (
+        <details className="mt-2 text-[12px] text-ink-muted">
+          <summary className="tap-inline cursor-pointer">
+            {t('activity.update.sent.heading')}
+          </summary>
+          <pre
+            className="mt-1 whitespace-pre-wrap text-[12px] text-ink-faint"
+            data-testid="activity-update-payload"
+          >
+            {payload.data.text}
+          </pre>
+        </details>
+      ) : null}
 
       <div className="mt-2">
         <h3 className="text-[11px] font-semibold uppercase tracking-[0.07em] text-ink-faint">
