@@ -68,3 +68,24 @@ export function axisTicks(
 export function axisLabels(ticks: AxisTick[]): Map<number, string> {
   return new Map(ticks.map((tick) => [tick.value, tick.text]))
 }
+
+/**
+ * The range a scale covers: the middle of the values.
+ *
+ * A run carries a few readings that are far outside the rest — a walk
+ * break's pace of nineteen minutes a kilometre, a spike in the heart rate
+ * at a crossing — and a scale that reaches them squashes the whole series
+ * into the top of the chart. So the scale covers the middle ninety-six per
+ * cent of the values, and the readings outside it are drawn past the edge
+ * of the drawing, which is what a chart does with them.
+ *
+ * The values outside are not thrown away and not rounded: they are still
+ * in the series, and the core's own words still say what they are.
+ */
+export function robustRange(values: number[]): [number, number] {
+  if (values.length === 0) return [0, 1]
+  const sorted = [...values].sort((left, right) => left - right)
+  const low = sorted[Math.floor(sorted.length * 0.02)] as number
+  const high = sorted[Math.min(sorted.length - 1, Math.ceil(sorted.length * 0.98))] as number
+  return [low, high]
+}

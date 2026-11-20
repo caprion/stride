@@ -1371,3 +1371,124 @@ export interface SettingsDeleteResult {
   /** When this answer was produced. */
   generated_at: string
 }
+
+// ---------------------------------------------------------------- the film
+
+/**
+ * One sample of a run's film.
+ *
+ * The sample is the run's own: decoded from its FIT file on read. It
+ * carries the zone it sits in, measured against the athlete's **stored**
+ * zone model — the model's own, named and dated beside the series.
+ */
+export interface FilmSample {
+  /**
+   * The time from the start of the run, as the core renders it: "42 m".
+   *
+   * The number beside the words is the time in **seconds**, and it is the
+   * number the film's timeline draws on.
+   */
+  elapsed: RenderedValue
+  /**
+   * The distance from the start, as the core renders it: "3.2 km".
+   *
+   * The number beside the words is the distance in **metres**.
+   */
+  distance: RenderedValue | null
+  /** The pace over the sample, as the core renders it: "5:24 /km". */
+  pace: RenderedValue | null
+  /** The heart rate over the sample, as the core renders it: "148 bpm". */
+  heart_rate: RenderedValue | null
+  /**
+   * The zone the sample sits in: the index of the band in the film's
+   * `zones`, counted from zero.
+   *
+   * `null` when the reading is **outside** the zones — at or below the
+   * first floor, or not there at all.
+   */
+  zone: number | null
+}
+
+/** One point of the run's ground, on the run's own time axis. */
+export interface FilmGround {
+  /** The seconds from the start of the run. */
+  offset_s: number
+  /** The altitude, as the core renders it: "926 m". */
+  elevation: RenderedValue
+}
+
+/**
+ * One split of a run's film.
+ *
+ * The split carries the time it **began**: a split is a place on the
+ * timeline, and the film can be played from it.
+ */
+export interface FilmSplit {
+  /** The split's number, from one. */
+  index: number
+  /** The seconds from the start of the run to the start of the split. */
+  offset_s: number
+  /** The split's distance, as the core renders it. */
+  distance: RenderedValue
+  /** The split's duration, as the core renders it. */
+  duration: RenderedValue
+  /** The split's pace, as the core renders it. */
+  pace: RenderedValue | null
+  /** The average heart rate over the split, as the core renders it. */
+  heart_rate: RenderedValue | null
+}
+
+/** One band of the athlete's zones, as the film draws it. */
+export interface FilmZone {
+  /** The band's name, as the core names it: "Z2". */
+  label: string
+  /** The band's range, in the core's words: "106-121 bpm". */
+  range: string | null
+  /** The band's lower edge, in beats per minute — for drawing. */
+  from_bpm: number | null
+  /** The band's upper edge, in beats per minute. */
+  to_bpm: number | null
+}
+
+/**
+ * A run's film: the run, playable.
+ *
+ * The series is the run's own, decoded from its file on read: the samples
+ * with their pace, their heart rate and the zone each one sits in, the
+ * ground, and the splits. The zone model the zones were measured against
+ * is named and dated beside them.
+ *
+ * **No value is the absence of the whole result.** A run with no file has
+ * no series at all, and says why in the core's words.
+ */
+export interface RunFilm {
+  /** The run's id. */
+  activity_id: number
+  /** The athlete's local date of the run. */
+  local_date: string
+  /** The basis the series was read on: "samples". */
+  basis: string | null
+  /** The zone model the zones were measured against, named and dated. */
+  model: ZoneModel | null
+  /** The five bands of the athlete's zones. */
+  zones: FilmZone[]
+  /** The name of the space outside the zones, in the core's words. */
+  outside_label: string | null
+  /** The run's samples. */
+  samples: FilmSample[]
+  /** The run's ground. */
+  ground: FilmGround[]
+  /** The run's splits. */
+  splits: FilmSplit[]
+  /** Why there is no film at all, in the core's words. */
+  unavailable: string | null
+  /**
+   * Why the zones have no value, in the core's words.
+   *
+   * The film itself may still be there: the pace, the heart rate and the
+   * ground do not need a zone model.
+   */
+  zones_unavailable: string | null
+  /** When the answer was produced. */
+  generated_at: string
+}

@@ -333,6 +333,52 @@
       "story": "12.4 km in 1 h 7 m, at an average of 148 bpm",
       "why": null
     },
+    "/activities/101/film": {
+      "activity_id": 101,
+      "basis": "samples",
+      "generated_at": "2026-05-13T06:30:00Z",
+      "ground": [],
+      "local_date": "2026-05-10",
+      "model": {
+        "floors": {
+          "zone1": {
+            "raw": 106,
+            "text": "106 bpm"
+          },
+          "zone2": {
+            "raw": 121,
+            "text": "121 bpm"
+          },
+          "zone3": {
+            "raw": 135,
+            "text": "135 bpm"
+          },
+          "zone4": {
+            "raw": 149,
+            "text": "149 bpm"
+          },
+          "zone5": {
+            "raw": 163,
+            "text": "163 bpm"
+          }
+        },
+        "max_heart_rate": {
+          "raw": 178,
+          "text": "178 bpm"
+        },
+        "read_at": "2026-05-10T06:30:00Z",
+        "read_on": "10 May 2026",
+        "source": "your zone model · HR_MAX · max heart rate 178 bpm · read on 10 May 2026",
+        "sport": "DEFAULT",
+        "training_method": "HR_MAX"
+      },
+      "outside_label": null,
+      "samples": [],
+      "splits": [],
+      "unavailable": "the run has no file to read",
+      "zones": [],
+      "zones_unavailable": null
+    },
     "/auth/status": {
       "connected": false,
       "generated_at": "2026-05-13T06:30:00Z",
@@ -10606,6 +10652,52 @@
       "start_time": "2026-05-10T07:10:00Z",
       "story": "12.4 km in 1 h 7 m, at an average of 148 bpm",
       "why": null
+    },
+    "/activities/101/film": {
+      "activity_id": 101,
+      "basis": "samples",
+      "generated_at": "2026-05-13T06:30:00Z",
+      "ground": [],
+      "local_date": "2026-05-10",
+      "model": {
+        "floors": {
+          "zone1": {
+            "raw": 106,
+            "text": "106 bpm"
+          },
+          "zone2": {
+            "raw": 121,
+            "text": "121 bpm"
+          },
+          "zone3": {
+            "raw": 135,
+            "text": "135 bpm"
+          },
+          "zone4": {
+            "raw": 149,
+            "text": "149 bpm"
+          },
+          "zone5": {
+            "raw": 163,
+            "text": "163 bpm"
+          }
+        },
+        "max_heart_rate": {
+          "raw": 178,
+          "text": "178 bpm"
+        },
+        "read_at": "2026-05-10T06:30:00Z",
+        "read_on": "10 May 2026",
+        "source": "your zone model · HR_MAX · max heart rate 178 bpm · read on 10 May 2026",
+        "sport": "DEFAULT",
+        "training_method": "HR_MAX"
+      },
+      "outside_label": null,
+      "samples": [],
+      "splits": [],
+      "unavailable": "the run has no file to read",
+      "zones": [],
+      "zones_unavailable": null
     },
     "/auth/status": {
       "connected": false,
