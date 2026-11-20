@@ -208,6 +208,15 @@ export function ProgressPage() {
           >
             {t('progress.viewRuns')}
           </Link>
+          {/* The pace page is reached from here: it is a page about the
+              history, not a destination of its own. */}
+          <Link
+            className="tap-inline text-[13px] font-medium text-brand-700 underline"
+            to="/pace"
+            data-testid="progress-pace-link"
+          >
+            {t('pace.open')}
+          </Link>
         </div>
         <div className="progress-grid mt-3">
           {/* ------------------------------------------ the Eddington number */}

@@ -403,6 +403,43 @@ export const catalogue = {
   },
   'progress.index.back': { type: 'status', text: 'Back to the questions' },
 
+  // ------------------------------------------------------------- pace
+  //
+  // The pace page: the training week by week, the pace at a heart rate,
+  // and where the time went by pace.
+  //
+  // The sentences about the data are the core's, and they arrive already
+  // written; what is here is the chrome around them.
+  'pace.heading': { type: 'status', text: 'The pace' },
+  'pace.open': { type: 'status', text: 'The pace' },
+  'pace.question': { type: 'status', text: 'How has my pace behaved?' },
+  'pace.summary': { type: 'status', text: '{weeks} weeks · {time} of running, read by pace' },
+  'pace.window': { type: 'status', text: 'The window: {from} – {to}' },
+  'pace.weeks.heading': { type: 'status', text: 'The training, week by week' },
+  'pace.weeks.note': {
+    type: 'status',
+    text: 'What you covered each week, the long run inside it, and the pace that week ran at.',
+  },
+  'pace.weeks.legend.distance': { type: 'status', text: "the week's distance" },
+  'pace.weeks.legend.longest': { type: 'status', text: 'the long run' },
+  'pace.weeks.legend.pace': { type: 'status', text: "the week's pace" },
+  'pace.paceAtHr.heading': { type: 'status', text: 'The pace at a heart rate' },
+  'pace.paceAtHr.note': {
+    type: 'status',
+    text: "One point a week: the pace you held at that week's median heart rate.",
+  },
+  'pace.bands.heading': { type: 'status', text: 'Where the time went, by pace' },
+  'pace.bands.note': {
+    type: 'status',
+    text: 'Every sample of every run, bucketed by the pace it was held at.',
+  },
+  'pace.bands.total': { type: 'status', text: 'The time in the bands' },
+  'pace.empty.title': { type: 'status', text: 'Nothing to show yet' },
+  'pace.empty.body': {
+    type: 'status',
+    text: 'No run in this window. The pace is read from the runs that are saved.',
+  },
+
   // ------------------------------------------------------------- body
   'body.heading': { type: 'status', text: 'Body' },
   'body.question': { type: 'status', text: 'How was my sleep?' },

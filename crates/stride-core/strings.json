@@ -81,6 +81,8 @@
     { "id": "profile.variety", "kind": "statement", "role": null, "template": "Sport variety" },
     { "id": "profile.week_days", "kind": "statement", "role": null, "template": "Week days" },
     { "id": "value.distance_range", "kind": "statement", "role": null, "template": "{from}-{to} km" },
+    { "id": "value.pace_range", "kind": "statement", "role": null, "template": "{from}–{to} /km" },
+    { "id": "pace.no_samples", "kind": "statement", "role": null, "template": "pace bands unavailable — the window holds no moving samples" },
     { "id": "zones.band.low", "kind": "statement", "role": null, "template": "Z1–Z2 low" },
     { "id": "zones.band.moderate", "kind": "statement", "role": null, "template": "Z3 moderate" },
     { "id": "zones.band.high", "kind": "statement", "role": null, "template": "Z4–Z5 high" },

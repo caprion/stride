@@ -29,9 +29,9 @@ reference only).
 | Route | Notes |
 |---|---|
 | `/plan/{current,today,week,blocks,sources,adherence,results,import}` | the plan engine |
-| `/insights/{today,progress,load,chips,rolling,streaks}` | Today and the feed chips; `progress` is the Progress screen's answer, `load` is the training load over the same window (see "The training load" below), `rolling` is the rolling view (see "The rolling view" below) and `streaks` is the streak of days and weeks (see "The streaks" below) |
+| `/insights/{today,progress,load,chips,rolling,streaks,pace}` | Today and the feed chips; `progress` is the Progress screen's answer, `load` is the training load over the same window (see "The training load" below), `rolling` is the rolling view (see "The rolling view" below), `streaks` is the streak of days and weeks (see "The streaks" below) and `pace` is the pace page's answer (see "The pace page" below) |
 
-| `/insights/{today,progress,load,heatmap,chips}` | Today and the feed chips; `progress` is the Progress screen's answer and `load` is the training load over the same window; `heatmap` is the grid over the stored positions, computed on the device (see "The heatmap" below) |
+| `/insights/{today,progress,load,heatmap,chips,pace}` | Today and the feed chips; `progress` is the Progress screen's answer and `load` is the training load over the same window; `heatmap` is the grid over the stored positions, computed on the device (see "The heatmap" below); `pace` is the pace page's answer (see "The pace page" below) |
 | `/compare` | the metric diff |
 | `/compare/candidates` | the runs you can compare against (the Compare screen's "choose a different run" action) |
 
@@ -146,6 +146,7 @@ Two rules hold for every shape below.
 | `/insights/load` | `generated_at`, `date`, `window: {from, from_label, to, to_label, weeks, warmup_days}`, `load: LoadSeries \| null`, `unavailable: string \| null`, `scenario: LoadScenario \| null` |
 | `/insights/rolling` | `generated_at`, `date`, `window: {from, from_label, to, to_label, days}`, `comparison: {from, from_label, to, to_label, days}`, `distance: {current, previous, difference}`, `duration: {current, previous, difference}`, `sessions: {current, previous, difference}`, `zones: {model, shares, distribution, unavailable}`, `distances: {key, label, sessions, distance, elevation, duration}[]`, `profile: {key, label, value, previous, movement}[]`, `weekday: {weekday, sessions, distance, duration, share}[]`, `daytime: {key, label, from_hour, to_hour, sessions, distance, duration}[]`, `months: {key, label, sessions, distance, duration, elevation}[]`, `years: {key, label, sessions, distance, duration, elevation}[]` |
 | `/insights/streaks` | `generated_at`, `date`, `days: {current, longest}`, `weeks: {current, longest}` |
+| `/insights/pace` | `generated_at`, `date`, `window: {from, from_label, to, to_label, weeks}`, `weeks: {week_start, distance, sessions, longest, pace, heart_rate}[]`, `bands: {width_s_per_km, total, distance, rows: {from, to, label, time, distance, share}[]} \| null`, `unavailable: string \| null` |
 
 | `/insights/heatmap` | `generated_at`, `date`, `runs`, `more_runs`, `cell_size: RenderedValue \| null`, `cells: {x, y, south, west, north, east, runs}[]`, `extent: {south, west, north, east} \| null`, `unavailable: string \| null` |
 | `/auth/status` | `connected`, `method`, `key_source`, `key_last4`, `last_sync_at`, `generated_at` |
@@ -370,6 +371,41 @@ Three more answers ride on the same window.
   it. A window with no run has **no facets at all** — every value is no
   value, never a zero — and a facet with no value in the window before it
   has **no movement** to report.
+
+### The pace page
+
+`/insights/pace?weeks=N` answers the pace page's three panels in one
+answer: the training week by week, the pace at a heart rate, and where the
+time went by pace.
+
+It is a route of its own, and not another field on `/insights/progress`:
+the bands need their own window and their own "no value" reason, and the
+progress payload is already wide. The window is the Progress window — the
+same `weeks` parameter (1 to 104, default 12) and the same calendar weeks
+the volume chart draws, the current partial week included — and the answer
+**names** it.
+
+* **`weeks`** is the training series: the week's distance, how many runs it
+  holds, **the long run inside it** (its distance and its pace), and the
+  week's own **separate medians** — the pace of the week's runs and the
+  heart rate of the week's runs. The two medians are descriptive and are
+  never a matched-effort comparison, and the route does not pair them into
+  one.
+* **`bands`** is the distribution of the window's moving time by the pace it
+  was held at: the bands the window's time fills, thirty seconds a
+  kilometre wide, fastest first. Each band carries its edges, its name in
+  the core's words ("4:30–5:00 /km"), the time in it, the distance in it
+  and its share of the window's time.
+* **The bands are a property of the window.** The same runs over twelve
+  weeks and over a year are two different answers, and the answer names
+  the window it carries.
+* **The samples are the runs' own**, decoded from their FIT files on read,
+  and only the moving ones — the same filter the zones route has always
+  used, so the numbers stay comparable with what it answered before. A
+  pace exactly on a band's edge belongs to the band below it.
+* **No value is the absence of the whole result.** A window with no moving
+  samples has **no bands**: `bands` is `null` and `unavailable` says why,
+  in the core's own words. It is never a band of zero.
 
 ### The heatmap
 

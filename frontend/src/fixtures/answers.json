@@ -6135,6 +6135,393 @@
         "weeks": 8
       }
     },
+    "/insights/pace": {
+      "bands": null,
+      "date": "2026-05-13",
+      "generated_at": "2026-05-13T06:30:00Z",
+      "unavailable": "pace bands unavailable — the window holds no moving samples",
+      "weeks": [
+        {
+          "distance": {
+            "raw": 6300,
+            "text": "6.3 km"
+          },
+          "heart_rate": {
+            "raw": 148,
+            "text": "148 bpm"
+          },
+          "longest": {
+            "distance": {
+              "raw": 6300,
+              "text": "6.3 km"
+            },
+            "pace": {
+              "raw": 330.16,
+              "text": "5:30 /km"
+            }
+          },
+          "pace": {
+            "raw": 330.16,
+            "text": "5:30 /km"
+          },
+          "sessions": 1,
+          "week_start": "2026-04-27"
+        },
+        {
+          "distance": {
+            "raw": 52100,
+            "text": "52.1 km"
+          },
+          "heart_rate": {
+            "raw": 148,
+            "text": "148 bpm"
+          },
+          "longest": {
+            "distance": {
+              "raw": 16100,
+              "text": "16.1 km"
+            },
+            "pace": {
+              "raw": 315.03,
+              "text": "5:15 /km"
+            }
+          },
+          "pace": {
+            "raw": 324,
+            "text": "5:24 /km"
+          },
+          "sessions": 5,
+          "week_start": "2026-05-04"
+        }
+      ],
+      "window": {
+        "from": "2026-02-23",
+        "from_label": "23 Feb 2026",
+        "to": "2026-05-13",
+        "to_label": "13 May 2026",
+        "weeks": 12
+      }
+    },
+    "/insights/pace?weeks=26": {
+      "bands": null,
+      "date": "2026-05-13",
+      "generated_at": "2026-05-13T06:30:00Z",
+      "unavailable": "pace bands unavailable — the window holds no moving samples",
+      "weeks": [
+        {
+          "distance": {
+            "raw": 18200,
+            "text": "18.2 km"
+          },
+          "heart_rate": {
+            "raw": 148,
+            "text": "148 bpm"
+          },
+          "longest": {
+            "distance": {
+              "raw": 18200,
+              "text": "18.2 km"
+            },
+            "pace": {
+              "raw": 309.89,
+              "text": "5:10 /km"
+            }
+          },
+          "pace": {
+            "raw": 309.89,
+            "text": "5:10 /km"
+          },
+          "sessions": 1,
+          "week_start": "2026-02-09"
+        },
+        {
+          "distance": {
+            "raw": 6300,
+            "text": "6.3 km"
+          },
+          "heart_rate": {
+            "raw": 148,
+            "text": "148 bpm"
+          },
+          "longest": {
+            "distance": {
+              "raw": 6300,
+              "text": "6.3 km"
+            },
+            "pace": {
+              "raw": 330.16,
+              "text": "5:30 /km"
+            }
+          },
+          "pace": {
+            "raw": 330.16,
+            "text": "5:30 /km"
+          },
+          "sessions": 1,
+          "week_start": "2026-04-27"
+        },
+        {
+          "distance": {
+            "raw": 52100,
+            "text": "52.1 km"
+          },
+          "heart_rate": {
+            "raw": 148,
+            "text": "148 bpm"
+          },
+          "longest": {
+            "distance": {
+              "raw": 16100,
+              "text": "16.1 km"
+            },
+            "pace": {
+              "raw": 315.03,
+              "text": "5:15 /km"
+            }
+          },
+          "pace": {
+            "raw": 324,
+            "text": "5:24 /km"
+          },
+          "sessions": 5,
+          "week_start": "2026-05-04"
+        }
+      ],
+      "window": {
+        "from": "2025-11-17",
+        "from_label": "17 Nov 2025",
+        "to": "2026-05-13",
+        "to_label": "13 May 2026",
+        "weeks": 26
+      }
+    },
+    "/insights/pace?weeks=4": {
+      "bands": null,
+      "date": "2026-05-13",
+      "generated_at": "2026-05-13T06:30:00Z",
+      "unavailable": "pace bands unavailable — the window holds no moving samples",
+      "weeks": [
+        {
+          "distance": {
+            "raw": 6300,
+            "text": "6.3 km"
+          },
+          "heart_rate": {
+            "raw": 148,
+            "text": "148 bpm"
+          },
+          "longest": {
+            "distance": {
+              "raw": 6300,
+              "text": "6.3 km"
+            },
+            "pace": {
+              "raw": 330.16,
+              "text": "5:30 /km"
+            }
+          },
+          "pace": {
+            "raw": 330.16,
+            "text": "5:30 /km"
+          },
+          "sessions": 1,
+          "week_start": "2026-04-27"
+        },
+        {
+          "distance": {
+            "raw": 52100,
+            "text": "52.1 km"
+          },
+          "heart_rate": {
+            "raw": 148,
+            "text": "148 bpm"
+          },
+          "longest": {
+            "distance": {
+              "raw": 16100,
+              "text": "16.1 km"
+            },
+            "pace": {
+              "raw": 315.03,
+              "text": "5:15 /km"
+            }
+          },
+          "pace": {
+            "raw": 324,
+            "text": "5:24 /km"
+          },
+          "sessions": 5,
+          "week_start": "2026-05-04"
+        }
+      ],
+      "window": {
+        "from": "2026-04-20",
+        "from_label": "20 Apr 2026",
+        "to": "2026-05-13",
+        "to_label": "13 May 2026",
+        "weeks": 4
+      }
+    },
+    "/insights/pace?weeks=52": {
+      "bands": null,
+      "date": "2026-05-13",
+      "generated_at": "2026-05-13T06:30:00Z",
+      "unavailable": "pace bands unavailable — the window holds no moving samples",
+      "weeks": [
+        {
+          "distance": {
+            "raw": 18200,
+            "text": "18.2 km"
+          },
+          "heart_rate": {
+            "raw": 148,
+            "text": "148 bpm"
+          },
+          "longest": {
+            "distance": {
+              "raw": 18200,
+              "text": "18.2 km"
+            },
+            "pace": {
+              "raw": 309.89,
+              "text": "5:10 /km"
+            }
+          },
+          "pace": {
+            "raw": 309.89,
+            "text": "5:10 /km"
+          },
+          "sessions": 1,
+          "week_start": "2026-02-09"
+        },
+        {
+          "distance": {
+            "raw": 6300,
+            "text": "6.3 km"
+          },
+          "heart_rate": {
+            "raw": 148,
+            "text": "148 bpm"
+          },
+          "longest": {
+            "distance": {
+              "raw": 6300,
+              "text": "6.3 km"
+            },
+            "pace": {
+              "raw": 330.16,
+              "text": "5:30 /km"
+            }
+          },
+          "pace": {
+            "raw": 330.16,
+            "text": "5:30 /km"
+          },
+          "sessions": 1,
+          "week_start": "2026-04-27"
+        },
+        {
+          "distance": {
+            "raw": 52100,
+            "text": "52.1 km"
+          },
+          "heart_rate": {
+            "raw": 148,
+            "text": "148 bpm"
+          },
+          "longest": {
+            "distance": {
+              "raw": 16100,
+              "text": "16.1 km"
+            },
+            "pace": {
+              "raw": 315.03,
+              "text": "5:15 /km"
+            }
+          },
+          "pace": {
+            "raw": 324,
+            "text": "5:24 /km"
+          },
+          "sessions": 5,
+          "week_start": "2026-05-04"
+        }
+      ],
+      "window": {
+        "from": "2025-05-19",
+        "from_label": "19 May 2025",
+        "to": "2026-05-13",
+        "to_label": "13 May 2026",
+        "weeks": 52
+      }
+    },
+    "/insights/pace?weeks=8": {
+      "bands": null,
+      "date": "2026-05-13",
+      "generated_at": "2026-05-13T06:30:00Z",
+      "unavailable": "pace bands unavailable — the window holds no moving samples",
+      "weeks": [
+        {
+          "distance": {
+            "raw": 6300,
+            "text": "6.3 km"
+          },
+          "heart_rate": {
+            "raw": 148,
+            "text": "148 bpm"
+          },
+          "longest": {
+            "distance": {
+              "raw": 6300,
+              "text": "6.3 km"
+            },
+            "pace": {
+              "raw": 330.16,
+              "text": "5:30 /km"
+            }
+          },
+          "pace": {
+            "raw": 330.16,
+            "text": "5:30 /km"
+          },
+          "sessions": 1,
+          "week_start": "2026-04-27"
+        },
+        {
+          "distance": {
+            "raw": 52100,
+            "text": "52.1 km"
+          },
+          "heart_rate": {
+            "raw": 148,
+            "text": "148 bpm"
+          },
+          "longest": {
+            "distance": {
+              "raw": 16100,
+              "text": "16.1 km"
+            },
+            "pace": {
+              "raw": 315.03,
+              "text": "5:15 /km"
+            }
+          },
+          "pace": {
+            "raw": 324,
+            "text": "5:24 /km"
+          },
+          "sessions": 5,
+          "week_start": "2026-05-04"
+        }
+      ],
+      "window": {
+        "from": "2026-03-23",
+        "from_label": "23 Mar 2026",
+        "to": "2026-05-13",
+        "to_label": "13 May 2026",
+        "weeks": 8
+      }
+    },
     "/insights/progress": {
       "adherence": {
         "done": 0,
@@ -16406,6 +16793,393 @@
         "to": "2026-05-13",
         "to_label": "13 May 2026",
         "warmup_days": 210,
+        "weeks": 8
+      }
+    },
+    "/insights/pace": {
+      "bands": null,
+      "date": "2026-05-13",
+      "generated_at": "2026-05-13T06:30:00Z",
+      "unavailable": "pace bands unavailable — the window holds no moving samples",
+      "weeks": [
+        {
+          "distance": {
+            "raw": 6300,
+            "text": "6.3 km"
+          },
+          "heart_rate": {
+            "raw": 148,
+            "text": "148 bpm"
+          },
+          "longest": {
+            "distance": {
+              "raw": 6300,
+              "text": "6.3 km"
+            },
+            "pace": {
+              "raw": 330.16,
+              "text": "5:30 /km"
+            }
+          },
+          "pace": {
+            "raw": 330.16,
+            "text": "5:30 /km"
+          },
+          "sessions": 1,
+          "week_start": "2026-04-27"
+        },
+        {
+          "distance": {
+            "raw": 52100,
+            "text": "52.1 km"
+          },
+          "heart_rate": {
+            "raw": 148,
+            "text": "148 bpm"
+          },
+          "longest": {
+            "distance": {
+              "raw": 16100,
+              "text": "16.1 km"
+            },
+            "pace": {
+              "raw": 315.03,
+              "text": "5:15 /km"
+            }
+          },
+          "pace": {
+            "raw": 324,
+            "text": "5:24 /km"
+          },
+          "sessions": 5,
+          "week_start": "2026-05-04"
+        }
+      ],
+      "window": {
+        "from": "2026-02-23",
+        "from_label": "23 Feb 2026",
+        "to": "2026-05-13",
+        "to_label": "13 May 2026",
+        "weeks": 12
+      }
+    },
+    "/insights/pace?weeks=26": {
+      "bands": null,
+      "date": "2026-05-13",
+      "generated_at": "2026-05-13T06:30:00Z",
+      "unavailable": "pace bands unavailable — the window holds no moving samples",
+      "weeks": [
+        {
+          "distance": {
+            "raw": 18200,
+            "text": "18.2 km"
+          },
+          "heart_rate": {
+            "raw": 148,
+            "text": "148 bpm"
+          },
+          "longest": {
+            "distance": {
+              "raw": 18200,
+              "text": "18.2 km"
+            },
+            "pace": {
+              "raw": 309.89,
+              "text": "5:10 /km"
+            }
+          },
+          "pace": {
+            "raw": 309.89,
+            "text": "5:10 /km"
+          },
+          "sessions": 1,
+          "week_start": "2026-02-09"
+        },
+        {
+          "distance": {
+            "raw": 6300,
+            "text": "6.3 km"
+          },
+          "heart_rate": {
+            "raw": 148,
+            "text": "148 bpm"
+          },
+          "longest": {
+            "distance": {
+              "raw": 6300,
+              "text": "6.3 km"
+            },
+            "pace": {
+              "raw": 330.16,
+              "text": "5:30 /km"
+            }
+          },
+          "pace": {
+            "raw": 330.16,
+            "text": "5:30 /km"
+          },
+          "sessions": 1,
+          "week_start": "2026-04-27"
+        },
+        {
+          "distance": {
+            "raw": 52100,
+            "text": "52.1 km"
+          },
+          "heart_rate": {
+            "raw": 148,
+            "text": "148 bpm"
+          },
+          "longest": {
+            "distance": {
+              "raw": 16100,
+              "text": "16.1 km"
+            },
+            "pace": {
+              "raw": 315.03,
+              "text": "5:15 /km"
+            }
+          },
+          "pace": {
+            "raw": 324,
+            "text": "5:24 /km"
+          },
+          "sessions": 5,
+          "week_start": "2026-05-04"
+        }
+      ],
+      "window": {
+        "from": "2025-11-17",
+        "from_label": "17 Nov 2025",
+        "to": "2026-05-13",
+        "to_label": "13 May 2026",
+        "weeks": 26
+      }
+    },
+    "/insights/pace?weeks=4": {
+      "bands": null,
+      "date": "2026-05-13",
+      "generated_at": "2026-05-13T06:30:00Z",
+      "unavailable": "pace bands unavailable — the window holds no moving samples",
+      "weeks": [
+        {
+          "distance": {
+            "raw": 6300,
+            "text": "6.3 km"
+          },
+          "heart_rate": {
+            "raw": 148,
+            "text": "148 bpm"
+          },
+          "longest": {
+            "distance": {
+              "raw": 6300,
+              "text": "6.3 km"
+            },
+            "pace": {
+              "raw": 330.16,
+              "text": "5:30 /km"
+            }
+          },
+          "pace": {
+            "raw": 330.16,
+            "text": "5:30 /km"
+          },
+          "sessions": 1,
+          "week_start": "2026-04-27"
+        },
+        {
+          "distance": {
+            "raw": 52100,
+            "text": "52.1 km"
+          },
+          "heart_rate": {
+            "raw": 148,
+            "text": "148 bpm"
+          },
+          "longest": {
+            "distance": {
+              "raw": 16100,
+              "text": "16.1 km"
+            },
+            "pace": {
+              "raw": 315.03,
+              "text": "5:15 /km"
+            }
+          },
+          "pace": {
+            "raw": 324,
+            "text": "5:24 /km"
+          },
+          "sessions": 5,
+          "week_start": "2026-05-04"
+        }
+      ],
+      "window": {
+        "from": "2026-04-20",
+        "from_label": "20 Apr 2026",
+        "to": "2026-05-13",
+        "to_label": "13 May 2026",
+        "weeks": 4
+      }
+    },
+    "/insights/pace?weeks=52": {
+      "bands": null,
+      "date": "2026-05-13",
+      "generated_at": "2026-05-13T06:30:00Z",
+      "unavailable": "pace bands unavailable — the window holds no moving samples",
+      "weeks": [
+        {
+          "distance": {
+            "raw": 18200,
+            "text": "18.2 km"
+          },
+          "heart_rate": {
+            "raw": 148,
+            "text": "148 bpm"
+          },
+          "longest": {
+            "distance": {
+              "raw": 18200,
+              "text": "18.2 km"
+            },
+            "pace": {
+              "raw": 309.89,
+              "text": "5:10 /km"
+            }
+          },
+          "pace": {
+            "raw": 309.89,
+            "text": "5:10 /km"
+          },
+          "sessions": 1,
+          "week_start": "2026-02-09"
+        },
+        {
+          "distance": {
+            "raw": 6300,
+            "text": "6.3 km"
+          },
+          "heart_rate": {
+            "raw": 148,
+            "text": "148 bpm"
+          },
+          "longest": {
+            "distance": {
+              "raw": 6300,
+              "text": "6.3 km"
+            },
+            "pace": {
+              "raw": 330.16,
+              "text": "5:30 /km"
+            }
+          },
+          "pace": {
+            "raw": 330.16,
+            "text": "5:30 /km"
+          },
+          "sessions": 1,
+          "week_start": "2026-04-27"
+        },
+        {
+          "distance": {
+            "raw": 52100,
+            "text": "52.1 km"
+          },
+          "heart_rate": {
+            "raw": 148,
+            "text": "148 bpm"
+          },
+          "longest": {
+            "distance": {
+              "raw": 16100,
+              "text": "16.1 km"
+            },
+            "pace": {
+              "raw": 315.03,
+              "text": "5:15 /km"
+            }
+          },
+          "pace": {
+            "raw": 324,
+            "text": "5:24 /km"
+          },
+          "sessions": 5,
+          "week_start": "2026-05-04"
+        }
+      ],
+      "window": {
+        "from": "2025-05-19",
+        "from_label": "19 May 2025",
+        "to": "2026-05-13",
+        "to_label": "13 May 2026",
+        "weeks": 52
+      }
+    },
+    "/insights/pace?weeks=8": {
+      "bands": null,
+      "date": "2026-05-13",
+      "generated_at": "2026-05-13T06:30:00Z",
+      "unavailable": "pace bands unavailable — the window holds no moving samples",
+      "weeks": [
+        {
+          "distance": {
+            "raw": 6300,
+            "text": "6.3 km"
+          },
+          "heart_rate": {
+            "raw": 148,
+            "text": "148 bpm"
+          },
+          "longest": {
+            "distance": {
+              "raw": 6300,
+              "text": "6.3 km"
+            },
+            "pace": {
+              "raw": 330.16,
+              "text": "5:30 /km"
+            }
+          },
+          "pace": {
+            "raw": 330.16,
+            "text": "5:30 /km"
+          },
+          "sessions": 1,
+          "week_start": "2026-04-27"
+        },
+        {
+          "distance": {
+            "raw": 52100,
+            "text": "52.1 km"
+          },
+          "heart_rate": {
+            "raw": 148,
+            "text": "148 bpm"
+          },
+          "longest": {
+            "distance": {
+              "raw": 16100,
+              "text": "16.1 km"
+            },
+            "pace": {
+              "raw": 315.03,
+              "text": "5:15 /km"
+            }
+          },
+          "pace": {
+            "raw": 324,
+            "text": "5:24 /km"
+          },
+          "sessions": 5,
+          "week_start": "2026-05-04"
+        }
+      ],
+      "window": {
+        "from": "2026-03-23",
+        "from_label": "23 Mar 2026",
+        "to": "2026-05-13",
+        "to_label": "13 May 2026",
         "weeks": 8
       }
     },

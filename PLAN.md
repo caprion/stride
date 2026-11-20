@@ -594,6 +594,59 @@ readings live beside it.
 This travels with the schema change (the `wellness_observations` table) in
 `docs/contract/schema.sql`.
 
+### Proposed amendment — the pace page (2026-11-20)
+
+**Proposal, not approved.** The approvals below are the user's to give. This
+section records the change and the rule it serves; it is not permission to
+ship, publish, migrate or sync production data.
+
+A running log answers one question about its own history that nothing
+answered: **how has the pace behaved?** The training chart every plan
+draws — the week's distance with the long run inside it and the pace on the
+other axis — was not in the app, and neither was the distribution of the
+time by pace.
+
+The rule this serves is the one the whole port runs on: **a number is only
+a fact against a stated period, and a shape is not a fact.** So:
+
+* **The pace page is a page, and it is reached from Progress.** It is not a
+  sixth destination: the navigation stays Today · Runs · Progress · Body,
+  and the page is reached from the Progress screen, the way the heatmap is
+  reached from Runs. The four destinations stay the four.
+* **It has three panels, and each says what happened.** The training, week
+  by week — the week's distance as bars, **the long run inside each bar**,
+  and the week's pace on the other axis; the pace at a heart rate — one
+  point a week, the pace held at that week's median heart rate; and where
+  the time went, by pace — the bands.
+* **The bands are the core's**, beside the other derived values: the
+  distribution of a window's moving time by the pace it was held at,
+  measured over the runs' own **moving samples**, the same filter the
+  time-in-zone computation has always used. They are thirty seconds a
+  kilometre wide, and a pace exactly on an edge belongs to the band below
+  it.
+* **The bands are a property of the window**, and the answer **names** the
+  window: the same bands over twelve weeks and over a year are two
+  different answers. The window is the Progress window — the same `weeks`
+  parameter and the same calendar weeks.
+* **The bands are the bands the window's own time fills.** They are not
+  cut at a fixed pace and gathered into two rows: a range cut at somebody
+  else's paces is a claim about the athlete, and it hides most of the time
+  in one row. Every band the window fills is there, and the times in them
+  add up to the window's moving time.
+* **The pace and the heart rate are separate medians**, and the page says
+  so where it draws them. They are descriptive; they are not a
+  same-effort fitness comparison, and the page makes no claim from them.
+* **No value is the absence of the whole result.** A window with no moving
+  samples has **no bands**: the answer carries the reason and no numbers,
+  never a band of zero.
+* **The voice is the plan's.** The pace trend is a line and the bands are a
+  distribution: there is no target, no "too slow", no verdict and nothing
+  that tells the athlete what to do.
+
+This travels with the route and the field tables in
+`docs/contract/api-paths.md`.
+
+
 ---
 
 ## 0. The voice — vitals, direction, options; no verdicts

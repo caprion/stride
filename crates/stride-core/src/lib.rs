@@ -31,6 +31,8 @@
 //!   evaluative, and read from the same primitives the charts read.
 //! * [`zones`] — the heart-rate zone model and the time-in-zone computation,
 //!   from the athlete's stored configuration, never a run's observed maximum.
+//! * [`pace`] — the pace bands: where a window's moving time went, by the
+//!   pace it was held at.
 //! * [`fingerprint`] — the run's own mechanics: the cadence, the pace and
 //!   the heart rate as they moved across the run, and the shares of the
 //!   moving time in the athlete's own zones. Observations, never a score.
@@ -61,6 +63,7 @@ pub mod fingerprint;
 
 pub mod heatmap;
 pub mod load;
+pub mod pace;
 pub mod pattern;
 pub mod plan;
 pub mod profile;
@@ -92,6 +95,7 @@ pub use load::{
     LoadInputs, LoadReport, LoadState, LoadZoneModel, NoLoadReason, ProjectedDay, RecoveryScenario,
     RestingHrReading, WeekLoad, BANISTER_K,
 };
+pub use pace::{pace_bands, PaceBand, PaceBands, PacePoint, PaceRun, BAND_WIDTH_S_PER_KM};
 pub use pattern::{patterns, HistoryDay, Pattern, PatternKind};
 pub use plan::{
     adherence_of, adherence_of_at, baseline_from_history, baseline_from_history_at,

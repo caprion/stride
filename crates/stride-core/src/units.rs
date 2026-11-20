@@ -261,6 +261,19 @@ pub fn render_pace(seconds_per_km: Option<f64>) -> Option<String> {
     strings::render("value.pace", &[("value", &value)])
 }
 
+/// The rendered value of a range of paces: "4:30–5:00 /km".
+///
+/// The range is a range of the contract's own pace unit, and the seconds
+/// are written as a clock, the way a pace is read.
+pub fn render_pace_range(from_s_per_km: f64, to_s_per_km: f64) -> Option<String> {
+    let from = format_pace(from_s_per_km);
+    let to = format_pace(to_s_per_km);
+    if from.is_empty() || to.is_empty() {
+        return None;
+    }
+    strings::render("value.pace_range", &[("from", &from), ("to", &to)])
+}
+
 /// The rendered value of an elevation: "128 m".
 ///
 /// The rounding: a whole number of metres, half to even. An elevation of no
