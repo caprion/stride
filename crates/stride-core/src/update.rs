@@ -485,7 +485,7 @@ pub fn payload(input: &UpdateInput) -> Option<Payload> {
         .map(|zone| ZoneFact {
             label: units::render_zone_label(zone.index).unwrap_or_default(),
             time: units::render_duration(Some(zone.seconds)).unwrap_or_default(),
-            share: units::render_share(zone.share_pct).unwrap_or_default(),
+            share: units::render_percent(zone.share_pct).unwrap_or_default(),
         })
         .collect();
 

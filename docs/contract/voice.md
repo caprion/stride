@@ -10,13 +10,15 @@ The rule in one line: **facts first, no judgements at all** — the vitals, the
 direction each moved, and the plan's own options. The app never tells the
 athlete what to do, never scores them, and never links an option to a vital.
 
-## The six string types
+## The seven string types
 
-There are six string types: the four **registers** — `vital`, `direction`,
-`option`, `pattern` — plus the two supporting types, `statement` and `status`.
-All six are typed in the catalogue; the four registers are the content,
-`statement` carries the sentences that state a fact about a comparison, and
-`status` covers connect / sync / staleness / empty states.
+There are seven string types: the four **registers** — `vital`, `direction`,
+`option`, `pattern` — plus the three supporting types, `statement`, `status`
+and `instruction`. All seven are typed in the catalogue; the four registers
+are the content, `statement` carries the sentences that state a fact about a
+comparison, `status` covers connect / sync / staleness / empty states, and
+`instruction` is the product's own instruction to a model — the run update's
+prompt, and nothing else.
 
 | type | what it is | where it lives |
 |---|---|---|
@@ -26,6 +28,12 @@ All six are typed in the catalogue; the four registers are the content,
 | `statement` | a factual sentence about a comparison — "2.4 km more than the 10 km target", "fitter than 8 weeks ago", "Same distance, 3 weeks apart" | Today, Progress, Compare |
 | `pattern` | what usually happened to this athlete, as a fact about the past, always with its sample size | Body only (never Today, never next to a suggestion) |
 | `status` | connect/sync/staleness and empty-state lines ("last synced 2 days ago", "not enough data for a comparison yet") | anywhere |
+| `instruction` | the product's instruction to a model — the run update's prompt: the register, and the rule that only the numbers given may be used | the run update |
+
+The `instruction` strings are the one kind the app never shows: they are
+sent to a model, and they are the product's own words. Like every other
+kind, they are checked for the banned words — a prompt that names a banned
+word would teach the model to use one.
 
 Order on Today is fixed: vitals (with the Rest summary) → the plan's sessions →
 the other options → the last run. Nothing draws a conclusion.
