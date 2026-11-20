@@ -24,6 +24,7 @@
 //! | [`sync`] | `sync_state` |
 //! | [`deleted`] | `deleted_garmin_activities` |
 //! | [`zones`] | `hr_zone_models` |
+//! | [`updates`] | `run_updates`, `update_settings` |
 
 use crate::error::{Result, StoreError};
 
@@ -33,6 +34,7 @@ pub mod notes;
 pub mod observations;
 pub mod plan;
 pub mod sync;
+pub mod updates;
 pub mod wellness;
 pub mod zones;
 

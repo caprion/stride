@@ -202,6 +202,53 @@ CREATE TABLE wellness_observations (
     CONSTRAINT uq_wellness_observations UNIQUE (date, source, field, ordinal)
 );
 
+-- Old: (nothing - the old app never wrote about a run in words). v5:
+-- the run update: a model's own reading of one run, checked against the
+-- numbers it was given.
+--
+-- The update is not the product's own voice. It is attributed to the
+-- writer and to the reviewer, the checks it passed are stored beside it,
+-- and the hash of the payload names what it was written from. An update
+-- that cannot be re-checked is just a sentence.
+--
+-- Only a shipped update is kept: a draft that did not pass the checks,
+-- and one the reviewer discarded, keep nothing.
+CREATE TABLE run_updates (
+    id            INTEGER NOT NULL PRIMARY KEY,
+    activity_id   INTEGER NOT NULL,          -- the run it is about
+    writer        VARCHAR(96) NOT NULL,      -- the writer's model, by name
+    reviewer      VARCHAR(96) NOT NULL,      -- the reviewer's model, by name
+    payload_hash  TEXT NOT NULL,             -- the SHA-256 of the payload the model was given
+    draft         TEXT NOT NULL,             -- the model's own words
+    checks        TEXT NOT NULL,             -- the checks and their findings, as JSON
+    verdict       VARCHAR(16) NOT NULL,      -- 'ship'
+    created_at    DATETIME NOT NULL,         -- when it was made, ISO-8601 UTC
+    FOREIGN KEY (activity_id) REFERENCES activities (id) ON DELETE CASCADE,
+    CONSTRAINT uq_run_updates_activity UNIQUE (activity_id)
+);
+
+-- Old: (nothing - the old app had no model to write with). v5: the
+-- update's own settings: the writer, the reviewer, and whether anything
+-- may leave the machine at all.
+--
+-- The feature is off until the athlete turns it on, and the two models
+-- are named here because they are a choice and not a default. The key
+-- itself is never stored: the settings name the environment variable it
+-- is read from.
+CREATE TABLE update_settings (
+    id                INTEGER NOT NULL PRIMARY KEY CHECK (id = 1),
+    enabled           INTEGER NOT NULL DEFAULT 0,  -- off until the athlete turns it on
+    allow_remote      INTEGER NOT NULL DEFAULT 0,  -- off: nothing leaves the machine
+    writer_model      VARCHAR(96) NOT NULL DEFAULT '',
+    writer_family     VARCHAR(48) NOT NULL DEFAULT '',
+    writer_base_url   VARCHAR(256) NOT NULL DEFAULT '',
+    reviewer_model    VARCHAR(96) NOT NULL DEFAULT '',
+    reviewer_family   VARCHAR(48) NOT NULL DEFAULT '',
+    reviewer_base_url VARCHAR(256) NOT NULL DEFAULT '',
+    key_env           VARCHAR(64) NOT NULL DEFAULT 'STRIDE_MODEL_KEY',
+    updated_at        DATETIME NOT NULL
+);
+
 -- Indexes, created after the tables, in this order.
 CREATE INDEX ix_activities_local_date ON activities (local_date);
 CREATE INDEX ix_activities_sport      ON activities (sport_type);
@@ -211,3 +258,4 @@ CREATE INDEX ix_plan_sessions_block_date ON plan_sessions (block_id, date);
 CREATE INDEX ix_plan_sessions_date     ON plan_sessions (date);
 CREATE INDEX ix_notes_activity_id     ON notes (activity_id);
 CREATE INDEX ix_wellness_observations_date ON wellness_observations (date);
+CREATE INDEX ix_run_updates_activity ON run_updates (activity_id);
