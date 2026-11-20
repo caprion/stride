@@ -431,7 +431,7 @@ export function PacePage() {
         <div style={{ width: '100%', height: 200 }} data-points={cloud.length}>
           <ResponsiveContainer width="100%" height="100%">
             <ScatterChart margin={{ top: 8, right: 16, bottom: 8, left: -6 }}>
-              <CartesianGrid stroke="#E4EBF0" />
+              <CartesianGrid stroke="var(--chart-grid)" />
               <XAxis
                 type="number"
                 dataKey="hrValue"
@@ -454,7 +454,7 @@ export function PacePage() {
                 domain={['dataMin - 10', 'dataMax + 10']}
               />
               <Tooltip content={<CloudTooltip />} cursor={{ strokeDasharray: '3 3' }} />
-              <Scatter data={cloud} fill="#B57C06" isAnimationActive={false} />
+              <Scatter data={cloud} fill="var(--accent-600)" isAnimationActive={false} />
             </ScatterChart>
           </ResponsiveContainer>
         </div>
