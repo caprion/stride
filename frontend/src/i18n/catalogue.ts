@@ -611,6 +611,8 @@ export const catalogue = {
 
   // --------------------------------------------------------- activity
   'activity.heading': { type: 'status', text: 'Activity' },
+  /** The action that opens the run's film. */
+  'activity.film': { type: 'status', text: 'Play the run' },
   'activity.story.heading': { type: 'status', text: 'What it meant' },
   'activity.effort.heading': { type: 'status', text: 'Effort' },
   'activity.splits.heading': { type: 'status', text: 'Splits' },
@@ -653,6 +655,46 @@ export const catalogue = {
     text: 'Pace and heart rate share the same elapsed-time cursor. Elevation uses distance and is shown separately.',
   },
   'activity.effort.minutes': { type: 'status', text: 'Minutes into the run' },
+
+  // --------------------------------------------------------- the run film
+  //
+  // The film is one run, playable: the pace, the heart rate and the
+  // ground on one axis, the athlete's own zones behind them, and the
+  // route beside it with a camera that follows the runner.
+  //
+  // The film's **sentences** are the core's — the reasons a run has no
+  // film, the name of the space outside the zones — and they arrive
+  // already written. What is here is the chrome around them.
+  'film.heading': { type: 'status', text: 'Run film' },
+  'film.back': { type: 'status', text: 'Back to the run' },
+  'film.play': { type: 'status', text: 'Play' },
+  'film.pause': { type: 'status', text: 'Pause' },
+  'film.scrub': { type: 'status', text: 'Move through the run' },
+  'film.speed': { type: 'status', text: 'The run plays at sixty times its own time.' },
+  'film.chart.alt': {
+    type: 'status',
+    text: "The run over time: the pace, the heart rate, the ground, and the athlete's own zones",
+  },
+  'film.elapsed': { type: 'status', text: 'Elapsed' },
+  'film.ground': { type: 'status', text: 'Ground' },
+  'film.now': { type: 'status', text: 'Right now' },
+  'film.axis.pace': { type: 'status', text: 'Pace — faster is higher' },
+  'film.axis.heartRate': { type: 'status', text: 'Heart rate' },
+  'film.zones.heading': { type: 'status', text: 'The zones you were in' },
+  'film.route.heading': { type: 'status', text: 'The route' },
+  'film.route.coloured': { type: 'status', text: 'The track is coloured by the pace' },
+  'film.splits.heading': { type: 'status', text: 'Splits' },
+  'film.splits.column': { type: 'status', text: 'Split' },
+  'film.splits.jump': { type: 'status', text: 'Play from this split' },
+  'film.alt': {
+    type: 'status',
+    text: "The route of the run, with the runner's position on it",
+  },
+  'film.empty.title': { type: 'status', text: 'There is no film for this run' },
+  'film.empty.body': {
+    type: 'status',
+    text: "The film is read from the run's own file.",
+  },
 
   // ----------------------------------------------------------- common
   'common.loading': { type: 'status', text: 'Loading…' },

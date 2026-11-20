@@ -294,6 +294,22 @@
     }
   }
 
+  /* The film: the timeline and the route beside it, one above the other
+     when there is no room for both. The film is a wide screen first, but
+     it must not break the phone. */
+  .film-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 12px;
+  }
+
+  @container shell (min-width: 1024px) {
+    .film-layout {
+      grid-template-columns: minmax(0, 1.45fr) minmax(0, 1fr);
+      align-items: start;
+    }
+  }
+
   /* Compare: the two run cards pair up as soon as there is room. */
   .compare-grid {
     display: grid;
@@ -436,6 +452,11 @@
     min-height: 44px;
     display: grid;
     place-items: center;
+  }
+  /* The map's own ground: the app's page colour, so a map without street
+     tiles looks like the app's own drawing and not like a hole. */
+  .street-map.leaflet-container {
+    background: var(--brand-50);
   }
   :focus-visible { outline: 2px solid var(--brand-600); outline-offset: 3px; }
 

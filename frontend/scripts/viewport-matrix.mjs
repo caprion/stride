@@ -67,6 +67,14 @@ const ROUTES = [
     fixture: 'route',
   },
   {
+    // The run film: reached by an explicit action on the run detail, and
+    // drawn by the app from the series the answer carries.
+    path: '/runs/101/film',
+    name: 'Run film',
+    primary: '[data-testid="film"]',
+    fixture: 'film',
+  },
+  {
     // The heatmap: reached by an explicit action, and drawn by the app
     // itself from the cells the answer carries.
     path: '/heatmap',

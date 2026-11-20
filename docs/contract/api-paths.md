@@ -20,6 +20,7 @@ reference only).
 | `/activities` | the feed, windowed by date |
 | `/activities/{id}` | one run |
 | `/activities/{id}/fit` | the run's **original FIT file** — the source of truth, byte for byte as Garmin served it | the athlete's own file, downloaded to their own machine; the app never uploads it anywhere |
+| `/activities/{id}/film` | the run's **film** — the run's own series, playable: the samples with their pace, their heart rate and **the zone each one sits in**, the ground, the splits, and the zone model the zones were measured against (see "The run film" below) |
 | `/physiology/{daily,sleep,hrv,vitals,latest,sources}` | Body inputs: the vitals and their directions (no score) |
 | `/fitness/{fingerprint,trends,zones}` | `fingerprint` answers **one run's fingerprint** — the observations of the run's mechanics, and the shares of the moving time in the athlete's own zones — and the **run detail shows them** (see "The fingerprint and the run's mechanics" below). `trends` is the measured trend of pace and heart rate. `zones` answers the per-run time in zone from the athlete's **stored zone model**, and names the model with the day it was read (see "The zones and the zone model" below) |
 | `/stats/{summary,weekly,pace-trends,elevation,personal-records}` | Progress |
@@ -136,6 +137,7 @@ Two rules hold for every shape below.
 |---|---|
 | `/activities` | `activities: ActivitySummary[]`, `next_cursor: string \| null`, `generated_at: string` |
 | `/activities/{id}` | `ActivitySummary` and `splits: {index, distance, duration, pace, heart_rate}[]`, `elevation: {distance, elevation}[]`, `samples: {offset_s, pace, heart_rate}[]`, `plan_line: {text} \| null`, `note: string \| null` |
+| `/activities/{id}/film` | `activity_id`, `local_date`, `basis: string \| null`, `model: ZoneModel \| null`, `zones: {label, range, from_bpm, to_bpm}[]`, `outside_label: string \| null`, `samples: {elapsed, distance, pace, heart_rate, zone}[]`, `ground: {offset_s, elevation}[]`, `splits: {index, offset_s, distance, duration, pace, heart_rate}[]`, `unavailable: string \| null`, `zones_unavailable: string \| null`, `generated_at` |
 | `/physiology/vitals` | `date`, `generated_at`, `rest: {label, line}`, `vitals: {key, label, value_text, direction_text, deviation_text, travel_text, status_text, band}[]`, `history: {sleep, hrv, resting_hr}` (each point: `date`, nullable `value`, nullable core-rendered `text` with units), `patterns: {id, text, sample_size}[]` |
 | `/plan/week` | `block_name`, `source`, `week_start`, `week_end`, `today`, `target`, `sessions: {date, session_type, title, sentence, target, actual, status, source}[]`, `adherence: {done, planned} \| null`, `counts: {done, planned, not_done}` |
 | `/settings` | `goal: {value: {text, raw} \| null, km: number \| null}`, `pause: {start_date, end_date, reason} \| null`, `storage: {size, activity_count, wellness_day_count, plan_session_count, note_count}`, `generated_at` |
@@ -857,3 +859,83 @@ The maximum heart rate the efficiency factor is measured against is the one
 from the athlete's **stored zone model**: their watch's own configuration,
 read once and stored with the day it was read. It is never the run's own
 observed maximum — two runs, two scales — and never an age formula.
+
+### The run film
+
+`/activities/{id}/film` answers one question about one run: **what this run
+looked like while it was happening**. The film is the run's own series,
+drawn as a timeline and played back: the pace, the heart rate and the
+ground on one axis, the athlete's own zones behind them, and the route
+beside it with a camera that follows the runner.
+
+It is a route of its own because it is a **surface**, not a metric: the
+answer is one run's whole timeline, and no other route answers that. It
+sits with the run's other sub-routes — `/activities/{id}/fit`,
+`/activities/{id}/note` — and it is named by the run it belongs to, so the
+run's own facts and the film's own series are two halves of one page.
+
+#### The name of the route
+
+`/activities/{id}/film` and not `/fitness/film?id=…`. The `/fitness/*`
+routes answer questions about the athlete's **fitness** — the zones, the
+fingerprint, the trends — and they are named by a query because they are
+about the athlete. The film is about a **run**: it is that run's samples,
+that run's ground and that run's splits. The zone model travels with it,
+named and dated, exactly as it travels with `/fitness/zones`.
+
+#### The fields
+
+| field | what it is |
+|---|---|
+| `activity_id` | the run's id |
+| `local_date` | the athlete's local date of the run |
+| `basis` | the basis the series was read on: `"samples"` — every sample of the run's file, standing ones included |
+| `model` | the zone model the zones were measured against, named and dated; `null` when no model has been read |
+| `zones` | the five bands of the athlete's zones: `label` ("Z1"), `range` ("106-121 bpm"), `from_bpm` and `to_bpm` |
+| `outside_label` | the name of the space **outside** the zones, in the core's words: "outside your zones" |
+| `samples` | the run's samples: `elapsed`, `distance`, `pace`, `heart_rate` and `zone` |
+| `samples[].elapsed` | the time from the start of the run, as the core renders it: "42 m". The number beside the words is the time in **seconds** |
+| `samples[].distance` | the distance from the start, as the core renders it: "3.2 km". The number beside the words is the distance in **metres** |
+| `samples[].zone` | the zone the sample sits in: the index of the band in `zones`, counted from zero. `null` when the reading is outside the zones |
+| `ground` | the run's ground: `offset_s` (the seconds from the start) and `elevation` |
+| `splits` | the run's splits: `index`, `offset_s` (the seconds from the start **to the beginning of the split**), `distance`, `duration`, `pace` and `heart_rate` |
+| `unavailable` | why there is no film at all, in the core's words |
+| `zones_unavailable` | why the zones have no value, in the core's words. The film itself may still be there: the pace, the heart rate and the ground do not need a zone model |
+| `generated_at` | when the answer was produced |
+
+#### The zone of a sample
+
+The zone of a sample is the **core's**: the athlete's stored model, read
+through `stride-core`'s own classifier — the one the time-in-zone
+computation uses — so the ribbon behind the film's timeline and the bands
+on the run detail cannot disagree about which zone a reading is in.
+
+The boundary rule is the contract's: a reading exactly on a floor belongs
+to the **lower** zone, and a reading at or below the first floor is
+**outside** the zones, as is a reading that is not there at all. The
+samples carry the zone as the index of the band in `zones`, and `null` for
+outside — so the ribbon has six bands: the five zones and the space
+outside them.
+
+#### The ground is on the run's time axis
+
+The run detail's elevation is **distance-based**, and it stays that way: it
+is the profile of the ground, not a series over time. The film's ground is
+different — it is the same altitude on the **elapsed** axis, so the pace,
+the heart rate and the ground share one cursor, and the playhead crosses
+all three at the same moment.
+
+#### No value
+
+**No value is the absence of the whole result**, and it is never a zero:
+
+- the run has no file → there is no series at all, and the reason in the
+  core's words;
+- the run's file carries no samples → the same shape, and the reason;
+- no zone model has been read → the film is still there, the **zones** have
+  no value, and the reason says so;
+- the stored model's floors are not strictly increasing → the same: the
+  model is named, and the zones have no value.
+
+The reason is the core's own sentence, asked for out of the core's
+catalogue and passed on. The api never writes a sentence of its own.

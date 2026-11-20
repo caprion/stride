@@ -32,6 +32,9 @@ import type {
   CompareCandidate,
   CompareResponse,
   ConnectionStatus,
+  FilmGround,
+  FilmSample,
+  FilmSplit,
   FitImportResult,
   FitnessZones,
   Fingerprint,
@@ -49,6 +52,7 @@ import type {
   ProgressInsight,
   RenderedValue,
   RollingInsight,
+  RunFilm,
   SettingsDeleteResult,
   SettingsExportResult,
   SettingsState,
@@ -623,6 +627,604 @@ export const heatmapEmptyFixture: HeatmapInsight = {
   cells: [],
   extent: null,
   unavailable: 'no_positions',
+}
+
+
+// ------------------------------------------------------------- the film
+
+/**
+ * The run film: the run's own series, playable.
+ *
+ * **The seeded store holds no FIT file**, so the router answers the film
+ * with the honest answer — "the run has no file to read" — and that is the
+ * answer the fixture set carries (see `answers.json`).
+ *
+ * The one below is the state the surface is **reviewed** in: the run's
+ * file read, with its samples, its ground, its splits and the athlete's
+ * own zone model. The values are invented, like every other value in this
+ * fixture set, and the words are the core's — "5:39 /km", "144 bpm",
+ * "18 m".
+ */
+
+
+/**
+ * The run's samples, as the core renders them.
+ *
+ * A minute apart, over the run the seed carries: twelve and a half
+ * kilometres in an hour and seven minutes, easing from 5:39 to 5:13 a
+ * kilometre while the heart rate climbs from 132 to 166.
+ */
+const FILM_SAMPLES: FilmSample[] = [
+  {
+    elapsed: { text: '0 m', raw: 0 },
+    distance: { text: '0 km', raw: 0 },
+    pace: { text: '5:39 /km', raw: 339.36 },
+    heart_rate: { text: '132 bpm', raw: 132 },
+    zone: 1,
+  },
+  {
+    elapsed: { text: '1 m', raw: 60 },
+    distance: { text: '0.2 km', raw: 177.03 },
+    pace: { text: '5:39 /km', raw: 338.92 },
+    heart_rate: { text: '133 bpm', raw: 133 },
+    zone: 1,
+  },
+  {
+    elapsed: { text: '2 m', raw: 120 },
+    distance: { text: '0.4 km', raw: 354.3 },
+    pace: { text: '5:38 /km', raw: 338.47 },
+    heart_rate: { text: '134 bpm', raw: 134 },
+    zone: 1,
+  },
+  {
+    elapsed: { text: '3 m', raw: 180 },
+    distance: { text: '0.5 km', raw: 531.81 },
+    pace: { text: '5:38 /km', raw: 338.02 },
+    heart_rate: { text: '135 bpm', raw: 135 },
+    zone: 1,
+  },
+  {
+    elapsed: { text: '4 m', raw: 240 },
+    distance: { text: '0.7 km', raw: 709.55 },
+    pace: { text: '5:38 /km', raw: 337.57 },
+    heart_rate: { text: '136 bpm', raw: 136 },
+    zone: 2,
+  },
+  {
+    elapsed: { text: '5 m', raw: 300 },
+    distance: { text: '0.9 km', raw: 887.53 },
+    pace: { text: '5:37 /km', raw: 337.12 },
+    heart_rate: { text: '136 bpm', raw: 136 },
+    zone: 2,
+  },
+  {
+    elapsed: { text: '6 m', raw: 360 },
+    distance: { text: '1.1 km', raw: 1065.74 },
+    pace: { text: '5:37 /km', raw: 336.67 },
+    heart_rate: { text: '137 bpm', raw: 137 },
+    zone: 2,
+  },
+  {
+    elapsed: { text: '7 m', raw: 420 },
+    distance: { text: '1.2 km', raw: 1244.19 },
+    pace: { text: '5:36 /km', raw: 336.23 },
+    heart_rate: { text: '138 bpm', raw: 138 },
+    zone: 2,
+  },
+  {
+    elapsed: { text: '8 m', raw: 480 },
+    distance: { text: '1.4 km', raw: 1422.88 },
+    pace: { text: '5:36 /km', raw: 335.78 },
+    heart_rate: { text: '138 bpm', raw: 138 },
+    zone: 2,
+  },
+  {
+    elapsed: { text: '9 m', raw: 540 },
+    distance: { text: '1.6 km', raw: 1601.81 },
+    pace: { text: '5:35 /km', raw: 335.33 },
+    heart_rate: { text: '139 bpm', raw: 139 },
+    zone: 2,
+  },
+  {
+    elapsed: { text: '10 m', raw: 600 },
+    distance: { text: '1.8 km', raw: 1780.98 },
+    pace: { text: '5:35 /km', raw: 334.88 },
+    heart_rate: { text: '139 bpm', raw: 139 },
+    zone: 2,
+  },
+  {
+    elapsed: { text: '11 m', raw: 660 },
+    distance: { text: '2 km', raw: 1960.38 },
+    pace: { text: '5:34 /km', raw: 334.43 },
+    heart_rate: { text: '140 bpm', raw: 140 },
+    zone: 2,
+  },
+  {
+    elapsed: { text: '12 m', raw: 720 },
+    distance: { text: '2.1 km', raw: 2140.03 },
+    pace: { text: '5:34 /km', raw: 333.99 },
+    heart_rate: { text: '141 bpm', raw: 141 },
+    zone: 2,
+  },
+  {
+    elapsed: { text: '13 m', raw: 780 },
+    distance: { text: '2.3 km', raw: 2319.92 },
+    pace: { text: '5:34 /km', raw: 333.54 },
+    heart_rate: { text: '141 bpm', raw: 141 },
+    zone: 2,
+  },
+  {
+    elapsed: { text: '14 m', raw: 840 },
+    distance: { text: '2.5 km', raw: 2500.05 },
+    pace: { text: '5:33 /km', raw: 333.09 },
+    heart_rate: { text: '142 bpm', raw: 142 },
+    zone: 2,
+  },
+  {
+    elapsed: { text: '15 m', raw: 900 },
+    distance: { text: '2.7 km', raw: 2680.43 },
+    pace: { text: '5:33 /km', raw: 332.64 },
+    heart_rate: { text: '142 bpm', raw: 142 },
+    zone: 2,
+  },
+  {
+    elapsed: { text: '16 m', raw: 960 },
+    distance: { text: '2.9 km', raw: 2861.05 },
+    pace: { text: '5:32 /km', raw: 332.19 },
+    heart_rate: { text: '143 bpm', raw: 143 },
+    zone: 2,
+  },
+  {
+    elapsed: { text: '17 m', raw: 1020 },
+    distance: { text: '3 km', raw: 3041.91 },
+    pace: { text: '5:32 /km', raw: 331.74 },
+    heart_rate: { text: '143 bpm', raw: 143 },
+    zone: 2,
+  },
+  {
+    elapsed: { text: '18 m', raw: 1080 },
+    distance: { text: '3.2 km', raw: 3219.26 },
+    pace: { text: '5:38 /km', raw: 338.3 },
+    heart_rate: { text: '144 bpm', raw: 144 },
+    zone: 2,
+  },
+  {
+    elapsed: { text: '19 m', raw: 1140 },
+    distance: { text: '3.4 km', raw: 3396.86 },
+    pace: { text: '5:38 /km', raw: 337.86 },
+    heart_rate: { text: '144 bpm', raw: 144 },
+    zone: 2,
+  },
+  {
+    elapsed: { text: '20 m', raw: 1200 },
+    distance: { text: '3.6 km', raw: 3578.45 },
+    pace: { text: '5:30 /km', raw: 330.4 },
+    heart_rate: { text: '145 bpm', raw: 145 },
+    zone: 2,
+  },
+  {
+    elapsed: { text: '21 m', raw: 1260 },
+    distance: { text: '3.8 km', raw: 3760.3 },
+    pace: { text: '5:30 /km', raw: 329.95 },
+    heart_rate: { text: '145 bpm', raw: 145 },
+    zone: 2,
+  },
+  {
+    elapsed: { text: '22 m', raw: 1320 },
+    distance: { text: '3.9 km', raw: 3942.39 },
+    pace: { text: '5:30 /km', raw: 329.5 },
+    heart_rate: { text: '146 bpm', raw: 146 },
+    zone: 2,
+  },
+  {
+    elapsed: { text: '23 m', raw: 1380 },
+    distance: { text: '4.1 km', raw: 4124.73 },
+    pace: { text: '5:29 /km', raw: 329.05 },
+    heart_rate: { text: '146 bpm', raw: 146 },
+    zone: 2,
+  },
+  {
+    elapsed: { text: '24 m', raw: 1440 },
+    distance: { text: '4.3 km', raw: 4307.32 },
+    pace: { text: '5:29 /km', raw: 328.61 },
+    heart_rate: { text: '147 bpm', raw: 147 },
+    zone: 2,
+  },
+  {
+    elapsed: { text: '25 m', raw: 1500 },
+    distance: { text: '4.5 km', raw: 4490.16 },
+    pace: { text: '5:28 /km', raw: 328.16 },
+    heart_rate: { text: '147 bpm', raw: 147 },
+    zone: 2,
+  },
+  {
+    elapsed: { text: '26 m', raw: 1560 },
+    distance: { text: '4.7 km', raw: 4673.25 },
+    pace: { text: '5:28 /km', raw: 327.71 },
+    heart_rate: { text: '148 bpm', raw: 148 },
+    zone: 2,
+  },
+  {
+    elapsed: { text: '27 m', raw: 1620 },
+    distance: { text: '4.9 km', raw: 4856.59 },
+    pace: { text: '5:27 /km', raw: 327.26 },
+    heart_rate: { text: '148 bpm', raw: 148 },
+    zone: 2,
+  },
+  {
+    elapsed: { text: '28 m', raw: 1680 },
+    distance: { text: '5 km', raw: 5040.18 },
+    pace: { text: '5:27 /km', raw: 326.81 },
+    heart_rate: { text: '149 bpm', raw: 149 },
+    zone: 2,
+  },
+  {
+    elapsed: { text: '29 m', raw: 1740 },
+    distance: { text: '5.2 km', raw: 5224.02 },
+    pace: { text: '5:26 /km', raw: 326.37 },
+    heart_rate: { text: '149 bpm', raw: 149 },
+    zone: 2,
+  },
+  {
+    elapsed: { text: '30 m', raw: 1800 },
+    distance: { text: '5.4 km', raw: 5408.12 },
+    pace: { text: '5:26 /km', raw: 325.92 },
+    heart_rate: { text: '154 bpm', raw: 154 },
+    zone: 3,
+  },
+  {
+    elapsed: { text: '31 m', raw: 1860 },
+    distance: { text: '5.6 km', raw: 5592.47 },
+    pace: { text: '5:25 /km', raw: 325.47 },
+    heart_rate: { text: '154 bpm', raw: 154 },
+    zone: 3,
+  },
+  {
+    elapsed: { text: '32 m', raw: 1920 },
+    distance: { text: '5.8 km', raw: 5777.07 },
+    pace: { text: '5:25 /km', raw: 325.02 },
+    heart_rate: { text: '151 bpm', raw: 151 },
+    zone: 3,
+  },
+  {
+    elapsed: { text: '33 m', raw: 1980 },
+    distance: { text: '6 km', raw: 5961.93 },
+    pace: { text: '5:25 /km', raw: 324.57 },
+    heart_rate: { text: '151 bpm', raw: 151 },
+    zone: 3,
+  },
+  {
+    elapsed: { text: '34 m', raw: 2040 },
+    distance: { text: '6.1 km', raw: 6147.04 },
+    pace: { text: '5:24 /km', raw: 324.12 },
+    heart_rate: { text: '152 bpm', raw: 152 },
+    zone: 3,
+  },
+  {
+    elapsed: { text: '35 m', raw: 2100 },
+    distance: { text: '6.3 km', raw: 6332.41 },
+    pace: { text: '5:24 /km', raw: 323.68 },
+    heart_rate: { text: '152 bpm', raw: 152 },
+    zone: 3,
+  },
+  {
+    elapsed: { text: '36 m', raw: 2160 },
+    distance: { text: '6.5 km', raw: 6518.04 },
+    pace: { text: '5:23 /km', raw: 323.23 },
+    heart_rate: { text: '153 bpm', raw: 153 },
+    zone: 3,
+  },
+  {
+    elapsed: { text: '37 m', raw: 2220 },
+    distance: { text: '6.7 km', raw: 6703.93 },
+    pace: { text: '5:23 /km', raw: 322.78 },
+    heart_rate: { text: '153 bpm', raw: 153 },
+    zone: 3,
+  },
+  {
+    elapsed: { text: '38 m', raw: 2280 },
+    distance: { text: '6.9 km', raw: 6890.07 },
+    pace: { text: '5:22 /km', raw: 322.33 },
+    heart_rate: { text: '154 bpm', raw: 154 },
+    zone: 3,
+  },
+  {
+    elapsed: { text: '39 m', raw: 2340 },
+    distance: { text: '7.1 km', raw: 7076.47 },
+    pace: { text: '5:22 /km', raw: 321.88 },
+    heart_rate: { text: '154 bpm', raw: 154 },
+    zone: 3,
+  },
+  {
+    elapsed: { text: '40 m', raw: 2400 },
+    distance: { text: '7.3 km', raw: 7263.14 },
+    pace: { text: '5:21 /km', raw: 321.43 },
+    heart_rate: { text: '155 bpm', raw: 155 },
+    zone: 3,
+  },
+  {
+    elapsed: { text: '41 m', raw: 2460 },
+    distance: { text: '7.5 km', raw: 7450.06 },
+    pace: { text: '5:21 /km', raw: 320.99 },
+    heart_rate: { text: '155 bpm', raw: 155 },
+    zone: 3,
+  },
+  {
+    elapsed: { text: '42 m', raw: 2520 },
+    distance: { text: '7.6 km', raw: 7637.25 },
+    pace: { text: '5:21 /km', raw: 320.54 },
+    heart_rate: { text: '155 bpm', raw: 155 },
+    zone: 3,
+  },
+  {
+    elapsed: { text: '43 m', raw: 2580 },
+    distance: { text: '7.8 km', raw: 7824.69 },
+    pace: { text: '5:20 /km', raw: 320.09 },
+    heart_rate: { text: '156 bpm', raw: 156 },
+    zone: 3,
+  },
+  {
+    elapsed: { text: '44 m', raw: 2640 },
+    distance: { text: '8 km', raw: 8008.38 },
+    pace: { text: '5:27 /km', raw: 326.65 },
+    heart_rate: { text: '156 bpm', raw: 156 },
+    zone: 3,
+  },
+  {
+    elapsed: { text: '45 m', raw: 2700 },
+    distance: { text: '8.2 km', raw: 8196.35 },
+    pace: { text: '5:19 /km', raw: 319.19 },
+    heart_rate: { text: '157 bpm', raw: 157 },
+    zone: 3,
+  },
+  {
+    elapsed: { text: '46 m', raw: 2760 },
+    distance: { text: '8.4 km', raw: 8384.59 },
+    pace: { text: '5:19 /km', raw: 318.75 },
+    heart_rate: { text: '157 bpm', raw: 157 },
+    zone: 3,
+  },
+  {
+    elapsed: { text: '47 m', raw: 2820 },
+    distance: { text: '8.6 km', raw: 8573.09 },
+    pace: { text: '5:18 /km', raw: 318.3 },
+    heart_rate: { text: '158 bpm', raw: 158 },
+    zone: 3,
+  },
+  {
+    elapsed: { text: '48 m', raw: 2880 },
+    distance: { text: '8.8 km', raw: 8761.86 },
+    pace: { text: '5:18 /km', raw: 317.85 },
+    heart_rate: { text: '158 bpm', raw: 158 },
+    zone: 3,
+  },
+  {
+    elapsed: { text: '49 m', raw: 2940 },
+    distance: { text: '9 km', raw: 8950.9 },
+    pace: { text: '5:17 /km', raw: 317.4 },
+    heart_rate: { text: '158 bpm', raw: 158 },
+    zone: 3,
+  },
+  {
+    elapsed: { text: '50 m', raw: 3000 },
+    distance: { text: '9.1 km', raw: 9140.2 },
+    pace: { text: '5:17 /km', raw: 316.95 },
+    heart_rate: { text: '159 bpm', raw: 159 },
+    zone: 3,
+  },
+  {
+    elapsed: { text: '51 m', raw: 3060 },
+    distance: { text: '9.3 km', raw: 9329.77 },
+    pace: { text: '5:17 /km', raw: 316.5 },
+    heart_rate: { text: '159 bpm', raw: 159 },
+    zone: 3,
+  },
+  {
+    elapsed: { text: '52 m', raw: 3120 },
+    distance: { text: '9.5 km', raw: 9519.61 },
+    pace: { text: '5:16 /km', raw: 316.06 },
+    heart_rate: { text: '160 bpm', raw: 160 },
+    zone: 3,
+  },
+  {
+    elapsed: { text: '53 m', raw: 3180 },
+    distance: { text: '9.7 km', raw: 9709.72 },
+    pace: { text: '5:16 /km', raw: 315.61 },
+    heart_rate: { text: '160 bpm', raw: 160 },
+    zone: 3,
+  },
+  {
+    elapsed: { text: '54 m', raw: 3240 },
+    distance: { text: '9.9 km', raw: 9900.1 },
+    pace: { text: '5:15 /km', raw: 315.16 },
+    heart_rate: { text: '161 bpm', raw: 161 },
+    zone: 3,
+  },
+  {
+    elapsed: { text: '55 m', raw: 3300 },
+    distance: { text: '10.1 km', raw: 10090.75 },
+    pace: { text: '5:15 /km', raw: 314.71 },
+    heart_rate: { text: '161 bpm', raw: 161 },
+    zone: 3,
+  },
+  {
+    elapsed: { text: '56 m', raw: 3360 },
+    distance: { text: '10.3 km', raw: 10281.67 },
+    pace: { text: '5:14 /km', raw: 314.26 },
+    heart_rate: { text: '161 bpm', raw: 161 },
+    zone: 3,
+  },
+  {
+    elapsed: { text: '57 m', raw: 3420 },
+    distance: { text: '10.5 km', raw: 10472.87 },
+    pace: { text: '5:14 /km', raw: 313.81 },
+    heart_rate: { text: '162 bpm', raw: 162 },
+    zone: 3,
+  },
+  {
+    elapsed: { text: '58 m', raw: 3480 },
+    distance: { text: '10.7 km', raw: 10664.34 },
+    pace: { text: '5:13 /km', raw: 313.37 },
+    heart_rate: { text: '162 bpm', raw: 162 },
+    zone: 3,
+  },
+  {
+    elapsed: { text: '59 m', raw: 3540 },
+    distance: { text: '10.9 km', raw: 10856.08 },
+    pace: { text: '5:13 /km', raw: 312.92 },
+    heart_rate: { text: '163 bpm', raw: 163 },
+    zone: 3,
+  },
+  {
+    elapsed: { text: '1 h', raw: 3600 },
+    distance: { text: '11 km', raw: 11048.1 },
+    pace: { text: '5:12 /km', raw: 312.47 },
+    heart_rate: { text: '163 bpm', raw: 163 },
+    zone: 3,
+  },
+  {
+    elapsed: { text: '1 h 1 m', raw: 3660 },
+    distance: { text: '11.2 km', raw: 11240.4 },
+    pace: { text: '5:12 /km', raw: 312.02 },
+    heart_rate: { text: '164 bpm', raw: 164 },
+    zone: 4,
+  },
+  {
+    elapsed: { text: '1 h 2 m', raw: 3720 },
+    distance: { text: '11.4 km', raw: 11432.97 },
+    pace: { text: '5:12 /km', raw: 311.57 },
+    heart_rate: { text: '164 bpm', raw: 164 },
+    zone: 4,
+  },
+  {
+    elapsed: { text: '1 h 3 m', raw: 3780 },
+    distance: { text: '11.6 km', raw: 11625.82 },
+    pace: { text: '5:11 /km', raw: 311.13 },
+    heart_rate: { text: '164 bpm', raw: 164 },
+    zone: 4,
+  },
+  {
+    elapsed: { text: '1 h 4 m', raw: 3840 },
+    distance: { text: '11.8 km', raw: 11818.94 },
+    pace: { text: '5:11 /km', raw: 310.68 },
+    heart_rate: { text: '165 bpm', raw: 165 },
+    zone: 4,
+  },
+  {
+    elapsed: { text: '1 h 5 m', raw: 3900 },
+    distance: { text: '12 km', raw: 12012.35 },
+    pace: { text: '5:10 /km', raw: 310.23 },
+    heart_rate: { text: '165 bpm', raw: 165 },
+    zone: 4,
+  },
+  {
+    elapsed: { text: '1 h 6 m', raw: 3960 },
+    distance: { text: '12.2 km', raw: 12206.03 },
+    pace: { text: '5:10 /km', raw: 309.78 },
+    heart_rate: { text: '166 bpm', raw: 166 },
+    zone: 4,
+  },
+  {
+    elapsed: { text: '1 h 7 m', raw: 4020 },
+    distance: { text: '12.4 km', raw: 12400 },
+    pace: { text: '5:09 /km', raw: 309.33 },
+    heart_rate: { text: '166 bpm', raw: 166 },
+    zone: 4,
+  },
+]
+
+const FILM_GROUND: FilmGround[] = [
+  { offset_s: 0, elevation: { text: '118 m', raw: 118 } },
+  { offset_s: 300, elevation: { text: '121 m', raw: 121 } },
+  { offset_s: 600, elevation: { text: '124 m', raw: 124 } },
+  { offset_s: 900, elevation: { text: '127 m', raw: 127 } },
+  { offset_s: 1200, elevation: { text: '131 m', raw: 131 } },
+  { offset_s: 1500, elevation: { text: '134 m', raw: 134 } },
+  { offset_s: 1800, elevation: { text: '137 m', raw: 137 } },
+  { offset_s: 2100, elevation: { text: '140 m', raw: 140 } },
+  { offset_s: 2400, elevation: { text: '143 m', raw: 143 } },
+  { offset_s: 2700, elevation: { text: '149 m', raw: 149 } },
+  { offset_s: 3000, elevation: { text: '152 m', raw: 152 } },
+  { offset_s: 3300, elevation: { text: '155 m', raw: 155 } },
+  { offset_s: 3600, elevation: { text: '159 m', raw: 159 } },
+  { offset_s: 3900, elevation: { text: '162 m', raw: 162 } },
+]
+
+const FILM_SPLITS: FilmSplit[] = [
+  {
+    index: 1,
+    offset_s: 0,
+    distance: { text: '3.2 km', raw: 3219.26 },
+    duration: { text: '18 m', raw: 1080 },
+    pace: { text: '5:35 /km', raw: 335.48 },
+    heart_rate: { text: '144 bpm', raw: 144 },
+  },
+  {
+    index: 2,
+    offset_s: 1080,
+    distance: { text: '3.1 km', raw: 3113.15 },
+    duration: { text: '17 m', raw: 1020 },
+    pace: { text: '5:28 /km', raw: 327.64 },
+    heart_rate: { text: '152 bpm', raw: 152 },
+  },
+  {
+    index: 3,
+    offset_s: 2100,
+    distance: { text: '3 km', raw: 2997.36 },
+    duration: { text: '16 m', raw: 960 },
+    pace: { text: '5:20 /km', raw: 320.28 },
+    heart_rate: { text: '159 bpm', raw: 159 },
+  },
+  {
+    index: 4,
+    offset_s: 3060,
+    distance: { text: '3.1 km', raw: 3070.23 },
+    duration: { text: '16 m', raw: 960 },
+    pace: { text: '5:13 /km', raw: 312.68 },
+    heart_rate: { text: '166 bpm', raw: 166 },
+  },
+]
+
+
+/**
+ * The run's film: the router's answer for a store whose run has a file.
+ *
+ * The model is the seeded store's own — the watch's configuration, read
+ * on the tenth of May — and the zones are its five bands.
+ */
+export const filmFixture: RunFilm = {
+  activity_id: 101,
+  local_date: '2026-05-10',
+  basis: 'samples',
+  model: {
+    sport: 'DEFAULT',
+    training_method: 'HR_MAX',
+    max_heart_rate: { text: '178 bpm', raw: 178 },
+    floors: {
+      zone1: { text: '106 bpm', raw: 106 },
+      zone2: { text: '121 bpm', raw: 121 },
+      zone3: { text: '135 bpm', raw: 135 },
+      zone4: { text: '149 bpm', raw: 149 },
+      zone5: { text: '163 bpm', raw: 163 },
+    },
+    read_at: '2026-05-10T06:30:00Z',
+    read_on: '10 May 2026',
+    source: 'your zone model · HR_MAX · max heart rate 178 bpm · read on 10 May 2026',
+  },
+  zones: [
+    { label: 'Z1', range: '106-121 bpm', from_bpm: 106, to_bpm: 121 },
+    { label: 'Z2', range: '121-135 bpm', from_bpm: 121, to_bpm: 135 },
+    { label: 'Z3', range: '135-149 bpm', from_bpm: 135, to_bpm: 149 },
+    { label: 'Z4', range: '149-163 bpm', from_bpm: 149, to_bpm: 163 },
+    { label: 'Z5', range: '163-178 bpm', from_bpm: 163, to_bpm: 178 },
+  ],
+  outside_label: 'outside your zones',
+  samples: FILM_SAMPLES,
+  ground: FILM_GROUND,
+  splits: FILM_SPLITS,
+  unavailable: null,
+  zones_unavailable: null,
+  generated_at: '2026-05-13T06:30:00Z',
 }
 
 // --------------------------------------------------------------- compare
@@ -1785,10 +2387,16 @@ export function fixtureResponse(
       }
     }
     case '/activities/101':
-      if (variant === 'route') {
+      if (variant === 'route' || variant === 'film') {
         return { ...activityDetailFixture, geo_points: SYNTHETIC_ROUTE }
       }
       return activityDetailFixture
+    case '/activities/101/film':
+      // The film's own series: the state the surface is reviewed in. The
+      // router's answer for the seeded store — the honest one, with no
+      // file to read — is in `answers.json`.
+      if (variant === 'film') return filmFixture
+      return routerAnswers['/activities/101/film'] as RunFilm
     case '/activities/101/fit':
       // The run's original file: the header of a FIT file, byte for
       // byte. The fixture set is synthetic, and a file is no less so

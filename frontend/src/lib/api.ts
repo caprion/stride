@@ -29,6 +29,7 @@ import type {
   PlanWeek,
   ProgressInsight,
   RollingInsight,
+  RunFilm,
   SettingsDeleteResult,
   SettingsExportResult,
   SettingsState,
@@ -67,6 +68,14 @@ export const ROUTES = {
   activities: '/activities',
   activity: '/activities/{id}',
   activityFit: '/activities/{id}/fit',
+  /**
+   * The run's film: the run's own series, playable.
+   *
+   * The samples with their pace, their heart rate and the zone each one
+   * sits in, the ground, the splits, and the zone model the zones were
+   * measured against.
+   */
+  activityFilm: '/activities/{id}/film',
 
   physiologyDaily: '/physiology/daily',
   physiologySleep: '/physiology/sleep',
@@ -232,6 +241,15 @@ export const api = {
     ),
   /** One run. */
   activity: (id: number | string) => get<ActivityDetail>(route('activity', { id })),
+
+  /**
+   * The run's film: the run's own series, playable.
+   *
+   * The route names the run, the way `/activities/{id}` does: the film is
+   * one run's timeline, and the zone model travels with it, named and
+   * dated.
+   */
+  runFilm: (id: number | string) => get<RunFilm>(route('activityFilm', { id })),
 
   /**
    * The run's original FIT file, byte for byte.

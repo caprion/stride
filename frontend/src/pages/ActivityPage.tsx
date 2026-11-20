@@ -32,6 +32,7 @@ import { SleepComposition } from '../components/SleepComposition'
 import { QueryError } from '../components/QueryError'
 import { PageHeader } from '../ui/layout/PageHeader'
 import { historyReturn } from '../lib/history'
+import { ZONE_COLOURS } from '../lib/zones'
 
 export function ActivityPage({ id }: { id: string }) {
   const [splitsOpen, setSplitsOpen] = useState(true)
@@ -159,12 +160,26 @@ export function ActivityPage({ id }: { id: string }) {
         title={data.name || sportLabel(data.sport_type)}
         meta={`${sportLabel(data.sport_type)} · ${formatDateMedium(data.local_date)}`}
         action={
-          <Link
-            to={`/compare/${data.id}?${new URLSearchParams({ returnTo })}`}
-            className="tap-inline rounded-md border border-edge bg-surface px-3 text-[13px] font-semibold text-brand-700"
-          >
-            {t('runs.compareWith')}
-          </Link>
+          <div className="flex flex-wrap gap-2">
+            {/*
+        The film is reached by an explicit action, the way the Street map
+        is: the run detail keeps its own panels, and the film is the deep
+        dive into this one run.
+      */}
+            <Link
+              to={`/runs/${data.id}/film`}
+              className="tap-inline rounded-md border border-edge bg-surface px-3 text-[13px] font-semibold text-brand-700"
+              data-testid="activity-film"
+            >
+              {t('activity.film')}
+            </Link>
+            <Link
+              to={`/compare/${data.id}?${new URLSearchParams({ returnTo })}`}
+              className="tap-inline rounded-md border border-edge bg-surface px-3 text-[13px] font-semibold text-brand-700"
+            >
+              {t('runs.compareWith')}
+            </Link>
+          </div>
         }
       />
       <nav className="mb-3 flex flex-wrap gap-4 text-[13px] text-brand-700">
@@ -354,13 +369,7 @@ export function ActivityPage({ id }: { id: string }) {
                           <span
                             className="block h-full rounded"
                             style={{
-                              backgroundColor: [
-                                'var(--brand-200)',
-                                'var(--brand-300)',
-                                'var(--brand-500)',
-                                'var(--brand-600)',
-                                'var(--accent-500)',
-                              ][index % 5],
+                              backgroundColor: ZONE_COLOURS[index % ZONE_COLOURS.length],
                               width: `${(100 * Math.max(0, band.time?.raw ?? 0)) / Math.max(1, ...(zones.data?.zones ?? []).map((zone) => zone.time?.raw ?? 0))}%`,
                             }}
                           />

@@ -318,6 +318,13 @@ pub const ROUTES: &[Route] = &[
         handler: crate::routes::data::activity,
     },
     Route {
+        // The run's film: the run's own series, with the zone each sample
+        // sits in.
+        pattern: "/activities/{id}/film",
+        method: Method::Get,
+        handler: crate::routes::film::film,
+    },
+    Route {
         pattern: "/physiology/daily",
         method: Method::Get,
         handler: crate::routes::data::physiology_daily,

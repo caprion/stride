@@ -173,6 +173,7 @@
     { "id": "year.changed.longest.same", "kind": "statement", "role": null, "template": "the longest run was {current} in both periods" },
     { "id": "year.changed.pace", "kind": "statement", "role": null, "template": "the average pace was {current} against {previous}" },
     { "id": "year.changed.pace.one", "kind": "statement", "role": null, "template": "the average pace was {current}" },
-    { "id": "year.changed.form", "kind": "statement", "role": null, "template": "the form was {current} at the end of the window against {previous} at the end of the period before" }
+    { "id": "year.changed.form", "kind": "statement", "role": null, "template": "the form was {current} at the end of the window against {previous} at the end of the period before" },
+    { "id": "film.zone.outside", "kind": "statement", "role": null, "template": "outside your zones" }
   ]
 }

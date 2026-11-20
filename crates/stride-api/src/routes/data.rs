@@ -789,7 +789,7 @@ fn floors_of_edges(floors: &ZoneFloors, max_heart_rate: Option<f64>) -> [(f64, O
 }
 
 /// The stored model's floors, as the core takes them.
-fn floors_of(model: &HeartRateZoneModel) -> ZoneFloors {
+pub(crate) fn floors_of(model: &HeartRateZoneModel) -> ZoneFloors {
     ZoneFloors {
         zone1: model.zone1_floor,
         zone2: model.zone2_floor,
@@ -806,7 +806,7 @@ fn floors_of(model: &HeartRateZoneModel) -> ZoneFloors {
 /// "10 May 2026". The core's canonical form stays inside the core, so the
 /// source line the core renders carries the api's form and not a third
 /// one.
-fn zone_model_of(model: &HeartRateZoneModel, read_on: &str) -> ZoneModel {
+pub(crate) fn zone_model_of(model: &HeartRateZoneModel, read_on: &str) -> ZoneModel {
     ZoneModel {
         sport: model.sport.clone(),
         training_method: model.training_method.clone(),

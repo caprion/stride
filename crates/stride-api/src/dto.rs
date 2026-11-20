@@ -609,6 +609,131 @@ pub struct ZoneModelFloors {
     pub zone5: RenderedValue,
 }
 
+// ---------------------------------------------------------------- the film
+
+/// One sample of a run's film.
+///
+/// The sample is the run's own: decoded from its FIT file on read, and
+/// never stored. It carries the zone it sits in, measured against the
+/// athlete's **stored** zone model.
+#[derive(Clone, Debug, PartialEq, Serialize)]
+pub struct FilmSample {
+    /// The time from the start of the run, as the core renders it: "42 m".
+    ///
+    /// The number beside the words is the time in **seconds**, and it is
+    /// the number the film's timeline draws on.
+    pub elapsed: RenderedValue,
+    /// The distance from the start, as the core renders it: "3.2 km".
+    ///
+    /// The number beside the words is the distance in **metres**. It is
+    /// `null` when the file carries no distance for that sample.
+    pub distance: Option<RenderedValue>,
+    /// The pace over the sample, as the core renders it: "5:24 /km".
+    pub pace: Option<RenderedValue>,
+    /// The heart rate over the sample, as the core renders it: "148 bpm".
+    pub heart_rate: Option<RenderedValue>,
+    /// The zone the sample sits in: the index of the band in the film's
+    /// `zones`, counted from zero.
+    ///
+    /// `null` when the reading is **outside the zones** — at or below the
+    /// first floor, or not there at all — and when the athlete has no
+    /// usable zone model, in which case the whole ribbon is absent.
+    pub zone: Option<i64>,
+}
+
+/// One point of the run's ground.
+///
+/// The ground is on the film's own time axis: the point says how far into
+/// the run it is, so the pace, the heart rate and the ground share one
+/// cursor.
+#[derive(Clone, Debug, PartialEq, Serialize)]
+pub struct FilmGround {
+    /// The seconds from the start of the run.
+    pub offset_s: f64,
+    /// The altitude, as the core renders it: "926 m".
+    pub elevation: RenderedValue,
+}
+
+/// One split of a run, as the film draws it.
+///
+/// The split carries the time it **began**: a split is a place on the
+/// timeline, and the film can be played from it.
+#[derive(Clone, Debug, PartialEq, Serialize)]
+pub struct FilmSplit {
+    /// The split's number, from one.
+    pub index: i64,
+    /// The seconds from the start of the run to the start of the split.
+    pub offset_s: f64,
+    /// The split's distance, as the core renders it.
+    pub distance: RenderedValue,
+    /// The split's duration, as the core renders it.
+    pub duration: RenderedValue,
+    /// The average heart rate over the split, as the core renders it.
+    pub heart_rate: Option<RenderedValue>,
+    /// The split's pace, as the core renders it.
+    pub pace: Option<RenderedValue>,
+}
+
+/// One band of the athlete's zones, as the film draws it.
+///
+/// The band is the model's own: its name and its range are the core's, and
+/// its edges are the numbers the core rendered the range from.
+#[derive(Clone, Debug, PartialEq, Serialize)]
+pub struct FilmZone {
+    /// The band's name, as the core names it: "Z2".
+    pub label: String,
+    /// The band's range, in the core's words: "106-121 bpm".
+    pub range: Option<String>,
+    /// The band's lower edge, in beats per minute — for drawing.
+    pub from_bpm: Option<i64>,
+    /// The band's upper edge, in beats per minute. `None` for the top band
+    /// when the model carries no maximum heart rate.
+    pub to_bpm: Option<i64>,
+}
+
+/// A run's film: the run, playable.
+///
+/// The series is the run's own, decoded from its FIT file on read: the
+/// samples with their pace, their heart rate and **the zone each one sits
+/// in**, the ground, and the splits. The zone model the zones were
+/// measured against is named and dated beside them.
+///
+/// **No value is the absence of the whole result.** A run with no file has
+/// no series at all, and says why in the core's words. It is never a zero
+/// and never a band.
+#[derive(Clone, Debug, PartialEq, Serialize)]
+pub struct RunFilm {
+    /// The run's id.
+    pub activity_id: i64,
+    /// The athlete's local date of the run.
+    pub local_date: String,
+    /// The basis the series was read on: "samples".
+    pub basis: Option<String>,
+    /// The zone model the zones were measured against, named and dated.
+    /// `None` when no model has been read.
+    pub model: Option<ZoneModel>,
+    /// The five bands of the athlete's zones. Empty when there is no usable
+    /// model, and then the ribbon is absent.
+    pub zones: Vec<FilmZone>,
+    /// The name of the space **outside** the zones, in the core's words:
+    /// "outside your zones". `None` when there is no usable model.
+    pub outside_label: Option<String>,
+    /// The run's samples.
+    pub samples: Vec<FilmSample>,
+    /// The run's ground.
+    pub ground: Vec<FilmGround>,
+    /// The run's splits.
+    pub splits: Vec<FilmSplit>,
+    /// Why there is no film at all, in the core's words.
+    pub unavailable: Option<String>,
+    /// Why the zones have no value, in the core's words. The film itself
+    /// may still be there: the pace, the heart rate and the ground do not
+    /// need a zone model.
+    pub zones_unavailable: Option<String>,
+    /// When the answer was produced.
+    pub generated_at: String,
+}
+
 // -------------------------------------------------------------------- stats
 
 /// One set of totals.

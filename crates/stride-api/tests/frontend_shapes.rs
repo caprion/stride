@@ -634,3 +634,27 @@ fn the_year_carries_the_shape_the_app_declares() {
         at(&body, &["comparison"]).unwrap_or(&Value::Null),
     );
 }
+
+fn the_film_carries_the_shape_the_app_declares() {
+    let declarations = declarations();
+    let harness = common::Harness::seeded("frontend-film");
+    let id = harness.write_run(common::run_with_fit(
+        "a-run-with-a-file",
+        "2026-05-10",
+        "hr_gps_run.fit",
+    ));
+    let body = harness.ok_get(&format!("/activities/{id}/film"));
+    assert_declared(&declarations, "RunFilm", &body);
+    if let Some(sample) = first_at(&body, &["samples"]) {
+        assert_declared(&declarations, "FilmSample", sample);
+    }
+    if let Some(point) = first_at(&body, &["ground"]) {
+        assert_declared(&declarations, "FilmGround", point);
+    }
+    if let Some(split) = first_at(&body, &["splits"]) {
+        assert_declared(&declarations, "FilmSplit", split);
+    }
+    if let Some(zone) = first_at(&body, &["zones"]) {
+        assert_declared(&declarations, "FilmZone", zone);
+    }
+}

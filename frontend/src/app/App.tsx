@@ -22,6 +22,7 @@ import { BodyPage } from '../pages/BodyPage'
 import { ComparePage } from '../pages/ComparePage'
 import { PlanWeekPage } from '../pages/PlanWeekPage'
 import { ActivityPage } from '../pages/ActivityPage'
+import { FilmPage } from '../pages/FilmPage'
 import { HeatmapPage } from '../pages/HeatmapPage'
 import { YearPage } from '../pages/YearPage'
 import { SettingsPage } from '../pages/SettingsPage'
@@ -35,6 +36,18 @@ function ActivityRoute() {
 function CompareRoute() {
   const { id } = useParams()
   return <ComparePage id={id ?? ''} />
+}
+
+/**
+ * The run film.
+ *
+ * It is reached by an explicit action on the run detail — the same
+ * discipline the Street map and the heatmap use — so it is a route of its
+ * own and not a fifth destination.
+ */
+function FilmRoute() {
+  const { id } = useParams()
+  return <FilmPage id={id ?? ''} />
 }
 
 /**
@@ -63,6 +76,7 @@ function AppRoutes() {
       <Route path="/" element={<TodayPage />} />
       <Route path="/runs" element={<RunsPage />} />
       <Route path="/runs/:id" element={<ActivityRoute />} />
+      <Route path="/runs/:id/film" element={<FilmRoute />} />
       <Route path="/progress" element={<ProgressPage />} />
       {/*
         The narrow Progress opens one panel at a time, and this is that
