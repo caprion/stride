@@ -21,7 +21,8 @@ import { chromium } from 'playwright-core'
 
 const here = dirname(fileURLToPath(import.meta.url))
 const root = join(here, '..')
-const port = 4173
+// the port may be given, so two worktrees can run the gate at once
+const port = Number(process.env.STRIDE_MATRIX_PORT ?? 4173)
 const base = `http://127.0.0.1:${port}`
 
 /** The six widths the gate runs at. */

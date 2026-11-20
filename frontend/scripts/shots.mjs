@@ -16,7 +16,7 @@ import { chromium } from 'playwright-core'
 
 const here = dirname(fileURLToPath(import.meta.url))
 const root = join(here, '..')
-const port = 4174
+const port = Number(process.env.STRIDE_SHOTS_PORT ?? 4174)
 const base = `http://127.0.0.1:${port}`
 
 const width = Number(process.argv[2] ?? 390)
