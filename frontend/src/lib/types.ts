@@ -1382,15 +1382,6 @@ export interface SettingsDeleteResult {
  * it carries.
  */
 export interface PaceInsight {
-
- * The year: the months, the calendar of the days, and what changed.
- *
- * **The calendar colours days, never places.** A day carries the zone mix
- * of that day's runs and nothing else: no position, no place name and
- * nothing that says where the athlete ran. Where they ran is the heatmap's
- * surface, and it has its own screen and its own disclosure.
- */
-export interface YearInsight {
   /** When this answer was produced. */
   generated_at: string
   /** The athlete's local calendar date the answer is about. */
@@ -1484,6 +1475,19 @@ export interface PaceBandRow {
   share: RenderedValue | null
 }
 
+/**
+ * The year: the months, the calendar of the days, and what changed.
+ *
+ * **The calendar colours days, never places.** A day carries the zone mix
+ * of that day's runs and nothing else: no position, no place name and
+ * nothing that says where the athlete ran. Where they ran is the heatmap's
+ * surface, and it has its own screen and its own disclosure.
+ */
+export interface YearInsight {
+  /** When this answer was produced. */
+  generated_at: string
+  /** The athlete's local calendar date the answer is about. */
+  date: string
   /** The window the answer is about: the last twelve calendar months. */
   window: YearWindow
   /** The period the window is compared against. */

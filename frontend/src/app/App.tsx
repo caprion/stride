@@ -84,7 +84,6 @@ function AppRoutes() {
         and not a destination: the four destinations stay the four.
       */}
       <Route path="/year" element={<YearPage />} />
->>>>>>> bb/the-year-as-a-film-thr_bp2jtqfxtb
       <Route path="/body" element={<BodyPage />} />
       <Route path="/plan" element={<PlanWeekPage />} />
       {/*

@@ -438,7 +438,9 @@ export const catalogue = {
   'pace.empty.body': {
     type: 'status',
     text: 'No run in this window. The pace is read from the runs that are saved.',
+  },
 
+  /*
    * The year, as a film.
    *
    * The chrome around the year's own numbers: the headings, the labels
