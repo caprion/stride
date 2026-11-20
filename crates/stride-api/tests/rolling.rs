@@ -424,6 +424,41 @@ fn the_streaks_answer_the_current_and_the_longest() {
 }
 
 #[test]
+fn the_streaks_answer_the_months_too() {
+    let harness = Harness::empty("streaks-months");
+    // One run in each of three consecutive months: March, April and May.
+    harness.write_run(common::run("march", "2026-03-14", 10_000.0, 3_000.0));
+    harness.write_run(common::run("april", "2026-04-12", 10_000.0, 3_000.0));
+    harness.write_run(common::run("may", "2026-05-10", 10_000.0, 3_000.0));
+
+    let answer = harness.ok_get("/insights/streaks");
+    // The current streak of months: three, from March.
+    assert_eq!(number(&answer, &["months", "current", "count"]), 3.0);
+    assert_eq!(text(&answer, &["months", "current", "start"]), "2026-03");
+    assert_eq!(
+        text(&answer, &["months", "current", "start_label"]),
+        "March 2026"
+    );
+    // And the longest one is the same run of months.
+    assert_eq!(number(&answer, &["months", "longest", "count"]), 3.0);
+    assert_eq!(text(&answer, &["months", "longest", "start"]), "2026-03");
+    assert_eq!(text(&answer, &["months", "longest", "end"]), "2026-05");
+}
+
+#[test]
+fn a_month_with_no_run_breaks_the_month_streak() {
+    let harness = Harness::empty("streaks-months-gap");
+    // March and May: April has no run in it.
+    harness.write_run(common::run("march", "2026-03-14", 10_000.0, 3_000.0));
+    harness.write_run(common::run("may", "2026-05-10", 10_000.0, 3_000.0));
+
+    let answer = harness.ok_get("/insights/streaks");
+    assert_eq!(number(&answer, &["months", "current", "count"]), 1.0);
+    assert_eq!(text(&answer, &["months", "current", "start"]), "2026-05");
+    assert_eq!(number(&answer, &["months", "longest", "count"]), 1.0);
+}
+
+#[test]
 fn a_streak_that_ended_is_not_a_current_streak() {
     let harness = Harness::empty("streaks-old");
     // The last run was on the 1st of May: eleven days ago.
@@ -447,6 +482,8 @@ fn a_history_with_no_runs_has_no_streak() {
     assert!(answer["days"]["longest"].is_null());
     assert!(answer["weeks"]["current"].is_null());
     assert!(answer["weeks"]["longest"].is_null());
+    assert!(answer["months"]["current"].is_null());
+    assert!(answer["months"]["longest"].is_null());
 }
 
 #[test]

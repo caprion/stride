@@ -144,6 +144,38 @@ export const catalogue = {
   'today.week.heading': { type: 'status', text: 'This week' },
   'today.week.recordedDays': { type: 'status', text: 'Recorded sessions this week' },
   'today.week.sessions': { type: 'status', text: '{n} sessions' },
+  /**
+   * The cockpit.
+   *
+   * One hero, three rows, and what is on the table. The rows are
+   * questions with the answer in them: this week's distance against the
+   * same days last week, the form with its ratio and its band, and the
+   * habit with the streak, the months and the Eddington number.
+   *
+   * Nothing here is a verdict, a score or a command: a difference is a
+   * difference, a form is a form, and a streak is a count.
+   */
+  'today.cockpit.hero': { type: 'status', text: 'The latest run' },
+  'today.cockpit.standing': { type: 'status', text: 'Where you stand' },
+  'today.cockpit.table': { type: 'status', text: "What's on the table" },
+  'today.hero.open': { type: 'status', text: 'Open the run' },
+  'today.hero.zones': { type: 'status', text: 'Time in zones' },
+  'today.week.against': { type: 'status', text: '{difference} against {from} – {to}' },
+  'today.form.label': { type: 'status', text: 'Form' },
+  'today.form.ratio': { type: 'status', text: 'the acute-to-chronic ratio is {ratio}' },
+  'today.form.band': { type: 'status', text: 'the band is {band}' },
+  'today.form.asOf': { type: 'status', text: 'as of {date}' },
+  'today.habit.label': { type: 'status', text: 'The habit' },
+  'today.habit.day': { type: 'status', text: '{n} day in a row' },
+  'today.habit.days': { type: 'status', text: '{n} days in a row' },
+  'today.habit.month': { type: 'status', text: '{n} month in a row' },
+  'today.habit.months': { type: 'status', text: '{n} months in a row' },
+  'today.habit.months.none': { type: 'status', text: 'no months in a row' },
+  'today.habit.eddington': { type: 'status', text: 'Eddington {number} over {from} – {to}' },
+  'today.habit.eddington.empty': {
+    type: 'status',
+    text: 'No recorded distance in this window, so there is no number.',
+  },
   'today.state.noData': {
     type: 'status',
     text: "Connect your Garmin key to see today's numbers",

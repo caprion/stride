@@ -255,31 +255,47 @@ describe('the splits and the tables on Progress', () => {
 
 describe('the streak on Today', () => {
   it('shows the count and the day it started', async () => {
+    vi.spyOn(api, 'insightsStreaks').mockResolvedValue({
+      ...streaksFixture,
+      days: {
+        current: {
+          count: 12,
+          start: '2026-05-01',
+          start_label: '1 May 2026',
+          end: null,
+          end_label: null,
+        },
+        longest: streaksFixture.days.longest,
+      },
+    })
     renderApp('/')
-    const card = await screen.findByTestId('today-streak')
+    const row = await screen.findByTestId('today-row-habit')
 
-    // The longest run of days: two, on the 9th and the 10th of May.
-    expect(card.querySelector('[data-testid="today-streak-days-longest"]')?.textContent).toBe('2')
-    // The weeks in a row: two, since the 3rd of May.
-    expect(card.querySelector('[data-testid="today-streak-weeks-current"]')?.textContent).toBe('2')
-    expect(card.textContent).toContain('since 3 May 2026')
+    // The streak that is still going: twelve days, and the day it
+    // started.
+    expect(row.querySelector('[data-testid="today-habit-streak"]')?.textContent).toBe(
+      '12 days in a row',
+    )
+    expect(row.textContent).toContain('since 1 May 2026')
+    // And the months: the run of months the habit has run.
+    expect(row.querySelector('[data-testid="today-habit-months"]')?.textContent).toBe(
+      '1 month in a row',
+    )
   })
 
   it('has no streak when the history holds none', async () => {
     vi.spyOn(api, 'insightsStreaks').mockResolvedValue(streaksEmptyFixture)
     renderApp('/')
-    const card = await screen.findByTestId('today-streak')
+    const row = await screen.findByTestId('today-row-habit')
 
     // A streak of zero days is no streak: the row says so and shows no
     // number.
-    expect(card.querySelector('[data-testid="today-streak-days-current"]')?.textContent).toBe(
-      'no streak',
-    )
-    expect(card.querySelector('[data-testid="today-streak-days-longest"]')?.textContent).toBe(
-      'no streak',
+    expect(row.querySelector('[data-testid="today-habit-streak"]')?.textContent).toBe('no streak')
+    expect(row.querySelector('[data-testid="today-habit-months"]')?.textContent).toBe(
+      'no months in a row',
     )
     // And no verdict: a streak is a count and a date.
-    const text = (card.textContent ?? '').toLowerCase()
+    const text = (row.textContent ?? '').toLowerCase()
     for (const word of ['consistent', 'good', 'bad', 'should']) {
       expect(text).not.toContain(word)
     }
@@ -306,10 +322,11 @@ describe('the streak on Today', () => {
       },
     })
     renderApp('/')
-    const card = await screen.findByTestId('today-streak')
+    const row = await screen.findByTestId('today-row-habit')
 
-    expect(card.querySelector('[data-testid="today-streak-days-current"]')?.textContent).toBe('12')
-    expect(card.textContent).toContain('since 1 May 2026')
-    expect(card.textContent).toContain('20 Apr 2026 – 28 Apr 2026')
+    expect(row.querySelector('[data-testid="today-habit-streak"]')?.textContent).toBe(
+      '12 days in a row',
+    )
+    expect(row.textContent).toContain('since 1 May 2026')
   })
 })

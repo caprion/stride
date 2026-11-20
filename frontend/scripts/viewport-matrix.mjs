@@ -43,7 +43,15 @@ const VIEWPORTS = [
  * it. `fixture` is the state the screen is reviewed in.
  */
 const ROUTES = [
-  { path: '/', name: 'Today', primary: '[data-testid="today-session"]' },
+  {
+    path: '/',
+    name: 'Today',
+    primary: '[data-testid="today-session"]',
+    // The hero with a route on it, so the map is in the layout: the
+    // cockpit's map is the wide widths' business, and the phone has none.
+    fixture: 'route',
+    wideOnly: '[data-testid="today-hero-route"]',
+  },
   {
     path: '/runs',
     name: 'Runs',

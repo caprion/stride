@@ -40,7 +40,7 @@ describe('Today, with nothing in it', () => {
     // No vitals, no session card and no last run: nothing is made up.
     expect(container.querySelector('[data-testid="today-vitals"]')).toBeNull()
     expect(container.querySelector('[data-testid="today-session"]')).toBeNull()
-    expect(container.querySelector('[data-testid="today-last-run"]')).toBeNull()
+    expect(container.querySelector('[data-testid="today-hero"]')).toBeNull()
     // And the connect card is not a row of "not enough data": the three
     // null-vitalled rows the router sends are hidden behind the card.
     expect(container.textContent).not.toContain('not enough data for a comparison yet')
@@ -61,7 +61,7 @@ describe('Today, with nothing in it', () => {
     // The wellness is missing, and only the wellness: the runs and the
     // plan are the router's, and they are still there.
     expect(container.querySelector('[data-testid="today-session"]')).toBeTruthy()
-    expect(container.querySelector('[data-testid="today-last-run"]')).toBeTruthy()
+    expect(container.querySelector('[data-testid="today-hero"]')).toBeTruthy()
   })
 })
 

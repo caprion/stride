@@ -1,12 +1,23 @@
 /**
- * Today.
+ * Today — the cockpit.
  *
- * A readout, not an instruction. Recorded running leads, followed by
- * the athlete's own plan and the evidence behind the morning readings.
+ * One hero, three rows, and what is on the table:
  *
- * Nothing here instructs, grades, ranks or concludes. The plan's sessions
- * are listed unranked and are never linked to a vital — that link would
- * be the judgement.
+ *   - **the hero** — the latest run: its name, its distance, its time,
+ *     its pace, its heart rate and its elevation, the zone ribbon drawn
+ *     from the athlete's own zones, the route the way the run detail
+ *     draws it, and a way into the run;
+ *   - **where you stand** — three rows, each a question with the answer
+ *     in it: this week against the same days last week, the form with
+ *     its ratio and its band, and the habit with the streak, the months
+ *     and the Eddington number;
+ *   - **what's on the table** — the plan's own sessions, unranked, and
+ *     the night's readings.
+ *
+ * **Nothing here is a verdict, a score or a command.** A difference is a
+ * difference; a form is a form; a streak is a count and a date. The
+ * plan's sessions are listed unranked and are never linked to a vital —
+ * that link would be the judgement.
  *
  * Every sentence on this screen is the core's (core-contract §8): the
  * Rest line, the direction words, the arithmetic, the travel and the
@@ -22,25 +33,44 @@
  *     readout greyed with its date: the numbers would be a lie, so they
  *     are not shown as if they were current;
  *   - **not enough history** — that row says so, and shows the value
- *     alone.
+ *     alone;
+ *   - **a week with no runs** — the distance is zero because nothing was
+ *     run, and the difference says so against the same days last week.
  */
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
 import { api } from '../lib/api'
 import { connectGarmin } from '../lib/connect'
-import { formatDateMedium, formatDateShort, renderedText } from '../lib/format'
+import {
+  formatCount,
+  formatDateMedium,
+  formatDateShort,
+  formatDayMonth,
+  renderedText,
+} from '../lib/format'
 import { stalenessText } from '../lib/staleness'
 import type { PlanSession } from '../lib/types'
 import { t } from '../i18n'
-import { RouteMap } from '../components/RouteMap'
-import { StreakCard } from '../components/StreakCard'
+import { StreetRouteMap } from '../components/StreetRouteMap'
 import { VitalReadings } from '../components/VitalReadings'
 import { PageHeader } from '../ui/layout/PageHeader'
 import { SleepComposition } from '../components/SleepComposition'
 import { SyncControls } from '../components/SyncControls'
 import { QueryError } from '../components/QueryError'
+import { ZoneRibbon } from '../components/ZoneRibbon'
 import { runsPath, weekDates } from '../lib/history'
+import { LOAD_EMPTY } from '../lib/load'
+
+/**
+ * The window the cockpit's Eddington number is over.
+ *
+ * It is the Progress screen's own default range, so the number on the
+ * cockpit is the number on the Progress screen — and the Progress answer
+ * is already cached under this range, so the two screens share one
+ * answer.
+ */
+const HABIT_WEEKS = 12
 
 function SessionCard({
   planned,
@@ -96,16 +126,35 @@ export function TodayPage() {
   const sync = useQuery({ queryKey: ['sync-status'], queryFn: api.syncStatus })
   const settings = useQuery({ queryKey: ['settings'], queryFn: api.settings })
   const connection = useQuery({ queryKey: ['auth-status'], queryFn: api.authStatus })
-  // The streak: how long the habit has run. A count and a date, and
+  // The habit: how long the streak has run. A count and a date, and
   // nothing else — no "you are consistent" anywhere near it.
   const streaks = useQuery({ queryKey: ['insights-streaks'], queryFn: api.insightsStreaks })
+  // The form: the load's own state, over the Progress screen's range.
+  const load = useQuery({
+    queryKey: ['insights-load', HABIT_WEEKS],
+    queryFn: () => api.insightsLoad(HABIT_WEEKS),
+  })
+  // The Eddington number, over the same range.
+  const progress = useQuery({
+    queryKey: ['insights-progress', HABIT_WEEKS],
+    queryFn: () => api.insightsProgress(HABIT_WEEKS),
+  })
+
+  const insight = today.data
+  const lastRun = insight?.last_run ?? null
+  // The zone ribbon: the run's own time in the athlete's own zones.
+  const zones = useQuery({
+    queryKey: ['fitness-zones', lastRun?.id ?? 0],
+    queryFn: () => api.fitnessZones(lastRun!.id),
+    enabled: Boolean(lastRun),
+  })
+
   const connect = useMutation({ mutationFn: () => connectGarmin() })
   const runSync = useMutation({
     mutationFn: () => api.syncRun(),
     onSuccess: () => queryClient.invalidateQueries(),
   })
 
-  const insight = today.data
   const snapshot = vitals.data
 
   if (today.isPending || vitals.isPending || sync.isPending) {
@@ -204,7 +253,6 @@ export function TodayPage() {
     )
   }
 
-  const lastRun = insight.last_run
   const stale = stalenessText(sync.data?.last_sync_at)
   const failed = sync.data?.last_error ?? null
   const readings = snapshot.vitals.filter((vital) => vital.value_text !== null)
@@ -222,6 +270,11 @@ export function TodayPage() {
         })
       : t('common.paused.until', { date: formatDateShort(settings.data.pause.end_date) })
     : null
+
+  // The week's own dates: the calendar week the answer is about.
+  const week = weekDates(insight.date)
+  // The form's own state: the last day the load has one for.
+  const lastState = load.data?.load?.states.slice(-1)[0] ?? null
 
   return (
     <div>
@@ -245,93 +298,223 @@ export function TodayPage() {
         />
       ) : null}
 
+      {/* ------------------------------------------------ the hero: the run */}
+      {lastRun ? (
+        <section className="card mb-3 px-4 py-4" data-testid="today-hero">
+          <div className="flex items-baseline justify-between gap-3">
+            <h2 className="text-[12px] font-semibold uppercase tracking-[0.06em] text-ink-faint">
+              {t('today.cockpit.hero')}
+            </h2>
+            <p className="text-[12px] text-ink-muted">{formatDateMedium(lastRun.local_date)}</p>
+          </div>
+          <h3 className="mt-1 text-[19px] font-semibold text-ink">
+            {lastRun.name || t('compare.run.label')}
+          </h3>
+          <div className="mt-1 lg:flex lg:items-start lg:gap-6">
+            <div className="min-w-0 flex-1">
+              <p className="text-[40px] font-semibold leading-tight tracking-tight tabular-nums text-brand-700">
+                {renderedText(lastRun.distance)}
+              </p>
+              {/*
+                The run's own facts, in the core's words: the time, the
+                pace, the heart rate and the elevation. Nothing here is
+                read against a target — there is no target on this screen.
+              */}
+              <ul className="mt-1 flex flex-wrap gap-x-3 gap-y-0.5 text-[13px] text-ink-soft">
+                <li data-testid="today-hero-time">{renderedText(lastRun.duration)}</li>
+                <li data-testid="today-hero-pace">{renderedText(lastRun.pace)}</li>
+                <li data-testid="today-hero-hr">{renderedText(lastRun.heart_rate)}</li>
+                <li data-testid="today-hero-elevation">
+                  {renderedText(lastRun.elevation_gain)}
+                </li>
+              </ul>
+              <ZoneRibbon zones={zones.data} />
+              {/*
+                The way into the run. The film is another thread's work:
+                until it lands, the action opens the run itself.
+              */}
+              <Link
+                to={`/runs/${lastRun.id}`}
+                data-testid="today-hero-open"
+                className="tap mt-3 inline-flex items-center rounded-md bg-brand-600 px-4 text-[14px] font-semibold text-white"
+              >
+                {t('today.hero.open')}
+              </Link>
+            </div>
+            {/*
+              The route, drawn the way the run detail draws it: the GPS
+              outline, and the Street map behind the app's own disclosure.
+              The phone has no room for it — the hero's map is the wide
+              widths' business.
+            */}
+            {lastRun.geo_points.length > 1 ? (
+              <div
+                className="mt-3 hidden w-full lg:mt-0 lg:block lg:w-[320px] lg:shrink-0"
+                data-testid="today-hero-route"
+              >
+                <StreetRouteMap points={lastRun.geo_points} />
+              </div>
+            ) : null}
+          </div>
+        </section>
+      ) : null}
+
       <div className="today-layout">
         <div>
-          <section className="card hero-card mb-3 px-5 py-5" data-testid="today-week">
+          {/* ------------------------------------------- where you stand */}
+          <section className="card mb-3 px-4 py-3" data-testid="today-standing">
             <h2 className="text-[12px] font-semibold uppercase tracking-[0.06em] text-ink-faint">
-              {t('today.week.heading')}
+              {t('today.cockpit.standing')}
             </h2>
-            <Link
-              to={runsPath(weekDates(insight.date)[0]!, weekDates(insight.date)[6]!)}
-              className="tap mt-1 flex items-baseline justify-between gap-3"
-            >
-              <span className="text-[48px] font-semibold leading-tight tracking-tight tabular-nums text-brand-700">
-                {renderedText(insight.week.distance)}
-              </span>
-              <span className="text-[13px] text-ink-muted">
-                {t('today.week.sessions', { n: insight.week.sessions })}
-              </span>
-            </Link>
-            <ol
-              className="-mx-5 mt-4 grid grid-cols-7"
-              aria-label={t('today.week.recordedDays')}
-            >
-              {insight.week.days.map((day) => (
-                <li key={day.date} className="min-w-0">
+            <ul className="mt-1.5 divide-y divide-edge">
+              {/* This week: the distance, and the same days last week. */}
+              <li className="py-2.5" data-testid="today-week">
+                <div className="flex items-baseline justify-between gap-3">
+                  <span className="text-[13.5px] text-ink-soft">{t('today.week.heading')}</span>
                   <Link
-                    to={runsPath(day.date)}
-                    className={`tap flex min-h-[72px] flex-col items-center justify-end gap-1 rounded-md text-[12px] ${day.date === insight.date ? 'bg-accent-100' : 'hover:bg-brand-100'}`}
-                    aria-label={`${formatDateShort(day.date)}: ${t('today.week.sessions', { n: day.sessions })}, ${renderedText(day.distance)}`}
-                    aria-current={day.date === insight.date ? 'date' : undefined}
+                    to={runsPath(week[0]!, week[6]!)}
+                    className="tap text-[17px] font-semibold tabular-nums text-brand-700 underline"
+                    data-testid="today-week-distance"
                   >
-                    <span
-                      className="w-5 rounded-t bg-brand-600"
-                      style={{
-                        height: `${day.sessions ? Math.max(8, (36 * (day.distance?.raw ?? day.sessions)) / Math.max(1, ...insight.week.days.map((entry) => entry.distance?.raw ?? entry.sessions))) : 2}px`,
-                      }}
-                    />
-                    <span className="text-ink-muted">
-                      {formatDateShort(day.date).slice(0, 3)}
-                    </span>
-                    <span className="font-semibold tabular-nums text-brand-700">
-                      {day.date.slice(-2)}
-                    </span>
+                    {renderedText(insight.week.distance)}
                   </Link>
-                </li>
-              ))}
-            </ol>
-          </section>
-          {lastRun ? (
-            <Link
-              to={`/runs/${lastRun.id}`}
-              data-testid="today-last-run"
-              className="tap card mb-3 flex items-center gap-4 px-4 py-4 transition-shadow hover:shadow-lift"
-            >
-              <span className="min-w-0 flex-1">
-                <span className="block text-[12px] font-semibold uppercase tracking-wide text-ink-muted">
-                  {t('today.lastRun.label')}
-                </span>
-                <span className="mt-1 block text-[17px] font-semibold text-ink">
-                  {lastRun.name || t('compare.run.label')}
-                </span>
-                <span className="mt-1 block text-[14px] text-ink-soft">
-                  {renderedText(lastRun.distance)} · {renderedText(lastRun.duration)} ·{' '}
-                  {renderedText(lastRun.pace)}
-                </span>
-                <span className="mt-1 block text-[12px] text-ink-muted">
-                  {formatDateMedium(lastRun.local_date)}
-                </span>
-              </span>
-              {lastRun.geo_points.length > 1 ? (
-                <span className="hidden w-[112px] shrink-0 lg:block" data-testid="today-route">
-                  <RouteMap points={lastRun.geo_points} variant="mini" />
-                </span>
-              ) : null}
-            </Link>
-          ) : null}
-          {/*
-            The streak: a count and the days it covers.
+                </div>
+                <p className="text-[12.5px] text-ink-muted" data-testid="today-week-against">
+                  {insight.week.difference
+                    ? t('today.week.against', {
+                        difference: renderedText(insight.week.difference),
+                        from: formatDayMonth(insight.week.previous.from),
+                        to: formatDayMonth(insight.week.previous.to),
+                      })
+                    : null}
+                </p>
+                {/*
+                  The recorded days of the week. These are the sessions
+                  that happened — not a rest day, not a coverage claim,
+                  and not an inferred habit.
+                */}
+                <ol
+                  className="mt-2 grid grid-cols-7"
+                  aria-label={t('today.week.recordedDays')}
+                  data-testid="today-week-days"
+                >
+                  {insight.week.days.map((day) => (
+                    <li key={day.date} className="min-w-0">
+                      <Link
+                        to={runsPath(day.date)}
+                        className={`tap flex min-h-[48px] flex-col items-center justify-end gap-1 rounded-md text-[12px] ${day.date === insight.date ? 'bg-accent-100' : 'hover:bg-brand-100'}`}
+                        aria-label={`${formatDateShort(day.date)}: ${t('today.week.sessions', { n: day.sessions })}, ${renderedText(day.distance)}`}
+                        aria-current={day.date === insight.date ? 'date' : undefined}
+                      >
+                        <span
+                          className="w-5 rounded-t bg-brand-600"
+                          style={{
+                            height: `${day.sessions ? Math.max(8, (36 * (day.distance?.raw ?? day.sessions)) / Math.max(1, ...insight.week.days.map((entry) => entry.distance?.raw ?? entry.sessions))) : 2}px`,
+                          }}
+                        />
+                        <span className="text-ink-muted">
+                          {formatDateShort(day.date).slice(0, 3)}
+                        </span>
+                        <span className="font-semibold tabular-nums text-brand-700">
+                          {day.date.slice(-2)}
+                        </span>
+                      </Link>
+                    </li>
+                  ))}
+                </ol>
+              </li>
 
-            The card is only there when the answer is: a failed query is
-            not a streak of zero, and it must not be drawn as one.
-          */}
-          {streaks.data ? (
-            <StreakCard streaks={streaks.data} className="card mb-3 px-4 py-3" />
-          ) : null}
-          <section className="card mb-3 px-4 py-3">
+              {/* Form: the load's own state, with its ratio and its band. */}
+              <li className="py-2.5" data-testid="today-row-form">
+                <div className="flex items-baseline justify-between gap-3">
+                  <span className="text-[13.5px] text-ink-soft">{t('today.form.label')}</span>
+                  <span
+                    className="text-[17px] font-semibold tabular-nums text-ink"
+                    data-testid="today-form-value"
+                  >
+                    {renderedText(lastState?.form ?? null)}
+                  </span>
+                </div>
+                {lastState ? (
+                  <>
+                    <p className="text-[12.5px] text-ink-muted" data-testid="today-form-ratio">
+                      {t('today.form.ratio', { ratio: renderedText(lastState.ratio) })}
+                    </p>
+                    <p className="text-[12px] text-ink-faint" data-testid="today-form-band">
+                      {t('today.form.band', { band: load.data?.scenario?.band ?? '' })}
+                      {' · '}
+                      {t('today.form.asOf', { date: lastState.label })}
+                    </p>
+                  </>
+                ) : load.data ? (
+                  /* No load is no value: the row says why, and shows no
+                     number at all. */
+                  <p className="text-[12.5px] text-ink-muted" data-testid="today-form-empty">
+                    {t(LOAD_EMPTY[load.data.unavailable ?? ''] ?? 'progress.load.empty.other')}
+                  </p>
+                ) : (
+                  <p className="text-[12.5px] text-ink-muted">{t('common.loading')}</p>
+                )}
+              </li>
+
+              {/* The habit: the streak, the months and the number. */}
+              <li className="py-2.5" data-testid="today-row-habit">
+                <div className="flex items-baseline justify-between gap-3">
+                  <span className="text-[13.5px] text-ink-soft">{t('today.habit.label')}</span>
+                  <span
+                    className="text-[17px] font-semibold tabular-nums text-ink"
+                    data-testid="today-habit-streak"
+                  >
+                    {streaks.data?.days.current
+                      ? t(
+                          streaks.data.days.current.count === 1
+                            ? 'today.habit.day'
+                            : 'today.habit.days',
+                          { n: streaks.data.days.current.count },
+                        )
+                      : t('today.streak.none')}
+                  </span>
+                </div>
+                <p className="text-[12.5px] text-ink-muted" data-testid="today-habit-months">
+                  {streaks.data?.months.current
+                    ? t(
+                        streaks.data.months.current.count === 1
+                          ? 'today.habit.month'
+                          : 'today.habit.months',
+                        { n: streaks.data.months.current.count },
+                      )
+                    : t('today.habit.months.none')}
+                </p>
+                {/*
+                  A streak is a count and a date: the day it started is
+                  part of the fact, and it is the core's own rendering of
+                  it.
+                */}
+                {streaks.data?.days.current ? (
+                  <p className="text-[12px] text-ink-faint" data-testid="today-habit-since">
+                    {t('today.streak.since', { date: streaks.data.days.current.start_label })}
+                  </p>
+                ) : null}
+                <p className="text-[12px] text-ink-faint" data-testid="today-habit-eddington">
+                  {progress.data?.eddington
+                    ? t('today.habit.eddington', {
+                        number: formatCount(progress.data.eddington.number),
+                        from: formatDayMonth(progress.data.period.from),
+                        to: formatDayMonth(progress.data.period.to),
+                      })
+                    : progress.data
+                      ? t('today.habit.eddington.empty')
+                      : t('common.loading')}
+                </p>
+              </li>
+            </ul>
+          </section>
+
+          {/* --------------------------------------- what's on the table */}
+          <section className="card mb-3 px-4 py-3" data-testid="today-table">
             <div className="flex items-center justify-between gap-3">
-              <h2 className="text-[12px] font-semibold uppercase tracking-wide text-ink-muted">
-                {t('plan.heading')}
+              <h2 className="text-[12px] font-semibold uppercase tracking-[0.06em] text-ink-faint">
+                {t('today.cockpit.table')}
               </h2>
               <Link
                 to="/plan"

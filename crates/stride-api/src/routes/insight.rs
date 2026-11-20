@@ -12,8 +12,8 @@ use stride_store::ActivitySummary as StoredActivity;
 
 use crate::dto::{
     Best, Chips, CompareCandidate, CompareMetric, CompareResponse, CompareRun, CompareSeries,
-    Consistency, PaceAtHr, ProgressEddington, ProgressInsight, RunningDay, TodayInsight,
-    WeekRunning, WeeklyVolume,
+    Consistency, PaceAtHr, PreviousWeek, ProgressEddington, ProgressInsight, RunningDay,
+    TodayInsight, WeekRunning, WeeklyVolume,
 };
 use crate::error::{ApiError, ApiResult};
 use crate::render;
@@ -77,10 +77,24 @@ pub fn today(api: &Api, request: &Request) -> ApiResult<Value> {
 
     let week_runs = api
         .store()
-        .activities_between(&super::week_start(current).to_iso(), &current.to_iso())
+        .activities_between(&week_start.to_iso(), &current.to_iso())
         .map_err(|error| api.store_error("the runs could not be read", &error))?;
+    let week_distance_m = render::total_of(week_runs.iter().map(|run| run.distance_m));
+
+    // The same elapsed days of the previous calendar week: the comparison
+    // is **like for like**, so the week to date is not weighed against a
+    // whole week. The days are the athlete's own — the same weekday, one
+    // week back.
+    let previous_from = week_start.add_days(-7);
+    let previous_to = current.add_days(-7);
+    let previous_runs = api
+        .store()
+        .activities_between(&previous_from.to_iso(), &previous_to.to_iso())
+        .map_err(|error| api.store_error("the runs could not be read", &error))?;
+    let previous_distance_m = render::total_of(previous_runs.iter().map(|run| run.distance_m));
+
     let week = WeekRunning {
-        distance: render::distance_of(render::total_of(week_runs.iter().map(|run| run.distance_m))),
+        distance: render::distance_of(week_distance_m),
         sessions: week_runs.len(),
         days: (0..7)
             .map(|offset| {
@@ -100,6 +114,19 @@ pub fn today(api: &Api, request: &Request) -> ApiResult<Value> {
                 }
             })
             .collect(),
+        previous: PreviousWeek {
+            from: previous_from.to_iso(),
+            to: previous_to.to_iso(),
+            distance: render::distance_of(previous_distance_m),
+            sessions: previous_runs.len(),
+        },
+        // The difference is the core's rendering of it, sign and all: the
+        // sign is the number's own, and nothing here says which way is the
+        // better way.
+        difference: render::difference(
+            Some(week_distance_m - previous_distance_m),
+            stride_core::ValueUnit::Distance,
+        ),
     };
 
     let distance_comparison = match &planned {

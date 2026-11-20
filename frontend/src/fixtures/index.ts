@@ -518,6 +518,7 @@ export const streaksEmptyFixture: StreakInsight = {
   date: TODAY,
   days: { current: null, longest: null },
   weeks: { current: null, longest: null },
+  months: { current: null, longest: null },
 }
 
 // ---------------------------------------------------------------- year
@@ -1192,6 +1193,38 @@ export const zonesUncalibratedFixture: FitnessZones = {
 }
 
 /**
+ * The zones of a run whose heart-rate samples have been read.
+ *
+ * The seeded store holds no FIT file, so the router's own answer is the
+ * honest one: the run has no heart-rate samples to read. This is the
+ * other state — the samples read — and it is the state the cockpit's
+ * **zone ribbon** is reviewed in.
+ *
+ * The times are invented, like every other value in this fixture set, and
+ * the model is the router's own: the athlete's stored zone model, with
+ * the day it was read.
+ */
+export const zonesWithTimeFixture: FitnessZones = {
+  ...zonesFixture,
+  basis: 'moving',
+  zones: [
+    { label: 'Z1', range: '106-121 bpm', from_bpm: 106, to_bpm: 121, time: value('6 m', 360) },
+    { label: 'Z2', range: '121-135 bpm', from_bpm: 121, to_bpm: 135, time: value('12 m', 720) },
+    {
+      label: 'Z3',
+      range: '135-149 bpm',
+      from_bpm: 135,
+      to_bpm: 149,
+      time: value('18 m', 1080),
+    },
+    { label: 'Z4', range: '149-163 bpm', from_bpm: 149, to_bpm: 163, time: value('9 m', 540) },
+    { label: 'Z5', range: '163-178 bpm', from_bpm: 163, to_bpm: 178, time: value('0 m', 0) },
+  ],
+  outside: value('2 m', 120),
+  unavailable: null,
+}
+
+/**
  * The fingerprint of a run whose file has been read.
  *
  * The seeded store holds no FIT file, so the router's answer for the
@@ -1497,7 +1530,18 @@ export const todayEmptyFixture: TodayInsight = {
   options: [],
   last_run: null,
   distance_comparison: null,
-  week: { distance: value('0 km', 0), sessions: 0, days: [] },
+  week: {
+    distance: value('0 km', 0),
+    sessions: 0,
+    days: [],
+    previous: {
+      from: '2026-05-04',
+      to: '2026-05-06',
+      distance: value('0 km', 0),
+      sessions: 0,
+    },
+    difference: value('0 km', 0),
+  },
 }
 
 /** The feed, with nothing in it. */
@@ -1637,6 +1681,7 @@ export const healthDailyStaleFixture: HealthDaily = {
  * | `paused` | the plan is paused until the 19th, for travel |
  * | `duplicate` | a FIT file that is already in the log |
  * | `uncalibrated` | no zone model has been read, so the bands have no value |
+ * | `zones` | the run's heart-rate samples have been read, so the zone ribbon has its times |
  */
 export function fixtureResponse(
   path: string,
@@ -1856,6 +1901,9 @@ export function fixtureResponse(
       return variant === 'stale' ? healthDailyStaleFixture : healthDailyFixture
     case '/fitness/zones':
       if (variant === 'uncalibrated') return zonesUncalibratedFixture
+      // The run's heart-rate samples have been read: the zone ribbon has
+      // the times to draw.
+      if (variant === 'zones') return zonesWithTimeFixture
       return zonesFixture
     case '/fitness/fingerprint':
       // The run's file has been read in the `route` variant — the state the

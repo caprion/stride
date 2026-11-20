@@ -1174,6 +1174,29 @@ pub struct WeekRunning {
     pub sessions: usize,
     /// Recorded activity counts for each calendar day, including future days.
     pub days: Vec<RunningDay>,
+    /// The same elapsed days of the previous calendar week.
+    ///
+    /// The comparison is **like for like**: the week to date against the
+    /// same days of the week before, so the two windows are the same
+    /// length. A week to date against a whole week would compare a part
+    /// with the whole.
+    pub previous: PreviousWeek,
+    /// This week's distance against the previous week's, as the core
+    /// renders the difference: the sign is the number's own.
+    pub difference: Option<RenderedValue>,
+}
+
+/// The totals of a stretch of days.
+#[derive(Clone, Debug, PartialEq, Serialize)]
+pub struct PreviousWeek {
+    /// The first day of the stretch, in the athlete's own calendar.
+    pub from: String,
+    /// The last day of the stretch, in the athlete's own calendar.
+    pub to: String,
+    /// The distance, as the core renders it.
+    pub distance: RenderedValue,
+    /// How many runs there were.
+    pub sessions: usize,
 }
 
 /// One marker in the current calendar week.
@@ -2058,6 +2081,33 @@ pub struct StreakInsight {
     pub days: StreakDetail,
     /// The streaks of weeks.
     pub weeks: StreakDetail,
+    /// The streaks of months.
+    pub months: MonthStreakDetail,
+}
+
+/// The streaks of months: the current one and the longest one.
+#[derive(Clone, Debug, PartialEq, Serialize)]
+pub struct MonthStreakDetail {
+    /// The streak that is still going. `None` when there is none: a streak
+    /// of zero months is no streak.
+    pub current: Option<MonthStreakValue>,
+    /// The longest one in the history.
+    pub longest: Option<MonthStreakValue>,
+}
+
+/// One streak of months: how long it is, and the months it covers.
+#[derive(Clone, Debug, PartialEq, Serialize)]
+pub struct MonthStreakValue {
+    /// How many months the streak runs.
+    pub count: u32,
+    /// The month it started, as `YYYY-MM`.
+    pub start: String,
+    /// The same month, as the api writes a month: "November 2025".
+    pub start_label: String,
+    /// The month it ended, when it ended in the past.
+    pub end: Option<String>,
+    /// The same month, as the api writes a month.
+    pub end_label: Option<String>,
 }
 
 /// The streaks of one kind: the current one and the longest one.

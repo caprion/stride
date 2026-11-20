@@ -85,6 +85,11 @@ pub fn day_label(day: Date) -> String {
     naive_of(day).format("%-d %b %Y").to_string()
 }
 
+/// The month a day is in, as the app shows it: "May 2026".
+pub fn month_label(day: Date) -> String {
+    naive_of(day).format("%B %Y").to_string()
+}
+
 /// The first day of the week a day is in.
 pub fn week_start(day: Date) -> Date {
     let offset = naive_of(day).weekday().num_days_from_monday() as i64;

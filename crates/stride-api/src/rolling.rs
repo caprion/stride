@@ -97,6 +97,10 @@ pub struct StreakAnswer {
     pub current_weeks: Option<Streak>,
     /// The longest run of weeks.
     pub longest_weeks: Option<Streak>,
+    /// The run of months that is still going, if there is one.
+    pub current_months: Option<Streak>,
+    /// The longest run of months.
+    pub longest_months: Option<Streak>,
 }
 
 impl From<Streaks> for StreakAnswer {
@@ -106,6 +110,8 @@ impl From<Streaks> for StreakAnswer {
             longest_days: streaks.longest_days,
             current_weeks: streaks.current_weeks,
             longest_weeks: streaks.longest_weeks,
+            current_months: streaks.current_months,
+            longest_months: streaks.longest_months,
         }
     }
 }

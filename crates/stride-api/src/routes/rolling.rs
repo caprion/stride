@@ -6,7 +6,7 @@
 //!   the split of the training across the athlete's own zones, the weekday
 //!   and daytime splits, and the monthly and yearly tables;
 //! * `/insights/streaks` — the streaks: the current run of days and the
-//!   longest one, and the same for weeks.
+//!   longest one, and the same for weeks and months.
 //!
 //! ## What is computed where
 //!
@@ -38,9 +38,10 @@ use stride_core::streaks::Streak;
 use stride_core::units;
 
 use crate::dto::{
-    DaytimeRow, DistanceBucketRow, PeriodRow, ProfileFacet, RollingInsight,
-    RollingWindow as RollingWindowDto, SessionComparison, StreakDetail, StreakInsight, StreakValue,
-    WeekdayRow, WindowComparison, ZoneDistributionRow, ZoneModelSource, ZoneShareRow, ZoneSplit,
+    DaytimeRow, DistanceBucketRow, MonthStreakDetail, MonthStreakValue, PeriodRow, ProfileFacet,
+    RollingInsight, RollingWindow as RollingWindowDto, SessionComparison, StreakDetail,
+    StreakInsight, StreakValue, WeekdayRow, WindowComparison, ZoneDistributionRow, ZoneModelSource,
+    ZoneShareRow, ZoneSplit,
 };
 use crate::error::{ApiError, ApiResult};
 use crate::render;
@@ -146,6 +147,10 @@ pub fn streaks(api: &Api, _request: &Request) -> ApiResult<Value> {
         weeks: StreakDetail {
             current: answer.current_weeks.map(streak_of),
             longest: answer.longest_weeks.map(streak_of),
+        },
+        months: MonthStreakDetail {
+            current: answer.current_months.map(month_streak_of),
+            longest: answer.longest_months.map(month_streak_of),
         },
     };
     ok(&response)
@@ -351,4 +356,24 @@ fn streak_of(streak: Streak) -> StreakValue {
         end: streak.end.map(|end| end.to_iso()),
         end_label: streak.end.map(super::day_label),
     }
+}
+
+/// One streak of months, as the months it covers.
+///
+/// The core's month streak is a run of calendar months, each with a run in
+/// it; the days it names are the newest run day of its oldest month, so
+/// the answer names the **month** and not the day inside it.
+fn month_streak_of(streak: Streak) -> MonthStreakValue {
+    MonthStreakValue {
+        count: streak.count,
+        start: month_key(streak.start),
+        start_label: super::month_label(streak.start),
+        end: streak.end.map(month_key),
+        end_label: streak.end.map(super::month_label),
+    }
+}
+
+/// The month a day is in, as `YYYY-MM`.
+fn month_key(day: Date) -> String {
+    format!("{:04}-{:02}", day.year(), day.month())
 }
