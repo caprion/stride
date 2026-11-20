@@ -846,6 +846,30 @@ export function ProgressPage() {
           </ul>
         </section>
 
+
+        {/* ------------------------------------------------- the year */}
+        {/*
+          The year, as a film: the twelve months, the calendar of the
+          days coloured by the zones they were run in, and what changed
+          against the athlete's own past.
+
+          It is a page of its own, reached from here. The four
+          destinations stay the four, and the page says nothing about
+          where the athlete ran.
+        */}
+        <section className="card px-4 py-3" data-testid="progress-year">
+          <h2 className="mb-1 text-[12px] font-semibold uppercase tracking-[0.07em] text-ink-faint">
+            {t('year.heading')}
+          </h2>
+          <p className="text-[13px] text-ink-soft">{t('year.intro')}</p>
+          <Link
+            className="tap-inline mt-2 inline-block text-[13px] font-medium text-brand-700 underline"
+            to="/year"
+            data-testid="progress-year-link"
+          >
+            {t('year.open')}
+          </Link>
+        </section>
         {/* -------------------------------------------------- the years */}
         <section className="card px-4 py-3" data-testid="progress-years">
           <h2 className="mb-2 text-[12px] font-semibold uppercase tracking-[0.07em] text-ink-faint">

@@ -65,6 +65,13 @@ const ROUTES = [
     primary: '[data-testid="heatmap-grid"]',
   },
   { path: '/progress', name: 'Progress', primary: '[data-testid="progress-headline"]' },
+  {
+    // The year, as a film: the months, the calendar of the days and what
+    // changed. It is a page reached from Progress, not a destination.
+    path: '/year',
+    name: 'Year',
+    primary: '[data-testid="year-months"]',
+  },
   { path: '/body', name: 'Body', primary: '[data-testid="body-signals"]' },
   { path: '/plan', name: 'Plan week', primary: '[data-testid="plan-week"]' },
   { path: '/compare/101', name: 'Compare', primary: '[data-testid="compare-metrics"]' },

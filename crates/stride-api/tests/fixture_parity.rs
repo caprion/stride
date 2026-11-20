@@ -304,6 +304,7 @@ fn router_answers(router: &Router) -> serde_json::Map<String, Value> {
         "/insights/rolling?weeks=26",
         "/insights/rolling?weeks=52",
         "/insights/streaks",
+        "/insights/year",
         "/calendar",
         "/compare/candidates",
         "/sync/status",

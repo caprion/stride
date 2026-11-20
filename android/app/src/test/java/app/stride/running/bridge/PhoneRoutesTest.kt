@@ -44,6 +44,7 @@ class PhoneRoutesTest {
         "/insights/progress",
         "/insights/heatmap",
         "/insights/chips",
+        "/insights/year",
         "/compare",
         "/compare/candidates",
         "/health",

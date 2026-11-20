@@ -20,6 +20,7 @@ import { ComparePage } from '../pages/ComparePage'
 import { PlanWeekPage } from '../pages/PlanWeekPage'
 import { ActivityPage } from '../pages/ActivityPage'
 import { HeatmapPage } from '../pages/HeatmapPage'
+import { YearPage } from '../pages/YearPage'
 import { SettingsPage } from '../pages/SettingsPage'
 import { ConnectPage } from '../pages/ConnectPage'
 
@@ -60,6 +61,12 @@ function AppRoutes() {
       <Route path="/runs" element={<RunsPage />} />
       <Route path="/runs/:id" element={<ActivityRoute />} />
       <Route path="/progress" element={<ProgressPage />} />
+      {/*
+        The year, as a film: the twelve months, the calendar of the days
+        and what changed. It is reached from Progress, and it is a page
+        and not a destination: the four destinations stay the four.
+      */}
+      <Route path="/year" element={<YearPage />} />
       <Route path="/body" element={<BodyPage />} />
       <Route path="/plan" element={<PlanWeekPage />} />
       {/*

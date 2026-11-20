@@ -37,6 +37,7 @@ import type {
   SyncRunResult,
   TodayInsight,
   VitalsSnapshot,
+  YearInsight,
 } from './types'
 import {
   ApiError,
@@ -97,6 +98,7 @@ export const ROUTES = {
   insightsLoad: '/insights/load',
   insightsRolling: '/insights/rolling',
   insightsStreaks: '/insights/streaks',
+  insightsYear: '/insights/year',
 
   insightsHeatmap: '/insights/heatmap',
   insightsChips: '/insights/chips',
@@ -305,6 +307,15 @@ export const api = {
    * of each.
    */
   insightsStreaks: () => get<StreakInsight>(ROUTES.insightsStreaks),
+  /**
+   * The year: the twelve calendar months, the calendar of the days
+   * coloured by the zones they were run in, and what changed against the
+   * athlete's own past.
+   *
+   * The calendar says **when** and **how hard**. It carries no position
+   * and no place name: where the athlete ran is the heatmap's surface.
+   */
+  insightsYear: () => get<YearInsight>(ROUTES.insightsYear),
 
   /**
    * The heatmap: the grid over the stored positions.
