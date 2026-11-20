@@ -587,7 +587,7 @@ mod tests {
     fn runs(list: &[Option<YearRun>]) -> Option<Vec<YearRun>> {
         let mut out: Vec<YearRun> = Vec::new();
         for run in list {
-            out.push(run.clone()?);
+            out.push(*run.as_ref()?);
         }
         Some(out)
     }
