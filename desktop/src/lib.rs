@@ -19,6 +19,8 @@
 //! | [`spa`] | the embedded app, and the guard that keeps it inside |
 //! | [`api`] | the seam to the router, and the router itself |
 //! | [`sync`] | the rig's pull policy: the one retry the shell owns |
+//! | [`model`] | the model client: one OpenAI-compatible shape, every provider |
+//! | [`update`] | the rig's calling: the writer, the reviewer, and the repair |
 //! | [`workspace`] | the machine-side services and the first-run state |
 //! | [`tools`] | the rig's verified export and import |
 //! | [`paths`] | where the rig keeps its files |
@@ -47,10 +49,12 @@ pub mod error;
 pub mod http;
 pub mod key;
 pub mod log;
+pub mod model;
 pub mod paths;
 pub mod server;
 pub mod spa;
 pub mod sync;
 pub mod tools;
 pub mod trust;
+pub mod update;
 pub mod workspace;

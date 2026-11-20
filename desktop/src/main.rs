@@ -310,12 +310,13 @@ fn import_command(arguments: &[String]) -> Result<i32> {
         summary.format_version, summary.schema_version
     );
     println!(
-        "runs {}; wellness days {}; plan blocks {}; planned sessions {}; notes {}",
+        "runs {}; wellness days {}; plan blocks {}; planned sessions {}; notes {}; updates {}",
         summary.activities,
         summary.wellness,
         summary.plan_blocks,
         summary.plan_sessions,
-        summary.notes
+        summary.notes,
+        summary.updates
     );
     if summary.refused.is_empty() {
         println!("refused: nothing");

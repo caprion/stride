@@ -360,10 +360,102 @@ impl Server {
             body: &request.body,
         };
         if api::is_pull(&request.method, path) {
-            crate::sync::pull(self.router.as_ref(), &call)
+            // The runs the pull brought are the ones that were not there
+            // before it, and their updates are written when they land.
+            let before = self.run_ids();
+            let answer = crate::sync::pull(self.router.as_ref(), &call);
+            if answer.status == 200 {
+                self.write_updates(&before);
+            }
+            answer
         } else {
             self.router.call(&call)
         }
+    }
+
+    /// The ids of the runs that are stored.
+    fn run_ids(&self) -> Vec<i64> {
+        let Some(workspace) = &self.workspace else {
+            return Vec::new();
+        };
+        workspace.store().activity_ids().unwrap_or_default()
+    }
+
+    /// Write the updates of the runs a pull brought.
+    ///
+    /// **A run's update is written when the run lands**, not on a timer:
+    /// the rig asks the router for the payload, asks the writer to write,
+    /// asks the reviewer to review, and keeps the draft only when the
+    /// reviewer ships it and the checks pass.
+    ///
+    /// Nothing happens when the feature is off — and the feature is off
+    /// until the athlete turns it on — and nothing leaves the machine
+    /// unless the settings allow it.
+    fn write_updates(&self, before: &[i64]) {
+        if self.workspace.is_none() {
+            return;
+        }
+        let settings = match self.update_settings() {
+            Some(settings) => settings,
+            None => return,
+        };
+        if !settings.enabled {
+            return;
+        }
+        let after = self.run_ids();
+        let fresh: Vec<i64> = after
+            .into_iter()
+            .filter(|id| !before.contains(id))
+            .collect();
+        if fresh.is_empty() {
+            return;
+        }
+
+        // The key is read from the environment variable the settings name,
+        // and it is never written down: a local server may need none.
+        let key = std::env::var(&settings.key_env)
+            .ok()
+            .and_then(|value| crate::model::ModelKey::new(&value).ok());
+        let model = match crate::model::ChatClient::new(key) {
+            Ok(model) => model,
+            Err(error) => {
+                log::log(&format!("the model client could not be built: {error}"));
+                return;
+            }
+        };
+
+        for id in fresh {
+            match crate::update::write_update(self.router.as_ref(), &model, &settings, id) {
+                Ok(written) => match written.draft {
+                    Some(_) => log::log(&format!("the update of the run {id} was written")),
+                    None => log::log(&format!(
+                        "the update of the run {id} was not kept ({})",
+                        if written.verdict.is_empty() {
+                            "nothing to write"
+                        } else {
+                            &written.verdict
+                        }
+                    )),
+                },
+                Err(error) => log::log(&format!("the update of the run {id} could not be written: {error}")),
+            }
+        }
+    }
+
+    /// The update's own settings, as the router holds them.
+    fn update_settings(&self) -> Option<crate::update::ModelSettings> {
+        let call = api::Request {
+            method: "GET",
+            path: "/api/v1/update/settings",
+            query: "",
+            body: &[],
+        };
+        let answer = self.router.call(&call);
+        if answer.status != 200 {
+            return None;
+        }
+        let value: serde_json::Value = serde_json::from_slice(&answer.body).unwrap_or_default();
+        Some(crate::update::ModelSettings::from_answer(&value))
     }
 
     /// Serve connections until the listener closes.
@@ -497,6 +589,7 @@ fn import_json(summary: tools::ImportSummary) -> serde_json::Value {
         "plan_blocks": summary.plan_blocks,
         "plan_sessions": summary.plan_sessions,
         "notes": summary.notes,
+        "updates": summary.updates,
         "refused": summary.refused,
     })
 }
