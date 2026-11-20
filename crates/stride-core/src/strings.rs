@@ -171,7 +171,7 @@ pub struct Entry {
 }
 
 /// The catalogue.
-pub const CATALOGUE: [Entry; 156] = [
+pub const CATALOGUE: [Entry; 158] = [
     // The vitals.
     Entry {
         id: "vital.sleep.label",
@@ -657,6 +657,23 @@ pub const CATALOGUE: [Entry; 156] = [
         kind: StringKind::Statement,
         role: None,
         template: "{from}-{to} km",
+    },
+    Entry {
+        // A range of paces: the band of the pace distribution, "4:30–5:00
+        // /km". The seconds are written as a clock, the way a pace is
+        // read.
+        id: "value.pace_range",
+        kind: StringKind::Statement,
+        role: None,
+        template: "{from}–{to} /km",
+    },
+    Entry {
+        // No value for the pace bands: the window holds no moving samples,
+        // so there is no distribution to draw. Never a band of zero.
+        id: "pace.no_samples",
+        kind: StringKind::Statement,
+        role: None,
+        template: "pace bands unavailable — the window holds no moving samples",
     },
     Entry {
         // The three bands the training is distributed across. They are the
