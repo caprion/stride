@@ -94,8 +94,7 @@ const ROUTES = [
     path: '/progress/window',
     name: 'Progress · the window',
     primary: '[data-testid="progress-panel-window"]',
-
-  { path: '/progress', name: 'Progress', primary: '[data-testid="progress-headline"]' },
+  },
   {
     // The pace page: reached from Progress, and it draws its own three
     // panels.
