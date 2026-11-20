@@ -276,15 +276,15 @@ pub fn record(api: &Api, request: &Request) -> ApiResult<Value> {
         update: Some(RunUpdate {
             writer,
             reviewer,
-            payload_hash: payload.hash,
+            payload_hash: payload.hash.clone(),
             draft,
-            checks,
+            checks: checks.clone(),
             verdict,
             created_at: crate::state::format_instant(stored.created_at),
         }),
-        checks: Vec::new(),
+        checks,
         verdict: "ship".to_string(),
-        payload_hash: None,
+        payload_hash: Some(payload.hash),
         generated_at: api.generated_at(),
     };
     ok(&response)
