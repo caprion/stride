@@ -5,10 +5,10 @@ import { t } from '../i18n'
 import { QueryError } from './QueryError'
 
 const STAGES = [
-  { key: 'deep_sleep', label: 'body.sleep.deep', color: '#124A7C' },
-  { key: 'rem_sleep', label: 'body.sleep.rem', color: '#7BA8CD' },
-  { key: 'light_sleep', label: 'body.sleep.light', color: '#D6E6F3' },
-  { key: 'awake', label: 'body.sleep.awake', color: '#F2B01E' },
+  { key: 'deep_sleep', label: 'body.sleep.deep', color: 'var(--brand-600)' },
+  { key: 'rem_sleep', label: 'body.sleep.rem', color: 'var(--brand-300)' },
+  { key: 'light_sleep', label: 'body.sleep.light', color: 'var(--brand-100)' },
+  { key: 'awake', label: 'body.sleep.awake', color: 'var(--accent-400)' },
 ] as const
 
 export function SleepComposition({

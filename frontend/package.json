@@ -10,6 +10,8 @@
     "preview": "vite preview --port 4173 --strictPort",
     "typecheck": "tsc --noEmit -p tsconfig.app.json && tsc --noEmit -p tsconfig.node.json",
     "lint:voice": "node scripts/lint-voice.mjs",
+    "tokens:generate": "node scripts/gen-tokens.mjs",
+    "tokens:check": "node scripts/check-tokens.mjs",
     "fixtures:export": "node scripts/export-fixtures.mjs",
     "test:unit": "vitest run",
     "test:viewport": "node scripts/viewport-matrix.mjs",

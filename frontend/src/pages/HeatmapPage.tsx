@@ -88,7 +88,7 @@ export function HeatmapPage() {
               <li className="flex items-center gap-2">
                 <span
                   className="inline-block size-3 rounded-xs"
-                  style={{ backgroundColor: '#D6E6F3' }}
+                  style={{ backgroundColor: 'var(--brand-100)' }}
                   aria-hidden="true"
                 />
                 {t('heatmap.legend.one')}
@@ -97,7 +97,7 @@ export function HeatmapPage() {
                 <li className="flex items-center gap-2">
                   <span
                     className="inline-block size-3 rounded-xs"
-                    style={{ backgroundColor: '#124A7C' }}
+                    style={{ backgroundColor: 'var(--brand-600)' }}
                     aria-hidden="true"
                   />
                   {t('heatmap.legend.many', { n: formatCount(busiest) })}

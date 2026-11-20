@@ -95,13 +95,13 @@ function EffortChart({
       <div style={{ width: '100%', height: 150 }}>
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={data} margin={{ top: 4, right: 4, bottom: 0, left: 0 }}>
-            <CartesianGrid stroke="#E4EBF0" vertical={false} />
+            <CartesianGrid stroke="var(--chart-grid)" vertical={false} />
             <XAxis
               dataKey="minute"
               type="number"
               domain={[0, 'dataMax']}
               tickCount={5}
-              tick={{ fontSize: 11, fill: '#61788D' }}
+              tick={{ fontSize: 11, fill: 'var(--chart-axis)' }}
             />
             <YAxis
               ticks={ticks.map((tick) => tick.value)}
@@ -125,7 +125,7 @@ function EffortChart({
               type="monotone"
               name={t(metric === 'pace' ? 'vital.pace' : 'vital.heartRate')}
               dataKey={metric === 'pace' ? 'pace' : 'hr'}
-              stroke={metric === 'pace' ? '#D99A0B' : '#1E5E96'}
+              stroke={metric === 'pace' ? 'var(--chart-reference)' : 'var(--chart-line)'}
               strokeWidth={2}
               dot={false}
               isAnimationActive={false}

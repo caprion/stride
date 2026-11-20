@@ -1,4 +1,8 @@
 <?xml version='1.0' encoding='utf-8'?>
+<!--
+    GENERATED from `frontend/tokens.ts` — do not edit.
+    Run `npm --prefix frontend run tokens:generate` after a token changes.
+-->
 <resources>
     <!-- The app's own colours: the surface the screens are drawn on, and
          the one accent colour a link may take. -->

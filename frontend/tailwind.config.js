@@ -1,86 +1,90 @@
+/**
+ * The Tailwind theme.
+ *
+ * **Generated from `tokens.ts` — this file holds no colour, no size and no
+ * shadow of its own.** Every value below is read from the token file, so
+ * there is one source for the app: the tokens.
+ *
+ * The colours are CSS variables rather than literal values, and that is
+ * what makes the palette a one-line change: `data-palette="dreeve"` on the
+ * root element swaps the variables, and every class in the app follows
+ * without being rewritten.
+ */
+
+import { fonts, motion, palettes, radii, shadows, spacing, typeScale } from './tokens.ts'
+
+/** The ten steps of a ramp. */
+const STEPS = [50, 100, 200, 300, 400, 500, 600, 700, 800, 900] as const
+
+/** A ramp as Tailwind wants it: every step a CSS variable. */
+function ramp(name: string): Record<string, string> {
+  return Object.fromEntries(STEPS.map((step) => [step, `var(--${name}-${step})`]))
+}
+
+/** The inks: the four weights of text. */
+const ink = {
+  DEFAULT: 'var(--ink)',
+  soft: 'var(--ink-soft)',
+  muted: 'var(--ink-muted)',
+  faint: 'var(--ink-faint)',
+}
+
+/** The surfaces: the four planes the app is drawn on. */
+const surface = {
+  DEFAULT: 'var(--surface)',
+  soft: 'var(--surface-soft)',
+  raised: 'var(--surface-raised)',
+  sunken: 'var(--surface-sunken)',
+}
+
+/** The chart's own colours: the grid, the axis, the band, the series. */
+const chart = {
+  grid: 'var(--chart-grid)',
+  axis: 'var(--chart-axis)',
+  band: 'var(--chart-band)',
+  line: 'var(--chart-line)',
+  lineAlt: 'var(--chart-line-alt)',
+  reference: 'var(--chart-reference)',
+}
+
+/** The type scale: the size, and the line height that goes with it. */
+const fontSize = Object.fromEntries(
+  Object.entries(typeScale).map(([name, step]) => [name, [step.size, { lineHeight: step.lineHeight }]]),
+)
+
 /** @type {import('tailwindcss').Config} */
 export default {
   content: ['./index.html', './src/**/*.{ts,tsx}'],
   theme: {
     extend: {
       colors: {
-        // Brand — deep azure. Structure, gravity, primary actions, the frame.
-        brand: {
-          50: '#EEF5FB',
-          100: '#D6E6F3',
-          200: '#A9C9E2',
-          300: '#7BA8CD',
-          400: '#4A82B4',
-          500: '#1E5E96',
-          600: '#124A7C',
-          700: '#0D3A63',
-          800: '#082B49',
-          900: '#051D33',
-        },
-        // Accent — warm amber. The athlete's own data.
-        accent: {
-          50: '#FEF8EA',
-          100: '#FDEDC7',
-          200: '#FBDB93',
-          300: '#F8C55C',
-          400: '#F2B01E',
-          500: '#D99A0B',
-          600: '#B57C06',
-          700: '#8A5E05',
-          800: '#5F4103',
-          900: '#3D2A02',
-        },
-        // Ink — a blue-black, so text sits in the same world as the chrome.
-        ink: {
-          DEFAULT: '#112B40',
-          soft: '#31465A',
-          muted: '#4E6577',
-          faint: '#586F82',
-        },
-        surface: {
-          DEFAULT: '#FFFFFF',
-          soft: '#F1F5F8',
-          raised: '#FAFCFD',
-          sunken: '#E9EFF4',
-        },
-        edge: '#CEDAE4',
+        // Brand — the deep azure in `stride`, the orange-red in `dreeve`.
+        brand: ramp('brand'),
+        // Accent — the warm ramp: the athlete's own data.
+        accent: ramp('accent'),
+        // Ink — a blue-black in `stride`, a pale grey in `night`.
+        ink,
+        surface,
+        edge: 'var(--edge)',
         // The only "positive"/"negative" tones in the app are for the
         // direction words, and they are never red: nothing is a failure.
-        better: '#2E8B7A',
-        usual: '#4A82B4',
-        could: '#8A5E05',
-        ramp: ['#F2B01E', '#E08A3C', '#B4557F', '#6E6BA8', '#3F6E9E', '#1E5E96'],
+        better: 'var(--better)',
+        usual: 'var(--usual)',
+        could: 'var(--could)',
+        // The series ramp: six steps, for a chart that draws more than one.
+        ramp: palettes.stride.ramp.map((_, index) => `var(--ramp-${index + 1})`),
+        chart,
       },
       fontFamily: {
-        sans: [
-          'system-ui',
-          '-apple-system',
-          'BlinkMacSystemFont',
-          '"Segoe UI"',
-          'Roboto',
-          '"Helvetica Neue"',
-          'Arial',
-          'sans-serif',
-        ],
-        mono: ['"SF Mono"', 'ui-monospace', 'Menlo', 'Consolas', 'monospace'],
+        sans: [...fonts.sans],
+        mono: [...fonts.mono],
       },
-      boxShadow: {
-        card: '0 1px 2px rgba(11,27,39,0.04), 0 1px 3px rgba(11,27,39,0.06)',
-        lift: '0 4px 16px rgba(11,27,39,0.10)',
-        nav: '0 1px 0 rgba(11,27,39,0.08)',
-      },
-      borderRadius: {
-        card: '9px',
-      },
-      keyframes: {
-        'fade-up': {
-          '0%': { opacity: '0', transform: 'translateY(6px)' },
-          '100%': { opacity: '1', transform: 'translateY(0)' },
-        },
-      },
-      animation: {
-        'fade-up': 'fade-up 0.28s ease-out both',
-      },
+      fontSize,
+      spacing: { ...spacing },
+      boxShadow: { ...shadows },
+      borderRadius: { ...radii },
+      keyframes: motion.keyframes,
+      animation: motion.animation,
     },
   },
   plugins: [],

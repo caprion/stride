@@ -38,7 +38,7 @@ export function AxisTick({ x = 0, y = 0, payload, labels }: TickProps) {
       y={y}
       dy={4}
       textAnchor="end"
-      fill="#61788D"
+      fill="var(--chart-axis)"
       fontSize={11}
       data-testid="chart-axis-label"
     >
