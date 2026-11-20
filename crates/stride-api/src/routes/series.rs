@@ -10,8 +10,6 @@
 //! configuration.
 
 use stride_core::pace::PacePoint;
-use stride_core::zones::ZoneSample;
-
 use stride_core::zones::{ZoneFloors, ZoneSample};
 use stride_ingest::{decode_fit, FitActivity, MAX_FIT_INPUT_BYTES};
 
