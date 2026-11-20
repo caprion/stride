@@ -72,6 +72,7 @@ pub mod streaks;
 pub mod strings;
 pub mod types;
 pub mod units;
+pub mod update;
 pub mod zones;
 
 pub use band::{band_for, Band};
@@ -117,6 +118,10 @@ pub use strings::StringKind;
 pub use types::{
     BetterSide, Distance, Duration, Effort, HeartRate, Hrv, RestingHr, Sleep, VitalKind, Vitals,
     WellnessDay,
+};
+pub use update::{
+    check_draft, payload, Check, Fact, Finding, ObservationFact, ObservationInput, Payload,
+    Quantity, Report, SplitFact, SplitInput, UpdateInput, ZoneFact, ZoneInput, VERDICTS,
 };
 pub use units::{
     render_cadence, render_difference, render_distance, render_duration, render_efficiency,

@@ -21,6 +21,7 @@
 //! | `option` | a session from the athlete's own plan, unranked, never conditioned on the vitals |
 //! | `pattern` | what usually happened, always with its sample size |
 //! | `status` | connect/sync/staleness and empty-state lines |
+//! | `instruction` | the product's instruction to a model — the run update's prompt |
 //!
 //! The rules the lint enforces:
 //!
@@ -115,6 +116,14 @@ pub enum StringKind {
     Statement,
     /// Connect, sync, staleness and empty-state lines.
     Status,
+    /// The product's instruction to a model.
+    ///
+    /// The one string the app never shows: it is the prompt the writer and
+    /// the reviewer are given, and it names the register the model is to
+    /// write in. It is a template — it carries holes, because the payload
+    /// and the draft go into it — and it is here because the prompt is the
+    /// product's instruction, not the model's own wording.
+    Instruction,
 }
 
 impl StringKind {
@@ -127,6 +136,7 @@ impl StringKind {
             StringKind::Pattern => "pattern",
             StringKind::Statement => "statement",
             StringKind::Status => "status",
+            StringKind::Instruction => "instruction",
         }
     }
 }
@@ -171,7 +181,7 @@ pub struct Entry {
 }
 
 /// The catalogue.
-pub const CATALOGUE: [Entry; 156] = [
+pub const CATALOGUE: [Entry; 176] = [
     // The vitals.
     Entry {
         id: "vital.sleep.label",
@@ -1184,6 +1194,148 @@ pub const CATALOGUE: [Entry; 156] = [
         role: None,
         template: "Version {version}",
     },
+    // The run update: the payload's labels, the directions the payload may
+    // state, and the checks' findings.
+    //
+    // The update itself is the model's wording and is **not** here: it is
+    // not the product's voice. What is here is the product's side of it —
+    // the labels the payload carries, the prompt the model is given, and
+    // what the checks say when they find something.
+    Entry {
+        id: "update.payload.distance",
+        kind: StringKind::Statement,
+        role: None,
+        template: "Distance",
+    },
+    Entry {
+        id: "update.payload.duration",
+        kind: StringKind::Statement,
+        role: None,
+        template: "Duration",
+    },
+    Entry {
+        id: "update.payload.pace",
+        kind: StringKind::Statement,
+        role: None,
+        template: "Average pace",
+    },
+    Entry {
+        id: "update.payload.heart_rate",
+        kind: StringKind::Statement,
+        role: None,
+        template: "Average heart rate",
+    },
+    Entry {
+        id: "update.payload.highest_heart_rate",
+        kind: StringKind::Statement,
+        role: None,
+        template: "Highest heart rate",
+    },
+    Entry {
+        id: "update.payload.elevation",
+        kind: StringKind::Statement,
+        role: None,
+        template: "Elevation gain",
+    },
+    Entry {
+        id: "update.payload.splits",
+        kind: StringKind::Statement,
+        role: None,
+        template: "Splits",
+    },
+    Entry {
+        id: "update.payload.zones",
+        kind: StringKind::Statement,
+        role: None,
+        template: "Zones",
+    },
+    Entry {
+        id: "update.payload.observations",
+        kind: StringKind::Statement,
+        role: None,
+        template: "Observations",
+    },
+    // The directions the payload states. They are the closed set the
+    // direction check compares the draft against, and they are not the
+    // app's direction words: those three are about a vital, and these are
+    // about a quantity that moved.
+    Entry {
+        id: "update.direction.faster",
+        kind: StringKind::Statement,
+        role: None,
+        template: "faster",
+    },
+    Entry {
+        id: "update.direction.slower",
+        kind: StringKind::Statement,
+        role: None,
+        template: "slower",
+    },
+    Entry {
+        id: "update.direction.higher",
+        kind: StringKind::Statement,
+        role: None,
+        template: "higher",
+    },
+    Entry {
+        id: "update.direction.lower",
+        kind: StringKind::Statement,
+        role: None,
+        template: "lower",
+    },
+    Entry {
+        id: "update.direction.held",
+        kind: StringKind::Statement,
+        role: None,
+        template: "held",
+    },
+    // What the checks say when they find something. These are shown under
+    // the update, so they are the app's own words about the model's text.
+    Entry {
+        id: "update.check.groundedness",
+        kind: StringKind::Status,
+        role: None,
+        template: "the number {value} is not in the payload",
+    },
+    Entry {
+        id: "update.check.direction",
+        kind: StringKind::Status,
+        role: None,
+        template: "the {label} is {stated} in the payload, and the draft says {claim}",
+    },
+    Entry {
+        id: "update.check.register",
+        kind: StringKind::Status,
+        role: None,
+        template: "the word {word} is not one the app uses",
+    },
+    // The prompts: the product's instruction to the model.
+    //
+    // They name the register — observations, no advice, no verdict, no
+    // score, no instruction and no prediction — and they tell the model to
+    // use only the numbers it is given. The reviewer is told to check the
+    // draft against the payload and to answer with one of three words.
+    Entry {
+        id: "update.prompt.writer",
+        kind: StringKind::Instruction,
+        role: None,
+        template:
+            "Write an update about one run: four to six sentences saying what the run was and how it went. Use only the numbers in the payload, and write each of them exactly as the payload writes them. Describe what happened: no advice, no verdict, no score, no instruction and no prediction. Do not tell the athlete what to do, and do not write about what comes next. Here is the payload: {payload}",
+    },
+    Entry {
+        id: "update.prompt.reviewer",
+        kind: StringKind::Instruction,
+        role: None,
+        template:
+            "Check a draft about one run against the payload it was written from. Read the draft for three things: the numbers in it, the direction of every claim, and the register it is written in. Answer with one word: ship, repair or discard. Say ship when the draft is true to the payload and written in the register. Say repair when the draft can be corrected, and name what to correct. Say discard when it cannot be corrected. Here is the payload: {payload} Here is the draft: {draft} Here are the findings: {findings}",
+    },
+    Entry {
+        id: "update.prompt.repair",
+        kind: StringKind::Instruction,
+        role: None,
+        template:
+            "Rewrite the update about one run, using the payload and the findings. Keep what the findings do not question, and correct what they question. Use only the numbers in the payload, and write each of them exactly as the payload writes them. Describe what happened: no advice, no verdict, no score, no instruction and no prediction. Do not tell the athlete what to do, and do not write about what comes next. Here is the payload: {payload} Here is the draft: {draft} Here are the findings: {findings}",
+    },
 ];
 
 /// The catalogue entry with this id.
@@ -1661,6 +1813,67 @@ mod tests {
                 "\"{command}\" should have been refused"
             );
         }
+    }
+
+    #[test]
+    fn the_ban_list_is_the_contract_s_own_list() {
+        // The list is the core's, and the contract's file is where it is
+        // written down. The frontend's lint reads the same list out of the
+        // export, so this is the one place the two are compared.
+        let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("..")
+            .join("..")
+            .join("docs")
+            .join("contract")
+            .join("voice.md");
+        let Ok(text) = std::fs::read_to_string(&path) else {
+            return;
+        };
+        let marker = "The lint fails the build on any of these words or constructions:";
+        let Some(at) = text.find(marker) else {
+            return;
+        };
+        let rest = &text[at + marker.len()..];
+        let Some(open) = rest.find("```") else {
+            return;
+        };
+        let after = &rest[open + 3..];
+        let Some(close) = after.find("```") else {
+            return;
+        };
+        let block = &after[..close];
+
+        // Every phrase of the list is named by the contract.
+        for phrase in BANNED_PHRASES {
+            assert!(
+                block.contains(phrase),
+                "the contract does not name the banned phrase \"{phrase}\""
+            );
+        }
+        // And the contract names nothing the list does not.
+        let mut rest = block.to_string();
+        let mut phrases: Vec<&str> = BANNED_PHRASES.to_vec();
+        // The longest first: "not recovered" has to go before "red".
+        phrases.sort_by(|left, right| right.len().cmp(&left.len()));
+        for phrase in phrases {
+            let mut at = 0;
+            while let Some(found) = rest[at..].find(phrase) {
+                let begin = at + found;
+                let end = begin + phrase.len();
+                rest.replace_range(begin..end, " ");
+                at = begin + 1;
+            }
+        }
+        let left: String = rest
+            .chars()
+            .filter(|character| {
+                !character.is_whitespace() && *character != '`' && *character != ','
+            })
+            .collect();
+        assert!(
+            left.is_empty(),
+            "the contract bans words the core does not: {left:?}"
+        );
     }
 
     #[test]

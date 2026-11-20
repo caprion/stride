@@ -163,6 +163,26 @@
     { "id": "status.not_enough_data", "kind": "status", "role": null, "template": "not enough data for a comparison yet" },
     { "id": "status.not_enough_data_yet", "kind": "status", "role": null, "template": "not enough data yet" },
     { "id": "status.saved_running_history", "kind": "status", "role": null, "template": "Your saved activity history" },
-    { "id": "status.version", "kind": "status", "role": null, "template": "Version {version}" }
+    { "id": "status.version", "kind": "status", "role": null, "template": "Version {version}" },
+    { "id": "update.payload.distance", "kind": "statement", "role": null, "template": "Distance" },
+    { "id": "update.payload.duration", "kind": "statement", "role": null, "template": "Duration" },
+    { "id": "update.payload.pace", "kind": "statement", "role": null, "template": "Average pace" },
+    { "id": "update.payload.heart_rate", "kind": "statement", "role": null, "template": "Average heart rate" },
+    { "id": "update.payload.highest_heart_rate", "kind": "statement", "role": null, "template": "Highest heart rate" },
+    { "id": "update.payload.elevation", "kind": "statement", "role": null, "template": "Elevation gain" },
+    { "id": "update.payload.splits", "kind": "statement", "role": null, "template": "Splits" },
+    { "id": "update.payload.zones", "kind": "statement", "role": null, "template": "Zones" },
+    { "id": "update.payload.observations", "kind": "statement", "role": null, "template": "Observations" },
+    { "id": "update.direction.faster", "kind": "statement", "role": null, "template": "faster" },
+    { "id": "update.direction.slower", "kind": "statement", "role": null, "template": "slower" },
+    { "id": "update.direction.higher", "kind": "statement", "role": null, "template": "higher" },
+    { "id": "update.direction.lower", "kind": "statement", "role": null, "template": "lower" },
+    { "id": "update.direction.held", "kind": "statement", "role": null, "template": "held" },
+    { "id": "update.check.groundedness", "kind": "status", "role": null, "template": "the number {value} is not in the payload" },
+    { "id": "update.check.direction", "kind": "status", "role": null, "template": "the {label} is {stated} in the payload, and the draft says {claim}" },
+    { "id": "update.check.register", "kind": "status", "role": null, "template": "the word {word} is not one the app uses" },
+    { "id": "update.prompt.writer", "kind": "instruction", "role": null, "template": "Write an update about one run: four to six sentences saying what the run was and how it went. Use only the numbers in the payload, and write each of them exactly as the payload writes them. Describe what happened: no advice, no verdict, no score, no instruction and no prediction. Do not tell the athlete what to do, and do not write about what comes next. Here is the payload: {payload}" },
+    { "id": "update.prompt.reviewer", "kind": "instruction", "role": null, "template": "Check a draft about one run against the payload it was written from. Read the draft for three things: the numbers in it, the direction of every claim, and the register it is written in. Answer with one word: ship, repair or discard. Say ship when the draft is true to the payload and written in the register. Say repair when the draft can be corrected, and name what to correct. Say discard when it cannot be corrected. Here is the payload: {payload} Here is the draft: {draft} Here are the findings: {findings}" },
+    { "id": "update.prompt.repair", "kind": "instruction", "role": null, "template": "Rewrite the update about one run, using the payload and the findings. Keep what the findings do not question, and correct what they question. Use only the numbers in the payload, and write each of them exactly as the payload writes them. Describe what happened: no advice, no verdict, no score, no instruction and no prediction. Do not tell the athlete what to do, and do not write about what comes next. Here is the payload: {payload} Here is the draft: {draft} Here are the findings: {findings}" }
   ]
 }
