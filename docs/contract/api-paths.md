@@ -29,7 +29,7 @@ reference only).
 | Route | Notes |
 |---|---|
 | `/plan/{current,today,week,blocks,sources,adherence,results,import}` | the plan engine |
-| `/insights/{today,progress,load,chips,rolling,streaks}` | Today and the feed chips; `progress` is the Progress screen's answer, `load` is the training load over the same window (see "The training load" below), `rolling` is the rolling view (see "The rolling view" below) and `streaks` is the streak of days and weeks (see "The streaks" below) |
+| `/insights/{today,progress,load,chips,rolling,streaks,year}` | Today and the feed chips; `progress` is the Progress screen's answer, `load` is the training load over the same window (see "The training load" below), `rolling` is the rolling view (see "The rolling view" below), `streaks` is the streak of days and weeks (see "The streaks" below) and `year` is the year: the months, the calendar of the days and what changed (see "The year" below) |
 
 | `/insights/{today,progress,load,heatmap,chips}` | Today and the feed chips; `progress` is the Progress screen's answer and `load` is the training load over the same window; `heatmap` is the grid over the stored positions, computed on the device (see "The heatmap" below) |
 | `/compare` | the metric diff |
@@ -146,6 +146,7 @@ Two rules hold for every shape below.
 | `/insights/load` | `generated_at`, `date`, `window: {from, from_label, to, to_label, weeks, warmup_days}`, `load: LoadSeries \| null`, `unavailable: string \| null`, `scenario: LoadScenario \| null` |
 | `/insights/rolling` | `generated_at`, `date`, `window: {from, from_label, to, to_label, days}`, `comparison: {from, from_label, to, to_label, days}`, `distance: {current, previous, difference}`, `duration: {current, previous, difference}`, `sessions: {current, previous, difference}`, `zones: {model, shares, distribution, unavailable}`, `distances: {key, label, sessions, distance, elevation, duration}[]`, `profile: {key, label, value, previous, movement}[]`, `weekday: {weekday, sessions, distance, duration, share}[]`, `daytime: {key, label, from_hour, to_hour, sessions, distance, duration}[]`, `months: {key, label, sessions, distance, duration, elevation}[]`, `years: {key, label, sessions, distance, duration, elevation}[]` |
 | `/insights/streaks` | `generated_at`, `date`, `days: {current, longest}`, `weeks: {current, longest}` |
+| `/insights/year` | `generated_at`, `date`, `window: {from, from_label, to, to_label, days}`, `comparison: {from, from_label, to, to_label, days}`, `months: {key, label, sessions, distance, duration, elevation, longest, form, weeks: {start, start_label, distance, sessions}[], mix: {zone, share}[], high}[]`, `days: {date, sessions, distance, high}[]`, `changed: string[]` |
 
 | `/insights/heatmap` | `generated_at`, `date`, `runs`, `more_runs`, `cell_size: RenderedValue \| null`, `cells: {x, y, south, west, north, east, runs}[]`, `extent: {south, west, north, east} \| null`, `unavailable: string \| null` |
 | `/auth/status` | `connected`, `method`, `key_source`, `key_last4`, `last_sync_at`, `generated_at` |
@@ -514,6 +515,83 @@ are consistent" anywhere near it.
 position answers with `cells: []`, `extent: null`, `cell_size: null`,
 `runs: 0` and the reason in `unavailable` — never an empty grid of cells
 that says "nowhere".
+
+### The year
+
+`/insights/year` answers with **a year of the athlete's own history**: the
+twelve calendar months, each with its own character; the **calendar of the
+days**, coloured by the zones the days were run in; and **what changed** —
+the diff against the athlete's own past.
+
+It is a route of its own, and not another field on `/insights/rolling`: the
+year has its own window (the twelve calendar months, and the period before
+them), its own "no value" reasons and its own sentences, and the rolling
+payload is already wide.
+
+**The numbers are the core's.** The route reads them through the api's seam
+(`crates/stride-api/src/year.rs`), which hands the core the stored runs,
+their zone times and the load's form. The days, the months, the window's
+totals and the sentences of the diff all come from `stride-core`'s year.
+**Nothing is stored**: every one of them is recomputed on read, like every
+other derived value.
+
+#### The window
+
+The window is **the last twelve calendar months**, ending on the day the
+answer is about, and the period it is compared against is **the same number
+of days, ending a day earlier** — the rolling view's own comparison. The
+current month is the month so far. The answer names both windows, so a
+number is never read apart from the period it describes.
+
+#### The fields
+
+| field | what it is |
+|---|---|
+| `window` · `comparison` | the two windows: their first and last day, the api's own rendering of those days, and how many days each covers |
+| `months[]` | one row per calendar month, oldest first: the runs, the distance, the moving time, the elevation gain, the longest run, the form at the month's end, the weeks the month touches, the mix of the zones and the share of the high zones |
+| `months[].weeks[]` | one row per calendar week the month touches: the week's first day, the distance of the week's days that fall in the month, and the runs in them |
+| `months[].mix[]` | one row per zone: the zone's label and its share of the time in the zones |
+| `days[]` | one row per day of the window, oldest first: the day, the runs on it, its distance and the share of its time in the zones that was in the high zones |
+| `changed[]` | what changed, in the core's own sentences |
+
+#### The calendar colours days, never places
+
+**The calendar is about *when* and *how hard*.** The days carry the zone
+mix of that day's runs and nothing else: no position, no place name and
+nothing that says where the athlete ran. Where they ran is the **heatmap's**
+surface, and it has its own screen, its own disclosure and its own rules.
+The two answers are deliberately different things, and the year's calendar
+is not a map.
+
+#### The zone mix
+
+The mix of a day — and of a month — is the **same time-in-zone
+computation** the bands use: the athlete's **stored model**, the runs' own
+FIT files decoded on read, and only the moving samples. A day's mix is the
+time of the runs that could be measured; a day whose runs carry none has
+**no mix at all**.
+
+#### No value
+
+**No value is the absence of the whole result**:
+
+- a day with no run has **no distance**;
+- a day whose runs carry no zone times — no file, no stored model, no
+  heart-rate samples — has **no mix**, and no share of the high zones;
+- a month with no runs has **no distance, no longest run, no form and no
+  mix**, and its weeks hold no distance;
+- a diff with nothing to compare has **no line** for that value.
+
+The window's **totals** are values: a window with no run holds 0 km, and
+that is a fact about the window rather than a missing measurement.
+
+#### The voice
+
+The year invites conclusions — that it was a good year, that the training
+was unbalanced, that the athlete peaked — and the product draws none. Each
+month is a fact about a month, the year says what happened and what
+changed, and the sentences of the diff are the diff's own numbers. There is
+no verdict, no score and nothing that tells the athlete what to do.
 
 ### The settings, the goal and the pause
 

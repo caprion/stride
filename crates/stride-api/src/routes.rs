@@ -22,6 +22,7 @@ pub mod plan;
 pub mod rolling;
 pub mod series;
 pub mod settings;
+pub mod year;
 
 use std::collections::BTreeMap;
 

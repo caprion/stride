@@ -455,6 +455,13 @@ pub const ROUTES: &[Route] = &[
         handler: crate::routes::rolling::streaks,
     },
     Route {
+        // The year: the months, the calendar of the days, and what
+        // changed against the athlete's own past.
+        pattern: "/insights/year",
+        method: Method::Get,
+        handler: crate::routes::year::year,
+    },
+    Route {
         pattern: "/insights/chips",
         method: Method::Get,
         handler: crate::routes::insight::chips,

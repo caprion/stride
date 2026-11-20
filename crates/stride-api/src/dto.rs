@@ -2151,3 +2151,119 @@ pub struct HeatmapExtent {
     /// The eastern edge.
     pub east: f64,
 }
+
+/// The year: the months, the calendar of the days, and what changed.
+///
+/// **The calendar colours days, never places.** The days carry the zone
+/// mix of that day's runs and nothing else: no position, no place name and
+/// nothing that says where the athlete ran. Where they ran is the
+/// heatmap's surface, and it has its own screen and its own disclosure.
+#[derive(Clone, Debug, PartialEq, Serialize)]
+pub struct YearInsight {
+    /// When this answer was produced.
+    pub generated_at: String,
+    /// The athlete's local calendar date the answer is about.
+    pub date: String,
+    /// The window the answer is about: the last twelve calendar months.
+    pub window: YearWindow,
+    /// The period the window is compared against: the same number of days,
+    /// ending a day earlier.
+    pub comparison: YearWindow,
+    /// The months of the window, oldest first.
+    pub months: Vec<YearMonth>,
+    /// Every day of the window, oldest first.
+    pub days: Vec<YearDay>,
+    /// What changed, in the core's own sentences.
+    ///
+    /// The sentences are written by the core's catalogue and travel to the
+    /// app already rendered: the app writes no sentence of its own.
+    pub changed: Vec<String>,
+}
+
+/// A window of days, as the year names it.
+#[derive(Clone, Debug, PartialEq, Serialize)]
+pub struct YearWindow {
+    /// The first day of the window, in the athlete's own calendar.
+    pub from: String,
+    /// The same day, as the api writes a date: "1 Jun 2025".
+    pub from_label: String,
+    /// The last day of the window.
+    pub to: String,
+    /// The same day, as the api writes a date: "13 May 2026".
+    pub to_label: String,
+    /// How many days the window covers.
+    pub days: i64,
+}
+
+/// One month of the year.
+#[derive(Clone, Debug, PartialEq, Serialize)]
+pub struct YearMonth {
+    /// The month's key: "2026-05".
+    pub key: String,
+    /// The month's label, as the api writes it: "May 2026".
+    pub label: String,
+    /// How many runs fell in the month.
+    pub sessions: usize,
+    /// The month's distance. `None` when the month holds no run.
+    pub distance: Option<RenderedValue>,
+    /// The month's moving time. `None` when it holds no run.
+    pub duration: Option<RenderedValue>,
+    /// The month's elevation gain. `None` when it holds no run.
+    pub elevation: Option<RenderedValue>,
+    /// The longest run of the month. `None` when it holds no run.
+    pub longest: Option<RenderedValue>,
+    /// The training load's form at the month's end.
+    pub form: Option<RenderedValue>,
+    /// The weeks the month touches, oldest first.
+    pub weeks: Vec<YearWeek>,
+    /// The mix of the zones the month was trained in: each zone's share of
+    /// the time in the zones.
+    ///
+    /// Empty when the month holds no time in the zones: that is no value,
+    /// never a row of zeros.
+    pub mix: Vec<YearZoneShare>,
+    /// The share of the time in the zones that was in the high zones
+    /// (Z4–Z5). `None` when the month holds no time in the zones.
+    pub high: Option<RenderedValue>,
+}
+
+/// One calendar week inside a month.
+#[derive(Clone, Debug, PartialEq, Serialize)]
+pub struct YearWeek {
+    /// The first day of the week — a Monday.
+    pub start: String,
+    /// The same day, as the api writes a date: "4 May 2026".
+    pub start_label: String,
+    /// The distance of the week's days that fall in the month. `None` when
+    /// the week holds no run in the month.
+    pub distance: Option<RenderedValue>,
+    /// How many runs fell in the week's days that are in the month.
+    pub sessions: usize,
+}
+
+/// One zone's share of the time in the zones.
+#[derive(Clone, Debug, PartialEq, Serialize)]
+pub struct YearZoneShare {
+    /// The zone, as the core writes it: "Z1".
+    pub zone: String,
+    /// The zone's share of the time in the zones. `None` when there is no
+    /// time in the zones at all.
+    pub share: Option<RenderedValue>,
+}
+
+/// One day of the calendar.
+#[derive(Clone, Debug, PartialEq, Serialize)]
+pub struct YearDay {
+    /// The day, in the athlete's own calendar.
+    pub date: String,
+    /// How many runs fell on the day.
+    pub sessions: usize,
+    /// The day's distance. `None` on a day with no run.
+    pub distance: Option<RenderedValue>,
+    /// The share of the day's time in the zones that was in the high zones
+    /// (Z4–Z5) — what the calendar colours the day by.
+    ///
+    /// `None` when the day's runs carry no time in the zones: no value,
+    /// never a share of zero.
+    pub high: Option<RenderedValue>,
+}
