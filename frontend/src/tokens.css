@@ -1,0 +1,151 @@
+/*
+ * The colours the app is painted with.
+ *
+ * GENERATED from `frontend/tokens.ts` — do not edit.
+ * Run `npm --prefix frontend run tokens:generate` after a token changes.
+ *
+ * The palette is one attribute on the root element: `data-palette`.
+ */
+
+:root {
+  color-scheme: light;
+  --brand-50: #EEF5FB;
+  --brand-100: #D6E6F3;
+  --brand-200: #A9C9E2;
+  --brand-300: #7BA8CD;
+  --brand-400: #4A82B4;
+  --brand-500: #1E5E96;
+  --brand-600: #124A7C;
+  --brand-700: #0D3A63;
+  --brand-800: #082B49;
+  --brand-900: #051D33;
+  --accent-50: #FEF8EA;
+  --accent-100: #FDEDC7;
+  --accent-200: #FBDB93;
+  --accent-300: #F8C55C;
+  --accent-400: #F2B01E;
+  --accent-500: #D99A0B;
+  --accent-600: #B57C06;
+  --accent-700: #8A5E05;
+  --accent-800: #5F4103;
+  --accent-900: #3D2A02;
+  --ink: #112B40;
+  --ink-soft: #31465A;
+  --ink-muted: #4E6577;
+  --ink-faint: #586F82;
+  --surface: #FFFFFF;
+  --surface-soft: #F1F5F8;
+  --surface-raised: #FAFCFD;
+  --surface-sunken: #E9EFF4;
+  --edge: #CEDAE4;
+  --better: #2E8B7A;
+  --usual: #4A82B4;
+  --could: #8A5E05;
+  --ramp-1: #F2B01E;
+  --ramp-2: #E08A3C;
+  --ramp-3: #B4557F;
+  --ramp-4: #6E6BA8;
+  --ramp-5: #3F6E9E;
+  --ramp-6: #1E5E96;
+  --chart-grid: #E4EBF0;
+  --chart-axis: #61788D;
+  --chart-band: #D6E6F3;
+  --chart-line: #1E5E96;
+  --chart-line-alt: #A9C9E2;
+  --chart-reference: #D99A0B;
+}
+
+html[data-palette='dreeve'] {
+  --brand-50: #FFF6F2;
+  --brand-100: #FFF1E9;
+  --brand-200: #FFD9C9;
+  --brand-300: #FFB99B;
+  --brand-400: #FF8A5C;
+  --brand-500: #FC5200;
+  --brand-600: #D03F00;
+  --brand-700: #C23C00;
+  --brand-800: #9E3100;
+  --brand-900: #7A2600;
+  --accent-50: #FDF6F3;
+  --accent-100: #FDF3EE;
+  --accent-200: #FCEFE8;
+  --accent-300: #F0CFC2;
+  --accent-400: #DE8A72;
+  --accent-500: #BD2D22;
+  --accent-600: #A32319;
+  --accent-700: #942319;
+  --accent-800: #6D1810;
+  --accent-900: #4A100B;
+  --ink: #111827;
+  --ink-soft: #374151;
+  --ink-muted: #6B7280;
+  --ink-faint: #9CA3AF;
+  --surface: #FFFFFF;
+  --surface-soft: #F9FAFB;
+  --surface-raised: #FCFCFD;
+  --surface-sunken: #F3F4F6;
+  --edge: #E5E7EB;
+  --better: #15803D;
+  --usual: #6B7280;
+  --could: #B45309;
+  --ramp-1: #FC5200;
+  --ramp-2: #BD2D22;
+  --ramp-3: #6B7280;
+  --ramp-4: #374151;
+  --ramp-5: #942319;
+  --ramp-6: #9CA3AF;
+  --chart-grid: #ECEEF0;
+  --chart-axis: #6B7280;
+  --chart-band: #FFF1E9;
+  --chart-line: #FC5200;
+  --chart-line-alt: #FFD9C9;
+  --chart-reference: #BD2D22;
+}
+
+html[data-palette='night'] {
+  --brand-50: #17293F;
+  --brand-100: #1E3A5F;
+  --brand-200: #24486F;
+  --brand-300: #2F5C8F;
+  --brand-400: #3B82F6;
+  --brand-500: #60A5FA;
+  --brand-600: #2F6FE0;
+  --brand-700: #93C5FD;
+  --brand-800: #BFDBFE;
+  --brand-900: #DBEAFE;
+  --accent-50: #2A2312;
+  --accent-100: #4A3A13;
+  --accent-200: #6B5524;
+  --accent-300: #8F7434;
+  --accent-400: #C08A1E;
+  --accent-500: #FBBF24;
+  --accent-600: #FCD34D;
+  --accent-700: #FDE68A;
+  --accent-800: #FEF3C7;
+  --accent-900: #FFFBEB;
+  --ink: #E8EEF6;
+  --ink-soft: #9FB0C4;
+  --ink-muted: #8497AC;
+  --ink-faint: #7A8EA4;
+  --surface: #14202F;
+  --surface-soft: #0D1724;
+  --surface-raised: #1B2839;
+  --surface-sunken: #0F1A28;
+  --edge: #24344A;
+  --better: #34D399;
+  --usual: #94A3B8;
+  --could: #FBBF24;
+  --ramp-1: #60A5FA;
+  --ramp-2: #FBBF24;
+  --ramp-3: #2DD4BF;
+  --ramp-4: #A78BFA;
+  --ramp-5: #FB7185;
+  --ramp-6: #94A3B8;
+  --chart-grid: #24344A;
+  --chart-axis: #8497AC;
+  --chart-band: #1E3A5F;
+  --chart-line: #60A5FA;
+  --chart-line-alt: #24486F;
+  --chart-reference: #FBBF24;
+  color-scheme: dark;
+}

@@ -11,6 +11,13 @@ import { BrowserRouter } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import './index.css'
 import { App } from './app/App'
+import { applyPalette } from './lib/palette'
+
+/*
+  The palette is applied before the first paint: the app is never drawn in
+  one colour and repainted in another.
+*/
+applyPalette()
 
 const queryClient = new QueryClient({
   defaultOptions: {
