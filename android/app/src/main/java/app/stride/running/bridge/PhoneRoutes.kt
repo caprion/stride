@@ -182,6 +182,7 @@ object PhoneRoutes {
         "/insights/progress",
         "/insights/heatmap",
         "/insights/chips",
+        "/insights/year",
         "/compare",
         "/compare/candidates",
         // App

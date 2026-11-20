@@ -479,6 +479,59 @@ a fact against a stated period, and a shape is not a fact.** So:
 
 This travels with the fields of `/insights/rolling` in
 
+### Proposed amendment — the year, as a film (2026-11-20)
+
+**Proposal, not approved.** The approvals below are the user's to give. This
+section records the change and the rule it serves; it is not permission to
+ship, publish, migrate or sync production data.
+
+A running log can answer three questions about its own year, and all three
+are facts about what happened: what each month held, what each day held,
+and what changed against the athlete's own past. This item adds them as
+one surface — **the year, as a film** — and it adds them on the terms the
+plan already sets.
+
+The rule this serves is the one the whole product runs on: **a number is
+only a fact against a stated period, and the calendar is about the days
+and never about the places.**
+
+So:
+
+* **The window is the last twelve calendar months**, ending on the day the
+  answer is about, and the period it is compared against is the same
+  number of days ending a day earlier — the rolling view's own
+  comparison. The answer names both windows, so a number is never read
+  apart from the period it describes.
+* **The months are the core's.** Each one holds the distance, the runs,
+  the longest run, the shape of the weeks it touches, the mix of the
+  zones it was trained in and the form at its end. **Nothing is stored**:
+  every one of them is recomputed on read, like every other derived
+  value.
+* **The calendar's colours are days, never places.** A day is coloured by
+  the share of its time in the zones that was in the high zones — the same
+  time-in-zone computation the run detail uses, against the athlete's own
+  stored model. **No position and no place name travels in the answer.**
+  Where the athlete ran is the heatmap's surface, and it has its own
+  screen, its own disclosure and its own rules.
+* **The diff is the core's own sentences.** The distance, the sessions,
+  the longest run, the pace and the form, said as the numbers of two
+  periods side by side. The app writes no sentence of its own.
+* **No value is the absence of the value.** A day with no run has no
+  distance; a day whose runs carry no zone times has no mix and no
+  colour; a month with no runs holds no numbers; and a diff with nothing
+  to compare has no line for that value.
+* **The voice is the plan's.** Each month is a fact about a month, and the
+  year says what happened and what changed. It does not say whether the
+  year was good, and it does not tell the athlete what to do.
+
+**The surface is a page reached from Progress**, the way Compare and the
+Plan week are reached from inside the app — not a fifth destination. The
+four destinations stay the four, and the same page is there at every
+width.
+
+This travels with the route and the field table of `/insights/year` in
+`docs/contract/api-paths.md`.
+
 ### Proposed amendment — the heatmap, computed on the device (2026-11-17)
 
 **Proposal, not approved.** The approvals below are the user's to give. This

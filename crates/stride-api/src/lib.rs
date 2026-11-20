@@ -21,6 +21,7 @@
 //! | [`fingerprint`] | the seam to the core's fingerprint engine: the run's own laps and samples in, the core's observations out |
 
 //! | [`rolling`] | the seam to the core's rolling view: the stored runs and the stored zone model in, the core's streaks, windows, splits and tables out |
+//! | [`year`] | the seam to the core's year: the stored runs, their zone times and the load's form in, the core's months, calendar and diff out |
 //! | [`planfile`] | the plan files the athlete may import: markdown, CSV, JSON, the Garmin schedule |
 //! | [`wellness`] | the source's own wellness observations: a Garmin payload and the rows it carries |
 //!
@@ -152,6 +153,7 @@ pub mod state;
 pub mod story;
 mod sync;
 pub mod wellness;
+pub mod year;
 
 pub use dto::RenderedValue;
 pub use error::{ApiError, ApiResult, ErrorEnvelope, ErrorKind};

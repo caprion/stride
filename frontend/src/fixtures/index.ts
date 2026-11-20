@@ -57,6 +57,7 @@ import type {
   SyncStatus,
   TodayInsight,
   VitalsSnapshot,
+  YearInsight,
 } from '../lib/types'
 import type { ApiErrorKind } from '../lib/transport'
 import answersData from './answers.json'
@@ -518,6 +519,21 @@ export const streaksEmptyFixture: StreakInsight = {
   days: { current: null, longest: null },
   weeks: { current: null, longest: null },
 }
+
+// ---------------------------------------------------------------- year
+
+/**
+ * The year: the twelve calendar months, the calendar of the days and
+ * what changed.
+ *
+ * The answer comes from the router's own store - the same seed - so the
+ * numbers on the page are the numbers the api computes.
+ *
+ * **The seeded store holds no FIT file**, so the days carry no mix: the
+ * calendar is drawn in its neutral colour, which is the honest answer
+ * and not a drawn one.
+ */
+export const yearFixture = routerAnswers['/insights/year'] as YearInsight
 
 // ------------------------------------------------------------- heatmap
 
@@ -1791,6 +1807,34 @@ export function fixtureResponse(
         return { ...loadFixture, load: null, scenario: null, unavailable: 'no_zone_model' }
       }
       return routerAnswers[`/insights/load?weeks=${params.weeks}`] ?? loadFixture
+    case '/insights/year': {
+      // Nothing in the store: the months hold no numbers and the days
+      // hold no distance.
+      if (variant === 'empty' || variant === 'fresh') {
+        return {
+          ...yearFixture,
+          months: yearFixture.months.map((month) => ({
+            ...month,
+            sessions: 0,
+            distance: null,
+            duration: null,
+            elevation: null,
+            longest: null,
+            form: null,
+            weeks: [],
+            mix: [],
+            high: null,
+          })),
+          days: yearFixture.days.map((day) => ({
+            ...day,
+            sessions: 0,
+            distance: null,
+            high: null,
+          })),
+        }
+      }
+      return yearFixture
+    }
     case '/insights/heatmap':
       // No run carries a position: there is no grid to draw, and the
       // screen says so.

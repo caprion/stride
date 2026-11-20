@@ -1382,6 +1382,15 @@ export interface SettingsDeleteResult {
  * it carries.
  */
 export interface PaceInsight {
+
+ * The year: the months, the calendar of the days, and what changed.
+ *
+ * **The calendar colours days, never places.** A day carries the zone mix
+ * of that day's runs and nothing else: no position, no place name and
+ * nothing that says where the athlete ran. Where they ran is the heatmap's
+ * surface, and it has its own screen and its own disclosure.
+ */
+export interface YearInsight {
   /** When this answer was produced. */
   generated_at: string
   /** The athlete's local calendar date the answer is about. */
@@ -1473,4 +1482,111 @@ export interface PaceBandRow {
   distance: RenderedValue
   /** The band's share of the window's time. */
   share: RenderedValue | null
+}
+
+  /** The window the answer is about: the last twelve calendar months. */
+  window: YearWindow
+  /** The period the window is compared against. */
+  comparison: YearWindow
+  /** The months of the window, oldest first. */
+  months: YearMonth[]
+  /** Every day of the window, oldest first. */
+  days: YearDay[]
+  /**
+   * What changed, in the core's own sentences.
+   *
+   * The sentences are written by the core and travel to the app already
+   * rendered: the app writes no sentence of its own.
+   */
+  changed: string[]
+}
+
+/** A window of days, as the year names it. */
+export interface YearWindow {
+  /** The first day of the window, in the athlete's own calendar. */
+  from: string
+  /** The same day, as the api writes a date: "1 Jun 2025". */
+  from_label: string
+  /** The last day of the window. */
+  to: string
+  /** The same day, as the api writes a date: "13 May 2026". */
+  to_label: string
+  /** How many days the window covers. */
+  days: number
+}
+
+/** One month of the year. */
+export interface YearMonth {
+  /** The month's key: "2026-05". */
+  key: string
+  /** The month's label, as the api writes it: "May 2026". */
+  label: string
+  /** How many runs fell in the month. */
+  sessions: number
+  /** The month's distance. Null when the month holds no run. */
+  distance: RenderedValue | null
+  /** The month's moving time. Null when it holds no run. */
+  duration: RenderedValue | null
+  /** The month's elevation gain. Null when it holds no run. */
+  elevation: RenderedValue | null
+  /** The longest run of the month. Null when it holds no run. */
+  longest: RenderedValue | null
+  /** The training load's form at the month's end. */
+  form: RenderedValue | null
+  /** The weeks the month touches, oldest first. */
+  weeks: YearWeek[]
+  /**
+   * The mix of the zones the month was trained in: each zone's share of
+   * the time in the zones.
+   *
+   * Empty when the month holds no time in the zones: that is no value,
+   * never a row of zeros.
+   */
+  mix: YearZoneShare[]
+  /**
+   * The share of the time in the zones that was in the high zones
+   * (Z4–Z5). Null when the month holds no time in the zones.
+   */
+  high: RenderedValue | null
+}
+
+/** One calendar week inside a month. */
+export interface YearWeek {
+  /** The first day of the week — a Monday. */
+  start: string
+  /** The same day, as the api writes a date: "4 May 2026". */
+  start_label: string
+  /**
+   * The distance of the week's days that fall in the month. Null when the
+   * week holds no run in the month.
+   */
+  distance: RenderedValue | null
+  /** How many runs fell in the week's days that are in the month. */
+  sessions: number
+}
+
+/** One zone's share of the time in the zones. */
+export interface YearZoneShare {
+  /** The zone, as the core writes it: "Z1". */
+  zone: string
+  /** The zone's share of the time in the zones. */
+  share: RenderedValue | null
+}
+
+/** One day of the calendar. */
+export interface YearDay {
+  /** The day, in the athlete's own calendar. */
+  date: string
+  /** How many runs fell on the day. */
+  sessions: number
+  /** The day's distance. Null on a day with no run. */
+  distance: RenderedValue | null
+  /**
+   * The share of the day's time in the zones that was in the high zones
+   * (Z4–Z5) — what the calendar colours the day by.
+   *
+   * Null when the day's runs carry no time in the zones: no value, never
+   * a share of zero.
+   */
+  high: RenderedValue | null
 }

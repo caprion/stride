@@ -9664,6 +9664,2707 @@
         "sessions": 0
       }
     },
+    "/insights/year": {
+      "changed": [
+        "+76.6 km against the period before (76.6 km against 0 km)",
+        "+7 recorded sessions (7 against 0)",
+        "the longest run grew by 18.2 km (18.2 km against 0 km)",
+        "the average pace was 5:17 /km"
+      ],
+      "comparison": {
+        "days": 347,
+        "from": "2024-06-19",
+        "from_label": "19 Jun 2024",
+        "to": "2025-05-31",
+        "to_label": "31 May 2025"
+      },
+      "date": "2026-05-13",
+      "days": [
+        {
+          "date": "2025-06-01",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-06-02",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-06-03",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-06-04",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-06-05",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-06-06",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-06-07",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-06-08",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-06-09",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-06-10",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-06-11",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-06-12",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-06-13",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-06-14",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-06-15",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-06-16",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-06-17",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-06-18",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-06-19",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-06-20",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-06-21",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-06-22",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-06-23",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-06-24",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-06-25",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-06-26",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-06-27",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-06-28",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-06-29",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-06-30",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-07-01",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-07-02",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-07-03",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-07-04",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-07-05",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-07-06",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-07-07",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-07-08",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-07-09",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-07-10",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-07-11",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-07-12",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-07-13",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-07-14",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-07-15",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-07-16",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-07-17",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-07-18",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-07-19",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-07-20",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-07-21",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-07-22",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-07-23",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-07-24",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-07-25",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-07-26",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-07-27",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-07-28",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-07-29",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-07-30",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-07-31",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-08-01",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-08-02",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-08-03",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-08-04",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-08-05",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-08-06",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-08-07",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-08-08",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-08-09",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-08-10",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-08-11",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-08-12",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-08-13",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-08-14",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-08-15",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-08-16",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-08-17",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-08-18",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-08-19",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-08-20",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-08-21",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-08-22",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-08-23",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-08-24",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-08-25",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-08-26",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-08-27",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-08-28",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-08-29",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-08-30",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-08-31",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-09-01",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-09-02",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-09-03",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-09-04",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-09-05",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-09-06",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-09-07",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-09-08",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-09-09",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-09-10",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-09-11",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-09-12",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-09-13",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-09-14",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-09-15",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-09-16",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-09-17",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-09-18",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-09-19",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-09-20",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-09-21",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-09-22",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-09-23",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-09-24",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-09-25",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-09-26",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-09-27",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-09-28",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-09-29",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-09-30",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-10-01",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-10-02",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-10-03",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-10-04",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-10-05",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-10-06",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-10-07",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-10-08",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-10-09",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-10-10",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-10-11",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-10-12",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-10-13",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-10-14",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-10-15",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-10-16",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-10-17",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-10-18",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-10-19",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-10-20",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-10-21",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-10-22",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-10-23",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-10-24",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-10-25",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-10-26",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-10-27",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-10-28",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-10-29",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-10-30",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-10-31",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-11-01",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-11-02",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-11-03",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-11-04",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-11-05",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-11-06",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-11-07",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-11-08",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-11-09",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-11-10",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-11-11",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-11-12",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-11-13",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-11-14",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-11-15",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-11-16",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-11-17",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-11-18",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-11-19",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-11-20",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-11-21",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-11-22",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-11-23",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-11-24",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-11-25",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-11-26",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-11-27",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-11-28",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-11-29",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-11-30",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-12-01",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-12-02",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-12-03",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-12-04",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-12-05",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-12-06",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-12-07",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-12-08",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-12-09",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-12-10",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-12-11",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-12-12",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-12-13",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-12-14",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-12-15",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-12-16",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-12-17",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-12-18",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-12-19",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-12-20",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-12-21",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-12-22",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-12-23",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-12-24",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-12-25",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-12-26",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-12-27",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-12-28",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-12-29",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-12-30",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-12-31",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-01-01",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-01-02",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-01-03",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-01-04",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-01-05",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-01-06",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-01-07",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-01-08",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-01-09",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-01-10",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-01-11",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-01-12",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-01-13",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-01-14",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-01-15",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-01-16",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-01-17",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-01-18",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-01-19",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-01-20",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-01-21",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-01-22",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-01-23",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-01-24",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-01-25",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-01-26",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-01-27",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-01-28",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-01-29",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-01-30",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-01-31",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-02-01",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-02-02",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-02-03",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-02-04",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-02-05",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-02-06",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-02-07",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-02-08",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-02-09",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-02-10",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-02-11",
+          "distance": {
+            "raw": 18200,
+            "text": "18.2 km"
+          },
+          "high": null,
+          "sessions": 1
+        },
+        {
+          "date": "2026-02-12",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-02-13",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-02-14",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-02-15",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-02-16",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-02-17",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-02-18",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-02-19",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-02-20",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-02-21",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-02-22",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-02-23",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-02-24",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-02-25",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-02-26",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-02-27",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-02-28",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-03-01",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-03-02",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-03-03",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-03-04",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-03-05",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-03-06",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-03-07",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-03-08",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-03-09",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-03-10",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-03-11",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-03-12",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-03-13",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-03-14",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-03-15",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-03-16",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-03-17",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-03-18",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-03-19",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-03-20",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-03-21",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-03-22",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-03-23",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-03-24",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-03-25",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-03-26",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-03-27",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-03-28",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-03-29",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-03-30",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-03-31",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-04-01",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-04-02",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-04-03",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-04-04",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-04-05",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-04-06",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-04-07",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-04-08",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-04-09",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-04-10",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-04-11",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-04-12",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-04-13",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-04-14",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-04-15",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-04-16",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-04-17",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-04-18",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-04-19",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-04-20",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-04-21",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-04-22",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-04-23",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-04-24",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-04-25",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-04-26",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-04-27",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-04-28",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-04-29",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-04-30",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-05-01",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-05-02",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-05-03",
+          "distance": {
+            "raw": 6300,
+            "text": "6.3 km"
+          },
+          "high": null,
+          "sessions": 1
+        },
+        {
+          "date": "2026-05-04",
+          "distance": {
+            "raw": 16100,
+            "text": "16.1 km"
+          },
+          "high": null,
+          "sessions": 1
+        },
+        {
+          "date": "2026-05-05",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-05-06",
+          "distance": {
+            "raw": 5000,
+            "text": "5 km"
+          },
+          "high": null,
+          "sessions": 1
+        },
+        {
+          "date": "2026-05-07",
+          "distance": {
+            "raw": 8400,
+            "text": "8.4 km"
+          },
+          "high": null,
+          "sessions": 1
+        },
+        {
+          "date": "2026-05-08",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-05-09",
+          "distance": {
+            "raw": 10200,
+            "text": "10.2 km"
+          },
+          "high": null,
+          "sessions": 1
+        },
+        {
+          "date": "2026-05-10",
+          "distance": {
+            "raw": 12400,
+            "text": "12.4 km"
+          },
+          "high": null,
+          "sessions": 1
+        },
+        {
+          "date": "2026-05-11",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-05-12",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-05-13",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        }
+      ],
+      "generated_at": "2026-05-13T06:30:00Z",
+      "months": [
+        {
+          "distance": null,
+          "duration": null,
+          "elevation": null,
+          "form": null,
+          "high": null,
+          "key": "2025-06",
+          "label": "June 2025",
+          "longest": null,
+          "mix": [],
+          "sessions": 0,
+          "weeks": [
+            {
+              "distance": null,
+              "sessions": 0,
+              "start": "2025-05-26",
+              "start_label": "26 May 2025"
+            },
+            {
+              "distance": null,
+              "sessions": 0,
+              "start": "2025-06-02",
+              "start_label": "2 Jun 2025"
+            },
+            {
+              "distance": null,
+              "sessions": 0,
+              "start": "2025-06-09",
+              "start_label": "9 Jun 2025"
+            },
+            {
+              "distance": null,
+              "sessions": 0,
+              "start": "2025-06-16",
+              "start_label": "16 Jun 2025"
+            },
+            {
+              "distance": null,
+              "sessions": 0,
+              "start": "2025-06-23",
+              "start_label": "23 Jun 2025"
+            },
+            {
+              "distance": null,
+              "sessions": 0,
+              "start": "2025-06-30",
+              "start_label": "30 Jun 2025"
+            }
+          ]
+        },
+        {
+          "distance": null,
+          "duration": null,
+          "elevation": null,
+          "form": null,
+          "high": null,
+          "key": "2025-07",
+          "label": "July 2025",
+          "longest": null,
+          "mix": [],
+          "sessions": 0,
+          "weeks": [
+            {
+              "distance": null,
+              "sessions": 0,
+              "start": "2025-06-30",
+              "start_label": "30 Jun 2025"
+            },
+            {
+              "distance": null,
+              "sessions": 0,
+              "start": "2025-07-07",
+              "start_label": "7 Jul 2025"
+            },
+            {
+              "distance": null,
+              "sessions": 0,
+              "start": "2025-07-14",
+              "start_label": "14 Jul 2025"
+            },
+            {
+              "distance": null,
+              "sessions": 0,
+              "start": "2025-07-21",
+              "start_label": "21 Jul 2025"
+            },
+            {
+              "distance": null,
+              "sessions": 0,
+              "start": "2025-07-28",
+              "start_label": "28 Jul 2025"
+            }
+          ]
+        },
+        {
+          "distance": null,
+          "duration": null,
+          "elevation": null,
+          "form": null,
+          "high": null,
+          "key": "2025-08",
+          "label": "August 2025",
+          "longest": null,
+          "mix": [],
+          "sessions": 0,
+          "weeks": [
+            {
+              "distance": null,
+              "sessions": 0,
+              "start": "2025-07-28",
+              "start_label": "28 Jul 2025"
+            },
+            {
+              "distance": null,
+              "sessions": 0,
+              "start": "2025-08-04",
+              "start_label": "4 Aug 2025"
+            },
+            {
+              "distance": null,
+              "sessions": 0,
+              "start": "2025-08-11",
+              "start_label": "11 Aug 2025"
+            },
+            {
+              "distance": null,
+              "sessions": 0,
+              "start": "2025-08-18",
+              "start_label": "18 Aug 2025"
+            },
+            {
+              "distance": null,
+              "sessions": 0,
+              "start": "2025-08-25",
+              "start_label": "25 Aug 2025"
+            }
+          ]
+        },
+        {
+          "distance": null,
+          "duration": null,
+          "elevation": null,
+          "form": null,
+          "high": null,
+          "key": "2025-09",
+          "label": "September 2025",
+          "longest": null,
+          "mix": [],
+          "sessions": 0,
+          "weeks": [
+            {
+              "distance": null,
+              "sessions": 0,
+              "start": "2025-09-01",
+              "start_label": "1 Sep 2025"
+            },
+            {
+              "distance": null,
+              "sessions": 0,
+              "start": "2025-09-08",
+              "start_label": "8 Sep 2025"
+            },
+            {
+              "distance": null,
+              "sessions": 0,
+              "start": "2025-09-15",
+              "start_label": "15 Sep 2025"
+            },
+            {
+              "distance": null,
+              "sessions": 0,
+              "start": "2025-09-22",
+              "start_label": "22 Sep 2025"
+            },
+            {
+              "distance": null,
+              "sessions": 0,
+              "start": "2025-09-29",
+              "start_label": "29 Sep 2025"
+            }
+          ]
+        },
+        {
+          "distance": null,
+          "duration": null,
+          "elevation": null,
+          "form": null,
+          "high": null,
+          "key": "2025-10",
+          "label": "October 2025",
+          "longest": null,
+          "mix": [],
+          "sessions": 0,
+          "weeks": [
+            {
+              "distance": null,
+              "sessions": 0,
+              "start": "2025-09-29",
+              "start_label": "29 Sep 2025"
+            },
+            {
+              "distance": null,
+              "sessions": 0,
+              "start": "2025-10-06",
+              "start_label": "6 Oct 2025"
+            },
+            {
+              "distance": null,
+              "sessions": 0,
+              "start": "2025-10-13",
+              "start_label": "13 Oct 2025"
+            },
+            {
+              "distance": null,
+              "sessions": 0,
+              "start": "2025-10-20",
+              "start_label": "20 Oct 2025"
+            },
+            {
+              "distance": null,
+              "sessions": 0,
+              "start": "2025-10-27",
+              "start_label": "27 Oct 2025"
+            }
+          ]
+        },
+        {
+          "distance": null,
+          "duration": null,
+          "elevation": null,
+          "form": null,
+          "high": null,
+          "key": "2025-11",
+          "label": "November 2025",
+          "longest": null,
+          "mix": [],
+          "sessions": 0,
+          "weeks": [
+            {
+              "distance": null,
+              "sessions": 0,
+              "start": "2025-10-27",
+              "start_label": "27 Oct 2025"
+            },
+            {
+              "distance": null,
+              "sessions": 0,
+              "start": "2025-11-03",
+              "start_label": "3 Nov 2025"
+            },
+            {
+              "distance": null,
+              "sessions": 0,
+              "start": "2025-11-10",
+              "start_label": "10 Nov 2025"
+            },
+            {
+              "distance": null,
+              "sessions": 0,
+              "start": "2025-11-17",
+              "start_label": "17 Nov 2025"
+            },
+            {
+              "distance": null,
+              "sessions": 0,
+              "start": "2025-11-24",
+              "start_label": "24 Nov 2025"
+            }
+          ]
+        },
+        {
+          "distance": null,
+          "duration": null,
+          "elevation": null,
+          "form": null,
+          "high": null,
+          "key": "2025-12",
+          "label": "December 2025",
+          "longest": null,
+          "mix": [],
+          "sessions": 0,
+          "weeks": [
+            {
+              "distance": null,
+              "sessions": 0,
+              "start": "2025-12-01",
+              "start_label": "1 Dec 2025"
+            },
+            {
+              "distance": null,
+              "sessions": 0,
+              "start": "2025-12-08",
+              "start_label": "8 Dec 2025"
+            },
+            {
+              "distance": null,
+              "sessions": 0,
+              "start": "2025-12-15",
+              "start_label": "15 Dec 2025"
+            },
+            {
+              "distance": null,
+              "sessions": 0,
+              "start": "2025-12-22",
+              "start_label": "22 Dec 2025"
+            },
+            {
+              "distance": null,
+              "sessions": 0,
+              "start": "2025-12-29",
+              "start_label": "29 Dec 2025"
+            }
+          ]
+        },
+        {
+          "distance": null,
+          "duration": null,
+          "elevation": null,
+          "form": null,
+          "high": null,
+          "key": "2026-01",
+          "label": "January 2026",
+          "longest": null,
+          "mix": [],
+          "sessions": 0,
+          "weeks": [
+            {
+              "distance": null,
+              "sessions": 0,
+              "start": "2025-12-29",
+              "start_label": "29 Dec 2025"
+            },
+            {
+              "distance": null,
+              "sessions": 0,
+              "start": "2026-01-05",
+              "start_label": "5 Jan 2026"
+            },
+            {
+              "distance": null,
+              "sessions": 0,
+              "start": "2026-01-12",
+              "start_label": "12 Jan 2026"
+            },
+            {
+              "distance": null,
+              "sessions": 0,
+              "start": "2026-01-19",
+              "start_label": "19 Jan 2026"
+            },
+            {
+              "distance": null,
+              "sessions": 0,
+              "start": "2026-01-26",
+              "start_label": "26 Jan 2026"
+            }
+          ]
+        },
+        {
+          "distance": {
+            "raw": 18200,
+            "text": "18.2 km"
+          },
+          "duration": {
+            "raw": 5640,
+            "text": "1 h 34 m"
+          },
+          "elevation": {
+            "raw": 42,
+            "text": "42 m"
+          },
+          "form": {
+            "raw": 0,
+            "text": "0.0"
+          },
+          "high": null,
+          "key": "2026-02",
+          "label": "February 2026",
+          "longest": {
+            "raw": 18200,
+            "text": "18.2 km"
+          },
+          "mix": [],
+          "sessions": 1,
+          "weeks": [
+            {
+              "distance": null,
+              "sessions": 0,
+              "start": "2026-01-26",
+              "start_label": "26 Jan 2026"
+            },
+            {
+              "distance": null,
+              "sessions": 0,
+              "start": "2026-02-02",
+              "start_label": "2 Feb 2026"
+            },
+            {
+              "distance": {
+                "raw": 18200,
+                "text": "18.2 km"
+              },
+              "sessions": 1,
+              "start": "2026-02-09",
+              "start_label": "9 Feb 2026"
+            },
+            {
+              "distance": null,
+              "sessions": 0,
+              "start": "2026-02-16",
+              "start_label": "16 Feb 2026"
+            },
+            {
+              "distance": null,
+              "sessions": 0,
+              "start": "2026-02-23",
+              "start_label": "23 Feb 2026"
+            }
+          ]
+        },
+        {
+          "distance": null,
+          "duration": null,
+          "elevation": null,
+          "form": null,
+          "high": null,
+          "key": "2026-03",
+          "label": "March 2026",
+          "longest": null,
+          "mix": [],
+          "sessions": 0,
+          "weeks": [
+            {
+              "distance": null,
+              "sessions": 0,
+              "start": "2026-02-23",
+              "start_label": "23 Feb 2026"
+            },
+            {
+              "distance": null,
+              "sessions": 0,
+              "start": "2026-03-02",
+              "start_label": "2 Mar 2026"
+            },
+            {
+              "distance": null,
+              "sessions": 0,
+              "start": "2026-03-09",
+              "start_label": "9 Mar 2026"
+            },
+            {
+              "distance": null,
+              "sessions": 0,
+              "start": "2026-03-16",
+              "start_label": "16 Mar 2026"
+            },
+            {
+              "distance": null,
+              "sessions": 0,
+              "start": "2026-03-23",
+              "start_label": "23 Mar 2026"
+            },
+            {
+              "distance": null,
+              "sessions": 0,
+              "start": "2026-03-30",
+              "start_label": "30 Mar 2026"
+            }
+          ]
+        },
+        {
+          "distance": null,
+          "duration": null,
+          "elevation": null,
+          "form": {
+            "raw": 0,
+            "text": "0.0"
+          },
+          "high": null,
+          "key": "2026-04",
+          "label": "April 2026",
+          "longest": null,
+          "mix": [],
+          "sessions": 0,
+          "weeks": [
+            {
+              "distance": null,
+              "sessions": 0,
+              "start": "2026-03-30",
+              "start_label": "30 Mar 2026"
+            },
+            {
+              "distance": null,
+              "sessions": 0,
+              "start": "2026-04-06",
+              "start_label": "6 Apr 2026"
+            },
+            {
+              "distance": null,
+              "sessions": 0,
+              "start": "2026-04-13",
+              "start_label": "13 Apr 2026"
+            },
+            {
+              "distance": null,
+              "sessions": 0,
+              "start": "2026-04-20",
+              "start_label": "20 Apr 2026"
+            },
+            {
+              "distance": null,
+              "sessions": 0,
+              "start": "2026-04-27",
+              "start_label": "27 Apr 2026"
+            }
+          ]
+        },
+        {
+          "distance": {
+            "raw": 58400,
+            "text": "58.4 km"
+          },
+          "duration": {
+            "raw": 18632,
+            "text": "5 h 11 m"
+          },
+          "elevation": {
+            "raw": 252,
+            "text": "252 m"
+          },
+          "form": {
+            "raw": -12.7,
+            "text": "-12.7"
+          },
+          "high": null,
+          "key": "2026-05",
+          "label": "May 2026",
+          "longest": {
+            "raw": 16100,
+            "text": "16.1 km"
+          },
+          "mix": [],
+          "sessions": 6,
+          "weeks": [
+            {
+              "distance": {
+                "raw": 6300,
+                "text": "6.3 km"
+              },
+              "sessions": 1,
+              "start": "2026-04-27",
+              "start_label": "27 Apr 2026"
+            },
+            {
+              "distance": {
+                "raw": 52100,
+                "text": "52.1 km"
+              },
+              "sessions": 5,
+              "start": "2026-05-04",
+              "start_label": "4 May 2026"
+            },
+            {
+              "distance": null,
+              "sessions": 0,
+              "start": "2026-05-11",
+              "start_label": "11 May 2026"
+            }
+          ]
+        }
+      ],
+      "window": {
+        "days": 347,
+        "from": "2025-06-01",
+        "from_label": "1 Jun 2025",
+        "to": "2026-05-13",
+        "to_label": "13 May 2026"
+      }
+    },
     "/physiology/sleep": {
       "days": [
         {
@@ -20220,6 +22921,2707 @@
           "text": "0 km"
         },
         "sessions": 0
+      }
+    },
+    "/insights/year": {
+      "changed": [
+        "+76.6 km against the period before (76.6 km against 0 km)",
+        "+7 recorded sessions (7 against 0)",
+        "the longest run grew by 18.2 km (18.2 km against 0 km)",
+        "the average pace was 5:17 /km"
+      ],
+      "comparison": {
+        "days": 347,
+        "from": "2024-06-19",
+        "from_label": "19 Jun 2024",
+        "to": "2025-05-31",
+        "to_label": "31 May 2025"
+      },
+      "date": "2026-05-13",
+      "days": [
+        {
+          "date": "2025-06-01",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-06-02",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-06-03",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-06-04",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-06-05",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-06-06",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-06-07",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-06-08",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-06-09",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-06-10",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-06-11",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-06-12",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-06-13",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-06-14",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-06-15",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-06-16",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-06-17",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-06-18",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-06-19",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-06-20",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-06-21",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-06-22",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-06-23",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-06-24",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-06-25",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-06-26",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-06-27",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-06-28",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-06-29",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-06-30",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-07-01",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-07-02",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-07-03",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-07-04",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-07-05",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-07-06",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-07-07",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-07-08",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-07-09",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-07-10",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-07-11",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-07-12",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-07-13",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-07-14",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-07-15",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-07-16",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-07-17",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-07-18",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-07-19",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-07-20",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-07-21",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-07-22",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-07-23",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-07-24",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-07-25",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-07-26",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-07-27",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-07-28",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-07-29",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-07-30",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-07-31",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-08-01",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-08-02",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-08-03",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-08-04",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-08-05",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-08-06",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-08-07",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-08-08",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-08-09",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-08-10",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-08-11",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-08-12",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-08-13",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-08-14",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-08-15",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-08-16",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-08-17",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-08-18",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-08-19",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-08-20",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-08-21",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-08-22",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-08-23",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-08-24",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-08-25",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-08-26",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-08-27",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-08-28",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-08-29",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-08-30",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-08-31",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-09-01",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-09-02",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-09-03",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-09-04",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-09-05",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-09-06",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-09-07",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-09-08",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-09-09",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-09-10",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-09-11",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-09-12",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-09-13",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-09-14",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-09-15",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-09-16",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-09-17",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-09-18",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-09-19",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-09-20",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-09-21",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-09-22",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-09-23",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-09-24",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-09-25",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-09-26",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-09-27",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-09-28",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-09-29",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-09-30",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-10-01",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-10-02",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-10-03",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-10-04",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-10-05",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-10-06",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-10-07",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-10-08",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-10-09",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-10-10",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-10-11",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-10-12",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-10-13",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-10-14",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-10-15",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-10-16",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-10-17",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-10-18",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-10-19",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-10-20",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-10-21",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-10-22",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-10-23",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-10-24",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-10-25",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-10-26",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-10-27",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-10-28",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-10-29",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-10-30",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-10-31",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-11-01",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-11-02",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-11-03",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-11-04",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-11-05",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-11-06",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-11-07",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-11-08",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-11-09",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-11-10",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-11-11",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-11-12",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-11-13",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-11-14",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-11-15",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-11-16",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-11-17",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-11-18",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-11-19",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-11-20",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-11-21",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-11-22",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-11-23",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-11-24",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-11-25",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-11-26",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-11-27",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-11-28",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-11-29",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-11-30",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-12-01",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-12-02",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-12-03",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-12-04",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-12-05",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-12-06",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-12-07",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-12-08",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-12-09",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-12-10",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-12-11",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-12-12",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-12-13",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-12-14",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-12-15",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-12-16",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-12-17",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-12-18",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-12-19",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-12-20",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-12-21",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-12-22",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-12-23",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-12-24",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-12-25",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-12-26",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-12-27",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-12-28",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-12-29",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-12-30",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2025-12-31",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-01-01",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-01-02",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-01-03",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-01-04",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-01-05",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-01-06",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-01-07",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-01-08",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-01-09",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-01-10",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-01-11",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-01-12",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-01-13",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-01-14",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-01-15",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-01-16",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-01-17",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-01-18",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-01-19",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-01-20",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-01-21",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-01-22",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-01-23",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-01-24",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-01-25",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-01-26",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-01-27",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-01-28",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-01-29",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-01-30",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-01-31",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-02-01",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-02-02",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-02-03",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-02-04",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-02-05",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-02-06",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-02-07",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-02-08",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-02-09",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-02-10",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-02-11",
+          "distance": {
+            "raw": 18200,
+            "text": "18.2 km"
+          },
+          "high": null,
+          "sessions": 1
+        },
+        {
+          "date": "2026-02-12",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-02-13",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-02-14",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-02-15",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-02-16",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-02-17",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-02-18",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-02-19",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-02-20",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-02-21",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-02-22",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-02-23",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-02-24",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-02-25",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-02-26",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-02-27",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-02-28",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-03-01",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-03-02",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-03-03",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-03-04",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-03-05",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-03-06",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-03-07",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-03-08",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-03-09",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-03-10",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-03-11",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-03-12",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-03-13",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-03-14",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-03-15",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-03-16",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-03-17",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-03-18",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-03-19",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-03-20",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-03-21",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-03-22",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-03-23",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-03-24",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-03-25",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-03-26",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-03-27",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-03-28",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-03-29",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-03-30",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-03-31",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-04-01",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-04-02",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-04-03",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-04-04",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-04-05",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-04-06",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-04-07",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-04-08",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-04-09",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-04-10",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-04-11",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-04-12",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-04-13",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-04-14",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-04-15",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-04-16",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-04-17",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-04-18",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-04-19",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-04-20",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-04-21",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-04-22",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-04-23",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-04-24",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-04-25",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-04-26",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-04-27",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-04-28",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-04-29",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-04-30",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-05-01",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-05-02",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-05-03",
+          "distance": {
+            "raw": 6300,
+            "text": "6.3 km"
+          },
+          "high": null,
+          "sessions": 1
+        },
+        {
+          "date": "2026-05-04",
+          "distance": {
+            "raw": 16100,
+            "text": "16.1 km"
+          },
+          "high": null,
+          "sessions": 1
+        },
+        {
+          "date": "2026-05-05",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-05-06",
+          "distance": {
+            "raw": 5000,
+            "text": "5 km"
+          },
+          "high": null,
+          "sessions": 1
+        },
+        {
+          "date": "2026-05-07",
+          "distance": {
+            "raw": 8400,
+            "text": "8.4 km"
+          },
+          "high": null,
+          "sessions": 1
+        },
+        {
+          "date": "2026-05-08",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-05-09",
+          "distance": {
+            "raw": 10200,
+            "text": "10.2 km"
+          },
+          "high": null,
+          "sessions": 1
+        },
+        {
+          "date": "2026-05-10",
+          "distance": {
+            "raw": 12400,
+            "text": "12.4 km"
+          },
+          "high": null,
+          "sessions": 1
+        },
+        {
+          "date": "2026-05-11",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-05-12",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        },
+        {
+          "date": "2026-05-13",
+          "distance": null,
+          "high": null,
+          "sessions": 0
+        }
+      ],
+      "generated_at": "2026-05-13T06:30:00Z",
+      "months": [
+        {
+          "distance": null,
+          "duration": null,
+          "elevation": null,
+          "form": null,
+          "high": null,
+          "key": "2025-06",
+          "label": "June 2025",
+          "longest": null,
+          "mix": [],
+          "sessions": 0,
+          "weeks": [
+            {
+              "distance": null,
+              "sessions": 0,
+              "start": "2025-05-26",
+              "start_label": "26 May 2025"
+            },
+            {
+              "distance": null,
+              "sessions": 0,
+              "start": "2025-06-02",
+              "start_label": "2 Jun 2025"
+            },
+            {
+              "distance": null,
+              "sessions": 0,
+              "start": "2025-06-09",
+              "start_label": "9 Jun 2025"
+            },
+            {
+              "distance": null,
+              "sessions": 0,
+              "start": "2025-06-16",
+              "start_label": "16 Jun 2025"
+            },
+            {
+              "distance": null,
+              "sessions": 0,
+              "start": "2025-06-23",
+              "start_label": "23 Jun 2025"
+            },
+            {
+              "distance": null,
+              "sessions": 0,
+              "start": "2025-06-30",
+              "start_label": "30 Jun 2025"
+            }
+          ]
+        },
+        {
+          "distance": null,
+          "duration": null,
+          "elevation": null,
+          "form": null,
+          "high": null,
+          "key": "2025-07",
+          "label": "July 2025",
+          "longest": null,
+          "mix": [],
+          "sessions": 0,
+          "weeks": [
+            {
+              "distance": null,
+              "sessions": 0,
+              "start": "2025-06-30",
+              "start_label": "30 Jun 2025"
+            },
+            {
+              "distance": null,
+              "sessions": 0,
+              "start": "2025-07-07",
+              "start_label": "7 Jul 2025"
+            },
+            {
+              "distance": null,
+              "sessions": 0,
+              "start": "2025-07-14",
+              "start_label": "14 Jul 2025"
+            },
+            {
+              "distance": null,
+              "sessions": 0,
+              "start": "2025-07-21",
+              "start_label": "21 Jul 2025"
+            },
+            {
+              "distance": null,
+              "sessions": 0,
+              "start": "2025-07-28",
+              "start_label": "28 Jul 2025"
+            }
+          ]
+        },
+        {
+          "distance": null,
+          "duration": null,
+          "elevation": null,
+          "form": null,
+          "high": null,
+          "key": "2025-08",
+          "label": "August 2025",
+          "longest": null,
+          "mix": [],
+          "sessions": 0,
+          "weeks": [
+            {
+              "distance": null,
+              "sessions": 0,
+              "start": "2025-07-28",
+              "start_label": "28 Jul 2025"
+            },
+            {
+              "distance": null,
+              "sessions": 0,
+              "start": "2025-08-04",
+              "start_label": "4 Aug 2025"
+            },
+            {
+              "distance": null,
+              "sessions": 0,
+              "start": "2025-08-11",
+              "start_label": "11 Aug 2025"
+            },
+            {
+              "distance": null,
+              "sessions": 0,
+              "start": "2025-08-18",
+              "start_label": "18 Aug 2025"
+            },
+            {
+              "distance": null,
+              "sessions": 0,
+              "start": "2025-08-25",
+              "start_label": "25 Aug 2025"
+            }
+          ]
+        },
+        {
+          "distance": null,
+          "duration": null,
+          "elevation": null,
+          "form": null,
+          "high": null,
+          "key": "2025-09",
+          "label": "September 2025",
+          "longest": null,
+          "mix": [],
+          "sessions": 0,
+          "weeks": [
+            {
+              "distance": null,
+              "sessions": 0,
+              "start": "2025-09-01",
+              "start_label": "1 Sep 2025"
+            },
+            {
+              "distance": null,
+              "sessions": 0,
+              "start": "2025-09-08",
+              "start_label": "8 Sep 2025"
+            },
+            {
+              "distance": null,
+              "sessions": 0,
+              "start": "2025-09-15",
+              "start_label": "15 Sep 2025"
+            },
+            {
+              "distance": null,
+              "sessions": 0,
+              "start": "2025-09-22",
+              "start_label": "22 Sep 2025"
+            },
+            {
+              "distance": null,
+              "sessions": 0,
+              "start": "2025-09-29",
+              "start_label": "29 Sep 2025"
+            }
+          ]
+        },
+        {
+          "distance": null,
+          "duration": null,
+          "elevation": null,
+          "form": null,
+          "high": null,
+          "key": "2025-10",
+          "label": "October 2025",
+          "longest": null,
+          "mix": [],
+          "sessions": 0,
+          "weeks": [
+            {
+              "distance": null,
+              "sessions": 0,
+              "start": "2025-09-29",
+              "start_label": "29 Sep 2025"
+            },
+            {
+              "distance": null,
+              "sessions": 0,
+              "start": "2025-10-06",
+              "start_label": "6 Oct 2025"
+            },
+            {
+              "distance": null,
+              "sessions": 0,
+              "start": "2025-10-13",
+              "start_label": "13 Oct 2025"
+            },
+            {
+              "distance": null,
+              "sessions": 0,
+              "start": "2025-10-20",
+              "start_label": "20 Oct 2025"
+            },
+            {
+              "distance": null,
+              "sessions": 0,
+              "start": "2025-10-27",
+              "start_label": "27 Oct 2025"
+            }
+          ]
+        },
+        {
+          "distance": null,
+          "duration": null,
+          "elevation": null,
+          "form": null,
+          "high": null,
+          "key": "2025-11",
+          "label": "November 2025",
+          "longest": null,
+          "mix": [],
+          "sessions": 0,
+          "weeks": [
+            {
+              "distance": null,
+              "sessions": 0,
+              "start": "2025-10-27",
+              "start_label": "27 Oct 2025"
+            },
+            {
+              "distance": null,
+              "sessions": 0,
+              "start": "2025-11-03",
+              "start_label": "3 Nov 2025"
+            },
+            {
+              "distance": null,
+              "sessions": 0,
+              "start": "2025-11-10",
+              "start_label": "10 Nov 2025"
+            },
+            {
+              "distance": null,
+              "sessions": 0,
+              "start": "2025-11-17",
+              "start_label": "17 Nov 2025"
+            },
+            {
+              "distance": null,
+              "sessions": 0,
+              "start": "2025-11-24",
+              "start_label": "24 Nov 2025"
+            }
+          ]
+        },
+        {
+          "distance": null,
+          "duration": null,
+          "elevation": null,
+          "form": null,
+          "high": null,
+          "key": "2025-12",
+          "label": "December 2025",
+          "longest": null,
+          "mix": [],
+          "sessions": 0,
+          "weeks": [
+            {
+              "distance": null,
+              "sessions": 0,
+              "start": "2025-12-01",
+              "start_label": "1 Dec 2025"
+            },
+            {
+              "distance": null,
+              "sessions": 0,
+              "start": "2025-12-08",
+              "start_label": "8 Dec 2025"
+            },
+            {
+              "distance": null,
+              "sessions": 0,
+              "start": "2025-12-15",
+              "start_label": "15 Dec 2025"
+            },
+            {
+              "distance": null,
+              "sessions": 0,
+              "start": "2025-12-22",
+              "start_label": "22 Dec 2025"
+            },
+            {
+              "distance": null,
+              "sessions": 0,
+              "start": "2025-12-29",
+              "start_label": "29 Dec 2025"
+            }
+          ]
+        },
+        {
+          "distance": null,
+          "duration": null,
+          "elevation": null,
+          "form": null,
+          "high": null,
+          "key": "2026-01",
+          "label": "January 2026",
+          "longest": null,
+          "mix": [],
+          "sessions": 0,
+          "weeks": [
+            {
+              "distance": null,
+              "sessions": 0,
+              "start": "2025-12-29",
+              "start_label": "29 Dec 2025"
+            },
+            {
+              "distance": null,
+              "sessions": 0,
+              "start": "2026-01-05",
+              "start_label": "5 Jan 2026"
+            },
+            {
+              "distance": null,
+              "sessions": 0,
+              "start": "2026-01-12",
+              "start_label": "12 Jan 2026"
+            },
+            {
+              "distance": null,
+              "sessions": 0,
+              "start": "2026-01-19",
+              "start_label": "19 Jan 2026"
+            },
+            {
+              "distance": null,
+              "sessions": 0,
+              "start": "2026-01-26",
+              "start_label": "26 Jan 2026"
+            }
+          ]
+        },
+        {
+          "distance": {
+            "raw": 18200,
+            "text": "18.2 km"
+          },
+          "duration": {
+            "raw": 5640,
+            "text": "1 h 34 m"
+          },
+          "elevation": {
+            "raw": 42,
+            "text": "42 m"
+          },
+          "form": {
+            "raw": 0,
+            "text": "0.0"
+          },
+          "high": null,
+          "key": "2026-02",
+          "label": "February 2026",
+          "longest": {
+            "raw": 18200,
+            "text": "18.2 km"
+          },
+          "mix": [],
+          "sessions": 1,
+          "weeks": [
+            {
+              "distance": null,
+              "sessions": 0,
+              "start": "2026-01-26",
+              "start_label": "26 Jan 2026"
+            },
+            {
+              "distance": null,
+              "sessions": 0,
+              "start": "2026-02-02",
+              "start_label": "2 Feb 2026"
+            },
+            {
+              "distance": {
+                "raw": 18200,
+                "text": "18.2 km"
+              },
+              "sessions": 1,
+              "start": "2026-02-09",
+              "start_label": "9 Feb 2026"
+            },
+            {
+              "distance": null,
+              "sessions": 0,
+              "start": "2026-02-16",
+              "start_label": "16 Feb 2026"
+            },
+            {
+              "distance": null,
+              "sessions": 0,
+              "start": "2026-02-23",
+              "start_label": "23 Feb 2026"
+            }
+          ]
+        },
+        {
+          "distance": null,
+          "duration": null,
+          "elevation": null,
+          "form": null,
+          "high": null,
+          "key": "2026-03",
+          "label": "March 2026",
+          "longest": null,
+          "mix": [],
+          "sessions": 0,
+          "weeks": [
+            {
+              "distance": null,
+              "sessions": 0,
+              "start": "2026-02-23",
+              "start_label": "23 Feb 2026"
+            },
+            {
+              "distance": null,
+              "sessions": 0,
+              "start": "2026-03-02",
+              "start_label": "2 Mar 2026"
+            },
+            {
+              "distance": null,
+              "sessions": 0,
+              "start": "2026-03-09",
+              "start_label": "9 Mar 2026"
+            },
+            {
+              "distance": null,
+              "sessions": 0,
+              "start": "2026-03-16",
+              "start_label": "16 Mar 2026"
+            },
+            {
+              "distance": null,
+              "sessions": 0,
+              "start": "2026-03-23",
+              "start_label": "23 Mar 2026"
+            },
+            {
+              "distance": null,
+              "sessions": 0,
+              "start": "2026-03-30",
+              "start_label": "30 Mar 2026"
+            }
+          ]
+        },
+        {
+          "distance": null,
+          "duration": null,
+          "elevation": null,
+          "form": {
+            "raw": 0,
+            "text": "0.0"
+          },
+          "high": null,
+          "key": "2026-04",
+          "label": "April 2026",
+          "longest": null,
+          "mix": [],
+          "sessions": 0,
+          "weeks": [
+            {
+              "distance": null,
+              "sessions": 0,
+              "start": "2026-03-30",
+              "start_label": "30 Mar 2026"
+            },
+            {
+              "distance": null,
+              "sessions": 0,
+              "start": "2026-04-06",
+              "start_label": "6 Apr 2026"
+            },
+            {
+              "distance": null,
+              "sessions": 0,
+              "start": "2026-04-13",
+              "start_label": "13 Apr 2026"
+            },
+            {
+              "distance": null,
+              "sessions": 0,
+              "start": "2026-04-20",
+              "start_label": "20 Apr 2026"
+            },
+            {
+              "distance": null,
+              "sessions": 0,
+              "start": "2026-04-27",
+              "start_label": "27 Apr 2026"
+            }
+          ]
+        },
+        {
+          "distance": {
+            "raw": 58400,
+            "text": "58.4 km"
+          },
+          "duration": {
+            "raw": 18632,
+            "text": "5 h 11 m"
+          },
+          "elevation": {
+            "raw": 252,
+            "text": "252 m"
+          },
+          "form": {
+            "raw": -12.7,
+            "text": "-12.7"
+          },
+          "high": null,
+          "key": "2026-05",
+          "label": "May 2026",
+          "longest": {
+            "raw": 16100,
+            "text": "16.1 km"
+          },
+          "mix": [],
+          "sessions": 6,
+          "weeks": [
+            {
+              "distance": {
+                "raw": 6300,
+                "text": "6.3 km"
+              },
+              "sessions": 1,
+              "start": "2026-04-27",
+              "start_label": "27 Apr 2026"
+            },
+            {
+              "distance": {
+                "raw": 52100,
+                "text": "52.1 km"
+              },
+              "sessions": 5,
+              "start": "2026-05-04",
+              "start_label": "4 May 2026"
+            },
+            {
+              "distance": null,
+              "sessions": 0,
+              "start": "2026-05-11",
+              "start_label": "11 May 2026"
+            }
+          ]
+        }
+      ],
+      "window": {
+        "days": 347,
+        "from": "2025-06-01",
+        "from_label": "1 Jun 2025",
+        "to": "2026-05-13",
+        "to_label": "13 May 2026"
       }
     },
     "/physiology/sleep": {

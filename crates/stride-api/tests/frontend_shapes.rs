@@ -603,4 +603,32 @@ fn the_pace_carries_the_shape_the_app_declares() {
             assert_declared(&declarations, "PaceBandRow", row);
         }
     }
+
+fn the_year_carries_the_shape_the_app_declares() {
+    let declarations = declarations();
+    let harness = common::Harness::seeded("frontend-year");
+    let body = harness.ok_get("/insights/year");
+    assert_declared(&declarations, "YearInsight", &body);
+    if let Some(month) = first_at(&body, &["months"]) {
+        assert_declared(&declarations, "YearMonth", month);
+        if let Some(week) = first_at(month, &["weeks"]) {
+            assert_declared(&declarations, "YearWeek", week);
+        }
+        if let Some(zone) = first_at(month, &["mix"]) {
+            assert_declared(&declarations, "YearZoneShare", zone);
+        }
+    }
+    if let Some(day) = first_at(&body, &["days"]) {
+        assert_declared(&declarations, "YearDay", day);
+    }
+    assert_declared(
+        &declarations,
+        "YearWindow",
+        at(&body, &["window"]).unwrap_or(&Value::Null),
+    );
+    assert_declared(
+        &declarations,
+        "YearWindow",
+        at(&body, &["comparison"]).unwrap_or(&Value::Null),
+    );
 }

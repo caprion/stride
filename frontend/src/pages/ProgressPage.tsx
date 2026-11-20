@@ -217,6 +217,15 @@ export function ProgressPage() {
           >
             {t('pace.open')}
           </Link>
+          {/* The year, as a film: the twelve months, the calendar of the
+              days and what changed. It is reached from here. */}
+          <Link
+            className="tap-inline text-[13px] font-medium text-brand-700 underline"
+            to="/year"
+            data-testid="progress-year-link"
+          >
+            {t('year.open')}
+          </Link>
         </div>
         <div className="progress-grid mt-3">
           {/* ------------------------------------------ the Eddington number */}

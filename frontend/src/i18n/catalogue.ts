@@ -438,6 +438,54 @@ export const catalogue = {
   'pace.empty.body': {
     type: 'status',
     text: 'No run in this window. The pace is read from the runs that are saved.',
+
+   * The year, as a film.
+   *
+   * The chrome around the year's own numbers: the headings, the labels
+   * and the empty states. The sentences of the diff are the core's, and
+   * they arrive already written.
+   */
+  'year.heading': { type: 'status', text: 'The year' },
+  'year.intro': {
+    type: 'statement',
+    text: 'Twelve months, the calendar of the days, and what changed against your own past.',
+  },
+  'year.open': { type: 'status', text: 'Open the year' },
+  'year.back': { type: 'status', text: 'Back to Progress' },
+  'year.window': { type: 'status', text: 'The window: {from} – {to}' },
+  'year.comparison': { type: 'status', text: 'against the {days} days before' },
+  'year.months.heading': { type: 'status', text: 'The months' },
+  'year.month.runs': { type: 'status', text: 'Runs' },
+  'year.month.longest': { type: 'status', text: 'Longest run' },
+  'year.month.form': { type: 'status', text: 'Form at the end' },
+  'year.month.weeks': { type: 'status', text: 'The weeks of the month' },
+  'year.month.mix': { type: 'status', text: 'Where the time went' },
+  'year.month.high': { type: 'status', text: '{share} in the high zones' },
+  'year.week.title': { type: 'status', text: '{week} · {distance}' },
+  'year.zone.title': { type: 'status', text: '{zone} · {share}' },
+  'year.day.title': { type: 'status', text: '{date} · {distance} · {high} in the high zones' },
+  'year.day.none': { type: 'status', text: 'no run' },
+  'year.day.noMix': { type: 'status', text: 'no mix' },
+  'year.calendar.heading': { type: 'status', text: 'The year as a calendar' },
+  'year.calendar.note': {
+    type: 'statement',
+    text: 'Each day is coloured by how much of that day was in the high zones. The calendar says when and how hard, and never where.',
+  },
+  'year.calendar.alt': {
+    type: 'status',
+    text: 'The days of the year, coloured by the share of each day in the high zones',
+  },
+  'year.calendar.legend': { type: 'status', text: 'Share of the day in the high zones' },
+  'year.calendar.legend.noMix': { type: 'status', text: 'no mix' },
+  'year.calendar.legend.low': { type: 'status', text: 'under 15%' },
+  'year.calendar.legend.mid': { type: 'status', text: '15% to 35%' },
+  'year.calendar.legend.high': { type: 'status', text: '35% to 60%' },
+  'year.calendar.legend.top': { type: 'status', text: '60% and over' },
+  'year.empty': { type: 'status', text: 'Nothing recorded in this year yet.' },
+  'year.changed.heading': { type: 'status', text: 'What changed' },
+  'year.changed.note': {
+    type: 'statement',
+    text: 'A diff against your own past, in facts. The sentence says what the records say.',
   },
 
   // ------------------------------------------------------------- body
