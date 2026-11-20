@@ -226,6 +226,51 @@
     }
   }
 
+  /*
+    Progress: **two arrangements of one screen.**
+
+    The wide screens get the dashboard — the panels, in a grid. A phone
+    gets the **index**: six questions, the athlete's answer to each, and
+    the doorway into the panel that answers it. The grid on a phone is a
+    wall of numbers without context, and the index is the same six
+    answers with the question they answer.
+
+    Which one is showing is decided by the container, in CSS — the same
+    rule every other band in the app follows, and the same rule the
+    narrow screens' other layouts follow.
+  */
+  .progress-dashboard {
+    display: none;
+  }
+
+  .progress-index {
+    display: block;
+  }
+
+  /*
+    The headline's own summary of the window. On a phone the rows carry
+    the numbers, so the summary grid is the dashboard's; the note that
+    says what the history is stays — it is the screen's honesty about
+    what it is showing.
+  */
+  .progress-summary {
+    display: none;
+  }
+
+  @container shell (min-width: 600px) {
+    .progress-dashboard {
+      display: block;
+    }
+
+    .progress-index {
+      display: none;
+    }
+
+    .progress-summary {
+      display: block;
+    }
+  }
+
   /* The heatmap: the drawing and its words, side by side at the wide
      widths. The drawing keeps its own size — a grid of cells does not
      need the whole of a wide screen. */

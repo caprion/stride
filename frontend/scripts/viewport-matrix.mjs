@@ -64,7 +64,36 @@ const ROUTES = [
     name: 'Heatmap',
     primary: '[data-testid="heatmap-grid"]',
   },
-  { path: '/progress', name: 'Progress', primary: '[data-testid="progress-headline"]' },
+  {
+    path: '/progress',
+    name: 'Progress',
+    primary: '[data-testid="progress-headline"]',
+    /*
+      The narrow layout: below the compact band the Progress screen is
+      **an index of the questions** — six rows, each with the athlete's
+      answer — and the dashboard of panels is not on the screen at all.
+      From the medium band up the dashboard is the screen, and the index
+      is not.
+    */
+    bands: [
+      {
+        maxWidth: 599,
+        shown: '[data-testid="progress-index"]',
+        hidden: '[data-testid="progress-dashboard"]',
+      },
+      {
+        minWidth: 600,
+        shown: '[data-testid="progress-dashboard"]',
+        hidden: '[data-testid="progress-index"]',
+      },
+    ],
+  },
+  {
+    // The index opens one panel at a time: this is that doorway.
+    path: '/progress/window',
+    name: 'Progress · the window',
+    primary: '[data-testid="progress-panel-window"]',
+  },
   { path: '/body', name: 'Body', primary: '[data-testid="body-signals"]' },
   { path: '/plan', name: 'Plan week', primary: '[data-testid="plan-week"]' },
   { path: '/compare/101', name: 'Compare', primary: '[data-testid="compare-metrics"]' },
@@ -351,6 +380,21 @@ async function main() {
           }
           if (viewport.width < WIDE && shown) {
             failures.push(`${label}: ${route.wideOnly} is shown at the narrow widths`)
+          }
+        }
+
+        // The arrangement of a screen that has two of them: the one the
+        // band asks for is on the screen, and the other one is not.
+        for (const band of route.bands ?? []) {
+          if (band.maxWidth !== undefined && viewport.width > band.maxWidth) continue
+          if (band.minWidth !== undefined && viewport.width < band.minWidth) continue
+          const shown = await page.$(band.shown)
+          if (!shown || !(await shown.isVisible())) {
+            failures.push(`${label}: ${band.shown} is not shown at this width`)
+          }
+          const hidden = await page.$(band.hidden)
+          if (hidden && (await hidden.isVisible())) {
+            failures.push(`${label}: ${band.hidden} is shown at this width`)
           }
         }
       }

@@ -365,6 +365,44 @@ export const catalogue = {
   'progress.rolling.noRows': { type: 'status', text: 'Nothing recorded yet.' },
   'progress.rolling.hours': { type: 'status', text: '{from} – {to}' },
 
+  /**
+   * The narrow Progress: an index of the questions.
+   *
+   * Six rows, each one a question with the athlete's answer in it. The
+   * wording is the app's own: a question, the answer in the core's own
+   * rendering, and the window the answer covers.
+   */
+  'progress.index.intro': { type: 'status', text: 'Six questions, and your answer to each.' },
+  'progress.index.footnote': {
+    type: 'status',
+    text: 'Each question opens on its own. The wider screens show the panels side by side.',
+  },
+  'progress.index.window.question': {
+    type: 'status',
+    text: 'This window against the window before',
+  },
+  'progress.index.load.question': { type: 'status', text: 'The training load' },
+  'progress.index.year.question': { type: 'status', text: 'The year' },
+  'progress.index.pace.question': { type: 'status', text: 'The pace' },
+  'progress.index.zones.question': { type: 'status', text: 'Your zones' },
+  'progress.index.habit.question': { type: 'status', text: 'The habit' },
+  'progress.index.run': { type: 'status', text: '{n} run' },
+  'progress.index.runs': { type: 'status', text: '{n} runs' },
+  'progress.index.month': { type: 'status', text: '{n} month with runs' },
+  'progress.index.months': { type: 'status', text: '{n} months with runs' },
+  'progress.index.day': { type: 'status', text: '{n} day' },
+  'progress.index.days': { type: 'status', text: '{n} days' },
+  'progress.index.week': { type: 'status', text: '{n} week' },
+  'progress.index.weeks': { type: 'status', text: '{n} weeks' },
+  'progress.index.eddington': { type: 'status', text: 'Eddington {n}' },
+  'progress.index.pace.week': { type: 'status', text: 'The week of {date}' },
+  'progress.index.pace.weeks': { type: 'status', text: 'The last {n} weeks' },
+  'progress.index.habit.window': {
+    type: 'status',
+    text: 'The Eddington number over {from} – {to}',
+  },
+  'progress.index.back': { type: 'status', text: 'Back to the questions' },
+
   // ------------------------------------------------------------- body
   'body.heading': { type: 'status', text: 'Body' },
   'body.question': { type: 'status', text: 'How was my sleep?' },

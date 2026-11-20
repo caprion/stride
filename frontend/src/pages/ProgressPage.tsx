@@ -22,6 +22,7 @@ import { PageHeader } from '../ui/layout/PageHeader'
 import { QueryError } from '../components/QueryError'
 import { runsPath, shiftDate } from '../lib/history'
 import { formatCount, formatDateShort, renderedText } from '../lib/format'
+import { ProgressIndex } from './ProgressIndex'
 import { RangeSelector } from './progressRange'
 import { useProgress } from './useProgress'
 import {
@@ -338,6 +339,15 @@ export function ProgressPage() {
           })}
         </p>
         <p className="mt-1 text-[12px] text-ink-muted">{t('progress.averageNote')}</p>
+      </div>
+
+      {/* ------------------------------------------------------- the index */}
+      {/*
+        The narrow arrangement: six questions, the athlete's answer to
+        each, and the doorway into the panel that answers it.
+      */}
+      <div className="progress-index" data-testid="progress-index-layout">
+        <ProgressIndex answers={answers} />
       </div>
     </div>
   )
