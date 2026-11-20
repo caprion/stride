@@ -1,5 +1,8 @@
 target/
 **/target/
+# A build cache that was made in the working tree by mistake. The name
+# carries the thread that made it, and it is not the repository's.
+target-*/
 node_modules/
 frontend/dist/
 *.tsbuildinfo
