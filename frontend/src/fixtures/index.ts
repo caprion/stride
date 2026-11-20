@@ -1231,7 +1231,7 @@ export const fingerprintFixture: Fingerprint = {
     shares: [],
     outside: null,
     unavailable: null,
-    note: null,
+    source: null,
   },
   unavailable: null,
   generated_at: '2026-05-13T06:30:00Z',
