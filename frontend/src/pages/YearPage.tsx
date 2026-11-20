@@ -38,11 +38,11 @@ import type { YearMonth } from '../lib/types'
  * a problem.
  */
 const ZONE_COLOURS: Record<string, string> = {
-  Z1: '#D6E6F3',
-  Z2: '#7BA8CD',
-  Z3: '#1E5E96',
-  Z4: '#F8C55C',
-  Z5: '#B57C06',
+  Z1: 'var(--chart-band)',
+  Z2: 'var(--brand-300)',
+  Z3: 'var(--brand-500)',
+  Z4: 'var(--accent-300)',
+  Z5: 'var(--accent-600)',
 }
 
 /**
@@ -130,7 +130,7 @@ function MonthCard({ month }: { month: YearMonth }) {
             key={zone.zone}
             style={{
               flexGrow: zone.share?.raw ?? 0,
-              background: ZONE_COLOURS[zone.zone] ?? '#D6E6F3',
+              background: ZONE_COLOURS[zone.zone] ?? 'var(--chart-band)',
             }}
             title={t('year.zone.title', {
               zone: zone.zone,
@@ -150,11 +150,11 @@ function MonthCard({ month }: { month: YearMonth }) {
  * own words.
  */
 const LEGEND: { key: CatalogueKey; colour: string }[] = [
-  { key: 'year.calendar.legend.noMix', colour: '#E9EFF4' },
-  { key: 'year.calendar.legend.low', colour: '#D6E6F3' },
-  { key: 'year.calendar.legend.mid', colour: '#7BA8CD' },
-  { key: 'year.calendar.legend.high', colour: '#FBDB93' },
-  { key: 'year.calendar.legend.top', colour: '#F2B01E' },
+  { key: 'year.calendar.legend.noMix', colour: 'var(--surface-sunken)' },
+  { key: 'year.calendar.legend.low', colour: 'var(--chart-band)' },
+  { key: 'year.calendar.legend.mid', colour: 'var(--brand-300)' },
+  { key: 'year.calendar.legend.high', colour: 'var(--accent-200)' },
+  { key: 'year.calendar.legend.top', colour: 'var(--accent-400)' },
 ]
 
 export function YearPage() {
