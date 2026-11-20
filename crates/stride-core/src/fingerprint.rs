@@ -117,7 +117,7 @@ const MIN_LAPS_FOR_VARIATION: usize = 3;
 /// says. The laps the fingerprint measures are the ones at least this
 /// long, and when a run has none of them the fragments are used as they
 /// are: measuring nothing would be worse than measuring a short run.
-const MIN_LAP_DISTANCE_M: f64 = 300.0;
+pub const MIN_LAP_DISTANCE_M: f64 = 300.0;
 
 /// One lap of the run, as the fingerprint reads it.
 #[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]

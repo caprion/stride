@@ -45,6 +45,7 @@ use std::collections::BTreeSet;
 
 use serde::{Deserialize, Serialize};
 
+use crate::fingerprint::MIN_LAP_DISTANCE_M;
 use crate::strings;
 use crate::strings::lint;
 use crate::units;
@@ -471,8 +472,24 @@ pub fn payload(input: &UpdateInput) -> Option<Payload> {
         units::render_elevation(input.elevation_gain_m),
     );
 
-    let splits = input
+    // **The fragments are left out.** A lap under three hundred metres is
+    // too short for its pace to mean anything — a tenth of a kilometre at
+    // the watch's own resolution — and a model that is shown one will
+    // narrate it: "lap 4 was a surge at 5:26". The payload is what the
+    // model may use, so it carries the laps that mean something, and when
+    /// a run is nothing but fragments the fragments are carried, because a
+    /// short run still has something to say.
+    let measured: Vec<&SplitInput> = input
         .splits
+        .iter()
+        .filter(|split| split.distance_m >= MIN_LAP_DISTANCE_M)
+        .collect();
+    let measured: Vec<&SplitInput> = if measured.is_empty() {
+        input.splits.iter().collect()
+    } else {
+        measured
+    };
+    let splits = measured
         .iter()
         .map(|split| SplitFact {
             lap_index: split.lap_index,
@@ -864,7 +881,12 @@ mod tests {
 
     /// A payload with a pace drift of −43 s/km, as the app would read it.
     fn payload_with_drift(drift: f64) -> Payload {
-        let input = UpdateInput {
+        payload(&input_with_drift(drift)).expect("the payload")
+    }
+
+    /// The input the payload is built from.
+    fn input_with_drift(drift: f64) -> UpdateInput {
+        UpdateInput {
             has_file: true,
             model: "the writer".to_string(),
             read_on: "10 May 2026".to_string(),
@@ -892,8 +914,7 @@ mod tests {
                 signed: Some(drift),
                 quantity: Some(Quantity::Pace),
             }],
-        };
-        payload(&input).unwrap_or_default()
+        }
     }
 
     #[test]
@@ -905,6 +926,24 @@ mod tests {
                 "the reviewer's prompt does not name the verdict \"{verdict}\""
             );
         }
+    }
+
+    #[test]
+    fn a_fragment_is_not_in_the_payload() {
+        // A lap of a hundred metres: too short for its pace to mean
+        // anything, and a model that is shown one narrates it.
+        let mut input = input_with_drift(-43.0);
+        input.splits.push(SplitInput {
+            lap_index: 2,
+            distance_m: 100.0,
+            pace_s_km: Some(9.0),
+            heart_rate: Some(171.0),
+        });
+
+        let payload = payload(&input).expect("the payload");
+
+        assert_eq!(payload.splits.len(), 1, "the fragment was left out");
+        assert_eq!(payload.splits[0].lap_index, 1);
     }
 
     #[test]
