@@ -603,7 +603,9 @@ fn the_pace_carries_the_shape_the_app_declares() {
             assert_declared(&declarations, "PaceBandRow", row);
         }
     }
+}
 
+#[test]
 fn the_year_carries_the_shape_the_app_declares() {
     let declarations = declarations();
     let harness = common::Harness::seeded("frontend-year");
