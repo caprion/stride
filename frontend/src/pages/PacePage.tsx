@@ -354,10 +354,10 @@ export function PacePage() {
               data={weeks}
               margin={{ top: 4, right: 52, bottom: 0, left: -18 }}
             >
-              <CartesianGrid stroke="#E4EBF0" vertical={false} />
+              <CartesianGrid stroke="var(--chart-grid)" vertical={false} />
               <XAxis
                 dataKey="label"
-                tick={{ fontSize: 11, fill: '#61788D' }}
+                tick={{ fontSize: 11, fill: 'var(--ink-muted)' }}
                 interval="preserveStartEnd"
               />
               <YAxis
@@ -382,7 +382,7 @@ export function PacePage() {
                 reversed
                 domain={['dataMin - 10', 'dataMax + 10']}
               />
-              <Tooltip content={<WeekTooltip />} cursor={{ fill: '#EEF5FB' }} />
+              <Tooltip content={<WeekTooltip />} cursor={{ fill: 'var(--brand-50)' }} />
               {/* The long run is the bar inside the bar: the week's
                   distance is the whole, and the long run is the part of it
                   that is drawn in the other colour. */}
@@ -390,21 +390,21 @@ export function PacePage() {
                 yAxisId="distance"
                 dataKey="longestKm"
                 stackId="distance"
-                fill="#1E5E96"
+                fill="var(--brand-500)"
                 isAnimationActive={false}
               />
               <Bar
                 yAxisId="distance"
                 dataKey="restKm"
                 stackId="distance"
-                fill="#7BA8CD"
+                fill="var(--brand-300)"
                 isAnimationActive={false}
               />
               <Line
                 yAxisId="pace"
                 type="monotone"
                 dataKey="paceValue"
-                stroke="#8A5E05"
+                stroke="var(--accent-700)"
                 strokeWidth={2}
                 dot={false}
                 connectNulls={false}
@@ -415,9 +415,9 @@ export function PacePage() {
         </div>
         <Legend
           swatches={[
-            { colour: '#7BA8CD', label: t('pace.weeks.legend.distance') },
-            { colour: '#1E5E96', label: t('pace.weeks.legend.longest') },
-            { colour: '#8A5E05', label: t('pace.weeks.legend.pace') },
+            { colour: 'var(--brand-300)', label: t('pace.weeks.legend.distance') },
+            { colour: 'var(--brand-500)', label: t('pace.weeks.legend.longest') },
+            { colour: 'var(--accent-700)', label: t('pace.weeks.legend.pace') },
           ]}
         />
       </ChartCard>
