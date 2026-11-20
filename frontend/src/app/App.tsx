@@ -15,6 +15,7 @@ import { currentHost } from '../lib/transport'
 import { TodayPage } from '../pages/TodayPage'
 import { RunsPage } from '../pages/RunsPage'
 import { ProgressPage } from '../pages/ProgressPage'
+import { PacePage } from '../pages/PacePage'
 import { BodyPage } from '../pages/BodyPage'
 import { ComparePage } from '../pages/ComparePage'
 import { PlanWeekPage } from '../pages/PlanWeekPage'
@@ -60,6 +61,12 @@ function AppRoutes() {
       <Route path="/runs" element={<RunsPage />} />
       <Route path="/runs/:id" element={<ActivityRoute />} />
       <Route path="/progress" element={<ProgressPage />} />
+      {/*
+        The pace page is reached from Progress, the way the heatmap is
+        reached from Runs: it is not a destination of its own, and the
+        athlete asks for it.
+      */}
+      <Route path="/pace" element={<PacePage />} />
       <Route path="/body" element={<BodyPage />} />
       <Route path="/plan" element={<PlanWeekPage />} />
       {/*

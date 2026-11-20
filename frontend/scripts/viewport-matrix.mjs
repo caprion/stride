@@ -65,6 +65,13 @@ const ROUTES = [
     primary: '[data-testid="heatmap-grid"]',
   },
   { path: '/progress', name: 'Progress', primary: '[data-testid="progress-headline"]' },
+  {
+    // The pace page: reached from Progress, and it draws its own three
+    // panels.
+    path: '/pace',
+    name: 'Pace',
+    primary: '[data-testid="pace-weeks"]',
+  },
   { path: '/body', name: 'Body', primary: '[data-testid="body-signals"]' },
   { path: '/plan', name: 'Plan week', primary: '[data-testid="plan-week"]' },
   { path: '/compare/101', name: 'Compare', primary: '[data-testid="compare-metrics"]' },

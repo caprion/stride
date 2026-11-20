@@ -43,6 +43,7 @@ import type {
   KeyTestResult,
   LoadInsight,
   NoteResult,
+  PaceInsight,
   PlanImportResult,
   PlanWeek,
   ProgressInsight,
@@ -391,6 +392,20 @@ export const progressFixture = routerAnswers['/insights/progress'] as ProgressIn
 
 /** Progress, with no plan: the router's answer for the baseline seed. */
 export const baselineProgressFixture = baselineAnswers['/insights/progress'] as ProgressInsight
+
+// ------------------------------------------------------------------ pace
+
+/**
+ * The pace page: the router's answer.
+ *
+ * The training week by week, the pace at a heart rate, and where the time
+ * went by pace.
+ *
+ * **The seeded store holds no FIT file**, so the router answers no bands:
+ * the window holds no moving samples, and the screen says so. The bands
+ * themselves are the router's, and the app draws what it is given.
+ */
+export const paceFixture = routerAnswers['/insights/pace'] as PaceInsight
 
 // --------------------------------------------------------------- load
 
@@ -1741,6 +1756,10 @@ export function fixtureResponse(
           baselineAnswers[`/insights/progress?weeks=${params.weeks}`] ?? baselineProgressFixture
         )
       return routerAnswers[`/insights/progress?weeks=${params.weeks}`] ?? progressFixture
+    case '/insights/pace':
+      // The seeded store holds no file, so the router answers no bands:
+      // the window holds no moving samples, and the screen says so.
+      return routerAnswers[`/insights/pace?weeks=${params.weeks}`] ?? paceFixture
     case '/insights/rolling': {
       // Nothing in the store: the window holds no distance and the
       // tables hold no rows.
