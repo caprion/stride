@@ -42,11 +42,11 @@ const GROUND_BOTTOM = 264
 const HEIGHT = 300
 
 /** The pace's colour — the athlete's own signal. */
-const PACE_COLOUR = '#D99A0B'
+const PACE_COLOUR = 'var(--accent-500)'
 /** The heart rate's colour. */
-const HEART_COLOUR = '#1E5E96'
+const HEART_COLOUR = 'var(--brand-500)'
 /** The ground's colour. */
-const GROUND_COLOUR = '#3F6E9E'
+const GROUND_COLOUR = 'var(--brand-400)'
 
 /** The seconds a sample is worth when the playhead moves. */
 const SCRUB_STEP = 1
@@ -194,7 +194,7 @@ export function RunFilm({
                   x2={head}
                   y1={RIBBON_TOP}
                   y2={GROUND_BOTTOM}
-                  stroke="#112B40"
+                  style={{ stroke: 'var(--ink)' }}
                   strokeWidth={1.5}
                   opacity={0.75}
                 />
@@ -203,8 +203,7 @@ export function RunFilm({
                     cx={head}
                     cy={drawing.yHeart(headHeart)}
                     r={4.5}
-                    fill={HEART_COLOUR}
-                    stroke="#FFFFFF"
+                    style={{ fill: HEART_COLOUR, stroke: 'var(--surface-raised)' }}
                     strokeWidth={2}
                   />
                 ) : null}
@@ -213,8 +212,7 @@ export function RunFilm({
                     cx={head}
                     cy={drawing.yPace(headPace)}
                     r={4.5}
-                    fill={PACE_COLOUR}
-                    stroke="#FFFFFF"
+                    style={{ fill: PACE_COLOUR, stroke: 'var(--surface-raised)' }}
                     strokeWidth={2}
                   />
                 ) : null}
@@ -441,14 +439,14 @@ function draw(
         x2={at}
         y1={PLOT_TOP}
         y2={GROUND_BOTTOM}
-        stroke="#E4EBF0"
+        style={{ stroke: 'var(--chart-grid)' }}
       />,
       <text
         key={`label-${minute}`}
         x={at}
         y={HEIGHT - 10}
         textAnchor="middle"
-        fill="#61788D"
+        style={{ fill: 'var(--ink-muted)' }}
         fontSize={11}
       >
         {minute} min
@@ -493,7 +491,7 @@ function draw(
       x={PAD.left - 8}
       y={yHeart(tick.value) + 4}
       textAnchor="end"
-      fill="#61788D"
+      style={{ fill: 'var(--ink-muted)' }}
       fontSize={11}
       data-testid="chart-axis-label"
     >
@@ -506,7 +504,7 @@ function draw(
       x={width - PAD.right + 8}
       y={yPace(tick.value) + 4}
       textAnchor="start"
-      fill="#61788D"
+      style={{ fill: 'var(--ink-muted)' }}
       fontSize={11}
       data-testid="chart-axis-label"
     >

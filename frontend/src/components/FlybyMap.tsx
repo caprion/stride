@@ -26,6 +26,7 @@ import { RouteMap, type GeoPoint } from './RouteMap'
 import { sampleAt } from './RunFilm'
 import { robustRange } from '../lib/chart'
 import type { FilmSample } from '../lib/types'
+import { token } from '../lib/tokens'
 
 /**
  * The colours of the pace, from the slowest to the fastest.
@@ -34,10 +35,14 @@ import type { FilmSample } from '../lib/types'
  * app: on the timeline's axis and on the track. The steps run from the
  * palest to the deepest, so the fastest part of the run is the darkest.
  */
-const PACE_RAMP = ['#FDEDC7', '#F8C55C', '#F2B01E', '#D99A0B', '#B57C06', '#8A5E05']
-
-/** The colour of a part of the track the pace is not known for. */
-const UNKNOWN_PACE_COLOUR = '#9FB3C1'
+const PACE_RAMP = [
+  '--accent-100',
+  '--accent-300',
+  '--accent-400',
+  '--accent-500',
+  '--accent-600',
+  '--accent-700',
+]
 
 /** The zoom the camera follows at. */
 const FOLLOW_ZOOM = 16
@@ -114,27 +119,28 @@ export function FlybyMap({
       maxZoom: FOLLOW_ZOOM,
       animate: false,
     })
-    for (const run of paceRuns(route.positions, lengths, total, route.distance, samples)) {
+    const ramp = PACE_RAMP.map((name) => token(name))
+    for (const run of paceRuns(route.positions, lengths, total, route.distance, samples, ramp)) {
       L.polyline(run.positions, { color: run.colour, weight: 4 }).addTo(instance)
     }
 
     // Where the run started, and where it ended: the app's own marks.
     L.circleMarker(route.positions[0] as L.LatLng, {
       radius: 5,
-      color: '#124A7C',
+      color: token('--brand-600'),
       fillOpacity: 1,
     }).addTo(instance)
     L.circleMarker(route.positions[route.positions.length - 1] as L.LatLng, {
       radius: 6,
-      color: '#124A7C',
-      fillColor: '#ffffff',
+      color: token('--brand-600'),
+      fillColor: token('--surface'),
       fillOpacity: 1,
     }).addTo(instance)
 
     marker.current = L.circleMarker(route.positions[0] as L.LatLng, {
       radius: 6,
-      color: '#112B40',
-      fillColor: '#112B40',
+      color: token('--ink'),
+      fillColor: token('--ink'),
       fillOpacity: 1,
       weight: 2,
     }).addTo(instance)
@@ -248,6 +254,7 @@ function paceRuns(
   total: number,
   distance: number,
   samples: FilmSample[],
+  ramp: string[],
 ): { colour: string; positions: L.LatLng[] }[] {
   const paces = samples
     .map((sample) => sample.pace?.raw)
@@ -259,7 +266,7 @@ function paceRuns(
   const runs: { colour: string; positions: L.LatLng[] }[] = []
   for (let index = 1; index < positions.length; index += 1) {
     const along = total > 0 ? ((lengths[index] as number) / total) * distance : 0
-    const colour = paceColour(paceAtDistance(samples, along), fastest, slowest)
+    const colour = paceColour(paceAtDistance(samples, along), fastest, slowest, ramp)
     const last = runs[runs.length - 1]
     if (last && last.colour === colour) {
       last.positions.push(positions[index] as L.LatLng)
@@ -288,11 +295,16 @@ function paceAtDistance(samples: FilmSample[], metres: number): number | null {
 }
 
 /** The colour of a pace: the app's own ramp, from the slowest to the fastest. */
-function paceColour(pace: number | null, fastest: number, slowest: number): string {
-  if (pace === null || slowest <= fastest) return UNKNOWN_PACE_COLOUR
+function paceColour(
+  pace: number | null,
+  fastest: number,
+  slowest: number,
+  ramp: string[],
+): string {
+  if (pace === null || slowest <= fastest) return token('--brand-200')
   const share = (pace - fastest) / (slowest - fastest)
-  const step = colourStep(1 - share, PACE_RAMP.length)
-  return PACE_RAMP[Math.min(PACE_RAMP.length - 1, Math.max(0, step))] as string
+  const step = colourStep(1 - share, ramp.length)
+  return ramp[Math.min(ramp.length - 1, Math.max(0, step))] as string
 }
 
 /**
