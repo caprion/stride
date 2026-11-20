@@ -130,8 +130,7 @@ impl ChatModel for ChatClient {
             .json(&body)
             .header("content-type", "application/json");
         if let Some(key) = &self.key {
-            let token = key.with_secret(|secret| secret.to_string());
-            request = request.bearer_auth(token);
+            request = request.bearer_auth(key.with_secret(|secret| secret.to_string()));
         }
 
         let answer = request
@@ -201,6 +200,9 @@ pub fn is_local(base_url: &str) -> bool {
 
 #[cfg(test)]
 mod tests {
+    // The tests are allowed to panic and to expect: they are test code.
+    #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
+
     use super::*;
 
     #[test]

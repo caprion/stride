@@ -1320,7 +1320,7 @@ pub const CATALOGUE: [Entry; 176] = [
         kind: StringKind::Instruction,
         role: None,
         template:
-            "Write an update about one run: four to six sentences saying what the run was and how it went. Use only the numbers in the payload, and write each of them exactly as the payload writes them. Describe what happened: no advice, no verdict, no score, no instruction and no prediction. Do not tell the athlete what to do, and do not write about what comes next. Here is the payload: {payload}",
+            "Write four to six sentences about one run: what the run was and how it went. Use only the numbers in the payload, and write each of them exactly as the payload writes them. Describe what happened: no advice, no verdict, no score, no instruction and no prediction. Do not tell the athlete what to do, and do not write about what comes next. Here is the payload: {payload}",
     },
     Entry {
         id: "update.prompt.reviewer",
@@ -1334,7 +1334,7 @@ pub const CATALOGUE: [Entry; 176] = [
         kind: StringKind::Instruction,
         role: None,
         template:
-            "Rewrite the update about one run, using the payload and the findings. Keep what the findings do not question, and correct what they question. Use only the numbers in the payload, and write each of them exactly as the payload writes them. Describe what happened: no advice, no verdict, no score, no instruction and no prediction. Do not tell the athlete what to do, and do not write about what comes next. Here is the payload: {payload} Here is the draft: {draft} Here are the findings: {findings}",
+            "Write the sentences again, using the payload and the findings. Keep what the findings do not question, and correct what they question. Use only the numbers in the payload, and write each of them exactly as the payload writes them. Describe what happened: no advice, no verdict, no score, no instruction and no prediction. Do not tell the athlete what to do, and do not write about what comes next. Here is the payload: {payload} Here is the draft: {draft} Here are the findings: {findings}",
     },
 ];
 
@@ -1854,7 +1854,7 @@ mod tests {
         let mut rest = block.to_string();
         let mut phrases: Vec<&str> = BANNED_PHRASES.to_vec();
         // The longest first: "not recovered" has to go before "red".
-        phrases.sort_by(|left, right| right.len().cmp(&left.len()));
+        phrases.sort_by_key(|phrase| std::cmp::Reverse(phrase.len()));
         for phrase in phrases {
             let mut at = 0;
             while let Some(found) = rest[at..].find(phrase) {
