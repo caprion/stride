@@ -15,6 +15,7 @@ import { currentHost } from '../lib/transport'
 import { TodayPage } from '../pages/TodayPage'
 import { RunsPage } from '../pages/RunsPage'
 import { ProgressPage } from '../pages/ProgressPage'
+import { ProgressPanelPage } from '../pages/ProgressPanelPage'
 import { BodyPage } from '../pages/BodyPage'
 import { ComparePage } from '../pages/ComparePage'
 import { PlanWeekPage } from '../pages/PlanWeekPage'
@@ -60,6 +61,12 @@ function AppRoutes() {
       <Route path="/runs" element={<RunsPage />} />
       <Route path="/runs/:id" element={<ActivityRoute />} />
       <Route path="/progress" element={<ProgressPage />} />
+      {/*
+        The narrow Progress opens one panel at a time, and this is that
+        doorway. It is a route and not a destination: the four
+        destinations stay the four, and this is reached from Progress.
+      */}
+      <Route path="/progress/:panel" element={<ProgressPanelPage />} />
       <Route path="/body" element={<BodyPage />} />
       <Route path="/plan" element={<PlanWeekPage />} />
       {/*

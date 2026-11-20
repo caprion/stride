@@ -29,11 +29,12 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
 import { api } from '../lib/api'
 import { connectGarmin } from '../lib/connect'
-import { formatCount, formatDateMedium, formatDateShort, renderedText } from '../lib/format'
+import { formatDateMedium, formatDateShort, renderedText } from '../lib/format'
 import { stalenessText } from '../lib/staleness'
 import type { PlanSession } from '../lib/types'
 import { t } from '../i18n'
 import { RouteMap } from '../components/RouteMap'
+import { StreakCard } from '../components/StreakCard'
 import { VitalReadings } from '../components/VitalReadings'
 import { PageHeader } from '../ui/layout/PageHeader'
 import { SleepComposition } from '../components/SleepComposition'
@@ -325,63 +326,7 @@ export function TodayPage() {
             not a streak of zero, and it must not be drawn as one.
           */}
           {streaks.data ? (
-            <section className="card mb-3 px-4 py-3" data-testid="today-streak">
-              <h2 className="text-[12px] font-semibold uppercase tracking-wide text-ink-muted">
-                {t('today.streak.heading')}
-              </h2>
-              <ul className="mt-1.5 space-y-1.5">
-                {(
-                  [
-                    {
-                      key: 'days-current',
-                      label: t('today.streak.days'),
-                      streak: streaks.data?.days.current ?? null,
-                    },
-                    {
-                      key: 'days-longest',
-                      label: t('today.streak.daysLongest'),
-                      streak: streaks.data?.days.longest ?? null,
-                    },
-                    {
-                      key: 'weeks-current',
-                      label: t('today.streak.weeks'),
-                      streak: streaks.data?.weeks.current ?? null,
-                    },
-                    {
-                      key: 'weeks-longest',
-                      label: t('today.streak.weeksLongest'),
-                      streak: streaks.data?.weeks.longest ?? null,
-                    },
-                  ] as const
-                ).map((row) => (
-                  <li key={row.key}>
-                    <div className="flex items-baseline justify-between gap-3">
-                      <span className="text-[13.5px] text-ink-soft">{row.label}</span>
-                      <span
-                        className="text-[16px] font-semibold tabular-nums text-ink"
-                        data-testid={`today-streak-${row.key}`}
-                      >
-                        {row.streak ? formatCount(row.streak.count) : t('today.streak.none')}
-                      </span>
-                    </div>
-                    {row.streak ? (
-                      <p className="text-[11.5px] text-ink-faint">
-                        {/* The api's own rendering of the days — the
-                          core's words, not a date the app formats. */}
-                        {row.streak.end && row.streak.end_label
-                          ? t('today.streak.range', {
-                              from: row.streak.start_label,
-                              to: row.streak.end_label,
-                            })
-                          : t('today.streak.since', {
-                              date: row.streak.start_label,
-                            })}
-                      </p>
-                    ) : null}
-                  </li>
-                ))}
-              </ul>
-            </section>
+            <StreakCard streaks={streaks.data} className="card mb-3 px-4 py-3" />
           ) : null}
           <section className="card mb-3 px-4 py-3">
             <div className="flex items-center justify-between gap-3">
