@@ -24,6 +24,12 @@
 //! The week streak counts **weeks with a run in them**, and the weeks are
 //! the athlete's own: Monday through Sunday.
 //!
+//! The month streak counts **months with a run in them**, and the months
+//! are the calendar's own: they are the athlete's months, counted from
+//! their first day. A month with no run in it breaks the streak, and the
+//! streak survives a month of quiet for the same reason the week one does:
+//! the month itself may still come.
+//!
 //! ## No value
 //!
 //! A streak of zero days is **no streak**, not a streak of zero: the
@@ -40,7 +46,7 @@ use crate::plan::week_start;
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Streak {
     /// How many days the streak runs — or how many weeks, for a week
-    /// streak.
+    /// streak, or how many months, for a month streak.
     pub count: u32,
     /// The oldest day of the streak: the day it started.
     pub start: Date,
@@ -63,6 +69,10 @@ pub struct Streaks {
     pub current_weeks: Option<Streak>,
     /// The longest run of weeks in the history.
     pub longest_weeks: Option<Streak>,
+    /// The run of months that is still going, if there is one.
+    pub current_months: Option<Streak>,
+    /// The longest run of months in the history.
+    pub longest_months: Option<Streak>,
 }
 
 impl Streaks {
@@ -73,6 +83,8 @@ impl Streaks {
             longest_days: None,
             current_weeks: None,
             longest_weeks: None,
+            current_months: None,
+            longest_months: None,
         }
     }
 }
@@ -98,12 +110,15 @@ pub fn streaks(days: &[Date], today: Date) -> Streaks {
 
     let (current_days, longest_days) = day_streaks(&days, today);
     let (current_weeks, longest_weeks) = week_streaks(&days, today);
+    let (current_months, longest_months) = month_streaks(&days, today);
 
     Streaks {
         current_days,
         longest_days,
         current_weeks,
         longest_weeks,
+        current_months,
+        longest_months,
     }
 }
 
@@ -240,6 +255,90 @@ fn week_streaks(days: &[Date], today: Date) -> (Option<Streak>, Option<Streak>) 
     (current_streak, Some(longest_streak))
 }
 
+/// The month streaks of a history, newest day first.
+///
+/// The months are the calendar's own. Two runs in the same month are one
+/// month of the streak, and a month with no run in it breaks it.
+fn month_streaks(days: &[Date], today: Date) -> (Option<Streak>, Option<Streak>) {
+    // The months that carry a run, newest first, each with the newest run
+    // day in it — the days arrive newest first, so the first day seen in
+    // a month is that month's newest.
+    let mut months: Vec<(i32, u32, Date)> = Vec::new();
+    for &day in days {
+        let key = (day.year(), day.month());
+        if !months.iter().any(|(year, month, _)| (*year, *month) == key) {
+            months.push((key.0, key.1, day));
+        }
+    }
+
+    let newest = months[0];
+
+    let mut longest = 1u32;
+    let mut running = 1u32;
+    let mut running_end = newest.2;
+    let mut running_is_longest = true;
+    let mut longest_period = (newest.2, newest.2);
+
+    // A month streak survives a month of quiet: the week streak's rule is
+    // that the last run was within the last seven days, and a month is
+    // that same rule with a month's span.
+    let possible = today.days_since(newest.2).abs() < 31;
+    let mut counting = possible;
+    let mut current = if possible { 1u32 } else { 0 };
+    let mut current_start = if possible { Some(newest.2) } else { None };
+
+    let mut previous = newest;
+    for &month in months.iter().skip(1) {
+        // The months between the two, counted between their firsts.
+        let gap = month_index(previous) - month_index(month);
+        if gap > 0 {
+            if gap == 1 {
+                running += 1;
+                if counting {
+                    current += 1;
+                    current_start = Some(month.2);
+                }
+                if running > longest {
+                    longest = running;
+                    running_is_longest = true;
+                }
+            } else {
+                running = 1;
+                running_end = month.2;
+                running_is_longest = false;
+                counting = false;
+            }
+        }
+        if running_is_longest {
+            // The start of a month streak is the newest run day in the
+            // streak's oldest month — the week streak's own rule.
+            longest_period = (month.2, running_end);
+        }
+        previous = month;
+    }
+
+    let longest_streak = Streak {
+        count: longest,
+        start: longest_period.0,
+        end: Some(longest_period.1),
+    };
+    let current_streak = match (possible, current_start) {
+        (true, Some(start)) if current > 0 => Some(Streak {
+            count: current,
+            start,
+            end: None,
+        }),
+        _ => None,
+    };
+    (current_streak, Some(longest_streak))
+}
+
+/// The number of a month, counted from January of year zero: the gap
+/// between two months is the difference of their numbers.
+fn month_index(month: (i32, u32, Date)) -> i32 {
+    month.0 * 12 + month.1 as i32
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -268,6 +367,8 @@ mod tests {
         assert!(answer.longest_days.is_none());
         assert!(answer.current_weeks.is_none());
         assert!(answer.longest_weeks.is_none());
+        assert!(answer.current_months.is_none());
+        assert!(answer.longest_months.is_none());
     }
 
     #[test]
@@ -449,6 +550,89 @@ mod tests {
         assert_eq!(longest.count, 1);
         assert_eq!(Some(longest.start), date("2026-05-18"));
         assert_eq!(longest.end, date("2026-05-18"));
+    }
+
+    #[test]
+    fn the_month_streak_counts_months_with_a_run_in_them() {
+        // March, April and May 2026: three months in a row.
+        let answer = match streaks_of(&["2026-03-14", "2026-04-12", "2026-05-10"], "2026-05-13") {
+            Some(answer) => answer,
+            None => return,
+        };
+        let current = match answer.current_months {
+            Some(current) => current,
+            None => return,
+        };
+        assert_eq!(current.count, 3);
+        // The start of a month streak is the newest run day in the
+        // streak's oldest month — the week streak's own rule.
+        assert_eq!(Some(current.start), date("2026-03-14"));
+        assert_eq!(current.end, None);
+
+        let longest = match answer.longest_months {
+            Some(longest) => longest,
+            None => return,
+        };
+        assert_eq!(longest.count, 3);
+        assert_eq!(Some(longest.start), date("2026-03-14"));
+        assert_eq!(longest.end, date("2026-05-10"));
+    }
+
+    #[test]
+    fn two_runs_in_one_month_are_one_month() {
+        let answer = match streaks_of(&["2026-05-10", "2026-05-12"], "2026-05-13") {
+            Some(answer) => answer,
+            None => return,
+        };
+        let current = match answer.current_months {
+            Some(current) => current,
+            None => return,
+        };
+        assert_eq!(current.count, 1);
+        assert_eq!(Some(current.start), date("2026-05-12"));
+    }
+
+    #[test]
+    fn a_month_with_no_run_breaks_the_month_streak() {
+        // May, then nothing in April, then March.
+        let answer = match streaks_of(&["2026-03-14", "2026-05-10"], "2026-05-13") {
+            Some(answer) => answer,
+            None => return,
+        };
+        let current = match answer.current_months {
+            Some(current) => current,
+            None => return,
+        };
+        assert_eq!(current.count, 1);
+        assert_eq!(Some(current.start), date("2026-05-10"));
+
+        let longest = match answer.longest_months {
+            Some(longest) => longest,
+            None => return,
+        };
+        assert_eq!(longest.count, 1);
+        assert_eq!(Some(longest.start), date("2026-05-10"));
+        assert_eq!(longest.end, date("2026-05-10"));
+    }
+
+    #[test]
+    fn a_month_streak_that_ended_a_month_ago_is_not_current() {
+        // The last run was on the 10th of March; the 20th of April is today.
+        let answer = match streaks_of(&["2026-02-14", "2026-03-10"], "2026-04-20") {
+            Some(answer) => answer,
+            None => return,
+        };
+        // More than a month of quiet: the streak is over, and there is no
+        // current one.
+        assert!(answer.current_months.is_none());
+        // The longest one is still a fact.
+        let longest = match answer.longest_months {
+            Some(longest) => longest,
+            None => return,
+        };
+        assert_eq!(longest.count, 2);
+        assert_eq!(Some(longest.start), date("2026-02-14"));
+        assert_eq!(longest.end, date("2026-03-10"));
     }
 
     #[test]
