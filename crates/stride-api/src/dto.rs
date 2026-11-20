@@ -2151,3 +2151,102 @@ pub struct HeatmapExtent {
     /// The eastern edge.
     pub east: f64,
 }
+
+/// The pace page's answer.
+///
+/// The page answers one question — how the pace has behaved — in three
+/// panels: the training week by week, the pace at a heart rate, and where
+/// the time went by pace. The last one is the pace bands, and they are a
+/// property of the window: the answer names the window they cover.
+#[derive(Clone, Debug, PartialEq, Serialize)]
+pub struct PaceInsight {
+    /// When this answer was produced.
+    pub generated_at: String,
+    /// The athlete's local calendar date the answer is about.
+    pub date: String,
+    /// The window the answer describes.
+    pub window: PaceWindow,
+    /// The weeks of the window, oldest first.
+    pub weeks: Vec<TrainingWeek>,
+    /// The bands the window's time falls into, or `None` when the window
+    /// holds no moving samples.
+    pub bands: Option<PaceBands>,
+    /// Why there are no bands, in the core's own words. `None` when there
+    /// are bands.
+    pub unavailable: Option<String>,
+}
+
+/// The window the pace answer describes.
+#[derive(Clone, Debug, PartialEq, Serialize)]
+pub struct PaceWindow {
+    /// The first day of the window, in the athlete's own calendar.
+    pub from: String,
+    /// The same day, as the api writes a date: "31 Aug 2026".
+    pub from_label: String,
+    /// The last day of the window.
+    pub to: String,
+    /// The same day, as the api writes a date: "20 Nov 2026".
+    pub to_label: String,
+    /// How many calendar weeks the window covers.
+    pub weeks: i64,
+}
+
+/// One week of the window: what it covered, and the long run inside it.
+#[derive(Clone, Debug, PartialEq, Serialize)]
+pub struct TrainingWeek {
+    /// The Monday the week starts on.
+    pub week_start: String,
+    /// The week's distance.
+    pub distance: RenderedValue,
+    /// How many runs the week holds.
+    pub sessions: usize,
+    /// The week's longest run, or `None` when the week holds no run.
+    pub longest: Option<PaceLongest>,
+    /// The week's median pace — the pace of the week's runs, not the pace
+    /// of one of them.
+    pub pace: Option<RenderedValue>,
+    /// The week's median heart rate, on the same week.
+    ///
+    /// The pace and the heart rate are **separate medians**: they are
+    /// never a matched-effort comparison, and the app does not draw one.
+    pub heart_rate: Option<RenderedValue>,
+}
+
+/// The longest run of a week.
+#[derive(Clone, Debug, PartialEq, Serialize)]
+pub struct PaceLongest {
+    /// The run's distance.
+    pub distance: RenderedValue,
+    /// The run's pace.
+    pub pace: Option<RenderedValue>,
+}
+
+/// The bands the window's moving time falls into.
+#[derive(Clone, Debug, PartialEq, Serialize)]
+pub struct PaceBands {
+    /// How wide a band is, in seconds per kilometre.
+    pub width_s_per_km: f64,
+    /// The window's moving time, in seconds: the sum of the bands' times.
+    pub total: RenderedValue,
+    /// The distance covered in the window.
+    pub distance: RenderedValue,
+    /// The bands, fastest first.
+    pub rows: Vec<PaceBandRow>,
+}
+
+/// One band of the distribution.
+#[derive(Clone, Debug, PartialEq, Serialize)]
+pub struct PaceBandRow {
+    /// The band's lower edge, in seconds per kilometre.
+    pub from: f64,
+    /// The band's upper edge, in seconds per kilometre.
+    pub to: f64,
+    /// The band's name, in the core's own words: "4:30–5:00 /km".
+    pub label: String,
+    /// The time held at the band's paces.
+    pub time: RenderedValue,
+    /// The distance covered at the band's paces.
+    pub distance: RenderedValue,
+    /// The band's share of the window's time.
+    pub share: Option<RenderedValue>,
+}

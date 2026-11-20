@@ -9,6 +9,7 @@
 //! ceiling, and the number of points in an answer is bounded by the
 //! configuration.
 
+use stride_core::pace::PacePoint;
 use stride_core::zones::ZoneSample;
 use stride_ingest::{decode_fit, FitActivity, MAX_FIT_INPUT_BYTES};
 
@@ -48,6 +49,24 @@ pub fn zone_samples(activity: &FitActivity) -> Vec<ZoneSample> {
         .map(|sample| ZoneSample {
             elapsed_s: sample.elapsed_s,
             heart_rate_bpm: sample.heart_rate_bpm,
+        })
+        .collect()
+}
+
+/// The moving samples of a run, for the pace bands.
+///
+/// Only the moving samples: the standing ones are filtered out, exactly as
+/// the time-in-zone computation filters them, so the two cannot disagree
+/// about which samples count. A sample that carries no distance carries no
+/// pace either, and is left out.
+pub fn pace_points(activity: &FitActivity) -> Vec<PacePoint> {
+    activity
+        .samples
+        .iter()
+        .filter(|sample| sample.kind != stride_ingest::SegmentKind::Stand)
+        .filter_map(|sample| {
+            let distance_m = sample.distance_m?;
+            Some(PacePoint::new(sample.elapsed_s, distance_m))
         })
         .collect()
 }

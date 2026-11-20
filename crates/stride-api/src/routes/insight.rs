@@ -139,25 +139,22 @@ pub fn progress(api: &Api, request: &Request) -> ApiResult<Value> {
     let mut weekly_volume: Vec<WeeklyVolume> = Vec::new();
     let mut pace_at_hr: Vec<PaceAtHr> = Vec::new();
     let mut consistency: Vec<Consistency> = Vec::new();
-    for (week, week_runs) in super::weeks(&runs) {
-        let distance_m: f64 = render::total_of(week_runs.iter().map(|run| run.distance_m));
+    // One implementation of the week's numbers: the shared weekly summary,
+    // the same one the pace page's training series reads.
+    for week in super::week_summaries(&runs) {
+        let week_start = week.week_start.to_iso();
         weekly_volume.push(WeeklyVolume {
-            week_start: week.to_iso(),
-            distance: render::distance_of(distance_m),
+            week_start: week_start.clone(),
+            distance: render::distance_of(week.distance_m),
         });
-        let paces: Vec<f64> = week_runs
-            .iter()
-            .filter_map(|run| super::pace_of(run.distance_m, run.moving_time_s))
-            .collect();
-        let hearts: Vec<f64> = week_runs.iter().filter_map(|run| run.avg_hr).collect();
         pace_at_hr.push(PaceAtHr {
-            week_start: week.to_iso(),
-            pace: render::pace(super::median(&paces).map(units::round_pace_s_per_km)),
-            heart_rate: render::heart_rate(super::median(&hearts)),
+            week_start: week_start.clone(),
+            pace: render::pace(week.median_pace_s_per_km.map(units::round_pace_s_per_km)),
+            heart_rate: render::heart_rate(week.median_hr_bpm),
         });
         consistency.push(Consistency {
-            week_start: week.to_iso(),
-            sessions: week_runs.len(),
+            week_start,
+            sessions: week.sessions,
         });
     }
 

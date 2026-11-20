@@ -18,6 +18,7 @@ pub mod export;
 pub mod heatmap;
 pub mod insight;
 pub mod load;
+pub mod pace;
 pub mod plan;
 pub mod rolling;
 pub mod series;
@@ -342,4 +343,83 @@ pub fn personal_records(api: &Api, runs: &[StoredActivity]) -> ApiResult<Vec<Per
     }
 
     Ok(records)
+}
+
+/// One week of the runs, as the app's weekly series reads it.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct WeekSummary {
+    /// The Monday the week starts on.
+    pub week_start: Date,
+    /// The week's distance, in metres.
+    pub distance_m: f64,
+    /// How many runs the week holds.
+    pub sessions: usize,
+    /// The week's median pace, in seconds per kilometre.
+    ///
+    /// The median of the **runs' own paces**: it is the pace of a run in
+    /// that week, not a pace the athlete held at one heart rate.
+    pub median_pace_s_per_km: Option<f64>,
+    /// The week's median heart rate.
+    ///
+    /// A separate median from the pace, and never a matched effort with
+    /// it: the two are descriptive.
+    pub median_hr_bpm: Option<f64>,
+    /// The week's longest run.
+    pub longest: Option<WeekLongest>,
+}
+
+/// The longest run of a week.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct WeekLongest {
+    /// The run's distance, in metres.
+    pub distance_m: f64,
+    /// The run's pace, in seconds per kilometre.
+    pub pace_s_per_km: Option<f64>,
+}
+
+/// The weeks of the runs, oldest first.
+///
+/// **One implementation of the week's numbers.** The Progress screen's
+/// weekly volume, its weekly medians and the pace page's training series
+/// all read these, so they cannot disagree about a week.
+pub fn week_summaries(runs: &[StoredActivity]) -> Vec<WeekSummary> {
+    weeks(runs)
+        .into_iter()
+        .map(|(week_start, week_runs)| {
+            let distance_m = render::total_of(week_runs.iter().map(|run| run.distance_m));
+            let paces: Vec<f64> = week_runs
+                .iter()
+                .filter_map(|run| pace_of(run.distance_m, run.moving_time_s))
+                .collect();
+            let hearts: Vec<f64> = week_runs.iter().filter_map(|run| run.avg_hr).collect();
+            WeekSummary {
+                week_start,
+                distance_m,
+                sessions: week_runs.len(),
+                median_pace_s_per_km: median(&paces),
+                median_hr_bpm: median(&hearts),
+                longest: longest_of(&week_runs),
+            }
+        })
+        .collect()
+}
+
+/// The longest run of a week: the first of the runs that are as long as the
+/// longest, so the answer does not depend on the order the runs came in.
+fn longest_of(runs: &[&StoredActivity]) -> Option<WeekLongest> {
+    let mut longest: Option<&StoredActivity> = None;
+    for run in runs {
+        let is_longer = match longest {
+            Some(current) => run.distance_m > current.distance_m,
+            None => true,
+        };
+        if is_longer {
+            longest = Some(run);
+        }
+    }
+    let run = longest?;
+    Some(WeekLongest {
+        distance_m: run.distance_m,
+        pace_s_per_km: pace_of(run.distance_m, run.moving_time_s),
+    })
 }
