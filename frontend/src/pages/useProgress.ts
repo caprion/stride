@@ -1,0 +1,109 @@
+/**
+ * The answers Progress draws on.
+ *
+ * One hook, so that the dashboard and the narrow layout ask the same
+ * questions of the same routes in the same window: the progress answer,
+ * the load, the rolling view and the streaks.
+ *
+ * The window is the **range** the screen is showing, and every answer
+ * follows it: the api is asked for that many weeks, and the weeks the
+ * charts draw are the calendar weeks of that window.
+ */
+
+import { useQuery } from '@tanstack/react-query'
+import { api } from '../lib/api'
+import { axisTicks, calendarWeekStarts } from '../lib/chart'
+import { formatDateShort } from '../lib/format'
+import type { ConsistencyPoint, PacePoint, VolumePoint } from './progressPanels'
+
+/** The answers, and the series the charts draw from them. */
+export function useProgress(range: number) {
+  const progress = useQuery({
+    queryKey: ['insights-progress', range],
+    queryFn: () => api.insightsProgress(range),
+  })
+  // The load has a route of its own, and it follows the same range: the
+  // number is never read apart from the control that changes it.
+  const load = useQuery({
+    queryKey: ['insights-load', range],
+    queryFn: () => api.insightsLoad(range),
+  })
+  // The rolling view follows the same range for the same reason.
+  const rolling = useQuery({
+    queryKey: ['insights-rolling', range],
+    queryFn: () => api.insightsRolling(range),
+  })
+  // The streaks: a count and the days it covers.
+  const streaks = useQuery({
+    queryKey: ['insights-streaks'],
+    queryFn: () => api.insightsStreaks(),
+  })
+
+  const data = progress.data
+
+  /**
+   * The weeks of the window.
+   *
+   * The chart windows use calendar weeks and preserve missing
+   * observations rather than compressing gaps or substituting zero, so a
+   * week with nothing in it is a gap in the line.
+   */
+  const weeks = data ? calendarWeekStarts(data.date, range) : []
+
+  const volume: VolumePoint[] = weeks.map((date) => {
+    const week = data?.weekly_volume.find((entry) => entry.week_start === date)
+    return {
+      label: formatDateShort(date),
+      weekStart: date,
+      km: week?.distance.raw == null ? null : week.distance.raw / 1000,
+      distanceText: week?.distance.text ?? null,
+    }
+  })
+
+  const pace: PacePoint[] = weeks.map((date) => {
+    const week = data?.pace_at_hr.find((entry) => entry.week_start === date)
+    return {
+      label: formatDateShort(date),
+      paceValue: week?.pace?.raw ?? null,
+      paceText: week?.pace?.text ?? null,
+      hrValue: week?.heart_rate?.raw ?? null,
+      hrText: week?.heart_rate?.text ?? null,
+    }
+  })
+
+  const consistency: ConsistencyPoint[] = weeks.map((date) => ({
+    label: formatDateShort(date),
+    sessions: data?.consistency.find((entry) => entry.week_start === date)?.sessions ?? null,
+  }))
+
+  /**
+   * The axes' labels.
+   *
+   * The volume's and the pace's are the core's own words — "38.6 km",
+   * "5:12 /km" — so every label carries its unit. The sessions are a
+   * count the api sends as a plain number, so their unit is the app's.
+   */
+  const volumeTicks = axisTicks(
+    volume.map((week) => ({ value: week.km, text: week.distanceText })),
+  )
+  const paceTicks = axisTicks(
+    pace.map((week) => ({ value: week.paceValue ?? null, text: week.paceText ?? null })),
+  )
+
+  return {
+    progress,
+    load,
+    rolling,
+    streaks,
+    data,
+    weeks,
+    volume,
+    pace,
+    consistency,
+    volumeTicks,
+    paceTicks,
+  }
+}
+
+/** What the hook returns. */
+export type ProgressAnswers = ReturnType<typeof useProgress>
