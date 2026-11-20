@@ -297,7 +297,36 @@ export interface TodayInsight {
     distance: RenderedValue
     sessions: number
     days: RunningDay[]
+    /**
+     * The same elapsed days of the previous calendar week.
+     *
+     * The comparison is **like for like**: the week to date against the
+     * same days of the week before, so the two windows are the same
+     * length. A week to date against a whole week would weigh a part
+     * against the whole.
+     */
+    previous: PreviousWeek
+    /**
+     * This week's distance against the previous week's — the core's own
+     * rendering of the difference, sign and all.
+     */
+    difference: RenderedValue | null
   }
+}
+
+/**
+ * The totals of a stretch of days: the previous week, as the cockpit's
+ * "this week" row is measured against it.
+ */
+export interface PreviousWeek {
+  /** The first day of the stretch, in the athlete's own calendar. */
+  from: string
+  /** The last day of the stretch, in the athlete's own calendar. */
+  to: string
+  /** The distance, as the core renders it. */
+  distance: RenderedValue
+  /** How many runs there were. */
+  sessions: number
 }
 
 /** One row of the metric diff. */
@@ -785,6 +814,36 @@ export interface StreakInsight {
   days: StreakDetail
   /** The streaks of weeks. */
   weeks: StreakDetail
+  /** The streaks of months. */
+  months: MonthStreakDetail
+}
+
+/** The streaks of months: the current one and the longest one. */
+export interface MonthStreakDetail {
+  /** The streak that is still going. Null when there is none. */
+  current: MonthStreakValue | null
+  /** The longest one in the history. */
+  longest: MonthStreakValue | null
+}
+
+/**
+ * One streak of months: how long it is, and the months it covers.
+ *
+ * A month streak is a run of calendar months, each with a run in it. The
+ * months are named as months — "November 2025" — and the days inside
+ * them are not the unit here.
+ */
+export interface MonthStreakValue {
+  /** How many months the streak runs. */
+  count: number
+  /** The month it started, as `YYYY-MM`. */
+  start: string
+  /** The same month, as the api writes a month: "November 2025". */
+  start_label: string
+  /** The month it ended, when it ended in the past. */
+  end: string | null
+  /** The same month, as the api writes a month. */
+  end_label: string | null
 }
 
 /** The streaks of one kind: the current one and the longest one. */

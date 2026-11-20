@@ -141,11 +141,11 @@ Two rules hold for every shape below.
 | `/settings/delete` | `deleted: boolean`, `generated_at` |
 | `/settings/import` | `activities`, `wellness`, `plan_blocks`, `plan_sessions`, `notes`, `rows`, `generated_at` |
 | `/activities/{id}/note` | `note: string \| null`, `generated_at` |
-| `/insights/today` | `generated_at`, `date`, `planned`, `options`, `last_run`, `distance_comparison: string \| null`, `week: {distance, sessions, days: {date, sessions}[]}` |
+| `/insights/today` | `generated_at`, `date`, `planned`, `options`, `last_run`, `distance_comparison: string \| null`, `week: {distance, sessions, days: {date, sessions}[], previous: {from, to, distance, sessions}, difference: RenderedValue \| null}` |
 | `/insights/progress` | `generated_at`, `date` (the core's local calendar date), `period: {from, to, distance, duration, sessions, recorded_weeks}`, `headline`, `headline_note`, `weekly_volume`, `typical_week`, `pace_at_hr`, `bests`, `consistency`, `sessions_per_week`, `adherence`, `eddington: {number, days_needed_for_next, longest_day} \| null` |
 | `/insights/load` | `generated_at`, `date`, `window: {from, from_label, to, to_label, weeks, warmup_days}`, `load: LoadSeries \| null`, `unavailable: string \| null`, `scenario: LoadScenario \| null` |
 | `/insights/rolling` | `generated_at`, `date`, `window: {from, from_label, to, to_label, days}`, `comparison: {from, from_label, to, to_label, days}`, `distance: {current, previous, difference}`, `duration: {current, previous, difference}`, `sessions: {current, previous, difference}`, `zones: {model, shares, distribution, unavailable}`, `distances: {key, label, sessions, distance, elevation, duration}[]`, `profile: {key, label, value, previous, movement}[]`, `weekday: {weekday, sessions, distance, duration, share}[]`, `daytime: {key, label, from_hour, to_hour, sessions, distance, duration}[]`, `months: {key, label, sessions, distance, duration, elevation}[]`, `years: {key, label, sessions, distance, duration, elevation}[]` |
-| `/insights/streaks` | `generated_at`, `date`, `days: {current, longest}`, `weeks: {current, longest}` |
+| `/insights/streaks` | `generated_at`, `date`, `days: {current, longest}`, `weeks: {current, longest}`, `months: {current, longest}` |
 
 | `/insights/heatmap` | `generated_at`, `date`, `runs`, `more_runs`, `cell_size: RenderedValue \| null`, `cells: {x, y, south, west, north, east, runs}[]`, `extent: {south, west, north, east} \| null`, `unavailable: string \| null` |
 | `/auth/status` | `connected`, `method`, `key_source`, `key_last4`, `last_sync_at`, `generated_at` |
@@ -475,19 +475,21 @@ no grade, no traffic light and nothing that tells the athlete what to do.
 
 `/insights/streaks` answers one question about the whole history: **how
 long is the streak**. It carries the current run of days, the run of weeks,
-and the longest one of each, with the days they cover.
+the run of months, and the longest one of each, with the days they cover.
 
 **The arithmetic is the reference implementation's, exactly.** The days are
 the distinct local days that carry a run; the walk goes from the newest day
 backwards; the current streak survives one quiet day (the last run may
 have been yesterday), and a streak that ended longer ago is not current.
 The week streak counts weeks with a run in them, and the weeks are the
-athlete's own: Monday through Sunday.
+athlete's own: Monday through Sunday. The month streak counts **months**
+with a run in them, and a month with no run in it breaks it — the same
+rule with a month's span, so the month itself may still come.
 
 | field | what it is |
 |---|---|
-| `days.current` · `weeks.current` | the streak that is still going: the count and the day it started |
-| `days.longest` · `weeks.longest` | the longest one in the history: the count and the days it covers |
+| `days.current` · `weeks.current` · `months.current` | the streak that is still going: the count and the day it started |
+| `days.longest` · `weeks.longest` · `months.longest` | the longest one in the history: the count and the days it covers |
 
 **A streak of zero days is no streak**: `current` is `null` when the last
 run was more than a day ago, and the whole answer is empty when there are
@@ -496,7 +498,10 @@ here.
 
 The start of a **week** streak is the newest run day in the streak's oldest
 week — the reference's own value — and the longest week's dates run from the
-oldest day of that walk to the newest.
+oldest day of that walk to the newest. A **month** streak follows the same
+rule with the month: the start is the newest run day in the streak's oldest
+month, and the answer names the **month** — `2026-03` and "March 2026" —
+because the month is the unit of a month streak, not the day inside it.
 
 The voice is the plan's: a streak is a count and a date. There is no "you
 are consistent" anywhere near it.
@@ -514,6 +519,36 @@ are consistent" anywhere near it.
 position answers with `cells: []`, `extent: null`, `cell_size: null`,
 `runs: 0` and the reason in `unavailable` — never an empty grid of cells
 that says "nowhere".
+
+### The week on Today
+
+`/insights/today` answers with the plan's session for the day, the plan's
+other sessions, the last run and **the week to date** — and, beside the
+week, **the same elapsed days of the previous calendar week**.
+
+The comparison is **like for like**. The week to date runs from the Monday
+of the athlete's calendar week to today; the comparison runs from the
+Monday of the week before to the same weekday a week back. The two windows
+are the same length, so the difference weighs the same number of days
+against the same number of days. A week to date weighed against a **whole**
+week would weigh a part against the whole, and the number would be about
+the calendar rather than about the running.
+
+| field | what it is |
+|---|---|
+| `week.distance` | the distance of the week to date, as the core renders it |
+| `week.sessions` | how many runs there were in it |
+| `week.days` | the seven days of the calendar week, each with the sessions recorded on it — recorded sessions, never an inferred rest day |
+| `week.previous` | the same elapsed days of the previous calendar week: the days it covers, the distance and the sessions |
+| `week.difference` | the week's distance against the previous one's, as the core renders the difference: the sign is the number's own, and nothing here says which way is the better way |
+
+**A week with no runs in it is zero kilometres** — the distance that was
+covered, which is a fact — and the difference against the same days last
+week says so. It is never a made-up number, and it is never the whole
+previous week.
+
+The voice is the plan's: a distance, a difference, and the days they
+cover. There is no verdict about any of it.
 
 ### The settings, the goal and the pause
 

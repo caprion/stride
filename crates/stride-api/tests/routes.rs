@@ -573,6 +573,46 @@ fn insights_today_answers_with_the_readout() {
 }
 
 #[test]
+fn insights_today_answers_the_week_against_the_same_days_last_week() {
+    let harness = common::Harness::empty("route-insights-week");
+    // The 12th of May is in the week to date; the 5th is the same weekday
+    // a week before.
+    harness.write_run(common::run("this-week", "2026-05-12", 5_000.0, 1_500.0));
+    harness.write_run(common::run("last-week", "2026-05-05", 8_000.0, 2_400.0));
+    // A run in the middle of the previous week is inside the comparison
+    // window too: the window is the same elapsed days, not the whole week.
+    harness.write_run(common::run("also-last-week", "2026-05-04", 1_000.0, 300.0));
+
+    let body = harness.ok_get("/insights/today");
+    assert_eq!(body["week"]["distance"]["raw"].as_f64(), Some(5_000.0));
+    // The comparison: the same days of the previous calendar week — the
+    // Monday and the Tuesday before.
+    assert_eq!(body["week"]["previous"]["from"], "2026-05-04");
+    assert_eq!(body["week"]["previous"]["to"], "2026-05-05");
+    assert_eq!(
+        body["week"]["previous"]["distance"]["raw"].as_f64(),
+        Some(9_000.0)
+    );
+    assert_eq!(body["week"]["previous"]["sessions"].as_u64(), Some(2));
+    // And the difference, in the core's own words: the sign is the
+    // number's own.
+    assert_eq!(body["week"]["difference"]["text"].as_str(), Some("−4 km"));
+    assert_eq!(body["week"]["difference"]["raw"].as_f64(), Some(-4_000.0));
+}
+
+#[test]
+fn insights_today_answers_a_week_with_no_runs() {
+    let harness = common::Harness::empty("route-insights-week-empty");
+    harness.write_run(common::run("last-week", "2026-05-05", 8_000.0, 2_400.0));
+
+    let body = harness.ok_get("/insights/today");
+    // Nothing was run this week: the distance is zero, and the
+    // difference says so against the same days last week.
+    assert_eq!(body["week"]["distance"]["text"].as_str(), Some("0 km"));
+    assert_eq!(body["week"]["difference"]["text"].as_str(), Some("−8 km"));
+}
+
+#[test]
 fn vital_history_uses_calendar_days_and_keeps_missing_dates() {
     let harness = common::Harness::seeded("calendar-vital-history");
     let snapshot = harness.ok_get("/physiology/vitals?date=2026-05-11&days=7");

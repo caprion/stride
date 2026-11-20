@@ -9060,6 +9060,22 @@
         }
       },
       "generated_at": "2026-05-13T06:30:00Z",
+      "months": {
+        "current": {
+          "count": 1,
+          "end": null,
+          "end_label": null,
+          "start": "2026-05",
+          "start_label": "May 2026"
+        },
+        "longest": {
+          "count": 1,
+          "end": "2026-05",
+          "end_label": "May 2026",
+          "start": "2026-05",
+          "start_label": "May 2026"
+        }
+      },
       "weeks": {
         "current": {
           "count": 2,
@@ -9270,9 +9286,22 @@
             "sessions": 0
           }
         ],
+        "difference": {
+          "raw": -21100,
+          "text": "−21.1 km"
+        },
         "distance": {
           "raw": 0,
           "text": "0 km"
+        },
+        "previous": {
+          "distance": {
+            "raw": 21100,
+            "text": "21.1 km"
+          },
+          "from": "2026-05-04",
+          "sessions": 2,
+          "to": "2026-05-06"
         },
         "sessions": 0
       }
@@ -19319,6 +19348,22 @@
         }
       },
       "generated_at": "2026-05-13T06:30:00Z",
+      "months": {
+        "current": {
+          "count": 1,
+          "end": null,
+          "end_label": null,
+          "start": "2026-05",
+          "start_label": "May 2026"
+        },
+        "longest": {
+          "count": 1,
+          "end": "2026-05",
+          "end_label": "May 2026",
+          "start": "2026-05",
+          "start_label": "May 2026"
+        }
+      },
       "weeks": {
         "current": {
           "count": 2,
@@ -19441,9 +19486,22 @@
             "sessions": 0
           }
         ],
+        "difference": {
+          "raw": -21100,
+          "text": "−21.1 km"
+        },
         "distance": {
           "raw": 0,
           "text": "0 km"
+        },
+        "previous": {
+          "distance": {
+            "raw": 21100,
+            "text": "21.1 km"
+          },
+          "from": "2026-05-04",
+          "sessions": 2,
+          "to": "2026-05-06"
         },
         "sessions": 0
       }

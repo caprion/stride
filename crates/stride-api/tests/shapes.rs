@@ -530,8 +530,13 @@ fn the_insight_routes_carry_their_shapes() {
     );
     assert_keys(
         &today["week"],
-        &["days", "distance", "sessions"],
+        &["days", "difference", "distance", "previous", "sessions"],
         "/insights/today: week",
+    );
+    assert_keys(
+        &today["week"]["previous"],
+        &["distance", "from", "sessions", "to"],
+        "/insights/today: week: previous",
     );
 
     let progress = harness.ok_get("/insights/progress");
@@ -582,6 +587,19 @@ fn the_insight_routes_carry_their_shapes() {
             "weeks",
         ],
         "/insights/load: window",
+    );
+
+    // The streaks carry the days, the weeks and the months.
+    let streaks = harness.ok_get("/insights/streaks");
+    assert_keys(
+        &streaks,
+        &["date", "days", "generated_at", "months", "weeks"],
+        "/insights/streaks",
+    );
+    assert_keys(
+        &streaks["months"],
+        &["current", "longest"],
+        "/insights/streaks: months",
     );
     // The seeded store holds no zone model, so the load has no value and
     // the answer says why.

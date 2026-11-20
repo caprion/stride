@@ -594,6 +594,50 @@ readings live beside it.
 This travels with the schema change (the `wellness_observations` table) in
 `docs/contract/schema.sql`.
 
+### Proposed amendment — the cockpit Today (2026-11-21)
+
+**Proposal, not approved.** The approvals below are the user's to give.
+This section records the change and the rule it serves; it is not permission
+to ship, publish, migrate or sync production data.
+
+Today was a wall of cards: the week, the last run, the streak, the plan,
+and the readings, each in its own box. The **cockpit** replaces it with
+three bands — **the hero**, **where you stand** and **what's on the table**
+— and the rule it serves is the one the screen system already runs on: *the
+phone is not a smaller desktop*. One hero, a few rows, and everything else
+one tap away.
+
+* **The hero is the latest run** — its name, its distance, its time, its
+  pace, its heart rate and its elevation, the **zone ribbon** drawn from
+  the athlete's own zones, the route the way the run detail draws it (the
+  GPS outline, and the Street map behind the app's own disclosure), and a
+  way into the run. The ribbon is a drawing of the **totals** the zones
+  route already answers (`/fitness/zones`): the per-sample series over
+  time belongs to the run film, and it is not built twice.
+* **Where you stand is three rows, not three cards**: *this week* (the
+  distance, and the difference against the **same elapsed days** of the
+  previous calendar week), *form* (the load's own state, with the ratio and
+  the band), and *the habit* (the streak, the months and the Eddington
+  number). Each row is a question with the answer in it, and each answer
+  names the period it describes.
+* **What's on the table** is the plan's own sessions — unranked, and never
+  linked to a vital — and the night's readings, in the words the app
+  already uses for them.
+* **The comparison is like for like.** The week to date is weighed against
+  the same days of the week before, not against a whole week: the two
+  windows are the same length, and a part weighed against the whole is a
+  fact about the calendar, not about the running.
+* **The months are a streak, and the streak is the core's.** A run of
+  calendar months with a run in each is the same rule the day and week
+  streaks already follow, and it lives in the core beside them.
+* **Nothing on the screen becomes a verdict, a score or a command.** A
+  difference is a difference, a form is a form, a band is a range, and a
+  streak is a count and a date. The phone has no hero map — the map is the
+  wide widths' business — and the scroll is the gesture.
+
+This travels with the two answers' field tables in
+`docs/contract/api-paths.md`.
+
 ---
 
 ## 0. The voice — vitals, direction, options; no verdicts
