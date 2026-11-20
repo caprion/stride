@@ -23,7 +23,7 @@ import { t } from '../i18n'
 import type { YearDay } from '../lib/types'
 
 /** The day with no mix: no run, or a run whose file carries no heart rate. */
-const NO_MIX = '#E9EFF4'
+const NO_MIX = 'var(--surface-sunken)'
 
 /**
  * The steps of the colouring, from the quietest day to the hardest.
@@ -32,7 +32,12 @@ const NO_MIX = '#E9EFF4'
  * high zones, banded the way the mock bands it — under 15 %, 15–35 %,
  * 35–60 % and 60 % and over.
  */
-const STEPS = ['#D6E6F3', '#7BA8CD', '#FBDB93', '#F2B01E']
+const STEPS = [
+  'var(--chart-band)',
+  'var(--brand-300)',
+  'var(--accent-200)',
+  'var(--accent-400)',
+]
 
 /** The size of a day in the drawing's own units. */
 const CELL = 0.86
