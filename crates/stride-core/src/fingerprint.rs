@@ -105,6 +105,20 @@ const PARTIAL_LAP_SHARE: f64 = 0.15;
 /// rule, kept.
 const MIN_LAPS_FOR_VARIATION: usize = 3;
 
+/// The shortest lap the fingerprint measures, in metres.
+///
+/// A lap shorter than this is a **fragment**: the watch recorded it, but
+/// its pace is mostly noise — the timer's resolution and the GPS's own
+/// jitter are a large part of it — and a fragment inside a run wrecks
+/// every observation computed across laps. A hundred-metre lap timed at a
+/// quarter of a second per kilometre is not a sprint; it is a fragment.
+///
+/// Three hundred metres is where a lap's pace starts to mean what it
+/// says. The laps the fingerprint measures are the ones at least this
+/// long, and when a run has none of them the fragments are used as they
+/// are: measuring nothing would be worse than measuring a short run.
+const MIN_LAP_DISTANCE_M: f64 = 300.0;
+
 /// One lap of the run, as the fingerprint reads it.
 #[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
 pub struct LapReading {
@@ -300,7 +314,9 @@ pub struct Fingerprint {
 ///
 /// Every observation is either a value or the reason it has none.
 pub fn fingerprint(input: &FingerprintInput) -> Fingerprint {
-    let laps = running_only(&input.laps);
+    // The laps the observations are computed over: the ones that were run
+    // rather than walked, and the ones long enough to measure.
+    let laps = measurable(&running_only(&input.laps));
     let third = laps.len() / 3;
     let (first, last) = if third == 0 {
         (&laps[..0], &laps[..0])
@@ -478,6 +494,30 @@ pub fn running_only(laps: &[LapReading]) -> Vec<LapReading> {
         laps.to_vec()
     } else {
         running
+    }
+}
+
+/// The laps the fingerprint measures: the ones long enough to mean
+/// something.
+///
+/// A fragment — a lap under [`MIN_LAP_DISTANCE_M`] — carries a pace that is
+/// mostly noise, and one of them inside the run is enough to turn a drift
+/// of a few seconds per kilometre into a figure nobody ran. So they are
+/// left out, and when a run is nothing but fragments the fragments are
+/// used: a short run still has something to say.
+pub fn measurable(laps: &[LapReading]) -> Vec<LapReading> {
+    if laps.is_empty() {
+        return Vec::new();
+    }
+    let measured: Vec<LapReading> = laps
+        .iter()
+        .copied()
+        .filter(|lap| lap.distance_m >= MIN_LAP_DISTANCE_M)
+        .collect();
+    if measured.is_empty() {
+        laps.to_vec()
+    } else {
+        measured
     }
 }
 

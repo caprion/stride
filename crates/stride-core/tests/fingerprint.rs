@@ -203,6 +203,75 @@ fn when_everything_looks_like_walking_the_laps_are_kept() {
 }
 
 #[test]
+fn a_fragment_is_not_measured() {
+    // A fragment inside the run: a hundred metres, timed at a pace that is
+    // mostly noise. Left in, it drags the drift and the variation into
+    // figures nobody ran.
+    let mut laps = six_laps();
+    laps.insert(
+        3,
+        LapReading {
+            duration_s: 9.0,
+            distance_m: 100.0,
+            avg_hr_bpm: Some(171.0),
+            avg_cadence_spm: Some(178.0),
+            avg_speed_ms: Some(11.1),
+            stride_length_m: None,
+        },
+    );
+
+    let answer = fingerprint(&input(laps));
+
+    assert_eq!(answer.laps, 6, "the fragment was not measured");
+    // And the drift is the drift of the six real laps.
+    let drift = value(&answer, "pace_drift").expect("the pace drift");
+    assert!(
+        drift.abs() < 60.0,
+        "the pace drift is a figure a run can have, and it was {drift}"
+    );
+}
+
+#[test]
+fn a_run_of_fragments_is_still_measured() {
+    // Three hundred metres each is on the line; shorter is a fragment. When
+    // every lap is one, the fragments are used: a short run still says
+    // something.
+    let laps = vec![
+        LapReading {
+            duration_s: 80.0,
+            distance_m: 200.0,
+            avg_hr_bpm: Some(150.0),
+            avg_cadence_spm: Some(170.0),
+            avg_speed_ms: Some(2.5),
+            stride_length_m: None,
+        },
+        LapReading {
+            duration_s: 80.0,
+            distance_m: 200.0,
+            avg_hr_bpm: Some(152.0),
+            avg_cadence_spm: Some(171.0),
+            avg_speed_ms: Some(2.5),
+            stride_length_m: None,
+        },
+        LapReading {
+            duration_s: 80.0,
+            distance_m: 200.0,
+            avg_hr_bpm: Some(154.0),
+            avg_cadence_spm: Some(172.0),
+            avg_speed_ms: Some(2.5),
+            stride_length_m: None,
+        },
+    ];
+
+    let answer = fingerprint(&input(laps));
+
+    assert_eq!(
+        answer.laps, 3,
+        "the fragments were used, as there was nothing else"
+    );
+}
+
+#[test]
 fn the_fingerprint_uses_the_running_laps_only() {
     let mut laps = six_laps();
     // A walking lap at the end of the run, which the half split would

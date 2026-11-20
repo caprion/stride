@@ -417,7 +417,9 @@ pub struct Fingerprint {
     /// The basis the numbers were computed on: the run's own laps and its
     /// moving samples. `None` when there is nothing to compute them from.
     pub basis: Option<String>,
-    /// How many laps the analysis used: the running ones.
+    /// How many laps the analysis used: the running ones, and the ones long
+    /// enough to measure. A fragment — a lap too short for its pace to mean
+    /// anything — is left out, and is not counted.
     pub laps: usize,
     /// The observations, in the order the app shows them. Empty when the
     /// run has no file to read.
