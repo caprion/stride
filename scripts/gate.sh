@@ -54,6 +54,13 @@ step "history scan"
 # added and later removed is exactly what the tree scanners cannot see.
 bash scripts/scan-history.sh
 
+step "design tokens (one source: the phone's chrome and the raw-colour scan)"
+# The token file is the source: the CSS the app is painted with and the
+# phone's own chrome are generated from it, and this check holds both to
+# it — the same way the app's fixtures are held to the router's answers.
+# It also names any component that has reached for a raw colour.
+npm --prefix frontend run tokens:check
+
 step "the app: voice, types, tests and the viewport matrix"
 # The app's own gates: the voice lint, the type check, the unit tests and the
 # six-width viewport matrix. The voice is the product's central design
