@@ -640,32 +640,31 @@ fn the_film_carries_the_shape_the_app_declares() {
     let declarations = declarations();
     let harness = common::Harness::seeded("frontend-film");
 
-/// The run's update carries the shape the app declares.
-#[test]
-fn the_update_carries_the_shape_the_app_declares() {
-    let declarations = declarations();
-    let harness = common::Harness::seeded("frontend-update");
-    let id = harness.write_run(common::run_with_fit(
-        "a-run-with-a-file",
-        "2026-05-10",
-        "hr_gps_run.fit",
-    ));
-    let body = harness.ok_get(&format!("/activities/{id}/film"));
-    assert_declared(&declarations, "RunFilm", &body);
-    if let Some(sample) = first_at(&body, &["samples"]) {
-        assert_declared(&declarations, "FilmSample", sample);
+    /// The run's update carries the shape the app declares.
+    #[test]
+    fn the_update_carries_the_shape_the_app_declares() {
+        let declarations = declarations();
+        let harness = common::Harness::seeded("frontend-update");
+        let id = harness.write_run(common::run_with_fit(
+            "a-run-with-a-file",
+            "2026-05-10",
+            "hr_gps_run.fit",
+        ));
+        let body = harness.ok_get(&format!("/activities/{id}/film"));
+        assert_declared(&declarations, "RunFilm", &body);
+        if let Some(sample) = first_at(&body, &["samples"]) {
+            assert_declared(&declarations, "FilmSample", sample);
+        }
+        if let Some(point) = first_at(&body, &["ground"]) {
+            assert_declared(&declarations, "FilmGround", point);
+        }
+        if let Some(split) = first_at(&body, &["splits"]) {
+            assert_declared(&declarations, "FilmSplit", split);
+        }
+        if let Some(zone) = first_at(&body, &["zones"]) {
+            assert_declared(&declarations, "FilmZone", zone);
+        }
     }
-    if let Some(point) = first_at(&body, &["ground"]) {
-        assert_declared(&declarations, "FilmGround", point);
-    }
-    if let Some(split) = first_at(&body, &["splits"]) {
-        assert_declared(&declarations, "FilmSplit", split);
-    }
-    if let Some(zone) = first_at(&body, &["zones"]) {
-        assert_declared(&declarations, "FilmZone", zone);
-    }
-}
-
 
     // The stored update: a run without one answers with a null.
     let body = harness.ok_get(&format!("/activities/{id}/update"));

@@ -134,12 +134,12 @@ pub use units::{
     render_length_cm, render_pace, render_percent, render_share, render_version, render_zone_label,
     ValueUnit,
 };
-pub use year::{
-    days_of, months_of, totals_of, weeks_of, what_changed, year_window, DayFacts, MonthFacts,
-    WeekFacts, YearRun, YearTotals, YEAR_MONTHS,
-};
 pub use update::{
     check_draft, payload, Check, Fact, Finding, ObservationFact, ObservationInput, Payload,
     Quantity, Report, SplitFact, SplitInput, UpdateInput, ZoneFact, ZoneInput, VERDICTS,
+};
+pub use year::{
+    days_of, months_of, totals_of, weeks_of, what_changed, year_window, DayFacts, MonthFacts,
+    WeekFacts, YearRun, YearTotals, YEAR_MONTHS,
 };
 pub use zones::{model_source, time_in_zone, zone_edges, TimeInZone, ZoneFloors, ZoneSample};
