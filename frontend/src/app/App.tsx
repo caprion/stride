@@ -70,6 +70,7 @@ function AppRoutes() {
       */}
       <Route path="/progress/:panel" element={<ProgressPanelPage />} />
 
+      {/*
         The pace page is reached from Progress, the way the heatmap is
         reached from Runs: it is not a destination of its own, and the
         athlete asks for it.
