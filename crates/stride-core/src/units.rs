@@ -176,6 +176,36 @@ pub fn format_pace(seconds_per_km: f64) -> String {
     format!("{minutes}:{seconds:02}")
 }
 
+/// The rendered value of a range of distances: "0-5 km".
+///
+/// The range is a range of the contract's own unit, and the decimals are
+/// the ones a distance is written with.
+pub fn render_distance_range(from_m: Option<f64>, to_m: Option<f64>) -> Option<String> {
+    let from = from_m?;
+    let to = to_m?;
+    if !from.is_finite() || !to.is_finite() {
+        return None;
+    }
+    let from = format_distance_km_short(from);
+    let to = format_distance_km_short(to);
+    strings::render("value.distance_range", &[("from", &from), ("to", &to)])
+}
+
+/// The rendered value of a share of a whole: "72.53%".
+///
+/// A share is a percentage of something the athlete did — the time in the
+/// zones, the moving time of a weekday. The precision is two decimals,
+/// the precision the comparison is made at, so that two windows a
+/// hundredth apart do not read as a move.
+pub fn render_share(percent: Option<f64>) -> Option<String> {
+    let percent = percent?;
+    if !percent.is_finite() {
+        return None;
+    }
+    let value = format_decimal(percent, 2);
+    strings::render("value.share", &[("value", &value)])
+}
+
 /// The rendered value of a distance: "8.4 km".
 ///
 /// The rounding: one decimal, with the decimals a person leaves out dropped —
@@ -242,6 +272,59 @@ pub fn render_elevation(metres: Option<f64>) -> Option<String> {
     }
     let value = format_whole(metres);
     strings::render("value.elevation", &[("value", &value)])
+}
+
+/// The rendered value of a cadence: "172 spm".
+///
+/// The rounding: one decimal, half to even — the contract's rule for a
+/// cadence. A cadence of no value renders nothing at all.
+pub fn render_cadence(steps_per_minute: Option<f64>) -> Option<String> {
+    let steps_per_minute = steps_per_minute?;
+    if !steps_per_minute.is_finite() {
+        return None;
+    }
+    let value = format!("{:.1}", round_cadence(steps_per_minute));
+    strings::render("value.cadence", &[("value", &value)])
+}
+
+/// The rendered value of a percentage: "2.1 %".
+///
+/// The rounding: one decimal, half to even. A percentage of no value
+/// renders nothing at all — never a zero.
+pub fn render_percent(percentage: Option<f64>) -> Option<String> {
+    let percentage = percentage?;
+    if !percentage.is_finite() {
+        return None;
+    }
+    let value = format!("{:.1}", round_half_even(percentage, 1));
+    strings::render("value.percent", &[("value", &value)])
+}
+
+/// The rendered value of a length, in centimetres: "112 cm".
+///
+/// The rounding: whole centimetres, half to even. A length of no value
+/// renders nothing at all.
+pub fn render_length_cm(centimetres: Option<f64>) -> Option<String> {
+    let centimetres = centimetres?;
+    if !centimetres.is_finite() {
+        return None;
+    }
+    let value = format_whole(centimetres);
+    strings::render("value.length", &[("value", &value)])
+}
+
+/// The rendered value of the efficiency factor: "3.64 m/s per unit of max
+/// heart rate".
+///
+/// The unit is written out, because the number alone would say nothing
+/// about what was measured. The rounding: two decimals, half to even.
+pub fn render_efficiency(efficiency: Option<f64>) -> Option<String> {
+    let efficiency = efficiency?;
+    if !efficiency.is_finite() {
+        return None;
+    }
+    let value = format!("{:.2}", round_half_even(efficiency, 2));
+    strings::render("value.efficiency", &[("value", &value)])
 }
 
 /// The rendered heart-rate band: "154-166 bpm".
@@ -319,6 +402,8 @@ pub enum ValueUnit {
     Pace,
     /// A heart rate, in beats per minute.
     HeartRate,
+    /// A percentage of something.
+    Percent,
     /// A count, with no unit.
     Count,
 }
@@ -354,6 +439,7 @@ pub fn render_difference(difference: Option<f64>, unit: ValueUnit) -> Option<Str
             strings::render("value.pace_difference", &[("value", &seconds)])?
         }
         ValueUnit::HeartRate => render_heart_rate(Some(magnitude))?,
+        ValueUnit::Percent => render_percent(Some(magnitude))?,
         ValueUnit::Count => format_whole(magnitude),
     };
     strings::render("value.difference", &[("sign", sign), ("value", &value)])

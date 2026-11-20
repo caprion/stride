@@ -1,0 +1,380 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Stride — plan builder mock</title>
+<style>
+  /* Stride's own palette, copied from frontend/tailwind.config.js */
+  :root {
+    --brand-50:#EEF5FB; --brand-100:#D6E6F3; --brand-500:#1E5E96; --brand-600:#124A7C; --brand-700:#0D3A63;
+    --accent-50:#FEF8EA; --accent-100:#FDEDC7; --accent-400:#F2B01E;
+    --ink:#112B40; --ink-soft:#31465A; --ink-muted:#4E6577; --ink-faint:#586F82;
+    --surface:#FFFFFF; --surface-soft:#F1F5F8; --surface-sunken:#E9EFF4; --edge:#CEDAE4;
+    --radius:9px;
+    --font: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin:0; padding:0; background:transparent; }
+  body { font-family: var(--font); color: var(--ink); }
+
+  .phones { display:flex; gap:18px; flex-wrap:wrap; align-items:flex-start; }
+  .phonewrap { display:flex; flex-direction:column; gap:8px; align-items:center; }
+  .caption { font-size:11.5px; color:#6b7a86; letter-spacing:.02em; max-width:300px; text-align:center; line-height:1.35; }
+
+  .phone {
+    width:300px; height:616px; border-radius:26px; border:1px solid #cfd8e0; background:var(--surface);
+    box-shadow:0 8px 26px rgba(17,43,64,.14); overflow:hidden; display:flex; flex-direction:column;
+    position:relative; font-size:13px;
+  }
+  .status { height:22px; display:flex; align-items:center; justify-content:space-between; padding:0 14px;
+    font-size:10px; color:var(--ink-faint); background:var(--surface); }
+  .bar { display:flex; align-items:center; justify-content:space-between; padding:8px 12px 6px; }
+  .bar h1 { font-size:17px; font-weight:650; color:var(--brand-700); margin:0; letter-spacing:-.01em; }
+  .bar .meta { font-size:10.5px; color:var(--ink-muted); margin-top:1px; }
+  .body { flex:1; overflow-y:auto; padding:0 12px 12px; }
+  .body::-webkit-scrollbar { width:0; }
+
+  .card { border:1px solid var(--edge); border-radius:var(--radius); background:var(--surface);
+    box-shadow:0 1px 2px rgba(11,27,39,.04),0 1px 3px rgba(11,27,39,.06); padding:10px 12px; margin-bottom:9px; }
+  .card.tight { padding:8px 10px; }
+  .h { font-size:10px; font-weight:650; letter-spacing:.07em; text-transform:uppercase; color:var(--ink-faint); margin:0 0 5px; }
+  .muted { color:var(--ink-muted); }
+  .faint { color:var(--ink-faint); }
+  .small { font-size:11.5px; line-height:1.4; }
+
+  .banner { background:var(--brand-50); border:1px solid var(--brand-100); color:var(--brand-700); }
+  .banner p { margin:2px 0 0; font-size:11px; color:var(--ink-muted); }
+
+  .strip { display:grid; grid-template-columns:repeat(7,1fr); gap:3px; }
+  .day { display:flex; flex-direction:column; align-items:center; gap:4px; padding:5px 0; border-radius:6px; }
+  .day.today { background:var(--brand-50); }
+  .day .l { font-size:10.5px; font-weight:600; color:var(--ink-soft); }
+  .dot { width:8px; height:8px; border-radius:99px; background:var(--surface-sunken); }
+  .dot.done { background:var(--brand-500); }
+  .dot.planned { background:var(--accent-400); }
+  .dot.not_done { background:var(--ink-faint); }
+  .day .t { font-size:9.5px; color:var(--ink-faint); }
+
+  .sess { font-size:15px; font-weight:650; color:var(--ink); margin:2px 0 0; }
+  .meta-line { font-size:11.5px; color:var(--ink-muted); margin-top:2px; }
+  .counts { display:flex; gap:12px; font-size:14px; font-weight:650; color:var(--ink); }
+  .counts span.muted { font-weight:500; }
+
+  .rowbtn { display:block; width:100%; text-align:center; border:1px solid var(--edge); background:var(--surface-soft);
+    color:var(--ink-soft); font-weight:650; font-size:12.5px; border-radius:7px; padding:8px; }
+  .rowbtn.primary { background:var(--brand-600); border-color:var(--brand-600); color:#fff; }
+  .rowbtn.ghost { background:transparent; }
+  .link { color:var(--brand-700); text-decoration:underline; font-size:12px; font-weight:500; }
+
+  .tabbar { display:flex; border-top:1px solid var(--edge); background:var(--surface); padding:6px 0 8px; }
+  .tabbar div { flex:1; text-align:center; font-size:9.5px; color:var(--ink-muted); }
+  .tabbar div.on { color:var(--brand-600); font-weight:650; }
+
+  /* ------- the builder sheet ------- */
+  .sheet { position:absolute; inset:0; background:var(--surface); display:flex; flex-direction:column; }
+  .sheet .shead { padding:10px 14px 8px; border-bottom:1px solid var(--edge); display:flex; align-items:center; gap:8px; }
+  .sheet .shead b { font-size:15px; color:var(--brand-700); }
+  .sheet .sbody { flex:1; overflow-y:auto; padding:12px 14px; }
+  .sheet .sfoot { padding:10px 14px 14px; border-top:1px solid var(--edge); background:var(--surface); }
+  .steps { display:flex; gap:5px; padding:8px 14px 0; }
+  .steps i { height:3px; flex:1; border-radius:99px; background:var(--surface-sunken); }
+  .steps i.on { background:var(--brand-500); }
+
+  .chips { display:flex; flex-wrap:wrap; gap:6px; }
+  .chip { border:1px solid var(--edge); background:var(--surface); border-radius:99px; padding:5px 11px;
+    font-size:12px; font-weight:550; color:var(--ink-soft); cursor:pointer; }
+  .chip.on { border-color:var(--brand-600); background:var(--brand-50); color:var(--brand-700); font-weight:650; }
+  .chip .note { display:block; font-size:9.5px; font-weight:500; color:var(--ink-faint); }
+  .field { margin-bottom:14px; }
+  .field > label { display:block; font-size:11px; font-weight:650; letter-spacing:.05em; text-transform:uppercase;
+    color:var(--ink-faint); margin-bottom:6px; }
+  .inp { border:1px solid var(--edge); border-radius:7px; padding:8px 10px; font-size:13px; color:var(--ink); background:var(--surface-raised,#FAFCFD); }
+  .inp .ph { color:var(--ink-faint); }
+  .toggle { display:flex; align-items:center; justify-content:space-between; border:1px solid var(--edge);
+    border-radius:7px; padding:9px 10px; font-size:12.5px; }
+  .sw { width:34px; height:19px; border-radius:99px; background:var(--brand-500); position:relative; }
+  .sw::after { content:''; position:absolute; top:2px; right:2px; width:15px; height:15px; background:#fff; border-radius:99px; }
+  .sw.off { background:var(--surface-sunken); }
+  .sw.off::after { right:auto; left:2px; }
+
+  table.wk { width:100%; border-collapse:collapse; font-size:11px; }
+  table.wk th { text-align:left; font-size:9.5px; letter-spacing:.05em; text-transform:uppercase; color:var(--ink-faint);
+    font-weight:650; padding:3px 4px; border-bottom:1px solid var(--edge); }
+  table.wk td { padding:4px; border-bottom:1px solid #eef3f7; color:var(--ink-soft); vertical-align:top; }
+  table.wk td.w { color:var(--ink); font-weight:650; white-space:nowrap; }
+  .ph { display:inline-block; font-size:9.5px; font-weight:650; padding:1px 6px; border-radius:99px; }
+  .ph.base { background:var(--surface-soft); color:var(--ink-muted); }
+  .ph.build { background:var(--brand-50); color:var(--brand-700); }
+  .ph.peak { background:var(--accent-50); color:var(--accent-400); }
+  .ph.taper { background:var(--accent-100); color:#8A5E05; }
+  .ph.race { background:var(--brand-600); color:#fff; }
+
+  .opts { list-style:none; margin:4px 0 0; padding:0; }
+  .opts li { font-size:12.5px; color:var(--ink-soft); padding:2px 0; }
+</style>
+</head>
+<body>
+
+<div class="phones">
+
+  <!-- 1 ── the Plan screen, with a built plan in force -->
+  <div class="phonewrap">
+    <div class="phone">
+      <div class="status"><span>9:41</span><span>Stride</span></div>
+      <div class="bar">
+        <div>
+          <h1>Plan</h1>
+          <div class="meta">Week of 17 Feb 2026</div>
+        </div>
+        <div class="meta faint">3 of 4 done</div>
+      </div>
+      <div class="body">
+
+        <div class="card banner">
+          <div style="font-size:12.5px;font-weight:650;">Built · half marathon · 16 weeks · 4 runs a week</div>
+          <p>Week 6 of 16 · build · from the v1 half-marathon template · goal 21.1 km on 12 Apr 2026</p>
+        </div>
+
+        <div class="card tight">
+          <div class="strip">
+            <div class="day"><span class="l">M</span><span class="dot done"></span><span class="t">8 km</span></div>
+            <div class="day"><span class="l">T</span><span class="dot done"></span><span class="t">quality</span></div>
+            <div class="day"><span class="l">W</span><span class="dot planned"></span><span class="t">10 km</span></div>
+            <div class="day"><span class="l">T</span><span class="dot done"></span><span class="t">8 km</span></div>
+            <div class="day"><span class="l">F</span><span class="dot planned"></span><span class="t">Rest</span></div>
+            <div class="day"><span class="l">S</span><span class="dot planned"></span><span class="t">6 km</span></div>
+            <div class="day today"><span class="l">S</span><span class="dot planned"></span><span class="t">16 km</span></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="h">Today · Sun 22 Feb</div>
+          <p class="sess">16 km · long</p>
+          <div class="meta-line">planned · from your built plan</div>
+        </div>
+
+        <div class="card">
+          <div class="h">Adherence</div>
+          <div class="counts"><span>3 done</span><span class="muted">4 planned</span><span class="muted">0 not done</span></div>
+          <div class="meta-line" style="margin-top:4px;">3 of 4 sessions run</div>
+        </div>
+
+        <div class="card">
+          <div class="h">Sources</div>
+          <div class="small muted" style="margin-bottom:8px;">One plan in force per source. The source is always named.</div>
+          <div style="display:flex;flex-direction:column;gap:6px;">
+            <div class="toggle"><span><b>Built</b><br /><span class="small faint">half marathon · 16 weeks · 4 runs a week</span></span><span class="small faint">in force</span></div>
+            <div class="toggle"><span><b>Imported</b><br /><span class="small faint">from a plan file · 12 sessions</span></span><span class="small faint">archived</span></div>
+            <div class="toggle"><span><b>Baseline</b><br /><span class="small faint">your usual week, inferred from 8 weeks</span></span><span class="small faint">archived</span></div>
+          </div>
+          <div style="display:flex;gap:8px;margin-top:10px;">
+            <span class="rowbtn" style="flex:1;">Build a plan</span>
+            <span class="rowbtn ghost" style="flex:1;">Import a plan</span>
+          </div>
+        </div>
+
+      </div>
+      <div class="tabbar">
+        <div>Today</div><div>Runs</div><div>Progress</div><div>Body</div><div>⚙</div>
+      </div>
+    </div>
+    <div class="caption">1 · The Plan screen, unchanged in shape — a fourth source (“built”) joins baseline, imported and typed.</div>
+  </div>
+
+  <!-- 2 ── the builder sheet -->
+  <div class="phonewrap">
+    <div class="phone">
+      <div class="sheet">
+        <div class="shead"><b id="sTitle">Build a plan</b><span class="small faint" id="sStep">step 1 of 3</span></div>
+        <div class="steps"><i class="on" id="st1"></i><i id="st2"></i><i id="st3"></i></div>
+        <div class="sbody" id="sBody"></div>
+        <div class="sfoot">
+          <div style="display:flex;gap:8px;">
+            <span class="rowbtn ghost" id="back" style="flex:0 0 34%;">Back</span>
+            <span class="rowbtn primary" id="next" style="flex:1;">Next</span>
+          </div>
+          <div class="small faint" style="margin-top:7px;text-align:center;">The plan is a record of an intent. It is never adjusted on its own.</div>
+        </div>
+      </div>
+    </div>
+    <div class="caption">2 · The builder lives inside the Plan screen, not as a new destination. Three steps, then a preview that must be read before it is saved.</div>
+  </div>
+
+  <!-- 3 ── Today, with the built plan's session as an option -->
+  <div class="phonewrap">
+    <div class="phone">
+      <div class="status"><span>9:41</span><span>Stride</span></div>
+      <div class="bar">
+        <div>
+          <h1>Today</h1>
+          <div class="meta">Sunday, 22 February 2026</div>
+        </div>
+      </div>
+      <div class="body">
+        <div class="card">
+          <div class="h">This week</div>
+          <div style="font-size:17px;font-weight:650;color:var(--ink);">42.4 km recorded</div>
+          <div class="meta-line">3 runs · 4 sessions planned</div>
+        </div>
+
+        <div class="card">
+          <div style="display:flex;justify-content:space-between;align-items:center;">
+            <h2 class="h" style="margin:0;">Plan</h2><span class="link">Open plan</span>
+          </div>
+          <p class="sess" style="margin-top:6px;">16 km · long</p>
+          <div class="meta-line">from your built plan</div>
+        </div>
+
+        <div class="card">
+          <h3 class="h">Also in your plan</h3>
+          <ul class="opts">
+            <li>Wed 10 km · easy</li>
+            <li>Sat 6 km · recovery</li>
+            <li>Quality · 3 × 8 min</li>
+          </ul>
+          <div class="small faint" style="margin-top:6px;">Listed unranked. Not conditioned on anything else on this screen.</div>
+        </div>
+
+        <div class="card">
+          <div class="h">Last run</div>
+          <div style="font-size:14px;font-weight:650;">Morning run</div>
+          <div class="meta-line">8.2 km · 42:10 · 5:08 /km</div>
+          <div class="small faint" style="margin-top:4px;">2.4 km more than the 8 km target</div>
+        </div>
+      </div>
+      <div class="tabbar">
+        <div class="on">Today</div><div>Runs</div><div>Progress</div><div>Body</div><div>⚙</div>
+      </div>
+    </div>
+    <div class="caption">3 · Today is untouched: the built plan’s session is an option, the other sessions are listed unranked, and the distance comparison stays neutral.</div>
+  </div>
+
+</div>
+
+<script>
+  // ---- a tiny illustrative generator (NOT the real one) -------------------
+  const RACES = {
+    '5k':      { name:'5 km',       m:5000  },
+    '10k':     { name:'10 km',      m:10000 },
+    'half':    { name:'half marathon', m:21097 },
+    'marathon':{ name:'marathon',   m:42195 },
+  };
+  const LEVELS = {
+    3: { days:'3 runs a week', long:[10,14], pct:[.28,.42] },
+    4: { days:'4 runs a week', long:[12,17], pct:[.30,.46] },
+    5: { days:'5 runs a week', long:[14,20], pct:[.32,.50] },
+  };
+  const DAYLONG = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
+  const state = { step:0, race:'half', weeks:16, level:4, longDay:6, strength:true };
+
+  function phases(n){
+    const out=[];
+    for(let w=1; w<=n; w++){
+      let p = 'base';
+      if (w===n) p='race';
+      else if (w> n-3) p='taper';
+      else if (w> n-7) p='peak';
+      else if (w> 4) p='build';
+      out.push(p);
+    }
+    return out;
+  }
+  function planWeeks(){
+    const L = LEVELS[state.level], ph = phases(state.weeks), rows=[];
+    for(let w=1; w<=state.weeks; w++){
+      const t = (w-1)/(state.weeks-1);
+      const long = Math.round(L.long[0] + (L.long[1]-L.long[0])*t);
+      const easy = Math.round(long*0.55), rec = Math.round(long*0.4);
+      const sess=[];
+      sess.push('Mon '+easy+' km easy');
+      if (w>=5 && w<state.weeks-2) sess.push('Tue quality · 3 × 8 min');
+      sess.push('Thu '+rec+' km recovery');
+      sess.push('Sun '+long+' km long');
+      if (state.strength) sess.push('Wed strength · 25 min');
+      rows.push({w, ph:ph[w-1], sess});
+    }
+    return rows;
+  }
+  function km(n){ return n+' km'; }
+
+  const body = document.getElementById('sBody'), title = document.getElementById('sTitle'), stepLbl = document.getElementById('sStep');
+  function chip(label, note, on, group){
+    return `<span class="chip ${on?'on':''}" data-g="${group}" data-v="${label}">${label}${note?`<span class="note">${note}</span>`:''}</span>`;
+  }
+  function render(){
+    const st=state.step;
+    document.getElementById('st1').className = st>=0?'on':'';
+    document.getElementById('st2').className = st>=1?'on':'';
+    document.getElementById('st3').className = st>=2?'on':'';
+    title.textContent = ['Build a plan','The shape of it','Preview'][st];
+    stepLbl.textContent = 'step '+(st+1)+' of 3';
+    document.getElementById('back').style.visibility = st===0?'hidden':'visible';
+    document.getElementById('next').textContent = st===2?'Save this plan':'Next';
+
+    if(st===0){
+      body.innerHTML = `
+        <div class="field">
+          <label>Goal distance</label>
+          <div class="chips">${Object.entries(RACES).map(([k,v])=>chip(v.name,'',state.race===k,'race')).join('')}</div>
+        </div>
+        <div class="field">
+          <label>Race date</label>
+          <div class="inp">12 Apr 2026 <span class="ph"> · add a name (optional)</span></div>
+          <div class="small faint" style="margin-top:5px;">The plan is built back from this date. No race list, no network.</div>
+        </div>
+        <div class="field">
+          <label>Length</label>
+          <div class="chips">${chip('Until the race','16 weeks',true,'len')}${chip('12 weeks','',false,'len')}${chip('20 weeks','',false,'len')}</div>
+        </div>`;
+    }
+    if(st===1){
+      body.innerHTML = `
+        <div class="field">
+          <label>Runs a week</label>
+          <div class="chips">${Object.entries(LEVELS).map(([k,v])=>chip(v.days, k==='3'?'your usual week':'', state.level==k,'lvl')).join('')}</div>
+          <div class="small faint" style="margin-top:6px;">Your usual week is 3 runs, inferred from 8 weeks of history. The plans below start from there — the choice is yours.</div>
+        </div>
+        <div class="field">
+          <label>Long run on</label>
+          <div class="chips">${DAYLONG.map((d,i)=>chip(d,'',state.longDay===i,'ld')).join('')}</div>
+        </div>
+        <div class="field">
+          <label>Also in the plan</label>
+          <div class="toggle"><span><b>Strength</b><br /><span class="small faint">25 min, two sessions a week</span></span><span class="sw ${state.strength?'':'off'}" id="strengthSw"></span></div>
+        </div>
+        <div class="card tight" style="background:var(--surface-raised);">
+          <div class="h">What this plan will be</div>
+          <div class="small muted">${RACES[state.race].name} · ${state.weeks} weeks · ${LEVELS[state.level].days} · long run on ${DAYLONG[state.longDay]}${state.strength?' · strength':''}</div>
+        </div>`;
+    }
+    if(st===2){
+      const rows = planWeeks();
+      body.innerHTML = `
+        <div class="card tight" style="background:var(--surface-raised);">
+          <div class="h">${RACES[state.race].name} · ${state.weeks} weeks · ${LEVELS[state.level].days}</div>
+          <div class="small muted">Goal 12 Apr 2026 · long run on ${DAYLONG[state.longDay]} · built from the v1 half-marathon template</div>
+        </div>
+        <table class="wk">
+          <tr><th>Wk</th><th>Phase</th><th>Sessions</th></tr>
+          ${rows.map(r=>`<tr><td class="w">${r.w}</td><td><span class="ph ${r.ph}">${r.ph}</span></td><td>${r.sess.join(' · ')}</td></tr>`).join('')}
+        </table>
+        <div class="small faint" style="margin-top:8px;">Distance targets only. A pace target needs a pace model of your own, which Stride does not have yet.</div>`;
+    }
+  }
+  body.addEventListener('click', e=>{
+    const c = e.target.closest('.chip'); if(!c) return;
+    const g=c.dataset.g, v=c.dataset.v;
+    if(g==='race') state.race = Object.keys(RACES).find(k=>RACES[k].name===v);
+    if(g==='lvl') state.level = Number(Object.keys(LEVELS).find(k=>LEVELS[k].days===v));
+    if(g==='ld') state.longDay = DAYLONG.indexOf(v);
+    if(g==='len'){ const n = v.includes('weeks') ? parseInt(v) : state.weeks; state.weeks = n; }
+    render();
+  });
+  body.addEventListener('click', e=>{ if(e.target.id==='strengthSw'){ state.strength=!state.strength; render(); } });
+  document.getElementById('next').addEventListener('click', ()=>{ state.step = Math.min(2, state.step+1); render(); });
+  document.getElementById('back').addEventListener('click', ()=>{ state.step = Math.max(0, state.step-1); render(); });
+  render();
+</script>
+</body>
+</html>

@@ -31,6 +31,21 @@
 //!   evaluative, and read from the same primitives the charts read.
 //! * [`zones`] — the heart-rate zone model and the time-in-zone computation,
 //!   from the athlete's stored configuration, never a run's observed maximum.
+//! * [`fingerprint`] — the run's own mechanics: the cadence, the pace and
+//!   the heart rate as they moved across the run, and the shares of the
+//!   moving time in the athlete's own zones. Observations, never a score.
+
+//! * [`streaks`] — the streaks: the current run of days (or weeks) and the
+//!   longest one, with the days they cover.
+//! * [`rolling`] — the rolling view: a window of days against the window
+//!   before it, the split of the training across the athlete's zones, the
+//!   weekday and daytime splits, the distance breakdown, and the monthly
+//!   and yearly tables.
+//! * [`profile`] — the athlete's shape over a window: seven facets, as
+//!   values with a direction of travel, never as a shape.
+
+//! * [`heatmap`] — the grid over the stored positions: a count of runs per
+//!   cell, computed on the device, never a route.
 //! * [`load`] — the training load: the daily series, the acute and chronic
 //!   loads, the form, the ratio, and the recovery scenario — a scenario
 //!   with its assumption attached, never a verdict.
@@ -42,12 +57,18 @@ pub mod band;
 pub mod date;
 pub mod direction;
 pub mod eddington;
+pub mod fingerprint;
+
+pub mod heatmap;
 pub mod load;
 pub mod pattern;
 pub mod plan;
+pub mod profile;
 pub mod rest;
+pub mod rolling;
 pub mod statement;
 pub mod story;
+pub mod streaks;
 pub mod strings;
 pub mod types;
 pub mod units;
@@ -59,6 +80,13 @@ pub use direction::{day_directions, DayDirections, Direction, Travel, VitalDirec
 pub use eddington::{
     days_needed_for_next, eddington, DailyDistance, Eddington, EddingtonUnit, Period,
 };
+pub use fingerprint::{
+    fingerprint, running_only, Fingerprint, FingerprintInput, FingerprintZoneModel, LapReading,
+    NoValue, Observation, ZoneDistribution, ZoneShare, MAX_STRIDE_LENGTH_M, WALKING_CADENCE_SPM,
+    WALKING_SPEED_MPS,
+};
+
+pub use heatmap::{bounds_of, cell_of, cell_size_m, heatmap, Bounds, Cell, Heatmap, HeatmapCell};
 pub use load::{
     load_report, recovery_scenario, ActivityLoad, DailyLoad, DayInput, LoadAnswer, LoadAssumptions,
     LoadInputs, LoadReport, LoadState, LoadZoneModel, NoLoadReason, ProjectedDay, RecoveryScenario,
@@ -71,20 +99,29 @@ pub use plan::{
     session_label, source_banner, today_of, week_of, week_start, Adherence, PlanBlock, PlanSession,
     PlanSource, RunFact, SessionKind, SessionResult, SessionStatus,
 };
+pub use profile::{facets, Facet, FacetKey, FacetUnit};
 pub use rest::RestSummary;
+pub use rolling::{
+    compare_windows, daytime_split, distance_breakdown, monthly_totals, polarised_shares,
+    totals_in, weekday_split, yearly_totals, Daytime, DaytimeCuts, DaytimeTotals, DistanceBucket,
+    Movement, PeriodTotals, PolarisedZone, RollingActivity, RollingWindow, WeekdayTotals,
+    WindowComparison, WindowTotals, ZoneTimes,
+};
 pub use statement::{
     compare_basis, distance_comparison_line, progress_headline, CompareBasis, PaceAtHr,
     ProgressHeadline,
 };
 pub use story::{story, RunFacts, Split};
+pub use streaks::{streaks, Streak, Streaks};
 pub use strings::StringKind;
 pub use types::{
     BetterSide, Distance, Duration, Effort, HeartRate, Hrv, RestingHr, Sleep, VitalKind, Vitals,
     WellnessDay,
 };
 pub use units::{
-    render_difference, render_distance, render_duration, render_elevation, render_heart_rate,
-    render_heart_rate_range, render_heart_rate_range_edges, render_pace, render_version,
-    render_zone_label, ValueUnit,
+    render_cadence, render_difference, render_distance, render_duration, render_efficiency,
+    render_elevation, render_heart_rate, render_heart_rate_range, render_heart_rate_range_edges,
+    render_length_cm, render_pace, render_percent, render_share, render_version, render_zone_label,
+    ValueUnit,
 };
-pub use zones::{model_source, time_in_zone, TimeInZone, ZoneFloors, ZoneSample};
+pub use zones::{model_source, time_in_zone, zone_edges, TimeInZone, ZoneFloors, ZoneSample};

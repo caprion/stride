@@ -11,7 +11,10 @@
 mod common;
 
 use serde_json::Value;
-use stride_ingest::{ACTIVITIES_PATH, HRV_DAILY_PATH, SLEEP_DAILY_PATH, USER_SUMMARY_PATH};
+use stride_ingest::{
+    ACTIVITIES_PATH, BODY_BATTERY_PATH, HRV_DAILY_PATH, SLEEP_DAILY_PATH, STRESS_PATH,
+    USER_SUMMARY_PATH,
+};
 
 use common::{TODAY, TOKEN_PATH};
 
@@ -298,9 +301,14 @@ fn physiology_sources_answers_with_the_sources() {
 #[test]
 fn fitness_fingerprint_answers_with_the_fingerprints() {
     let harness = common::Harness::seeded("route-fitness-fingerprint");
-    let body = harness.ok_get("/fitness/fingerprint");
-    assert!(body["items"].is_array());
+    // The fingerprint is of one run, named by the query. The seeded store
+    // holds no file, so there is nothing to measure: the answer says so in
+    // the core's words, and there are no observations.
+    let body = harness.ok_get("/fitness/fingerprint?id=1");
+    assert_eq!(body["activity_id"].as_i64(), Some(1));
     assert_eq!(body["generated_at"].as_str(), Some(common::NOW));
+    assert!(body["observations"].as_array().unwrap().is_empty());
+    assert!(body["unavailable"].as_str().is_some());
 }
 
 #[test]
@@ -764,6 +772,8 @@ fn sync_run_answers_with_what_the_pull_brought() {
         USER_SUMMARY_PATH,
         "{\"summaryDTO\": {\"calendarDate\": \"2026-05-12\", \"restingHeartRate\": 47.0}}",
     );
+    harness.garmin.with_status(STRESS_PATH, 204, "");
+    harness.garmin.with_status(BODY_BATTERY_PATH, 204, "");
 
     let body = harness.post("/sync/run", "{\"days\": 1}");
     assert_eq!(body["activities"].as_u64(), Some(0));

@@ -227,6 +227,16 @@ pub fn run_without_readings(
     activity
 }
 
+/// A run whose FIT file is the corpus file named.
+///
+/// The file is the run's own source of truth: the derived series — the
+/// laps, the samples, the fingerprint — are read from it on read.
+pub fn run_with_fit(external_id: &str, local_date: &str, file_name: &str) -> NewActivity {
+    let mut activity = run(external_id, local_date, 10_000.0, 3_000.0);
+    activity.fit_blob = corpus_fit(file_name);
+    activity
+}
+
 /// A day of wellness.
 pub fn wellness(date: &str) -> WellnessDaily {
     WellnessDaily {

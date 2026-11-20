@@ -1,7 +1,7 @@
 //! `stride-store` — the encrypted SQLite database.
 //!
 //! The only crate that touches the database. The schema is **frozen** in
-//! `docs/contract/schema.sql`: seven tables, their columns, their types and
+//! `docs/contract/schema.sql`: its tables, their columns, their types and
 //! their indices. This crate implements that schema exactly, and
 //! `tests/schema_contract.rs` proves it, by comparing SQLite's own
 //! `sqlite_master` output with the contract's.
@@ -71,8 +71,9 @@ pub use legacy::{
 };
 pub use model::{
     Activity, ActivitySamples, ActivitySummary, HeartRateZoneModel, NewActivity,
-    NewActivitySamples, NewHeartRateZoneModel, NewNote, NewPlanBlock, NewPlanSession, Note,
-    PlanBlock, PlanSession, SyncState, WellnessDaily,
+    NewActivitySamples, NewHeartRateZoneModel, NewNote, NewPlanBlock, NewPlanSession,
+    NewWellnessObservation, Note, PlanBlock, PlanSession, SyncState, WellnessDaily,
+    WellnessObservation,
 };
 pub use repos::activity::{FeedCursor, FeedPage};
 pub use schema::SCHEMA_VERSION;

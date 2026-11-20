@@ -269,6 +269,8 @@ fn route_to_path(route: &str) -> String {
         "/compare" => "/compare?a=102&b=101".to_string(),
         // The zones are of one run; the fixture's first run is 101.
         "/fitness/zones" => "/fitness/zones?id=101".to_string(),
+        // The fingerprint is of one run too.
+        "/fitness/fingerprint" => "/fitness/fingerprint?id=101".to_string(),
         other => other.to_string(),
     }
 }
@@ -283,6 +285,7 @@ fn router_answers(router: &Router) -> serde_json::Map<String, Value> {
         "/physiology/vitals",
         "/physiology/sleep",
         "/fitness/zones",
+        "/fitness/fingerprint",
         "/plan/week",
         "/insights/today",
         "/insights/progress",
@@ -295,6 +298,12 @@ fn router_answers(router: &Router) -> serde_json::Map<String, Value> {
         "/insights/load?weeks=8",
         "/insights/load?weeks=26",
         "/insights/load?weeks=52",
+        "/insights/rolling",
+        "/insights/rolling?weeks=4",
+        "/insights/rolling?weeks=8",
+        "/insights/rolling?weeks=26",
+        "/insights/rolling?weeks=52",
+        "/insights/streaks",
         "/calendar",
         "/compare/candidates",
         "/sync/status",

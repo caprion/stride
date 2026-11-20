@@ -16,8 +16,10 @@ import type {
   ConnectionStatus,
   FitImportResult,
   FitnessZones,
+  Fingerprint,
   Health,
   HealthDaily,
+  HeatmapInsight,
   KeyConnectResult,
   KeyTestResult,
   LoadInsight,
@@ -25,11 +27,13 @@ import type {
   PlanImportResult,
   PlanWeek,
   ProgressInsight,
+  RollingInsight,
   SettingsDeleteResult,
   SettingsExportResult,
   SettingsState,
   SleepDays,
   SyncStatus,
+  StreakInsight,
   SyncRunResult,
   TodayInsight,
   VitalsSnapshot,
@@ -91,6 +95,10 @@ export const ROUTES = {
   insightsToday: '/insights/today',
   insightsProgress: '/insights/progress',
   insightsLoad: '/insights/load',
+  insightsRolling: '/insights/rolling',
+  insightsStreaks: '/insights/streaks',
+
+  insightsHeatmap: '/insights/heatmap',
   insightsChips: '/insights/chips',
 
   compare: '/compare',
@@ -240,8 +248,15 @@ export const api = {
   physiologyLatest: () => get<unknown>(ROUTES.physiologyLatest),
   physiologySources: () => get<unknown>(ROUTES.physiologySources),
 
-  fitnessFingerprint: () => get<unknown>(ROUTES.fitnessFingerprint),
   fitnessTrends: () => get<unknown>(ROUTES.fitnessTrends),
+  /**
+   * The fingerprint of one run: the run's own mechanics, as observations.
+   *
+   * The route takes the run's id: the observations belong to a run, and
+   * the run detail shows them.
+   */
+  fitnessFingerprint: (id: number | string) =>
+    get<Fingerprint>(ROUTES.fitnessFingerprint, { id: String(id) }),
   /**
    * The heart-rate zones of one run.
    *
@@ -276,6 +291,29 @@ export const api = {
    * value" reasons, and it carries the assumption its numbers rest on.
    */
   insightsLoad: (weeks = 12) => get<LoadInsight>(ROUTES.insightsLoad, { weeks }),
+  /**
+   * The rolling view: the window against the window before it, the split
+   * of the training across the athlete's own zones, the weekday and
+   * daytime splits, and the monthly and yearly tables.
+   *
+   * It follows the same range as the Progress screen, so the card is
+   * never read apart from the control that changes it.
+   */
+  insightsRolling: (weeks = 12) => get<RollingInsight>(ROUTES.insightsRolling, { weeks }),
+  /**
+   * The streaks: the current run of days and weeks, and the longest one
+   * of each.
+   */
+  insightsStreaks: () => get<StreakInsight>(ROUTES.insightsStreaks),
+
+  /**
+   * The heatmap: the grid over the stored positions.
+   *
+   * **Computed on the device.** The answer is a count of runs per cell,
+   * made from the runs the store already holds; nothing is fetched for it
+   * and nothing is sent with it.
+   */
+  insightsHeatmap: () => get<HeatmapInsight>(ROUTES.insightsHeatmap),
   insightsChips: (id: number | string) =>
     get<unknown>(ROUTES.insightsChips, { id: String(id) }),
 

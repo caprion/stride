@@ -18,6 +18,7 @@
 //! |---|---|
 //! | [`activity`] | `activities`, `activity_samples` |
 //! | [`wellness`] | `wellness_daily` |
+//! | [`observations`] | `wellness_observations` |
 //! | [`plan`] | `plan_blocks`, `plan_sessions` |
 //! | [`notes`] | `notes` |
 //! | [`sync`] | `sync_state` |
@@ -29,6 +30,7 @@ use crate::error::{Result, StoreError};
 pub mod activity;
 pub mod deleted;
 pub mod notes;
+pub mod observations;
 pub mod plan;
 pub mod sync;
 pub mod wellness;

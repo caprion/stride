@@ -165,6 +165,27 @@ pub fn model_source(method: &str, max_heart_rate: Option<f64>, read_on: &str) ->
     }
 }
 
+/// The edges of the five zones: the floor each zone starts at, and the
+/// floor it ends at.
+///
+/// The top zone ends at the maximum heart rate the model was built on,
+/// and has **no upper edge** when the watch reported none.
+pub fn zone_edges(floors: &ZoneFloors, max_heart_rate: Option<f64>) -> [(f64, Option<f64>); 5] {
+    let all = [
+        floors.zone1,
+        floors.zone2,
+        floors.zone3,
+        floors.zone4,
+        floors.zone5,
+    ];
+    let mut edges = [(0.0, None); 5];
+    for (index, from) in all.iter().enumerate() {
+        let to = all.get(index + 1).copied().or(max_heart_rate);
+        edges[index] = (*from, to);
+    }
+    edges
+}
+
 /// The zone a heart rate falls into, as an index from 0 (zone 1) to 4
 /// (zone 5), or `None` when it is at or below the first floor.
 ///

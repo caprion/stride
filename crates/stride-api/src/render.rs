@@ -177,6 +177,15 @@ pub fn cadence(_steps_per_minute: Option<f64>) -> Option<RenderedValue> {
     None
 }
 
+/// A share of a whole, as the core renders it: "72.53%".
+///
+/// The core renders the number and the core's catalogue carries the unit,
+/// so the app reads "72.53%" and nobody downstream rounds it again.
+pub fn share(percent: Option<f64>) -> Option<RenderedValue> {
+    let text = units::render_share(percent)?;
+    Some(RenderedValue { text, raw: percent })
+}
+
 /// The difference between two values, as the core renders it.
 ///
 /// **The core renders it, sign and all**: "+2.4 km", "−0.6 km", "+6 s/km".
@@ -188,6 +197,18 @@ pub fn difference(difference: Option<f64>, unit: ValueUnit) -> Option<RenderedVa
     Some(RenderedValue {
         text,
         raw: difference,
+    })
+}
+
+/// A percentage, as the core renders it: "2.1 %".
+///
+/// The core's own renderer, with the core's rounding: one decimal, half to
+/// even. A percentage of no value renders nothing at all.
+pub fn percent(percentage: Option<f64>) -> Option<RenderedValue> {
+    let text = units::render_percent(percentage)?;
+    Some(RenderedValue {
+        text,
+        raw: percentage,
     })
 }
 

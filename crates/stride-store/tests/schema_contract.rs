@@ -118,11 +118,13 @@ fn the_store_creates_the_contract_s_schema() -> Result<()> {
             "ix_plan_blocks_start_date".to_string(),
             "ix_plan_sessions_block_date".to_string(),
             "ix_plan_sessions_date".to_string(),
+            "ix_wellness_observations_date".to_string(),
             "notes".to_string(),
             "plan_blocks".to_string(),
             "plan_sessions".to_string(),
             "sync_state".to_string(),
             "wellness_daily".to_string(),
+            "wellness_observations".to_string(),
         ]
     );
 
@@ -174,6 +176,7 @@ fn the_tables_are_created_in_the_contract_s_order() -> Result<()> {
             "sync_state".to_string(),
             "deleted_garmin_activities".to_string(),
             "hr_zone_models".to_string(),
+            "wellness_observations".to_string(),
         ]
     );
     drop(dir);
@@ -194,6 +197,7 @@ fn the_indexes_are_created_in_the_contract_s_order() -> Result<()> {
             "ix_plan_sessions_block_date".to_string(),
             "ix_plan_sessions_date".to_string(),
             "ix_notes_activity_id".to_string(),
+            "ix_wellness_observations_date".to_string(),
         ]
     );
     drop(dir);
@@ -211,7 +215,7 @@ fn the_migration_is_idempotent() -> Result<()> {
     assert_eq!(store.schema_version()?, schema::SCHEMA_VERSION);
 
     let tables = store.with_connection(schema::table_names)?;
-    assert_eq!(tables.len(), 9);
+    assert_eq!(tables.len(), 10);
     drop(dir);
     Ok(())
 }
@@ -245,6 +249,45 @@ fn a_version_two_database_migrates_to_version_three() -> Result<()> {
     assert_eq!(store.schema_version()?, schema::SCHEMA_VERSION);
     let tables = store.with_connection(schema::table_names)?;
     assert!(tables.iter().any(|table| table == "hr_zone_models"));
+    assert!(tables.iter().any(|table| table == "wellness_observations"));
+    drop(dir);
+    Ok(())
+}
+
+#[test]
+fn a_version_three_database_migrates_to_version_four() -> Result<()> {
+    let dir = common::scratch("schema-migrate-v3-v4")?;
+    let path = dir.file("stride.db");
+    let store = Store::open(&path, &common::key()?)?;
+
+    // Build the schema as it was at version 3.
+    store.with_connection(|conn| {
+        for migration in schema::migrations()
+            .into_iter()
+            .take_while(|step| step.version <= 3)
+        {
+            for statement in migration.statements {
+                conn.execute_batch(statement)
+                    .map_err(|error| stride_store::StoreError::migration(statement, error))?;
+            }
+            conn.pragma_update(None, "user_version", migration.version)
+                .map_err(|error| stride_store::StoreError::migration("user_version", error))?;
+        }
+        Ok(())
+    })?;
+    assert_eq!(store.schema_version()?, 3);
+    let tables = store.with_connection(schema::table_names)?;
+    assert!(!tables.iter().any(|table| table == "wellness_observations"));
+
+    // One migrate() adds the observations table and its index.
+    store.migrate()?;
+    assert_eq!(store.schema_version()?, schema::SCHEMA_VERSION);
+    let tables = store.with_connection(schema::table_names)?;
+    assert!(tables.iter().any(|table| table == "wellness_observations"));
+    let indexes = store.with_connection(schema::index_names)?;
+    assert!(indexes
+        .iter()
+        .any(|index| index == "ix_wellness_observations_date"));
     drop(dir);
     Ok(())
 }
@@ -261,7 +304,7 @@ fn a_database_opened_again_keeps_its_schema_version() -> Result<()> {
         let store = Store::open_and_migrate(&path, &common::key()?)?;
         assert_eq!(store.schema_version()?, schema::SCHEMA_VERSION);
         let tables = store.with_connection(schema::table_names)?;
-        assert_eq!(tables.len(), 9);
+        assert_eq!(tables.len(), 10);
     }
     Ok(())
 }

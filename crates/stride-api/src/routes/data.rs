@@ -9,15 +9,15 @@ use stride_core::direction::day_directions;
 use stride_core::pattern::{patterns, HistoryDay, PatternKind};
 use stride_core::types::{Distance, VitalKind};
 use stride_core::units;
-use stride_core::zones::{time_in_zone, TimeInZone, ZoneFloors, ZoneSample};
+use stride_core::zones::{time_in_zone, TimeInZone, ZoneFloors};
 use stride_store::{ActivitySummary as StoredActivity, HeartRateZoneModel, WellnessDaily};
 
 use crate::dto::{
     ActivityDetail, ActivityListResponse, ActivitySummary, ElevationStats, ElevationWeek,
-    Fingerprint, Fingerprints, FitnessZones, HrvDay, HrvDays, LatestPhysiology, PaceTrends,
-    PaceWeek, PersonalRecords, PhysiologyDay, PhysiologyDays, RenderedValue, SleepDay, SleepDays,
-    SourceInfo, Sources, StatsSummary, Totals, Trend, TrendPoint, Trends, VitalBand, VitalReading,
-    VitalsHistory, VitalsSnapshot, WeekTotals, WeeklyStats, ZoneBand, ZoneModel, ZoneModelFloors,
+    FitnessZones, HrvDay, HrvDays, LatestPhysiology, PaceTrends, PaceWeek, PersonalRecords,
+    PhysiologyDay, PhysiologyDays, RenderedValue, SleepDay, SleepDays, SourceInfo, Sources,
+    StatsSummary, Totals, Trend, TrendPoint, Trends, VitalBand, VitalReading, VitalsHistory,
+    VitalsSnapshot, WeekTotals, WeeklyStats, ZoneBand, ZoneModel, ZoneModelFloors,
 };
 use crate::error::{ApiError, ApiResult};
 use crate::render;
@@ -26,9 +26,6 @@ use crate::state::Api;
 
 use super::series;
 use super::{core_date, day_label, day_of, ok, pace_of, today, week_start};
-
-/// The most runs one answer may carry.
-const MAX_RUNS_IN_ANSWER: usize = 500;
 
 // ------------------------------------------------------------------- the feed
 
@@ -576,25 +573,28 @@ fn pattern_id(kind: &PatternKind) -> String {
 /// **Endpoint only.** The data is already synced; the route has no screen,
 /// and the plan says so in the OpenAPI document so that nobody builds one
 /// by accident.
+/// The fingerprint of one run: the run's own mechanics, as **observations**.
+///
+/// The route answers the per-run question — *what did this run's laps say
+/// about this run* — from the run's own file, decoded on read, and from the
+/// athlete's **stored zone model**. It is not a score and carries no
+/// score: every observation is a value or the reason it has none.
+///
+/// The run is named by the query (`?id=…`), like the zones. The basis is
+/// named too — the run's laps and its moving samples — and the zone
+/// distribution names the model it was measured against, with the day that
+/// model was read.
+///
+/// **No value is the absence of the whole result.** A run with no file has
+/// no observations at all, and says why in the core's words. It is never a
+/// zero and never a band.
 pub fn fitness_fingerprint(api: &Api, request: &Request) -> ApiResult<Value> {
-    let runs = stored_runs(api, request)?;
-    let mut items = Vec::new();
-    for run in runs.iter().take(MAX_RUNS_IN_ANSWER) {
-        items.push(Fingerprint {
-            activity_id: run.id,
-            local_date: run.local_date.clone(),
-            distance: render::distance(Some(run.distance_m)),
-            duration: render::duration(Some(run.moving_time_s)),
-            heart_rate: render::heart_rate(run.avg_hr),
-            pace: render::pace(pace_of(run.distance_m, run.moving_time_s)),
-            elevation_gain: render::elevation(Some(run.elevation_gain_m)),
-        });
-    }
-    let response = Fingerprints {
-        items,
-        generated_at: api.generated_at(),
+    let id = match request.query.integer("id")? {
+        Some(id) => id,
+        None => return Err(ApiError::bad_request("the fingerprint needs a run")),
     };
-    ok(&response)
+    let answer = crate::fingerprint::fingerprint(api, id)?;
+    ok(&answer)
 }
 
 /// The measured trends.
@@ -712,7 +712,7 @@ pub fn fitness_zones(api: &Api, request: &Request) -> ApiResult<Value> {
     let Some(decoded) = super::series::decoded(api, id) else {
         return ok(&no_value_zones(Some(model), "zones.unavailable"));
     };
-    let samples = zone_samples(&decoded);
+    let samples = super::series::zone_samples(&decoded);
     let Some(time) = time_in_zone(floors, &samples) else {
         return ok(&no_value_zones(Some(model), "zones.unusable_model"));
     };
@@ -785,19 +785,7 @@ fn zones_of(
 /// rate the model was built on — which Garmin may not have reported, in
 /// which case that band has no upper edge.
 fn floors_of_edges(floors: &ZoneFloors, max_heart_rate: Option<f64>) -> [(f64, Option<f64>); 5] {
-    let all = [
-        floors.zone1,
-        floors.zone2,
-        floors.zone3,
-        floors.zone4,
-        floors.zone5,
-    ];
-    let mut edges = [(0.0, None); 5];
-    for (index, from) in all.iter().enumerate() {
-        let to = all.get(index + 1).copied().or(max_heart_rate);
-        edges[index] = (*from, to);
-    }
-    edges
+    stride_core::zones::zone_edges(floors, max_heart_rate)
 }
 
 /// The stored model's floors, as the core takes them.
@@ -846,23 +834,6 @@ fn floor_value(bpm: f64) -> RenderedValue {
         text: String::new(),
         raw: Some(bpm),
     })
-}
-
-/// The moving samples of a run, as the core takes them.
-///
-/// **The moving filter stays**: the standing samples are not the athlete
-/// running, and the numbers have to stay comparable with what this route
-/// answered before the model came in.
-fn zone_samples(activity: &stride_ingest::FitActivity) -> Vec<ZoneSample> {
-    activity
-        .samples
-        .iter()
-        .filter(|sample| sample.kind != stride_ingest::SegmentKind::Stand)
-        .map(|sample| ZoneSample {
-            elapsed_s: sample.elapsed_s,
-            heart_rate_bpm: sample.heart_rate_bpm,
-        })
-        .collect()
 }
 
 // -------------------------------------------------------------------- stats

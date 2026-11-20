@@ -9,6 +9,7 @@
 //! ceiling, and the number of points in an answer is bounded by the
 //! configuration.
 
+use stride_core::zones::ZoneSample;
 use stride_ingest::{decode_fit, FitActivity, MAX_FIT_INPUT_BYTES};
 
 use crate::dto::{ElevationPoint, SamplePoint, Split};
@@ -31,6 +32,24 @@ pub fn samples_for(api: &Api, activity_id: i64) -> Vec<SamplePoint> {
         Some(decoded) => samples(&decoded, api.config().max_samples_in_response),
         None => Vec::new(),
     }
+}
+
+/// The heart-rate samples of a run, for the time-in-zone computation.
+///
+/// Only the moving samples: the standing ones are filtered out, exactly as
+/// they always were, so the numbers stay comparable with what the zones
+/// route answered before. One implementation, so the per-run bands and the
+/// window's split cannot disagree about which samples count.
+pub fn zone_samples(activity: &FitActivity) -> Vec<ZoneSample> {
+    activity
+        .samples
+        .iter()
+        .filter(|sample| sample.kind != stride_ingest::SegmentKind::Stand)
+        .map(|sample| ZoneSample {
+            elapsed_s: sample.elapsed_s,
+            heart_rate_bpm: sample.heart_rate_bpm,
+        })
+        .collect()
 }
 
 /// The splits of a run.

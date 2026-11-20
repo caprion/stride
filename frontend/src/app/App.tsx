@@ -19,6 +19,7 @@ import { BodyPage } from '../pages/BodyPage'
 import { ComparePage } from '../pages/ComparePage'
 import { PlanWeekPage } from '../pages/PlanWeekPage'
 import { ActivityPage } from '../pages/ActivityPage'
+import { HeatmapPage } from '../pages/HeatmapPage'
 import { SettingsPage } from '../pages/SettingsPage'
 import { ConnectPage } from '../pages/ConnectPage'
 
@@ -61,6 +62,11 @@ function AppRoutes() {
       <Route path="/progress" element={<ProgressPage />} />
       <Route path="/body" element={<BodyPage />} />
       <Route path="/plan" element={<PlanWeekPage />} />
+      {/*
+        The heatmap is reached contextually, from the Runs screen: it is
+        not a destination of its own, and the athlete asks for it.
+      */}
+      <Route path="/heatmap" element={<HeatmapPage />} />
       <Route path="/compare/:id" element={<CompareRoute />} />
       <Route path="/settings" element={<SettingsPage />} />
       <Route path="*" element={<TodayPage />} />

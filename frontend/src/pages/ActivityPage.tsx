@@ -48,6 +48,10 @@ export function ActivityPage({ id }: { id: string }) {
     queryKey: ['fitness-zones', id],
     queryFn: () => api.fitnessZones(id),
   })
+  const form = useQuery({
+    queryKey: ['fitness-fingerprint', id],
+    queryFn: () => api.fitnessFingerprint(id),
+  })
   const data = activity.data
 
   useEffect(() => {
@@ -541,6 +545,57 @@ export function ActivityPage({ id }: { id: string }) {
                   </AreaChart>
                 </ResponsiveContainer>
               </div>
+            ) : null}
+          </section>
+
+          {/* ----------------------------------------------------------- form */}
+          {/*
+        The run's own mechanics, as **observations**: the cadence, the
+        pace, the heart rate as they moved across the run, and the
+        decoupling between them.
+
+        Each row is a value and, where the run has one, the direction it
+        moved — the sign of the difference. There is no score here and no
+        composite: the numbers are what the run measured, and the reader
+        decides what they mean. A metric the run cannot answer says why,
+        in the core's own words.
+      */}
+          <section className="card mt-3 px-4 py-3" data-testid="activity-form">
+            <h2 className="text-[12px] font-semibold uppercase tracking-[0.07em] text-ink-faint">
+              {t('activity.form.heading')}
+            </h2>
+            {form.isError ? (
+              <QueryError
+                retry={() => {
+                  void form.refetch()
+                }}
+              />
+            ) : null}
+            {form.data?.unavailable ? (
+              <p className="mt-1 text-[12px] text-ink-faint" data-testid="activity-form-unavailable">
+                {form.data.unavailable}
+              </p>
+            ) : null}
+            {form.data && form.data.observations.length > 0 ? (
+              <ul className="mt-2 space-y-1" data-testid="activity-form-observations">
+                {form.data.observations.map((observation) => (
+                  <li
+                    key={observation.key}
+                    className="flex flex-wrap items-baseline justify-between gap-x-3 text-[12px]"
+                  >
+                    <span className="text-ink-muted">{observation.label}</span>
+                    {observation.value ? (
+                      <span className="ml-auto tabular-nums text-ink">
+                        {renderedText(observation.value)}
+                      </span>
+                    ) : (
+                      <span className="ml-auto text-right text-ink-faint">
+                        {observation.reason}
+                      </span>
+                    )}
+                  </li>
+                ))}
+              </ul>
             ) : null}
           </section>
         </div>

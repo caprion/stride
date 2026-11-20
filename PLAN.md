@@ -230,6 +230,12 @@ This travels with the frozen route change (the `eddington` field of
 section records the change and the rule it serves; it is not permission to
 ship, publish, migrate or sync production data.
 
+### Proposed amendment — the fingerprint as observations on the run detail (2026-11-17)
+
+**Proposal, not approved.** The approvals below are the user's to give. This
+section records the change and the rule it serves; it is not permission to
+ship, publish, migrate or sync production data.
+
 The bands are the product's most interpretable intensity statement, and
 since the zone model became a dated fact they are measured against the
 athlete's own configuration. What they did not say is **where that model
@@ -326,6 +332,267 @@ do. The band of the ratio is named as a **range** ("0.8 to 1.3").
 
 This travels with the route and the field tables in
 `docs/contract/api-paths.md`.
+
+The old application kept a table of **running mechanics** per run: the
+cadence and its variability, the pace's variability, the aerobic decoupling,
+the negative split, the stride length, the zone distribution — and a
+`form_score` at the end of them. The legacy importer dropped that table with
+the reason *"derived from the FIT"*, which is right in principle: the
+derived series are recomputed on read and never stored. The work was
+therefore to **derive it properly, in the core, from the series Stride
+already has** — and that is what this amendment records.
+
+The rule this serves: **a run's mechanics are observations, not a grade.**
+The old `form_score` was a weighted mean of three bounded component scores
+(cadence 30 %, decoupling 45 %, pace 25 %), with the weights renormalised
+around whichever component was missing and a hundred-point scale on top.
+That is a grade: it says the run was worth a number out of a hundred, and
+the thresholds that made it so were the implementation's own. The product
+reports values and lets the reader decide, so **the composite is not
+ported**. The observations it was built from are, and each of them says
+what it measured: the cadence, the variability of the cadence and of the
+pace, the drift between the first third of the run and the last, the
+half-split drift of the heart rate and of the pace, the efficiency factor,
+the decoupling, the stride length.
+
+Two of the reference's inputs are **not** ported either, and both for the
+same reason the zones were rebuilt:
+
+- the **reference maximum heart rate** — the old application measured the
+  efficiency factor against the largest maximum heart rate it had ever seen
+  on that athlete, and fell back to 190. Two numbers measured against two
+  scales are not comparable, and 190 is a guess. The efficiency factor is
+  now measured against the maximum heart rate of the athlete's **stored
+  zone model**: their watch's own configuration, read once and stored with
+  the day it was read. A model with no maximum heart rate has no
+  efficiency factor, and says so;
+- the **zone model** — the distribution is the **stored** model's, and it
+  is reported as the **shares of the moving time** in the athlete's own
+  zones, with the model named and dated. The old application rebuilt five
+  bands from a reference maximum, which is what Epic A removed.
+
+And the old **negative split** — a flag that was `100` for a negative split
+and `0` otherwise — is not ported as a flag: a zero is not a measurement.
+The pace drift is reported as the **signed difference** between the two
+halves, so a negative number *is* the negative split, and the sign is the
+direction.
+
+The surface is a **detail section on the run detail**, below the other
+sections: the values, and the direction each one moved — the sign of the
+difference. It is not a headline, and it is not a page: PLAN.md §2 keeps
+the running-form fingerprint **page** out of scope, and this amendment does
+not bring one back. A metric the run cannot answer says why, in the core's
+own words, and never shows a zero.
+
+The route changes its meaning with it: `/fitness/fingerprint` answered a
+list of runs with their distance and their pace, and it now answers **one
+run's** fingerprint, named by the query, with the run detail showing it.
+The route keeps its name and its place in the frozen table; the old answer
+is gone rather than left beside the new one.
+
+This travels with the route's field table in `docs/contract/api-paths.md`.
+
+### Proposed amendment — the rolling view on Progress, the streak on Today (2026-11-18)
+
+### Proposed amendment — the source's wellness observations are kept (2026-11-17)
+
+**Proposal, not approved.** The approvals below are the user's to give.
+This section records the change and the rule it serves; it is not permission
+to ship, publish, migrate or sync production data.
+
+A running log has six questions about its own history that it can answer
+exactly, and this product answered none of them: how long the streak is,
+how the last *N* days compare with the *N* before, how the training is
+distributed across the athlete's own zones, which way that distribution
+moved, which days and which times of day the athlete runs, and what a month
+or a year looks like. Every one of them needs **no new input** — they are
+derived from the runs and the zone model that are already stored — and
+every one of them is *depth*, not breadth.
+
+The rule this serves: **the product shows the values, says which way each
+one moved against the athlete's own usual, and lets the reader decide.** So:
+
+* **The rolling view lives on Progress**, under the range selector, because
+  Progress is the screen about a window of history. It answers with the
+  window and the period before it, the two numbers side by side and the
+  difference between them, and the card **names the window it describes**.
+* **The streak lives on Today**, because it is the "how is the habit going"
+  number, and Today is where the athlete looks first.
+* **The window's basis is stated, not guessed at.** The window is the last
+  *N* days ending today, and the comparison period is the same *N* days
+  ending yesterday — the reference implementation's own comparison. The
+  parameter is the Progress route's own `weeks`, so the card follows the
+  range selector the screen already has.
+* **The zones are the athlete's own**, measured against the stored model
+  and named with the day it was read. The three bands are **low (Z1–2),
+  moderate (Z3), high (Z4–Z5)** — what they are, not what they ought to
+  be. **No target range travels with them**: a range that says how the
+  split ought to be is a prescription, and this product does not prescribe.
+* **Nothing is stored.** Every one of these numbers is recomputed on read,
+  like every other derived value.
+* **Every value that cannot be computed is "no value", never a zero.** A
+  streak of zero days is no streak; a window with no time in the zones has
+  no shares; a month with no runs is not a row in the monthly table.
+
+The voice is the hard part of this item, and the string lint is what holds
+it: these panels invite conclusions — "you are in a good streak", "your
+training is imbalanced", "you are peaking" — and the product draws none. A
+streak is a count and a date. A share says which way it moved and stops
+there. A difference is a difference.
+
+This travels with the two routes and their field tables in
+`docs/contract/api-paths.md`.
+
+### Proposed amendment — the zone distribution, the distance breakdown and the training profile (2026-11-18)
+
+**Proposal, not approved.** The approvals below are the user's to give.
+This section records the change and the rule it serves; it is not permission
+to ship, publish, migrate or sync production data.
+
+The reference dashboard's panel catalogue was read against this port, and
+three of its panels had no home here: the **heart-rate zone distribution**
+(the histogram and each zone's share), the **distance breakdown** (the runs
+by how far they went) and the **athlete profile** (the radar's content).
+
+The rule this serves is the one the whole port runs on: **a number is only
+a fact against a stated period, and a shape is not a fact.** So:
+
+* **The distribution** is the same time-in-zone computation the bands
+  already use, one zone at a time: the time in each of the five and the
+  share of the time in the zones that was. It comes free from what the
+  zones route already measures, and the model is named with it.
+* **The distance breakdown** is one aggregation over the stored distances,
+  with the reference implementation's own bucket rule: the bucket size
+  comes from the longest run in the window, so the longest run lands in
+  the last bucket.
+* **The profile is seven values and their movements, and not a radar.** A
+  polygon over fixed anchors — "ten hours a week is a very active
+  amateur", "five days a week is excellent consistency" — is a claim
+  about a shape, and the anchors are somebody else's coaching
+  assumptions. The facets here are the athlete's own numbers: the
+  volume, the consistency, the intensity, the duration, the density, the
+  sport variety and the days of the week. Each says which way it moved
+  against the window before it, and the reader draws the shape.
+* **No value is the absence of the whole result.** A window with no run
+  has no profile at all — every facet is no value, never a zero — and a
+  facet with nothing to compare against has no movement to report.
+
+This travels with the fields of `/insights/rolling` in
+
+### Proposed amendment — the heatmap, computed on the device (2026-11-17)
+
+**Proposal, not approved.** The approvals below are the user's to give. This
+section records the change and the rule it serves; it is not permission to
+ship, publish, migrate or sync production data.
+
+§2 deferred the heatmap with the tiles proxy and the other out-of-scope
+extras. This amendment brings **one** of them back, in one form: a grid
+over the positions the athlete's own runs carry, computed on the device.
+The tiles proxy stays out.
+
+The rule this serves: **nothing leaves the device, and a heatmap is a
+picture of a habit — so it is a grid, never a place name.**
+
+A heatmap is the surface where a running log says the most about where a
+person lives. The product's answer is the one it already uses for the
+Street map: **local aggregation, an explicit action, and a disclosure of
+what leaves.** This item has none of the Street map's outbound risk —
+nothing is fetched, nothing is sent — and that is the point of it.
+
+So:
+
+* **The grid is computed on the device.** The route reads the stored runs
+  and decodes their stored FIT files — the same files the run detail's
+  route decodes — and answers with a count of runs per cell. There is no
+  tile request, no geocoding, no reverse geocoding, no third-party
+  service and no outbound anything.
+* **The grid is coarse on purpose.** It is the reference implementation's
+  own resolution: zoom 14 of the slippy-tile grid, a cell about two
+  kilometres across at the latitudes a runner lives at. A coarse grid is
+  both faster to compute and less identifying than a fine one, and this
+  surface is *about* a habit.
+* **A cell's value is a count, never a route.** A cell holds how many runs
+  went through it; a run counts once in a cell however many times it
+  crossed it; a cell carries no time, no order and no connection to
+  another cell. The answer is a set of rectangles with a number each, and
+  no path can be read back out of it.
+* **It is a place, not a person.** No street names, no addresses, no
+  reverse geocoding and no place labels: a grid of cells over a map the
+  athlete can draw themselves is the whole design. The surface says where
+  the runs went and how often, and it draws no conclusion about the
+  athlete's life.
+* **It is behind an explicit action.** The heatmap is not on the run list;
+  it is something the athlete asks for, the way the Street map is asked
+  for.
+* **It discloses what it is.** The surface says, in the app's own words,
+  that the aggregation is local: it is computed on this device from the
+  stored runs, and nothing is sent anywhere. The disclosure is true, and
+  it says nothing about a service that is not involved.
+* **Nothing is stored.** The grid is a derived series like the samples, the
+  laps and the zones: recomputed on read, never written down. There is no
+  grid, no tile and no heatmap blob in the database, and no schema
+  change.
+
+The heatmap is not a fifth destination and not a new tab: it is a
+contextual surface reached from the Runs screen, the way Compare and the
+Plan week are reached. The four destinations stay the four.
+
+This travels with the route and the field tables in
+`docs/contract/api-paths.md`.
+
+The capability inventory's own verdict on the wellness is the heading of this
+item: *"First: ownership — preserve source wellness observations, with
+retrieval time and schema/provenance, inside encrypted storage and backup.
+Sleep, HRV and summary fields are discarded today. FIT retention alone does
+not protect wellness history. This needs a reviewed schema migration, not an
+unversioned side file."*
+
+The rule this serves: **a reading the source served is kept, with the day it
+was read and the day it was for.** The product kept a projection of the
+wellness — sleep seconds, the stages, the HRV, the resting heart rate, the
+average stress — and dropped the rest: the sleep window and the window's
+confirmation, the unmeasurable time, the naps, the stress durations per band
+and the stress qualifier, the whole body battery, the seven-day average
+resting heart rate, the respiration, the day's minimum and maximum heart
+rate, and the source's own range of the day. A year of sleep and recovery
+cannot be looked at later from a projection, and a number that cannot say
+where its input came from and when it was read is not inspectable.
+
+So the schema grows a table, and the shape is decided by the missingness:
+
+* **One row per (day, source, field, item).** A field the source never sent
+  has **no row at all**; a field the source sent as null has a row whose
+  value is null. A wide table cannot tell those two apart, and this one has
+  to: *"no reading"* and *"the reading was null"* are different facts, and a
+  store that cannot say which one it is holding is not inspectable.
+* **The field name is the source's own.** Nothing is renamed into the
+  product's vocabulary, and nothing is derived: every value is one the
+  source reported, in the source's own unit, which is recorded beside it.
+* **A later read never deletes a row.** It replaces the value it carried and
+  keeps the reading time of the read that carried it, so a failed read
+  leaves the previous value and its reading time in place. A reading without
+  its retrieval time cannot be audited.
+* **The device's verdicts are not observations.** The sleep scores, the HRV
+  status, the VO2 max and the like are the device's opinion of the athlete,
+  and the plan drops a device score everywhere else. They are not kept.
+
+The ingest follows the same rule: a payload is filed under the day **it**
+carries, not under the day that was asked for, and a failed read is a
+failure — the values already stored stay, and the pull says it failed. The
+reports that carry the rest — the stress durations and the body battery —
+are separate endpoints, and they are read over the window the pull covers:
+two requests for a window, inside the sync's existing request budget.
+
+**The surface is optional, and this change does not add one.** A surface is
+where it can be honest — on Body, the source's own observation, and never a
+second score — but the point of this item is the retention and the
+provenance, and a reviewable, inspectable store is not optional. What the
+product already shows keeps working exactly as it did: `wellness_daily`
+stays the product's projection of the three vitals, and the source's own
+readings live beside it.
+
+This travels with the schema change (the `wellness_observations` table) in
+`docs/contract/schema.sql`.
 
 ---
 

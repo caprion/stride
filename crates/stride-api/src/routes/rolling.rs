@@ -1,0 +1,354 @@
+//! The rolling view: a window of history, and what it holds.
+//!
+//! Two routes answer here, and they are the two halves of the item:
+//!
+//! * `/insights/rolling?weeks=N` — the window and the period before it,
+//!   the split of the training across the athlete's own zones, the weekday
+//!   and daytime splits, and the monthly and yearly tables;
+//! * `/insights/streaks` — the streaks: the current run of days and the
+//!   longest one, and the same for weeks.
+//!
+//! ## What is computed where
+//!
+//! The numbers are the **core's**: the streaks, the window's totals, the
+//! split of the zones, the weekday and daytime splits and the monthly and
+//! yearly tables all come from `stride-core`'s rolling view. This module
+//! reads them through the seam in [`crate::rolling`], which is the one
+//! place the store's rows become the engine's inputs. It opens no
+//! connection and re-derives nothing.
+//!
+//! ## The window
+//!
+//! The window is **the last *N* days ending on the day the answer is
+//! about**, and the comparison period is **the same *N* days ending a day
+//! earlier**. The card names both, so a number is never read apart from
+//! the period it describes.
+//!
+//! ## No value is the absence of the value
+//!
+//! A split with no model, an unusable model or no heart-rate samples has
+//! **no shares at all**, and the reason in the core's own words. A streak
+//! of zero days is **no streak**. Nothing here is ever a zero that stands
+//! in for a value that could not be computed.
+
+use serde_json::Value;
+use stride_core::date::Date;
+use stride_core::rolling::{DaytimeCuts, RollingWindow};
+use stride_core::streaks::Streak;
+use stride_core::units;
+
+use crate::dto::{
+    DaytimeRow, DistanceBucketRow, PeriodRow, ProfileFacet, RollingInsight,
+    RollingWindow as RollingWindowDto, SessionComparison, StreakDetail, StreakInsight, StreakValue,
+    WeekdayRow, WindowComparison, ZoneDistributionRow, ZoneModelSource, ZoneShareRow, ZoneSplit,
+};
+use crate::error::{ApiError, ApiResult};
+use crate::render;
+use crate::router::Request;
+use crate::state::Api;
+
+use super::ok;
+
+/// How many weeks the window may cover — the Progress route's own bound.
+const MAX_WEEKS: i64 = 104;
+
+/// The days a week holds: the window is measured in weeks, and it is
+/// measured in days.
+const DAYS_PER_WEEK: i64 = 7;
+
+/// The rolling view over a window.
+pub fn rolling(api: &Api, request: &Request) -> ApiResult<Value> {
+    let weeks = request.query.integer("weeks")?.unwrap_or(12);
+    if !(1..=MAX_WEEKS).contains(&weeks) {
+        return Err(ApiError::bad_request(
+            "the rolling window is not between 1 and 104 weeks",
+        ));
+    }
+    let current = super::today(api)?;
+    let window = RollingWindow::new(weeks * DAYS_PER_WEEK, current);
+
+    // The whole history: the window's runs and the splits' runs are in it,
+    // and it is one read of the store.
+    let runs = crate::rolling::window_runs(api, "0000-01-01", &current.to_iso())?;
+    let activities = &runs.activities;
+
+    let comparison = crate::rolling::window_comparison(activities, window);
+
+    // The runs the split is measured over: the window and the period
+    // before it.
+    let window_runs: Vec<&stride_store::ActivitySummary> = runs
+        .runs
+        .iter()
+        .filter(|run| {
+            Date::parse(&run.local_date)
+                .map(|date| window.contains(date) || window.previous().contains(date))
+                .unwrap_or(false)
+        })
+        .collect();
+    let split = crate::rolling::zone_split(api, &window_runs, window)?;
+
+    let weekday = crate::rolling::weekday_split_of(activities);
+    let daytime = crate::rolling::daytime_split_of(activities, DaytimeCuts::default());
+    let (months, years) = crate::rolling::period_tables(activities);
+
+    // The runs of the window and of the period before it: the breakdown
+    // and the facets are about the window.
+    let in_window: Vec<stride_core::rolling::RollingActivity> = activities
+        .iter()
+        .filter(|activity| window.contains(activity.date))
+        .cloned()
+        .collect();
+    let in_previous: Vec<stride_core::rolling::RollingActivity> = activities
+        .iter()
+        .filter(|activity| window.previous().contains(activity.date))
+        .cloned()
+        .collect();
+    let buckets = crate::rolling::distance_buckets(&in_window);
+    let profile = crate::rolling::profile_facets(&in_window, &in_previous);
+
+    let response = RollingInsight {
+        generated_at: api.generated_at(),
+        date: current.to_iso(),
+        window: window_of(window),
+        comparison: window_of(window.previous()),
+        distance: distance_comparison(&comparison),
+        duration: duration_comparison(&comparison),
+        sessions: SessionComparison {
+            current: comparison.current.sessions,
+            previous: comparison.previous.sessions,
+            difference: render::difference(
+                Some(comparison.current.sessions as f64 - comparison.previous.sessions as f64),
+                stride_core::ValueUnit::Count,
+            ),
+        },
+        zones: zones_of(&split),
+        distances: buckets.iter().map(bucket_of).collect(),
+        profile: profile.iter().map(facet_of).collect(),
+        weekday: weekday.iter().map(weekday_of).collect(),
+        daytime: daytime.iter().map(daytime_of).collect(),
+        months: months.iter().map(|month| period_of(month, true)).collect(),
+        years: years.iter().map(|year| period_of(year, false)).collect(),
+    };
+    ok(&response)
+}
+
+/// The streaks of the athlete's history.
+pub fn streaks(api: &Api, _request: &Request) -> ApiResult<Value> {
+    let current = super::today(api)?;
+    let answer = crate::rolling::streak_answer(api, current)?;
+    let response = StreakInsight {
+        generated_at: api.generated_at(),
+        date: current.to_iso(),
+        days: StreakDetail {
+            current: answer.current_days.map(streak_of),
+            longest: answer.longest_days.map(streak_of),
+        },
+        weeks: StreakDetail {
+            current: answer.current_weeks.map(streak_of),
+            longest: answer.longest_weeks.map(streak_of),
+        },
+    };
+    ok(&response)
+}
+
+// ------------------------------------------------------------------ helpers
+
+/// A window of days, as the answer names it.
+fn window_of(window: RollingWindow) -> RollingWindowDto {
+    let from = window.from();
+    let to = window.to;
+    RollingWindowDto {
+        from: from.to_iso(),
+        from_label: super::day_label(from),
+        to: to.to_iso(),
+        to_label: super::day_label(to),
+        days: window.days,
+    }
+}
+
+/// The distance of the window and of the period before it.
+///
+/// The difference is the core's rendering of it, sign and all: the sign is
+/// the number's own, and nothing here says which way is the better way.
+fn distance_comparison(comparison: &stride_core::rolling::WindowComparison) -> WindowComparison {
+    WindowComparison {
+        current: render::distance(Some(comparison.current.distance_m)),
+        previous: render::distance(Some(comparison.previous.distance_m)),
+        difference: render::difference(
+            Some(comparison.current.distance_m - comparison.previous.distance_m),
+            stride_core::ValueUnit::Distance,
+        ),
+    }
+}
+
+/// The moving time of the window and of the period before it.
+fn duration_comparison(comparison: &stride_core::rolling::WindowComparison) -> WindowComparison {
+    WindowComparison {
+        current: render::duration(Some(comparison.current.moving_time_s)),
+        previous: render::duration(Some(comparison.previous.moving_time_s)),
+        difference: render::difference(
+            Some(comparison.current.moving_time_s - comparison.previous.moving_time_s),
+            stride_core::ValueUnit::Duration,
+        ),
+    }
+}
+
+/// One bucket of the distance breakdown.
+fn bucket_of(bucket: &stride_core::rolling::DistanceBucket) -> DistanceBucketRow {
+    let from_m = bucket.from_km * 1000.0;
+    let to_m = bucket.to_km * 1000.0;
+    DistanceBucketRow {
+        key: format!("{}-{}", bucket.from_km as i64, bucket.to_km as i64),
+        label: units::render_distance_range(Some(from_m), Some(to_m)).unwrap_or_default(),
+        sessions: bucket.sessions,
+        distance: render::distance_of(bucket.distance_m),
+        elevation: render::elevation_of(bucket.elevation_gain_m),
+        duration: render::duration_of(bucket.moving_time_s),
+    }
+}
+
+/// One facet of the athlete's shape.
+fn facet_of(facet: &stride_core::profile::Facet) -> ProfileFacet {
+    ProfileFacet {
+        key: facet.key.key().to_string(),
+        label: facet.label.to_string(),
+        value: facet_value(facet.value, facet.unit),
+        previous: facet_value(facet.previous, facet.unit),
+        movement: facet.movement.map(|movement| movement.key().to_string()),
+    }
+}
+
+/// A facet's value, in the unit the facet is in.
+fn facet_value(
+    value: Option<f64>,
+    unit: stride_core::profile::FacetUnit,
+) -> Option<crate::dto::RenderedValue> {
+    use stride_core::profile::FacetUnit;
+    match unit {
+        FacetUnit::Distance => render::distance(value),
+        FacetUnit::Count => render::whole(value),
+        FacetUnit::Duration => render::duration(value),
+        FacetUnit::HeartRate => render::heart_rate(value),
+    }
+}
+
+/// The split of the training across the athlete's zones.
+///
+/// The model's own source line travels with the shares: a number that
+/// cannot say where its input came from is not inspectable.
+fn zones_of(split: &crate::rolling::ZoneSplitAnswer) -> ZoneSplit {
+    let model = split.model.as_ref().map(|model| {
+        let read_on_label = super::day_label(model.read_on);
+        ZoneModelSource {
+            read_on: model.read_on.to_iso(),
+            read_on_label: read_on_label.clone(),
+            source: stride_core::model_source(
+                &model.training_method,
+                model.max_heart_rate,
+                &read_on_label,
+            ),
+        }
+    });
+    let shares = split.shares.as_ref().map(|shares| {
+        shares
+            .iter()
+            .map(|share| ZoneShareRow {
+                key: share.band.key().to_string(),
+                label: share.band.label().to_string(),
+                share: render::share(share.share),
+                previous_share: render::share(share.previous_share),
+                trend: share.trend.map(|trend| trend.key().to_string()),
+            })
+            .collect()
+    });
+    let distribution = split.distribution.as_ref().map(|rows| {
+        let edges = split
+            .model
+            .as_ref()
+            .map(|model| stride_core::zones::zone_edges(&model.floors, model.max_heart_rate));
+        rows.iter()
+            .map(|row| {
+                let (from, to) = edges
+                    .map(|edges| edges[row.zone - 1])
+                    .unwrap_or((0.0, None));
+                ZoneDistributionRow {
+                    zone: units::render_zone_label(row.zone).unwrap_or_default(),
+                    range: units::render_heart_rate_range(Some(from), to),
+                    time: render::duration_of(row.time_s),
+                    share: render::share(Some(row.share)),
+                }
+            })
+            .collect()
+    });
+    ZoneSplit {
+        model,
+        shares,
+        distribution,
+        unavailable: split.unavailable.clone(),
+    }
+}
+
+/// One day of the week, as the answer names it.
+fn weekday_of(day: &stride_core::rolling::WeekdayTotals) -> WeekdayRow {
+    WeekdayRow {
+        weekday: day.weekday.name().to_string(),
+        sessions: day.sessions,
+        distance: render::distance_of(day.distance_m),
+        duration: render::duration_of(day.moving_time_s),
+        share: render::share(day.share),
+    }
+}
+
+/// One time of day, as the answer names it.
+fn daytime_of(daytime: &stride_core::rolling::DaytimeTotals) -> DaytimeRow {
+    DaytimeRow {
+        key: daytime.daytime.key().to_string(),
+        label: daytime.daytime.label().to_string(),
+        from_hour: daytime.from_hour,
+        to_hour: daytime.to_hour,
+        sessions: daytime.sessions,
+        distance: render::distance_of(daytime.distance_m),
+        duration: render::duration_of(daytime.moving_time_s),
+    }
+}
+
+/// One month or year of the history, as the answer names it.
+fn period_of(period: &stride_core::rolling::PeriodTotals, month: bool) -> PeriodRow {
+    PeriodRow {
+        key: period.key.clone(),
+        label: if month {
+            month_label(&period.key)
+        } else {
+            period.key.clone()
+        },
+        sessions: period.sessions,
+        distance: render::distance_of(period.distance_m),
+        duration: render::duration_of(period.moving_time_s),
+        elevation: render::elevation_of(period.elevation_gain_m),
+    }
+}
+
+/// A month, as the api writes it: "April 2026".
+fn month_label(key: &str) -> String {
+    let mut parts = key.split('-');
+    let year = parts.next().and_then(|year| year.parse::<i32>().ok());
+    let month = parts.next().and_then(|month| month.parse::<u32>().ok());
+    match (year, month) {
+        (Some(year), Some(month)) => {
+            let naive = chrono::NaiveDate::from_ymd_opt(year, month, 1).unwrap_or_default();
+            naive.format("%B %Y").to_string()
+        }
+        _ => key.to_string(),
+    }
+}
+
+/// One streak, as the answer names it.
+fn streak_of(streak: Streak) -> StreakValue {
+    StreakValue {
+        count: streak.count,
+        start: streak.start.to_iso(),
+        start_label: super::day_label(streak.start),
+        end: streak.end.map(|end| end.to_iso()),
+        end_label: streak.end.map(super::day_label),
+    }
+}

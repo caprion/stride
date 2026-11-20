@@ -125,12 +125,12 @@ fn a_provider_checkpoint_preserves_missing_fields_and_records_no_data_days() -> 
     };
     row.hrv_ms = None;
     row.sleep_s = Some(21_000.0);
-    store.write_wellness_checkpoint(Some(&row), &checkpoint)?;
+    store.write_wellness_checkpoint(std::slice::from_ref(&row), &[], &checkpoint)?;
     let read = store.wellness_daily("2026-05-10")?;
     assert_eq!(read.as_ref().and_then(|row| row.hrv_ms), Some(48.0));
     assert_eq!(read.as_ref().and_then(|row| row.sleep_s), Some(21_000.0));
     checkpoint.cursor = Some("checked-2026-05-09".to_string());
-    store.write_wellness_checkpoint(None, &checkpoint)?;
+    store.write_wellness_checkpoint(&[], &[], &checkpoint)?;
     assert_eq!(store.count_wellness_daily()?, 1);
     assert_eq!(
         store.sync_state("wellness")?.and_then(|state| state.cursor),
@@ -139,7 +139,7 @@ fn a_provider_checkpoint_preserves_missing_fields_and_records_no_data_days() -> 
     checkpoint.kind = "activities".to_string();
     row.sleep_s = Some(1.0);
     assert!(store
-        .write_wellness_checkpoint(Some(&row), &checkpoint)
+        .write_wellness_checkpoint(std::slice::from_ref(&row), &[], &checkpoint)
         .is_err());
     assert_eq!(
         store
@@ -170,7 +170,7 @@ fn a_failed_checkpoint_rolls_back_the_wellness_write() -> Result<()> {
         updated_at: row.updated_at,
     };
     assert!(store
-        .write_wellness_checkpoint(Some(&row), &checkpoint)
+        .write_wellness_checkpoint(std::slice::from_ref(&row), &[], &checkpoint)
         .is_err());
     assert!(store.wellness_daily("2026-05-10")?.is_none());
     assert!(store.sync_state("wellness")?.is_none());

@@ -63,6 +63,11 @@ CREATE TABLE activity_samples (
 -- body_battery, training_readiness, vo2max, endurance_score, running_tolerance,
 -- acute/chronic load, steps) — the product never shows a device score, so none
 -- is stored.
+--
+-- This table stays the product's *projection*: the three vitals the screens
+-- read. The source's own readings — the sleep window, the stress durations,
+-- the body battery, the seven-day average resting heart rate, the respiration
+-- — are kept whole, with their provenance, in `wellness_observations` (v4).
 CREATE TABLE wellness_daily (
     date          VARCHAR(10) NOT NULL PRIMARY KEY, -- YYYY-MM-DD
     sleep_s       REAL,                             -- NULL = no value
@@ -167,6 +172,36 @@ CREATE TABLE hr_zone_models (
     read_at          DATETIME NOT NULL              -- when the model was read, ISO-8601 UTC
 );
 
+-- Old: (nothing - the old app stored a projection of the wellness and
+-- dropped the rest of it). v4: the source's own wellness observations, kept
+-- with their provenance: the value, the day the source reported it for, and
+-- the day it was read. One row per (day, source, field, item).
+--
+-- The missingness is kept as the source gave it: a field the source never
+-- sent has no row at all, and a field the source sent as null has a row
+-- whose value is null. A later read never deletes a row - it replaces the
+-- value it carried and keeps the reading time of the read that carried it -
+-- so a failed read leaves the previous value and its reading time in place.
+--
+-- Nothing here is derived: every value is one the source reported, in the
+-- source's own unit. The device's own verdicts - the sleep scores, the HRV
+-- status, the VO2 max - are judgements, not observations, and are not
+-- stored.
+CREATE TABLE wellness_observations (
+    id           INTEGER NOT NULL PRIMARY KEY,
+    date         VARCHAR(10) NOT NULL,        -- the day the source reported the value for
+    source       VARCHAR(24) NOT NULL,        -- 'garmin_personal'
+    endpoint     VARCHAR(96) NOT NULL,        -- the API path the value was read from
+    field        VARCHAR(48) NOT NULL,        -- the source's own field name
+    ordinal      INTEGER NOT NULL DEFAULT 0,  -- which item of a repeated field this is
+    value        REAL,                        -- the number, as reported; NULL when the source sent null
+    text_value   TEXT,                        -- a value that is not a number, as reported
+    unit         VARCHAR(16),                 -- the unit the source states for the number
+    observed_at  DATETIME,                    -- the instant the item is about, when the source gave one
+    retrieved_at DATETIME NOT NULL,           -- when the value was read, ISO-8601 UTC
+    CONSTRAINT uq_wellness_observations UNIQUE (date, source, field, ordinal)
+);
+
 -- Indexes, created after the tables, in this order.
 CREATE INDEX ix_activities_local_date ON activities (local_date);
 CREATE INDEX ix_activities_sport      ON activities (sport_type);
@@ -175,3 +210,4 @@ CREATE INDEX ix_plan_blocks_start_date ON plan_blocks (start_date);
 CREATE INDEX ix_plan_sessions_block_date ON plan_sessions (block_id, date);
 CREATE INDEX ix_plan_sessions_date     ON plan_sessions (date);
 CREATE INDEX ix_notes_activity_id     ON notes (activity_id);
+CREATE INDEX ix_wellness_observations_date ON wellness_observations (date);

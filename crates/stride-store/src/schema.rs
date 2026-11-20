@@ -23,13 +23,17 @@
 //! The version of the schema is SQLite's own `user_version`, so a database
 //! knows where it is without a table of its own. Running the migration twice
 //! changes nothing and does not fail.
+//!
+//! A step adds the tables **and** the indexes that go with them: an index
+//! added to an old step would never be created on a database that already
+//! ran that step.
 
 use rusqlite::Connection;
 
 use crate::error::{Result, StoreError};
 
 /// The version of the schema this build reads and writes.
-pub const SCHEMA_VERSION: i64 = 3;
+pub const SCHEMA_VERSION: i64 = 4;
 
 /// The statements that create the tables, in creation order.
 ///
@@ -166,6 +170,43 @@ CREATE TABLE hr_zone_models (
     read_at          DATETIME NOT NULL              -- when the model was read, ISO-8601 UTC
 );
 "#,
+    // The table added in version 4: the source's own wellness observations.
+    //
+    // The old app kept a projection of the wellness and dropped the rest:
+    // the sleep window, the stress durations, the body battery, the seven-day
+    // average resting heart rate, the respiration. This table keeps what the
+    // source actually serves, with its provenance - the value, the day the
+    // source reported it for, and the day it was read.
+    r#"-- Old: (nothing - the old app stored a projection of the wellness and
+-- dropped the rest of it). v4: the source's own wellness observations, kept
+-- with their provenance: the value, the day the source reported it for, and
+-- the day it was read. One row per (day, source, field, item).
+--
+-- The missingness is kept as the source gave it: a field the source never
+-- sent has no row at all, and a field the source sent as null has a row
+-- whose value is null. A later read never deletes a row - it replaces the
+-- value it carried and keeps the reading time of the read that carried it -
+-- so a failed read leaves the previous value and its reading time in place.
+--
+-- Nothing here is derived: every value is one the source reported, in the
+-- source's own unit. The device's own verdicts - the sleep scores, the HRV
+-- status, the VO2 max - are judgements, not observations, and are not
+-- stored.
+CREATE TABLE wellness_observations (
+    id           INTEGER NOT NULL PRIMARY KEY,
+    date         VARCHAR(10) NOT NULL,        -- the day the source reported the value for
+    source       VARCHAR(24) NOT NULL,        -- 'garmin_personal'
+    endpoint     VARCHAR(96) NOT NULL,        -- the API path the value was read from
+    field        VARCHAR(48) NOT NULL,        -- the source's own field name
+    ordinal      INTEGER NOT NULL DEFAULT 0,  -- which item of a repeated field this is
+    value        REAL,                        -- the number, as reported; NULL when the source sent null
+    text_value   TEXT,                        -- a value that is not a number, as reported
+    unit         VARCHAR(16),                 -- the unit the source states for the number
+    observed_at  DATETIME,                    -- the instant the item is about, when the source gave one
+    retrieved_at DATETIME NOT NULL,           -- when the value was read, ISO-8601 UTC
+    CONSTRAINT uq_wellness_observations UNIQUE (date, source, field, ordinal)
+);
+"#,
 ];
 
 /// The statements that create the indexes, in creation order.
@@ -186,12 +227,22 @@ pub const INDEX_STATEMENTS: &[&str] = &[
 "#,
 ];
 
+/// The indexes that version 4 adds, in creation order.
+///
+/// They are separate from [`INDEX_STATEMENTS`] because an index added to an
+/// older step would never be created on a database that already ran it.
+pub const V4_INDEX_STATEMENTS: &[&str] = &[
+    r#"CREATE INDEX ix_wellness_observations_date ON wellness_observations (date);
+"#,
+];
+
 /// Every statement of the schema, in order: the tables first, then the
 /// indexes.
 pub fn all_statements() -> Vec<&'static str> {
     TABLE_STATEMENTS
         .iter()
         .chain(INDEX_STATEMENTS.iter())
+        .chain(V4_INDEX_STATEMENTS.iter())
         .copied()
         .collect()
 }
@@ -208,12 +259,13 @@ pub struct Migration {
 ///
 /// Version 1 is the schema of the original freeze. Version 2 adds the
 /// tombstone table for the runs Garmin no longer lists. Version 3 adds the
-/// heart-rate zone model table. A database at an older version gets the
-/// missing steps, each in its own transaction.
+/// heart-rate zone model table. Version 4 adds the wellness observations
+/// table. A database at an older version gets the missing steps, each in its
+/// own transaction.
 ///
 /// The first seven tables of [`TABLE_STATEMENTS`] are version 1; the eighth
 /// — the tombstone table — is version 2; the ninth — the zone model table —
-/// is version 3.
+/// is version 3; the tenth — the wellness observations table — is version 4.
 pub fn migrations() -> Vec<Migration> {
     vec![
         Migration {
@@ -229,8 +281,16 @@ pub fn migrations() -> Vec<Migration> {
             statements: TABLE_STATEMENTS[7..8].to_vec(),
         },
         Migration {
+            version: 3,
+            statements: TABLE_STATEMENTS[8..9].to_vec(),
+        },
+        Migration {
             version: SCHEMA_VERSION,
-            statements: TABLE_STATEMENTS[8..].to_vec(),
+            statements: TABLE_STATEMENTS[9..]
+                .iter()
+                .chain(V4_INDEX_STATEMENTS.iter())
+                .copied()
+                .collect(),
         },
     ]
 }

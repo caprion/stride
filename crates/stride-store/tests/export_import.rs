@@ -3,7 +3,23 @@
 mod common;
 
 use stride_store::export::{self, Format};
-use stride_store::{DatabaseKey, Result, Store};
+use stride_store::{DatabaseKey, NewWellnessObservation, Result, Store};
+
+/// An observation to write, with the values a test wants.
+fn observation(field: &str, value: Option<f64>) -> NewWellnessObservation {
+    NewWellnessObservation {
+        date: "2026-05-10".to_string(),
+        source: "garmin_personal".to_string(),
+        endpoint: "/usersummary-service/usersummary/daily".to_string(),
+        field: field.to_string(),
+        ordinal: 0,
+        value,
+        text_value: None,
+        unit: Some("s".to_string()),
+        observed_at: None,
+        retrieved_at: common::instant(),
+    }
+}
 
 #[test]
 fn an_export_is_a_database_and_a_manifest() -> Result<()> {
@@ -72,6 +88,31 @@ fn an_import_reads_the_export_back() -> Result<()> {
 }
 
 #[test]
+fn the_observations_travel_with_the_export() -> Result<()> {
+    let (dir, store) = common::store("export-observations")?;
+    store.write_wellness_observations(&[observation("lowStressDuration", Some(1_800.0))])?;
+
+    let target = dir.file("export");
+    let manifest = export::export(&store, &target, &common::key()?)?;
+    assert_eq!(manifest.tables.get("wellness_observations"), Some(&1));
+
+    // A second database, empty, reads the export.
+    let other = Store::open_and_migrate(&dir.file("other.db"), &common::key()?)?;
+    let report = export::import(&other, &target, &common::key()?)?;
+    assert_eq!(report.observations, 1);
+    assert_eq!(other.count_wellness_observations()?, 1);
+
+    let stored = other.wellness_observations("2026-05-10")?;
+    assert_eq!(stored.len(), 1);
+    assert_eq!(stored[0].field, "lowStressDuration");
+    assert_eq!(stored[0].value, Some(1_800.0));
+    assert_eq!(stored[0].retrieved_at, common::instant());
+
+    drop(dir);
+    Ok(())
+}
+
+#[test]
 fn an_import_twice_adds_nothing_the_second_time() -> Result<()> {
     let (dir, store) = common::store("export-import-twice")?;
     store.upsert_activity(&common::activity("run-1", "2026-05-10"))?;
@@ -102,7 +143,7 @@ fn an_import_refuses_an_export_of_another_schema_version() -> Result<()> {
     // The manifest says a schema this build does not read.
     let path = target.join("manifest.json");
     let text = common::read_text(&path)?;
-    let text = text.replace("\"schema_version\": 3", "\"schema_version\": 99");
+    let text = text.replace("\"schema_version\": 4", "\"schema_version\": 99");
     common::write(&path, &text)?;
 
     let other = Store::open_and_migrate(&dir.file("other.db"), &common::key()?)?;
@@ -121,7 +162,7 @@ fn an_import_refuses_an_export_of_another_schema_version() -> Result<()> {
         "the error does not say the version: {text}"
     );
     assert!(
-        text.contains("3"),
+        text.contains("4"),
         "the error does not say the version: {text}"
     );
 
@@ -197,7 +238,7 @@ fn a_plain_database_is_converted_into_an_encrypted_one() -> Result<()> {
 
     let report = export::convert_plaintext_to_encrypted(&path, &common::key()?)?;
 
-    assert_eq!(report.tables.len(), 9);
+    assert_eq!(report.tables.len(), 10);
     assert_eq!(report.rows, 1);
     assert!(
         report.schema_matches,

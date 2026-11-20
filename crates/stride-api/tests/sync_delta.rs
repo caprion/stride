@@ -214,6 +214,8 @@ impl HttpTransport for SyncGarmin {
                 stride_ingest::garmin::USER_SUMMARY_PATH,
             ]
             .contains(&path.as_str())
+            || path.starts_with(stride_ingest::garmin::STRESS_PATH)
+            || path.starts_with(stride_ingest::garmin::BODY_BATTERY_PATH)
         {
             return Ok(HttpResponse {
                 status: 204,

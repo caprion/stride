@@ -562,6 +562,253 @@ export interface LoadScenario {
   }[]
 }
 
+/**
+ * The rolling view: a window of history and what it holds.
+ *
+ * The window is **the last N days ending on the day the answer is about**,
+ * and the comparison period is **the same N days ending a day earlier**.
+ * The two are a comparison, not a verdict: the numbers side by side and
+ * the difference between them.
+ */
+export interface RollingInsight {
+  generated_at: string
+  /** The athlete's local calendar date the answer is about. */
+  date: string
+  /** The window the answer is about. */
+  window: RollingWindow
+  /** The period the window is compared against. */
+  comparison: RollingWindow
+  /** The distance of the window and of the period before it. */
+  distance: WindowComparison
+  /** The moving time of the window and of the period before it. */
+  duration: WindowComparison
+  /** The runs of the window and of the period before it. */
+  sessions: SessionComparison
+  /** The split of the training across the athlete's own zones. */
+  zones: ZoneSplit
+  /** The buckets of the distance breakdown: the runs, by how far they went. */
+  distances: DistanceBucketRow[]
+  /** The athlete's shape over the window: seven facets. */
+  profile: ProfileFacet[]
+  /** What usually happened on each day of the week. */
+  weekday: WeekdayRow[]
+  /** What usually happened in each time of day. */
+  daytime: DaytimeRow[]
+  /** What each month of the history holds, newest first. */
+  months: PeriodRow[]
+  /** What each year of the history holds, newest first. */
+  years: PeriodRow[]
+}
+
+/** A window of days. */
+export interface RollingWindow {
+  /** The first day of the window, in the athlete's own calendar. */
+  from: string
+  /** The same day, as the api writes a date: "18 Feb 2026". */
+  from_label: string
+  /** The last day of the window. */
+  to: string
+  /** The same day, as the api writes a date: "12 May 2026". */
+  to_label: string
+  /** How many days the window covers. */
+  days: number
+}
+
+/** A value in a window, in the window before it, and the difference. */
+export interface WindowComparison {
+  /** The value in the window. */
+  current: RenderedValue | null
+  /** The value in the window before it. */
+  previous: RenderedValue | null
+  /** The difference between the two, sign and all. */
+  difference: RenderedValue | null
+}
+
+/** A count in a window, in the window before it, and the difference. */
+export interface SessionComparison {
+  /** The runs in the window. */
+  current: number
+  /** The runs in the window before it. */
+  previous: number
+  /** The difference between the two, as the core renders it. */
+  difference: RenderedValue | null
+}
+
+/**
+ * The split of the training across the athlete's own zones.
+ *
+ * The shares are facts — what share of the time in the zones was spent
+ * in the low band, the moderate band and the high band. There is no
+ * target range beside them.
+ */
+export interface ZoneSplit {
+  /** The model the split was measured against, when there is one. */
+  model: ZoneModelSource | null
+  /** The shares, when there is a value. */
+  shares: ZoneShareRow[] | null
+  /** The distribution: the time in each of the five zones. */
+  distribution: ZoneDistributionRow[] | null
+  /** Why there is no split, in the core's own words. */
+  unavailable: string | null
+}
+
+/** One zone of the distribution: the time in it and its share. */
+export interface ZoneDistributionRow {
+  /** The zone's label: "Z1". */
+  zone: string
+  /** The range the zone covers, as the core renders it: "106-121 bpm". */
+  range: string | null
+  /** The time in the zone, as the core renders it. */
+  time: RenderedValue
+  /** The zone's share of the time in the zones. */
+  share: RenderedValue | null
+}
+
+/** One bucket of the distance breakdown. */
+export interface DistanceBucketRow {
+  /** The bucket's key: "0-5". */
+  key: string
+  /** The bucket's range, as the core renders it: "0-5 km". */
+  label: string
+  /** The runs that fell into the bucket. */
+  sessions: number
+  /** The distance of those runs. */
+  distance: RenderedValue
+  /** The elevation gain of those runs. */
+  elevation: RenderedValue
+  /** The moving time of those runs. */
+  duration: RenderedValue
+}
+
+/**
+ * One facet of the athlete's shape.
+ *
+ * A value, and the way it moved against the window before it. There is
+ * no polygon and no score: the reader draws the shape.
+ */
+export interface ProfileFacet {
+  /** The facet's key: "volume", "consistency" and so on. */
+  key: string
+  /** The facet's name, in the core's words: "Sport variety". */
+  label: string
+  /** The value in the window. Null when it cannot be computed. */
+  value: RenderedValue | null
+  /** The value in the window before it. */
+  previous: RenderedValue | null
+  /** Which way it moved: "up", "down" or "steady". */
+  movement: string | null
+}
+
+/** The zone model a split was measured against. */
+export interface ZoneModelSource {
+  /** The day the model was read, in the athlete's own calendar. */
+  read_on: string
+  /** The same day, as the api writes a date: "10 May 2026". */
+  read_on_label: string
+  /** The model's own source line, in the core's words. */
+  source: string | null
+}
+
+/** One band's share of the time in the zones. */
+export interface ZoneShareRow {
+  /** The band's key: "low", "moderate" or "high". */
+  key: string
+  /** The band's name, in the core's words: "Z1–Z2 low". */
+  label: string
+  /** The share of the time in the zones. */
+  share: RenderedValue | null
+  /** The share in the window before it. */
+  previous_share: RenderedValue | null
+  /** Which way it moved: "up", "down" or "steady". */
+  trend: string | null
+}
+
+/** What usually happened on one day of the week. */
+export interface WeekdayRow {
+  /** The day's name, in the core's words: "Monday". */
+  weekday: string
+  /** How many runs fell on it. */
+  sessions: number
+  /** The distance of those runs. */
+  distance: RenderedValue
+  /** The moving time of those runs. */
+  duration: RenderedValue
+  /** The day's share of the moving time. */
+  share: RenderedValue | null
+}
+
+/** What usually happened in one time of day. */
+export interface DaytimeRow {
+  /** The bucket's key: "morning", "afternoon", "evening" or "night". */
+  key: string
+  /** The bucket's name, in the core's words. */
+  label: string
+  /** The hour the bucket starts at, in the athlete's own local time. */
+  from_hour: number
+  /** The hour the bucket ends at. */
+  to_hour: number
+  /** How many runs fell into it. */
+  sessions: number
+  /** The distance of those runs. */
+  distance: RenderedValue
+  /** The moving time of those runs. */
+  duration: RenderedValue
+}
+
+/** What a month or a year of the history holds. */
+export interface PeriodRow {
+  /** The period's key: "2026-04" for a month, "2026" for a year. */
+  key: string
+  /** The period's name, as the api writes it: "April 2026" or "2026". */
+  label: string
+  /** How many runs fell into it. */
+  sessions: number
+  /** The distance of those runs. */
+  distance: RenderedValue
+  /** The moving time of those runs. */
+  duration: RenderedValue
+  /** The elevation gain of those runs. */
+  elevation: RenderedValue
+}
+
+/**
+ * The streaks of the athlete's history.
+ *
+ * A streak is a count and the days it covers: nothing more. There is no
+ * "you are consistent" here — the number is the number.
+ */
+export interface StreakInsight {
+  generated_at: string
+  /** The athlete's local calendar date the answer is about. */
+  date: string
+  /** The streaks of days. */
+  days: StreakDetail
+  /** The streaks of weeks. */
+  weeks: StreakDetail
+}
+
+/** The streaks of one kind: the current one and the longest one. */
+export interface StreakDetail {
+  /** The streak that is still going. Null when there is none. */
+  current: StreakValue | null
+  /** The longest one in the history. */
+  longest: StreakValue | null
+}
+
+/** One streak: how long it is, and the days it covers. */
+export interface StreakValue {
+  /** How many days (or weeks) the streak runs. */
+  count: number
+  /** The day it started, in the athlete's own calendar. */
+  start: string
+  /** The same day, as the api writes a date: "2 May 2026". */
+  start_label: string
+  /** The day it ended, when it ended in the past. */
+  end: string | null
+  /** The same day, as the api writes a date. */
+  end_label: string | null
+}
+
 export interface ActivityCalendar {
   year: number
   month: number
@@ -733,6 +980,155 @@ export interface FitnessZones {
   outside: RenderedValue | null
   /** Why there is no value, in the core's words. */
   unavailable: string | null
+}
+
+/**
+ * One observation of a run's mechanics.
+ *
+ * **An observation is a value or a reason** — never a zero where there is
+ * nothing to measure, and never a score: a weighted mean of a run's
+ * numbers would be a grade, and a grade is a verdict.
+ */
+export interface FingerprintObservation {
+  /** The observation's key: "cadence", "cadence_variability", and so on. */
+  key: string
+  /** The label, in the core's own words: "Cadence". */
+  label: string
+  /** The value, as the core renders it: "163.0 spm". */
+  value: RenderedValue | null
+  /** Why there is no value, in the core's words. */
+  reason: string | null
+}
+
+/**
+ * One zone's share of the moving time.
+ *
+ * The share is of the time **in the zones**; the time outside them is
+ * reported on its own.
+ */
+export interface ZoneShare {
+  /** The zone's name, as the core names it: "Z1". */
+  label: string
+  /** The zone's share of the time in the zones: "8.0 %". */
+  share: RenderedValue
+  /** The time spent in the zone, as the core renders it: "12 m". */
+  time: RenderedValue | null
+}
+
+/**
+ * The zone distribution of a run, against the athlete's **stored** model.
+ *
+ * When there is not enough to compute it — no model has been read, or the
+ * stored model cannot be used — the answer says so in words rather than
+ * inventing shares.
+ */
+export interface FingerprintZones {
+  /** The model the shares were computed against, named and dated. */
+  model: ZoneModel | null
+  /** The shares, one per zone. Empty when there is no value. */
+  shares: ZoneShare[]
+  /** The time outside the zones. */
+  outside: RenderedValue | null
+  /** Why there is no value, in the core's words. */
+  unavailable: string | null
+  /** Where the model came from, in the core's words. */
+  source: string | null
+}
+
+/**
+ * The fingerprint of one run: the run's own mechanics, as **observations**.
+ *
+ * The observations come from the run's own laps and its moving samples,
+ * decoded on read; the zone shares are the athlete's own model's, with the
+ * day that model was read. There is no score in the answer, and no
+ * composite: the reader decides what the numbers mean.
+ */
+export interface Fingerprint {
+  /** The run's id. */
+  activity_id: number
+  /** The athlete's local date. */
+  local_date: string
+  /** The basis the numbers were computed on: "laps and moving samples". */
+  basis: string | null
+  /** How many laps the analysis used: the running ones. */
+  laps: number
+  /** The observations, in the order the app shows them. */
+  observations: FingerprintObservation[]
+  /** The zone distribution. */
+  zones: FingerprintZones
+  /** Why there is no value at all, in the core's words. */
+  unavailable: string | null
+  /** When the answer was produced. */
+  generated_at: string
+}
+
+/**
+ * The heatmap: a grid over the stored positions.
+ *
+ * **Computed on the device.** The api fetches nothing for this answer and
+ * sends nothing with it: the cells are made of the positions the athlete's
+ * own runs carry, decoded from their stored FIT files on read.
+ *
+ * A cell's value is a **count of runs**, never a route: no cell carries a
+ * time, an order or a connection to another cell, so no path can be read
+ * back out of the answer.
+ */
+export interface HeatmapInsight {
+  /** When the answer was produced. */
+  generated_at: string
+  /** The athlete's local date. */
+  date: string
+  /** How many runs carried a position and were counted. */
+  runs: number
+  /**
+   * Whether the store holds runs this answer did not read.
+   *
+   * The answer is bounded — it reads the newest runs — and says so rather
+   * than letting a partial map read as the whole history.
+   */
+  more_runs: boolean
+  /**
+   * The size of one cell on the ground, as the core renders it: "2 km".
+   *
+   * `null` when there is no cell to size.
+   */
+  cell_size: RenderedValue | null
+  /** The cells, north to south and west to east. */
+  cells: HeatmapCell[]
+  /** The box the cells cover, or null when there is none. */
+  extent: HeatmapExtent | null
+  /** Why there is no heatmap, or null when there is one. */
+  unavailable: string | null
+}
+
+/** One cell of the heatmap. */
+export interface HeatmapCell {
+  /** The cell's column in the grid. */
+  x: number
+  /** The cell's row in the grid. */
+  y: number
+  /** The cell's southern edge. */
+  south: number
+  /** The cell's western edge. */
+  west: number
+  /** The cell's northern edge. */
+  north: number
+  /** The cell's eastern edge. */
+  east: number
+  /** How many runs went through this cell. */
+  runs: number
+}
+
+/** The box the heatmap's cells cover. */
+export interface HeatmapExtent {
+  /** The southern edge. */
+  south: number
+  /** The western edge. */
+  west: number
+  /** The northern edge. */
+  north: number
+  /** The eastern edge. */
+  east: number
 }
 
 /** The health of the sync window. */

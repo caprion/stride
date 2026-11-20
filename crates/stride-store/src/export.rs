@@ -138,6 +138,8 @@ pub struct ImportReport {
     pub plan_sessions: usize,
     /// How many notes were written.
     pub notes: usize,
+    /// How many of the source's own wellness observations were written.
+    pub observations: usize,
     /// How many rows there are in all.
     pub rows: usize,
 }
@@ -499,11 +501,23 @@ const HR_ZONE_MODELS: FrozenTable = FrozenTable {
     columns: "PRAGMA main.table_info(\"hr_zone_models\")",
 };
 
+/// `wellness_observations`.
+const WELLNESS_OBSERVATIONS: FrozenTable = FrozenTable {
+    name: "wellness_observations",
+    select: "SELECT id, date, source, endpoint, field, ordinal, value, text_value, unit, \
+             observed_at, retrieved_at FROM wellness_observations",
+    insert: "INSERT INTO wellness_observations (id, date, source, endpoint, field, ordinal, \
+              value, text_value, unit, observed_at, retrieved_at) \
+              VALUES (:id, :date, :source, :endpoint, :field, :ordinal, :value, :text_value, \
+              :unit, :observed_at, :retrieved_at)",
+    columns: "PRAGMA main.table_info(\"wellness_observations\")",
+};
+
 /// The tables of the frozen schema, in the schema's order.
 ///
 /// The order is the schema's: parents before children, so a child never
 /// arrives before its parent.
-const FROZEN_TABLES: [FrozenTable; 9] = [
+const FROZEN_TABLES: [FrozenTable; 10] = [
     ACTIVITIES,
     ACTIVITY_SAMPLES,
     WELLNESS_DAILY,
@@ -513,6 +527,7 @@ const FROZEN_TABLES: [FrozenTable; 9] = [
     SYNC_STATE,
     DELETED_GARMIN_ACTIVITIES,
     HR_ZONE_MODELS,
+    WELLNESS_OBSERVATIONS,
 ];
 
 /// Copy every row of the schema from one database to another.
@@ -849,6 +864,42 @@ fn merge(source: &Connection, destination: &Connection) -> Result<ImportReport> 
                 ],
             )
             .map_err(|error| StoreError::query("the tombstone", error))?;
+        report.rows += 1;
+    }
+
+    // The source's own wellness observations, by day, source, field and
+    // item. A row is replaced, never duplicated: the import is a merge.
+    for row in read_rows(source, &WELLNESS_OBSERVATIONS)? {
+        transaction
+            .execute(
+                "INSERT INTO wellness_observations (
+                    date, source, endpoint, field, ordinal, value, text_value,
+                    unit, observed_at, retrieved_at
+                 ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)
+                 ON CONFLICT(date, source, field, ordinal) DO UPDATE SET
+                    endpoint = excluded.endpoint,
+                    value = excluded.value,
+                    text_value = excluded.text_value,
+                    unit = excluded.unit,
+                    observed_at = excluded.observed_at,
+                    retrieved_at = excluded.retrieved_at",
+                rusqlite::params![
+                    text_of(&row, "date"),
+                    text_of(&row, "source"),
+                    text_of(&row, "endpoint"),
+                    text_of(&row, "field"),
+                    row.get("ordinal")
+                        .and_then(|value| value.as_i64())
+                        .unwrap_or_default(),
+                    row.get("value").and_then(|value| value.as_f64()),
+                    optional_text(&row, "text_value"),
+                    optional_text(&row, "unit"),
+                    optional_text(&row, "observed_at"),
+                    text_of(&row, "retrieved_at"),
+                ],
+            )
+            .map_err(|error| StoreError::query("the wellness observations", error))?;
+        report.observations += 1;
         report.rows += 1;
     }
 

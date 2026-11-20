@@ -21,7 +21,7 @@ reference only).
 | `/activities/{id}` | one run |
 | `/activities/{id}/fit` | the run's **original FIT file** — the source of truth, byte for byte as Garmin served it | the athlete's own file, downloaded to their own machine; the app never uploads it anywhere |
 | `/physiology/{daily,sleep,hrv,vitals,latest,sources}` | Body inputs: the vitals and their directions (no score) |
-| `/fitness/{fingerprint,trends,zones}` | `fingerprint` is **endpoint-only**: the data is already synced, but it has **no screen**, and the OpenAPI document must say so. `zones` answers the per-run time in zone from the athlete's **stored zone model**, and names the model with the day it was read (see "The zones and the zone model" below) |
+| `/fitness/{fingerprint,trends,zones}` | `fingerprint` answers **one run's fingerprint** — the observations of the run's mechanics, and the shares of the moving time in the athlete's own zones — and the **run detail shows them** (see "The fingerprint and the run's mechanics" below). `trends` is the measured trend of pace and heart rate. `zones` answers the per-run time in zone from the athlete's **stored zone model**, and names the model with the day it was read (see "The zones and the zone model" below) |
 | `/stats/{summary,weekly,pace-trends,elevation,personal-records}` | Progress |
 
 ## Plan & insight
@@ -29,7 +29,9 @@ reference only).
 | Route | Notes |
 |---|---|
 | `/plan/{current,today,week,blocks,sources,adherence,results,import}` | the plan engine |
-| `/insights/{today,progress,load,chips}` | Today and the feed chips; `progress` is the Progress screen's answer and `load` is the training load over the same window (see "The training load" below) |
+| `/insights/{today,progress,load,chips,rolling,streaks}` | Today and the feed chips; `progress` is the Progress screen's answer, `load` is the training load over the same window (see "The training load" below), `rolling` is the rolling view (see "The rolling view" below) and `streaks` is the streak of days and weeks (see "The streaks" below) |
+
+| `/insights/{today,progress,load,heatmap,chips}` | Today and the feed chips; `progress` is the Progress screen's answer and `load` is the training load over the same window; `heatmap` is the grid over the stored positions, computed on the device (see "The heatmap" below) |
 | `/compare` | the metric diff |
 | `/compare/candidates` | the runs you can compare against (the Compare screen's "choose a different run" action) |
 
@@ -67,8 +69,11 @@ and `qr` never appear in the route table.
    in-list is the more recent intent.
 2. **`/fitness/fingerprint`** was dropped from the `{…}` brace list by the
    route-table fix, but the same commit's note says it "stays (the data is
-   already synced) but has no screen". This file keeps it, endpoint-only, per
-   that note.
+   already synced) but has no screen". The route stayed, and it stayed
+   endpoint-only — until the fingerprint became a set of **observations** on
+   the run detail. The route now answers **one run's** fingerprint, named by
+   the query, and the run detail shows it: the "endpoint-only" note is
+   superseded by the fingerprint's own section below.
 3. **`/physiology/readiness`** is renamed **`/physiology/vitals`** (resolved by
    the plan after Slice 0 flagged it): v2 has no readiness score, so the route
    returns the vitals and their directions. The table above already uses the
@@ -139,6 +144,10 @@ Two rules hold for every shape below.
 | `/insights/today` | `generated_at`, `date`, `planned`, `options`, `last_run`, `distance_comparison: string \| null`, `week: {distance, sessions, days: {date, sessions}[]}` |
 | `/insights/progress` | `generated_at`, `date` (the core's local calendar date), `period: {from, to, distance, duration, sessions, recorded_weeks}`, `headline`, `headline_note`, `weekly_volume`, `typical_week`, `pace_at_hr`, `bests`, `consistency`, `sessions_per_week`, `adherence`, `eddington: {number, days_needed_for_next, longest_day} \| null` |
 | `/insights/load` | `generated_at`, `date`, `window: {from, from_label, to, to_label, weeks, warmup_days}`, `load: LoadSeries \| null`, `unavailable: string \| null`, `scenario: LoadScenario \| null` |
+| `/insights/rolling` | `generated_at`, `date`, `window: {from, from_label, to, to_label, days}`, `comparison: {from, from_label, to, to_label, days}`, `distance: {current, previous, difference}`, `duration: {current, previous, difference}`, `sessions: {current, previous, difference}`, `zones: {model, shares, distribution, unavailable}`, `distances: {key, label, sessions, distance, elevation, duration}[]`, `profile: {key, label, value, previous, movement}[]`, `weekday: {weekday, sessions, distance, duration, share}[]`, `daytime: {key, label, from_hour, to_hour, sessions, distance, duration}[]`, `months: {key, label, sessions, distance, duration, elevation}[]`, `years: {key, label, sessions, distance, duration, elevation}[]` |
+| `/insights/streaks` | `generated_at`, `date`, `days: {current, longest}`, `weeks: {current, longest}` |
+
+| `/insights/heatmap` | `generated_at`, `date`, `runs`, `more_runs`, `cell_size: RenderedValue \| null`, `cells: {x, y, south, west, north, east, runs}[]`, `extent: {south, west, north, east} \| null`, `unavailable: string \| null` |
 | `/auth/status` | `connected`, `method`, `key_source`, `key_last4`, `last_sync_at`, `generated_at` |
 | `/auth/garmin/fit-import` | `imported`, `duplicate`, `activity_id`, `date`, `distance`, `generated_at` |
 | `/plan/import` | `imported`, `block_id`, `sessions`, `generated_at` |
@@ -148,6 +157,7 @@ Two rules hold for every shape below.
 | `/sync/run` | `activities`, `wellness_days`, `skipped`, `deleted`, `complete: boolean`, `more_pending: boolean`, `failure: {code, detail, status, retry_after_seconds} \| null`, `finished_at`, `generated_at` |
 | `/health/daily` | `date`, `generated_at`, `stale: boolean` |
 | `/fitness/zones` | `basis: string \| null`, `model: ZoneModel \| null`, `zones: ZoneBand[]`, `outside: RenderedValue \| null`, `unavailable: string \| null` |
+| `/fitness/fingerprint` | `activity_id`, `local_date`, `basis: string \| null`, `laps`, `observations: FingerprintObservation[]` (each: `key`, `label`, `value: RenderedValue \| null`, `reason: string \| null`), `zones: FingerprintZones` (`model: ZoneModel \| null`, `shares: ZoneShare[]` (each: `label`, `share: RenderedValue`, `time: RenderedValue \| null`), `outside: RenderedValue \| null`, `unavailable: string \| null`, `note: string \| null`), `unavailable: string \| null`, `generated_at` |
 
 The app's own declarations are in `frontend/src/lib/types.ts`, and
 `crates/stride-api/tests/frontend_shapes.rs` holds the router to them: it
@@ -299,6 +309,212 @@ a **range** — `0.8 to 1.3` — and the scenario says what it assumes: a
 complete rest day, the Banister coefficient, the zone model the maximum
 heart rate came from and the day it was read, and the two windows.
 
+### The rolling view
+
+`/insights/rolling?weeks=N` answers with what a **window of history** holds:
+the window against the window before it, the split of the training across
+the athlete's own zones, what usually happened on which day of the week and
+when in the day, and what each month and each year of the history holds.
+
+It is a route of its own, and not another field on `/insights/progress`:
+the rolling view has its own window, its own "no value" reasons and its own
+tables, and the progress payload is already wide.
+
+**The numbers are the core's.** The route reads them through the api's seam
+(`crates/stride-api/src/rolling.rs`), which hands the core the stored runs
+and the stored zone model. The window's totals, the split of the zones, the
+weekday and daytime splits and the monthly and yearly tables all come from
+`stride-core`'s rolling view; the route writes them as they are. **Nothing
+is stored**: every one of them is recomputed on read, like every other
+derived value.
+
+#### The window
+
+The window is **the last `N` days ending on the day the answer is about**,
+and the comparison period is **the same `N` days ending a day earlier**.
+That is the reference implementation's own comparison — its rolling window
+is a window that moves one day at a time, and its zone split is compared
+against "the same window as of the previous day" — and it is stated here
+rather than left to be guessed at.
+
+`weeks` is the Progress route's own parameter (1 to 104, default 12) and
+the window is `weeks × 7` days, so the card on Progress follows the range
+selector the screen already has.
+
+The window applies to **the comparison, the split of the zones, the
+distance breakdown and the profile**. The weekday and daytime splits and
+the monthly and yearly tables cover the **whole saved history** — a
+weekday is a fact about every Monday the athlete has run, not about the
+last twelve weeks — and the cards say so.
+
+#### The distribution, the breakdown and the profile
+
+Three more answers ride on the same window.
+
+* **`zones.distribution`** is the **distribution** of the training across
+  the athlete's own zones: the time in each of the five, and the share of
+  the time in the zones that was. It comes from the same time-in-zone
+  computation as the bands, so the two cannot disagree. The ranges are the
+  model's own floors.
+* **`distances`** is the **distance breakdown**: the runs by how far they
+  went. The bucket size is the reference implementation's own — it is
+  taken from the longest run in the window, so that the longest run lands
+  in the last bucket and there are about eleven of them. A window with no
+  run has no buckets.
+* **`profile`** is the athlete's shape over the window, as **seven values
+  and their movements**: volume, consistency, intensity, duration,
+  density, sport variety and the days of the week. It is **not a radar**:
+  a polygon over fixed anchors is a claim about a shape, and the anchors
+  are somebody else's coaching assumptions. Each facet is the athlete's
+  own number, and each says which way it moved against the window before
+  it. A window with no run has **no facets at all** — every value is no
+  value, never a zero — and a facet with no value in the window before it
+  has **no movement** to report.
+
+### The heatmap
+
+`/insights/heatmap` answers with **a grid over the stored positions**: how
+many runs went through each cell. It is computed **on the device** — the
+route fetches nothing, asks nobody and sends nothing, and there is no tile
+server, no geocoder and no third-party service in the path that draws it.
+
+The grid is a **derived series**, like the samples, the laps and the zones:
+it is recomputed on read from the stored FIT files and **never stored**.
+There is no grid, no tile and no heatmap blob in the database.
+
+#### The grid
+
+The grid is the slippy-tile grid at **zoom 14** — the reference
+implementation's own resolution. A cell is about **two kilometres** across
+at the latitudes a runner lives at, and the coarseness is the point: a cell
+is a part of town and not a street, and a coarse grid is both faster to
+compute and less identifying than a fine one.
+
+The cells are in the Web Mercator projection, so a cell is a rectangle in
+the athlete's own coordinates and a square on the ground. A position that
+falls exactly on a cell edge belongs to the cell the edge opens — the
+higher one, east or north.
+
+#### A cell's value is a count, never a route
+
+| rule | what it means |
+|---|---|
+| the count is of **runs** | a cell holds how many runs went through it, not how many positions and not how long |
+| a run counts **once** in a cell | a run that loops round a block crosses the same cell many times, and the cell counts the run |
+| a cell carries **no time** | there is no per-cell time, so no cell can be placed in a day |
+| a cell carries **no order** | the answer is a set of rectangles, not a sequence, so no path can be read back out of it |
+| a cell carries **no connection** | the cells are not joined to each other, so two neighbouring cells do not say a route ran between them |
+| a cell is a **place, not a person** | nothing names a street, an address or a neighbourhood, and nothing here is a conclusion about the athlete |
+
+#### The fields
+
+| field | what it is |
+|---|---|
+| `window.from` · `window.to` | the first and last day of the window, in the athlete's own calendar |
+| `window.from_label` · `window.to_label` | the same days, **as the api writes a date**: "18 Feb 2026" |
+| `window.days` | how many days the window covers |
+| `comparison` | the same window, a day earlier: the period the window is compared against |
+| `distance` · `duration` | the value in the window, the value in the period before it, and the difference between them |
+| `sessions` | the runs in the window, the runs in the period before it, and the difference |
+| `zones.model` | the zone model the split was measured against: the day it was read and the model's own source line |
+| `zones.shares` | the three bands — low (Z1–Z2), moderate (Z3), high (Z4–Z5) — with the share of the time in the zones, the share in the window before it, and which way it moved |
+| `zones.distribution` | the five zones one by one: the label, the range the model gives the zone, the time in it and its share of the time in the zones |
+| `zones.unavailable` | why there is no split, in the core's own words |
+| `distances` | the distance breakdown: the buckets, the runs in them, their distance, their climb and their time |
+| `profile` | the seven facets of the athlete's shape: the label, the value, the value in the window before it and which way it moved |
+| `weekday[]` | one row per day of the week: the runs, the distance, the moving time and the day's share of the moving time |
+| `daytime[]` | one row per time of day: the runs, the distance and the moving time, with the hours the bucket starts and ends at |
+| `months[]` · `years[]` | one row per month and per year of the history: the runs, the distance, the moving time and the elevation gain |
+
+The difference between two windows is the **core's** rendering of it, sign
+and all: "+5 km", "−20 m". The sign is the number's own, and nothing in
+the answer says which way is the better way.
+
+#### The zones
+
+The split of the training is measured against the athlete's **stored zone
+model**, and the model travels with it: the day it was read and its own
+source line. The time in the zones comes from the runs' own FIT files,
+decoded on read, and only the moving samples — the same filter
+`/fitness/zones` has always used, so the two cannot disagree.
+
+The three bands are named for what they are — **low (Z1–Z2), moderate (Z3),
+high (Z4–Z5)** — and there is **no target range beside them**: a range
+that says how the split ought to be is a prescription, not a fact about
+what happened, and the product does not prescribe.
+
+#### No value
+
+**No value is the absence of the whole result**, and it is never a zero:
+
+- no zone model has been read → `zones.shares: null` and the reason in
+  `zones.unavailable`;
+- the stored model's floors do not increase → the model is named, and
+  there is no value: `zones.shares: null` and the reason;
+- the runs in the window carry no heart-rate samples → `zones.shares: null`
+  and the reason.
+
+The window's **totals** are values: a window with no runs holds 0 km, and
+that is a fact about the window rather than a missing measurement. The
+**shares** and the **streaks** are the values that are absent when they
+cannot be computed.
+
+A month with no runs is **not a row** in the monthly table, and a year with
+one run in it is a year with one run in it: the table holds the periods the
+athlete ran in, and no row of zeros.
+
+#### The voice
+
+The rolling view invites conclusions, and the product draws none. The
+answer states the two windows' numbers side by side and the difference
+between them, and says which way each share moved against the window
+before it — "up", "down", "steady" — and stops there. There is no verdict,
+no grade, no traffic light and nothing that tells the athlete what to do.
+
+### The streaks
+
+`/insights/streaks` answers one question about the whole history: **how
+long is the streak**. It carries the current run of days, the run of weeks,
+and the longest one of each, with the days they cover.
+
+**The arithmetic is the reference implementation's, exactly.** The days are
+the distinct local days that carry a run; the walk goes from the newest day
+backwards; the current streak survives one quiet day (the last run may
+have been yesterday), and a streak that ended longer ago is not current.
+The week streak counts weeks with a run in them, and the weeks are the
+athlete's own: Monday through Sunday.
+
+| field | what it is |
+|---|---|
+| `days.current` · `weeks.current` | the streak that is still going: the count and the day it started |
+| `days.longest` · `weeks.longest` | the longest one in the history: the count and the days it covers |
+
+**A streak of zero days is no streak**: `current` is `null` when the last
+run was more than a day ago, and the whole answer is empty when there are
+no runs at all. A number that could be read as "zero" is not a number
+here.
+
+The start of a **week** streak is the newest run day in the streak's oldest
+week — the reference's own value — and the longest week's dates run from the
+oldest day of that walk to the newest.
+
+The voice is the plan's: a streak is a count and a date. There is no "you
+are consistent" anywhere near it.
+
+| `runs` | how many runs carried a position and were counted |
+| `more_runs` | whether the store holds runs this answer did not read: the answer is bounded, and says so rather than letting a partial map read as the whole history |
+| `cell_size` | the size of one cell on the ground, as the core renders it: "2 km". `null` when there is no cell |
+| `cells` | the cells, north to south and west to east: `x` and `y` are the cell's place in the grid, `south` · `west` · `north` · `east` are its corners, and `runs` is its count |
+| `extent` | the box the cells cover, or `null` when there is none |
+| `unavailable` | why there is no heatmap, or `null` when there is one |
+
+#### No value
+
+**No value is the absence of the whole result**: a store whose runs carry no
+position answers with `cells: []`, `extent: null`, `cell_size: null`,
+`runs: 0` and the reason in `unavailable` — never an empty grid of cells
+that says "nowhere".
+
 ### The settings, the goal and the pause
 
 Four inputs change what the app says, and three of them live in the `notes` table
@@ -393,3 +609,97 @@ as they always were, so the numbers stay comparable with what the route
 answered before the model came in. The derived series are recomputed on read
 and never stored; the zone **model** is the exception, because it is not in
 the FIT: it is the watch's configuration, and it is stored, dated.
+
+### The fingerprint and the run's mechanics
+
+`/fitness/fingerprint?id=…` answers one question about one run: **what did
+this run's laps say about this run**. The observations are the run's own
+mechanics — the cadence and how it varied, the pace's variation, the drift
+between the first third of the run and the last, the half-split drift of the
+heart rate and of the pace, the efficiency factor, the aerobic decoupling,
+and the shares of the moving time in the athlete's own zones.
+
+The run is named by the query, like the zones. The **basis** is named too —
+the run's laps and its moving samples — and the answer says how many laps
+the analysis used: the **running** ones.
+
+#### There is no score
+
+The answer carries **observations**, and no composite. The reference
+implementation ended with a `form_score`: a weighted mean of three bounded
+component scores, with the weights renormalised around whichever component
+was missing. That number is a grade, and the product does not ship grades.
+What is worth keeping is the observations the score was built from, each of
+which says what it measured.
+
+#### The fields
+
+| field | what it is |
+|---|---|
+| `activity_id` | the run's id |
+| `local_date` | the athlete's local date |
+| `basis` | the basis the numbers were computed on: `"laps and moving samples"` |
+| `laps` | how many laps the analysis used: the running ones |
+| `observations` | the observations, in the order the app shows them |
+| `observations[].key` | the observation's name: `cadence`, `cadence_variability`, `efficiency`, `pace_variability`, `cadence_drift`, `heart_rate_drift`, `pace_drift`, `decoupling`, `stride_length` |
+| `observations[].label` | the label, in the core's own words: "Cadence" |
+| `observations[].value` | the value, as the core renders it: "163.0 spm" |
+| `observations[].reason` | why there is no value, in the core's words |
+| `zones` | the zone distribution: the shares of the moving time in the athlete's own zones |
+| `zones.model` | the stored zone model the shares were measured against, named and dated |
+| `zones.shares` | one per zone: `label` ("Z1"), `share` (the share of the time **in the zones**) and `time` |
+| `zones.outside` | the time outside the zones: no heart-rate reading, or a reading at or below the first floor |
+| `zones.note` | where the model came from, in the core's words: "your zone model, read on 2026-05-10" |
+| `unavailable` | why there is no value at all, in the core's words |
+| `generated_at` | when the answer was produced |
+
+#### The observations
+
+| observation | what it is |
+|---|---|
+| `cadence` | the mean cadence of the running laps, in steps per minute |
+| `cadence_variability` | the **coefficient of variation** of the cadence: the sample standard deviation over the mean, as a percentage, from three laps or more |
+| `efficiency` | the **efficiency factor**: the speed over the heart rate as a fraction of a maximum heart rate — speed and not pace, because the pace-to-heart-rate ratio is the reciprocal and would make a slower run look more efficient |
+| `pace_variability` | the coefficient of variation of the paces |
+| `cadence_drift` | the change in the cadence between the **first third** and the **last third** of the running laps, as a percentage |
+| `heart_rate_drift` | the **half-split** drift: the difference between the mean heart rate of the first half of the running laps and the second |
+| `pace_drift` | the half-split drift of the pace, in seconds per kilometre. A negative number is a negative split |
+| `decoupling` | how far the efficiency factor fell between the first third and the last, as a percentage |
+| `stride_length` | the mean of the laps' own stride lengths, in centimetres. A stride longer than three metres is rejected as implausible |
+
+The **sign of a difference is the direction**: `+5 bpm` is a heart rate that
+rose, `−4 s/km` is a pace that quickened. The pace variation leaves out a
+last lap that holds less than a fifteenth of the run's distance: a fragment
+of a lap says more about where the watch stopped than about how the run was
+run.
+
+#### No value
+
+**No value is the absence of the value**, and it is never a zero:
+
+- the run has no file → there are no observations at all, and the reason in
+  the core's words;
+- the run's laps carry no cadence → the cadence, its variation and its drift
+  say so;
+- the run is too short to split → the drifts say so: fewer than three laps
+  for the thirds, fewer than two for the halves;
+- the file carries no stride length → the stride length says so;
+- there is no maximum heart rate to measure the efficiency factor against →
+  the efficiency factor and the decoupling say so;
+- no zone model has been read → the zone distribution is "no value", and
+  says why.
+
+The reason is the core's own sentence, asked for out of the core's catalogue
+and passed on. The api never writes a sentence of its own.
+
+#### Where the inputs come from
+
+The observations are computed from the run's **own laps**, and the zone
+shares from the run's **moving samples** — the same filter the zones route
+uses, so the two answers cannot disagree. The derived series are recomputed
+on read from the FIT file and are never stored.
+
+The maximum heart rate the efficiency factor is measured against is the one
+from the athlete's **stored zone model**: their watch's own configuration,
+read once and stored with the day it was read. It is never the run's own
+observed maximum — two runs, two scales — and never an age formula.

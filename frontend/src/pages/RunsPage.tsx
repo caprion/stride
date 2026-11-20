@@ -187,6 +187,20 @@ export function RunsPage() {
       <PageHeader
         title={t('runs.heading')}
         meta={stale ? <span className="text-ink-faint">{stale}</span> : null}
+        action={
+          /*
+            The heatmap is not on the run list: it is something the
+            athlete asks for, with a button, the way the Street map is
+            asked for on a run.
+          */
+          <Link
+            to="/heatmap"
+            className="tap inline-flex items-center rounded-md border border-edge bg-surface px-3 text-[13px] font-semibold text-ink-soft"
+            data-testid="runs-heatmap"
+          >
+            {t('heatmap.action')}
+          </Link>
+        }
       />
 
       <div className="runs-layout">

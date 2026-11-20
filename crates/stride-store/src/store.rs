@@ -175,8 +175,8 @@ impl Store {
         f(&conn)
     }
 
-    /// Delete everything: every run, every wellness day, the plan and every
-    /// note.
+    /// Delete everything: every run, every wellness day, every observation
+    /// the source reported, the plan and every note.
     ///
     /// **One transaction.** The data goes or it does not: a delete that
     /// stopped halfway would leave the log in a state no athlete had ever
@@ -209,6 +209,10 @@ impl Store {
         let removed = transaction
             .execute("DELETE FROM wellness_daily", [])
             .map_err(|source| StoreError::query("wellness_daily", source))?;
+        deleted += removed as i64;
+        let removed = transaction
+            .execute("DELETE FROM wellness_observations", [])
+            .map_err(|source| StoreError::query("wellness_observations", source))?;
         deleted += removed as i64;
         let removed = transaction
             .execute("DELETE FROM plan_sessions", [])

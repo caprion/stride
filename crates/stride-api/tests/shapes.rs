@@ -212,11 +212,25 @@ fn the_vitals_snapshot_carries_the_shape_the_app_reads() {
 fn the_fitness_routes_carry_their_shapes() {
     let harness = common::Harness::seeded("shape-fitness");
 
-    let fingerprint = harness.ok_get("/fitness/fingerprint");
+    let fingerprint = harness.ok_get("/fitness/fingerprint?id=1");
     assert_keys(
         &fingerprint,
-        &["generated_at", "items"],
+        &[
+            "activity_id",
+            "basis",
+            "generated_at",
+            "laps",
+            "local_date",
+            "observations",
+            "unavailable",
+            "zones",
+        ],
         "/fitness/fingerprint",
+    );
+    assert_keys(
+        &fingerprint["zones"],
+        &["model", "outside", "shares", "source", "unavailable"],
+        "/fitness/fingerprint: the zones",
     );
 
     let trends = harness.ok_get("/fitness/trends");

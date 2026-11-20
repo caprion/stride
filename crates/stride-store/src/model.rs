@@ -266,6 +266,73 @@ pub struct WellnessDaily {
     pub updated_at: DateTime<Utc>,
 }
 
+/// One observation the wellness source reported, with its provenance.
+///
+/// An observation is **the source's own reading**: the value, the day the
+/// source reported it for, and the day it was read. Nothing here is derived
+/// and nothing here is a verdict.
+///
+/// The missingness is part of the row: a field the source never sent has no
+/// row at all, and a field it sent as null has a row whose value is `None`
+/// and whose text is `None` too. A row with a text value is a value that is
+/// not a number.
+#[derive(Debug, Clone, PartialEq)]
+pub struct WellnessObservation {
+    /// The row's primary key.
+    pub id: i64,
+    /// The day the source reported the value for, `YYYY-MM-DD`.
+    pub date: String,
+    /// Where the reading came from: `garmin_personal`.
+    pub source: String,
+    /// The API path the value was read from.
+    pub endpoint: String,
+    /// The source's own field name.
+    pub field: String,
+    /// Which item of a repeated field this is. Zero for a field that is not
+    /// repeated.
+    pub ordinal: i64,
+    /// The number, as the source reported it. `None` when the source sent
+    /// null, or when the value is not a number.
+    pub value: Option<f64>,
+    /// A value that is not a number, as the source reported it.
+    pub text_value: Option<String>,
+    /// The unit the source states for the number.
+    pub unit: Option<String>,
+    /// The instant the item is about, when the source gave one.
+    pub observed_at: Option<DateTime<Utc>>,
+    /// When the value was read.
+    pub retrieved_at: DateTime<Utc>,
+}
+
+/// One observation to write.
+///
+/// The row is written over the one already stored for the same day, source,
+/// field and item: a later read replaces the value it carried and keeps the
+/// reading time of the read that carried it.
+#[derive(Debug, Clone, PartialEq)]
+pub struct NewWellnessObservation {
+    /// The day the source reported the value for, `YYYY-MM-DD`.
+    pub date: String,
+    /// Where the reading came from.
+    pub source: String,
+    /// The API path the value was read from.
+    pub endpoint: String,
+    /// The source's own field name.
+    pub field: String,
+    /// Which item of a repeated field this is.
+    pub ordinal: i64,
+    /// The number, as the source reported it.
+    pub value: Option<f64>,
+    /// A value that is not a number, as the source reported it.
+    pub text_value: Option<String>,
+    /// The unit the source states for the number.
+    pub unit: Option<String>,
+    /// The instant the item is about, when the source gave one.
+    pub observed_at: Option<DateTime<Utc>>,
+    /// When the value was read.
+    pub retrieved_at: DateTime<Utc>,
+}
+
 /// The athlete's heart-rate zone model, as Garmin reported it on one day.
 ///
 /// The model is a **dated fact about the athlete's configuration**, not a

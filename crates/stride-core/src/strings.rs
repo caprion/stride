@@ -171,7 +171,7 @@ pub struct Entry {
 }
 
 /// The catalogue.
-pub const CATALOGUE: [Entry; 115] = [
+pub const CATALOGUE: [Entry; 156] = [
     // The vitals.
     Entry {
         id: "vital.sleep.label",
@@ -400,6 +400,35 @@ pub const CATALOGUE: [Entry; 115] = [
         role: None,
         template: "{value} s/km",
     },
+    // The fingerprint's own values: a cadence, a percentage, a stride
+    // length and the efficiency factor.
+    Entry {
+        id: "value.cadence",
+        kind: StringKind::Statement,
+        role: None,
+        template: "{value} spm",
+    },
+    Entry {
+        id: "value.percent",
+        kind: StringKind::Statement,
+        role: None,
+        template: "{value} %",
+    },
+    Entry {
+        id: "value.length",
+        kind: StringKind::Statement,
+        role: None,
+        template: "{value} cm",
+    },
+    Entry {
+        // The efficiency factor: the speed over the heart rate as a
+        // fraction of the maximum. The unit is written out, because a
+        // bare number would say nothing about what was measured.
+        id: "value.efficiency",
+        kind: StringKind::Statement,
+        role: None,
+        template: "{value} m/s per unit of max heart rate",
+    },
     Entry {
         // The heart-rate bands: the range, and the honest answer when the
         // bands cannot be computed at all.
@@ -567,6 +596,120 @@ pub const CATALOGUE: [Entry; 115] = [
         kind: StringKind::Statement,
         role: None,
         template: "zones unavailable — the stored zone model's floors are not in order",
+    },
+    Entry {
+        // The split of a window of runs: the model is there, but the runs
+        // carry no heart-rate samples to measure. There is no share, and
+        // the answer says why.
+        id: "rolling.zones.no_samples",
+        kind: StringKind::Statement,
+        role: None,
+        template: "the split has no value — the runs in the window have no heart-rate samples",
+    },
+    Entry {
+        // The seven facets of the athlete's shape: the names of the
+        // values, and nothing that says what they mean.
+        id: "profile.volume",
+        kind: StringKind::Statement,
+        role: None,
+        template: "Volume",
+    },
+    Entry {
+        id: "profile.consistency",
+        kind: StringKind::Statement,
+        role: None,
+        template: "Consistency",
+    },
+    Entry {
+        id: "profile.intensity",
+        kind: StringKind::Statement,
+        role: None,
+        template: "Intensity",
+    },
+    Entry {
+        id: "profile.duration",
+        kind: StringKind::Statement,
+        role: None,
+        template: "Duration",
+    },
+    Entry {
+        id: "profile.density",
+        kind: StringKind::Statement,
+        role: None,
+        template: "Density",
+    },
+    Entry {
+        id: "profile.variety",
+        kind: StringKind::Statement,
+        role: None,
+        template: "Sport variety",
+    },
+    Entry {
+        id: "profile.week_days",
+        kind: StringKind::Statement,
+        role: None,
+        template: "Week days",
+    },
+    Entry {
+        // The range of distances a bucket of the distance breakdown holds:
+        // "0-5 km".
+        id: "value.distance_range",
+        kind: StringKind::Statement,
+        role: None,
+        template: "{from}-{to} km",
+    },
+    Entry {
+        // The three bands the training is distributed across. They are the
+        // athlete's own zones, and the names describe what the bands are:
+        // no target range and no prescription lives near them.
+        id: "zones.band.low",
+        kind: StringKind::Statement,
+        role: None,
+        template: "Z1–Z2 low",
+    },
+    Entry {
+        id: "zones.band.moderate",
+        kind: StringKind::Statement,
+        role: None,
+        template: "Z3 moderate",
+    },
+    Entry {
+        id: "zones.band.high",
+        kind: StringKind::Statement,
+        role: None,
+        template: "Z4–Z5 high",
+    },
+    Entry {
+        // A share of a whole: the time in the zones, the time of the week.
+        id: "value.share",
+        kind: StringKind::Statement,
+        role: None,
+        template: "{value}%",
+    },
+    Entry {
+        // The times of day, in the athlete's own local time.
+        id: "daytime.morning",
+        kind: StringKind::Statement,
+        role: None,
+        template: "Morning",
+    },
+    Entry {
+        id: "daytime.afternoon",
+        kind: StringKind::Statement,
+        role: None,
+        template: "Afternoon",
+    },
+    Entry {
+        id: "daytime.evening",
+        kind: StringKind::Statement,
+        role: None,
+        template: "Evening",
+    },
+    Entry {
+        id: "daytime.night",
+        kind: StringKind::Statement,
+        role: None,
+        template: "Night",
     },
     Entry {
         // The model's own source line: where the bands came from and when
@@ -887,6 +1030,131 @@ pub const CATALOGUE: [Entry; 115] = [
         kind: StringKind::Statement,
         role: None,
         template: "no training for {forecast} days · Banister k = {k} · max heart rate {max_hr} from your zone model, read on {date} · acute window {acute} days, chronic window {chronic} days",
+    },
+    // The fingerprint: the labels of the observations, and the reasons a
+    // run has none of them. They are facts about the run and never about
+    // the athlete.
+    Entry {
+        id: "fingerprint.label.cadence",
+        kind: StringKind::Vital,
+        role: None,
+        template: "Cadence",
+    },
+    Entry {
+        id: "fingerprint.label.cadence_variability",
+        kind: StringKind::Vital,
+        role: None,
+        template: "Cadence variability",
+    },
+    Entry {
+        id: "fingerprint.label.efficiency",
+        kind: StringKind::Vital,
+        role: None,
+        template: "Efficiency factor",
+    },
+    Entry {
+        id: "fingerprint.label.pace_variability",
+        kind: StringKind::Vital,
+        role: None,
+        template: "Pace variability",
+    },
+    Entry {
+        id: "fingerprint.label.cadence_drift",
+        kind: StringKind::Vital,
+        role: None,
+        template: "Cadence drift",
+    },
+    Entry {
+        id: "fingerprint.label.heart_rate_drift",
+        kind: StringKind::Vital,
+        role: None,
+        template: "Heart rate drift",
+    },
+    Entry {
+        id: "fingerprint.label.pace_drift",
+        kind: StringKind::Vital,
+        role: None,
+        template: "Pace drift",
+    },
+    Entry {
+        id: "fingerprint.label.decoupling",
+        kind: StringKind::Vital,
+        role: None,
+        template: "Aerobic decoupling",
+    },
+    Entry {
+        id: "fingerprint.label.stride_length",
+        kind: StringKind::Vital,
+        role: None,
+        template: "Stride length",
+    },
+    Entry {
+        id: "fingerprint.no_cadence",
+        kind: StringKind::Statement,
+        role: None,
+        template: "the run has no cadence readings",
+    },
+    Entry {
+        id: "fingerprint.no_heart_rate",
+        kind: StringKind::Statement,
+        role: None,
+        template: "the run has no heart-rate readings",
+    },
+    Entry {
+        id: "fingerprint.no_pace",
+        kind: StringKind::Statement,
+        role: None,
+        template: "the run has no pace readings",
+    },
+    Entry {
+        id: "fingerprint.too_few_laps",
+        kind: StringKind::Statement,
+        role: None,
+        template: "the run has too few laps to measure a variation from",
+    },
+    Entry {
+        id: "fingerprint.too_few_laps_to_compare",
+        kind: StringKind::Statement,
+        role: None,
+        template: "the run has too few laps to compare one end with the other",
+    },
+    Entry {
+        id: "fingerprint.no_stride_length",
+        kind: StringKind::Statement,
+        role: None,
+        template: "the run's file carries no stride length",
+    },
+    Entry {
+        id: "fingerprint.no_reference",
+        kind: StringKind::Statement,
+        role: None,
+        template: "no maximum heart rate to measure the efficiency factor against",
+    },
+    Entry {
+        id: "fingerprint.no_samples",
+        kind: StringKind::Statement,
+        role: None,
+        template: "the run has no samples to read",
+    },
+    Entry {
+        id: "fingerprint.no_time_in_zones",
+        kind: StringKind::Statement,
+        role: None,
+        template: "the run has no time in any of the zones",
+    },
+    Entry {
+        id: "fingerprint.unavailable",
+        kind: StringKind::Statement,
+        role: None,
+        template: "the run has no file to read",
+    },
+    Entry {
+        // Where the zone model came from, and when it was read. A number
+        // that cannot say where its input came from is not inspectable.
+        id: "fingerprint.zones.source",
+        kind: StringKind::Statement,
+        role: None,
+        template: "your zone model, read on {date}",
     },
     // The statuses.
     Entry {

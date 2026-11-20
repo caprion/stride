@@ -34,8 +34,11 @@ import type {
   ConnectionStatus,
   FitImportResult,
   FitnessZones,
+  Fingerprint,
   Health,
   HealthDaily,
+  HeatmapCell,
+  HeatmapInsight,
   KeyConnectResult,
   KeyTestResult,
   LoadInsight,
@@ -44,10 +47,12 @@ import type {
   PlanWeek,
   ProgressInsight,
   RenderedValue,
+  RollingInsight,
   SettingsDeleteResult,
   SettingsExportResult,
   SettingsState,
   SleepDays,
+  StreakInsight,
   SyncStatus,
   TodayInsight,
   VitalsSnapshot,
@@ -391,6 +396,196 @@ export const baselineProgressFixture = baselineAnswers['/insights/progress'] as 
  * the card are the numbers the api computes.
  */
 export const loadFixture = routerAnswers['/insights/load'] as LoadInsight
+
+// -------------------------------------------------------------- rolling
+
+/**
+ * The rolling view: the router's answer.
+ *
+ * The window against the window before it, the split of the training
+ * across the athlete's own zones, the weekday and daytime splits, and the
+ * monthly and yearly tables. The answer comes from the router's own
+ * store — the same seed — so the numbers on the cards are the numbers the
+ * api computes.
+ */
+export const rollingFixture = routerAnswers['/insights/rolling'] as RollingInsight
+
+/**
+ * The rolling view, with nothing in the store.
+ *
+ * The empty state: no runs, so the window holds no distance and the
+ * tables hold no rows. The zone split has no value either — there is no
+ * model and no run to measure.
+ */
+export const rollingEmptyFixture: RollingInsight = {
+  generated_at: '2026-05-13T06:30:00Z',
+  date: TODAY,
+  window: {
+    from: '2026-04-15',
+    from_label: '15 Apr 2026',
+    to: TODAY,
+    to_label: '13 May 2026',
+    days: 28,
+  },
+  comparison: {
+    from: '2026-03-18',
+    from_label: '18 Mar 2026',
+    to: '2026-04-14',
+    to_label: '14 Apr 2026',
+    days: 28,
+  },
+  distance: {
+    current: value('0 km', 0),
+    previous: value('0 km', 0),
+    difference: value('0 km', 0),
+  },
+  duration: {
+    current: value('0 m', 0),
+    previous: value('0 m', 0),
+    difference: value('0 m', 0),
+  },
+  sessions: { current: 0, previous: 0, difference: value('0', 0) },
+  zones: {
+    model: null,
+    shares: null,
+    distribution: null,
+    unavailable: 'zones unavailable — no zone model has been read',
+  },
+  weekday: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].map(
+    (weekday) => ({
+      weekday,
+      sessions: 0,
+      distance: value('0 km', 0),
+      duration: value('0 m', 0),
+      share: null,
+    }),
+  ),
+  daytime: [
+    { key: 'morning', from: 6, to: 12 },
+    { key: 'afternoon', from: 12, to: 17 },
+    { key: 'evening', from: 17, to: 23 },
+    { key: 'night', from: 23, to: 6 },
+  ].map((bucket) => ({
+    key: bucket.key,
+    label: bucket.key.charAt(0).toUpperCase() + bucket.key.slice(1),
+    from_hour: bucket.from,
+    to_hour: bucket.to,
+    sessions: 0,
+    distance: value('0 km', 0),
+    duration: value('0 m', 0),
+  })),
+  distances: [],
+  profile: [],
+  months: [],
+  years: [],
+}
+
+// -------------------------------------------------------------- streaks
+
+/**
+ * The streaks: the router's answer.
+ *
+ * The current run of days and weeks, and the longest one of each. A
+ * streak is a count and the days it covers — nothing more.
+ */
+export const streaksFixture = routerAnswers['/insights/streaks'] as StreakInsight
+
+/** The streaks, with nothing in the store: there is no streak at all. */
+export const streaksEmptyFixture: StreakInsight = {
+  generated_at: '2026-05-13T06:30:00Z',
+  date: TODAY,
+  days: { current: null, longest: null },
+  weeks: { current: null, longest: null },
+}
+
+// ------------------------------------------------------------- heatmap
+
+/**
+ * The heatmap: a grid over the stored positions.
+ *
+ * The seeded store holds no FIT file, so **the router answers no cells**
+ * and the app draws nothing — which is the honest answer. This grid is
+ * the fixture set's own: a few cells around the repository's synthetic
+ * anchor — the South Pacific, far from any coast and from any real route
+ * — so that the surface can be seen and reviewed without a real run. The
+ * cells mean nothing, and they name nothing.
+ */
+const SYNTHETIC_CELLS: HeatmapCell[] = [
+  {
+    x: 1818,
+    y: 8218,
+    south: -35.022,
+    west: -140.044,
+    north: -35.0,
+    east: -140.022,
+    runs: 4,
+  },
+  {
+    x: 1819,
+    y: 8218,
+    south: -35.022,
+    west: -140.022,
+    north: -35.0,
+    east: -140.0,
+    runs: 2,
+  },
+  {
+    x: 1820,
+    y: 8218,
+    south: -35.022,
+    west: -140.0,
+    north: -35.0,
+    east: -139.978,
+    runs: 1,
+  },
+  {
+    x: 1818,
+    y: 8219,
+    south: -35.044,
+    west: -140.044,
+    north: -35.022,
+    east: -140.022,
+    runs: 3,
+  },
+  {
+    x: 1819,
+    y: 8219,
+    south: -35.044,
+    west: -140.022,
+    north: -35.022,
+    east: -140.0,
+    runs: 1,
+  },
+]
+
+/** The heatmap, with the synthetic grid on it. */
+export const heatmapFixture: HeatmapInsight = {
+  generated_at: '2026-05-13T06:30:00Z',
+  date: '2026-05-13',
+  runs: 6,
+  more_runs: false,
+  cell_size: { text: '2 km', raw: 2003.4 },
+  cells: SYNTHETIC_CELLS,
+  extent: {
+    south: -35.044,
+    west: -140.044,
+    north: -35.0,
+    east: -139.978,
+  },
+  unavailable: null,
+}
+
+/** The heatmap, with nothing to draw: no run carries a position. */
+export const heatmapEmptyFixture: HeatmapInsight = {
+  generated_at: '2026-05-13T06:30:00Z',
+  date: '2026-05-13',
+  runs: 0,
+  more_runs: false,
+  cell_size: null,
+  cells: [],
+  extent: null,
+  unavailable: 'no_positions',
+}
 
 // --------------------------------------------------------------- compare
 
@@ -959,6 +1154,89 @@ export const zonesUncalibratedFixture: FitnessZones = {
   unavailable: 'zones unavailable — no zone model has been read',
 }
 
+/**
+ * The fingerprint of a run whose file has been read.
+ *
+ * The seeded store holds no FIT file, so the router's answer for the
+ * fixture's run is the honest one: there is nothing to measure, and the
+ * core says why — "the run has no file to read". That answer is the
+ * default fixture.
+ *
+ * This one is the state the card is **reviewed** in: the run's file read,
+ * and the observations it holds. The values are invented, like every other
+ * value in this fixture set, and the words are the core's — "163.0 spm",
+ * "+5 bpm", "the run's file carries no stride length".
+ *
+ * There is no score in it, and no composite: the rows are the run's own
+ * measurements, and the reader decides what they mean.
+ */
+export const fingerprintFixture: Fingerprint = {
+  activity_id: 101,
+  local_date: '2026-05-10',
+  basis: 'laps and moving samples',
+  laps: 6,
+  observations: [
+    { key: 'cadence', label: 'Cadence', value: { text: '163.0 spm', raw: 163 }, reason: null },
+    {
+      key: 'cadence_variability',
+      label: 'Cadence variability',
+      value: { text: '2.3 %', raw: 2.3 },
+      reason: null,
+    },
+    {
+      key: 'efficiency',
+      label: 'Efficiency factor',
+      value: { text: '4.05 m/s per unit of max heart rate', raw: 4.05 },
+      reason: null,
+    },
+    {
+      key: 'pace_variability',
+      label: 'Pace variability',
+      value: { text: '1.4 %', raw: 1.4 },
+      reason: null,
+    },
+    {
+      key: 'cadence_drift',
+      label: 'Cadence drift',
+      value: { text: '−1.4 %', raw: -1.4 },
+      reason: null,
+    },
+    {
+      key: 'heart_rate_drift',
+      label: 'Heart rate drift',
+      value: { text: '+5 bpm', raw: 5 },
+      reason: null,
+    },
+    {
+      key: 'pace_drift',
+      label: 'Pace drift',
+      value: { text: '−4 s/km', raw: -4 },
+      reason: null,
+    },
+    {
+      key: 'decoupling',
+      label: 'Aerobic decoupling',
+      value: { text: '3.9 %', raw: 3.9 },
+      reason: null,
+    },
+    {
+      key: 'stride_length',
+      label: 'Stride length',
+      value: null,
+      reason: "the run's file carries no stride length",
+    },
+  ],
+  zones: {
+    model: null,
+    shares: [],
+    outside: null,
+    unavailable: null,
+    note: null,
+  },
+  unavailable: null,
+  generated_at: '2026-05-13T06:30:00Z',
+}
+
 /** The service's own health — and the version, for About. */
 export const healthFixture = routerAnswers['/health'] as Health
 
@@ -1457,6 +1735,30 @@ export function fixtureResponse(
           baselineAnswers[`/insights/progress?weeks=${params.weeks}`] ?? baselineProgressFixture
         )
       return routerAnswers[`/insights/progress?weeks=${params.weeks}`] ?? progressFixture
+    case '/insights/rolling': {
+      // Nothing in the store: the window holds no distance and the
+      // tables hold no rows.
+      if (variant === 'empty' || variant === 'fresh') return rollingEmptyFixture
+      // No zone model in the store: the split has no value, and the card
+      // says why.
+      if (variant === 'noload') {
+        return {
+          ...(routerAnswers[`/insights/rolling?weeks=${params.weeks}`] ?? rollingFixture),
+          zones: {
+            model: null,
+            shares: null,
+            distribution: null,
+            unavailable: 'zones unavailable — no zone model has been read',
+          },
+        }
+      }
+      return (
+        routerAnswers[`/insights/rolling?weeks=${params.weeks}`] ?? rollingFixture
+      )
+    }
+    case '/insights/streaks':
+      if (variant === 'empty' || variant === 'fresh') return streaksEmptyFixture
+      return streaksFixture
     case '/insights/load':
       // No zone model in the store: the load has no value, and the card
       // says why.
@@ -1464,6 +1766,11 @@ export function fixtureResponse(
         return { ...loadFixture, load: null, scenario: null, unavailable: 'no_zone_model' }
       }
       return routerAnswers[`/insights/load?weeks=${params.weeks}`] ?? loadFixture
+    case '/insights/heatmap':
+      // No run carries a position: there is no grid to draw, and the
+      // screen says so.
+      if (variant === 'empty' || variant === 'fresh') return heatmapEmptyFixture
+      return heatmapFixture
     case '/compare': {
       // Which run is A is the API's business: the app asks, and the API
       // answers the question in that order.
@@ -1481,6 +1788,12 @@ export function fixtureResponse(
     case '/fitness/zones':
       if (variant === 'uncalibrated') return zonesUncalibratedFixture
       return zonesFixture
+    case '/fitness/fingerprint':
+      // The run's file has been read in the `route` variant — the state the
+      // card is reviewed in. The default answer is the router's: the
+      // seeded store holds no file, so there is nothing to measure.
+      if (variant === 'route') return fingerprintFixture
+      return routerAnswers['/fitness/fingerprint'] as Fingerprint
     case '/health':
       if (variant === 'baseline') return baselineHealthFixture
       return healthFixture

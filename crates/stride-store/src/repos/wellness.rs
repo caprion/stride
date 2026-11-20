@@ -12,8 +12,9 @@ use rusqlite::{params, Connection, OptionalExtension, Row};
 
 use crate::datetimes::DbDateTime;
 use crate::error::{Result, StoreError};
-use crate::model::{SyncState, WellnessDaily};
+use crate::model::{NewWellnessObservation, SyncState, WellnessDaily};
 use crate::repos::collect;
+use crate::repos::observations::write_observations;
 use crate::store::Store;
 
 /// The columns of `wellness_daily`.
@@ -86,11 +87,20 @@ impl Store {
 
     /// Commit a provider day and its checked-date cursor together.
     ///
-    /// Missing provider fields preserve stored observations. `None` records a
-    /// successful no-data response without inventing a wellness row.
+    /// Missing provider fields preserve stored observations. An empty list
+    /// records a successful no-data response without inventing a wellness
+    /// row.
+    ///
+    /// The rows are written one by one, so that a day that two responses
+    /// reported is one row and a day that one response reported is another.
+    ///
+    /// The source's own observations are written in the same transaction:
+    /// the day's readings, the day's rows and the day's cursor land
+    /// together or not at all.
     pub fn write_wellness_checkpoint(
         &self,
-        wellness: Option<&WellnessDaily>,
+        rows: &[WellnessDaily],
+        observations: &[NewWellnessObservation],
         state: &SyncState,
     ) -> Result<()> {
         if state.kind != crate::model::sync_kind::WELLNESS {
@@ -102,9 +112,10 @@ impl Store {
         let transaction = conn
             .transaction()
             .map_err(|source| StoreError::query("begin wellness checkpoint", source))?;
-        if let Some(wellness) = wellness {
-            write_wellness(&transaction, wellness, true)?;
+        for row in rows {
+            write_wellness(&transaction, row, true)?;
         }
+        write_observations(&transaction, observations)?;
         super::sync::write_state(&transaction, state)?;
         transaction
             .commit()

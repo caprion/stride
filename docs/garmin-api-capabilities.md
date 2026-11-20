@@ -34,26 +34,41 @@ require an `application/json` response for that request.
 
 The normal sync uses activity search and original FIT downloads, plus daily
 sleep, daily HRV and daily user summaries. It persists sleep duration/stages,
-nightly HRV, resting HR and average stress. It also reads the heart-rate zone
-model (`/biometric-service/heartRateZones/v2`) and stores it as a dated fact —
-the watch's configuration, not a per-run series. The profile endpoint is used to
-test a connection, not as a health-data sync.
+nightly HRV, resting HR and average stress — the product's own projection of
+the three vitals. It also reads the heart-rate zone model
+(`/biometric-service/heartRateZones/v2`) and stores it as a dated fact —
+the watch's configuration, not a per-run series. The profile endpoint is used
+to test a connection, not as a health-data sync.
+
+**The source's own wellness observations are kept, with their provenance.**
+The `wellness_observations` table holds one row per (day, source, field,
+item): the value, the day the response carried, and the day it was read. A
+field the source never sent has no row; a field it sent as null has a row
+whose value is null; a later read never deletes a row, so a failed read
+leaves the previous value and its reading time in place. The two reports
+that carry the rest — the stress durations per band and the body battery —
+are read over the window the pull covers.
 
 The FIT original is retained, allowing future reprocessing of fields the
-current decoder does not project. The wellness schema retains only selected
-scalars: it does not retain the original sleep, HRV or daily-summary payload.
-Thus, adding a client method is not enough to preserve or display its data.
+current decoder does not project. The wellness projections retain only
+selected scalars, but the source's own readings are no longer discarded:
+the original sleep, HRV and daily-summary payloads are not stored verbatim,
+yet every field they carried is kept as an observation.
 
 Implementation evidence:
 
 - [Transport and endpoint methods](../crates/stride-ingest/src/garmin.rs),
   constants at lines 21-66 and methods at lines 431-575.
 - [Sync, wellness and zone-model mapping](../crates/stride-api/src/routes/app.rs),
-  activity loop at lines 164-257, wellness loop at lines 291-309, and
-  `wellness_of` / `zone_model_of` in the helpers below.
+  the activity loop, the wellness loop, and `wellness_of` /
+  `zone_model_of` in the helpers below.
+- [The wellness observations](../crates/stride-api/src/wellness.rs): a Garmin
+  payload and the rows it carries.
 - [Stored activity, wellness and zone-model fields](../crates/stride-store/src/model.rs),
-  `NewActivity` at lines 175-206, `WellnessDaily` at lines 244-267 and
-  `HeartRateZoneModel` at lines 277-325.
+  `NewActivity`, `WellnessDaily`, `WellnessObservation` /
+  `NewWellnessObservation` and `HeartRateZoneModel`.
+- [Wellness-observations repository](../crates/stride-store/src/repos/observations.rs),
+  `write_wellness_observations` and the reads beside it.
 - [Zone-model repository](../crates/stride-store/src/repos/zones.rs),
   `write_hr_zone_model_if_new` and `current_hr_zone_model`.
 - [Default sync budget](../crates/stride-api/src/state.rs), lines 208-210.
@@ -70,15 +85,15 @@ normal v2 sync, not that no code or test mentions the endpoint.
 | `/activity-service/activity/{activityId}/workouts` | Live 200 | Unused. Workout steps associated with an already recorded activity, not the future workout calendar. |
 | `/download-service/files/activity/{activityId}` | Documented; not re-downloaded in this audit | Used by sync. Preserve original FIT bytes; this audit did not repeat downloads. |
 | `/biometric-service/heartRateZones/v2` | Live 200, defaults disabled | Consumed by sync; stored as a dated fact in `hr_zone_models` (the watch's configuration, one row per model change). The per-run time in zone is computed from that stored model, and the answer names the model and the day it was read. |
-| `/sleep-service/sleep/dailySleep` | Live 200 | Used; only duration and stages are stored. Timing, confirmation, naps and other optional fields are not preserved. |
+| `/sleep-service/sleep/dailySleep` | Live 200 | Used. The duration and the stages are the product's projection; the window, the window's confirmation, the unmeasurable time, the naps and the respiration are kept as observations, with the day the response carried and the day it was read. |
 | `/sleep-service/sleep/dailySleepSummariesByDate` | Live 200 with correct range parameters | Client helper exists but sends `date`; documented parameters are `startDate` and `endDate`. Not ready to wire into sync unchanged. |
-| `/hrv-service/hrv/{calendarDate}` | Live 204 in sampled window | Used; extracts `hrvSummary.lastNightAvg`. A no-content response must stay missing, not become zero. |
+| `/hrv-service/hrv/{calendarDate}` | Live 204 in sampled window | Used. The projection extracts `hrvSummary.lastNightAvg`; the weekly average, the five-minute high and the baseline are kept as observations. A no-content response must stay missing, not become zero. |
 | `/hrv-service/hrv/daily/{fromDate}/{toDate}` | Live 204 in sampled window | Client helper exists, unused. Range support is documented; data availability remains conditional. |
-| `/usersummary-service/usersummary/daily` | Live 200 | Used, but stores only resting HR and average stress. Much of the same payload is discarded. |
+| `/usersummary-service/usersummary/daily` | Live 200 | Used. The projection keeps the resting HR and the average stress; the rest of the payload — the stress durations per band, the stress qualifier, the body battery, the seven-day average resting heart rate, the day's minimum and maximum heart rate, the respiration, the steps and the source's own range of the day — is kept as observations. |
 | `/usersummary-service/v2/dailysummaries` | Live 200 | Unused range endpoint. Response wraps days in `data`; nested schema differs from the single-day endpoint. |
-| `/wellness-service/wellness/dailyHeartRate` | Live 200 | Client method exists, unused. Dated heart-rate samples and resting HR, not an ECG. |
-| `/wellness-service/wellness/bodyBattery/reports/daily` | Live 200 | Client method exists, unused. Daily report also contains sampled values; Garmin's estimate, not Stride's recovery verdict. |
-| `/usersummary-service/stats/stress/daily/{startDate}/{endDate}` | Live 200 | Client method exists, unused. Daily aggregates, not a continuous intraday stress stream. |
+| `/wellness-service/wellness/dailyHeartRate` | Live 200 | Client method exists, unused. The daily summary carries the same readings — the day's minimum and maximum heart rate, and the seven-day average resting heart rate — and the sync's request budget does not stretch to a fourth read per day. Dated heart-rate samples and resting HR, not an ECG. |
+| `/wellness-service/wellness/bodyBattery/reports/daily` | Live 200 | Read once per pull, over the window the pull covers: the day's charged and drained, and the curve, are kept as observations. Garmin's estimate, not Stride's recovery verdict — and never combined into one. |
+| `/usersummary-service/stats/stress/daily/{startDate}/{endDate}` | Live 200 | Read once per pull, over the window the pull covers: the durations per band, the proportions and the qualifier are kept as observations. Daily aggregates, not a continuous intraday stress stream. |
 | `/usersummary-service/stats/steps/daily/{startDate}/{endDate}` | Live 200 | Client method exists, unused; later context, not a reason to expand the initial product. |
 | `/wellnessactivity-service/activity/summary/range/{fromDate}/{untilDate}` | Live 200, empty result | Unused wellness-activity summaries. Empty does not establish support for a particular activity type or device. |
 | `/userprofile-service/userprofile/settings` | Documented; not probed | Used for connection testing. Avoid copying personal profile data into diagnostics. |
@@ -99,8 +114,8 @@ These are implementation proposals, not features shipped by this audit.
 | Priority | Opportunity | Why it matters / prerequisite |
 |---|---|---|
 | First: correctness | Use configured sport-specific HR zones, or explicitly labelled Garmin-reported time in zones. | Zone floors/method were live-accessible. Activity search also returned `hrTimeInZone_1` through `_5`. Stride now reads the configured model and stores it as a dated fact, and computes the per-run time in zone from that model rather than from each run's observed maximum. Preserve model/source and capture date; today's settings cannot be passed off as historical settings. |
-| First: ownership | Preserve source wellness observations, with retrieval time and schema/provenance, inside encrypted storage and backup. | Sleep, HRV and summary fields are discarded today. FIT retention alone does not protect wellness history. This needs a reviewed schema migration, not an unversioned side file. |
-| First: existing scope | Preserve sleep start/end, confirmation, unmeasurable time and naps when supplied; preserve HRV baseline/weekly fields when supplied. | Improves the agreed Health view without inventing a score. Sleep extras were visible live. HRV extras are documented, but were not verified populated in this sample. Keep missingness and do not infer sleep debt from absent sleep-need data. |
+| First: ownership | Preserve source wellness observations, with retrieval time and schema/provenance, inside encrypted storage and backup. | **Done.** The `wellness_observations` table (schema version 4) keeps one row per (day, source, field, item): the value, the day the response carried, and the day it was read. A field the source never sent has no row; a field it sent as null has a row whose value is null; a later read never deletes a row, so a failed read keeps the previous value and its reading time. The export carries the table and the manifest counts it. |
+| First: existing scope | Preserve sleep start/end, confirmation, unmeasurable time and naps when supplied; preserve HRV baseline/weekly fields when supplied. | **Done**, as observations: the sleep window, the window's confirmation, the unmeasurable time, the naps and the HRV's weekly and baseline fields are kept with the day the response carried and the day it was read. The missingness is kept, and no sleep debt is inferred from absent sleep-need data. |
 | First: reliable sync | Add dated range pulls with explicit budgets, gaps and retry state. | Sleep range and v2 summary range worked live. Correct the existing sleep-helper parameter mismatch first; map each response's actual date and units. Do not silently turn API failures into missing measurements. |
 | Next: activity context | Retain training-effect fields, effort/feel and attached completed-workout steps where present. | Live responses exposed these fields. They can explain a completed session or compare historical intent with execution. Garmin-authored estimates and user-recorded effort need distinct provenance; steps have typed units/repeat semantics. |
 | Later: optional recovery context | Expose stress and Body Battery as opt-in Garmin data, not a second readiness score. | Much of the daily context already arrives in the summary payload; a Body Battery curve needs the separate report. Average stress is already stored, so this is not wholly new ingestion. |

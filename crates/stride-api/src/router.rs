@@ -445,9 +445,26 @@ pub const ROUTES: &[Route] = &[
         handler: crate::routes::load::load,
     },
     Route {
+        pattern: "/insights/rolling",
+        method: Method::Get,
+        handler: crate::routes::rolling::rolling,
+    },
+    Route {
+        pattern: "/insights/streaks",
+        method: Method::Get,
+        handler: crate::routes::rolling::streaks,
+    },
+    Route {
         pattern: "/insights/chips",
         method: Method::Get,
         handler: crate::routes::insight::chips,
+    },
+    // The heatmap: the grid over the stored positions, computed on the
+    // device.
+    Route {
+        pattern: "/insights/heatmap",
+        method: Method::Get,
+        handler: crate::routes::heatmap::heatmap,
     },
     Route {
         pattern: "/compare",

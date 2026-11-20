@@ -1,0 +1,181 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Stride — pulling plans in</title>
+<style>
+  :root{
+    --brand-50:#EEF5FB; --brand-100:#D6E6F3; --brand-500:#1E5E96; --brand-600:#124A7C; --brand-700:#0D3A63;
+    --accent-50:#FEF8EA; --accent-100:#FDEDC7; --accent-400:#F2B01E;
+    --ink:#112B40; --ink-soft:#31465A; --ink-muted:#4E6577; --ink-faint:#586F82;
+    --surface:#FFFFFF; --surface-soft:#F1F5F8; --surface-sunken:#E9EFF4; --edge:#CEDAE4;
+    --font: system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;background:transparent}
+  body{font-family:var(--font);color:var(--ink);font-size:13px}
+  .phones{display:flex;gap:18px;flex-wrap:wrap;align-items:flex-start}
+  .wrap{display:flex;flex-direction:column;gap:8px;align-items:center}
+  .cap{font-size:11.5px;color:#6b7a86;max-width:300px;text-align:center;line-height:1.35}
+  .phone{width:300px;height:616px;border-radius:26px;border:1px solid #cfd8e0;background:var(--surface);
+    box-shadow:0 8px 26px rgba(17,43,64,.14);overflow:hidden;display:flex;flex-direction:column}
+  .status{height:22px;display:flex;align-items:center;justify-content:space-between;padding:0 14px;font-size:10px;color:var(--ink-faint)}
+  .bar{padding:8px 12px 6px}
+  .bar h1{font-size:17px;font-weight:650;color:var(--brand-700);margin:0}
+  .bar .meta{font-size:10.5px;color:var(--ink-muted);margin-top:1px}
+  .body{flex:1;overflow-y:auto;padding:0 12px 12px}
+  .card{border:1px solid var(--edge);border-radius:9px;background:var(--surface);
+    box-shadow:0 1px 2px rgba(11,27,39,.04),0 1px 3px rgba(11,27,39,.06);padding:10px 12px;margin-bottom:9px}
+  .card.tight{padding:8px 10px}
+  .h{font-size:10px;font-weight:650;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-faint);margin:0 0 5px}
+  .muted{color:var(--ink-muted)} .faint{color:var(--ink-faint)}
+  .small{font-size:11.5px;line-height:1.4}
+  .mono{font-family:ui-monospace,Menlo,Consolas,monospace}
+  .btn{display:block;width:100%;text-align:center;border:1px solid var(--edge);background:var(--surface-soft);
+    color:var(--ink-soft);font-weight:650;font-size:12.5px;border-radius:7px;padding:9px;cursor:pointer}
+  .btn.primary{background:var(--brand-600);border-color:var(--brand-600);color:#fff}
+  .btn.ghost{background:transparent}
+  .row{display:flex;align-items:center;gap:9px;padding:9px 0;border-bottom:1px solid #eef3f7}
+  .row:last-child{border-bottom:0}
+  .ico{width:30px;height:30px;border-radius:7px;background:var(--brand-50);color:var(--brand-700);
+    display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex:none}
+  .row b{font-size:12.5px;font-weight:650;display:block}
+  .row span{font-size:11px;color:var(--ink-muted)}
+  .row .go{color:var(--brand-700);font-size:12px;margin-left:auto}
+  .tabs{display:flex;gap:6px;margin-bottom:8px}
+  .tab{flex:1;text-align:center;font-size:11.5px;font-weight:600;padding:6px 0;border-radius:7px;
+    background:var(--surface-soft);color:var(--ink-muted);cursor:pointer}
+  .tab.on{background:var(--brand-50);color:var(--brand-700);font-weight:650}
+  textarea{width:100%;height:112px;border:1px solid var(--edge);border-radius:7px;padding:8px 9px;
+    font-family:ui-monospace,Menlo,Consolas,monospace;font-size:10.5px;line-height:1.5;color:var(--ink-soft);
+    background:#FBFDFE;resize:none}
+  table{width:100%;border-collapse:collapse;font-size:11px}
+  th{text-align:left;font-size:9.5px;letter-spacing:.05em;text-transform:uppercase;color:var(--ink-faint);
+    font-weight:650;padding:3px 4px;border-bottom:1px solid var(--edge)}
+  td{padding:5px 4px;border-bottom:1px solid #eef3f7;color:var(--ink-soft);vertical-align:top}
+  td.w{color:var(--ink);font-weight:650;white-space:nowrap}
+  .kind{display:inline-block;font-size:9.5px;font-weight:650;padding:1px 6px;border-radius:99px;background:var(--brand-50);color:var(--brand-700)}
+  .kind.un{background:var(--surface-sunken);color:var(--ink-muted)}
+  .kind.q{background:var(--accent-50);color:#8A5E05}
+  .note{border-left:2px solid var(--accent-400);background:var(--accent-50);padding:7px 9px;border-radius:0 7px 7px 0;font-size:11px;color:#8A5E05}
+  .note.blue{border-left-color:var(--brand-500);background:var(--brand-50);color:var(--brand-700)}
+</style>
+</head>
+<body>
+<div class="phones">
+
+  <!-- 1 : the ways in -->
+  <div class="wrap">
+    <div class="phone">
+      <div class="status"><span>9:41</span><span>Stride</span></div>
+      <div class="bar"><h1>Plan</h1><div class="meta">Sources</div></div>
+      <div class="body">
+        <div class="card">
+          <div class="h">Bring a plan in</div>
+          <div class="row"><div class="ico">✎</div><div><b>Paste a week</b><span>Copy the week from any plan site</span></div><span class="go">›</span></div>
+          <div class="row"><div class="ico">⇪</div><div><b>Import a file</b><span>.csv · .ics · .json · .txt</span></div><span class="go">›</span></div>
+          <div class="row"><div class="ico">⟳</div><div><b>From a training service</b><span>TrainingPeaks · connect once</span></div><span class="go">›</span></div>
+          <div class="row"><div class="ico">⌖</div><div><b>From a link</b><span>a public .ics or .csv you name</span></div><span class="go">›</span></div>
+        </div>
+
+        <div class="card">
+          <div class="h">What arrives with it</div>
+          <div class="small muted">Every imported plan keeps where it came from, the words it used, and its targets — including the sessions Stride has no word for.</div>
+        </div>
+
+        <div class="card">
+          <div class="h">In force</div>
+          <div class="small muted">One plan per source is in force. Importing another file of the same source archives the first, and says so.</div>
+        </div>
+
+        <div class="card">
+          <div class="h">Built</div>
+          <div class="small muted">A plan built inside Stride needs no import at all.</div>
+          <div style="margin-top:8px"><span class="btn">Build a plan</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="cap">1 · Four ways in, all of them the athlete's own file or their own credentials. No scraping, no account, no background fetch.</div>
+  </div>
+
+  <!-- 2 : paste -->
+  <div class="wrap">
+    <div class="phone">
+      <div class="status"><span>9:41</span><span>Stride</span></div>
+      <div class="bar"><h1>Paste a week</h1><div class="meta">from the plan site</div></div>
+      <div class="body">
+        <div class="tabs"><div class="tab on">Paste</div><div class="tab">File</div><div class="tab">Link</div></div>
+        <textarea spellcheck="false">Mon 23 Feb — Easy 8 km
+Tue 24 Feb — Intervals 6 x 400 m
+Thu 26 Feb — Tempo 25 min
+Sat 28 Feb — Long 16 km
+Sun 1 Mar — Rest</textarea>
+        <div style="display:flex;gap:8px;margin:9px 0 10px">
+          <span class="btn ghost" style="flex:0 0 42%">Week of<br /><span class="small faint">23 Feb 2026</span></span>
+          <span class="btn primary" style="flex:1;align-self:stretch">Read it</span>
+        </div>
+
+        <div class="note blue" style="margin-bottom:9px">Read as 5 sessions · 4 kinds Stride knows · 1 kept with your own words</div>
+
+        <div class="card tight">
+          <table>
+            <tr><th>Day</th><th>Session</th><th>Kind</th><th>Target</th></tr>
+            <tr><td class="w">Mon 23</td><td>Easy 8 km</td><td><span class="kind">easy</span></td><td>8 km</td></tr>
+            <tr><td class="w">Tue 24</td><td>Intervals 6 x 400 m</td><td><span class="kind q">quality</span></td><td>2.4 km</td></tr>
+            <tr><td class="w">Thu 26</td><td>Tempo 25 min</td><td><span class="kind q">quality</span></td><td class="faint">25 min</td></tr>
+            <tr><td class="w">Sat 28</td><td>Long 16 km</td><td><span class="kind">long</span></td><td>16 km</td></tr>
+            <tr><td class="w">Sun 1 Mar</td><td>Rest</td><td><span class="kind un">rest</span></td><td class="faint">—</td></tr>
+          </table>
+        </div>
+
+        <div class="note">"Intervals 6 × 400 m" and "Tempo 25 min" keep their own words: a session Stride cannot read as a distance keeps the target it was given.</div>
+      </div>
+    </div>
+    <div class="cap">2 · Paste is the universal fallback. Dates may be missing (a week start is asked for once); the structure of a session is kept as it was written.</div>
+  </div>
+
+  <!-- 3 : what was read -->
+  <div class="wrap">
+    <div class="phone">
+      <div class="status"><span>9:41</span><span>Stride</span></div>
+      <div class="bar"><h1>Imported</h1><div class="meta">from a TrainingPeaks export</div></div>
+      <div class="body">
+        <div class="card banner" style="background:var(--brand-50);border:1px solid var(--brand-100)">
+          <div style="font-size:12.5px;font-weight:650;color:var(--brand-700)">Imported · marathon plan · 16 weeks</div>
+          <p class="small muted" style="margin:2px 0 0">TrainingPeaks export · 12 Feb 2026 · 112 sessions read · 9 with words Stride does not know</p>
+        </div>
+
+        <div class="card">
+          <div class="h">The nine Stride cannot name</div>
+          <table>
+            <tr><th>Date</th><th>As the plan wrote it</th></tr>
+            <tr><td class="w">26 Feb</td><td>Hill reps 8 x 60s</td></tr>
+            <tr><td class="w">5 Mar</td><td>Progression 12→16 km</td></tr>
+            <tr><td class="w">12 Mar</td><td>Fartlek 45 min</td></tr>
+            <tr><td class="w">19 Mar</td><td>Marathon pace 5 km</td></tr>
+            <tr><td class="w">26 Mar</td><td>Trail run</td></tr>
+            <tr><td class="w">2 Apr</td><td>Recovery walk-run</td></tr>
+          </table>
+          <div class="small faint" style="margin-top:6px">They are not given a kind they did not have. They keep their own words, and their target.</div>
+        </div>
+
+        <div class="card">
+          <div class="h">In force</div>
+          <div class="small muted">This plan is the imported plan. The plan you had before is archived, and its sessions stay in your history.</div>
+          <div style="margin-top:9px"><span class="btn primary">Keep this plan</span></div>
+        </div>
+
+        <div class="card">
+          <div class="h">Or</div>
+          <div class="small muted">Map the columns yourself, if the file names things differently.</div>
+          <div style="margin-top:8px"><span class="btn ghost">Map the columns</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="cap">3 · The import reports what it read and what it could not name — and refuses to guess. That honesty is the product.</div>
+  </div>
+
+</div>
+</body>
+</html>

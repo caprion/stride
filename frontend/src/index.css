@@ -226,6 +226,22 @@
     }
   }
 
+  /* The heatmap: the drawing and its words, side by side at the wide
+     widths. The drawing keeps its own size — a grid of cells does not
+     need the whole of a wide screen. */
+  .heatmap-layout {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 12px;
+    align-items: start;
+  }
+
+  @container shell (min-width: 1024px) {
+    .heatmap-layout {
+      grid-template-columns: minmax(0, 480px) minmax(0, 1fr);
+    }
+  }
+
   /* Compare: the two run cards pair up as soon as there is room. */
   .compare-grid {
     display: grid;

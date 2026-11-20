@@ -15,9 +15,11 @@
 pub mod app;
 pub mod data;
 pub mod export;
+pub mod heatmap;
 pub mod insight;
 pub mod load;
 pub mod plan;
+pub mod rolling;
 pub mod series;
 pub mod settings;
 

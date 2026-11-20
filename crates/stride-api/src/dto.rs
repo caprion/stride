@@ -398,32 +398,85 @@ pub struct VitalsSnapshot {
 
 // ------------------------------------------------------------------ fitness
 
-/// One run's fingerprint: the shape of the run, in numbers.
+/// One run's fingerprint: the run's own mechanics, as **observations**.
+///
+/// The fingerprint is what the run's laps say about the run — the cadence,
+/// the pace and the heart rate as they moved across it, and the shares of
+/// the moving time in the athlete's own zones. Every observation is either
+/// a value or the reason it has none; **there is no score**, because a
+/// weighted mean of a run's numbers is a grade and a grade is a verdict.
+///
+/// The numbers are the core's: the computation lives in `stride-core`, and
+/// this payload carries what the core rendered.
 #[derive(Clone, Debug, PartialEq, Serialize)]
 pub struct Fingerprint {
     /// The run's id.
     pub activity_id: i64,
     /// The athlete's local date.
     pub local_date: String,
-    /// The distance, as the core renders it.
-    pub distance: Option<RenderedValue>,
-    /// The moving time, as the core renders it.
-    pub duration: Option<RenderedValue>,
-    /// The average heart rate, as the core renders it.
-    pub heart_rate: Option<RenderedValue>,
-    /// The pace, as the core renders it.
-    pub pace: Option<RenderedValue>,
-    /// The elevation gain, as the core renders it.
-    pub elevation_gain: Option<RenderedValue>,
-}
-
-/// The fingerprints of the runs that have been synced.
-#[derive(Clone, Debug, PartialEq, Serialize)]
-pub struct Fingerprints {
-    /// The fingerprints, newest first.
-    pub items: Vec<Fingerprint>,
+    /// The basis the numbers were computed on: the run's own laps and its
+    /// moving samples. `None` when there is nothing to compute them from.
+    pub basis: Option<String>,
+    /// How many laps the analysis used: the running ones.
+    pub laps: usize,
+    /// The observations, in the order the app shows them. Empty when the
+    /// run has no file to read.
+    pub observations: Vec<FingerprintObservation>,
+    /// The zone distribution: the shares of the moving time in the
+    /// athlete's own zones.
+    pub zones: FingerprintZones,
+    /// Why there is no value at all, in the core's words.
+    pub unavailable: Option<String>,
     /// When this answer was produced.
     pub generated_at: String,
+}
+
+/// One observation of a run's mechanics.
+#[derive(Clone, Debug, PartialEq, Serialize)]
+pub struct FingerprintObservation {
+    /// The observation's key: `cadence`, `cadence_variability`, and so on.
+    pub key: String,
+    /// The label, in the core's own words.
+    pub label: String,
+    /// The value, as the core renders it. `None` when there is no value.
+    pub value: Option<RenderedValue>,
+    /// Why there is no value, in the core's words. `Some` exactly when
+    /// `value` is `None`.
+    pub reason: Option<String>,
+}
+
+/// The zone distribution of a run, against the athlete's **stored** model.
+///
+/// The shares are of the time **in the zones**: the time outside them — no
+/// heart-rate reading, or a reading at or below the first floor — is
+/// reported on its own, because it is not part of any zone.
+///
+/// **No value is the absence of the whole result**: a run with no stored
+/// model has no shares, and says why in the core's words.
+#[derive(Clone, Debug, PartialEq, Serialize)]
+pub struct FingerprintZones {
+    /// The model the shares were computed against, named and dated.
+    /// `None` when no model has been read.
+    pub model: Option<ZoneModel>,
+    /// The shares, one per zone. Empty when there is no value.
+    pub shares: Vec<ZoneShare>,
+    /// The time outside the zones. Absent when there is no value.
+    pub outside: Option<RenderedValue>,
+    /// Why there is no value, in the core's words.
+    pub unavailable: Option<String>,
+    /// Where the model came from, in the core's words.
+    pub source: Option<String>,
+}
+
+/// One zone's share of the moving time.
+#[derive(Clone, Debug, PartialEq, Serialize)]
+pub struct ZoneShare {
+    /// The zone's name, as the core names it: "Z1".
+    pub label: String,
+    /// The zone's share of the time in the zones, as the core renders it.
+    pub share: RenderedValue,
+    /// The time spent in the zone, as the core renders it.
+    pub time: Option<RenderedValue>,
 }
 
 /// One point of a trend.
@@ -1768,4 +1821,333 @@ pub struct LoadProjection {
     pub form: RenderedValue,
     /// The projected acute-to-chronic ratio.
     pub ratio: RenderedValue,
+}
+
+// ---------------------------------------------------------------- rolling
+
+/// The rolling view: a window of history and what it holds.
+///
+/// The window is **the last *N* days ending on the day the answer is
+/// about**, and the comparison period is **the same *N* days ending a day
+/// earlier**. The comparison is a comparison: two numbers side by side and
+/// the difference between them, never a verdict.
+#[derive(Clone, Debug, PartialEq, Serialize)]
+pub struct RollingInsight {
+    /// When this answer was produced.
+    pub generated_at: String,
+    /// The athlete's local calendar date the answer is about.
+    pub date: String,
+    /// The window the answer is about.
+    pub window: RollingWindow,
+    /// The period the window is compared against.
+    pub comparison: RollingWindow,
+    /// The distance of the window and of the period before it.
+    pub distance: WindowComparison,
+    /// The moving time of the window and of the period before it.
+    pub duration: WindowComparison,
+    /// The runs of the window and of the period before it.
+    pub sessions: SessionComparison,
+    /// The split of the training across the athlete's own zones.
+    pub zones: ZoneSplit,
+    /// The buckets of the distance breakdown: the runs, by how far they
+    /// went.
+    pub distances: Vec<DistanceBucketRow>,
+    /// The athlete's shape over the window: seven facets, each with the
+    /// way it moved against the window before it.
+    pub profile: Vec<ProfileFacet>,
+    /// What usually happened on each day of the week.
+    pub weekday: Vec<WeekdayRow>,
+    /// What usually happened in each time of day.
+    pub daytime: Vec<DaytimeRow>,
+    /// What each month of the history holds, newest first.
+    pub months: Vec<PeriodRow>,
+    /// What each year of the history holds, newest first.
+    pub years: Vec<PeriodRow>,
+}
+
+/// A window of days.
+#[derive(Clone, Debug, PartialEq, Serialize)]
+pub struct RollingWindow {
+    /// The first day of the window, in the athlete's own calendar.
+    pub from: String,
+    /// The same day, as the api writes a date: "18 Feb 2026".
+    pub from_label: String,
+    /// The last day of the window.
+    pub to: String,
+    /// The same day, as the api writes a date: "13 May 2026".
+    pub to_label: String,
+    /// How many days the window covers.
+    pub days: i64,
+}
+
+/// A value in a window, in the window before it, and the difference.
+#[derive(Clone, Debug, PartialEq, Serialize)]
+pub struct WindowComparison {
+    /// The value in the window.
+    pub current: Option<RenderedValue>,
+    /// The value in the window before it.
+    pub previous: Option<RenderedValue>,
+    /// The difference between the two, sign and all.
+    pub difference: Option<RenderedValue>,
+}
+
+/// A count in a window, in the window before it, and the difference.
+#[derive(Clone, Debug, PartialEq, Serialize)]
+pub struct SessionComparison {
+    /// The runs in the window.
+    pub current: usize,
+    /// The runs in the window before it.
+    pub previous: usize,
+    /// The difference between the two, as the core renders it: "+3", "−3".
+    pub difference: Option<RenderedValue>,
+}
+
+/// The split of the training across the athlete's own zones.
+///
+/// The shares are facts: what share of the time in the zones was spent in
+/// the low band, the moderate band and the high band. There is no target
+/// range beside them and nothing that says whether the split is any good.
+#[derive(Clone, Debug, PartialEq, Serialize)]
+pub struct ZoneSplit {
+    /// The model the split was measured against, when there is one.
+    pub model: Option<ZoneModelSource>,
+    /// The shares, when there is a value.
+    pub shares: Option<Vec<ZoneShareRow>>,
+    /// The distribution: the time in each of the five zones and the share
+    /// of the time in the zones it holds.
+    pub distribution: Option<Vec<ZoneDistributionRow>>,
+    /// Why there is no split, in the core's own words.
+    pub unavailable: Option<String>,
+}
+
+/// One zone of the distribution.
+#[derive(Clone, Debug, PartialEq, Serialize)]
+pub struct ZoneDistributionRow {
+    /// The zone's label: "Z1".
+    pub zone: String,
+    /// The range the zone covers, as the core renders it: "106-121 bpm".
+    pub range: Option<String>,
+    /// The time in the zone, as the core renders it.
+    pub time: RenderedValue,
+    /// The zone's share of the time in the zones.
+    pub share: Option<RenderedValue>,
+}
+
+/// One bucket of the distance breakdown.
+#[derive(Clone, Debug, PartialEq, Serialize)]
+pub struct DistanceBucketRow {
+    /// The bucket's key: "0-5".
+    pub key: String,
+    /// The bucket's range, as the core renders it: "0-5 km".
+    pub label: String,
+    /// The runs that fell into the bucket.
+    pub sessions: usize,
+    /// The distance of those runs.
+    pub distance: RenderedValue,
+    /// The elevation gain of those runs.
+    pub elevation: RenderedValue,
+    /// The moving time of those runs.
+    pub duration: RenderedValue,
+}
+
+/// One facet of the athlete's shape.
+#[derive(Clone, Debug, PartialEq, Serialize)]
+pub struct ProfileFacet {
+    /// The facet's key: "volume", "consistency" and so on.
+    pub key: String,
+    /// The facet's name, in the core's words: "Sport variety".
+    pub label: String,
+    /// The value in the window. Null when it cannot be computed.
+    pub value: Option<RenderedValue>,
+    /// The value in the window before it.
+    pub previous: Option<RenderedValue>,
+    /// Which way it moved: "up", "down" or "steady".
+    pub movement: Option<String>,
+}
+
+/// The zone model a split was measured against.
+#[derive(Clone, Debug, PartialEq, Serialize)]
+pub struct ZoneModelSource {
+    /// The day the model was read, in the athlete's own calendar.
+    pub read_on: String,
+    /// The same day, as the api writes a date: "10 May 2026".
+    pub read_on_label: String,
+    /// The model's own source line, in the core's words.
+    pub source: Option<String>,
+}
+
+/// One band's share of the time in the zones.
+#[derive(Clone, Debug, PartialEq, Serialize)]
+pub struct ZoneShareRow {
+    /// The band's key: "low", "moderate" or "high".
+    pub key: String,
+    /// The band's name, in the core's words: "Z1–Z2 low".
+    pub label: String,
+    /// The share of the time in the zones, as the core renders it.
+    pub share: Option<RenderedValue>,
+    /// The share in the window before it.
+    pub previous_share: Option<RenderedValue>,
+    /// Which way it moved: "up", "down" or "steady".
+    pub trend: Option<String>,
+}
+
+/// What usually happened on one day of the week.
+#[derive(Clone, Debug, PartialEq, Serialize)]
+pub struct WeekdayRow {
+    /// The day's name, in the core's words: "Monday".
+    pub weekday: String,
+    /// How many runs fell on it.
+    pub sessions: usize,
+    /// The distance of those runs.
+    pub distance: RenderedValue,
+    /// The moving time of those runs.
+    pub duration: RenderedValue,
+    /// The day's share of the moving time.
+    pub share: Option<RenderedValue>,
+}
+
+/// What usually happened in one time of day.
+#[derive(Clone, Debug, PartialEq, Serialize)]
+pub struct DaytimeRow {
+    /// The bucket's key: "morning", "afternoon", "evening" or "night".
+    pub key: String,
+    /// The bucket's name, in the core's words.
+    pub label: String,
+    /// The hour the bucket starts at, in the athlete's own local time.
+    pub from_hour: u32,
+    /// The hour the bucket ends at.
+    pub to_hour: u32,
+    /// How many runs fell into it.
+    pub sessions: usize,
+    /// The distance of those runs.
+    pub distance: RenderedValue,
+    /// The moving time of those runs.
+    pub duration: RenderedValue,
+}
+
+/// What a month or a year of the history holds.
+#[derive(Clone, Debug, PartialEq, Serialize)]
+pub struct PeriodRow {
+    /// The period's key: "2026-04" for a month, "2026" for a year.
+    pub key: String,
+    /// The period's name, as the api writes it: "April 2026" or "2026".
+    pub label: String,
+    /// How many runs fell into it.
+    pub sessions: usize,
+    /// The distance of those runs.
+    pub distance: RenderedValue,
+    /// The moving time of those runs.
+    pub duration: RenderedValue,
+    /// The elevation gain of those runs.
+    pub elevation: RenderedValue,
+}
+
+// ---------------------------------------------------------------- streaks
+
+/// The streaks of the athlete's history.
+///
+/// A streak is a count and the days it covers: nothing more. There is no
+/// "you are consistent" here — the number is the number.
+#[derive(Clone, Debug, PartialEq, Serialize)]
+pub struct StreakInsight {
+    /// When this answer was produced.
+    pub generated_at: String,
+    /// The athlete's local calendar date the answer is about.
+    pub date: String,
+    /// The streaks of days.
+    pub days: StreakDetail,
+    /// The streaks of weeks.
+    pub weeks: StreakDetail,
+}
+
+/// The streaks of one kind: the current one and the longest one.
+#[derive(Clone, Debug, PartialEq, Serialize)]
+pub struct StreakDetail {
+    /// The streak that is still going. `None` when there is none: a streak
+    /// of zero days is no streak.
+    pub current: Option<StreakValue>,
+    /// The longest one in the history.
+    pub longest: Option<StreakValue>,
+}
+
+/// One streak: how long it is, and the days it covers.
+#[derive(Clone, Debug, PartialEq, Serialize)]
+pub struct StreakValue {
+    /// How many days (or weeks) the streak runs.
+    pub count: u32,
+    /// The day it started, in the athlete's own calendar.
+    pub start: String,
+    /// The same day, as the api writes a date: "2 May 2026".
+    pub start_label: String,
+    /// The day it ended, when it ended in the past.
+    pub end: Option<String>,
+    /// The same day, as the api writes a date.
+    pub end_label: Option<String>,
+}
+
+// ------------------------------------------------------------------ heatmap
+
+/// The heatmap: a grid over the stored positions.
+///
+/// **Computed on the device.** Nothing is fetched for it and nothing is
+/// sent with it: the cells are made of the positions the athlete's own
+/// runs carry, decoded from their stored FIT files on read.
+#[derive(Clone, Debug, PartialEq, Serialize)]
+pub struct HeatmapInsight {
+    /// When this answer was produced.
+    pub generated_at: String,
+    /// The athlete's local date.
+    pub date: String,
+    /// How many runs carried a position and were counted.
+    pub runs: u32,
+    /// Whether the store holds runs this answer did not read.
+    ///
+    /// The answer is bounded: it reads the newest runs only, and this says
+    /// so rather than letting a partial map read as the whole history.
+    pub more_runs: bool,
+    /// The size of one cell on the ground, as the core renders it.
+    ///
+    /// `None` when there is no cell: there is nothing to size.
+    pub cell_size: Option<RenderedValue>,
+    /// The cells, north to south and west to east.
+    pub cells: Vec<HeatmapCell>,
+    /// The box the cells cover.
+    pub extent: Option<HeatmapExtent>,
+    /// Why there is no heatmap. `None` when there is one.
+    pub unavailable: Option<String>,
+}
+
+/// One cell of the heatmap.
+#[derive(Clone, Debug, PartialEq, Serialize)]
+pub struct HeatmapCell {
+    /// The cell's column in the grid.
+    pub x: u32,
+    /// The cell's row in the grid.
+    pub y: u32,
+    /// The cell's southern edge.
+    pub south: f64,
+    /// The cell's western edge.
+    pub west: f64,
+    /// The cell's northern edge.
+    pub north: f64,
+    /// The cell's eastern edge.
+    pub east: f64,
+    /// How many runs went through this cell.
+    ///
+    /// A count of runs, never a path: the cell does not know the order,
+    /// the time or the way the run went through it.
+    pub runs: u32,
+}
+
+/// The box the heatmap's cells cover.
+#[derive(Clone, Copy, Debug, PartialEq, Serialize)]
+pub struct HeatmapExtent {
+    /// The southern edge.
+    pub south: f64,
+    /// The western edge.
+    pub west: f64,
+    /// The northern edge.
+    pub north: f64,
+    /// The eastern edge.
+    pub east: f64,
 }

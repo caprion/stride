@@ -18,7 +18,11 @@
 //! | [`routes`] | the handlers, and the helpers they share |
 //! | [`plan`] | the seam to the core's plan engine: the store's rows in, the core's answers out |
 //! | [`load`] | the seam to the core's training-load engine: the stored zone model, the measured resting heart rate and the stored activities in, the core's series and its scenario out |
+//! | [`fingerprint`] | the seam to the core's fingerprint engine: the run's own laps and samples in, the core's observations out |
+
+//! | [`rolling`] | the seam to the core's rolling view: the stored runs and the stored zone model in, the core's streaks, windows, splits and tables out |
 //! | [`planfile`] | the plan files the athlete may import: markdown, CSV, JSON, the Garmin schedule |
+//! | [`wellness`] | the source's own wellness observations: a Garmin payload and the rows it carries |
 //!
 //! ## The rules this crate keeps
 //!
@@ -135,15 +139,18 @@ pub const VERSION: &str = match option_env!("STRIDE_VERSION") {
 pub mod dto;
 pub mod error;
 pub mod ffi;
+pub mod fingerprint;
 pub mod load;
 pub mod plan;
 pub mod planfile;
 pub mod render;
+pub mod rolling;
 pub mod router;
 pub mod routes;
 pub mod state;
 pub mod story;
 mod sync;
+pub mod wellness;
 
 pub use dto::RenderedValue;
 pub use error::{ApiError, ApiResult, ErrorEnvelope, ErrorKind};

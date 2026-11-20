@@ -12,7 +12,8 @@
 mod common;
 
 use stride_ingest::{
-    ACTIVITIES_PATH, HEART_RATE_ZONES_PATH, HRV_DAILY_PATH, SLEEP_DAILY_PATH, USER_SUMMARY_PATH,
+    ACTIVITIES_PATH, BODY_BATTERY_PATH, HEART_RATE_ZONES_PATH, HRV_DAILY_PATH, SLEEP_DAILY_PATH,
+    STRESS_PATH, USER_SUMMARY_PATH,
 };
 use stride_store::NewHeartRateZoneModel;
 
@@ -45,7 +46,13 @@ fn answer_clean_sync(harness: &common::Harness) {
     harness
         .garmin
         .with_json(ACTIVITIES_PATH, "{\"activityList\": []}");
-    for path in [SLEEP_DAILY_PATH, HRV_DAILY_PATH, USER_SUMMARY_PATH] {
+    for path in [
+        SLEEP_DAILY_PATH,
+        HRV_DAILY_PATH,
+        USER_SUMMARY_PATH,
+        STRESS_PATH,
+        BODY_BATTERY_PATH,
+    ] {
         harness.garmin.with_status(path, 204, "");
     }
 }

@@ -6,6 +6,9 @@ use std::sync::Arc;
 use chrono::{DateTime, NaiveDate, NaiveDateTime, Utc};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
+use stride_ingest::{
+    BODY_BATTERY_PATH, HRV_DAILY_PATH, SLEEP_DAILY_PATH, STRESS_PATH, USER_SUMMARY_PATH,
+};
 use stride_store::model::{note_kind, source, sync_kind};
 use stride_store::{NewActivity, SyncState};
 
@@ -398,7 +401,7 @@ pub fn sync_run(api: &Api, request: &Request) -> ApiResult<Value> {
         updated_at: api.now(),
     };
     api.store()
-        .write_wellness_checkpoint(None, &checkpoint)
+        .write_wellness_checkpoint(&[], &[], &checkpoint)
         .map_err(|error| api.store_error("the wellness checkpoint could not be written", &error))?;
     let wellness_end = if history_only {
         wellness.next_date.as_deref().map(core_date).transpose()?
@@ -412,6 +415,9 @@ pub fn sync_run(api: &Api, request: &Request) -> ApiResult<Value> {
     };
     let mut wellness_days = 0usize;
     let mut wellness_complete = wellness_window > 0;
+    // The window the days covered: the reports are read over it.
+    let mut window_from: Option<String> = None;
+    let mut window_to: Option<String> = None;
     for offset in 0..wellness_window {
         if failure.is_some() || transport.paused()? {
             wellness_complete = false;
@@ -422,8 +428,8 @@ pub fn sync_run(api: &Api, request: &Request) -> ApiResult<Value> {
         if date < wellness.target_from {
             break;
         }
-        let row = match wellness_of(&client, &date, api.now()) {
-            Ok(row) => row,
+        let day = match wellness_of(&client, &date, api.now()) {
+            Ok(day) => day,
             Err(error) => {
                 if !transport.paused()? {
                     failure = Some(sync_failure(api, &error));
@@ -439,13 +445,24 @@ pub fn sync_run(api: &Api, request: &Request) -> ApiResult<Value> {
         );
         checkpoint.updated_at = api.now();
         api.store()
-            .write_wellness_checkpoint(row.as_ref(), &checkpoint)
+            .write_wellness_checkpoint(&day.rows, &day.observations, &checkpoint)
             .map_err(|error| {
                 api.store_error("the wellness checkpoint could not be written", &error)
             })?;
-        if row.is_some() {
-            wellness_days += 1;
+        // The days the pull brought: the days the responses named.
+        let mut days: BTreeSet<String> = BTreeSet::new();
+        for row in &day.rows {
+            days.insert(row.date.clone());
         }
+        wellness_days += days.len();
+        window_from = Some(match window_from {
+            Some(from) => from.min(date.clone()),
+            None => date.clone(),
+        });
+        window_to = Some(match window_to {
+            Some(to) => to.max(date.clone()),
+            None => date.clone(),
+        });
     }
 
     // The zone model is the athlete's own configuration, read once per pull.
@@ -462,6 +479,57 @@ pub fn sync_run(api: &Api, request: &Request) -> ApiResult<Value> {
             }
             Ok(None) => {}
             Err(_) => {}
+        }
+    }
+
+    // The stress durations and the body battery are separate endpoints, and
+    // each of them answers for the whole window in one request. They are
+    // read after the days, so a failure in one of them never costs the
+    // days that already landed.
+    //
+    // A read that fails is a failure, not a missing reading: the values
+    // already stored, and the day they were read, stay in place, and the
+    // pull says it failed.
+    if failure.is_none() && !transport.paused()? {
+        if let (Some(from), Some(to)) = (window_from.clone(), window_to.clone()) {
+            match client.stress(&from, &to) {
+                Ok(payload) => {
+                    let rows = crate::wellness::stress(&payload, STRESS_PATH, api.now());
+                    api.store()
+                        .write_wellness_observations(&rows)
+                        .map_err(|error| {
+                            api.store_error("the stress observations could not be written", &error)
+                        })?;
+                }
+                Err(error) => {
+                    if !transport.paused()? {
+                        failure = Some(sync_failure(api, &error));
+                    }
+                    wellness_complete = false;
+                }
+            }
+            if failure.is_none() && !transport.paused()? {
+                match client.body_battery(&from, &to) {
+                    Ok(payload) => {
+                        let rows =
+                            crate::wellness::body_battery(&payload, BODY_BATTERY_PATH, api.now());
+                        api.store()
+                            .write_wellness_observations(&rows)
+                            .map_err(|error| {
+                                api.store_error(
+                                    "the body battery observations could not be written",
+                                    &error,
+                                )
+                            })?;
+                    }
+                    Err(error) => {
+                        if !transport.paused()? {
+                            failure = Some(sync_failure(api, &error));
+                        }
+                        wellness_complete = false;
+                    }
+                }
+            }
         }
     }
 
@@ -858,18 +926,45 @@ fn key_of(api: &Api, request: &Request) -> ApiResult<Option<String>> {
 
 /// The wellness of one day, as Garmin reports it.
 ///
+/// The day is the **response's** day, not the day that was asked for: a
+/// response that names another day belongs to that day. Each response
+/// brings its own row, so a day that two responses reported is one row and
+/// a day that one response reported is another — no response's readings are
+/// ever filed under another response's day.
+///
 /// `Err` means the pull must stop: Garmin is rate limiting, or the
 /// connection is gone, and asking again would spend the limit on the same
 /// answer. A day with no sleep is not an error — it is a day with no
 /// sleep.
+struct WellnessDay {
+    /// The product's own rows, one per response that reported something.
+    rows: Vec<stride_store::WellnessDaily>,
+    /// The source's own observations, with the day each response carried.
+    observations: Vec<stride_store::NewWellnessObservation>,
+}
+
 fn wellness_of(
     client: &stride_ingest::GarminClient,
     date: &str,
     updated_at: DateTime<Utc>,
-) -> Result<Option<stride_store::WellnessDaily>, stride_ingest::GarminError> {
+) -> Result<WellnessDay, stride_ingest::GarminError> {
     let sleep = client.sleep_daily(date)?;
     let hrv = client.hrv_daily(date)?;
     let summary = client.daily_summary(date)?;
+
+    // The source's own observations, each filed under the day its own
+    // response carried.
+    let sleep_observations = crate::wellness::sleep(&sleep, date, SLEEP_DAILY_PATH, updated_at);
+    let hrv_observations = crate::wellness::hrv(&hrv, date, HRV_DAILY_PATH, updated_at);
+    let summary_observations =
+        crate::wellness::summary(&summary, date, USER_SUMMARY_PATH, updated_at);
+    let mut observations = Vec::new();
+    observations.extend(sleep_observations.rows);
+    observations.extend(hrv_observations.rows);
+    observations.extend(summary_observations.rows);
+
+    // The product's own rows: one per response, each under the day that
+    // response carried.
     let sleep_s = field(&sleep, "dailySleep", "sleepTimeSeconds").and_then(|v| v.as_f64());
     let deep_sleep_s = field(&sleep, "dailySleep", "deepSleepSeconds").and_then(|v| v.as_f64());
     let rem_s = field(&sleep, "dailySleep", "remSleepSeconds").and_then(|v| v.as_f64());
@@ -878,22 +973,64 @@ fn wellness_of(
     let hrv_ms = field(&hrv, "hrvSummary", "lastNightAvg").and_then(|v| v.as_f64());
     let resting_hr = field(&summary, "summaryDTO", "restingHeartRate").and_then(|v| v.as_f64());
     let stress_avg = field(&summary, "summaryDTO", "averageStressLevel").and_then(|v| v.as_f64());
-    if sleep_s.is_none() && hrv_ms.is_none() && resting_hr.is_none() {
-        return Ok(None);
+
+    let mut rows = Vec::new();
+    if sleep_s.is_some() {
+        rows.push(stride_store::WellnessDaily {
+            date: sleep_observations
+                .date
+                .clone()
+                .unwrap_or_else(|| date.to_string()),
+            sleep_s,
+            deep_sleep_s,
+            rem_s,
+            light_sleep_s,
+            awake_s,
+            hrv_ms: None,
+            resting_hr: None,
+            stress_avg: None,
+            source: source::GARMIN_PERSONAL.to_string(),
+            updated_at,
+        });
     }
-    Ok(Some(stride_store::WellnessDaily {
-        date: date.to_string(),
-        sleep_s,
-        deep_sleep_s,
-        rem_s,
-        light_sleep_s,
-        awake_s,
-        hrv_ms,
-        resting_hr,
-        stress_avg,
-        source: source::GARMIN_PERSONAL.to_string(),
-        updated_at,
-    }))
+    if hrv_ms.is_some() {
+        rows.push(stride_store::WellnessDaily {
+            date: hrv_observations
+                .date
+                .clone()
+                .unwrap_or_else(|| date.to_string()),
+            sleep_s: None,
+            deep_sleep_s: None,
+            rem_s: None,
+            light_sleep_s: None,
+            awake_s: None,
+            hrv_ms,
+            resting_hr: None,
+            stress_avg: None,
+            source: source::GARMIN_PERSONAL.to_string(),
+            updated_at,
+        });
+    }
+    if resting_hr.is_some() {
+        rows.push(stride_store::WellnessDaily {
+            date: summary_observations
+                .date
+                .clone()
+                .unwrap_or_else(|| date.to_string()),
+            sleep_s: None,
+            deep_sleep_s: None,
+            rem_s: None,
+            light_sleep_s: None,
+            awake_s: None,
+            hrv_ms: None,
+            resting_hr,
+            stress_avg,
+            source: source::GARMIN_PERSONAL.to_string(),
+            updated_at,
+        });
+    }
+
+    Ok(WellnessDay { rows, observations })
 }
 
 /// A field of a payload, whether Garmin wrapped it or not.

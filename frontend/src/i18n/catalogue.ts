@@ -124,6 +124,23 @@ export const catalogue = {
   'today.session.source.typed': { type: 'status', text: 'from your plan' },
   'today.options.heading': { type: 'status', text: 'Also in your plan' },
   'today.lastRun.label': { type: 'status', text: 'Last run' },
+  /**
+   * The streak.
+   *
+   * A streak is a **count and a date**: how many days in a row, since
+   * when, and how the longest one compares. There is no "you are
+   * consistent" here — the number is the number, and the reader decides
+   * what it means.
+   */
+  'today.streak.heading': { type: 'status', text: 'Streak' },
+  'today.streak.days': { type: 'status', text: 'Days in a row' },
+  'today.streak.daysLongest': { type: 'status', text: 'Longest days in a row' },
+  'today.streak.weeks': { type: 'status', text: 'Weeks in a row' },
+  'today.streak.weeksLongest': { type: 'status', text: 'Longest weeks in a row' },
+  'today.streak.longest': { type: 'status', text: 'Longest' },
+  'today.streak.since': { type: 'status', text: 'since {date}' },
+  'today.streak.range': { type: 'status', text: '{from} – {to}' },
+  'today.streak.none': { type: 'status', text: 'no streak' },
   'today.week.heading': { type: 'status', text: 'This week' },
   'today.week.recordedDays': { type: 'status', text: 'Recorded sessions this week' },
   'today.week.sessions': { type: 'status', text: '{n} sessions' },
@@ -316,6 +333,37 @@ export const catalogue = {
     type: 'status',
     text: 'Average across weeks with recorded sessions, not all calendar weeks.',
   },
+  /**
+   * The rolling view.
+   *
+   * The card is a **comparison**: the window's numbers, the numbers of the
+   * window before it, and the difference between them. There is no
+   * verdict, no grade and nothing that says which way is the better way —
+   * the reader decides.
+   *
+   * The window is named on the card, so a number is never read apart from
+   * the period it describes.
+   */
+  'progress.rolling.heading': { type: 'status', text: 'Rolling window' },
+  'progress.rolling.window': { type: 'status', text: 'The last {days} days' },
+  'progress.rolling.range': { type: 'status', text: '{from} – {to}' },
+  'progress.rolling.before': { type: 'status', text: 'The {days} days before' },
+  'progress.rolling.difference': { type: 'status', text: 'Difference' },
+  'progress.rolling.sessions': { type: 'status', text: 'Runs' },
+  'progress.rolling.zones.heading': { type: 'status', text: 'Time in zones' },
+  'progress.rolling.zones.distribution': { type: 'status', text: 'By zone' },
+  'progress.rolling.distances.heading': { type: 'status', text: 'By distance' },
+  'progress.profile.heading': { type: 'status', text: 'Training profile' },
+  'progress.rolling.trend.up': { type: 'status', text: 'up on the {days} days before' },
+  'progress.rolling.trend.down': { type: 'status', text: 'down on the {days} days before' },
+  'progress.rolling.trend.steady': { type: 'status', text: 'the same as the {days} days before' },
+  'progress.rolling.weekday.heading': { type: 'status', text: 'By weekday' },
+  'progress.rolling.daytime.heading': { type: 'status', text: 'By time of day' },
+  'progress.rolling.months.heading': { type: 'status', text: 'By month' },
+  'progress.rolling.years.heading': { type: 'status', text: 'By year' },
+  'progress.rolling.history': { type: 'status', text: 'All saved runs' },
+  'progress.rolling.noRows': { type: 'status', text: 'Nothing recorded yet.' },
+  'progress.rolling.hours': { type: 'status', text: '{from} – {to}' },
 
   // ------------------------------------------------------------- body
   'body.heading': { type: 'status', text: 'Body' },
@@ -409,6 +457,7 @@ export const catalogue = {
   'activity.story.heading': { type: 'status', text: 'What it meant' },
   'activity.effort.heading': { type: 'status', text: 'Effort' },
   'activity.splits.heading': { type: 'status', text: 'Splits' },
+  'activity.form.heading': { type: 'status', text: 'Form' },
   'activity.elevation.heading': { type: 'status', text: 'Elevation' },
   'activity.route.heading': { type: 'status', text: 'Route' },
   /**
@@ -463,6 +512,35 @@ export const catalogue = {
   },
   'common.paused.until': { type: 'status', text: 'paused until {date}' },
   'common.paused.untilReason': { type: 'status', text: 'paused until {date} · {reason}' },
+
+  // ---------------------------------------------------------- the heatmap
+  //
+  // The heatmap is a grid over the positions the stored runs carry, and it
+  // is made on this device. The disclosure says so, in the app's own words:
+  // the aggregation is local, and nothing is sent anywhere.
+  'heatmap.heading': { type: 'status', text: 'Heatmap' },
+  'heatmap.action': { type: 'status', text: 'Heatmap' },
+  'heatmap.disclosure': {
+    type: 'status',
+    text: 'The heatmap is made on this device from the stored runs. Nothing is sent anywhere.',
+  },
+  'heatmap.summary': { type: 'status', text: '{runs} runs in {cells} cells' },
+  'heatmap.cellSize': { type: 'status', text: 'Each cell is about {size} across' },
+  'heatmap.legend.one': { type: 'status', text: '1 run' },
+  'heatmap.legend.many': { type: 'status', text: '{n} runs' },
+  'heatmap.empty.title': { type: 'status', text: 'No run has a saved route yet' },
+  'heatmap.empty.body': {
+    type: 'status',
+    text: 'The heatmap is made from the routes in the stored runs.',
+  },
+  'heatmap.moreRuns': {
+    type: 'status',
+    text: 'The map covers the most recent runs. Older runs are not on it.',
+  },
+  'heatmap.alt': {
+    type: 'status',
+    text: 'A grid of cells, shaded by how many runs went through each cell',
+  },
   // --------------------------------------------------------- settings
   'settings.heading': { type: 'status', text: 'Data & connection' },
   'settings.connection.unknown': {

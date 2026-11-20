@@ -57,6 +57,13 @@ const ROUTES = [
     primary: '[data-testid="activity-detail"]',
     fixture: 'route',
   },
+  {
+    // The heatmap: reached by an explicit action, and drawn by the app
+    // itself from the cells the answer carries.
+    path: '/heatmap',
+    name: 'Heatmap',
+    primary: '[data-testid="heatmap-grid"]',
+  },
   { path: '/progress', name: 'Progress', primary: '[data-testid="progress-headline"]' },
   { path: '/body', name: 'Body', primary: '[data-testid="body-signals"]' },
   { path: '/plan', name: 'Plan week', primary: '[data-testid="plan-week"]' },

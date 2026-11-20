@@ -180,6 +180,7 @@ object PhoneRoutes {
         "/plan/import",
         "/insights/today",
         "/insights/progress",
+        "/insights/heatmap",
         "/insights/chips",
         "/compare",
         "/compare/candidates",

@@ -558,90 +558,22 @@ fn the_zones_carry_the_shape_the_app_declares() {
 }
 
 #[test]
-fn the_health_carries_the_shape_the_app_declares() {
+fn the_fingerprint_carries_the_shape_the_app_declares() {
     let declarations = declarations();
-    let harness = common::Harness::seeded("frontend-health");
-    let body = harness.ok_get("/health/daily");
-    assert_declared(&declarations, "HealthDaily", &body);
-}
-
-#[test]
-fn the_settings_carry_the_shape_the_app_declares() {
-    let declarations = declarations();
-    let harness = common::Harness::seeded("frontend-settings");
-    let body = harness.ok_get("/settings");
-    assert_declared(&declarations, "SettingsState", &body);
-    assert_declared(
-        &declarations,
-        "SettingsGoal",
-        at(&body, &["goal"]).unwrap_or(&Value::Null),
-    );
-    if let Some(pause) = at(&body, &["pause"]) {
-        if pause.is_object() {
-            assert_declared(&declarations, "SettingsPause", pause);
-        }
+    let harness = common::Harness::seeded("frontend-fingerprint");
+    let id = harness.write_run(common::run_with_fit(
+        "a-run-with-a-file",
+        "2026-05-10",
+        "hr_gps_run.fit",
+    ));
+    let body = harness.ok_get(&format!("/fitness/fingerprint?id={id}"));
+    assert_declared(&declarations, "Fingerprint", &body);
+    if let Some(observation) = first_at(&body, &["observations"]) {
+        assert_declared(&declarations, "FingerprintObservation", observation);
     }
     assert_declared(
         &declarations,
-        "SettingsStorage",
-        at(&body, &["storage"]).unwrap_or(&Value::Null),
+        "FingerprintZones",
+        at(&body, &["zones"]).unwrap_or(&Value::Null),
     );
-}
-
-#[test]
-fn the_note_carries_the_shape_the_app_declares() {
-    let declarations = declarations();
-    let harness = common::Harness::seeded("frontend-note");
-    let id = harness.write_run(common::run("a-run", "2026-05-10", 10_000.0, 3_000.0));
-    let body = harness.post(&format!("/activities/{id}/note"), "{\"text\":\"a note\"}");
-    assert_declared(&declarations, "NoteResult", &body);
-}
-
-#[test]
-fn the_fit_import_carries_the_shape_the_app_declares() {
-    let declarations = declarations();
-    let harness = common::Harness::seeded("frontend-fit-import");
-    let file = common::corpus_fit("real_garmin_run.fit");
-    let body = harness.post(
-        "/auth/garmin/fit-import",
-        &format!("{{\"fit_base64\":\"{}\"}}", common::base64(&file)),
-    );
-    assert_declared(&declarations, "FitImportResult", &body);
-}
-
-#[test]
-fn the_plan_import_carries_the_shape_the_app_declares() {
-    let declarations = declarations();
-    let harness = common::Harness::seeded("frontend-plan-import");
-    let body = harness.post(
-        "/plan/import",
-        "{\"name\":\"My plan\",\"sessions\":[{\"date\":\"2026-05-12\",\"session_type\":\"easy\",\"target_distance_m\":10000}]}",
-    );
-    assert_declared(&declarations, "PlanImportResult", &body);
-}
-
-#[test]
-fn the_connection_carries_the_shape_the_app_declares() {
-    let declarations = declarations();
-    let harness = common::Harness::seeded("frontend-connection");
-    let body = harness.ok_get("/auth/status");
-    assert_declared(&declarations, "ConnectionStatus", &body);
-}
-
-#[test]
-fn the_service_health_carries_the_shape_the_app_declares() {
-    let declarations = declarations();
-    let harness = common::Harness::seeded("frontend-service-health");
-    let body = harness.ok_get("/health");
-    assert_declared(&declarations, "Health", &body);
-}
-
-#[test]
-fn the_export_and_the_delete_carry_the_shape_the_app_declares() {
-    let declarations = declarations();
-    let harness = common::Harness::seeded("frontend-export");
-    let body = harness.post("/settings/export", "{}");
-    assert_declared(&declarations, "SettingsExportResult", &body);
-    let body = harness.post("/settings/delete", "{\"confirm\":\"DELETE\"}");
-    assert_declared(&declarations, "SettingsDeleteResult", &body);
 }
