@@ -284,13 +284,13 @@ export function ActivityPage({ id }: { id: string }) {
                   syncId={`effort-${id}`}
                   margin={{ top: 4, right: 4, bottom: 0, left: 0 }}
                 >
-                  <CartesianGrid stroke="#E4EBF0" vertical={false} />
+                  <CartesianGrid stroke="var(--chart-grid)" vertical={false} />
                   <XAxis
                     dataKey="minute"
                     type="number"
                     domain={[0, 'dataMax']}
                     tickCount={5}
-                    tick={{ fontSize: 11, fill: '#61788D' }}
+                    tick={{ fontSize: 11, fill: 'var(--chart-axis)' }}
                   />
                   <YAxis
                     ticks={heartRateTicks.map((tick) => tick.value)}
@@ -313,9 +313,9 @@ export function ActivityPage({ id }: { id: string }) {
                         key={band.label}
                         y1={band.from_bpm ?? 0}
                         y2={band.to_bpm ?? 0}
-                        fill="#D6E6F3"
+                        fill="var(--chart-band)"
                         fillOpacity={0.35}
-                        stroke="#A9C9E2"
+                        stroke="var(--chart-line-alt)"
                         strokeOpacity={0.8}
                       />
                     ))}
@@ -332,7 +332,7 @@ export function ActivityPage({ id }: { id: string }) {
                     type="monotone"
                     name={t('vital.heartRate')}
                     dataKey="hr"
-                    stroke="#1E5E96"
+                    stroke="var(--chart-line)"
                     strokeWidth={2}
                     dot={false}
                   />
@@ -355,11 +355,11 @@ export function ActivityPage({ id }: { id: string }) {
                             className="block h-full rounded"
                             style={{
                               backgroundColor: [
-                                '#A9C9E2',
-                                '#7BA8CD',
-                                '#1E5E96',
-                                '#124A7C',
-                                '#D99A0B',
+                                'var(--brand-200)',
+                                'var(--brand-300)',
+                                'var(--brand-500)',
+                                'var(--brand-600)',
+                                'var(--accent-500)',
                               ][index % 5],
                               width: `${(100 * Math.max(0, band.time?.raw ?? 0)) / Math.max(1, ...(zones.data?.zones ?? []).map((zone) => zone.time?.raw ?? 0))}%`,
                             }}
@@ -411,13 +411,13 @@ export function ActivityPage({ id }: { id: string }) {
                   syncId={`effort-${id}`}
                   margin={{ top: 4, right: 4, bottom: 0, left: 0 }}
                 >
-                  <CartesianGrid stroke="#E4EBF0" vertical={false} />
+                  <CartesianGrid stroke="var(--chart-grid)" vertical={false} />
                   <XAxis
                     dataKey="minute"
                     type="number"
                     domain={[0, 'dataMax']}
                     tickCount={5}
-                    tick={{ fontSize: 11, fill: '#61788D' }}
+                    tick={{ fontSize: 11, fill: 'var(--chart-axis)' }}
                   />
                   <YAxis
                     ticks={paceTicks.map((tick) => tick.value)}
@@ -438,7 +438,7 @@ export function ActivityPage({ id }: { id: string }) {
                     type="monotone"
                     name={t('vital.pace')}
                     dataKey="pace"
-                    stroke="#D99A0B"
+                    stroke="var(--chart-reference)"
                     strokeWidth={2}
                     dot={false}
                   />
@@ -519,8 +519,8 @@ export function ActivityPage({ id }: { id: string }) {
               <div style={{ width: '100%', height: 140 }} className="mt-2">
                 <ResponsiveContainer width="100%" height="100%">
                   <AreaChart data={elevation} margin={{ top: 4, right: 4, bottom: 0, left: 0 }}>
-                    <CartesianGrid stroke="#E4EBF0" vertical={false} />
-                    <XAxis dataKey="km" tick={{ fontSize: 11, fill: '#61788D' }} />
+                    <CartesianGrid stroke="var(--chart-grid)" vertical={false} />
+                    <XAxis dataKey="km" tick={{ fontSize: 11, fill: 'var(--chart-axis)' }} />
                     <YAxis
                       ticks={elevationTicks.map((tick) => tick.value)}
                       tick={axisTick(elevationTicks)}
@@ -539,8 +539,8 @@ export function ActivityPage({ id }: { id: string }) {
                       type="monotone"
                       name={t('activity.elevation.heading')}
                       dataKey="m"
-                      stroke="#3F6E9E"
-                      fill="#D6E6F3"
+                      stroke="var(--chart-line)"
+                      fill="var(--chart-band)"
                     />
                   </AreaChart>
                 </ResponsiveContainer>

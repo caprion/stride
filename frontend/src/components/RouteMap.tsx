@@ -112,7 +112,7 @@ export function RouteMap({
         <polyline
           points={line}
           fill="none"
-          stroke="#1E5E96"
+          stroke="var(--chart-line)"
           strokeWidth={2}
           strokeLinecap="round"
           strokeLinejoin="round"
@@ -126,7 +126,7 @@ export function RouteMap({
         */}
         <path
           d={`M ${startX} ${startY} L ${startX} ${startY}`}
-          stroke="#1E5E96"
+          stroke="var(--chart-line)"
           strokeWidth={8}
           strokeLinecap="round"
           vectorEffect="non-scaling-stroke"
@@ -134,14 +134,14 @@ export function RouteMap({
         />
         <path
           d={`M ${endX} ${endY} L ${endX} ${endY}`}
-          stroke="#0D3A63"
+          stroke="var(--brand-700)"
           strokeWidth={11}
           strokeLinecap="round"
           vectorEffect="non-scaling-stroke"
         />
         <path
           d={`M ${endX} ${endY} L ${endX} ${endY}`}
-          stroke="#FFFFFF"
+          stroke="var(--surface)"
           strokeWidth={6}
           strokeLinecap="round"
           vectorEffect="non-scaling-stroke"

@@ -34,12 +34,12 @@ export function StreetRouteMap({ points }: { points: readonly GeoPoint[] }) {
     })
       .on('tileerror', () => setFailed(true))
       .addTo(map)
-    const route = L.polyline(positions, { color: '#124A7C', weight: 4 }).addTo(map)
-    L.circleMarker(positions[0]!, { radius: 5, color: '#124A7C', fillOpacity: 1 }).addTo(map)
+    const route = L.polyline(positions, { color: 'var(--brand-600)', weight: 4 }).addTo(map)
+    L.circleMarker(positions[0]!, { radius: 5, color: 'var(--brand-600)', fillOpacity: 1 }).addTo(map)
     L.circleMarker(positions[positions.length - 1]!, {
       radius: 6,
-      color: '#124A7C',
-      fillColor: '#ffffff',
+      color: 'var(--brand-600)',
+      fillColor: 'var(--surface)',
       fillOpacity: 1,
     }).addTo(map)
     map.fitBounds(route.getBounds(), { padding: [24, 24], maxZoom: 16, animate: false })

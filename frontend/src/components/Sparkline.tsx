@@ -59,7 +59,7 @@ export function Sparkline({
           y={y(band.upper)}
           width={width}
           height={Math.max(1, y(band.lower) - y(band.upper))}
-          fill="#E4EBF0"
+          fill="var(--chart-band)"
         />
       ) : null}
       {segments.map((segment, index) => {
@@ -70,10 +70,10 @@ export function Sparkline({
             <polyline
               points={segment.map((point) => `${point.x},${point.y}`).join(' ')}
               fill="none"
-              stroke="#1E5E96"
+              stroke="var(--chart-line)"
               strokeWidth="1.5"
             />
-            <circle cx={last.x} cy={last.y} r="2" fill="#1E5E96" />
+            <circle cx={last.x} cy={last.y} r="2" fill="var(--chart-line)" />
           </g>
         )
       })}

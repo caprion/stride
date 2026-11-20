@@ -705,14 +705,14 @@ export function VolumePanel({
                 patternUnits="userSpaceOnUse"
                 patternTransform="rotate(45)"
               >
-                <rect width="6" height="6" fill="#D6E6F3" />
-                <rect width="3" height="6" fill="#1E5E96" />
+                <rect width="6" height="6" fill="var(--chart-band)" />
+                <rect width="3" height="6" fill="var(--chart-line)" />
               </pattern>
             </defs>
-            <CartesianGrid stroke="#E4EBF0" vertical={false} />
+            <CartesianGrid stroke="var(--chart-grid)" vertical={false} />
             <XAxis
               dataKey="label"
-              tick={{ fontSize: 11, fill: '#61788D' }}
+              tick={{ fontSize: 11, fill: 'var(--chart-axis)' }}
               interval="preserveStartEnd"
             />
             <YAxis
@@ -731,14 +731,14 @@ export function VolumePanel({
             {typicalWeek !== null ? (
               <ReferenceLine
                 y={(typicalWeek.raw ?? 0) / 1000}
-                stroke="#93A6B7"
+                stroke="var(--chart-axis)"
                 strokeDasharray="4 3"
               />
             ) : null}
             <Bar
               name={t('vital.distance')}
               dataKey="km"
-              fill="#1E5E96"
+              fill="var(--chart-line)"
               isAnimationActive={false}
               cursor="pointer"
               onClick={(_entry, index) => {
@@ -749,7 +749,7 @@ export function VolumePanel({
               {volume.map((week, index) => (
                 <Cell
                   key={week.label}
-                  fill={index === volume.length - 1 ? 'url(#partial-week)' : '#1E5E96'}
+                  fill={index === volume.length - 1 ? 'url(#partial-week)' : 'var(--chart-line)'}
                 />
               ))}
             </Bar>
@@ -784,10 +784,10 @@ export function PaceAtHrPanel({
       <div style={{ width: '100%', height: 180 }}>
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={pace} margin={{ top: 4, right: 4, bottom: 0, left: -6 }}>
-            <CartesianGrid stroke="#E4EBF0" vertical={false} />
+            <CartesianGrid stroke="var(--chart-grid)" vertical={false} />
             <XAxis
               dataKey="label"
-              tick={{ fontSize: 11, fill: '#61788D' }}
+              tick={{ fontSize: 11, fill: 'var(--chart-axis)' }}
               interval="preserveStartEnd"
             />
             <YAxis
@@ -813,7 +813,7 @@ export function PaceAtHrPanel({
               type="monotone"
               name={t('vital.pace')}
               dataKey="paceValue"
-              stroke="#1E5E96"
+              stroke="var(--chart-line)"
               strokeWidth={2}
               dot={false}
               connectNulls={false}
@@ -856,25 +856,25 @@ export function ConsistencyPanel({ consistency }: { consistency: ConsistencyPoin
       <div style={{ width: '100%', height: 140 }}>
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={consistency} margin={{ top: 4, right: 4, bottom: 0, left: -24 }}>
-            <CartesianGrid stroke="#E4EBF0" vertical={false} />
+            <CartesianGrid stroke="var(--chart-grid)" vertical={false} />
             <XAxis
               dataKey="label"
-              tick={{ fontSize: 11, fill: '#61788D' }}
+              tick={{ fontSize: 11, fill: 'var(--chart-axis)' }}
               interval="preserveStartEnd"
             />
             <YAxis
-              tick={{ fontSize: 11, fill: '#61788D' }}
+              tick={{ fontSize: 11, fill: 'var(--chart-axis)' }}
               width={64}
               allowDecimals={false}
               label={{
                 value: t('progress.consistency.unit'),
                 angle: -90,
                 position: 'insideLeft',
-                style: { fontSize: 11, fill: '#61788D' },
+                style: { fontSize: 11, fill: 'var(--chart-axis)' },
               }}
             />
             <Tooltip />
-            <Bar name={t('progress.consistency.unit')} dataKey="sessions" fill="#7BA8CD" />
+            <Bar name={t('progress.consistency.unit')} dataKey="sessions" fill="var(--brand-300)" />
           </BarChart>
         </ResponsiveContainer>
       </div>

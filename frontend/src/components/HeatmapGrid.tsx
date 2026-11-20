@@ -28,7 +28,12 @@ const PADDING = 4
  * The product's own azure: a density, not a verdict. Nothing here is red,
  * because nothing here is a problem.
  */
-const STEPS = ['#D6E6F3', '#A9C9E2', '#4A82B4', '#124A7C']
+const STEPS = [
+  'var(--brand-100)',
+  'var(--brand-200)',
+  'var(--brand-400)',
+  'var(--brand-600)',
+]
 
 export function HeatmapGrid({
   cells,

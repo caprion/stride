@@ -45,11 +45,11 @@ export function HistoryChart({
               if (typeof date === 'string') onDate?.(date)
             }}
           >
-            <CartesianGrid stroke="#E4EBF0" vertical={false} />
+            <CartesianGrid stroke="var(--chart-grid)" vertical={false} />
             <XAxis
               dataKey="date"
               tickFormatter={formatDateShort}
-              tick={{ fontSize: 10, fill: '#61788D' }}
+              tick={{ fontSize: 10, fill: 'var(--chart-axis)' }}
               minTickGap={30}
             />
             <YAxis
@@ -64,12 +64,12 @@ export function HistoryChart({
               <ReferenceArea
                 y1={band.lower}
                 y2={band.upper}
-                fill="#D6E6F3"
+                fill="var(--chart-band)"
                 fillOpacity={0.45}
                 ifOverflow="extendDomain"
               />
             ) : null}
-            <ReferenceLine x={selected} stroke="#D99A0B" />
+            <ReferenceLine x={selected} stroke="var(--chart-reference)" />
             <Tooltip
               labelFormatter={(date) => formatDateShort(String(date))}
               formatter={(_value, _name, item) =>
@@ -78,7 +78,7 @@ export function HistoryChart({
             />
             <Line
               dataKey="value"
-              stroke="#124A7C"
+              stroke="var(--chart-line)"
               strokeWidth={2}
               dot={history.length <= 31}
               connectNulls={false}
