@@ -478,6 +478,70 @@ also offers an explicit **Street map** action using Leaflet/OpenStreetMap.
 It discloses the viewed area, keeps attribution visible and falls back to the
 local outline when tiles fail.
 
+## The tokens
+
+**One source: [`tokens.ts`](tokens.ts).** Every colour, size, radius and
+shadow the app uses is in that file, and nothing else holds a copy.
+
+| what | where it comes from |
+|---|---|
+| the Tailwind theme | `tailwind.config.js` reads the token file; it holds no colour of its own |
+| the colours the app is painted with | `src/tokens.css` is **generated** from the token file |
+| the phone's own chrome | `android/app/src/main/res/values/colors.xml` (and `values-night/`) are **generated** from it |
+| the charts | the chart's colours are tokens too — `var(--chart-line)`, `var(--chart-band)` and the rest |
+
+```
+npm --prefix frontend run tokens:generate   # write the generated files
+npm --prefix frontend run tokens:check      # the gate's check: parity, and no raw colour
+```
+
+The check is the same kind of check the fixtures' parity test makes: the
+generated files are compared with what the tokens say, and the app's source
+is scanned for raw hex values. A component that names a colour is named in
+the failure.
+
+### The palettes
+
+The token file holds **palettes**, not one set of colours:
+
+| palette | what it is |
+|---|---|
+| `stride` | today's: the deep azure, the warm amber, the white cards |
+| `dreeve` | the one the athlete prefers: the orange-red `#fc5200`, the warm ground `#f9fafb`, the hairline `#e5e7eb`, the ink `#111827`, the muted `#6b7280`, white cards |
+| `night` | the dark variant |
+
+**The swap is one attribute.** `data-palette` on the root element, and the
+whole app follows: the Tailwind classes resolve to CSS variables, and the
+variables are the palette's.
+
+```ts
+import { setPalette } from './lib/palette'
+
+setPalette('dreeve')
+```
+
+The choice is kept in the WebView's own storage, on the device, and never
+leaves it. It is deliberately not part of the api's settings: those are the
+athlete's training — the goal and the pause — and a colour scheme is a
+property of this screen.
+
+The phone's native chrome is generated from the same file, so the status
+bar and the launcher's backdrop cannot drift from the bundle the phone
+embeds; `values-night/colors.xml` carries the phone into its dark mode.
+
+### What a component may name
+
+A component names a token, never a colour:
+
+```tsx
+<div className="bg-brand-600 text-white" />     // a Tailwind class
+<path stroke="var(--chart-line)" />             // a chart's own token
+```
+
+The type scale, the spacing rhythm, the radii and the shadows are in the
+token file for the same reason: a number that is not on the rhythm is a
+number somebody chose at random.
+
 ## The checks
 
 ```
