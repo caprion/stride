@@ -102,7 +102,7 @@ describe('linked history exploration', () => {
   it('exposes an empty plan and leads with running before wellness', async () => {
     window.history.pushState({}, '', '/?fixtures=noplan')
     const view = renderApp('/')
-    const last = await screen.findByTestId('today-last-run')
+    const last = await screen.findByTestId('today-hero')
     expect(screen.getByRole('link', { name: 'View plan' })).toHaveAttribute('href', '/plan')
     const vitals = view.container.querySelector('[data-testid="today-vitals"]')!
     expect(last.compareDocumentPosition(vitals) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()

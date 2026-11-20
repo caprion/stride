@@ -32,20 +32,7 @@ import { axisTick } from '../components/ChartAxis'
 import { PageHeader } from '../ui/layout/PageHeader'
 import { QueryError } from '../components/QueryError'
 import { runsPath, shiftDate } from '../lib/history'
-
-/**
- * The reasons the load can have no value, and the line each one gets.
- *
- * The reasons are the **core's** — the api passes the core's own reasons
- * on — and the line is the app's chrome. A reason the app does not know
- * gets the plain one: no value is still no value.
- */
-const LOAD_EMPTY: Record<string, CatalogueKey> = {
-  no_zone_model: 'progress.load.empty.no_zone_model',
-  no_max_heart_rate: 'progress.load.empty.no_max_heart_rate',
-  unusable_zone_model: 'progress.load.empty.unusable_zone_model',
-  no_history: 'progress.load.empty.no_history',
-}
+import { LOAD_EMPTY } from '../lib/load'
 
 /** A chart card with a fixed, legible height. */
 function ChartCard({ title, children }: { title: string; children: React.ReactNode }) {

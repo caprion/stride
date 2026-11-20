@@ -48,7 +48,7 @@ describe('the route', () => {
     expect(container.querySelector('[data-testid="route-map"]')).toBeNull()
   })
 
-  it('shows a thumbnail in the feed, and a mini one on Today', async () => {
+  it('shows a thumbnail in the feed, and the hero\'s route on Today', async () => {
     window.history.pushState({}, '', '/?fixtures=route')
 
     const runs = renderApp('/runs')
@@ -57,8 +57,8 @@ describe('the route', () => {
 
     const today = renderApp('/')
     await waitFor(() =>
-      expect(today.container.querySelector('[data-testid="today-last-run"]')).toBeTruthy(),
+      expect(today.container.querySelector('[data-testid="today-hero"]')).toBeTruthy(),
     )
-    expect(today.container.querySelector('[data-testid="today-route"]')).toBeTruthy()
+    expect(today.container.querySelector('[data-testid="today-hero-route"]')).toBeTruthy()
   })
 })
