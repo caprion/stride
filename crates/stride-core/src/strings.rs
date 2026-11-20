@@ -171,7 +171,7 @@ pub struct Entry {
 }
 
 /// The catalogue.
-pub const CATALOGUE: [Entry; 156] = [
+pub const CATALOGUE: [Entry; 164] = [
     // The vitals.
     Entry {
         id: "vital.sleep.label",
@@ -1155,6 +1155,61 @@ pub const CATALOGUE: [Entry; 156] = [
         kind: StringKind::Statement,
         role: None,
         template: "your zone model, read on {date}",
+    },
+    // The year: what changed, in the diff against the athlete's own past.
+    //
+    // The sentences are facts and nothing else: the numbers of two
+    // periods, side by side, and the difference between them. There is no
+    // verdict in any of them, and nothing that tells the athlete what to
+    // do with what the diff says.
+    Entry {
+        id: "year.changed.distance",
+        kind: StringKind::Statement,
+        role: None,
+        template: "{difference} against the period before ({current} against {previous})",
+    },
+    Entry {
+        id: "year.changed.sessions",
+        kind: StringKind::Statement,
+        role: None,
+        template: "{difference} recorded sessions ({current} against {previous})",
+    },
+    Entry {
+        id: "year.changed.longest.grew",
+        kind: StringKind::Statement,
+        role: None,
+        template: "the longest run grew by {gap} ({current} against {previous})",
+    },
+    Entry {
+        id: "year.changed.longest.shortened",
+        kind: StringKind::Statement,
+        role: None,
+        template: "the longest run shortened by {gap} ({current} against {previous})",
+    },
+    Entry {
+        id: "year.changed.longest.same",
+        kind: StringKind::Statement,
+        role: None,
+        template: "the longest run was {current} in both periods",
+    },
+    Entry {
+        id: "year.changed.pace",
+        kind: StringKind::Statement,
+        role: None,
+        template: "the average pace was {current} against {previous}",
+    },
+    Entry {
+        id: "year.changed.pace.one",
+        kind: StringKind::Statement,
+        role: None,
+        template: "the average pace was {current}",
+    },
+    Entry {
+        id: "year.changed.form",
+        kind: StringKind::Statement,
+        role: None,
+        template:
+            "the form was {current} at the end of the window against {previous} at the end of the period before",
     },
     // The statuses.
     Entry {

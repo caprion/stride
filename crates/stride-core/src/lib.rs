@@ -49,6 +49,9 @@
 //! * [`load`] — the training load: the daily series, the acute and chronic
 //!   loads, the form, the ratio, and the recovery scenario — a scenario
 //!   with its assumption attached, never a verdict.
+//! * [`year`] — the year: the months, the calendar of the days coloured by
+//!   the zones they were run in, and what changed against the athlete's
+//!   own past.
 //!
 //! The voice, in one line: facts first, no judgements. The app informs; it
 //! never instructs.
@@ -72,6 +75,7 @@ pub mod streaks;
 pub mod strings;
 pub mod types;
 pub mod units;
+pub mod year;
 pub mod zones;
 
 pub use band::{band_for, Band};
@@ -123,5 +127,9 @@ pub use units::{
     render_elevation, render_heart_rate, render_heart_rate_range, render_heart_rate_range_edges,
     render_length_cm, render_pace, render_percent, render_share, render_version, render_zone_label,
     ValueUnit,
+};
+pub use year::{
+    days_of, months_of, totals_of, weeks_of, what_changed, year_window, DayFacts, MonthFacts,
+    WeekFacts, YearRun, YearTotals, YEAR_MONTHS,
 };
 pub use zones::{model_source, time_in_zone, zone_edges, TimeInZone, ZoneFloors, ZoneSample};
