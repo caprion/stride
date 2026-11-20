@@ -165,6 +165,26 @@ pub fn model_source(method: &str, max_heart_rate: Option<f64>, read_on: &str) ->
     }
 }
 
+/// The zone a **sample** sits in, as an index from 0 (zone 1) to 4 (zone 5).
+///
+/// The same classifier the time-in-zone computation uses, so the zone of a
+/// single reading and the time a run spent in that zone can never disagree:
+/// one rule, in one place.
+///
+/// `None` when the reading is **outside the zones** — at or below the first
+/// floor — and `None` when there is no reading at all. The core counts both
+/// as outside, and so does this: a reading that is not there is not in a
+/// zone, and it is never band 1.
+///
+/// The model is the athlete's **stored** one. A model whose floors are not
+/// strictly increasing cannot be used, and every reading is outside it.
+pub fn zone_of(heart_rate_bpm: Option<f64>, floors: ZoneFloors) -> Option<usize> {
+    if !floors.is_usable() {
+        return None;
+    }
+    zone_index(heart_rate_bpm?, floors)
+}
+
 /// The edges of the five zones: the floor each zone starts at, and the
 /// floor it ends at.
 ///
@@ -339,6 +359,33 @@ mod tests {
             model_source("HR_MAX", None, "10 May 2026"),
             Some("your zone model · HR_MAX · read on 10 May 2026".to_string())
         );
+    }
+
+    #[test]
+    fn the_zone_of_a_sample_is_the_zone_the_time_is_counted_in() {
+        // The same rule the time-in-zone computation uses.
+        assert_eq!(zone_of(Some(110.0), floors()), Some(0));
+        assert_eq!(zone_of(Some(150.0), floors()), Some(2));
+        assert_eq!(zone_of(Some(190.0), floors()), Some(4));
+        // A reading exactly on a floor belongs to the lower zone.
+        assert_eq!(zone_of(Some(120.0), floors()), Some(0));
+        // At or below the first floor is outside the zones.
+        assert_eq!(zone_of(Some(100.0), floors()), None);
+        assert_eq!(zone_of(Some(90.0), floors()), None);
+        // A reading that is not there is not in a zone either.
+        assert_eq!(zone_of(None, floors()), None);
+    }
+
+    #[test]
+    fn a_sample_of_an_unusable_model_is_outside_every_zone() {
+        let unusable = ZoneFloors {
+            zone1: 100.0,
+            zone2: 90.0,
+            zone3: 140.0,
+            zone4: 160.0,
+            zone5: 175.0,
+        };
+        assert_eq!(zone_of(Some(150.0), unusable), None);
     }
 
     #[test]

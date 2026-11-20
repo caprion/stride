@@ -171,7 +171,7 @@ pub struct Entry {
 }
 
 /// The catalogue.
-pub const CATALOGUE: [Entry; 156] = [
+pub const CATALOGUE: [Entry; 157] = [
     // The vitals.
     Entry {
         id: "vital.sleep.label",
@@ -1183,6 +1183,18 @@ pub const CATALOGUE: [Entry; 156] = [
         kind: StringKind::Status,
         role: None,
         template: "Version {version}",
+    },
+    Entry {
+        // The space **outside** the athlete's zones: a reading at or below
+        // the first floor, or no reading at all.
+        //
+        // It is a name and not a verdict: the run's film draws it as a band
+        // behind the pace and the heart rate, and the athlete reads where
+        // they were. Nothing here says the reading was too low.
+        id: "film.zone.outside",
+        kind: StringKind::Statement,
+        role: None,
+        template: "outside your zones",
     },
 ];
 

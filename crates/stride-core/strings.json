@@ -163,6 +163,7 @@
     { "id": "status.not_enough_data", "kind": "status", "role": null, "template": "not enough data for a comparison yet" },
     { "id": "status.not_enough_data_yet", "kind": "status", "role": null, "template": "not enough data yet" },
     { "id": "status.saved_running_history", "kind": "status", "role": null, "template": "Your saved activity history" },
-    { "id": "status.version", "kind": "status", "role": null, "template": "Version {version}" }
+    { "id": "status.version", "kind": "status", "role": null, "template": "Version {version}" },
+    { "id": "film.zone.outside", "kind": "statement", "role": null, "template": "outside your zones" }
   ]
 }
