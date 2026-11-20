@@ -48,6 +48,7 @@ import type {
   ProgressInsight,
   RenderedValue,
   RollingInsight,
+  RunUpdateResponse,
   SettingsDeleteResult,
   SettingsExportResult,
   SettingsState,
@@ -55,6 +56,8 @@ import type {
   StreakInsight,
   SyncStatus,
   TodayInsight,
+  UpdatePayloadResponse,
+  UpdateSettings,
   VitalsSnapshot,
 } from '../lib/types'
 import type { ApiErrorKind } from '../lib/transport'
@@ -1713,6 +1716,15 @@ export function fixtureResponse(
         return { ...activityDetailFixture, geo_points: SYNTHETIC_ROUTE }
       }
       return activityDetailFixture
+    case '/activities/101/update':
+      // The stored update of a run: the router's answer. The seeded store
+      // holds none, so the run has none.
+      return routerAnswers['/activities/101/update'] as RunUpdateResponse
+    case '/activities/101/update/payload':
+      // The payload a model may read: the router's answer.
+      return routerAnswers['/activities/101/update/payload'] as UpdatePayloadResponse
+    case '/update/settings':
+      return routerAnswers['/update/settings'] as UpdateSettings
     case '/activities/101/fit':
       // The run's original file: the header of a FIT file, byte for
       // byte. The fixture set is synthetic, and a file is no less so

@@ -9,7 +9,7 @@ import { readFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
-import { checkCatalogue, checkInlineText } from '../scripts/voice-lint.mjs'
+import { bannedTerms, checkCatalogue, checkInlineText } from '../scripts/voice-lint.mjs'
 import { DIRECTION_WORDS, catalogue } from '../src/i18n'
 
 const here = dirname(fileURLToPath(import.meta.url))
@@ -24,11 +24,17 @@ const exported = JSON.parse(
 )
 const vitalWords: string[] = exported.rules?.vital_words ?? []
 
+/**
+ * The banned words are the core's — read out of the export, not written
+ * out here. The app's lint and the reviewer's check read the same list.
+ */
+const terms: string[] = bannedTerms(exported)
+
 const entries = catalogue
 
 describe('the voice lint', () => {
   it('passes the real catalogue', () => {
-    expect(checkCatalogue(entries, DIRECTION_WORDS, vitalWords)).toEqual([])
+    expect(checkCatalogue(entries, DIRECTION_WORDS, vitalWords, terms)).toEqual([])
   })
 
   it('fails on a banned word', () => {
@@ -36,6 +42,7 @@ describe('the voice lint', () => {
       { ...entries, 'x.y': { type: 'status', text: 'You should rest today' } },
       DIRECTION_WORDS,
       vitalWords,
+      terms,
     )
     expect(failures.join('\n')).toContain('should')
   })
@@ -46,6 +53,7 @@ describe('the voice lint', () => {
         { ...entries, 'x.y': { type: 'status', text } },
         DIRECTION_WORDS,
         vitalWords,
+        terms,
       )
       expect(failures.join('\n')).toContain('banned word')
     }
@@ -57,6 +65,7 @@ describe('the voice lint', () => {
         { ...entries, 'x.y': { type: 'status', text } },
         DIRECTION_WORDS,
         vitalWords,
+        terms,
       )
       expect(failures.join('\n')).toContain('banned word')
     }
@@ -67,6 +76,7 @@ describe('the voice lint', () => {
       { ...entries, 'x.y': { type: 'status', text: 'Rest — could be better' } },
       DIRECTION_WORDS,
       vitalWords,
+      terms,
     )
     expect(failures).toEqual([])
   })
@@ -76,6 +86,7 @@ describe('the voice lint', () => {
       { ...entries, 'x.direction': { type: 'direction', text: 'not great' } },
       DIRECTION_WORDS,
       vitalWords,
+      terms,
     )
     expect(failures.join('\n')).toContain('closed set')
   })
@@ -85,6 +96,7 @@ describe('the voice lint', () => {
       { ...entries, 'x.direction': { type: 'direction', text: 'slightly below usual' } },
       DIRECTION_WORDS,
       vitalWords,
+      terms,
     )
     expect(failures.join('\n')).toContain('closed set')
   })
@@ -94,6 +106,7 @@ describe('the voice lint', () => {
       { ...entries, 'x.pattern': { type: 'pattern', text: 'your HRV has been low lately' } },
       DIRECTION_WORDS,
       vitalWords,
+      terms,
     )
     expect(failures.join('\n')).toContain('sample size')
   })
@@ -106,6 +119,7 @@ describe('the voice lint', () => {
       },
       DIRECTION_WORDS,
       vitalWords,
+      terms,
     )
     expect(failures.join('\n')).toContain('mentions a vital')
   })
@@ -117,6 +131,7 @@ describe('the voice lint', () => {
       { ...entries, 'x.statement': { type: 'statement', text: '{gap} more than the {target}' } },
       DIRECTION_WORDS,
       vitalWords,
+      terms,
     )
     expect(failures.join('\n')).toContain('hole')
   })
@@ -126,17 +141,26 @@ describe('the voice lint', () => {
       { ...entries, 'x.statement': { type: 'statement', text: 'Your data stays on this phone.' } },
       DIRECTION_WORDS,
       vitalWords,
+      terms,
     )
     expect(failures).toEqual([])
   })
 
   it('fails on a banned word written inline in a component', () => {
-    const failures = checkInlineText('src/pages/Example.tsx', '<p>You should take the day</p>')
+    const failures = checkInlineText(
+      'src/pages/Example.tsx',
+      '<p>You should take the day</p>',
+      terms,
+    )
     expect(failures.join('\n')).toContain('should')
   })
 
   it('does not flag a catalogue lookup as inline prose', () => {
-    const failures = checkInlineText('src/pages/Example.tsx', "<p>{t('today.heading')}</p>")
+    const failures = checkInlineText(
+      'src/pages/Example.tsx',
+      "<p>{t('today.heading')}</p>",
+      terms,
+    )
     expect(failures).toEqual([])
   })
 })

@@ -37,6 +37,7 @@ import { KeyField } from '../components/KeyField'
 import { PlanImport } from '../components/PlanImport'
 import { PageHeader } from '../ui/layout/PageHeader'
 import { SyncControls } from '../components/SyncControls'
+import { UpdateSettings } from '../components/UpdateSettings'
 import { Choice, Field, Notice, SettingRow, SettingsGroup } from '../ui/settings/SettingsGroup'
 
 /** The reasons a pause can have. The athlete's own words for it. */
@@ -271,6 +272,16 @@ export function SettingsPage() {
             ) : null}
           </SettingsGroup>
         ) : null}
+        {/*
+        The run update's own settings: which model writes, which model
+        reviews, and whether anything may leave the machine at all.
+
+        They live beside the connection and not inside it: the feature is
+        off until it is turned on, and the key is never here — the
+        settings name the environment variable it is read from.
+      */}
+        {section === 'data' ? <UpdateSettings /> : null}
+
         {/* ------------------------------------------------ the goal */}
         {section === 'training' ? (
           <SettingsGroup title={t('settings.goal.heading')} testId="settings-goal">

@@ -460,6 +460,38 @@ export const catalogue = {
   'activity.form.heading': { type: 'status', text: 'Form' },
   'activity.elevation.heading': { type: 'status', text: 'Elevation' },
   'activity.route.heading': { type: 'status', text: 'Route' },
+  /*
+    The run's update: the model's own reading of the run.
+
+    It is **not** the product's voice, and the app says so: the writer
+    and the reviewer are named, the checks are listed under it, and the
+    athlete can dismiss it. The app's own facts are above it, and they
+    are the app's.
+  */
+  'activity.update.heading': { type: 'status', text: "The run's update" },
+  'activity.update.attribution': {
+    type: 'status',
+    text: 'Written by {writer}, checked by {reviewer}',
+  },
+  'activity.update.checks.heading': { type: 'status', text: 'The checks' },
+  'activity.update.check.groundedness': {
+    type: 'status',
+    text: 'Every number is in the payload',
+  },
+  'activity.update.check.direction': {
+    type: 'status',
+    text: 'Every direction agrees with the payload',
+  },
+  'activity.update.check.register': {
+    type: 'status',
+    text: 'No word the app does not use',
+  },
+  'activity.update.dismiss': { type: 'status', text: 'Dismiss' },
+  'activity.update.dismissed': {
+    type: 'status',
+    text: 'The update was dismissed. It is still stored.',
+  },
+  'activity.update.showAgain': { type: 'status', text: 'Show it again' },
   /**
    * The route, for a screen reader.
    *
@@ -549,6 +581,39 @@ export const catalogue = {
   },
   'settings.connection.manage': { type: 'status', text: 'Connection details' },
   'settings.connection.connect': { type: 'status', text: 'Connect to Garmin' },
+
+  /*
+    The run update's own settings: which model writes, which model
+    reviews, and whether anything may leave the machine at all.
+
+    The **key is not here**: the settings name the environment variable
+    it is read from, and the app says what would be sent.
+  */
+  'settings.update.heading': { type: 'status', text: 'Run updates' },
+  'settings.update.state': { type: 'status', text: 'The update' },
+  'settings.update.on': { type: 'status', text: 'On' },
+  'settings.update.off': { type: 'status', text: 'Off' },
+  'settings.update.writer': { type: 'status', text: 'The writer' },
+  'settings.update.reviewer': { type: 'status', text: 'The reviewer' },
+  'settings.update.model': { type: 'status', text: 'Model' },
+  'settings.update.family': { type: 'status', text: 'Family' },
+  'settings.update.baseUrl': { type: 'status', text: 'Base URL' },
+  'settings.update.allowRemote': {
+    type: 'status',
+    text: 'Allow anything to leave this machine',
+  },
+  'settings.update.keyEnv': { type: 'status', text: 'The key is read from' },
+  'settings.update.sent': { type: 'status', text: 'What would be sent' },
+  'settings.update.sent.body': {
+    type: 'statement',
+    text: "The run's own facts: the distance, the duration, the pace, the heart rate, the splits, the time in your own zones and the run's own mechanics. Never your positions, never your note, never your name.",
+  },
+  'settings.update.save': { type: 'status', text: 'Save the settings' },
+  'settings.update.saved': { type: 'status', text: 'The settings are saved' },
+  'settings.update.sameFamily': {
+    type: 'status',
+    text: "The reviewer's family is the writer's family.",
+  },
 
   // The weekly goal: one number, and a blank is no goal.
   'settings.goal.heading': { type: 'status', text: 'Weekly goal' },

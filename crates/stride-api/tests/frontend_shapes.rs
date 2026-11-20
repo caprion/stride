@@ -577,3 +577,35 @@ fn the_fingerprint_carries_the_shape_the_app_declares() {
         at(&body, &["zones"]).unwrap_or(&Value::Null),
     );
 }
+
+/// The run's update carries the shape the app declares.
+#[test]
+fn the_update_carries_the_shape_the_app_declares() {
+    let declarations = declarations();
+    let harness = common::Harness::seeded("frontend-update");
+    let id = harness.write_run(common::run_with_fit(
+        "a-run-with-a-file",
+        "2026-05-10",
+        "hr_gps_run.fit",
+    ));
+
+    // The stored update: a run without one answers with a null.
+    let body = harness.ok_get(&format!("/activities/{id}/update"));
+    assert_declared(&declarations, "RunUpdateResponse", &body);
+
+    // The payload: the facts a model may read, and nothing else.
+    let body = harness.ok_get(&format!("/activities/{id}/update/payload"));
+    assert_declared(&declarations, "UpdatePayloadResponse", &body);
+    if let Some(payload) = at(&body, &["payload"]) {
+        assert_declared(&declarations, "UpdatePayload", payload);
+    }
+}
+
+/// The update's own settings carry the shape the app declares.
+#[test]
+fn the_update_settings_carry_the_shape_the_app_declares() {
+    let declarations = declarations();
+    let harness = common::Harness::seeded("frontend-update-settings");
+    let body = harness.ok_get("/update/settings");
+    assert_declared(&declarations, "UpdateSettings", &body);
+}
