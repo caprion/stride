@@ -596,7 +596,11 @@ fn the_year_carries_the_shape_the_app_declares() {
     if let Some(day) = first_at(&body, &["days"]) {
         assert_declared(&declarations, "YearDay", day);
     }
-    assert_declared(&declarations, "YearWindow", at(&body, &["window"]).unwrap_or(&Value::Null));
+    assert_declared(
+        &declarations,
+        "YearWindow",
+        at(&body, &["window"]).unwrap_or(&Value::Null),
+    );
     assert_declared(
         &declarations,
         "YearWindow",
