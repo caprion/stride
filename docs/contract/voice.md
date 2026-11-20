@@ -94,6 +94,49 @@ and is exempt.
 - **no commands, no verdicts, no shame** — no imperative addressed to the
   athlete, no "good/bad", no red, no "should have".
 
+## The run update's own register
+
+The run update is the one place where a **model** writes the words, so it has
+its own rules, and they are the app's rules: the model arranges the facts
+the app computed and may not do anything else.
+
+**The direction words are a different set from the closed one.** The closed
+set — `better than usual` · `about usual` · `could be better` — is a *vital's*
+vocabulary, and a run update is not about a vital: it is about a run. The
+words the update may use for a direction are:
+
+```
+faster   slower   higher   lower   held
+```
+
+They are the app's own words (`update.direction.*` in the catalogue), and
+they may not be extended. A model told to avoid the closed set can still
+write "better" or "worse" about a run; these five are what it says instead.
+
+**The signs are the app's, and they are fixed.** The app computes the drifts
+and the model may only repeat them:
+
+| the app says | the sign means |
+|---|---|
+| pace drift | second half minus first half — **negative is a faster second half** |
+| heart rate drift | second half minus first half, in beats per minute |
+| cadence drift | the change in the mean cadence, in percent |
+| aerobic decoupling | the heart rate's rise against the pace's — a rise is a decoupling |
+
+A model that reverses a sign is the defect this register exists to catch: the
+number is grounded and the meaning is wrong.
+
+**A lap is not a kilometre.** The payload's laps are numbered from one, and
+the number counts the laps the watch recorded — it is not a distance marker.
+The payload says "lap 4", never a bare "4", and a fragment (a lap under
+three hundred metres) is left out of the payload altogether, because a model
+that is shown one narrates it.
+
+**The payload carries no title.** The run's title is the athlete's own
+words, and a title like "Easy Run" is a word the ban list does not want in
+the model's prose — so the title is not in the payload, and a model cannot
+quote what it was never given.
+
 ## What this replaces
 
 | old product | v2 |
