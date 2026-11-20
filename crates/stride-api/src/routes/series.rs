@@ -9,10 +9,10 @@
 //! ceiling, and the number of points in an answer is bounded by the
 //! configuration.
 
-use stride_core::zones::ZoneSample;
+use stride_core::zones::{ZoneFloors, ZoneSample};
 use stride_ingest::{decode_fit, FitActivity, MAX_FIT_INPUT_BYTES};
 
-use crate::dto::{ElevationPoint, SamplePoint, Split};
+use crate::dto::{ElevationPoint, FilmGround, FilmSample, FilmSplit, SamplePoint, Split};
 use crate::render;
 use crate::state::Api;
 use stride_core::units;
@@ -96,17 +96,109 @@ pub fn samples(activity: &FitActivity, cap: usize) -> Vec<SamplePoint> {
         .iter()
         .map(|sample| SamplePoint {
             offset_s: units::round_time_s(sample.elapsed_s),
-            pace: render::pace(sample.speed_ms.and_then(|speed| {
-                if speed <= 0.0 {
-                    return None;
-                }
-                Some(units::round_pace_s_per_km(1000.0 / speed))
-            })),
+            pace: render::pace(pace_of_sample(sample.speed_ms)),
             heart_rate: render::heart_rate(sample.heart_rate_bpm),
         })
         .collect();
     thin(&mut points, cap);
     points
+}
+
+/// The pace of a sample, in seconds per kilometre.
+///
+/// A sample with no speed, or with a speed of zero, has no pace: there is
+/// nothing to divide.
+fn pace_of_sample(speed_ms: Option<f64>) -> Option<f64> {
+    let speed = speed_ms?;
+    if speed <= 0.0 {
+        return None;
+    }
+    Some(units::round_pace_s_per_km(1000.0 / speed))
+}
+
+/// The series of a run's **film**: the samples with the zone each one sits
+/// in.
+///
+/// The zone is the **core's**: the athlete's stored model, read through
+/// `stride-core`'s own classifier — the one the time-in-zone computation
+/// uses — so the ribbon behind the film's timeline and the bands on the
+/// run detail cannot disagree about which zone a reading is in.
+///
+/// `floors` is `None` when the athlete has no usable zone model: the film
+/// is still there, and every sample's zone is `None` — outside the zones,
+/// which is what the core says when there are no zones to be in.
+pub fn film_samples(
+    activity: &FitActivity,
+    floors: Option<ZoneFloors>,
+    cap: usize,
+) -> Vec<FilmSample> {
+    let mut points: Vec<FilmSample> = activity
+        .samples
+        .iter()
+        .map(|sample| FilmSample {
+            elapsed: render::duration_of(units::round_time_s(sample.elapsed_s)),
+            distance: sample.distance_m.map(render::distance_of),
+            pace: render::pace(pace_of_sample(sample.speed_ms)),
+            heart_rate: render::heart_rate(sample.heart_rate_bpm),
+            zone: floors
+                .and_then(|floors| stride_core::zones::zone_of(sample.heart_rate_bpm, floors))
+                .map(|index| index as i64),
+        })
+        .collect();
+    thin(&mut points, cap);
+    points
+}
+
+/// The ground of a run's film: the altitude, on the run's own time axis.
+///
+/// The points are the ones the file carries: a run with no altitude has no
+/// ground, and the answer says so with an empty list rather than with a
+/// flat line.
+pub fn ground(activity: &FitActivity, cap: usize) -> Vec<FilmGround> {
+    let mut points: Vec<FilmGround> = activity
+        .samples
+        .iter()
+        .filter_map(|sample| {
+            let altitude = sample.altitude_m?;
+            Some(FilmGround {
+                offset_s: units::round_time_s(sample.elapsed_s),
+                elevation: render::elevation_of(altitude),
+            })
+        })
+        .collect();
+    thin(&mut points, cap);
+    points
+}
+
+/// The splits of a run's film: each with the time it began.
+///
+/// A split is a place on the timeline, and the film can be played from it.
+/// The time comes from the file's own lap bounds — the elapsed time at the
+/// end of each lap — so a lap that covers a stop still begins where the
+/// file says it began.
+pub fn film_splits(activity: &FitActivity) -> Vec<FilmSplit> {
+    let mut offset_s = 0.0;
+    activity
+        .laps
+        .iter()
+        .enumerate()
+        .map(|(index, lap)| {
+            let split = FilmSplit {
+                index: lap.lap_index,
+                offset_s: units::round_time_s(offset_s),
+                distance: render::distance_of(lap.distance_m),
+                duration: render::duration_of(lap.duration_s),
+                heart_rate: render::heart_rate(lap.avg_hr.map(|rate| rate as f64)),
+                pace: render::pace(super::pace_of(lap.distance_m, lap.duration_s)),
+            };
+            offset_s = activity
+                .lap_bounds
+                .get(index)
+                .copied()
+                .unwrap_or(offset_s + lap.duration_s);
+            split
+        })
+        .collect()
 }
 
 /// The route over the whole run, bounded without dropping its endpoints.

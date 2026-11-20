@@ -15,6 +15,7 @@
 pub mod app;
 pub mod data;
 pub mod export;
+pub mod film;
 pub mod heatmap;
 pub mod insight;
 pub mod load;

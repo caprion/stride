@@ -479,6 +479,59 @@ a fact against a stated period, and a shape is not a fact.** So:
 
 This travels with the fields of `/insights/rolling` in
 
+### Proposed amendment — the run film, with the flyby (2026-11-20)
+
+**Proposal, not approved.** The approvals below are the user's to give. This section records the change and the rule it serves; it is not permission to ship, publish, migrate or sync production data.
+
+The mock's surface the athlete liked most is the one the product is
+missing: **one run, playable**. The pace, the heart rate and the ground on
+one axis, the athlete's own zones behind them, and the route beside it
+with a camera that follows the runner. The readout says where you are:
+elapsed, distance, pace, heart rate, ground, and the zone you are in.
+
+The rule this serves: **a run's own facts, read from the file that was
+stored with it, and named with the source they came from.** The film is
+the run read back as a timeline, and every number on it is the run's own.
+
+So:
+
+* **The film is a surface, not a destination.** It is reached by an
+  **explicit action** on the run detail — the same discipline the Street
+  map and the heatmap use — and it is a route under `/runs`
+  (`/runs/{id}/film`) with a back link. The run detail keeps its own
+  panels; the film is the deep dive. The four destinations stay the four.
+* **The series is the run's own file, decoded on read.** The samples, the
+  ground and the splits come from the FIT file that was stored with the
+  run, and nothing is stored: the derived series are recomputed on every
+  read, like every other derived value.
+* **The zone of a sample is the core's.** Each sample carries the zone it
+  sits in, measured against the athlete's **stored** zone model through the
+  core's own classifier — the one the time-in-zone computation uses — so
+  the ribbon behind the film's timeline and the bands on the run detail
+  cannot disagree. The model travels with the film, **named and dated**.
+* **The route is the app's own map.** The flyby is the Street map with a
+  marker that moves and a track that is coloured by the pace: the same
+  tile layer, the same disclosure, no second map library. The route is
+  drawn once and the marker moves, so the film stays smooth. And the
+  **street tiles are behind the same explicit action** they are behind on
+  the run detail — the athlete asks for them, and the app says what they
+  reveal. Without them the flyby is the athlete's own route on this
+  device, and nothing leaves it.
+* **The scales are the chart's own.** A run carries a few readings far
+  outside the rest — a walk break's pace of nineteen minutes a kilometre —
+  and a scale that reaches them squashes the series into the top of the
+  chart. So the pace's and the heart rate's scales cover the middle of the
+  readings, and the readings outside are drawn past the edge of the
+  drawing. Nothing is thrown away and nothing is rounded: the values are
+  the run's own, and the words beside them are the core's.
+* **No value is the absence of the whole result.** A run with no file has
+  no series at all, and says why in the core's words. It is never a zero,
+  never a band, and never an empty chart that looks like a run of nothing.
+* **The film's own words are the product's.** The core's catalogue holds
+  the sentences; the app writes none of its own.
+
+This travels with the route and the field tables in `docs/contract/api-paths.md`.
+
 ### Proposed amendment — the heatmap, computed on the device (2026-11-17)
 
 **Proposal, not approved.** The approvals below are the user's to give. This
@@ -670,7 +723,7 @@ normal**, in plain language — and leaves the decision with you.
 
 ## 2. Scope
 
-**In:** Connect (Garmin key) · Sync (incremental) · Today · Runs · Activity detail · Progress · Body ·
+**In:** Connect (Garmin key) · Sync (incremental) · Today · Runs · Activity detail · Run film · Progress · Body ·
 Plan week · Compare · FIT import (any watch) · Settings (goal, pause, note, connect, about).
 
 **Out (deferred, with reasons):** Garmin account login/MFA and the scheduled-workout calendar · MCP/agent
@@ -731,7 +784,7 @@ legible, safe-area applied.
 The original specifications remain in `docs/plan.html`; the approved amendments
 and [current media](docs/media/README.md) supersede their layout and old status claims.
 
-Today · Runs · Activity · Progress · Body · Plan week · Compare · Connect · Settings — each with purpose, what
+Today · Runs · Activity · Run film · Progress · Body · Plan week · Compare · Connect · Settings — each with purpose, what
 it must never do, content blocks, layout per width, states, and acceptance checks.
 
 **Today** leads with recorded weekly activity and the named latest run, then
