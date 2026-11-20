@@ -635,6 +635,7 @@ fn the_year_carries_the_shape_the_app_declares() {
     );
 }
 
+#[test]
 fn the_film_carries_the_shape_the_app_declares() {
     let declarations = declarations();
     let harness = common::Harness::seeded("frontend-film");
@@ -659,6 +660,8 @@ fn the_film_carries_the_shape_the_app_declares() {
     }
 }
 
+/// The run's update carries the shape the app declares.
+#[test]
 fn the_update_carries_the_shape_the_app_declares() {
     let declarations = declarations();
     let harness = common::Harness::seeded("frontend-update");

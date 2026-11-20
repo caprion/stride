@@ -1861,3 +1861,90 @@ export interface UpdateSettings {
   /** When the answer was produced. */
   generated_at: string
 }
+
+/**
+ * The stored update of a run.
+ *
+ * A run without an update has none: the answer says so with a null.
+ */
+export interface RunUpdateResponse {
+  /** The run's id. */
+  activity_id: number
+  /** The update, when the run has one. */
+  update: RunUpdate | null
+  /** When the answer was produced. */
+  generated_at: string
+}
+
+/**
+ * One fact of the payload: a label and a rendered value.
+ */
+export interface UpdateFact {
+  /** The label, in the core's own words. */
+  label: string
+  /** The value, as the core renders it. */
+  value: string
+}
+
+/**
+ * One split of the payload.
+ */
+export interface UpdateSplit {
+  /** The split's number, from one. */
+  index: number
+  /** The distance, as the core renders it. */
+  distance: string
+  /** The pace, as the core renders it. */
+  pace: string
+  /** The heart rate, as the core renders it. */
+  heart_rate: string
+}
+
+/**
+ * One zone of the payload: the time in the athlete's own zones.
+ */
+export interface UpdateZone {
+  /** The zone's name: "Z1". */
+  label: string
+  /** The time in the zone, as the core renders it. */
+  time: string
+  /** The share of the moving time, as the core renders it. */
+  share: string
+}
+
+/**
+ * One observation of the payload: the run's own mechanics.
+ */
+export interface UpdateObservation {
+  /** The label, in the core's own words. */
+  label: string
+  /** The value, as the core renders it. */
+  value: string
+  /** The direction of a signed value: "faster", "slower", and so on. */
+  direction: string | null
+  /** The signed number behind the value, when it has one. */
+  signed: number | null
+  /** What the number counts: "pace", "heart_rate" or "percent". */
+  quantity: string | null
+}
+
+/**
+ * The payload: the facts a model may use, and nothing else.
+ *
+ * **Metrics only.** Never the positions, never the athlete's note, never
+ * their name: the payload is the answer to "what would be sent".
+ */
+export interface UpdatePayload {
+  /** The writer's model, by name. */
+  model: string
+  /** The day the run was read, as the api writes a date. */
+  read_on: string
+  /** The run's own facts. */
+  facts: UpdateFact[]
+  /** The run's splits. */
+  splits: UpdateSplit[]
+  /** The time in the athlete's own zones. */
+  zones: UpdateZone[]
+  /** The run's own mechanics. */
+  observations: UpdateObservation[]
+}
