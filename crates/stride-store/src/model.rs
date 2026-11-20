@@ -636,18 +636,24 @@ pub struct UpdateSettings {
 impl UpdateSettings {
     /// The settings as they are before anything is written.
     ///
-    /// The feature is off, nothing may leave the machine, and no model is
-    /// named: the models are a choice, and the choice has not been made.
+    /// The feature is off and nothing may leave the machine. The **models
+    /// are named**, though: a season of runs was measured against them, and
+    /// the choice that came out of it is the pair the app starts from —
+    /// the writer that was clean on 105 of 107 runs and the reviewer that
+    /// fixes a sign error, which is a different family on purpose.
+    ///
+    /// The athlete can change every one of them; these are the ones the
+    /// evidence chose, and the settings screen shows them.
     pub fn defaults(at: DateTime<Utc>) -> UpdateSettings {
         UpdateSettings {
             enabled: false,
             allow_remote: false,
-            writer_model: String::new(),
-            writer_family: String::new(),
-            writer_base_url: String::new(),
-            reviewer_model: String::new(),
-            reviewer_family: String::new(),
-            reviewer_base_url: String::new(),
+            writer_model: Self::DEFAULT_WRITER_MODEL.to_string(),
+            writer_family: Self::DEFAULT_WRITER_FAMILY.to_string(),
+            writer_base_url: Self::DEFAULT_WRITER_BASE_URL.to_string(),
+            reviewer_model: Self::DEFAULT_REVIEWER_MODEL.to_string(),
+            reviewer_family: Self::DEFAULT_REVIEWER_FAMILY.to_string(),
+            reviewer_base_url: Self::DEFAULT_REVIEWER_BASE_URL.to_string(),
             key_env: Self::DEFAULT_KEY_ENV.to_string(),
             updated_at: at,
         }
@@ -655,4 +661,21 @@ impl UpdateSettings {
 
     /// The environment variable the key is read from, when there is none.
     pub const DEFAULT_KEY_ENV: &'static str = "STRIDE_MODEL_KEY";
+
+    /// The writer the season measured: the fastest clean writer, and the
+    /// cheapest one that reaches the bar.
+    pub const DEFAULT_WRITER_MODEL: &str = "deepseek-flash";
+    /// The writer's family.
+    pub const DEFAULT_WRITER_FAMILY: &str = "deepseek";
+    /// Where the writer is called: DeepSeek's own OpenAI-compatible route.
+    pub const DEFAULT_WRITER_BASE_URL: &str = "https://api.deepseek.com/v1";
+
+    /// The reviewer the season measured: the only one of them that fixes a
+    /// signed direction, and a different family from the writer.
+    pub const DEFAULT_REVIEWER_MODEL: &str = "gemini-3.1-flash-lite";
+    /// The reviewer's family.
+    pub const DEFAULT_REVIEWER_FAMILY: &str = "gemini";
+    /// Where the reviewer is called: Google's OpenAI-compatible route.
+    pub const DEFAULT_REVIEWER_BASE_URL: &str =
+        "https://generativelanguage.googleapis.com/v1beta/openai";
 }

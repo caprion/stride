@@ -129,7 +129,8 @@ pub struct Written {
 /// is kept** either way.
 pub fn write_update(
     router: &dyn Router,
-    model: &dyn ChatModel,
+    writer: &dyn ChatModel,
+    reviewer: &dyn ChatModel,
     settings: &ModelSettings,
     activity_id: i64,
 ) -> Result<Written> {
@@ -154,8 +155,27 @@ pub fn write_update(
     let hash = hash.to_string();
 
     // The first pass.
-    let draft = write_draft(router, model, settings, activity_id, None, &[])?;
-    let review = review_draft(router, model, settings, activity_id, &draft)?;
+    let draft = write_draft(router, writer, settings, activity_id, None, &[])?;
+
+    // **The checks first, and the reviewer only when they find something.**
+    //
+    // The checks are the core's own: groundedness, direction and register.
+    // They are free and they are exact, and over a season of runs they
+    // reject about two drafts in a hundred — so a reviewer called on every
+    // draft spends five times as much for nothing. The reviewer is called
+    // when the checks found something to correct, and the answer says so:
+    // the update is kept either way, and the attribution says which way.
+    let findings = checks_of(router, activity_id, &draft)?;
+    if findings.is_empty() {
+        let kept = record_as(router, settings, activity_id, &draft, &hash, SHIP, "")?;
+        return Ok(Written {
+            draft: kept.then_some(draft),
+            verdict: SHIP.to_string(),
+            findings: Vec::new(),
+        });
+    }
+
+    let review = review_draft(router, reviewer, settings, activity_id, &draft)?;
 
     match review.verdict.as_str() {
         SHIP => {
@@ -170,13 +190,13 @@ pub fn write_update(
             // A second pass, with the reviewer's findings.
             let second = write_draft(
                 router,
-                model,
+                writer,
                 settings,
                 activity_id,
                 Some(&draft),
                 &review.findings,
             )?;
-            let review = review_draft(router, model, settings, activity_id, &second)?;
+            let review = review_draft(router, reviewer, settings, activity_id, &second)?;
             if review.verdict != SHIP {
                 return Ok(Written {
                     draft: None,
@@ -259,6 +279,26 @@ fn write_draft(
     model.complete(&settings.writer_base_url, &settings.writer_model, &prompt)
 }
 
+/// The checks, on a draft: what the core found in it.
+///
+/// The router runs the three checks and answers with the findings — so the
+/// rig never has to know what a groundedness error is, and the two sides
+/// can never disagree about which drafts are clean.
+fn checks_of(router: &dyn Router, activity_id: i64, draft: &str) -> Result<Vec<String>> {
+    let body = json!({ "role": WRITER, "draft": draft });
+    let answer = call(router, "POST", &request_path(activity_id), Some(&body))?;
+    Ok(answer["findings"]
+        .as_array()
+        .map(|items| {
+            items
+                .iter()
+                .filter_map(|item| item.as_str())
+                .map(|text| text.to_string())
+                .collect()
+        })
+        .unwrap_or_default())
+}
+
 /// The reviewer's answer, and what it found.
 fn review_draft(
     router: &dyn Router,
@@ -332,9 +372,31 @@ fn record(
     hash: &str,
     verdict: &str,
 ) -> Result<bool> {
+    record_as(
+        router,
+        settings,
+        activity_id,
+        draft,
+        hash,
+        verdict,
+        &settings.reviewer_model,
+    )
+}
+
+/// Record the update, naming the reviewer — or naming nobody, when the
+/// checks passed and no reviewer was called.
+fn record_as(
+    router: &dyn Router,
+    settings: &ModelSettings,
+    activity_id: i64,
+    draft: &str,
+    hash: &str,
+    verdict: &str,
+    reviewer: &str,
+) -> Result<bool> {
     let body = json!({
         "writer": settings.writer_model,
-        "reviewer": settings.reviewer_model,
+        "reviewer": reviewer,
         "verdict": verdict,
         "payload_hash": hash,
         "draft": draft,

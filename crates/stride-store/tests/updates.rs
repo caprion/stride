@@ -168,8 +168,14 @@ fn the_settings_are_off_until_the_athlete_turns_them_on() -> Result<()> {
         !settings.allow_remote,
         "nothing leaves the machine by default"
     );
-    assert_eq!(settings.writer_model, "");
-    assert_eq!(settings.reviewer_model, "");
+    // The models are named — a season of runs chose them — but the feature
+    // is off and nothing may leave the machine.
+    assert_eq!(settings.writer_model, "deepseek-flash");
+    assert_eq!(settings.reviewer_model, "gemini-3.1-flash-lite");
+    assert_ne!(
+        settings.writer_family, settings.reviewer_family,
+        "the reviewer's family has to differ from the writer's"
+    );
     assert_eq!(settings.key_env, "STRIDE_MODEL_KEY");
     drop(dir);
     Ok(())

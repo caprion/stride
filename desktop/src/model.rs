@@ -32,6 +32,15 @@ const TIMEOUT: Duration = Duration::from_secs(90);
 /// name another one.
 pub const DEFAULT_KEY_ENV: &str = "STRIDE_MODEL_KEY";
 
+/// The environment variable the **reviewer's** key is read from.
+///
+/// The writer and the reviewer are usually two providers — two different
+/// families, on purpose — and two providers do not share a key. So the
+/// writer's key comes from the variable the settings name, and the
+/// reviewer's from this one; when it is not set, the reviewer's key is the
+/// writer's, which is what a local model or a single gateway wants.
+pub const REVIEWER_KEY_ENV: &str = "STRIDE_REVIEWER_KEY";
+
 /// A model that can be asked to write.
 ///
 /// The rig talks to this, and not to the HTTP client, so that the

@@ -632,6 +632,10 @@ export const catalogue = {
     type: 'status',
     text: 'Written by {writer}, checked by {reviewer}',
   },
+  'activity.update.attribution.unchanged': {
+    type: 'status',
+    text: 'Written by {writer}; the checks found nothing to change',
+  },
   'activity.update.checks.heading': { type: 'status', text: 'The checks' },
   'activity.update.check.groundedness': {
     type: 'status',

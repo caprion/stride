@@ -411,21 +411,41 @@ impl Server {
             return;
         }
 
-        // The key is read from the environment variable the settings name,
-        // and it is never written down: a local server may need none.
+        // The keys are read from the environment, and they are never written
+        // down: a local server may need none. The writer's key comes from
+        // the variable the settings name, and the reviewer's from its own
+        // — two providers do not share a key — and the reviewer's falls
+        // back to the writer's when there is only one.
         let key = std::env::var(&settings.key_env)
             .ok()
             .and_then(|value| crate::model::ModelKey::new(&value).ok());
-        let model = match crate::model::ChatClient::new(key) {
+        let writer = match crate::model::ChatClient::new(key) {
             Ok(model) => model,
             Err(error) => {
                 log::log(&format!("the model client could not be built: {error}"));
                 return;
             }
         };
+        let reviewer_key = std::env::var(crate::model::REVIEWER_KEY_ENV)
+            .ok()
+            .or_else(|| std::env::var(&settings.key_env).ok())
+            .and_then(|value| crate::model::ModelKey::new(&value).ok());
+        let reviewer = match crate::model::ChatClient::new(reviewer_key) {
+            Ok(model) => model,
+            Err(error) => {
+                log::log(&format!("the reviewer could not be reached: {error}"));
+                return;
+            }
+        };
 
         for id in fresh {
-            match crate::update::write_update(self.router.as_ref(), &model, &settings, id) {
+            match crate::update::write_update(
+                self.router.as_ref(),
+                &writer,
+                &reviewer,
+                &settings,
+                id,
+            ) {
                 Ok(written) => match written.draft {
                     Some(_) => log::log(&format!("the update of the run {id} was written")),
                     None => log::log(&format!(

@@ -249,7 +249,18 @@ fn the_settings_are_off_until_the_athlete_turns_them_on() {
     let body = harness.ok_get("/update/settings");
     assert_eq!(body["enabled"].as_bool(), Some(false));
     assert_eq!(body["allow_remote"].as_bool(), Some(false));
-    assert_eq!(body["writer_model"].as_str(), Some(""));
+    // The models are named: a season of runs chose them, and the athlete
+    // can change every one of them.
+    assert_eq!(body["writer_model"].as_str(), Some("deepseek-flash"));
+    assert_eq!(
+        body["reviewer_model"].as_str(),
+        Some("gemini-3.1-flash-lite")
+    );
+    // And the two are of different families, on purpose.
+    assert_ne!(
+        body["writer_family"].as_str(),
+        body["reviewer_family"].as_str()
+    );
 
     // The reviewer of the writer's own family is refused: a same-family
     // reviewer repeats the writer's misreadings.

@@ -13454,13 +13454,13 @@
       "enabled": false,
       "generated_at": "2026-05-13T06:30:00Z",
       "key_env": "STRIDE_MODEL_KEY",
-      "reviewer_base_url": "",
-      "reviewer_family": "",
-      "reviewer_model": "",
+      "reviewer_base_url": "https://generativelanguage.googleapis.com/v1beta/openai",
+      "reviewer_family": "gemini",
+      "reviewer_model": "gemini-3.1-flash-lite",
       "updated_at": "2026-05-13T06:30:00Z",
-      "writer_base_url": "",
-      "writer_family": "",
-      "writer_model": ""
+      "writer_base_url": "https://api.deepseek.com/v1",
+      "writer_family": "deepseek",
+      "writer_model": "deepseek-flash"
     }
   },
   "baseline": {
@@ -26722,13 +26722,13 @@
       "enabled": false,
       "generated_at": "2026-05-13T06:30:00Z",
       "key_env": "STRIDE_MODEL_KEY",
-      "reviewer_base_url": "",
-      "reviewer_family": "",
-      "reviewer_model": "",
+      "reviewer_base_url": "https://generativelanguage.googleapis.com/v1beta/openai",
+      "reviewer_family": "gemini",
+      "reviewer_model": "gemini-3.1-flash-lite",
       "updated_at": "2026-05-13T06:30:00Z",
-      "writer_base_url": "",
-      "writer_family": "",
-      "writer_model": ""
+      "writer_base_url": "https://api.deepseek.com/v1",
+      "writer_family": "deepseek",
+      "writer_model": "deepseek-flash"
     }
   },
   "seed": {

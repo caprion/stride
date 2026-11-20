@@ -110,7 +110,11 @@ impl Router for FakeRouter {
         if path.ends_with("/update/request") {
             let body: Value = serde_json::from_slice(request.body).unwrap_or(json!({}));
             let role = body["role"].as_str().unwrap_or_default().to_string();
-            let findings = if role == "reviewer" {
+            // The checks run on the draft, whichever role asked: this is
+            // what the real router answers, and the rig reads the findings
+            // from it.
+            let drafted = body["draft"].as_str().unwrap_or_default().trim();
+            let findings = if !drafted.is_empty() {
                 json!(["groundedness: the number 500 is not in the payload"])
             } else {
                 json!([])
@@ -145,6 +149,32 @@ impl Router for FakeRouter {
     }
 }
 
+/// A router whose checks find nothing in any draft.
+struct CleanRouter {
+    inner: FakeRouter,
+}
+
+impl Router for CleanRouter {
+    fn call(&self, request: &Request<'_>) -> Response {
+        if request.path.ends_with("/update/request") {
+            let body: Value = serde_json::from_slice(request.body).unwrap_or(json!({}));
+            let role = body["role"].as_str().unwrap_or_default().to_string();
+            return Response::json(
+                200,
+                &json!({
+                    "role": role,
+                    "prompt": format!("the prompt for {role}"),
+                    "payload_hash": "a-hash",
+                    "payload": "Distance — 10 km",
+                    "findings": [],
+                })
+                .to_string(),
+            );
+        }
+        self.inner.call(request)
+    }
+}
+
 /// The settings the rig would have: on, local, and two families.
 fn settings() -> ModelSettings {
     ModelSettings {
@@ -161,11 +191,38 @@ fn settings() -> ModelSettings {
 }
 
 #[test]
+fn the_reviewer_is_not_called_when_the_checks_find_nothing() {
+    let router = CleanRouter {
+        inner: FakeRouter::new(true),
+    };
+    let model = FakeModel::new(vec!["The run was 10 km in 50 m."]);
+
+    let written = update::write_update(&router, &model, &model, &settings(), 1).unwrap();
+
+    assert_eq!(written.draft.as_deref(), Some("The run was 10 km in 50 m."));
+    assert_eq!(written.verdict, "ship");
+    assert_eq!(
+        model.calls(),
+        vec!["the writer".to_string()],
+        "the writer was called, and the reviewer was not"
+    );
+    // And the update says who wrote it, and that nobody reviewed it.
+    let recorded = router.inner.recorded();
+    assert_eq!(recorded.len(), 1);
+    assert_eq!(recorded[0]["writer"].as_str(), Some("the writer"));
+    assert_eq!(
+        recorded[0]["reviewer"].as_str(),
+        Some(""),
+        "no reviewer was called, so none is named"
+    );
+}
+
+#[test]
 fn the_writer_is_called_once_and_the_reviewer_once() {
     let router = FakeRouter::new(true);
     let model = FakeModel::new(vec!["The run was 10 km in 50 m.", "ship"]);
 
-    let written = update::write_update(&router, &model, &settings(), 1).unwrap();
+    let written = update::write_update(&router, &model, &model, &settings(), 1).unwrap();
 
     assert_eq!(written.draft.as_deref(), Some("The run was 10 km in 50 m."));
     assert_eq!(written.verdict, "ship");
@@ -186,7 +243,7 @@ fn a_refusal_is_a_refusal_and_nothing_is_kept() {
     let router = FakeRouter::new(true);
     let model = FakeModel::refusing();
 
-    let refused = update::write_update(&router, &model, &settings(), 1);
+    let refused = update::write_update(&router, &model, &model, &settings(), 1);
 
     assert!(refused.is_err(), "a refusal was not a refusal");
     assert!(
@@ -200,7 +257,7 @@ fn a_draft_that_fails_the_checks_is_not_kept() {
     let router = FakeRouter::new(false);
     let model = FakeModel::new(vec!["The run was 10 km in 50 m.", "ship"]);
 
-    let written = update::write_update(&router, &model, &settings(), 1).unwrap();
+    let written = update::write_update(&router, &model, &model, &settings(), 1).unwrap();
 
     assert!(
         written.draft.is_none(),
@@ -220,7 +277,7 @@ fn a_repair_is_a_second_pass() {
         "ship",
     ]);
 
-    let written = update::write_update(&router, &model, &settings(), 1).unwrap();
+    let written = update::write_update(&router, &model, &model, &settings(), 1).unwrap();
 
     assert_eq!(written.draft.as_deref(), Some("The second draft."));
     assert_eq!(
@@ -240,7 +297,7 @@ fn a_discard_keeps_nothing() {
     let router = FakeRouter::new(true);
     let model = FakeModel::new(vec!["The draft.", "discard"]);
 
-    let written = update::write_update(&router, &model, &settings(), 1).unwrap();
+    let written = update::write_update(&router, &model, &model, &settings(), 1).unwrap();
 
     assert!(written.draft.is_none());
     assert_eq!(written.verdict, "discard");
@@ -257,7 +314,7 @@ fn a_feature_that_is_off_calls_nothing() {
     let mut off = settings();
     off.enabled = false;
 
-    let written = update::write_update(&router, &model, &off, 1).unwrap();
+    let written = update::write_update(&router, &model, &model, &off, 1).unwrap();
 
     assert!(written.draft.is_none());
     assert!(model.calls().is_empty(), "a model was called");
@@ -270,7 +327,7 @@ fn nothing_leaves_the_machine_unless_the_athlete_says_so() {
     let mut remote = settings();
     remote.writer_base_url = "https://api.openai.com/v1".to_string();
 
-    let refused = update::write_update(&router, &model, &remote, 1);
+    let refused = update::write_update(&router, &model, &model, &remote, 1);
 
     assert!(refused.is_err(), "a remote model was called");
     assert!(model.calls().is_empty(), "a model was called");
@@ -283,7 +340,7 @@ fn a_reviewer_of_the_writer_s_own_family_is_refused() {
     let mut same = settings();
     same.reviewer_family = same.writer_family.clone();
 
-    let refused = update::write_update(&router, &model, &same, 1);
+    let refused = update::write_update(&router, &model, &model, &same, 1);
 
     assert!(refused.is_err(), "a same-family reviewer was called");
     assert!(model.calls().is_empty(), "a model was called");

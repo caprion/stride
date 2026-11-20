@@ -91,10 +91,12 @@ export function RunUpdate({ id }: { id: string }) {
         {update.draft}
       </p>
       <p className="mt-1 text-[12px] text-ink-muted" data-testid="activity-update-attribution">
-        {t('activity.update.attribution', {
-          writer: update.writer,
-          reviewer: update.reviewer,
-        })}
+        {update.reviewer
+          ? t('activity.update.attribution', {
+              writer: update.writer,
+              reviewer: update.reviewer,
+            })
+          : t('activity.update.attribution.unchanged', { writer: update.writer })}
       </p>
 
       {payload.data?.text ? (

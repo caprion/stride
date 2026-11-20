@@ -55,6 +55,20 @@ describe("the run's update", () => {
     expect(checks?.textContent).toContain('No word the app does not use')
   })
 
+  it('says plainly when the checks found nothing to change', async () => {
+    vi.spyOn(api, 'activityUpdate').mockResolvedValue({
+      ...update,
+      update: { ...update.update, reviewer: '' },
+    })
+    renderApp('/runs/101')
+
+    const panel = await screen.findByTestId('activity-update')
+
+    expect(panel.querySelector('[data-testid="activity-update-attribution"]')?.textContent).toBe(
+      'Written by the writer; the checks found nothing to change',
+    )
+  })
+
   it('shows what the model was given', async () => {
     vi.spyOn(api, 'activityUpdate').mockResolvedValue(update)
     vi.spyOn(api, 'activityUpdatePayload').mockResolvedValue({

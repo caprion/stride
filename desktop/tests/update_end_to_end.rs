@@ -140,6 +140,7 @@ fn one_run_s_update_is_written_and_kept() {
     let written = update::write_update(
         &router as &dyn Router,
         &model,
+        &model,
         &ModelSettings::from_answer(&settings_answer(&router)),
         id,
     )
@@ -155,7 +156,9 @@ fn one_run_s_update_is_written_and_kept() {
     // the payload it was written from.
     let stored = store.run_update(id).unwrap().expect("the update");
     assert_eq!(stored.writer, "the writer");
-    assert_eq!(stored.reviewer, "the reviewer");
+    // The draft passed the checks, so no reviewer was called and none is
+    // named: the attribution says the checks found nothing to change.
+    assert_eq!(stored.reviewer, "");
     assert_eq!(stored.verdict, "ship");
     assert_eq!(stored.payload_hash.len(), 64);
     assert!(stored.checks.contains("groundedness"));
