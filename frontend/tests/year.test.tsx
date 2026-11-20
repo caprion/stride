@@ -63,9 +63,9 @@ describe('the year', () => {
     expect(days).toHaveLength(3)
     // The hard day is the deepest colour, the easy one the palest, and
     // the day with no run is the neutral one: no mix, not a mix of zero.
-    expect(days[0]?.getAttribute('fill')).toBe('#F2B01E')
-    expect(days[1]?.getAttribute('fill')).toBe('#D6E6F3')
-    expect(days[2]?.getAttribute('fill')).toBe('#E9EFF4')
+    expect(days[0]?.getAttribute('fill')).toBe('var(--accent-400)')
+    expect(days[1]?.getAttribute('fill')).toBe('var(--chart-band)')
+    expect(days[2]?.getAttribute('fill')).toBe('var(--surface-sunken)')
   })
 
   it('says what changed, in the core own sentences', async () => {
