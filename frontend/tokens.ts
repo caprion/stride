@@ -35,12 +35,14 @@
  *
  * ## The ramps
  *
- * A ramp runs from the faintest trace of its colour to the deepest:
- * `50` is the faintest, `900` the deepest. In the dark palette the same
- * numbering still means "faintest" and "deepest" *relative to that
- * palette's ground*, so `50` is a tint that barely lifts off a dark page.
- * One step is deliberate: `brand.600` is the fill that carries white text,
- * so it stays dark enough to carry it in every palette.
+ * A ramp runs from the faintest trace of its colour to its strongest
+ * expression: `50` is the faintest, `900` the strongest. On the light
+ * ground that means a pale tint at `50` and a deep blue at `900`; on the
+ * dark ground it is the other way round — `50` is a tint that barely
+ * lifts off the page, and `900` is a pale blue.
+ *
+ * One step is deliberate in every palette: `brand.600` is the fill that
+ * carries white text, so it stays dark enough to carry it.
  */
 
 /** A ramp: ten steps, from the faintest trace to the deepest. */
