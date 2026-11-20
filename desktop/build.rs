@@ -14,7 +14,23 @@
 //! `frontend/dist` is preferred in a development checkout, so the normal
 //! edit-reload loop still sees the change that was just made.
 
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
+
+/// Every file under a directory, so cargo knows when the bundle changes.
+fn watch_every_file(directory: &Path) {
+    let entries = match std::fs::read_dir(directory) {
+        Ok(entries) => entries,
+        Err(_) => return,
+    };
+    for entry in entries.flatten() {
+        let path = entry.path();
+        if path.is_dir() {
+            watch_every_file(&path);
+        } else {
+            println!("cargo:rerun-if-changed={}", path.display());
+        }
+    }
+}
 
 fn main() {
     let manifest_dir = match std::env::var("CARGO_MANIFEST_DIR") {
@@ -33,6 +49,15 @@ fn main() {
     println!("cargo:rerun-if-changed={}", bundle.display());
     println!("cargo:rerun-if-changed={}", root.join("frontend").display());
     println!("cargo:rerun-if-changed={}", released.display());
+    // **Every file in the bundle, one by one.** A directory's own mtime does
+    // not change when a file inside it is rewritten, so a rig built after a
+    // frontend change would otherwise carry the *old* bundle — and the
+    // desktop deployment would serve an app that is not the one in the
+    // tree. The rig is the deployment, so it must rebuild when the bundle
+    // does.
+    for directory in [&bundle, &released] {
+        watch_every_file(directory);
+    }
 
     let development = bundle.join("index.html").is_file();
     let released_built = released.join("index.html").is_file();

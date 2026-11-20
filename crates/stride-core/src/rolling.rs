@@ -92,12 +92,16 @@ impl RollingWindow {
         self.to.add_days(-(self.days - 1))
     }
 
-    /// The same window, a day earlier: the period the answer compares
-    /// itself against.
+    /// The window **before** this one: the same number of days, ending the
+    /// day before this window begins.
+    ///
+    /// This is the period the answer compares itself against, and it must
+    /// not overlap the window it is compared with: the two are meant to be
+    /// two halves of a longer story, not the same days twice.
     pub fn previous(&self) -> RollingWindow {
         RollingWindow {
             days: self.days,
-            to: self.to.add_days(-1),
+            to: self.from().add_days(-1),
         }
     }
 
@@ -829,8 +833,10 @@ mod tests {
     }
 
     #[test]
-    fn the_comparison_is_the_same_window_a_day_earlier() {
+    fn the_comparison_is_the_window_before_the_window() {
         let runs = match runs(&[
+            activity("2026-05-08", 5_000.0, 1_500.0, 7),
+            activity("2026-05-09", 6_000.0, 1_800.0, 7),
             activity("2026-05-11", 10_000.0, 3_000.0, 7),
             activity("2026-05-12", 8_000.0, 2_400.0, 18),
             activity("2026-05-13", 12_000.0, 3_600.0, 7),
@@ -846,10 +852,12 @@ mod tests {
         // The window holds the 11th, the 12th and the 13th.
         assert_eq!(comparison.current.sessions, 3);
         assert_eq!(comparison.current.distance_m, 30_000.0);
-        // The window a day earlier holds the 10th to the 12th: two of them
-        // are inside, and the 10th is not there at all.
+        // The window **before** it holds the 8th, the 9th and the 10th: the
+        // two runs of that period, and nothing of the window it is compared
+        // with. The two windows never share a day.
         assert_eq!(comparison.previous.sessions, 2);
-        assert_eq!(comparison.previous.distance_m, 18_000.0);
+        assert_eq!(comparison.previous.distance_m, 11_000.0);
+        assert_eq!(comparison.previous.moving_time_s, 3_300.0);
     }
 
     #[test]

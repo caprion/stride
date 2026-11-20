@@ -242,6 +242,46 @@
           "sport_type": "running",
           "start_time": "2026-05-03T07:10:00Z",
           "story": "6.3 km in 35 m, at an average of 148 bpm"
+        },
+        {
+          "distance": {
+            "raw": 18200,
+            "text": "18.2 km"
+          },
+          "duration": {
+            "raw": 5640,
+            "text": "1 h 34 m"
+          },
+          "elevation_gain": {
+            "raw": 42,
+            "text": "42 m"
+          },
+          "geo_points": [],
+          "group": {
+            "distance": {
+              "raw": 18200,
+              "text": "18.2 km"
+            },
+            "duration": {
+              "raw": 5640,
+              "text": "1 h 34 m"
+            },
+            "key": "2026-02-09"
+          },
+          "heart_rate": {
+            "raw": 148,
+            "text": "148 bpm"
+          },
+          "id": 107,
+          "local_date": "2026-02-11",
+          "name": "Run",
+          "pace": {
+            "raw": 309.89,
+            "text": "5:10 /km"
+          },
+          "sport_type": "running",
+          "start_time": "2026-02-11T07:10:00Z",
+          "story": "18.2 km in 1 h 34 m, at an average of 148 bpm"
         }
       ],
       "generated_at": "2026-05-13T06:30:00Z",
@@ -1104,6 +1144,15 @@
         },
         "id": 106,
         "label": "Run"
+      },
+      {
+        "date": "2026-02-11",
+        "distance": {
+          "raw": 18200,
+          "text": "18.2 km"
+        },
+        "id": 107,
+        "label": "Run"
       }
     ],
     "/fitness/fingerprint": {
@@ -1194,7 +1243,7 @@
       "zones": []
     },
     "/health": {
-      "activities": 6,
+      "activities": 7,
       "garmin_connected": false,
       "generated_at": "2026-05-13T06:30:00Z",
       "ok": true,
@@ -2225,6 +2274,12 @@
         },
         "days": [
           {
+            "date": "2026-02-11",
+            "label": "11 Feb 2026",
+            "load": null,
+            "reason": "no_resting_hr"
+          },
+          {
             "date": "2026-04-14",
             "label": "14 Apr 2026",
             "load": {
@@ -2496,6 +2551,26 @@
           }
         ],
         "states": [
+          {
+            "acute": {
+              "raw": 0,
+              "text": "0.0"
+            },
+            "chronic": {
+              "raw": 0,
+              "text": "0.0"
+            },
+            "date": "2026-02-11",
+            "form": {
+              "raw": 0,
+              "text": "0.0"
+            },
+            "label": "11 Feb 2026",
+            "ratio": {
+              "raw": 0,
+              "text": "0.00"
+            }
+          },
           {
             "acute": {
               "raw": 0,
@@ -4051,6 +4126,12 @@
         },
         "days": [
           {
+            "date": "2026-02-11",
+            "label": "11 Feb 2026",
+            "load": null,
+            "reason": "no_resting_hr"
+          },
+          {
             "date": "2026-04-14",
             "label": "14 Apr 2026",
             "load": {
@@ -4322,6 +4403,26 @@
           }
         ],
         "states": [
+          {
+            "acute": {
+              "raw": 0,
+              "text": "0.0"
+            },
+            "chronic": {
+              "raw": 0,
+              "text": "0.0"
+            },
+            "date": "2026-02-11",
+            "form": {
+              "raw": 0,
+              "text": "0.0"
+            },
+            "label": "11 Feb 2026",
+            "ratio": {
+              "raw": 0,
+              "text": "0.00"
+            }
+          },
           {
             "acute": {
               "raw": 0,
@@ -6041,12 +6142,16 @@
       },
       "bests": [
         {
-          "date": "2026-05-04",
+          "date": "2026-02-11",
           "key": "progress.best.longest",
-          "value": "16.1 km"
+          "value": "18.2 km"
         }
       ],
       "consistency": [
+        {
+          "sessions": 1,
+          "week_start": "2026-02-09"
+        },
         {
           "sessions": 1,
           "week_start": "2026-04-27"
@@ -6069,6 +6174,17 @@
       "headline": "Your saved activity history",
       "headline_note": null,
       "pace_at_hr": [
+        {
+          "heart_rate": {
+            "raw": 148,
+            "text": "148 bpm"
+          },
+          "pace": {
+            "raw": 309.89,
+            "text": "5:10 /km"
+          },
+          "week_start": "2026-02-09"
+        },
         {
           "heart_rate": {
             "raw": 148,
@@ -6107,14 +6223,21 @@
         "to": "2026-05-13"
       },
       "sessions_per_week": {
-        "raw": 3,
-        "text": "3.0"
+        "raw": 2.3333333333333335,
+        "text": "2.3"
       },
       "typical_week": {
-        "raw": 29200,
-        "text": "29.2 km"
+        "raw": 18200,
+        "text": "18.2 km"
       },
       "weekly_volume": [
+        {
+          "distance": {
+            "raw": 18200,
+            "text": "18.2 km"
+          },
+          "week_start": "2026-02-09"
+        },
         {
           "distance": {
             "raw": 6300,
@@ -6139,12 +6262,16 @@
       },
       "bests": [
         {
-          "date": "2026-05-04",
+          "date": "2026-02-11",
           "key": "progress.best.longest",
-          "value": "16.1 km"
+          "value": "18.2 km"
         }
       ],
       "consistency": [
+        {
+          "sessions": 1,
+          "week_start": "2026-02-09"
+        },
         {
           "sessions": 1,
           "week_start": "2026-04-27"
@@ -6156,17 +6283,28 @@
       ],
       "date": "2026-05-13",
       "eddington": {
-        "days_needed_for_next": 1,
+        "days_needed_for_next": 2,
         "longest_day": {
-          "raw": 16100,
-          "text": "16.1 km"
+          "raw": 18200,
+          "text": "18.2 km"
         },
-        "number": 5
+        "number": 6
       },
       "generated_at": "2026-05-13T06:30:00Z",
       "headline": "Your saved activity history",
       "headline_note": null,
       "pace_at_hr": [
+        {
+          "heart_rate": {
+            "raw": 148,
+            "text": "148 bpm"
+          },
+          "pace": {
+            "raw": 309.89,
+            "text": "5:10 /km"
+          },
+          "week_start": "2026-02-09"
+        },
         {
           "heart_rate": {
             "raw": 148,
@@ -6192,27 +6330,34 @@
       ],
       "period": {
         "distance": {
-          "raw": 58400,
-          "text": "58.4 km"
+          "raw": 76600,
+          "text": "76.6 km"
         },
         "duration": {
-          "raw": 18632,
-          "text": "5 h 11 m"
+          "raw": 24272,
+          "text": "6 h 45 m"
         },
         "from": "2025-11-17",
-        "recorded_weeks": 2,
-        "sessions": 6,
+        "recorded_weeks": 3,
+        "sessions": 7,
         "to": "2026-05-13"
       },
       "sessions_per_week": {
-        "raw": 3,
-        "text": "3.0"
+        "raw": 2.3333333333333335,
+        "text": "2.3"
       },
       "typical_week": {
-        "raw": 29200,
-        "text": "29.2 km"
+        "raw": 18200,
+        "text": "18.2 km"
       },
       "weekly_volume": [
+        {
+          "distance": {
+            "raw": 18200,
+            "text": "18.2 km"
+          },
+          "week_start": "2026-02-09"
+        },
         {
           "distance": {
             "raw": 6300,
@@ -6237,12 +6382,16 @@
       },
       "bests": [
         {
-          "date": "2026-05-04",
+          "date": "2026-02-11",
           "key": "progress.best.longest",
-          "value": "16.1 km"
+          "value": "18.2 km"
         }
       ],
       "consistency": [
+        {
+          "sessions": 1,
+          "week_start": "2026-02-09"
+        },
         {
           "sessions": 1,
           "week_start": "2026-04-27"
@@ -6265,6 +6414,17 @@
       "headline": "Your saved activity history",
       "headline_note": null,
       "pace_at_hr": [
+        {
+          "heart_rate": {
+            "raw": 148,
+            "text": "148 bpm"
+          },
+          "pace": {
+            "raw": 309.89,
+            "text": "5:10 /km"
+          },
+          "week_start": "2026-02-09"
+        },
         {
           "heart_rate": {
             "raw": 148,
@@ -6303,14 +6463,21 @@
         "to": "2026-05-13"
       },
       "sessions_per_week": {
-        "raw": 3,
-        "text": "3.0"
+        "raw": 2.3333333333333335,
+        "text": "2.3"
       },
       "typical_week": {
-        "raw": 29200,
-        "text": "29.2 km"
+        "raw": 18200,
+        "text": "18.2 km"
       },
       "weekly_volume": [
+        {
+          "distance": {
+            "raw": 18200,
+            "text": "18.2 km"
+          },
+          "week_start": "2026-02-09"
+        },
         {
           "distance": {
             "raw": 6300,
@@ -6335,12 +6502,16 @@
       },
       "bests": [
         {
-          "date": "2026-05-04",
+          "date": "2026-02-11",
           "key": "progress.best.longest",
-          "value": "16.1 km"
+          "value": "18.2 km"
         }
       ],
       "consistency": [
+        {
+          "sessions": 1,
+          "week_start": "2026-02-09"
+        },
         {
           "sessions": 1,
           "week_start": "2026-04-27"
@@ -6352,17 +6523,28 @@
       ],
       "date": "2026-05-13",
       "eddington": {
-        "days_needed_for_next": 1,
+        "days_needed_for_next": 2,
         "longest_day": {
-          "raw": 16100,
-          "text": "16.1 km"
+          "raw": 18200,
+          "text": "18.2 km"
         },
-        "number": 5
+        "number": 6
       },
       "generated_at": "2026-05-13T06:30:00Z",
       "headline": "Your saved activity history",
       "headline_note": null,
       "pace_at_hr": [
+        {
+          "heart_rate": {
+            "raw": 148,
+            "text": "148 bpm"
+          },
+          "pace": {
+            "raw": 309.89,
+            "text": "5:10 /km"
+          },
+          "week_start": "2026-02-09"
+        },
         {
           "heart_rate": {
             "raw": 148,
@@ -6388,27 +6570,34 @@
       ],
       "period": {
         "distance": {
-          "raw": 58400,
-          "text": "58.4 km"
+          "raw": 76600,
+          "text": "76.6 km"
         },
         "duration": {
-          "raw": 18632,
-          "text": "5 h 11 m"
+          "raw": 24272,
+          "text": "6 h 45 m"
         },
         "from": "2025-05-19",
-        "recorded_weeks": 2,
-        "sessions": 6,
+        "recorded_weeks": 3,
+        "sessions": 7,
         "to": "2026-05-13"
       },
       "sessions_per_week": {
-        "raw": 3,
-        "text": "3.0"
+        "raw": 2.3333333333333335,
+        "text": "2.3"
       },
       "typical_week": {
-        "raw": 29200,
-        "text": "29.2 km"
+        "raw": 18200,
+        "text": "18.2 km"
       },
       "weekly_volume": [
+        {
+          "distance": {
+            "raw": 18200,
+            "text": "18.2 km"
+          },
+          "week_start": "2026-02-09"
+        },
         {
           "distance": {
             "raw": 6300,
@@ -6433,12 +6622,16 @@
       },
       "bests": [
         {
-          "date": "2026-05-04",
+          "date": "2026-02-11",
           "key": "progress.best.longest",
-          "value": "16.1 km"
+          "value": "18.2 km"
         }
       ],
       "consistency": [
+        {
+          "sessions": 1,
+          "week_start": "2026-02-09"
+        },
         {
           "sessions": 1,
           "week_start": "2026-04-27"
@@ -6461,6 +6654,17 @@
       "headline": "Your saved activity history",
       "headline_note": null,
       "pace_at_hr": [
+        {
+          "heart_rate": {
+            "raw": 148,
+            "text": "148 bpm"
+          },
+          "pace": {
+            "raw": 309.89,
+            "text": "5:10 /km"
+          },
+          "week_start": "2026-02-09"
+        },
         {
           "heart_rate": {
             "raw": 148,
@@ -6499,14 +6703,21 @@
         "to": "2026-05-13"
       },
       "sessions_per_week": {
-        "raw": 3,
-        "text": "3.0"
+        "raw": 2.3333333333333335,
+        "text": "2.3"
       },
       "typical_week": {
-        "raw": 29200,
-        "text": "29.2 km"
+        "raw": 18200,
+        "text": "18.2 km"
       },
       "weekly_volume": [
+        {
+          "distance": {
+            "raw": 18200,
+            "text": "18.2 km"
+          },
+          "week_start": "2026-02-09"
+        },
         {
           "distance": {
             "raw": 6300,
@@ -6527,26 +6738,26 @@
     "/insights/rolling": {
       "comparison": {
         "days": 84,
-        "from": "2026-02-18",
-        "from_label": "18 Feb 2026",
-        "to": "2026-05-12",
-        "to_label": "12 May 2026"
+        "from": "2025-11-27",
+        "from_label": "27 Nov 2025",
+        "to": "2026-02-18",
+        "to_label": "18 Feb 2026"
       },
       "date": "2026-05-13",
       "daytime": [
         {
           "distance": {
-            "raw": 58400,
-            "text": "58.4 km"
+            "raw": 76600,
+            "text": "76.6 km"
           },
           "duration": {
-            "raw": 18632,
-            "text": "5 h 11 m"
+            "raw": 24272,
+            "text": "6 h 45 m"
           },
           "from_hour": 6,
           "key": "morning",
           "label": "Morning",
-          "sessions": 6,
+          "sessions": 7,
           "to_hour": 12
         },
         {
@@ -6601,12 +6812,12 @@
           "text": "58.4 km"
         },
         "difference": {
-          "raw": 0,
-          "text": "0 km"
+          "raw": 40200,
+          "text": "+40.2 km"
         },
         "previous": {
-          "raw": 58400,
-          "text": "58.4 km"
+          "raw": 18200,
+          "text": "18.2 km"
         }
       },
       "distances": [
@@ -6702,12 +6913,12 @@
           "text": "5 h 11 m"
         },
         "difference": {
-          "raw": 0,
-          "text": "0 m"
+          "raw": 12992,
+          "text": "+3 h 37 m"
         },
         "previous": {
-          "raw": 18632,
-          "text": "5 h 11 m"
+          "raw": 5640,
+          "text": "1 h 34 m"
         }
       },
       "generated_at": "2026-05-13T06:30:00Z",
@@ -6728,16 +6939,33 @@
           "key": "2026-05",
           "label": "May 2026",
           "sessions": 6
+        },
+        {
+          "distance": {
+            "raw": 18200,
+            "text": "18.2 km"
+          },
+          "duration": {
+            "raw": 5640,
+            "text": "1 h 34 m"
+          },
+          "elevation": {
+            "raw": 42,
+            "text": "42 m"
+          },
+          "key": "2026-02",
+          "label": "February 2026",
+          "sessions": 1
         }
       ],
       "profile": [
         {
           "key": "volume",
           "label": "Volume",
-          "movement": "steady",
+          "movement": "up",
           "previous": {
-            "raw": 58400,
-            "text": "58.4 km"
+            "raw": 18200,
+            "text": "18.2 km"
           },
           "value": {
             "raw": 58400,
@@ -6747,10 +6975,10 @@
         {
           "key": "consistency",
           "label": "Consistency",
-          "movement": "steady",
+          "movement": "up",
           "previous": {
-            "raw": 6,
-            "text": "6"
+            "raw": 1,
+            "text": "1"
           },
           "value": {
             "raw": 6,
@@ -6773,10 +7001,10 @@
         {
           "key": "duration",
           "label": "Duration",
-          "movement": "steady",
+          "movement": "down",
           "previous": {
-            "raw": 2920,
-            "text": "49 m"
+            "raw": 5640,
+            "text": "1 h 34 m"
           },
           "value": {
             "raw": 2920,
@@ -6786,10 +7014,10 @@
         {
           "key": "density",
           "label": "Density",
-          "movement": "steady",
+          "movement": "down",
           "previous": {
-            "raw": 3105.3333333333335,
-            "text": "52 m"
+            "raw": 5640,
+            "text": "1 h 34 m"
           },
           "value": {
             "raw": 3105.3333333333335,
@@ -6812,10 +7040,10 @@
         {
           "key": "week_days",
           "label": "Week days",
-          "movement": "steady",
+          "movement": "up",
           "previous": {
-            "raw": 5,
-            "text": "5"
+            "raw": 1,
+            "text": "1"
           },
           "value": {
             "raw": 5,
@@ -6826,10 +7054,10 @@
       "sessions": {
         "current": 6,
         "difference": {
-          "raw": 0,
-          "text": "0"
+          "raw": 5,
+          "text": "+5"
         },
-        "previous": 6
+        "previous": 1
       },
       "weekday": [
         {
@@ -6843,8 +7071,8 @@
           },
           "sessions": 1,
           "share": {
-            "raw": 27.22,
-            "text": "27.22%"
+            "raw": 20.9,
+            "text": "20.90%"
           },
           "weekday": "Monday"
         },
@@ -6866,17 +7094,17 @@
         },
         {
           "distance": {
-            "raw": 5000,
-            "text": "5 km"
+            "raw": 23200,
+            "text": "23.2 km"
           },
           "duration": {
-            "raw": 1620,
-            "text": "27 m"
+            "raw": 7260,
+            "text": "2 h 1 m"
           },
-          "sessions": 1,
+          "sessions": 2,
           "share": {
-            "raw": 8.69,
-            "text": "8.69%"
+            "raw": 29.91,
+            "text": "29.91%"
           },
           "weekday": "Wednesday"
         },
@@ -6891,8 +7119,8 @@
           },
           "sessions": 1,
           "share": {
-            "raw": 13.53,
-            "text": "13.53%"
+            "raw": 10.38,
+            "text": "10.38%"
           },
           "weekday": "Thursday"
         },
@@ -6923,8 +7151,8 @@
           },
           "sessions": 1,
           "share": {
-            "raw": 17.82,
-            "text": "17.82%"
+            "raw": 13.68,
+            "text": "13.68%"
           },
           "weekday": "Saturday"
         },
@@ -6939,8 +7167,8 @@
           },
           "sessions": 2,
           "share": {
-            "raw": 32.74,
-            "text": "32.74%"
+            "raw": 25.13,
+            "text": "25.13%"
           },
           "weekday": "Sunday"
         }
@@ -6955,20 +7183,20 @@
       "years": [
         {
           "distance": {
-            "raw": 58400,
-            "text": "58.4 km"
+            "raw": 76600,
+            "text": "76.6 km"
           },
           "duration": {
-            "raw": 18632,
-            "text": "5 h 11 m"
+            "raw": 24272,
+            "text": "6 h 45 m"
           },
           "elevation": {
-            "raw": 252,
-            "text": "252 m"
+            "raw": 294,
+            "text": "294 m"
           },
           "key": "2026",
           "label": "2026",
-          "sessions": 6
+          "sessions": 7
         }
       ],
       "zones": {
@@ -6985,26 +7213,26 @@
     "/insights/rolling?weeks=26": {
       "comparison": {
         "days": 182,
-        "from": "2025-11-12",
-        "from_label": "12 Nov 2025",
-        "to": "2026-05-12",
-        "to_label": "12 May 2026"
+        "from": "2025-05-15",
+        "from_label": "15 May 2025",
+        "to": "2025-11-12",
+        "to_label": "12 Nov 2025"
       },
       "date": "2026-05-13",
       "daytime": [
         {
           "distance": {
-            "raw": 58400,
-            "text": "58.4 km"
+            "raw": 76600,
+            "text": "76.6 km"
           },
           "duration": {
-            "raw": 18632,
-            "text": "5 h 11 m"
+            "raw": 24272,
+            "text": "6 h 45 m"
           },
           "from_hour": 6,
           "key": "morning",
           "label": "Morning",
-          "sessions": 6,
+          "sessions": 7,
           "to_hour": 12
         },
         {
@@ -7055,16 +7283,16 @@
       ],
       "distance": {
         "current": {
-          "raw": 58400,
-          "text": "58.4 km"
+          "raw": 76600,
+          "text": "76.6 km"
         },
         "difference": {
-          "raw": 0,
-          "text": "0 km"
+          "raw": 76600,
+          "text": "+76.6 km"
         },
         "previous": {
-          "raw": 58400,
-          "text": "58.4 km"
+          "raw": 0,
+          "text": "0 km"
         }
       },
       "distances": [
@@ -7138,34 +7366,34 @@
         },
         {
           "distance": {
-            "raw": 16100,
-            "text": "16.1 km"
+            "raw": 34300,
+            "text": "34.3 km"
           },
           "duration": {
-            "raw": 5072,
-            "text": "1 h 25 m"
+            "raw": 10712,
+            "text": "2 h 59 m"
           },
           "elevation": {
-            "raw": 42,
-            "text": "42 m"
+            "raw": 84,
+            "text": "84 m"
           },
           "key": "16-20",
           "label": "16-20 km",
-          "sessions": 1
+          "sessions": 2
         }
       ],
       "duration": {
         "current": {
-          "raw": 18632,
-          "text": "5 h 11 m"
+          "raw": 24272,
+          "text": "6 h 45 m"
         },
         "difference": {
-          "raw": 0,
-          "text": "0 m"
+          "raw": 24272,
+          "text": "+6 h 45 m"
         },
         "previous": {
-          "raw": 18632,
-          "text": "5 h 11 m"
+          "raw": 0,
+          "text": "0 m"
         }
       },
       "generated_at": "2026-05-13T06:30:00Z",
@@ -7186,43 +7414,51 @@
           "key": "2026-05",
           "label": "May 2026",
           "sessions": 6
+        },
+        {
+          "distance": {
+            "raw": 18200,
+            "text": "18.2 km"
+          },
+          "duration": {
+            "raw": 5640,
+            "text": "1 h 34 m"
+          },
+          "elevation": {
+            "raw": 42,
+            "text": "42 m"
+          },
+          "key": "2026-02",
+          "label": "February 2026",
+          "sessions": 1
         }
       ],
       "profile": [
         {
           "key": "volume",
           "label": "Volume",
-          "movement": "steady",
-          "previous": {
-            "raw": 58400,
-            "text": "58.4 km"
-          },
+          "movement": null,
+          "previous": null,
           "value": {
-            "raw": 58400,
-            "text": "58.4 km"
+            "raw": 76600,
+            "text": "76.6 km"
           }
         },
         {
           "key": "consistency",
           "label": "Consistency",
-          "movement": "steady",
-          "previous": {
-            "raw": 6,
-            "text": "6"
-          },
+          "movement": null,
+          "previous": null,
           "value": {
-            "raw": 6,
-            "text": "6"
+            "raw": 7,
+            "text": "7"
           }
         },
         {
           "key": "intensity",
           "label": "Intensity",
-          "movement": "steady",
-          "previous": {
-            "raw": 148,
-            "text": "148 bpm"
-          },
+          "movement": null,
+          "previous": null,
           "value": {
             "raw": 148,
             "text": "148 bpm"
@@ -7231,37 +7467,28 @@
         {
           "key": "duration",
           "label": "Duration",
-          "movement": "steady",
-          "previous": {
-            "raw": 2920,
-            "text": "49 m"
-          },
+          "movement": null,
+          "previous": null,
           "value": {
-            "raw": 2920,
-            "text": "49 m"
+            "raw": 3320,
+            "text": "55 m"
           }
         },
         {
           "key": "density",
           "label": "Density",
-          "movement": "steady",
-          "previous": {
-            "raw": 3105.3333333333335,
-            "text": "52 m"
-          },
+          "movement": null,
+          "previous": null,
           "value": {
-            "raw": 3105.3333333333335,
-            "text": "52 m"
+            "raw": 3467.4285714285716,
+            "text": "58 m"
           }
         },
         {
           "key": "variety",
           "label": "Sport variety",
-          "movement": "steady",
-          "previous": {
-            "raw": 1,
-            "text": "1"
-          },
+          "movement": null,
+          "previous": null,
           "value": {
             "raw": 1,
             "text": "1"
@@ -7270,11 +7497,8 @@
         {
           "key": "week_days",
           "label": "Week days",
-          "movement": "steady",
-          "previous": {
-            "raw": 5,
-            "text": "5"
-          },
+          "movement": null,
+          "previous": null,
           "value": {
             "raw": 5,
             "text": "5"
@@ -7282,12 +7506,12 @@
         }
       ],
       "sessions": {
-        "current": 6,
+        "current": 7,
         "difference": {
-          "raw": 0,
-          "text": "0"
+          "raw": 7,
+          "text": "+7"
         },
-        "previous": 6
+        "previous": 0
       },
       "weekday": [
         {
@@ -7301,8 +7525,8 @@
           },
           "sessions": 1,
           "share": {
-            "raw": 27.22,
-            "text": "27.22%"
+            "raw": 20.9,
+            "text": "20.90%"
           },
           "weekday": "Monday"
         },
@@ -7324,17 +7548,17 @@
         },
         {
           "distance": {
-            "raw": 5000,
-            "text": "5 km"
+            "raw": 23200,
+            "text": "23.2 km"
           },
           "duration": {
-            "raw": 1620,
-            "text": "27 m"
+            "raw": 7260,
+            "text": "2 h 1 m"
           },
-          "sessions": 1,
+          "sessions": 2,
           "share": {
-            "raw": 8.69,
-            "text": "8.69%"
+            "raw": 29.91,
+            "text": "29.91%"
           },
           "weekday": "Wednesday"
         },
@@ -7349,8 +7573,8 @@
           },
           "sessions": 1,
           "share": {
-            "raw": 13.53,
-            "text": "13.53%"
+            "raw": 10.38,
+            "text": "10.38%"
           },
           "weekday": "Thursday"
         },
@@ -7381,8 +7605,8 @@
           },
           "sessions": 1,
           "share": {
-            "raw": 17.82,
-            "text": "17.82%"
+            "raw": 13.68,
+            "text": "13.68%"
           },
           "weekday": "Saturday"
         },
@@ -7397,8 +7621,8 @@
           },
           "sessions": 2,
           "share": {
-            "raw": 32.74,
-            "text": "32.74%"
+            "raw": 25.13,
+            "text": "25.13%"
           },
           "weekday": "Sunday"
         }
@@ -7413,20 +7637,20 @@
       "years": [
         {
           "distance": {
-            "raw": 58400,
-            "text": "58.4 km"
+            "raw": 76600,
+            "text": "76.6 km"
           },
           "duration": {
-            "raw": 18632,
-            "text": "5 h 11 m"
+            "raw": 24272,
+            "text": "6 h 45 m"
           },
           "elevation": {
-            "raw": 252,
-            "text": "252 m"
+            "raw": 294,
+            "text": "294 m"
           },
           "key": "2026",
           "label": "2026",
-          "sessions": 6
+          "sessions": 7
         }
       ],
       "zones": {
@@ -7443,26 +7667,26 @@
     "/insights/rolling?weeks=4": {
       "comparison": {
         "days": 28,
-        "from": "2026-04-15",
-        "from_label": "15 Apr 2026",
-        "to": "2026-05-12",
-        "to_label": "12 May 2026"
+        "from": "2026-03-19",
+        "from_label": "19 Mar 2026",
+        "to": "2026-04-15",
+        "to_label": "15 Apr 2026"
       },
       "date": "2026-05-13",
       "daytime": [
         {
           "distance": {
-            "raw": 58400,
-            "text": "58.4 km"
+            "raw": 76600,
+            "text": "76.6 km"
           },
           "duration": {
-            "raw": 18632,
-            "text": "5 h 11 m"
+            "raw": 24272,
+            "text": "6 h 45 m"
           },
           "from_hour": 6,
           "key": "morning",
           "label": "Morning",
-          "sessions": 6,
+          "sessions": 7,
           "to_hour": 12
         },
         {
@@ -7517,12 +7741,12 @@
           "text": "58.4 km"
         },
         "difference": {
-          "raw": 0,
-          "text": "0 km"
+          "raw": 58400,
+          "text": "+58.4 km"
         },
         "previous": {
-          "raw": 58400,
-          "text": "58.4 km"
+          "raw": 0,
+          "text": "0 km"
         }
       },
       "distances": [
@@ -7618,12 +7842,12 @@
           "text": "5 h 11 m"
         },
         "difference": {
-          "raw": 0,
-          "text": "0 m"
+          "raw": 18632,
+          "text": "+5 h 11 m"
         },
         "previous": {
-          "raw": 18632,
-          "text": "5 h 11 m"
+          "raw": 0,
+          "text": "0 m"
         }
       },
       "generated_at": "2026-05-13T06:30:00Z",
@@ -7644,17 +7868,31 @@
           "key": "2026-05",
           "label": "May 2026",
           "sessions": 6
+        },
+        {
+          "distance": {
+            "raw": 18200,
+            "text": "18.2 km"
+          },
+          "duration": {
+            "raw": 5640,
+            "text": "1 h 34 m"
+          },
+          "elevation": {
+            "raw": 42,
+            "text": "42 m"
+          },
+          "key": "2026-02",
+          "label": "February 2026",
+          "sessions": 1
         }
       ],
       "profile": [
         {
           "key": "volume",
           "label": "Volume",
-          "movement": "steady",
-          "previous": {
-            "raw": 58400,
-            "text": "58.4 km"
-          },
+          "movement": null,
+          "previous": null,
           "value": {
             "raw": 58400,
             "text": "58.4 km"
@@ -7663,11 +7901,8 @@
         {
           "key": "consistency",
           "label": "Consistency",
-          "movement": "steady",
-          "previous": {
-            "raw": 6,
-            "text": "6"
-          },
+          "movement": null,
+          "previous": null,
           "value": {
             "raw": 6,
             "text": "6"
@@ -7676,11 +7911,8 @@
         {
           "key": "intensity",
           "label": "Intensity",
-          "movement": "steady",
-          "previous": {
-            "raw": 148,
-            "text": "148 bpm"
-          },
+          "movement": null,
+          "previous": null,
           "value": {
             "raw": 148,
             "text": "148 bpm"
@@ -7689,11 +7921,8 @@
         {
           "key": "duration",
           "label": "Duration",
-          "movement": "steady",
-          "previous": {
-            "raw": 2920,
-            "text": "49 m"
-          },
+          "movement": null,
+          "previous": null,
           "value": {
             "raw": 2920,
             "text": "49 m"
@@ -7702,11 +7931,8 @@
         {
           "key": "density",
           "label": "Density",
-          "movement": "steady",
-          "previous": {
-            "raw": 3105.3333333333335,
-            "text": "52 m"
-          },
+          "movement": null,
+          "previous": null,
           "value": {
             "raw": 3105.3333333333335,
             "text": "52 m"
@@ -7715,11 +7941,8 @@
         {
           "key": "variety",
           "label": "Sport variety",
-          "movement": "steady",
-          "previous": {
-            "raw": 1,
-            "text": "1"
-          },
+          "movement": null,
+          "previous": null,
           "value": {
             "raw": 1,
             "text": "1"
@@ -7728,11 +7951,8 @@
         {
           "key": "week_days",
           "label": "Week days",
-          "movement": "steady",
-          "previous": {
-            "raw": 5,
-            "text": "5"
-          },
+          "movement": null,
+          "previous": null,
           "value": {
             "raw": 5,
             "text": "5"
@@ -7742,10 +7962,10 @@
       "sessions": {
         "current": 6,
         "difference": {
-          "raw": 0,
-          "text": "0"
+          "raw": 6,
+          "text": "+6"
         },
-        "previous": 6
+        "previous": 0
       },
       "weekday": [
         {
@@ -7759,8 +7979,8 @@
           },
           "sessions": 1,
           "share": {
-            "raw": 27.22,
-            "text": "27.22%"
+            "raw": 20.9,
+            "text": "20.90%"
           },
           "weekday": "Monday"
         },
@@ -7782,17 +8002,17 @@
         },
         {
           "distance": {
-            "raw": 5000,
-            "text": "5 km"
+            "raw": 23200,
+            "text": "23.2 km"
           },
           "duration": {
-            "raw": 1620,
-            "text": "27 m"
+            "raw": 7260,
+            "text": "2 h 1 m"
           },
-          "sessions": 1,
+          "sessions": 2,
           "share": {
-            "raw": 8.69,
-            "text": "8.69%"
+            "raw": 29.91,
+            "text": "29.91%"
           },
           "weekday": "Wednesday"
         },
@@ -7807,8 +8027,8 @@
           },
           "sessions": 1,
           "share": {
-            "raw": 13.53,
-            "text": "13.53%"
+            "raw": 10.38,
+            "text": "10.38%"
           },
           "weekday": "Thursday"
         },
@@ -7839,8 +8059,8 @@
           },
           "sessions": 1,
           "share": {
-            "raw": 17.82,
-            "text": "17.82%"
+            "raw": 13.68,
+            "text": "13.68%"
           },
           "weekday": "Saturday"
         },
@@ -7855,8 +8075,8 @@
           },
           "sessions": 2,
           "share": {
-            "raw": 32.74,
-            "text": "32.74%"
+            "raw": 25.13,
+            "text": "25.13%"
           },
           "weekday": "Sunday"
         }
@@ -7871,20 +8091,20 @@
       "years": [
         {
           "distance": {
-            "raw": 58400,
-            "text": "58.4 km"
+            "raw": 76600,
+            "text": "76.6 km"
           },
           "duration": {
-            "raw": 18632,
-            "text": "5 h 11 m"
+            "raw": 24272,
+            "text": "6 h 45 m"
           },
           "elevation": {
-            "raw": 252,
-            "text": "252 m"
+            "raw": 294,
+            "text": "294 m"
           },
           "key": "2026",
           "label": "2026",
-          "sessions": 6
+          "sessions": 7
         }
       ],
       "zones": {
@@ -7901,26 +8121,26 @@
     "/insights/rolling?weeks=52": {
       "comparison": {
         "days": 364,
-        "from": "2025-05-14",
-        "from_label": "14 May 2025",
-        "to": "2026-05-12",
-        "to_label": "12 May 2026"
+        "from": "2024-05-16",
+        "from_label": "16 May 2024",
+        "to": "2025-05-14",
+        "to_label": "14 May 2025"
       },
       "date": "2026-05-13",
       "daytime": [
         {
           "distance": {
-            "raw": 58400,
-            "text": "58.4 km"
+            "raw": 76600,
+            "text": "76.6 km"
           },
           "duration": {
-            "raw": 18632,
-            "text": "5 h 11 m"
+            "raw": 24272,
+            "text": "6 h 45 m"
           },
           "from_hour": 6,
           "key": "morning",
           "label": "Morning",
-          "sessions": 6,
+          "sessions": 7,
           "to_hour": 12
         },
         {
@@ -7971,16 +8191,16 @@
       ],
       "distance": {
         "current": {
-          "raw": 58400,
-          "text": "58.4 km"
+          "raw": 76600,
+          "text": "76.6 km"
         },
         "difference": {
-          "raw": 0,
-          "text": "0 km"
+          "raw": 76600,
+          "text": "+76.6 km"
         },
         "previous": {
-          "raw": 58400,
-          "text": "58.4 km"
+          "raw": 0,
+          "text": "0 km"
         }
       },
       "distances": [
@@ -8054,34 +8274,34 @@
         },
         {
           "distance": {
-            "raw": 16100,
-            "text": "16.1 km"
+            "raw": 34300,
+            "text": "34.3 km"
           },
           "duration": {
-            "raw": 5072,
-            "text": "1 h 25 m"
+            "raw": 10712,
+            "text": "2 h 59 m"
           },
           "elevation": {
-            "raw": 42,
-            "text": "42 m"
+            "raw": 84,
+            "text": "84 m"
           },
           "key": "16-20",
           "label": "16-20 km",
-          "sessions": 1
+          "sessions": 2
         }
       ],
       "duration": {
         "current": {
-          "raw": 18632,
-          "text": "5 h 11 m"
+          "raw": 24272,
+          "text": "6 h 45 m"
         },
         "difference": {
-          "raw": 0,
-          "text": "0 m"
+          "raw": 24272,
+          "text": "+6 h 45 m"
         },
         "previous": {
-          "raw": 18632,
-          "text": "5 h 11 m"
+          "raw": 0,
+          "text": "0 m"
         }
       },
       "generated_at": "2026-05-13T06:30:00Z",
@@ -8102,43 +8322,51 @@
           "key": "2026-05",
           "label": "May 2026",
           "sessions": 6
+        },
+        {
+          "distance": {
+            "raw": 18200,
+            "text": "18.2 km"
+          },
+          "duration": {
+            "raw": 5640,
+            "text": "1 h 34 m"
+          },
+          "elevation": {
+            "raw": 42,
+            "text": "42 m"
+          },
+          "key": "2026-02",
+          "label": "February 2026",
+          "sessions": 1
         }
       ],
       "profile": [
         {
           "key": "volume",
           "label": "Volume",
-          "movement": "steady",
-          "previous": {
-            "raw": 58400,
-            "text": "58.4 km"
-          },
+          "movement": null,
+          "previous": null,
           "value": {
-            "raw": 58400,
-            "text": "58.4 km"
+            "raw": 76600,
+            "text": "76.6 km"
           }
         },
         {
           "key": "consistency",
           "label": "Consistency",
-          "movement": "steady",
-          "previous": {
-            "raw": 6,
-            "text": "6"
-          },
+          "movement": null,
+          "previous": null,
           "value": {
-            "raw": 6,
-            "text": "6"
+            "raw": 7,
+            "text": "7"
           }
         },
         {
           "key": "intensity",
           "label": "Intensity",
-          "movement": "steady",
-          "previous": {
-            "raw": 148,
-            "text": "148 bpm"
-          },
+          "movement": null,
+          "previous": null,
           "value": {
             "raw": 148,
             "text": "148 bpm"
@@ -8147,37 +8375,28 @@
         {
           "key": "duration",
           "label": "Duration",
-          "movement": "steady",
-          "previous": {
-            "raw": 2920,
-            "text": "49 m"
-          },
+          "movement": null,
+          "previous": null,
           "value": {
-            "raw": 2920,
-            "text": "49 m"
+            "raw": 3320,
+            "text": "55 m"
           }
         },
         {
           "key": "density",
           "label": "Density",
-          "movement": "steady",
-          "previous": {
-            "raw": 3105.3333333333335,
-            "text": "52 m"
-          },
+          "movement": null,
+          "previous": null,
           "value": {
-            "raw": 3105.3333333333335,
-            "text": "52 m"
+            "raw": 3467.4285714285716,
+            "text": "58 m"
           }
         },
         {
           "key": "variety",
           "label": "Sport variety",
-          "movement": "steady",
-          "previous": {
-            "raw": 1,
-            "text": "1"
-          },
+          "movement": null,
+          "previous": null,
           "value": {
             "raw": 1,
             "text": "1"
@@ -8186,11 +8405,8 @@
         {
           "key": "week_days",
           "label": "Week days",
-          "movement": "steady",
-          "previous": {
-            "raw": 5,
-            "text": "5"
-          },
+          "movement": null,
+          "previous": null,
           "value": {
             "raw": 5,
             "text": "5"
@@ -8198,12 +8414,12 @@
         }
       ],
       "sessions": {
-        "current": 6,
+        "current": 7,
         "difference": {
-          "raw": 0,
-          "text": "0"
+          "raw": 7,
+          "text": "+7"
         },
-        "previous": 6
+        "previous": 0
       },
       "weekday": [
         {
@@ -8217,8 +8433,8 @@
           },
           "sessions": 1,
           "share": {
-            "raw": 27.22,
-            "text": "27.22%"
+            "raw": 20.9,
+            "text": "20.90%"
           },
           "weekday": "Monday"
         },
@@ -8240,17 +8456,17 @@
         },
         {
           "distance": {
-            "raw": 5000,
-            "text": "5 km"
+            "raw": 23200,
+            "text": "23.2 km"
           },
           "duration": {
-            "raw": 1620,
-            "text": "27 m"
+            "raw": 7260,
+            "text": "2 h 1 m"
           },
-          "sessions": 1,
+          "sessions": 2,
           "share": {
-            "raw": 8.69,
-            "text": "8.69%"
+            "raw": 29.91,
+            "text": "29.91%"
           },
           "weekday": "Wednesday"
         },
@@ -8265,8 +8481,8 @@
           },
           "sessions": 1,
           "share": {
-            "raw": 13.53,
-            "text": "13.53%"
+            "raw": 10.38,
+            "text": "10.38%"
           },
           "weekday": "Thursday"
         },
@@ -8297,8 +8513,8 @@
           },
           "sessions": 1,
           "share": {
-            "raw": 17.82,
-            "text": "17.82%"
+            "raw": 13.68,
+            "text": "13.68%"
           },
           "weekday": "Saturday"
         },
@@ -8313,8 +8529,8 @@
           },
           "sessions": 2,
           "share": {
-            "raw": 32.74,
-            "text": "32.74%"
+            "raw": 25.13,
+            "text": "25.13%"
           },
           "weekday": "Sunday"
         }
@@ -8329,20 +8545,20 @@
       "years": [
         {
           "distance": {
-            "raw": 58400,
-            "text": "58.4 km"
+            "raw": 76600,
+            "text": "76.6 km"
           },
           "duration": {
-            "raw": 18632,
-            "text": "5 h 11 m"
+            "raw": 24272,
+            "text": "6 h 45 m"
           },
           "elevation": {
-            "raw": 252,
-            "text": "252 m"
+            "raw": 294,
+            "text": "294 m"
           },
           "key": "2026",
           "label": "2026",
-          "sessions": 6
+          "sessions": 7
         }
       ],
       "zones": {
@@ -8359,26 +8575,26 @@
     "/insights/rolling?weeks=8": {
       "comparison": {
         "days": 56,
-        "from": "2026-03-18",
-        "from_label": "18 Mar 2026",
-        "to": "2026-05-12",
-        "to_label": "12 May 2026"
+        "from": "2026-01-22",
+        "from_label": "22 Jan 2026",
+        "to": "2026-03-18",
+        "to_label": "18 Mar 2026"
       },
       "date": "2026-05-13",
       "daytime": [
         {
           "distance": {
-            "raw": 58400,
-            "text": "58.4 km"
+            "raw": 76600,
+            "text": "76.6 km"
           },
           "duration": {
-            "raw": 18632,
-            "text": "5 h 11 m"
+            "raw": 24272,
+            "text": "6 h 45 m"
           },
           "from_hour": 6,
           "key": "morning",
           "label": "Morning",
-          "sessions": 6,
+          "sessions": 7,
           "to_hour": 12
         },
         {
@@ -8433,12 +8649,12 @@
           "text": "58.4 km"
         },
         "difference": {
-          "raw": 0,
-          "text": "0 km"
+          "raw": 40200,
+          "text": "+40.2 km"
         },
         "previous": {
-          "raw": 58400,
-          "text": "58.4 km"
+          "raw": 18200,
+          "text": "18.2 km"
         }
       },
       "distances": [
@@ -8534,12 +8750,12 @@
           "text": "5 h 11 m"
         },
         "difference": {
-          "raw": 0,
-          "text": "0 m"
+          "raw": 12992,
+          "text": "+3 h 37 m"
         },
         "previous": {
-          "raw": 18632,
-          "text": "5 h 11 m"
+          "raw": 5640,
+          "text": "1 h 34 m"
         }
       },
       "generated_at": "2026-05-13T06:30:00Z",
@@ -8560,16 +8776,33 @@
           "key": "2026-05",
           "label": "May 2026",
           "sessions": 6
+        },
+        {
+          "distance": {
+            "raw": 18200,
+            "text": "18.2 km"
+          },
+          "duration": {
+            "raw": 5640,
+            "text": "1 h 34 m"
+          },
+          "elevation": {
+            "raw": 42,
+            "text": "42 m"
+          },
+          "key": "2026-02",
+          "label": "February 2026",
+          "sessions": 1
         }
       ],
       "profile": [
         {
           "key": "volume",
           "label": "Volume",
-          "movement": "steady",
+          "movement": "up",
           "previous": {
-            "raw": 58400,
-            "text": "58.4 km"
+            "raw": 18200,
+            "text": "18.2 km"
           },
           "value": {
             "raw": 58400,
@@ -8579,10 +8812,10 @@
         {
           "key": "consistency",
           "label": "Consistency",
-          "movement": "steady",
+          "movement": "up",
           "previous": {
-            "raw": 6,
-            "text": "6"
+            "raw": 1,
+            "text": "1"
           },
           "value": {
             "raw": 6,
@@ -8605,10 +8838,10 @@
         {
           "key": "duration",
           "label": "Duration",
-          "movement": "steady",
+          "movement": "down",
           "previous": {
-            "raw": 2920,
-            "text": "49 m"
+            "raw": 5640,
+            "text": "1 h 34 m"
           },
           "value": {
             "raw": 2920,
@@ -8618,10 +8851,10 @@
         {
           "key": "density",
           "label": "Density",
-          "movement": "steady",
+          "movement": "down",
           "previous": {
-            "raw": 3105.3333333333335,
-            "text": "52 m"
+            "raw": 5640,
+            "text": "1 h 34 m"
           },
           "value": {
             "raw": 3105.3333333333335,
@@ -8644,10 +8877,10 @@
         {
           "key": "week_days",
           "label": "Week days",
-          "movement": "steady",
+          "movement": "up",
           "previous": {
-            "raw": 5,
-            "text": "5"
+            "raw": 1,
+            "text": "1"
           },
           "value": {
             "raw": 5,
@@ -8658,10 +8891,10 @@
       "sessions": {
         "current": 6,
         "difference": {
-          "raw": 0,
-          "text": "0"
+          "raw": 5,
+          "text": "+5"
         },
-        "previous": 6
+        "previous": 1
       },
       "weekday": [
         {
@@ -8675,8 +8908,8 @@
           },
           "sessions": 1,
           "share": {
-            "raw": 27.22,
-            "text": "27.22%"
+            "raw": 20.9,
+            "text": "20.90%"
           },
           "weekday": "Monday"
         },
@@ -8698,17 +8931,17 @@
         },
         {
           "distance": {
-            "raw": 5000,
-            "text": "5 km"
+            "raw": 23200,
+            "text": "23.2 km"
           },
           "duration": {
-            "raw": 1620,
-            "text": "27 m"
+            "raw": 7260,
+            "text": "2 h 1 m"
           },
-          "sessions": 1,
+          "sessions": 2,
           "share": {
-            "raw": 8.69,
-            "text": "8.69%"
+            "raw": 29.91,
+            "text": "29.91%"
           },
           "weekday": "Wednesday"
         },
@@ -8723,8 +8956,8 @@
           },
           "sessions": 1,
           "share": {
-            "raw": 13.53,
-            "text": "13.53%"
+            "raw": 10.38,
+            "text": "10.38%"
           },
           "weekday": "Thursday"
         },
@@ -8755,8 +8988,8 @@
           },
           "sessions": 1,
           "share": {
-            "raw": 17.82,
-            "text": "17.82%"
+            "raw": 13.68,
+            "text": "13.68%"
           },
           "weekday": "Saturday"
         },
@@ -8771,8 +9004,8 @@
           },
           "sessions": 2,
           "share": {
-            "raw": 32.74,
-            "text": "32.74%"
+            "raw": 25.13,
+            "text": "25.13%"
           },
           "weekday": "Sunday"
         }
@@ -8787,20 +9020,20 @@
       "years": [
         {
           "distance": {
-            "raw": 58400,
-            "text": "58.4 km"
+            "raw": 76600,
+            "text": "76.6 km"
           },
           "duration": {
-            "raw": 18632,
-            "text": "5 h 11 m"
+            "raw": 24272,
+            "text": "6 h 45 m"
           },
           "elevation": {
-            "raw": 252,
-            "text": "252 m"
+            "raw": 294,
+            "text": "294 m"
           },
           "key": "2026",
           "label": "2026",
-          "sessions": 6
+          "sessions": 7
         }
       ],
       "zones": {
@@ -10019,18 +10252,18 @@
       },
       "pause": null,
       "storage": {
-        "activity_count": 6,
+        "activity_count": 7,
         "note_count": 0,
         "plan_session_count": 7,
         "size": {
-          "raw": 650776,
-          "text": "635.5 KB"
+          "raw": 671376,
+          "text": "655.6 KB"
         },
         "wellness_day_count": 30
       }
     },
     "/sync/status": {
-      "activity_count": 6,
+      "activity_count": 7,
       "cursor": null,
       "deleted": 0,
       "history": null,
@@ -10283,6 +10516,46 @@
           "sport_type": "running",
           "start_time": "2026-05-03T07:10:00Z",
           "story": "6.3 km in 35 m, at an average of 148 bpm"
+        },
+        {
+          "distance": {
+            "raw": 18200,
+            "text": "18.2 km"
+          },
+          "duration": {
+            "raw": 5640,
+            "text": "1 h 34 m"
+          },
+          "elevation_gain": {
+            "raw": 42,
+            "text": "42 m"
+          },
+          "geo_points": [],
+          "group": {
+            "distance": {
+              "raw": 18200,
+              "text": "18.2 km"
+            },
+            "duration": {
+              "raw": 5640,
+              "text": "1 h 34 m"
+            },
+            "key": "2026-02-09"
+          },
+          "heart_rate": {
+            "raw": 148,
+            "text": "148 bpm"
+          },
+          "id": 107,
+          "local_date": "2026-02-11",
+          "name": "Run",
+          "pace": {
+            "raw": 309.89,
+            "text": "5:10 /km"
+          },
+          "sport_type": "running",
+          "start_time": "2026-02-11T07:10:00Z",
+          "story": "18.2 km in 1 h 34 m, at an average of 148 bpm"
         }
       ],
       "generated_at": "2026-05-13T06:30:00Z",
@@ -11145,6 +11418,15 @@
         },
         "id": 106,
         "label": "Run"
+      },
+      {
+        "date": "2026-02-11",
+        "distance": {
+          "raw": 18200,
+          "text": "18.2 km"
+        },
+        "id": 107,
+        "label": "Run"
       }
     ],
     "/fitness/fingerprint": {
@@ -11235,7 +11517,7 @@
       "zones": []
     },
     "/health": {
-      "activities": 6,
+      "activities": 7,
       "garmin_connected": false,
       "generated_at": "2026-05-13T06:30:00Z",
       "ok": true,
@@ -12266,6 +12548,12 @@
         },
         "days": [
           {
+            "date": "2026-02-11",
+            "label": "11 Feb 2026",
+            "load": null,
+            "reason": "no_resting_hr"
+          },
+          {
             "date": "2026-04-14",
             "label": "14 Apr 2026",
             "load": {
@@ -12537,6 +12825,26 @@
           }
         ],
         "states": [
+          {
+            "acute": {
+              "raw": 0,
+              "text": "0.0"
+            },
+            "chronic": {
+              "raw": 0,
+              "text": "0.0"
+            },
+            "date": "2026-02-11",
+            "form": {
+              "raw": 0,
+              "text": "0.0"
+            },
+            "label": "11 Feb 2026",
+            "ratio": {
+              "raw": 0,
+              "text": "0.00"
+            }
+          },
           {
             "acute": {
               "raw": 0,
@@ -14092,6 +14400,12 @@
         },
         "days": [
           {
+            "date": "2026-02-11",
+            "label": "11 Feb 2026",
+            "load": null,
+            "reason": "no_resting_hr"
+          },
+          {
             "date": "2026-04-14",
             "label": "14 Apr 2026",
             "load": {
@@ -14363,6 +14677,26 @@
           }
         ],
         "states": [
+          {
+            "acute": {
+              "raw": 0,
+              "text": "0.0"
+            },
+            "chronic": {
+              "raw": 0,
+              "text": "0.0"
+            },
+            "date": "2026-02-11",
+            "form": {
+              "raw": 0,
+              "text": "0.0"
+            },
+            "label": "11 Feb 2026",
+            "ratio": {
+              "raw": 0,
+              "text": "0.00"
+            }
+          },
           {
             "acute": {
               "raw": 0,
@@ -16079,12 +16413,16 @@
       "adherence": null,
       "bests": [
         {
-          "date": "2026-05-04",
+          "date": "2026-02-11",
           "key": "progress.best.longest",
-          "value": "16.1 km"
+          "value": "18.2 km"
         }
       ],
       "consistency": [
+        {
+          "sessions": 1,
+          "week_start": "2026-02-09"
+        },
         {
           "sessions": 1,
           "week_start": "2026-04-27"
@@ -16107,6 +16445,17 @@
       "headline": "Your saved activity history",
       "headline_note": null,
       "pace_at_hr": [
+        {
+          "heart_rate": {
+            "raw": 148,
+            "text": "148 bpm"
+          },
+          "pace": {
+            "raw": 309.89,
+            "text": "5:10 /km"
+          },
+          "week_start": "2026-02-09"
+        },
         {
           "heart_rate": {
             "raw": 148,
@@ -16145,14 +16494,21 @@
         "to": "2026-05-13"
       },
       "sessions_per_week": {
-        "raw": 3,
-        "text": "3.0"
+        "raw": 2.3333333333333335,
+        "text": "2.3"
       },
       "typical_week": {
-        "raw": 29200,
-        "text": "29.2 km"
+        "raw": 18200,
+        "text": "18.2 km"
       },
       "weekly_volume": [
+        {
+          "distance": {
+            "raw": 18200,
+            "text": "18.2 km"
+          },
+          "week_start": "2026-02-09"
+        },
         {
           "distance": {
             "raw": 6300,
@@ -16174,12 +16530,16 @@
       "adherence": null,
       "bests": [
         {
-          "date": "2026-05-04",
+          "date": "2026-02-11",
           "key": "progress.best.longest",
-          "value": "16.1 km"
+          "value": "18.2 km"
         }
       ],
       "consistency": [
+        {
+          "sessions": 1,
+          "week_start": "2026-02-09"
+        },
         {
           "sessions": 1,
           "week_start": "2026-04-27"
@@ -16191,17 +16551,28 @@
       ],
       "date": "2026-05-13",
       "eddington": {
-        "days_needed_for_next": 1,
+        "days_needed_for_next": 2,
         "longest_day": {
-          "raw": 16100,
-          "text": "16.1 km"
+          "raw": 18200,
+          "text": "18.2 km"
         },
-        "number": 5
+        "number": 6
       },
       "generated_at": "2026-05-13T06:30:00Z",
       "headline": "Your saved activity history",
       "headline_note": null,
       "pace_at_hr": [
+        {
+          "heart_rate": {
+            "raw": 148,
+            "text": "148 bpm"
+          },
+          "pace": {
+            "raw": 309.89,
+            "text": "5:10 /km"
+          },
+          "week_start": "2026-02-09"
+        },
         {
           "heart_rate": {
             "raw": 148,
@@ -16227,27 +16598,34 @@
       ],
       "period": {
         "distance": {
-          "raw": 58400,
-          "text": "58.4 km"
+          "raw": 76600,
+          "text": "76.6 km"
         },
         "duration": {
-          "raw": 18632,
-          "text": "5 h 11 m"
+          "raw": 24272,
+          "text": "6 h 45 m"
         },
         "from": "2025-11-17",
-        "recorded_weeks": 2,
-        "sessions": 6,
+        "recorded_weeks": 3,
+        "sessions": 7,
         "to": "2026-05-13"
       },
       "sessions_per_week": {
-        "raw": 3,
-        "text": "3.0"
+        "raw": 2.3333333333333335,
+        "text": "2.3"
       },
       "typical_week": {
-        "raw": 29200,
-        "text": "29.2 km"
+        "raw": 18200,
+        "text": "18.2 km"
       },
       "weekly_volume": [
+        {
+          "distance": {
+            "raw": 18200,
+            "text": "18.2 km"
+          },
+          "week_start": "2026-02-09"
+        },
         {
           "distance": {
             "raw": 6300,
@@ -16269,12 +16647,16 @@
       "adherence": null,
       "bests": [
         {
-          "date": "2026-05-04",
+          "date": "2026-02-11",
           "key": "progress.best.longest",
-          "value": "16.1 km"
+          "value": "18.2 km"
         }
       ],
       "consistency": [
+        {
+          "sessions": 1,
+          "week_start": "2026-02-09"
+        },
         {
           "sessions": 1,
           "week_start": "2026-04-27"
@@ -16297,6 +16679,17 @@
       "headline": "Your saved activity history",
       "headline_note": null,
       "pace_at_hr": [
+        {
+          "heart_rate": {
+            "raw": 148,
+            "text": "148 bpm"
+          },
+          "pace": {
+            "raw": 309.89,
+            "text": "5:10 /km"
+          },
+          "week_start": "2026-02-09"
+        },
         {
           "heart_rate": {
             "raw": 148,
@@ -16335,14 +16728,21 @@
         "to": "2026-05-13"
       },
       "sessions_per_week": {
-        "raw": 3,
-        "text": "3.0"
+        "raw": 2.3333333333333335,
+        "text": "2.3"
       },
       "typical_week": {
-        "raw": 29200,
-        "text": "29.2 km"
+        "raw": 18200,
+        "text": "18.2 km"
       },
       "weekly_volume": [
+        {
+          "distance": {
+            "raw": 18200,
+            "text": "18.2 km"
+          },
+          "week_start": "2026-02-09"
+        },
         {
           "distance": {
             "raw": 6300,
@@ -16364,12 +16764,16 @@
       "adherence": null,
       "bests": [
         {
-          "date": "2026-05-04",
+          "date": "2026-02-11",
           "key": "progress.best.longest",
-          "value": "16.1 km"
+          "value": "18.2 km"
         }
       ],
       "consistency": [
+        {
+          "sessions": 1,
+          "week_start": "2026-02-09"
+        },
         {
           "sessions": 1,
           "week_start": "2026-04-27"
@@ -16381,17 +16785,28 @@
       ],
       "date": "2026-05-13",
       "eddington": {
-        "days_needed_for_next": 1,
+        "days_needed_for_next": 2,
         "longest_day": {
-          "raw": 16100,
-          "text": "16.1 km"
+          "raw": 18200,
+          "text": "18.2 km"
         },
-        "number": 5
+        "number": 6
       },
       "generated_at": "2026-05-13T06:30:00Z",
       "headline": "Your saved activity history",
       "headline_note": null,
       "pace_at_hr": [
+        {
+          "heart_rate": {
+            "raw": 148,
+            "text": "148 bpm"
+          },
+          "pace": {
+            "raw": 309.89,
+            "text": "5:10 /km"
+          },
+          "week_start": "2026-02-09"
+        },
         {
           "heart_rate": {
             "raw": 148,
@@ -16417,27 +16832,34 @@
       ],
       "period": {
         "distance": {
-          "raw": 58400,
-          "text": "58.4 km"
+          "raw": 76600,
+          "text": "76.6 km"
         },
         "duration": {
-          "raw": 18632,
-          "text": "5 h 11 m"
+          "raw": 24272,
+          "text": "6 h 45 m"
         },
         "from": "2025-05-19",
-        "recorded_weeks": 2,
-        "sessions": 6,
+        "recorded_weeks": 3,
+        "sessions": 7,
         "to": "2026-05-13"
       },
       "sessions_per_week": {
-        "raw": 3,
-        "text": "3.0"
+        "raw": 2.3333333333333335,
+        "text": "2.3"
       },
       "typical_week": {
-        "raw": 29200,
-        "text": "29.2 km"
+        "raw": 18200,
+        "text": "18.2 km"
       },
       "weekly_volume": [
+        {
+          "distance": {
+            "raw": 18200,
+            "text": "18.2 km"
+          },
+          "week_start": "2026-02-09"
+        },
         {
           "distance": {
             "raw": 6300,
@@ -16459,12 +16881,16 @@
       "adherence": null,
       "bests": [
         {
-          "date": "2026-05-04",
+          "date": "2026-02-11",
           "key": "progress.best.longest",
-          "value": "16.1 km"
+          "value": "18.2 km"
         }
       ],
       "consistency": [
+        {
+          "sessions": 1,
+          "week_start": "2026-02-09"
+        },
         {
           "sessions": 1,
           "week_start": "2026-04-27"
@@ -16487,6 +16913,17 @@
       "headline": "Your saved activity history",
       "headline_note": null,
       "pace_at_hr": [
+        {
+          "heart_rate": {
+            "raw": 148,
+            "text": "148 bpm"
+          },
+          "pace": {
+            "raw": 309.89,
+            "text": "5:10 /km"
+          },
+          "week_start": "2026-02-09"
+        },
         {
           "heart_rate": {
             "raw": 148,
@@ -16525,14 +16962,21 @@
         "to": "2026-05-13"
       },
       "sessions_per_week": {
-        "raw": 3,
-        "text": "3.0"
+        "raw": 2.3333333333333335,
+        "text": "2.3"
       },
       "typical_week": {
-        "raw": 29200,
-        "text": "29.2 km"
+        "raw": 18200,
+        "text": "18.2 km"
       },
       "weekly_volume": [
+        {
+          "distance": {
+            "raw": 18200,
+            "text": "18.2 km"
+          },
+          "week_start": "2026-02-09"
+        },
         {
           "distance": {
             "raw": 6300,
@@ -16553,26 +16997,26 @@
     "/insights/rolling": {
       "comparison": {
         "days": 84,
-        "from": "2026-02-18",
-        "from_label": "18 Feb 2026",
-        "to": "2026-05-12",
-        "to_label": "12 May 2026"
+        "from": "2025-11-27",
+        "from_label": "27 Nov 2025",
+        "to": "2026-02-18",
+        "to_label": "18 Feb 2026"
       },
       "date": "2026-05-13",
       "daytime": [
         {
           "distance": {
-            "raw": 58400,
-            "text": "58.4 km"
+            "raw": 76600,
+            "text": "76.6 km"
           },
           "duration": {
-            "raw": 18632,
-            "text": "5 h 11 m"
+            "raw": 24272,
+            "text": "6 h 45 m"
           },
           "from_hour": 6,
           "key": "morning",
           "label": "Morning",
-          "sessions": 6,
+          "sessions": 7,
           "to_hour": 12
         },
         {
@@ -16627,12 +17071,12 @@
           "text": "58.4 km"
         },
         "difference": {
-          "raw": 0,
-          "text": "0 km"
+          "raw": 40200,
+          "text": "+40.2 km"
         },
         "previous": {
-          "raw": 58400,
-          "text": "58.4 km"
+          "raw": 18200,
+          "text": "18.2 km"
         }
       },
       "distances": [
@@ -16728,12 +17172,12 @@
           "text": "5 h 11 m"
         },
         "difference": {
-          "raw": 0,
-          "text": "0 m"
+          "raw": 12992,
+          "text": "+3 h 37 m"
         },
         "previous": {
-          "raw": 18632,
-          "text": "5 h 11 m"
+          "raw": 5640,
+          "text": "1 h 34 m"
         }
       },
       "generated_at": "2026-05-13T06:30:00Z",
@@ -16754,16 +17198,33 @@
           "key": "2026-05",
           "label": "May 2026",
           "sessions": 6
+        },
+        {
+          "distance": {
+            "raw": 18200,
+            "text": "18.2 km"
+          },
+          "duration": {
+            "raw": 5640,
+            "text": "1 h 34 m"
+          },
+          "elevation": {
+            "raw": 42,
+            "text": "42 m"
+          },
+          "key": "2026-02",
+          "label": "February 2026",
+          "sessions": 1
         }
       ],
       "profile": [
         {
           "key": "volume",
           "label": "Volume",
-          "movement": "steady",
+          "movement": "up",
           "previous": {
-            "raw": 58400,
-            "text": "58.4 km"
+            "raw": 18200,
+            "text": "18.2 km"
           },
           "value": {
             "raw": 58400,
@@ -16773,10 +17234,10 @@
         {
           "key": "consistency",
           "label": "Consistency",
-          "movement": "steady",
+          "movement": "up",
           "previous": {
-            "raw": 6,
-            "text": "6"
+            "raw": 1,
+            "text": "1"
           },
           "value": {
             "raw": 6,
@@ -16799,10 +17260,10 @@
         {
           "key": "duration",
           "label": "Duration",
-          "movement": "steady",
+          "movement": "down",
           "previous": {
-            "raw": 2920,
-            "text": "49 m"
+            "raw": 5640,
+            "text": "1 h 34 m"
           },
           "value": {
             "raw": 2920,
@@ -16812,10 +17273,10 @@
         {
           "key": "density",
           "label": "Density",
-          "movement": "steady",
+          "movement": "down",
           "previous": {
-            "raw": 3105.3333333333335,
-            "text": "52 m"
+            "raw": 5640,
+            "text": "1 h 34 m"
           },
           "value": {
             "raw": 3105.3333333333335,
@@ -16838,10 +17299,10 @@
         {
           "key": "week_days",
           "label": "Week days",
-          "movement": "steady",
+          "movement": "up",
           "previous": {
-            "raw": 5,
-            "text": "5"
+            "raw": 1,
+            "text": "1"
           },
           "value": {
             "raw": 5,
@@ -16852,10 +17313,10 @@
       "sessions": {
         "current": 6,
         "difference": {
-          "raw": 0,
-          "text": "0"
+          "raw": 5,
+          "text": "+5"
         },
-        "previous": 6
+        "previous": 1
       },
       "weekday": [
         {
@@ -16869,8 +17330,8 @@
           },
           "sessions": 1,
           "share": {
-            "raw": 27.22,
-            "text": "27.22%"
+            "raw": 20.9,
+            "text": "20.90%"
           },
           "weekday": "Monday"
         },
@@ -16892,17 +17353,17 @@
         },
         {
           "distance": {
-            "raw": 5000,
-            "text": "5 km"
+            "raw": 23200,
+            "text": "23.2 km"
           },
           "duration": {
-            "raw": 1620,
-            "text": "27 m"
+            "raw": 7260,
+            "text": "2 h 1 m"
           },
-          "sessions": 1,
+          "sessions": 2,
           "share": {
-            "raw": 8.69,
-            "text": "8.69%"
+            "raw": 29.91,
+            "text": "29.91%"
           },
           "weekday": "Wednesday"
         },
@@ -16917,8 +17378,8 @@
           },
           "sessions": 1,
           "share": {
-            "raw": 13.53,
-            "text": "13.53%"
+            "raw": 10.38,
+            "text": "10.38%"
           },
           "weekday": "Thursday"
         },
@@ -16949,8 +17410,8 @@
           },
           "sessions": 1,
           "share": {
-            "raw": 17.82,
-            "text": "17.82%"
+            "raw": 13.68,
+            "text": "13.68%"
           },
           "weekday": "Saturday"
         },
@@ -16965,8 +17426,8 @@
           },
           "sessions": 2,
           "share": {
-            "raw": 32.74,
-            "text": "32.74%"
+            "raw": 25.13,
+            "text": "25.13%"
           },
           "weekday": "Sunday"
         }
@@ -16981,20 +17442,20 @@
       "years": [
         {
           "distance": {
-            "raw": 58400,
-            "text": "58.4 km"
+            "raw": 76600,
+            "text": "76.6 km"
           },
           "duration": {
-            "raw": 18632,
-            "text": "5 h 11 m"
+            "raw": 24272,
+            "text": "6 h 45 m"
           },
           "elevation": {
-            "raw": 252,
-            "text": "252 m"
+            "raw": 294,
+            "text": "294 m"
           },
           "key": "2026",
           "label": "2026",
-          "sessions": 6
+          "sessions": 7
         }
       ],
       "zones": {
@@ -17011,26 +17472,26 @@
     "/insights/rolling?weeks=26": {
       "comparison": {
         "days": 182,
-        "from": "2025-11-12",
-        "from_label": "12 Nov 2025",
-        "to": "2026-05-12",
-        "to_label": "12 May 2026"
+        "from": "2025-05-15",
+        "from_label": "15 May 2025",
+        "to": "2025-11-12",
+        "to_label": "12 Nov 2025"
       },
       "date": "2026-05-13",
       "daytime": [
         {
           "distance": {
-            "raw": 58400,
-            "text": "58.4 km"
+            "raw": 76600,
+            "text": "76.6 km"
           },
           "duration": {
-            "raw": 18632,
-            "text": "5 h 11 m"
+            "raw": 24272,
+            "text": "6 h 45 m"
           },
           "from_hour": 6,
           "key": "morning",
           "label": "Morning",
-          "sessions": 6,
+          "sessions": 7,
           "to_hour": 12
         },
         {
@@ -17081,16 +17542,16 @@
       ],
       "distance": {
         "current": {
-          "raw": 58400,
-          "text": "58.4 km"
+          "raw": 76600,
+          "text": "76.6 km"
         },
         "difference": {
-          "raw": 0,
-          "text": "0 km"
+          "raw": 76600,
+          "text": "+76.6 km"
         },
         "previous": {
-          "raw": 58400,
-          "text": "58.4 km"
+          "raw": 0,
+          "text": "0 km"
         }
       },
       "distances": [
@@ -17164,34 +17625,34 @@
         },
         {
           "distance": {
-            "raw": 16100,
-            "text": "16.1 km"
+            "raw": 34300,
+            "text": "34.3 km"
           },
           "duration": {
-            "raw": 5072,
-            "text": "1 h 25 m"
+            "raw": 10712,
+            "text": "2 h 59 m"
           },
           "elevation": {
-            "raw": 42,
-            "text": "42 m"
+            "raw": 84,
+            "text": "84 m"
           },
           "key": "16-20",
           "label": "16-20 km",
-          "sessions": 1
+          "sessions": 2
         }
       ],
       "duration": {
         "current": {
-          "raw": 18632,
-          "text": "5 h 11 m"
+          "raw": 24272,
+          "text": "6 h 45 m"
         },
         "difference": {
-          "raw": 0,
-          "text": "0 m"
+          "raw": 24272,
+          "text": "+6 h 45 m"
         },
         "previous": {
-          "raw": 18632,
-          "text": "5 h 11 m"
+          "raw": 0,
+          "text": "0 m"
         }
       },
       "generated_at": "2026-05-13T06:30:00Z",
@@ -17212,43 +17673,51 @@
           "key": "2026-05",
           "label": "May 2026",
           "sessions": 6
+        },
+        {
+          "distance": {
+            "raw": 18200,
+            "text": "18.2 km"
+          },
+          "duration": {
+            "raw": 5640,
+            "text": "1 h 34 m"
+          },
+          "elevation": {
+            "raw": 42,
+            "text": "42 m"
+          },
+          "key": "2026-02",
+          "label": "February 2026",
+          "sessions": 1
         }
       ],
       "profile": [
         {
           "key": "volume",
           "label": "Volume",
-          "movement": "steady",
-          "previous": {
-            "raw": 58400,
-            "text": "58.4 km"
-          },
+          "movement": null,
+          "previous": null,
           "value": {
-            "raw": 58400,
-            "text": "58.4 km"
+            "raw": 76600,
+            "text": "76.6 km"
           }
         },
         {
           "key": "consistency",
           "label": "Consistency",
-          "movement": "steady",
-          "previous": {
-            "raw": 6,
-            "text": "6"
-          },
+          "movement": null,
+          "previous": null,
           "value": {
-            "raw": 6,
-            "text": "6"
+            "raw": 7,
+            "text": "7"
           }
         },
         {
           "key": "intensity",
           "label": "Intensity",
-          "movement": "steady",
-          "previous": {
-            "raw": 148,
-            "text": "148 bpm"
-          },
+          "movement": null,
+          "previous": null,
           "value": {
             "raw": 148,
             "text": "148 bpm"
@@ -17257,37 +17726,28 @@
         {
           "key": "duration",
           "label": "Duration",
-          "movement": "steady",
-          "previous": {
-            "raw": 2920,
-            "text": "49 m"
-          },
+          "movement": null,
+          "previous": null,
           "value": {
-            "raw": 2920,
-            "text": "49 m"
+            "raw": 3320,
+            "text": "55 m"
           }
         },
         {
           "key": "density",
           "label": "Density",
-          "movement": "steady",
-          "previous": {
-            "raw": 3105.3333333333335,
-            "text": "52 m"
-          },
+          "movement": null,
+          "previous": null,
           "value": {
-            "raw": 3105.3333333333335,
-            "text": "52 m"
+            "raw": 3467.4285714285716,
+            "text": "58 m"
           }
         },
         {
           "key": "variety",
           "label": "Sport variety",
-          "movement": "steady",
-          "previous": {
-            "raw": 1,
-            "text": "1"
-          },
+          "movement": null,
+          "previous": null,
           "value": {
             "raw": 1,
             "text": "1"
@@ -17296,11 +17756,8 @@
         {
           "key": "week_days",
           "label": "Week days",
-          "movement": "steady",
-          "previous": {
-            "raw": 5,
-            "text": "5"
-          },
+          "movement": null,
+          "previous": null,
           "value": {
             "raw": 5,
             "text": "5"
@@ -17308,12 +17765,12 @@
         }
       ],
       "sessions": {
-        "current": 6,
+        "current": 7,
         "difference": {
-          "raw": 0,
-          "text": "0"
+          "raw": 7,
+          "text": "+7"
         },
-        "previous": 6
+        "previous": 0
       },
       "weekday": [
         {
@@ -17327,8 +17784,8 @@
           },
           "sessions": 1,
           "share": {
-            "raw": 27.22,
-            "text": "27.22%"
+            "raw": 20.9,
+            "text": "20.90%"
           },
           "weekday": "Monday"
         },
@@ -17350,17 +17807,17 @@
         },
         {
           "distance": {
-            "raw": 5000,
-            "text": "5 km"
+            "raw": 23200,
+            "text": "23.2 km"
           },
           "duration": {
-            "raw": 1620,
-            "text": "27 m"
+            "raw": 7260,
+            "text": "2 h 1 m"
           },
-          "sessions": 1,
+          "sessions": 2,
           "share": {
-            "raw": 8.69,
-            "text": "8.69%"
+            "raw": 29.91,
+            "text": "29.91%"
           },
           "weekday": "Wednesday"
         },
@@ -17375,8 +17832,8 @@
           },
           "sessions": 1,
           "share": {
-            "raw": 13.53,
-            "text": "13.53%"
+            "raw": 10.38,
+            "text": "10.38%"
           },
           "weekday": "Thursday"
         },
@@ -17407,8 +17864,8 @@
           },
           "sessions": 1,
           "share": {
-            "raw": 17.82,
-            "text": "17.82%"
+            "raw": 13.68,
+            "text": "13.68%"
           },
           "weekday": "Saturday"
         },
@@ -17423,8 +17880,8 @@
           },
           "sessions": 2,
           "share": {
-            "raw": 32.74,
-            "text": "32.74%"
+            "raw": 25.13,
+            "text": "25.13%"
           },
           "weekday": "Sunday"
         }
@@ -17439,20 +17896,20 @@
       "years": [
         {
           "distance": {
-            "raw": 58400,
-            "text": "58.4 km"
+            "raw": 76600,
+            "text": "76.6 km"
           },
           "duration": {
-            "raw": 18632,
-            "text": "5 h 11 m"
+            "raw": 24272,
+            "text": "6 h 45 m"
           },
           "elevation": {
-            "raw": 252,
-            "text": "252 m"
+            "raw": 294,
+            "text": "294 m"
           },
           "key": "2026",
           "label": "2026",
-          "sessions": 6
+          "sessions": 7
         }
       ],
       "zones": {
@@ -17469,26 +17926,26 @@
     "/insights/rolling?weeks=4": {
       "comparison": {
         "days": 28,
-        "from": "2026-04-15",
-        "from_label": "15 Apr 2026",
-        "to": "2026-05-12",
-        "to_label": "12 May 2026"
+        "from": "2026-03-19",
+        "from_label": "19 Mar 2026",
+        "to": "2026-04-15",
+        "to_label": "15 Apr 2026"
       },
       "date": "2026-05-13",
       "daytime": [
         {
           "distance": {
-            "raw": 58400,
-            "text": "58.4 km"
+            "raw": 76600,
+            "text": "76.6 km"
           },
           "duration": {
-            "raw": 18632,
-            "text": "5 h 11 m"
+            "raw": 24272,
+            "text": "6 h 45 m"
           },
           "from_hour": 6,
           "key": "morning",
           "label": "Morning",
-          "sessions": 6,
+          "sessions": 7,
           "to_hour": 12
         },
         {
@@ -17543,12 +18000,12 @@
           "text": "58.4 km"
         },
         "difference": {
-          "raw": 0,
-          "text": "0 km"
+          "raw": 58400,
+          "text": "+58.4 km"
         },
         "previous": {
-          "raw": 58400,
-          "text": "58.4 km"
+          "raw": 0,
+          "text": "0 km"
         }
       },
       "distances": [
@@ -17644,12 +18101,12 @@
           "text": "5 h 11 m"
         },
         "difference": {
-          "raw": 0,
-          "text": "0 m"
+          "raw": 18632,
+          "text": "+5 h 11 m"
         },
         "previous": {
-          "raw": 18632,
-          "text": "5 h 11 m"
+          "raw": 0,
+          "text": "0 m"
         }
       },
       "generated_at": "2026-05-13T06:30:00Z",
@@ -17670,17 +18127,31 @@
           "key": "2026-05",
           "label": "May 2026",
           "sessions": 6
+        },
+        {
+          "distance": {
+            "raw": 18200,
+            "text": "18.2 km"
+          },
+          "duration": {
+            "raw": 5640,
+            "text": "1 h 34 m"
+          },
+          "elevation": {
+            "raw": 42,
+            "text": "42 m"
+          },
+          "key": "2026-02",
+          "label": "February 2026",
+          "sessions": 1
         }
       ],
       "profile": [
         {
           "key": "volume",
           "label": "Volume",
-          "movement": "steady",
-          "previous": {
-            "raw": 58400,
-            "text": "58.4 km"
-          },
+          "movement": null,
+          "previous": null,
           "value": {
             "raw": 58400,
             "text": "58.4 km"
@@ -17689,11 +18160,8 @@
         {
           "key": "consistency",
           "label": "Consistency",
-          "movement": "steady",
-          "previous": {
-            "raw": 6,
-            "text": "6"
-          },
+          "movement": null,
+          "previous": null,
           "value": {
             "raw": 6,
             "text": "6"
@@ -17702,11 +18170,8 @@
         {
           "key": "intensity",
           "label": "Intensity",
-          "movement": "steady",
-          "previous": {
-            "raw": 148,
-            "text": "148 bpm"
-          },
+          "movement": null,
+          "previous": null,
           "value": {
             "raw": 148,
             "text": "148 bpm"
@@ -17715,11 +18180,8 @@
         {
           "key": "duration",
           "label": "Duration",
-          "movement": "steady",
-          "previous": {
-            "raw": 2920,
-            "text": "49 m"
-          },
+          "movement": null,
+          "previous": null,
           "value": {
             "raw": 2920,
             "text": "49 m"
@@ -17728,11 +18190,8 @@
         {
           "key": "density",
           "label": "Density",
-          "movement": "steady",
-          "previous": {
-            "raw": 3105.3333333333335,
-            "text": "52 m"
-          },
+          "movement": null,
+          "previous": null,
           "value": {
             "raw": 3105.3333333333335,
             "text": "52 m"
@@ -17741,11 +18200,8 @@
         {
           "key": "variety",
           "label": "Sport variety",
-          "movement": "steady",
-          "previous": {
-            "raw": 1,
-            "text": "1"
-          },
+          "movement": null,
+          "previous": null,
           "value": {
             "raw": 1,
             "text": "1"
@@ -17754,11 +18210,8 @@
         {
           "key": "week_days",
           "label": "Week days",
-          "movement": "steady",
-          "previous": {
-            "raw": 5,
-            "text": "5"
-          },
+          "movement": null,
+          "previous": null,
           "value": {
             "raw": 5,
             "text": "5"
@@ -17768,10 +18221,10 @@
       "sessions": {
         "current": 6,
         "difference": {
-          "raw": 0,
-          "text": "0"
+          "raw": 6,
+          "text": "+6"
         },
-        "previous": 6
+        "previous": 0
       },
       "weekday": [
         {
@@ -17785,8 +18238,8 @@
           },
           "sessions": 1,
           "share": {
-            "raw": 27.22,
-            "text": "27.22%"
+            "raw": 20.9,
+            "text": "20.90%"
           },
           "weekday": "Monday"
         },
@@ -17808,17 +18261,17 @@
         },
         {
           "distance": {
-            "raw": 5000,
-            "text": "5 km"
+            "raw": 23200,
+            "text": "23.2 km"
           },
           "duration": {
-            "raw": 1620,
-            "text": "27 m"
+            "raw": 7260,
+            "text": "2 h 1 m"
           },
-          "sessions": 1,
+          "sessions": 2,
           "share": {
-            "raw": 8.69,
-            "text": "8.69%"
+            "raw": 29.91,
+            "text": "29.91%"
           },
           "weekday": "Wednesday"
         },
@@ -17833,8 +18286,8 @@
           },
           "sessions": 1,
           "share": {
-            "raw": 13.53,
-            "text": "13.53%"
+            "raw": 10.38,
+            "text": "10.38%"
           },
           "weekday": "Thursday"
         },
@@ -17865,8 +18318,8 @@
           },
           "sessions": 1,
           "share": {
-            "raw": 17.82,
-            "text": "17.82%"
+            "raw": 13.68,
+            "text": "13.68%"
           },
           "weekday": "Saturday"
         },
@@ -17881,8 +18334,8 @@
           },
           "sessions": 2,
           "share": {
-            "raw": 32.74,
-            "text": "32.74%"
+            "raw": 25.13,
+            "text": "25.13%"
           },
           "weekday": "Sunday"
         }
@@ -17897,20 +18350,20 @@
       "years": [
         {
           "distance": {
-            "raw": 58400,
-            "text": "58.4 km"
+            "raw": 76600,
+            "text": "76.6 km"
           },
           "duration": {
-            "raw": 18632,
-            "text": "5 h 11 m"
+            "raw": 24272,
+            "text": "6 h 45 m"
           },
           "elevation": {
-            "raw": 252,
-            "text": "252 m"
+            "raw": 294,
+            "text": "294 m"
           },
           "key": "2026",
           "label": "2026",
-          "sessions": 6
+          "sessions": 7
         }
       ],
       "zones": {
@@ -17927,26 +18380,26 @@
     "/insights/rolling?weeks=52": {
       "comparison": {
         "days": 364,
-        "from": "2025-05-14",
-        "from_label": "14 May 2025",
-        "to": "2026-05-12",
-        "to_label": "12 May 2026"
+        "from": "2024-05-16",
+        "from_label": "16 May 2024",
+        "to": "2025-05-14",
+        "to_label": "14 May 2025"
       },
       "date": "2026-05-13",
       "daytime": [
         {
           "distance": {
-            "raw": 58400,
-            "text": "58.4 km"
+            "raw": 76600,
+            "text": "76.6 km"
           },
           "duration": {
-            "raw": 18632,
-            "text": "5 h 11 m"
+            "raw": 24272,
+            "text": "6 h 45 m"
           },
           "from_hour": 6,
           "key": "morning",
           "label": "Morning",
-          "sessions": 6,
+          "sessions": 7,
           "to_hour": 12
         },
         {
@@ -17997,16 +18450,16 @@
       ],
       "distance": {
         "current": {
-          "raw": 58400,
-          "text": "58.4 km"
+          "raw": 76600,
+          "text": "76.6 km"
         },
         "difference": {
-          "raw": 0,
-          "text": "0 km"
+          "raw": 76600,
+          "text": "+76.6 km"
         },
         "previous": {
-          "raw": 58400,
-          "text": "58.4 km"
+          "raw": 0,
+          "text": "0 km"
         }
       },
       "distances": [
@@ -18080,34 +18533,34 @@
         },
         {
           "distance": {
-            "raw": 16100,
-            "text": "16.1 km"
+            "raw": 34300,
+            "text": "34.3 km"
           },
           "duration": {
-            "raw": 5072,
-            "text": "1 h 25 m"
+            "raw": 10712,
+            "text": "2 h 59 m"
           },
           "elevation": {
-            "raw": 42,
-            "text": "42 m"
+            "raw": 84,
+            "text": "84 m"
           },
           "key": "16-20",
           "label": "16-20 km",
-          "sessions": 1
+          "sessions": 2
         }
       ],
       "duration": {
         "current": {
-          "raw": 18632,
-          "text": "5 h 11 m"
+          "raw": 24272,
+          "text": "6 h 45 m"
         },
         "difference": {
-          "raw": 0,
-          "text": "0 m"
+          "raw": 24272,
+          "text": "+6 h 45 m"
         },
         "previous": {
-          "raw": 18632,
-          "text": "5 h 11 m"
+          "raw": 0,
+          "text": "0 m"
         }
       },
       "generated_at": "2026-05-13T06:30:00Z",
@@ -18128,43 +18581,51 @@
           "key": "2026-05",
           "label": "May 2026",
           "sessions": 6
+        },
+        {
+          "distance": {
+            "raw": 18200,
+            "text": "18.2 km"
+          },
+          "duration": {
+            "raw": 5640,
+            "text": "1 h 34 m"
+          },
+          "elevation": {
+            "raw": 42,
+            "text": "42 m"
+          },
+          "key": "2026-02",
+          "label": "February 2026",
+          "sessions": 1
         }
       ],
       "profile": [
         {
           "key": "volume",
           "label": "Volume",
-          "movement": "steady",
-          "previous": {
-            "raw": 58400,
-            "text": "58.4 km"
-          },
+          "movement": null,
+          "previous": null,
           "value": {
-            "raw": 58400,
-            "text": "58.4 km"
+            "raw": 76600,
+            "text": "76.6 km"
           }
         },
         {
           "key": "consistency",
           "label": "Consistency",
-          "movement": "steady",
-          "previous": {
-            "raw": 6,
-            "text": "6"
-          },
+          "movement": null,
+          "previous": null,
           "value": {
-            "raw": 6,
-            "text": "6"
+            "raw": 7,
+            "text": "7"
           }
         },
         {
           "key": "intensity",
           "label": "Intensity",
-          "movement": "steady",
-          "previous": {
-            "raw": 148,
-            "text": "148 bpm"
-          },
+          "movement": null,
+          "previous": null,
           "value": {
             "raw": 148,
             "text": "148 bpm"
@@ -18173,37 +18634,28 @@
         {
           "key": "duration",
           "label": "Duration",
-          "movement": "steady",
-          "previous": {
-            "raw": 2920,
-            "text": "49 m"
-          },
+          "movement": null,
+          "previous": null,
           "value": {
-            "raw": 2920,
-            "text": "49 m"
+            "raw": 3320,
+            "text": "55 m"
           }
         },
         {
           "key": "density",
           "label": "Density",
-          "movement": "steady",
-          "previous": {
-            "raw": 3105.3333333333335,
-            "text": "52 m"
-          },
+          "movement": null,
+          "previous": null,
           "value": {
-            "raw": 3105.3333333333335,
-            "text": "52 m"
+            "raw": 3467.4285714285716,
+            "text": "58 m"
           }
         },
         {
           "key": "variety",
           "label": "Sport variety",
-          "movement": "steady",
-          "previous": {
-            "raw": 1,
-            "text": "1"
-          },
+          "movement": null,
+          "previous": null,
           "value": {
             "raw": 1,
             "text": "1"
@@ -18212,11 +18664,8 @@
         {
           "key": "week_days",
           "label": "Week days",
-          "movement": "steady",
-          "previous": {
-            "raw": 5,
-            "text": "5"
-          },
+          "movement": null,
+          "previous": null,
           "value": {
             "raw": 5,
             "text": "5"
@@ -18224,12 +18673,12 @@
         }
       ],
       "sessions": {
-        "current": 6,
+        "current": 7,
         "difference": {
-          "raw": 0,
-          "text": "0"
+          "raw": 7,
+          "text": "+7"
         },
-        "previous": 6
+        "previous": 0
       },
       "weekday": [
         {
@@ -18243,8 +18692,8 @@
           },
           "sessions": 1,
           "share": {
-            "raw": 27.22,
-            "text": "27.22%"
+            "raw": 20.9,
+            "text": "20.90%"
           },
           "weekday": "Monday"
         },
@@ -18266,17 +18715,17 @@
         },
         {
           "distance": {
-            "raw": 5000,
-            "text": "5 km"
+            "raw": 23200,
+            "text": "23.2 km"
           },
           "duration": {
-            "raw": 1620,
-            "text": "27 m"
+            "raw": 7260,
+            "text": "2 h 1 m"
           },
-          "sessions": 1,
+          "sessions": 2,
           "share": {
-            "raw": 8.69,
-            "text": "8.69%"
+            "raw": 29.91,
+            "text": "29.91%"
           },
           "weekday": "Wednesday"
         },
@@ -18291,8 +18740,8 @@
           },
           "sessions": 1,
           "share": {
-            "raw": 13.53,
-            "text": "13.53%"
+            "raw": 10.38,
+            "text": "10.38%"
           },
           "weekday": "Thursday"
         },
@@ -18323,8 +18772,8 @@
           },
           "sessions": 1,
           "share": {
-            "raw": 17.82,
-            "text": "17.82%"
+            "raw": 13.68,
+            "text": "13.68%"
           },
           "weekday": "Saturday"
         },
@@ -18339,8 +18788,8 @@
           },
           "sessions": 2,
           "share": {
-            "raw": 32.74,
-            "text": "32.74%"
+            "raw": 25.13,
+            "text": "25.13%"
           },
           "weekday": "Sunday"
         }
@@ -18355,20 +18804,20 @@
       "years": [
         {
           "distance": {
-            "raw": 58400,
-            "text": "58.4 km"
+            "raw": 76600,
+            "text": "76.6 km"
           },
           "duration": {
-            "raw": 18632,
-            "text": "5 h 11 m"
+            "raw": 24272,
+            "text": "6 h 45 m"
           },
           "elevation": {
-            "raw": 252,
-            "text": "252 m"
+            "raw": 294,
+            "text": "294 m"
           },
           "key": "2026",
           "label": "2026",
-          "sessions": 6
+          "sessions": 7
         }
       ],
       "zones": {
@@ -18385,26 +18834,26 @@
     "/insights/rolling?weeks=8": {
       "comparison": {
         "days": 56,
-        "from": "2026-03-18",
-        "from_label": "18 Mar 2026",
-        "to": "2026-05-12",
-        "to_label": "12 May 2026"
+        "from": "2026-01-22",
+        "from_label": "22 Jan 2026",
+        "to": "2026-03-18",
+        "to_label": "18 Mar 2026"
       },
       "date": "2026-05-13",
       "daytime": [
         {
           "distance": {
-            "raw": 58400,
-            "text": "58.4 km"
+            "raw": 76600,
+            "text": "76.6 km"
           },
           "duration": {
-            "raw": 18632,
-            "text": "5 h 11 m"
+            "raw": 24272,
+            "text": "6 h 45 m"
           },
           "from_hour": 6,
           "key": "morning",
           "label": "Morning",
-          "sessions": 6,
+          "sessions": 7,
           "to_hour": 12
         },
         {
@@ -18459,12 +18908,12 @@
           "text": "58.4 km"
         },
         "difference": {
-          "raw": 0,
-          "text": "0 km"
+          "raw": 40200,
+          "text": "+40.2 km"
         },
         "previous": {
-          "raw": 58400,
-          "text": "58.4 km"
+          "raw": 18200,
+          "text": "18.2 km"
         }
       },
       "distances": [
@@ -18560,12 +19009,12 @@
           "text": "5 h 11 m"
         },
         "difference": {
-          "raw": 0,
-          "text": "0 m"
+          "raw": 12992,
+          "text": "+3 h 37 m"
         },
         "previous": {
-          "raw": 18632,
-          "text": "5 h 11 m"
+          "raw": 5640,
+          "text": "1 h 34 m"
         }
       },
       "generated_at": "2026-05-13T06:30:00Z",
@@ -18586,16 +19035,33 @@
           "key": "2026-05",
           "label": "May 2026",
           "sessions": 6
+        },
+        {
+          "distance": {
+            "raw": 18200,
+            "text": "18.2 km"
+          },
+          "duration": {
+            "raw": 5640,
+            "text": "1 h 34 m"
+          },
+          "elevation": {
+            "raw": 42,
+            "text": "42 m"
+          },
+          "key": "2026-02",
+          "label": "February 2026",
+          "sessions": 1
         }
       ],
       "profile": [
         {
           "key": "volume",
           "label": "Volume",
-          "movement": "steady",
+          "movement": "up",
           "previous": {
-            "raw": 58400,
-            "text": "58.4 km"
+            "raw": 18200,
+            "text": "18.2 km"
           },
           "value": {
             "raw": 58400,
@@ -18605,10 +19071,10 @@
         {
           "key": "consistency",
           "label": "Consistency",
-          "movement": "steady",
+          "movement": "up",
           "previous": {
-            "raw": 6,
-            "text": "6"
+            "raw": 1,
+            "text": "1"
           },
           "value": {
             "raw": 6,
@@ -18631,10 +19097,10 @@
         {
           "key": "duration",
           "label": "Duration",
-          "movement": "steady",
+          "movement": "down",
           "previous": {
-            "raw": 2920,
-            "text": "49 m"
+            "raw": 5640,
+            "text": "1 h 34 m"
           },
           "value": {
             "raw": 2920,
@@ -18644,10 +19110,10 @@
         {
           "key": "density",
           "label": "Density",
-          "movement": "steady",
+          "movement": "down",
           "previous": {
-            "raw": 3105.3333333333335,
-            "text": "52 m"
+            "raw": 5640,
+            "text": "1 h 34 m"
           },
           "value": {
             "raw": 3105.3333333333335,
@@ -18670,10 +19136,10 @@
         {
           "key": "week_days",
           "label": "Week days",
-          "movement": "steady",
+          "movement": "up",
           "previous": {
-            "raw": 5,
-            "text": "5"
+            "raw": 1,
+            "text": "1"
           },
           "value": {
             "raw": 5,
@@ -18684,10 +19150,10 @@
       "sessions": {
         "current": 6,
         "difference": {
-          "raw": 0,
-          "text": "0"
+          "raw": 5,
+          "text": "+5"
         },
-        "previous": 6
+        "previous": 1
       },
       "weekday": [
         {
@@ -18701,8 +19167,8 @@
           },
           "sessions": 1,
           "share": {
-            "raw": 27.22,
-            "text": "27.22%"
+            "raw": 20.9,
+            "text": "20.90%"
           },
           "weekday": "Monday"
         },
@@ -18724,17 +19190,17 @@
         },
         {
           "distance": {
-            "raw": 5000,
-            "text": "5 km"
+            "raw": 23200,
+            "text": "23.2 km"
           },
           "duration": {
-            "raw": 1620,
-            "text": "27 m"
+            "raw": 7260,
+            "text": "2 h 1 m"
           },
-          "sessions": 1,
+          "sessions": 2,
           "share": {
-            "raw": 8.69,
-            "text": "8.69%"
+            "raw": 29.91,
+            "text": "29.91%"
           },
           "weekday": "Wednesday"
         },
@@ -18749,8 +19215,8 @@
           },
           "sessions": 1,
           "share": {
-            "raw": 13.53,
-            "text": "13.53%"
+            "raw": 10.38,
+            "text": "10.38%"
           },
           "weekday": "Thursday"
         },
@@ -18781,8 +19247,8 @@
           },
           "sessions": 1,
           "share": {
-            "raw": 17.82,
-            "text": "17.82%"
+            "raw": 13.68,
+            "text": "13.68%"
           },
           "weekday": "Saturday"
         },
@@ -18797,8 +19263,8 @@
           },
           "sessions": 2,
           "share": {
-            "raw": 32.74,
-            "text": "32.74%"
+            "raw": 25.13,
+            "text": "25.13%"
           },
           "weekday": "Sunday"
         }
@@ -18813,20 +19279,20 @@
       "years": [
         {
           "distance": {
-            "raw": 58400,
-            "text": "58.4 km"
+            "raw": 76600,
+            "text": "76.6 km"
           },
           "duration": {
-            "raw": 18632,
-            "text": "5 h 11 m"
+            "raw": 24272,
+            "text": "6 h 45 m"
           },
           "elevation": {
-            "raw": 252,
-            "text": "252 m"
+            "raw": 294,
+            "text": "294 m"
           },
           "key": "2026",
           "label": "2026",
-          "sessions": 6
+          "sessions": 7
         }
       ],
       "zones": {
@@ -19865,18 +20331,18 @@
       },
       "pause": null,
       "storage": {
-        "activity_count": 6,
+        "activity_count": 7,
         "note_count": 0,
         "plan_session_count": 0,
         "size": {
-          "raw": 556016,
-          "text": "543.0 KB"
+          "raw": 576616,
+          "text": "563.1 KB"
         },
         "wellness_day_count": 30
       }
     },
     "/sync/status": {
-      "activity_count": 6,
+      "activity_count": 7,
       "cursor": null,
       "deleted": 0,
       "history": null,
@@ -20017,6 +20483,29 @@
       "duration": {
         "text": "35 m",
         "raw": 2080
+      },
+      "heart_rate": {
+        "text": "148 bpm",
+        "raw": 148
+      },
+      "elevation_gain": {
+        "text": "42 m",
+        "raw": 42
+      }
+    },
+    {
+      "id": 107,
+      "name": "Run",
+      "sport_type": "running",
+      "start_time": "2026-02-11T07:10:00Z",
+      "local_date": "2026-02-11",
+      "distance": {
+        "text": "18.2 km",
+        "raw": 18200
+      },
+      "duration": {
+        "text": "1 h 34 m",
+        "raw": 5640
       },
       "heart_rate": {
         "text": "148 bpm",

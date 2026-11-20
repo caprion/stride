@@ -131,9 +131,10 @@ fn the_window_is_the_last_days_ending_today() {
     assert_eq!(text(&answer, &["window", "from"]), "2026-05-06");
     assert_eq!(text(&answer, &["window", "to"]), "2026-05-12");
     assert_eq!(number(&answer, &["window", "days"]), 7.0);
-    // The comparison is the same seven days, ending a day earlier.
-    assert_eq!(text(&answer, &["comparison", "from"]), "2026-05-05");
-    assert_eq!(text(&answer, &["comparison", "to"]), "2026-05-11");
+    // The comparison is the seven days **before** the window: the 29th of
+    // April to the 5th of May. The two windows share no day.
+    assert_eq!(text(&answer, &["comparison", "from"]), "2026-04-29");
+    assert_eq!(text(&answer, &["comparison", "to"]), "2026-05-05");
 
     // The window holds the run of today: 10 km in 50 minutes.
     assert_eq!(text(&answer, &["distance", "current", "text"]), "10 km");
@@ -272,25 +273,27 @@ fn the_distance_breakdown_buckets_the_runs() {
 fn the_profile_is_seven_values_and_their_movement() {
     let harness = Harness::empty("rolling-profile");
     harness.write_run(common::run("today", TODAY, 20_000.0, 3_000.0));
-    // A run in the window before it: half the distance.
-    harness.write_run(common::run("before", "2026-05-11", 10_000.0, 3_000.0));
+    // A run in the window **before** it: half the distance. The window
+    // before the window is the 29th of April to the 5th of May, so the run
+    // belongs on the 4th.
+    harness.write_run(common::run("before", "2026-05-04", 10_000.0, 3_000.0));
 
     let answer = harness.ok_get("/insights/rolling?weeks=1");
     let profile = answer["profile"].as_array().expect("the facets");
     assert_eq!(profile.len(), 7);
 
-    // The volume: both runs are in the window (30 km), and only the
+    // The volume: the run of today is in the window (20 km), and the
     // earlier one is in the window before it (10 km) — up.
     let volume = &profile[0];
     assert_eq!(text(volume, &["key"]), "volume");
     assert_eq!(text(volume, &["label"]), "Volume");
-    assert_eq!(text(volume, &["value", "text"]), "30 km");
+    assert_eq!(text(volume, &["value", "text"]), "20 km");
     assert_eq!(text(volume, &["previous", "text"]), "10 km");
     assert_eq!(text(volume, &["movement"]), "up");
 
-    // The consistency: two days carry a run.
+    // The consistency: one day carries a run in each window.
     assert_eq!(text(&profile[1], &["key"]), "consistency");
-    assert_eq!(text(&profile[1], &["value", "text"]), "2");
+    assert_eq!(text(&profile[1], &["value", "text"]), "1");
     // The intensity: the median heart rate of the runs.
     assert_eq!(text(&profile[2], &["key"]), "intensity");
     assert_eq!(text(&profile[2], &["value", "text"]), "148 bpm");

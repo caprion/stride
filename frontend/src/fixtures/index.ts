@@ -310,6 +310,12 @@ export const activityFixtures: SeedActivity[] = [
   activity(104, '2026-05-06', value('5 km', 5_000), value('27 m', 1_620)),
   activity(105, '2026-05-04', value('16.1 km', 16_100), value('1 h 25 m', 5_072)),
   activity(106, '2026-05-03', value('6.3 km', 6_300), value('35 m', 2_080)),
+  // A run in the window **before** the window: the twelve-week window ends
+  // on the 13th of May, and the window before it runs from the 26th of
+  // November to the 18th of February. Without a run in there the
+  // comparison has nothing to compare, and every facet says "no value" for
+  // its previous — which is honest but exercises nothing.
+  activity(107, '2026-02-11', value('18.2 km', 18_200), value('1 h 34 m', 5_640)),
 ]
 
 /** The feed: the router's answer. */

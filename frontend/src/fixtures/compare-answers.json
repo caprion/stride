@@ -464,6 +464,99 @@
       "b": []
     }
   },
+  "101:107": {
+    "a": {
+      "date": "2026-05-10",
+      "distance": {
+        "raw": 12400,
+        "text": "12.4 km"
+      },
+      "id": 101,
+      "label": "Run",
+      "story": null
+    },
+    "b": {
+      "date": "2026-02-11",
+      "distance": {
+        "raw": 18200,
+        "text": "18.2 km"
+      },
+      "id": 107,
+      "label": "Run",
+      "story": null
+    },
+    "basis_text": "Different distances — read with care",
+    "metrics": [
+      {
+        "a": {
+          "raw": 12400,
+          "text": "12.4 km"
+        },
+        "b": {
+          "raw": 18200,
+          "text": "18.2 km"
+        },
+        "delta": {
+          "raw": 5800,
+          "text": "+5.8 km"
+        },
+        "key": "distance",
+        "label_key": "vital.distance"
+      },
+      {
+        "a": {
+          "raw": 4020,
+          "text": "1 h 7 m"
+        },
+        "b": {
+          "raw": 5640,
+          "text": "1 h 34 m"
+        },
+        "delta": {
+          "raw": 1620,
+          "text": "+27 m"
+        },
+        "key": "time",
+        "label_key": "vital.time"
+      },
+      {
+        "a": {
+          "raw": 324.19,
+          "text": "5:24 /km"
+        },
+        "b": {
+          "raw": 309.89,
+          "text": "5:10 /km"
+        },
+        "delta": {
+          "raw": -14.300000000000011,
+          "text": "−14 s/km"
+        },
+        "key": "pace",
+        "label_key": "vital.pace"
+      },
+      {
+        "a": {
+          "raw": 148,
+          "text": "148 bpm"
+        },
+        "b": {
+          "raw": 148,
+          "text": "148 bpm"
+        },
+        "delta": {
+          "raw": 0,
+          "text": "0 bpm"
+        },
+        "key": "hr",
+        "label_key": "vital.heartRate"
+      }
+    ],
+    "series": {
+      "a": [],
+      "b": []
+    }
+  },
   "102:101": {
     "a": {
       "date": "2026-05-09",
@@ -903,6 +996,99 @@
         "delta": {
           "raw": 4.670000000000016,
           "text": "+5 s/km"
+        },
+        "key": "pace",
+        "label_key": "vital.pace"
+      },
+      {
+        "a": {
+          "raw": 146,
+          "text": "146 bpm"
+        },
+        "b": {
+          "raw": 148,
+          "text": "148 bpm"
+        },
+        "delta": {
+          "raw": 2,
+          "text": "+2 bpm"
+        },
+        "key": "hr",
+        "label_key": "vital.heartRate"
+      }
+    ],
+    "series": {
+      "a": [],
+      "b": []
+    }
+  },
+  "102:107": {
+    "a": {
+      "date": "2026-05-09",
+      "distance": {
+        "raw": 10200,
+        "text": "10.2 km"
+      },
+      "id": 102,
+      "label": "Run",
+      "story": null
+    },
+    "b": {
+      "date": "2026-02-11",
+      "distance": {
+        "raw": 18200,
+        "text": "18.2 km"
+      },
+      "id": 107,
+      "label": "Run",
+      "story": null
+    },
+    "basis_text": "Different distances — read with care",
+    "metrics": [
+      {
+        "a": {
+          "raw": 10200,
+          "text": "10.2 km"
+        },
+        "b": {
+          "raw": 18200,
+          "text": "18.2 km"
+        },
+        "delta": {
+          "raw": 8000,
+          "text": "+8 km"
+        },
+        "key": "distance",
+        "label_key": "vital.distance"
+      },
+      {
+        "a": {
+          "raw": 3320,
+          "text": "55 m"
+        },
+        "b": {
+          "raw": 5640,
+          "text": "1 h 34 m"
+        },
+        "delta": {
+          "raw": 2320,
+          "text": "+39 m"
+        },
+        "key": "time",
+        "label_key": "vital.time"
+      },
+      {
+        "a": {
+          "raw": 325.49,
+          "text": "5:25 /km"
+        },
+        "b": {
+          "raw": 309.89,
+          "text": "5:10 /km"
+        },
+        "delta": {
+          "raw": -15.600000000000023,
+          "text": "−16 s/km"
         },
         "key": "pace",
         "label_key": "vital.pace"
@@ -1394,6 +1580,99 @@
       "b": []
     }
   },
+  "103:107": {
+    "a": {
+      "date": "2026-05-07",
+      "distance": {
+        "raw": 8400,
+        "text": "8.4 km"
+      },
+      "id": 103,
+      "label": "Run",
+      "story": null
+    },
+    "b": {
+      "date": "2026-02-11",
+      "distance": {
+        "raw": 18200,
+        "text": "18.2 km"
+      },
+      "id": 107,
+      "label": "Run",
+      "story": null
+    },
+    "basis_text": "Different distances — read with care",
+    "metrics": [
+      {
+        "a": {
+          "raw": 8400,
+          "text": "8.4 km"
+        },
+        "b": {
+          "raw": 18200,
+          "text": "18.2 km"
+        },
+        "delta": {
+          "raw": 9800,
+          "text": "+9.8 km"
+        },
+        "key": "distance",
+        "label_key": "vital.distance"
+      },
+      {
+        "a": {
+          "raw": 2520,
+          "text": "42 m"
+        },
+        "b": {
+          "raw": 5640,
+          "text": "1 h 34 m"
+        },
+        "delta": {
+          "raw": 3120,
+          "text": "+52 m"
+        },
+        "key": "time",
+        "label_key": "vital.time"
+      },
+      {
+        "a": {
+          "raw": 300,
+          "text": "5:00 /km"
+        },
+        "b": {
+          "raw": 309.89,
+          "text": "5:10 /km"
+        },
+        "delta": {
+          "raw": 9.889999999999986,
+          "text": "+10 s/km"
+        },
+        "key": "pace",
+        "label_key": "vital.pace"
+      },
+      {
+        "a": {
+          "raw": 148,
+          "text": "148 bpm"
+        },
+        "b": {
+          "raw": 148,
+          "text": "148 bpm"
+        },
+        "delta": {
+          "raw": 0,
+          "text": "0 bpm"
+        },
+        "key": "hr",
+        "label_key": "vital.heartRate"
+      }
+    ],
+    "series": {
+      "a": [],
+      "b": []
+    }
+  },
   "104:101": {
     "a": {
       "date": "2026-05-06",
@@ -1833,6 +2112,99 @@
         "delta": {
           "raw": 6.160000000000025,
           "text": "+6 s/km"
+        },
+        "key": "pace",
+        "label_key": "vital.pace"
+      },
+      {
+        "a": {
+          "raw": 148,
+          "text": "148 bpm"
+        },
+        "b": {
+          "raw": 148,
+          "text": "148 bpm"
+        },
+        "delta": {
+          "raw": 0,
+          "text": "0 bpm"
+        },
+        "key": "hr",
+        "label_key": "vital.heartRate"
+      }
+    ],
+    "series": {
+      "a": [],
+      "b": []
+    }
+  },
+  "104:107": {
+    "a": {
+      "date": "2026-05-06",
+      "distance": {
+        "raw": 5000,
+        "text": "5 km"
+      },
+      "id": 104,
+      "label": "Run",
+      "story": null
+    },
+    "b": {
+      "date": "2026-02-11",
+      "distance": {
+        "raw": 18200,
+        "text": "18.2 km"
+      },
+      "id": 107,
+      "label": "Run",
+      "story": null
+    },
+    "basis_text": "Different distances — read with care",
+    "metrics": [
+      {
+        "a": {
+          "raw": 5000,
+          "text": "5 km"
+        },
+        "b": {
+          "raw": 18200,
+          "text": "18.2 km"
+        },
+        "delta": {
+          "raw": 13200,
+          "text": "+13.2 km"
+        },
+        "key": "distance",
+        "label_key": "vital.distance"
+      },
+      {
+        "a": {
+          "raw": 1620,
+          "text": "27 m"
+        },
+        "b": {
+          "raw": 5640,
+          "text": "1 h 34 m"
+        },
+        "delta": {
+          "raw": 4020,
+          "text": "+1 h 7 m"
+        },
+        "key": "time",
+        "label_key": "vital.time"
+      },
+      {
+        "a": {
+          "raw": 324,
+          "text": "5:24 /km"
+        },
+        "b": {
+          "raw": 309.89,
+          "text": "5:10 /km"
+        },
+        "delta": {
+          "raw": -14.110000000000014,
+          "text": "−14 s/km"
         },
         "key": "pace",
         "label_key": "vital.pace"
@@ -2324,6 +2696,99 @@
       "b": []
     }
   },
+  "105:107": {
+    "a": {
+      "date": "2026-05-04",
+      "distance": {
+        "raw": 16100,
+        "text": "16.1 km"
+      },
+      "id": 105,
+      "label": "Run",
+      "story": null
+    },
+    "b": {
+      "date": "2026-02-11",
+      "distance": {
+        "raw": 18200,
+        "text": "18.2 km"
+      },
+      "id": 107,
+      "label": "Run",
+      "story": null
+    },
+    "basis_text": "Different distances — read with care",
+    "metrics": [
+      {
+        "a": {
+          "raw": 16100,
+          "text": "16.1 km"
+        },
+        "b": {
+          "raw": 18200,
+          "text": "18.2 km"
+        },
+        "delta": {
+          "raw": 2100,
+          "text": "+2.1 km"
+        },
+        "key": "distance",
+        "label_key": "vital.distance"
+      },
+      {
+        "a": {
+          "raw": 5072,
+          "text": "1 h 25 m"
+        },
+        "b": {
+          "raw": 5640,
+          "text": "1 h 34 m"
+        },
+        "delta": {
+          "raw": 568,
+          "text": "+9 m"
+        },
+        "key": "time",
+        "label_key": "vital.time"
+      },
+      {
+        "a": {
+          "raw": 315.03,
+          "text": "5:15 /km"
+        },
+        "b": {
+          "raw": 309.89,
+          "text": "5:10 /km"
+        },
+        "delta": {
+          "raw": -5.139999999999986,
+          "text": "−5 s/km"
+        },
+        "key": "pace",
+        "label_key": "vital.pace"
+      },
+      {
+        "a": {
+          "raw": 148,
+          "text": "148 bpm"
+        },
+        "b": {
+          "raw": 148,
+          "text": "148 bpm"
+        },
+        "delta": {
+          "raw": 0,
+          "text": "0 bpm"
+        },
+        "key": "hr",
+        "label_key": "vital.heartRate"
+      }
+    ],
+    "series": {
+      "a": [],
+      "b": []
+    }
+  },
   "106:101": {
     "a": {
       "date": "2026-05-03",
@@ -2763,6 +3228,657 @@
         "delta": {
           "raw": -15.130000000000052,
           "text": "−15 s/km"
+        },
+        "key": "pace",
+        "label_key": "vital.pace"
+      },
+      {
+        "a": {
+          "raw": 148,
+          "text": "148 bpm"
+        },
+        "b": {
+          "raw": 148,
+          "text": "148 bpm"
+        },
+        "delta": {
+          "raw": 0,
+          "text": "0 bpm"
+        },
+        "key": "hr",
+        "label_key": "vital.heartRate"
+      }
+    ],
+    "series": {
+      "a": [],
+      "b": []
+    }
+  },
+  "106:107": {
+    "a": {
+      "date": "2026-05-03",
+      "distance": {
+        "raw": 6300,
+        "text": "6.3 km"
+      },
+      "id": 106,
+      "label": "Run",
+      "story": null
+    },
+    "b": {
+      "date": "2026-02-11",
+      "distance": {
+        "raw": 18200,
+        "text": "18.2 km"
+      },
+      "id": 107,
+      "label": "Run",
+      "story": null
+    },
+    "basis_text": "Different distances — read with care",
+    "metrics": [
+      {
+        "a": {
+          "raw": 6300,
+          "text": "6.3 km"
+        },
+        "b": {
+          "raw": 18200,
+          "text": "18.2 km"
+        },
+        "delta": {
+          "raw": 11900,
+          "text": "+11.9 km"
+        },
+        "key": "distance",
+        "label_key": "vital.distance"
+      },
+      {
+        "a": {
+          "raw": 2080,
+          "text": "35 m"
+        },
+        "b": {
+          "raw": 5640,
+          "text": "1 h 34 m"
+        },
+        "delta": {
+          "raw": 3560,
+          "text": "+59 m"
+        },
+        "key": "time",
+        "label_key": "vital.time"
+      },
+      {
+        "a": {
+          "raw": 330.16,
+          "text": "5:30 /km"
+        },
+        "b": {
+          "raw": 309.89,
+          "text": "5:10 /km"
+        },
+        "delta": {
+          "raw": -20.27000000000004,
+          "text": "−20 s/km"
+        },
+        "key": "pace",
+        "label_key": "vital.pace"
+      },
+      {
+        "a": {
+          "raw": 148,
+          "text": "148 bpm"
+        },
+        "b": {
+          "raw": 148,
+          "text": "148 bpm"
+        },
+        "delta": {
+          "raw": 0,
+          "text": "0 bpm"
+        },
+        "key": "hr",
+        "label_key": "vital.heartRate"
+      }
+    ],
+    "series": {
+      "a": [],
+      "b": []
+    }
+  },
+  "107:101": {
+    "a": {
+      "date": "2026-02-11",
+      "distance": {
+        "raw": 18200,
+        "text": "18.2 km"
+      },
+      "id": 107,
+      "label": "Run",
+      "story": null
+    },
+    "b": {
+      "date": "2026-05-10",
+      "distance": {
+        "raw": 12400,
+        "text": "12.4 km"
+      },
+      "id": 101,
+      "label": "Run",
+      "story": null
+    },
+    "basis_text": "Different distances — read with care",
+    "metrics": [
+      {
+        "a": {
+          "raw": 18200,
+          "text": "18.2 km"
+        },
+        "b": {
+          "raw": 12400,
+          "text": "12.4 km"
+        },
+        "delta": {
+          "raw": -5800,
+          "text": "−5.8 km"
+        },
+        "key": "distance",
+        "label_key": "vital.distance"
+      },
+      {
+        "a": {
+          "raw": 5640,
+          "text": "1 h 34 m"
+        },
+        "b": {
+          "raw": 4020,
+          "text": "1 h 7 m"
+        },
+        "delta": {
+          "raw": -1620,
+          "text": "−27 m"
+        },
+        "key": "time",
+        "label_key": "vital.time"
+      },
+      {
+        "a": {
+          "raw": 309.89,
+          "text": "5:10 /km"
+        },
+        "b": {
+          "raw": 324.19,
+          "text": "5:24 /km"
+        },
+        "delta": {
+          "raw": 14.300000000000011,
+          "text": "+14 s/km"
+        },
+        "key": "pace",
+        "label_key": "vital.pace"
+      },
+      {
+        "a": {
+          "raw": 148,
+          "text": "148 bpm"
+        },
+        "b": {
+          "raw": 148,
+          "text": "148 bpm"
+        },
+        "delta": {
+          "raw": 0,
+          "text": "0 bpm"
+        },
+        "key": "hr",
+        "label_key": "vital.heartRate"
+      }
+    ],
+    "series": {
+      "a": [],
+      "b": []
+    }
+  },
+  "107:102": {
+    "a": {
+      "date": "2026-02-11",
+      "distance": {
+        "raw": 18200,
+        "text": "18.2 km"
+      },
+      "id": 107,
+      "label": "Run",
+      "story": null
+    },
+    "b": {
+      "date": "2026-05-09",
+      "distance": {
+        "raw": 10200,
+        "text": "10.2 km"
+      },
+      "id": 102,
+      "label": "Run",
+      "story": null
+    },
+    "basis_text": "Different distances — read with care",
+    "metrics": [
+      {
+        "a": {
+          "raw": 18200,
+          "text": "18.2 km"
+        },
+        "b": {
+          "raw": 10200,
+          "text": "10.2 km"
+        },
+        "delta": {
+          "raw": -8000,
+          "text": "−8 km"
+        },
+        "key": "distance",
+        "label_key": "vital.distance"
+      },
+      {
+        "a": {
+          "raw": 5640,
+          "text": "1 h 34 m"
+        },
+        "b": {
+          "raw": 3320,
+          "text": "55 m"
+        },
+        "delta": {
+          "raw": -2320,
+          "text": "−39 m"
+        },
+        "key": "time",
+        "label_key": "vital.time"
+      },
+      {
+        "a": {
+          "raw": 309.89,
+          "text": "5:10 /km"
+        },
+        "b": {
+          "raw": 325.49,
+          "text": "5:25 /km"
+        },
+        "delta": {
+          "raw": 15.600000000000023,
+          "text": "+16 s/km"
+        },
+        "key": "pace",
+        "label_key": "vital.pace"
+      },
+      {
+        "a": {
+          "raw": 148,
+          "text": "148 bpm"
+        },
+        "b": {
+          "raw": 146,
+          "text": "146 bpm"
+        },
+        "delta": {
+          "raw": -2,
+          "text": "−2 bpm"
+        },
+        "key": "hr",
+        "label_key": "vital.heartRate"
+      }
+    ],
+    "series": {
+      "a": [],
+      "b": []
+    }
+  },
+  "107:103": {
+    "a": {
+      "date": "2026-02-11",
+      "distance": {
+        "raw": 18200,
+        "text": "18.2 km"
+      },
+      "id": 107,
+      "label": "Run",
+      "story": null
+    },
+    "b": {
+      "date": "2026-05-07",
+      "distance": {
+        "raw": 8400,
+        "text": "8.4 km"
+      },
+      "id": 103,
+      "label": "Run",
+      "story": null
+    },
+    "basis_text": "Different distances — read with care",
+    "metrics": [
+      {
+        "a": {
+          "raw": 18200,
+          "text": "18.2 km"
+        },
+        "b": {
+          "raw": 8400,
+          "text": "8.4 km"
+        },
+        "delta": {
+          "raw": -9800,
+          "text": "−9.8 km"
+        },
+        "key": "distance",
+        "label_key": "vital.distance"
+      },
+      {
+        "a": {
+          "raw": 5640,
+          "text": "1 h 34 m"
+        },
+        "b": {
+          "raw": 2520,
+          "text": "42 m"
+        },
+        "delta": {
+          "raw": -3120,
+          "text": "−52 m"
+        },
+        "key": "time",
+        "label_key": "vital.time"
+      },
+      {
+        "a": {
+          "raw": 309.89,
+          "text": "5:10 /km"
+        },
+        "b": {
+          "raw": 300,
+          "text": "5:00 /km"
+        },
+        "delta": {
+          "raw": -9.889999999999986,
+          "text": "−10 s/km"
+        },
+        "key": "pace",
+        "label_key": "vital.pace"
+      },
+      {
+        "a": {
+          "raw": 148,
+          "text": "148 bpm"
+        },
+        "b": {
+          "raw": 148,
+          "text": "148 bpm"
+        },
+        "delta": {
+          "raw": 0,
+          "text": "0 bpm"
+        },
+        "key": "hr",
+        "label_key": "vital.heartRate"
+      }
+    ],
+    "series": {
+      "a": [],
+      "b": []
+    }
+  },
+  "107:104": {
+    "a": {
+      "date": "2026-02-11",
+      "distance": {
+        "raw": 18200,
+        "text": "18.2 km"
+      },
+      "id": 107,
+      "label": "Run",
+      "story": null
+    },
+    "b": {
+      "date": "2026-05-06",
+      "distance": {
+        "raw": 5000,
+        "text": "5 km"
+      },
+      "id": 104,
+      "label": "Run",
+      "story": null
+    },
+    "basis_text": "Different distances — read with care",
+    "metrics": [
+      {
+        "a": {
+          "raw": 18200,
+          "text": "18.2 km"
+        },
+        "b": {
+          "raw": 5000,
+          "text": "5 km"
+        },
+        "delta": {
+          "raw": -13200,
+          "text": "−13.2 km"
+        },
+        "key": "distance",
+        "label_key": "vital.distance"
+      },
+      {
+        "a": {
+          "raw": 5640,
+          "text": "1 h 34 m"
+        },
+        "b": {
+          "raw": 1620,
+          "text": "27 m"
+        },
+        "delta": {
+          "raw": -4020,
+          "text": "−1 h 7 m"
+        },
+        "key": "time",
+        "label_key": "vital.time"
+      },
+      {
+        "a": {
+          "raw": 309.89,
+          "text": "5:10 /km"
+        },
+        "b": {
+          "raw": 324,
+          "text": "5:24 /km"
+        },
+        "delta": {
+          "raw": 14.110000000000014,
+          "text": "+14 s/km"
+        },
+        "key": "pace",
+        "label_key": "vital.pace"
+      },
+      {
+        "a": {
+          "raw": 148,
+          "text": "148 bpm"
+        },
+        "b": {
+          "raw": 148,
+          "text": "148 bpm"
+        },
+        "delta": {
+          "raw": 0,
+          "text": "0 bpm"
+        },
+        "key": "hr",
+        "label_key": "vital.heartRate"
+      }
+    ],
+    "series": {
+      "a": [],
+      "b": []
+    }
+  },
+  "107:105": {
+    "a": {
+      "date": "2026-02-11",
+      "distance": {
+        "raw": 18200,
+        "text": "18.2 km"
+      },
+      "id": 107,
+      "label": "Run",
+      "story": null
+    },
+    "b": {
+      "date": "2026-05-04",
+      "distance": {
+        "raw": 16100,
+        "text": "16.1 km"
+      },
+      "id": 105,
+      "label": "Run",
+      "story": null
+    },
+    "basis_text": "Different distances — read with care",
+    "metrics": [
+      {
+        "a": {
+          "raw": 18200,
+          "text": "18.2 km"
+        },
+        "b": {
+          "raw": 16100,
+          "text": "16.1 km"
+        },
+        "delta": {
+          "raw": -2100,
+          "text": "−2.1 km"
+        },
+        "key": "distance",
+        "label_key": "vital.distance"
+      },
+      {
+        "a": {
+          "raw": 5640,
+          "text": "1 h 34 m"
+        },
+        "b": {
+          "raw": 5072,
+          "text": "1 h 25 m"
+        },
+        "delta": {
+          "raw": -568,
+          "text": "−9 m"
+        },
+        "key": "time",
+        "label_key": "vital.time"
+      },
+      {
+        "a": {
+          "raw": 309.89,
+          "text": "5:10 /km"
+        },
+        "b": {
+          "raw": 315.03,
+          "text": "5:15 /km"
+        },
+        "delta": {
+          "raw": 5.139999999999986,
+          "text": "+5 s/km"
+        },
+        "key": "pace",
+        "label_key": "vital.pace"
+      },
+      {
+        "a": {
+          "raw": 148,
+          "text": "148 bpm"
+        },
+        "b": {
+          "raw": 148,
+          "text": "148 bpm"
+        },
+        "delta": {
+          "raw": 0,
+          "text": "0 bpm"
+        },
+        "key": "hr",
+        "label_key": "vital.heartRate"
+      }
+    ],
+    "series": {
+      "a": [],
+      "b": []
+    }
+  },
+  "107:106": {
+    "a": {
+      "date": "2026-02-11",
+      "distance": {
+        "raw": 18200,
+        "text": "18.2 km"
+      },
+      "id": 107,
+      "label": "Run",
+      "story": null
+    },
+    "b": {
+      "date": "2026-05-03",
+      "distance": {
+        "raw": 6300,
+        "text": "6.3 km"
+      },
+      "id": 106,
+      "label": "Run",
+      "story": null
+    },
+    "basis_text": "Different distances — read with care",
+    "metrics": [
+      {
+        "a": {
+          "raw": 18200,
+          "text": "18.2 km"
+        },
+        "b": {
+          "raw": 6300,
+          "text": "6.3 km"
+        },
+        "delta": {
+          "raw": -11900,
+          "text": "−11.9 km"
+        },
+        "key": "distance",
+        "label_key": "vital.distance"
+      },
+      {
+        "a": {
+          "raw": 5640,
+          "text": "1 h 34 m"
+        },
+        "b": {
+          "raw": 2080,
+          "text": "35 m"
+        },
+        "delta": {
+          "raw": -3560,
+          "text": "−59 m"
+        },
+        "key": "time",
+        "label_key": "vital.time"
+      },
+      {
+        "a": {
+          "raw": 309.89,
+          "text": "5:10 /km"
+        },
+        "b": {
+          "raw": 330.16,
+          "text": "5:30 /km"
+        },
+        "delta": {
+          "raw": 20.27000000000004,
+          "text": "+20 s/km"
         },
         "key": "pace",
         "label_key": "vital.pace"

@@ -334,9 +334,11 @@ describe('the Compare screen', () => {
 
     const picker = container.querySelector('[data-testid="compare-picker"]')
     expect(picker).toBeTruthy()
-    // The real runs, and not two of them: the athlete has six.
+    // The real runs, and not two of them: the athlete has seven — the six
+    // of May and the one of February that gives the rolling comparison
+    // something to compare itself with.
     const options = picker?.querySelectorAll('[data-testid^="compare-candidate-"]') ?? []
-    expect(options.length).toBe(5)
+    expect(options.length).toBe(6)
 
     // The 3 May run is in the list; choosing it asks the api for that
     // pair — the earlier run is A, and the app does not decide that.

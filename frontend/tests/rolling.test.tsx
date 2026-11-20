@@ -207,7 +207,12 @@ describe('the training profile on Progress', () => {
     expect(card.querySelector('[data-testid="progress-profile-week_days"]')?.textContent).toBe('5')
     // The facet names are the core's.
     expect(card.textContent).toContain('Sport variety')
-    // And each says which way it moved against the window before it.
+    // And each says which way it moved against the window before it. The
+    // window before the window is the 84 days that end the day the window
+    // begins, so it carries its own runs: some facets moved up, some down,
+    // and the ones that did not move say so.
+    expect(card.textContent).toContain('up on the 84 days before')
+    expect(card.textContent).toContain('down on the 84 days before')
     expect(card.textContent).toContain('the same as the 84 days before')
     // No polygon, no score, no grade.
     const text = (card.textContent ?? '').toLowerCase()
@@ -240,10 +245,11 @@ describe('the splits and the tables on Progress', () => {
     const months = await screen.findByTestId('progress-months')
     expect(months.textContent).toContain('May 2026')
     expect(months.textContent).toContain('58.4 km')
+    expect(months.textContent).toContain('February 2026')
 
     const years = await screen.findByTestId('progress-years')
     expect(years.textContent).toContain('2026')
-    expect(years.textContent).toContain('58.4 km')
+    expect(years.textContent).toContain('76.6 km')
   })
 })
 
