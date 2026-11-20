@@ -2160,15 +2160,6 @@ pub struct HeatmapExtent {
 /// property of the window: the answer names the window they cover.
 #[derive(Clone, Debug, PartialEq, Serialize)]
 pub struct PaceInsight {
-
-/// The year: the months, the calendar of the days, and what changed.
-///
-/// **The calendar colours days, never places.** The days carry the zone
-/// mix of that day's runs and nothing else: no position, no place name and
-/// nothing that says where the athlete ran. Where they ran is the
-/// heatmap's surface, and it has its own screen and its own disclosure.
-#[derive(Clone, Debug, PartialEq, Serialize)]
-pub struct YearInsight {
     /// When this answer was produced.
     pub generated_at: String,
     /// The athlete's local calendar date the answer is about.
@@ -2260,6 +2251,18 @@ pub struct PaceBandRow {
     pub share: Option<RenderedValue>,
 }
 
+/// The year: the months, the calendar of the days, and what changed.
+///
+/// **The calendar colours days, never places.** The days carry the zone
+/// mix of that day's runs and nothing else: no position, no place name and
+/// nothing that says where the athlete ran. Where they ran is the
+/// heatmap's surface, and it has its own screen and its own disclosure.
+#[derive(Clone, Debug, PartialEq, Serialize)]
+pub struct YearInsight {
+    /// When this answer was produced.
+    pub generated_at: String,
+    /// The athlete's local calendar date the answer is about.
+    pub date: String,
     /// The window the answer is about: the last twelve calendar months.
     pub window: YearWindow,
     /// The period the window is compared against: the same number of days,
