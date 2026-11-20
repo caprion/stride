@@ -538,3 +538,121 @@ pub struct SyncState {
     /// When the row was last changed.
     pub updated_at: DateTime<Utc>,
 }
+
+/// The verdict an update may carry.
+///
+/// The reviewer's three answers: ship, repair, discard. **Only a shipped
+/// update is kept** — a repair is a second pass, and a discard keeps
+/// nothing.
+pub mod verdict {
+    /// The draft is true to the payload and written in the register.
+    pub const SHIP: &str = "ship";
+    /// The draft can be corrected, and the reviewer named what to correct.
+    pub const REPAIR: &str = "repair";
+    /// The draft cannot be corrected, and nothing is kept.
+    pub const DISCARD: &str = "discard";
+}
+
+/// One run's update.
+///
+/// The update is a model's own reading of the run: it is **attributed**,
+/// and what it was checked against is stored beside it. The payload hash
+/// names the payload the model was given, so the update can be re-checked
+/// instead of believed.
+#[derive(Debug, Clone, PartialEq)]
+pub struct RunUpdate {
+    /// The row's primary key.
+    pub id: i64,
+    /// The run it is about.
+    pub activity_id: i64,
+    /// The writer's model, by name.
+    pub writer: String,
+    /// The reviewer's model, by name.
+    pub reviewer: String,
+    /// The SHA-256 of the payload the model was given.
+    pub payload_hash: String,
+    /// The model's own words.
+    pub draft: String,
+    /// The checks and their findings, as JSON.
+    pub checks: String,
+    /// The verdict: `ship`.
+    pub verdict: String,
+    /// When the update was made.
+    pub created_at: DateTime<Utc>,
+}
+
+/// A run update to write.
+#[derive(Debug, Clone, PartialEq)]
+pub struct NewRunUpdate {
+    /// The run it is about.
+    pub activity_id: i64,
+    /// The writer's model, by name.
+    pub writer: String,
+    /// The reviewer's model, by name.
+    pub reviewer: String,
+    /// The SHA-256 of the payload the model was given.
+    pub payload_hash: String,
+    /// The model's own words.
+    pub draft: String,
+    /// The checks and their findings, as JSON.
+    pub checks: String,
+    /// The verdict: `ship`.
+    pub verdict: String,
+    /// When the update was made.
+    pub created_at: DateTime<Utc>,
+}
+
+/// The update's own settings.
+///
+/// Which model writes, which model reviews, and whether anything may leave
+/// the machine at all. The **key is not here**: the settings name the
+/// environment variable it is read from, so the key is never in the
+/// database and never in an export.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct UpdateSettings {
+    /// Is the feature on? It is off until the athlete turns it on.
+    pub enabled: bool,
+    /// May anything leave the machine? It may not, until the athlete says so.
+    pub allow_remote: bool,
+    /// The writer's model, by name.
+    pub writer_model: String,
+    /// The writer's family: the models of one family read alike, and a
+    /// reviewer of the same family repeats the writer's misreadings.
+    pub writer_family: String,
+    /// The base URL the writer is called at.
+    pub writer_base_url: String,
+    /// The reviewer's model, by name.
+    pub reviewer_model: String,
+    /// The reviewer's family. It has to differ from the writer's.
+    pub reviewer_family: String,
+    /// The base URL the reviewer is called at.
+    pub reviewer_base_url: String,
+    /// The environment variable the key is read from.
+    pub key_env: String,
+    /// When the settings were last written.
+    pub updated_at: DateTime<Utc>,
+}
+
+impl UpdateSettings {
+    /// The settings as they are before anything is written.
+    ///
+    /// The feature is off, nothing may leave the machine, and no model is
+    /// named: the models are a choice, and the choice has not been made.
+    pub fn defaults(at: DateTime<Utc>) -> UpdateSettings {
+        UpdateSettings {
+            enabled: false,
+            allow_remote: false,
+            writer_model: String::new(),
+            writer_family: String::new(),
+            writer_base_url: String::new(),
+            reviewer_model: String::new(),
+            reviewer_family: String::new(),
+            reviewer_base_url: String::new(),
+            key_env: Self::DEFAULT_KEY_ENV.to_string(),
+            updated_at: at,
+        }
+    }
+
+    /// The environment variable the key is read from, when there is none.
+    pub const DEFAULT_KEY_ENV: &'static str = "STRIDE_MODEL_KEY";
+}

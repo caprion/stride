@@ -283,6 +283,10 @@ fn router_answers(router: &Router) -> serde_json::Map<String, Value> {
         "/activities",
         "/activities/101",
         "/activities/101/film",
+
+        "/activities/101/update",
+        "/activities/101/update/payload",
+        "/update/settings",
         "/physiology/vitals",
         "/physiology/sleep",
         "/fitness/zones",

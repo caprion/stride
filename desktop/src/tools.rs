@@ -72,6 +72,8 @@ pub struct ImportSummary {
     pub plan_sessions: usize,
     /// How many notes were merged.
     pub notes: usize,
+    /// How many run updates were merged.
+    pub updates: usize,
     /// Anything the import refused. A failed import refuses the whole
     /// bundle and returns a failure instead; a successful one has nothing
     /// to refuse.
@@ -162,6 +164,7 @@ pub fn import(workspace: &Workspace, source: &Path) -> Result<ImportSummary> {
         plan_blocks: report.plan_blocks,
         plan_sessions: report.plan_sessions,
         notes: report.notes,
+        updates: report.updates,
         refused: Vec::new(),
     })
 }

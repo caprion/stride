@@ -2541,3 +2541,111 @@ pub struct YearDay {
     /// never a share of zero.
     pub high: Option<RenderedValue>,
 }
+
+/// One run's update.
+///
+/// The update is a model's own reading of the run: it is **attributed**,
+/// it is not the product's voice, and it is kept with the checks it passed
+/// and the hash of the payload it was written from.
+#[derive(Clone, Debug, PartialEq, Serialize)]
+pub struct RunUpdate {
+    /// The writer's model, by name.
+    pub writer: String,
+    /// The reviewer's model, by name.
+    pub reviewer: String,
+    /// The SHA-256 of the payload the model was given.
+    pub payload_hash: String,
+    /// The model's own words.
+    pub draft: String,
+    /// The checks it passed, and what they found.
+    pub checks: Vec<UpdateCheck>,
+    /// The verdict: `ship`.
+    pub verdict: String,
+    /// When the update was made.
+    pub created_at: String,
+}
+
+/// One check, and what it found.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct UpdateCheck {
+    /// The check's name: `groundedness`, `direction` or `register`.
+    pub check: String,
+    /// What the check found, in the core's own words. Empty when it found
+    /// nothing.
+    pub findings: Vec<String>,
+}
+
+/// The stored update of a run.
+#[derive(Clone, Debug, PartialEq, Serialize)]
+pub struct RunUpdateResponse {
+    /// The run's id.
+    pub activity_id: i64,
+    /// The update, when the run has one.
+    pub update: Option<RunUpdate>,
+    /// When this answer was produced.
+    pub generated_at: String,
+}
+
+/// The payload of a run: the facts a model may use, and nothing else.
+#[derive(Clone, Debug, PartialEq, Serialize)]
+pub struct UpdatePayloadResponse {
+    /// The run's id.
+    pub activity_id: i64,
+    /// The hash of the payload's rendered text. `None` when there is no
+    /// payload.
+    pub payload_hash: Option<String>,
+    /// The payload, as the core builds it. `None` when there is no value.
+    pub payload: Option<stride_core::update::Payload>,
+    /// The payload as the model reads it: the core's own wording.
+    pub text: String,
+    /// Why there is no payload, in the core's own words.
+    pub unavailable: Option<String>,
+    /// When this answer was produced.
+    pub generated_at: String,
+}
+
+/// What the rig should send to a model next.
+#[derive(Clone, Debug, PartialEq, Serialize)]
+pub struct UpdateRequestResponse {
+    /// The role the prompt is for: `writer`, `reviewer` or `repair`.
+    pub role: String,
+    /// The prompt, in the core's own words.
+    pub prompt: String,
+    /// The hash of the payload the model is given.
+    pub payload_hash: String,
+    /// The payload as the model reads it.
+    pub payload: String,
+    /// The checks' findings, when the draft had any.
+    pub findings: Vec<String>,
+    /// When this answer was produced.
+    pub generated_at: String,
+}
+
+/// The update's own settings.
+#[derive(Clone, Debug, PartialEq, Serialize)]
+pub struct UpdateSettingsResponse {
+    /// Is the feature on? It is off until the athlete turns it on.
+    pub enabled: bool,
+    /// May anything leave the machine? It may not, until the athlete says
+    /// so.
+    pub allow_remote: bool,
+    /// The writer's model, by name.
+    pub writer_model: String,
+    /// The writer's family.
+    pub writer_family: String,
+    /// The base URL the writer is called at.
+    pub writer_base_url: String,
+    /// The reviewer's model, by name.
+    pub reviewer_model: String,
+    /// The reviewer's family.
+    pub reviewer_family: String,
+    /// The base URL the reviewer is called at.
+    pub reviewer_base_url: String,
+    /// The environment variable the key is read from. The key itself is
+    /// never in the answer.
+    pub key_env: String,
+    /// When these settings were last written.
+    pub updated_at: String,
+    /// When this answer was produced.
+    pub generated_at: String,
+}

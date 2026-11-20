@@ -595,6 +595,38 @@ pub const ROUTES: &[Route] = &[
         method: Method::Post,
         handler: crate::routes::settings::write_note,
     },
+    // The run update: the payload a model may read, the stored update, and
+    // the two routes the rig uses to make one.
+    Route {
+        pattern: "/activities/{id}/update",
+        method: Method::Get,
+        handler: crate::routes::update::stored,
+    },
+    Route {
+        pattern: "/activities/{id}/update",
+        method: Method::Post,
+        handler: crate::routes::update::record,
+    },
+    Route {
+        pattern: "/activities/{id}/update/payload",
+        method: Method::Get,
+        handler: crate::routes::update::payload,
+    },
+    Route {
+        pattern: "/activities/{id}/update/request",
+        method: Method::Post,
+        handler: crate::routes::update::model_request,
+    },
+    Route {
+        pattern: "/update/settings",
+        method: Method::Get,
+        handler: crate::routes::update::settings,
+    },
+    Route {
+        pattern: "/update/settings",
+        method: Method::Post,
+        handler: crate::routes::update::write_settings,
+    },
 ];
 
 /// The routes that answer with a file, not JSON.

@@ -203,6 +203,10 @@ impl Store {
             .map_err(|source| StoreError::query("activity_samples", source))?;
         deleted += removed as i64;
         let removed = transaction
+            .execute("DELETE FROM run_updates", [])
+            .map_err(|source| StoreError::query("run_updates", source))?;
+        deleted += removed as i64;
+        let removed = transaction
             .execute("DELETE FROM activities", [])
             .map_err(|source| StoreError::query("activities", source))?;
         deleted += removed as i64;
@@ -233,6 +237,10 @@ impl Store {
         let removed = transaction
             .execute("DELETE FROM hr_zone_models", [])
             .map_err(|source| StoreError::query("hr_zone_models", source))?;
+        deleted += removed as i64;
+        let removed = transaction
+            .execute("DELETE FROM update_settings", [])
+            .map_err(|source| StoreError::query("update_settings", source))?;
         deleted += removed as i64;
 
         transaction

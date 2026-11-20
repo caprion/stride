@@ -30,6 +30,7 @@ import { axisTick } from '../components/ChartAxis'
 import { StreetRouteMap } from '../components/StreetRouteMap'
 import { SleepComposition } from '../components/SleepComposition'
 import { QueryError } from '../components/QueryError'
+import { RunUpdate } from '../components/RunUpdate'
 import { PageHeader } from '../ui/layout/PageHeader'
 import { historyReturn } from '../lib/history'
 import { ZONE_COLOURS } from '../lib/zones'
@@ -609,6 +610,15 @@ export function ActivityPage({ id }: { id: string }) {
           </section>
         </div>
       </div>
+
+      {/* ----------------------------------------------------- the update */}
+      {/*
+        The model's own reading of the run, below the app's own facts.
+
+        It is attributed, it carries the checks it passed, and it can be
+        dismissed. The app's numbers are above it and they are the app's.
+      */}
+      <RunUpdate id={id} />
 
       {/* -------------------------------------------------- against the plan */}
       {data.plan_line ? (

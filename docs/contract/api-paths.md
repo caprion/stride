@@ -51,10 +51,17 @@ reference only).
 | `/settings/delete` | delete everything, with the typed confirmation the request carries |
 | `/settings/import` | read an export back into the database (the rig's own) |
 | `/activities/{id}/note` | the athlete's note on a run — the only free text the product stores |
+| `/activities/{id}/update` | the run's **update**: the model's own reading of the run, attributed to the writer and the reviewer, with the checks it passed and the hash of the payload it was written from (see "The run update" below) |
+| `/activities/{id}/update/payload` | the **payload** of a run: the facts a model may read, and nothing else (see "The run update" below) |
+| `/activities/{id}/update/request` | the **prompt** the rig sends to a model — the writer, the reviewer or the repair — with the payload it carries |
+| `/update/settings` | the update's own settings: which model writes, which model reviews, and whether anything may leave the machine at all |
 
 The last five rows arrived with the settings slice (PLAN.md §8, slice 8), and they are
 the first change to the frozen table since the freeze. They travel with the plan edit
 in the same pull request, as the freeze requires.
+
+The four rows after them arrived with the run update (the plan's amendment of
+2026-11-19). They travel with the plan edit in the same pull request too.
 
 ## Cut from the old table
 
@@ -146,6 +153,12 @@ Two rules hold for every shape below.
 | `/settings/import` | `activities`, `wellness`, `plan_blocks`, `plan_sessions`, `notes`, `rows`, `generated_at` |
 | `/activities/{id}/note` | `note: string \| null`, `generated_at` |
 | `/insights/today` | `generated_at`, `date`, `planned`, `options`, `last_run`, `distance_comparison: string \| null`, `week: {distance, sessions, days: {date, sessions}[], previous: {from, to, distance, sessions}, difference: RenderedValue \| null}` |
+
+| `/activities/{id}/update` | `activity_id`, `update: RunUpdate \| null` (each: `writer`, `reviewer`, `payload_hash`, `draft`, `checks: {check, findings: string[]}[]`, `verdict`, `created_at`), `generated_at` |
+| `/activities/{id}/update/payload` | `activity_id`, `payload_hash: string \| null`, `payload: UpdatePayload \| null` (each: `model`, `read_on`, `facts: {label, value}[]`, `splits: {index, distance, pace, heart_rate}[]`, `zones: {label, time, share}[]`, `observations: {label, value, direction, signed, quantity}[]`), `text`, `unavailable: string \| null`, `generated_at` |
+| `/activities/{id}/update/request` | `role`, `prompt`, `payload_hash`, `payload`, `findings: string[]`, `generated_at` |
+| `/update/settings` | `enabled`, `allow_remote`, `writer_model`, `writer_family`, `writer_base_url`, `reviewer_model`, `reviewer_family`, `reviewer_base_url`, `key_env`, `updated_at`, `generated_at` |
+| `/insights/today` | `generated_at`, `date`, `planned`, `options`, `last_run`, `distance_comparison: string \| null`, `week: {distance, sessions, days: {date, sessions}[]}` |
 | `/insights/progress` | `generated_at`, `date` (the core's local calendar date), `period: {from, to, distance, duration, sessions, recorded_weeks}`, `headline`, `headline_note`, `weekly_volume`, `typical_week`, `pace_at_hr`, `bests`, `consistency`, `sessions_per_week`, `adherence`, `eddington: {number, days_needed_for_next, longest_day} \| null` |
 | `/insights/load` | `generated_at`, `date`, `window: {from, from_label, to, to_label, weeks, warmup_days}`, `load: LoadSeries \| null`, `unavailable: string \| null`, `scenario: LoadScenario \| null` |
 | `/insights/rolling` | `generated_at`, `date`, `window: {from, from_label, to, to_label, days}`, `comparison: {from, from_label, to, to_label, days}`, `distance: {current, previous, difference}`, `duration: {current, previous, difference}`, `sessions: {current, previous, difference}`, `zones: {model, shares, distribution, unavailable}`, `distances: {key, label, sessions, distance, elevation, duration}[]`, `profile: {key, label, value, previous, movement}[]`, `weekday: {weekday, sessions, distance, duration, share}[]`, `daytime: {key, label, from_hour, to_hour, sessions, distance, duration}[]`, `months: {key, label, sessions, distance, duration, elevation}[]`, `years: {key, label, sessions, distance, duration, elevation}[]` |
@@ -939,3 +952,81 @@ all three at the same moment.
 
 The reason is the core's own sentence, asked for out of the core's
 catalogue and passed on. The api never writes a sentence of its own.
+
+### The run update
+
+Every run gets a short **update**: four to six sentences saying what the run
+was and how it went. A language model writes it from the run's own numbers,
+a **second** model reviews the draft before it reaches the athlete, and
+three mechanical checks stand between the two models and the screen.
+
+The update is **not the product's voice**. It is the model's reading, it is
+attributed — the writer and the reviewer are named — and it lives beside the
+app's own facts and not inside them. The app's numbers stay the app's:
+computed in Rust, from the stored series, with their sources named.
+
+#### The routes
+
+| route | what it answers |
+|---|---|
+| `/activities/{id}/update` | the stored update of a run, with its checks and its verdict — `null` when the run has none |
+| `/activities/{id}/update/payload` | the facts a model may read for that run, and the hash of them |
+| `/activities/{id}/update/request` | the prompt for a role — `writer`, `reviewer` or `repair` — with the payload it carries |
+| `/update/settings` | the update's own settings |
+
+**The rig owns the calling, not the router.** The rig asks the model to
+write, asks the second model to review, and asks this router what to send
+it and whether a draft may be kept. The router never calls a model.
+
+#### The payload is metrics only
+
+The payload carries the run's own facts — the distance, the duration, the
+pace, the heart rate, the splits, the time in the athlete's own zones, the
+run's own mechanics, the writer's model name and the day it was read — and
+**nothing else**: never the positions, never the athlete's note, never their
+name, never the plan. The payload route is the answer to "what would be
+sent", and the app shows it before the first send.
+
+A run with no file to read has no payload: the answer says why in the
+core's own words, and there is no update for it.
+
+#### The three checks
+
+The core owns them, beside the other derived values, and they are
+mechanical:
+
+| check | what it asks |
+|---|---|
+| groundedness | does every number in the draft appear in the payload? |
+| direction | does a claim with a sign agree with the payload's signed value? |
+| register | does the draft use a word the product forbids? |
+
+The register's word list is the core's own ban list — the one
+`docs/contract/voice.md` freezes and the one the app's lint reads out of
+the export — plus the words that would make an observation a prediction.
+**One list, two readers**: the app's lint and the reviewer's check cannot
+drift apart.
+
+#### What may be kept
+
+Only a draft that passes the three checks **and** that the reviewer
+shipped. A repair is a second pass with the reviewer's findings; a discard
+keeps no update. A draft that does not pass the checks keeps nothing, and
+the answer says what the checks found.
+
+The stored update keeps the writer, the reviewer, the **hash of the
+payload**, the draft, the checks and their findings, the verdict and the
+day it was made. An update you cannot re-check is just a sentence, and the
+product's whole claim is that its numbers can be inspected.
+
+#### The settings, and what may leave the machine
+
+The feature is **off by default**, and **nothing leaves the machine** until
+the athlete says so. The settings name the writer, the reviewer and the two
+base URLs; the **key is not in them** — the settings name the environment
+variable it is read from, so the key is never in the database, never in an
+export and never in a log line.
+
+The reviewer's family has to differ from the writer's: a reviewer of the
+writer's own family repeats the writer's misreadings. The settings refuse
+that, and the rig refuses it again before it writes anything.

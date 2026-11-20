@@ -6,47 +6,20 @@
  *
  * Plain JavaScript on purpose — the CLI runs it directly, and the unit
  * test imports it.
+ *
+ * ## One list, two readers
+ *
+ * **The ban list is the core's.** It lives in `stride-core`, beside the
+ * catalogue it holds, and it travels to the app in the export
+ * (`crates/stride-core/strings.json`). The app's lint reads it from
+ * there, and the reviewer's check reads the same list out of the core
+ * itself — so the app's lint and the model's reviewer cannot drift
+ * apart, because there is only one list.
+ *
+ * The list is compared with the contract's own (`docs/contract/voice.md`)
+ * by the lint and by the core's test, so the file that freezes the words
+ * still holds them.
  */
-
-/**
- * The ban list, from `docs/contract/voice.md`.
- *
- * The contract's list, word for word:
- *
- *   should   must      take the day   rest day   rest up   rest today   go easy
- *   missed   bad       poor           fail       behind    good        keep it easy
- *   ready to recommended   better to  need to   red        readiness score
- *   not recovered   you are ready   you are not ready
- *
- * `rest` is banned as a *command* — `rest day`, `rest up`, `rest today` —
- * and never as the noun: the "Rest" summary label on Today is the name of
- * a row, not an instruction.
- */
-export const BANNED = [
-  { term: 'should', pattern: /\bshould\b/i },
-  { term: 'must', pattern: /\bmust\b/i },
-  { term: 'take the day', pattern: /\btake\s+the\s+day\b/i },
-  { term: 'rest day', pattern: /\brest\s+day\b/i },
-  { term: 'rest up', pattern: /\brest\s+up\b/i },
-  { term: 'rest today', pattern: /\brest\s+today\b/i },
-  { term: 'go easy', pattern: /\bgo\s+easy\b/i },
-  { term: 'keep it easy', pattern: /\bkeep\s+it\s+easy\b/i },
-  { term: 'missed', pattern: /\bmissed\b/i },
-  { term: 'bad', pattern: /\bbad\b/i },
-  { term: 'poor', pattern: /\bpoor\b/i },
-  { term: 'fail', pattern: /\bfail/i },
-  { term: 'behind', pattern: /\bbehind\b/i },
-  { term: 'good', pattern: /\bgood\b/i },
-  { term: 'red', pattern: /\bred\b/i },
-  { term: 'readiness score', pattern: /\breadiness\s+score\b/i },
-  { term: 'not recovered', pattern: /\bnot\s+recovered\b/i },
-  { term: 'you are ready', pattern: /\byou\s+are\s+ready\b/i },
-  { term: 'you are not ready', pattern: /\byou\s+are\s+not\s+ready\b/i },
-  { term: 'ready to', pattern: /\bready\s+to\b/i },
-  { term: 'recommended', pattern: /\brecommended\b/i },
-  { term: 'better to', pattern: /\bbetter\s+to\b/i },
-  { term: 'need to', pattern: /\bneed\s+to\b/i },
-]
 
 /**
  * The words that name a vital.
@@ -65,14 +38,34 @@ export const SAMPLE_NOUN =
 /** A hole in a sentence: a placeholder waiting for a value. */
 export const HOLE = /\{[^{}]*\}/
 
+/**
+ * The ban list, out of the core's export.
+ *
+ * The export is the one list: the core holds it beside the catalogue and
+ * sends it here with the strings.
+ */
+export function bannedTerms(exported) {
+  return exported?.rules?.banned_phrases ?? []
+}
+
+/**
+ * The pattern of a banned phrase.
+ *
+ * **On word boundaries**, the way the core matches it: "resting" is not
+ * the command "rest today", and "mustard" is not "must". The core's own
+ * matcher is the rule, and the app follows it — that is the whole point
+ * of the one list.
+ */
+export function patternFor(term) {
+  const escaped = term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  return new RegExp(`\\b${escaped.replace(/\s+/g, '\\s+')}\\b`, 'i')
+}
+
 /** The banned words inside a piece of text. */
-export function bannedWords(text) {
+export function bannedWords(text, terms) {
   const found = []
-  for (const { term, pattern } of BANNED) {
-    const matcher = new RegExp(pattern.source, 'gi')
-    const hit = matcher.test(text)
-    matcher.lastIndex = 0
-    if (hit) found.push(term)
+  for (const term of terms ?? []) {
+    if (patternFor(term).test(text)) found.push(term)
   }
   return found
 }
@@ -82,9 +75,10 @@ export function bannedWords(text) {
  *
  * `entries` is a map of key → { type, text }; `directionWords` is the
  * closed set; `vitalWords` is the core's list of the words that name a
- * vital — read from the export, never written out here.
+ * vital — read from the export, never written out here; and `terms` is
+ * the core's ban list, read from the same export.
  */
-export function checkCatalogue(entries, directionWords, vitalWords = []) {
+export function checkCatalogue(entries, directionWords, vitalWords = [], terms = []) {
   const failures = []
 
   for (const [key, entry] of Object.entries(entries)) {
@@ -92,7 +86,7 @@ export function checkCatalogue(entries, directionWords, vitalWords = []) {
       failures.push(`catalogue.${key}: has no text`)
       continue
     }
-    for (const term of bannedWords(entry.text)) {
+    for (const term of bannedWords(entry.text, terms)) {
       failures.push(`catalogue.${key}: contains the banned word "${term}" — "${entry.text}"`)
     }
   }
@@ -155,7 +149,7 @@ export function checkCatalogue(entries, directionWords, vitalWords = []) {
 }
 
 /** Check prose written inline in a component. */
-export function checkInlineText(file, text) {
+export function checkInlineText(file, text, terms = []) {
   const failures = []
   const jsxText = />([^<>]+)</g
   let match
@@ -165,7 +159,7 @@ export function checkInlineText(file, text) {
     // An expression, not prose: `{t('...')}` is a catalogue lookup, and
     // the catalogue is linted on its own.
     if (literal.includes('{') || literal.includes('}')) continue
-    for (const term of bannedWords(literal)) {
+    for (const term of bannedWords(literal, terms)) {
       failures.push(`${file}: writes the banned word "${term}" inline — "${literal}"`)
     }
   }
@@ -176,8 +170,8 @@ export function checkInlineText(file, text) {
  * Check the core's export — `crates/stride-core/strings.json`.
  *
  * The export carries the catalogue's strings *and the rules with them*:
- * the ban list, the closed direction set, the minimum pattern sample and
- * the vital words. It is the artefact the contract names, and it is
+ * the ban list, the closed direction set, the minimum pattern sample
+ * and the vital words. It is the artefact the contract names, and it is
  * regenerated, never hand-edited:
  *
  *     cargo run -p stride-core --example export_catalogue
@@ -187,21 +181,23 @@ export function checkInlineText(file, text) {
  * if the two ever disagree, the contract's list wins and the export is
  * regenerated.
  */
-export function checkExport(exported, directionWords) {
+export function checkExport(exported, directionWords, terms = []) {
   const failures = []
   const rules = exported?.rules ?? {}
   const entries = exported?.entries ?? []
 
-  // The ban list is one list: the contract's, word for word.
+  // The ban list is one list: the core's, read out of the export.
   const exportList = rules.banned_phrases ?? []
-  const contractList = BANNED.map((entry) => entry.term)
-  const missing = contractList.filter((term) => !exportList.includes(term))
-  const extra = exportList.filter((term) => !contractList.includes(term))
+  if (exportList.length === 0) {
+    failures.push('the export carries no ban list')
+  }
+  const missing = terms.filter((term) => !exportList.includes(term))
+  const extra = exportList.filter((term) => !terms.includes(term))
   if (missing.length > 0) {
     failures.push(`the export's ban list is missing: ${missing.join(', ')}`)
   }
   if (extra.length > 0) {
-    failures.push(`the export's ban list has words the contract does not: ${extra.join(', ')}`)
+    failures.push(`the export's ban list has words the list does not: ${extra.join(', ')}`)
   }
 
   // The closed direction set is the contract's, and it is not extended.
@@ -215,7 +211,7 @@ export function checkExport(exported, directionWords) {
 
   // No banned word in any exported string.
   for (const entry of entries) {
-    for (const term of bannedWords(entry.template ?? '')) {
+    for (const term of bannedWords(entry.template ?? '', terms)) {
       failures.push(`the export's ${entry.id}: contains the banned word "${term}"`)
     }
   }
@@ -243,5 +239,46 @@ export function checkExport(exported, directionWords) {
     }
   }
 
+  return failures
+}
+
+/**
+ * Check the contract's own list against the core's.
+ *
+ * The contract (`docs/contract/voice.md`) is where the words are written
+ * down, and the core's list is where they are kept. The two are compared
+ * here, so the file that freezes the words still holds them.
+ */
+export function checkContract(contract, terms) {
+  const failures = []
+  const marker = 'The lint fails the build on any of these words or constructions:'
+  const at = contract.indexOf(marker)
+  if (at < 0) {
+    failures.push('the contract has no ban list')
+    return failures
+  }
+  const rest = contract.slice(at + marker.length)
+  const open = rest.indexOf('```')
+  const close = open < 0 ? -1 : rest.indexOf('```', open + 3)
+  if (open < 0 || close < 0) {
+    failures.push('the contract has no ban list block')
+    return failures
+  }
+  const block = rest.slice(open + 3, close)
+
+  for (const term of terms) {
+    if (!block.includes(term)) {
+      failures.push(`the contract does not name the banned word "${term}"`)
+    }
+  }
+  // And the contract names nothing the list does not.
+  let left = block
+  for (const term of [...terms].sort((a, b) => b.length - a.length)) {
+    left = left.replace(new RegExp(`\\b${term.replace(/ /g, '\\s+')}\\b`, 'gi'), ' ')
+  }
+  const rest2 = left.replace(/[\s`,.]/g, '')
+  if (rest2.length > 0) {
+    failures.push(`the contract bans words the list does not: ${rest2}`)
+  }
   return failures
 }

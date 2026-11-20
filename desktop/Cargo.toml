@@ -38,6 +38,11 @@ uuid = { version = "1", features = ["v4"] }
 # The rig's one error type, with the sentences in one place.
 thiserror = "1"
 
+# The model client speaks the OpenAI-compatible chat shape over TLS. The
+# `ring` provider is the one the rest of the tree already builds (the
+# ingest crate's own client), so this adds no new cryptography.
+reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "blocking", "json", "gzip"] }
+
 [dev-dependencies]
 # The tests write a row and read a row, so they need the same clock the
 # store uses.

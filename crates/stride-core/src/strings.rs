@@ -21,6 +21,7 @@
 //! | `option` | a session from the athlete's own plan, unranked, never conditioned on the vitals |
 //! | `pattern` | what usually happened, always with its sample size |
 //! | `status` | connect/sync/staleness and empty-state lines |
+//! | `instruction` | the product's instruction to a model — the run update's prompt |
 //!
 //! The rules the lint enforces:
 //!
@@ -115,6 +116,14 @@ pub enum StringKind {
     Statement,
     /// Connect, sync, staleness and empty-state lines.
     Status,
+    /// The product's instruction to a model.
+    ///
+    /// The one string the app never shows: it is the prompt the writer and
+    /// the reviewer are given, and it names the register the model is to
+    /// write in. It is a template — it carries holes, because the payload
+    /// and the draft go into it — and it is here because the prompt is the
+    /// product's instruction, not the model's own wording.
+    Instruction,
 }
 
 impl StringKind {
@@ -127,6 +136,7 @@ impl StringKind {
             StringKind::Pattern => "pattern",
             StringKind::Statement => "statement",
             StringKind::Status => "status",
+            StringKind::Instruction => "instruction",
         }
     }
 }
@@ -171,7 +181,7 @@ pub struct Entry {
 }
 
 /// The catalogue.
-pub const CATALOGUE: [Entry; 167] = [
+pub const CATALOGUE: [Entry; 187] = [
     // The vitals.
     Entry {
         id: "vital.sleep.label",
@@ -1262,6 +1272,130 @@ pub const CATALOGUE: [Entry; 167] = [
         kind: StringKind::Statement,
         role: None,
         template: "outside your zones",
+    },
+
+    Entry {
+        id: "update.payload.distance",
+        kind: StringKind::Statement,
+        role: None,
+        template: "Distance",
+    },
+    Entry {
+        id: "update.payload.duration",
+        kind: StringKind::Statement,
+        role: None,
+        template: "Duration",
+    },
+    Entry {
+        id: "update.payload.pace",
+        kind: StringKind::Statement,
+        role: None,
+        template: "Average pace",
+    },
+    Entry {
+        id: "update.payload.heart_rate",
+        kind: StringKind::Statement,
+        role: None,
+        template: "Average heart rate",
+    },
+    Entry {
+        id: "update.payload.highest_heart_rate",
+        kind: StringKind::Statement,
+        role: None,
+        template: "Highest heart rate",
+    },
+    Entry {
+        id: "update.payload.elevation",
+        kind: StringKind::Statement,
+        role: None,
+        template: "Elevation gain",
+    },
+    Entry {
+        id: "update.payload.splits",
+        kind: StringKind::Statement,
+        role: None,
+        template: "Splits",
+    },
+    Entry {
+        id: "update.payload.zones",
+        kind: StringKind::Statement,
+        role: None,
+        template: "Zones",
+    },
+    Entry {
+        id: "update.payload.observations",
+        kind: StringKind::Statement,
+        role: None,
+        template: "Observations",
+    },
+    Entry {
+        id: "update.direction.faster",
+        kind: StringKind::Statement,
+        role: None,
+        template: "faster",
+    },
+    Entry {
+        id: "update.direction.slower",
+        kind: StringKind::Statement,
+        role: None,
+        template: "slower",
+    },
+    Entry {
+        id: "update.direction.higher",
+        kind: StringKind::Statement,
+        role: None,
+        template: "higher",
+    },
+    Entry {
+        id: "update.direction.lower",
+        kind: StringKind::Statement,
+        role: None,
+        template: "lower",
+    },
+    Entry {
+        id: "update.direction.held",
+        kind: StringKind::Statement,
+        role: None,
+        template: "held",
+    },
+    Entry {
+        id: "update.check.groundedness",
+        kind: StringKind::Status,
+        role: None,
+        template: "the number {value} is not in the payload",
+    },
+    Entry {
+        id: "update.check.direction",
+        kind: StringKind::Status,
+        role: None,
+        template: "the {label} is {stated} in the payload, and the draft says {claim}",
+    },
+    Entry {
+        id: "update.check.register",
+        kind: StringKind::Status,
+        role: None,
+        template: "the word {word} is not one the app uses",
+    },
+    Entry {
+        id: "update.prompt.writer",
+        kind: StringKind::Instruction,
+        role: None,
+        template:
+            "Write four to six sentences about one run: what the run was and how it went. Use only the numbers in the payload, and write each of them exactly as the payload writes them. Describe what happened: no advice, no verdict, no score, no instruction and no prediction. Do not tell the athlete what to do, and do not write about what comes next. Here is the payload: {payload}",
+    },
+    Entry {
+        id: "update.prompt.reviewer",
+        kind: StringKind::Instruction,
+        role: None,
+        template:
+            "Check a draft about one run against the payload it was written from. Read the draft for three things: the numbers in it, the direction of every claim, and the register it is written in. Answer with one word: ship, repair or discard. Say ship when the draft is true to the payload and written in the register. Say repair when the draft can be corrected, and name what to correct. Say discard when it cannot be corrected. Here is the payload: {payload} Here is the draft: {draft} Here are the findings: {findings}",
+    },
+    Entry {
+        id: "update.prompt.repair",
+        kind: StringKind::Instruction,
+        role: None,
+        template:
+            "Write the sentences again, using the payload and the findings. Keep what the findings do not question, and correct what they question. Use only the numbers in the payload, and write each of them exactly as the payload writes them. Describe what happened: no advice, no verdict, no score, no instruction and no prediction. Do not tell the athlete what to do, and do not write about what comes next. Here is the payload: {payload} Here is the draft: {draft} Here are the findings: {findings}",
     },
 
 ];

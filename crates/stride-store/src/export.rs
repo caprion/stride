@@ -140,6 +140,8 @@ pub struct ImportReport {
     pub notes: usize,
     /// How many of the source's own wellness observations were written.
     pub observations: usize,
+    /// How many run updates were written.
+    pub updates: usize,
     /// How many rows there are in all.
     pub rows: usize,
 }
@@ -513,11 +515,38 @@ const WELLNESS_OBSERVATIONS: FrozenTable = FrozenTable {
     columns: "PRAGMA main.table_info(\"wellness_observations\")",
 };
 
+/// `run_updates`.
+const RUN_UPDATES: FrozenTable = FrozenTable {
+    name: "run_updates",
+    select: "SELECT id, activity_id, writer, reviewer, payload_hash, draft, checks, verdict, \
+             created_at FROM run_updates",
+    insert: "INSERT INTO run_updates (id, activity_id, writer, reviewer, payload_hash, draft, \
+              checks, verdict, created_at) \
+              VALUES (:id, :activity_id, :writer, :reviewer, :payload_hash, :draft, :checks, \
+              :verdict, :created_at)",
+    columns: "PRAGMA main.table_info(\"run_updates\")",
+};
+
+/// `update_settings`.
+const UPDATE_SETTINGS: FrozenTable = FrozenTable {
+    name: "update_settings",
+    select: "SELECT id, enabled, allow_remote, writer_model, writer_family, writer_base_url, \
+             reviewer_model, reviewer_family, reviewer_base_url, key_env, updated_at \
+             FROM update_settings",
+    insert: "INSERT INTO update_settings (id, enabled, allow_remote, writer_model, \
+              writer_family, writer_base_url, reviewer_model, reviewer_family, \
+              reviewer_base_url, key_env, updated_at) \
+              VALUES (:id, :enabled, :allow_remote, :writer_model, :writer_family, \
+              :writer_base_url, :reviewer_model, :reviewer_family, :reviewer_base_url, \
+              :key_env, :updated_at)",
+    columns: "PRAGMA main.table_info(\"update_settings\")",
+};
+
 /// The tables of the frozen schema, in the schema's order.
 ///
 /// The order is the schema's: parents before children, so a child never
 /// arrives before its parent.
-const FROZEN_TABLES: [FrozenTable; 10] = [
+const FROZEN_TABLES: [FrozenTable; 12] = [
     ACTIVITIES,
     ACTIVITY_SAMPLES,
     WELLNESS_DAILY,
@@ -528,6 +557,8 @@ const FROZEN_TABLES: [FrozenTable; 10] = [
     DELETED_GARMIN_ACTIVITIES,
     HR_ZONE_MODELS,
     WELLNESS_OBSERVATIONS,
+    RUN_UPDATES,
+    UPDATE_SETTINGS,
 ];
 
 /// Copy every row of the schema from one database to another.
@@ -900,6 +931,89 @@ fn merge(source: &Connection, destination: &Connection) -> Result<ImportReport> 
             )
             .map_err(|error| StoreError::query("the wellness observations", error))?;
         report.observations += 1;
+        report.rows += 1;
+    }
+
+    // The run updates, by the run they are about. A run's id may change
+    // in the import, so the update follows its run and is written against
+    // the id the run has here.
+    for row in read_rows(source, &RUN_UPDATES)? {
+        let old = row
+            .get("activity_id")
+            .and_then(|value| value.as_i64())
+            .unwrap_or_default();
+        let activity_id = match activity_ids.get(&old) {
+            Some(id) => *id,
+            None => continue,
+        };
+        transaction
+            .execute(
+                "INSERT INTO run_updates (
+                    activity_id, writer, reviewer, payload_hash, draft, checks, verdict, created_at
+                 ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)
+                 ON CONFLICT(activity_id) DO UPDATE SET
+                    writer = excluded.writer,
+                    reviewer = excluded.reviewer,
+                    payload_hash = excluded.payload_hash,
+                    draft = excluded.draft,
+                    checks = excluded.checks,
+                    verdict = excluded.verdict,
+                    created_at = excluded.created_at",
+                rusqlite::params![
+                    activity_id,
+                    text_of(&row, "writer"),
+                    text_of(&row, "reviewer"),
+                    text_of(&row, "payload_hash"),
+                    text_of(&row, "draft"),
+                    text_of(&row, "checks"),
+                    text_of(&row, "verdict"),
+                    text_of(&row, "created_at"),
+                ],
+            )
+            .map_err(|error| StoreError::query("the run update", error))?;
+        report.updates += 1;
+        report.rows += 1;
+    }
+
+    // The update's own settings: the one row, and it replaces the one that
+    // is here. The key is not in it — the settings only name the
+    // environment variable it is read from.
+    for row in read_rows(source, &UPDATE_SETTINGS)? {
+        transaction
+            .execute(
+                "INSERT INTO update_settings (
+                    id, enabled, allow_remote, writer_model, writer_family, writer_base_url,
+                    reviewer_model, reviewer_family, reviewer_base_url, key_env, updated_at
+                 ) VALUES (1, ?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)
+                 ON CONFLICT(id) DO UPDATE SET
+                    enabled = excluded.enabled,
+                    allow_remote = excluded.allow_remote,
+                    writer_model = excluded.writer_model,
+                    writer_family = excluded.writer_family,
+                    writer_base_url = excluded.writer_base_url,
+                    reviewer_model = excluded.reviewer_model,
+                    reviewer_family = excluded.reviewer_family,
+                    reviewer_base_url = excluded.reviewer_base_url,
+                    key_env = excluded.key_env,
+                    updated_at = excluded.updated_at",
+                rusqlite::params![
+                    row.get("enabled")
+                        .and_then(|value| value.as_i64())
+                        .unwrap_or_default(),
+                    row.get("allow_remote")
+                        .and_then(|value| value.as_i64())
+                        .unwrap_or_default(),
+                    text_of(&row, "writer_model"),
+                    text_of(&row, "writer_family"),
+                    text_of(&row, "writer_base_url"),
+                    text_of(&row, "reviewer_model"),
+                    text_of(&row, "reviewer_family"),
+                    text_of(&row, "reviewer_base_url"),
+                    text_of(&row, "key_env"),
+                    text_of(&row, "updated_at"),
+                ],
+            )
+            .map_err(|error| StoreError::query("the update's settings", error))?;
         report.rows += 1;
     }
 

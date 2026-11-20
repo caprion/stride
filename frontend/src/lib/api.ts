@@ -32,12 +32,15 @@ import type {
   RunFilm,
   SettingsDeleteResult,
   SettingsExportResult,
+  RunUpdateResponse,
   SettingsState,
   SleepDays,
   SyncStatus,
   StreakInsight,
   SyncRunResult,
   TodayInsight,
+  UpdatePayloadResponse,
+  UpdateSettings,
   VitalsSnapshot,
   YearInsight,
 } from './types'
@@ -146,6 +149,14 @@ export const ROUTES = {
   settingsExport: '/settings/export',
   settingsDelete: '/settings/delete',
   activityNote: '/activities/{id}/note',
+
+  /*
+    The run update: the stored update of a run, the payload a model may
+    read, and the update's own settings.
+  */
+  activityUpdate: '/activities/{id}/update',
+  activityUpdatePayload: '/activities/{id}/update/payload',
+  updateSettings: '/update/settings',
 
   calendar: '/calendar',
 } as const
@@ -477,4 +488,44 @@ export const api = {
   /** A note on a run — the only free text the product stores. */
   saveNote: (id: number | string, text: string | null) =>
     post<NoteResult>(route('activityNote', { id }), { text }),
+
+  /**
+   * The stored update of a run: the model's own reading of it, with the
+   * checks it passed and its verdict.
+   *
+   * It is `null` when the run has none: a draft that did not pass the
+   * checks, and one the reviewer discarded, keep nothing.
+   */
+  activityUpdate: (id: number | string) =>
+    get<RunUpdateResponse>(route('activityUpdate', { id })),
+  /**
+   * The payload a model may read for a run: the facts, and nothing else.
+   *
+   * This is what would be sent, and the app shows it before the first
+   * send.
+   */
+  activityUpdatePayload: (id: number | string) =>
+    get<UpdatePayloadResponse>(route('activityUpdatePayload', { id })),
+  /**
+   * The update's own settings: which model writes, which model reviews,
+   * and whether anything may leave the machine at all.
+   */
+  updateSettings: () => get<UpdateSettings>(ROUTES.updateSettings),
+  /**
+   * Write the update's own settings.
+   *
+   * The key is not among them: the settings name the environment
+   * variable it is read from.
+   */
+  saveUpdateSettings: (change: {
+    enabled?: boolean
+    allow_remote?: boolean
+    writer_model?: string
+    writer_family?: string
+    writer_base_url?: string
+    reviewer_model?: string
+    reviewer_family?: string
+    reviewer_base_url?: string
+    key_env?: string
+  }) => post<UpdateSettings>(ROUTES.updateSettings, change),
 }

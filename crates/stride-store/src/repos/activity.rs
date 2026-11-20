@@ -495,6 +495,22 @@ impl Store {
         collect(mapped)
     }
 
+    /// The ids of every stored run, oldest first.
+    ///
+    /// The rig's own use: it reads the ids before a pull and after it, and
+    /// the runs that are in the second list and not in the first are the
+    /// ones the pull brought.
+    pub fn activity_ids(&self) -> Result<Vec<i64>> {
+        let conn = self.lock()?;
+        let mut statement = conn
+            .prepare("SELECT id FROM activities ORDER BY id ASC")
+            .map_err(|source| StoreError::query("the run ids", source))?;
+        let mapped = statement
+            .query_map([], |row| row.get::<_, i64>("id"))
+            .map_err(|source| StoreError::query("the run ids", source))?;
+        collect(mapped)
+    }
+
     /// How many runs there are.
     pub fn count_activities(&self) -> Result<i64> {
         let conn = self.lock()?;

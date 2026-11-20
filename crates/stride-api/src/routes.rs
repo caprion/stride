@@ -26,6 +26,8 @@ pub mod series;
 pub mod settings;
 pub mod year;
 
+pub mod update;
+
 use std::collections::BTreeMap;
 
 use chrono::{DateTime, Datelike, NaiveDate, Utc};

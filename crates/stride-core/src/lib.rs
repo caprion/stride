@@ -79,6 +79,8 @@ pub mod strings;
 pub mod types;
 pub mod units;
 pub mod year;
+
+pub mod update;
 pub mod zones;
 
 pub use band::{band_for, Band};
@@ -135,5 +137,9 @@ pub use units::{
 pub use year::{
     days_of, months_of, totals_of, weeks_of, what_changed, year_window, DayFacts, MonthFacts,
     WeekFacts, YearRun, YearTotals, YEAR_MONTHS,
+};
+pub use update::{
+    check_draft, payload, Check, Fact, Finding, ObservationFact, ObservationInput, Payload,
+    Quantity, Report, SplitFact, SplitInput, UpdateInput, ZoneFact, ZoneInput, VERDICTS,
 };
 pub use zones::{model_source, time_in_zone, zone_edges, TimeInZone, ZoneFloors, ZoneSample};

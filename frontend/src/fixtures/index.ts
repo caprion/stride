@@ -53,6 +53,8 @@ import type {
   RenderedValue,
   RollingInsight,
   RunFilm,
+
+  RunUpdateResponse,
   SettingsDeleteResult,
   SettingsExportResult,
   SettingsState,
@@ -60,6 +62,8 @@ import type {
   StreakInsight,
   SyncStatus,
   TodayInsight,
+  UpdatePayloadResponse,
+  UpdateSettings,
   VitalsSnapshot,
   YearInsight,
 } from '../lib/types'
@@ -2397,6 +2401,16 @@ export function fixtureResponse(
       // file to read — is in `answers.json`.
       if (variant === 'film') return filmFixture
       return routerAnswers['/activities/101/film'] as RunFilm
+
+    case '/activities/101/update':
+      // The stored update of a run: the router's answer. The seeded store
+      // holds none, so the run has none.
+      return routerAnswers['/activities/101/update'] as RunUpdateResponse
+    case '/activities/101/update/payload':
+      // The payload a model may read: the router's answer.
+      return routerAnswers['/activities/101/update/payload'] as UpdatePayloadResponse
+    case '/update/settings':
+      return routerAnswers['/update/settings'] as UpdateSettings
     case '/activities/101/fit':
       // The run's original file: the header of a FIT file, byte for
       // byte. The fixture set is synthetic, and a file is no less so

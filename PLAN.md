@@ -702,6 +702,8 @@ This travels with the schema change (the `wellness_observations` table) in
 
 ### Proposed amendment — the pace page (2026-11-20)
 
+### Proposed amendment — the run update, the model's reading of a run (2026-11-19)
+
 **Proposal, not approved.** The approvals below are the user's to give. This
 section records the change and the rule it serves; it is not permission to
 ship, publish, migrate or sync production data.
@@ -797,6 +799,68 @@ one tap away.
 
 This travels with the two answers' field tables in
 `docs/contract/api-paths.md`.
+
+Every run gets a short **update**: four to six sentences saying what the run
+was and how it went. A language model writes it from the run's own numbers,
+a **second** model reviews the draft before it reaches the athlete, and
+three mechanical checks stand between the two models and the screen.
+
+The update is **not the product's voice.** It is the model's reading, it is
+attributed — the writer and the reviewer are named — and it lives beside the
+app's own facts and not inside them. The athlete can dismiss it. The app's
+numbers stay the app's: computed in Rust, from the stored series, with their
+sources named.
+
+The rule this serves: **the product is the athlete's alone, and a reading
+that cannot be inspected is a sentence.** Everything the run already is —
+the split table, the zone times, the fingerprint — is computed in Rust from
+the stored series and stored locally. This item adds the *reading* and it
+must not weaken anything the product already guarantees.
+
+The rules the update follows:
+
+* **The model never computes a number.** It is handed facts that are already
+  computed and may only arrange them into sentences. Every number in the
+  draft appears in the payload it was given.
+* **Two models, two jobs.** The writer writes; the reviewer checks the draft
+  *against the payload* — the numbers, the directions and the register — and
+  answers ship, repair or discard. A repair is a second pass with the
+  reviewer's findings; a discard keeps no update.
+* **The reviewer's family must differ from the writer's.** A same-family
+  reviewer repeats the same misreadings: in an earlier bake-off one model
+  read a pace drift of −43 s/km as "pace improved by 43 s/km" — a sign error
+  that a mechanical check catches and that a reviewer of another family
+  would also catch.
+* **Nothing leaves the device unless the athlete says so.** The feature is
+  off by default, and the payload is **metrics only**: never the positions,
+  never the athlete's note, never their name. The app shows exactly what
+  would be sent before the first send.
+* **A local model is a first-class choice.** The client speaks the
+  OpenAI-compatible chat shape, which every provider here speaks and which a
+  local server speaks on `127.0.0.1`. "Local" is then only a different base
+  URL.
+* **The models are settings.** Nothing is hard-coded: the writer, the
+  reviewer and the two base URLs are the athlete's own choice, and the
+  defaults may change when the evaluation of the candidates lands.
+
+Where the parts live:
+
+* the **checks** are in the core, beside the other derived values, and the
+  forbidden list is the core's own ban list — so the app's lint and the
+  reviewer's check read one list and cannot drift apart;
+* the **update** is in the store, with the writer, the reviewer, the hash of
+  the payload, the draft, the checks and their findings, the verdict and the
+  day it was made — and it travels with the export, the import and the
+  delete, like every other table;
+* the **payload, the prompt and the stored update** are served by the api,
+  and the **rig** owns the calling: the model client, the settings and the
+  orchestration, after a pull that brought a new run;
+* the **app** shows the update on the run detail, below its own facts,
+  attributed, with the checks listed under it, and it can be dismissed.
+
+This travels with the two route families and their field tables in
+`docs/contract/api-paths.md`, and with the schema change (the `run_updates`
+and `update_settings` tables) in `docs/contract/schema.sql`.
 
 ---
 

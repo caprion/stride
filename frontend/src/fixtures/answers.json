@@ -379,6 +379,19 @@
       "zones": [],
       "zones_unavailable": null
     },
+    "/activities/101/update": {
+      "activity_id": 101,
+      "generated_at": "2026-05-13T06:30:00Z",
+      "update": null
+    },
+    "/activities/101/update/payload": {
+      "activity_id": 101,
+      "generated_at": "2026-05-13T06:30:00Z",
+      "payload": null,
+      "payload_hash": null,
+      "text": "",
+      "unavailable": "the run has no file to read"
+    },
     "/auth/status": {
       "connected": false,
       "generated_at": "2026-05-13T06:30:00Z",
@@ -13419,8 +13432,8 @@
         "note_count": 0,
         "plan_session_count": 7,
         "size": {
-          "raw": 671376,
-          "text": "655.6 KB"
+          "raw": 696096,
+          "text": "679.8 KB"
         },
         "wellness_day_count": 30
       }
@@ -13435,6 +13448,19 @@
       "more_pending": false,
       "pulled": 0,
       "skipped": 0
+    },
+    "/update/settings": {
+      "allow_remote": false,
+      "enabled": false,
+      "generated_at": "2026-05-13T06:30:00Z",
+      "key_env": "STRIDE_MODEL_KEY",
+      "reviewer_base_url": "",
+      "reviewer_family": "",
+      "reviewer_model": "",
+      "updated_at": "2026-05-13T06:30:00Z",
+      "writer_base_url": "",
+      "writer_family": "",
+      "writer_model": ""
     }
   },
   "baseline": {
@@ -13815,6 +13841,19 @@
       "unavailable": "the run has no file to read",
       "zones": [],
       "zones_unavailable": null
+    },
+    "/activities/101/update": {
+      "activity_id": 101,
+      "generated_at": "2026-05-13T06:30:00Z",
+      "update": null
+    },
+    "/activities/101/update/payload": {
+      "activity_id": 101,
+      "generated_at": "2026-05-13T06:30:00Z",
+      "payload": null,
+      "payload_hash": null,
+      "text": "",
+      "unavailable": "the run has no file to read"
     },
     "/auth/status": {
       "connected": false,
@@ -26661,8 +26700,8 @@
         "note_count": 0,
         "plan_session_count": 0,
         "size": {
-          "raw": 576616,
-          "text": "563.1 KB"
+          "raw": 601336,
+          "text": "587.2 KB"
         },
         "wellness_day_count": 30
       }
@@ -26677,6 +26716,19 @@
       "more_pending": false,
       "pulled": 0,
       "skipped": 0
+    },
+    "/update/settings": {
+      "allow_remote": false,
+      "enabled": false,
+      "generated_at": "2026-05-13T06:30:00Z",
+      "key_env": "STRIDE_MODEL_KEY",
+      "reviewer_base_url": "",
+      "reviewer_family": "",
+      "reviewer_model": "",
+      "updated_at": "2026-05-13T06:30:00Z",
+      "writer_base_url": "",
+      "writer_family": "",
+      "writer_model": ""
     }
   },
   "seed": {

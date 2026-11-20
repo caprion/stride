@@ -1772,3 +1772,92 @@ export interface RunFilm {
   /** When the answer was produced. */
   generated_at: string
 }
+
+/**
+ * One check of a run's update, and what it found.
+ *
+ * The three checks are the core's: groundedness, direction and the
+ * register. They are mechanical, and their findings are the core's own
+ * words.
+ */
+export interface UpdateCheck {
+  /** The check's name: "groundedness", "direction" or "register". */
+  check: string
+  /** What the check found, in the core's own words. */
+  findings: string[]
+}
+
+/**
+ * A run's update: the model's own reading of the run.
+ *
+ * **It is not the product's voice.** It is attributed — the writer and
+ * the reviewer are named — and it is kept with the checks it passed and
+ * the hash of the payload it was written from, so it can be re-checked
+ * rather than believed.
+ */
+export interface RunUpdate {
+  /** The writer's model, by name. */
+  writer: string
+  /** The reviewer's model, by name. */
+  reviewer: string
+  /** The SHA-256 of the payload the model was given. */
+  payload_hash: string
+  /** The model's own words. */
+  draft: string
+  /** The checks it passed, and what they found. */
+  checks: UpdateCheck[]
+  /** The verdict: "ship". */
+  verdict: string
+  /** When the update was made. */
+  created_at: string
+}
+
+/**
+ * The payload of a run.
+ */
+export interface UpdatePayloadResponse {
+  /** The run's id. */
+  activity_id: number
+  /** The hash of the payload's rendered text. */
+  payload_hash: string | null
+  /** The payload, when there is one. */
+  payload: UpdatePayload | null
+  /** The payload as the model reads it: the core's own wording. */
+  text: string
+  /** Why there is no payload, in the core's own words. */
+  unavailable: string | null
+  /** When the answer was produced. */
+  generated_at: string
+}
+
+/**
+ * The update's own settings.
+ *
+ * **The key is not in them.** The settings name the environment variable
+ * it is read from, so the key is never in the database and never in an
+ * export.
+ */
+export interface UpdateSettings {
+  /** Is the feature on? It is off until the athlete turns it on. */
+  enabled: boolean
+  /** May anything leave the machine? It may not, until the athlete says so. */
+  allow_remote: boolean
+  /** The writer's model, by name. */
+  writer_model: string
+  /** The writer's family. */
+  writer_family: string
+  /** The base URL the writer is called at. */
+  writer_base_url: string
+  /** The reviewer's model, by name. */
+  reviewer_model: string
+  /** The reviewer's family. It has to differ from the writer's. */
+  reviewer_family: string
+  /** The base URL the reviewer is called at. */
+  reviewer_base_url: string
+  /** The environment variable the key is read from. */
+  key_env: string
+  /** When these settings were last written. */
+  updated_at: string
+  /** When the answer was produced. */
+  generated_at: string
+}

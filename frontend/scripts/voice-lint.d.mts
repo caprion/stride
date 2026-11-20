@@ -1,8 +1,3 @@
-export interface BannedTerm {
-  term: string
-  pattern: RegExp
-}
-
 export interface ExportEntry {
   id: string
   kind: string
@@ -22,18 +17,26 @@ export interface ExportCatalogue {
   entries?: ExportEntry[]
 }
 
-export declare const BANNED: BannedTerm[]
 export declare const SAMPLE_SIZE: RegExp
 export declare const SAMPLE_NOUN: RegExp
 
-export declare function bannedWords(text: string): string[]
+export declare function bannedTerms(exported: ExportCatalogue): string[]
+export declare function patternFor(term: string): RegExp
+export declare function bannedWords(text: string, terms?: string[]): string[]
 export declare function checkCatalogue(
   entries: Record<string, { type: string; text: string }>,
   directionWords: readonly string[],
   vitalWords?: readonly string[],
+  terms?: string[],
 ): string[]
-export declare function checkInlineText(file: string, text: string): string[]
+export declare function checkInlineText(
+  file: string,
+  text: string,
+  terms?: string[],
+): string[]
 export declare function checkExport(
   exported: ExportCatalogue,
   directionWords: readonly string[],
+  terms?: string[],
 ): string[]
+export declare function checkContract(contract: string, terms: string[]): string[]

@@ -71,9 +71,9 @@ pub use legacy::{
 };
 pub use model::{
     Activity, ActivitySamples, ActivitySummary, HeartRateZoneModel, NewActivity,
-    NewActivitySamples, NewHeartRateZoneModel, NewNote, NewPlanBlock, NewPlanSession,
-    NewWellnessObservation, Note, PlanBlock, PlanSession, SyncState, WellnessDaily,
-    WellnessObservation,
+    NewActivitySamples, NewHeartRateZoneModel, NewNote, NewPlanBlock, NewPlanSession, NewRunUpdate,
+    NewWellnessObservation, Note, PlanBlock, PlanSession, RunUpdate, SyncState, UpdateSettings,
+    WellnessDaily, WellnessObservation,
 };
 pub use repos::activity::{FeedCursor, FeedPage};
 pub use schema::SCHEMA_VERSION;

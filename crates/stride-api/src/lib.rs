@@ -19,6 +19,8 @@
 //! | [`plan`] | the seam to the core's plan engine: the store's rows in, the core's answers out |
 //! | [`load`] | the seam to the core's training-load engine: the stored zone model, the measured resting heart rate and the stored activities in, the core's series and its scenario out |
 //! | [`fingerprint`] | the seam to the core's fingerprint engine: the run's own laps and samples in, the core's observations out |
+//! | [`update`] | the seam to the core's run update: the run's own facts in, the payload the model may read out |
+//! | [`update`] | the seam to the core's run update: the run's own facts in, the payload the model may read out |
 
 //! | [`rolling`] | the seam to the core's rolling view: the stored runs and the stored zone model in, the core's streaks, windows, splits and tables out |
 //! | [`year`] | the seam to the core's year: the stored runs, their zone times and the load's form in, the core's months, calendar and diff out |
@@ -152,6 +154,7 @@ pub mod routes;
 pub mod state;
 pub mod story;
 mod sync;
+pub mod update;
 pub mod wellness;
 pub mod year;
 
