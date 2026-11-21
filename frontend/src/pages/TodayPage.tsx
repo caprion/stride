@@ -92,7 +92,7 @@ function SessionCard({
     <Link
       to="/plan"
       data-testid="today-session"
-      className="tap card block px-4 py-3 transition-shadow hover:shadow-lift"
+      className="tap card block py-3 transition-shadow hover:shadow-lift"
     >
       {/* The session, as the core wrote it: "Today — 10 km · easy". */}
       <p className="text-[17px] font-semibold text-ink">{planned.sentence}</p>
@@ -173,7 +173,7 @@ export function TodayPage() {
     return (
       <div>
         <PageHeader title={t('today.heading')} />
-        <section className="card px-4 py-4" role="alert">
+        <section className="card py-4" role="alert">
           <p>{t('common.error')}</p>
           <button
             type="button"
@@ -212,7 +212,7 @@ export function TodayPage() {
     return (
       <div>
         <PageHeader title={t('today.heading')} action={<SyncControls />} />
-        <div className="card px-4 py-6 text-center" data-testid="today-empty">
+        <div className="card py-6 text-center" data-testid="today-empty">
           <p className="text-[14px] text-ink-soft">
             {connection.data?.connected ? t('today.state.noRecords') : t('today.state.noData')}
           </p>
@@ -300,9 +300,9 @@ export function TodayPage() {
 
       {/* ------------------------------------------------ the hero: the run */}
       {lastRun ? (
-        <section className="card mb-3 px-4 py-4" data-testid="today-hero">
+        <section className="card mb-3 py-4" data-testid="today-hero">
           <div className="flex items-baseline justify-between gap-3">
-            <h2 className="text-[12px] font-semibold uppercase tracking-[0.06em] text-ink-faint">
+            <h2 className="caps">
               {t('today.cockpit.hero')}
             </h2>
             <p className="text-[12px] text-ink-muted">{formatDateMedium(lastRun.local_date)}</p>
@@ -362,8 +362,8 @@ export function TodayPage() {
       <div className="today-layout">
         <div>
           {/* ------------------------------------------- where you stand */}
-          <section className="card mb-3 px-4 py-3" data-testid="today-standing">
-            <h2 className="text-[12px] font-semibold uppercase tracking-[0.06em] text-ink-faint">
+          <section className="card mb-3 py-3" data-testid="today-standing">
+            <h2 className="caps">
               {t('today.cockpit.standing')}
             </h2>
             <ul className="mt-1.5 divide-y divide-edge">
@@ -511,9 +511,9 @@ export function TodayPage() {
           </section>
 
           {/* --------------------------------------- what's on the table */}
-          <section className="card mb-3 px-4 py-3" data-testid="today-table">
+          <section className="card mb-3 py-3" data-testid="today-table">
             <div className="flex items-center justify-between gap-3">
-              <h2 className="text-[12px] font-semibold uppercase tracking-[0.06em] text-ink-faint">
+              <h2 className="caps">
                 {t('today.cockpit.table')}
               </h2>
               <Link
@@ -559,7 +559,7 @@ export function TodayPage() {
             // The sync did not finish. The reason and a retry, and the
             // numbers below are greyed with their date: they are the last
             // good ones, not the current ones.
-            <section className="card px-4 py-3" data-testid="today-sync-failed">
+            <section className="card py-3" data-testid="today-sync-failed">
               <p className="text-[13.5px] font-semibold text-ink">
                 {t('today.state.syncIncomplete')}
               </p>
@@ -578,13 +578,13 @@ export function TodayPage() {
               {runSync.isError ? <p role="alert">{t('common.error')}</p> : null}
             </section>
           ) : snapshot.rest.line ? (
-            <section className="card px-4 py-3" data-testid="today-state-line">
+            <section className="card py-3" data-testid="today-state-line">
               {/*
             The heading names when the numbers are from, and interprets
             nothing. The core's own label for the summary row stays below
             it: "Rest" is the name of a row, not an instruction.
           */}
-              <p className="text-[12px] font-semibold uppercase tracking-[0.06em] text-ink-faint">
+              <p className="caps">
                 {t('vital.rest.heading')}
               </p>
               <div className="mt-1 flex flex-wrap items-baseline gap-x-2 gap-y-0.5">

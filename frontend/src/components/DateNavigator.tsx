@@ -11,7 +11,7 @@ export function DateNavigator({
   onDate: (date: string) => void
 }) {
   return (
-    <section className="card mb-3 overflow-hidden" aria-label={t('body.history.controls')}>
+    <section className="card mb-3 overflow-hidden card-flush" aria-label={t('body.history.controls')}>
       <div className="flex flex-wrap items-end justify-between gap-2 px-3 py-2">
         <button
           type="button"

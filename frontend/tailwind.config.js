@@ -65,6 +65,15 @@ export default {
         // Ink — a blue-black in `stride`, a pale grey in `night`.
         ink,
         surface,
+        // The rail: the wide arrangement's own ground and ink.
+        rail: {
+          ground: 'var(--rail-ground)',
+          ink: 'var(--rail-ink)',
+          'ink-strong': 'var(--rail-ink-strong)',
+          active: 'var(--rail-active)',
+          hover: 'var(--rail-hover)',
+          foot: 'var(--rail-foot)',
+        },
         edge: 'var(--edge)',
         // The only "positive"/"negative" tones in the app are for the
         // direction words, and they are never red: nothing is a failure.

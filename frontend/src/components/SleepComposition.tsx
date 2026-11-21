@@ -37,7 +37,7 @@ export function SleepComposition({
   const total = STAGES.reduce((sum, { key }) => sum + Math.max(0, night[key]?.raw ?? 0), 0)
 
   return (
-    <section className="card my-3 px-4 py-3" data-testid="sleep-composition" data-date={date}>
+    <section className="card my-3 py-3" data-testid="sleep-composition" data-date={date}>
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <h2 className="text-[13px] font-semibold text-ink">
           {beforeRun

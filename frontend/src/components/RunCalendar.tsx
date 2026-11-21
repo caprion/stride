@@ -42,7 +42,7 @@ export function RunCalendar({
   const offset = (parseISO(first).getDay() + 6) % 7
 
   return (
-    <section className="runs-calendar card overflow-hidden" aria-label={t('runs.calendar')}>
+    <section className="runs-calendar card overflow-hidden card-flush" aria-label={t('runs.calendar')}>
       <div className="flex items-center justify-between gap-1 px-2 py-2">
         <button
           type="button"

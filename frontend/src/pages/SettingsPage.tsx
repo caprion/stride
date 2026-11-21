@@ -136,7 +136,7 @@ export function SettingsPage() {
     return (
       <div>
         <PageHeader title={t('settings.heading')} />
-        <div className="card px-4 py-6 text-center">
+        <div className="card py-6 text-center">
           <p className="text-[14px] text-ink-soft">{t('common.error')}</p>
           <button
             type="button"
@@ -167,7 +167,7 @@ export function SettingsPage() {
     <div>
       <PageHeader title={t('settings.heading')} />
 
-      <section className="card mb-3 border-brand-200 bg-brand-50 px-4 py-4">
+      <section className="card mb-3 border-brand-200 bg-brand-50 py-4">
         <h2 className="text-[16px] font-semibold text-brand-700">{t('common.local')}</h2>
         <p className="mt-1 text-[14px] text-ink-soft">{t('common.saved')}</p>
       </section>
@@ -424,11 +424,11 @@ export function SettingsPage() {
         {/* ----------------------------------------------- the import */}
         {section === 'files' ? (
           <SettingsGroup title={t('settings.import.heading')} testId="settings-import">
-            <p className="mb-2 text-[12px] font-semibold uppercase tracking-[0.06em] text-ink-faint">
+            <p className="mb-2 caps">
               {t('settings.import.fit')}
             </p>
             <FitImport />
-            <p className="mb-2 mt-4 text-[12px] font-semibold uppercase tracking-[0.06em] text-ink-faint">
+            <p className="mb-2 mt-4 caps">
               {t('settings.import.plan')}
             </p>
             <PlanImport />

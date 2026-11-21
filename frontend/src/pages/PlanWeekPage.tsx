@@ -95,7 +95,7 @@ export function PlanWeekPage() {
     return (
       <div>
         <PageHeader title={t('plan.heading')} />
-        <div className="card px-4 py-6 text-center" data-testid="plan-none">
+        <div className="card py-6 text-center" data-testid="plan-none">
           <p className="text-[15px] font-semibold text-ink">{t('plan.state.none')}</p>
           <p className="mt-1 text-[13px] text-ink-muted">{t('plan.state.noneBody')}</p>
           <div className="mt-3 flex justify-center">
@@ -153,7 +153,7 @@ export function PlanWeekPage() {
 
       {/* -------------------------------------------- the source banner */}
       <div
-        className="card px-4 py-2.5 text-[13.5px] font-medium text-ink-soft"
+        className="card py-2.5 text-[13.5px] font-medium text-ink-soft"
         data-testid="plan-source"
       >
         {sourceText(data.source)}
@@ -164,7 +164,7 @@ export function PlanWeekPage() {
       </div>
 
       {/* -------------------------------------------------- the week strip */}
-      <section className="card mt-3 px-2 py-3" data-testid="plan-week">
+      <section className="card mt-3 py-3" data-testid="plan-week">
         <div className="grid grid-cols-7 gap-1">
           {days.map((day) => {
             const planned = byDate.get(day)
@@ -193,7 +193,7 @@ export function PlanWeekPage() {
       </section>
 
       {/* -------------------------------------------------- the day detail */}
-      <section className="card mt-3 px-4 py-3" data-testid="plan-day-detail">
+      <section className="card mt-3 py-3" data-testid="plan-day-detail">
         {(() => {
           const planned = byDate.get(today)
           if (!planned) {
@@ -201,7 +201,7 @@ export function PlanWeekPage() {
           }
           return (
             <>
-              <p className="text-[12px] font-semibold uppercase tracking-[0.07em] text-ink-faint">
+              <p className="caps">
                 {t('plan.day.today')} · {formatDateMedium(planned.date)}
               </p>
               {/* The session, as the core wrote it. */}
@@ -219,8 +219,8 @@ export function PlanWeekPage() {
 
       {/* ------------------------------------- the counts of the week */}
       {data.counts ? (
-        <section className="card mt-3 px-4 py-3" data-testid="plan-counts">
-          <h2 className="text-[12px] font-semibold uppercase tracking-[0.07em] text-ink-faint">
+        <section className="card mt-3 py-3" data-testid="plan-counts">
+          <h2 className="caps">
             {t('plan.adherence.heading')}
           </h2>
           {/*
@@ -258,8 +258,8 @@ export function PlanWeekPage() {
       ) : null}
 
       {/* ------------------------------------------------ sources, manage */}
-      <section className="card mt-3 px-4 py-3" data-testid="plan-sources">
-        <h2 className="text-[12px] font-semibold uppercase tracking-[0.07em] text-ink-faint">
+      <section className="card mt-3 py-3" data-testid="plan-sources">
+        <h2 className="caps">
           {t('plan.sources.heading')}
         </h2>
         <p className="mt-1 text-[13px] text-ink-muted">{sourceWhy(data.source)}</p>

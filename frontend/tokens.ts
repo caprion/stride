@@ -76,6 +76,30 @@ export interface Surface {
 }
 
 /**
+ * The rail: the wide arrangement's own ground, and the ink on it.
+ *
+ * The rail is the one piece of chrome that is not the page's colour — it
+ * is the app's own dark ground, with its own ink, so that the
+ * destinations read as a place of their own. Every palette answers the
+ * rail's roles, because a palette that left the rail white would put the
+ * app's navigation in another product's colours.
+ */
+export interface Rail {
+  /** The ground the rail is drawn on. */
+  ground: string
+  /** A destination at rest. */
+  ink: string
+  /** The destination that is open, and the one under the pointer. */
+  inkStrong: string
+  /** The ground of the destination that is open. */
+  active: string
+  /** The ground of a destination under the pointer. */
+  hover: string
+  /** The note at the foot of the rail. */
+  foot: string
+}
+
+/**
  * The chart's own colours.
  *
  * A chart is not a card with a line on it: it has a grid behind it, a band
@@ -106,6 +130,8 @@ export interface Palette {
   accent: Ramp
   ink: Ink
   surface: Surface
+  /** The wide arrangement's own ground, and the ink on it. */
+  rail: Rail
   /** The hairline between two things. */
   edge: string
   /** The three directions the app may say. Never red, never a grade. */
@@ -133,6 +159,7 @@ interface PaletteInput {
   accent: Ramp
   ink: Ink
   surface: Surface
+  rail: Rail
   edge: string
   better: string
   usual: string
@@ -153,6 +180,7 @@ function palette(input: PaletteInput): Palette {
     accent: input.accent,
     ink: input.ink,
     surface: input.surface,
+    rail: input.rail,
     edge: input.edge,
     better: input.better,
     usual: input.usual,
@@ -172,54 +200,70 @@ function palette(input: PaletteInput): Palette {
 /**
  * `stride` — today's colours.
  *
- * The deep azure for the structure, the warm amber for the athlete's own
- * data, and the white cards on a cool ground.
+ * **These are the mock's colours.** The approved design lives in
+ * `stride-mocks/mock.css`, and this palette is that file's `stride`
+ * block, lifted into the app's own ramp: the deep azure for the
+ * structure, the warm amber for the athlete's own data, the white cards
+ * on a cool ground, and the hairline between them.
+ *
+ * The mock's inks are three — the ink, the soft ink and the faint ink —
+ * and the app writes in four roles, so the middle one is shared: `soft`
+ * and `muted` are both the mock's soft ink. That is the mock's own
+ * hierarchy, not a fourth colour the mock never had.
  */
 export const stride: Palette = palette({
   brand: {
-    50: '#EEF5FB',
-    100: '#D6E6F3',
-    200: '#A9C9E2',
-    300: '#7BA8CD',
-    400: '#4A82B4',
-    500: '#1E5E96',
-    600: '#124A7C',
-    700: '#0D3A63',
-    800: '#082B49',
-    900: '#051D33',
+    50: '#F2F7FC',
+    100: '#E6EFF9',
+    200: '#CFE0F3',
+    300: '#A9C8E8',
+    400: '#6EA4DE',
+    500: '#2B7FE3',
+    600: '#1F6BC4',
+    700: '#14548F',
+    800: '#104A7D',
+    900: '#0D3A63',
   },
   accent: {
-    50: '#FEF8EA',
-    100: '#FDEDC7',
-    200: '#FBDB93',
-    300: '#F8C55C',
-    400: '#F2B01E',
-    500: '#D99A0B',
-    600: '#B57C06',
-    700: '#8A5E05',
-    800: '#5F4103',
-    900: '#3D2A02',
+    50: '#FEF9F0',
+    100: '#FDF1DC',
+    200: '#F8E2BD',
+    300: '#F3D19A',
+    400: '#EFB86A',
+    500: '#E8A33D',
+    600: '#D1872A',
+    700: '#B57312',
+    800: '#8D5610',
+    900: '#6B410C',
   },
   ink: {
-    DEFAULT: '#112B40',
-    soft: '#31465A',
-    muted: '#4E6577',
-    faint: '#586F82',
+    DEFAULT: '#0F1B2A',
+    soft: '#5A6B7E',
+    muted: '#5A6B7E',
+    faint: '#8B9AAB',
   },
   surface: {
     DEFAULT: '#FFFFFF',
-    soft: '#F1F5F8',
-    raised: '#FAFCFD',
-    sunken: '#E9EFF4',
+    soft: '#F1F4F7',
+    raised: '#F8FAFC',
+    sunken: '#EEF2F6',
   },
-  edge: '#CEDAE4',
-  better: '#2E8B7A',
-  usual: '#4A82B4',
-  could: '#8A5E05',
-  ramp: ['#F2B01E', '#E08A3C', '#B4557F', '#6E6BA8', '#3F6E9E', '#1E5E96'],
+  rail: {
+    ground: '#0D3A63',
+    ink: '#FFFFFFC7',
+    inkStrong: '#FFFFFF',
+    active: '#FFFFFF29',
+    hover: '#FFFFFF14',
+    foot: '#FFFFFF8C',
+  },
+  edge: '#E3E8EF',
+  better: '#1F9D6B',
+  usual: '#8B9AAB',
+  could: '#D98814',
+  ramp: ['#2B7FE3', '#E8A33D', '#0E9C8A', '#7C5CD6', '#E2607A', '#6B7F96'],
   chart: {
-    grid: '#E4EBF0',
-    axis: '#61788D',
+    grid: '#EEF2F6',
+    axis: '#8B9AAB',
   },
 })
 
@@ -267,6 +311,14 @@ export const dreeve: Palette = palette({
     soft: '#F9FAFB',
     raised: '#FCFCFD',
     sunken: '#F3F4F6',
+  },
+  rail: {
+    ground: '#FFFFFF',
+    ink: '#6B7280',
+    inkStrong: '#111827',
+    active: '#FFF1E9',
+    hover: '#F9FAFB',
+    foot: '#9CA3AF',
   },
   edge: '#E5E7EB',
   better: '#15803D',
@@ -322,6 +374,14 @@ export const night: Palette = palette({
     soft: '#0D1724',
     raised: '#1B2839',
     sunken: '#0F1A28',
+  },
+  rail: {
+    ground: '#14202F',
+    ink: '#9FB0C4',
+    inkStrong: '#E8EEF6',
+    active: '#24344A',
+    hover: '#1E2A38',
+    foot: '#8497AC',
   },
   edge: '#24344A',
   better: '#34D399',
@@ -420,17 +480,18 @@ export const spacing = {
 /**
  * The radii.
  *
- * The card is the app's own: nine pixels, soft enough to sit on a page and
- * square enough to stack.
+ * **The card is the mock's card:** fourteen pixels — soft enough to sit on
+ * a page and square enough to stack. The small radius is the mock's nine,
+ * and the small radius is what a control, a mark and a chip take.
  */
 export const radii = {
   none: '0px',
   sm: '2px',
-  md: '6px',
-  lg: '8px',
-  card: '9px',
-  xl: '12px',
-  '2xl': '16px',
+  md: '9px',
+  lg: '12px',
+  card: '14px',
+  xl: '16px',
+  '2xl': '20px',
   '3xl': '24px',
   full: '9999px',
 } as const
@@ -438,13 +499,14 @@ export const radii = {
 /**
  * The shadows.
  *
- * The app is flat by design: a shadow says "this is above that", and
- * almost nothing in it is.
+ * **The card's shadow is the mock's shadow:** a soft two-part shadow — a
+ * hairline under the card and a wide, shallow lift off the page. It says
+ * "this is a card", and it is the only thing in the app that says it.
  */
 export const shadows = {
-  card: '0 1px 2px rgba(11,27,39,0.04), 0 1px 3px rgba(11,27,39,0.06)',
-  lift: '0 4px 16px rgba(11,27,39,0.10)',
-  nav: '0 1px 0 rgba(11,27,39,0.08)',
+  card: '0 1px 2px rgba(15,27,42,0.05), 0 6px 20px -12px rgba(15,27,42,0.22)',
+  lift: '0 20px 60px -20px rgba(15,27,42,0.35)',
+  nav: '0 1px 0 rgba(15,27,42,0.08)',
 } as const
 
 /**
@@ -465,16 +527,23 @@ export const motion = {
   },
 } as const
 
-/** The two families of type the app is set in. */
+/**
+ * The two families of type the app is set in.
+ *
+ * **The sans is Inter**, the mock's face — and it is the app's *own* copy
+ * of it: the files live in `frontend/public/fonts/`, are loaded by the
+ * app's own CSS, and are never fetched from a CDN. The app is a
+ * self-hosted desktop program and the phone is a webview: both must draw
+ * the same face with no network at all.
+ */
 export const fonts = {
   sans: [
+    'Inter',
+    'ui-sans-serif',
     'system-ui',
     '-apple-system',
-    'BlinkMacSystemFont',
     '"Segoe UI"',
     'Roboto',
-    '"Helvetica Neue"',
-    'Arial',
     'sans-serif',
   ],
   mono: ['"SF Mono"', 'ui-monospace', 'Menlo', 'Consolas', 'monospace'],

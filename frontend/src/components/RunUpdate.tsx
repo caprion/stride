@@ -55,7 +55,7 @@ export function RunUpdate({ id }: { id: string }) {
 
   if (dismissed) {
     return (
-      <section className="card mt-3 px-4 py-3" data-testid="activity-update-dismissed">
+      <section className="card mt-3 py-3" data-testid="activity-update-dismissed">
         <p className="text-[13px] text-ink-muted">{t('activity.update.dismissed')}</p>
         <button
           type="button"
@@ -72,9 +72,9 @@ export function RunUpdate({ id }: { id: string }) {
   }
 
   return (
-    <section className="card mt-3 px-4 py-3" data-testid="activity-update">
+    <section className="card mt-3 py-3" data-testid="activity-update">
       <div className="flex items-center justify-between gap-3">
-        <h2 className="text-[12px] font-semibold uppercase tracking-[0.07em] text-ink-faint">
+        <h2 className="caps">
           {t('activity.update.heading')}
         </h2>
         <button
@@ -116,7 +116,7 @@ export function RunUpdate({ id }: { id: string }) {
       ) : null}
 
       <div className="mt-2">
-        <h3 className="text-[11px] font-semibold uppercase tracking-[0.07em] text-ink-faint">
+        <h3 className="caps-sm">
           {t('activity.update.checks.heading')}
         </h3>
         <ul className="mt-1 space-y-1" data-testid="activity-update-checks">

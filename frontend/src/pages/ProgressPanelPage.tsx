@@ -47,7 +47,7 @@ export function ProgressPanelPage() {
     return (
       <div>
         <PageHeader title={t('progress.heading')} />
-        <section className="card px-4 py-4" role="alert">
+        <section className="card py-4" role="alert">
           <p>{t('common.error')}</p>
         </section>
       </div>
@@ -68,7 +68,7 @@ export function ProgressPanelPage() {
     return (
       <div>
         <PageHeader title={t('progress.heading')} />
-        <div className="card px-4 py-8 text-center" data-testid="progress-empty">
+        <div className="card py-8 text-center" data-testid="progress-empty">
           <p className="text-[15px] font-semibold text-ink">{t('progress.empty.title')}</p>
           <p className="mt-1 text-[13px] text-ink-muted">{t('progress.empty.body')}</p>
         </div>
@@ -119,7 +119,7 @@ export function ProgressPanelPage() {
             {streaks.data ? (
               <StreakCard
                 streaks={streaks.data}
-                className="card px-4 py-3"
+                className="card py-3"
                 testId="progress-streaks"
               />
             ) : null}

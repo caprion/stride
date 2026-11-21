@@ -34,7 +34,7 @@ export function SettingsGroup({
   const [open, setOpen] = useState(defaultOpen)
 
   return (
-    <section className="card overflow-hidden" data-testid={testId}>
+    <section className="card overflow-hidden card-flush" data-testid={testId}>
       <button
         type="button"
         className="tap flex w-full items-center justify-between gap-3 px-4 py-3 text-left"
@@ -127,7 +127,7 @@ export function Field({
 }) {
   return (
     <label className="block">
-      <span className="block text-[12px] font-semibold uppercase tracking-[0.06em] text-ink-faint">
+      <span className="block caps">
         {label}
       </span>
       <input
@@ -164,7 +164,7 @@ export function Choice({
 }) {
   return (
     <label className="block">
-      <span className="block text-[12px] font-semibold uppercase tracking-[0.06em] text-ink-faint">
+      <span className="block caps">
         {label}
       </span>
       <select

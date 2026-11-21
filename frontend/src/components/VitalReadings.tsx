@@ -42,7 +42,7 @@ export function VitalReadings({
     <>
       {available.length > 0 ? (
         <section
-          className={`${layout === 'cards' ? 'signal-grid' : 'card mt-3 px-4 py-1'} ${muted ? 'opacity-60' : ''}`}
+          className={`${layout === 'cards' ? 'signal-grid' : 'card mt-3 py-1'} ${muted ? 'opacity-60' : ''}`}
           data-testid={layout === 'cards' ? 'body-signals' : 'today-vitals'}
         >
           {available.map((reading) => {
@@ -75,7 +75,7 @@ export function VitalReadings({
                 </div>
               ) : null
             return (
-              <div key={reading.key} className={layout === 'cards' ? 'card px-4 py-2' : ''}>
+              <div key={reading.key} className={layout === 'cards' ? 'card py-2' : ''}>
                 {reading.vital ? (
                   <VitalRow vital={reading.vital}>{chart}</VitalRow>
                 ) : (

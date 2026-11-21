@@ -15,7 +15,7 @@ import { t } from '../i18n'
 
 export function StreakCard({
   streaks,
-  className = 'card px-4 py-3',
+  className = 'card py-3',
   testId = 'today-streak',
 }: {
   streaks: StreakInsight
@@ -48,7 +48,7 @@ export function StreakCard({
 
   return (
     <section className={className} data-testid={testId}>
-      <h2 className="text-[12px] font-semibold uppercase tracking-wide text-ink-muted">
+      <h2 className="caps">
         {t('today.streak.heading')}
       </h2>
       <ul className="mt-1.5 space-y-1.5">

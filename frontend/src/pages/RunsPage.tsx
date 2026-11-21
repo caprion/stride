@@ -206,7 +206,7 @@ export function RunsPage() {
       <div className="runs-layout">
         <RunCalendar from={from} to={to} onRange={onRange} />
         <div className="min-w-0">
-          <section className="card mb-3 px-4 py-3">
+          <section className="card mb-3 py-3">
             <div className="run-filters">
               <label className="flex min-w-0 flex-col gap-1 text-[12px] text-ink-muted">
                 {t('runs.search')}
@@ -264,7 +264,7 @@ export function RunsPage() {
           </section>
           {selected.length > 0 ? (
             <section
-              className="compare-tray card mb-3 flex flex-wrap items-center gap-3 border-brand-200 bg-brand-50 px-4 py-2"
+              className="compare-tray card mb-3 flex flex-wrap items-center gap-3 border-brand-200 bg-brand-50 py-2"
               aria-label={t('runs.compareSelected')}
             >
               <p className="mr-auto text-[13px] font-semibold text-brand-700">
@@ -304,9 +304,9 @@ export function RunsPage() {
           {invalidRange ? null : feed.isPending ? (
             <p className="text-[14px] text-ink-muted">{t('common.loading')}</p>
           ) : loaded.length === 0 && (from || to) && !feed.isError ? (
-            <p className="card px-4 py-5 text-[14px] text-ink-muted">{t('runs.noMatches')}</p>
+            <p className="card py-5 text-[14px] text-ink-muted">{t('runs.noMatches')}</p>
           ) : loaded.length === 0 && !feed.isError ? (
-            <div className="card px-4 py-8 text-center" data-testid="runs-empty">
+            <div className="card py-8 text-center" data-testid="runs-empty">
               <p className="text-[15px] font-semibold text-ink">{t('runs.empty.title')}</p>
               <p className="mt-1 text-[13px] text-ink-muted">{t('runs.empty.body')}</p>
               <button
@@ -323,14 +323,14 @@ export function RunsPage() {
           ) : loaded.length > 0 ? (
             <div className="space-y-4">
               {rows.length === 0 ? (
-                <p className="card px-4 py-5 text-[14px] text-ink-muted">
+                <p className="card py-5 text-[14px] text-ink-muted">
                   {t('runs.noMatches')}
                 </p>
               ) : null}
               {groups.map((group) => (
                 <section key={group.label}>
                   <div className="mb-1 flex flex-wrap items-baseline justify-between gap-2 px-1">
-                    <h2 className="text-[12px] font-semibold uppercase tracking-[0.07em] text-ink-faint">
+                    <h2 className="caps">
                       {group.label}
                     </h2>
                     {!from && !to && !search ? (
@@ -342,7 +342,7 @@ export function RunsPage() {
                       </span>
                     ) : null}
                   </div>
-                  <ul className="card divide-y divide-edge overflow-hidden">
+                  <ul className="card divide-y divide-edge overflow-hidden card-flush">
                     {group.activities.map((activity) => (
                       <ActivityRow
                         key={activity.id}

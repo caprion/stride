@@ -59,7 +59,7 @@ export function HeatmapPage() {
       {heatmap.isPending ? <p className="text-[14px] text-ink-muted">{t('common.loading')}</p> : null}
 
       {empty ? (
-        <div className="card px-4 py-8 text-center" data-testid="heatmap-empty">
+        <div className="card py-8 text-center" data-testid="heatmap-empty">
           <p className="text-[15px] font-semibold text-ink">{t('heatmap.empty.title')}</p>
           <p className="mt-1 text-[13px] text-ink-muted">{t('heatmap.empty.body')}</p>
         </div>

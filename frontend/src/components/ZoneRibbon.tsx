@@ -45,7 +45,7 @@ export function ZoneRibbon({ zones }: { zones: FitnessZones | null | undefined }
 
   return (
     <div className="mt-3" data-testid="zone-ribbon">
-      <p className="text-[12px] font-semibold uppercase tracking-[0.06em] text-ink-faint">
+      <p className="caps">
         {t('today.hero.zones')}
       </p>
       <div className="mt-1 flex h-2.5 w-full overflow-hidden rounded-full bg-brand-50">

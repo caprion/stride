@@ -31,7 +31,7 @@ export function RangeSelector({
 }) {
   return (
     <div className="mt-3 flex flex-wrap items-center gap-2" data-testid={testId}>
-      <span className="text-[12px] font-semibold uppercase tracking-[0.07em] text-ink-faint">
+      <span className="caps">
         {t('progress.range.label')}
       </span>
       <div className="flex flex-wrap gap-1">

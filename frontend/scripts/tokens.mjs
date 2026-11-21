@@ -53,6 +53,12 @@ export function paletteVariables(palette) {
     variables[surface === 'DEFAULT' ? '--surface' : `--surface-${surface}`] =
       palette.surface[surface]
   }
+  variables['--rail-ground'] = palette.rail.ground
+  variables['--rail-ink'] = palette.rail.ink
+  variables['--rail-ink-strong'] = palette.rail.inkStrong
+  variables['--rail-active'] = palette.rail.active
+  variables['--rail-hover'] = palette.rail.hover
+  variables['--rail-foot'] = palette.rail.foot
   variables['--edge'] = palette.edge
   variables['--better'] = palette.better
   variables['--usual'] = palette.usual

@@ -205,10 +205,10 @@ export function ActivityPage({ id }: { id: string }) {
       <div className="activity-grid">
         <div>
           {/* ------------------------------------- the three headline numbers */}
-          <section className="card px-4 py-3" data-testid="activity-detail">
+          <section className="card py-3" data-testid="activity-detail">
             <div className="stat-strip">
               <span>
-                <span className="text-[11px] uppercase tracking-[0.07em] text-ink-faint">
+                <span className="caps-sm">
                   {t('vital.distance')}
                 </span>
                 <span className="ml-2 text-[17px] font-semibold tabular-nums text-ink">
@@ -216,7 +216,7 @@ export function ActivityPage({ id }: { id: string }) {
                 </span>
               </span>
               <span>
-                <span className="text-[11px] uppercase tracking-[0.07em] text-ink-faint">
+                <span className="caps-sm">
                   {t('vital.time')}
                 </span>
                 <span className="ml-2 text-[17px] font-semibold tabular-nums text-ink">
@@ -224,7 +224,7 @@ export function ActivityPage({ id }: { id: string }) {
                 </span>
               </span>
               <span>
-                <span className="text-[11px] uppercase tracking-[0.07em] text-ink-faint">
+                <span className="caps-sm">
                   {t('vital.pace')}
                 </span>
                 <span className="ml-2 text-[17px] font-semibold tabular-nums text-ink">
@@ -233,7 +233,7 @@ export function ActivityPage({ id }: { id: string }) {
               </span>
               {data.heart_rate ? (
                 <span>
-                  <span className="text-[11px] uppercase tracking-[0.07em] text-ink-faint">
+                  <span className="caps-sm">
                     {t('vital.heartRate')}
                   </span>
                   <span className="ml-2 text-[17px] font-semibold tabular-nums">
@@ -252,8 +252,8 @@ export function ActivityPage({ id }: { id: string }) {
         the run's average pace — so when it is absent, the sentence
         stands alone.
       */}
-          <section className="card mt-3 px-4 py-3">
-            <h2 className="text-[12px] font-semibold uppercase tracking-[0.07em] text-ink-faint">
+          <section className="card mt-3 py-3">
+            <h2 className="caps">
               {t('activity.story.heading')}
             </h2>
             <p className="mt-1 text-[14.5px] text-ink-soft">{data.story}</p>
@@ -266,8 +266,8 @@ export function ActivityPage({ id }: { id: string }) {
 
           {/* ----------------------------------------------------------- map */}
           {data.geo_points.length > 1 ? (
-            <section className="card mt-3 px-4 py-3" data-testid="activity-route">
-              <h2 className="text-[12px] font-semibold uppercase tracking-[0.07em] text-ink-faint">
+            <section className="card mt-3 py-3" data-testid="activity-route">
+              <h2 className="caps">
                 {t('activity.route.heading')}
               </h2>
               <div className="mt-2">
@@ -278,8 +278,8 @@ export function ActivityPage({ id }: { id: string }) {
         </div>
         <div>
           {/* --------------------------------------------------------- effort */}
-          <section className="card mt-3 px-4 py-3" data-testid="activity-effort">
-            <h2 className="mb-2 text-[12px] font-semibold uppercase tracking-[0.07em] text-ink-faint">
+          <section className="card mt-3 py-3" data-testid="activity-effort">
+            <h2 className="mb-2 caps">
               {t('activity.effort.heading')}
             </h2>
             <p className="mb-3 text-[12px] text-ink-muted">{t('activity.effort.cursor')}</p>
@@ -458,9 +458,9 @@ export function ActivityPage({ id }: { id: string }) {
           </section>
 
           {/* -------------------------------------------------------- splits */}
-          <section id="activity-splits" className="card mt-3 px-4 py-3">
+          <section id="activity-splits" className="card mt-3 py-3">
             <div className="flex items-center justify-between gap-3">
-              <h2 className="text-[12px] font-semibold uppercase tracking-[0.07em] text-ink-faint">
+              <h2 className="caps">
                 {t('activity.splits.heading')}
               </h2>
               <button
@@ -512,9 +512,9 @@ export function ActivityPage({ id }: { id: string }) {
           </section>
 
           {/* ------------------------------------------------------ elevation */}
-          <section className="card mt-3 px-4 py-3">
+          <section className="card mt-3 py-3">
             <div className="flex items-center justify-between gap-3">
-              <h2 className="text-[12px] font-semibold uppercase tracking-[0.07em] text-ink-faint">
+              <h2 className="caps">
                 {t('activity.elevation.heading')}
               </h2>
               <button
@@ -570,8 +570,8 @@ export function ActivityPage({ id }: { id: string }) {
         decides what they mean. A metric the run cannot answer says why,
         in the core's own words.
       */}
-          <section className="card mt-3 px-4 py-3" data-testid="activity-form">
-            <h2 className="text-[12px] font-semibold uppercase tracking-[0.07em] text-ink-faint">
+          <section className="card mt-3 py-3" data-testid="activity-form">
+            <h2 className="caps">
               {t('activity.form.heading')}
             </h2>
             {form.isError ? (
@@ -622,8 +622,8 @@ export function ActivityPage({ id }: { id: string }) {
 
       {/* -------------------------------------------------- against the plan */}
       {data.plan_line ? (
-        <section className="card mt-3 px-4 py-3">
-          <h2 className="text-[12px] font-semibold uppercase tracking-[0.07em] text-ink-faint">
+        <section className="card mt-3 py-3">
+          <h2 className="caps">
             {t('activity.plan.heading')}
           </h2>
           <p className="mt-1 text-[14px] text-ink-soft" data-testid="activity-plan-line">
@@ -638,9 +638,9 @@ export function ActivityPage({ id }: { id: string }) {
         to the run it is about. It is edited here, on the run's own page —
         the settings screen holds the settings, not the notes.
       */}
-      <section id="activity-note" className="card mt-3 px-4 py-3" data-testid="activity-note">
+      <section id="activity-note" className="card mt-3 py-3" data-testid="activity-note">
         <div className="flex items-center justify-between gap-3">
-          <h2 className="text-[12px] font-semibold uppercase tracking-[0.07em] text-ink-faint">
+          <h2 className="caps">
             {t('activity.note.heading')}
           </h2>
           <button
