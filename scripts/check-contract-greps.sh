@@ -33,7 +33,13 @@ fi
 #
 # The case matters, so the name's first letter is matched with the
 # case-insensitivity switched off for it: `(?-i:…)` is a PCRE group.
-if grep -rniP '(SELECT|INSERT|UPDATE|DELETE)[[:space:]].*\{(?-i:[a-z_])[a-zA-Z0-9_]*\}' crates/ 2>/dev/null; then
+# The keyword is matched **case-sensitively** here: a SQL keyword in this
+# tree is written in capitals, and a case-insensitive match reads the word
+# "update" in a sentence of prose as a statement — the string catalogue
+# holds the product's own instructions to a model, and they are not SQL.
+# The check above is case-insensitive and still covers a built statement in
+# any case.
+if grep -rnP '(SELECT|INSERT|UPDATE|DELETE)[[:space:]].*\{(?-i:[a-z_])[a-zA-Z0-9_]*\}' crates/ 2>/dev/null; then
   echo "check-contract-greps: an identifier interpolated into SQL is not a constant" >&2
   fail=1
 fi

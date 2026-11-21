@@ -32,6 +32,18 @@ const TIMEOUT: Duration = Duration::from_secs(90);
 /// name another one.
 pub const DEFAULT_KEY_ENV: &str = "STRIDE_MODEL_KEY";
 
+/// How many tokens an answer may be.
+///
+/// The update is four to six sentences and the reviewer's answer is a word
+/// and a few lines, so this is generous — and it is a **budget**: a model
+/// that starts writing forever is cut off rather than billed for it.
+///
+/// The budget has to be a real one: a run with twenty-three laps is a long
+/// answer, and a draft that is cut off mid-sentence is worse than no draft
+/// at all. Four thousand tokens is the provider's own default, and the
+/// drafts measured in the evaluation were written with no smaller limit.
+const MAX_TOKENS: u32 = 4_000;
+
 /// The environment variable the **reviewer's** key is read from.
 ///
 /// The writer and the reviewer are usually two providers — two different
@@ -118,6 +130,31 @@ impl ChatClient {
     }
 }
 
+impl ChatClient {
+    /// Ask the model, and say what it answered.
+    ///
+    /// The status comes back with the body, because the caller decides
+    /// what a refusal means — a bad request is asked again without the
+    /// thinking field, and any other refusal is the end of it.
+    fn ask(&self, base: &str, body: &serde_json::Value) -> Result<(reqwest::StatusCode, String)> {
+        // The content type is set by `json` itself: setting it again would
+        // send the header twice, and a server that reads it strictly
+        // answers "unsupported media type".
+        let mut request = self.client.post(ChatClient::chat_url(base)).json(body);
+        if let Some(key) = &self.key {
+            request = request.bearer_auth(key.with_secret(|secret| secret.to_string()));
+        }
+        let answer = request
+            .send()
+            .map_err(|error| Error::http(format!("the model could not be reached: {error}")))?;
+        let status = answer.status();
+        let text = answer.text().map_err(|error| {
+            Error::http(format!("the model's answer could not be read: {error}"))
+        })?;
+        Ok((status, text))
+    }
+}
+
 impl ChatModel for ChatClient {
     fn complete(&self, base_url: &str, model: &str, prompt: &str) -> Result<String> {
         let base = base_url.trim();
@@ -127,28 +164,39 @@ impl ChatModel for ChatClient {
         if !base.starts_with("http://") && !base.starts_with("https://") {
             return Err(Error::config("the base URL of the model is not an address"));
         }
+        // The prompt goes as the **user's** message, which is how the
+        // evaluation asked every model it measured — the drafts that were
+        // read and scored came from this shape.
         let body = serde_json::json!({
             "model": model,
-            "messages": [{ "role": "system", "content": prompt }],
+            "messages": [{ "role": "user", "content": prompt }],
             "temperature": 0.2,
+            "max_tokens": MAX_TOKENS,
+            // **The thinking is off.** A reasoning model that thinks inside
+            // the budget spends it on the reasoning: the evaluation measured
+            // a model that returned an empty answer because the thinking ate
+            // every token, and the app's own answer would be empty in the
+            // same way. The app wants sentences, not a trace.
+            //
+            // The field is one provider's extension, so a server that does
+            // not know it is asked again without it — the answer is the
+            // same, and the cost of the second call is one refused request.
+            "thinking": { "type": "disabled" },
         });
 
-        let mut request = self
-            .client
-            .post(ChatClient::chat_url(base))
-            .json(&body)
-            .header("content-type", "application/json");
-        if let Some(key) = &self.key {
-            request = request.bearer_auth(key.with_secret(|secret| secret.to_string()));
-        }
-
-        let answer = request
-            .send()
-            .map_err(|error| Error::http(format!("the model could not be reached: {error}")))?;
-        let status = answer.status();
-        let text = answer.text().map_err(|error| {
-            Error::http(format!("the model's answer could not be read: {error}"))
-        })?;
+        let (status, text) = self.ask(base, &body)?;
+        let (status, text) = if matches!(status.as_u16(), 400 | 422) {
+            // The server did not know the field. Ask again without it.
+            let plain = serde_json::json!({
+                "model": model,
+                "messages": [{ "role": "user", "content": prompt }],
+                "temperature": 0.2,
+                "max_tokens": MAX_TOKENS,
+            });
+            self.ask(base, &plain)?
+        } else {
+            (status, text)
+        };
         if !status.is_success() {
             // The status is said; the body is not, because it may carry
             // something the athlete did not ask to be logged.

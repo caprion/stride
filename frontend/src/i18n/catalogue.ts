@@ -645,6 +645,10 @@ export const catalogue = {
     type: 'status',
     text: 'Every direction agrees with the payload',
   },
+  'activity.update.check.shape': {
+    type: 'status',
+    text: 'It is four to six sentences, plain prose, and it addresses you',
+  },
   'activity.update.check.register': {
     type: 'status',
     text: 'No word the app does not use',

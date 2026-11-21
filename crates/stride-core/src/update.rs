@@ -90,6 +90,9 @@ pub enum Check {
     Direction,
     /// The draft uses no word the product forbids.
     Register,
+    /// The draft is the shape the product asks for: four to six sentences,
+    /// plain prose, and it addresses the athlete.
+    Shape,
 }
 
 impl Check {
@@ -99,11 +102,17 @@ impl Check {
             Check::Groundedness => "groundedness",
             Check::Direction => "direction",
             Check::Register => "register",
+            Check::Shape => "shape",
         }
     }
 
-    /// The three checks, in the order they are listed.
-    pub const ALL: [Check; 3] = [Check::Groundedness, Check::Direction, Check::Register];
+    /// The checks, in the order they are listed.
+    pub const ALL: [Check; 4] = [
+        Check::Groundedness,
+        Check::Direction,
+        Check::Register,
+        Check::Shape,
+    ];
 }
 
 /// One thing the checks found.
@@ -316,7 +325,52 @@ impl Payload {
                 }
             }
         }
+        // **The notes.** The payload says what its own fields mean, because
+        // a number on its own is ambiguous and a sign is worse: "a negative
+        // pace drift" is a faster second half, and a model that reads it
+        // the other way round says the opposite of what happened. The notes
+        // are the app's own words — the same conventions the core computes
+        // with — and they carry no numbers of their own, so they cannot
+        // make a number grounded that the payload did not give.
+        let notes = self.notes();
+        if !notes.is_empty() {
+            out.push_str(&format!("{}\n", heading("update.payload.notes")));
+            for note in notes {
+                out.push_str(&format!("- {note}\n"));
+            }
+        }
         out.trim_end().to_string()
+    }
+
+    /// The notes the payload carries: one for each field it holds.
+    ///
+    /// The notes are the app's own documentation of its fields, and they
+    /// are the app's own sign conventions — the same ones the core
+    /// computes with.
+    fn notes(&self) -> Vec<String> {
+        let mut notes = Vec::new();
+        if !self.splits.is_empty() {
+            notes.push(note("update.payload.note.laps"));
+        }
+        if !self.zones.is_empty() {
+            notes.push(note("update.payload.note.zones"));
+        }
+        if !self.observations.is_empty() {
+            notes.push(note("update.payload.note.observations"));
+        }
+        for observation in &self.observations {
+            let label = observation.label.to_lowercase();
+            if label.contains("pace drift") {
+                notes.push(note("update.payload.note.pace_drift"));
+            } else if label.contains("heart rate drift") {
+                notes.push(note("update.payload.note.heart_rate_drift"));
+            } else if label.contains("cadence drift") {
+                notes.push(note("update.payload.note.cadence_drift"));
+            } else if label.contains("decoupling") {
+                notes.push(note("update.payload.note.aerobic_decoupling"));
+            }
+        }
+        notes
     }
 
     /// Every number the payload carries.
@@ -342,6 +396,10 @@ impl Payload {
             out.push(fact.value.clone());
         }
         for split in &self.splits {
+            // The lap's **number** is in the payload — the model was told
+            // "lap 11" — so it is a number it was given, and a draft that
+            // says "lap 11" is not inventing one.
+            out.push(split.lap_index.to_string());
             out.push(split.distance.clone());
             out.push(split.pace.clone());
             out.push(split.heart_rate.clone());
@@ -547,6 +605,11 @@ fn push_fact(facts: &mut Vec<Fact>, label: &str, value: Option<String>) {
 }
 
 /// A catalogue entry's wording, or an empty string.
+/// A note for the model: the catalogue's own words.
+fn note(id: &str) -> String {
+    strings::text(id).unwrap_or_default().to_string()
+}
+
 fn heading(id: &str) -> String {
     strings::text(id).unwrap_or_default().to_string()
 }
@@ -563,6 +626,7 @@ pub fn check_draft(payload: &Payload, draft: &str) -> Report {
     findings.extend(groundedness(payload, draft));
     findings.extend(direction(payload, draft));
     findings.extend(register(draft));
+    findings.extend(shape(draft));
     Report { findings }
 }
 
@@ -571,7 +635,7 @@ fn groundedness(payload: &Payload, draft: &str) -> Vec<Finding> {
     let given = payload.numbers();
     let mut findings = Vec::new();
     for number in numbers_in(draft) {
-        if given.contains(&number) {
+        if given.contains(&number) || is_a_rounding(&number, &given) {
             continue;
         }
         let detail = strings::render("update.check.groundedness", &[("value", &number)])
@@ -582,6 +646,29 @@ fn groundedness(payload: &Payload, draft: &str) -> Vec<Finding> {
         });
     }
     findings
+}
+
+/// Whether a number is a **rounding** of a number the payload gave.
+///
+/// A number within six tenths of a percent of a number in the payload is
+/// the same number written more roughly — "49 %" for "48.8 %" — and a
+/// model that rounds a number the app gave it has not invented one. The
+/// rule is the one the evaluation measured: the tolerance is six tenths
+/// of a percent, and never less than six hundredths of anything.
+fn is_a_rounding(number: &str, given: &BTreeSet<String>) -> bool {
+    let Ok(candidate) = number.parse::<f64>() else {
+        return false;
+    };
+    for value in given {
+        let Ok(other) = value.parse::<f64>() else {
+            continue;
+        };
+        let tolerance = 0.06_f64.max(other.abs() * 0.006);
+        if (candidate - other).abs() <= tolerance {
+            return true;
+        }
+    }
+    false
 }
 
 /// The direction check: a claim with a sign agrees with the payload.
@@ -654,6 +741,90 @@ fn register(draft: &str) -> Vec<Finding> {
         });
     }
     findings
+}
+
+/// The shape check: the draft is what the product asks a draft to be.
+///
+/// **Four to six sentences, plain prose, and it addresses the athlete.**
+/// These are the rules the product's own prompt gives the model, and this
+/// is where they are held: a three-sentence draft is not the update the
+/// athlete reads, and a bulleted one is a form, not a sentence.
+///
+/// The check does not judge the writing. It counts sentences, looks for a
+/// bullet and looks for the athlete being addressed — nothing else.
+fn shape(draft: &str) -> Vec<Finding> {
+    let mut findings = Vec::new();
+    let sentences = sentences_of(draft);
+    if !(4..=6).contains(&sentences) {
+        let detail = strings::render("update.check.shape", &[("count", &sentences.to_string())])
+            .unwrap_or_else(|| {
+                format!("the draft has {sentences} sentences, and the shape is four to six")
+            });
+        findings.push(Finding {
+            check: Check::Shape,
+            detail,
+        });
+    }
+    let lowered = draft.to_lowercase();
+    if !lowered.contains("you") && !lowered.contains("your") {
+        let detail = strings::render("update.check.shape.you", &[])
+            .unwrap_or_else(|| "the draft does not address the athlete".to_string());
+        findings.push(Finding {
+            check: Check::Shape,
+            detail,
+        });
+    }
+    if draft.lines().any(|line| {
+        let trimmed = line.trim_start();
+        trimmed.starts_with('-') || trimmed.starts_with('*') || trimmed.starts_with('•')
+    }) {
+        let detail = strings::render("update.check.shape.bullets", &[])
+            .unwrap_or_else(|| "the draft is a list, and the shape is prose".to_string());
+        findings.push(Finding {
+            check: Check::Shape,
+            detail,
+        });
+    }
+    findings
+}
+
+/// How many sentences the draft holds.
+///
+/// A sentence ends at a full stop, a question mark or an exclamation mark,
+/// and the next one starts with a capital or a quote. A decimal point and
+/// an abbreviation's dot are not the end of a sentence: "1.5 km" is one
+/// number, not two sentences.
+fn sentences_of(draft: &str) -> usize {
+    let characters: Vec<char> = draft.chars().collect();
+    let mut count = 0;
+    let mut index = 0;
+    while index < characters.len() {
+        let character = characters[index];
+        if matches!(character, '.' | '?' | '!') {
+            // A dot between two digits is a decimal point.
+            let decimal = character == '.'
+                && index > 0
+                && index + 1 < characters.len()
+                && characters[index - 1].is_ascii_digit()
+                && characters[index + 1].is_ascii_digit();
+            if !decimal {
+                // The next word starts a new sentence.
+                let mut next = index + 1;
+                while next < characters.len() && characters[next].is_whitespace() {
+                    next += 1;
+                }
+                if next >= characters.len() {
+                    count += 1;
+                    break;
+                }
+                if characters[next].is_uppercase() || characters[next] == '"' {
+                    count += 1;
+                }
+            }
+        }
+        index += 1;
+    }
+    count
 }
 
 /// Does the draft's word agree with the payload's direction?
@@ -967,17 +1138,26 @@ mod tests {
         assert_eq!(payload.splits.len(), 1);
         assert_eq!(payload.zones[0].label, "Z1");
         assert_eq!(payload.observations[0].direction.as_deref(), Some("faster"));
-        // The payload holds no position, no note and no name: it is built
-        // from the facts and nothing else.
+        // The payload holds no position, no name and nothing the athlete
+        // wrote: it is built from the facts and nothing else. The notes it
+        // does carry are the app's own — what its fields mean — and they
+        // are the only "notes" in it.
         let text = payload.text();
         assert!(!text.contains('@'));
-        assert!(!text.to_lowercase().contains("note"));
+        assert!(
+            !text.to_lowercase().contains("your note"),
+            "the athlete's own note is never in the payload"
+        );
+        assert!(
+            text.contains("The notes"),
+            "the app's own field notes are in it"
+        );
     }
 
     #[test]
     fn a_clean_draft_passes_the_checks() {
         let payload = payload_with_drift(-43.0);
-        let draft = "The run was 12.4 km in 1 h 7 m, at an average of 148 bpm. \
+        let draft = "You ran 12.4 km in 1 h 7 m, at an average of 148 bpm. \
                       The pace was 5:24 /km. The first split was 1 km at 5:20 /km and 150 bpm. \
                       The pace drift was −43 s/km, so the second half was faster. \
                       The run spent 3 m in Z1.";

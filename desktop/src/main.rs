@@ -9,6 +9,7 @@
 //! stride-desktop export     write a verified export of the local log
 //! stride-desktop import     read a verified export back into the local log
 //! stride-desktop reread     read every stored file again, and write what it says
+//! stride-desktop update     write the update of a run, or of every run that has none
 //! ```
 //!
 //! `serve` is the one a stranger runs. It opens the database, holds the
@@ -70,6 +71,7 @@ fn run(arguments: &[String]) -> Result<i32> {
         "export" => export_command(rest),
         "import" => import_command(rest),
         "reread" => reread_command(rest),
+        "update" => update_command(rest),
         "help" | "--help" | "-h" => {
             print_help();
             Ok(0)
@@ -387,6 +389,91 @@ fn reread_command(arguments: &[String]) -> Result<i32> {
     Ok(0)
 }
 
+/// Write the update of a run, or of every run that has none.
+///
+/// The same writing a pull does — the payload, the writer, the checks, the
+/// reviewer — but asked for rather than waited for. `stride-desktop update`
+/// writes the runs that have no update yet; `stride-desktop update 63`
+/// writes that one.
+fn update_command(arguments: &[String]) -> Result<i32> {
+    let mut option_arguments = Vec::new();
+    let mut ids: Vec<i64> = Vec::new();
+    let mut force = false;
+    let mut index = 0;
+    while index < arguments.len() {
+        let argument = &arguments[index];
+        if argument == "--data-dir" {
+            let value = arguments.get(index + 1).ok_or_else(|| {
+                Error::config("--data-dir needs the directory the rig keeps its files in")
+            })?;
+            option_arguments.push(argument.clone());
+            option_arguments.push(value.clone());
+            index += 2;
+            continue;
+        }
+        if argument == "--force" {
+            force = true;
+        } else if argument.starts_with("--") {
+            option_arguments.push(argument.clone());
+        } else {
+            let id = argument.parse::<i64>().map_err(|_| {
+                Error::config("the run's id is a number — try `stride-desktop update 63`")
+            })?;
+            ids.push(id);
+        }
+        index += 1;
+    }
+    let options = Options::parse(&option_arguments)?;
+    options.reject_unknown(&["data-dir"])?;
+    let directory = data_directory(&options)?;
+    let workspace = workspace_for(&directory)?;
+
+    // The settings and the models are the rig's own business, so they come
+    // from the router and the environment, exactly as a pull's writing
+    // does.
+    let router = stride_desktop::update::router(&workspace)?;
+    let settings = stride_desktop::update::settings(&router)
+        .ok_or_else(|| Error::config("the update settings could not be read"))?;
+    if !settings.enabled {
+        return Err(Error::config(
+            "the run update is off — turn it on in the settings first",
+        ));
+    }
+    let (writer, reviewer) = stride_desktop::update::clients(&settings)?;
+    let targets: Vec<i64> = if ids.is_empty() {
+        stride_desktop::update::runs_without_updates(&workspace)?
+    } else {
+        ids
+    };
+    let targets: Vec<i64> = if force {
+        // Every run, whether it has an update or not: the update is written
+        // again, and the one that was there is replaced.
+        stride_desktop::update::all_runs(&workspace)?
+    } else {
+        targets
+    };
+    let mut kept = 0;
+    let mut refused: Vec<String> = Vec::new();
+    let count = targets.len();
+    for id in targets {
+        match stride_desktop::update::write_one(&router, &writer, &reviewer, &settings, id) {
+            Ok(outcome) => {
+                if outcome.draft.is_some() {
+                    kept += 1;
+                } else {
+                    refused.push(format!("the run {id}: {}", outcome.verdict));
+                }
+            }
+            Err(error) => refused.push(format!("the run {id}: {error}")),
+        }
+    }
+    println!("wrote {count} updates; kept {kept}");
+    for line in &refused {
+        println!("not kept: {line}");
+    }
+    Ok(0)
+}
+
 /// Open the machine-side services for a command that does not serve.
 fn workspace_for(directory: &std::path::Path) -> Result<Workspace> {
     paths::ensure_data_dir(directory)?;
@@ -638,6 +725,8 @@ stride {version} — the desktop rig: one binary that serves the app and the rou
   stride-desktop export    write a verified export of the local log
   stride-desktop import    read a verified export back into the local log
   stride-desktop reread    read every stored file again, and write what it says
+  stride-desktop update    write the update of a run, or of every run that has none
+    --force                 write again the runs that already have an update
 
 the options of `export`
   --output <directory>     where to write the export (default: the rig's private exports folder)

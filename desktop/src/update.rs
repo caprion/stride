@@ -39,6 +39,7 @@ use serde_json::{json, Value};
 use crate::api::{Request, Router};
 use crate::error::{Error, Result};
 use crate::model::ChatModel;
+use crate::workspace::Workspace;
 
 /// The update's own settings, as the rig reads them.
 ///
@@ -167,22 +168,37 @@ pub fn write_update(
     // the update is kept either way, and the attribution says which way.
     let findings = checks_of(router, activity_id, &draft)?;
     if findings.is_empty() {
-        let kept = record_as(router, settings, activity_id, &draft, &hash, SHIP, "")?;
+        let recorded = record_as(router, settings, activity_id, &draft, &hash, SHIP, "")?;
         return Ok(Written {
-            draft: kept.then_some(draft),
-            verdict: SHIP.to_string(),
+            draft: recorded.kept.then_some(draft),
+            verdict: recorded.verdict,
             findings: Vec::new(),
         });
     }
 
     let review = review_draft(router, reviewer, settings, activity_id, &draft)?;
 
+    // **The reviewer advises; the checks decide.**
+    //
+    // The app's own rule is that a draft is kept when it passes the
+    // checks, and the checks are the app's rules — groundedness, direction,
+    // register and shape. The reviewer is a second pair of eyes over a
+    // draft the checks already found something in, and its value is what it
+    // *finds*: the readings the checks cannot make (the draft that does not
+    // address the athlete, the one that is a list, the one that is too
+    // short).
+    //
+    // Its verdict is not a gate. A reviewer that disliked another model's
+    // prose would otherwise decide what the athlete reads, and the
+    // evaluation's own numbers say the reviewer's taste is not to be
+    // trusted with that: it introduced defects as often as it fixed them.
+    // A "discard" is honoured only where it agrees with the checks.
     match review.verdict.as_str() {
         SHIP => {
-            let kept = record(router, settings, activity_id, &draft, &hash, SHIP)?;
+            let recorded = record(router, settings, activity_id, &draft, &hash, SHIP)?;
             Ok(Written {
-                draft: kept.then_some(draft),
-                verdict: SHIP.to_string(),
+                draft: recorded.kept.then_some(draft),
+                verdict: recorded.verdict,
                 findings: review.findings,
             })
         }
@@ -197,17 +213,12 @@ pub fn write_update(
                 &review.findings,
             )?;
             let review = review_draft(router, reviewer, settings, activity_id, &second)?;
-            if review.verdict != SHIP {
-                return Ok(Written {
-                    draft: None,
-                    verdict: review.verdict,
-                    findings: review.findings,
-                });
-            }
-            let kept = record(router, settings, activity_id, &second, &hash, SHIP)?;
+            // The checks decide, and the router checks the draft again
+            // when it is recorded: a draft that still fails keeps nothing.
+            let recorded = record(router, settings, activity_id, &second, &hash, SHIP)?;
             Ok(Written {
-                draft: kept.then_some(second),
-                verdict: SHIP.to_string(),
+                draft: recorded.kept.then_some(second),
+                verdict: recorded.verdict,
                 findings: review.findings,
             })
         }
@@ -217,6 +228,86 @@ pub fn write_update(
             findings: review.findings,
         }),
     }
+}
+
+/// The rig's router, over its own workspace.
+pub fn router(workspace: &Workspace) -> Result<crate::api::ApiRouter> {
+    let host = crate::server::DesktopHost::new(workspace.store().clone(), workspace.keys().clone());
+    crate::api::ApiRouter::over(&host)
+}
+
+/// The update's settings, as the router answers them.
+pub fn settings(router: &dyn Router) -> Option<ModelSettings> {
+    let call = Request {
+        method: "GET",
+        path: "/api/v1/update/settings",
+        query: "",
+        body: &[],
+    };
+    let answer = router.call(&call);
+    if answer.status != 200 {
+        return None;
+    }
+    let value: serde_json::Value = serde_json::from_slice(&answer.body).unwrap_or_default();
+    Some(ModelSettings::from_answer(&value))
+}
+
+/// The two model clients: the writer's and the reviewer's.
+///
+/// The keys are read from the environment, and they are never written
+/// down: a local server may need none. The writer's key comes from the
+/// variable the settings name, and the reviewer's from its own — two
+/// providers do not share a key — and the reviewer's falls back to the
+/// writer's when there is only one.
+pub fn clients(
+    settings: &ModelSettings,
+) -> Result<(crate::model::ChatClient, crate::model::ChatClient)> {
+    let key = std::env::var(&settings.key_env)
+        .ok()
+        .and_then(|value| crate::model::ModelKey::new(&value).ok());
+    let writer =
+        crate::model::ChatClient::new(key).map_err(|error| Error::config(error.to_string()))?;
+    let reviewer_key = std::env::var(crate::model::REVIEWER_KEY_ENV)
+        .ok()
+        .or_else(|| std::env::var(&settings.key_env).ok())
+        .and_then(|value| crate::model::ModelKey::new(&value).ok());
+    let reviewer = crate::model::ChatClient::new(reviewer_key)
+        .map_err(|error| Error::config(error.to_string()))?;
+    Ok((writer, reviewer))
+}
+
+/// The runs that have no update yet.
+pub fn runs_without_updates(workspace: &Workspace) -> Result<Vec<i64>> {
+    let ids = workspace.store().activity_ids()?;
+    let mut without = Vec::new();
+    for id in ids {
+        if workspace.store().run_update(id)?.is_none() {
+            without.push(id);
+        }
+    }
+    Ok(without)
+}
+
+/// Every run, in order: the ones that have an update and the ones that
+/// have not.
+pub fn all_runs(workspace: &Workspace) -> Result<Vec<i64>> {
+    Ok(workspace.store().activity_ids()?)
+}
+
+/// Write the update of one run, on demand.
+///
+/// The same writing a pull does — the payload, the writer, the checks, the
+/// reviewer — but asked for rather than waited for: a run that landed
+/// before the feature was on, a run whose first attempt failed, and a run
+/// the athlete wants read again.
+pub fn write_one(
+    router: &dyn Router,
+    writer: &dyn ChatModel,
+    reviewer: &dyn ChatModel,
+    settings: &ModelSettings,
+    activity_id: i64,
+) -> Result<Written> {
+    write_update(router, writer, reviewer, settings, activity_id)
 }
 
 /// The rules the rig keeps before it calls anything.
@@ -371,7 +462,7 @@ fn record(
     draft: &str,
     hash: &str,
     verdict: &str,
-) -> Result<bool> {
+) -> Result<Recorded> {
     record_as(
         router,
         settings,
@@ -393,7 +484,7 @@ fn record_as(
     hash: &str,
     verdict: &str,
     reviewer: &str,
-) -> Result<bool> {
+) -> Result<Recorded> {
     let body = json!({
         "writer": settings.writer_model,
         "reviewer": reviewer,
@@ -402,7 +493,22 @@ fn record_as(
         "draft": draft,
     });
     let answer = call(router, "POST", &update_path(activity_id), Some(&body))?;
-    Ok(answer["stored"].as_bool().unwrap_or(false))
+    Ok(Recorded {
+        kept: answer["stored"].as_bool().unwrap_or(false),
+        verdict: answer["verdict"].as_str().unwrap_or(DISCARD).to_string(),
+    })
+}
+
+/// What the router said when the draft was recorded.
+///
+/// The router checks the draft **again**, against the payload it builds
+/// now, and refuses a draft that does not pass — so its verdict is the
+/// last word, and the rig reports that word rather than the reviewer's.
+struct Recorded {
+    /// Was the draft kept?
+    kept: bool,
+    /// The router's own verdict: "ship" or "discard".
+    verdict: String,
 }
 
 /// Ask the router, and read its answer.

@@ -209,8 +209,14 @@ export function checkExport(exported, directionWords, terms = []) {
     failures.push(`the export's direction set is not the contract's: ${exportSet.join(' · ')}`)
   }
 
-  // No banned word in any exported string.
+  // No banned word in any exported string — **except in an instruction**.
+  //
+  // The ban list holds what the athlete reads. An `instruction` is the one
+  // string the athlete never sees: it is the product's own instruction to a
+  // model, and a prompt that forbids a word has to name it — "do not use
+  // these words: should, must, …" — which is the opposite of using one.
   for (const entry of entries) {
+    if (entry.kind === 'instruction') continue
     for (const term of bannedWords(entry.template ?? '', terms)) {
       failures.push(`the export's ${entry.id}: contains the banned word "${term}"`)
     }

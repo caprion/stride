@@ -185,11 +185,83 @@ impl Server {
             ("POST", "/rig/import/file") => Some(self.accept_import_file(workspace, request)),
             ("POST", "/rig/import/finish") => Some(self.finish_import(workspace, request)),
             ("POST", "/rig/fit-import") => Some(self.fit_import(workspace, request)),
+            ("POST", "/rig/update") => Some(self.write_update(workspace, request)),
             (_, path) if path.starts_with("/rig/") => {
                 Some(Response::text(404, "There is no rig tool at that path."))
             }
             _ => None,
         }
+    }
+
+    /// Write the update of a run, and say what happened.
+    ///
+    /// The body names the run: `{"activity_id": 63}` writes that run's
+    /// update, and `{"all": true}` writes the update of every run that has
+    /// none. The answer says what was written, what was kept and what was
+    /// not — never the draft itself, which the app shows in its own place.
+    fn write_update(&self, workspace: &Workspace, request: &Request) -> Response {
+        let body: serde_json::Value = serde_json::from_slice(&request.body).unwrap_or_default();
+        let all = body
+            .get("all")
+            .and_then(serde_json::Value::as_bool)
+            .unwrap_or(false);
+        let Some(settings) = self.update_settings() else {
+            return rig_error(500, "no_settings", "the update settings could not be read");
+        };
+        if !settings.enabled {
+            return rig_error(
+                409,
+                "the_feature_is_off",
+                "the run update is off — turn it on in the settings first",
+            );
+        }
+        let ids: Vec<i64> = if all {
+            match crate::update::runs_without_updates(workspace) {
+                Ok(ids) => ids,
+                Err(error) => return rig_error(500, "no_runs", &error.to_string()),
+            }
+        } else {
+            match body.get("activity_id").and_then(serde_json::Value::as_i64) {
+                Some(id) => vec![id],
+                None => {
+                    return rig_error(400, "no_run", "the request names no run");
+                }
+            }
+        };
+        let (writer, reviewer) = match crate::update::clients(&settings) {
+            Ok(clients) => clients,
+            Err(error) => return rig_error(500, "no_model", &error.to_string()),
+        };
+        let mut written = 0;
+        let mut kept = 0;
+        let mut refused = Vec::new();
+        for id in ids {
+            match crate::update::write_one(self.router.as_ref(), &writer, &reviewer, &settings, id)
+            {
+                Ok(outcome) => {
+                    written += 1;
+                    if outcome.draft.is_some() {
+                        kept += 1;
+                    } else {
+                        let findings = if outcome.findings.is_empty() {
+                            String::new()
+                        } else {
+                            format!(" ({})", outcome.findings.join("; "))
+                        };
+                        refused.push(format!("the run {id}: {}{findings}", outcome.verdict));
+                    }
+                }
+                Err(error) => refused.push(format!("the run {id}: {error}")),
+            }
+        }
+        json_response(
+            200,
+            serde_json::json!({
+                "written": written,
+                "kept": kept,
+                "refused": refused,
+            }),
+        )
     }
 
     /// Write an export and describe where it is.
@@ -411,29 +483,11 @@ impl Server {
             return;
         }
 
-        // The keys are read from the environment, and they are never written
-        // down: a local server may need none. The writer's key comes from
-        // the variable the settings name, and the reviewer's from its own
-        // — two providers do not share a key — and the reviewer's falls
-        // back to the writer's when there is only one.
-        let key = std::env::var(&settings.key_env)
-            .ok()
-            .and_then(|value| crate::model::ModelKey::new(&value).ok());
-        let writer = match crate::model::ChatClient::new(key) {
-            Ok(model) => model,
+        // The writer and the reviewer, with their own keys.
+        let (writer, reviewer) = match crate::update::clients(&settings) {
+            Ok(clients) => clients,
             Err(error) => {
                 log::log(&format!("the model client could not be built: {error}"));
-                return;
-            }
-        };
-        let reviewer_key = std::env::var(crate::model::REVIEWER_KEY_ENV)
-            .ok()
-            .or_else(|| std::env::var(&settings.key_env).ok())
-            .and_then(|value| crate::model::ModelKey::new(&value).ok());
-        let reviewer = match crate::model::ChatClient::new(reviewer_key) {
-            Ok(model) => model,
-            Err(error) => {
-                log::log(&format!("the reviewer could not be reached: {error}"));
                 return;
             }
         };

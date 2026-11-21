@@ -133,7 +133,8 @@ fn one_run_s_update_is_written_and_kept() {
     .unwrap_or_else(|_| panic!("the router"));
 
     let model = ScriptedModel::new(vec![
-        "The run was 10 km in 50 m, at an average of 150 bpm.",
+        "You ran 10 km in 50 m, at an average of 150 bpm. The pace held steady through the run. \
+         The first kilometre was the slowest of the run. The run spent 3 m in the slowest band.",
         "ship",
     ]);
 
@@ -148,7 +149,10 @@ fn one_run_s_update_is_written_and_kept() {
 
     assert_eq!(
         written.draft.as_deref(),
-        Some("The run was 10 km in 50 m, at an average of 150 bpm.")
+        Some(
+            "You ran 10 km in 50 m, at an average of 150 bpm. The pace held steady through the run. \
+             The first kilometre was the slowest of the run. The run spent 3 m in the slowest band."
+        )
     );
     assert_eq!(written.verdict, "ship");
 
@@ -175,7 +179,7 @@ fn one_run_s_update_is_written_and_kept() {
     assert_eq!(body["update"]["writer"].as_str(), Some("the writer"));
     assert_eq!(
         body["update"]["checks"].as_array().map(|c| c.len()),
-        Some(3)
+        Some(4)
     );
 
     // The payload carries the run's own facts and nothing else.

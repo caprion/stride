@@ -181,7 +181,7 @@ pub struct Entry {
 }
 
 /// The catalogue.
-pub const CATALOGUE: [Entry; 187] = [
+pub const CATALOGUE: [Entry; 198] = [
     // The vitals.
     Entry {
         id: "vital.sleep.label",
@@ -1377,25 +1377,98 @@ pub const CATALOGUE: [Entry; 187] = [
         template: "the word {word} is not one the app uses",
     },
     Entry {
+        id: "update.payload.notes",
+        kind: StringKind::Statement,
+        role: None,
+        template: "The notes",
+    },
+    Entry {
+        id: "update.payload.note.laps",
+        kind: StringKind::Instruction,
+        role: None,
+        template:
+            "Each line of the laps is one lap of the run: its number, how far that lap covered, its pace and its average heart rate. A lap is not a kilometre — the laps of a run do not add up to a kilometre count.",
+    },
+    Entry {
+        id: "update.payload.note.zones",
+        kind: StringKind::Instruction,
+        role: None,
+        template:
+            "The zones are the athlete's own zone model, read from the app: the first band is the slowest and the last the fastest. The share is the share of the run's time in that band.",
+    },
+    Entry {
+        id: "update.payload.note.pace_drift",
+        kind: StringKind::Instruction,
+        role: None,
+        template:
+            "Pace drift is the second half's average pace minus the first half's, in seconds per kilometre. A negative pace drift means the second half was the faster half.",
+    },
+    Entry {
+        id: "update.payload.note.heart_rate_drift",
+        kind: StringKind::Instruction,
+        role: None,
+        template:
+            "Heart rate drift is the second half's average heart rate minus the first half's, in beats per minute. A positive drift means the heart rate rose.",
+    },
+    Entry {
+        id: "update.payload.note.cadence_drift",
+        kind: StringKind::Instruction,
+        role: None,
+        template:
+            "Cadence drift is the last third's average cadence minus the first third's, as a percentage. A positive drift means the cadence rose.",
+    },
+    Entry {
+        id: "update.payload.note.aerobic_decoupling",
+        kind: StringKind::Instruction,
+        role: None,
+        template:
+            "Aerobic decoupling is the first third's efficiency minus the last third's. A positive decoupling means the efficiency fell as the run went on, and a negative one means it rose.",
+    },
+    Entry {
+        id: "update.payload.note.observations",
+        kind: StringKind::Instruction,
+        role: None,
+        template:
+            "Each line of the observations is one measurement of the run, with the direction the app read in it: faster, slower, higher, lower or held.",
+    },
+    Entry {
+        id: "update.check.shape",
+        kind: StringKind::Status,
+        role: None,
+        template: "the draft has {count} sentences, and the shape is four to six",
+    },
+    Entry {
+        id: "update.check.shape.you",
+        kind: StringKind::Status,
+        role: None,
+        template: "the draft does not address the athlete",
+    },
+    Entry {
+        id: "update.check.shape.bullets",
+        kind: StringKind::Status,
+        role: None,
+        template: "the draft is a list, and the shape is prose",
+    },
+    Entry {
         id: "update.prompt.writer",
         kind: StringKind::Instruction,
         role: None,
         template:
-            "Write four to six sentences about one run: what the run was and how it went. Use only the numbers in the payload, and write each of them exactly as the payload writes them. Describe what happened: no advice, no verdict, no score, no instruction and no prediction. Do not tell the athlete what to do, and do not write about what comes next. Here is the payload: {payload}",
+            "You are writing the run update for a running log — a private record of the runner's own runs.\n\nHere is the run, exactly as the app recorded it. Every number you may use is in this payload. Do not use any other number, do not estimate, and do not carry a number over from another run. The notes inside the payload say what the app's fields mean; follow them.\n\n{payload}\n\nWrite the update in four to six sentences.\n\n- Say what the run was and how it went.\n- If something in the laps or the mechanics stands out, say what stands out.\n- Address the runner as \"you\".\n- Observations only: no advice, no verdict, no score, no commands. Do not tell the runner what to do, and do not call the run good or bad.\n- Do not use these words: should, must, missed, bad, poor, fail, behind, good, red, recommended, better to, need to, ready to.\n- Plain prose. No preamble, no markdown, no bullet points, no labels, no sign-off.\n\nReturn only the update.",
     },
     Entry {
         id: "update.prompt.reviewer",
         kind: StringKind::Instruction,
         role: None,
         template:
-            "Check a draft about one run against the payload it was written from. Read the draft for three things: the numbers in it, the direction of every claim, and the register it is written in. Answer with one word: ship, repair or discard. Say ship when the draft is true to the payload and written in the register. Say repair when the draft can be corrected, and name what to correct. Say discard when it cannot be corrected. Here is the payload: {payload} Here is the draft: {draft} Here are the findings: {findings}",
+            "You are the reviewer of a run update for a private running log. Another model wrote the draft below from the payload, and the draft reaches the runner only after you have checked it.\n\nHere is the run, exactly as the app recorded it, with the app's own notes on what the fields mean:\n\n{payload}\n\nHere is the draft:\n\n{draft}\n\nCheck the draft against the payload, for these things:\n- any number that is not in the payload;\n- any claim whose direction contradicts the payload (a negative pace drift is a faster second half; a positive heart rate drift is a heart rate that rose; a negative aerobic decoupling is an efficiency that rose);\n- any banned word (should, must, missed, bad, poor, fail, behind, good, red, recommended, better to, need to, ready to);\n- any advice, verdict, score or command;\n- any preamble, markdown, bullet, label or reasoning that leaked into the text;\n- a length outside four to six sentences;\n- anything that contradicts the app's own numbers.\n\nAnswer with one word first: ship, repair or discard. Say ship when the draft is true to the payload and written in the register. Say repair when the draft can be corrected, and name what to correct. Say discard when it cannot be corrected.\n\nHere are the findings the checks found: {findings}",
     },
     Entry {
         id: "update.prompt.repair",
         kind: StringKind::Instruction,
         role: None,
         template:
-            "Write the sentences again, using the payload and the findings. Keep what the findings do not question, and correct what they question. Use only the numbers in the payload, and write each of them exactly as the payload writes them. Describe what happened: no advice, no verdict, no score, no instruction and no prediction. Do not tell the athlete what to do, and do not write about what comes next. Here is the payload: {payload} Here is the draft: {draft} Here are the findings: {findings}",
+            "You are writing the run update for a running log — a private record of the runner's own runs. Another model wrote a draft from the same payload, and a reviewer has said what is wrong with it.\n\nHere is the run, exactly as the app recorded it. Every number you may use is in this payload. Do not use any other number, do not estimate, and do not carry a number over from another run. The notes inside the payload say what the app's fields mean; follow them.\n\n{payload}\n\nHere is the draft:\n\n{draft}\n\nHere is what the reviewer found:\n\n{findings}\n\nWrite the update again, in four to six sentences.\n\n- Keep what the findings do not question, and correct what they question.\n- Address the runner as \"you\".\n- Observations only: no advice, no verdict, no score, no commands. Do not tell the runner what to do, and do not call the run good or bad.\n- Do not use these words: should, must, missed, bad, poor, fail, behind, good, red, recommended, better to, need to, ready to.\n- Plain prose. No preamble, no markdown, no bullet points, no labels, no sign-off.\n\nReturn only the update.",
     },
 
 ];
@@ -1616,13 +1689,20 @@ pub mod lint {
     ) -> Vec<Violation> {
         let mut violations = Vec::new();
 
-        for phrase in banned_phrases() {
-            if contains_phrase(text, phrase) {
-                violations.push(Violation {
-                    rule: Rule::BannedWord,
-                    entry_id,
-                    detail: format!("the banned phrase \"{phrase}\""),
-                });
+        // The ban list holds what the **athlete** reads. An `instruction` is
+        // the one string the athlete never sees: it is the product's own
+        // instruction to a model, and a prompt that forbids a word has to
+        // name it — "do not use these words: should, must, …" — which is
+        // the opposite of using one.
+        if kind != StringKind::Instruction {
+            for phrase in banned_phrases() {
+                if contains_phrase(text, phrase) {
+                    violations.push(Violation {
+                        rule: Rule::BannedWord,
+                        entry_id,
+                        detail: format!("the banned phrase \"{phrase}\""),
+                    });
+                }
             }
         }
 

@@ -142,7 +142,10 @@ fn the_prompt_is_the_core_s_own_instruction() {
         &json!({"role": "writer"}).to_string(),
     );
     let prompt = body["prompt"].as_str().unwrap();
-    assert!(prompt.contains("Use only the numbers in the payload"));
+    assert!(
+        prompt.contains("Every number you may use is in this payload"),
+        "{prompt}"
+    );
     assert!(prompt.contains("no verdict"));
     // The payload travels with it.
     assert!(
@@ -221,7 +224,9 @@ fn a_draft_that_passes_is_kept_with_its_checks() {
             "reviewer": "the reviewer",
             "verdict": "ship",
             "payload_hash": hash,
-            "draft": "The run was 10 km in 50 m, at an average of 150 bpm.",
+            "draft": "You ran 10 km in 50 m, at an average of 150 bpm. The pace held steady \
+                      through the run. The first kilometre was the slowest of the run. The run \
+                      spent 3 m in the slowest band.",
         })
         .to_string(),
     );
@@ -236,7 +241,7 @@ fn a_draft_that_passes_is_kept_with_its_checks() {
     assert_eq!(update["verdict"].as_str(), Some("ship"));
     assert_eq!(update["payload_hash"].as_str(), Some(hash.as_str()));
     let checks = update["checks"].as_array().unwrap();
-    assert_eq!(checks.len(), 3, "the three checks are listed");
+    assert_eq!(checks.len(), 4, "the four checks are listed");
     for check in checks {
         assert!(check["findings"].as_array().unwrap().is_empty());
     }

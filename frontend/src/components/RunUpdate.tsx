@@ -30,6 +30,8 @@ function checkLabel(check: string): string {
       return t('activity.update.check.direction')
     case 'register':
       return t('activity.update.check.register')
+    case 'shape':
+      return t('activity.update.check.shape')
     default:
       return check
   }

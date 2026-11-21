@@ -116,6 +116,16 @@
     <output id="fit-output" aria-live="polite"></output>
   </section>
 
+  <section>
+    <h2>Write a run's update</h2>
+    <p class="muted">The run update is the model's own reading of a run: the facts the app computed, arranged into sentences, checked against the payload and named. It is written when a run lands — this writes it again for a run that has none.</p>
+    <div class="row">
+      <input id="update-activity" name="activity" type="number" min="1" step="1" autocomplete="off" spellcheck="false" placeholder="run id">
+      <button id="update-button" type="button">Write the update</button>
+    </div>
+    <output id="update-output" aria-live="polite"></output>
+  </section>
+
   <section class="privacy">
     <h2>Keep an export private</h2>
     <p class="muted">An export contains the athlete's runs, wellness days, plans and notes. Copy the whole folder over a private channel such as a USB cable or a local file share. Do not put it in public storage. The Garmin key is never in an export.</p>
@@ -145,6 +155,39 @@
     }
     return answer
   }
+
+  const updateButton = document.getElementById('update-button')
+  const updateOutput = document.getElementById('update-output')
+  const updateActivity = document.getElementById('update-activity')
+  updateButton.addEventListener('click', async () => {
+    const activity = Number(updateActivity.value)
+    if (!Number.isInteger(activity) || activity < 1) {
+      show(updateOutput, 'A run id is a number.', 'bad')
+      return
+    }
+    updateButton.disabled = true
+    show(updateOutput, 'Writing the update…')
+    try {
+      const answer = await jsonPost('/rig/update', { activity_id: activity })
+      const kept = answer.kept || 0
+      const refused = answer.refused || []
+      show(
+        updateOutput,
+        [
+          `Wrote ${answer.written || 0} update${answer.written === 1 ? '' : 's'}; ${kept} kept.`,
+          ...refused.map((line) => `Not kept — ${line}`),
+          kept
+            ? 'The update is on the run\u2019s page, named and attributed.'
+            : 'Nothing was kept: the draft did not pass the checks, or the model refused.',
+        ].join('\n'),
+        kept ? 'good' : 'state',
+      )
+    } catch (problem) {
+      show(updateOutput, problem.message, 'bad')
+    } finally {
+      updateButton.disabled = false
+    }
+  })
 
   const exportButton = document.getElementById('export-button')
   const exportOutput = document.getElementById('export-output')
