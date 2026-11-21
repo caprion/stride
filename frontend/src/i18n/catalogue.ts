@@ -386,6 +386,34 @@ export const catalogue = {
   'progress.rolling.zones.distribution': { type: 'status', text: 'By zone' },
   'progress.rolling.distances.heading': { type: 'status', text: 'By distance' },
   'progress.profile.heading': { type: 'status', text: 'Training profile' },
+
+  /**
+   * The athlete's shape: the same six facets of the training, over two
+   * windows, drawn on one chart.
+   *
+   * The chart is the athlete's own — every axis is scaled to the larger
+   * of the two windows' values, so the two shapes are read against each
+   * other and not against anybody's idea of a good week.
+   */
+  'progress.shape.heading': { type: 'status', text: 'Your shape' },
+  'progress.shape.note': {
+    type: 'status',
+    text: 'Six facets of your training, over two windows, on one chart.',
+  },
+  'progress.shape.scale': {
+    type: 'status',
+    text: 'Each axis is scaled to the larger of the two windows.',
+  },
+  'progress.shape.alt': {
+    type: 'status',
+    text: 'Six axes, with the shape of each of the two windows drawn on them.',
+  },
+  'progress.shape.empty': {
+    type: 'status',
+    text: 'This window holds no run, so it has no shape.',
+  },
+  'progress.shape.axis': { type: 'status', text: 'Facet' },
+  'progress.shape.window': { type: 'status', text: '{days} days' },
   'progress.rolling.trend.up': { type: 'status', text: 'up on the {days} days before' },
   'progress.rolling.trend.down': { type: 'status', text: 'down on the {days} days before' },
   'progress.rolling.trend.steady': { type: 'status', text: 'the same as the {days} days before' },
@@ -404,7 +432,7 @@ export const catalogue = {
    * wording is the app's own: a question, the answer in the core's own
    * rendering, and the window the answer covers.
    */
-  'progress.index.intro': { type: 'status', text: 'Six questions, and your answer to each.' },
+  'progress.index.intro': { type: 'status', text: 'Seven questions, and your answer to each.' },
   'progress.index.footnote': {
     type: 'status',
     text: 'Each question opens on its own. The wider screens show the panels side by side.',
@@ -418,6 +446,7 @@ export const catalogue = {
   'progress.index.pace.question': { type: 'status', text: 'The pace' },
   'progress.index.zones.question': { type: 'status', text: 'Your zones' },
   'progress.index.habit.question': { type: 'status', text: 'The habit' },
+  'progress.index.shape.question': { type: 'status', text: 'Your shape' },
   'progress.index.run': { type: 'status', text: '{n} run' },
   'progress.index.runs': { type: 'status', text: '{n} runs' },
   'progress.index.month': { type: 'status', text: '{n} month with runs' },

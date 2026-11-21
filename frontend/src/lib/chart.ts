@@ -70,6 +70,95 @@ export function axisLabels(ticks: AxisTick[]): Map<number, string> {
 }
 
 /**
+ * A scale: a number in, a number out.
+ *
+ * The app's charts draw on scales, and the scale is the app's own: the
+ * same helper draws the film's playhead, the run film's lines and the
+ * shape's axes, so a chart cannot grow a second idea of where its zero
+ * is.
+ */
+export type Scale = (value: number) => number
+
+/**
+ * A linear scale: a domain, a range, and the straight line between them.
+ *
+ * A domain that is a single point (both ends the same) has no line to
+ * draw, and the scale returns the low end of the range for every value:
+ * a chart with one value on it draws that value at the bottom of its
+ * range rather than dividing by zero.
+ */
+export function linearScale(domain: [number, number], range: [number, number]): Scale {
+  const [from, to] = domain
+  const [low, high] = range
+  const span = to - from
+  if (span === 0) return () => low
+  return (value: number) => low + ((value - from) / span) * (high - low)
+}
+
+/** A point on a drawing. */
+export interface Point {
+  x: number
+  y: number
+}
+
+/**
+ * A closed path through a set of points.
+ *
+ * The path is the drawing's own geometry — the app's, not a library's —
+ * and the numbers in it are rounded to a tenth of a pixel, so the path of
+ * a shape is not a string of seventeen decimals.
+ */
+export function polygonPath(points: Point[]): string {
+  if (points.length === 0) return ''
+  const [first, ...rest] = points
+  const start = first as Point
+  const restPath = rest.map((point) => ` L ${px(point.x)},${px(point.y)}`).join('')
+  return `M ${px(start.x)},${px(start.y)}${restPath} Z`
+}
+
+/**
+ * A pixel on a drawing.
+ *
+ * The drawing's own geometry: a coordinate, to a tenth of a pixel.
+ */
+export function px(value: number): number {
+  return Math.round(value * 10) / 10
+}
+
+/**
+ * The app's own font, as the labels are set in it.
+ */
+export function fontFamily(): string {
+  if (typeof document === 'undefined') return 'system-ui, sans-serif'
+  return getComputedStyle(document.body).fontFamily || 'system-ui, sans-serif'
+}
+
+/** The canvas the drawings measure their labels with. */
+let measuringContext: CanvasRenderingContext2D | null | undefined
+
+function measuring(): CanvasRenderingContext2D | null {
+  if (measuringContext === undefined) {
+    measuringContext =
+      typeof document === 'undefined' ? null : document.createElement('canvas').getContext('2d')
+  }
+  return measuringContext
+}
+
+/**
+ * The width of a piece of text, as the drawing will set it.
+ *
+ * The drawing measures its own labels: a canvas knows how wide a string
+ * is, and a drawing must not put two labels on top of each other, nor
+ * let one of them run past the edge of the drawing.
+ */
+export function textWidth(text: string, size = 11, weight = 400): number {
+  const context = measuring()
+  if (!context) return text.length * size * 0.55
+  context.font = `${weight} ${size}px ${fontFamily()}`
+  return context.measureText(text).width
+}
+
+/**
  * The range a scale covers: the middle of the values.
  *
  * A run carries a few readings that are far outside the rest — a walk

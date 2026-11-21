@@ -2,13 +2,14 @@
  * The route.
  *
  * The API sends the route as points — the run's own coordinates, in the
- * order the run went through them — and the app draws them: the map on
- * the run's own page, a thumbnail in the feed at the wide widths, and a
- * mini thumbnail on Today where there is room for it.
+ * order the run went through them — and the app draws them.
  *
- * **No map library, no tiles, no server.** The route never leaves the
- * device, so the map does not either: the drawing is made here, from the
- * points the API sent.
+ * **On the run's own page the map is the flyby**: the track coloured by
+ * the pace, the marker on the runner and the camera following, played
+ * from the run's own samples. The app's own SVG map — the outline, with a
+ * marker where the run started and a ring where it ended — is what the
+ * feed and the cockpit draw, where a picture of the route is the whole
+ * of what is wanted.
  */
 
 import { waitFor } from '@testing-library/react'
@@ -20,11 +21,26 @@ afterEach(() => {
 })
 
 describe('the route', () => {
-  it('draws the run\'s route, with a marker where it started and where it ended', async () => {
+  it("draws the flyby on the run's own page, and plays it", async () => {
     window.history.pushState({}, '', '/?fixtures=route')
     const { container } = renderApp('/runs/101')
     await waitFor(() =>
-      expect(container.querySelector('[data-testid="activity-route"]')).toBeTruthy(),
+      expect(container.querySelector('[data-testid="activity-flyby"]')).toBeTruthy(),
+    )
+
+    // The map is the flyby: the same map the film page draws.
+    expect(container.querySelector('[data-testid="film-flyby"]')).toBeTruthy()
+    // And it is played from the run's own page.
+    expect(container.querySelector('[data-testid="activity-flyby-play"]')).toBeTruthy()
+    // The film is still the deep view, and the run detail still opens it.
+    expect(container.querySelector('[data-testid="activity-film"]')).toBeTruthy()
+  })
+
+  it('draws the run\'s outline in the feed, with a marker where it started and where it ended', async () => {
+    window.history.pushState({}, '', '/?fixtures=route')
+    const { container } = renderApp('/runs')
+    await waitFor(() =>
+      expect(container.querySelector('[data-testid="run-route"]')).toBeTruthy(),
     )
 
     // The drawing is the app's own SVG, and the two markers are in it.
@@ -45,6 +61,7 @@ describe('the route', () => {
     )
 
     expect(container.querySelector('[data-testid="activity-route"]')).toBeNull()
+    expect(container.querySelector('[data-testid="activity-flyby"]')).toBeNull()
     expect(container.querySelector('[data-testid="route-map"]')).toBeNull()
   })
 

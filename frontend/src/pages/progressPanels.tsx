@@ -31,6 +31,7 @@ import { formatCount, formatDateShort, renderedText } from '../lib/format'
 import { t } from '../i18n'
 import type { CatalogueKey } from '../i18n'
 import { axisTick } from '../components/ChartAxis'
+import { AthleteShape, shapeAxes } from '../components/AthleteShape'
 
 /**
  * The reasons the load can have no value, and the line each one gets.
@@ -570,6 +571,120 @@ export function ProfilePanel({ rolling }: { rolling: RollingInsight | undefined 
       <p className="mt-2 text-[12px] text-ink-faint" data-testid="progress-profile-window">
         {t('progress.rolling.window', { days: rolling?.window.days ?? 0 })}
       </p>
+    </section>
+  )
+}
+
+/**
+ * The athlete's shape: six axes, two windows, one chart.
+ *
+ * The same six facets of the training — the volume, the consistency, the
+ * sport variety, the density, the duration, the intensity — over two
+ * windows, drawn on one chart. **Each axis is scaled to the larger of the
+ * two windows' values**, so the two shapes are read against each other
+ * and not against anybody's idea of a good week.
+ *
+ * The numbers beside the chart are the core's own rendering, one row for
+ * each axis, and a facet with no value says so by showing nothing. The
+ * windows are named, so a shape is never read apart from the period it
+ * covers.
+ */
+export function ShapePanel({
+  short,
+  long,
+  error,
+}: {
+  short: RollingInsight | undefined
+  long: RollingInsight | undefined
+  error: boolean
+}) {
+  const axes = shapeAxes(short, long)
+  const shortDays = short?.window.days
+  const longDays = long?.window.days
+
+  return (
+    <section className="card px-4 py-3" data-testid="progress-shape">
+      <h2 className="mb-2 text-[12px] font-semibold uppercase tracking-[0.07em] text-ink-faint">
+        {t('progress.shape.heading')}
+      </h2>
+      <p className="text-[12px] text-ink-muted">{t('progress.shape.note')}</p>
+      {error && !short && !long ? (
+        <p className="mt-2 text-[13px] text-ink-muted" data-testid="progress-shape-error">
+          {t('common.error')}
+        </p>
+      ) : null}
+      {!short && !long && !error ? (
+        <p className="mt-2 text-[13px] text-ink-muted">{t('common.loading')}</p>
+      ) : null}
+      {short || long ? (
+        <>
+          <AthleteShape short={short} long={long} />
+          {/* The two windows, named: the chart is never read apart from
+              the period it covers. */}
+          <ul className="mt-2 flex flex-wrap gap-x-4 gap-y-1" data-testid="progress-shape-legend">
+            {[
+              { days: shortDays, colour: 'var(--chart-line)' },
+              { days: longDays, colour: 'var(--chart-line-alt)' },
+            ].map((entry) => (
+              <li
+                key={entry.colour}
+                className="flex items-center gap-1.5 text-[11.5px] text-ink-muted"
+              >
+                <span
+                  className="inline-block h-2.5 w-4 rounded-sm"
+                  style={{ backgroundColor: entry.colour }}
+                />
+                <span>
+                  {entry.days === undefined
+                    ? t('progress.shape.empty')
+                    : t('progress.rolling.window', { days: entry.days })}
+                </span>
+              </li>
+            ))}
+          </ul>
+          <p className="mt-1 text-[12px] text-ink-faint">{t('progress.shape.scale')}</p>
+          {/* The numbers, in the core's own words: a row for each axis,
+              and the two windows beside it. */}
+          <table className="mt-3 w-full table-fixed text-[12px]" data-testid="progress-shape-values">
+            <thead>
+              <tr className="border-b border-edge text-ink-muted">
+                <th scope="col" className="py-1.5 text-left font-medium">
+                  {t('progress.shape.axis')}
+                </th>
+                <th scope="col" className="py-1.5 text-right font-medium">
+                  {shortDays === undefined
+                    ? ''
+                    : t('progress.shape.window', { days: shortDays })}
+                </th>
+                <th scope="col" className="py-1.5 text-right font-medium">
+                  {longDays === undefined ? '' : t('progress.shape.window', { days: longDays })}
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {axes.map((axis) => (
+                <tr key={axis.key} className="border-b border-edge last:border-b-0">
+                  <th scope="row" className="py-1.5 text-left font-medium text-ink-soft">
+                    {axis.label}
+                  </th>
+                  <td
+                    className="py-1.5 text-right tabular-nums text-ink"
+                    data-testid={`progress-shape-${axis.key}-short`}
+                  >
+                    {renderedText(axis.short)}
+                  </td>
+                  <td
+                    className="py-1.5 text-right tabular-nums text-ink-muted"
+                    data-testid={`progress-shape-${axis.key}-long`}
+                  >
+                    {renderedText(axis.long)}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </>
+      ) : null}
     </section>
   )
 }

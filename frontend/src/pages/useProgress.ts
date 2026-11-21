@@ -16,6 +16,18 @@ import { axisTicks, calendarWeekStarts } from '../lib/chart'
 import { formatDateShort } from '../lib/format'
 import type { ConsistencyPoint, PacePoint, VolumePoint } from './progressPanels'
 
+/**
+ * The two windows the athlete's shape is drawn over.
+ *
+ * **The router's window is measured in weeks**, so the short window is
+ * four weeks — twenty-eight days — and the longer one thirteen — ninety-one
+ * days: the nearest windows to a month and to a quarter. The panel names
+ * the window the answer reports, so the reader is never told a period the
+ * router did not answer.
+ */
+export const SHORT_WINDOW_WEEKS = 4
+export const QUARTER_WINDOW_WEEKS = 13
+
 /** The answers, and the series the charts draw from them. */
 export function useProgress(range: number) {
   const progress = useQuery({
@@ -37,6 +49,21 @@ export function useProgress(range: number) {
   const streaks = useQuery({
     queryKey: ['insights-streaks'],
     queryFn: () => api.insightsStreaks(),
+  })
+  /**
+   * The shape's two windows.
+   *
+   * The same route as the rolling view, asked for the two windows the
+   * shape is drawn over. They are windows of their own: the panel names
+   * each one, and the two shapes are read against each other.
+   */
+  const shapeShort = useQuery({
+    queryKey: ['insights-rolling', SHORT_WINDOW_WEEKS],
+    queryFn: () => api.insightsRolling(SHORT_WINDOW_WEEKS),
+  })
+  const shapeLong = useQuery({
+    queryKey: ['insights-rolling', QUARTER_WINDOW_WEEKS],
+    queryFn: () => api.insightsRolling(QUARTER_WINDOW_WEEKS),
   })
 
   const data = progress.data
@@ -95,6 +122,7 @@ export function useProgress(range: number) {
     load,
     rolling,
     streaks,
+    shape: { short: shapeShort, long: shapeLong },
     data,
     weeks,
     volume,
