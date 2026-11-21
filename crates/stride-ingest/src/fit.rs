@@ -1019,11 +1019,17 @@ impl Importer<'_> {
         let segmentation = segment::segment_samples(&samples_for_segmentation);
         let has_records = !self.records.is_empty();
 
+        // The barometer's own resets are taken out before anything reads
+        // the altitude: the samples the app draws and the stream the
+        // router answers with are the same shape, and it is the run's own.
+        let altitudes = rebased_altitudes(&self.records);
+
         let fitted_samples = self
             .records
             .iter()
             .zip(segmentation.samples.iter())
-            .map(|(record, classified)| FitSample {
+            .enumerate()
+            .map(|(index, (record, classified))| FitSample {
                 index: classified.sample.index,
                 elapsed_s: classified.sample.elapsed_s,
                 kind: classified.kind,
@@ -1034,7 +1040,11 @@ impl Importer<'_> {
                     .cadence
                     .map(|value| running_cadence(value, sport.as_deref())),
                 heart_rate_bpm: record.heart_rate_bpm,
-                altitude_m: record.altitude_m,
+                altitude_m: altitudes
+                    .get(index)
+                    .copied()
+                    .flatten()
+                    .or(record.altitude_m),
             })
             .collect();
 
@@ -1094,7 +1104,14 @@ impl Importer<'_> {
 
                 let elevation: Vec<(f64, f64)> = running
                     .iter()
-                    .filter_map(|record| record.altitude_m.map(|value| (record.timestamp_s, value)))
+                    .enumerate()
+                    .filter_map(|(index, record)| {
+                        altitudes
+                            .get(index)
+                            .copied()
+                            .flatten()
+                            .map(|value| (record.timestamp_s, value))
+                    })
                     .collect();
                 if !elevation.is_empty() {
                     let (rebased, reset) = rebased_elevation(&elevation);
@@ -1235,21 +1252,16 @@ pub fn running_cadence(value: f64, sport: Option<&str>) -> f64 {
     }
 }
 
-/// The fastest a barometer may report a change of altitude, in metres per
-/// second.
-///
-/// No runner climbs at five metres a second, and no barometer drifts that
-/// fast either: when the reading changes faster than this, the sensor has
-/// lost the signal and found it again, and the altitude it reports after
-/// that is a **reset** — not a cliff, and not a climb.
-const MAX_VERTICAL_SPEED_MPS: f64 = 5.0;
-
 /// The biggest change between two readings that is not a glitch, in metres.
 ///
 /// A barometer tracks a slope a metre or two at a time, so a change of
 /// fifty metres between two readings is the sensor losing its signal and
 /// finding it again — not the ground. A real descent or climb is recorded
 /// as many small steps, never as one.
+///
+/// The test is the **size** of the change and not its speed: a quick
+/// twenty-metre wobble is the barometer's own noise, and the device's
+/// climb already accounts for it the way the watch meant it.
 const RESET_STEP_M: f64 = 50.0;
 
 /// How close the readings must come back to the trusted level, in metres.
@@ -1286,11 +1298,8 @@ fn rebased_elevation(records: &[(f64, f64)]) -> (Vec<(f64, f64)>, bool) {
     while index < records.len() {
         let previous = (records[index - 1].0, values[index - 1]);
         let current = (records[index].0, records[index].1);
-        let seconds = (current.0 - previous.0).max(0.0);
         let step = current.1 - previous.1;
-        let too_fast = seconds > 0.0 && step.abs() / seconds > MAX_VERTICAL_SPEED_MPS;
-        let too_big = step.abs() > RESET_STEP_M;
-        if !too_fast && !too_big {
+        if step.abs() <= RESET_STEP_M {
             index += 1;
             continue;
         }
@@ -1325,6 +1334,28 @@ fn rebased_elevation(records: &[(f64, f64)]) -> (Vec<(f64, f64)>, bool) {
         .map(|((timestamp, _), value)| (*timestamp, *value))
         .collect();
     (rebased, reset)
+}
+
+/// The rebased altitude of every record: `None` where the record carries
+/// none.
+fn rebased_altitudes(records: &[RawRecord]) -> Vec<Option<f64>> {
+    let readings: Vec<(f64, f64)> = records
+        .iter()
+        .filter_map(|record| record.altitude_m.map(|value| (record.timestamp_s, value)))
+        .collect();
+    let (rebased, _) = rebased_elevation(&readings);
+    let mut out: Vec<Option<f64>> = vec![None; records.len()];
+    let mut next = 0;
+    for (index, record) in records.iter().enumerate() {
+        if record.altitude_m.is_none() {
+            continue;
+        }
+        if let Some((_, value)) = rebased.get(next) {
+            out[index] = Some(*value);
+            next += 1;
+        }
+    }
+    out
 }
 
 /// The climb of a rebased series: every rise, added up.
@@ -1891,7 +1922,7 @@ mod tests {
             (0.0, 920.0),
             (10.0, 921.0),
             (20.0, 920.5),
-            (20.05, 92.0), // the reset: 828 m in fifty milliseconds
+            (20.05, 92.0), // the reset: 828 m in one step
             (30.0, 92.5),
             (60.0, 96.0),
             (120.0, 120.0),
@@ -1917,6 +1948,26 @@ mod tests {
             climb < 100.0,
             "the climb is the run's own, and it was {climb}"
         );
+    }
+
+    #[test]
+    fn a_quick_wobble_is_not_a_glitch() {
+        // Twenty metres in two seconds: the barometer's own noise, and the
+        // device's climb already means what it means. It is not a lost
+        // signal, so the series is left as it is.
+        let records = vec![
+            (0.0, 100.0),
+            (2.0, 80.0),
+            (4.0, 84.0),
+            (6.0, 86.0),
+            (8.0, 88.0),
+        ];
+
+        let (rebased, reset) = rebased_elevation(&records);
+
+        assert!(!reset, "a wobble is not a lost signal");
+        assert_eq!(rebased.len(), 5);
+        assert!((rebased[1].1 - 80.0).abs() < 0.01);
     }
 
     #[test]
