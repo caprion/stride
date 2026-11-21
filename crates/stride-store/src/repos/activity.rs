@@ -519,6 +519,25 @@ impl Store {
     }
 
     /// The FIT file of one run.
+    /// The runs that hold a file, and the file itself.
+    ///
+    /// The file is the source of truth, and reading it again is how a
+    /// change to the reader reaches the runs that are already in the log.
+    pub fn activities_with_files(&self) -> Result<Vec<(i64, Vec<u8>)>> {
+        let conn = self.lock()?;
+        let mut statement = conn.prepare(
+            "SELECT id, fit_blob FROM activities WHERE fit_blob IS NOT NULL AND fit_blob != '' ORDER BY id",
+        )?;
+        let rows = statement.query_map([], |row| {
+            Ok((row.get::<_, i64>(0)?, row.get::<_, Vec<u8>>(1)?))
+        })?;
+        let mut held = Vec::new();
+        for row in rows {
+            held.push(row?);
+        }
+        Ok(held)
+    }
+
     pub fn fit_blob(&self, activity_id: i64) -> Result<Option<Vec<u8>>> {
         let conn = self.lock()?;
         conn.query_row(

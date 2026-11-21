@@ -1453,6 +1453,7 @@ dependencies = [
  "rustls-pemfile",
  "serde_json",
  "stride-api",
+ "stride-ingest",
  "stride-store",
  "thiserror 1.0.69",
  "uuid",

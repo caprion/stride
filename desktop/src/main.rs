@@ -8,6 +8,7 @@
 //! stride-desktop doctor     say what this rig is and where its files are
 //! stride-desktop export     write a verified export of the local log
 //! stride-desktop import     read a verified export back into the local log
+//! stride-desktop reread     read every stored file again, and write what it says
 //! ```
 //!
 //! `serve` is the one a stranger runs. It opens the database, holds the
@@ -576,6 +577,7 @@ stride {version} — the desktop rig: one binary that serves the app and the rou
   stride-desktop doctor    say what this rig is and where its files are
   stride-desktop export    write a verified export of the local log
   stride-desktop import    read a verified export back into the local log
+  stride-desktop reread    read every stored file again, and write what it says
 
 the options of `export`
   --output <directory>     where to write the export (default: the rig's private exports folder)

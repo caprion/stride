@@ -1039,6 +1039,10 @@ impl Importer<'_> {
             .collect();
 
         let mut streams = BTreeMap::new();
+        // The climb the file's own records support, when the barometer
+        // reset itself and the device's own climb counted the climb back
+        // up to the truth. `None` means the device's number stands.
+        let mut elevation_gain: Option<f64> = None;
         if let Some(start) = start_timestamp_s {
             let running: Vec<&RawRecord> = self
                 .records
@@ -1093,7 +1097,14 @@ impl Importer<'_> {
                     .filter_map(|record| record.altitude_m.map(|value| (record.timestamp_s, value)))
                     .collect();
                 if !elevation.is_empty() {
-                    streams.insert("elevation".to_owned(), series(&elevation, start, "m"));
+                    let (rebased, reset) = rebased_elevation(&elevation);
+                    if reset {
+                        // The barometer reset itself: the device's own climb
+                        // counted the climb back up to the truth, and the
+                        // file's records say the run climbed this much.
+                        elevation_gain = Some(climb_of(&rebased));
+                    }
+                    streams.insert("elevation".to_owned(), series(&rebased, start, "m"));
                 }
             }
         }
@@ -1123,7 +1134,8 @@ impl Importer<'_> {
             distance_m,
             moving_time_s,
             elapsed_time_s,
-            elevation_gain_m: bounded(summary.total_ascent, 100_000.0).unwrap_or(0.0),
+            elevation_gain_m: bounded(elevation_gain.or(summary.total_ascent), 100_000.0)
+                .unwrap_or(0.0),
             elevation_loss_m: bounded(summary.total_descent, 100_000.0),
             avg_hr: bounded(summary.avg_heart_rate, 300.0).map(|value| value.trunc() as i64),
             max_hr: bounded(summary.max_heart_rate, 300.0).map(|value| value.trunc() as i64),
@@ -1221,6 +1233,110 @@ pub fn running_cadence(value: f64, sport: Option<&str>) -> f64 {
     } else {
         value
     }
+}
+
+/// The fastest a barometer may report a change of altitude, in metres per
+/// second.
+///
+/// No runner climbs at five metres a second, and no barometer drifts that
+/// fast either: when the reading changes faster than this, the sensor has
+/// lost the signal and found it again, and the altitude it reports after
+/// that is a **reset** — not a cliff, and not a climb.
+const MAX_VERTICAL_SPEED_MPS: f64 = 5.0;
+
+/// The biggest change between two readings that is not a glitch, in metres.
+///
+/// A barometer tracks a slope a metre or two at a time, so a change of
+/// fifty metres between two readings is the sensor losing its signal and
+/// finding it again — not the ground. A real descent or climb is recorded
+/// as many small steps, never as one.
+const RESET_STEP_M: f64 = 50.0;
+
+/// How close the readings must come back to the trusted level, in metres.
+///
+/// A lost signal that comes back within this is the same level, seen
+/// again; a reading further away than this is still the sensor's own lie.
+const RESET_TOLERANCE_M: f64 = 30.0;
+
+/// The elevation of a run, with the barometer's resets taken out.
+///
+/// A barometric altimeter loses its signal under a bridge or between tall
+/// buildings, and the reading that comes back is not where the run was:
+/// the series drops hundreds of metres in a fraction of a second and then
+/// climbs back to the truth over the next kilometres. The device counts
+/// that climb, and a flat six-kilometre run is reported as an eight
+/// hundred metre hill.
+///
+/// So a change faster than a runner can climb is a **reset**: the readings
+/// from there until they come back to the level the run was at are the
+/// sensor's own lie, and they are replaced by the straight line between
+/// the level the run was at and the level it came back to. What is left is
+/// the run's own shape, and the climb the file's own records support.
+///
+/// The answer is the rebased series, and whether a reset was found: the
+/// caller uses the device's own climb unless one was, because the device's
+/// number is the watch's smoothed one and it is right far more often.
+fn rebased_elevation(records: &[(f64, f64)]) -> (Vec<(f64, f64)>, bool) {
+    if records.len() < 2 {
+        return (records.to_vec(), false);
+    }
+    let mut values: Vec<f64> = records.iter().map(|(_, value)| *value).collect();
+    let mut reset = false;
+    let mut index = 1;
+    while index < records.len() {
+        let previous = (records[index - 1].0, values[index - 1]);
+        let current = (records[index].0, records[index].1);
+        let seconds = (current.0 - previous.0).max(0.0);
+        let step = current.1 - previous.1;
+        let too_fast = seconds > 0.0 && step.abs() / seconds > MAX_VERTICAL_SPEED_MPS;
+        let too_big = step.abs() > RESET_STEP_M;
+        if !too_fast && !too_big {
+            index += 1;
+            continue;
+        }
+        // The reading jumped: the level the run was at is the last one that
+        // can be trusted, and the readings until they come back to it are
+        // the sensor's own lie.
+        reset = true;
+        let trusted = previous.1;
+        let mut back = index;
+        while back < records.len() && (records[back].1 - trusted).abs() > RESET_TOLERANCE_M {
+            back += 1;
+        }
+        let end = if back < records.len() {
+            records[back].1
+        } else {
+            trusted
+        };
+        let steps = (back - index).max(1);
+        for step_index in 0..steps {
+            let position = index + step_index;
+            if position >= values.len() {
+                break;
+            }
+            let share = (step_index + 1) as f64 / steps as f64;
+            values[position] = trusted + (end - trusted) * share;
+        }
+        index = back.max(index + 1);
+    }
+    let rebased = records
+        .iter()
+        .zip(values.iter())
+        .map(|((timestamp, _), value)| (*timestamp, *value))
+        .collect();
+    (rebased, reset)
+}
+
+/// The climb of a rebased series: every rise, added up.
+fn climb_of(series: &[(f64, f64)]) -> f64 {
+    let mut total = 0.0;
+    for index in 1..series.len() {
+        let step = series[index].1 - series[index - 1].1;
+        if step > 0.0 {
+            total += step;
+        }
+    }
+    total
 }
 
 fn series(samples: &[(f64, f64)], start_timestamp_s: f64, unit: &str) -> Stream {
@@ -1764,6 +1880,62 @@ mod tests {
         assert_eq!(running_cadence(90.0, Some("running")), 180.0);
         assert_eq!(running_cadence(120.0, Some("running")), 120.0);
         assert_eq!(running_cadence(0.0, Some("running")), 0.0);
+    }
+
+    #[test]
+    fn a_barometer_reset_is_taken_out_of_the_elevation() {
+        // The truth: a flat run at about 920 m. The barometer loses the
+        // signal for a moment and comes back 828 m lower, and then climbs
+        // back to the truth over the next two kilometres.
+        let records = vec![
+            (0.0, 920.0),
+            (10.0, 921.0),
+            (20.0, 920.5),
+            (20.05, 92.0), // the reset: 828 m in fifty milliseconds
+            (30.0, 92.5),
+            (60.0, 96.0),
+            (120.0, 120.0),
+            (600.0, 260.0),
+            (900.0, 920.0), // back to the truth
+        ];
+
+        let (rebased, reset) = rebased_elevation(&records);
+
+        assert!(reset, "the reset was found");
+        // The series reads as the run's own shape: about 920 m throughout,
+        // with the slow rise at the end.
+        let last = rebased.last().expect("the last reading");
+        assert!(
+            (last.1 - 920.0).abs() < 1.0,
+            "the level after the reset was carried forward, and it was {}",
+            last.1
+        );
+        // And the climb the records support is the slow rise, not the
+        // eight hundred metres of the climb back up.
+        let climb = climb_of(&rebased);
+        assert!(
+            climb < 100.0,
+            "the climb is the run's own, and it was {climb}"
+        );
+    }
+
+    #[test]
+    fn a_real_climb_is_left_alone() {
+        // A run that goes up and comes down: a hundred metres over five
+        // minutes is a runner, not a barometer.
+        let records = vec![
+            (0.0, 100.0),
+            (60.0, 110.0),
+            (120.0, 120.0),
+            (180.0, 130.0),
+            (240.0, 140.0),
+        ];
+
+        let (rebased, reset) = rebased_elevation(&records);
+
+        assert!(!reset, "no reset was found");
+        assert_eq!(rebased.len(), 5);
+        assert!((climb_of(&rebased) - 40.0).abs() < 0.01);
     }
 
     #[test]
