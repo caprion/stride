@@ -67,8 +67,8 @@ function hour(value: number): string {
 /** A chart card with a fixed, legible height. */
 export function ChartCard({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <section className="card px-4 py-3">
-      <h2 className="mb-2 text-[12px] font-semibold uppercase tracking-[0.07em] text-ink-faint">
+    <section className="card py-3">
+      <h2 className="mb-2 caps">
         {title}
       </h2>
       {children}
@@ -110,8 +110,8 @@ export interface ConsistencyPoint {
  */
 export function EddingtonPanel({ data }: { data: ProgressInsight }) {
   return (
-    <section className="card px-4 py-3" data-testid="progress-eddington">
-      <h2 className="mb-2 text-[12px] font-semibold uppercase tracking-[0.07em] text-ink-faint">
+    <section className="card py-3" data-testid="progress-eddington">
+      <h2 className="mb-2 caps">
         {t('progress.eddington.heading')}
       </h2>
       {data.eddington ? (
@@ -180,8 +180,8 @@ export function LoadPanel({ load, error }: { load: LoadInsight | undefined; erro
   const week = series?.week ?? null
 
   return (
-    <section className="card px-4 py-3" data-testid="progress-load">
-      <h2 className="mb-2 text-[12px] font-semibold uppercase tracking-[0.07em] text-ink-faint">
+    <section className="card py-3" data-testid="progress-load">
+      <h2 className="mb-2 caps">
         {t('progress.load.heading')}
       </h2>
       {error && !load ? (
@@ -227,7 +227,7 @@ export function LoadPanel({ load, error }: { load: LoadInsight | undefined; erro
           ) : null}
           {week ? (
             <>
-              <h3 className="mt-3 text-[11px] font-semibold uppercase tracking-[0.07em] text-ink-faint">
+              <h3 className="mt-3 caps-sm">
                 {t('progress.load.week.heading')}
               </h3>
               <dl className="mt-1.5 grid grid-cols-2 gap-x-3 gap-y-2">
@@ -311,8 +311,8 @@ export function RollingPanel({
   error: boolean
 }) {
   return (
-    <section className="card px-4 py-3" data-testid="progress-rolling">
-      <h2 className="mb-2 text-[12px] font-semibold uppercase tracking-[0.07em] text-ink-faint">
+    <section className="card py-3" data-testid="progress-rolling">
+      <h2 className="mb-2 caps">
         {t('progress.rolling.heading')}
       </h2>
       {error && !rolling ? (
@@ -387,8 +387,8 @@ export function RollingPanel({
  */
 export function ZonesPanel({ rolling }: { rolling: RollingInsight | undefined }) {
   return (
-    <section className="card px-4 py-3" data-testid="progress-zones">
-      <h2 className="mb-2 text-[12px] font-semibold uppercase tracking-[0.07em] text-ink-faint">
+    <section className="card py-3" data-testid="progress-zones">
+      <h2 className="mb-2 caps">
         {t('progress.rolling.zones.heading')}
       </h2>
       {rolling?.zones.shares ? (
@@ -446,8 +446,8 @@ export function ZonesPanel({ rolling }: { rolling: RollingInsight | undefined })
  */
 export function ZonesDistributionPanel({ rolling }: { rolling: RollingInsight | undefined }) {
   return (
-    <section className="card px-4 py-3" data-testid="progress-zones-distribution">
-      <h2 className="mb-2 text-[12px] font-semibold uppercase tracking-[0.07em] text-ink-faint">
+    <section className="card py-3" data-testid="progress-zones-distribution">
+      <h2 className="mb-2 caps">
         {t('progress.rolling.zones.distribution')}
       </h2>
       {rolling?.zones.distribution ? (
@@ -507,8 +507,8 @@ export function ZonesDistributionPanel({ rolling }: { rolling: RollingInsight | 
  */
 export function DistancesPanel({ rolling }: { rolling: RollingInsight | undefined }) {
   return (
-    <section className="card px-4 py-3" data-testid="progress-distances">
-      <h2 className="mb-2 text-[12px] font-semibold uppercase tracking-[0.07em] text-ink-faint">
+    <section className="card py-3" data-testid="progress-distances">
+      <h2 className="mb-2 caps">
         {t('progress.rolling.distances.heading')}
       </h2>
       <p className="text-[12px] text-ink-faint" data-testid="progress-distances-window">
@@ -541,8 +541,8 @@ export function DistancesPanel({ rolling }: { rolling: RollingInsight | undefine
  */
 export function ProfilePanel({ rolling }: { rolling: RollingInsight | undefined }) {
   return (
-    <section className="card px-4 py-3" data-testid="progress-profile">
-      <h2 className="mb-2 text-[12px] font-semibold uppercase tracking-[0.07em] text-ink-faint">
+    <section className="card py-3" data-testid="progress-profile">
+      <h2 className="mb-2 caps">
         {t('progress.profile.heading')}
       </h2>
       <ul className="space-y-1.5" data-testid="progress-profile-facets">
@@ -577,8 +577,8 @@ export function ProfilePanel({ rolling }: { rolling: RollingInsight | undefined 
 /** What usually happened on each day of the week. */
 export function WeekdayPanel({ rolling }: { rolling: RollingInsight | undefined }) {
   return (
-    <section className="card px-4 py-3" data-testid="progress-weekday">
-      <h2 className="mb-2 text-[12px] font-semibold uppercase tracking-[0.07em] text-ink-faint">
+    <section className="card py-3" data-testid="progress-weekday">
+      <h2 className="mb-2 caps">
         {t('progress.rolling.weekday.heading')}
       </h2>
       <p className="text-[12px] text-ink-faint">{t('progress.rolling.history')}</p>
@@ -600,8 +600,8 @@ export function WeekdayPanel({ rolling }: { rolling: RollingInsight | undefined 
 /** What usually happened in each time of day. */
 export function DaytimePanel({ rolling }: { rolling: RollingInsight | undefined }) {
   return (
-    <section className="card px-4 py-3" data-testid="progress-daytime">
-      <h2 className="mb-2 text-[12px] font-semibold uppercase tracking-[0.07em] text-ink-faint">
+    <section className="card py-3" data-testid="progress-daytime">
+      <h2 className="mb-2 caps">
         {t('progress.rolling.daytime.heading')}
       </h2>
       <p className="text-[12px] text-ink-faint">{t('progress.rolling.history')}</p>
@@ -631,8 +631,8 @@ export function DaytimePanel({ rolling }: { rolling: RollingInsight | undefined 
 /** What each month of the history holds. */
 export function MonthsPanel({ rolling }: { rolling: RollingInsight | undefined }) {
   return (
-    <section className="card px-4 py-3" data-testid="progress-months">
-      <h2 className="mb-2 text-[12px] font-semibold uppercase tracking-[0.07em] text-ink-faint">
+    <section className="card py-3" data-testid="progress-months">
+      <h2 className="mb-2 caps">
         {t('progress.rolling.months.heading')}
       </h2>
       {rolling && rolling.months.length === 0 ? (
@@ -656,8 +656,8 @@ export function MonthsPanel({ rolling }: { rolling: RollingInsight | undefined }
 /** What each year of the history holds. */
 export function YearsPanel({ rolling }: { rolling: RollingInsight | undefined }) {
   return (
-    <section className="card px-4 py-3" data-testid="progress-years">
-      <h2 className="mb-2 text-[12px] font-semibold uppercase tracking-[0.07em] text-ink-faint">
+    <section className="card py-3" data-testid="progress-years">
+      <h2 className="mb-2 caps">
         {t('progress.rolling.years.heading')}
       </h2>
       <p className="text-[12px] text-ink-faint">{t('progress.rolling.history')}</p>

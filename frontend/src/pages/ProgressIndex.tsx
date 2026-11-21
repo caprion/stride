@@ -219,8 +219,8 @@ export function ProgressIndex({ answers }: { answers: ProgressAnswers }) {
 
   return (
     <div data-testid="progress-index">
-      <p className="mb-2 text-[13px] text-ink-muted">{t('progress.index.intro')}</p>
-      <ul className="card overflow-hidden" data-testid="progress-index-rows">
+      <p className="lede">{t('progress.index.intro')}</p>
+      <ul className="card overflow-hidden card-flush" data-testid="progress-index-rows">
         {rows.map((row) => (
           <li key={row.id} className="border-b border-edge last:border-b-0">
             <Link

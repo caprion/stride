@@ -6,6 +6,54 @@
 */
 @import './tokens.css';
 
+/*
+  Inter — the app's own copy of the mock's face.
+
+  **The font is an asset, not a package.** The app is a self-hosted
+  desktop program and the phone is a webview: neither may fetch a face
+  from a CDN, and neither may draw the app in a different face from the
+  other. So the five weights the mock uses live in the repository, in
+  `frontend/public/fonts/`, are subset to Latin, and are loaded here.
+
+  The files are the official Inter release (SIL Open Font License 1.1 —
+  the licence is beside them in `frontend/public/fonts/OFL.txt`).
+*/
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/Inter-Regular.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url('/fonts/Inter-Medium.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url('/fonts/Inter-SemiBold.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('/fonts/Inter-Bold.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 800;
+  font-display: swap;
+  src: url('/fonts/Inter-ExtraBold.woff2') format('woff2');
+}
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -43,6 +91,10 @@
 
   body {
     @apply bg-surface-soft font-sans text-ink;
+    /* The mock's own measure: the app is read at a run's end, on a
+       phone, in daylight, and the text is small and close. */
+    font-size: 14px;
+    line-height: 1.45;
   }
 
   ::-webkit-scrollbar {
@@ -120,8 +172,63 @@
   .nav-topbar {
     display: none;
   }
+
+  /* The wide arrangement's rail: the mock's rail.
+   *
+   * **The rail is the app's own dark ground** — the palette's own
+   * `--rail-ground`, not the page's colour — with the destinations on it,
+   * the brand at the top, and the note at the foot. The destination set
+   * is the app's; only the ground is the mock's.
+   */
   .nav-rail {
     display: none;
+    width: 232px;
+    flex: 0 0 232px;
+    padding: 20px 16px;
+    background: var(--rail-ground);
+    color: var(--rail-ink);
+    overflow-y: auto;
+  }
+
+  .nav-rail__brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .nav-rail nav {
+    display: grid;
+    gap: 3px;
+    margin-top: 22px;
+  }
+
+  .nav-rail nav a {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 11px;
+    border-radius: 9px;
+    color: var(--rail-ink);
+    font-weight: 500;
+    text-decoration: none;
+    transition: background-color 0.12s ease, color 0.12s ease;
+  }
+
+  .nav-rail nav a:hover {
+    background: var(--rail-hover);
+    color: var(--rail-ink-strong);
+  }
+
+  .nav-rail nav a[aria-current='page'] {
+    background: var(--rail-active);
+    color: var(--rail-ink-strong);
+  }
+
+  .nav-rail__foot {
+    margin-top: 24px;
+    color: var(--rail-foot);
+    font-size: 11.5px;
+    line-height: 1.6;
   }
 
   @container shell (min-width: 600px) {
@@ -351,9 +458,61 @@
     }
   }
 
-  /* A card. */
+  /* A card.
+   *
+   * **The mock's card:** a white ground, a hairline edge, the fourteen
+   * pixel radius, the soft two-part shadow, and the mock's own padding.
+   * The shadow is what says "this is a card", so it is on every card.
+   */
   .card {
-    @apply rounded-card border border-edge bg-surface;
+    @apply rounded-card border border-edge bg-surface shadow-card;
+    padding: 16px 18px;
+  }
+
+  /* A card whose content carries its own padding — a table, a list, a
+     calendar. The mock calls it a flush card. */
+  .card-flush {
+    padding: 0;
+  }
+
+  /* A section heading: the mock's small caps.
+   *
+   * One style for every band heading, so a screen reads as a set of
+   * sections rather than a set of headings somebody sized by hand.
+   */
+  .caps {
+    font-size: 12px;
+    line-height: 1.4;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    font-weight: 700;
+    color: var(--ink-faint);
+  }
+
+  /* The same, one step smaller: a card's own heading. */
+  .caps-sm {
+    font-size: 11.5px;
+    line-height: 1.4;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    font-weight: 700;
+    color: var(--ink-faint);
+  }
+
+  /* The line under a section heading: the mock's lede. */
+  .lede {
+    margin: 0 0 12px;
+    max-width: 74ch;
+    color: var(--ink-soft);
+    font-size: 13px;
+    line-height: 1.5;
+  }
+
+  /* The line under a page's own heading. */
+  .sub {
+    margin-top: 3px;
+    color: var(--ink-soft);
+    font-size: 13px;
   }
 
   .hero-card {
@@ -361,7 +520,40 @@
   }
 
   .nav-tabbar a[aria-current='page'] {
-    box-shadow: inset 0 -3px 0 var(--brand-600);
+    box-shadow: inset 0 -3px 0 var(--brand-500);
+  }
+
+  /* The brand: one mark, one word.
+   *
+   * The mark is the mock's — the warm gradient square with the app's
+   * glyph in it — and the word is the mock's weight and tracking.
+   */
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .brand__mark {
+    display: grid;
+    place-items: center;
+    width: 30px;
+    height: 30px;
+    border-radius: 9px;
+    background: linear-gradient(140deg, var(--accent-500), var(--accent-400));
+    color: var(--ink);
+  }
+
+  .brand__word {
+    color: var(--ink);
+    font-size: 17px;
+    font-weight: 800;
+    letter-spacing: 0.2px;
+  }
+
+  /* On the rail the word is the rail's own ink. */
+  .nav-rail .brand__word {
+    color: var(--rail-ink-strong);
   }
 
   /*

@@ -134,7 +134,7 @@ export function UpdateSettings() {
       </label>
 
       <div className="mt-3">
-        <h3 className="text-[11px] font-semibold uppercase tracking-[0.06em] text-ink-faint">
+        <h3 className="caps-sm">
           {t('settings.update.sent')}
         </h3>
         <p className="mt-1 text-[13px] text-ink-muted" data-testid="settings-update-sent">

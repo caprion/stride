@@ -58,7 +58,7 @@ export function KeyField({ onConnected }: { onConnected?: () => void }) {
   return (
     <div data-testid="key-field">
       <label className="block">
-        <span className="block text-[12px] font-semibold uppercase tracking-[0.06em] text-ink-faint">
+        <span className="block caps">
           {t('connect.key.label')}
         </span>
         <input

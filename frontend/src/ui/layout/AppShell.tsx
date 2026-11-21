@@ -72,16 +72,9 @@ function DestinationLink({
       to={destination.to}
       end={destination.end}
       data-destination={destination.to}
-      className={({ isActive }) =>
-        [
-          'tap flex items-center gap-2.5 rounded-md px-3 text-[14px] font-medium transition-colors',
-          isActive
-            ? 'bg-brand-50 text-brand-700'
-            : 'text-ink-soft hover:bg-surface-soft hover:text-ink',
-        ].join(' ')
-      }
+      className="tap flex items-center gap-2.5 text-[14px] font-medium"
     >
-      <Icon size={17} strokeWidth={2} />
+      <Icon size={16} strokeWidth={2} />
       {label}
     </NavLink>
   )
@@ -119,16 +112,9 @@ function SettingsLink({ variant }: { variant: 'bar' | 'rail' }) {
     <NavLink
       to="/settings"
       data-testid="shell-settings"
-      className={({ isActive }) =>
-        [
-          'tap flex items-center gap-2.5 rounded-md px-3 text-[14px] font-medium transition-colors',
-          isActive
-            ? 'bg-brand-50 text-brand-700'
-            : 'text-ink-muted hover:bg-surface-soft hover:text-ink',
-        ].join(' ')
-      }
+      className="tap flex items-center gap-2.5 text-[14px] font-medium"
     >
-      <Settings size={17} strokeWidth={2} />
+      <Settings size={16} strokeWidth={2} />
       {t('nav.settings')}
     </NavLink>
   )
@@ -170,24 +156,33 @@ function TopBar() {
   )
 }
 
-/** The left rail — the wide arrangement. */
+/** The left rail — the wide arrangement.
+ *
+ * **The mock's rail:** the app's own dark ground, the brand at the top,
+ * the destinations as the mock sets them, and the note at the foot.
+ *
+ * The destination set is the app's and it does not change — the same
+ * four, in the same order, at every width. The settings link is not a
+ * destination: it is the last item of the rail's list, as the mock has
+ * it.
+ */
 function Rail() {
   return (
-    <aside
-      data-nav="rail"
-      className="nav-rail w-[212px] shrink-0 overflow-y-auto border-r border-edge bg-surface px-3 py-5"
-    >
-      <div className="px-2 pb-4">
+    <aside data-nav="rail" className="nav-rail">
+      <div className="nav-rail__brand">
         <Brand />
       </div>
-      <nav aria-label={t('nav.label')} className="space-y-0.5">
+      <nav aria-label={t('nav.label')}>
         {DESTINATIONS.map((destination) => (
           <DestinationLink key={destination.to} destination={destination} variant="rail" />
         ))}
-      </nav>
-      <div className="mt-4 border-t border-edge pt-3">
         <SettingsLink variant="rail" />
-      </div>
+      </nav>
+      <p className="nav-rail__foot">
+        {t('nav.foot.one')}
+        <br />
+        {t('nav.foot.two')}
+      </p>
     </aside>
   )
 }

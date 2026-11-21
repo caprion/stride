@@ -244,7 +244,7 @@ export function RunFilm({
       {/* ------------------------------------------------ the zone legend */}
       {film.zones.length > 0 ? (
         <div className="mt-3" data-testid="film-zones">
-          <h3 className="text-[11px] font-semibold uppercase tracking-[0.07em] text-ink-faint">
+          <h3 className="caps-sm">
             {t('film.zones.heading')}
           </h3>
           <ul className="mt-1 flex flex-wrap gap-x-4 gap-y-1">
@@ -283,7 +283,7 @@ export function RunFilm({
 function Readout({ label, value }: { label: string; value: string }) {
   return (
     <div>
-      <div className="text-[11px] uppercase tracking-[0.07em] text-ink-faint">{label}</div>
+      <div className="caps-sm">{label}</div>
       <div className="text-[17px] font-semibold tabular-nums text-ink">{value}</div>
     </div>
   )

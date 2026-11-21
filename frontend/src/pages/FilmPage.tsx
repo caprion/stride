@@ -142,7 +142,7 @@ export function FilmPage({ id }: { id: string }) {
       ) : null}
 
       {empty ? (
-        <section className="card px-4 py-6" data-testid="film-empty">
+        <section className="card py-6" data-testid="film-empty">
           <p className="text-[15px] font-semibold text-ink">{t('film.empty.title')}</p>
           <p className="mt-1 text-[13px] text-ink-muted" data-testid="film-empty-reason">
             {data.unavailable ?? t('film.empty.body')}
@@ -151,9 +151,9 @@ export function FilmPage({ id }: { id: string }) {
       ) : (
         <>
           <div className="film-layout">
-            <section className="card px-4 py-3" data-testid="film">
+            <section className="card py-3" data-testid="film">
               {run.data?.name ? (
-                <h2 className="text-[12px] font-semibold uppercase tracking-[0.07em] text-ink-faint">
+                <h2 className="caps">
                   {run.data.name}
                 </h2>
               ) : null}
@@ -171,9 +171,9 @@ export function FilmPage({ id }: { id: string }) {
               ) : null}
             </section>
 
-            <section className="card px-4 py-3" data-testid="film-route">
+            <section className="card py-3" data-testid="film-route">
               <div className="flex flex-wrap items-baseline justify-between gap-2">
-                <h2 className="text-[12px] font-semibold uppercase tracking-[0.07em] text-ink-faint">
+                <h2 className="caps">
                   {t('film.route.heading')}
                 </h2>
                 <span className="text-[12px] text-ink-muted">{t('film.route.coloured')}</span>
@@ -190,8 +190,8 @@ export function FilmPage({ id }: { id: string }) {
 
           {/* ------------------------------------------------- the splits */}
           {data.splits.length > 0 ? (
-            <section className="card mt-3 px-4 py-3" data-testid="film-splits">
-              <h2 className="text-[12px] font-semibold uppercase tracking-[0.07em] text-ink-faint">
+            <section className="card mt-3 py-3" data-testid="film-splits">
+              <h2 className="caps">
                 {t('film.splits.heading')}
               </h2>
               <table className="mt-2 w-full table-fixed text-[12px]">

@@ -89,7 +89,7 @@ function EffortChart({
   )
   return (
     <figure className="m-0">
-      <figcaption className="mb-1 text-[12px] font-semibold uppercase tracking-[0.07em] text-ink-faint">
+      <figcaption className="mb-1 caps">
         {name}
       </figcaption>
       <div style={{ width: '100%', height: 150 }}>
@@ -248,7 +248,7 @@ export function ComparePage({ id }: { id: string }) {
       <>
         {back}
         <PageHeader title={t('compare.heading')} />
-        <section className="card px-4 py-6" data-testid="compare-none">
+        <section className="card py-6" data-testid="compare-none">
           <p>{t('compare.state.none')}</p>
           <p className="mt-1 text-[13px] text-ink-muted">{t('compare.state.noneBody')}</p>
         </section>
@@ -277,7 +277,7 @@ export function ComparePage({ id }: { id: string }) {
       <div>
         {back}
         <PageHeader title={t('compare.heading')} />
-        <div className="card px-4 py-8 text-center" data-testid="compare-none">
+        <div className="card py-8 text-center" data-testid="compare-none">
           <p className="text-[15px] font-semibold text-ink">{t('compare.state.none')}</p>
           <p className="mt-1 text-[13px] text-ink-muted">{t('compare.state.noneBody')}</p>
         </div>
@@ -305,14 +305,14 @@ export function ComparePage({ id }: { id: string }) {
 
       {/* --------------------------------------------- the basis banner */}
       <p
-        className="card px-4 py-2.5 text-[13.5px] font-medium text-ink-soft"
+        className="card py-2.5 text-[13.5px] font-medium text-ink-soft"
         data-testid="compare-basis"
       >
         {data.basis_text}
       </p>
 
       {/* ------------------------------------------- the metric diff */}
-      <section className="card mt-3 overflow-hidden" data-testid="compare-metrics">
+      <section className="card mt-3 overflow-hidden card-flush" data-testid="compare-metrics">
         <table className="w-full table-fixed">
           <thead>
             <tr className="border-b border-edge bg-surface-soft text-[11px] text-ink-muted">
@@ -344,8 +344,8 @@ export function ComparePage({ id }: { id: string }) {
           { run: runA, key: 'a' as const },
           { run: runB, key: 'b' as const },
         ].map(({ run, key }) => (
-          <section key={key} className="card px-4 py-3" data-testid={`compare-run-${key}`}>
-            <p className="text-[11px] font-semibold uppercase tracking-[0.07em] text-ink-faint">
+          <section key={key} className="card py-3" data-testid={`compare-run-${key}`}>
+            <p className="caps-sm">
               {t(key === 'a' ? 'compare.column.a' : 'compare.column.b')}
             </p>
             <p className="text-[15px] font-semibold text-ink">
@@ -365,9 +365,9 @@ export function ComparePage({ id }: { id: string }) {
       </div>
 
       {/* --------------------------------------------------- the charts */}
-      <section className="card mt-3 px-4 py-3">
+      <section className="card mt-3 py-3">
         <div className="mb-2 flex flex-wrap items-center justify-between gap-3">
-          <h2 className="text-[12px] font-semibold uppercase tracking-[0.07em] text-ink-faint">
+          <h2 className="caps">
             {t('activity.effort.heading')}
           </h2>
           <div className="flex items-center gap-2 text-[12px] text-ink-muted">
@@ -462,9 +462,9 @@ export function ComparePage({ id }: { id: string }) {
       {/* --------------------------------------------- the other runs */}
       <div className="mt-3">
         {picking ? (
-          <section className="card px-4 py-3" data-testid="compare-picker">
+          <section className="card py-3" data-testid="compare-picker">
             <div className="flex items-center justify-between gap-3">
-              <h2 className="text-[12px] font-semibold uppercase tracking-[0.07em] text-ink-faint">
+              <h2 className="caps">
                 {t('compare.chooseOther')}
               </h2>
               <button

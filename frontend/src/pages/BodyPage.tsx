@@ -46,7 +46,7 @@ export function BodyPage() {
     return (
       <div>
         <PageHeader title={t('body.heading')} />
-        <section className="card px-4 py-4" role="alert">
+        <section className="card py-4" role="alert">
           <p>{t('common.error')}</p>
           <button
             type="button"
@@ -128,7 +128,7 @@ export function BodyPage() {
           }
         />
         {controls}
-        <div className="card px-4 py-8 text-center" data-testid="body-empty">
+        <div className="card py-8 text-center" data-testid="body-empty">
           <p className="text-[15px] font-semibold text-ink">{t('body.state.empty')}</p>
           <p className="mt-1 text-[13px] text-ink-muted">{t('body.state.emptyBody')}</p>
         </div>
@@ -161,8 +161,8 @@ export function BodyPage() {
       <VitalReadings snapshot={snapshot} layout="cards" onDate={setDate} />
 
       {/* --------------------------------------------- how to read this */}
-      <section className="card mt-3 px-4 py-3">
-        <h2 className="text-[12px] font-semibold uppercase tracking-[0.07em] text-ink-faint">
+      <section className="card mt-3 py-3">
+        <h2 className="caps">
           {t('body.howToRead.heading')}
         </h2>
         <p className="mt-1 text-[13.5px] text-ink-soft">{t('body.howToRead.band')}</p>
@@ -171,8 +171,8 @@ export function BodyPage() {
 
       {/* ------------------------------------------------------ patterns */}
       {snapshot.patterns.length > 0 ? (
-        <section className="card mt-3 px-4 py-3" data-testid="body-patterns">
-          <h2 className="text-[12px] font-semibold uppercase tracking-[0.07em] text-ink-faint">
+        <section className="card mt-3 py-3" data-testid="body-patterns">
+          <h2 className="caps">
             {t('body.patterns.heading')}
           </h2>
           <ul className="mt-1.5 space-y-1.5">

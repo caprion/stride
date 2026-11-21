@@ -140,11 +140,11 @@ function ChartCard({
   testId: string
 }) {
   return (
-    <section className="card px-4 py-3" data-testid={testId}>
-      <h2 className="mb-1 text-[12px] font-semibold uppercase tracking-[0.07em] text-ink-faint">
+    <section className="card py-3" data-testid={testId}>
+      <h2 className="mb-1 caps">
         {title}
       </h2>
-      <p className="mb-2 text-[13px] text-ink-muted">{note}</p>
+      <p className="lede">{note}</p>
       {children}
     </section>
   )
@@ -228,7 +228,7 @@ export function PacePage() {
     return (
       <div>
         <PageHeader title={t('pace.heading')} />
-        <section className="card px-4 py-4" role="alert">
+        <section className="card py-4" role="alert">
           <p>{t('common.error')}</p>
           <button
             type="button"
@@ -258,7 +258,7 @@ export function PacePage() {
     return (
       <div>
         <PageHeader title={t('pace.heading')} />
-        <div className="card px-4 py-8 text-center" data-testid="pace-empty">
+        <div className="card py-8 text-center" data-testid="pace-empty">
           <p className="text-[15px] font-semibold text-ink">{t('pace.empty.title')}</p>
           <p className="mt-1 text-[13px] text-ink-muted">{t('pace.empty.body')}</p>
         </div>
@@ -308,7 +308,7 @@ export function PacePage() {
         className="mb-3 flex flex-wrap items-center gap-2"
         data-testid="pace-range"
       >
-        <span className="text-[12px] font-semibold uppercase tracking-[0.07em] text-ink-faint">
+        <span className="caps">
           {t('progress.range.label')}
         </span>
         <div className="flex flex-wrap gap-1">

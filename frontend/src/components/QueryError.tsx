@@ -2,7 +2,7 @@ import { t } from '../i18n'
 
 export function QueryError({ retry }: { retry: () => void }) {
   return (
-    <section className="card my-3 px-4 py-3" role="alert">
+    <section className="card my-3 py-3" role="alert">
       <p className="text-[14px] font-medium">{t('common.error')}</p>
       <button
         type="button"

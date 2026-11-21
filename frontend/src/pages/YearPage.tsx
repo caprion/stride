@@ -57,7 +57,7 @@ function MonthCard({ month }: { month: YearMonth }) {
   const longest = Math.max(...weeks.map((week) => week.distance?.raw ?? 0), 1)
 
   return (
-    <section className="card px-4 py-3" data-testid="year-month" data-month={month.key}>
+    <section className="card py-3" data-testid="year-month" data-month={month.key}>
       <div className="flex items-baseline justify-between gap-2">
         <h3 className="text-[15px] font-semibold leading-tight text-ink">{month.label}</h3>
         <span className="text-[12px] text-ink-faint">{month.key.slice(0, 4)}</span>
@@ -190,7 +190,7 @@ export function YearPage() {
       />
 
       {year.isError && !data ? (
-        <section className="card px-4 py-4" role="alert">
+        <section className="card py-4" role="alert">
           <p>{t('common.error')}</p>
           <button
             type="button"
@@ -223,7 +223,7 @@ export function YearPage() {
             </p>
           ) : null}
           <section className="mt-1" data-testid="year-months">
-            <h2 className="mb-2 text-[12px] font-semibold uppercase tracking-[0.07em] text-ink-faint">
+            <h2 className="mb-2 caps">
               {t('year.months.heading')}
             </h2>
             <div className="grid gap-3 sm:grid-cols-2">
@@ -242,8 +242,8 @@ export function YearPage() {
             how hard; it says nothing about where, and that is the
             heatmap's surface to say.
           */}
-          <section className="card mt-3 px-4 py-3" data-testid="year-calendar-card">
-            <h2 className="mb-1 text-[12px] font-semibold uppercase tracking-[0.07em] text-ink-faint">
+          <section className="card mt-3 py-3" data-testid="year-calendar-card">
+            <h2 className="mb-1 caps">
               {t('year.calendar.heading')}
             </h2>
             <p className="mb-3 text-[13px] text-ink-soft">{t('year.calendar.note')}</p>
@@ -271,8 +271,8 @@ export function YearPage() {
             sentences. There is no verdict and nothing that tells the
             athlete what to do: the sentences say what the records say.
           */}
-          <section className="card mt-3 px-4 py-3" data-testid="year-changed">
-            <h2 className="mb-1 text-[12px] font-semibold uppercase tracking-[0.07em] text-ink-faint">
+          <section className="card mt-3 py-3" data-testid="year-changed">
+            <h2 className="mb-1 caps">
               {t('year.changed.heading')}
             </h2>
             <p className="mb-2 text-[13px] text-ink-soft">{t('year.changed.note')}</p>

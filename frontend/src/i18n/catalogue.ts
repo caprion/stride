@@ -73,6 +73,11 @@ export const catalogue = {
   'nav.body': { type: 'status', text: 'Body' },
   'nav.settings': { type: 'status', text: 'Settings' },
   'nav.label': { type: 'status', text: 'Destinations' },
+  'nav.foot.one': {
+    type: 'statement',
+    text: 'Real data, read from your own Garmin on this device.',
+  },
+  'nav.foot.two': { type: 'statement', text: 'Every number here is your own.' },
   'common.local': { type: 'status', text: 'Stored on this device' },
   'common.saved': { type: 'statement', text: 'Your history is stored locally on this device.' },
   'history.previousWeek': { type: 'status', text: 'Previous week' },
