@@ -35,6 +35,15 @@ import { PageHeader } from '../ui/layout/PageHeader'
 import { historyReturn } from '../lib/history'
 import { ZONE_COLOURS } from '../lib/zones'
 
+/** The minutes into the run, as the axis writes them. */
+function minuteTick(value: number): string {
+  const minutes = Math.round(value)
+  if (minutes < 60) return `${minutes}`
+  const hours = Math.floor(minutes / 60)
+  const rest = minutes % 60
+  return rest === 0 ? `${hours} h` : `${hours} h ${rest} m`
+}
+
 export function ActivityPage({ id }: { id: string }) {
   const [splitsOpen, setSplitsOpen] = useState(true)
   const [elevationOpen, setElevationOpen] = useState(true)
@@ -326,6 +335,7 @@ export function ActivityPage({ id }: { id: string }) {
                     type="number"
                     domain={[0, 'dataMax']}
                     tickCount={5}
+                    tickFormatter={minuteTick}
                     tick={{ fontSize: 11, fill: 'var(--chart-axis)' }}
                   />
                   <YAxis
@@ -447,6 +457,7 @@ export function ActivityPage({ id }: { id: string }) {
                     type="number"
                     domain={[0, 'dataMax']}
                     tickCount={5}
+                    tickFormatter={minuteTick}
                     tick={{ fontSize: 11, fill: 'var(--chart-axis)' }}
                   />
                   <YAxis
