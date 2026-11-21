@@ -36,14 +36,14 @@ async function windowOf(id: string): Promise<string> {
 }
 
 describe('the index of the questions', () => {
-  it('asks seven questions, and each one is a question the app already asks', async () => {
+  it('asks six questions, and each one is a question the app already asks', async () => {
     renderApp('/progress')
     const index = await screen.findByTestId('progress-index')
 
     const questions = [...index.querySelectorAll('a[data-testid^="progress-index-"]')].map(
       (node) => node.getAttribute('data-testid'),
     )
-    // Seven rows, and each one is one of them.
+    // Six rows, and each one is one of them.
     expect(questions).toEqual([
       'progress-index-window',
       'progress-index-load',
@@ -51,7 +51,6 @@ describe('the index of the questions', () => {
       'progress-index-pace',
       'progress-index-zones',
       'progress-index-habit',
-      'progress-index-shape',
     ])
 
     expect(index.textContent).toContain('This window against the window before')
@@ -60,7 +59,6 @@ describe('the index of the questions', () => {
     expect(index.textContent).toContain('The pace')
     expect(index.textContent).toContain('Your zones')
     expect(index.textContent).toContain('The habit')
-    expect(index.textContent).toContain('Your shape')
   })
 
   it('answers the window with the window and the difference', async () => {
@@ -147,14 +145,6 @@ describe('the index of the questions', () => {
     expect(await windowOf('habit')).toBe('The Eddington number over 23 Feb 2026 – 13 May 2026')
   })
 
-  it('answers the shape with the volume and the days that carry a run', async () => {
-    renderApp('/progress')
-    // The core's own rendering: "58.4 km", and six days with a run.
-    expect(await answer('shape')).toBe('58.4 km · 6 days')
-    // And the window the answer covers.
-    expect(await windowOf('shape')).toBe('The last 28 days')
-  })
-
   it('draws no verdict on a row', async () => {
     renderApp('/progress')
     const index = await screen.findByTestId('progress-index')
@@ -238,10 +228,6 @@ describe('opening a row', () => {
     expect(panel.querySelector('[data-testid="progress-streaks"]')).toBeTruthy()
     expect(panel.querySelector('[data-testid="progress-eddington"]')).toBeTruthy()
 
-    await userEvent.click(screen.getByTestId('progress-panel-back'))
-    await userEvent.click(await screen.findByTestId('progress-index-shape'))
-    panel = await screen.findByTestId('progress-panel-shape')
-    expect(panel.querySelector('[data-testid="progress-shape"]')).toBeTruthy()
   })
 
   it('goes back to the questions', async () => {

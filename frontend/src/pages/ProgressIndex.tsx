@@ -42,8 +42,37 @@ function counted(count: number, one: CatalogueKey, many: CatalogueKey): string {
   return t(count === 1 ? one : many, { n: formatCount(count) })
 }
 
-/** The panels a row can open. */
-export const PROGRESS_PANELS = ['window', 'load', 'year', 'pace', 'zones', 'habit', 'shape'] as const
+/**
+ * The panels a row can open.
+ *
+ * The phone's index opens six of them. The wide Progress is a wall: every
+ * panel of the wall has a doorway of its own, so the list is the wall's
+ * too — the names the cards' "open →" links point at.
+ */
+export const PROGRESS_PANELS = [
+  'window',
+  'load',
+  'year',
+  'pace',
+  'zones',
+  'habit',
+  'shape',
+  'volume',
+  'week',
+  'activities',
+  'heatmap',
+  'profile',
+  'facets',
+  'eddington',
+  'zone-time',
+  'weekday',
+  'daytime',
+  'distances',
+  'months',
+  'bests',
+  'consistency',
+  'adherence',
+] as const
 export type ProgressPanel = (typeof PROGRESS_PANELS)[number]
 
 /** One row of the index. */
@@ -76,7 +105,7 @@ interface IndexRow {
  * nothing here is a number the app formatted on its own.
  */
 export function indexRows(answers: ProgressAnswers): IndexRow[] {
-  const { progress, load, rolling, streaks, shape } = answers
+  const { progress, load, rolling, streaks } = answers
 
   /* ---------------------------------------------- the window, and before */
   const rollingData = rolling.data
@@ -204,37 +233,7 @@ export function indexRows(answers: ProgressAnswers): IndexRow[] {
     empty: !streakDays && !streakWeeks && !eddington,
   }
 
-  /* -------------------------------------------------------------- the shape */
-  /**
-   * The shape: the athlete's own facets over the shorter of the two
-   * windows. The answer is the core's own rendering of the volume and of
-   * the consistency — the days of the window that carry a run — and the
-   * window is named beside it.
-   */
-  const shapeData = shape.short.data
-  const volume = shapeData?.profile.find((facet) => facet.key === 'volume')?.value ?? null
-  const consistency =
-    shapeData?.profile.find((facet) => facet.key === 'consistency')?.value ?? null
-  const shapeRow: IndexRow = {
-    id: 'shape',
-    panel: 'shape',
-    question: t('progress.index.shape.question'),
-    answer: shapeData
-      ? `${renderedText(volume)} · ${
-          consistency?.raw === null || consistency?.raw === undefined
-            ? ABSENT
-            : counted(consistency.raw, 'progress.index.day', 'progress.index.days')
-        }`
-      : shape.short.isError
-        ? t('common.error')
-        : t('common.loading'),
-    window: shapeData
-      ? t('progress.rolling.window', { days: shapeData.window.days })
-      : null,
-    empty: !shapeData,
-  }
-
-  return [windowRow, loadRow, yearRow, paceRow, zonesRow, habitRow, shapeRow]
+  return [windowRow, loadRow, yearRow, paceRow, zonesRow, habitRow]
 }
 
 /**

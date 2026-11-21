@@ -7,7 +7,14 @@
  */
 
 import { describe, expect, it } from 'vitest'
-import { axisLabels, axisTicks, calendarWeekStarts } from '../src/lib/chart'
+import {
+  axisLabels,
+  axisTicks,
+  calendarWeekStarts,
+  polygonPath,
+  radialPoint,
+  scaleToLargest,
+} from '../src/lib/chart'
 
 describe('calendar chart windows', () => {
   it('uses consecutive calendar weeks even across month and year boundaries', () => {
@@ -66,5 +73,65 @@ describe("a chart's axis", () => {
 
     expect(labels.get(324)).toBe('5:24 /km')
     expect(labels.get(999)).toBeUndefined()
+  })
+})
+
+/**
+ * The radar's scale and its path.
+ *
+ * The scale puts the **larger of two values** on the outside — the
+ * athlete's own scale, not an anchor somebody else chose — and the path
+ * is the browser's own path syntax.
+ */
+describe("the radar's scale", () => {
+  it('puts the larger of the two values on the outside', () => {
+    const scale = scaleToLargest([30, 60])
+
+    expect(scale.max).toBe(60)
+    expect(scale.at(60)).toBe(1)
+    expect(scale.at(30)).toBeCloseTo(0.5)
+  })
+
+  it('leaves a value that is not there at the centre', () => {
+    const scale = scaleToLargest([null, 40, undefined])
+
+    expect(scale.max).toBe(40)
+    expect(scale.at(0)).toBe(0)
+  })
+
+  it('has no scale when there is no value at all', () => {
+    const scale = scaleToLargest([null, null])
+
+    expect(scale.max).toBe(0)
+    expect(scale.at(10)).toBe(0)
+  })
+})
+
+describe("the radar's path", () => {
+  it('is a closed path of the points', () => {
+    const path = polygonPath([
+      { x: 0, y: 0 },
+      { x: 10, y: 0 },
+      { x: 10, y: 10 },
+    ])
+
+    expect(path).toBe('M0,0 L10,0 L10,10 Z')
+  })
+
+  it('is nothing when there are no points', () => {
+    expect(polygonPath([])).toBe('')
+  })
+})
+
+describe("the radar's axes", () => {
+  it('start at the top and go round clockwise', () => {
+    const top = radialPoint(100, 100, 50, 0, 6)
+
+    expect(top.x).toBeCloseTo(100)
+    expect(top.y).toBeCloseTo(50)
+
+    const second = radialPoint(100, 100, 50, 1, 6)
+    expect(second.x).toBeGreaterThan(100)
+    expect(second.y).toBeLessThan(100)
   })
 })
