@@ -112,6 +112,13 @@ const ROUTES = [
     primary: '[data-testid="progress-panel-window"]',
   },
   {
+    // The athlete's shape: the same panel, on its own. The chart has to
+    // read at 390 pixels: the labels shrink, the chart does not overflow.
+    path: '/progress/shape',
+    name: 'Progress · the shape',
+    primary: '[data-testid="progress-panel-shape"]',
+  },
+  {
     // The pace page: reached from Progress, and it draws its own three
     // panels.
     path: '/pace',

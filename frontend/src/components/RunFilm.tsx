@@ -15,10 +15,11 @@
  * heart rate, the ground, and the zone.
  */
 
-import { useLayoutEffect, useMemo, useRef, useState } from 'react'
-import type { ReactNode, RefObject } from 'react'
+import { useMemo, useRef } from 'react'
+import type { ReactNode } from 'react'
 import { t } from '../i18n'
-import { axisTicks, robustRange } from '../lib/chart'
+import { axisTicks, px, robustRange, textWidth } from '../lib/chart'
+import { useWidth } from '../lib/useWidth'
 import { ABSENT, renderedText } from '../lib/format'
 import { zoneColour } from '../lib/zones'
 import type { FilmSample, RunFilm } from '../lib/types'
@@ -324,36 +325,6 @@ function groundAt(
   return found ?? ground[0] ?? null
 }
 
-/**
- * The width of an element, measured as it changes.
- *
- * The drawing is measured before it is painted — a chart that is drawn at
- * the wrong width and corrected afterwards flickers — and the observer
- * keeps it right when the window changes.
- */
-function useWidth(ref: RefObject<HTMLDivElement>): number {
-  const [width, setWidth] = useState(0)
-  useLayoutEffect(() => {
-    const node = ref.current
-    if (!node) return
-    const measure = () => {
-      const next = Math.round(node.getBoundingClientRect().width)
-      setWidth((current) => (current === next ? current : next))
-    }
-    measure()
-    const observer = new ResizeObserver((entries) => {
-      const entry = entries[0]
-      const next = Math.round(
-        entry?.contentRect?.width ?? node.getBoundingClientRect().width,
-      )
-      setWidth((current) => (current === next ? current : next))
-    })
-    observer.observe(node)
-    return () => observer.disconnect()
-  }, [ref])
-  return width
-}
-
 /** What the drawing holds, and the scales it draws on. */
 interface Drawing {
   grid: ReactNode
@@ -620,16 +591,6 @@ function draw(
 }
 
 /**
- * A pixel on the drawing.
- *
- * The drawing's own geometry: a coordinate, to a tenth of a pixel, so the
- * path of the run is not a string of seventeen decimals.
- */
-function px(value: number): number {
-  return Math.round(value * 10) / 10
-}
-
-/**
  * The two axes' names, and whether they fit side by side.
  *
  * The pace's name carries the reading of the chart — *faster is higher* —
@@ -640,40 +601,10 @@ function axisTitles(width: number): { pace: string; heart: string | null } {
   const pace = t('film.axis.pace')
   const heart = t('film.axis.heartRate')
   const room = width - PAD.left - PAD.right - 8
-  if (textWidth(pace) + textWidth(heart) + 16 <= room) {
+  if (textWidth(pace, 11, 700) + textWidth(heart, 11, 700) + 16 <= room) {
     return { pace, heart }
   }
   return { pace, heart: null }
-}
-
-/**
- * The width of a piece of text, as the drawing will set it.
- *
- * The drawing measures its own labels: a canvas knows how wide a string
- * is, and the drawing must not put two labels on top of each other.
- */
-function textWidth(text: string): number {
-  const context = measuring()
-  if (!context) return text.length * 6
-  context.font = `700 11px ${fontFamily()}`
-  return context.measureText(text).width
-}
-
-/** The canvas the drawing measures its labels with. */
-let measuringContext: CanvasRenderingContext2D | null | undefined
-
-function measuring(): CanvasRenderingContext2D | null {
-  if (measuringContext === undefined) {
-    measuringContext =
-      typeof document === 'undefined' ? null : document.createElement('canvas').getContext('2d')
-  }
-  return measuringContext
-}
-
-/** The app's own font, as the labels are set in it. */
-function fontFamily(): string {
-  if (typeof document === 'undefined') return 'system-ui, sans-serif'
-  return getComputedStyle(document.body).fontFamily || 'system-ui, sans-serif'
 }
 
 /** The lowest point of the ground. */

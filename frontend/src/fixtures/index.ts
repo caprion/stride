@@ -2399,7 +2399,10 @@ export function fixtureResponse(
       // The film's own series: the state the surface is reviewed in. The
       // router's answer for the seeded store — the honest one, with no
       // file to read — is in `answers.json`.
-      if (variant === 'film') return filmFixture
+      //
+      // The `route` variant reviews it too: the run detail's map is the
+      // flyby, and the flyby is driven by the run's own samples.
+      if (variant === 'film' || variant === 'route') return filmFixture
       return routerAnswers['/activities/101/film'] as RunFilm
 
     case '/activities/101/update':

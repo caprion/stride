@@ -23,6 +23,7 @@ import {
   LoadPanel,
   PaceAtHrPanel,
   RollingPanel,
+  ShapePanel,
   YearsPanel,
   ZonesPanel,
 } from './progressPanels'
@@ -114,6 +115,13 @@ export function ProgressPanelPage() {
           />
         ) : null}
         {panel === 'zones' ? <ZonesPanel rolling={rolling.data} /> : null}
+        {panel === 'shape' ? (
+          <ShapePanel
+            short={answers.shape.short.data}
+            long={answers.shape.long.data}
+            error={answers.shape.short.isError || answers.shape.long.isError}
+          />
+        ) : null}
         {panel === 'habit' ? (
           <>
             {streaks.data ? (

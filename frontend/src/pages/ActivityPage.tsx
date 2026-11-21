@@ -7,7 +7,7 @@
  */
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import {
   Area,
@@ -27,7 +27,7 @@ import { canDeliverFile, downloadFile, fileName } from '../lib/download'
 import { formatDateMedium, renderedText, sportLabel } from '../lib/format'
 import { t } from '../i18n'
 import { axisTick } from '../components/ChartAxis'
-import { StreetRouteMap } from '../components/StreetRouteMap'
+import { RunFlyby } from '../components/RunFlyby'
 import { SleepComposition } from '../components/SleepComposition'
 import { QueryError } from '../components/QueryError'
 import { RunUpdate } from '../components/RunUpdate'
@@ -46,6 +46,14 @@ export function ActivityPage({ id }: { id: string }) {
   const client = useQueryClient()
 
   const activity = useQuery({ queryKey: ['activity', id], queryFn: () => api.activity(id) })
+  /**
+   * The run's own samples, as the film carries them.
+   *
+   * The flyby is driven by them — the playhead over the seconds the watch
+   * recorded, and the distance it recorded at each of them — so the run
+   * detail and the film page read the same series.
+   */
+  const film = useQuery({ queryKey: ['activity-film', id], queryFn: () => api.runFilm(id) })
   const zones = useQuery({
     queryKey: ['fitness-zones', id],
     queryFn: () => api.fitnessZones(id),
@@ -55,6 +63,8 @@ export function ActivityPage({ id }: { id: string }) {
     queryFn: () => api.fitnessFingerprint(id),
   })
   const data = activity.data
+  /** The film's samples: one array, held still while the page renders. */
+  const filmSamples = useMemo(() => film.data?.samples ?? [], [film.data])
 
   useEffect(() => {
     if (data?.note !== undefined && data?.note !== null) setNote(data.note)
@@ -265,13 +275,23 @@ export function ActivityPage({ id }: { id: string }) {
           </section>
 
           {/* ----------------------------------------------------------- map */}
+          {/*
+        The flyby, on the run's own page: the same map the film page
+        draws, with the camera on the runner and the track coloured by
+        the pace. The film itself is the deep view — the ground profile,
+        the zone bands, the scrubbing — and the action in the header
+        opens it.
+      */}
           {data.geo_points.length > 1 ? (
             <section className="card mt-3 py-3" data-testid="activity-route">
-              <h2 className="caps">
-                {t('activity.route.heading')}
-              </h2>
+              <div className="flex flex-wrap items-baseline justify-between gap-2">
+                <h2 className="caps">{t('activity.route.heading')}</h2>
+                {filmSamples.length > 0 ? (
+                  <span className="text-[12px] text-ink-muted">{t('film.route.coloured')}</span>
+                ) : null}
+              </div>
               <div className="mt-2">
-                <StreetRouteMap key={id} points={data.geo_points} />
+                <RunFlyby key={id} points={data.geo_points} samples={filmSamples} />
               </div>
             </section>
           ) : null}

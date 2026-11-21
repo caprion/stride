@@ -16,7 +16,6 @@
  */
 
 import { useQuery } from '@tanstack/react-query'
-import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { api } from '../lib/api'
 import { formatDateMedium, renderedText } from '../lib/format'
@@ -24,73 +23,18 @@ import { t } from '../i18n'
 import { FlybyMap } from '../components/FlybyMap'
 import { QueryError } from '../components/QueryError'
 import { RunFilm } from '../components/RunFilm'
+import { useFilmPlayback } from '../components/useFilmPlayback'
 import { PageHeader } from '../ui/layout/PageHeader'
-
-/**
- * How much faster the film plays than the run happened.
- *
- * A run is an hour; the athlete wants to see the shape of it, not to sit
- * through it again. The speed is the film's own and it is said on the
- * screen.
- */
-const SPEED = 60
 
 /** The film, and the run it is about. */
 export function FilmPage({ id }: { id: string }) {
   const run = useQuery({ queryKey: ['activity', id], queryFn: () => api.activity(id) })
   const film = useQuery({ queryKey: ['activity-film', id], queryFn: () => api.runFilm(id) })
 
-  const [playhead, setPlayhead] = useState(0)
-  const [playing, setPlaying] = useState(false)
-  /** The playhead the animation reads, so the frame never waits for a
-   * render to catch up. */
-  const position = useRef(0)
-  const frame = useRef(0)
-
   const duration = film.data?.samples[film.data.samples.length - 1]?.elapsed.raw ?? 0
 
-  /** Move the playhead, and stop the film where the athlete left it. */
-  const scrub = useCallback((seconds: number) => {
-    setPlaying(false)
-    position.current = seconds
-    setPlayhead(seconds)
-  }, [])
-
-  /** The film, playing at sixty times the run's own time. */
-  useEffect(() => {
-    if (!playing || duration <= 0) return
-    let last = performance.now()
-    const tick = (now: number) => {
-      const delta = (now - last) / 1000
-      last = now
-      const next = position.current + delta * SPEED
-      if (next >= duration) {
-        position.current = duration
-        setPlayhead(duration)
-        setPlaying(false)
-        return
-      }
-      position.current = next
-      setPlayhead(next)
-      frame.current = requestAnimationFrame(tick)
-    }
-    frame.current = requestAnimationFrame(tick)
-    return () => cancelAnimationFrame(frame.current)
-  }, [playing, duration])
-
-  /** Play, or pause where the film is. */
-  const toggle = useCallback(() => {
-    if (playing) {
-      setPlaying(false)
-      return
-    }
-    // A film that has run its course starts again.
-    if (position.current >= duration) {
-      position.current = 0
-      setPlayhead(0)
-    }
-    setPlaying(true)
-  }, [playing, duration])
+  /** The film's own playback: the playhead, and the hand on it. */
+  const { playhead, playing, scrub, toggle } = useFilmPlayback(duration)
 
   const back = (
     <Link to={`/runs/${id}`} className="tap-inline mb-2 text-[13px] text-brand-700 underline">

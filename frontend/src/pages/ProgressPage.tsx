@@ -37,6 +37,7 @@ import {
   PaceAtHrPanel,
   ProfilePanel,
   RollingPanel,
+  ShapePanel,
   VolumePanel,
   WeekdayPanel,
   YearsPanel,
@@ -310,6 +311,21 @@ export function ProgressPage() {
             against the window before it. The reader draws the shape.
           */}
           <ProfilePanel rolling={rolling.data} />
+
+          {/* ----------------------------------------------- the athlete's shape */}
+          {/*
+            The same six facets of the training, over two windows, drawn
+            on one chart: the shape of the short window and the shape of
+            the long one, each axis scaled to the larger of the two.
+
+            It is a panel of the wall, and it opens on its own like the
+            others — the phone reaches it through the index.
+          */}
+          <ShapePanel
+            short={answers.shape.short.data}
+            long={answers.shape.long.data}
+            error={answers.shape.short.isError || answers.shape.long.isError}
+          />
 
           {/* -------------------------------------------- the weekday split */}
           <WeekdayPanel rolling={rolling.data} />
