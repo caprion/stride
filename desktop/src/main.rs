@@ -69,6 +69,7 @@ fn run(arguments: &[String]) -> Result<i32> {
         "doctor" => doctor(rest),
         "export" => export_command(rest),
         "import" => import_command(rest),
+        "reread" => reread_command(rest),
         "help" | "--help" | "-h" => {
             print_help();
             Ok(0)
@@ -323,6 +324,65 @@ fn import_command(arguments: &[String]) -> Result<i32> {
         println!("refused: nothing");
     } else {
         println!("refused: {}", summary.refused.join("; "));
+    }
+    Ok(0)
+}
+
+/// Read every stored file again, and write what it says.
+///
+/// The files are the source of truth, and the reader is code: a change to
+/// the way a file is read reaches the runs already in the log only when
+/// they are read again.
+fn reread_command(arguments: &[String]) -> Result<i32> {
+    let mut option_arguments = Vec::new();
+    let mut index = 0;
+    while index < arguments.len() {
+        let argument = &arguments[index];
+        if argument == "--data-dir" {
+            let value = arguments.get(index + 1).ok_or_else(|| {
+                Error::config("--data-dir needs the directory the rig keeps its files in")
+            })?;
+            option_arguments.push(argument.clone());
+            option_arguments.push(value.clone());
+            index += 2;
+            continue;
+        }
+        if argument.starts_with("--") {
+            option_arguments.push(argument.clone());
+        } else {
+            return Err(Error::config(
+                "the re-read takes no arguments but the options",
+            ));
+        }
+        index += 1;
+    }
+    let options = Options::parse(&option_arguments)?;
+    options.reject_unknown(&["data-dir"])?;
+    let directory = data_directory(&options)?;
+    let workspace = workspace_for(&directory)?;
+    // The re-read is the api's: the ingest crate is the only part of
+    // Stride that reads a FIT file, and it is behind the router.
+    let api = stride_api::state::Api::new(
+        workspace.store().clone(),
+        stride_api::state::Config::default(),
+        std::sync::Arc::new(stride_api::state::SystemClock),
+    )
+    .map_err(|_| Error::config("the router could not be built"))?;
+    let summary =
+        stride_api::reread::reread(&api).map_err(|error| Error::config(error.to_string()))?;
+
+    println!("read {} files again", summary.read);
+    if summary.changed.is_empty() {
+        println!("changed: nothing");
+    } else {
+        for line in &summary.changed {
+            println!("changed: {line}");
+        }
+    }
+    if summary.unreadable.is_empty() {
+        println!("unreadable: nothing");
+    } else {
+        println!("unreadable: {}", summary.unreadable.join("; "));
     }
     Ok(0)
 }

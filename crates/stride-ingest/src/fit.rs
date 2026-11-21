@@ -1904,7 +1904,7 @@ mod tests {
         assert!(reset, "the reset was found");
         // The series reads as the run's own shape: about 920 m throughout,
         // with the slow rise at the end.
-        let last = rebased.last().expect("the last reading");
+        let last = rebased.last().copied().unwrap_or_default();
         assert!(
             (last.1 - 920.0).abs() < 1.0,
             "the level after the reset was carried forward, and it was {}",

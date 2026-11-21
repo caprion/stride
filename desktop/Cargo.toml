@@ -15,10 +15,6 @@ workspace = true
 # desktop owns neither: it is the host they run on.
 stride-api = { path = "../crates/stride-api" }
 stride-store = { path = "../crates/stride-store" }
-# The rig reads its own files again: the ingest crate is the only part of
-# Stride that reads a FIT file, and it is already in the binary through
-# the router.
-stride-ingest = { path = "../crates/stride-ingest" }
 
 # The router's answer is JSON, and the rig reads two things out of it: the
 # bytes it puts on the wire, and the key the athlete's own field posted.

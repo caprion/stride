@@ -148,6 +148,7 @@ pub mod pace;
 pub mod plan;
 pub mod planfile;
 pub mod render;
+pub mod reread;
 pub mod rolling;
 pub mod router;
 pub mod routes;
