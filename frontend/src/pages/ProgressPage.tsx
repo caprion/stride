@@ -6,10 +6,12 @@
  * grade, and no counter for a week that had no plan.
  *
  * **Two arrangements of one screen.** On the wide screens it is the
- * dashboard: the panels, laid out in a grid, each one a question with its
- * answer. On a phone that grid is twelve tiles of numbers without
- * context, so the narrow layout is **an index**: six questions, the
- * athlete's answer to each, and a doorway into the panel that answers it.
+ * **wall**: every panel the router answers, on one screen, in the mock's
+ * cards — a name, the answer, and the way into the panel that answers it.
+ * On a phone that wall is a pile of numbers without context, so the
+ * narrow layout is **an index**: six questions, the athlete's answer to
+ * each, and a doorway into the panel that answers it.
+ *
  * The band is decided by the container, in CSS — the same rule every
  * other band in the app follows.
  */
@@ -24,32 +26,17 @@ import { runsPath, shiftDate } from '../lib/history'
 import { formatCount, formatDateShort, renderedText } from '../lib/format'
 import { ProgressIndex } from './ProgressIndex'
 import { RangeSelector } from './progressRange'
+import { ProgressWall } from './progressWall'
 import { useProgress } from './useProgress'
-import {
-  AdherencePanel,
-  BestsPanel,
-  ConsistencyPanel,
-  DaytimePanel,
-  DistancesPanel,
-  EddingtonPanel,
-  LoadPanel,
-  MonthsPanel,
-  PaceAtHrPanel,
-  ProfilePanel,
-  RollingPanel,
-  VolumePanel,
-  WeekdayPanel,
-  YearsPanel,
-  ZonesDistributionPanel,
-  ZonesPanel,
-} from './progressPanels'
+import { useWall } from './useWall'
 
 export function ProgressPage() {
   const [range, setRange] = useState<number>(12)
   const [chosenWeek, setChosenWeek] = useState('')
   const navigate = useNavigate()
   const answers = useProgress(range)
-  const { progress, load, rolling, data } = answers
+  const wall = useWall(range)
+  const { progress, data } = answers
   const stale = useStaleness()
 
   if (progress.isError && !data) {
@@ -177,11 +164,12 @@ export function ProgressPage() {
       */}
       <RangeSelector range={range} onChange={setRange} />
 
-      {/* ------------------------------------------------- the dashboard */}
+      {/* --------------------------------------------------- the wall */}
       {/*
-        The wide arrangement: the panels, in a grid. The narrow layout
-        replaces this with the index below — one arrangement or the
-        other, never both, and the band that decides is the container's.
+        The wide arrangement: the wall of panels, in the mock's cards.
+        The narrow layout replaces this with the index below — one
+        arrangement or the other, never both, and the band that decides
+        is the container's.
       */}
       <div className="progress-dashboard" data-testid="progress-dashboard">
         <div className="mt-3 flex flex-wrap items-end gap-3">
@@ -208,147 +196,15 @@ export function ProgressPage() {
           >
             {t('progress.viewRuns')}
           </Link>
-          {/* The pace page is reached from here: it is a page about the
-              history, not a destination of its own. */}
-          <Link
-            className="tap-inline text-[13px] font-medium text-brand-700 underline"
-            to="/pace"
-            data-testid="progress-pace-link"
-          >
-            {t('pace.open')}
-          </Link>
-          {/* The year, as a film: the twelve months, the calendar of the
-              days and what changed. It is reached from here. */}
-          <Link
-            className="tap-inline text-[13px] font-medium text-brand-700 underline"
-            to="/year"
-            data-testid="progress-year-link"
-          >
-            {t('year.open')}
-          </Link>
         </div>
-        <div className="progress-grid mt-3">
-          {/* ------------------------------------------ the Eddington number */}
-          {/*
-            The number, the days still needed for the next one and the
-            longest distance in a day — over the window the screen is
-            showing. The window is named on the card, so the number is
-            never read apart from the period it covers.
-          */}
-          <EddingtonPanel data={data} />
 
-          {/* ------------------------------------------ the training load */}
-          {/*
-            The load, as values and a scenario.
-
-            The card says what the numbers are, what window they describe
-            and what the model assumed — the coefficient, where the maximum
-            heart rate came from and the day the zone model was read, and
-            the two windows. There is no score, no grade, no verdict and no
-            instruction: the band of the ratio is named as a range, and the
-            reader decides what it means.
-
-            A load with no value says so, with the reason: never a zero.
-          */}
-          <LoadPanel load={load.data} error={load.isError} />
-
-          {/* --------------------------------------- the rolling window */}
-          {/*
-            The window against the window before it.
-
-            A comparison, not a verdict: the two numbers side by side and
-            the difference between them. The card names the window it
-            describes, so a number is never read apart from the period it
-            covers.
-          */}
-          <RollingPanel rolling={rolling.data} error={rolling.isError} />
-
-          {/* ------------------------------------------ the split of zones */}
-          {/*
-            How the training was distributed across the athlete's own
-            zones: low (Z1–Z2), moderate (Z3), high (Z4–Z5). The shares
-            are facts about the window, and each says which way it moved
-            against the window before it.
-
-            There is no target range here: a range that says how the split
-            ought to be is a prescription, and this product does not
-            prescribe. The model the split was measured against is named
-            with the day it was read.
-          */}
-          <ZonesPanel rolling={rolling.data} />
-
-          {/* --------------------------------------- the zone distribution */}
-          {/*
-            The distribution of the time across the athlete's own zones:
-            how long they spent in each of the five, and what share of the
-            time in the zones that was.
-
-            The ranges are the model's own floors, and the model is named
-            below — a band that cannot say where it came from is not
-            inspectable.
-          */}
-          <ZonesDistributionPanel rolling={rolling.data} />
-
-          {/* --------------------------------------- the distance breakdown */}
-          {/*
-            The runs by how far they went: the buckets, their runs, their
-            distance, their climb and their time. The bucket size is taken
-            from the longest run in the window, so the buckets are the
-            athlete's own scale.
-          */}
-          <DistancesPanel rolling={rolling.data} />
-
-          {/* -------------------------------------------- the training profile */}
-          {/*
-            Seven facets of the athlete's shape over the window: the
-            volume, the consistency, the intensity, the duration, the
-            density, the sport variety and the days of the week.
-
-            **Not a radar.** A polygon over fixed anchors is a claim about a
-            shape, and the anchors are somebody else's coaching
-            assumptions. These are values, and each says which way it moved
-            against the window before it. The reader draws the shape.
-          */}
-          <ProfilePanel rolling={rolling.data} />
-
-          {/* -------------------------------------------- the weekday split */}
-          <WeekdayPanel rolling={rolling.data} />
-
-          {/* --------------------------------------------- the daytime split */}
-          <DaytimePanel rolling={rolling.data} />
-
-          {/* ------------------------------------------------- the months */}
-          <MonthsPanel rolling={rolling.data} />
-
-          {/* -------------------------------------------------- the years */}
-          <YearsPanel rolling={rolling.data} />
-
-          {/* --------------------------------------------- weekly volume */}
-          <VolumePanel
-            volume={answers.volume}
-            ticks={answers.volumeTicks}
-            typicalWeek={data.typical_week}
-            onWeekClick={(weekStart) => {
-              navigate(runsPath(weekStart, shiftDate(weekStart, 6)))
-            }}
-          />
-
-          {/* -------------------------------------------- pace at heart rate */}
-          <PaceAtHrPanel
-            pace={answers.pace}
-            ticks={answers.paceTicks}
-            window={t('progress.index.pace.weeks', { n: range })}
-          />
-
-          {/* ------------------------------------------ bests & milestones */}
-          <BestsPanel bests={data.bests} />
-
-          {/* ---------------------------------------------- consistency */}
-          <ConsistencyPanel consistency={answers.consistency} />
-
-          {/* ------------------------------------------------- adherence */}
-          <AdherencePanel adherence={data.adherence} />
-        </div>
+        <ProgressWall
+          answers={answers}
+          wall={wall}
+          onWeekClick={(weekStart) => {
+            navigate(runsPath(weekStart, shiftDate(weekStart, 6)))
+          }}
+        />
 
         <p className="mt-4 text-[12.5px] text-ink-faint">
           {formatCount(data.weekly_volume.length)} weeks ·{' '}

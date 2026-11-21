@@ -273,6 +273,88 @@ export const catalogue = {
 
   // --------------------------------------------------------- progress
   'progress.heading': { type: 'status', text: 'Progress' },
+  /**
+   * The wall: the desktop's Progress.
+   *
+   * The names of the panels are the mock's own — the year, the pace, the
+   * training load — and the sentences under them are the app's: what the
+   * panel is, and the window it covers. Nothing here is a number: every
+   * number on the wall is the router's answer.
+   */
+  'progress.wall.open': { type: 'status', text: 'open →' },
+  'progress.wall.year.heading': { type: 'status', text: 'The year' },
+  'progress.wall.year.months': { type: 'status', text: '{n} months' },
+  'progress.wall.year.note': {
+    type: 'status',
+    text: 'The year as a calendar, coloured by the zones you were in.',
+  },
+  'progress.wall.pace.heading': { type: 'status', text: 'The pace' },
+  'progress.wall.pace.weeks': { type: 'status', text: '{n} weeks' },
+  'progress.wall.pace.note': {
+    type: 'status',
+    text: 'The training week by week, and where the time went by pace.',
+  },
+  'progress.wall.activities.heading': { type: 'status', text: 'Most recent activities' },
+  'progress.wall.date': { type: 'status', text: 'Date' },
+  'progress.wall.name': { type: 'status', text: 'Name' },
+  'progress.wall.week.heading': { type: 'status', text: 'This week against last week' },
+  'progress.wall.week.distance': { type: 'status', text: 'Distance this week' },
+  'progress.wall.week.sessions': { type: 'status', text: 'Recorded sessions' },
+  'progress.wall.week.before': { type: 'status', text: 'The days before' },
+  'progress.wall.week.window': {
+    type: 'status',
+    text: '{from} – {to}, against {beforeFrom} – {beforeTo}.',
+  },
+  'progress.wall.heatmap.heading': { type: 'status', text: 'Activity heatmap' },
+  'progress.wall.heatmap.legend': {
+    type: 'status',
+    text: 'The days of the year, by distance.',
+  },
+  'progress.wall.heatmap.none': { type: 'status', text: 'no run' },
+  'progress.wall.heatmap.l1': { type: 'status', text: 'under 5 km' },
+  'progress.wall.heatmap.l2': { type: 'status', text: '5–10 km' },
+  'progress.wall.heatmap.l3': { type: 'status', text: '10–15 km' },
+  'progress.wall.heatmap.l4': { type: 'status', text: 'over 15 km' },
+  'progress.wall.streaks.heading': { type: 'status', text: 'Streaks' },
+  'progress.wall.streaks.days': { type: 'status', text: 'Days' },
+  'progress.wall.streaks.weeks': { type: 'status', text: 'Weeks' },
+  'progress.wall.streaks.months': { type: 'status', text: 'Months' },
+  'progress.wall.streaks.longest': {
+    type: 'status',
+    text: 'The longest: {days} days · {months} months.',
+  },
+  'progress.wall.profile.heading': { type: 'status', text: 'The athlete profile' },
+  'progress.wall.profile.alt': {
+    type: 'status',
+    text: 'The athlete profile: two windows on one chart, each axis scaled to the larger of the two.',
+  },
+  'progress.wall.profile.axis': { type: 'status', text: 'The axis' },
+  'progress.wall.profile.window': { type: 'status', text: 'The last {days} days' },
+  'progress.wall.profile.note': {
+    type: 'status',
+    text: 'Each axis is scaled to the larger of the two windows.',
+  },
+  'progress.wall.zones.heading': { type: 'status', text: 'Time in each zone' },
+  'progress.wall.split.heading': { type: 'status', text: 'Polarised split' },
+  'progress.wall.split.note': {
+    type: 'status',
+    text: 'Low, moderate and high — the share of the time in each.',
+  },
+  'progress.wall.weekday.heading': { type: 'status', text: 'Stats per weekday' },
+  'progress.wall.day': { type: 'status', text: 'Day' },
+  'progress.wall.timeOfDay': { type: 'status', text: 'Time of day' },
+  'progress.wall.daytime.heading': { type: 'status', text: 'Daytime stats' },
+  'progress.wall.distances.heading': { type: 'status', text: 'Distance breakdown' },
+  'progress.wall.distances.sessions': { type: 'status', text: 'Sessions' },
+  'progress.wall.distances.total': { type: 'status', text: 'Total' },
+  'progress.wall.months.heading': { type: 'status', text: 'Monthly stats' },
+  'progress.wall.years.heading': { type: 'status', text: 'Yearly stats' },
+  'progress.wall.bests.heading': { type: 'status', text: 'Bests & milestones' },
+  'progress.wall.body.heading': { type: 'status', text: 'Body, last night' },
+  'progress.wall.body.note': {
+    type: 'status',
+    text: 'Each against your own usual — the median of the last 30 nights.',
+  },
   'progress.volume.heading': { type: 'status', text: 'Weekly volume' },
   'progress.paceAtHr.heading': { type: 'status', text: 'Weekly median pace' },
   'progress.bests.heading': { type: 'status', text: 'Bests & milestones' },
@@ -388,7 +470,10 @@ export const catalogue = {
   'progress.profile.heading': { type: 'status', text: 'Training profile' },
   'progress.rolling.trend.up': { type: 'status', text: 'up on the {days} days before' },
   'progress.rolling.trend.down': { type: 'status', text: 'down on the {days} days before' },
-  'progress.rolling.trend.steady': { type: 'status', text: 'the same as the {days} days before' },
+  'progress.rolling.trend.steady': {
+    type: 'status',
+    text: 'the same as the {days} days before',
+  },
   'progress.rolling.weekday.heading': { type: 'status', text: 'By weekday' },
   'progress.rolling.daytime.heading': { type: 'status', text: 'By time of day' },
   'progress.rolling.months.heading': { type: 'status', text: 'By month' },

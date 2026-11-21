@@ -220,11 +220,24 @@
     }
   }
 
-  /* Progress: one column at compact and medium, two at wide. */
+  /*
+    The wall: the desktop's Progress.
+
+    One column at the narrow band (where the wall is not on the screen
+    at all), two from the medium band up, and the mock's **four** columns
+    of panels on a wide screen. The viewport matrix asks for two columns
+    at 1280, so the fourth arrives above that.
+  */
   .progress-grid {
     display: grid;
     grid-template-columns: 1fr;
     gap: 12px;
+  }
+
+  @container shell (min-width: 600px) {
+    .progress-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
   }
 
   @container shell (min-width: 1024px) {
@@ -233,14 +246,21 @@
     }
   }
 
+  @container shell (min-width: 1300px) {
+    .progress-grid {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+  }
+
   /*
     Progress: **two arrangements of one screen.**
 
-    The wide screens get the dashboard — the panels, in a grid. A phone
-    gets the **index**: six questions, the athlete's answer to each, and
-    the doorway into the panel that answers it. The grid on a phone is a
-    wall of numbers without context, and the index is the same six
-    answers with the question they answer.
+    The wide screens get the **wall** — every panel the router answers,
+    in a grid of the mock's cards. A phone gets the **index**: six
+    questions, the athlete's answer to each, and the doorway into the
+    panel that answers it. The wall on a phone is a pile of numbers
+    without context, and the index is the same six answers with the
+    question they answer.
 
     Which one is showing is decided by the container, in CSS — the same
     rule every other band in the app follows, and the same rule the

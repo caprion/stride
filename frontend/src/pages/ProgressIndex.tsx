@@ -42,8 +42,36 @@ function counted(count: number, one: CatalogueKey, many: CatalogueKey): string {
   return t(count === 1 ? one : many, { n: formatCount(count) })
 }
 
-/** The panels a row can open. */
-export const PROGRESS_PANELS = ['window', 'load', 'year', 'pace', 'zones', 'habit'] as const
+/**
+ * The panels a row can open.
+ *
+ * The phone's index opens six of them. The wide Progress is a wall: every
+ * panel of the wall has a doorway of its own, so the list is the wall's
+ * too — the names the cards' "open →" links point at.
+ */
+export const PROGRESS_PANELS = [
+  'window',
+  'load',
+  'year',
+  'pace',
+  'zones',
+  'habit',
+  'volume',
+  'week',
+  'activities',
+  'heatmap',
+  'profile',
+  'facets',
+  'eddington',
+  'zone-time',
+  'weekday',
+  'daytime',
+  'distances',
+  'months',
+  'bests',
+  'consistency',
+  'adherence',
+] as const
 export type ProgressPanel = (typeof PROGRESS_PANELS)[number]
 
 /** One row of the index. */

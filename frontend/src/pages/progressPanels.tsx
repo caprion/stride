@@ -60,14 +60,58 @@ const TREND: Record<string, CatalogueKey> = {
 }
 
 /** An hour of the athlete's own local time, as a clock reads it. */
-function hour(value: number): string {
+export function hour(value: number): string {
   return `${String(value).padStart(2, '0')}:00`
 }
 
-/** A chart card with a fixed, legible height. */
-export function ChartCard({ title, children }: { title: string; children: ReactNode }) {
+/**
+ * A panel's own frame.
+ *
+ * **A panel is a card with a name, or it is nothing.** The wide Progress
+ * draws the panels inside its own cards — the mock's shape, with the
+ * mock's name — so a panel can be drawn without its frame: `bare` gives
+ * the content alone, and the wall puts it in a card of its own.
+ *
+ * The test id is on the content either way, so a panel is found the same
+ * whether it is drawn on its own or inside the wall.
+ */
+function PanelShell({
+  title,
+  testId,
+  bare = false,
+  children,
+}: {
+  title: string
+  testId: string
+  bare?: boolean
+  children: ReactNode
+}) {
+  if (bare) return <div data-testid={testId}>{children}</div>
   return (
-    <section className="card px-4 py-3">
+    <section className="card px-4 py-3" data-testid={testId}>
+      <h2 className="mb-2 text-[12px] font-semibold uppercase tracking-[0.07em] text-ink-faint">
+        {title}
+      </h2>
+      {children}
+    </section>
+  )
+}
+
+/** A chart card with a fixed, legible height. */
+export function ChartCard({
+  title,
+  testId,
+  bare = false,
+  children,
+}: {
+  title: string
+  testId?: string
+  bare?: boolean
+  children: ReactNode
+}) {
+  if (bare) return <div data-testid={testId}>{children}</div>
+  return (
+    <section className="card px-4 py-3" data-testid={testId}>
       <h2 className="mb-2 text-[12px] font-semibold uppercase tracking-[0.07em] text-ink-faint">
         {title}
       </h2>
@@ -108,12 +152,15 @@ export interface ConsistencyPoint {
  * showing. The window is named on the card, so the number is never read
  * apart from the period it covers.
  */
-export function EddingtonPanel({ data }: { data: ProgressInsight }) {
+export function EddingtonPanel({
+  data,
+  bare = false,
+}: {
+  data: ProgressInsight
+  bare?: boolean
+}) {
   return (
-    <section className="card px-4 py-3" data-testid="progress-eddington">
-      <h2 className="mb-2 text-[12px] font-semibold uppercase tracking-[0.07em] text-ink-faint">
-        {t('progress.eddington.heading')}
-      </h2>
+    <PanelShell title={t('progress.eddington.heading')} testId="progress-eddington" bare={bare}>
       {data.eddington ? (
         <>
           <p
@@ -158,7 +205,7 @@ export function EddingtonPanel({ data }: { data: ProgressInsight }) {
       <p className="mt-2 text-[12px] text-ink-faint" data-testid="progress-eddington-window">
         {formatDateShort(data.period.from)} - {formatDateShort(data.period.to)}
       </p>
-    </section>
+    </PanelShell>
   )
 }
 
@@ -173,17 +220,22 @@ export function EddingtonPanel({ data }: { data: ProgressInsight }) {
  *
  * A load with no value says so, with the reason: never a zero.
  */
-export function LoadPanel({ load, error }: { load: LoadInsight | undefined; error: boolean }) {
+export function LoadPanel({
+  load,
+  error,
+  bare = false,
+}: {
+  load: LoadInsight | undefined
+  error: boolean
+  bare?: boolean
+}) {
   const series = load?.load ?? null
   const states = series?.states ?? []
   const lastState = states.length > 0 ? states[states.length - 1]! : undefined
   const week = series?.week ?? null
 
   return (
-    <section className="card px-4 py-3" data-testid="progress-load">
-      <h2 className="mb-2 text-[12px] font-semibold uppercase tracking-[0.07em] text-ink-faint">
-        {t('progress.load.heading')}
-      </h2>
+    <PanelShell title={t('progress.load.heading')} testId="progress-load" bare={bare}>
       {error && !load ? (
         <p className="text-[13px] text-ink-muted">{t('common.error')}</p>
       ) : null}
@@ -292,7 +344,7 @@ export function LoadPanel({ load, error }: { load: LoadInsight | undefined; erro
           })}
         </p>
       ) : null}
-    </section>
+    </PanelShell>
   )
 }
 
@@ -306,15 +358,14 @@ export function LoadPanel({ load, error }: { load: LoadInsight | undefined; erro
 export function RollingPanel({
   rolling,
   error,
+  bare = false,
 }: {
   rolling: RollingInsight | undefined
   error: boolean
+  bare?: boolean
 }) {
   return (
-    <section className="card px-4 py-3" data-testid="progress-rolling">
-      <h2 className="mb-2 text-[12px] font-semibold uppercase tracking-[0.07em] text-ink-faint">
-        {t('progress.rolling.heading')}
-      </h2>
+    <PanelShell title={t('progress.rolling.heading')} testId="progress-rolling" bare={bare}>
       {error && !rolling ? (
         <p className="text-[13px] text-ink-muted">{t('common.error')}</p>
       ) : null}
@@ -371,7 +422,7 @@ export function RollingPanel({
           </dl>
         </>
       ) : null}
-    </section>
+    </PanelShell>
   )
 }
 
@@ -385,12 +436,15 @@ export function RollingPanel({
  * to be is a prescription, and this product does not prescribe. The model
  * the split was measured against is named with the day it was read.
  */
-export function ZonesPanel({ rolling }: { rolling: RollingInsight | undefined }) {
+export function ZonesPanel({
+  rolling,
+  bare = false,
+}: {
+  rolling: RollingInsight | undefined
+  bare?: boolean
+}) {
   return (
-    <section className="card px-4 py-3" data-testid="progress-zones">
-      <h2 className="mb-2 text-[12px] font-semibold uppercase tracking-[0.07em] text-ink-faint">
-        {t('progress.rolling.zones.heading')}
-      </h2>
+    <PanelShell title={t('progress.rolling.zones.heading')} testId="progress-zones" bare={bare}>
       {rolling?.zones.shares ? (
         <>
           <ul className="space-y-1.5" data-testid="progress-zones-shares">
@@ -432,7 +486,7 @@ export function ZonesPanel({ rolling }: { rolling: RollingInsight | undefined })
           {rolling.zones.unavailable ?? t('common.error')}
         </p>
       ) : null}
-    </section>
+    </PanelShell>
   )
 }
 
@@ -444,12 +498,19 @@ export function ZonesPanel({ rolling }: { rolling: RollingInsight | undefined })
  * The ranges are the model's own floors, and the model is named below — a
  * band that cannot say where it came from is not inspectable.
  */
-export function ZonesDistributionPanel({ rolling }: { rolling: RollingInsight | undefined }) {
+export function ZonesDistributionPanel({
+  rolling,
+  bare = false,
+}: {
+  rolling: RollingInsight | undefined
+  bare?: boolean
+}) {
   return (
-    <section className="card px-4 py-3" data-testid="progress-zones-distribution">
-      <h2 className="mb-2 text-[12px] font-semibold uppercase tracking-[0.07em] text-ink-faint">
-        {t('progress.rolling.zones.distribution')}
-      </h2>
+    <PanelShell
+      title={t('progress.rolling.zones.distribution')}
+      testId="progress-zones-distribution"
+      bare={bare}
+    >
       {rolling?.zones.distribution ? (
         <>
           <ul className="space-y-1.5" data-testid="progress-zones-distribution-rows">
@@ -496,36 +557,7 @@ export function ZonesDistributionPanel({ rolling }: { rolling: RollingInsight | 
           {rolling.zones.unavailable ?? t('common.error')}
         </p>
       ) : null}
-    </section>
-  )
-}
-
-/**
- * The runs by how far they went: the buckets, their runs, their distance,
- * their climb and their time. The bucket size is taken from the longest
- * run in the window, so the buckets are the athlete's own scale.
- */
-export function DistancesPanel({ rolling }: { rolling: RollingInsight | undefined }) {
-  return (
-    <section className="card px-4 py-3" data-testid="progress-distances">
-      <h2 className="mb-2 text-[12px] font-semibold uppercase tracking-[0.07em] text-ink-faint">
-        {t('progress.rolling.distances.heading')}
-      </h2>
-      <p className="text-[12px] text-ink-faint" data-testid="progress-distances-window">
-        {t('progress.rolling.window', { days: rolling?.window.days ?? 0 })}
-      </p>
-      <ul className="mt-1.5 space-y-1">
-        {rolling?.distances.map((bucket) => (
-          <li key={bucket.key} className="flex items-baseline justify-between gap-3">
-            <span className="text-[13.5px] text-ink-soft">{bucket.label}</span>
-            <span className="flex items-baseline gap-2 text-[13.5px] tabular-nums text-ink">
-              <span className="text-ink-muted">{formatCount(bucket.sessions)}</span>
-              <span>{renderedText(bucket.distance)}</span>
-            </span>
-          </li>
-        ))}
-      </ul>
-    </section>
+    </PanelShell>
   )
 }
 
@@ -539,12 +571,15 @@ export function DistancesPanel({ rolling }: { rolling: RollingInsight | undefine
  * are values, and each says which way it moved against the window before
  * it. The reader draws the shape.
  */
-export function ProfilePanel({ rolling }: { rolling: RollingInsight | undefined }) {
+export function ProfilePanel({
+  rolling,
+  bare = false,
+}: {
+  rolling: RollingInsight | undefined
+  bare?: boolean
+}) {
   return (
-    <section className="card px-4 py-3" data-testid="progress-profile">
-      <h2 className="mb-2 text-[12px] font-semibold uppercase tracking-[0.07em] text-ink-faint">
-        {t('progress.profile.heading')}
-      </h2>
+    <PanelShell title={t('progress.profile.heading')} testId="progress-profile" bare={bare}>
       <ul className="space-y-1.5" data-testid="progress-profile-facets">
         {rolling?.profile.map((facet) => (
           <li key={facet.key} className="flex items-baseline justify-between gap-3">
@@ -570,71 +605,24 @@ export function ProfilePanel({ rolling }: { rolling: RollingInsight | undefined 
       <p className="mt-2 text-[12px] text-ink-faint" data-testid="progress-profile-window">
         {t('progress.rolling.window', { days: rolling?.window.days ?? 0 })}
       </p>
-    </section>
-  )
-}
-
-/** What usually happened on each day of the week. */
-export function WeekdayPanel({ rolling }: { rolling: RollingInsight | undefined }) {
-  return (
-    <section className="card px-4 py-3" data-testid="progress-weekday">
-      <h2 className="mb-2 text-[12px] font-semibold uppercase tracking-[0.07em] text-ink-faint">
-        {t('progress.rolling.weekday.heading')}
-      </h2>
-      <p className="text-[12px] text-ink-faint">{t('progress.rolling.history')}</p>
-      <ul className="mt-1.5 space-y-1">
-        {rolling?.weekday.map((day) => (
-          <li key={day.weekday} className="flex items-baseline justify-between gap-3">
-            <span className="text-[13.5px] text-ink-soft">{day.weekday}</span>
-            <span className="flex items-baseline gap-2 text-[13px] tabular-nums text-ink">
-              <span className="text-ink-muted">{formatCount(day.sessions)}</span>
-              <span>{renderedText(day.distance)}</span>
-            </span>
-          </li>
-        ))}
-      </ul>
-    </section>
-  )
-}
-
-/** What usually happened in each time of day. */
-export function DaytimePanel({ rolling }: { rolling: RollingInsight | undefined }) {
-  return (
-    <section className="card px-4 py-3" data-testid="progress-daytime">
-      <h2 className="mb-2 text-[12px] font-semibold uppercase tracking-[0.07em] text-ink-faint">
-        {t('progress.rolling.daytime.heading')}
-      </h2>
-      <p className="text-[12px] text-ink-faint">{t('progress.rolling.history')}</p>
-      <ul className="mt-1.5 space-y-1.5">
-        {rolling?.daytime.map((bucket) => (
-          <li key={bucket.key}>
-            <div className="flex items-baseline justify-between gap-3">
-              <span className="text-[13.5px] text-ink-soft">{bucket.label}</span>
-              <span className="text-[13.5px] font-semibold tabular-nums text-ink">
-                {renderedText(bucket.distance)}
-              </span>
-            </div>
-            <p className="text-[11.5px] text-ink-faint">
-              {t('progress.rolling.hours', {
-                from: hour(bucket.from_hour),
-                to: hour(bucket.to_hour),
-              })}{' '}
-              · {formatCount(bucket.sessions)}
-            </p>
-          </li>
-        ))}
-      </ul>
-    </section>
+    </PanelShell>
   )
 }
 
 /** What each month of the history holds. */
-export function MonthsPanel({ rolling }: { rolling: RollingInsight | undefined }) {
+export function MonthsPanel({
+  rolling,
+  bare = false,
+}: {
+  rolling: RollingInsight | undefined
+  bare?: boolean
+}) {
   return (
-    <section className="card px-4 py-3" data-testid="progress-months">
-      <h2 className="mb-2 text-[12px] font-semibold uppercase tracking-[0.07em] text-ink-faint">
-        {t('progress.rolling.months.heading')}
-      </h2>
+    <PanelShell
+      title={t('progress.rolling.months.heading')}
+      testId="progress-months"
+      bare={bare}
+    >
       {rolling && rolling.months.length === 0 ? (
         <p className="text-[13px] text-ink-muted">{t('progress.rolling.noRows')}</p>
       ) : null}
@@ -649,17 +637,20 @@ export function MonthsPanel({ rolling }: { rolling: RollingInsight | undefined }
           </li>
         ))}
       </ul>
-    </section>
+    </PanelShell>
   )
 }
 
 /** What each year of the history holds. */
-export function YearsPanel({ rolling }: { rolling: RollingInsight | undefined }) {
+export function YearsPanel({
+  rolling,
+  bare = false,
+}: {
+  rolling: RollingInsight | undefined
+  bare?: boolean
+}) {
   return (
-    <section className="card px-4 py-3" data-testid="progress-years">
-      <h2 className="mb-2 text-[12px] font-semibold uppercase tracking-[0.07em] text-ink-faint">
-        {t('progress.rolling.years.heading')}
-      </h2>
+    <PanelShell title={t('progress.rolling.years.heading')} testId="progress-years" bare={bare}>
       <p className="text-[12px] text-ink-faint">{t('progress.rolling.history')}</p>
       {rolling && rolling.years.length === 0 ? (
         <p className="text-[13px] text-ink-muted">{t('progress.rolling.noRows')}</p>
@@ -675,7 +666,7 @@ export function YearsPanel({ rolling }: { rolling: RollingInsight | undefined })
           </li>
         ))}
       </ul>
-    </section>
+    </PanelShell>
   )
 }
 
@@ -685,15 +676,17 @@ export function VolumePanel({
   ticks,
   typicalWeek,
   onWeekClick,
+  bare = false,
 }: {
   volume: VolumePoint[]
   ticks: { value: number; text: string }[]
   typicalWeek: RenderedValue | null
   /** What happens when a week is opened: the runs of that week. */
   onWeekClick?: (weekStart: string) => void
+  bare?: boolean
 }) {
   return (
-    <ChartCard title={t('progress.volume.heading')}>
+    <ChartCard title={t('progress.volume.heading')} testId="progress-volume" bare={bare}>
       <div style={{ width: '100%', height: 180 }}>
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={volume} margin={{ top: 4, right: 4, bottom: 0, left: -18 }}>
@@ -749,7 +742,9 @@ export function VolumePanel({
               {volume.map((week, index) => (
                 <Cell
                   key={week.label}
-                  fill={index === volume.length - 1 ? 'url(#partial-week)' : 'var(--chart-line)'}
+                  fill={
+                    index === volume.length - 1 ? 'url(#partial-week)' : 'var(--chart-line)'
+                  }
                 />
               ))}
             </Bar>
@@ -773,14 +768,16 @@ export function PaceAtHrPanel({
   pace,
   ticks,
   window,
+  bare = false,
 }: {
   pace: PacePoint[]
   ticks: { value: number; text: string }[]
   /** The window the chart covers, named under it. */
   window?: string
+  bare?: boolean
 }) {
   return (
-    <ChartCard title={t('progress.paceAtHr.heading')}>
+    <ChartCard title={t('progress.paceAtHr.heading')} testId="progress-pace-hr" bare={bare}>
       <div style={{ width: '100%', height: 180 }}>
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={pace} margin={{ top: 4, right: 4, bottom: 0, left: -6 }}>
@@ -832,9 +829,15 @@ export function PaceAtHrPanel({
 }
 
 /** The bests and the milestones. */
-export function BestsPanel({ bests }: { bests: ProgressInsight['bests'] }) {
+export function BestsPanel({
+  bests,
+  bare = false,
+}: {
+  bests: ProgressInsight['bests']
+  bare?: boolean
+}) {
   return (
-    <ChartCard title={t('progress.bests.heading')}>
+    <ChartCard title={t('progress.bests.heading')} testId="progress-bests" bare={bare}>
       <ul className="space-y-1.5">
         {bests.map((best) => (
           <li key={best.key} className="flex items-baseline justify-between gap-3">
@@ -850,9 +853,19 @@ export function BestsPanel({ bests }: { bests: ProgressInsight['bests'] }) {
 }
 
 /** The sessions a week, as a chart. */
-export function ConsistencyPanel({ consistency }: { consistency: ConsistencyPoint[] }) {
+export function ConsistencyPanel({
+  consistency,
+  bare = false,
+}: {
+  consistency: ConsistencyPoint[]
+  bare?: boolean
+}) {
   return (
-    <ChartCard title={t('progress.consistency.heading')}>
+    <ChartCard
+      title={t('progress.consistency.heading')}
+      testId="progress-consistency"
+      bare={bare}
+    >
       <div style={{ width: '100%', height: 140 }}>
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={consistency} margin={{ top: 4, right: 4, bottom: 0, left: -24 }}>
@@ -874,7 +887,11 @@ export function ConsistencyPanel({ consistency }: { consistency: ConsistencyPoin
               }}
             />
             <Tooltip />
-            <Bar name={t('progress.consistency.unit')} dataKey="sessions" fill="var(--brand-300)" />
+            <Bar
+              name={t('progress.consistency.unit')}
+              dataKey="sessions"
+              fill="var(--brand-300)"
+            />
           </BarChart>
         </ResponsiveContainer>
       </div>
@@ -883,10 +900,16 @@ export function ConsistencyPanel({ consistency }: { consistency: ConsistencyPoin
 }
 
 /** The plan's sessions, and how many of them were run. */
-export function AdherencePanel({ adherence }: { adherence: ProgressInsight['adherence'] }) {
+export function AdherencePanel({
+  adherence,
+  bare = false,
+}: {
+  adherence: ProgressInsight['adherence']
+  bare?: boolean
+}) {
   if (!adherence) return null
   return (
-    <ChartCard title={t('progress.adherence.heading')}>
+    <ChartCard title={t('progress.adherence.heading')} testId="progress-adherence" bare={bare}>
       <p className="text-[17px] font-semibold text-ink" data-testid="progress-adherence">
         {t('progress.adherence.count', {
           done: adherence.done,
