@@ -106,6 +106,7 @@ export const catalogue = {
     type: 'status',
     text: 'Bands from your own zone model.',
   },
+  'activity.zones.stopped': { type: 'status', text: 'Not moving' },
   'activity.zones.missing': { type: 'status', text: 'Time outside your zones' },
   'settings.preferences': { type: 'status', text: 'Training preferences' },
   'settings.files': { type: 'status', text: 'Files and app information' },

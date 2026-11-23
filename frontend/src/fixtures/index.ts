@@ -1795,6 +1795,7 @@ export const zonesUncalibratedFixture: FitnessZones = {
   model: null,
   zones: [],
   outside: null,
+  stopped: null,
   unavailable: 'zones unavailable — no zone model has been read',
 }
 

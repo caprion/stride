@@ -459,18 +459,22 @@ fn the_zone_shares_come_from_the_stored_model() {
     input.samples = vec![
         ZoneSample {
             elapsed_s: 0.0,
+            moving: true,
             heart_rate_bpm: Some(130.0),
         },
         ZoneSample {
             elapsed_s: 10.0,
+            moving: true,
             heart_rate_bpm: None,
         },
         ZoneSample {
             elapsed_s: 20.0,
+            moving: true,
             heart_rate_bpm: Some(150.0),
         },
         ZoneSample {
             elapsed_s: 30.0,
+            moving: true,
             heart_rate_bpm: Some(150.0),
         },
     ];
@@ -502,10 +506,12 @@ fn a_run_with_no_stored_model_has_no_zone_distribution() {
     input.samples = vec![
         ZoneSample {
             elapsed_s: 0.0,
+            moving: true,
             heart_rate_bpm: Some(130.0),
         },
         ZoneSample {
             elapsed_s: 10.0,
+            moving: true,
             heart_rate_bpm: Some(130.0),
         },
     ];
@@ -535,10 +541,12 @@ fn a_model_whose_floors_are_not_in_order_has_no_zone_distribution() {
     input.samples = vec![
         ZoneSample {
             elapsed_s: 0.0,
+            moving: true,
             heart_rate_bpm: Some(130.0),
         },
         ZoneSample {
             elapsed_s: 10.0,
+            moving: true,
             heart_rate_bpm: Some(130.0),
         },
     ];

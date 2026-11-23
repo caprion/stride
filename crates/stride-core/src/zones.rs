@@ -63,6 +63,35 @@ pub struct ZoneSample {
     pub elapsed_s: f64,
     /// The heart rate, in beats per minute. `None` = no reading.
     pub heart_rate_bpm: Option<f64>,
+    /// Whether the athlete was **moving** when this sample was taken.
+    ///
+    /// A sample owns the span until the next sample, so a sample that
+    /// was taken while the athlete stood still owns the time they stood
+    /// still. Dropping the stopped samples from the list does not drop
+    /// the time: it merges the stopped span into the neighbouring running
+    /// one, and the run then claims more time in a zone than it spent
+    /// moving.
+    pub moving: bool,
+}
+
+impl ZoneSample {
+    /// A reading from a stretch the athlete was moving through.
+    pub fn moving(elapsed_s: f64, heart_rate_bpm: Option<f64>) -> Self {
+        Self {
+            elapsed_s,
+            heart_rate_bpm,
+            moving: true,
+        }
+    }
+
+    /// A reading from a stretch the athlete was not moving through.
+    pub fn stopped(elapsed_s: f64, heart_rate_bpm: Option<f64>) -> Self {
+        Self {
+            elapsed_s,
+            heart_rate_bpm,
+            moving: false,
+        }
+    }
 }
 
 /// The time a run spent in each of the five zones, in seconds.
@@ -84,6 +113,14 @@ pub struct TimeInZone {
     pub zone5_s: f64,
     /// Time with no heart-rate reading, or at or below the first floor.
     pub outside_s: f64,
+    /// The time the athlete was **not moving**, in seconds.
+    ///
+    /// This is not "outside the zones": it is time the athlete spent
+    /// standing still, which no heart rate describes. It is kept apart
+    /// from the zones so that the zones and the outside add up to the
+    /// time the athlete actually moved, and so that a run cannot claim
+    /// more time in a zone than it spent moving.
+    pub stopped_s: f64,
 }
 
 impl TimeInZone {
@@ -96,6 +133,15 @@ impl TimeInZone {
             self.zone4_s,
             self.zone5_s,
         ]
+    }
+
+    /// The moving time the zones were measured over.
+    ///
+    /// The zones and the outside add up to it, and the stopped time sits
+    /// beside it. A run's zones can never be longer than the movement
+    /// they were measured over.
+    pub fn moving_s(&self) -> f64 {
+        self.per_zone().iter().sum::<f64>() + self.outside_s
     }
 }
 
@@ -120,6 +166,15 @@ pub fn time_in_zone(floors: ZoneFloors, samples: &[ZoneSample]) -> Option<TimeIn
     for window in samples.windows(2) {
         let span = window[1].elapsed_s - window[0].elapsed_s;
         if !span.is_finite() || span <= 0.0 {
+            continue;
+        }
+        // **A stopped stretch is not time in a zone.** The sample owns the
+        // span until the next one, so a stretch the athlete stood
+        // through would otherwise be charged to the heart rate of the
+        // sample before it — and the run would claim more time in a zone
+        // than it spent moving.
+        if !window[0].moving {
+            time.stopped_s += span;
             continue;
         }
         match window[0].heart_rate_bpm {
@@ -249,14 +304,8 @@ mod tests {
     /// span is the one second until the second sample.
     fn span(heart_rate_bpm: Option<f64>) -> [ZoneSample; 2] {
         [
-            ZoneSample {
-                elapsed_s: 0.0,
-                heart_rate_bpm,
-            },
-            ZoneSample {
-                elapsed_s: 1.0,
-                heart_rate_bpm: None,
-            },
+            ZoneSample::moving(0.0, heart_rate_bpm),
+            ZoneSample::moving(1.0, None),
         ]
     }
 
@@ -388,10 +437,55 @@ mod tests {
         assert_eq!(zone_of(Some(150.0), unusable), None);
     }
 
+    /// **A stopped stretch is not time in a zone.**
+    ///
+    /// A sample owns the span until the next one, so a stretch the
+    /// athlete stood through belongs to the sample before it. Dropping
+    /// the stopped samples from the list does not drop the time — it
+    /// merges the stopped span into the neighbouring running one, and the
+    /// run then claims more time in a zone than it spent moving.
+    #[test]
+    fn a_stopped_stretch_is_not_time_in_a_zone() {
+        let samples = [
+            ZoneSample::moving(0.0, Some(150.0)),
+            ZoneSample::stopped(10.0, Some(150.0)),
+            ZoneSample::moving(20.0, Some(150.0)),
+        ];
+
+        let time = compute(floors(), &samples);
+
+        // Ten seconds of running, in the zone 150 bpm falls in.
+        assert_eq!(time.zone3_s, 10.0);
+        // And ten seconds of standing still, which is not in a zone.
+        assert_eq!(time.stopped_s, 10.0);
+        // The zones and the outside add up to the movement, and the
+        // stopped time sits beside it.
+        assert_eq!(time.moving_s(), 10.0);
+        assert_eq!(time.moving_s() + time.stopped_s, 20.0);
+    }
+
+    /// The same three samples, with the stopped one **dropped** — which is
+    /// what the list used to do. The twenty seconds all land in the zone.
+    #[test]
+    fn dropping_the_stopped_sample_would_claim_the_time_it_did_not_move() {
+        let samples = [
+            ZoneSample::moving(0.0, Some(150.0)),
+            ZoneSample::moving(20.0, Some(150.0)),
+        ];
+
+        let time = compute(floors(), &samples);
+
+        // The defect this guards: the run claims twenty seconds of zone
+        // time for ten seconds of running.
+        assert_eq!(time.zone3_s, 20.0);
+        assert_eq!(time.stopped_s, 0.0);
+    }
+
     #[test]
     fn a_lone_sample_carries_no_time() {
         let samples = [ZoneSample {
             elapsed_s: 0.0,
+            moving: true,
             heart_rate_bpm: Some(150.0),
         }];
         let time = compute(floors(), &samples);

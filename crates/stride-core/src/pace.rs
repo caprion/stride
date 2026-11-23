@@ -74,6 +74,14 @@ pub struct PacePoint {
     pub elapsed_s: f64,
     /// The run's cumulative distance at the sample, in metres.
     pub distance_m: f64,
+    /// Whether the athlete was **moving** when this point was taken.
+    ///
+    /// A point owns the span until the next one, so a point taken while
+    /// the athlete stood still owns the time they stood still. Dropping
+    /// the stopped points from the list does not drop the time: it
+    /// merges the stopped span into the neighbouring running one, and the
+    /// run then claims more time at a pace than it spent moving.
+    pub moving: bool,
 }
 
 impl PacePoint {
@@ -82,6 +90,16 @@ impl PacePoint {
         Self {
             elapsed_s,
             distance_m,
+            moving: true,
+        }
+    }
+
+    /// A point of a stretch the athlete was not moving through.
+    pub fn stopped(elapsed_s: f64, distance_m: f64) -> Self {
+        Self {
+            elapsed_s,
+            distance_m,
+            moving: false,
         }
     }
 }
@@ -179,6 +197,14 @@ pub fn pace_bands(runs: &[PaceRun], period: Period) -> PaceBands {
             continue;
         }
         for span in run.samples.windows(2) {
+            // **A stopped stretch is not time at a pace.** The point owns
+            // the span until the next one, so a stretch the athlete stood
+            // through would otherwise be charged to the pace of the point
+            // before it — and the run would claim more time at a pace
+            // than it spent moving.
+            if !span[0].moving {
+                continue;
+            }
             let Some((time_s, distance_m)) = span_of(span[0], span[1]) else {
                 continue;
             };

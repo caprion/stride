@@ -1298,6 +1298,7 @@
         "training_method": "HR_MAX"
       },
       "outside": null,
+      "stopped": null,
       "unavailable": "zones unavailable — the run has no heart-rate samples",
       "zones": []
     },
@@ -15236,6 +15237,7 @@
         "training_method": "HR_MAX"
       },
       "outside": null,
+      "stopped": null,
       "unavailable": "zones unavailable — the run has no heart-rate samples",
       "zones": []
     },

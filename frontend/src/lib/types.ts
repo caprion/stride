@@ -1038,6 +1038,14 @@ export interface FitnessZones {
    * below the first floor.
    */
   outside: RenderedValue | null
+  /**
+   * The time the athlete was not moving: the stretches they stood still.
+   *
+   * It is kept apart from the zones so that the zones and the outside add
+   * up to the time the athlete actually moved, and so that a run can never
+   * claim more time in a zone than it spent moving.
+   */
+  stopped: RenderedValue | null
   /** Why there is no value, in the core's words. */
   unavailable: string | null
 }

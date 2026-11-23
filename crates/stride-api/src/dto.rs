@@ -565,6 +565,14 @@ pub struct FitnessZones {
     /// The time outside the zones: no heart-rate reading, or a reading at
     /// or below the first floor. Absent when there is no value.
     pub outside: Option<RenderedValue>,
+    /// The time the athlete was not moving: the stretches they stood
+    /// still. Absent when there is no value, and zero when they never
+    /// stopped.
+    ///
+    /// It is kept apart from the zones so that the zones and the outside
+    /// add up to the time the athlete actually moved, and so that a run
+    /// can never claim more time in a zone than it spent moving.
+    pub stopped: Option<RenderedValue>,
     /// Why there is no value, in the core's words.
     pub unavailable: Option<String>,
 }

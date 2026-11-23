@@ -85,15 +85,10 @@ pub fn fingerprint(api: &Api, id: i64) -> ApiResult<Fingerprint> {
     };
 
     let laps: Vec<LapReading> = decoded.laps.iter().map(lap_reading).collect();
-    let samples: Vec<ZoneSample> = decoded
-        .samples
-        .iter()
-        .filter(|sample| sample.kind != stride_ingest::SegmentKind::Stand)
-        .map(|sample| ZoneSample {
-            elapsed_s: sample.elapsed_s,
-            heart_rate_bpm: sample.heart_rate_bpm,
-        })
-        .collect();
+    // The same sample list the zones route reads, from the same one
+    // place: the per-run bands and the window's split cannot disagree
+    // about which samples count.
+    let samples: Vec<ZoneSample> = crate::routes::series::zone_samples(&decoded);
 
     let answer = core_fingerprint(&FingerprintInput {
         laps,

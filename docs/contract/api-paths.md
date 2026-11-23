@@ -178,7 +178,7 @@ Two rules hold for every shape below.
 | `/sync/status` | `last_sync_at: string \| null`, `last_error: string \| null`, `activity_count: number`, `cursor`, `pulled`, `skipped`, `deleted`, `more_pending: boolean`, `history: {activities, wellness} \| null` |
 | `/sync/run` | `activities`, `wellness_days`, `skipped`, `deleted`, `complete: boolean`, `more_pending: boolean`, `failure: {code, detail, status, retry_after_seconds} \| null`, `finished_at`, `generated_at` |
 | `/health/daily` | `date`, `generated_at`, `stale: boolean` |
-| `/fitness/zones` | `basis: string \| null`, `model: ZoneModel \| null`, `zones: ZoneBand[]`, `outside: RenderedValue \| null`, `unavailable: string \| null` |
+| `/fitness/zones` | `basis: string \| null`, `model: ZoneModel \| null`, `zones: ZoneBand[]`, `outside: RenderedValue \| null`, `stopped: RenderedValue \| null`, `unavailable: string \| null` |
 | `/fitness/fingerprint` | `activity_id`, `local_date`, `basis: string \| null`, `laps`, `observations: FingerprintObservation[]` (each: `key`, `label`, `value: RenderedValue \| null`, `reason: string \| null`), `zones: FingerprintZones` (`model: ZoneModel \| null`, `shares: ZoneShare[]` (each: `label`, `share: RenderedValue`, `time: RenderedValue \| null`), `outside: RenderedValue \| null`, `unavailable: string \| null`, `note: string \| null`), `unavailable: string \| null`, `generated_at` |
 
 The app's own declarations are in `frontend/src/lib/types.ts`, and
@@ -725,7 +725,7 @@ and the old computation is gone rather than left beside the new one.
 
 | field | what it is |
 |---|---|
-| `basis` | the basis the times were computed on: `"moving"` — the moving samples of the run's FIT file |
+| `basis` | the basis the times were computed on: `"moving"` — the spans of the run's FIT file whose sample says the athlete was moving |
 | `model` | the zone model the times were computed against, or `null` when no model has been read |
 | `model.sport` | the sport Garmin reported the model for: `"DEFAULT"` |
 | `model.training_method` | the training method the model was set with: `"HR_MAX"`, `"LACTATE_THRESHOLD"`, `"HR_RESERVE"` or `"CUSTOM"` |
@@ -737,6 +737,7 @@ and the old computation is gone rather than left beside the new one.
 | `zones` | the five bands, each with the time spent in it: `label`, `range`, `from_bpm`, `to_bpm`, `time` |
 | `zones[].time` | the time in the band, as a rendered value; the number beside the words is the time in **seconds** |
 | `outside` | the time outside the zones — no heart-rate reading, or a reading at or below the first floor — as a rendered value |
+| `stopped` | the time the athlete was **not moving**: the stretches they stood still, as a rendered value. The zones and the outside add up to the movement they were measured over, and the stopped time sits beside it |
 | `unavailable` | why there is no value, in the core's words |
 
 The model's floors are the **exclusive lower bounds** of the zones: the

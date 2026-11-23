@@ -418,6 +418,14 @@ export function ActivityPage({ id }: { id: string }) {
                     {t('activity.zones.missing')} · {renderedText(zones.data.outside)}
                   </p>
                 ) : null}
+                {/* The time the athlete was not moving. It is not time in
+                    a zone, and it is not outside one: it is the stretches
+                    they stood still. */}
+                {zones.data.stopped && (zones.data.stopped.raw ?? 0) > 0 ? (
+                  <p className="mt-1 text-[11px] text-ink-muted" data-testid="activity-zones-stopped">
+                    {t('activity.zones.stopped')} · {renderedText(zones.data.stopped)}
+                  </p>
+                ) : null}
               </div>
             ) : null}
             {/*

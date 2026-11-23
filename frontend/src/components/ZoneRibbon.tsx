@@ -76,6 +76,13 @@ export function ZoneRibbon({ zones }: { zones: FitnessZones | null | undefined }
           {t('activity.zones.missing')} · {renderedText(zones.outside)}
         </p>
       ) : null}
+      {/* The time the athlete was not moving: not time in a zone, and
+          not outside one. */}
+      {zones?.stopped && (zones.stopped.raw ?? 0) > 0 ? (
+        <p className="mt-0.5 text-[11.5px] text-ink-faint" data-testid="zone-ribbon-stopped">
+          {t('activity.zones.stopped')} · {renderedText(zones.stopped)}
+        </p>
+      ) : null}
     </div>
   )
 }

@@ -731,6 +731,7 @@ fn no_value_zones(model: Option<ZoneModel>, reason: &str) -> FitnessZones {
         model,
         zones: Vec::new(),
         outside: None,
+        stopped: None,
         unavailable: stride_core::strings::render(reason, &[]),
     }
 }
@@ -774,6 +775,7 @@ fn zones_of(
         model: Some(model),
         zones,
         outside: render::duration(Some(time.outside_s)),
+        stopped: render::duration(Some(time.stopped_s)),
         unavailable: None,
     }
 }

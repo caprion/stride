@@ -88,6 +88,7 @@ fn core_time(harness: &common::Harness, id: i64) -> TimeInZone {
         .filter(|sample| sample.kind != stride_ingest::SegmentKind::Stand)
         .map(|sample| ZoneSample {
             elapsed_s: sample.elapsed_s,
+            moving: true,
             heart_rate_bpm: sample.heart_rate_bpm,
         })
         .collect();

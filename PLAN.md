@@ -224,6 +224,54 @@ what to do about either.
 This travels with the frozen route change (the `eddington` field of
 `/insights/progress`) in `docs/contract/api-paths.md`.
 
+### Proposed amendment — a stopped stretch is not time in a zone (2026-11-23)
+
+**Proposal, not approved.** The approvals below are the user's to give. This
+section records the change and the rule it serves; it is not permission to
+ship, publish, migrate or sync production data.
+
+The zone times were computed over a sample list with the **stopped samples
+removed**. That looks harmless and is not: a sample owns the span until the
+next one, so removing the stopped samples does not remove the time — it
+merges the stopped span into the neighbouring running one, and the run then
+claims more time in a zone than it spent moving.
+
+On the rig's own runs it was not a rounding matter. A 56-minute easy run
+answered **62 minutes of zone time**; a tempo run answered 58 minutes
+against 54. The zone times and the run's own duration were two numbers on
+one screen that did not agree, and the athlete had no way to see why. The
+same arithmetic ran through the **pace bands** and through the **polarised
+split**, so the share of the training in the hard zones was a share of an
+inflated total.
+
+The rule this serves: **a run cannot claim more time than it spent.** The
+zones and the outside answer about the time the athlete was *moving*, so
+they are measured over the moving time and over nothing else.
+
+What changes:
+
+- The **stopped samples stay in the list**, each carrying whether the
+  athlete was moving. A span owned by a stopped sample is the time they
+  stood still, and it goes to its own bucket.
+- The core's `TimeInZone` gains **`stopped_s`**, and the zones and the
+  outside add up to the **movement** the zones were measured over. The
+  stopped time sits beside it, and the three together are the run's
+  recorded elapsed time.
+- The route answers with **`stopped`**, and the run detail and the ribbon
+  show it — "Not moving · 3 m" — so the reader can see where the time
+  went instead of finding the arithmetic does not close.
+- The pace bands skip the stopped spans the same way, so the two cannot
+  disagree about which samples count.
+
+**What this does not settle.** The watch's own timer and the record
+stream's movement are two measurements, and on the rig's runs they differ
+by one or two per cent: the watch pauses its timer in places the record
+stream does not. The zones are measured over the **record stream's**
+movement, and the run's duration is the **watch's** timer. Reconciling the
+two needs the watch's timer events, which the ingest does not decode; that
+is a later item, and until it is done the two numbers are the two
+measurements they are.
+
 ### Proposed amendment — the zone model's date on the run detail (2026-11-17)
 
 **Proposal, not approved.** The approvals below are the user's to give. This
