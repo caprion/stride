@@ -18,10 +18,19 @@ import { screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { api } from '../src/lib/api'
+import { t } from '../src/i18n'
+import { TASK_AREAS, WALL_CARDS, cardRoute } from '../src/pages/taskAreas'
 import { loadFixture, rollingFixture, streaksEmptyFixture } from '../src/fixtures'
 import { renderApp } from './helpers'
 
 afterEach(() => vi.restoreAllMocks())
+
+/**
+ * The links of the index that are not the areas' own links: the picture's
+ * doorway, and the six questions' rows.
+ */
+const QUESTION_LINKS =
+  'a[data-testid^="progress-index-"]:not([data-testid^="progress-index-area-"])'
 
 /** The text of one row's answer. */
 async function answer(id: string): Promise<string> {
@@ -40,8 +49,8 @@ describe('the index of the questions', () => {
     renderApp('/progress')
     const index = await screen.findByTestId('progress-index')
 
-    const questions = [...index.querySelectorAll('a[data-testid^="progress-index-"]')].map(
-      (node) => node.getAttribute('data-testid'),
+    const questions = [...index.querySelectorAll(QUESTION_LINKS)].map((node) =>
+      node.getAttribute('data-testid'),
     )
     // The picture above the questions, and the six questions themselves.
     // Each one is a panel the app already has.
@@ -154,6 +163,81 @@ describe('the index of the questions', () => {
     for (const word of ['good', 'bad', 'poor', 'should', 'must', 'optimal', 'consistent']) {
       expect(text).not.toContain(word)
     }
+  })
+})
+
+describe('the areas of the index', () => {
+  it('opens every panel of the model from the index', async () => {
+    renderApp('/progress')
+    const index = await screen.findByTestId('progress-index')
+
+    // Every card of the wall has a doorway on the phone now: the six
+    // questions' own rows count, and the areas carry the rest.
+    const hrefs = [...index.querySelectorAll('a')].map((node) => node.getAttribute('href'))
+    for (const area of TASK_AREAS) {
+      for (const id of area.cards) {
+        expect(hrefs).toContain(cardRoute(id))
+      }
+    }
+  })
+
+  it("draws the areas in the model's order, and leaves out the ones with nothing in them", async () => {
+    renderApp('/progress')
+    const index = await screen.findByTestId('progress-index')
+
+    // The panels the index opens already: the picture's panel and the
+    // six questions' own panels.
+    const opened = new Set(
+      [...index.querySelectorAll(QUESTION_LINKS)].map((node) => node.getAttribute('href')),
+    )
+
+    const sections = [
+      ...index.querySelectorAll('nav[data-testid="progress-index-areas"] > section'),
+    ]
+    const drawn = sections.map((section) => section.querySelector('h3')?.textContent ?? '')
+
+    // The model's areas, in the model's order, minus the ones that have
+    // nothing left to open.
+    const expected = TASK_AREAS.filter((area) =>
+      area.cards.some((id) => !opened.has(cardRoute(id))),
+    ).map((area) => t(area.titleKey))
+
+    expect(drawn).toEqual(expected)
+  })
+
+  it('gives every panel a link, under the name the card gives it', async () => {
+    renderApp('/progress')
+    const index = await screen.findByTestId('progress-index')
+
+    for (const section of index.querySelectorAll(
+      'nav[data-testid="progress-index-areas"] > section',
+    )) {
+      const links = [...section.querySelectorAll('a')]
+      // An area with nothing in it is not drawn, so a drawn one has a
+      // link under it.
+      expect(links.length).toBeGreaterThan(0)
+
+      for (const link of links) {
+        const id = link.getAttribute('data-testid')?.replace('progress-index-area-', '')
+        const card = WALL_CARDS.find((entry) => entry.id === id)
+        expect(card).toBeTruthy()
+        // The panel's own name, and the card's own route.
+        expect(link.textContent).toBe(t(card!.titleKey))
+        expect(link.getAttribute('href')).toBe(cardRoute(card!.id))
+      }
+    }
+  })
+
+  it('carries no answers and no numbers in the areas', async () => {
+    renderApp('/progress')
+    const index = await screen.findByTestId('progress-index')
+    const areas = index.querySelector('nav[data-testid="progress-index-areas"]')
+
+    // The questions carry the answers; the wall's cards carry the
+    // numbers. The areas are a way in and nothing more.
+    expect(areas?.querySelectorAll('[data-testid$="-answer"]').length).toBe(0)
+    expect(areas?.querySelectorAll('[data-testid$="-window"]').length).toBe(0)
+    expect(areas?.textContent ?? '').not.toMatch(/\d/)
   })
 })
 

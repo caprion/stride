@@ -5,20 +5,24 @@
  * one screen, in the mock's cards — a name, the answer, and the way into
  * the panel that answers it.
  *
- * The tests hold three things:
+ * The tests hold four things:
  *
+ *   - **The areas are drawn.** The wall is the model's task areas, in
+ *     the model's order, each with its own heading.
+ *   - **Every card is on the wall, once.** No card is lost, none is
+ *     twice, and the test ids are the ones the wall has always had.
  *   - **Every card opens its panel.** The "open →" in the card's head is
- *     the doorway the mock's drawer is.
+ *     the doorway the mock's drawer is, and the route is the model's.
  *   - **No new numbers.** Every value on the wall is the router's own
  *     rendering, and a panel with no value says so and shows no number.
- *   - **The phone keeps the index.** The six rows are still there, and
- *     they are still the only thing the phone shows.
  */
 
 import { screen } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { api } from '../src/lib/api'
 import { rollingFixture } from '../src/fixtures'
+import { t } from '../src/i18n'
+import { TASK_AREAS, WALL_CARDS, cardRoute } from '../src/pages/taskAreas'
 import { renderApp } from './helpers'
 
 /**
@@ -52,40 +56,93 @@ globalThis.ResizeObserver = SizedResizeObserver as never
 
 afterEach(() => vi.restoreAllMocks())
 
-/** The cards of the wall, and the panel each one opens. */
-const CARDS: [card: string, open: string, panel: string][] = [
-  ['year', 'progress-wall-open-year', '/year'],
-  ['pace', 'progress-pace-link', '/pace'],
-  ['activities', 'progress-wall-open-activities', '/runs'],
-  ['load', 'progress-wall-open-load', '/progress/load'],
-  ['volume', 'progress-wall-open-volume', '/progress/volume'],
-  ['week', 'progress-wall-open-week', '/progress/week'],
-  ['heatmap', 'progress-wall-open-heatmap', '/progress/heatmap'],
-  ['streaks', 'progress-wall-open-streaks', '/progress/habit'],
-  ['profile', 'progress-wall-open-profile', '/progress/shape'],
-  ['facets', 'progress-wall-open-facets', '/progress/facets'],
-  ['eddington', 'progress-wall-open-eddington', '/progress/eddington'],
-  ['zones', 'progress-wall-open-zones', '/progress/zone-time'],
-  ['split', 'progress-wall-open-split', '/progress/zones'],
-  ['window', 'progress-wall-open-window', '/progress/window'],
-  ['weekday', 'progress-wall-open-weekday', '/progress/weekday'],
-  ['daytime', 'progress-wall-open-daytime', '/progress/daytime'],
-  ['distances', 'progress-wall-open-distances', '/progress/distances'],
-  ['months', 'progress-wall-open-months', '/progress/months'],
-  ['years', 'progress-wall-open-years', '/progress/year'],
-  ['bests', 'progress-wall-open-bests', '/progress/bests'],
-  ['consistency', 'progress-wall-open-consistency', '/progress/consistency'],
-  ['body', 'progress-wall-open-body', '/body'],
-]
+/** The test id of a card of the wall. */
+function cardTestId(id: string): string {
+  return `progress-wall-${id}`
+}
+
+/**
+ * The test id of a card's "open →".
+ *
+ * The wall names its doorways after the card they open, and the pace has
+ * always had a name of its own.
+ */
+const OPEN_TEST_IDS: Record<string, string> = { pace: 'progress-pace-link' }
+
+function openTestId(id: string): string {
+  return OPEN_TEST_IDS[id] ?? `progress-wall-open-${id}`
+}
+
+/**
+ * The links of the index that are not the areas' own links: the picture's
+ * doorway, and the six questions' rows.
+ */
+const QUESTION_LINKS = 'a[data-testid^="progress-index-"]:not([data-testid^="progress-index-area-"])'
 
 describe('the wall on Progress', () => {
-  it('has a card for every panel, and each card opens it', async () => {
+  it('draws the areas of the model, in the model’s order', async () => {
+    renderApp('/progress')
+    const wall = await screen.findByTestId('progress-wall')
+
+    // The areas are the model's, and they are drawn in the order the
+    // model gives them: what is happening now, then how it compares,
+    // then the shape of the last few months, then the habits.
+    const areas = [...wall.querySelectorAll('section[data-testid^="progress-area-"]')]
+    expect(areas.map((area) => area.getAttribute('data-testid'))).toEqual(
+      TASK_AREAS.map((area) => `progress-area-${area.id}`),
+    )
+  })
+
+  it('names each area with the catalogue’s own words, and nothing else', async () => {
     renderApp('/progress')
     await screen.findByTestId('progress-wall')
 
-    for (const [, open, panel] of CARDS) {
-      const link = await screen.findByTestId(open)
-      expect(link.getAttribute('href')).toBe(panel)
+    for (const area of TASK_AREAS) {
+      const node = await screen.findByTestId(`progress-area-${area.id}`)
+      const heading = node.querySelector('h2')
+
+      // The heading is the area's name, and nothing more: no number, no
+      // summary, no verdict.
+      expect(heading?.textContent).toBe(t(area.titleKey))
+    }
+  })
+
+  it('has every card of the wall, exactly once', async () => {
+    renderApp('/progress')
+    const wall = await screen.findByTestId('progress-wall')
+
+    for (const card of WALL_CARDS) {
+      // The card is a section of its own, and it is on the wall once.
+      const cards = wall.querySelectorAll(`section[data-testid="${cardTestId(card.id)}"]`)
+      expect(cards).toHaveLength(1)
+    }
+  })
+
+  it('draws the cards of an area in the model’s order', async () => {
+    renderApp('/progress')
+    await screen.findByTestId('progress-wall')
+
+    for (const area of TASK_AREAS) {
+      const node = await screen.findByTestId(`progress-area-${area.id}`)
+      const cards = [...node.querySelectorAll('section[data-testid^="progress-wall-"]')]
+
+      // The area holds the model's cards for that area, and it holds
+      // them in the model's order.
+      expect(cards.map((card) => card.getAttribute('data-testid'))).toEqual(
+        area.cards.map((id) => cardTestId(id)),
+      )
+    }
+  })
+
+  it('has a card for every panel, and each card opens it', async () => {
+    renderApp('/progress')
+    const wall = await screen.findByTestId('progress-wall')
+
+    for (const card of WALL_CARDS) {
+      const link = wall.querySelector(`[data-testid="${openTestId(card.id)}"]`)
+
+      // The doorway is where the model says it is.
+      expect(link?.getAttribute('href')).toBe(cardRoute(card.id))
     }
   })
 
@@ -94,7 +151,7 @@ describe('the wall on Progress', () => {
     const index = await screen.findByTestId('progress-index')
 
     // The six questions, and the picture above them.
-    expect(index.querySelectorAll('a[data-testid^="progress-index-"]')).toHaveLength(7)
+    expect(index.querySelectorAll(QUESTION_LINKS)).toHaveLength(7)
   })
 
   it('puts the athlete profile above the questions, as a picture', async () => {

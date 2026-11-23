@@ -24,7 +24,7 @@
  */
 
 import { Link } from 'react-router-dom'
-import type { ReactNode } from 'react'
+import { Fragment, type ReactNode } from 'react'
 import { t } from '../i18n'
 import {
   ABSENT,
@@ -67,6 +67,7 @@ import {
 } from './progressPanels'
 import type { ProgressAnswers } from './useProgress'
 import type { WallAnswers } from './useWall'
+import { TASK_AREAS, WALL_CARDS, cardRoute, type WallCardId } from './taskAreas'
 
 /**
  * A card of the wall.
@@ -95,7 +96,7 @@ function WallCard({
   children: ReactNode
 }) {
   return (
-    <section className={`card px-4 py-3 ${wide ? 'col-span-2' : ''}`} data-testid={testId}>
+    <section className={`card px-4 py-3 ${wide ? 'progress-card--wide' : ''}`} data-testid={testId}>
       <div className="mb-2 flex items-baseline justify-between gap-3">
         <h2 className="text-[12px] font-semibold uppercase tracking-[0.07em] text-ink-faint">
           {title}
@@ -813,11 +814,33 @@ export function VitalsBody({ vitals }: { vitals: VitalsSnapshot | undefined }) {
 /* ------------------------------------------------------------- the wall */
 
 /**
+ * The catalogue key that names each card.
+ *
+ * The name of a card is the model's business: the wall reads it from
+ * the task areas, so the wall and the model cannot disagree about what
+ * a card is called.
+ */
+const CARD_TITLE_KEYS = new Map(WALL_CARDS.map((card) => [card.id, card.titleKey] as const))
+
+/** The name of a card, in the catalogue's own words. */
+function cardTitle(id: WallCardId): string {
+  const key = CARD_TITLE_KEYS.get(id)
+  if (!key) {
+    // Every id in the areas is in the cards: the model is one place, and
+    // a card that is not in it has no name to draw.
+    throw new Error(`the wall has no card named "${id}"`)
+  }
+  return t(key)
+}
+
+/**
  * The wall.
  *
- * The cards are in the mock's order, and each one answers one question
- * about the athlete's history. The card's "open →" is the doorway into
- * the panel that answers it.
+ * The cards are the model's: `taskAreas.ts` says which cards belong
+ * together and in what order, and the wall draws the areas in the
+ * model's order. Every card still answers one question about the
+ * athlete's history, and its "open →" is still the doorway into the
+ * panel that answers it.
  */
 export function ProgressWall({
   answers,
@@ -831,37 +854,96 @@ export function ProgressWall({
   const { data, load, rolling, streaks } = answers
   const { today, year, pace, activities, profile, profileScope, setProfileMonths, vitals } = wall
 
-  return (
-    <div className="progress-grid mt-3" data-testid="progress-wall">
-      {/* ------------------------------------------------- the year */}
-      <WallCard
-        title={t('progress.wall.year.heading')}
-        to="/year"
-        wide
-        testId="progress-wall-year"
-      >
-        {year.data ? (
-          <>
-            <BigValue>
-              {t('progress.wall.year.months', { n: formatCount(year.data.months.length) })}
-            </BigValue>
-            <Note>{t('progress.wall.year.note')}</Note>
-            <Window>
-              {year.data.window.from_label} – {year.data.window.to_label}
-            </Window>
-            <div className="mt-2">
-              <YearCalendar days={year.data.days} />
-            </div>
-          </>
-        ) : (
-          <p className="text-[13px] text-ink-muted">{t('common.loading')}</p>
-        )}
+  /**
+   * The cards of the wall, each one exactly once.
+   *
+   * The map is keyed by the card's own id, so a card that is missing is
+   * a type error and a card that is nowhere on the wall cannot be drawn.
+   * The name of a card and the route it opens both come from the model.
+   */
+  const cards: Record<WallCardId, ReactNode> = {
+    /* -------------------------------------------- the training load */
+    load: (
+      <WallCard title={cardTitle('load')} to={cardRoute('load')} testId="progress-wall-load">
+        {/* The card is the headline: the shape of the load and the
+            numbers behind it. The panel carries the whole answer. */}
+        <LoadPanel load={load.data} error={load.isError} bare detail={false} />
       </WallCard>
+    ),
 
-      {/* ------------------------------------------------ the pace */}
+    /* --------------------------------------------- the weekly volume */
+    volume: (
       <WallCard
-        title={t('progress.wall.pace.heading')}
-        to="/pace"
+        title={cardTitle('volume')}
+        to={cardRoute('volume')}
+        testId="progress-wall-volume"
+      >
+        <VolumePanel
+          volume={answers.volume}
+          ticks={answers.volumeTicks}
+          typicalWeek={data?.typical_week ?? null}
+          onWeekClick={onWeekClick}
+          bare
+        />
+      </WallCard>
+    ),
+
+    /* ----------------------------------------------- the consistency */
+    consistency: (
+      <WallCard
+        title={cardTitle('consistency')}
+        to={cardRoute('consistency')}
+        testId="progress-wall-consistency"
+      >
+        <ConsistencyPanel consistency={answers.consistency} bare />
+      </WallCard>
+    ),
+
+    /* ---------------------------------------------- the time in zones */
+    zones: (
+      <WallCard
+        title={cardTitle('zones')}
+        to={cardRoute('zones')}
+        testId="progress-wall-zones"
+      >
+        <ZonesDistributionPanel rolling={rolling.data} bare />
+      </WallCard>
+    ),
+
+    /* ---------------------------------------------- the polarised split */
+    split: (
+      <WallCard
+        title={cardTitle('split')}
+        to={cardRoute('split')}
+        testId="progress-wall-split"
+      >
+        <ZonesPanel rolling={rolling.data} bare />
+      </WallCard>
+    ),
+
+    /* --------------------------------- this week against last week */
+    week: (
+      <WallCard title={cardTitle('week')} to={cardRoute('week')} testId="progress-wall-week">
+        <WeekBody today={today.data} />
+      </WallCard>
+    ),
+
+    /* --------------------------------------------- the rolling window */
+    window: (
+      <WallCard
+        title={cardTitle('window')}
+        to={cardRoute('window')}
+        testId="progress-wall-window"
+      >
+        <RollingPanel rolling={rolling.data} error={rolling.isError} bare />
+      </WallCard>
+    ),
+
+    /* ------------------------------------------------ the pace */
+    pace: (
+      <WallCard
+        title={cardTitle('pace')}
+        to={cardRoute('pace')}
         wide
         testId="progress-wall-pace"
         openTestId="progress-pace-link"
@@ -881,56 +963,130 @@ export function ProgressWall({
           <p className="text-[13px] text-ink-muted">{t('common.loading')}</p>
         )}
       </WallCard>
+    ),
 
-      {/* ----------------------------------- the most recent activities */}
+    /* ------------------------------------------ bests & milestones */
+    bests: (
       <WallCard
-        title={t('progress.wall.activities.heading')}
-        to="/runs"
-        wide
-        testId="progress-wall-activities"
+        title={cardTitle('bests')}
+        to={cardRoute('bests')}
+        testId="progress-wall-bests"
       >
-        <ActivitiesTable activities={activities.data?.activities ?? []} />
+        {data ? <BestsPanel bests={data.bests} bare /> : null}
       </WallCard>
+    ),
 
-      {/* -------------------------------------------- the training load */}
+    /* ------------------------------------------ the athlete profile */
+    profile: (
       <WallCard
-        title={t('progress.load.heading')}
-        to="/progress/load"
-        testId="progress-wall-load"
+        title={cardTitle('profile')}
+        to={cardRoute('profile')}
+        testId="progress-wall-profile"
       >
-        {/* The card is the headline: the shape of the load and the
-            numbers behind it. The panel carries the whole answer. */}
-        <LoadPanel load={load.data} error={load.isError} bare detail={false} />
-      </WallCard>
-
-      {/* --------------------------------------------- the weekly volume */}
-      <WallCard
-        title={t('progress.volume.heading')}
-        to="/progress/volume"
-        testId="progress-wall-volume"
-      >
-        <VolumePanel
-          volume={answers.volume}
-          ticks={answers.volumeTicks}
-          typicalWeek={data?.typical_week ?? null}
-          onWeekClick={onWeekClick}
+        <ShapePanel
+          rolling={profile.data}
+          error={profile.isError}
+          months={profileScope.months}
+          onScope={setProfileMonths}
           bare
         />
       </WallCard>
+    ),
 
-      {/* --------------------------------- this week against last week */}
+    /* ------------------------------------------- the training profile */
+    facets: (
       <WallCard
-        title={t('progress.wall.week.heading')}
-        to="/progress/week"
-        testId="progress-wall-week"
+        title={cardTitle('facets')}
+        to={cardRoute('facets')}
+        testId="progress-wall-facets"
       >
-        <WeekBody today={today.data} />
+        <ProfilePanel rolling={rolling.data} bare />
       </WallCard>
+    ),
 
-      {/* -------------------------------------------- the activity heatmap */}
+    /* -------------------------------------------------- the challenges */
+    challenges: (
       <WallCard
-        title={t('progress.wall.heatmap.heading')}
-        to="/progress/heatmap"
+        title={cardTitle('challenges')}
+        to={cardRoute('challenges')}
+        testId="progress-wall-challenges"
+      >
+        <ChallengePanel challenges={answers.challenges.data} bare />
+      </WallCard>
+    ),
+
+    /* --------------------------------------------------- the adherence */
+    adherence: data?.adherence ? (
+      <WallCard
+        title={cardTitle('adherence')}
+        to={cardRoute('adherence')}
+        testId="progress-wall-adherence"
+      >
+        <AdherencePanel adherence={data.adherence} bare />
+      </WallCard>
+    ) : null,
+
+    /* ------------------------------------------------- the weekday split */
+    weekday: (
+      <WallCard
+        title={cardTitle('weekday')}
+        to={cardRoute('weekday')}
+        wide
+        testId="progress-wall-weekday"
+      >
+        <WeekdayTable rolling={rolling.data} />
+      </WallCard>
+    ),
+
+    /* ------------------------------------------------- the daytime split */
+    daytime: (
+      <WallCard
+        title={cardTitle('daytime')}
+        to={cardRoute('daytime')}
+        testId="progress-wall-daytime"
+      >
+        <DaytimeTable rolling={rolling.data} />
+      </WallCard>
+    ),
+
+    /* --------------------------------------------- the distance breakdown */
+    distances: (
+      <WallCard
+        title={cardTitle('distances')}
+        to={cardRoute('distances')}
+        testId="progress-wall-distances"
+      >
+        <DistancesTable rolling={rolling.data} />
+      </WallCard>
+    ),
+
+    /* ------------------------------------------------- the year */
+    year: (
+      <WallCard title={cardTitle('year')} to={cardRoute('year')} wide testId="progress-wall-year">
+        {year.data ? (
+          <>
+            <BigValue>
+              {t('progress.wall.year.months', { n: formatCount(year.data.months.length) })}
+            </BigValue>
+            <Note>{t('progress.wall.year.note')}</Note>
+            <Window>
+              {year.data.window.from_label} – {year.data.window.to_label}
+            </Window>
+            <div className="mt-2">
+              <YearCalendar days={year.data.days} />
+            </div>
+          </>
+        ) : (
+          <p className="text-[13px] text-ink-muted">{t('common.loading')}</p>
+        )}
+      </WallCard>
+    ),
+
+    /* -------------------------------------------- the activity heatmap */
+    heatmap: (
+      <WallCard
+        title={cardTitle('heatmap')}
+        to={cardRoute('heatmap')}
         wide
         testId="progress-wall-heatmap"
       >
@@ -943,165 +1099,96 @@ export function ProgressWall({
           <p className="text-[13px] text-ink-muted">{t('common.loading')}</p>
         )}
       </WallCard>
+    ),
 
-      {/* --------------------------------------------------- the streaks */}
+    /* --------------------------------------------------- the months */
+    months: (
       <WallCard
-        title={t('progress.wall.streaks.heading')}
-        to="/progress/habit"
-        testId="progress-wall-streaks"
-      >
-        <StreaksBody streaks={streaks.data} />
-      </WallCard>
-
-      {/* -------------------------------------------------- the challenges */}
-      <WallCard
-        title={t('challenge.heading')}
-        to="/progress/challenges"
-        testId="progress-wall-challenges"
-      >
-        <ChallengePanel challenges={answers.challenges.data} bare />
-      </WallCard>
-
-      {/* ------------------------------------------ the athlete profile */}
-      <WallCard
-        title={t('progress.wall.profile.heading')}
-        to="/progress/shape"
-        testId="progress-wall-profile"
-      >
-        <ShapePanel
-          rolling={profile.data}
-          error={profile.isError}
-          months={profileScope.months}
-          onScope={setProfileMonths}
-          bare
-        />
-      </WallCard>
-
-      {/* ------------------------------------------- the training profile */}
-      <WallCard
-        title={t('progress.profile.heading')}
-        to="/progress/facets"
-        testId="progress-wall-facets"
-      >
-        <ProfilePanel rolling={rolling.data} bare />
-      </WallCard>
-
-      {/* ----------------------------------------------- the Eddington number */}
-      <WallCard
-        title={t('progress.eddington.heading')}
-        to="/progress/eddington"
-        testId="progress-wall-eddington"
-      >
-        {data ? <EddingtonPanel data={data} bare /> : null}
-      </WallCard>
-
-      {/* ---------------------------------------------- the time in zones */}
-      <WallCard
-        title={t('progress.wall.zones.heading')}
-        to="/progress/zone-time"
-        testId="progress-wall-zones"
-      >
-        <ZonesDistributionPanel rolling={rolling.data} bare />
-      </WallCard>
-
-      {/* ---------------------------------------------- the polarised split */}
-      <WallCard
-        title={t('progress.wall.split.heading')}
-        to="/progress/zones"
-        testId="progress-wall-split"
-      >
-        <ZonesPanel rolling={rolling.data} bare />
-      </WallCard>
-
-      {/* --------------------------------------------- the rolling window */}
-      <WallCard
-        title={t('progress.rolling.heading')}
-        to="/progress/window"
-        testId="progress-wall-window"
-      >
-        <RollingPanel rolling={rolling.data} error={rolling.isError} bare />
-      </WallCard>
-
-      {/* ------------------------------------------------- the weekday split */}
-      <WallCard
-        title={t('progress.wall.weekday.heading')}
-        to="/progress/weekday"
-        wide
-        testId="progress-wall-weekday"
-      >
-        <WeekdayTable rolling={rolling.data} />
-      </WallCard>
-
-      {/* ------------------------------------------------- the daytime split */}
-      <WallCard
-        title={t('progress.wall.daytime.heading')}
-        to="/progress/daytime"
-        testId="progress-wall-daytime"
-      >
-        <DaytimeTable rolling={rolling.data} />
-      </WallCard>
-
-      {/* --------------------------------------------- the distance breakdown */}
-      <WallCard
-        title={t('progress.wall.distances.heading')}
-        to="/progress/distances"
-        testId="progress-wall-distances"
-      >
-        <DistancesTable rolling={rolling.data} />
-      </WallCard>
-
-      {/* --------------------------------------------------- the months */}
-      <WallCard
-        title={t('progress.wall.months.heading')}
-        to="/progress/months"
+        title={cardTitle('months')}
+        to={cardRoute('months')}
         wide
         testId="progress-wall-months"
       >
         <MonthsChart rolling={rolling.data} />
       </WallCard>
+    ),
 
-      {/* ---------------------------------------------------- the years */}
+    /* ---------------------------------------------------- the years */
+    years: (
       <WallCard
-        title={t('progress.wall.years.heading')}
-        to="/progress/year"
+        title={cardTitle('years')}
+        to={cardRoute('years')}
         testId="progress-wall-years"
       >
         <YearsChart rolling={rolling.data} />
       </WallCard>
+    ),
 
-      {/* ------------------------------------------ bests & milestones */}
+    /* --------------------------------------------------- the streaks */
+    streaks: (
       <WallCard
-        title={t('progress.wall.bests.heading')}
-        to="/progress/bests"
-        testId="progress-wall-bests"
+        title={cardTitle('streaks')}
+        to={cardRoute('streaks')}
+        testId="progress-wall-streaks"
       >
-        {data ? <BestsPanel bests={data.bests} bare /> : null}
+        <StreaksBody streaks={streaks.data} />
       </WallCard>
+    ),
 
-      {/* ----------------------------------------------- the consistency */}
+    /* ----------------------------------------------- the Eddington number */
+    eddington: (
       <WallCard
-        title={t('progress.consistency.heading')}
-        to="/progress/consistency"
-        testId="progress-wall-consistency"
+        title={cardTitle('eddington')}
+        to={cardRoute('eddington')}
+        testId="progress-wall-eddington"
       >
-        <ConsistencyPanel consistency={answers.consistency} bare />
+        {data ? <EddingtonPanel data={data} bare /> : null}
       </WallCard>
+    ),
 
-      {/* --------------------------------------------------- the adherence */}
-      {data?.adherence ? (
-        <WallCard
-          title={t('progress.adherence.heading')}
-          to="/progress/adherence"
-          testId="progress-wall-adherence"
-        >
-          <AdherencePanel adherence={data.adherence} bare />
-        </WallCard>
-      ) : null}
+    /* ----------------------------------- the most recent activities */
+    activities: (
+      <WallCard
+        title={cardTitle('activities')}
+        to={cardRoute('activities')}
+        wide
+        testId="progress-wall-activities"
+      >
+        <ActivitiesTable activities={activities.data?.activities ?? []} />
+      </WallCard>
+    ),
 
-      {/* ------------------------------------------------- last night */}
-      <WallCard title={t('progress.wall.body.heading')} to="/body" testId="progress-wall-body">
+    /* ------------------------------------------------- last night */
+    body: (
+      <WallCard title={cardTitle('body')} to={cardRoute('body')} testId="progress-wall-body">
         <VitalsBody vitals={vitals.data} />
       </WallCard>
+    ),
+  }
+
+  return (
+    <div className="progress-grid mt-3" data-testid="progress-wall">
+      {/*
+        The wall draws the model's areas, in the model's order. An area
+        is a heading and nothing more: it names the group of cards and
+        says nothing about them.
+      */}
+      {TASK_AREAS.map((area) => (
+        <section
+          key={area.id}
+          className="progress-area"
+          data-testid={`progress-area-${area.id}`}
+        >
+          <h2 className="progress-area__heading text-[12px] font-semibold uppercase tracking-[0.07em] text-ink-faint">
+            {t(area.titleKey)}
+          </h2>
+          <div className="progress-area__grid">
+            {area.cards.map((id) => (
+              <Fragment key={id}>{cards[id]}</Fragment>
+            ))}
+          </div>
+        </section>
+      ))}
     </div>
   )
 }

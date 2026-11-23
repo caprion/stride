@@ -22,6 +22,12 @@
  *
  * The panels the rows open are the app's existing panels, drawn one at a
  * time by the panel route.
+ *
+ * **And the areas under the questions.** The wall is grouped into task
+ * areas, and the index carries the same areas: the panels the six
+ * questions do not open already, one link each, under the heading of the
+ * area they belong to. The areas are a way into the rest of the wall and
+ * nothing more — they carry no answers and no numbers.
  */
 
 import { Link } from 'react-router-dom'
@@ -32,6 +38,7 @@ import type { CatalogueKey } from '../i18n'
 import type { RollingInsight } from '../lib/types'
 import type { ProgressAnswers } from './useProgress'
 import { LOAD_EMPTY, ShapeBody } from './progressPanels'
+import { TASK_AREAS, WALL_CARDS, cardRoute, type TaskArea, type WallCard } from './taskAreas'
 
 /**
  * A count with its unit — in the number's own singular or plural.
@@ -239,6 +246,49 @@ export function indexRows(answers: ProgressAnswers): IndexRow[] {
 }
 
 /**
+ * The panel the picture opens: the athlete profile, which has the
+ * numbers under the shape.
+ */
+const SHAPE_ROUTE = '/progress/shape'
+
+/**
+ * The areas of the split, and the panels each one still has to open.
+ *
+ * The six questions open six of the wall's panels, and the picture above
+ * them opens the athlete profile. Every other panel of the wall is left
+ * to the areas: the areas are the ways into the rest of the wall, and
+ * they carry no answers and no numbers of their own — the wall's cards
+ * carry the numbers, and the questions carry the answers.
+ *
+ * **An area with nothing left in it is not drawn.** A heading with
+ * nothing under it is a heading that says nothing.
+ */
+export interface AreaLinks {
+  /** The area, in the model's order. */
+  area: TaskArea
+  /** The panels of the area that the index does not open already. */
+  cards: WallCard[]
+}
+
+/**
+ * The areas, and the panels they carry.
+ *
+ * A panel the index opens already — a question's own panel, or the
+ * picture's — is not opened a second time: the area carries only what is
+ * left.
+ */
+export function areaLinks(rows: IndexRow[]): AreaLinks[] {
+  const opened = new Set<string>([...rows.map((row) => `/progress/${row.panel}`), SHAPE_ROUTE])
+  return TASK_AREAS.map((area) => ({
+    area,
+    cards: area.cards
+      .map((id) => WALL_CARDS.find((card) => card.id === id))
+      .filter((card): card is WallCard => card !== undefined)
+      .filter((card) => !opened.has(card.to)),
+  })).filter((entry) => entry.cards.length > 0)
+}
+
+/**
  * The index itself.
  *
  * A list of rows in one card, the way the app's own lists are drawn: the
@@ -265,6 +315,7 @@ export function ProgressIndex({
   }
 }) {
   const rows = indexRows(answers)
+  const areas = areaLinks(rows)
 
   return (
     <div data-testid="progress-index">
@@ -274,7 +325,7 @@ export function ProgressIndex({
             {t('progress.index.shape.heading')}
           </h2>
           <Link
-            to="/progress/shape"
+            to={SHAPE_ROUTE}
             className="tap-inline shrink-0 text-[12.5px] font-semibold text-brand-700 underline"
             data-testid="progress-index-shape-open"
           >
@@ -318,6 +369,38 @@ export function ProgressIndex({
           </li>
         ))}
       </ul>
+      {/*
+        The areas: the wall's own shape, and the way into the panels the
+        six questions do not open already. A link per panel, and nothing
+        else — the numbers are on the wall's cards, and the answers are
+        in the questions above.
+      */}
+      <nav className="mt-4 space-y-3" data-testid="progress-index-areas">
+        {areas.map(({ area, cards }) => (
+          <section
+            key={area.id}
+            className="card px-4 py-3"
+            data-testid={`progress-index-areas-${area.id}`}
+          >
+            <h3 className="mb-1 text-[12px] font-semibold uppercase tracking-[0.07em] text-ink-faint">
+              {t(area.titleKey)}
+            </h3>
+            <ul>
+              {cards.map((card) => (
+                <li key={card.id} className="border-t border-edge first:border-t-0">
+                  <Link
+                    to={cardRoute(card.id)}
+                    data-testid={`progress-index-area-${card.id}`}
+                    className="tap block py-1.5 text-[14px] font-medium text-brand-700 underline"
+                  >
+                    {t(card.titleKey)}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </section>
+        ))}
+      </nav>
       <p className="mt-3 text-[12px] leading-snug text-ink-faint">
         {t('progress.index.footnote')}
       </p>

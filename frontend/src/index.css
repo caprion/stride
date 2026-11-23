@@ -360,6 +360,68 @@
   }
 
   /*
+    The wall's **task areas**.
+
+    An area is a block that spans the wall, and it holds its own grid of
+    the same column counts as the wall's — so the columns still line up
+    across the wall, and a wide card is still two columns of its area.
+
+    The one-column band is the one place a wide card changes: two
+    columns of a one-column grid would open a column of its own, so
+    there it spans the whole area.
+  */
+  .progress-area {
+    grid-column: 1 / -1;
+  }
+
+  /*
+    The areas are read one after the other, so there is a little more
+    room above each heading than below it: the heading belongs to the
+    cards under it, not to the area above.
+  */
+  .progress-area + .progress-area {
+    margin-top: 8px;
+  }
+
+  .progress-area__heading {
+    margin: 0 0 8px;
+  }
+
+  .progress-area__grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  /* The one-column band: a wide card spans the whole area. */
+  .progress-card--wide {
+    grid-column: span 1 / span 1;
+  }
+
+  @container shell (min-width: 600px) {
+    .progress-area__grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    /* From here a wide card is two columns of its area. */
+    .progress-card--wide {
+      grid-column: span 2 / span 2;
+    }
+  }
+
+  @container shell (min-width: 1024px) {
+    .progress-area__grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  @container shell (min-width: 1300px) {
+    .progress-area__grid {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+  }
+
+  /*
     Progress: **two arrangements of one screen.**
 
     The wide screens get the **wall** — every panel the router answers,
