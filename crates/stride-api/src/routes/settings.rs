@@ -17,12 +17,13 @@
 //! them.
 
 use serde_json::Value;
+use stride_core::challenges::ChallengeKind;
 use stride_core::date::Date;
-use stride_store::model::note_kind;
+use stride_store::model::{note_kind, NewNote};
 
 use crate::dto::{
-    NoteResult, SettingsDeleteResult, SettingsExportResult, SettingsGoal, SettingsPause,
-    SettingsState, SettingsStorage,
+    NoteResult, SettingsChallenge, SettingsDeleteResult, SettingsExportResult, SettingsGoal,
+    SettingsPause, SettingsState, SettingsStorage,
 };
 use crate::error::{ApiError, ApiResult};
 use crate::render;
@@ -69,7 +70,8 @@ pub fn write_settings(api: &Api, request: &Request) -> ApiResult<Value> {
 
     let goal_given = body.get("goal_km").is_some();
     let pause_given = body.get("pause").is_some();
-    if !goal_given && !pause_given {
+    let challenges_given = body.get("challenges").is_some();
+    if !goal_given && !pause_given && !challenges_given {
         return Err(ApiError::bad_request("the settings carry nothing to write"));
     }
 
@@ -88,6 +90,10 @@ pub fn write_settings(api: &Api, request: &Request) -> ApiResult<Value> {
         api.store()
             .set_goal(goal, api.now())
             .map_err(|error| api.store_error("the goal could not be written", &error))?;
+    }
+
+    if challenges_given {
+        write_challenges(api, body.get("challenges"))?;
     }
 
     if pause_given {
@@ -144,6 +150,101 @@ pub fn write_settings(api: &Api, request: &Request) -> ApiResult<Value> {
     let current = super::today(api)?;
     let response = state_of(api, current)?;
     ok(&response)
+}
+
+/// The challenges the athlete has set, written in one go.
+///
+/// The list **replaces** the set: what the athlete sees is what is there,
+/// and a challenge they removed is gone. The weekly goal is not here —
+/// it is a challenge of its own shape, and it is set with the goal.
+fn write_challenges(api: &Api, given: Option<&Value>) -> ApiResult<()> {
+    let mut wanted: Vec<(ChallengeKind, f64, Option<String>)> = Vec::new();
+
+    match given {
+        None | Some(Value::Null) => {}
+        Some(Value::Array(list)) => {
+            for entry in list {
+                let kind = entry
+                    .get("kind")
+                    .and_then(|value| value.as_str())
+                    .and_then(ChallengeKind::of_str)
+                    .ok_or_else(|| ApiError::bad_request("a challenge has no kind"))?;
+                let km = entry
+                    .get("km")
+                    .and_then(|value| value.as_f64())
+                    .filter(|value| value.is_finite() && *value > 0.0)
+                    .ok_or_else(|| ApiError::bad_request("a challenge has no distance"))?;
+                let label = entry
+                    .get("label")
+                    .and_then(|value| value.as_str())
+                    .map(|text| text.trim().to_string())
+                    .filter(|text| !text.is_empty());
+                wanted.push((kind, km, label));
+            }
+        }
+        Some(_) => return Err(ApiError::bad_request("the challenges are not a list")),
+    }
+
+    // The ones that are there now are gone, and the wanted ones are
+    // written. The order is the order the athlete gave them in.
+    for kind in [ChallengeKind::WeekDistance, ChallengeKind::RunDistance] {
+        let existing = api
+            .store()
+            .notes_of_kind(note_kind_of(kind))
+            .map_err(|error| api.store_error("the challenges could not be read", &error))?;
+        for note in existing {
+            api.store()
+                .delete_note(note.id)
+                .map_err(|error| api.store_error("the challenge could not be removed", &error))?;
+        }
+    }
+
+    for (kind, km, label) in wanted {
+        api.store()
+            .upsert_note(&NewNote {
+                kind: note_kind_of(kind).to_string(),
+                activity_id: None,
+                text: label,
+                value: Some(km),
+                start_date: None,
+                end_date: None,
+                created_at: api.now(),
+            })
+            .map_err(|error| api.store_error("the challenge could not be written", &error))?;
+    }
+
+    Ok(())
+}
+
+/// The challenges the athlete has set, as the settings carry them.
+fn challenges_of(api: &Api) -> ApiResult<Vec<SettingsChallenge>> {
+    let mut out: Vec<SettingsChallenge> = Vec::new();
+    for kind in [ChallengeKind::WeekDistance, ChallengeKind::RunDistance] {
+        let notes = api
+            .store()
+            .notes_of_kind(note_kind_of(kind))
+            .map_err(|error| api.store_error("the challenges could not be read", &error))?;
+        for note in notes {
+            let Some(km) = note.value else { continue };
+            if km <= 0.0 {
+                continue;
+            }
+            out.push(SettingsChallenge {
+                kind: kind.as_str().to_string(),
+                km,
+                label: note.text.clone(),
+            });
+        }
+    }
+    Ok(out)
+}
+
+/// The note kind a challenge of this kind is written as.
+fn note_kind_of(kind: ChallengeKind) -> &'static str {
+    match kind {
+        ChallengeKind::WeekDistance => stride_store::model::note_kind::CHALLENGE_WEEK,
+        ChallengeKind::RunDistance => stride_store::model::note_kind::CHALLENGE_RUN,
+    }
 }
 
 /// Write a backup.
@@ -256,6 +357,7 @@ fn state_of(api: &Api, current: Date) -> ApiResult<SettingsState> {
         km: goal_km,
     };
     let pause = pause_of(api, current)?;
+    let challenges = challenges_of(api)?;
     let storage = SettingsStorage {
         size: render::bytes(api.store().size_bytes()),
         activity_count: api
@@ -278,6 +380,7 @@ fn state_of(api: &Api, current: Date) -> ApiResult<SettingsState> {
     Ok(SettingsState {
         goal,
         pause,
+        challenges,
         storage,
         generated_at: api.generated_at(),
     })

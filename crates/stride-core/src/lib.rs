@@ -59,6 +59,7 @@
 //! never instructs.
 
 pub mod band;
+pub mod challenges;
 pub mod date;
 pub mod direction;
 pub mod eddington;
@@ -84,6 +85,9 @@ pub mod update;
 pub mod zones;
 
 pub use band::{band_for, Band};
+pub use challenges::{
+    challenge_grid, challenge_met, streak_of, Challenge, ChallengeKind, ChallengeWeek, WeekMeasure,
+};
 pub use date::Date;
 pub use direction::{day_directions, DayDirections, Direction, Travel, VitalDirection};
 pub use eddington::{

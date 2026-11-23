@@ -18,7 +18,13 @@ use crate::store::Store;
 const COLUMNS: &str = "id, kind, activity_id, text, value, start_date, end_date, created_at";
 
 /// The kinds a note may have.
-const KINDS: [&str; 3] = [note_kind::NOTE, note_kind::GOAL, note_kind::PAUSE];
+const KINDS: [&str; 5] = [
+    note_kind::NOTE,
+    note_kind::GOAL,
+    note_kind::PAUSE,
+    note_kind::CHALLENGE_WEEK,
+    note_kind::CHALLENGE_RUN,
+];
 
 /// Read one row of `notes`.
 fn map_note(row: &Row<'_>) -> rusqlite::Result<Note> {

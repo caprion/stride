@@ -26,6 +26,7 @@
 import type {
   ActivityDetail,
   ActivityCalendar,
+  ChallengeInsight,
   CompareSeriesPoint,
   ActivityListResponse,
   ActivitySummary,
@@ -1935,10 +1936,59 @@ export const settingsFixture = routerAnswers['/settings'] as SettingsState
 /** The settings, with no plan: the router's answer for the baseline seed. */
 export const baselineSettingsFixture = baselineAnswers['/settings'] as SettingsState
 
+/**
+ * The challenges: the athlete's own, against the weeks.
+ *
+ * The weekly goal is one of them — a challenge of the week-distance
+ * shape, and it is in the grid without anything being set up.
+ */
+export const challengesFixture: ChallengeInsight = {
+  generated_at: '2026-05-13T06:30:00Z',
+  date: '2026-05-13',
+  window: {
+    from: '2026-02-23',
+    from_label: '23 Feb 2026',
+    to: '2026-05-13',
+    to_label: '13 May 2026',
+    weeks: 12,
+  },
+  challenges: [
+    {
+      key: 'week_distance:40000',
+      kind: 'week_distance',
+      label: '40 km in the week',
+      target: { text: '40 km', raw: 40_000 },
+      streak: { text: '3', raw: 3 },
+      weeks: [
+        {
+          week_start: '2026-04-27',
+          label: '27 Apr 2026',
+          met: true,
+          measured: { text: '44 km', raw: 44_000 },
+        },
+        {
+          week_start: '2026-05-04',
+          label: '4 May 2026',
+          met: true,
+          measured: { text: '52 km', raw: 52_100 },
+        },
+        {
+          week_start: '2026-05-11',
+          label: '11 May 2026',
+          met: false,
+          measured: { text: '31 km', raw: 31_000 },
+        },
+      ],
+    },
+  ],
+  unavailable: null,
+}
+
 /** The settings with nothing set: no goal, no pause, an empty log. */
 export const settingsEmptyFixture: SettingsState = {
   goal: { value: null, km: null },
   pause: null,
+  challenges: [],
   storage: {
     size: value('64 KB', 65_536),
     activity_count: 0,
@@ -2299,6 +2349,9 @@ export function fixtureResponse(
   body?: unknown,
 ): unknown {
   switch (path) {
+    case '/insights/challenges': {
+      return challengesFixture
+    }
     case '/insights/today': {
       if (variant === 'empty' || variant === 'fresh') return todayEmptyFixture
       // The wellness has not come, but the runs have: the run and the

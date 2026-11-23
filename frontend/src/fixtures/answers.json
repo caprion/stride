@@ -13903,6 +13903,7 @@
         "value": null
       },
       "pause": null,
+      "challenges": [],
       "storage": {
         "activity_count": 7,
         "note_count": 0,
@@ -27647,6 +27648,7 @@
         "value": null
       },
       "pause": null,
+      "challenges": [],
       "storage": {
         "activity_count": 7,
         "note_count": 0,

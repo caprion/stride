@@ -53,6 +53,10 @@ pub mod note_kind {
     pub const GOAL: &str = "goal";
     /// A pause in the plan.
     pub const PAUSE: &str = "pause";
+    /// A challenge of the week: so many kilometres across the week.
+    pub const CHALLENGE_WEEK: &str = "challenge_week";
+    /// A challenge of the run: a run of at least so many kilometres.
+    pub const CHALLENGE_RUN: &str = "challenge_run";
 }
 
 /// The kinds of data a sync keeps a cursor for.
@@ -489,13 +493,14 @@ pub struct NewPlanSession {
 pub struct Note {
     /// The row's primary key.
     pub id: i64,
-    /// `note`, `goal` or `pause`.
+    /// `note`, `goal`, `pause`, `challenge_week` or `challenge_run`.
     pub kind: String,
     /// The run the note is about. Set for `kind = 'note'`.
     pub activity_id: Option<i64>,
     /// The note's text, or the pause's reason.
     pub text: Option<String>,
-    /// The weekly goal, in kilometres. For `kind = 'goal'`.
+    /// The weekly goal, in kilometres. For `kind = 'goal'`, and the
+    /// target of a challenge, in kilometres, for the two challenge kinds.
     pub value: Option<f64>,
     /// The first day of the pause, `YYYY-MM-DD`.
     pub start_date: Option<String>,
@@ -508,13 +513,14 @@ pub struct Note {
 /// A note to write.
 #[derive(Debug, Clone, PartialEq)]
 pub struct NewNote {
-    /// `note`, `goal` or `pause`.
+    /// `note`, `goal`, `pause`, `challenge_week` or `challenge_run`.
     pub kind: String,
     /// The run the note is about. Set for `kind = 'note'`.
     pub activity_id: Option<i64>,
     /// The note's text, or the pause's reason.
     pub text: Option<String>,
-    /// The weekly goal, in kilometres. For `kind = 'goal'`.
+    /// The weekly goal, in kilometres. For `kind = 'goal'`, and the
+    /// target of a challenge, in kilometres, for the two challenge kinds.
     pub value: Option<f64>,
     /// The first day of the pause, `YYYY-MM-DD`.
     pub start_date: Option<String>,

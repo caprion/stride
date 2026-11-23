@@ -51,6 +51,7 @@ import type {
 } from '../lib/types'
 import {
   AdherencePanel,
+  ChallengePanel,
   BestsPanel,
   ConsistencyPanel,
   EddingtonPanel,
@@ -925,6 +926,15 @@ export function ProgressWall({
         testId="progress-wall-streaks"
       >
         <StreaksBody streaks={streaks.data} />
+      </WallCard>
+
+      {/* -------------------------------------------------- the challenges */}
+      <WallCard
+        title={t('challenge.heading')}
+        to="/progress/challenges"
+        testId="progress-wall-challenges"
+      >
+        <ChallengePanel challenges={answers.challenges.data} bare />
       </WallCard>
 
       {/* ------------------------------------------ the athlete profile */}

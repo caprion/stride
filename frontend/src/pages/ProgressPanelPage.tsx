@@ -23,6 +23,7 @@ import { PROGRESS_PANELS, type ProgressPanel } from './ProgressIndex'
 import { RangeSelector } from './progressRange'
 import {
   AdherencePanel,
+  ChallengePanel,
   BestsPanel,
   ConsistencyPanel,
   EddingtonPanel,
@@ -82,7 +83,7 @@ export function ProgressPanelPage() {
   // A name that is not a panel is not a page: back to the index.
   if (!isPanel(panel)) return <Navigate to="/progress" replace />
 
-  const { progress, load, rolling, streaks } = answers
+  const { progress, load, rolling, streaks, challenges } = answers
   const { today, year, activities, shortWindow, longWindow } = wall
 
   if (progress.isError && !progress.data) {
@@ -168,6 +169,9 @@ export function ProgressPanelPage() {
           />
         ) : null}
         {panel === 'zone-time' ? <ZonesDistributionPanel rolling={rolling.data} /> : null}
+        {panel === 'challenges' ? (
+          <ChallengePanel challenges={challenges.data} />
+        ) : null}
         {panel === 'habit' ? (
           <>
             {streaks.data ? (

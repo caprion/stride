@@ -474,7 +474,7 @@ fn the_settings_routes_carry_their_shapes() {
     let settings = harness.ok_get("/settings");
     assert_keys(
         &settings,
-        &["generated_at", "goal", "pause", "storage"],
+        &["challenges", "generated_at", "goal", "pause", "storage"],
         "/settings",
     );
     assert_keys(&settings["goal"], &["km", "value"], "/settings: the goal");
@@ -595,6 +595,31 @@ fn the_insight_routes_carry_their_shapes() {
         ],
         "/insights/load: window",
     );
+
+    // The challenges carry the weeks, and each week says what it
+    // measured.
+    let challenges = harness.ok_get("/insights/challenges");
+    assert_keys(
+        &challenges,
+        &[
+            "challenges",
+            "date",
+            "generated_at",
+            "unavailable",
+            "window",
+        ],
+        "/insights/challenges",
+    );
+    assert_keys(
+        &challenges["window"],
+        &["from", "from_label", "to", "to_label", "weeks"],
+        "/insights/challenges: window",
+    );
+    // The seeded store holds no goal and no challenges, so the grid is
+    // empty — and the answer says so rather than inventing a row.
+    assert!(challenges["challenges"]
+        .as_array()
+        .is_some_and(|rows| rows.is_empty()));
 
     // The streaks carry the days, the weeks and the months.
     let streaks = harness.ok_get("/insights/streaks");

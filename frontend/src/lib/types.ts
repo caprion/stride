@@ -1412,6 +1412,8 @@ export interface SettingsStorage {
  * `/health`, which owns it.
  */
 export interface SettingsState {
+  /** The challenges the athlete has set, in the order they were set. */
+  challenges: SettingsChallenge[]
   /** The weekly goal. */
   goal: SettingsGoal
   /** The pause, when there is one. */
@@ -1521,6 +1523,86 @@ export interface PaceLongest {
 }
 
 /** The bands the window's moving time falls into. */
+/**
+ * How a challenge is measured.
+ *
+ * `week_distance` is the week's own distance; `run_distance` is the
+ * week's longest run.
+ */
+export type ChallengeKind = 'week_distance' | 'run_distance'
+
+/**
+ * One challenge of the athlete's own, as the settings carry it.
+ */
+export interface SettingsChallenge {
+  /** How it is measured. */
+  kind: ChallengeKind
+  /** The target, in kilometres. */
+  km: number
+  /** The athlete's own words for it, when they gave any. */
+  label: string | null
+}
+
+/**
+ * The challenges: the athlete's own, measured week by week.
+ *
+ * A week is met or it is not — a fact about the week, not a grade.
+ */
+export interface ChallengeInsight {
+  /** When this answer was produced. */
+  generated_at: string
+  /** The athlete's local date. */
+  date: string
+  /** The window the weeks cover. */
+  window: ChallengeWindow
+  /** The challenges, each with the weeks against it. */
+  challenges: ChallengeRow[]
+  /** Why there is no value, in the core's words. */
+  unavailable: string | null
+}
+
+/** The window the challenge grid covers. */
+export interface ChallengeWindow {
+  /** The first day of the window, in the athlete's own calendar. */
+  from: string
+  /** The same day, as the api writes a date: "4 May 2026". */
+  from_label: string
+  /** The last day of the window. */
+  to: string
+  /** The same day, as the api writes a date. */
+  to_label: string
+  /** How many weeks the window covers. */
+  weeks: number
+}
+
+/** One challenge, and the weeks against it. */
+export interface ChallengeRow {
+  /** The challenge's own key: its kind and its target. */
+  key: string
+  /** How it is measured: "week_distance" or "run_distance". */
+  kind: string
+  /** The name the core gives it, or the athlete's own words. */
+  label: string
+  /** The target, as the core renders it: "40 km". */
+  target: RenderedValue
+  /** How many weeks in a row it was met, at the end of the window. */
+  streak: RenderedValue | null
+  /** The weeks, oldest first. */
+  weeks: ChallengeWeekRow[]
+}
+
+/** One week against one challenge. */
+export interface ChallengeWeekRow {
+  /** The Monday the week starts on. */
+  week_start: string
+  /** The same day, as the api writes a date. */
+  label: string
+  /** Whether the week reached the target. */
+  met: boolean
+  /** What the week measured, as the core renders it. */
+  measured: RenderedValue
+}
+
 export interface PaceBands {
   /**
    * The time in the bands that were too small to draw.

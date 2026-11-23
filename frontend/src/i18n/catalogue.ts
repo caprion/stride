@@ -544,6 +544,25 @@ export const catalogue = {
    * wording is the app's own: a question, the answer in the core's own
    * rendering, and the window the answer covers.
    */
+  'challenge.heading': { type: 'status', text: 'Your challenges' },
+  'challenge.challenges': { type: 'status', text: 'The challenges' },
+  'challenge.met': { type: 'status', text: '{n} of {of} weeks' },
+  'challenge.streak': { type: 'status', text: '{n} weeks in a row' },
+  'challenge.inARow': { type: 'status', text: '{n} in a row' },
+  'challenge.empty': {
+    type: 'status',
+    text: 'No challenges yet. Set a weekly goal, or a run to keep doing.',
+  },
+  'challenge.note': {
+    type: 'status',
+    text: 'A week is met or it is not. The pattern across the row is yours to read.',
+  },
+  'challenge.add': { type: 'status', text: 'Add a challenge' },
+  'challenge.label': { type: 'status', text: 'Your words for it' },
+  'challenge.kind.week': { type: 'status', text: 'Across the week' },
+  'challenge.kind.run': { type: 'status', text: 'A single run' },
+  'challenge.target': { type: 'status', text: 'Kilometres' },
+  'challenge.remove': { type: 'status', text: 'Remove' },
   'progress.index.intro': { type: 'status', text: 'Six questions, and your answer to each.' },
   'progress.index.shape.heading': { type: 'status', text: 'Your training, in one picture' },
   'progress.index.shape.open': { type: 'status', text: 'Open →' },

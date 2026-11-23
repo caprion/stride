@@ -463,6 +463,12 @@ pub const ROUTES: &[Route] = &[
         method: Method::Get,
         handler: crate::routes::pace::pace,
     },
+    // The challenges: the athlete's own, measured week by week.
+    Route {
+        pattern: "/insights/challenges",
+        method: Method::Get,
+        handler: crate::routes::challenges::challenges,
+    },
     Route {
         pattern: "/insights/streaks",
         method: Method::Get,

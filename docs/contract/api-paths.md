@@ -30,11 +30,11 @@ reference only).
 | Route | Notes |
 |---|---|
 | `/plan/{current,today,week,blocks,sources,adherence,results,import}` | the plan engine |
-| `/insights/{today,progress,load,chips,rolling,streaks,pace}` | Today and the feed chips; `progress` is the Progress screen's answer, `load` is the training load over the same window (see "The training load" below), `rolling` is the rolling view (see "The rolling view" below), `streaks` is the streak of days and weeks (see "The streaks" below) and `pace` is the pace page's answer (see "The pace page" below) |
+| `/insights/{today,progress,load,chips,rolling,streaks,pace,challenges}` | Today and the feed chips; `progress` is the Progress screen's answer, `load` is the training load over the same window (see "The training load" below), `rolling` is the rolling view (see "The rolling view" below), `streaks` is the streak of days and weeks (see "The streaks" below), `pace` is the pace page's answer (see "The pace page" below) and `challenges` is the athlete's own challenges, week by week (see "The challenges" below) |
 
-| `/insights/{today,progress,load,chips,rolling,streaks,year}` | Today and the feed chips; `progress` is the Progress screen's answer, `load` is the training load over the same window (see "The training load" below), `rolling` is the rolling view (see "The rolling view" below), `streaks` is the streak of days and weeks (see "The streaks" below) and `year` is the year: the months, the calendar of the days and what changed (see "The year" below) |
+| `/insights/{today,progress,load,chips,rolling,streaks,year,challenges}` | Today and the feed chips; `progress` is the Progress screen's answer, `load` is the training load over the same window (see "The training load" below), `rolling` is the rolling view (see "The rolling view" below), `streaks` is the streak of days and weeks (see "The streaks" below) and `year` is the year: the months, the calendar of the days and what changed (see "The year" below) |
 
-| `/insights/{today,progress,load,heatmap,chips,pace}` | Today and the feed chips; `progress` is the Progress screen's answer and `load` is the training load over the same window; `heatmap` is the grid over the stored positions, computed on the device (see "The heatmap" below); `pace` is the pace page's answer (see "The pace page" below) |
+| `/insights/{today,progress,load,heatmap,chips,pace,challenges}` | Today and the feed chips; `progress` is the Progress screen's answer and `load` is the training load over the same window; `heatmap` is the grid over the stored positions, computed on the device (see "The heatmap" below); `pace` is the pace page's answer (see "The pace page" below) |
 | `/compare` | the metric diff |
 | `/compare/candidates` | the runs you can compare against (the Compare screen's "choose a different run" action) |
 
@@ -168,6 +168,7 @@ Two rules hold for every shape below.
 | `/insights/year` | `generated_at`, `date`, `window: {from, from_label, to, to_label, days}`, `comparison: {from, from_label, to, to_label, days}`, `months: {key, label, sessions, distance, duration, elevation, longest, form, weeks: {start, start_label, distance, sessions}[], mix: {zone, share}[], high}[]`, `days: {date, sessions, distance, high}[]`, `changed: string[]` |
 
 | `/insights/streaks` | `generated_at`, `date`, `days: {current, longest}`, `weeks: {current, longest}`, `months: {current, longest}` |
+| `/insights/challenges` | `generated_at`, `date`, `window: {from, from_label, to, to_label, weeks}`, `challenges: {key, kind, label, target, streak, weeks: {week_start, label, met, measured}[]}[]`, `unavailable: string \| null` |
 
 | `/insights/heatmap` | `generated_at`, `date`, `runs`, `runs_outside`, `more_runs`, `cell_size: RenderedValue \| null`, `cells: {x, y, south, west, north, east, runs}[]`, `extent: {south, west, north, east} \| null`, `unavailable: string \| null` |
 | `/auth/status` | `connected`, `method`, `key_source`, `key_last4`, `last_sync_at`, `generated_at` |
@@ -527,6 +528,31 @@ answer states the two windows' numbers side by side and the difference
 between them, and says which way each share moved against the window
 before it — "up", "down", "steady" — and stops there. There is no verdict,
 no grade, no traffic light and nothing that tells the athlete what to do.
+
+### The challenges
+
+`/insights/challenges?weeks=N` answers with **the athlete's own
+challenges, measured week by week**. A challenge is something the athlete
+set themselves — a run of at least so many kilometres, or so many
+kilometres across the week — and the grid says, week by week, whether the
+week reached it.
+
+**The weekly goal is a challenge already.** It is the same shape, so it is
+in the grid from the first day without anything being set up; the
+athlete's own challenges are written through `/settings` and sit beside
+it.
+
+**A week is met or it is not.** The answer is a fact: the week's distance
+was what it was, and the longest run in it was what it was. **A week that
+did not reach the target is not a failure** — it is a week, and the reader
+draws the conclusion. Nothing in this answer is coloured as a problem,
+because nothing in it is a problem.
+
+The challenges are written as rows of the `notes` table, with the kinds
+`challenge_week` and `challenge_run`; the target is in `value`, in
+kilometres, and the athlete's own words for it, when they gave any, in
+`text`. The weekly goal is a row of its own kind, `goal`, and is not one
+of the challenge rows.
 
 ### The streaks
 

@@ -114,10 +114,10 @@ pub const TABLE_STATEMENTS: &[&str] = &[
 "#,
     r#"CREATE TABLE notes (
     id          INTEGER NOT NULL PRIMARY KEY,
-    kind        VARCHAR(16) NOT NULL,               -- 'note' | 'goal' | 'pause'
+    kind        VARCHAR(16) NOT NULL,               -- 'note' | 'goal' | 'pause' | 'challenge_week' | 'challenge_run'
     activity_id INTEGER,                            -- set for kind='note'
     text        TEXT,                               -- the note text, or the pause reason
-    value       REAL,                               -- the weekly goal in km, for kind='goal'
+    value       REAL,                               -- the weekly goal in km (kind='goal'), or a challenge's target in km
     start_date  VARCHAR(10),                        -- pause start
     end_date    VARCHAR(10),                        -- pause end
     created_at  DATETIME NOT NULL,

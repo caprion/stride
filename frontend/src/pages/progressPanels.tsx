@@ -26,7 +26,14 @@ import {
   XAxis,
   YAxis,
 } from 'recharts'
-import type { LoadInsight, ProgressInsight, RenderedValue, RollingInsight } from '../lib/types'
+import type {
+  ChallengeInsight,
+  LoadInsight,
+  ProgressInsight,
+  RenderedValue,
+  RollingInsight,
+} from '../lib/types'
+import { ChallengeGrid } from '../components/ChallengeGrid'
 import { formatCount, formatDateShort, renderedText } from '../lib/format'
 import { t } from '../i18n'
 import type { CatalogueKey } from '../i18n'
@@ -209,6 +216,46 @@ export function EddingtonPanel({
       <p className="mt-2 text-[12px] text-ink-faint" data-testid="progress-eddington-window">
         {formatDateShort(data.period.from)} - {formatDateShort(data.period.to)}
       </p>
+    </PanelShell>
+  )
+}
+
+/**
+ * The challenges: the athlete's own, measured week by week.
+ *
+ * **A week is met or it is not.** The grid says what happened and the
+ * streak counts the weeks in a row; neither is a grade, and a week that
+ * did not reach the target is drawn quietly rather than crossed out.
+ */
+export function ChallengePanel({
+  challenges,
+  bare = false,
+}: {
+  challenges: ChallengeInsight | undefined
+  bare?: boolean
+}) {
+  const rows = challenges?.challenges ?? []
+  const weeks =
+    rows.length > 0
+      ? rows[0]!.weeks.map((week) => ({
+          week_start: week.week_start,
+          label: week.label,
+        }))
+      : []
+
+  return (
+    <PanelShell title={t('challenge.heading')} testId="progress-challenges" bare={bare}>
+      {challenges?.unavailable ? (
+        <p className="text-[13px] text-ink-muted" data-testid="progress-challenges-empty">
+          {challenges.unavailable}
+        </p>
+      ) : null}
+      {!challenges?.unavailable ? (
+        <>
+          <ChallengeGrid challenges={rows} weeks={weeks} />
+          <p className="mt-2 text-[12px] text-ink-faint">{t('challenge.note')}</p>
+        </>
+      ) : null}
     </PanelShell>
   )
 }

@@ -50,6 +50,11 @@ export function useProgress(range: number) {
     queryKey: ['insights-streaks'],
     queryFn: () => api.insightsStreaks(),
   })
+  // The challenges: the athlete's own, against the same window.
+  const challenges = useQuery({
+    queryKey: ['insights-challenges', range],
+    queryFn: () => api.insightsChallenges(range),
+  })
   /**
    * The shape's two windows.
    *
@@ -122,6 +127,7 @@ export function useProgress(range: number) {
     load,
     rolling,
     streaks,
+    challenges,
     shape: { short: shapeShort, long: shapeLong },
     data,
     weeks,

@@ -30,7 +30,7 @@ import { api } from '../lib/api'
 import { connectGarmin } from '../lib/connect'
 import { formatDateShort, formatRelative, renderedText } from '../lib/format'
 import { currentHost } from '../lib/transport'
-import type { PauseReason } from '../lib/types'
+import type { ChallengeKind, PauseReason } from '../lib/types'
 import { t } from '../i18n'
 import { FitImport } from '../components/FitImport'
 import { KeyField } from '../components/KeyField'
@@ -61,6 +61,9 @@ export function SettingsPage() {
   const client = useQueryClient()
 
   const [goal, setGoal] = useState<string | null>(null)
+  const [challengeKind, setChallengeKind] = useState<ChallengeKind>('run_distance')
+  const [challengeKm, setChallengeKm] = useState<string | null>(null)
+  const [challengeLabel, setChallengeLabel] = useState<string | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
   const [goalNotice, setGoalNotice] = useState<string | null>(null)
   const [pauseNotice, setPauseNotice] = useState<string | null>(null)
@@ -84,6 +87,10 @@ export function SettingsPage() {
         )
         setGoal(null)
       }
+      if ('challenges' in change) {
+        setChallengeKm(null)
+        setChallengeLabel(null)
+      }
       if ('pause' in change) {
         setPauseNotice(
           change.pause === null ? t('settings.pause.cleared') : t('settings.pause.saved'),
@@ -94,6 +101,7 @@ export function SettingsPage() {
       }
       void client.invalidateQueries({ queryKey: ['insights-today'] })
       void client.invalidateQueries({ queryKey: ['plan-week'] })
+      void client.invalidateQueries({ queryKey: ['insights-challenges'] })
     },
   })
 
@@ -281,6 +289,110 @@ export function SettingsPage() {
         settings name the environment variable it is read from.
       */}
         {section === 'data' ? <UpdateSettings /> : null}
+
+        {/* -------------------------------------------- the challenges */}
+        {section === 'training' ? (
+          <SettingsGroup title={t('challenge.heading')} testId="settings-challenges">
+            {state.challenges.length > 0 ? (
+              <ul className="space-y-1.5" data-testid="settings-challenges-list">
+                {state.challenges.map((challenge) => (
+                  <li
+                    key={`${challenge.kind}:${challenge.km}`}
+                    className="flex items-baseline justify-between gap-3"
+                  >
+                    <span className="min-w-0 text-[13.5px] text-ink-soft">
+                      {challenge.label ??
+                        t(
+                          challenge.kind === 'run_distance'
+                            ? 'challenge.kind.run'
+                            : 'challenge.kind.week',
+                        )}
+                      <span className="text-ink-faint"> · {challenge.km} km</span>
+                    </span>
+                    <button
+                      type="button"
+                      className="tap shrink-0 text-[12.5px] font-semibold text-brand-700 underline"
+                      data-testid={`settings-challenge-remove-${challenge.kind}-${challenge.km}`}
+                      onClick={() =>
+                        save.mutate({
+                          challenges: state.challenges
+                            .filter(
+                              (other) =>
+                                !(other.kind === challenge.kind && other.km === challenge.km),
+                            )
+                            .map((other) => ({
+                              kind: other.kind,
+                              km: other.km,
+                              label: other.label,
+                            })),
+                        })
+                      }
+                    >
+                      {t('challenge.remove')}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-[13px] text-ink-muted" data-testid="settings-challenges-none">
+                {t('challenge.empty')}
+              </p>
+            )}
+            <div className="mt-3 space-y-2">
+              <label className="block">
+                <span className="block caps">{t('challenge.add')}</span>
+                <select
+                  value={challengeKind}
+                  onChange={(event) => setChallengeKind(event.target.value as ChallengeKind)}
+                  data-testid="settings-challenge-kind"
+                  className="tap mt-1 w-full rounded-md border border-edge bg-surface px-3 text-[15px] text-ink"
+                >
+                  <option value="run_distance">{t('challenge.kind.run')}</option>
+                  <option value="week_distance">{t('challenge.kind.week')}</option>
+                </select>
+              </label>
+              <Field
+                label={t('challenge.target')}
+                value={challengeKm ?? ''}
+                inputMode="decimal"
+                onChange={setChallengeKm}
+                testId="settings-challenge-km"
+              />
+              <Field
+                label={t('challenge.label')}
+                value={challengeLabel ?? ''}
+                onChange={setChallengeLabel}
+                testId="settings-challenge-label"
+              />
+              <button
+                type="button"
+                className="tap inline-flex items-center rounded-md bg-brand-600 px-4 text-[14px] font-semibold text-white disabled:opacity-50"
+                disabled={save.isPending}
+                data-testid="settings-challenge-add"
+                onClick={() => {
+                  const km = Number((challengeKm ?? '').trim())
+                  if (!Number.isFinite(km) || km <= 0) return
+                  save.mutate({
+                    challenges: [
+                      ...state.challenges.map((other) => ({
+                        kind: other.kind,
+                        km: other.km,
+                        label: other.label,
+                      })),
+                      {
+                        kind: challengeKind,
+                        km,
+                        label: (challengeLabel ?? '').trim() || null,
+                      },
+                    ],
+                  })
+                }}
+              >
+                {t('challenge.add')}
+              </button>
+            </div>
+          </SettingsGroup>
+        ) : null}
 
         {/* ------------------------------------------------ the goal */}
         {section === 'training' ? (

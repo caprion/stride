@@ -1190,10 +1190,23 @@ pub struct SettingsState {
     pub goal: SettingsGoal,
     /// The pause, when there is one.
     pub pause: Option<SettingsPause>,
+    /// The challenges the athlete has set, in the order they were set.
+    pub challenges: Vec<SettingsChallenge>,
     /// The storage.
     pub storage: SettingsStorage,
     /// When this answer was produced.
     pub generated_at: String,
+}
+
+/// One challenge of the athlete's own, as the settings carry it.
+#[derive(Clone, Debug, PartialEq, Serialize)]
+pub struct SettingsChallenge {
+    /// How it is measured: "week_distance" or "run_distance".
+    pub kind: String,
+    /// The target, in kilometres.
+    pub km: f64,
+    /// The athlete's own words for it, when they gave any.
+    pub label: Option<String>,
 }
 
 /// The answer to exporting a backup.
@@ -2414,6 +2427,69 @@ pub struct PaceLongest {
 }
 
 /// The bands the window's moving time falls into.
+#[derive(Clone, Debug, PartialEq, Serialize)]
+pub struct ChallengeInsight {
+    /// When this answer was produced.
+    pub generated_at: String,
+    /// The athlete's local date.
+    pub date: String,
+    /// The window the weeks cover.
+    pub window: ChallengeWindow,
+    /// The challenges, each with the weeks against it.
+    pub challenges: Vec<ChallengeRow>,
+    /// Why there is no value, in the core's own words.
+    pub unavailable: Option<String>,
+}
+
+/// The window the challenge grid covers.
+#[derive(Clone, Debug, PartialEq, Serialize)]
+pub struct ChallengeWindow {
+    /// The first day of the window, in the athlete's own calendar.
+    pub from: String,
+    /// The same day, as the api writes a date: "4 May 2026".
+    pub from_label: String,
+    /// The last day of the window.
+    pub to: String,
+    /// The same day, as the api writes a date.
+    pub to_label: String,
+    /// How many weeks the window covers.
+    pub weeks: i64,
+}
+
+/// One challenge, and the weeks against it.
+#[derive(Clone, Debug, PartialEq, Serialize)]
+pub struct ChallengeRow {
+    /// The challenge's own key: its kind and its target.
+    pub key: String,
+    /// How it is measured: "week_distance" or "run_distance".
+    pub kind: String,
+    /// The name the core gives it, or the athlete's own words.
+    pub label: String,
+    /// The target, as the core renders it: "40 km".
+    pub target: RenderedValue,
+    /// How many weeks in a row it was met, at the end of the window.
+    pub streak: Option<RenderedValue>,
+    /// The weeks, oldest first.
+    pub weeks: Vec<ChallengeWeekRow>,
+}
+
+/// One week against one challenge.
+#[derive(Clone, Debug, PartialEq, Serialize)]
+pub struct ChallengeWeekRow {
+    /// The Monday the week starts on.
+    pub week_start: String,
+    /// The same day, as the api writes a date.
+    pub label: String,
+    /// Whether the week reached the target.
+    pub met: bool,
+    /// What the week measured, as the core renders it.
+    pub measured: RenderedValue,
+}
+
+/// The bands a window's time falls into.
+///
+/// The bands that hold a readable share of the time, and the time in the
+/// ones that were too small to draw.
 #[derive(Clone, Debug, PartialEq, Serialize)]
 pub struct PaceBands {
     /// How wide a band is, in seconds per kilometre.

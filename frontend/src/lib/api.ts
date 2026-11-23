@@ -36,6 +36,8 @@ import type {
   SettingsState,
   SleepDays,
   SyncStatus,
+  ChallengeInsight,
+  ChallengeKind,
   StreakInsight,
   SyncRunResult,
   TodayInsight,
@@ -112,6 +114,7 @@ export const ROUTES = {
   insightsLoad: '/insights/load',
   insightsRolling: '/insights/rolling',
   insightsStreaks: '/insights/streaks',
+  insightsChallenges: '/insights/challenges',
   insightsYear: '/insights/year',
 
   insightsHeatmap: '/insights/heatmap',
@@ -347,6 +350,14 @@ export const api = {
    */
   insightsStreaks: () => get<StreakInsight>(ROUTES.insightsStreaks),
   /**
+   * The challenges: the athlete's own, measured week by week.
+   *
+   * The weekly goal is one of them, so the grid has something in it from
+   * the first day, and the athlete's own challenges sit beside it.
+   */
+  insightsChallenges: (weeks = 12) =>
+    get<ChallengeInsight>(ROUTES.insightsChallenges, { weeks }),
+  /**
    * The year: the twelve calendar months, the calendar of the days
    * coloured by the zones they were run in, and what changed against the
    * athlete's own past.
@@ -470,6 +481,11 @@ export const api = {
     goal_km?: number | null
     /** The pause. Null clears the pause. */
     pause?: { start_date: string; end_date: string; reason: string | null } | null
+    /**
+     * The challenges, in the order the athlete wants them. The list
+     * replaces the set: what is sent is what is there.
+     */
+    challenges?: { kind: ChallengeKind; km: number; label?: string | null }[]
   }) => post<SettingsState>(ROUTES.settings, change),
 
   /** A backup, written by the host. */

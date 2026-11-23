@@ -13,6 +13,7 @@
 //! own and never writes a domain sentence of its own.
 
 pub mod app;
+pub mod challenges;
 pub mod data;
 pub mod export;
 pub mod film;

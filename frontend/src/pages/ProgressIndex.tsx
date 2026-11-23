@@ -73,6 +73,7 @@ export const PROGRESS_PANELS = [
   'bests',
   'consistency',
   'adherence',
+  'challenges',
 ] as const
 export type ProgressPanel = (typeof PROGRESS_PANELS)[number]
 
