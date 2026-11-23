@@ -93,8 +93,23 @@ describe('the wall on Progress', () => {
     renderApp('/progress')
     const index = await screen.findByTestId('progress-index')
 
-    // Six questions, and no more.
-    expect(index.querySelectorAll('a[data-testid^="progress-index-"]')).toHaveLength(6)
+    // The six questions, and the picture above them.
+    expect(index.querySelectorAll('a[data-testid^="progress-index-"]')).toHaveLength(7)
+  })
+
+  it('puts the athlete profile above the questions, as a picture', async () => {
+    renderApp('/progress')
+    const index = await screen.findByTestId('progress-index')
+
+    // The picture is the first thing on the narrow layout: it answers
+    // "what does my training look like?" in one glance.
+    const shape = index.querySelector('[data-testid="progress-index-shape"]')
+    expect(shape).toBeTruthy()
+    expect(shape?.querySelector('[data-testid="progress-shape-chart"]')).toBeTruthy()
+    // And it opens the panel that has the numbers under it.
+    expect(shape?.querySelector('[data-testid="progress-index-shape-open"]')?.getAttribute('href')).toBe(
+      '/progress/shape',
+    )
   })
 
   it('shows the values the router answered with', async () => {

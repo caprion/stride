@@ -216,6 +216,13 @@ export function EddingtonPanel({
 /**
  * The load, as values and a scenario.
  *
+ * **The shape comes first.** The card opens with the chart of the two
+ * weighted series and the form, because that is what the window looks
+ * like, and the numbers come after it: a picture you can read at a
+ * glance, and then the facts behind it. The scenario and the assumption
+ * stay at the foot, where they have always been — the assumption
+ * travels with the numbers it belongs to.
+ *
  * The card says what the numbers are, what window they describe and what
  * the model assumed — the coefficient, where the maximum heart rate came
  * from and the day the zone model was read, and the two windows. There is
@@ -228,10 +235,22 @@ export function LoadPanel({
   load,
   error,
   bare = false,
+  detail = true,
 }: {
   load: LoadInsight | undefined
   error: boolean
+  /** The card is the wall's, and the heading is already said. */
   bare?: boolean
+  /**
+   * Whether the card carries the whole answer.
+   *
+   * The **card** is the headline: the shape of the load and the numbers
+   * behind it. The **panel** is the answer: the same shape, and then the
+   * texture under it and the scenario's own projection. The wall is a
+   * grid of cards, and a card that carried every chart of its question
+   * would be a wall of one.
+   */
+  detail?: boolean
 }) {
   const series = load?.load ?? null
   const states = series?.states ?? []
@@ -252,8 +271,15 @@ export function LoadPanel({
               {t('progress.load.asOf', { date: lastState.label })}
             </p>
           ) : null}
+          {/* The shape, first: the two weighted series and the form,
+              day by day. */}
+          {load ? (
+            <div className="mt-2">
+              <LoadSeriesChart load={load} />
+            </div>
+          ) : null}
           <dl
-            className="mt-2 grid grid-cols-2 gap-x-3 gap-y-2"
+            className="mt-3 grid grid-cols-2 gap-x-3 gap-y-2"
             data-testid="progress-load-values"
           >
             {[
@@ -314,6 +340,23 @@ export function LoadPanel({
               </dl>
             </>
           ) : null}
+          {/* The charts of the load. The answer already carried the
+              day-by-day series and the seven days the scenario projects
+              forward; these draw them, and they draw nothing the answer
+              did not send. The card carries the shape; the panel carries
+              the whole answer. */}
+          {load && detail ? (
+            <>
+              <div className="mt-4">
+                <LoadDaysChart load={load} />
+              </div>
+              {load.scenario ? (
+                <div className="mt-4">
+                  <LoadProjectionChart load={load} />
+                </div>
+              ) : null}
+            </>
+          ) : null}
           {/* The scenario and its assumption: the core's own words,
               and the assumption travels with them. */}
           {load?.scenario ? (
@@ -330,25 +373,6 @@ export function LoadPanel({
               >
                 {load.scenario.assumption}
               </p>
-            </>
-          ) : null}
-          {/* The charts of the load. The answer already carried the
-              day-by-day series and the seven days the scenario projects
-              forward; these draw them, and they draw nothing the answer
-              did not send. */}
-          {load ? (
-            <>
-              <div className="mt-4">
-                <LoadSeriesChart load={load} />
-              </div>
-              <div className="mt-4">
-                <LoadDaysChart load={load} />
-              </div>
-              {load.scenario ? (
-                <div className="mt-4">
-                  <LoadProjectionChart load={load} />
-                </div>
-              ) : null}
             </>
           ) : null}
         </>
@@ -457,6 +481,11 @@ export function RollingPanel({
  * the window, and each says which way it moved against the window before
  * it.
  *
+ * **The split is a picture.** Three bars, one under each share: the
+ * reader sees the shape of the split before the numbers — a third of
+ * the time easy and a third of it hard reads as two thirds, and it does
+ * not read that way in three separate figures.
+ *
  * There is no target range here: a range that says how the split ought
  * to be is a prescription, and this product does not prescribe. The model
  * the split was measured against is named with the day it was read.
@@ -473,25 +502,44 @@ export function ZonesPanel({
 
       {rolling?.zones.shares ? (
         <>
-          <ul className="space-y-1.5" data-testid="progress-zones-shares">
+          <ul className="space-y-2.5" data-testid="progress-zones-shares">
             {rolling.zones.shares.map((share) => (
-              <li key={share.key} className="flex items-baseline justify-between gap-3">
-                <span className="text-[13.5px] text-ink-soft">{share.label}</span>
-                <span className="flex items-baseline gap-2">
-                  <span
-                    className="text-[16px] font-semibold tabular-nums text-ink"
-                    data-testid={`progress-zones-${share.key}`}
-                  >
-                    {renderedText(share.share)}
+              <li key={share.key}>
+                <div className="flex items-baseline justify-between gap-3">
+                  <span className="whitespace-nowrap text-[13.5px] text-ink-soft">
+                    {share.label}
                   </span>
-                  {share.trend ? (
-                    <span className="text-[11.5px] text-ink-muted">
-                      {t(TREND[share.trend] ?? 'progress.rolling.trend.steady', {
-                        days: rolling.window.days,
-                      })}
+                  <span className="flex items-baseline gap-2">
+                    <span
+                      className="text-[16px] font-semibold tabular-nums text-ink"
+                      data-testid={`progress-zones-${share.key}`}
+                    >
+                      {renderedText(share.share)}
                     </span>
-                  ) : null}
-                </span>
+                    {share.trend ? (
+                      <span className="text-[11.5px] text-ink-muted">
+                        {t(TREND[share.trend] ?? 'progress.rolling.trend.steady', {
+                          days: rolling.window.days,
+                        })}
+                      </span>
+                    ) : null}
+                  </span>
+                </div>
+                {/* The bar is the share itself: the core's own number,
+                    drawn at its own scale. */}
+                <div
+                  className="mt-1 h-1.5 w-full overflow-hidden rounded-full"
+                  style={{ background: 'var(--chart-band)' }}
+                >
+                  <div
+                    className="h-full rounded-full"
+                    style={{
+                      width: `${share.share?.raw ?? 0}%`,
+                      background: 'var(--chart-line)',
+                    }}
+                    data-testid={`progress-zones-bar-${share.key}`}
+                  />
+                </div>
               </li>
             ))}
           </ul>
@@ -934,7 +982,7 @@ export function ShapePanel({
 }
 
 /** The shape's body: the chart, the legend and the numbers. */
-function ShapeBody({
+export function ShapeBody({
   short,
   long,
   error,

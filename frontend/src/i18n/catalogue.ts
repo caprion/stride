@@ -544,6 +544,8 @@ export const catalogue = {
    * rendering, and the window the answer covers.
    */
   'progress.index.intro': { type: 'status', text: 'Six questions, and your answer to each.' },
+  'progress.index.shape.heading': { type: 'status', text: 'Your training, in one picture' },
+  'progress.index.shape.open': { type: 'status', text: 'Open →' },
   'progress.index.footnote': {
     type: 'status',
     text: 'Each question opens on its own. The wider screens show the panels side by side.',

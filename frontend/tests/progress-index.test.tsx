@@ -43,8 +43,10 @@ describe('the index of the questions', () => {
     const questions = [...index.querySelectorAll('a[data-testid^="progress-index-"]')].map(
       (node) => node.getAttribute('data-testid'),
     )
-    // Six rows, and each one is one of them.
+    // The picture above the questions, and the six questions themselves.
+    // Each one is a panel the app already has.
     expect(questions).toEqual([
+      'progress-index-shape-open',
       'progress-index-window',
       'progress-index-load',
       'progress-index-year',

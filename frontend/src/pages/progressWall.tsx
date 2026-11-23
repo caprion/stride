@@ -872,7 +872,9 @@ export function ProgressWall({
         to="/progress/load"
         testId="progress-wall-load"
       >
-        <LoadPanel load={load.data} error={load.isError} bare />
+        {/* The card is the headline: the shape of the load and the
+            numbers behind it. The panel carries the whole answer. */}
+        <LoadPanel load={load.data} error={load.isError} bare detail={false} />
       </WallCard>
 
       {/* --------------------------------------------- the weekly volume */}

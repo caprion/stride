@@ -17,14 +17,15 @@
 import { screen } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { api } from '../src/lib/api'
-import { loadFixture } from '../src/fixtures'
+import { loadFixture, rollingFixture } from '../src/fixtures'
 import { renderApp } from './helpers'
 
 afterEach(() => vi.restoreAllMocks())
 
 describe('the charts of the training load', () => {
   it('draws the series, the days and the projection', async () => {
-    renderApp('/progress')
+    // The panel is the whole answer; the card is the headline.
+    renderApp('/progress/load')
     const card = await screen.findByTestId('progress-load')
 
     // The shape of the training, over the window the screen is showing.
@@ -35,8 +36,22 @@ describe('the charts of the training load', () => {
     expect(card.querySelector('[data-testid="progress-load-projection"]')).toBeTruthy()
   })
 
+  it('gives the wall card the headline and the panel the whole answer', async () => {
+    const { unmount } = renderApp('/progress')
+    const card = await screen.findByTestId('progress-load')
+    // The card on the wall: the shape and the numbers behind it.
+    expect(card.querySelector('[data-testid="progress-load-series"]')).toBeTruthy()
+    expect(card.querySelector('[data-testid="progress-load-days"]')).toBeNull()
+    unmount()
+
+    renderApp('/progress/load')
+    const panel = await screen.findByTestId('progress-load')
+    expect(panel.querySelector('[data-testid="progress-load-days"]')).toBeTruthy()
+    expect(panel.querySelector('[data-testid="progress-load-projection"]')).toBeTruthy()
+  })
+
   it('names the three lines it draws', async () => {
-    renderApp('/progress')
+    renderApp('/progress/load')
     const card = await screen.findByTestId('progress-load')
 
     expect(card.querySelector('[data-testid="progress-load-legend-chronic"]')?.textContent).toBe(
@@ -51,7 +66,7 @@ describe('the charts of the training load', () => {
   })
 
   it('says what the charts show, and what the empty bars are', async () => {
-    renderApp('/progress')
+    renderApp('/progress/load')
     const card = await screen.findByTestId('progress-load')
 
     expect(card.querySelector('[data-testid="progress-load-series-note"]')?.textContent).toContain(
@@ -92,5 +107,72 @@ describe('the charts of the training load', () => {
     expect(card.querySelector('[data-testid="progress-load-series"]')).toBeNull()
     expect(card.querySelector('[data-testid="progress-load-days"]')).toBeNull()
     expect(card.querySelector('[data-testid="progress-load-projection"]')).toBeNull()
+  })
+})
+
+/**
+ * The graphs come before the text.
+ *
+ * **The card opens with the picture.** The shape of the training is
+ * what the window looks like, and a reader takes that in before they
+ * read a number; the numbers are the facts behind the picture, and they
+ * come after it.
+ */
+describe('the shape before the numbers', () => {
+  it('draws the chart of the load before the values', async () => {
+    renderApp('/progress')
+    const card = await screen.findByTestId('progress-load')
+
+    const chart = card.querySelector('[data-testid="progress-load-series"]')
+    const values = card.querySelector('[data-testid="progress-load-values"]')
+    expect(chart).toBeTruthy()
+    expect(values).toBeTruthy()
+    // The chart comes first in the card, not after the numbers.
+    expect(
+      chart!.compareDocumentPosition(values!) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy()
+  })
+
+  it('draws the split of the training as bars', async () => {
+    // The router's own answer carries the split; the fixture's rolling
+    // answer has none, so the card would have nothing to draw.
+    vi.spyOn(api, 'insightsRolling').mockResolvedValue({
+      ...rollingFixture,
+      zones: {
+        ...rollingFixture.zones,
+        shares: [
+          {
+            key: 'low',
+            label: 'Z1–Z2 low',
+            share: { raw: 6.11, text: '6.11%' },
+            previous_share: { raw: 5.89, text: '5.89%' },
+            trend: 'up',
+          },
+          {
+            key: 'moderate',
+            label: 'Z3 moderate',
+            share: { raw: 39.51, text: '39.51%' },
+            previous_share: { raw: 27.1, text: '27.10%' },
+            trend: 'up',
+          },
+          {
+            key: 'high',
+            label: 'Z4–Z5 high',
+            share: { raw: 54.37, text: '54.37%' },
+            previous_share: { raw: 67.01, text: '67.01%' },
+            trend: 'down',
+          },
+        ],
+      },
+    })
+    renderApp('/progress')
+    const card = await screen.findByTestId('progress-zones')
+
+    // The three shares are bars as well as numbers.
+    expect(card.querySelector('[data-testid="progress-zones-bar-low"]')).toBeTruthy()
+    expect(card.querySelector('[data-testid="progress-zones-bar-moderate"]')).toBeTruthy()
+    expect(card.querySelector('[data-testid="progress-zones-bar-high"]')).toBeTruthy()
+    // And the numbers are still there, in the core's own words.
+    expect(card.querySelector('[data-testid="progress-zones-high"]')?.textContent).toContain('%')
   })
 })

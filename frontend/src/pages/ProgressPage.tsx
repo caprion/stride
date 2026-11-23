@@ -223,7 +223,10 @@ export function ProgressPage() {
         each, and the doorway into the panel that answers it.
       */}
       <div className="progress-index" data-testid="progress-index-layout">
-        <ProgressIndex answers={answers} />
+        <ProgressIndex
+          answers={answers}
+          shape={{ short: wall.shortWindow.data, long: wall.longWindow.data }}
+        />
       </div>
     </div>
   )

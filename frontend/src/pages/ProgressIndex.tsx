@@ -29,8 +29,9 @@ import { ChevronRight } from 'lucide-react'
 import { ABSENT, formatCount, formatDateMedium, renderedText } from '../lib/format'
 import { t } from '../i18n'
 import type { CatalogueKey } from '../i18n'
+import type { RollingInsight } from '../lib/types'
 import type { ProgressAnswers } from './useProgress'
-import { LOAD_EMPTY } from './progressPanels'
+import { LOAD_EMPTY, ShapeBody } from './progressPanels'
 
 /**
  * A count with its unit — in the number's own singular or plural.
@@ -242,12 +243,41 @@ export function indexRows(answers: ProgressAnswers): IndexRow[] {
  * A list of rows in one card, the way the app's own lists are drawn: the
  * question on its own line, the answer under it, and the window the
  * answer covers under that. The row opens the panel that answers it.
+ *
+ * **And a picture above the questions.** The athlete profile is the one
+ * answer in this product that is a shape and nothing else — six axes, two
+ * windows, and not a number in the drawing. It answers "what does my
+ * training look like?" in one glance, which is the question the index is
+ * a list of answers to, so it is above the list rather than inside it.
+ * It opens the panel that has the numbers under it.
  */
-export function ProgressIndex({ answers }: { answers: ProgressAnswers }) {
+export function ProgressIndex({
+  answers,
+  shape,
+}: {
+  answers: ProgressAnswers
+  /** The two windows the athlete profile is drawn over. */
+  shape: { short: RollingInsight | undefined; long: RollingInsight | undefined }
+}) {
   const rows = indexRows(answers)
 
   return (
     <div data-testid="progress-index">
+      <section className="card mb-3 px-4 py-3" data-testid="progress-index-shape">
+        <div className="mb-1 flex items-baseline justify-between gap-3">
+          <h2 className="text-[12px] font-semibold uppercase tracking-[0.07em] text-ink-faint">
+            {t('progress.index.shape.heading')}
+          </h2>
+          <Link
+            to="/progress/shape"
+            className="tap-inline shrink-0 text-[12.5px] font-semibold text-brand-700 underline"
+            data-testid="progress-index-shape-open"
+          >
+            {t('progress.index.shape.open')}
+          </Link>
+        </div>
+        <ShapeBody short={shape.short} long={shape.long} error={false} />
+      </section>
       <p className="lede">{t('progress.index.intro')}</p>
       <ul className="card overflow-hidden card-flush" data-testid="progress-index-rows">
         {rows.map((row) => (
