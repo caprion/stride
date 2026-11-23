@@ -1184,7 +1184,11 @@ export function ProgressWall({
         to={cardRoute('facets')}
         testId="progress-wall-facets"
       >
-        <ProfilePanel rolling={rolling.data} bare />
+        {/* The facets are the profile's own facets, so they are read
+            over the **profile's scope** and not the page's range: the
+            two cards of the shape must not say "84 days" and "91 days"
+            beside each other. */}
+        <ProfilePanel rolling={profile.data} bare />
       </WallCard>
     ),
 
@@ -1218,7 +1222,7 @@ export function ProgressWall({
         wide
         testId="progress-wall-weekday"
       >
-        <WeekdayTable rolling={rolling.data} />
+        <WeekdayTable rolling={profile.data} />
       </WallCard>
     ),
 
@@ -1229,7 +1233,7 @@ export function ProgressWall({
         to={cardRoute('daytime')}
         testId="progress-wall-daytime"
       >
-        <DaytimeTable rolling={rolling.data} />
+        <DaytimeTable rolling={profile.data} />
       </WallCard>
     ),
 
@@ -1240,7 +1244,7 @@ export function ProgressWall({
         to={cardRoute('distances')}
         testId="progress-wall-distances"
       >
-        <DistancesTable rolling={rolling.data} />
+        <DistancesTable rolling={profile.data} />
       </WallCard>
     ),
 
@@ -1293,7 +1297,7 @@ export function ProgressWall({
         wide
         testId="progress-wall-months"
       >
-        <MonthsChart rolling={rolling.data} />
+        <MonthsChart rolling={profile.data} />
       </WallCard>
     ),
 
@@ -1304,7 +1308,7 @@ export function ProgressWall({
         to={cardRoute('years')}
         testId="progress-wall-years"
       >
-        <YearsChart rolling={rolling.data} />
+        <YearsChart rolling={profile.data} />
       </WallCard>
     ),
 
