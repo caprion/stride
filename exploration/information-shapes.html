@@ -1,0 +1,543 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Stride — how Progress should inform: four ways, and the setup</title>
+<style>
+  /* Stride's own palette, copied from frontend/tailwind.config.js */
+  :root {
+    --brand-50:#EEF5FB; --brand-100:#D6E6F3; --brand-300:#A9C8E8; --brand-500:#1E5E96;
+    --brand-600:#124A7C; --brand-700:#0D3A63;
+    --accent-50:#FEF8EA; --accent-100:#FDEDC7; --accent-400:#F2B01E;
+    --ink:#112B40; --ink-soft:#31465A; --ink-muted:#4E6577; --ink-faint:#586F82;
+    --surface:#FFFFFF; --surface-soft:#F1F5F8; --surface-sunken:#E9EFF4; --edge:#CEDAE4;
+    --radius:9px;
+    --font: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin:0; padding:0; background:var(--surface-soft); }
+  body { font-family: var(--font); color:var(--ink); }
+  .wrap { max-width:1500px; margin:0 auto; padding:26px 22px 60px; }
+  h1 { font-size:21px; color:var(--brand-700); margin:0 0 4px; letter-spacing:-.01em; }
+  .lede { font-size:13.5px; color:var(--ink-muted); margin:0 0 8px; max-width:900px; line-height:1.5; }
+  h2 { font-size:15px; color:var(--brand-700); margin:30px 0 4px; }
+  h2 .n { color:var(--ink-faint); font-weight:600; margin-right:7px; }
+  .note { font-size:12.5px; color:var(--ink-muted); margin:0 0 12px; max-width:980px; line-height:1.5; }
+  .note b { color:var(--ink-soft); }
+  .phones { display:flex; gap:18px; flex-wrap:wrap; align-items:flex-start; }
+  .phonewrap { display:flex; flex-direction:column; gap:8px; align-items:center; }
+  .caption { font-size:11.5px; color:var(--ink-muted); max-width:300px; text-align:center; line-height:1.4; }
+  .caption b { display:block; color:var(--brand-700); font-size:12px; margin-bottom:3px; }
+
+  .phone { width:300px; height:620px; border-radius:26px; border:1px solid #cfd8e0; background:var(--surface);
+    box-shadow:0 8px 26px rgba(17,43,64,.14); overflow:hidden; display:flex; flex-direction:column;
+    position:relative; font-size:13px; }
+  .bar { display:flex; align-items:center; justify-content:space-between; padding:10px 12px 6px; }
+  .bar h1 { font-size:16px; font-weight:650; color:var(--brand-700); margin:0; letter-spacing:-.01em; }
+  .bar .meta { font-size:10.5px; color:var(--ink-faint); margin-top:1px; }
+  .body { flex:1; overflow-y:auto; padding:0 12px 12px; }
+  .body::-webkit-scrollbar { width:0; }
+
+  .card { border:1px solid var(--edge); border-radius:var(--radius); background:var(--surface);
+    box-shadow:0 1px 2px rgba(11,27,39,.04),0 1px 3px rgba(11,27,39,.06); padding:10px 12px; margin-bottom:9px; }
+  .h { font-size:10px; font-weight:650; letter-spacing:.07em; text-transform:uppercase; color:var(--ink-faint); margin:0 0 5px; }
+  .muted { color:var(--ink-muted); }
+  .faint { color:var(--ink-faint); }
+  .small { font-size:11.5px; line-height:1.4; }
+  .tiny { font-size:10.5px; line-height:1.35; }
+
+  /* the reading: the app's own sentences, set as prose */
+  .reading p { margin:0 0 8px; font-size:13.5px; line-height:1.48; color:var(--ink); }
+  .reading p:last-child { margin-bottom:0; }
+  .reading .dim { color:var(--ink-muted); }
+
+  /* one idea, one picture, one sentence */
+  .idea { border-top:1px solid var(--edge); padding:9px 0 10px; }
+  .idea:first-of-type { border-top:0; padding-top:2px; }
+  .idea .say { font-size:13px; line-height:1.45; color:var(--ink); margin:0 0 6px; }
+  .idea .say b { font-weight:650; }
+  .idea svg { display:block; width:100%; }
+
+  .rows { list-style:none; padding:0; margin:0; }
+  .rows li { display:flex; align-items:baseline; justify-content:space-between; gap:10px;
+    padding:6px 0; border-bottom:1px solid var(--surface-sunken); font-size:13px; }
+  .rows li:last-child { border-bottom:0; }
+  .rows .v { font-weight:650; font-variant-numeric:tabular-nums; color:var(--ink); }
+  .rows .l { color:var(--ink-soft); }
+  .rows .w { color:var(--ink-faint); font-size:11px; }
+
+  .link { color:var(--brand-600); font-weight:600; font-size:12.5px; text-decoration:underline; }
+  .wayin { display:flex; flex-wrap:wrap; gap:6px; margin-top:2px; }
+  .wayin span { font-size:11.5px; color:var(--brand-700); background:var(--brand-50);
+    border:1px solid var(--brand-100); border-radius:99px; padding:3px 9px; }
+
+  .banner { background:var(--brand-50); border:1px solid var(--brand-100); color:var(--brand-700); }
+  .banner p { margin:2px 0 0; font-size:11px; color:var(--ink-muted); }
+
+  /* the setup */
+  .step { display:flex; gap:9px; align-items:flex-start; padding:8px 0; border-bottom:1px solid var(--surface-sunken); }
+  .step:last-child { border-bottom:0; }
+  .step .n { width:18px; height:18px; border-radius:99px; background:var(--brand-100); color:var(--brand-700);
+    font-size:10.5px; font-weight:700; display:flex; align-items:center; justify-content:center; flex:none; margin-top:1px; }
+  .step .q { font-size:13px; font-weight:600; color:var(--ink); }
+  .check { display:flex; gap:8px; align-items:flex-start; padding:5px 0; font-size:12.5px; color:var(--ink-soft); }
+  .box { width:14px; height:14px; border-radius:4px; border:1.5px solid var(--brand-500); flex:none; margin-top:1px;
+    background:var(--brand-500); position:relative; }
+  .box.off { background:transparent; border-color:var(--edge); }
+  .box::after { content:''; position:absolute; left:4px; top:1px; width:4px; height:8px;
+    border:solid var(--surface); border-width:0 2px 2px 0; transform:rotate(42deg); }
+  .box.off::after { display:none; }
+  .seg { display:flex; gap:5px; }
+  .seg span { flex:1; text-align:center; font-size:11.5px; padding:6px 4px; border:1px solid var(--edge);
+    border-radius:7px; color:var(--ink-muted); }
+  .seg span.on { background:var(--brand-500); border-color:var(--brand-500); color:var(--surface); font-weight:600; }
+
+  /* the consistency grid */
+  .grid { border-collapse:collapse; width:100%; font-size:10.5px; }
+  .grid th { font-weight:600; color:var(--ink-faint); text-align:center; padding:3px 2px; font-size:9.5px; }
+  .grid th.rowh { text-align:left; color:var(--ink-soft); font-weight:500; white-space:nowrap; padding-right:8px; font-size:10.5px; }
+  .grid td { text-align:center; padding:3px 2px; }
+  .dot { width:9px; height:9px; border-radius:99px; background:var(--brand-500); display:inline-block; }
+  .dot.no { background:var(--surface-sunken); }
+  .dot.edge { background:var(--brand-300); }
+  .grid td.hit { background:var(--brand-50); border-radius:5px; }
+
+  .verdict { border-left:3px solid var(--brand-500); padding:2px 0 2px 11px; margin:9px 0 0; }
+  .verdict .t { font-size:12.5px; font-weight:650; color:var(--brand-700); }
+  .verdict .d { font-size:12px; color:var(--ink-muted); margin-top:2px; line-height:1.45; }
+  .vs { display:grid; grid-template-columns:1fr 1fr; gap:14px; max-width:1080px; margin:10px 0 0; }
+  .vs .col h3 { font-size:12px; text-transform:uppercase; letter-spacing:.07em; color:var(--ink-faint); margin:0 0 6px; }
+  .vs .col.win h3 { color:var(--brand-700); }
+  .vs ul { margin:0; padding-left:17px; font-size:12.5px; color:var(--ink-muted); line-height:1.5; }
+  .vs ul li { margin-bottom:4px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <h1>How Progress should inform</h1>
+  <p class="lede">
+    The same six facts — 300 km in 12 weeks, a run every week, 7:26 /km at 151 bpm against
+    7:31 six weeks ago, an acute load of 42 against a chronic 29, a ratio of 1.44, and
+    Z4–Z5 down from 67% to 53% — drawn four ways. The numbers are illustrative.
+    <b>The question is not which is prettiest. It is which one leaves the reader understanding
+    something they did not know.</b>
+  </p>
+
+  <h2><span class="n">1</span>Four ways to say the same thing</h2>
+  <p class="note">
+    <b>A — charts only.</b> The wall as it is now: the facts, laid out, and the reading left to
+    the athlete. Honest, complete, and it assumes you already know what to look for.
+    <b>B — text only.</b> The reading, with nothing to look at. Warm and clear, but "the form is
+    −12.7" is a number again, and the shape is gone.
+    <b>C — hybrid, sentence-led.</b> One idea, one picture, one sentence — the sentence is the
+    reading of that picture.
+    <b>D — hybrid, picture-led.</b> The same pieces, order flipped: the picture first, the
+    sentence as its caption.
+  </p>
+
+  <div class="phones">
+
+    <!-- A: charts only -->
+    <div class="phonewrap">
+      <div class="phone">
+        <div class="bar"><div><h1>Progress</h1><div class="meta">23 Feb – 13 May</div></div></div>
+        <div class="body">
+          <div class="card">
+            <div class="h">Weekly volume</div>
+            <svg viewBox="0 0 260 70" height="70">
+              <g fill="var(--brand-500)">
+                <rect x="4" y="30" width="16" height="40" rx="2"/><rect x="26" y="24" width="16" height="46" rx="2"/>
+                <rect x="48" y="34" width="16" height="36" rx="2"/><rect x="70" y="18" width="16" height="52" rx="2"/>
+                <rect x="92" y="28" width="16" height="42" rx="2"/><rect x="114" y="12" width="16" height="58" rx="2"/>
+                <rect x="136" y="22" width="16" height="48" rx="2"/><rect x="158" y="30" width="16" height="40" rx="2"/>
+                <rect x="180" y="16" width="16" height="54" rx="2"/><rect x="202" y="26" width="16" height="44" rx="2"/>
+                <rect x="224" y="20" width="16" height="50" rx="2"/>
+              </g>
+              <line x1="0" y1="52" x2="260" y2="52" stroke="var(--brand-300)" stroke-width="1.5" stroke-dasharray="4 3"/>
+            </svg>
+            <p class="tiny faint" style="margin:4px 0 0">your typical week · 23.2 km</p>
+          </div>
+          <div class="card">
+            <div class="h">Pace at 151 bpm</div>
+            <svg viewBox="0 0 260 60" height="60">
+              <polyline points="6,22 34,26 62,28 90,32 118,36 146,40 174,44 202,48 230,52 254,54"
+                fill="none" stroke="var(--brand-500)" stroke-width="2"/>
+            </svg>
+          </div>
+          <div class="card">
+            <div class="h">Training load</div>
+            <svg viewBox="0 0 260 60" height="60">
+              <polyline points="6,40 34,32 62,34 90,26 118,30 146,22 174,26 202,18 230,22 254,14"
+                fill="none" stroke="var(--accent-400)" stroke-width="2"/>
+              <polyline points="6,48 34,44 62,45 90,42 118,41 146,39 174,38 202,36 230,35 254,33"
+                fill="none" stroke="var(--brand-500)" stroke-width="2"/>
+            </svg>
+            <p class="tiny faint" style="margin:4px 0 0">acute · chronic · form</p>
+          </div>
+          <div class="card">
+            <div class="h">Time in zones</div>
+            <ul class="rows">
+              <li><span class="l">Z1–Z2</span><span class="v">6%</span></li>
+              <li><span class="l">Z3</span><span class="v">41%</span></li>
+              <li><span class="l">Z4–Z5</span><span class="v">53%</span></li>
+            </ul>
+          </div>
+        </div>
+      </div>
+      <div class="caption"><b>A · charts only</b>Everything is there. Nothing is read for you, and
+        there is no sentence to take away.</div>
+    </div>
+
+    <!-- B: text only -->
+    <div class="phonewrap">
+      <div class="phone">
+        <div class="bar"><div><h1>Progress</h1><div class="meta">23 Feb – 13 May</div></div></div>
+        <div class="body">
+          <div class="card reading">
+            <p>Twelve weeks, thirty-five runs, 300 km — and 142 km more than the twelve weeks before.</p>
+            <p>Every one of those weeks had a run in it.</p>
+            <p>At the same heart rate you are quicker than you were: 7:26 /km at 151 bpm last week,
+              against 7:31 six weeks ago.</p>
+            <p>The load has gone the other way, though. 42 acute against 29 chronic, and the form has
+              been negative for three weeks — more than your body has been used to. With a week off,
+              the ratio is expected back inside 0.8 to 1.3 by tomorrow, and the form positive in four days.</p>
+            <p>The hard running has come down: Z4–Z5 was 67% of your time in the window before and
+              53% in this one.</p>
+          </div>
+          <div class="card">
+            <div class="h">The way in</div>
+            <div class="wayin">
+              <span>The load</span><span>The year</span><span>The pace</span>
+              <span>Your zones</span><span>The habit</span><span>The window</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="caption"><b>B · text only</b>It reads like a friend and it is easy to follow — but the
+        shape of the training is gone, and every number is a number again.</div>
+    </div>
+
+    <!-- C: hybrid, sentence-led -->
+    <div class="phonewrap">
+      <div class="phone">
+        <div class="bar"><div><h1>Progress</h1><div class="meta">23 Feb – 13 May</div></div></div>
+        <div class="body">
+          <div class="card">
+            <div class="h">Your training</div>
+            <div class="idea">
+              <p class="say"><b>Twelve weeks, every week.</b> 300 km, and 142 km more than the twelve
+                weeks before.</p>
+              <svg viewBox="0 0 260 44" height="44">
+                <g fill="var(--brand-500)">
+                  <rect x="4" y="16" width="14" height="28" rx="2"/><rect x="22" y="12" width="14" height="32" rx="2"/>
+                  <rect x="40" y="19" width="14" height="25" rx="2"/><rect x="58" y="9" width="14" height="35" rx="2"/>
+                  <rect x="76" y="15" width="14" height="29" rx="2"/><rect x="94" y="6" width="14" height="38" rx="2"/>
+                  <rect x="112" y="13" width="14" height="31" rx="2"/><rect x="130" y="17" width="14" height="27" rx="2"/>
+                  <rect x="148" y="10" width="14" height="34" rx="2"/><rect x="166" y="14" width="14" height="30" rx="2"/>
+                  <rect x="184" y="11" width="14" height="33" rx="2"/><rect x="202" y="8" width="14" height="36" rx="2"/>
+                  <rect x="220" y="12" width="14" height="32" rx="2"/><rect x="238" y="10" width="14" height="34" rx="2"/>
+                </g>
+              </svg>
+            </div>
+            <div class="idea">
+              <p class="say"><b>Same heart rate, quicker.</b> 7:26 /km at 151 bpm, against 7:31 six
+                weeks ago.</p>
+              <svg viewBox="0 0 260 40" height="40">
+                <polyline points="4,16 34,19 64,21 94,24 124,27 154,30 184,32 214,34 256,36"
+                  fill="none" stroke="var(--brand-500)" stroke-width="2"/>
+              </svg>
+            </div>
+            <div class="idea">
+              <p class="say"><b>More load than your body's used to.</b> 42 acute against 29 chronic. A
+                week off and the ratio's back inside the band tomorrow.</p>
+              <svg viewBox="0 0 260 40" height="40">
+                <line x1="0" y1="22" x2="260" y2="22" stroke="var(--ink-faint)" stroke-width="1" stroke-dasharray="3 3"/>
+                <polyline points="4,30 34,26 64,27 94,22 124,24 154,19 184,21 214,15 256,12"
+                  fill="none" stroke="var(--accent-400)" stroke-width="2"/>
+                <polyline points="4,34 34,32 64,32 94,30 124,29 154,28 184,27 214,25 256,24"
+                  fill="none" stroke="var(--brand-500)" stroke-width="2"/>
+              </svg>
+            </div>
+          </div>
+          <div class="card">
+            <div class="h">The way in</div>
+            <div class="wayin">
+              <span>The load</span><span>The year</span><span>The pace</span>
+              <span>Your zones</span><span>The habit</span><span>The window</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="caption"><b>C · hybrid, sentence-led</b>One idea, one picture, one sentence — and the
+        sentence is the reading of that picture. <b>This is the one.</b></div>
+    </div>
+
+    <!-- D: hybrid, picture-led -->
+    <div class="phonewrap">
+      <div class="phone">
+        <div class="bar"><div><h1>Progress</h1><div class="meta">23 Feb – 13 May</div></div></div>
+        <div class="body">
+          <div class="card">
+            <div class="h">Weekly volume</div>
+            <svg viewBox="0 0 260 54" height="54">
+              <g fill="var(--brand-500)">
+                <rect x="4" y="18" width="14" height="36" rx="2"/><rect x="22" y="14" width="14" height="40" rx="2"/>
+                <rect x="40" y="21" width="14" height="33" rx="2"/><rect x="58" y="11" width="14" height="43" rx="2"/>
+                <rect x="76" y="17" width="14" height="37" rx="2"/><rect x="94" y="8" width="14" height="46" rx="2"/>
+                <rect x="112" y="15" width="14" height="39" rx="2"/><rect x="130" y="19" width="14" height="35" rx="2"/>
+                <rect x="148" y="12" width="14" height="42" rx="2"/><rect x="166" y="16" width="14" height="38" rx="2"/>
+                <rect x="184" y="13" width="14" height="41" rx="2"/><rect x="202" y="10" width="14" height="44" rx="2"/>
+                <rect x="220" y="14" width="14" height="40" rx="2"/><rect x="238" y="12" width="14" height="42" rx="2"/>
+              </g>
+            </svg>
+            <p class="small" style="margin:5px 0 0"><b>Twelve weeks, every week.</b> 300 km, and 142 km
+              more than the twelve weeks before.</p>
+          </div>
+          <div class="card">
+            <div class="h">Pace at 151 bpm</div>
+            <svg viewBox="0 0 260 44" height="44">
+              <polyline points="4,14 34,17 64,19 94,22 124,25 154,28 184,30 214,32 256,34"
+                fill="none" stroke="var(--brand-500)" stroke-width="2"/>
+            </svg>
+            <p class="small" style="margin:5px 0 0"><b>Same heart rate, quicker.</b> 7:26 /km at 151 bpm,
+              against 7:31 six weeks ago.</p>
+          </div>
+        </div>
+      </div>
+      <div class="caption"><b>D · hybrid, picture-led</b>Good for a screen you glance at. But the
+        sentence is now a caption, and the reading arrives late.</div>
+    </div>
+  </div>
+
+  <div class="vs">
+    <div class="col">
+      <h3>Why C and not D</h3>
+      <ul>
+        <li><b>The sentence leads, so the reading is the first thing read.</b> On a phone the athlete
+          reads the top of the screen; D makes them read a chart before they get to the point.</li>
+        <li><b>One idea, one picture, one sentence</b> — the sentence is the reading <i>of that
+          picture</i>, never a paragraph bolted under a chart about something else.</li>
+        <li><b>Each picture earns its place</b> because it carries one idea that a sentence alone
+          would flatten.</li>
+      </ul>
+    </div>
+    <div class="col">
+      <h3>How many pictures?</h3>
+      <ul>
+        <li><b>One per idea, and no more.</b> Three on the phone. The radar is the fourth, and it is
+          the summary rather than an idea.</li>
+        <li><b>The charts stay the charts.</b> The picture is the evidence; the sentence is the
+          reading. Neither replaces the other.</li>
+        <li><b>Nothing is a chart for the sake of it.</b> A streak is a number and reads as a number.
+          A load is a shape and reads as a shape.</li>
+      </ul>
+    </div>
+  </div>
+
+  <h2><span class="n">2</span>The reading, on the desktop</h2>
+  <p class="note">
+    The same reading, laid out wide: the sentences on the left as prose, and the pictures on the
+    right as the evidence for each one. On the phone the same reading is a column of
+    <i>idea → picture → sentence</i> blocks. <b>One reading, two arrangements</b> — the wall and the
+    panel say the same thing about the same window.
+  </p>
+
+  <div class="card" style="max-width:1080px; padding:16px 18px;">
+    <div style="display:grid; grid-template-columns:1.15fr 1fr; gap:26px;">
+      <div class="reading">
+        <p style="font-size:16px; font-weight:650; line-height:1.4; margin-bottom:10px;">
+          Twelve weeks, every week, 300 km — 142 km more than the twelve weeks before.</p>
+        <p>At the same heart rate you are quicker than you were: 7:26 /km at 151 bpm last week,
+          against 7:31 six weeks ago.</p>
+        <p>The load has gone the other way, though. 42 acute against 29 chronic, and the form has
+          been negative for three weeks — more than your body has been used to. With a week off, the
+          ratio is expected back inside 0.8 to 1.3 by tomorrow, and the form positive in four days.</p>
+        <p>The hard running has come down: Z4–Z5 was 67% of your time in the window before and 53%
+          in this one.</p>
+        <p class="dim" style="font-size:12px; margin-top:10px;">
+          The window: 23 Feb 2026 – 13 May 2026 · no training for 7 days · Banister k = 1.92 ·
+          max heart rate 197 bpm from your zone model, read on 16 Nov 2026</p>
+      </div>
+      <div>
+        <div class="idea">
+          <p class="say" style="margin-bottom:4px;"><b>Twelve weeks, every week.</b></p>
+          <svg viewBox="0 0 300 52" height="52">
+            <g fill="var(--brand-500)">
+              <rect x="4" y="16" width="17" height="36" rx="2"/><rect x="25" y="12" width="17" height="40" rx="2"/>
+              <rect x="46" y="19" width="17" height="33" rx="2"/><rect x="67" y="9" width="17" height="43" rx="2"/>
+              <rect x="88" y="15" width="17" height="37" rx="2"/><rect x="109" y="6" width="17" height="46" rx="2"/>
+              <rect x="130" y="13" width="17" height="39" rx="2"/><rect x="151" y="17" width="17" height="35" rx="2"/>
+              <rect x="172" y="10" width="17" height="42" rx="2"/><rect x="193" y="14" width="17" height="38" rx="2"/>
+              <rect x="214" y="11" width="17" height="41" rx="2"/><rect x="235" y="8" width="17" height="44" rx="2"/>
+              <rect x="256" y="12" width="17" height="40" rx="2"/><rect x="277" y="10" width="17" height="42" rx="2"/>
+            </g>
+          </svg>
+        </div>
+        <div class="idea">
+          <p class="say" style="margin-bottom:4px;"><b>Same heart rate, quicker.</b></p>
+          <svg viewBox="0 0 300 44" height="44">
+            <polyline points="4,16 34,19 64,21 94,24 124,27 154,30 184,32 214,34 296,36"
+              fill="none" stroke="var(--brand-500)" stroke-width="2"/>
+          </svg>
+        </div>
+        <div class="idea">
+          <p class="say" style="margin-bottom:4px;"><b>More load than your body's used to.</b></p>
+          <svg viewBox="0 0 300 46" height="46">
+            <line x1="0" y1="25" x2="300" y2="25" stroke="var(--ink-faint)" stroke-width="1" stroke-dasharray="3 3"/>
+            <polyline points="4,33 34,29 64,30 94,25 124,27 154,22 184,24 214,18 296,14"
+              fill="none" stroke="var(--accent-400)" stroke-width="2"/>
+            <polyline points="4,37 34,35 64,35 94,33 124,32 154,31 184,30 214,28 296,27"
+              fill="none" stroke="var(--brand-500)" stroke-width="2"/>
+          </svg>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <h2><span class="n">3</span>The setup</h2>
+  <p class="note">
+    If the reading is about what the athlete cares about, something has to say what they care
+    about. Three questions, asked once. <b>Nothing here is a setting to tune later</b> — it is the
+    subject of the reading.
+  </p>
+
+  <div class="phones">
+    <div class="phonewrap">
+      <div class="phone">
+        <div class="bar"><div><h1>Set up</h1><div class="meta">Your training · 1 of 3</div></div></div>
+        <div class="body">
+          <div class="card">
+            <div class="step"><div class="n">1</div><div>
+              <div class="q">What do you want to know about your training?</div>
+              <div class="small faint" style="margin-top:2px;">Pick what your reading talks about.</div>
+            </div></div>
+            <div style="padding-top:8px;">
+              <div class="check"><div class="box"></div><span>Is my fitness moving?</span></div>
+              <div class="check"><div class="box"></div><span>Am I doing more than my body is used to?</span></div>
+              <div class="check"><div class="box"></div><span>Am I consistent?</span></div>
+              <div class="check"><div class="box off"></div><span>Am I quick enough for what I'm aiming at?</span></div>
+            </div>
+          </div>
+          <div class="card banner">
+            <div class="h" style="color:var(--brand-700)">Why this</div>
+            <p>With three of these, your reading is three sentences and a picture. With all four, it
+              is the whole thing.</p>
+          </div>
+          <div class="card">
+            <div class="h">How much do you want to read?</div>
+            <div class="seg"><span>A line or two</span><span class="on">A short paragraph</span><span>The whole thing</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="caption"><b>Step 1 — the subject.</b> Each box is a <b>fact group</b> the reading
+        draws from. It is not a preference: it decides which sentences exist.</div>
+    </div>
+
+    <div class="phonewrap">
+      <div class="phone">
+        <div class="bar"><div><h1>Set up</h1><div class="meta">Your training · 2 of 3</div></div></div>
+        <div class="body">
+          <div class="card">
+            <div class="step"><div class="n">2</div><div>
+              <div class="q">What do you want to be consistent about?</div>
+              <div class="small faint" style="margin-top:2px;">Your own goals. You can change them
+                whenever.</div>
+            </div></div>
+            <div style="padding-top:8px;">
+              <div class="check"><div class="box"></div><span>A 5 km</span></div>
+              <div class="check"><div class="box"></div><span>A 10 km</span></div>
+              <div class="check"><div class="box"></div><span>A half marathon</span></div>
+              <div class="check"><div class="box off"></div><span>100 km in a month</span></div>
+              <div class="check"><div class="box off"></div><span>2000 m of climbing</span></div>
+            </div>
+          </div>
+          <div class="card banner">
+            <div class="h" style="color:var(--brand-700)">What this buys</div>
+            <p>Your reading gets a subject: <i>"You wanted to be consistent about a half marathon.
+              You have run one in 9 of the last 12 weeks — and this was the third in a row."</i></p>
+          </div>
+        </div>
+      </div>
+      <div class="caption"><b>Step 2 — the challenges.</b> These become the rows of the consistency
+        view, and a subject for the reading. Your words, not the app's.</div>
+    </div>
+
+    <div class="phonewrap">
+      <div class="phone">
+        <div class="bar"><div><h1>Consistency</h1><div class="meta">23 Feb – 13 May</div></div></div>
+        <div class="body">
+          <div class="card">
+            <div class="h">Your challenges</div>
+            <table class="grid">
+              <thead><tr><th class="rowh"></th><th>Feb</th><th>Mar</th><th>Apr</th><th>May</th></tr></thead>
+              <tbody>
+                <tr><th class="rowh">A 5 km</th>
+                  <td class="hit"><span class="dot"></span></td><td class="hit"><span class="dot"></span></td>
+                  <td class="hit"><span class="dot"></span></td><td class="hit"><span class="dot"></span></td></tr>
+                <tr><th class="rowh">A 10 km</th>
+                  <td class="hit"><span class="dot"></span></td><td><span class="dot no"></span></td>
+                  <td class="hit"><span class="dot"></span></td><td class="hit"><span class="dot"></span></td></tr>
+                <tr><th class="rowh">A half marathon</th>
+                  <td><span class="dot no"></span></td><td><span class="dot no"></span></td>
+                  <td class="hit"><span class="dot edge"></span></td><td class="hit"><span class="dot"></span></td></tr>
+                <tr><th class="rowh">100 km a month</th>
+                  <td><span class="dot no"></span></td><td class="hit"><span class="dot"></span></td>
+                  <td><span class="dot no"></span></td><td class="hit"><span class="dot"></span></td></tr>
+              </tbody>
+            </table>
+            <p class="small" style="margin:8px 0 0;"><b>You have run a half marathon in 9 of the last
+              12 weeks — and this was the third in a row.</b></p>
+            <p class="tiny faint" style="margin:3px 0 0;">A week with no dot is a week without the
+              distance, not a failure.</p>
+          </div>
+          <div class="card">
+            <div class="h">This week</div>
+            <ul class="rows">
+              <li><span class="l">A 5 km</span><span class="v">7.4 km</span><span class="w">done</span></li>
+              <li><span class="l">A 10 km</span><span class="v">11.7 km</span><span class="w">done</span></li>
+              <li><span class="l">A half marathon</span><span class="v">—</span><span class="w">21.2 km so far</span></li>
+            </ul>
+          </div>
+        </div>
+      </div>
+      <div class="caption"><b>The grid, constructively.</b> Same shape as the reference card, but the
+        week you did not is a quiet dot and never a red cross — and the sentence under it counts the
+        pattern instead of the misses.</div>
+    </div>
+  </div>
+
+  <h2><span class="n">4</span>What the mock does not settle</h2>
+  <div class="vs">
+    <div class="col">
+      <h3>Still open</h3>
+      <ul>
+        <li><b>How many ideas on the phone?</b> Three is the mock. Four is the ceiling before the
+          reading stops being a reading.</li>
+        <li><b>Does the reading ever mention the plan?</b> Comparing training against the athlete's
+          own plan is factual — and the easiest place to slide into "you fell short". The setup's
+          challenges are the safer version of the same idea.</li>
+        <li><b>Does the reading change when the range changes?</b> It must, or it is a caption on a
+          chart rather than a reading of a window.</li>
+        <li><b>Who writes it?</b> The core supplying the facts and a model connecting them — the
+          hybrid — needs a register in the voice contract, and a cache keyed on the window.</li>
+      </ul>
+    </div>
+    <div class="col win">
+      <h3>Settled enough to build</h3>
+      <ul>
+        <li><b>One idea, one picture, one sentence.</b> The sentence is the reading of that picture,
+          and never a paragraph under a chart about something else.</li>
+        <li><b>The reading leads; the picture is the evidence.</b> Sentence-led, on both surfaces.</li>
+        <li><b>Encouragement comes from the pattern</b> — "twelve weeks, every week" — never from an
+          adjective about the athlete and never from an instruction.</li>
+        <li><b>The yardstick is you.</b> Every comparison is against the athlete's own past.</li>
+        <li><b>The index becomes a way in</b>: rows of links, not rows of figures.</li>
+      </ul>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>
