@@ -71,7 +71,7 @@ function radiusOf(point: [number, number], centre: number): number {
 
 describe("the athlete's shape", () => {
   it('is on the wall of panels, and draws the two windows', async () => {
-    renderApp('/progress')
+    renderApp('/profile')
     const panel = await screen.findByTestId('progress-shape')
 
     // The chart itself, drawn by the app.
@@ -96,7 +96,7 @@ describe("the athlete's shape", () => {
   })
 
   it('shows the core\'s own numbers, and the windows they cover', async () => {
-    renderApp('/progress')
+    renderApp('/profile')
     const panel = await screen.findByTestId('progress-shape')
 
     // The values are the core's rendering: "58.4 km", "148 bpm".
@@ -129,7 +129,7 @@ describe("the athlete's shape", () => {
     }
     vi.spyOn(api, 'insightsRolling').mockResolvedValue(bigger)
 
-    renderApp('/progress')
+    renderApp('/profile')
     const panel = await screen.findByTestId('progress-shape')
     await waitFor(() =>
       expect(panel.querySelector('[data-testid="progress-shape-before"]')).toBeTruthy(),
@@ -147,15 +147,21 @@ describe("the athlete's shape", () => {
   })
 
   it('opens on its own, like the other panels', async () => {
-    renderApp('/progress/shape')
-    const panel = await screen.findByTestId('progress-panel-shape')
+    renderApp('/profile/shape')
+    const panel = await screen.findByTestId('profile-panel-shape')
     expect(panel.querySelector('[data-testid="progress-shape"]')).toBeTruthy()
     // And the chart is on it.
     expect(panel.querySelector('[data-testid="progress-shape-svg"]')).toBeTruthy()
   })
 
+  it('opens from the old link too', async () => {
+    renderApp('/progress/shape')
+    const panel = await screen.findByTestId('profile-panel-shape')
+    expect(panel.querySelector('[data-testid="progress-shape"]')).toBeTruthy()
+  })
+
   it('draws no verdict', async () => {
-    renderApp('/progress')
+    renderApp('/profile')
     const panel = await screen.findByTestId('progress-shape')
     const text = (panel.textContent ?? '').toLowerCase()
     for (const word of ['score', 'grade', 'excellent', 'very active', 'optimal', 'good', 'bad']) {

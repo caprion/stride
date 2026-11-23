@@ -25,6 +25,7 @@
 
 import { Link } from 'react-router-dom'
 import { Fragment, type ReactNode } from 'react'
+import { endOfMonth, format, isValid, parseISO } from 'date-fns'
 import { t } from '../i18n'
 import {
   ABSENT,
@@ -33,6 +34,7 @@ import {
   formatDateShort,
   renderedText,
 } from '../lib/format'
+import { runsPath, shiftDate } from '../lib/history'
 import {
   ProfileRadar,
   RADAR_AXES,
@@ -67,7 +69,41 @@ import {
 } from './progressPanels'
 import type { ProgressAnswers } from './useProgress'
 import type { WallAnswers } from './useWall'
-import { TASK_AREAS, WALL_CARDS, cardRoute, type WallCardId } from './taskAreas'
+import { areasOf, WALL_CARDS, cardRoute, type WallCardId } from './taskAreas'
+
+/* ------------------------------------------------ the ways into the runs */
+
+/**
+ * The name a link into the runs behind a mark carries.
+ *
+ * **The link says what it opens.** A mark on a chart is a shape, and a
+ * shape has no words in it, so the name carries the date and what is
+ * behind it — "The runs of Sun 10 May". The reader does not have to
+ * hover to find out, and a screen reader says the same words.
+ */
+function runsName(kind: 'day' | 'week' | 'month', when: string): string {
+  if (kind === 'day') return t('progress.wall.runs.day', { date: when })
+  if (kind === 'week') return t('progress.wall.runs.week', { date: when })
+  return t('progress.wall.runs.month', { month: when })
+}
+
+/**
+ * A week, as the app measures it: the Monday and the six days after it.
+ *
+ * The same seven days the weekly volume chart uses, so a week on one
+ * card and a week on another are one week.
+ */
+function weekEnd(weekStart: string): string {
+  return shiftDate(weekStart, 6)
+}
+
+/** A month, as the app measures it: the first of the month to the last. */
+function monthRange(key: string): { from: string; to: string } {
+  const first = `${key}-01`
+  const date = parseISO(first)
+  if (!isValid(date)) return { from: first, to: first }
+  return { from: first, to: format(endOfMonth(date), 'yyyy-MM-dd') }
+}
 
 /**
  * A card of the wall.
@@ -280,7 +316,7 @@ export function DistanceCalendar({ days }: { days: YearDay[] }) {
       viewBox={`0 0 ${columns} 7`}
       preserveAspectRatio="xMinYMin meet"
       className="block h-auto w-full"
-      role="img"
+      role="group"
       aria-label={t('progress.wall.heatmap.legend')}
       data-testid="progress-wall-calendar"
     >
@@ -288,9 +324,8 @@ export function DistanceCalendar({ days }: { days: YearDay[] }) {
         const column = Math.floor((offset + index) / 7)
         const row = (offset + index) % 7
         const band = distanceBand(day.distance?.raw ?? null)
-        return (
+        const rect = (
           <rect
-            key={day.date}
             x={column}
             y={row}
             width={0.86}
@@ -308,6 +343,19 @@ export function DistanceCalendar({ days }: { days: YearDay[] }) {
               })}
             </title>
           </rect>
+        )
+        // A day with no run in it is a quiet mark: absence is not a door.
+        if (day.sessions <= 0) return <Fragment key={day.date}>{rect}</Fragment>
+        // A day with a run in it opens the runs of that day.
+        return (
+          <Link
+            key={day.date}
+            to={runsPath(day.date)}
+            aria-label={runsName('day', formatDateShort(day.date))}
+            data-testid={`progress-wall-heatmap-${day.date}`}
+          >
+            {rect}
+          </Link>
         )
       })}
     </svg>
@@ -343,7 +391,12 @@ export function DistanceLegend() {
 export function PaceBars({
   pace,
 }: {
-  pace: { week_start: string; pace: { raw: number | null; text: string } | null }[]
+  pace: {
+    week_start: string
+    /** How many runs the week holds. */
+    sessions: number
+    pace: { raw: number | null; text: string } | null
+  }[]
 }) {
   /**
    * **The pace, and not the distance.**
@@ -369,12 +422,30 @@ export function PaceBars({
         // against the others is not drawn at all.
         const share =
           value === null || span <= 0 ? null : (slowest - value) / span
+        const height = `${share === null ? 3 : Math.max(6, share * 100)}%`
+        const className = `min-w-[2px] flex-1 rounded-t-[2px] ${share === null ? 'bg-surface-sunken' : 'bg-brand-400'}`
+        const title = `${week.week_start}${week.pace ? ` · ${week.pace.text}` : ''}`
+        // A week with no run in it is a quiet mark: absence is not a door.
+        if (week.sessions <= 0) {
+          return (
+            <span
+              key={week.week_start}
+              className={className}
+              style={{ height }}
+              title={title}
+            />
+          )
+        }
+        // A week with a run in it opens the runs of that week.
         return (
-          <span
+          <Link
             key={week.week_start}
-            className={`min-w-[2px] flex-1 rounded-t-[2px] ${share === null ? 'bg-surface-sunken' : 'bg-brand-400'}`}
-            style={{ height: `${share === null ? 3 : Math.max(6, share * 100)}%` }}
-            title={`${week.week_start}${week.pace ? ` · ${week.pace.text}` : ''}`}
+            to={runsPath(week.week_start, weekEnd(week.week_start))}
+            aria-label={runsName('week', formatDateShort(week.week_start))}
+            data-testid={`progress-wall-pace-${week.week_start}`}
+            className={`block ${className}`}
+            style={{ height }}
+            title={title}
           />
         )
       })}
@@ -538,6 +609,24 @@ export function StreaksBody({ streaks }: { streaks: StreakInsight | undefined })
 }
 
 /**
+ * A period on the chart: the mark, and where it opens when the period
+ * holds runs.
+ *
+ * A period with nothing in it is a quiet mark: absence is not a door.
+ */
+interface PeriodMark {
+  label: string
+  km: number | null
+  text: string | null
+  /** Where the mark opens, when the period holds runs. */
+  to?: string
+  /** The name the link carries. */
+  name?: string
+  /** The test id of the link. */
+  linkTestId?: string
+}
+
+/**
  * A period's distance, as the mock's chart: a bar for each period.
  *
  * The chart is the app's own drawing, and it is HTML rather than SVG —
@@ -550,7 +639,7 @@ function PeriodBars({
   testId,
   label,
 }: {
-  rows: { label: string; km: number | null; text: string | null }[]
+  rows: PeriodMark[]
   testId: string
   label: string
 }) {
@@ -585,10 +674,23 @@ function PeriodBars({
               title={`${row.label}: ${row.text ?? ABSENT}`}
             >
               <div
-                className="rounded-t-[3px] bg-brand-400"
+                className="relative rounded-t-[3px] bg-brand-400"
                 style={{ height: `${row.km ? (row.km / furthest) * 100 : 0}%` }}
                 data-testid={`${testId}-bar`}
-              />
+              >
+                {/*
+                  The mark is the doorway: the link covers the bar and
+                  nothing else, so the chart still reads as a chart.
+                */}
+                {row.to ? (
+                  <Link
+                    to={row.to}
+                    aria-label={row.name}
+                    data-testid={row.linkTestId}
+                    className="absolute inset-0 block"
+                  />
+                ) : null}
+              </div>
             </div>
           ))}
         </div>
@@ -611,11 +713,19 @@ function PeriodBars({
 
 /** The months of the history, as the mock's chart. */
 export function MonthsChart({ rolling }: { rolling: RollingInsight | undefined }) {
-  const rows = (rolling?.months ?? []).map((month) => ({
-    label: month.label,
-    km: month.distance?.raw == null ? null : month.distance.raw / 1000,
-    text: month.distance?.text ?? null,
-  }))
+  const rows = (rolling?.months ?? []).map((month) => {
+    const range = monthRange(month.key)
+    // A month with no run in it is a quiet mark: absence is not a door.
+    const hasRuns = month.sessions > 0
+    return {
+      label: month.label,
+      km: month.distance?.raw == null ? null : month.distance.raw / 1000,
+      text: month.distance?.text ?? null,
+      to: hasRuns ? runsPath(range.from, range.to) : undefined,
+      name: hasRuns ? runsName('month', month.label) : undefined,
+      linkTestId: hasRuns ? `progress-wall-months-${month.key}` : undefined,
+    }
+  })
   if (rows.length === 0)
     return <p className="text-[13px] text-ink-muted">{t('progress.rolling.noRows')}</p>
   return (
@@ -811,6 +921,58 @@ export function VitalsBody({ vitals }: { vitals: VitalsSnapshot | undefined }) {
   )
 }
 
+/**
+ * The weeks of the window, each one a doorway into that week's runs.
+ *
+ * The rolling window is the range the screen is showing, and its weeks
+ * are the calendar weeks of that range — the same weeks the weekly
+ * volume chart uses. A week with no run in it is a quiet mark:
+ * absence is not a door.
+ */
+function WindowWeeks({
+  weeks,
+  runs,
+}: {
+  /** The weeks of the window, Monday first. */
+  weeks: string[]
+  /** How many runs each of them holds. */
+  runs: Map<string, number>
+}) {
+  if (weeks.length === 0) return null
+  return (
+    <div className="mt-2">
+      <p id="progress-wall-window-weeks-label" className="text-[11.5px] text-ink-faint">
+        {t('progress.wall.window.weeks')}
+      </p>
+      <div
+        className="mt-1 flex gap-[2px]"
+        role="group"
+        aria-labelledby="progress-wall-window-weeks-label"
+        data-testid="progress-wall-window-weeks"
+      >
+        {weeks.map((week) => {
+          const sessions = runs.get(week) ?? 0
+          const className = `min-w-[2px] flex-1 rounded-[2px] ${sessions > 0 ? 'bg-brand-400' : 'bg-surface-sunken'}`
+          const style = { height: '8px' }
+          if (sessions <= 0) {
+            return <span key={week} className={className} style={style} />
+          }
+          return (
+            <Link
+              key={week}
+              to={runsPath(week, weekEnd(week))}
+              aria-label={runsName('week', formatDateShort(week))}
+              data-testid={`progress-wall-window-${week}`}
+              className={`block ${className}`}
+              style={style}
+            />
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
 /* ------------------------------------------------------------- the wall */
 
 /**
@@ -846,13 +1008,34 @@ export function ProgressWall({
   answers,
   wall,
   onWeekClick,
+  destination = 'progress',
 }: {
   answers: ProgressAnswers
   wall: WallAnswers
   onWeekClick: (weekStart: string) => void
+  /**
+   * Which destination's areas this wall draws.
+   *
+   * The athlete profile is a destination of its own, and the areas are
+   * split between the two pages: the work on Progress, the long pattern
+   * on the athlete profile.
+   */
+  destination?: 'progress' | 'profile'
 }) {
   const { data, load, rolling, streaks } = answers
   const { today, year, pace, activities, profile, profileScope, setProfileMonths, vitals } = wall
+
+  /**
+   * The weeks of the rolling window, and the runs in each of them.
+   *
+   * The window is the range the screen is showing, and the answer's own
+   * count of the runs in each week is what says whether a week holds
+   * anything at all.
+   */
+  const windowRuns = new Map<string, number>()
+  answers.weeks.forEach((week, index) => {
+    windowRuns.set(week, answers.consistency[index]?.sessions ?? 0)
+  })
 
   /**
    * The cards of the wall, each one exactly once.
@@ -936,6 +1119,7 @@ export function ProgressWall({
         testId="progress-wall-window"
       >
         <RollingPanel rolling={rolling.data} error={rolling.isError} bare />
+        <WindowWeeks weeks={answers.weeks} runs={windowRuns} />
       </WallCard>
     ),
 
@@ -1173,7 +1357,7 @@ export function ProgressWall({
         is a heading and nothing more: it names the group of cards and
         says nothing about them.
       */}
-      {TASK_AREAS.map((area) => (
+      {areasOf(destination).map((area) => (
         <section
           key={area.id}
           className="progress-area"

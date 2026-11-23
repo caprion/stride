@@ -16,9 +16,9 @@ import { renderApp } from './helpers'
 
 afterEach(() => vi.restoreAllMocks())
 
-describe('the Eddington number on Progress', () => {
+describe('the Eddington number on the athlete profile', () => {
   it('shows the number, the days to the next one and the longest day', async () => {
-    const { container } = renderApp('/progress')
+    const { container } = renderApp('/profile')
     const card = await screen.findByTestId('progress-eddington')
 
     expect(
@@ -34,14 +34,14 @@ describe('the Eddington number on Progress', () => {
   })
 
   it('names the window the number covers', async () => {
-    const { container } = renderApp('/progress')
+    const { container } = renderApp('/profile')
     const card = await screen.findByTestId('progress-eddington')
     const window = card.querySelector('[data-testid="progress-eddington-window"]')?.textContent
 
     expect(window).toContain('23 Feb')
     expect(window).toContain('13 May')
-    // And it is the window the totals beside it describe.
-    expect(container.querySelector('[data-testid="progress-summary"]')?.textContent).toBeTruthy()
+    // And it is the window the screen is showing.
+    expect(container.querySelector('[data-testid="profile-range"]')).toBeTruthy()
   })
 
   it('has no number when the window holds no distance', async () => {
@@ -49,7 +49,7 @@ describe('the Eddington number on Progress', () => {
       ...progressFixture,
       eddington: null,
     })
-    renderApp('/progress')
+    renderApp('/profile')
     const card = await screen.findByTestId('progress-eddington')
 
     expect(

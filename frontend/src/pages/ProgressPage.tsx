@@ -223,14 +223,7 @@ export function ProgressPage() {
         each, and the doorway into the panel that answers it.
       */}
       <div className="progress-index" data-testid="progress-index-layout">
-        <ProgressIndex
-          answers={answers}
-          shape={{
-            rolling: wall.profile.data,
-            months: wall.profileScope.months,
-            onScope: wall.setProfileMonths,
-          }}
-        />
+        <ProgressIndex answers={answers} />
       </div>
     </div>
   )

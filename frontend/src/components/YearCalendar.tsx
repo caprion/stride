@@ -16,9 +16,17 @@
  * the high zones** (Z4–Z5), and the steps are the app's own: azure for
  * the quiet days, amber for the hard ones. Nothing here is red, because
  * nothing here is a problem.
+ *
+ * **A day with a run in it is a doorway.** The days are links into the
+ * runs of that day, so the calendar is not a picture of the year but the
+ * way into the runs behind it. A day with nothing in it stays a quiet
+ * mark: absence is not a door.
  */
 
-import { formatDateMedium } from '../lib/format'
+import { Fragment } from 'react'
+import { Link } from 'react-router-dom'
+import { formatDateMedium, formatDateShort } from '../lib/format'
+import { runsPath } from '../lib/history'
 import { t } from '../i18n'
 import type { YearDay } from '../lib/types'
 
@@ -77,7 +85,7 @@ export function YearCalendar({ days }: { days: YearDay[] }) {
       viewBox={`0 0 ${columns} 7`}
       preserveAspectRatio="xMinYMin meet"
       className="block h-auto w-full"
-      role="img"
+      role="group"
       aria-label={t('year.calendar.alt')}
       data-testid="year-calendar"
     >
@@ -85,9 +93,8 @@ export function YearCalendar({ days }: { days: YearDay[] }) {
         const column = Math.floor((offset + index) / 7)
         const row = (offset + index) % 7
         const high = day.high?.raw ?? null
-        return (
+        const rect = (
           <rect
-            key={day.date}
             x={column}
             y={row}
             width={CELL}
@@ -106,6 +113,19 @@ export function YearCalendar({ days }: { days: YearDay[] }) {
               })}
             </title>
           </rect>
+        )
+        // A day with no run in it is a quiet mark: absence is not a door.
+        if (day.sessions <= 0) return <Fragment key={day.date}>{rect}</Fragment>
+        // A day with a run in it opens the runs of that day.
+        return (
+          <Link
+            key={day.date}
+            to={runsPath(day.date)}
+            aria-label={t('progress.wall.runs.day', { date: formatDateShort(day.date) })}
+            data-testid={`progress-wall-year-${day.date}`}
+          >
+            {rect}
+          </Link>
         )
       })}
     </svg>

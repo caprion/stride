@@ -1,14 +1,14 @@
 /**
  * The routes.
  *
- * Four destinations, and two contextual routes that are reached from
+ * Five destinations, and two contextual routes that are reached from
  * inside the app rather than from the navigation: the Plan week (from
  * Today) and Compare (from a run). Settings is reached from the shell's
  * secondary link, and the first-run page stands alone.
  */
 
 import { useQuery } from '@tanstack/react-query'
-import { Navigate, Route, Routes, useParams } from 'react-router-dom'
+import { Navigate, Route, Routes, useLocation, useParams } from 'react-router-dom'
 import { AppShell } from '../ui/layout/AppShell'
 import { api } from '../lib/api'
 import { currentHost } from '../lib/transport'
@@ -16,6 +16,8 @@ import { TodayPage } from '../pages/TodayPage'
 import { RunsPage } from '../pages/RunsPage'
 import { ProgressPage } from '../pages/ProgressPage'
 import { ProgressPanelPage } from '../pages/ProgressPanelPage'
+import { ProfilePage, ProfilePanelPage } from '../pages/ProfilePage'
+import { panelDestination } from '../pages/taskAreas'
 
 import { PacePage } from '../pages/PacePage'
 import { BodyPage } from '../pages/BodyPage'
@@ -51,6 +53,34 @@ function FilmRoute() {
 }
 
 /**
+ * The panel route of Progress.
+ *
+ * **The old links still work.** The athlete profile's panels moved under
+ * the athlete profile, and a link someone saved last month still opens
+ * the panel it opened then: it lands on the profile's own page, with the
+ * place it was opened from carried along, so that the panel's back link
+ * says where the reader came from.
+ */
+function ProgressPanelRoute() {
+  const { panel } = useParams()
+  const location = useLocation()
+
+  if (panel && panelDestination(panel) === 'profile') {
+    // The query travels with the redirect: the reader's own place is
+    // kept, and so is everything the app was asked for.
+    return (
+      <Navigate
+        to={{ pathname: `/profile/${panel}`, search: location.search }}
+        state={{ from: '/progress' }}
+        replace
+      />
+    )
+  }
+
+  return <ProgressPanelPage />
+}
+
+/**
  * The first-run page, and when it exists.
  *
  * **It is the desktop's page.** The phone's first run is a native screen:
@@ -80,10 +110,17 @@ function AppRoutes() {
       <Route path="/progress" element={<ProgressPage />} />
       {/*
         The narrow Progress opens one panel at a time, and this is that
-        doorway. It is a route and not a destination: the four
-        destinations stay the four, and this is reached from Progress.
+        doorway. It is a route and not a destination: the destinations
+        stay the destinations, and this is reached from Progress.
       */}
-      <Route path="/progress/:panel" element={<ProgressPanelPage />} />
+      <Route path="/progress/:panel" element={<ProgressPanelRoute />} />
+
+      {/*
+        The athlete profile: a destination of its own, with its own wall,
+        its own index and its own panels.
+      */}
+      <Route path="/profile" element={<ProfilePage />} />
+      <Route path="/profile/:panel" element={<ProfilePanelPage />} />
 
       {/*
         The pace page is reached from Progress, the way the heatmap is

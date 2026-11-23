@@ -166,9 +166,9 @@ describe('the zone distribution on Progress', () => {
   })
 })
 
-describe('the distance breakdown on Progress', () => {
+describe('the distance breakdown on the athlete profile', () => {
   it('buckets the runs by how far they went', async () => {
-    renderApp('/progress')
+    renderApp('/profile')
     const card = await screen.findByTestId('progress-distances')
 
     // The buckets are the athlete's own scale: the longest run in the
@@ -184,9 +184,9 @@ describe('the distance breakdown on Progress', () => {
   })
 })
 
-describe('the training profile on Progress', () => {
+describe('the training profile on the athlete profile', () => {
   it('shows the seven facets as values, and no shape', async () => {
-    renderApp('/progress')
+    renderApp('/profile')
     const card = await screen.findByTestId('progress-profile')
 
     // The facets, each with its own value.
@@ -222,9 +222,9 @@ describe('the training profile on Progress', () => {
   })
 })
 
-describe('the splits and the tables on Progress', () => {
+describe('the splits and the tables on the athlete profile', () => {
   it('places the runs on their weekday', async () => {
-    renderApp('/progress')
+    renderApp('/profile')
     const card = await screen.findByTestId('progress-weekday')
     expect(card.textContent).toContain('Monday')
     // The run of the Monday and how far it went.
@@ -232,7 +232,7 @@ describe('the splits and the tables on Progress', () => {
   })
 
   it('names the hours of the daytime split', async () => {
-    renderApp('/progress')
+    renderApp('/profile')
     const card = await screen.findByTestId('progress-daytime')
     expect(card.textContent).toContain('Morning')
     // The cut points, in the athlete's own local time.
@@ -241,7 +241,7 @@ describe('the splits and the tables on Progress', () => {
   })
 
   it('holds the months and the years that have runs', async () => {
-    renderApp('/progress')
+    renderApp('/profile')
     const months = await screen.findByTestId('progress-months')
     expect(months.textContent).toContain('May 2026')
     expect(months.textContent).toContain('58.4 km')

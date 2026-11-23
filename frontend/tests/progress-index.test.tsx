@@ -19,7 +19,7 @@ import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { api } from '../src/lib/api'
 import { t } from '../src/i18n'
-import { TASK_AREAS, WALL_CARDS, cardRoute } from '../src/pages/taskAreas'
+import { TASK_AREAS, WALL_CARDS, areasOf, cardRoute } from '../src/pages/taskAreas'
 import { loadFixture, rollingFixture, streaksEmptyFixture } from '../src/fixtures'
 import { renderApp } from './helpers'
 
@@ -52,10 +52,10 @@ describe('the index of the questions', () => {
     const questions = [...index.querySelectorAll(QUESTION_LINKS)].map((node) =>
       node.getAttribute('data-testid'),
     )
-    // The picture above the questions, and the six questions themselves.
-    // Each one is a panel the app already has.
+    // The six questions themselves. Each one is a panel the app already
+    // has. The athlete profile's picture is not here: it is the
+    // profile's own, and the profile has an index of its own.
     expect(questions).toEqual([
-      'progress-index-shape-open',
       'progress-index-window',
       'progress-index-load',
       'progress-index-year',
@@ -167,13 +167,19 @@ describe('the index of the questions', () => {
 })
 
 describe('the areas of the index', () => {
-  it('opens every panel of the model from the index', async () => {
+  it('opens every panel of the model from the two indexes', async () => {
     renderApp('/progress')
+    renderApp('/profile')
     const index = await screen.findByTestId('progress-index')
+    const profile = await screen.findByTestId('profile-index')
 
-    // Every card of the wall has a doorway on the phone now: the six
-    // questions' own rows count, and the areas carry the rest.
-    const hrefs = [...index.querySelectorAll('a')].map((node) => node.getAttribute('href'))
+    // Every card of the wall has a doorway on the phone now: the
+    // questions' own rows count, the picture counts, and the areas carry
+    // the rest — and the two indexes carry them between them.
+    const hrefs = [
+      ...[...index.querySelectorAll('a')].map((node) => node.getAttribute('href')),
+      ...[...profile.querySelectorAll('a')].map((node) => node.getAttribute('href')),
+    ]
     for (const area of TASK_AREAS) {
       for (const id of area.cards) {
         expect(hrefs).toContain(cardRoute(id))
@@ -185,8 +191,7 @@ describe('the areas of the index', () => {
     renderApp('/progress')
     const index = await screen.findByTestId('progress-index')
 
-    // The panels the index opens already: the picture's panel and the
-    // six questions' own panels.
+    // The panels the index opens already: the six questions' own panels.
     const opened = new Set(
       [...index.querySelectorAll(QUESTION_LINKS)].map((node) => node.getAttribute('href')),
     )
@@ -196,11 +201,11 @@ describe('the areas of the index', () => {
     ]
     const drawn = sections.map((section) => section.querySelector('h3')?.textContent ?? '')
 
-    // The model's areas, in the model's order, minus the ones that have
-    // nothing left to open.
-    const expected = TASK_AREAS.filter((area) =>
-      area.cards.some((id) => !opened.has(cardRoute(id))),
-    ).map((area) => t(area.titleKey))
+    // The model's areas of this destination, in the model's order, minus
+    // the ones that have nothing left to open.
+    const expected = areasOf('progress')
+      .filter((area) => area.cards.some((id) => !opened.has(cardRoute(id))))
+      .map((area) => t(area.titleKey))
 
     expect(drawn).toEqual(expected)
   })
@@ -295,10 +300,12 @@ describe('opening a row', () => {
   it('opens the year, the pace, the zones and the habit', async () => {
     renderApp('/progress')
     await userEvent.click(await screen.findByTestId('progress-index-year'))
-    let panel = await screen.findByTestId('progress-panel-year')
+    // The year is a panel of the athlete profile, so it opens under the
+    // profile — and the back link goes back to Progress, and says so.
+    let panel = await screen.findByTestId('profile-panel-year')
     expect(panel.querySelector('[data-testid="progress-years"]')).toBeTruthy()
 
-    await userEvent.click(screen.getByTestId('progress-panel-back'))
+    await userEvent.click(screen.getByTestId('profile-panel-back'))
     await userEvent.click(await screen.findByTestId('progress-index-pace'))
     panel = await screen.findByTestId('progress-panel-pace')
     expect(panel.querySelector('[data-testid="progress-pace-window"]')).toBeTruthy()
@@ -310,10 +317,9 @@ describe('opening a row', () => {
 
     await userEvent.click(screen.getByTestId('progress-panel-back'))
     await userEvent.click(await screen.findByTestId('progress-index-habit'))
-    panel = await screen.findByTestId('progress-panel-habit')
+    panel = await screen.findByTestId('profile-panel-habit')
     expect(panel.querySelector('[data-testid="progress-streaks"]')).toBeTruthy()
     expect(panel.querySelector('[data-testid="progress-eddington"]')).toBeTruthy()
-
   })
 
   it('goes back to the questions', async () => {
@@ -323,5 +329,90 @@ describe('opening a row', () => {
 
     await userEvent.click(screen.getByTestId('progress-panel-back'))
     expect(await screen.findByTestId('progress-index')).toBeTruthy()
+  })
+})
+
+/**
+ * The narrow athlete profile: the picture, the questions, and the
+ * areas' links.
+ *
+ * The same rules as Progress's index: every number is the answer to the
+ * question, every row names the window it covers, and nothing on a row
+ * is a verdict.
+ */
+describe('the index of the athlete profile', () => {
+  const PROFILE_LINKS =
+    'a[data-testid^="profile-index-"]:not([data-testid^="profile-index-area-"])'
+
+  it('asks its own questions, and answers each one', async () => {
+    renderApp('/profile')
+    const index = await screen.findByTestId('profile-index')
+
+    // The picture, and the profile's own four questions.
+    const questions = [...index.querySelectorAll(PROFILE_LINKS)].map((node) =>
+      node.getAttribute('data-testid'),
+    )
+    expect(questions).toEqual([
+      'profile-index-shape-open',
+      'profile-index-goals',
+      'profile-index-schedule',
+      'profile-index-seasons',
+      'profile-index-months',
+    ])
+
+    // The core's own numbers: the weeks of the challenges, the days of
+    // the week the runs fall on, the months of the history and the
+    // months in a row.
+    expect((await screen.findByTestId('profile-index-goals-answer')).textContent).toBe(
+      '2 of 3 weeks',
+    )
+    expect((await screen.findByTestId('profile-index-schedule-answer')).textContent).toContain(
+      'Monday',
+    )
+    expect((await screen.findByTestId('profile-index-seasons-answer')).textContent).toContain(
+      'May 2026',
+    )
+    expect((await screen.findByTestId('profile-index-months-answer')).textContent).toBe(
+      '1 month in a row',
+    )
+  })
+
+  it('opens its panels under the profile', async () => {
+    renderApp('/profile')
+    const index = await screen.findByTestId('profile-index')
+
+    const hrefs = [...index.querySelectorAll('a')].map((node) => node.getAttribute('href'))
+    expect(hrefs).toContain('/profile/shape')
+    expect(hrefs).toContain('/profile/challenges')
+    expect(hrefs).toContain('/profile/weekday')
+    expect(hrefs).toContain('/profile/months')
+    expect(hrefs).toContain('/profile/habit')
+    // And the areas carry the rest of the profile's panels.
+    expect(hrefs).toContain('/profile/facets')
+    expect(hrefs).toContain('/profile/heatmap')
+    expect(hrefs).toContain('/profile/eddington')
+  })
+
+  it('opens a panel of the profile, and comes back to the profile', async () => {
+    renderApp('/profile')
+    await userEvent.click(await screen.findByTestId('profile-index-goals'))
+
+    const panel = await screen.findByTestId('profile-panel-challenges')
+    expect(panel.querySelector('[data-testid="challenge-grid"]')).toBeTruthy()
+
+    // The back link goes back to the athlete profile, and says so.
+    const back = screen.getByTestId('profile-panel-back')
+    expect(back.getAttribute('href')).toBe('/profile')
+    await userEvent.click(back)
+    expect(await screen.findByTestId('profile-index')).toBeTruthy()
+  })
+
+  it('draws no verdict on a row', async () => {
+    renderApp('/profile')
+    const index = await screen.findByTestId('profile-index')
+    const text = (index.textContent ?? '').toLowerCase()
+    for (const word of ['good', 'bad', 'poor', 'should', 'must', 'optimal', 'consistent']) {
+      expect(text).not.toContain(word)
+    }
   })
 })

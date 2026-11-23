@@ -106,17 +106,47 @@ const ROUTES = [
     ],
   },
   {
+    // The athlete profile: a destination of its own, with its own wall
+    // on the wide screens and its own index on the phone.
+    path: '/profile',
+    name: 'Athlete profile',
+    primary: '[data-testid="profile-range"]',
+    bands: [
+      {
+        maxWidth: 599,
+        shown: '[data-testid="profile-index"]',
+        hidden: '[data-testid="profile-dashboard"]',
+      },
+      {
+        minWidth: 600,
+        shown: '[data-testid="profile-dashboard"]',
+        hidden: '[data-testid="profile-index"]',
+      },
+    ],
+  },
+  {
     // The index opens one panel at a time: this is that doorway.
     path: '/progress/window',
     name: 'Progress · the window',
     primary: '[data-testid="progress-panel-window"]',
   },
   {
+    // A panel of the athlete profile: the shape, on its own page.
+    path: '/profile/shape',
+    name: 'Athlete profile · the shape',
+    primary: '[data-testid="profile-panel-shape"]',
+  },
+  {
     // The athlete's shape: the same panel, on its own. The chart has to
     // read at 390 pixels: the labels shrink, the chart does not overflow.
+    //
+    // **The old link still opens it.** The shape is a panel of the
+    // athlete profile now, and the link that was saved last month still
+    // lands on it — under the profile, and with the back link pointing
+    // at the place it came from.
     path: '/progress/shape',
     name: 'Progress · the shape',
-    primary: '[data-testid="progress-panel-shape"]',
+    primary: '[data-testid="profile-panel-shape"]',
   },
   {
     // The pace page: reached from Progress, and it draws its own three
@@ -148,8 +178,13 @@ const ROUTES = [
   },
 ]
 
-/** The four destinations — the set that must never change. */
-const DESTINATIONS = ['/', '/runs', '/progress', '/body']
+/**
+ * The five destinations — the set that must never change.
+ *
+ * The athlete profile is one of them, and the phone's tab bar has to
+ * carry all five and the settings link without squashing a tap target.
+ */
+const DESTINATIONS = ['/', '/runs', '/progress', '/profile', '/body']
 
 /**
  * The width the app calls wide.

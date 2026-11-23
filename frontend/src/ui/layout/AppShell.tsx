@@ -83,8 +83,9 @@ function DestinationLink({
 /**
  * The settings link.
  *
- * **It is not a destination.** The destination set is four — Today, Runs,
- * Progress, Body — and it is the same four at every width. The settings
+ * **It is not a destination.** The destination set is five — Today,
+ * Runs, Progress, the athlete profile, Body — and it is the same five
+ * at every width. The settings
  * screen is secondary, and each band puts the link where it has room:
  * a gear at the end of the tab bar at compact, a gear at the end of the
  * top bar at medium, and a link under the destinations in the rail.
@@ -162,7 +163,7 @@ function TopBar() {
  * the destinations as the mock sets them, and the note at the foot.
  *
  * The destination set is the app's and it does not change — the same
- * four, in the same order, at every width. The settings link is not a
+ * five, in the same order, at every width. The settings link is not a
  * destination: it is the last item of the rail's list, as the mock has
  * it.
  */

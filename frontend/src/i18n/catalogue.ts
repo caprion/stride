@@ -288,6 +288,18 @@ export const catalogue = {
    * number on the wall is the router's answer.
    */
   'progress.wall.open': { type: 'status', text: 'open →' },
+  /*
+    The ways into the runs behind a picture.
+
+    A mark on a chart is a shape and a shape has no words in it, so the
+    link that carries it says what it opens: the date, and the runs
+    behind it. A reader who cannot see the mark — or who reads the
+    screen aloud — still knows where the link goes.
+  */
+  'progress.wall.runs.day': { type: 'status', text: 'The runs of {date}' },
+  'progress.wall.runs.week': { type: 'status', text: 'The runs of the week starting {date}' },
+  'progress.wall.runs.month': { type: 'status', text: 'The runs of {month}' },
+  'progress.wall.window.weeks': { type: 'status', text: 'The weeks of the window' },
   'progress.wall.year.heading': { type: 'status', text: 'The year' },
   'progress.wall.year.months': { type: 'status', text: '{n} months' },
   'progress.wall.year.note': {
@@ -334,6 +346,39 @@ export const catalogue = {
     groups the phone's index carries. A heading and nothing else — no
     verdict, no summary, no number of its own.
   */
+  /*
+    The nav label of the athlete profile.
+
+    **"My running" and not "Profile".** The tab bar holds Progress and
+    the athlete profile side by side, and the two labels read alike: a
+    runner scanning five tabs cannot tell "Progress" (the recent work)
+    from "Profile" (the long pattern). "My running" names the athlete's
+    own history and cannot be confused with either. It is one line
+    here: "Profile" reads fine in the rail and the top bar.
+  */
+  'nav.profile': { type: 'status', text: 'My running' },
+  'progress.profile.page': { type: 'status', text: 'The athlete profile' },
+  'progress.profile.lede': { type: 'status', text: 'What does my training look like?' },
+  'progress.profile.back': { type: 'status', text: 'Back to the athlete profile' },
+
+  /*
+    The phone's athlete profile: the picture, the questions, and the
+    areas' links. The questions are the profile's own — the goals, the
+    schedule, the seasons and the number that counts the history — and
+    every number in them is the core's own rendering.
+  */
+  'progress.profile.index.intro': {
+    type: 'status',
+    text: 'Four questions, and your answer to each.',
+  },
+  'progress.profile.index.goals.question': { type: 'status', text: 'The goals' },
+  'progress.profile.index.schedule.question': { type: 'status', text: 'The schedule' },
+  'progress.profile.index.seasons.question': { type: 'status', text: 'The seasons' },
+  'progress.profile.index.goals.empty': { type: 'status', text: 'No challenges yet' },
+  'progress.profile.index.habit.question': { type: 'status', text: 'The months in a row' },
+  'progress.profile.index.month': { type: 'status', text: '{n} month in a row' },
+  'progress.profile.index.months': { type: 'status', text: '{n} months in a row' },
+
   'progress.area.work': { type: 'status', text: 'The work' },
   'progress.area.time': { type: 'status', text: 'Where the time went' },
   'progress.area.comparison': { type: 'status', text: 'The comparison' },

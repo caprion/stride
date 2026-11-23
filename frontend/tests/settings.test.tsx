@@ -268,7 +268,7 @@ describe('the shell', () => {
         node.getAttribute('data-destination'),
       ),
     )
-    expect([...destinations].sort()).toEqual(['/', '/body', '/progress', '/runs'])
+    expect([...destinations].sort()).toEqual(['/', '/body', '/profile', '/progress', '/runs'])
     expect(screen.getAllByTestId('shell-settings').length).toBeGreaterThan(0)
   })
 })

@@ -48,7 +48,7 @@ describe('the challenge grid', () => {
   })
 
   it('is on the wall, with the habits beside it', async () => {
-    renderApp('/progress')
+    renderApp('/profile')
     const card = await screen.findByTestId('progress-wall-challenges')
     expect(card).toBeTruthy()
   })

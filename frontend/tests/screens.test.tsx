@@ -250,7 +250,7 @@ describe('Compare', () => {
 })
 
 describe('the shell', () => {
-  it('offers the same four destinations at every width', async () => {
+  it('offers the same five destinations at every width', async () => {
     const { container } = renderApp('/')
     await waitFor(() => expect(container.querySelector('[data-nav="tabbar"]')).toBeTruthy())
     const destinations = new Set(
@@ -258,6 +258,6 @@ describe('the shell', () => {
         node.getAttribute('data-destination'),
       ),
     )
-    expect([...destinations].sort()).toEqual(['/', '/body', '/progress', '/runs'])
+    expect([...destinations].sort()).toEqual(['/', '/body', '/profile', '/progress', '/runs'])
   })
 })

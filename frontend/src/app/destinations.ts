@@ -1,8 +1,8 @@
 /**
- * The four destinations.
+ * The five destinations.
  *
  * This list is the information architecture, and it is the *whole* of it:
- * the same four at every width, in the same order. Compare and the Plan
+ * the same five at every width, in the same order. Compare and the Plan
  * week are reached contextually — from a run, and from Today — so they are
  * routes, not destinations.
  *
@@ -15,6 +15,7 @@ import {
   HeartPulse,
   LayoutDashboard,
   TrendingUp,
+  UserRound,
   type LucideIcon,
 } from 'lucide-react'
 import type { CatalogueKey } from '../i18n'
@@ -34,5 +35,11 @@ export const DESTINATIONS: readonly Destination[] = [
   { to: '/', labelKey: 'nav.today', icon: LayoutDashboard, end: true },
   { to: '/runs', labelKey: 'nav.runs', icon: Activity, end: false },
   { to: '/progress', labelKey: 'nav.progress', icon: TrendingUp, end: false },
+  /*
+    The athlete profile: the long pattern, months and seasons, beside
+    Progress, which is the recent work. Its mark is a person and not a
+    chart, because the profile is the athlete's own and not a graph.
+  */
+  { to: '/profile', labelKey: 'nav.profile', icon: UserRound, end: false },
   { to: '/body', labelKey: 'nav.body', icon: HeartPulse, end: false },
 ] as const
