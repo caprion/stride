@@ -28,6 +28,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          # **The whole history.** The gate's history scan walks every
+          # commit and every added line, because a leak that was added and
+          # later removed is exactly what the tree scanners cannot see.
+          # A shallow clone leaves it nothing to walk: it read one commit
+          # and called it clean.
+          fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: 22

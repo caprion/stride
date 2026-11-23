@@ -297,7 +297,15 @@ const IN_PAGE_CHECKS = `
   // 6. Every chart's axis label carries a unit, and the unit is the
   //    core's own words ("148 bpm", "5:24 /km"). A bare number on an
   //    axis is the app printing a domain number on its own.
+  //
+  //    **The one exception is a dimensionless quantity.** The training
+  //    load is not measured in anything: the core renders it as the
+  //    number itself, so its ticks carry no unit and say so with the
+  //    data-dimensionless attribute. Those ticks are the core's words,
+  //    not the app's, and inventing a unit for them would be the app
+  //    writing the model's wording.
   for (const label of document.querySelectorAll('[data-testid="chart-axis-label"]')) {
+    if (label.getAttribute('data-dimensionless') === 'true') continue
     const text = (label.textContent ?? '').trim()
     if (!/[a-z/]+$/i.test(text)) {
       problems.push('a chart axis label carries no unit: "' + text + '"')

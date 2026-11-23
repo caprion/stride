@@ -32,6 +32,7 @@ import { t } from '../i18n'
 import type { CatalogueKey } from '../i18n'
 import { axisTick } from '../components/ChartAxis'
 import { AthleteShape, shapeAxes } from '../components/AthleteShape'
+import { LoadDaysChart, LoadProjectionChart, LoadSeriesChart } from './loadCharts'
 
 /**
  * The reasons the load can have no value, and the line each one gets.
@@ -329,6 +330,25 @@ export function LoadPanel({
               >
                 {load.scenario.assumption}
               </p>
+            </>
+          ) : null}
+          {/* The charts of the load. The answer already carried the
+              day-by-day series and the seven days the scenario projects
+              forward; these draw them, and they draw nothing the answer
+              did not send. */}
+          {load ? (
+            <>
+              <div className="mt-4">
+                <LoadSeriesChart load={load} />
+              </div>
+              <div className="mt-4">
+                <LoadDaysChart load={load} />
+              </div>
+              {load.scenario ? (
+                <div className="mt-4">
+                  <LoadProjectionChart load={load} />
+                </div>
+              ) : null}
             </>
           ) : null}
         </>

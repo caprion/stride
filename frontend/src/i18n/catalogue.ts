@@ -410,6 +410,27 @@ export const catalogue = {
   'progress.load.monotony': { type: 'status', text: 'Monotony' },
   'progress.load.strain': { type: 'status', text: 'Strain' },
   'progress.load.window': { type: 'status', text: 'The window: {from} – {to}' },
+  /*
+    The charts of the load: the series over the window, the load of each
+    day, and the form the scenario projects. The charts draw what the
+    answer already carried — the shape of the training was on the wire
+    and not on the screen.
+  */
+  'progress.load.series.heading': { type: 'status', text: 'The load over the window' },
+  'progress.load.series.note': {
+    type: 'statement',
+    text: 'The acute load, the chronic load and the form. The form is positive above the line.',
+  },
+  'progress.load.days.heading': { type: 'status', text: 'The load of each day' },
+  'progress.load.days.note': {
+    type: 'statement',
+    text: 'A day with no training has a load of zero, and a day with nothing to weigh has no load.',
+  },
+  'progress.load.projection.heading': { type: 'status', text: 'The form, projected' },
+  'progress.load.projection.note': {
+    type: 'status',
+    text: 'The next {n} days, with no training.',
+  },
   'progress.load.empty.no_zone_model': {
     type: 'status',
     text: 'No zone model has been read, so there is no load to show.',

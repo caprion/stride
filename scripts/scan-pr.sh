@@ -41,10 +41,16 @@ if [[ -z "$DIFF" ]]; then
 fi
 
 # Only added lines, with their file path.
+#
+# **The released bundle is excluded.** `desktop/assets/` is the rig's
+# generated web bundle: the tree scanner, the secret scanner and the
+# history scanner all skip it, because it is build output and the
+# browser's own code. This one skipped it too, and did not — so a change
+# that refreshed the bundle was read as if the athlete had written it.
 ADDED=$(printf '%s\n' "$DIFF" | awk '
   /^\+\+\+ b\// { file = substr($0, 7); next }
   /^\+/ && !/^\+\+\+/ { printf "%s\t%s\n", file, substr($0, 2) }
-')
+' | grep -vE '^(fixtures/scan-tests/|desktop/assets/)')
 
 # `git diff --name-only` sees binary files too; the +++ header does not.
 FILES_TOUCHED=$(git diff --name-only "$BASE...$HEAD" | sort -u)
@@ -232,7 +238,7 @@ for f in $FILES_TOUCHED; do
 done
 
 # A new binary blob, or a big new file, in a place that is not the corpus.
-BIG=$(git diff --numstat "$BASE...$HEAD" | awk '$1 == "-" || ($1+0) > 20000 { print $3 }' | grep -v '^fixtures/' || true)
+BIG=$(git diff --numstat "$BASE...$HEAD" | awk '$1 == "-" || ($1+0) > 20000 { print $3 }' | grep -vE '^(fixtures/|desktop/assets/)' || true)
 if [[ -n "$BIG" ]]; then
   fail "a large or binary file was added outside the corpus:"
   printf '%s\n' "$BIG" | sed 's/^/    /' >&2

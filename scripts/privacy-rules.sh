@@ -147,12 +147,19 @@ privacy_check_line() {
     local LON='[lL][oO][nN]'
     local LONGITUDE='[lL][oO][nN][gG][iI][tT][uU][dD][eE]'
     local LNG='[lL][nN][gG]'
+    # **A camelCase boundary is a boundary between two words.** It is a
+    # lowercase letter (or the start of the key) before the coordinate
+    # word and an uppercase one after it: "posLat", "lonDeg". An
+    # all-caps compound is not one — in "RADAR_LONG_WEEKS" the "LON" is
+    # the start of "long", and reading it as a longitude would refuse a
+    # count of weeks for a word.
+    local CAMEL='(^|[a-z0-9])'
     if [[ "$key" =~ (^|[^A-Za-z0-9])($LAT|$LATITUDE)([^A-Za-z0-9]|$) ]] \
-       || [[ "$key" =~ ($LAT|$LATITUDE)([A-Z]) ]] \
+       || [[ "$key" =~ $CAMEL($LAT|$LATITUDE)([A-Z]) ]] \
        || [[ "$key" =~ ([a-z0-9])($LAT|$LATITUDE)($) ]]; then
       role=lat
     elif [[ "$key" =~ (^|[^A-Za-z0-9])($LON|$LONGITUDE|$LNG)([^A-Za-z0-9]|$) ]] \
-         || [[ "$key" =~ ($LON|$LONGITUDE|$LNG)([A-Z]) ]] \
+         || [[ "$key" =~ $CAMEL($LON|$LONGITUDE|$LNG)([A-Z]) ]] \
          || [[ "$key" =~ ([a-z0-9])($LON|$LONGITUDE|$LNG)($) ]]; then
       role=lon
     fi
