@@ -329,6 +329,22 @@ export const catalogue = {
     type: 'status',
     text: 'The longest: {days} days · {months} months.',
   },
+  /*
+    The task areas: the groups the wall's cards are drawn in, and the
+    groups the phone's index carries. A heading and nothing else — no
+    verdict, no summary, no number of its own.
+  */
+  'progress.area.work': { type: 'status', text: 'The work' },
+  'progress.area.time': { type: 'status', text: 'Where the time went' },
+  'progress.area.comparison': { type: 'status', text: 'The comparison' },
+  'progress.area.pace': { type: 'status', text: 'The pace and the results' },
+  'progress.area.shape': { type: 'status', text: 'The shape' },
+  'progress.area.goals': { type: 'status', text: 'The goals' },
+  'progress.area.schedule': { type: 'status', text: 'The schedule and the run lengths' },
+  'progress.area.seasons': { type: 'status', text: 'The seasons' },
+  'progress.area.habit': { type: 'status', text: 'The habit' },
+  'progress.area.elsewhere': { type: 'status', text: 'Somewhere else' },
+
   'progress.wall.profile.heading': { type: 'status', text: 'The athlete profile' },
   'progress.wall.profile.alt': {
     type: 'status',
