@@ -375,11 +375,11 @@ export function ProgressIndex({
         else — the numbers are on the wall's cards, and the answers are
         in the questions above.
       */}
-      <nav className="mt-4 space-y-3" data-testid="progress-index-areas">
+      <nav className="card mt-3 overflow-hidden card-flush" data-testid="progress-index-areas">
         {areas.map(({ area, cards }) => (
           <section
             key={area.id}
-            className="card px-4 py-3"
+            className="px-4 py-3"
             data-testid={`progress-index-areas-${area.id}`}
           >
             <h3 className="mb-1 text-[12px] font-semibold uppercase tracking-[0.07em] text-ink-faint">
@@ -391,7 +391,7 @@ export function ProgressIndex({
                   <Link
                     to={cardRoute(card.id)}
                     data-testid={`progress-index-area-${card.id}`}
-                    className="tap block py-1.5 text-[14px] font-medium text-brand-700 underline"
+                    className="tap block py-1.5 text-[14px] font-medium text-ink"
                   >
                     {t(card.titleKey)}
                   </Link>
