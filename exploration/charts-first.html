@@ -1,0 +1,509 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Stride — charts first: what the text is for</title>
+<style>
+  /* Stride's own palette, copied from frontend/tailwind.config.js */
+  :root {
+    --brand-50:#EEF5FB; --brand-100:#D6E6F3; --brand-300:#A9C8E8; --brand-500:#1E5E96;
+    --brand-600:#124A7C; --brand-700:#0D3A63;
+    --accent-50:#FEF8EA; --accent-100:#FDEDC7; --accent-400:#F2B01E;
+    --ink:#112B40; --ink-soft:#31465A; --ink-muted:#4E6577; --ink-faint:#586F82;
+    --surface:#FFFFFF; --surface-soft:#F1F5F8; --surface-sunken:#E9EFF4; --edge:#CEDAE4;
+    --radius:9px;
+    --font: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin:0; padding:0; background:var(--surface-soft); }
+  body { font-family: var(--font); color:var(--ink); }
+  .wrap { max-width:1460px; margin:0 auto; padding:26px 22px 60px; }
+  h1 { font-size:21px; color:var(--brand-700); margin:0 0 4px; letter-spacing:-.01em; }
+  .lede { font-size:13.5px; color:var(--ink-muted); margin:0 0 8px; max-width:960px; line-height:1.55; }
+  .lede b { color:var(--ink-soft); }
+  h2 { font-size:15px; color:var(--brand-700); margin:32px 0 4px; }
+  h2 .n { color:var(--ink-faint); font-weight:600; margin-right:7px; }
+  .note { font-size:12.5px; color:var(--ink-muted); margin:0 0 14px; max-width:1000px; line-height:1.55; }
+  .note b { color:var(--ink-soft); }
+  .phones { display:flex; gap:20px; flex-wrap:wrap; align-items:flex-start; }
+  .phonewrap { display:flex; flex-direction:column; gap:8px; align-items:center; }
+  .caption { font-size:11.5px; color:var(--ink-muted); max-width:310px; text-align:center; line-height:1.4; }
+  .caption b { display:block; color:var(--brand-700); font-size:12px; margin-bottom:3px; }
+
+  .phone { width:320px; height:660px; border-radius:26px; border:1px solid #cfd8e0; background:var(--surface);
+    box-shadow:0 8px 26px rgba(17,43,64,.14); overflow:hidden; display:flex; flex-direction:column;
+    position:relative; font-size:13px; }
+  .bar { display:flex; align-items:center; justify-content:space-between; padding:10px 13px 6px; }
+  .bar h1 { font-size:16px; font-weight:650; color:var(--brand-700); margin:0; letter-spacing:-.01em; }
+  .bar .meta { font-size:10.5px; color:var(--ink-faint); margin-top:1px; }
+  .body { flex:1; overflow-y:auto; padding:0 13px 13px; }
+  .body::-webkit-scrollbar { width:0; }
+
+  .card { border:1px solid var(--edge); border-radius:var(--radius); background:var(--surface);
+    box-shadow:0 1px 2px rgba(11,27,39,.04),0 1px 3px rgba(11,27,39,.06); padding:10px 12px; margin-bottom:9px; }
+  .h { font-size:10px; font-weight:650; letter-spacing:.07em; text-transform:uppercase; color:var(--ink-faint);
+    margin:0 0 2px; display:flex; justify-content:space-between; align-items:baseline; gap:8px; }
+  .h .sub { font-weight:500; letter-spacing:0; text-transform:none; font-size:10.5px; color:var(--ink-faint); }
+  .tiny { font-size:10.5px; line-height:1.35; color:var(--ink-faint); }
+  .small { font-size:11.5px; line-height:1.45; color:var(--ink-muted); }
+
+  /* the only two sentences on the screen */
+  .say { font-size:12.5px; line-height:1.5; color:var(--ink-soft); }
+  .say b { color:var(--ink); font-weight:600; }
+
+  /* annotations drawn on the chart itself */
+  .ann { font-size:9.5px; fill:var(--ink-faint); }
+  .ann.ink { fill:var(--ink-muted); }
+
+  .legend { display:flex; flex-wrap:wrap; gap:7px 22px; margin-top:6px; }
+  .legend span { display:inline-flex; align-items:center; gap:5px; font-size:10.5px; color:var(--ink-muted); }
+  .legend i { width:11px; height:3px; border-radius:2px; display:inline-block; }
+  .legend i.dash { background:repeating-linear-gradient(90deg,var(--brand-300) 0 4px,transparent 4px 7px); }
+  .legend i.ghost { background:var(--brand-100); box-shadow:inset 0 0 0 1px var(--brand-300); }
+  .legend i.dot { width:7px; height:7px; border-radius:99px; background:var(--brand-300); }
+
+  .banner { background:var(--brand-50); border:1px solid var(--brand-100); }
+  .banner p { margin:2px 0 0; font-size:11px; color:var(--ink-muted); }
+
+  table.map { border-collapse:collapse; width:100%; max-width:1080px; font-size:12.5px; }
+  table.map th { text-align:left; font-size:10px; letter-spacing:.07em; text-transform:uppercase;
+    color:var(--ink-faint); padding:0 10px 7px 0; font-weight:650; }
+  table.map td { padding:7px 10px 7px 0; border-top:1px solid var(--surface-sunken); vertical-align:top; line-height:1.45; }
+  table.map td.s { color:var(--ink-soft); }
+  table.map td.g { color:var(--brand-700); font-weight:600; white-space:nowrap; }
+  table.map tr.gone td { color:var(--ink-faint); }
+
+  .rule { border-left:3px solid var(--brand-500); padding:4px 0 4px 12px; margin:14px 0 0; max-width:900px; }
+  .rule .t { font-size:15px; font-weight:650; color:var(--brand-700); }
+  .rule .d { font-size:12.5px; color:var(--ink-muted); margin-top:3px; line-height:1.5; }
+
+  /* the setup, re-cast */
+  .check { display:flex; gap:8px; align-items:flex-start; padding:5px 0; font-size:12.5px; color:var(--ink-soft); }
+  .box { width:14px; height:14px; border-radius:4px; border:1.5px solid var(--brand-500); flex:none; margin-top:1px;
+    background:var(--brand-500); position:relative; }
+  .box.off { background:transparent; border-color:var(--edge); }
+  .box::after { content:''; position:absolute; left:4px; top:1px; width:4px; height:8px;
+    border:solid var(--surface); border-width:0 2px 2px 0; transform:rotate(42deg); }
+  .box.off::after { display:none; }
+  .chip { display:inline-block; font-size:10px; color:var(--brand-700); background:var(--brand-50);
+    border:1px solid var(--brand-100); border-radius:99px; padding:1px 7px; margin:2px 4px 0 0; }
+
+  .grid { border-collapse:collapse; width:100%; font-size:10.5px; }
+  .grid th { font-weight:600; color:var(--ink-faint); text-align:center; padding:3px 2px; font-size:9.5px; }
+  .grid th.rowh { text-align:left; color:var(--ink-soft); font-weight:500; white-space:nowrap; padding-right:8px; font-size:10.5px; }
+  .grid td { text-align:center; padding:3px 2px; }
+  .dot { width:9px; height:9px; border-radius:99px; background:var(--brand-500); display:inline-block; }
+  .dot.no { background:var(--surface-sunken); }
+  .dot.edge { background:var(--brand-300); }
+  .grid td.hit { background:var(--brand-50); border-radius:5px; }
+
+
+  /* the mock is plain CSS, so the utility names the app uses are defined here */
+  .mt-1{margin-top:2px}.mt-2{margin-top:4px}.mt-3{margin-top:8px}.mt-4{margin-top:12px}
+  .mb-1{margin-bottom:2px}.mb-2{margin-bottom:4px}
+  .gap-2{gap:6px}.gap-3{gap:10px}
+  .gap-x-3{gap:10px}.gap-x-4{gap:14px}.gap-x-11px{gap:26px}
+  .gap-y-1{gap:3px}.gap-y-3px{gap:6px}
+  .text-[9.5px]{font-size:9.5px}.text-[10.5px]{font-size:10.5px}.text-[11px]{font-size:11px}
+  .text-[11.5px]{font-size:11.5px}.text-[12px]{font-size:12px}.text-[12.5px]{font-size:12.5px}
+  .text-[13px]{font-size:13px}.text-[13.5px]{font-size:13.5px}.text-[15px]{font-size:15px}
+  .font-semibold{font-weight:600}.font-medium{font-weight:500}
+  .tabular-nums{font-variant-numeric:tabular-nums}
+  .text-right{text-align:right}.text-center{text-align:center}
+  .text-ink{color:var(--ink)}.text-ink-muted{color:var(--ink-muted)}.text-ink-faint{color:var(--ink-faint)}
+  .text-brand-700{color:var(--brand-700)}.text-surface{color:var(--surface)}
+  .whitespace-nowrap{white-space:nowrap}.w-full{width:100%}
+
+  svg { display:block; width:100%; height:auto; }
+  .vs { display:grid; grid-template-columns:1fr 1fr; gap:20px; max-width:1060px; margin:12px 0 0; }
+  .vs .col h3 { font-size:11.5px; text-transform:uppercase; letter-spacing:.07em; color:var(--ink-faint); margin:0 0 7px; }
+  .vs .col.win h3 { color:var(--brand-700); }
+  .vs ul { margin:0; padding-left:17px; font-size:12.5px; color:var(--ink-muted); line-height:1.55; }
+  .vs ul li { margin-bottom:5px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <h1>Charts first — and what the text is then for</h1>
+  <p class="lede">
+    The reading was too wordy, and the reason is specific: <b>most of it was narrating charts that
+    were already there.</b> "Twelve weeks, every week" is the bars. "142 km more than before" is the
+    ghost of the last window behind them. A sentence that describes a picture adds nothing the
+    picture does not already say, and it adds it in a worse way — slower, and with more room to
+    be wrong.
+    <b>So: the chart carries it, and the text is only what a chart cannot carry.</b>
+  </p>
+
+  <h2><span class="n">1</span>Where every sentence went</h2>
+  <p class="note">
+    The same seven facts as the earlier passes. Five of them turned out to be chart-work. Two did not.
+  </p>
+
+  <table class="map">
+    <thead><tr><th>The sentence</th><th>Where it goes instead</th><th>Why</th></tr></thead>
+    <tbody>
+      <tr class="gone">
+        <td class="s">"Twelve weeks, every week."</td><td class="g">nothing</td>
+        <td>It is twelve bars. The average line already says the rest of it.</td></tr>
+      <tr>
+        <td class="s">"300 km, and 142 km more than the twelve weeks before."</td><td class="g">the chart</td>
+        <td>Ghost the last window behind this one and the gap is the answer. Two series, one shape,
+            no sentence.</td></tr>
+      <tr>
+        <td class="s">"Same heart rate, quicker: 7:26 against 7:31."</td><td class="g">the chart</td>
+        <td>Two lines on the same axis. The vertical gap between them <i>is</i> the difference.</td></tr>
+      <tr>
+        <td class="s">"42 acute against 29 chronic."</td><td class="g">the chart</td>
+        <td>It is two lines. A band on the form's zero line shows which side of it you are on.</td></tr>
+      <tr>
+        <td class="s">"Z4–Z5 was 67% of your time before and 53% now."</td><td class="g">the chart</td>
+        <td>Two stacked bars, one above the other. The hard share shrinks or it does not.</td></tr>
+      <tr class="gone">
+        <td class="s">"Twelve weeks, every week, 300 km — 142 km more than the twelve weeks before."</td>
+        <td class="g">nothing</td>
+        <td>The whole sentence, gone. The two charts above say it.</td></tr>
+      <tr>
+        <td class="s">"With no training for 7 days, the ratio is expected back inside 0.8 to 1.3 in a
+          day, and the form turns positive in 4 days."</td><td class="g">the text</td>
+        <td>It is about a <b>model's expectation</b>, not about the data. No chart of the past shows
+          what a model expects of the future.</td></tr>
+      <tr>
+        <td class="s">"Banister k = 1.92 · max heart rate 197 bpm from your zone model, read on 16 Nov."</td>
+        <td class="g">the text</td>
+        <td>Provenance. The contract says the assumption sits where the numbers are read — and it
+            cannot be drawn.</td></tr>
+      <tr>
+        <td class="s">"No zone model has been read, so there is no load to show."</td><td class="g">the text</td>
+        <td>Absence has to be said. There is no chart of a thing that is not there.</td></tr>
+    </tbody>
+  </table>
+
+  <div class="rule">
+    <div class="t">The rule: the sentence says what the chart cannot.</div>
+    <div class="d">
+      A chart shows <i>pattern</i>: shape, trend, spread, and the athlete next to their own past.
+      What it cannot show is a <b>model's expectation</b>, a <b>model's provenance</b>, or the
+      <b>absence</b> of something. Those are the only sentences worth writing.
+    </div>
+  </div>
+
+  <h2><span class="n">2</span>What that leaves on the screen</h2>
+  <p class="note">
+    Six charts and two sentences. The charts are put next to each other so they can be read against
+    each other — this window over the last, this split over the last — which is the only place the
+    comparison lives now.
+  </p>
+
+  <div class="phones">
+    <div class="phonewrap">
+      <div class="phone">
+        <div class="bar"><div><h1>Progress</h1><div class="meta">23 Feb – 13 May</div></div></div>
+        <div class="body">
+
+          <div class="card">
+            <div class="h">Weekly volume <span class="sub">km</span></div>
+            <svg viewBox="0 0 290 86" height="86">
+              <g>
+                <rect x="6" y="46" width="8" height="30" rx="2" fill="var(--brand-100)"/>
+                <rect x="29" y="43" width="8" height="33" rx="2" fill="var(--brand-100)"/>
+                <rect x="52" y="50" width="8" height="26" rx="2" fill="var(--brand-100)"/>
+                <rect x="75" y="40" width="8" height="36" rx="2" fill="var(--brand-100)"/>
+                <rect x="98" y="44" width="8" height="32" rx="2" fill="var(--brand-100)"/>
+                <rect x="121" y="36" width="8" height="40" rx="2" fill="var(--brand-100)"/>
+                <rect x="144" y="41" width="8" height="35" rx="2" fill="var(--brand-100)"/>
+                <rect x="167" y="45" width="8" height="31" rx="2" fill="var(--brand-100)"/>
+                <rect x="190" y="38" width="8" height="38" rx="2" fill="var(--brand-100)"/>
+                <rect x="213" y="42" width="8" height="34" rx="2" fill="var(--brand-100)"/>
+                <rect x="236" y="37" width="8" height="39" rx="2" fill="var(--brand-100)"/>
+                <rect x="259" y="39" width="8" height="37" rx="2" fill="var(--brand-100)"/>
+                <rect x="16" y="24" width="8" height="52" rx="2" fill="var(--brand-500)"/>
+                <rect x="39" y="20" width="8" height="56" rx="2" fill="var(--brand-500)"/>
+                <rect x="62" y="28" width="8" height="48" rx="2" fill="var(--brand-500)"/>
+                <rect x="85" y="16" width="8" height="60" rx="2" fill="var(--brand-500)"/>
+                <rect x="108" y="22" width="8" height="54" rx="2" fill="var(--brand-500)"/>
+                <rect x="131" y="13" width="8" height="63" rx="2" fill="var(--brand-500)"/>
+                <rect x="154" y="20" width="8" height="56" rx="2" fill="var(--brand-500)"/>
+                <rect x="177" y="25" width="8" height="51" rx="2" fill="var(--brand-500)"/>
+                <rect x="200" y="18" width="8" height="58" rx="2" fill="var(--brand-500)"/>
+                <rect x="223" y="23" width="8" height="53" rx="2" fill="var(--brand-500)"/>
+                <rect x="246" y="15" width="8" height="61" rx="2" fill="var(--brand-500)"/>
+                <rect x="269" y="18" width="8" height="58" rx="2" fill="var(--brand-500)"/>
+              </g>
+              <!-- the typical week -->
+              <line x1="0" y1="21" x2="290" y2="21" stroke="var(--ink-faint)" stroke-width="1.5" stroke-dasharray="4 3"/>
+            </svg>
+            <div class="legend">
+              <span><i style="background:var(--brand-500)"></i>this window</span>
+              <span><i class="ghost"></i>the 12 weeks before</span>
+              <span><i class="dash"></i>your typical week · 23.2 km</span>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="h">Pace at 151 bpm <span class="sub">s/km</span></div>
+            <svg viewBox="0 0 290 66" height="66">
+              <!-- the window before -->
+              <polyline points="6,12 36,13 66,14 96,15 126,15 156,16 186,16 216,17 250,17"
+                fill="none" stroke="var(--brand-300)" stroke-width="2" stroke-dasharray="4 3"/>
+              <!-- this window -->
+              <polyline points="6,22 36,23 66,25 96,27 126,30 156,33 186,35 216,37 250,39"
+                fill="none" stroke="var(--brand-500)" stroke-width="2"/>
+              <!-- the gap, which is the answer -->
+              <line x1="264" y1="17" x2="264" y2="39" stroke="var(--accent-400)" stroke-width="2"/>
+              <line x1="260" y1="17" x2="268" y2="17" stroke="var(--accent-400)" stroke-width="2"/>
+              <line x1="260" y1="39" x2="268" y2="39" stroke="var(--accent-400)" stroke-width="2"/>
+            </svg>
+            <div class="legend">
+              <span><i style="background:var(--brand-500)"></i>this window</span>
+              <span><i class="dash"></i>the window before</span>
+              <span><i style="background:var(--accent-400)"></i>the gap · 5 s/km</span>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="h">Training load <span class="sub">acute · chronic</span></div>
+            <svg viewBox="0 0 290 62" height="62">
+              <polyline points="6,48 36,42 66,40 96,34 126,32 156,28 186,26 216,22 284,18"
+                fill="none" stroke="var(--brand-500)" stroke-width="2"/>
+              <polyline points="6,52 36,48 66,44 96,36 126,32 156,26 186,22 216,16 284,10"
+                fill="none" stroke="var(--accent-400)" stroke-width="2"/>
+            </svg>
+            <div class="legend">
+              <span><i style="background:var(--accent-400)"></i>acute load</span>
+              <span><i style="background:var(--brand-500)"></i>chronic load</span>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="h">Time in zones <span class="sub">share of moving time</span></div>
+            <svg viewBox="0 0 290 66" height="66">
+              <text class="ann ink" x="0" y="8">this window</text>
+              <g transform="translate(0,12)">
+                <rect x="0" y="0" width="17" height="13" fill="var(--brand-100)"/>
+                <rect x="17" y="0" width="119" height="13" fill="var(--brand-300)"/>
+                <rect x="136" y="0" width="154" height="13" fill="var(--brand-500)"/>
+              </g>
+              <text class="ann" x="0" y="40">the window before</text>
+              <g transform="translate(0,44)">
+                <rect x="0" y="0" width="12" height="13" fill="var(--brand-100)"/>
+                <rect x="12" y="0" width="84" height="13" fill="var(--brand-300)"/>
+                <rect x="96" y="0" width="194" height="13" fill="var(--brand-500)"/>
+              </g>
+            </svg>
+            <div class="legend">
+              <span><i style="background:var(--brand-100)"></i>Z1–Z2</span>
+              <span><i style="background:var(--brand-300)"></i>Z3</span>
+              <span><i style="background:var(--brand-500)"></i>Z4–Z5</span>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="h">Your shape <span class="sub">six axes · two windows</span></div>
+            <svg viewBox="0 0 290 176" height="176">
+              <g stroke="var(--surface-sunken)" fill="none" stroke-width="1">
+                <polygon points="145,30 253,85 215,159 75,159 37,85"/>
+                <polygon points="145,51 217,86 191,138 99,138 73,86"/>
+                <polygon points="145,72 181,87 167,117 123,117 109,87"/>
+              </g>
+              <polygon points="145,72 181,87 167,117 123,117 109,87" fill="var(--brand-100)"/>
+              <polygon points="145,44 240,88 196,144 84,144 57,86" fill="none" stroke="var(--brand-300)"
+                stroke-width="2" stroke-dasharray="4 3"/>
+              <g fill="var(--brand-500)">
+                <circle cx="145" cy="72" r="3"/><circle cx="181" cy="87" r="3"/><circle cx="167" cy="117" r="3"/>
+                <circle cx="123" cy="117" r="3"/><circle cx="109" cy="87" r="3"/>
+              </g>
+              <g fill="var(--accent-400)">
+                <circle cx="145" cy="44" r="3"/><circle cx="240" cy="88" r="3"/><circle cx="196" cy="144" r="3"/>
+                <circle cx="84" cy="144" r="3"/><circle cx="57" cy="86" r="3"/>
+              </g>
+              <g class="ann" text-anchor="middle">
+                <text x="145" y="16">Volume</text><text x="268" y="88">Consistency</text>
+                <text x="215" y="172">Variety</text><text x="75" y="172">Density</text>
+                <text x="22" y="88">Duration</text><text x="22" y="160">Intensity</text>
+              </g>
+            </svg>
+            <div class="legend">
+              <span><i style="background:var(--brand-500)"></i>the last 28 days</span>
+              <span><i class="ghost"></i>the last 91 days</span>
+            </div>
+          </div>
+
+          <!-- the two sentences that survive -->
+          <div class="card">
+            <p class="say" style="margin:0 0 6px;"><b>With no training for 7 days,</b> the
+              acute-to-chronic ratio is expected back inside 0.8 to 1.3 in about a day, and the form
+              turns positive in 4 days.</p>
+            <p class="tiny" style="margin:0;">no training for 7 days · Banister k = 1.92 · max heart
+              rate 197 bpm from your zone model, read on 16 Nov 2026</p>
+          </div>
+
+        </div>
+      </div>
+      <div class="caption"><b>Charts first.</b> Six charts, each carrying one comparison against
+        your own past, and two sentences: one about the model, one about where the model's numbers
+        came from.</div>
+    </div>
+  </div>
+
+  <h2><span class="n">3</span>What "encouraging" looks like with no adjectives</h2>
+  <p class="note">
+    If the text cannot praise, the encouragement has to live in the drawing. It does, and it is
+    stronger than a sentence: <b>the chart puts the athlete next to themselves.</b>
+  </p>
+  <div class="vs">
+    <div class="col win">
+      <h3>What carries it now</h3>
+      <ul>
+        <li><b>The ghost.</b> The window before, behind this one. The difference is drawn, so it does
+          not have to be said — and saying it always sounded like a verdict waiting to happen.</li>
+        <li><b>The average line.</b> "Your typical week" as a line on the chart. Where the bars sit
+          against it is the whole message, and it is a fact about the athlete.</li>
+        <li><b>The gap.</b> The vertical distance between two lines on the pace chart, drawn in
+          amber. It is the improvement; nobody has to call it one.</li>
+        <li><b>The zero line.</b> The form's zero, drawn. Which side of it the line is on is the
+          whole of the load's message.</li>
+        <li><b>The quiet dot.</b> In the consistency grid, the week you did not is a pale dot. The
+          pattern reads as a streak without a single cross.</li>
+      </ul>
+    </div>
+    <div class="col">
+      <h3>What it costs</h3>
+      <ul>
+        <li><b>The reading is gone</b>, and with it the thing that made the app feel like it was
+          paying attention. That is a real loss, and it is the trade this direction makes.</li>
+        <li><b>Charts need more room than sentences.</b> Six charts is a scroll, where one paragraph
+          was a screen. On a phone, the charts have to earn their height.</li>
+        <li><b>Every chart must answer a question</b>, or it is decoration. "What is this for?" has
+          to have an answer for each of them, which is a discipline the paragraph did not need.</li>
+        <li><b>The charts are harder to get right</b> than the words were: the ghost, the average
+          line and the gap all have to be legible at 300 px.</li>
+      </ul>
+    </div>
+  </div>
+
+  <h2><span class="n">4</span>The setup, re-cast</h2>
+  <p class="note">
+    If the reading is gone, the setup cannot be "how wordy do you want it". It becomes
+    <b>which charts you are shown and which comparison each one carries</b> — which is the same
+    choice, made once, and it is a better one: the athlete picks the questions they care about, and
+    the screen answers exactly those.
+  </p>
+  <div class="phones">
+    <div class="phonewrap">
+      <div class="phone">
+        <div class="bar"><div><h1>Set up</h1><div class="meta">Your training</div></div></div>
+        <div class="body">
+          <div class="card">
+            <div class="h">What do you want to see?</div>
+            <div class="check"><div class="box"></div><span>Weekly volume, against my typical week</span></div>
+            <div class="check"><div class="box"></div><span>My pace at the same heart rate</span></div>
+            <div class="check"><div class="box"></div><span>My training load</span></div>
+            <div class="check"><div class="box off"></div><span>How my time splits across the zones</span></div>
+            <div class="check"><div class="box"></div><span>The shape of my training, two windows</span></div>
+          </div>
+          <div class="card banner">
+            <div class="h" style="color:var(--brand-700)">What each one is</div>
+            <p>Each is a chart and the comparison it carries.</p>
+            <div style="margin-top:6px;">
+              <span class="chip">volume vs typical week</span>
+              <span class="chip">pace vs the window before</span>
+              <span class="chip">load vs its own zero</span>
+              <span class="chip">zones vs the window before</span>
+              <span class="chip">six axes, two windows</span>
+            </div>
+          </div>
+          <div class="card">
+            <div class="h">What do you want to be consistent about?</div>
+            <div class="check"><div class="box"></div><span>A 5 km</span></div>
+            <div class="check"><div class="box"></div><span>A 10 km</span></div>
+            <div class="check"><div class="box"></div><span>A half marathon</span></div>
+            <div class="check"><div class="box off"></div><span>100 km in a month</span></div>
+            <div class="check"><div class="box off"></div><span>2000 m of climbing</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="caption"><b>The setup is a chart picker.</b> Untick one and its chart is not on the
+        screen; nothing else changes, because there is no prose to trim.</div>
+    </div>
+
+    <div class="phonewrap">
+      <div class="phone">
+        <div class="bar"><div><h1>Consistency</h1><div class="meta">23 Feb – 13 May</div></div></div>
+        <div class="body">
+          <div class="card">
+            <div class="h">Your challenges</div>
+            <table class="grid">
+              <thead><tr><th class="rowh"></th><th>Feb</th><th>Mar</th><th>Apr</th><th>May</th></tr></thead>
+              <tbody>
+                <tr><th class="rowh">A 5 km</th>
+                  <td class="hit"><span class="dot"></span></td><td class="hit"><span class="dot"></span></td>
+                  <td class="hit"><span class="dot"></span></td><td class="hit"><span class="dot"></span></td></tr>
+                <tr><th class="rowh">A 10 km</th>
+                  <td class="hit"><span class="dot"></span></td><td><span class="dot no"></span></td>
+                  <td class="hit"><span class="dot"></span></td><td class="hit"><span class="dot"></span></td></tr>
+                <tr><th class="rowh">A half marathon</th>
+                  <td><span class="dot no"></span></td><td><span class="dot no"></span></td>
+                  <td class="hit"><span class="dot edge"></span></td><td class="hit"><span class="dot"></span></td></tr>
+                <tr><th class="rowh">100 km a month</th>
+                  <td><span class="dot no"></span></td><td class="hit"><span class="dot"></span></td>
+                  <td><span class="dot no"></span></td><td class="hit"><span class="dot"></span></td></tr>
+              </tbody>
+            </table>
+            <p class="tiny" style="margin:7px 0 0;">A week with no dot is a week without the
+              distance. The counts are in the panel.</p>
+          </div>
+          <div class="card">
+            <div class="h">This week</div>
+            <table class="grid">
+              <thead><tr><th class="rowh"></th><th>Distance</th><th>Where it stands</th></tr></thead>
+              <tbody>
+                <tr><th class="rowh">A 5 km</th><td>7.4 km</td><td><span class="dot"></span></td></tr>
+                <tr><th class="rowh">A 10 km</th><td>11.7 km</td><td><span class="dot"></span></td></tr>
+                <tr><th class="rowh">A half marathon</th><td>21.2 km so far</td><td><span class="dot edge"></span></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+      <div class="caption"><b>The grid, constructively.</b> The same shape as the reference card, with
+        the week that was not done as a quiet dot rather than a red cross — and the counts in the
+        panel rather than in the sentences.</div>
+    </div>
+  </div>
+
+  <h2><span class="n">5</span>Where this leaves the voice</h2>
+  <div class="vs">
+    <div class="col win">
+      <h3>What the voice is now</h3>
+      <ul>
+        <li><b>It is in the drawings</b> — the ghost, the average line, the gap, the zero line, the
+          quiet dot. Each one is a comparison against the athlete's own past, drawn rather than
+          said.</li>
+        <li><b>It is in the two sentences</b> — the model's expectation, and where the model's
+          numbers came from.</li>
+        <li><b>It is in the absence</b> — "no zone model has been read, so there is no load to
+          show" is still the app speaking, and it is still careful.</li>
+        <li><b>The yardstick is unchanged.</b> You, always. There is no population to be behind.</li>
+      </ul>
+    </div>
+    <div class="col">
+      <h3>What is still open</h3>
+      <ul>
+        <li><b>Six charts is a scroll.</b> Which of them earn their height on a phone? The setup
+          is the answer, but the default has to be right.</li>
+        <li><b>The charts have to be legible at 300 px</b> — the ghost, the average and the gap all
+          have to read at that width.</li>
+        <li><b>Does the run update stay prose?</b> It is the one place the product writes about a
+          run, and it is the most human thing here. Charts cannot replace it, and should not try.</li>
+        <li><b>Is anything lost that matters?</b> The thing a paragraph did that a chart cannot: say
+          two facts <i>together</i>. The chart puts them side by side. Whether that is enough is
+          the open question, and it is the one to settle by looking rather than arguing.</li>
+      </ul>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

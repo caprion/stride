@@ -1,5 +1,12 @@
 # The voice — four passes, and the rule that makes them possible
 
+> **Partly superseded.** The reading these passes propose was judged too
+> wordy — most of it was narrating charts that were already there. The
+> direction that replaced it is `exploration/charts-first.html`: the chart
+> carries it, and the text is only what a chart cannot carry. The four
+> passes are kept because the *voice* rules below still hold, and because
+> the review that produced them is the evidence for them.
+
 **Passes to react to, not a proposal.** Nothing here is implemented. The
 numbers are illustrative.
 
