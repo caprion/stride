@@ -371,7 +371,7 @@ export function PaceBars({
         return (
           <span
             key={week.week_start}
-            className={`max-w-[14px] flex-1 rounded-t-[2px] ${share === null ? 'bg-surface-sunken' : 'bg-brand-400'}`}
+            className={`min-w-[2px] flex-1 rounded-t-[2px] ${share === null ? 'bg-surface-sunken' : 'bg-brand-400'}`}
             style={{ height: `${share === null ? 3 : Math.max(6, share * 100)}%` }}
             title={`${week.week_start}${week.pace ? ` · ${week.pace.text}` : ''}`}
           />

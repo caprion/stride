@@ -1049,12 +1049,12 @@ export function ProfileScopePicker({
   onChange: (months: number) => void
 }) {
   return (
-    <div className="mb-2 flex flex-wrap gap-2" data-testid="profile-scope">
+    <div className="mb-2 flex flex-wrap gap-1.5" data-testid="profile-scope">
       {PROFILE_SCOPES.map((scope) => (
         <button
           key={scope.months}
           type="button"
-          className={`tap rounded-full border px-3 py-1 text-[12px] ${
+          className={`tap rounded-full border px-2.5 py-0.5 text-[11.5px] ${
             scope.months === months
               ? 'border-brand-600 bg-brand-600 font-semibold text-white'
               : 'border-edge text-ink-muted'
@@ -1109,8 +1109,16 @@ export function ShapeBody({
               the period it covers. */}
           <ul className="mt-2 flex flex-wrap gap-x-4 gap-y-1" data-testid="progress-shape-legend">
             {[
-              { days: shortDays, colour: 'var(--chart-line)' },
-              { days: longDays, colour: 'var(--chart-line-alt)' },
+              {
+                days: shortDays,
+                colour: 'var(--chart-line)',
+                label: t('progress.rolling.window', { days: shortDays ?? 0 }),
+              },
+              {
+                days: longDays,
+                colour: 'var(--chart-line-alt)',
+                label: t('progress.wall.profile.previous', { days: longDays ?? 0 }),
+              },
             ].map((entry) => (
               <li
                 key={entry.colour}
@@ -1120,11 +1128,7 @@ export function ShapeBody({
                   className="inline-block h-2.5 w-4 rounded-sm"
                   style={{ backgroundColor: entry.colour }}
                 />
-                <span>
-                  {entry.days === undefined
-                    ? t('progress.shape.empty')
-                    : t('progress.rolling.window', { days: entry.days })}
-                </span>
+                <span>{entry.days === undefined ? t('progress.shape.empty') : entry.label}</span>
               </li>
             ))}
           </ul>
