@@ -986,10 +986,19 @@ export function ShapeBody({
   short,
   long,
   error,
+  table = true,
 }: {
   short: RollingInsight | undefined
   long: RollingInsight | undefined
   error: boolean
+  /**
+   * Whether the numbers under the chart are drawn.
+   *
+   * The chart is the answer; the numbers are the detail under it. A card
+   * that leads with the picture says the numbers on the panel it opens,
+   * and keeps the card a picture.
+   */
+  table?: boolean
 }) {
   const axes = shapeAxes(short, long)
   const shortDays = short?.window.days
@@ -1034,7 +1043,11 @@ export function ShapeBody({
           <p className="mt-1 text-[12px] text-ink-faint">{t('progress.shape.scale')}</p>
           {/* The numbers, in the core's own words: a row for each axis,
               and the two windows beside it. */}
-          <table className="mt-3 w-full table-fixed text-[12px]" data-testid="progress-shape-values">
+          {table ? (
+            <table
+              className="mt-3 w-full table-fixed text-[12px]"
+              data-testid="progress-shape-values"
+            >
             <thead>
               <tr className="border-b border-edge text-ink-muted">
                 <th scope="col" className="py-1.5 text-left font-medium">
@@ -1072,6 +1085,7 @@ export function ShapeBody({
               ))}
             </tbody>
           </table>
+          ) : null}
         </>
       ) : null}
     </>

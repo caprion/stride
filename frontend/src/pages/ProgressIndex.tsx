@@ -276,7 +276,7 @@ export function ProgressIndex({
             {t('progress.index.shape.open')}
           </Link>
         </div>
-        <ShapeBody short={shape.short} long={shape.long} error={false} />
+        <ShapeBody short={shape.short} long={shape.long} error={false} table={false} />
       </section>
       <p className="lede">{t('progress.index.intro')}</p>
       <ul className="card overflow-hidden card-flush" data-testid="progress-index-rows">
