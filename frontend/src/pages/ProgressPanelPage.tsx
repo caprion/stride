@@ -84,7 +84,7 @@ export function ProgressPanelPage() {
   if (!isPanel(panel)) return <Navigate to="/progress" replace />
 
   const { progress, load, rolling, streaks, challenges } = answers
-  const { today, year, activities, shortWindow, longWindow } = wall
+  const { today, year, activities, profile, profileScope, setProfileMonths } = wall
 
   if (progress.isError && !progress.data) {
     return (
@@ -163,9 +163,10 @@ export function ProgressPanelPage() {
         {panel === 'zones' ? <ZonesPanel rolling={rolling.data} /> : null}
         {panel === 'shape' ? (
           <ShapePanel
-            short={answers.shape.short.data}
-            long={answers.shape.long.data}
-            error={answers.shape.short.isError || answers.shape.long.isError}
+            rolling={profile.data}
+            error={profile.isError}
+            months={profileScope.months}
+            onScope={setProfileMonths}
           />
         ) : null}
         {panel === 'zone-time' ? <ZonesDistributionPanel rolling={rolling.data} /> : null}
@@ -200,7 +201,7 @@ export function ProgressPanelPage() {
         {panel === 'facets' ? <ProfilePanel rolling={rolling.data} /> : null}
         {panel === 'profile' ? (
           <PanelCard title={t('progress.wall.profile.heading')}>
-            <ProfileRadarBody short={shortWindow.data} long={longWindow.data} />
+            <ProfileRadarBody rolling={profile.data} months={profileScope.months} onScope={setProfileMonths} />
           </PanelCard>
         ) : null}
         {panel === 'week' ? (

@@ -152,15 +152,15 @@ describe('the athlete profile on Progress', () => {
     renderApp('/progress')
     const card = await screen.findByTestId('progress-wall-profile')
 
-    // One polygon for each window.
-    expect(card.querySelector('[data-testid="progress-shape-short"]')).toBeTruthy()
-    expect(card.querySelector('[data-testid="progress-shape-long"]')).toBeTruthy()
+    // One polygon for each window: the window, and the window before it.
+    expect(card.querySelector('[data-testid="progress-shape-now"]')).toBeTruthy()
+    expect(card.querySelector('[data-testid="progress-shape-before"]')).toBeTruthy()
 
-    // The windows are named with the answer's own count of days: the
-    // router's window is measured in weeks, and the card says what it
-    // answered.
-    expect(card.textContent).toContain('The last 28 days')
+    // The windows are named with the answer's own count of days, and
+    // they are the **same length** — the window, and the window before
+    // it. The card says what it answered.
     expect(card.textContent).toContain('The last 91 days')
+    expect(card.textContent).toContain('the 91 days before')
   })
 
   it("names the six axes in the core's own words", async () => {
@@ -190,13 +190,13 @@ describe('the athlete profile on Progress', () => {
 
     // The core's rendering of each facet, in the window's own units.
     expect(
-      card.querySelector('[data-testid="progress-shape-volume-short"]')?.textContent,
+      card.querySelector('[data-testid="progress-shape-volume-now"]')?.textContent,
     ).toBe('58.4 km')
     expect(
-      card.querySelector('[data-testid="progress-shape-intensity-short"]')?.textContent,
+      card.querySelector('[data-testid="progress-shape-intensity-now"]')?.textContent,
     ).toBe('148 bpm')
     expect(
-      card.querySelector('[data-testid="progress-shape-variety-short"]')?.textContent,
+      card.querySelector('[data-testid="progress-shape-variety-now"]')?.textContent,
     ).toBe('1')
   })
 })

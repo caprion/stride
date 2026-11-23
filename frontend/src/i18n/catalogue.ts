@@ -335,6 +335,10 @@ export const catalogue = {
     text: 'The athlete profile: two windows on one chart, each axis scaled to the larger of the two.',
   },
   'progress.wall.profile.axis': { type: 'status', text: 'The axis' },
+  'progress.wall.profile.previous': {
+    type: 'status',
+    text: 'the {days} days before',
+  },
   'progress.wall.profile.window': { type: 'status', text: 'The last {days} days' },
   'progress.wall.profile.note': {
     type: 'status',

@@ -34,6 +34,7 @@ import type {
   RollingInsight,
 } from '../lib/types'
 import { ChallengeGrid } from '../components/ChallengeGrid'
+import { PROFILE_SCOPES } from './useWall'
 import { formatCount, formatDateShort, renderedText } from '../lib/format'
 import { t } from '../i18n'
 import type { CatalogueKey } from '../i18n'
@@ -999,21 +1000,26 @@ export function AdherencePanel({
  * covers.
  */
 export function ShapePanel({
-  short,
-  long,
+  rolling,
   error,
+  months,
+  onScope,
   bare = false,
 }: {
-  short: RollingInsight | undefined
-  long: RollingInsight | undefined
+  rolling: RollingInsight | undefined
   error: boolean
+  /** The window the profile is drawn over, in months. */
+  months: number
+  /** The scope the athlete chooses. */
+  onScope: (months: number) => void
   /** The card is the wall's, and the heading is already said. */
   bare?: boolean
 }) {
   if (bare) {
     return (
       <div data-testid="progress-shape">
-        <ShapeBody short={short} long={long} error={error} />
+        <ProfileScopePicker months={months} onChange={onScope} />
+        <ShapeBody rolling={rolling} error={error} />
       </div>
     )
   }
@@ -1022,21 +1028,54 @@ export function ShapePanel({
     <section className="card px-4 py-3" data-testid="progress-shape">
       <h2 className="mb-2 caps">{t('progress.shape.heading')}</h2>
       <p className="text-[12px] text-ink-muted">{t('progress.shape.note')}</p>
-      <ShapeBody short={short} long={long} error={error} />
-
+      <ProfileScopePicker months={months} onChange={onScope} />
+      <ShapeBody rolling={rolling} error={error} />
     </section>
+  )
+}
+
+/**
+ * The windows the profile is drawn over.
+ *
+ * **Three months, six months, a year.** Each is compared with the window
+ * before it of the same length, so the two shapes on the chart are the
+ * same length and the shorter one is never smaller for the wrong reason.
+ */
+export function ProfileScopePicker({
+  months,
+  onChange,
+}: {
+  months: number
+  onChange: (months: number) => void
+}) {
+  return (
+    <div className="mb-2 flex flex-wrap gap-2" data-testid="profile-scope">
+      {PROFILE_SCOPES.map((scope) => (
+        <button
+          key={scope.months}
+          type="button"
+          className={`tap rounded-full border px-3 py-1 text-[12px] ${
+            scope.months === months
+              ? 'border-brand-600 bg-brand-600 font-semibold text-white'
+              : 'border-edge text-ink-muted'
+          }`}
+          onClick={() => onChange(scope.months)}
+          data-testid={`profile-scope-${scope.months}`}
+        >
+          {scope.months} months
+        </button>
+      ))}
+    </div>
   )
 }
 
 /** The shape's body: the chart, the legend and the numbers. */
 export function ShapeBody({
-  short,
-  long,
+  rolling,
   error,
   table = true,
 }: {
-  short: RollingInsight | undefined
-  long: RollingInsight | undefined
+  rolling: RollingInsight | undefined
   error: boolean
   /**
    * Whether the numbers under the chart are drawn.
@@ -1047,23 +1086,25 @@ export function ShapeBody({
    */
   table?: boolean
 }) {
-  const axes = shapeAxes(short, long)
-  const shortDays = short?.window.days
-  const longDays = long?.window.days
+  const axes = shapeAxes(rolling)
+  // The two windows are the same length: the window, and the window
+  // before it.
+  const shortDays = rolling?.window.days
+  const longDays = shortDays
   return (
     <>
       <p className="text-[12px] text-ink-muted">{t('progress.shape.note')}</p>
-      {error && !short && !long ? (
+      {error && !rolling ? (
         <p className="mt-2 text-[13px] text-ink-muted" data-testid="progress-shape-error">
           {t('common.error')}
         </p>
       ) : null}
-      {!short && !long && !error ? (
+      {!rolling && !error ? (
         <p className="mt-2 text-[13px] text-ink-muted">{t('common.loading')}</p>
       ) : null}
-      {short || long ? (
+      {rolling ? (
         <>
-          <AthleteShape short={short} long={long} />
+          <AthleteShape rolling={rolling} />
           {/* The two windows, named: the chart is never read apart from
               the period it covers. */}
           <ul className="mt-2 flex flex-wrap gap-x-4 gap-y-1" data-testid="progress-shape-legend">
@@ -1106,7 +1147,9 @@ export function ShapeBody({
                     : t('progress.shape.window', { days: shortDays })}
                 </th>
                 <th scope="col" className="py-1.5 text-right font-medium">
-                  {longDays === undefined ? '' : t('progress.shape.window', { days: longDays })}
+                  {longDays === undefined
+                    ? ''
+                    : t('progress.wall.profile.previous', { days: longDays })}
                 </th>
               </tr>
             </thead>
@@ -1118,15 +1161,15 @@ export function ShapeBody({
                   </th>
                   <td
                     className="py-1.5 text-right tabular-nums text-ink"
-                    data-testid={`progress-shape-${axis.key}-short`}
+                    data-testid={`progress-shape-${axis.key}-now`}
                   >
-                    {renderedText(axis.short)}
+                    {renderedText(axis.now)}
                   </td>
                   <td
                     className="py-1.5 text-right tabular-nums text-ink-muted"
-                    data-testid={`progress-shape-${axis.key}-long`}
+                    data-testid={`progress-shape-${axis.key}-before`}
                   >
-                    {renderedText(axis.long)}
+                    {renderedText(axis.before)}
                   </td>
                 </tr>
               ))}

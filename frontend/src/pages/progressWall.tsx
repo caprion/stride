@@ -51,6 +51,7 @@ import type {
 } from '../lib/types'
 import {
   AdherencePanel,
+  ProfileScopePicker,
   ChallengePanel,
   BestsPanel,
   ConsistencyPanel,
@@ -144,14 +145,15 @@ function Window({ children }: { children: ReactNode }) {
  * The facets are the answer's own — the key, the name and the value are
  * the core's — and the order is the chart's.
  */
-function axesOf(rolling: RollingInsight): RadarAxis[] {
+function axesOf(rolling: RollingInsight, field: 'value' | 'previous'): RadarAxis[] {
   return RADAR_AXES.map((key) => {
     const facet = rolling.profile.find((entry) => entry.key === key)
+    const value = field === 'value' ? facet?.value : facet?.previous
     return {
       key,
       label: facet?.label ?? key,
-      value: facet?.value?.raw ?? null,
-      text: facet?.value?.text ?? null,
+      value: value?.raw ?? null,
+      text: value?.text ?? null,
     }
   })
 }
@@ -164,25 +166,28 @@ function axesOf(rolling: RollingInsight): RadarAxis[] {
  * read the values — the core's own rendering of each one.
  */
 export function ProfileRadarBody({
-  short,
-  long,
+  rolling,
+  months,
+  onScope,
 }: {
-  short: RollingInsight | undefined
-  long: RollingInsight | undefined
+  rolling: RollingInsight | undefined
+  /** The window the profile is drawn over, in months. */
+  months: number
+  /** The scope the athlete chooses. */
+  onScope: (months: number) => void
 }) {
   const series: RadarSeries[] = []
-  if (short) {
+  if (rolling) {
+    // The window, and the window before it of the same length.
     series.push({
-      key: 'short',
-      label: t('progress.wall.profile.window', { days: short.window.days }),
-      axes: axesOf(short),
+      key: 'now',
+      label: t('progress.wall.profile.window', { days: rolling.window.days }),
+      axes: axesOf(rolling, 'value'),
     })
-  }
-  if (long) {
     series.push({
-      key: 'long',
-      label: t('progress.wall.profile.window', { days: long.window.days }),
-      axes: axesOf(long),
+      key: 'before',
+      label: t('progress.wall.profile.previous', { days: rolling.window.days }),
+      axes: axesOf(rolling, 'previous'),
     })
   }
 
@@ -192,6 +197,7 @@ export function ProfileRadarBody({
 
   return (
     <div data-testid="progress-wall-radar">
+      <ProfileScopePicker months={months} onChange={onScope} />
       <ProfileRadar series={series} />
       <Note>{t('progress.wall.profile.note')}</Note>
       {series.length > 1 ? (
@@ -336,19 +342,38 @@ export function DistanceLegend() {
 export function PaceBars({
   pace,
 }: {
-  pace: { week_start: string; distance: { raw: number | null } }[]
+  pace: { week_start: string; pace: { raw: number | null; text: string } | null }[]
 }) {
-  const furthest = Math.max(...pace.map((week) => week.distance.raw ?? 0), 1)
+  /**
+   * **The pace, and not the distance.**
+   *
+   * The card is titled "The pace" and the preview is the first thing in
+   * it, so the preview has to be the pace: a preview of the distance
+   * under a pace title answers a different question from the one the
+   * card asks. The bars are the pace, and a faster week is a taller
+   * one — the pace is a time, and a shorter one is further along.
+   */
+  const paces = pace
+    .map((week) => week.pace?.raw ?? null)
+    .filter((value): value is number => value !== null && Number.isFinite(value))
+  const slowest = paces.length > 0 ? Math.max(...paces) : 0
+  const fastest = paces.length > 0 ? Math.min(...paces) : 0
+  const span = slowest - fastest
+
   return (
     <div className="mt-2 flex h-11 items-end gap-[2px]" data-testid="progress-wall-pace-bars">
       {pace.map((week) => {
-        const distance = week.distance.raw ?? 0
+        const value = week.pace?.raw ?? null
+        // A week with no run has no pace, and a pace that cannot be read
+        // against the others is not drawn at all.
+        const share =
+          value === null || span <= 0 ? null : (slowest - value) / span
         return (
           <span
             key={week.week_start}
-            className={`max-w-[14px] flex-1 rounded-t-[2px] ${distance > 0 ? 'bg-brand-400' : 'bg-surface-sunken'}`}
-            style={{ height: `${Math.max(3, (distance / furthest) * 100)}%` }}
-            title={week.week_start}
+            className={`max-w-[14px] flex-1 rounded-t-[2px] ${share === null ? 'bg-surface-sunken' : 'bg-brand-400'}`}
+            style={{ height: `${share === null ? 3 : Math.max(6, share * 100)}%` }}
+            title={`${week.week_start}${week.pace ? ` · ${week.pace.text}` : ''}`}
           />
         )
       })}
@@ -804,7 +829,7 @@ export function ProgressWall({
   onWeekClick: (weekStart: string) => void
 }) {
   const { data, load, rolling, streaks } = answers
-  const { today, year, pace, activities, shortWindow, longWindow, vitals } = wall
+  const { today, year, pace, activities, profile, profileScope, setProfileMonths, vitals } = wall
 
   return (
     <div className="progress-grid mt-3" data-testid="progress-wall">
@@ -944,9 +969,10 @@ export function ProgressWall({
         testId="progress-wall-profile"
       >
         <ShapePanel
-          short={shortWindow.data}
-          long={longWindow.data}
-          error={shortWindow.isError || longWindow.isError}
+          rolling={profile.data}
+          error={profile.isError}
+          months={profileScope.months}
+          onScope={setProfileMonths}
           bare
         />
       </WallCard>

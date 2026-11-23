@@ -258,7 +258,11 @@ export function ProgressIndex({
 }: {
   answers: ProgressAnswers
   /** The two windows the athlete profile is drawn over. */
-  shape: { short: RollingInsight | undefined; long: RollingInsight | undefined }
+  shape: {
+    rolling: RollingInsight | undefined
+    months: number
+    onScope: (months: number) => void
+  }
 }) {
   const rows = indexRows(answers)
 
@@ -277,7 +281,7 @@ export function ProgressIndex({
             {t('progress.index.shape.open')}
           </Link>
         </div>
-        <ShapeBody short={shape.short} long={shape.long} error={false} table={false} />
+        <ShapeBody rolling={shape.rolling} error={false} table={false} />
       </section>
       <p className="lede">{t('progress.index.intro')}</p>
       <ul className="card overflow-hidden card-flush" data-testid="progress-index-rows">

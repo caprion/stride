@@ -14,6 +14,7 @@ import { screen, waitFor } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { api } from '../src/lib/api'
 import { rollingFixture } from '../src/fixtures'
+import { RADAR_AXES } from '../src/components/ProfileRadar'
 import { renderApp } from './helpers'
 
 /**
@@ -76,9 +77,9 @@ describe("the athlete's shape", () => {
     // The chart itself, drawn by the app.
     const svg = panel.querySelector('[data-testid="progress-shape-svg"]')
     expect(svg).toBeTruthy()
-    // Both windows are drawn on it.
-    expect(panel.querySelector('[data-testid="progress-shape-short"]')).toBeTruthy()
-    expect(panel.querySelector('[data-testid="progress-shape-long"]')).toBeTruthy()
+    // Both windows are drawn on it: the window, and the window before it.
+    expect(panel.querySelector('[data-testid="progress-shape-now"]')).toBeTruthy()
+    expect(panel.querySelector('[data-testid="progress-shape-before"]')).toBeTruthy()
 
     // The axes are named in the core's own words.
     const labels = [...panel.querySelectorAll('[data-testid="progress-shape-label"]')].map(
@@ -99,51 +100,50 @@ describe("the athlete's shape", () => {
     const panel = await screen.findByTestId('progress-shape')
 
     // The values are the core's rendering: "58.4 km", "148 bpm".
-    expect(panel.querySelector('[data-testid="progress-shape-volume-short"]')?.textContent).toBe(
+    expect(panel.querySelector('[data-testid="progress-shape-volume-now"]')?.textContent).toBe(
       '58.4 km',
     )
-    expect(panel.querySelector('[data-testid="progress-shape-intensity-short"]')?.textContent).toBe(
+    expect(panel.querySelector('[data-testid="progress-shape-intensity-now"]')?.textContent).toBe(
       '148 bpm',
     )
-    expect(panel.querySelector('[data-testid="progress-shape-consistency-short"]')?.textContent).toBe(
+    expect(panel.querySelector('[data-testid="progress-shape-consistency-now"]')?.textContent).toBe(
       '6',
     )
-    // And the two windows are named.
-    expect(panel.textContent).toContain('The last 28 days')
+    // And the two windows are named: the window, and the window before
+    // it of the same length.
     expect(panel.textContent).toContain('The last 91 days')
+    expect(panel.textContent).toContain('the 91 days before')
     // And how the axes are scaled, so the shape is not read as a score.
     expect(panel.textContent).toContain('Each axis is scaled to the larger of the two windows.')
   })
 
   it('scales every axis to the larger of the two windows', async () => {
-    // The longer window holds more: its volume is the larger of the two,
-    // so it reaches the edge of the chart and the shorter window reaches
-    // the share of it that its own volume is.
+    // The window holds more than the window before it: its volume is the
+    // larger of the two, so it reaches the edge of the chart and the
+    // window before reaches the share of it that its own volume is.
     const bigger = {
       ...rollingFixture,
-      window: { ...rollingFixture.window, days: 91 },
       profile: rollingFixture.profile.map((facet) =>
         facet.key === 'volume' ? { ...facet, value: { text: '76.6 km', raw: 76600 } } : facet,
       ),
     }
-    vi.spyOn(api, 'insightsRolling').mockImplementation(async (weeks = 12) =>
-      weeks === 13 ? bigger : rollingFixture,
-    )
+    vi.spyOn(api, 'insightsRolling').mockResolvedValue(bigger)
 
     renderApp('/progress')
     const panel = await screen.findByTestId('progress-shape')
     await waitFor(() =>
-      expect(panel.querySelector('[data-testid="progress-shape-long"]')).toBeTruthy(),
+      expect(panel.querySelector('[data-testid="progress-shape-before"]')).toBeTruthy(),
     )
 
-    const short = pointsOf(panel.querySelector('[data-testid="progress-shape-short"]'))
-    const long = pointsOf(panel.querySelector('[data-testid="progress-shape-long"]'))
+    const now = pointsOf(panel.querySelector('[data-testid="progress-shape-now"]'))
+    const before = pointsOf(panel.querySelector('[data-testid="progress-shape-before"]'))
     // The volume is the first axis, and it is at the top of the chart.
     const centre = 640 / 2
-    expect(radiusOf(short[0]!, centre)).toBeLessThan(radiusOf(long[0]!, centre))
-    // And every other axis is the same in the two windows, so the two
-    // shapes meet there.
-    expect(radiusOf(short[1]!, centre)).toBeCloseTo(radiusOf(long[1]!, centre), 5)
+    expect(radiusOf(now[0]!, centre)).toBeGreaterThan(radiusOf(before[0]!, centre))
+    // And on the axis the two windows agree on — the intensity — the two
+    // shapes meet, because each axis is scaled to the larger of the two.
+    const intensity = RADAR_AXES.indexOf('intensity')
+    expect(radiusOf(now[intensity]!, centre)).toBeCloseTo(radiusOf(before[intensity]!, centre), 5)
   })
 
   it('opens on its own, like the other panels', async () => {

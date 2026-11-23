@@ -225,7 +225,11 @@ export function ProgressPage() {
       <div className="progress-index" data-testid="progress-index-layout">
         <ProgressIndex
           answers={answers}
-          shape={{ short: wall.shortWindow.data, long: wall.longWindow.data }}
+          shape={{
+            rolling: wall.profile.data,
+            months: wall.profileScope.months,
+            onScope: wall.setProfileMonths,
+          }}
         />
       </div>
     </div>

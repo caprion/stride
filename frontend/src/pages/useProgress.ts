@@ -24,6 +24,10 @@ import type { ConsistencyPoint, PacePoint, VolumePoint } from './progressPanels'
  * days: the nearest windows to a month and to a quarter. The panel names
  * the window the answer reports, so the reader is never told a period the
  * router did not answer.
+ *
+ * The shape's own window is chosen on the profile's scope control, and
+ * the two shapes on the chart are the window and the window before it of
+ * the same length — see `PROFILE_SCOPES` in `useWall`.
  */
 export const SHORT_WINDOW_WEEKS = 4
 export const QUARTER_WINDOW_WEEKS = 13

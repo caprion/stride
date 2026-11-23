@@ -41,16 +41,22 @@ const AXES = [
   'intensity',
 ] as const
 
-/** One axis: the core's own name for it, and the two windows' values. */
+/**
+ * One axis: the core's own name for it, and the two windows' values.
+ *
+ * The two windows are **the window and the window before it**, and they
+ * are the same length: the answer carries the comparison, and a window
+ * of three months against a window of six is not a comparison at all.
+ */
 export interface ShapeAxis {
   /** The facet's key: "volume", "consistency" and so on. */
   key: string
   /** The facet's name, in the core's own words: "Sport variety". */
   label: string
-  /** The value in the shorter window. */
-  short: RenderedValue | null
-  /** The value in the longer window. */
-  long: RenderedValue | null
+  /** The value in the window. */
+  now: RenderedValue | null
+  /** The value in the window before it, of the same length. */
+  before: RenderedValue | null
 }
 
 /**
@@ -59,20 +65,15 @@ export interface ShapeAxis {
  * The values are the core's: the app reads them and draws them, and it
  * never derives one from another.
  */
-export function shapeAxes(
-  short: RollingInsight | undefined,
-  long: RollingInsight | undefined,
-): ShapeAxis[] {
-  const facet = (answer: RollingInsight | undefined, key: string) =>
-    answer?.profile.find((entry) => entry.key === key)
+export function shapeAxes(rolling: RollingInsight | undefined): ShapeAxis[] {
+  const facet = (key: string) => rolling?.profile.find((entry) => entry.key === key)
   return AXES.map((key) => {
-    const near = facet(short, key)
-    const far = facet(long, key)
+    const entry = facet(key)
     return {
       key,
-      label: near?.label ?? far?.label ?? '',
-      short: near?.value ?? null,
-      long: far?.value ?? null,
+      label: entry?.label ?? '',
+      now: entry?.value ?? null,
+      before: entry?.previous ?? null,
     }
   })
 }
@@ -150,16 +151,10 @@ function layout(size: number, labels: string[]): { radius: number; fontSize: num
 }
 
 /** The athlete's shape, drawn. */
-export function AthleteShape({
-  short,
-  long,
-}: {
-  short: RollingInsight | undefined
-  long: RollingInsight | undefined
-}) {
+export function AthleteShape({ rolling }: { rolling: RollingInsight | undefined }) {
   const host = useRef<HTMLDivElement>(null)
   const width = useWidth(host)
-  const axes = useMemo(() => shapeAxes(short, long), [short, long])
+  const axes = useMemo(() => shapeAxes(rolling), [rolling])
 
   /** The drawing is square, and it is never wider than its column. */
   const size = Math.min(width, 340)
@@ -173,11 +168,11 @@ export function AthleteShape({
    * two shapes are read against each other. An axis with no value is left
    * out: a shape is not drawn through a number that does not exist.
    */
-  const pointsOf = (which: 'short' | 'long'): Point[] => {
+  const pointsOf = (which: 'now' | 'before'): Point[] => {
     const points: Point[] = []
     axes.forEach((axis, index) => {
-      const value = which === 'short' ? axis.short : axis.long
-      const other = which === 'short' ? axis.long : axis.short
+      const value = which === 'now' ? axis.now : axis.before
+      const other = which === 'now' ? axis.before : axis.now
       const largest = Math.max(value?.raw ?? 0, other?.raw ?? 0)
       if (!value || value.raw === null || largest <= 0) return
       const along = linearScale([0, largest], [0, radius])(value.raw)
@@ -190,8 +185,8 @@ export function AthleteShape({
     return points
   }
 
-  const shortPoints = pointsOf('short')
-  const longPoints = pointsOf('long')
+  const nowPoints = pointsOf('now')
+  const beforePoints = pointsOf('before')
 
   /** The rings: the frame the shapes are read against. */
   const rings = [0.25, 0.5, 0.75, 1].map((share) =>
@@ -244,21 +239,21 @@ export function AthleteShape({
             the same shape, the quiet dashed edge of the longer one is
             still there to be seen.
           */}
-          {shortPoints.length > 1 ? (
+          {nowPoints.length > 1 ? (
             <path
-              d={polygonPath(shortPoints)}
+              d={polygonPath(nowPoints)}
               strokeWidth={2}
               style={{
                 fill: 'var(--chart-line)',
                 fillOpacity: 0.18,
                 stroke: 'var(--chart-line)',
               }}
-              data-testid="progress-shape-short"
+              data-testid="progress-shape-now"
             />
           ) : null}
-          {longPoints.length > 1 ? (
+          {beforePoints.length > 1 ? (
             <path
-              d={polygonPath(longPoints)}
+              d={polygonPath(beforePoints)}
               strokeWidth={1.5}
               strokeDasharray="4 3"
               style={{
@@ -266,10 +261,10 @@ export function AthleteShape({
                 fillOpacity: 0.1,
                 stroke: 'var(--chart-line-alt)',
               }}
-              data-testid="progress-shape-long"
+              data-testid="progress-shape-before"
             />
           ) : null}
-          {shortPoints.map((point, index) => (
+          {nowPoints.map((point, index) => (
             <circle
               key={`marker-${index}`}
               cx={point.x}
