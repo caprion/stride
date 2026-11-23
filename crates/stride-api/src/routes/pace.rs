@@ -123,6 +123,13 @@ fn week_of(week: &super::WeekSummary) -> TrainingWeek {
 /// The labels are the core's own words — "4:30–5:00 /km" — and the numbers
 /// beside them are the core's rendering: the time, the distance and the
 /// share of the window's time.
+///
+/// **Only the bands that carry a readable share of the time are
+/// answered.** The grid is the whole range of paces, from a sprint to a
+/// standstill, and a window of training touches a handful of them: the
+/// empty bands are not rows a reader can use, and there are a hundred and
+/// forty of them. The time in the bands that were too small to draw
+/// comes beside them, so the numbers still add up.
 fn bands_of(bands: &CoreBands) -> PaceBands {
     PaceBands {
         width_s_per_km: stride_core::pace::BAND_WIDTH_S_PER_KM,
@@ -140,5 +147,6 @@ fn bands_of(bands: &CoreBands) -> PaceBands {
                 share: render::share(Some(band.share_percent)),
             })
             .collect(),
+        rest: render::duration_of(bands.rest_s),
     }
 }

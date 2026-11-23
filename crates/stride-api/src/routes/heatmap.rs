@@ -72,6 +72,7 @@ pub fn heatmap(api: &Api, _request: &Request) -> ApiResult<Value> {
         generated_at: api.generated_at(),
         date: today.to_iso(),
         runs: grid.runs,
+        runs_outside: grid.runs_outside,
         more_runs,
         cell_size: cell_size_of(&grid),
         cells: cells_of(&grid),

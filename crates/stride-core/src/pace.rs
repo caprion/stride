@@ -60,6 +60,15 @@ use crate::date::Date;
 use crate::eddington::Period;
 use crate::units;
 
+/// The share of the window's time a band must hold to be drawn.
+///
+/// **Half a per cent.** A band that holds less than that is not a band
+/// of time: the distribution of a run is measured over every span of
+/// every run, and the spans where the watch's position drifted while the
+/// athlete stood still smear across hundreds of bands. The time in them
+/// is reported as one number rather than as a hundred bands of nothing.
+pub const BAND_MIN_SHARE_PERCENT: f64 = 0.5;
+
 /// The width of one pace band, in seconds per kilometre.
 ///
 /// Thirty seconds a kilometre is the width a person reads a pace in, and the
@@ -74,32 +83,37 @@ pub struct PacePoint {
     pub elapsed_s: f64,
     /// The run's cumulative distance at the sample, in metres.
     pub distance_m: f64,
-    /// Whether the athlete was **moving** when this point was taken.
+    /// Whether the athlete was **running** when this point was taken.
     ///
     /// A point owns the span until the next one, so a point taken while
     /// the athlete stood still owns the time they stood still. Dropping
     /// the stopped points from the list does not drop the time: it
     /// merges the stopped span into the neighbouring running one, and the
     /// run then claims more time at a pace than it spent moving.
-    pub moving: bool,
+    ///
+    /// **The bands are about the pace the athlete ran at.** The time
+    /// spent walking and standing is not a pace, and it smears across
+    /// hundreds of bands: measured over it, the distribution of a run is
+    /// mostly a picture of the athlete standing about.
+    pub running: bool,
 }
 
 impl PacePoint {
-    /// One moving sample.
+    /// One sample of a stretch the athlete was running through.
     pub fn new(elapsed_s: f64, distance_m: f64) -> Self {
         Self {
             elapsed_s,
             distance_m,
-            moving: true,
+            running: true,
         }
     }
 
-    /// A point of a stretch the athlete was not moving through.
+    /// A point of a stretch the athlete was not running through.
     pub fn stopped(elapsed_s: f64, distance_m: f64) -> Self {
         Self {
             elapsed_s,
             distance_m,
-            moving: false,
+            running: false,
         }
     }
 }
@@ -152,11 +166,20 @@ impl PaceBand {
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct PaceBands {
     /// The bands the window's time fills, fastest first.
+    ///
+    /// Only the bands that hold a readable share of the time; the rest of
+    /// the time is in `rest_s`.
     pub bands: Vec<PaceBand>,
     /// The window's moving time, in seconds: the sum of the bands' times.
     pub total_s: f64,
     /// The distance covered in the window, in metres.
     pub total_m: f64,
+    /// The time in the bands that were **too small to draw**, in seconds.
+    ///
+    /// It is part of `total_s` and not in any band: the bands are the
+    /// shape of the running, and the shape does not change because the
+    /// smallest of it is not drawn.
+    pub rest_s: f64,
 }
 
 impl PaceBands {
@@ -166,6 +189,7 @@ impl PaceBands {
             bands: Vec::new(),
             total_s: 0.0,
             total_m: 0.0,
+            rest_s: 0.0,
         }
     }
 
@@ -197,12 +221,12 @@ pub fn pace_bands(runs: &[PaceRun], period: Period) -> PaceBands {
             continue;
         }
         for span in run.samples.windows(2) {
-            // **A stopped stretch is not time at a pace.** The point owns
-            // the span until the next one, so a stretch the athlete stood
-            // through would otherwise be charged to the pace of the point
-            // before it — and the run would claim more time at a pace
-            // than it spent moving.
-            if !span[0].moving {
+            // **A stretch that is not running is not time at a pace.**
+            // The point owns the span until the next one, so a stretch
+            // the athlete stood or walked through would otherwise be
+            // charged to the pace of the point before it — and the run
+            // would claim more time at a pace than it spent running.
+            if !span[0].running {
                 continue;
             }
             let Some((time_s, distance_m)) = span_of(span[0], span[1]) else {
@@ -223,9 +247,20 @@ pub fn pace_bands(runs: &[PaceRun], period: Period) -> PaceBands {
         return PaceBands::empty();
     }
 
-    // The bands the window's time fills, fastest first.
+    // The bands the window's time fills, fastest first — and the time in
+    // the bands that were too small to draw.
     let mut bands: Vec<PaceBand> = Vec::with_capacity(grid.len());
+    let mut rest_s = 0.0;
     for (index, (time_s, distance_m)) in grid {
+        let share = if total_s > 0.0 {
+            time_s / total_s * 100.0
+        } else {
+            0.0
+        };
+        if share < BAND_MIN_SHARE_PERCENT {
+            rest_s += time_s;
+            continue;
+        }
         bands.push(band(index, time_s, distance_m, total_s));
     }
 
@@ -233,6 +268,7 @@ pub fn pace_bands(runs: &[PaceRun], period: Period) -> PaceBands {
         bands,
         total_s,
         total_m,
+        rest_s,
     }
 }
 

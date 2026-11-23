@@ -61,13 +61,14 @@ pub fn zone_samples(activity: &FitActivity) -> Vec<ZoneSample> {
         .collect()
 }
 
-/// The moving samples of a run, for the pace bands.
+/// The samples of a run, for the pace bands.
 ///
-/// **The stopped samples stay in the list**, for the same reason the zone
-/// samples keep theirs: a point owns the span until the next one, and
-/// dropping the stopped points would merge the stopped span into the
-/// neighbouring running one. A sample that carries no distance carries no
-/// pace either, and is left out.
+/// **The bands are about the pace the athlete ran at.** The samples of a
+/// stretch that was walked or stood through stay in the list — a point
+/// owns the span until the next one, and dropping those points would
+/// merge their spans into the neighbouring running one — and they are
+/// marked, so the core can leave their time out of the bands. A sample
+/// that carries no distance carries no pace either, and is left out.
 pub fn pace_points(activity: &FitActivity) -> Vec<PacePoint> {
     activity
         .samples
@@ -75,10 +76,10 @@ pub fn pace_points(activity: &FitActivity) -> Vec<PacePoint> {
         .filter_map(|sample| {
             let distance_m = sample.distance_m?;
             let elapsed_s = sample.elapsed_s;
-            Some(if sample.kind == stride_ingest::SegmentKind::Stand {
-                PacePoint::stopped(elapsed_s, distance_m)
-            } else {
+            Some(if sample.kind == stride_ingest::SegmentKind::Run {
                 PacePoint::new(elapsed_s, distance_m)
+            } else {
+                PacePoint::stopped(elapsed_s, distance_m)
             })
         })
         .collect()

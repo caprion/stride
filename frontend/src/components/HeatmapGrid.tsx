@@ -45,6 +45,15 @@ export function HeatmapGrid({
   if (cells.length === 0) return null
 
   /**
+   * The cells the answer carries are the cells of the **picture**: the
+   * places the running is. The grid is a global one at a fixed size, so
+   * the box that holds every cell the athlete ever touched can be a
+   * thousand kilometres across — and the cells they actually ran in are
+   * then one pixel each, and the picture is blank.
+   */
+  const drawn = cells
+
+  /**
    * A degree of longitude is shorter than a degree of latitude away from
    * the equator, so the drawing scales the two the way the ground does —
    * otherwise every grid comes out wider than it is tall.
@@ -52,12 +61,12 @@ export function HeatmapGrid({
   const meanLatitude = (extent.north + extent.south) / 2
   const scale = Math.cos((meanLatitude * Math.PI) / 180)
 
-  const west = extent.west * scale
-  const east = extent.east * scale
-  const minX = Math.min(west, ...cells.map((cell) => cell.west * scale))
-  const maxX = Math.max(east, ...cells.map((cell) => cell.east * scale))
-  const minY = Math.min(extent.south, ...cells.map((cell) => cell.south))
-  const maxY = Math.max(extent.north, ...cells.map((cell) => cell.north))
+  const west = Math.min(...drawn.map((cell) => cell.west)) * scale
+  const east = Math.max(...drawn.map((cell) => cell.east)) * scale
+  const minX = west
+  const maxX = east
+  const minY = Math.min(...drawn.map((cell) => cell.south))
+  const maxY = Math.max(...drawn.map((cell) => cell.north))
 
   const spanX = maxX - minX || 1e-9
   const spanY = maxY - minY || 1e-9
@@ -69,7 +78,7 @@ export function HeatmapGrid({
   // North is up: the latitude grows upwards, the drawing's y grows down.
   const y = (latitude: number) => top + (maxY - latitude) * fit
 
-  const busiest = cells.reduce((most, cell) => Math.max(most, cell.runs), 0)
+  const busiest = drawn.reduce((most, cell) => Math.max(most, cell.runs), 0)
 
   return (
     <svg
@@ -80,7 +89,7 @@ export function HeatmapGrid({
       aria-label={t('heatmap.alt')}
       data-testid="heatmap-grid"
     >
-      {cells.map((cell) => {
+      {drawn.map((cell) => {
         const x0 = x(cell.west)
         const y0 = y(cell.north)
         const x1 = x(cell.east)

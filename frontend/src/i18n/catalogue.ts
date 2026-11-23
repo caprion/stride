@@ -576,7 +576,7 @@ export const catalogue = {
     type: 'status',
     text: 'The Eddington number over {from} – {to}',
   },
-  'progress.index.back': { type: 'status', text: 'Back to the questions' },
+  'progress.back': { type: 'status', text: 'Back to Progress' },
 
   // ------------------------------------------------------------- pace
   //
@@ -607,6 +607,10 @@ export const catalogue = {
   'pace.bands.note': {
     type: 'status',
     text: 'Every sample of every run, bucketed by the pace it was held at.',
+  },
+  'pace.bands.rest': {
+    type: 'status',
+    text: 'The smaller bands',
   },
   'pace.bands.total': { type: 'status', text: 'The time in the bands' },
   'pace.empty.title': { type: 'status', text: 'Nothing to show yet' },
@@ -908,6 +912,10 @@ export const catalogue = {
     text: 'The heatmap is made on this device from the stored runs. Nothing is sent anywhere.',
   },
   'heatmap.summary': { type: 'status', text: '{runs} runs in {cells} cells' },
+  'heatmap.outside': {
+    type: 'status',
+    text: '{n} runs are in other places, outside this picture.',
+  },
   'heatmap.cellSize': { type: 'status', text: 'Each cell is about {size} across' },
   'heatmap.legend.one': { type: 'status', text: '1 run' },
   'heatmap.legend.many': { type: 'status', text: '{n} runs' },

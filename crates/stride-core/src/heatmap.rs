@@ -126,11 +126,18 @@ pub struct HeatmapCell {
 /// read back as a path.
 #[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
 pub struct Heatmap {
-    /// The runs that carried at least one position.
+    /// The runs that carried at least one position **and are in the
+    /// picture**.
     pub runs: u32,
-    /// The cells, north to south and west to east.
+    /// The runs that carried a position but are **outside** the picture.
+    ///
+    /// A run is outside when none of the cells it touched is in it. The
+    /// count is of **runs**, not of cells: a run is counted once, however
+    /// many cells it went through.
+    pub runs_outside: u32,
+    /// The cells of the picture, north to south and west to east.
     pub cells: Vec<HeatmapCell>,
-    /// The box the cells cover.
+    /// The box the picture's cells cover.
     pub extent: Option<Bounds>,
 }
 
@@ -220,7 +227,9 @@ pub fn cell_size_m(latitude: f64) -> f64 {
 /// the same on every read.
 pub fn heatmap(runs: &[&[[f64; 2]]]) -> Heatmap {
     let mut counts: BTreeMap<Cell, u32> = BTreeMap::new();
-    let mut counted: u32 = 0;
+    // The cells each run touched, so that a run can be counted once when
+    // the picture is chosen.
+    let mut touched_by_run: Vec<BTreeSet<Cell>> = Vec::new();
     for run in runs {
         // The cells this run touches, each of them once: a run that loops
         // around a block crosses the same cell many times, and the cell
@@ -234,18 +243,27 @@ pub fn heatmap(runs: &[&[[f64; 2]]]) -> Heatmap {
         if touched.is_empty() {
             continue;
         }
-        counted += 1;
-        for cell in touched {
-            *counts.entry(cell).or_insert(0) += 1;
+        for cell in &touched {
+            *counts.entry(*cell).or_insert(0) += 1;
         }
+        touched_by_run.push(touched);
     }
 
-    let mut cells: Vec<HeatmapCell> = counts
-        .into_iter()
-        .map(|(cell, runs)| HeatmapCell {
-            cell,
-            bounds: bounds_of(cell),
-            runs,
+    // **The picture is the running, not every cell ever touched.**
+    //
+    // The grid is a global one at a fixed size, so the box that holds
+    // every cell the athlete ever touched can be a thousand kilometres
+    // across — and the cells they actually ran in are then one pixel
+    // each, and the picture is blank. The picture is drawn over the
+    // places the running is, and the runs outside them are counted.
+    let picture = picture_cells(&counts);
+
+    let mut cells: Vec<HeatmapCell> = picture
+        .iter()
+        .map(|cell| HeatmapCell {
+            cell: *cell,
+            bounds: bounds_of(*cell),
+            runs: counts.get(cell).copied().unwrap_or(0),
         })
         .collect();
     // North to south, then west to east.
@@ -256,13 +274,86 @@ pub fn heatmap(runs: &[&[[f64; 2]]]) -> Heatmap {
             .then(left.cell.x.cmp(&right.cell.x))
     });
 
+    // A run is in the picture when any of the cells it touched is in it.
+    let mut counted: u32 = 0;
+    let mut outside: u32 = 0;
+    for touched in &touched_by_run {
+        if touched.iter().any(|cell| picture.contains(cell)) {
+            counted += 1;
+        } else {
+            outside += 1;
+        }
+    }
+
     let extent = cells.iter().map(|cell| cell.bounds).reduce(Bounds::union);
 
     Heatmap {
         runs: counted,
+        runs_outside: outside,
         cells,
         extent,
     }
+}
+
+/// How far apart two cells may be and still be the same place, in cells.
+///
+/// **Ten cells**, which is about twenty kilometres where a runner lives:
+/// the grid's cells are two or three kilometres across, and a city's
+/// streets are a few cells apart. The runs of a city fall along its
+/// streets, so the cells a city touches are near each other without
+/// touching; a run in another country is hundreds of cells away.
+pub const PLACE_RADIUS_CELLS: u32 = 10;
+
+/// The cells the picture is drawn over.
+///
+/// The cells are grouped into **places** — the groups of cells that are
+/// near each other — and the picture is the **biggest** place. One
+/// place, so the box is never stretched by a run a thousand kilometres
+/// away: a picture of two places is a picture of the gap between them,
+/// and the cells of both are one pixel each. The runs of every other
+/// place are counted, and the count says so.
+fn picture_cells(counts: &BTreeMap<Cell, u32>) -> BTreeSet<Cell> {
+    let mut remaining: Vec<Cell> = counts.keys().copied().collect();
+    let mut places: Vec<Vec<Cell>> = Vec::new();
+    while let Some(seed) = remaining.pop() {
+        let mut place: Vec<Cell> = vec![seed];
+        let mut changed = true;
+        while changed {
+            changed = false;
+            let mut index = 0;
+            while index < remaining.len() {
+                let cell = remaining[index];
+                let near = place.iter().any(|other| {
+                    cell.x.abs_diff(other.x) <= PLACE_RADIUS_CELLS
+                        && cell.y.abs_diff(other.y) <= PLACE_RADIUS_CELLS
+                });
+                if near {
+                    place.push(cell);
+                    remaining.remove(index);
+                    changed = true;
+                } else {
+                    index += 1;
+                }
+            }
+        }
+        places.push(place);
+    }
+    // The places that hold the most running, biggest first.
+    places.sort_by(|left, right| {
+        let weight = |place: &Vec<Cell>| -> u32 {
+            place
+                .iter()
+                .map(|cell| counts.get(cell).copied().unwrap_or(0))
+                .sum()
+        };
+        weight(right).cmp(&weight(left))
+    });
+
+    let mut picture: BTreeSet<Cell> = BTreeSet::new();
+    if let Some(biggest) = places.first() {
+        picture.extend(biggest.iter().copied());
+    }
+    picture
 }
 
 /// The latitude a row of the grid opens at.

@@ -1146,8 +1146,13 @@ export interface HeatmapInsight {
   generated_at: string
   /** The athlete's local date. */
   date: string
-  /** How many runs carried a position and were counted. */
+  /** How many runs carried a position and are in the picture. */
   runs: number
+  /**
+   * How many runs carried a position but are **outside** the picture:
+   * the places the athlete ran in, and the picture does not cover.
+   */
+  runs_outside: number
   /**
    * Whether the store holds runs this answer did not read.
    *
@@ -1517,6 +1522,14 @@ export interface PaceLongest {
 
 /** The bands the window's moving time falls into. */
 export interface PaceBands {
+  /**
+   * The time in the bands that were too small to draw.
+   *
+   * It is part of `total` and in no band: the bands are the shape of the
+   * running, and the shape does not change because the smallest of it is
+   * not drawn.
+   */
+  rest: RenderedValue
   /** How wide a band is, in seconds per kilometre. */
   width_s_per_km: number
   /** The window's moving time: the sum of the bands' times. */

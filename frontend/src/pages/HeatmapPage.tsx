@@ -31,6 +31,7 @@ export function HeatmapPage() {
   const empty = Boolean(data?.unavailable)
   const busiest = data?.cells.reduce((most, cell) => Math.max(most, cell.runs), 0) ?? 0
 
+
   return (
     <div>
       <PageHeader
@@ -104,6 +105,11 @@ export function HeatmapPage() {
                 </li>
               ) : null}
             </ul>
+            {data.runs_outside > 0 ? (
+              <p className="mt-1 text-[12px] text-ink-muted" data-testid="heatmap-outside">
+                {t('heatmap.outside', { n: formatCount(data.runs_outside) })}
+              </p>
+            ) : null}
             {data.more_runs ? (
               <p className="mt-3 text-[12px] text-ink-muted" data-testid="heatmap-more-runs">
                 {t('heatmap.moreRuns')}

@@ -49,17 +49,18 @@ fn a_run_counts_once_in_a_cell_it_crosses_repeatedly() {
 
 #[test]
 fn a_cell_counts_every_run_that_went_through_it() {
-    // Two runs over the same corner and one run somewhere else.
+    // Two runs over the same corner and one run somewhere else — far
+    // enough away to be another place, so it is counted outside the
+    // picture.
     let here = ANCHOR;
     let there = [-35.5, -140.5];
     let grid = heatmap(&runs(&[run(&[here, here]), run(&[here]), run(&[there])]));
 
-    assert_eq!(grid.runs, 3, "three runs were counted");
-    assert_eq!(grid.cells.len(), 2, "two cells were touched");
+    assert_eq!(grid.runs, 2, "two runs are in the picture");
+    assert_eq!(grid.runs_outside, 1, "one run is outside it");
+    assert_eq!(grid.cells.len(), 1, "one cell is in the picture");
     let busiest = grid.busiest();
     assert_eq!(busiest, 2, "the corner cell holds two runs");
-    // And the cells are ordered north to south, west to east.
-    assert!(grid.cells[0].cell.y <= grid.cells[1].cell.y);
 }
 
 #[test]
@@ -183,4 +184,53 @@ fn the_extent_covers_every_cell() {
         assert!(cell.bounds.west >= extent.west);
         assert!(cell.bounds.east <= extent.east);
     }
+}
+
+/// **The picture is the running, not every cell ever touched.**
+///
+/// The grid is a global one at a fixed size, so the box that holds every
+/// cell the athlete ever touched can be a thousand kilometres across —
+/// and the cells they actually ran in are then one pixel each. The
+/// picture is drawn over the places the running is, and the runs outside
+/// them are counted.
+#[test]
+fn the_picture_is_the_place_the_running_is() {
+    // The city: two runs a street apart.
+    let here = [ANCHOR[0], ANCHOR[1]];
+    let near = [ANCHOR[0] + 0.005, ANCHOR[1] + 0.005];
+    // A run in another country, a long way off.
+    let elsewhere = [ANCHOR[0] + 20.0, ANCHOR[1] + 20.0];
+
+    let grid = heatmap(&runs(&[
+        run(&[here, near]),
+        run(&[here, near]),
+        run(&[elsewhere]),
+    ]));
+
+    // The city is in the picture, and the run far away is not.
+    assert_eq!(grid.runs, 2);
+    assert_eq!(grid.runs_outside, 1);
+    // And the box is the city's, not the whole world's.
+    let extent = grid.extent.expect("the picture has a box");
+    assert!(extent.north < ANCHOR[0] + 1.0, "the box is the city's");
+    assert!(extent.south > ANCHOR[0] - 1.0, "the box is the city's");
+}
+
+#[test]
+fn a_run_is_counted_once_outside_the_picture() {
+    // A run far away, crossing three cells, and the city it is not in.
+    // The far run is one run outside, not three.
+    let here = ANCHOR;
+    let elsewhere = [ANCHOR[0] + 20.0, ANCHOR[1] + 20.0];
+    let grid = heatmap(&runs(&[
+        run(&[here]),
+        run(&[
+            elsewhere,
+            [elsewhere[0] + 0.01, elsewhere[1]],
+            [elsewhere[0], elsewhere[1] + 0.01],
+        ]),
+    ]));
+
+    assert_eq!(grid.runs, 1, "the run in the city is in the picture");
+    assert_eq!(grid.runs_outside, 1, "the far run is counted once");
 }

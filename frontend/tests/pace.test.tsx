@@ -30,6 +30,7 @@ const BANDS = {
   width_s_per_km: 30,
   total: { text: '3 h 12 m', raw: 11520 },
   distance: { text: '18 km', raw: 18000 },
+  rest: { text: '0 m', raw: 0 },
   rows: [
     {
       from: 240,
@@ -136,6 +137,22 @@ describe('the pace page', () => {
     expect(rows.textContent).toContain('3 h')
     const bar = rows.querySelector('[data-testid="pace-bands-bar-270"]')
     expect(bar?.getAttribute('style')).toContain('93.75%')
+  })
+
+  it('says how much time is in the bands too small to draw', async () => {
+    vi.spyOn(api, 'insightsPace').mockResolvedValue({
+      ...paceFixture,
+      bands: { ...BANDS, rest: { text: '41 m', raw: 2460 } },
+      unavailable: null,
+    })
+    renderApp('/pace')
+    const bands = await screen.findByTestId('pace-bands')
+
+    // The time is not lost: it is beside the bands, not in one of them.
+    expect(bands.querySelector('[data-testid="pace-bands-rest"]')?.textContent).toContain('41 m')
+    expect(bands.querySelector('[data-testid="pace-bands-rest"]')?.textContent).toContain(
+      'The smaller bands',
+    )
   })
 })
 

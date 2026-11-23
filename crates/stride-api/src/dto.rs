@@ -2289,6 +2289,9 @@ pub struct HeatmapInsight {
     pub date: String,
     /// How many runs carried a position and were counted.
     pub runs: u32,
+    /// How many runs carried a position but are **outside** the picture:
+    /// the places the athlete ran in, and the picture does not cover.
+    pub runs_outside: u32,
     /// Whether the store holds runs this answer did not read.
     ///
     /// The answer is bounded: it reads the newest runs only, and this says
@@ -2419,8 +2422,15 @@ pub struct PaceBands {
     pub total: RenderedValue,
     /// The distance covered in the window.
     pub distance: RenderedValue,
-    /// The bands, fastest first.
+    /// The bands, fastest first. Only the bands that hold a readable
+    /// share of the time.
     pub rows: Vec<PaceBandRow>,
+    /// The time in the bands that were too small to draw.
+    ///
+    /// It is part of `total` and in no band: the bands are the shape of
+    /// the running, and the shape does not change because the smallest of
+    /// it is not drawn.
+    pub rest: RenderedValue,
 }
 
 /// One band of the distribution.

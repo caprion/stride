@@ -497,6 +497,21 @@ export function PacePage() {
                   </div>
                 </li>
               ))}
+              {/* The time in the bands too small to draw: the bands are
+                  the shape of the running, and the rest of the time is
+                  not lost — it is here. */}
+              {data.bands.rest && (data.bands.rest.raw ?? 0) > 0 ? (
+                <li data-testid="pace-bands-rest">
+                  <div className="flex items-baseline justify-between gap-3">
+                    <span className="text-[13.5px] text-ink-muted">
+                      {t('pace.bands.rest')}
+                    </span>
+                    <span className="text-[13.5px] tabular-nums text-ink-muted">
+                      {renderedText(data.bands.rest)}
+                    </span>
+                  </div>
+                </li>
+              ) : null}
             </ul>
           </>
         ) : (

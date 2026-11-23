@@ -125,7 +125,7 @@ export function ProgressPanelPage() {
         className="tap-inline mb-2 text-[13px] text-brand-700 underline"
         data-testid="progress-panel-back"
       >
-        {t('progress.index.back')}
+        {t('progress.back')}
       </Link>
       <PageHeader
         title={t('progress.heading')}
