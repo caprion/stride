@@ -1,0 +1,497 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Stride — the athlete profile, and the setup that goes with it</title>
+<style>
+  /* Stride's own palette, copied from frontend/tailwind.config.js */
+  :root {
+    --brand-50:#EEF5FB; --brand-100:#D6E6F3; --brand-300:#A9C8E8; --brand-500:#1E5E96;
+    --brand-600:#124A7C; --brand-700:#0D3A63;
+    --accent-50:#FEF8EA; --accent-100:#FDEDC7; --accent-400:#F2B01E;
+    --ink:#112B40; --ink-soft:#31465A; --ink-muted:#4E6577; --ink-faint:#586F82;
+    --surface:#FFFFFF; --surface-soft:#F1F5F8; --surface-sunken:#E9EFF4; --edge:#CEDAE4;
+    --radius:9px;
+    --font: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin:0; padding:0; background:var(--surface-soft); }
+  body { font-family: var(--font); color:var(--ink); }
+  .wrap { max-width:1400px; margin:0 auto; padding:26px 22px 60px; }
+  h1 { font-size:21px; color:var(--brand-700); margin:0 0 6px; letter-spacing:-.01em; }
+  .lede { font-size:13.5px; color:var(--ink-muted); margin:0 0 8px; max-width:940px; line-height:1.6; }
+  .lede b { color:var(--ink-soft); }
+  h2 { font-size:15px; color:var(--brand-700); margin:30px 0 4px; }
+  h2 .n { color:var(--ink-faint); font-weight:600; margin-right:7px; }
+  .note { font-size:12.5px; color:var(--ink-muted); margin:0 0 14px; max-width:1000px; line-height:1.6; }
+  .note b { color:var(--ink-soft); }
+
+  .phones { display:flex; gap:20px; flex-wrap:wrap; align-items:flex-start; }
+  .phonewrap { display:flex; flex-direction:column; gap:9px; align-items:center; }
+  .caption { font-size:11.5px; color:var(--ink-muted); max-width:310px; text-align:center; line-height:1.45; }
+  .caption b { display:block; color:var(--brand-700); font-size:12px; margin-bottom:3px; }
+
+  .phone { width:320px; height:660px; border-radius:26px; border:1px solid #cfd8e0; background:var(--surface);
+    box-shadow:0 8px 26px rgba(17,43,64,.14); overflow:hidden; display:flex; flex-direction:column;
+    position:relative; font-size:13px; }
+  .status { height:22px; display:flex; align-items:center; justify-content:space-between; padding:0 14px;
+    font-size:10px; color:var(--ink-faint); background:var(--surface); }
+  .bar { display:flex; align-items:flex-start; justify-content:space-between; gap:10px; padding:8px 13px 5px; }
+  .bar h1 { font-size:17px; margin:0; }
+  .bar .meta { font-size:10.5px; color:var(--ink-faint); margin-top:2px; text-align:right; }
+  .body { flex:1; overflow-y:auto; padding:0 13px 14px; }
+  .body::-webkit-scrollbar { width:0; }
+
+  .card { border:1px solid var(--edge); border-radius:var(--radius); background:var(--surface);
+    box-shadow:0 1px 2px rgba(11,27,39,.04),0 1px 3px rgba(11,27,39,.06); padding:11px 12px; margin-bottom:9px; }
+  .card.tight { padding:9px 10px; }
+  .h { font-size:10px; font-weight:650; letter-spacing:.07em; text-transform:uppercase; color:var(--ink-faint);
+    margin:0 0 5px; display:flex; justify-content:space-between; align-items:baseline; gap:8px; }
+  .h .sub { font-weight:500; letter-spacing:0; text-transform:none; font-size:10.5px; color:var(--ink-faint); }
+  .small { font-size:11.5px; line-height:1.45; color:var(--ink-muted); }
+  .tiny { font-size:10.5px; line-height:1.35; color:var(--ink-faint); }
+  .muted { color:var(--ink-muted); }
+
+  /* the reading: the coach's sentence */
+  .reading { font-size:13.5px; line-height:1.55; color:var(--ink); }
+  .reading p { margin:0 0 7px; }
+  .reading p:last-child { margin-bottom:0; }
+  .reading .dim { color:var(--ink-muted); }
+
+  /* a row of the index */
+  .row { display:flex; align-items:flex-start; justify-content:space-between; gap:10px;
+    padding:8px 0; border-bottom:1px solid var(--surface-sunken); }
+  .row:last-child { border-bottom:0; }
+  .row .q { font-size:13.5px; font-weight:600; color:var(--ink); }
+  .row .a { font-size:12.5px; color:var(--ink-soft); margin-top:2px; }
+  .row .w { font-size:11px; color:var(--ink-faint); margin-top:2px; }
+  .row .go { color:var(--brand-600); font-weight:600; font-size:12.5px; white-space:nowrap; }
+
+  /* the scope picker */
+  .scope { display:flex; gap:4px; }
+  .scope span { white-space:nowrap; font-size:11px; padding:3px 9px; border-radius:99px; border:1px solid var(--edge);
+    color:var(--ink-muted); }
+  .scope span.on { background:var(--brand-600); border-color:var(--brand-600); color:#fff; font-weight:600; }
+
+  /* the radar */
+  .radar { display:block; margin:2px auto 0; }
+
+  /* the challenge grid */
+  .grid { border-collapse:collapse; width:100%; font-size:10px; }
+  .grid th { font-weight:600; color:var(--ink-faint); text-align:center; padding:2px 1px; font-size:9px; }
+  .grid th.rowh { text-align:left; color:var(--ink-soft); font-weight:500; white-space:nowrap;
+    padding-right:8px; font-size:10.5px; }
+  .grid td { text-align:center; padding:1.5px 0; }
+  .dot { width:8px; height:8px; border-radius:99px; background:var(--brand-500); display:inline-block; }
+  .dot.no { background:var(--surface-sunken); }
+
+  /* the small multiples */
+  .sm { display:grid; grid-template-columns:repeat(7,1fr); gap:3px; align-items:end; height:38px; }
+  .sm i { display:block; background:var(--brand-300); border-radius:2px 2px 0 0; }
+
+  /* the setup */
+  .check { display:flex; gap:9px; align-items:flex-start; padding:6px 0; font-size:12.5px; color:var(--ink-soft); }
+  .box { width:14px; height:14px; border-radius:4px; border:1.5px solid var(--brand-500); flex:none; margin-top:1px;
+    background:var(--brand-500); position:relative; }
+  .box.off { background:transparent; border-color:var(--edge); }
+  .box::after { content:''; position:absolute; left:4px; top:1px; width:4px; height:8px;
+    border:solid #fff; border-width:0 2px 2px 0; transform:rotate(42deg); }
+  .box.off::after { display:none; }
+  .seg { display:flex; gap:5px; }
+  .seg span { flex:1; text-align:center; font-size:11px; padding:6px 3px; border:1px solid var(--edge);
+    border-radius:7px; color:var(--ink-muted); }
+  .seg span.on { background:var(--brand-600); border-color:var(--brand-600); color:#fff; font-weight:600; }
+
+  .banner { background:var(--brand-50); border:1px solid var(--brand-100); }
+  .banner p { margin:2px 0 0; font-size:11px; color:var(--ink-muted); }
+
+  /* what moved where */
+  table.map { border-collapse:collapse; width:100%; max-width:1060px; font-size:12.5px; margin-top:10px; }
+  table.map th { text-align:left; font-size:10px; letter-spacing:.07em; text-transform:uppercase;
+    color:var(--ink-faint); padding:0 12px 7px 0; font-weight:650; }
+  table.map td { padding:7px 12px 7px 0; border-top:1px solid var(--surface-sunken); vertical-align:top; line-height:1.45; }
+  table.map td.g { color:var(--brand-700); font-weight:600; white-space:nowrap; }
+  table.map td.s { color:var(--ink-soft); }
+  .cols { display:grid; grid-template-columns:1fr 1fr; gap:26px; max-width:1060px; margin-top:12px; }
+  .cols h3 { font-size:12px; text-transform:uppercase; letter-spacing:.07em; color:var(--ink-faint);
+    margin:0 0 7px; }
+  .cols.win h3 { color:var(--brand-700); }
+  .cols ul { margin:0; padding-left:17px; font-size:12.5px; color:var(--ink-muted); line-height:1.55; }
+  .cols ul li { margin-bottom:5px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <h1>The athlete profile, and the setup that goes with it</h1>
+  <p class="lede">
+    A proposal to argue with, not a decision. The question: <b>should the long-term picture and the
+    setup become a page of their own?</b> The short answer is yes, and the reason is not "the long
+    term is a different horizon" — it is that <b>a coach's voice needs a long horizon to be
+    honest.</b> At twelve weeks you cannot say "you are more consistent than you were"; at twelve
+    months you can, and it is a fact.
+  </p>
+  <p class="lede">
+    So: <b>Progress answers "how is my training going?"</b> — the work: the load, the volume, the
+    comparisons, the intensity, the pace, the plan. <b>The athlete profile answers "what does my
+    training look like?"</b> — the pattern: the shape, the habits, the schedule, the run lengths, the
+    seasons. And <b>the setup lives inside the profile</b>, because the profile is the thing you set
+    up: what you want to know, what you want to be consistent about, how much you want to read.
+  </p>
+
+  <h2><span class="n">1</span>Progress — the questions about the training</h2>
+  <p class="note">
+    The wall keeps every chart it has, but in an order that says something. The reading comes first
+    (two sentences), then the questions, then the way into each one. The range selector stays where
+    it is: <b>weeks</b>.
+  </p>
+
+  <div class="phones">
+    <div class="phonewrap">
+      <div class="phone">
+        <div class="status"><span>3:07</span><span>51%</span></div>
+        <div class="bar"><div><h1>Progress</h1></div><div class="meta">12 weeks<br />7 Sep – 23 Nov</div></div>
+        <div class="body">
+
+          <div class="card">
+            <p class="reading">
+              You have covered <b>300 km</b> in twelve weeks — 142 km more than the twelve weeks
+              before it, and you ran every one of those weeks.
+              <span class="dim">The load has been running a little ahead of what your body has been
+              used to; with a week off, the ratio is expected back inside its band tomorrow.</span>
+            </p>
+          </div>
+
+          <div class="card tight">
+            <div class="row">
+              <div>
+                <div class="q">The load</div>
+                <div class="a">Acute 41.6 · Chronic 28.9 · Form −12.7</div>
+                <div class="w">the last seven days · the forty-two before</div>
+              </div>
+              <div class="go">Open →</div>
+            </div>
+            <div class="row">
+              <div>
+                <div class="q">The volume</div>
+                <div class="a">300 km · 35 runs · 8 h 54 m a week</div>
+                <div class="w">the last twelve weeks</div>
+              </div>
+              <div class="go">Open →</div>
+            </div>
+            <div class="row">
+              <div>
+                <div class="q">The comparison</div>
+                <div class="a">+142 km · +11 runs · +9 h 20 m</div>
+                <div class="w">this window against the one before</div>
+              </div>
+              <div class="go">Open →</div>
+            </div>
+            <div class="row">
+              <div>
+                <div class="q">The intensity</div>
+                <div class="a">Z4–Z5 53% · Z1–Z2 6%</div>
+                <div class="w">against your own zone model</div>
+              </div>
+              <div class="go">Open →</div>
+            </div>
+            <div class="row">
+              <div>
+                <div class="q">The pace</div>
+                <div class="a">7:26 /km at 151 bpm</div>
+                <div class="w">the last week</div>
+              </div>
+              <div class="go">Open →</div>
+            </div>
+            <div class="row">
+              <div>
+                <div class="q">The plan</div>
+                <div class="a">4 of 5 sessions done</div>
+                <div class="w">this week</div>
+              </div>
+              <div class="go">Open →</div>
+            </div>
+          </div>
+
+          <div class="card tight banner">
+            <p><b>The athlete profile →</b> the shape, the habits, the schedule and the seasons —
+              over thirty, ninety or a hundred and twenty days.</p>
+          </div>
+
+        </div>
+      </div>
+      <div class="caption"><b>Progress</b> The work: the load, the volume, the comparison, the
+        intensity, the pace, the plan. Weeks. A reading on top, in two sentences.</div>
+    </div>
+
+    <div class="phonewrap">
+      <div class="phone">
+        <div class="status"><span>3:07</span><span>51%</span></div>
+        <div class="bar">
+          <div><h1>Your athlete profile</h1></div>
+          <div class="meta">the last<br />90 days</div>
+        </div>
+        <div class="body">
+
+          <div class="card tight">
+            <div class="scope">
+              <span>30 days</span><span class="on">90 days</span><span>120 days</span>
+              <span style="margin-left:auto;border:0;color:var(--brand-600);">Set up →</span>
+            </div>
+          </div>
+
+          <div class="card">
+            <p class="reading">
+              Over ninety days you ran <b>every week</b>, and the weeks have got longer — 14 km,
+              21 km, 28 km.
+              <span class="dim">The same pace at the same heart rate is 24 s/km quicker than it was
+              ninety days ago.</span>
+            </p>
+          </div>
+
+          <div class="card">
+            <div class="h">The shape <span class="sub">six axes · 90 days against the 30 before</span></div>
+            <svg class="radar" viewBox="-14 0 300 190" height="190">
+              <g stroke="var(--surface-sunken)" fill="none" stroke-width="1">
+                <polygon points="140,22 246,74 209,152 71,152 34,74"/>
+                <polygon points="140,42 214,76 189,130 91,130 66,76"/>
+                <polygon points="140,62 182,78 169,108 111,108 98,78"/>
+              </g>
+              <polygon points="140,62 182,78 169,108 111,108 98,78" fill="var(--brand-100)"/>
+              <polygon points="140,36 232,78 194,138 86,138 48,72" fill="none" stroke="var(--brand-300)"
+                stroke-width="2" stroke-dasharray="4 3"/>
+              <g fill="var(--brand-500)">
+                <circle cx="140" cy="62" r="3.5"/><circle cx="182" cy="78" r="3.5"/>
+                <circle cx="169" cy="108" r="3.5"/><circle cx="111" cy="108" r="3.5"/>
+                <circle cx="98" cy="78" r="3.5"/>
+              </g>
+              <g fill="var(--accent-400)">
+                <circle cx="140" cy="36" r="3.5"/><circle cx="232" cy="78" r="3.5"/>
+                <circle cx="194" cy="138" r="3.5"/><circle cx="86" cy="138" r="3.5"/>
+                <circle cx="48" cy="72" r="3.5"/>
+              </g>
+              <g fill="var(--ink-faint)" font-size="10" text-anchor="middle">
+                <text x="140" y="12">Volume</text><text x="262" y="78" text-anchor="start">Consistency</text>
+                <text x="209" y="166">Variety</text><text x="71" y="166">Density</text>
+                <text x="20" y="78" text-anchor="end">Duration</text><text x="20" y="140" text-anchor="end">Intensity</text>
+              </g>
+            </svg>
+            <div class="legend" style="display:flex; gap:16px; margin-top:6px;">
+              <span style="display:inline-flex;align-items:center;gap:5px;font-size:10.5px;color:var(--ink-muted);">
+                <i style="width:11px;height:3px;border-radius:2px;background:var(--brand-500);display:inline-block;"></i>
+                the last 90 days</span>
+              <span style="display:inline-flex;align-items:center;gap:5px;font-size:10.5px;color:var(--ink-muted);">
+                <i style="width:11px;height:3px;border-radius:2px;background:var(--brand-300);display:inline-block;"></i>
+                the 90 days before</span>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="h">The habits <span class="sub">your challenges, week by week</span></div>
+            <table class="grid">
+              <thead><tr><th class="rowh"></th><th>7 Sep</th><th>14</th><th>21</th><th>28</th><th>5 Oct</th><th>12</th><th>19</th><th>26</th><th>2 Nov</th><th>9</th><th>16</th><th>23</th></tr></thead>
+              <tbody>
+                <tr><th class="rowh">40 km in the week</th>
+                  <td><span class="dot no"></span></td><td><span class="dot no"></span></td>
+                  <td><span class="dot no"></span></td><td><span class="dot"></span></td>
+                  <td><span class="dot"></span></td><td><span class="dot"></span></td>
+                  <td><span class="dot"></span></td><td><span class="dot"></span></td>
+                  <td><span class="dot"></span></td><td><span class="dot"></span></td>
+                  <td><span class="dot"></span></td><td><span class="dot"></span></td></tr>
+                <tr><th class="rowh">a run of 16 km</th>
+                  <td><span class="dot no"></span></td><td><span class="dot no"></span></td>
+                  <td><span class="dot"></span></td><td><span class="dot no"></span></td>
+                  <td><span class="dot no"></span></td><td><span class="dot no"></span></td>
+                  <td><span class="dot no"></span></td><td><span class="dot no"></span></td>
+                  <td><span class="dot no"></span></td><td><span class="dot no"></span></td>
+                  <td><span class="dot no"></span></td><td><span class="dot no"></span></td></tr>
+              </tbody>
+            </table>
+            <p class="tiny" style="margin:6px 0 0;">2 of 12 weeks · 1 of 12 weeks. A week is met or it
+              is not.</p>
+          </div>
+
+          <div class="card">
+            <div class="h">The schedule <span class="sub">when you run</span></div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+              <div>
+                <div class="tiny">by day of the week</div>
+                <div class="sm" style="margin-top:4px;">
+                  <i style="height:60%"></i><i style="height:45%"></i><i style="height:80%"></i>
+                  <i style="height:50%"></i><i style="height:95%"></i><i style="height:30%"></i>
+                  <i style="height:70%"></i>
+                </div>
+              </div>
+              <div>
+                <div class="tiny">by time of day</div>
+                <div class="sm" style="margin-top:4px;">
+                  <i style="height:20%"></i><i style="height:55%"></i><i style="height:90%"></i>
+                  <i style="height:35%"></i><i style="height:15%"></i><i style="height:10%"></i>
+                  <i style="height:8%"></i>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="h">The seasons <span class="sub">twelve months</span></div>
+            <div class="sm" style="height:44px;">
+              <i style="height:40%"></i><i style="height:55%"></i><i style="height:72%"></i>
+              <i style="height:60%"></i><i style="height:48%"></i><i style="height:52%"></i>
+              <i style="height:66%"></i><i style="height:80%"></i><i style="height:74%"></i>
+              <i style="height:60%"></i><i style="height:45%"></i><i style="height:70%"></i>
+              <i style="height:58%"></i>
+            </div>
+            <p class="tiny" style="margin:6px 0 0;">1 Jun 2025 – 23 Nov 2026 · 243 km in the last
+              thirty days</p>
+          </div>
+
+        </div>
+      </div>
+      <div class="caption"><b>Your athlete profile</b> The pattern: the shape, the habits, the
+        schedule, the run lengths, the seasons. <b>Months, not weeks</b> — and the scope is on the
+        page.</div>
+    </div>
+
+    <div="phonewrap">
+      <div class="phone">
+        <div class="status"><span>3:07</span><span>51%</span></div>
+        <div class="bar">
+          <div><h1>Set up your profile</h1></div>
+          <div class="meta">once</div>
+        </div>
+        <div class="body">
+
+          <div class="card">
+            <div class="h">What do you want to know about your training?</div>
+            <div class="check"><div class="box"></div><span>Is my fitness moving?</span></div>
+            <div class="check"><div class="box"></div><span>Am I doing more than my body is used to?</span></div>
+            <div class="check"><div class="box"></div><span>Am I consistent?</span></div>
+            <div class="check"><div class="box off"></div><span>Am I quick enough for what I am aiming at?</span></div>
+            <p class="tiny" style="margin:6px 0 0;">Each one is a set of facts the reading draws
+              from. Untick one and its chart is not on your profile.</p>
+          </div>
+
+          <div class="card">
+            <div class="h">What do you want to be consistent about?</div>
+            <ul style="list-style:none;padding:0;margin:0;">
+              <li style="display:flex;justify-content:space-between;gap:10px;padding:5px 0;font-size:12.5px;color:var(--ink-soft);">
+                <span>40 km in the week</span><span style="color:var(--brand-600);font-weight:600;">Remove</span></li>
+              <li style="display:flex;justify-content:space-between;gap:10px;padding:5px 0;font-size:12.5px;color:var(--ink-soft);">
+                <span>a run of 16 km</span><span style="color:var(--brand-600);font-weight:600;">Remove</span></li>
+            </ul>
+            <div style="display:flex;gap:8px;margin-top:8px;">
+              <select style="flex:1;border:1px solid var(--edge);border-radius:7px;padding:8px;font-size:12.5px;background:var(--surface);">
+                <option>A single run</option><option>Across the week</option>
+              </select>
+              <input inputmode="decimal" placeholder="16" style="width:74px;border:1px solid var(--edge);border-radius:7px;padding:8px;font-size:12.5px;" />
+              <button style="border:0;border-radius:7px;background:var(--brand-600);color:#fff;font-weight:600;padding:8px 12px;font-size:12.5px;">Add</button>
+            </div>
+            <p class="tiny" style="margin:6px 0 0;">These are the rows of your grid. Your words for
+              them, if you want them.</p>
+          </div>
+
+          <div class="card">
+            <div class="h">How much do you want to read?</div>
+            <div class="seg"><span>A line or two</span><span class="on">A short paragraph</span><span>The whole thing</span></div>
+            <p class="tiny" style="margin:6px 0 0;">How long the reading is, on both screens.</p>
+          </div>
+
+          <div class="card banner">
+            <p><b>What this is not.</b> There is no score here, and no verdict. Everything on your
+              profile is a fact about a period, and the period is named.</p>
+          </div>
+
+        </div>
+      </div>
+      <div class="caption"><b>The setup, inside the profile</b> What you want to know, what you
+        want to be consistent about, how much you want to read. Asked once, and it shapes the page
+        above.</div>
+    </div>
+  </div>
+
+  <h2><span class="n">2</span>What moves where</h2>
+  <p class="note">
+    Nothing is deleted. Every one of the twenty-three cards keeps a home; the cut is by
+    <b>which question the card answers</b>, not by how long ago the data is.
+  </p>
+
+  <table class="map">
+    <thead><tr><th>Now</th><th>Proposed home</th><th>Why</th></tr></thead>
+    <tbody>
+      <tr><td class="s">Training load</td><td class="g">Progress · the load</td><td class="s">The dose, over weeks. It is the training's own question.</td></tr>
+      <tr><td class="s">Weekly volume</td><td class="g">Progress · the volume</td><td class="s">How much, week by week.</td></tr>
+      <tr><td class="s">This week against last week</td><td class="g">Progress · the comparison</td><td class="s">Matched weekdays — a different question from an equal preceding period, so it keeps its own place.</td></tr>
+      <tr><td class="s">Rolling window</td><td class="g">Progress · the comparison</td><td class="s">The equal preceding period, beside the matched one.</td></tr>
+      <tr><td class="s">Time in each zone</td><td class="g">Progress · the intensity</td><td class="s">The amount of work.</td></tr>
+      <tr><td class="s">Polarised split</td><td class="g">Progress · the intensity</td><td class="s">The composition of it. One area, two views.</td></tr>
+      <tr><td class="s">The pace</td><td class="g">Progress · the pace</td><td class="s">Where the speed is going. The preview must be fixed to match its title.</td></tr>
+      <tr><td class="s">Bests &amp; milestones</td><td class="g">Progress · the bests</td><td class="s">A record is a fact about a run, not a pattern.</td></tr>
+      <tr><td class="s">Adherence</td><td class="g">Progress · the plan</td><td class="s">Only with a plan, and beside it.</td></tr>
+      <tr><td class="s">Consistency</td><td class="g">Progress · the volume</td><td class="s">Sessions per week, with the volume it belongs to.</td></tr>
+      <tr><td class="s">Activity heatmap</td><td class="g">Progress · the volume</td><td class="s">The days you ran, in a year.</td></tr>
+      <tr><td class="s">Most recent activities</td><td class="g">a link</td><td class="s">The log lives in Runs; Progress links to it.</td></tr>
+      <tr><td class="s">Body, last night</td><td class="g">a link</td><td class="s">Last night is not the same window as twelve weeks.</td></tr>
+
+      <tr><td class="s">The athlete profile (radar)</td><td class="g">Profile · the shape</td><td class="s">It compares two windows already; on its own page the scope is stated.</td></tr>
+      <tr><td class="s">Training profile (facets)</td><td class="g">Profile · the shape</td><td class="s">The same six axes, as numbers. One area, two views.</td></tr>
+      <tr><td class="s">Streaks</td><td class="g">Profile · the habits</td><td class="s">The same question as the challenges.</td></tr>
+      <tr><td class="s">The challenges</td><td class="g">Profile · the habits</td><td class="s">The athlete's own goals, week by week.</td></tr>
+      <tr><td class="s">Eddington number</td><td class="g">Profile · the habits</td><td class="s">The same question again.</td></tr>
+      <tr><td class="s">Stats per weekday</td><td class="g">Profile · the schedule</td><td class="s">When you tend to run — a pattern, not a week.</td></tr>
+      <tr><td class="s">Daytime stats</td><td class="g">Profile · the schedule</td><td class="s">The same area, another lens.</td></tr>
+      <tr><td class="s">Distance breakdown</td><td class="g">Profile · the run lengths</td><td class="s">The shape of your sessions.</td></tr>
+      <tr><td class="s">Monthly stats</td><td class="g">Profile · the seasons</td><td class="s">Twelve months is a season, not a week.</td></tr>
+      <tr><td class="s">Yearly stats</td><td class="g">Profile · the seasons</td><td class="s">The same area, a coarser lens.</td></tr>
+      <tr><td class="s">The year</td><td class="g">Profile · the seasons</td><td class="s">The calendar of the days, with its legend.</td></tr>
+    </tbody>
+  </table>
+
+  <h2><span class="n">3</span>What the split buys, and what it risks</h2>
+  <div class="cols">
+    <div class="col win">
+      <h3>What it buys</h3>
+      <ul>
+        <li><b>The horizon bug goes away by construction.</b> The radar today compares 4 and 13 weeks whatever the range selector says. On its own page, the scope is on the page and every card in it uses it.</li>
+        <li><b>The coaching voice gets a place where it is honest.</b> "You are more consistent than you were" is a fact over ninety days and a guess over twelve weeks.</li>
+        <li><b>The setup stops being an orphan.</b> Right now it has nowhere to live; the profile is the thing you set up.</li>
+        <li><b>Two radars become one.</b> <code>/progress/shape</code> and <code>/progress/profile</code> draw the same six axes twice.</li>
+        <li><b>Progress gets a spine.</b> Today → Progress → the athlete profile: the next session, then the training, then the pattern.</li>
+      </ul>
+    </div>
+    <div class="col">
+      <h3>What it risks</h3>
+      <ul>
+        <li><b>The profile can drift into a scoreboard.</b> "Your fitness is 72" is what this page is one bad decision away from. The guard: every number names its period, and there is no composite.</li>
+        <li><b>Five destinations.</b> The nav goes from four to five. That is the cost of the split, and it has to be earned.</li>
+        <li><b>Some cards fit both sides.</b> The pace is about a run and about a trend; the zones are about the training and about the pattern. The cut has to be argued case by case, not by horizon alone.</li>
+        <li><b>Two places for the year.</b> The year has to end up in one place, or the seasons are read twice.</li>
+      </ul>
+    </div>
+  </div>
+
+  <h2><span class="n">4</span>What this prototype does not decide</h2>
+  <div class="cols">
+    <div class="col">
+      <h3>Open</h3>
+      <ul>
+        <li><b>Is the profile a destination, or a card that opens one?</b> The mock makes it a destination. A fifth destination is a real cost.</li>
+        <li><b>Does the reading sit on Progress, on the profile, or on both?</b> The mock puts a short one on each: the training on one, the pattern on the other. That is the "how much do you want to read" setting doing two jobs.</li>
+        <li><b>Is the setup a page or a sheet?</b> The mock makes it a page, because it is asked once and it is worth reading.</li>
+      </ul>
+    </div>
+    <div class="col">
+      <h3>Settled enough to build</h3>
+      <ul>
+        <li><b>The scope picker: 30 / 90 / 120 days</b>, on the profile, replacing the fixed 4-and-13-week windows.</li>
+        <li><b>One radar at one route</b>, and the profile owns it.</li>
+        <li><b>The habits together</b> — streaks, challenges, Eddington — on the profile.</li>
+        <li><b>The setup asks three questions</b> and shapes the page rather than a separate feature.</li>
+      </ul>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>
