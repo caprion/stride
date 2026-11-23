@@ -19,7 +19,7 @@
 //! instant, and turning it into one would put the athlete's midnight in the
 //! wrong place.
 
-use chrono::{DateTime, NaiveDateTime, SecondsFormat, TimeZone, Utc};
+use chrono::{DateTime, NaiveDateTime, TimeZone, Utc};
 use rusqlite::types::{FromSql, FromSqlResult, ToSql, ToSqlOutput, Value, ValueRef};
 
 use crate::error::{Result, StoreError};
@@ -96,11 +96,6 @@ pub fn parse_datetime(value: &str) -> Result<DateTime<Utc>> {
     parse_datetime_text(value).map_err(|reason| StoreError::InvalidKey {
         reason: format!("the datetime {reason}"),
     })
-}
-
-/// The ISO-8601 form, with the offset written out.
-pub fn to_iso8601(value: DateTime<Utc>) -> String {
-    value.to_rfc3339_opts(SecondsFormat::Micros, true)
 }
 
 /// The athlete's local date, `YYYY-MM-DD`.

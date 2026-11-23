@@ -398,22 +398,6 @@ impl GarminClient {
         self
     }
 
-    /// Set how long before expiry the access value is refreshed.
-    pub fn with_refresh_margin(mut self, margin: Duration) -> Self {
-        self.refresh_margin = margin;
-        self
-    }
-
-    /// Forget the cached access value.
-    pub fn invalidate_access(&self) {
-        self.lock().access = None;
-    }
-
-    /// Whether an access value is cached.
-    pub fn has_cached_access(&self) -> bool {
-        self.lock().access.is_some()
-    }
-
     /// The number of Personal API key exchanges this client has made.
     pub fn exchange_count(&self) -> usize {
         self.lock().exchange_count
@@ -496,11 +480,6 @@ impl GarminClient {
         self.get_value(SLEEP_SUMMARY_PATH, &[("date".to_owned(), date)])
     }
 
-    /// Alias for [`GarminClient::sleep_summary`].
-    pub fn sleep_range(&self, date: &str) -> Result<Value, GarminError> {
-        self.sleep_summary(date)
-    }
-
     /// One day's HRV payload.
     pub fn hrv_daily(&self, date: &str) -> Result<Value, GarminError> {
         let date = check_date(date)?;
@@ -522,11 +501,6 @@ impl GarminClient {
     pub fn wellness_daily_heart_rate(&self, date: &str) -> Result<Value, GarminError> {
         let date = check_date(date)?;
         self.get_value(DAILY_HEART_RATE_PATH, &[("date".to_owned(), date)])
-    }
-
-    /// Alias for [`GarminClient::wellness_daily_heart_rate`].
-    pub fn daily_heart_rate(&self, date: &str) -> Result<Value, GarminError> {
-        self.wellness_daily_heart_rate(date)
     }
 
     /// The body-battery reports for a date range.

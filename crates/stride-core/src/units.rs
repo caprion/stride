@@ -99,14 +99,6 @@ pub fn format_duration(seconds: f64) -> String {
     }
 }
 
-/// The human rendering of a distance, in kilometres.
-pub fn format_distance_km(metres: f64, decimals: usize) -> String {
-    if !metres.is_finite() {
-        return String::new();
-    }
-    format!("{:.decimals$}", round_half_even(metres / 1000.0, decimals))
-}
-
 /// The human rendering of a distance, in kilometres, without the decimals a
 /// person would leave out: "6 km", "8.4 km".
 pub fn format_distance_km_short(metres: f64) -> String {

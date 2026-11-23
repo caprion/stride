@@ -99,18 +99,6 @@ pub fn week_start(day: Date) -> Date {
     day.add_days(-offset)
 }
 
-/// The week a day is in, as the app writes it: "2026-W19".
-pub fn week_key(day: Date) -> String {
-    let iso = week_start(day);
-    format!("{}-W{:02}", iso.year(), iso_week(iso))
-}
-
-/// The week number of a date, in the ISO's reckoning.
-fn iso_week(day: Date) -> u32 {
-    let naive = naive_of(day);
-    naive.iso_week().week()
-}
-
 /// The vitals of one day of wellness.
 pub fn vitals_of(row: &WellnessDaily) -> Vitals {
     let sleep = row.sleep_s.and_then(Duration::from_seconds).map(|total| {
@@ -134,15 +122,6 @@ pub fn wellness_days(rows: &[WellnessDaily]) -> Vec<WellnessDay> {
     rows.iter()
         .filter_map(|row| Date::parse(&row.date).map(|date| WellnessDay::new(date, vitals_of(row))))
         .collect()
-}
-
-/// The history of the last `days` nights before a day, as the core reads it.
-pub fn history_before(api: &Api, day: Date, days: i64) -> ApiResult<Vec<WellnessDay>> {
-    let store = api.store();
-    let rows = store
-        .wellness_before(&day.to_iso(), days)
-        .map_err(|_| ApiError::internal("the history could not be read"))?;
-    Ok(wellness_days(&rows))
 }
 
 /// The pace of a run, in seconds per kilometre.
@@ -236,15 +215,6 @@ pub fn summaries(api: &Api, runs: &[StoredActivity]) -> ApiResult<Vec<ActivitySu
 pub fn group_key(activity: &StoredActivity) -> ApiResult<String> {
     let date = core_date(&activity.local_date)?;
     Ok(week_start(date).to_iso())
-}
-
-/// The runs of one day.
-pub fn runs_on(api: &Api, date: &str) -> ApiResult<Vec<ActivitySummary>> {
-    let runs = api
-        .store()
-        .activities_for_date(date)
-        .map_err(|error| api.store_error("the runs could not be read", &error))?;
-    summaries(api, &runs)
 }
 
 /// The distance of one day, in metres.

@@ -83,12 +83,6 @@ pub fn positions_in(path: &Path) -> Result<Vec<(f64, f64)>, Error> {
     positions_from_bytes(&bytes)
 }
 
-/// Whether every position in `path` is within 1° of the synthetic anchor.
-pub fn all_positions_at_anchor(path: &Path) -> Result<bool, Error> {
-    let positions = positions_in(path)?;
-    Ok(positions.iter().all(|&(lat, lon)| within_anchor(lat, lon)))
-}
-
 pub fn within_anchor(lat: f64, lon: f64) -> bool {
     degree_distance(lat, lon, ANCHOR_LAT, ANCHOR_LON) <= ANCHOR_RADIUS_DEGREES
 }

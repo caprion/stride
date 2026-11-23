@@ -639,69 +639,6 @@ export function ProfilePanel({
   )
 }
 
-/** What each month of the history holds. */
-export function MonthsPanel({
-  rolling,
-  bare = false,
-}: {
-  rolling: RollingInsight | undefined
-  bare?: boolean
-}) {
-  return (
-    <PanelShell
-      title={t('progress.rolling.months.heading')}
-      testId="progress-months"
-      bare={bare}
-    >
-
-      {rolling && rolling.months.length === 0 ? (
-        <p className="text-[13px] text-ink-muted">{t('progress.rolling.noRows')}</p>
-      ) : null}
-      <ul className="space-y-1">
-        {rolling?.months.map((month) => (
-          <li key={month.key} className="flex items-baseline justify-between gap-3">
-            <span className="text-[13.5px] text-ink-soft">{month.label}</span>
-            <span className="flex items-baseline gap-2 text-[13.5px] tabular-nums text-ink">
-              <span className="text-ink-muted">{formatCount(month.sessions)}</span>
-              <span>{renderedText(month.distance)}</span>
-            </span>
-          </li>
-        ))}
-      </ul>
-    </PanelShell>
-  )
-}
-
-/** What each year of the history holds. */
-export function YearsPanel({
-  rolling,
-  bare = false,
-}: {
-  rolling: RollingInsight | undefined
-  bare?: boolean
-}) {
-  return (
-    <PanelShell title={t('progress.rolling.years.heading')} testId="progress-years" bare={bare}>
-
-      <p className="text-[12px] text-ink-faint">{t('progress.rolling.history')}</p>
-      {rolling && rolling.years.length === 0 ? (
-        <p className="text-[13px] text-ink-muted">{t('progress.rolling.noRows')}</p>
-      ) : null}
-      <ul className="space-y-1">
-        {rolling?.years.map((year) => (
-          <li key={year.key} className="flex items-baseline justify-between gap-3">
-            <span className="text-[13.5px] text-ink-soft">{year.label}</span>
-            <span className="flex items-baseline gap-2 text-[13.5px] tabular-nums text-ink">
-              <span className="text-ink-muted">{formatCount(year.sessions)}</span>
-              <span>{renderedText(year.distance)}</span>
-            </span>
-          </li>
-        ))}
-      </ul>
-    </PanelShell>
-  )
-}
-
 /** The weekly volume, as a chart. */
 export function VolumePanel({
   volume,

@@ -411,15 +411,6 @@ impl Api {
         self.garmin().last_error = error;
     }
 
-    /// A Garmin client for the key that is held, if there is one.
-    pub fn garmin_client(&self) -> Option<GarminClient> {
-        let state = self.garmin();
-        state
-            .key
-            .as_ref()
-            .map(|key| key.client(self.transport.clone()))
-    }
-
     /// The key that is held, for the routes that test it.
     ///
     /// The key is copied into the client and nowhere else: the caller gets
@@ -518,9 +509,4 @@ impl Api {
 /// An instant as the responses carry it: `2026-05-12T06:30:00Z`.
 pub fn format_instant(instant: DateTime<Utc>) -> String {
     instant.to_rfc3339_opts(SecondsFormat::Secs, true)
-}
-
-/// A date as the responses carry it: `2026-05-12`.
-pub fn format_date(date: chrono::NaiveDate) -> String {
-    date.format("%Y-%m-%d").to_string()
 }

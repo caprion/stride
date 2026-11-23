@@ -36,6 +36,3 @@ export const DESTINATIONS: readonly Destination[] = [
   { to: '/progress', labelKey: 'nav.progress', icon: TrendingUp, end: false },
   { to: '/body', labelKey: 'nav.body', icon: HeartPulse, end: false },
 ] as const
-
-/** The destination routes, in order — the set the viewport gate compares. */
-export const DESTINATION_ROUTES = DESTINATIONS.map((destination) => destination.to)

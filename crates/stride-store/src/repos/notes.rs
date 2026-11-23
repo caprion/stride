@@ -181,20 +181,6 @@ impl Store {
         .map(|value| value.flatten())
     }
 
-    /// The goal in force, as the row that holds it.
-    pub fn goal_note(&self) -> Result<Option<Note>> {
-        let conn = self.lock()?;
-        let sql = format!(
-            "SELECT {COLUMNS} FROM notes
-             WHERE kind = ?1 AND value IS NOT NULL
-             ORDER BY id DESC
-             LIMIT 1"
-        );
-        conn.query_row(&sql, params![note_kind::GOAL], map_note)
-            .optional()
-            .map_err(|source| StoreError::query("the goal", source))
-    }
-
     /// Set the weekly goal, or take it away.
     ///
     /// **A blank goal is no goal.** The goal is written as a setting, and a

@@ -113,28 +113,11 @@ impl Store {
         })
     }
 
-    /// Open the database with a key given as bytes.
-    ///
-    /// The same as [`Store::open`], for a caller that holds the key as bytes.
-    /// The bytes are copied into a [`DatabaseKey`] and are not kept by the
-    /// store.
-    pub fn open_with_bytes(path: &Path, key: &[u8]) -> Result<Store> {
-        let key = DatabaseKey::from_bytes(key.to_vec())?;
-        Store::open(path, &key)
-    }
-
     /// Open the database and bring it up to the current schema.
     pub fn open_and_migrate(path: &Path, key: &DatabaseKey) -> Result<Store> {
         let store = Store::open(path, key)?;
         store.migrate()?;
         Ok(store)
-    }
-
-    /// Open the database with a key given as bytes, and bring it up to the
-    /// current schema.
-    pub fn open_and_migrate_with_bytes(path: &Path, key: &[u8]) -> Result<Store> {
-        let key = DatabaseKey::from_bytes(key.to_vec())?;
-        Store::open_and_migrate(path, &key)
     }
 
     /// Bring the database up to the current schema.

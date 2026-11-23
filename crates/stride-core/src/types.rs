@@ -40,11 +40,6 @@ impl Duration {
         }
     }
 
-    /// A duration in minutes. `None` when the number cannot be a duration.
-    pub fn from_minutes(minutes: f64) -> Option<Self> {
-        Self::from_seconds(minutes * 60.0)
-    }
-
     /// A duration in hours. `None` when the number cannot be a duration.
     pub fn from_hours(hours: f64) -> Option<Self> {
         Self::from_seconds(hours * 3600.0)

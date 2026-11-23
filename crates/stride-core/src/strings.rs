@@ -1567,11 +1567,6 @@ pub mod lint {
             .collect()
     }
 
-    /// Whether a phrase is banned.
-    pub fn is_banned(phrase: &str) -> bool {
-        banned_phrases().contains(&phrase)
-    }
-
     /// Whether a text contains a phrase, on word boundaries and without
     /// regard to case.
     ///

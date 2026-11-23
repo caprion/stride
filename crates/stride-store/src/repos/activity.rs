@@ -570,32 +570,6 @@ impl Store {
             .map_err(|source| StoreError::query("activity_samples", source))
     }
 
-    /// Write the derived series of one run.
-    ///
-    /// The series may be written on its own; it does not have to arrive with
-    /// the run. It is a cache of what the FIT file already says.
-    pub fn put_activity_samples(&self, samples: &ActivitySamples) -> Result<()> {
-        let conn = self.lock()?;
-        conn.execute(
-            "INSERT INTO activity_samples (activity_id, series, sha256, first_s, last_s)
-             VALUES (?1, ?2, ?3, ?4, ?5)
-             ON CONFLICT(activity_id) DO UPDATE SET
-                series = excluded.series,
-                sha256 = excluded.sha256,
-                first_s = excluded.first_s,
-                last_s = excluded.last_s",
-            params![
-                samples.activity_id,
-                samples.series,
-                samples.sha256,
-                samples.first_s,
-                samples.last_s,
-            ],
-        )
-        .map_err(|source| StoreError::query("upsert activity_samples", source))?;
-        Ok(())
-    }
-
     /// Throw the derived series of one run away.
     ///
     /// The FIT file is still there, so the series can be derived again. This
@@ -608,17 +582,6 @@ impl Store {
                 params![activity_id],
             )
             .map_err(|source| StoreError::query("prune activity_samples", source))?;
-        Ok(removed)
-    }
-
-    /// Throw every derived series away.
-    ///
-    /// The FIT files are still there, so every series can be derived again.
-    pub fn prune_all_activity_samples(&self) -> Result<usize> {
-        let conn = self.lock()?;
-        let removed = conn
-            .execute("DELETE FROM activity_samples", [])
-            .map_err(|source| StoreError::query("prune every activity_samples", source))?;
         Ok(removed)
     }
 
