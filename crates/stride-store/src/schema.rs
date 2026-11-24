@@ -33,7 +33,7 @@ use rusqlite::Connection;
 use crate::error::{Result, StoreError};
 
 /// The version of the schema this build reads and writes.
-pub const SCHEMA_VERSION: i64 = 5;
+pub const SCHEMA_VERSION: i64 = 6;
 
 /// The statements that create the tables, in creation order.
 ///
@@ -271,6 +271,104 @@ CREATE TABLE update_settings (
     updated_at        DATETIME NOT NULL
 );
 "#,
+    // The tables added in version 6: the athlete's own race, the athlete's
+    // own threshold choice, and the source's own facts about an activity.
+    //
+    // The first two are the athlete's own facts, typed into the app: they
+    // are never synced, and the app never invents one. The third is the
+    // source's own record of a run, kept with its provenance, so that a
+    // field the source never sent has no row and a field it sent as null
+    // has a row whose value is null.
+    r#"-- Old: (nothing - the old app never held a race the athlete ran). v6: the
+-- athlete's own race: the distance, the time, the day it was run, the day it
+-- was entered, the day it was last changed, and the label the athlete gave
+-- it.
+--
+-- A race is an **observation**, not a verdict. The athlete types it, and
+-- Stride never invents one and never infers one from the training. The
+-- distance is in metres, the contract's own unit (core contract §1), and the
+-- label is a closed list that names the distance the race was at.
+--
+-- The anchor is the race the paces come from. At most one row carries it,
+-- and it never moves by itself: entering another race leaves it where the
+-- athlete pointed it.
+CREATE TABLE race_observations (
+    id          INTEGER NOT NULL PRIMARY KEY,
+    distance_m  REAL NOT NULL,             -- the race's distance, in metres
+    time_s      REAL NOT NULL,             -- the finish time, in seconds
+    race_date   VARCHAR(10) NOT NULL,      -- the day of the race, YYYY-MM-DD
+    label       VARCHAR(24) NOT NULL,      -- '5K' | '10K' | '15K' | '10-mile' |
+                                            -- 'half marathon' | 'marathon'
+    name        TEXT,                      -- the athlete's own words for the race
+    source      VARCHAR(16) NOT NULL,      -- 'typed' - the only source there is
+    entered_on  VARCHAR(10) NOT NULL,      -- the day it was entered
+    updated_on  VARCHAR(10) NOT NULL,      -- the day it was last changed
+    anchor      INTEGER NOT NULL DEFAULT 0 -- 1 when the paces come from this race
+);
+"#,
+    r#"-- Old: (nothing - the old app had no threshold of the athlete's own). v6:
+-- the threshold the athlete uses: one dated fact per choice, with its
+-- source.
+--
+-- The candidates are **computed and never stored**; this table holds what
+-- the athlete picked, and the history of the picks. A choice may carry a
+-- heart rate, a pace band (the band's two ends), or **both** - a typed
+-- value from a lab test carries the pair. The kind is what the row carries,
+-- and a missing kind is a missing kind, never a zero.
+--
+-- **At most one row carries `in_force = 1`.** One threshold at a time; the
+-- earlier choice stays in the dated history with its base named, and a plan
+-- adopted in March is paced by March's number.
+CREATE TABLE threshold_observations (
+    id                 INTEGER NOT NULL PRIMARY KEY,
+    hr_bpm             REAL,                -- NULL when the choice carries no heart rate
+    pace_low_s_per_km  REAL,                -- NULL when the choice carries no pace
+    pace_high_s_per_km REAL,                -- NULL when the choice carries no pace
+    source             VARCHAR(24) NOT NULL,-- 'watch_zone_model' | 'race' |
+                                            -- 'field_test' | 'typed'
+    rule_id            VARCHAR(48),         -- the named rule that computed it
+    base               VARCHAR(24),         -- the base it was made for:
+                                            -- 'pfitzinger' | 'eighty_twenty'
+    origin_date        VARCHAR(10),         -- the day of the underlying fact
+    origin_ref         VARCHAR(64),         -- the model / race / run it came from
+    label              TEXT,                -- the athlete's own label; 'typed' only
+    entered_on         VARCHAR(10) NOT NULL,-- the day the choice was made
+    updated_on         VARCHAR(10) NOT NULL,-- the day the row was last changed
+    in_force           INTEGER NOT NULL DEFAULT 0 -- 1 = the threshold in use now
+);
+"#,
+    r#"-- Old: (nothing - the old app stored a projection of the activity and
+-- dropped the rest of it). v6: the source's own facts about an activity,
+-- kept with their provenance: the value, the day the response carried it,
+-- and the day it was read. One row per (activity, source, field, item).
+--
+-- The missingness is kept as the source gave it: a field the source never
+-- sent has no row at all, and a field the source sent as null has a row
+-- whose value is null. A later read never deletes a row - it replaces the
+-- value it carried and keeps the reading time of the read that carried it -
+-- so a failed read leaves the previous value and its reading time in place.
+--
+-- Nothing here is derived, and nothing here is a verdict. The watch's own
+-- zone minutes are the source's own record of the run, over the elapsed
+-- time; Garmin's estimates - the VO2 max, the training stress score, the
+-- activity training load, the lactate threshold, the intensity factor, the
+-- stress and the body battery - are judgements, and they are not stored.
+CREATE TABLE activity_observations (
+    id           INTEGER NOT NULL PRIMARY KEY,
+    activity_id  INTEGER NOT NULL,           -- the run it is about
+    source       VARCHAR(24) NOT NULL,       -- 'garmin_personal'
+    endpoint     VARCHAR(96) NOT NULL,       -- the API path the value was read from
+    field        VARCHAR(48) NOT NULL,       -- the source's own field name
+    ordinal      INTEGER NOT NULL DEFAULT 0, -- which item of a repeated field
+    value        REAL,                       -- the number, as reported; NULL when the source sent null
+    text_value   TEXT,                       -- a value that is not a number, as reported
+    unit         VARCHAR(16),                -- the unit the source states for the number
+    observed_at  DATETIME,                   -- the instant the item is about, when the source gave one
+    retrieved_at DATETIME NOT NULL,          -- when the value was read, ISO-8601 UTC
+    FOREIGN KEY (activity_id) REFERENCES activities (id) ON DELETE CASCADE,
+    CONSTRAINT uq_activity_observations UNIQUE (activity_id, source, field, ordinal)
+);
+"#,
 ];
 
 /// The statements that create the indexes, in creation order.
@@ -306,6 +404,16 @@ pub const V5_INDEX_STATEMENTS: &[&str] = &[
 "#,
 ];
 
+/// The indexes that version 6 adds, in creation order.
+pub const V6_INDEX_STATEMENTS: &[&str] = &[
+    r#"CREATE INDEX ix_race_observations_race_date ON race_observations (race_date);
+"#,
+    r#"CREATE INDEX ix_threshold_observations_entered_on ON threshold_observations (entered_on);
+"#,
+    r#"CREATE INDEX ix_activity_observations_activity ON activity_observations (activity_id);
+"#,
+];
+
 /// Every statement of the schema, in order: the tables first, then the
 /// indexes.
 pub fn all_statements() -> Vec<&'static str> {
@@ -314,6 +422,7 @@ pub fn all_statements() -> Vec<&'static str> {
         .chain(INDEX_STATEMENTS.iter())
         .chain(V4_INDEX_STATEMENTS.iter())
         .chain(V5_INDEX_STATEMENTS.iter())
+        .chain(V6_INDEX_STATEMENTS.iter())
         .copied()
         .collect()
 }
@@ -332,14 +441,16 @@ pub struct Migration {
 /// tombstone table for the runs Garmin no longer lists. Version 3 adds the
 /// heart-rate zone model table. Version 4 adds the wellness observations
 /// table. Version 5 adds the run update's table and the update's own
-/// settings. A database at an older version gets the missing steps, each in
-/// its own transaction.
+/// settings. Version 6 adds the athlete's race, the athlete's threshold
+/// choice and the source's own activity observations. A database at an older
+/// version gets the missing steps, each in its own transaction.
 ///
 /// The first seven tables of [`TABLE_STATEMENTS`] are version 1; the eighth
 /// — the tombstone table — is version 2; the ninth — the zone model table —
 /// is version 3; the tenth — the wellness observations table — is version 4;
 /// the eleventh and the twelfth — the run update and its settings — are
-/// version 5.
+/// version 5; the thirteenth, fourteenth and fifteenth — the race, the
+/// threshold and the activity observations — are version 6.
 pub fn migrations() -> Vec<Migration> {
     vec![
         Migration {
@@ -367,10 +478,18 @@ pub fn migrations() -> Vec<Migration> {
                 .collect(),
         },
         Migration {
-            version: SCHEMA_VERSION,
-            statements: TABLE_STATEMENTS[10..]
+            version: 5,
+            statements: TABLE_STATEMENTS[10..12]
                 .iter()
                 .chain(V5_INDEX_STATEMENTS.iter())
+                .copied()
+                .collect(),
+        },
+        Migration {
+            version: SCHEMA_VERSION,
+            statements: TABLE_STATEMENTS[12..]
+                .iter()
+                .chain(V6_INDEX_STATEMENTS.iter())
                 .copied()
                 .collect(),
         },

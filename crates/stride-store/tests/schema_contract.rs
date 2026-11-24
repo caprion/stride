@@ -108,23 +108,29 @@ fn the_store_creates_the_contract_s_schema() -> Result<()> {
         names,
         vec![
             "activities".to_string(),
+            "activity_observations".to_string(),
             "activity_samples".to_string(),
             "deleted_garmin_activities".to_string(),
             "hr_zone_models".to_string(),
             "ix_activities_local_date".to_string(),
             "ix_activities_sport".to_string(),
             "ix_activities_start".to_string(),
+            "ix_activity_observations_activity".to_string(),
             "ix_notes_activity_id".to_string(),
             "ix_plan_blocks_start_date".to_string(),
             "ix_plan_sessions_block_date".to_string(),
             "ix_plan_sessions_date".to_string(),
+            "ix_race_observations_race_date".to_string(),
             "ix_run_updates_activity".to_string(),
+            "ix_threshold_observations_entered_on".to_string(),
             "ix_wellness_observations_date".to_string(),
             "notes".to_string(),
             "plan_blocks".to_string(),
             "plan_sessions".to_string(),
+            "race_observations".to_string(),
             "run_updates".to_string(),
             "sync_state".to_string(),
+            "threshold_observations".to_string(),
             "update_settings".to_string(),
             "wellness_daily".to_string(),
             "wellness_observations".to_string(),
@@ -182,6 +188,9 @@ fn the_tables_are_created_in_the_contract_s_order() -> Result<()> {
             "wellness_observations".to_string(),
             "run_updates".to_string(),
             "update_settings".to_string(),
+            "race_observations".to_string(),
+            "threshold_observations".to_string(),
+            "activity_observations".to_string(),
         ]
     );
     drop(dir);
@@ -204,6 +213,9 @@ fn the_indexes_are_created_in_the_contract_s_order() -> Result<()> {
             "ix_notes_activity_id".to_string(),
             "ix_wellness_observations_date".to_string(),
             "ix_run_updates_activity".to_string(),
+            "ix_race_observations_race_date".to_string(),
+            "ix_threshold_observations_entered_on".to_string(),
+            "ix_activity_observations_activity".to_string(),
         ]
     );
     drop(dir);
@@ -221,7 +233,7 @@ fn the_migration_is_idempotent() -> Result<()> {
     assert_eq!(store.schema_version()?, schema::SCHEMA_VERSION);
 
     let tables = store.with_connection(schema::table_names)?;
-    assert_eq!(tables.len(), 12);
+    assert_eq!(tables.len(), 15);
     drop(dir);
     Ok(())
 }
@@ -350,7 +362,55 @@ fn a_database_opened_again_keeps_its_schema_version() -> Result<()> {
         let store = Store::open_and_migrate(&path, &common::key()?)?;
         assert_eq!(store.schema_version()?, schema::SCHEMA_VERSION);
         let tables = store.with_connection(schema::table_names)?;
-        assert_eq!(tables.len(), 12);
+        assert_eq!(tables.len(), 15);
     }
+    Ok(())
+}
+
+#[test]
+fn a_version_five_database_migrates_to_version_six() -> Result<()> {
+    let dir = common::scratch("schema-migrate-v5-v6")?;
+    let path = dir.file("stride.db");
+    let store = Store::open(&path, &common::key()?)?;
+
+    // Build the schema as it was at version 5.
+    store.with_connection(|conn| {
+        for migration in schema::migrations()
+            .into_iter()
+            .take_while(|step| step.version <= 5)
+        {
+            for statement in migration.statements {
+                conn.execute_batch(statement)
+                    .map_err(|error| stride_store::StoreError::migration(statement, error))?;
+            }
+            conn.pragma_update(None, "user_version", migration.version)
+                .map_err(|error| stride_store::StoreError::migration("user_version", error))?;
+        }
+        Ok(())
+    })?;
+    assert_eq!(store.schema_version()?, 5);
+    let tables = store.with_connection(schema::table_names)?;
+    assert!(!tables.iter().any(|table| table == "race_observations"));
+    assert!(!tables.iter().any(|table| table == "threshold_observations"));
+    assert!(!tables.iter().any(|table| table == "activity_observations"));
+
+    // One migrate() adds the three tables and their indexes.
+    store.migrate()?;
+    assert_eq!(store.schema_version()?, schema::SCHEMA_VERSION);
+    let tables = store.with_connection(schema::table_names)?;
+    assert!(tables.iter().any(|table| table == "race_observations"));
+    assert!(tables.iter().any(|table| table == "threshold_observations"));
+    assert!(tables.iter().any(|table| table == "activity_observations"));
+    let indexes = store.with_connection(schema::index_names)?;
+    assert!(indexes
+        .iter()
+        .any(|index| index == "ix_race_observations_race_date"));
+    assert!(indexes
+        .iter()
+        .any(|index| index == "ix_threshold_observations_entered_on"));
+    assert!(indexes
+        .iter()
+        .any(|index| index == "ix_activity_observations_activity"));
+    drop(dir);
     Ok(())
 }

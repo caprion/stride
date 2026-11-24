@@ -210,6 +210,55 @@ changed with it.
   (`crates/stride-api/src/zonemodel.rs`), so the rule is in one place and
   the store's dated history is read as a history.
 
+### Note — the storage for the races, the threshold and the source's own facts (2026-11-24)
+
+This note travels with a change to `docs/contract/schema.sql`, which the
+contract freeze says is a plan change: a frozen file changes only with a
+plan note in the same change. **The schema version moves from 5 to 6**, and
+three tables are added. No route changed, and no shape changed.
+
+* **The athlete's races** (`race_observations`). The distance, the finish
+  time, the day of the race, the day it was entered, the day it was last
+  changed, and the **label** the athlete gave it — a closed list: `5K`,
+  `10K`, `15K`, `10-mile`, `half marathon`, `marathon`. The distance is in
+  metres, the core contract's own unit; the label is what the athlete says.
+  The **anchor** — the race the paces come from — is a flag, and **at most
+  one row carries it**: entering another race never moves it by itself.
+* **The athlete's threshold** (`threshold_observations`). One dated fact per
+  **choice**: the heart rate, the pace band's two ends, or **both** — a
+  typed value from a lab test carries the pair — with the **source** (the
+  watch's zone model, a race, a field test, or typed), the **rule** that
+  computed it where one applied, the **base** it was made for, the day the
+  choice was made and the day the row was last changed. **At most one row
+  carries `in_force`**: one threshold at a time, the earlier choices stay in
+  the dated history with their base named, and a plan adopted in March is
+  paced by March's number. The candidates are computed and never stored.
+* **The source's own facts about an activity** (`activity_observations`).
+  One row per (activity, source, field, item), in the shape
+  `wellness_observations` already uses: the value, the day the response
+  carried it, the day it was read, and the source. The watch's own zone
+  minutes (`hrTimeInZone_1..5`, over the **elapsed** time) are the fourth
+  path for the imported history, and they ride on the **activity-search
+  payload the sync already fetches** — **no extra request**, and the pull's
+  request budget does not grow. A field the source never sent has **no
+  row**; a field it sent as null has a row whose value is null; **never a
+  zero for "no time"**.
+* **What stays out.** Garmin's estimates — the VO₂ max, the training stress
+  score, the activity training load, the lactate threshold, the intensity
+  factor, the stress and the body battery — are judgements, and the contract
+  excludes them. The races and the threshold are **the athlete's own** and
+  are **never synced**: they are typed into the app.
+* **The export and the backup carry every table**, with their counts in the
+  manifest. These are the athlete's own facts, held locally in an encrypted
+  database; the export is the athlete's own file and stays with the athlete.
+* **One bump, and where that differs from the amendment above.** The
+  amendment "the two bases of zone time" says each new table is its own
+  bump. The storage step's brief asks for **schema version 6** with the
+  three tables in it, and the three tables are read and written together, so
+  they ship in **one** step: a database at version 5 takes version 6 and
+  gets all three tables and their indexes, in one transaction, and a
+  database that already ran version 6 changes nothing.
+
 ### Proposed amendment — the zone model is a dated fact (2026-11-15)
 
 **Proposal, not approved.** The approvals below are the user's to give. This

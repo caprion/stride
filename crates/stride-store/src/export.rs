@@ -542,11 +542,49 @@ const UPDATE_SETTINGS: FrozenTable = FrozenTable {
     columns: "PRAGMA main.table_info(\"update_settings\")",
 };
 
+/// `race_observations`.
+const RACE_OBSERVATIONS: FrozenTable = FrozenTable {
+    name: "race_observations",
+    select: "SELECT id, distance_m, time_s, race_date, label, name, source, entered_on, \
+             updated_on, anchor FROM race_observations",
+    insert: "INSERT INTO race_observations (id, distance_m, time_s, race_date, label, name, \
+              source, entered_on, updated_on, anchor) \
+              VALUES (:id, :distance_m, :time_s, :race_date, :label, :name, :source, \
+              :entered_on, :updated_on, :anchor)",
+    columns: "PRAGMA main.table_info(\"race_observations\")",
+};
+
+/// `threshold_observations`.
+const THRESHOLD_OBSERVATIONS: FrozenTable = FrozenTable {
+    name: "threshold_observations",
+    select: "SELECT id, hr_bpm, pace_low_s_per_km, pace_high_s_per_km, source, rule_id, base, \
+             origin_date, origin_ref, label, entered_on, updated_on, in_force \
+             FROM threshold_observations",
+    insert: "INSERT INTO threshold_observations (id, hr_bpm, pace_low_s_per_km, \
+              pace_high_s_per_km, source, rule_id, base, origin_date, origin_ref, label, \
+              entered_on, updated_on, in_force) \
+              VALUES (:id, :hr_bpm, :pace_low_s_per_km, :pace_high_s_per_km, :source, :rule_id, \
+              :base, :origin_date, :origin_ref, :label, :entered_on, :updated_on, :in_force)",
+    columns: "PRAGMA main.table_info(\"threshold_observations\")",
+};
+
+/// `activity_observations`.
+const ACTIVITY_OBSERVATIONS: FrozenTable = FrozenTable {
+    name: "activity_observations",
+    select: "SELECT id, activity_id, source, endpoint, field, ordinal, value, text_value, \
+             unit, observed_at, retrieved_at FROM activity_observations",
+    insert: "INSERT INTO activity_observations (id, activity_id, source, endpoint, field, \
+              ordinal, value, text_value, unit, observed_at, retrieved_at) \
+              VALUES (:id, :activity_id, :source, :endpoint, :field, :ordinal, :value, \
+              :text_value, :unit, :observed_at, :retrieved_at)",
+    columns: "PRAGMA main.table_info(\"activity_observations\")",
+};
+
 /// The tables of the frozen schema, in the schema's order.
 ///
 /// The order is the schema's: parents before children, so a child never
 /// arrives before its parent.
-const FROZEN_TABLES: [FrozenTable; 12] = [
+const FROZEN_TABLES: [FrozenTable; 15] = [
     ACTIVITIES,
     ACTIVITY_SAMPLES,
     WELLNESS_DAILY,
@@ -559,6 +597,9 @@ const FROZEN_TABLES: [FrozenTable; 12] = [
     WELLNESS_OBSERVATIONS,
     RUN_UPDATES,
     UPDATE_SETTINGS,
+    RACE_OBSERVATIONS,
+    THRESHOLD_OBSERVATIONS,
+    ACTIVITY_OBSERVATIONS,
 ];
 
 /// Copy every row of the schema from one database to another.
