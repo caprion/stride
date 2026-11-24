@@ -190,6 +190,10 @@ impl Store {
             .map_err(|source| StoreError::query("run_updates", source))?;
         deleted += removed as i64;
         let removed = transaction
+            .execute("DELETE FROM activity_observations", [])
+            .map_err(|source| StoreError::query("activity_observations", source))?;
+        deleted += removed as i64;
+        let removed = transaction
             .execute("DELETE FROM activities", [])
             .map_err(|source| StoreError::query("activities", source))?;
         deleted += removed as i64;
@@ -224,6 +228,14 @@ impl Store {
         let removed = transaction
             .execute("DELETE FROM update_settings", [])
             .map_err(|source| StoreError::query("update_settings", source))?;
+        deleted += removed as i64;
+        let removed = transaction
+            .execute("DELETE FROM race_observations", [])
+            .map_err(|source| StoreError::query("race_observations", source))?;
+        deleted += removed as i64;
+        let removed = transaction
+            .execute("DELETE FROM threshold_observations", [])
+            .map_err(|source| StoreError::query("threshold_observations", source))?;
         deleted += removed as i64;
 
         transaction

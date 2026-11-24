@@ -17,23 +17,29 @@
 //! | module | table |
 //! |---|---|
 //! | [`activity`] | `activities`, `activity_samples` |
+//! | [`activity_observations`] | `activity_observations` |
 //! | [`wellness`] | `wellness_daily` |
 //! | [`observations`] | `wellness_observations` |
 //! | [`plan`] | `plan_blocks`, `plan_sessions` |
 //! | [`notes`] | `notes` |
+//! | [`races`] | `race_observations` |
 //! | [`sync`] | `sync_state` |
 //! | [`deleted`] | `deleted_garmin_activities` |
+//! | [`threshold`] | `threshold_observations` |
 //! | [`zones`] | `hr_zone_models` |
 //! | [`updates`] | `run_updates`, `update_settings` |
 
 use crate::error::{Result, StoreError};
 
 pub mod activity;
+pub mod activity_observations;
 pub mod deleted;
 pub mod notes;
 pub mod observations;
 pub mod plan;
+pub mod races;
 pub mod sync;
+pub mod threshold;
 pub mod updates;
 pub mod wellness;
 pub mod zones;

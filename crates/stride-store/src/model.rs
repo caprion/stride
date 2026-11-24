@@ -69,6 +69,106 @@ pub mod sync_kind {
     pub const DAILY_SUMMARIES: &str = "daily_summaries";
 }
 
+/// The label an athlete gave a race.
+///
+/// The list is **closed**: the label names the distance the race was at,
+/// and the app never reads a label it does not know.
+pub mod race_label {
+    /// Five kilometres.
+    pub const FIVE_K: &str = "5K";
+    /// Ten kilometres.
+    pub const TEN_K: &str = "10K";
+    /// Fifteen kilometres.
+    pub const FIFTEEN_K: &str = "15K";
+    /// Ten miles.
+    pub const TEN_MILE: &str = "10-mile";
+    /// A half marathon.
+    pub const HALF_MARATHON: &str = "half marathon";
+    /// A marathon.
+    pub const MARATHON: &str = "marathon";
+
+    /// Every label, in the order the app lists them.
+    pub const ALL: [&str; 6] = [FIVE_K, TEN_K, FIFTEEN_K, TEN_MILE, HALF_MARATHON, MARATHON];
+
+    /// The distance a label names, in metres.
+    ///
+    /// `None` for a label that is not on the list: the app never invents a
+    /// distance for a race it cannot name.
+    pub fn distance_m(label: &str) -> Option<f64> {
+        match label {
+            FIVE_K => Some(5_000.0),
+            TEN_K => Some(10_000.0),
+            FIFTEEN_K => Some(15_000.0),
+            TEN_MILE => Some(16_093.44),
+            HALF_MARATHON => Some(21_097.5),
+            MARATHON => Some(42_195.0),
+            _ => None,
+        }
+    }
+
+    /// Is this a label the app knows?
+    pub fn is_known(label: &str) -> bool {
+        ALL.contains(&label)
+    }
+}
+
+/// Where a race came from.
+pub mod race_source {
+    /// Typed into the app. The only source there is: a watch does not time
+    /// races, and the app never infers one from the training.
+    pub const TYPED: &str = "typed";
+}
+
+/// Where a threshold choice came from.
+///
+/// The four candidates are four **sources**, not four rules.
+pub mod threshold_source {
+    /// The watch's own zone model — its fifth zone's floor.
+    pub const WATCH_ZONE_MODEL: &str = "watch_zone_model";
+    /// A race the athlete typed.
+    pub const RACE: &str = "race";
+    /// A field test the athlete pointed at.
+    pub const FIELD_TEST: &str = "field_test";
+    /// A number the athlete brought.
+    pub const TYPED: &str = "typed";
+
+    /// Every source, in the order the app lists the candidates.
+    pub const ALL: [&str; 4] = [WATCH_ZONE_MODEL, RACE, FIELD_TEST, TYPED];
+}
+
+/// The base a threshold choice was made for.
+///
+/// The bases read the threshold differently, so a choice names the one it
+/// was made for.
+pub mod threshold_base {
+    /// The Pfitzinger base — the first drop.
+    pub const PFITZINGER: &str = "pfitzinger";
+    /// The 80/20 base.
+    pub const EIGHTY_TWENTY: &str = "eighty_twenty";
+
+    /// Every base, in the order the app lists them.
+    pub const ALL: [&str; 2] = [PFITZINGER, EIGHTY_TWENTY];
+}
+
+/// The label an athlete gave a typed threshold.
+///
+/// The app stores the label and shows it; it never parses it.
+pub mod threshold_label {
+    /// A laboratory test.
+    pub const LAB_TEST: &str = "lab test";
+    /// A coach.
+    pub const COACH: &str = "coach";
+    /// Another application.
+    pub const ANOTHER_APP: &str = "another app";
+    /// A book or a table.
+    pub const BOOK_OR_TABLE: &str = "book or table";
+    /// The athlete's own number.
+    pub const MY_OWN_NUMBER: &str = "my own number";
+
+    /// Every label, in the order the app lists them.
+    pub const ALL: [&str; 5] = [LAB_TEST, COACH, ANOTHER_APP, BOOK_OR_TABLE, MY_OWN_NUMBER];
+}
+
 /// One run.
 ///
 /// The FIT file is in here: the blob is the source of truth, and everything
@@ -684,4 +784,218 @@ impl UpdateSettings {
     /// Where the reviewer is called: Google's OpenAI-compatible route.
     pub const DEFAULT_REVIEWER_BASE_URL: &str =
         "https://generativelanguage.googleapis.com/v1beta/openai";
+}
+
+/// One race the athlete ran.
+///
+/// A race is an **observation**, not a verdict: the athlete types it, and
+/// the app never invents one and never infers one from the training. The
+/// distance is in metres and the time in seconds — the core contract's own
+/// units — and the label is the athlete's own name for the distance.
+#[derive(Debug, Clone, PartialEq)]
+pub struct RaceObservation {
+    /// The row's primary key.
+    pub id: i64,
+    /// The race's distance, in metres.
+    pub distance_m: f64,
+    /// The finish time, in seconds.
+    pub time_s: f64,
+    /// The day of the race, `YYYY-MM-DD`.
+    pub race_date: String,
+    /// The athlete's label for the race — `10K`, `half marathon`, …
+    pub label: String,
+    /// The athlete's own words for the race. `None` = none given.
+    pub name: Option<String>,
+    /// Where the race came from: `typed`.
+    pub source: String,
+    /// The day the race was entered.
+    pub entered_on: String,
+    /// The day the row was last changed.
+    pub updated_on: String,
+    /// Do the paces come from this race? At most one race carries it.
+    pub anchor: bool,
+}
+
+/// A race to write.
+#[derive(Debug, Clone, PartialEq)]
+pub struct NewRaceObservation {
+    /// The race's distance, in metres.
+    pub distance_m: f64,
+    /// The finish time, in seconds.
+    pub time_s: f64,
+    /// The day of the race, `YYYY-MM-DD`.
+    pub race_date: String,
+    /// The athlete's label for the race.
+    pub label: String,
+    /// The athlete's own words for the race.
+    pub name: Option<String>,
+    /// Where the race came from: `typed`.
+    pub source: String,
+    /// The day the race was entered.
+    pub entered_on: String,
+    /// The day the row was last changed.
+    pub updated_on: String,
+}
+
+/// What a threshold choice carries.
+///
+/// The kind is what the row carries, and **a missing kind is a missing
+/// kind** — never a zero, and never a conversion between the two.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ThresholdKind {
+    /// A heart rate, in beats per minute.
+    HeartRate,
+    /// A pace band — the band's two ends, in seconds per kilometre.
+    PaceBand,
+    /// Both: a heart rate and a pace band.
+    Both,
+}
+
+/// One threshold the athlete uses.
+///
+/// The choice is a **dated fact**: the value (or the pair of values), the
+/// source it came from, the rule that computed it where one applied, the
+/// base it was made for, the day the choice was made and the day the row
+/// was last changed.
+///
+/// **At most one choice is in force at a time.** The earlier choices stay
+/// in the history, and a plan adopted in March is paced by March's number.
+#[derive(Debug, Clone, PartialEq)]
+pub struct ThresholdObservation {
+    /// The row's primary key.
+    pub id: i64,
+    /// The threshold heart rate, in beats per minute. `None` = no value.
+    pub hr_bpm: Option<f64>,
+    /// The fast end of the pace band, in seconds per kilometre.
+    pub pace_low_s_per_km: Option<f64>,
+    /// The slow end of the pace band, in seconds per kilometre.
+    pub pace_high_s_per_km: Option<f64>,
+    /// Where the number came from: `watch_zone_model`, `race`,
+    /// `field_test` or `typed`.
+    pub source: String,
+    /// The named rule that computed the value. `None` = no rule applied.
+    pub rule_id: Option<String>,
+    /// The base the choice was made for: `pfitzinger` or `eighty_twenty`.
+    pub base: Option<String>,
+    /// The day of the fact the number came from. `None` = none given.
+    pub origin_date: Option<String>,
+    /// The model, race or run the number came from.
+    pub origin_ref: Option<String>,
+    /// The athlete's own label for the number. `typed` only.
+    pub label: Option<String>,
+    /// The day the choice was made.
+    pub entered_on: String,
+    /// The day the row was last changed.
+    pub updated_on: String,
+    /// Is this the choice in force now?
+    pub in_force: bool,
+}
+
+impl ThresholdObservation {
+    /// What the choice carries: a heart rate, a pace band, or both.
+    ///
+    /// `None` when the row carries neither — an empty choice is not a
+    /// choice, and the repository refuses to write one.
+    pub fn kind(&self) -> Option<ThresholdKind> {
+        match (self.hr_bpm.is_some(), self.pace_low_s_per_km.is_some()) {
+            (true, true) => Some(ThresholdKind::Both),
+            (true, false) => Some(ThresholdKind::HeartRate),
+            (false, true) => Some(ThresholdKind::PaceBand),
+            (false, false) => None,
+        }
+    }
+}
+
+/// A threshold choice to write.
+#[derive(Debug, Clone, PartialEq)]
+pub struct NewThresholdObservation {
+    /// The threshold heart rate, in beats per minute.
+    pub hr_bpm: Option<f64>,
+    /// The fast end of the pace band, in seconds per kilometre.
+    pub pace_low_s_per_km: Option<f64>,
+    /// The slow end of the pace band, in seconds per kilometre.
+    pub pace_high_s_per_km: Option<f64>,
+    /// Where the number came from.
+    pub source: String,
+    /// The named rule that computed the value.
+    pub rule_id: Option<String>,
+    /// The base the choice was made for.
+    pub base: Option<String>,
+    /// The day of the fact the number came from.
+    pub origin_date: Option<String>,
+    /// The model, race or run the number came from.
+    pub origin_ref: Option<String>,
+    /// The athlete's own label for the number.
+    pub label: Option<String>,
+    /// The day the choice was made.
+    pub entered_on: String,
+    /// The day the row was last changed.
+    pub updated_on: String,
+}
+
+/// One observation the source reported about a run.
+///
+/// An observation is **the source's own fact**: the value, the day the
+/// response carried it, the day it was read, and the endpoint it was read
+/// from. Nothing here is derived and nothing here is a verdict.
+///
+/// The missingness is part of the row: a field the source never sent has no
+/// row at all, and a field it sent as null has a row whose value is `None`
+/// and whose text is `None` too.
+#[derive(Debug, Clone, PartialEq)]
+pub struct ActivityObservation {
+    /// The row's primary key.
+    pub id: i64,
+    /// The run it is about.
+    pub activity_id: i64,
+    /// Where the reading came from: `garmin_personal`.
+    pub source: String,
+    /// The API path the value was read from.
+    pub endpoint: String,
+    /// The source's own field name.
+    pub field: String,
+    /// Which item of a repeated field this is. Zero for a field that is not
+    /// repeated.
+    pub ordinal: i64,
+    /// The number, as the source reported it. `None` when the source sent
+    /// null, or when the value is not a number.
+    pub value: Option<f64>,
+    /// A value that is not a number, as the source reported it.
+    pub text_value: Option<String>,
+    /// The unit the source states for the number.
+    pub unit: Option<String>,
+    /// The instant the item is about, when the source gave one.
+    pub observed_at: Option<DateTime<Utc>>,
+    /// When the value was read.
+    pub retrieved_at: DateTime<Utc>,
+}
+
+/// One observation to write.
+///
+/// The row is written over the one already stored for the same run, source,
+/// field and item: a later read replaces the value it carried and keeps the
+/// reading time of the read that carried it, so a failed read leaves the
+/// previous value and its reading time in place.
+#[derive(Debug, Clone, PartialEq)]
+pub struct NewActivityObservation {
+    /// The run it is about.
+    pub activity_id: i64,
+    /// Where the reading came from.
+    pub source: String,
+    /// The API path the value was read from.
+    pub endpoint: String,
+    /// The source's own field name.
+    pub field: String,
+    /// Which item of a repeated field this is.
+    pub ordinal: i64,
+    /// The number, as the source reported it.
+    pub value: Option<f64>,
+    /// A value that is not a number, as the source reported it.
+    pub text_value: Option<String>,
+    /// The unit the source states for the number.
+    pub unit: Option<String>,
+    /// The instant the item is about, when the source gave one.
+    pub observed_at: Option<DateTime<Utc>>,
+    /// When the value was read.
+    pub retrieved_at: DateTime<Utc>,
 }
