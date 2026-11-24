@@ -27,6 +27,7 @@ pub mod statement;
 pub mod story;
 pub mod streaks;
 pub mod strings;
+pub mod threshold;
 pub mod training_paces;
 pub mod types;
 pub mod units;

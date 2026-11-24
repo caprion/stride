@@ -181,7 +181,7 @@ pub struct Entry {
 }
 
 /// The catalogue.
-pub const CATALOGUE: [Entry; 209] = [
+pub const CATALOGUE: [Entry; 222] = [
     // The vitals.
     Entry {
         id: "vital.rest.label",
@@ -1560,6 +1560,84 @@ pub const CATALOGUE: [Entry; 209] = [
         kind: StringKind::Status,
         role: None,
         template: "no goal distance — the rule that places the threshold band needs to know which distance you race",
+    },
+    Entry {
+        id: "threshold.rule.watch",
+        kind: StringKind::Statement,
+        role: None,
+        template: "the start of your watch's fifth zone — the model's own threshold",
+    },
+    Entry {
+        id: "threshold.rule.race",
+        kind: StringKind::Statement,
+        role: None,
+        template: "the pace you could race for about an hour — the band between your 15K pace and your 10-mile pace",
+    },
+    Entry {
+        id: "threshold.rule.test",
+        kind: StringKind::Statement,
+        role: None,
+        template: "your pace and heart rate over the last 30 minutes of a 45-minute time trial",
+    },
+    Entry {
+        id: "threshold.limit.watch",
+        kind: StringKind::Statement,
+        role: None,
+        template: "the app cannot check what was put into the watch",
+    },
+    Entry {
+        id: "threshold.limit.race",
+        kind: StringKind::Statement,
+        role: None,
+        template: "a race is a race, not a test — the pace carries that day's conditions",
+    },
+    Entry {
+        id: "threshold.limit.test",
+        kind: StringKind::Statement,
+        role: None,
+        template: "the estimate carries the run's conditions, the effort across the window, and the watch's heart-rate accuracy",
+    },
+    Entry {
+        id: "threshold.limit.typed",
+        kind: StringKind::Statement,
+        role: None,
+        template: "the app cannot check what the number was taken from",
+    },
+    Entry {
+        id: "threshold.missing.test",
+        kind: StringKind::Status,
+        role: None,
+        template: "no run chosen for the estimate",
+    },
+    Entry {
+        id: "threshold.missing.window",
+        kind: StringKind::Status,
+        role: None,
+        template: "the run carries no samples the rule's window can read",
+    },
+    Entry {
+        id: "threshold.missing.typed",
+        kind: StringKind::Status,
+        role: None,
+        template: "no number entered",
+    },
+    Entry {
+        id: "threshold.in_use",
+        kind: StringKind::Status,
+        role: None,
+        template: "in use",
+    },
+    Entry {
+        id: "threshold.history",
+        kind: StringKind::Statement,
+        role: None,
+        template: "your threshold on {date} was {value}",
+    },
+    Entry {
+        id: "threshold.drift",
+        kind: StringKind::Statement,
+        role: None,
+        template: "the heart rate's drift across the window: {drift} bpm",
     },
 
 ];

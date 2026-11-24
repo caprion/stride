@@ -216,6 +216,19 @@
     { "id": "pace.missing.race", "kind": "status", "role": null, "template": "no race time entered — the paces have no value yet" },
     { "id": "pace.missing.max_hr", "kind": "status", "role": null, "template": "no maximum heart rate — your watch's zones hold none, so the heart-rate bands have no value" },
     { "id": "pace.missing.resting_hr", "kind": "status", "role": null, "template": "no resting heart rate — the bands as a share of your heart-rate reserve have no value" },
-    { "id": "pace.missing.goal", "kind": "status", "role": null, "template": "no goal distance — the rule that places the threshold band needs to know which distance you race" }
+    { "id": "pace.missing.goal", "kind": "status", "role": null, "template": "no goal distance — the rule that places the threshold band needs to know which distance you race" },
+    { "id": "threshold.rule.watch", "kind": "statement", "role": null, "template": "the start of your watch's fifth zone — the model's own threshold" },
+    { "id": "threshold.rule.race", "kind": "statement", "role": null, "template": "the pace you could race for about an hour — the band between your 15K pace and your 10-mile pace" },
+    { "id": "threshold.rule.test", "kind": "statement", "role": null, "template": "your pace and heart rate over the last 30 minutes of a 45-minute time trial" },
+    { "id": "threshold.limit.watch", "kind": "statement", "role": null, "template": "the app cannot check what was put into the watch" },
+    { "id": "threshold.limit.race", "kind": "statement", "role": null, "template": "a race is a race, not a test — the pace carries that day's conditions" },
+    { "id": "threshold.limit.test", "kind": "statement", "role": null, "template": "the estimate carries the run's conditions, the effort across the window, and the watch's heart-rate accuracy" },
+    { "id": "threshold.limit.typed", "kind": "statement", "role": null, "template": "the app cannot check what the number was taken from" },
+    { "id": "threshold.missing.test", "kind": "status", "role": null, "template": "no run chosen for the estimate" },
+    { "id": "threshold.missing.window", "kind": "status", "role": null, "template": "the run carries no samples the rule's window can read" },
+    { "id": "threshold.missing.typed", "kind": "status", "role": null, "template": "no number entered" },
+    { "id": "threshold.in_use", "kind": "status", "role": null, "template": "in use" },
+    { "id": "threshold.history", "kind": "statement", "role": null, "template": "your threshold on {date} was {value}" },
+    { "id": "threshold.drift", "kind": "statement", "role": null, "template": "the heart rate's drift across the window: {drift} bpm" }
   ]
 }
