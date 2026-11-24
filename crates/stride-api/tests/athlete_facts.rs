@@ -165,11 +165,34 @@ fn the_base_is_a_closed_list() {
 }
 
 #[test]
-fn the_programmes_are_served_and_their_absence_is_named() {
+fn the_programmes_are_served_with_their_entry_requirement() {
     let harness = Harness::empty("plan-bases");
     let body = harness.ok_get("/plan/bases");
-    // The templates land with the plan's own step: until then, the list is
-    // empty and the reason says so.
-    assert!(body["bases"].as_array().unwrap().is_empty());
-    assert!(body["unavailable"].is_string());
+    // The catalogue holds the four programmes that were read cell by cell
+    // from the book's own tables.
+    let bases = body["bases"].as_array().expect("the programmes");
+    assert_eq!(bases.len(), 4);
+    let ids: Vec<&str> = bases
+        .iter()
+        .map(|base| base["id"].as_str().unwrap())
+        .collect();
+    assert_eq!(
+        ids,
+        vec![
+            "pfitzinger-10k-tier-1",
+            "pfitzinger-10k-tier-2",
+            "pfitzinger-half-marathon-tier-1",
+            "pfitzinger-half-marathon-tier-2",
+        ]
+    );
+    for base in bases {
+        assert_eq!(base["method"], "Pfitzinger");
+        assert_eq!(base["weeks"], 12);
+        // The entry requirement is stated, in the core's own unit.
+        assert!(base["entry_requirement"].is_string());
+        assert!(base["entry_from_m"].as_f64().unwrap() > 0.0);
+        assert!(base["entry_to_m"].as_f64().unwrap() > base["entry_from_m"].as_f64().unwrap());
+    }
+    // And there is nothing to be unavailable about.
+    assert!(body["unavailable"].is_null());
 }

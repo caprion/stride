@@ -20,6 +20,7 @@ pub mod movement;
 pub mod pace;
 pub mod pattern;
 pub mod plan;
+pub mod plan_bases;
 pub mod profile;
 pub mod rest;
 pub mod rolling;

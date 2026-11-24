@@ -1,0 +1,4261 @@
+{
+  "schema": "stride.plan-templates/v1",
+  "status": "the core's catalogue — the four programmes, read cell by cell from the spine's own tables. The exploration copy (exploration/plan-templates.json) is the verification copy, and a test in the core holds the two in step.",
+  "written": "2026-11-24",
+  "retranscribed": "2026-11-24 — from the corrected spine tables (row-index alignment of the schedule images)",
+  "source": {
+    "spine": "exploration/pfitzinger-spine.md §2.3",
+    "book": "Pete Pfitzinger & Philip Latter, Faster Road Racing: 5K to Half Marathon, 2nd ed. (Human Kinetics, 2015)",
+    "confidence": "book — the four schedules were read cell by cell from the book's schedule images (spine §6.4)",
+    "read": "cell by cell, with the printed weekly mileage as the check",
+    "method": "the schedules print as two images per plan — the Monday–Thursday half and the Friday–Sunday-plus-volume half — and the two halves have different row heights, so they are paired by row index and then checked by sum (spine §2.3). A volume that does not sum is a finding, not a licence to adjust a cell."
+  },
+  "units": {
+    "mile_to_km": 1.609344,
+    "km_rounding_decimals": 1,
+    "about": "every kilometre value is derived from the printed miles at 1 mile = 1.609344 km, rounded to 0.1 km; the spine's own printed kilometre bands are kept in printed_km"
+  },
+  "transcription_notes": [
+    "Every day is transcribed from the spine's §2.3 table for that week; the cell text is kept verbatim in the day's 'cell' field and the parenthetical detail in 'detail'.",
+    "The spine's legend: Rest = 'Rest or cross-training'; GA*n* = general aerobic, *n* miles; GA+s = general aerobic + speed; End *n* = endurance (the long run); Prog *n* (*k* @LT) = progression long run, last *k* miles at LT pace; LT *n* = lactate threshold; VO₂ *n* = VO₂max; SR *n* = speed repetitions; Rec *n* = recovery; RP *n* = race pace.",
+    "On the race days the schedule prints a number (8, 9, 10, 11, 16, 17) that is the miles it counts for that day in the weekly total — it is not the race's own distance. The race's distance is in the day's race_distance_m and race_distance_label.",
+    "A rest or cross-training day has no distance field; it is not a zero.",
+    "volume_check.cells_mi is the sum of the printed daily miles; it reconciles when it equals the printed weekly mileage. Every week of all four programmes reconciles.",
+    "No cell anywhere has been filled from arithmetic. Where a week did not sum, it was reported as a finding and the cells were left as they stand."
+  ],
+  "kinds": {
+    "rest_cross": {
+      "method_name": "Rest or cross-training",
+      "spine_legend": "Rest",
+      "app_kind": "rest",
+      "app_label": "rest or cross-training",
+      "is_run": false,
+      "pace_rule": null,
+      "about": "not a run; the day leaves no trace in the record"
+    },
+    "ga": {
+      "method_name": "General aerobic run",
+      "spine_legend": "GA",
+      "app_kind": "easy",
+      "app_label": "easy",
+      "is_run": true,
+      "pace_rule": "heart-rate band only — 70–81 % of max HR (62–75 % of HR reserve); the method states no pace",
+      "about": null
+    },
+    "ga_speed": {
+      "method_name": "General aerobic run with speed work",
+      "spine_legend": "GA+s",
+      "app_kind": "easy",
+      "app_label": "easy, with strides",
+      "is_run": true,
+      "pace_rule": "heart-rate band only — 70–81 % of max HR; the speed work carries no heart-rate rule",
+      "about": null
+    },
+    "endurance": {
+      "method_name": "Endurance run (the long run)",
+      "spine_legend": "End",
+      "app_kind": "long",
+      "app_label": "long run",
+      "is_run": true,
+      "pace_rule": "20–33 % slower than the 10K race pace at the start, 17–29 % slower than the 15K–half-marathon pace at the finish",
+      "about": null
+    },
+    "progression_long_run": {
+      "method_name": "Progression long run",
+      "spine_legend": "Prog",
+      "app_kind": "long",
+      "app_label": "long run, finishing fast",
+      "is_run": true,
+      "pace_rule": "as the long run, then the last miles at LT pace",
+      "about": "the last miles of the run are at LT pace; the cell states how many"
+    },
+    "lt": {
+      "method_name": "Lactate threshold run (tempo)",
+      "spine_legend": "LT",
+      "app_kind": "quality",
+      "app_label": "tempo",
+      "is_run": true,
+      "pace_rule": "LT pace — the pace you could race for about an hour",
+      "about": null
+    },
+    "vo2max": {
+      "method_name": "VO₂max intervals",
+      "spine_legend": "VO₂",
+      "app_kind": "quality",
+      "app_label": "intervals",
+      "is_run": true,
+      "pace_rule": "3K–5K race pace",
+      "about": null
+    },
+    "speed_repetitions": {
+      "method_name": "Speed repetitions",
+      "spine_legend": "SR",
+      "app_kind": "quality",
+      "app_label": "speed repetitions",
+      "is_run": true,
+      "pace_rule": "800 m–mile race pace",
+      "about": null
+    },
+    "recovery": {
+      "method_name": "Recovery run",
+      "spine_legend": "Rec",
+      "app_kind": "easy",
+      "app_label": "recovery",
+      "is_run": true,
+      "pace_rule": "below 76 % of max HR, or 2 min/mile slower than the 15K–half-marathon race pace",
+      "about": null
+    },
+    "race_pace": {
+      "method_name": "Race-pace run",
+      "spine_legend": "RP",
+      "app_kind": "quality",
+      "app_label": "race pace",
+      "is_run": true,
+      "pace_rule": "the goal race's own pace",
+      "about": null
+    },
+    "race_pace_speed": {
+      "method_name": "Race-pace run with strides",
+      "spine_legend": "RP+s",
+      "app_kind": "quality",
+      "app_label": "race pace, with strides",
+      "is_run": true,
+      "pace_rule": "the goal race's own pace",
+      "about": null
+    },
+    "tune_up_race": {
+      "method_name": "Tune-up race",
+      "spine_legend": "tune-up race",
+      "app_kind": "race",
+      "app_label": "race",
+      "is_run": true,
+      "pace_rule": "raced near maximal effort; shorter than the goal distance",
+      "about": "two per plan, at 4 and 2 weeks to go"
+    },
+    "goal_race": {
+      "method_name": "The goal race",
+      "spine_legend": "goal race",
+      "app_kind": "race",
+      "app_label": "race",
+      "is_run": true,
+      "pace_rule": "the goal race's own pace",
+      "about": null
+    }
+  },
+  "templates": [
+    {
+      "id": "pfitzinger-10k-tier-1",
+      "label": "10K tier 1",
+      "method": "Pfitzinger",
+      "distance_m": 10000,
+      "weeks": 12,
+      "entry_mileage": {
+        "min_mi": 25,
+        "max_mi": 35,
+        "min_km": 40.2,
+        "max_km": 56.3,
+        "source": "spine §2.2 — the 8K & 10K plan's entry requirement for tier 1: '25–35' mi/wk of training"
+      },
+      "plan_mileage": {
+        "min_mi": 30,
+        "max_mi": 42,
+        "min_km": 48.3,
+        "max_km": 67.6,
+        "printed_km": "48–67 km",
+        "source": "spine §2.3.1 heading — '30 to 42 miles (48–67 km) per week'"
+      },
+      "goal_race": {
+        "label": "8K or 10K goal race",
+        "distance_m": 10000,
+        "distance_label": "10K",
+        "options": [
+          {
+            "label": "8K",
+            "distance_m": 8000
+          },
+          {
+            "label": "10K",
+            "distance_m": 10000
+          }
+        ],
+        "source": "spine §2.3.1 race-week cell — '8K or 10K goal race 11'"
+      },
+      "source": {
+        "spine_section": "§2.3.1",
+        "book_chapter": "ch. 10 — the 8K & 10K plans",
+        "distance_m": 10000,
+        "method": "Pfitzinger"
+      },
+      "volume_series_mi": [
+        30,
+        32,
+        34,
+        30,
+        37,
+        39,
+        41,
+        34,
+        42,
+        34,
+        30,
+        31,
+        32
+      ],
+      "notes": [
+        "The tune-up races are 5K, at 4 and 2 weeks to go (spine §2.3.1).",
+        "The 10K plan has no progression long runs (spine §2.3.1).",
+        "One post-race recovery week of 32 miles follows the race (spine §2.3.1).",
+        "The quality session is on Friday in every week; the race-pace session is week 5 (spine §2.3.1)."
+      ],
+      "weeks_detail": [
+        {
+          "week": 11,
+          "weeks_to_go": 11,
+          "label": "11 weeks to go",
+          "in_plan": true,
+          "printed_volume_mi": 30,
+          "printed_volume_km": 48.3,
+          "volume_check": {
+            "cells_mi": 30,
+            "cells_km": 48.3,
+            "reconciles": true
+          },
+          "source": "spine §2.3.1, week 11",
+          "days": [
+            {
+              "day": "mon",
+              "kind": "rest_cross",
+              "kind_label": "Rest",
+              "cell": "Rest"
+            },
+            {
+              "day": "tue",
+              "kind": "ga_speed",
+              "kind_label": "GA+s",
+              "distance_mi": 6,
+              "distance_km": 9.7,
+              "detail": "6×12 s uphill + 6×100 m strides",
+              "cell": "GA+s 6 (6×12 s uphill + 6×100 m strides)"
+            },
+            {
+              "day": "wed",
+              "kind": "endurance",
+              "kind_label": "End",
+              "distance_mi": 8,
+              "distance_km": 12.9,
+              "cell": "End 8"
+            },
+            {
+              "day": "thu",
+              "kind": "rest_cross",
+              "kind_label": "Rest",
+              "cell": "Rest"
+            },
+            {
+              "day": "fri",
+              "kind": "lt",
+              "kind_label": "LT",
+              "distance_mi": 7,
+              "distance_km": 11.3,
+              "detail": "3 × 8 min, jog 3",
+              "cell": "LT 7 (3 × 8 min, jog 3)"
+            },
+            {
+              "day": "sat",
+              "kind": "rest_cross",
+              "kind_label": "Rest",
+              "cell": "Rest"
+            },
+            {
+              "day": "sun",
+              "kind": "endurance",
+              "kind_label": "End",
+              "distance_mi": 9,
+              "distance_km": 14.5,
+              "cell": "End 9"
+            }
+          ]
+        },
+        {
+          "week": 10,
+          "weeks_to_go": 10,
+          "label": "10 weeks to go",
+          "in_plan": true,
+          "printed_volume_mi": 32,
+          "printed_volume_km": 51.5,
+          "volume_check": {
+            "cells_mi": 32,
+            "cells_km": 51.5,
+            "reconciles": true
+          },
+          "source": "spine §2.3.1, week 10",
+          "days": [
+            {
+              "day": "mon",
+              "kind": "rest_cross",
+              "kind_label": "Rest",
+              "cell": "Rest"
+            },
+            {
+              "day": "tue",
+              "kind": "speed_repetitions",
+              "kind_label": "SR",
+              "distance_mi": 6,
+              "distance_km": 9.7,
+              "detail": "2 sets of 4 × 200 m @ 800 m–mile race pace, jog 200 m, 4 min between sets",
+              "cell": "SR 6 (2 sets of 4 × 200 m @ 800 m–mile race pace, jog 200 m, 4 min between sets)"
+            },
+            {
+              "day": "wed",
+              "kind": "endurance",
+              "kind_label": "End",
+              "distance_mi": 8,
+              "distance_km": 12.9,
+              "cell": "End 8"
+            },
+            {
+              "day": "thu",
+              "kind": "rest_cross",
+              "kind_label": "Rest",
+              "cell": "Rest"
+            },
+            {
+              "day": "fri",
+              "kind": "lt",
+              "kind_label": "LT",
+              "distance_mi": 8,
+              "distance_km": 12.9,
+              "detail": "10 min, jog 3, 10 min, jog 3, 8 min",
+              "cell": "LT 8 (10 min, jog 3, 10 min, jog 3, 8 min)"
+            },
+            {
+              "day": "sat",
+              "kind": "rest_cross",
+              "kind_label": "Rest",
+              "cell": "Rest"
+            },
+            {
+              "day": "sun",
+              "kind": "endurance",
+              "kind_label": "End",
+              "distance_mi": 10,
+              "distance_km": 16.1,
+              "cell": "End 10"
+            }
+          ]
+        },
+        {
+          "week": 9,
+          "weeks_to_go": 9,
+          "label": "9 weeks to go",
+          "in_plan": true,
+          "printed_volume_mi": 34,
+          "printed_volume_km": 54.7,
+          "volume_check": {
+            "cells_mi": 34,
+            "cells_km": 54.7,
+            "reconciles": true
+          },
+          "source": "spine §2.3.1, week 9",
+          "days": [
+            {
+              "day": "mon",
+              "kind": "rest_cross",
+              "kind_label": "Rest",
+              "cell": "Rest"
+            },
+            {
+              "day": "tue",
+              "kind": "ga_speed",
+              "kind_label": "GA+s",
+              "distance_mi": 7,
+              "distance_km": 11.3,
+              "detail": "6×12 s uphill + 6×100 m strides",
+              "cell": "GA+s 7 (6×12 s uphill + 6×100 m strides)"
+            },
+            {
+              "day": "wed",
+              "kind": "endurance",
+              "kind_label": "End",
+              "distance_mi": 9,
+              "distance_km": 14.5,
+              "cell": "End 9"
+            },
+            {
+              "day": "thu",
+              "kind": "rest_cross",
+              "kind_label": "Rest",
+              "cell": "Rest"
+            },
+            {
+              "day": "fri",
+              "kind": "vo2max",
+              "kind_label": "VO₂",
+              "distance_mi": 8,
+              "distance_km": 12.9,
+              "detail": "6 × 3 min uphill @ 3K–5K race effort, jog downhill",
+              "cell": "VO₂ 8 (6 × 3 min uphill @ 3K–5K race effort, jog downhill)"
+            },
+            {
+              "day": "sat",
+              "kind": "rest_cross",
+              "kind_label": "Rest",
+              "cell": "Rest"
+            },
+            {
+              "day": "sun",
+              "kind": "endurance",
+              "kind_label": "End",
+              "distance_mi": 10,
+              "distance_km": 16.1,
+              "cell": "End 10"
+            }
+          ]
+        },
+        {
+          "week": 8,
+          "weeks_to_go": 8,
+          "label": "8 weeks to go — recovery week",
+          "in_plan": true,
+          "recovery_week": true,
+          "printed_volume_mi": 30,
+          "printed_volume_km": 48.3,
+          "volume_check": {
+            "cells_mi": 30,
+            "cells_km": 48.3,
+            "reconciles": true
+          },
+          "source": "spine §2.3.1, week 8 (recovery)",
+          "days": [
+            {
+              "day": "mon",
+              "kind": "rest_cross",
+              "kind_label": "Rest",
+              "cell": "Rest"
+            },
+            {
+              "day": "tue",
+              "kind": "speed_repetitions",
+              "kind_label": "SR",
+              "distance_mi": 7,
+              "distance_km": 11.3,
+              "detail": "2 sets of 4 × 200 m",
+              "cell": "SR 7 (2 sets of 4 × 200 m)"
+            },
+            {
+              "day": "wed",
+              "kind": "ga",
+              "kind_label": "GA",
+              "distance_mi": 7,
+              "distance_km": 11.3,
+              "cell": "GA 7"
+            },
+            {
+              "day": "thu",
+              "kind": "rest_cross",
+              "kind_label": "Rest",
+              "cell": "Rest"
+            },
+            {
+              "day": "fri",
+              "kind": "ga",
+              "kind_label": "GA",
+              "distance_mi": 7,
+              "distance_km": 11.3,
+              "cell": "GA 7"
+            },
+            {
+              "day": "sat",
+              "kind": "rest_cross",
+              "kind_label": "Rest",
+              "cell": "Rest"
+            },
+            {
+              "day": "sun",
+              "kind": "ga",
+              "kind_label": "GA",
+              "distance_mi": 9,
+              "distance_km": 14.5,
+              "cell": "GA 9"
+            }
+          ]
+        },
+        {
+          "week": 7,
+          "weeks_to_go": 7,
+          "label": "7 weeks to go",
+          "in_plan": true,
+          "printed_volume_mi": 37,
+          "printed_volume_km": 59.5,
+          "volume_check": {
+            "cells_mi": 37,
+            "cells_km": 59.5,
+            "reconciles": true
+          },
+          "source": "spine §2.3.1, week 7",
+          "days": [
+            {
+              "day": "mon",
+              "kind": "rest_cross",
+              "kind_label": "Rest",
+              "cell": "Rest"
+            },
+            {
+              "day": "tue",
+              "kind": "ga_speed",
+              "kind_label": "GA+s",
+              "distance_mi": 7,
+              "distance_km": 11.3,
+              "cell": "GA+s 7"
+            },
+            {
+              "day": "wed",
+              "kind": "endurance",
+              "kind_label": "End",
+              "distance_mi": 9,
+              "distance_km": 14.5,
+              "cell": "End 9"
+            },
+            {
+              "day": "thu",
+              "kind": "rest_cross",
+              "kind_label": "Rest",
+              "cell": "Rest"
+            },
+            {
+              "day": "fri",
+              "kind": "vo2max",
+              "kind_label": "VO₂",
+              "distance_mi": 8,
+              "distance_km": 12.9,
+              "detail": "5 × 1,000 m @ 3K–5K race pace, jog 50–90 %",
+              "cell": "VO₂ 8 (5 × 1,000 m @ 3K–5K race pace, jog 50–90 %)"
+            },
+            {
+              "day": "sat",
+              "kind": "recovery",
+              "kind_label": "Rec",
+              "distance_mi": 3,
+              "distance_km": 4.8,
+              "cell": "Rec 3"
+            },
+            {
+              "day": "sun",
+              "kind": "endurance",
+              "kind_label": "End",
+              "distance_mi": 10,
+              "distance_km": 16.1,
+              "cell": "End 10"
+            }
+          ]
+        },
+        {
+          "week": 6,
+          "weeks_to_go": 6,
+          "label": "6 weeks to go",
+          "in_plan": true,
+          "printed_volume_mi": 39,
+          "printed_volume_km": 62.8,
+          "volume_check": {
+            "cells_mi": 39,
+            "cells_km": 62.8,
+            "reconciles": true
+          },
+          "source": "spine §2.3.1, week 6",
+          "days": [
+            {
+              "day": "mon",
+              "kind": "rest_cross",
+              "kind_label": "Rest",
+              "cell": "Rest"
+            },
+            {
+              "day": "tue",
+              "kind": "speed_repetitions",
+              "kind_label": "SR",
+              "distance_mi": 8,
+              "distance_km": 12.9,
+              "detail": "2 sets of 5 × 200 m",
+              "cell": "SR 8 (2 sets of 5 × 200 m)"
+            },
+            {
+              "day": "wed",
+              "kind": "endurance",
+              "kind_label": "End",
+              "distance_mi": 9,
+              "distance_km": 14.5,
+              "cell": "End 9"
+            },
+            {
+              "day": "thu",
+              "kind": "rest_cross",
+              "kind_label": "Rest",
+              "cell": "Rest"
+            },
+            {
+              "day": "fri",
+              "kind": "lt",
+              "kind_label": "LT",
+              "distance_mi": 8,
+              "distance_km": 12.9,
+              "detail": "12 min, jog 4, 10 min, jog 4, 10 min",
+              "cell": "LT 8 (12 min, jog 4, 10 min, jog 4, 10 min)"
+            },
+            {
+              "day": "sat",
+              "kind": "recovery",
+              "kind_label": "Rec",
+              "distance_mi": 3,
+              "distance_km": 4.8,
+              "cell": "Rec 3"
+            },
+            {
+              "day": "sun",
+              "kind": "endurance",
+              "kind_label": "End",
+              "distance_mi": 11,
+              "distance_km": 17.7,
+              "cell": "End 11"
+            }
+          ]
+        },
+        {
+          "week": 5,
+          "weeks_to_go": 5,
+          "label": "5 weeks to go",
+          "in_plan": true,
+          "printed_volume_mi": 41,
+          "printed_volume_km": 66.0,
+          "volume_check": {
+            "cells_mi": 41,
+            "cells_km": 66.0,
+            "reconciles": true
+          },
+          "source": "spine §2.3.1, week 5",
+          "days": [
+            {
+              "day": "mon",
+              "kind": "rest_cross",
+              "kind_label": "Rest",
+              "cell": "Rest"
+            },
+            {
+              "day": "tue",
+              "kind": "ga_speed",
+              "kind_label": "GA+s",
+              "distance_mi": 8,
+              "distance_km": 12.9,
+              "detail": "2 sets of 6 × 100 m strides, jog 3 min between sets",
+              "cell": "GA+s 8 (2 sets of 6 × 100 m strides, jog 3 min between sets)"
+            },
+            {
+              "day": "wed",
+              "kind": "endurance",
+              "kind_label": "End",
+              "distance_mi": 9,
+              "distance_km": 14.5,
+              "cell": "End 9"
+            },
+            {
+              "day": "thu",
+              "kind": "rest_cross",
+              "kind_label": "Rest",
+              "cell": "Rest"
+            },
+            {
+              "day": "fri",
+              "kind": "race_pace",
+              "kind_label": "RP",
+              "distance_mi": 9,
+              "distance_km": 14.5,
+              "detail": "4 × 1,200 m + 2 × 1,000 m @ 8K–10K race pace, jog 50 % interval time recovery",
+              "cell": "RP 9 (4 × 1,200 m + 2 × 1,000 m @ 8K–10K race pace, jog 50 % interval time recovery)"
+            },
+            {
+              "day": "sat",
+              "kind": "recovery",
+              "kind_label": "Rec",
+              "distance_mi": 4,
+              "distance_km": 6.4,
+              "cell": "Rec 4"
+            },
+            {
+              "day": "sun",
+              "kind": "endurance",
+              "kind_label": "End",
+              "distance_mi": 11,
+              "distance_km": 17.7,
+              "cell": "End 11"
+            }
+          ]
+        },
+        {
+          "week": 4,
+          "weeks_to_go": 4,
+          "label": "4 weeks to go",
+          "in_plan": true,
+          "printed_volume_mi": 34,
+          "printed_volume_km": 54.7,
+          "volume_check": {
+            "cells_mi": 34,
+            "cells_km": 54.7,
+            "reconciles": true
+          },
+          "source": "spine §2.3.1, week 4",
+          "days": [
+            {
+              "day": "mon",
+              "kind": "rest_cross",
+              "kind_label": "Rest",
+              "cell": "Rest"
+            },
+            {
+              "day": "tue",
+              "kind": "ga_speed",
+              "kind_label": "GA+s",
+              "distance_mi": 7,
+              "distance_km": 11.3,
+              "detail": "2 sets of 4 × 150 m strides, jog 250 m, 4 min between sets",
+              "cell": "GA+s 7 (2 sets of 4 × 150 m strides, jog 250 m, 4 min between sets)"
+            },
+            {
+              "day": "wed",
+              "kind": "ga",
+              "kind_label": "GA",
+              "distance_mi": 7,
+              "distance_km": 11.3,
+              "cell": "GA 7"
+            },
+            {
+              "day": "thu",
+              "kind": "rest_cross",
+              "kind_label": "Rest",
+              "cell": "Rest"
+            },
+            {
+              "day": "fri",
+              "kind": "recovery",
+              "kind_label": "Rec",
+              "distance_mi": 3,
+              "distance_km": 4.8,
+              "detail": "4×100 m strides",
+              "cell": "Rec 3 + 4×100 m strides"
+            },
+            {
+              "day": "sat",
+              "kind": "tune_up_race",
+              "kind_label": "tune-up race",
+              "distance_mi": 8,
+              "distance_km": 12.9,
+              "race_distance_m": 5000,
+              "race_distance_label": "5K",
+              "distance_basis": "the schedule's number is the miles it counts for this day in the weekly total; the race's own distance is in race_distance_m",
+              "cell": "5K tune-up race 8"
+            },
+            {
+              "day": "sun",
+              "kind": "endurance",
+              "kind_label": "End",
+              "distance_mi": 9,
+              "distance_km": 14.5,
+              "cell": "End 9"
+            }
+          ]
+        },
+        {
+          "week": 3,
+          "weeks_to_go": 3,
+          "label": "3 weeks to go",
+          "in_plan": true,
+          "printed_volume_mi": 42,
+          "printed_volume_km": 67.6,
+          "volume_check": {
+            "cells_mi": 42,
+            "cells_km": 67.6,
+            "reconciles": true
+          },
+          "source": "spine §2.3.1, week 3",
+          "days": [
+            {
+              "day": "mon",
+              "kind": "rest_cross",
+              "kind_label": "Rest",
+              "cell": "Rest"
+            },
+            {
+              "day": "tue",
+              "kind": "ga_speed",
+              "kind_label": "GA+s",
+              "distance_mi": 8,
+              "distance_km": 12.9,
+              "detail": "8 × 100 m strides",
+              "cell": "GA+s 8 (8 × 100 m strides)"
+            },
+            {
+              "day": "wed",
+              "kind": "endurance",
+              "kind_label": "End",
+              "distance_mi": 9,
+              "distance_km": 14.5,
+              "cell": "End 9"
+            },
+            {
+              "day": "thu",
+              "kind": "rest_cross",
+              "kind_label": "Rest",
+              "cell": "Rest"
+            },
+            {
+              "day": "fri",
+              "kind": "vo2max",
+              "kind_label": "VO₂",
+              "distance_mi": 9,
+              "distance_km": 14.5,
+              "detail": "3 × 1,000 m + 3 × 800 m @ 3K–5K",
+              "cell": "VO₂ 9 (3 × 1,000 m + 3 × 800 m @ 3K–5K)"
+            },
+            {
+              "day": "sat",
+              "kind": "recovery",
+              "kind_label": "Rec",
+              "distance_mi": 5,
+              "distance_km": 8.0,
+              "cell": "Rec 5"
+            },
+            {
+              "day": "sun",
+              "kind": "endurance",
+              "kind_label": "End",
+              "distance_mi": 11,
+              "distance_km": 17.7,
+              "cell": "End 11"
+            }
+          ]
+        },
+        {
+          "week": 2,
+          "weeks_to_go": 2,
+          "label": "2 weeks to go",
+          "in_plan": true,
+          "printed_volume_mi": 34,
+          "printed_volume_km": 54.7,
+          "volume_check": {
+            "cells_mi": 34,
+            "cells_km": 54.7,
+            "reconciles": true
+          },
+          "source": "spine §2.3.1, week 2",
+          "days": [
+            {
+              "day": "mon",
+              "kind": "rest_cross",
+              "kind_label": "Rest",
+              "cell": "Rest"
+            },
+            {
+              "day": "tue",
+              "kind": "ga_speed",
+              "kind_label": "GA+s",
+              "distance_mi": 7,
+              "distance_km": 11.3,
+              "detail": "2 sets of 4 × 150 m strides",
+              "cell": "GA+s 7 (2 sets of 4 × 150 m strides)"
+            },
+            {
+              "day": "wed",
+              "kind": "ga",
+              "kind_label": "GA",
+              "distance_mi": 7,
+              "distance_km": 11.3,
+              "cell": "GA 7"
+            },
+            {
+              "day": "thu",
+              "kind": "rest_cross",
+              "kind_label": "Rest",
+              "cell": "Rest"
+            },
+            {
+              "day": "fri",
+              "kind": "recovery",
+              "kind_label": "Rec",
+              "distance_mi": 3,
+              "distance_km": 4.8,
+              "cell": "Rec 3"
+            },
+            {
+              "day": "sat",
+              "kind": "tune_up_race",
+              "kind_label": "tune-up race",
+              "distance_mi": 8,
+              "distance_km": 12.9,
+              "race_distance_m": 5000,
+              "race_distance_label": "5K",
+              "distance_basis": "the schedule's number is the miles it counts for this day in the weekly total; the race's own distance is in race_distance_m",
+              "cell": "5K tune-up race 8"
+            },
+            {
+              "day": "sun",
+              "kind": "endurance",
+              "kind_label": "End",
+              "distance_mi": 9,
+              "distance_km": 14.5,
+              "cell": "End 9"
+            }
+          ]
+        },
+        {
+          "week": 1,
+          "weeks_to_go": 1,
+          "label": "1 week to go",
+          "in_plan": true,
+          "printed_volume_mi": 30,
+          "printed_volume_km": 48.3,
+          "volume_check": {
+            "cells_mi": 30,
+            "cells_km": 48.3,
+            "reconciles": true
+          },
+          "source": "spine §2.3.1, week 1",
+          "days": [
+            {
+              "day": "mon",
+              "kind": "rest_cross",
+              "kind_label": "Rest",
+              "cell": "Rest"
+            },
+            {
+              "day": "tue",
+              "kind": "ga_speed",
+              "kind_label": "GA+s",
+              "distance_mi": 6,
+              "distance_km": 9.7,
+              "detail": "8 × 100 m strides",
+              "cell": "GA+s 6 (8 × 100 m strides)"
+            },
+            {
+              "day": "wed",
+              "kind": "recovery",
+              "kind_label": "Rec",
+              "distance_mi": 4,
+              "distance_km": 6.4,
+              "cell": "Rec 4"
+            },
+            {
+              "day": "thu",
+              "kind": "vo2max",
+              "kind_label": "VO₂",
+              "distance_mi": 8,
+              "distance_km": 12.9,
+              "detail": "4 × 800 m + 2 × 600 m @ 3K–5K",
+              "cell": "VO₂ 8 (4 × 800 m + 2 × 600 m @ 3K–5K)"
+            },
+            {
+              "day": "fri",
+              "kind": "rest_cross",
+              "kind_label": "Rest",
+              "cell": "Rest"
+            },
+            {
+              "day": "sat",
+              "kind": "recovery",
+              "kind_label": "Rec",
+              "distance_mi": 4,
+              "distance_km": 6.4,
+              "cell": "Rec 4"
+            },
+            {
+              "day": "sun",
+              "kind": "ga",
+              "kind_label": "GA",
+              "distance_mi": 8,
+              "distance_km": 12.9,
+              "cell": "GA 8"
+            }
+          ]
+        },
+        {
+          "week": 0,
+          "weeks_to_go": 0,
+          "label": "race week",
+          "in_plan": true,
+          "printed_volume_mi": 31,
+          "printed_volume_km": 49.9,
+          "volume_check": {
+            "cells_mi": 31,
+            "cells_km": 49.9,
+            "reconciles": true
+          },
+          "source": "spine §2.3.1, race week",
+          "days": [
+            {
+              "day": "mon",
+              "kind": "race_pace_speed",
+              "kind_label": "RP+s",
+              "distance_mi": 6,
+              "distance_km": 9.7,
+              "detail": "4 × 100 m strides, 1,200 m @ 8K–10K race pace",
+              "cell": "RP+s 6 (4 × 100 m strides, 1,200 m @ 8K–10K race pace)"
+            },
+            {
+              "day": "tue",
+              "kind": "recovery",
+              "kind_label": "Rec",
+              "distance_mi": 3,
+              "distance_km": 4.8,
+              "cell": "Rec 3"
+            },
+            {
+              "day": "wed",
+              "kind": "recovery",
+              "kind_label": "Rec",
+              "distance_mi": 4,
+              "distance_km": 6.4,
+              "cell": "Rec 4"
+            },
+            {
+              "day": "thu",
+              "kind": "rest_cross",
+              "kind_label": "Rest",
+              "cell": "Rest"
+            },
+            {
+              "day": "fri",
+              "kind": "recovery",
+              "kind_label": "Rec",
+              "distance_mi": 3,
+              "distance_km": 4.8,
+              "detail": "4×100 m strides",
+              "cell": "Rec 3 + 4×100 m strides"
+            },
+            {
+              "day": "sat",
+              "kind": "goal_race",
+              "kind_label": "goal race",
+              "distance_mi": 11,
+              "distance_km": 17.7,
+              "race_distance_m": 10000,
+              "race_distance_label": "8K or 10K",
+              "distance_basis": "the schedule's number is the miles it counts for this day in the weekly total; the race's own distance is in race_distance_m",
+              "cell": "8K or 10K goal race 11"
+            },
+            {
+              "day": "sun",
+              "kind": "recovery",
+              "kind_label": "Rec",
+              "distance_mi": 4,
+              "distance_km": 6.4,
+              "cell": "Rec 4"
+            }
+          ]
+        },
+        {
+          "week": -1,
+          "weeks_to_go": null,
+          "label": "post-race week",
+          "in_plan": false,
+          "printed_volume_mi": 32,
+          "printed_volume_km": 51.5,
+          "volume_check": {
+            "cells_mi": 32,
+            "cells_km": 51.5,
+            "reconciles": true
+          },
+          "source": "spine §2.3.1, postrace row",
+          "days": [
+            {
+              "day": "mon",
+              "kind": "rest_cross",
+              "kind_label": "Rest",
+              "cell": "Rest"
+            },
+            {
+              "day": "tue",
+              "kind": "recovery",
+              "kind_label": "Rec",
+              "distance_mi": 5,
+              "distance_km": 8.0,
+              "cell": "Rec 5"
+            },
+            {
+              "day": "wed",
+              "kind": "recovery",
+              "kind_label": "Rec",
+              "distance_mi": 5,
+              "distance_km": 8.0,
+              "cell": "Rec 5"
+            },
+            {
+              "day": "thu",
+              "kind": "recovery",
+              "kind_label": "Rec",
+              "distance_mi": 6,
+              "distance_km": 9.7,
+              "cell": "Rec 6"
+            },
+            {
+              "day": "fri",
+              "kind": "rest_cross",
+              "kind_label": "Rest",
+              "cell": "Rest"
+            },
+            {
+              "day": "sat",
+              "kind": "ga_speed",
+              "kind_label": "GA+s",
+              "distance_mi": 7,
+              "distance_km": 11.3,
+              "detail": "8 × 100 m strides",
+              "cell": "GA+s 7 (8 × 100 m strides)"
+            },
+            {
+              "day": "sun",
+              "kind": "ga",
+              "kind_label": "GA",
+              "distance_mi": 9,
+              "distance_km": 14.5,
+              "cell": "GA 9"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "pfitzinger-10k-tier-2",
+      "label": "10K tier 2",
+      "method": "Pfitzinger",
+      "distance_m": 10000,
+      "weeks": 12,
+      "entry_mileage": {
+        "min_mi": 40,
+        "max_mi": 50,
+        "min_km": 64.4,
+        "max_km": 80.5,
+        "source": "spine §2.2 — the 8K & 10K plan's entry requirement for tier 2: '40–50' mi/wk of training"
+      },
+      "plan_mileage": {
+        "min_mi": 45,
+        "max_mi": 57,
+        "min_km": 72.4,
+        "max_km": 91.7,
+        "printed_km": "72–91 km",
+        "source": "spine §2.3.2 heading — '45 to 57 miles (72–91 km) per week'"
+      },
+      "goal_race": {
+        "label": "8K–10K goal race",
+        "distance_m": 10000,
+        "distance_label": "10K",
+        "options": [
+          {
+            "label": "8K",
+            "distance_m": 8000
+          },
+          {
+            "label": "10K",
+            "distance_m": 10000
+          }
+        ],
+        "source": "spine §2.3.2 race-week cell — '8K–10K goal race 11'"
+      },
+      "source": {
+        "spine_section": "§2.3.2",
+        "book_chapter": "ch. 10 — the 8K & 10K plans",
+        "distance_m": 10000,
+        "method": "Pfitzinger"
+      },
+      "volume_series_mi": [
+        45,
+        47,
+        49,
+        45,
+        52,
+        54,
+        56,
+        47,
+        57,
+        47,
+        40,
+        38,
+        39
+      ],
+      "notes": [
+        "Two endurance days a week — Thursday and Sunday — from the first week (spine §2.3.2).",
+        "The quality session is on Wednesday in weeks 3 to 11 and on Thursday in week 1 (spine §2.3.2).",
+        "The tune-up races are 5K, at 4 and 2 weeks to go (spine §2.3.2).",
+        "One post-race week of 39 miles follows the race (spine §2.3.2)."
+      ],
+      "weeks_detail": [
+        {
+          "week": 11,
+          "weeks_to_go": 11,
+          "label": "11 weeks to go",
+          "in_plan": true,
+          "printed_volume_mi": 45,
+          "printed_volume_km": 72.4,
+          "volume_check": {
+            "cells_mi": 45,
+            "cells_km": 72.4,
+            "reconciles": true
+          },
+          "source": "spine §2.3.2, week 11",
+          "days": [
+            {
+              "day": "mon",
+              "kind": "rest_cross",
+              "kind_label": "Rest",
+              "cell": "Rest"
+            },
+            {
+              "day": "tue",
+              "kind": "ga",
+              "kind_label": "GA",
+              "distance_mi": 8,
+              "distance_km": 12.9,
+              "cell": "GA 8"
+            },
+            {
+              "day": "wed",
+              "kind": "lt",
+              "kind_label": "LT",
+              "distance_mi": 8,
+              "distance_km": 12.9,
+              "detail": "10 min, jog 3, 8 min, jog 3, 8 min",
+              "cell": "LT 8 (10 min, jog 3, 8 min, jog 3, 8 min)"
+            },
+            {
+              "day": "thu",
+              "kind": "endurance",
+              "kind_label": "End",
+              "distance_mi": 9,
+              "distance_km": 14.5,
+              "cell": "End 9"
+            },
+            {
+              "day": "fri",
+              "kind": "recovery",
+              "kind_label": "Rec",
+              "distance_mi": 3,
+              "distance_km": 4.8,
+              "cell": "Rec 3"
+            },
+            {
+              "day": "sat",
+              "kind": "ga_speed",
+              "kind_label": "GA+s",
+              "distance_mi": 7,
+              "distance_km": 11.3,
+              "detail": "6×12 s uphill + 8×100 m strides",
+              "cell": "GA+s 7 (6×12 s uphill + 8×100 m strides)"
+            },
+            {
+              "day": "sun",
+              "kind": "endurance",
+              "kind_label": "End",
+              "distance_mi": 10,
+              "distance_km": 16.1,
+              "cell": "End 10"
+            }
+          ]
+        },
+        {
+          "week": 10,
+          "weeks_to_go": 10,
+          "label": "10 weeks to go",
+          "in_plan": true,
+          "printed_volume_mi": 47,
+          "printed_volume_km": 75.6,
+          "volume_check": {
+            "cells_mi": 47,
+            "cells_km": 75.6,
+            "reconciles": true
+          },
+          "source": "spine §2.3.2, week 10",
+          "days": [
+            {
+              "day": "mon",
+              "kind": "rest_cross",
+              "kind_label": "Rest",
+              "cell": "Rest"
+            },
+            {
+              "day": "tue",
+              "kind": "ga",
+              "kind_label": "GA",
+              "distance_mi": 8,
+              "distance_km": 12.9,
+              "cell": "GA 8"
+            },
+            {
+              "day": "wed",
+              "kind": "lt",
+              "kind_label": "LT",
+              "distance_mi": 9,
+              "distance_km": 14.5,
+              "detail": "12 min, jog 4, 10 min, jog 4, 8 min",
+              "cell": "LT 9 (12 min, jog 4, 10 min, jog 4, 8 min)"
+            },
+            {
+              "day": "thu",
+              "kind": "endurance",
+              "kind_label": "End",
+              "distance_mi": 9,
+              "distance_km": 14.5,
+              "cell": "End 9"
+            },
+            {
+              "day": "fri",
+              "kind": "recovery",
+              "kind_label": "Rec",
+              "distance_mi": 3,
+              "distance_km": 4.8,
+              "cell": "Rec 3"
+            },
+            {
+              "day": "sat",
+              "kind": "speed_repetitions",
+              "kind_label": "SR",
+              "distance_mi": 7,
+              "distance_km": 11.3,
+              "detail": "2 sets of 5 × 200 m @ 800 m–mile race pace",
+              "cell": "SR 7 (2 sets of 5 × 200 m @ 800 m–mile race pace)"
+            },
+            {
+              "day": "sun",
+              "kind": "endurance",
+              "kind_label": "End",
+              "distance_mi": 11,
+              "distance_km": 17.7,
+              "cell": "End 11"
+            }
+          ]
+        },
+        {
+          "week": 9,
+          "weeks_to_go": 9,
+          "label": "9 weeks to go",
+          "in_plan": true,
+          "printed_volume_mi": 49,
+          "printed_volume_km": 78.9,
+          "volume_check": {
+            "cells_mi": 49,
+            "cells_km": 78.9,
+            "reconciles": true
+          },
+          "source": "spine §2.3.2, week 9",
+          "days": [
+            {
+              "day": "mon",
+              "kind": "rest_cross",
+              "kind_label": "Rest",
+              "cell": "Rest"
+            },
+            {
+              "day": "tue",
+              "kind": "ga",
+              "kind_label": "GA",
+              "distance_mi": 8,
+              "distance_km": 12.9,
+              "cell": "GA 8"
+            },
+            {
+              "day": "wed",
+              "kind": "vo2max",
+              "kind_label": "VO₂",
+              "distance_mi": 9,
+              "distance_km": 14.5,
+              "detail": "7 × 3 min uphill @ 3K–5K race effort",
+              "cell": "VO₂ 9 (7 × 3 min uphill @ 3K–5K race effort)"
+            },
+            {
+              "day": "thu",
+              "kind": "endurance",
+              "kind_label": "End",
+              "distance_mi": 9,
+              "distance_km": 14.5,
+              "cell": "End 9"
+            },
+            {
+              "day": "fri",
+              "kind": "recovery",
+              "kind_label": "Rec",
+              "distance_mi": 4,
+              "distance_km": 6.4,
+              "cell": "Rec 4"
+            },
+            {
+              "day": "sat",
+              "kind": "ga_speed",
+              "kind_label": "GA+s",
+              "distance_mi": 8,
+              "distance_km": 12.9,
+              "detail": "6×12 s uphill + 8×100 m strides",
+              "cell": "GA+s 8 (6×12 s uphill + 8×100 m strides)"
+            },
+            {
+              "day": "sun",
+              "kind": "endurance",
+              "kind_label": "End",
+              "distance_mi": 11,
+              "distance_km": 17.7,
+              "cell": "End 11"
+            }
+          ]
+        },
+        {
+          "week": 8,
+          "weeks_to_go": 8,
+          "label": "8 weeks to go — recovery week",
+          "in_plan": true,
+          "recovery_week": true,
+          "printed_volume_mi": 45,
+          "printed_volume_km": 72.4,
+          "volume_check": {
+            "cells_mi": 45,
+            "cells_km": 72.4,
+            "reconciles": true
+          },
+          "source": "spine §2.3.2, week 8 (recovery)",
+          "days": [
+            {
+              "day": "mon",
+              "kind": "rest_cross",
+              "kind_label": "Rest",
+              "cell": "Rest"
+            },
+            {
+              "day": "tue",
+              "kind": "ga",
+              "kind_label": "GA",
+              "distance_mi": 7,
+              "distance_km": 11.3,
+              "cell": "GA 7"
+            },
+            {
+              "day": "wed",
+              "kind": "ga",
+              "kind_label": "GA",
+              "distance_mi": 9,
+              "distance_km": 14.5,
+              "cell": "GA 9"
+            },
+            {
+              "day": "thu",
+              "kind": "speed_repetitions",
+              "kind_label": "SR",
+              "distance_mi": 8,
+              "distance_km": 12.9,
+              "detail": "2 sets of 5 × 200 m",
+              "cell": "SR 8 (2 sets of 5 × 200 m)"
+            },
+            {
+              "day": "fri",
+              "kind": "recovery",
+              "kind_label": "Rec",
+              "distance_mi": 3,
+              "distance_km": 4.8,
+              "cell": "Rec 3"
+            },
+            {
+              "day": "sat",
+              "kind": "ga",
+              "kind_label": "GA",
+              "distance_mi": 8,
+              "distance_km": 12.9,
+              "cell": "GA 8"
+            },
+            {
+              "day": "sun",
+              "kind": "endurance",
+              "kind_label": "End",
+              "distance_mi": 10,
+              "distance_km": 16.1,
+              "cell": "End 10"
+            }
+          ]
+        },
+        {
+          "week": 7,
+          "weeks_to_go": 7,
+          "label": "7 weeks to go",
+          "in_plan": true,
+          "printed_volume_mi": 52,
+          "printed_volume_km": 83.7,
+          "volume_check": {
+            "cells_mi": 52,
+            "cells_km": 83.7,
+            "reconciles": true
+          },
+          "source": "spine §2.3.2, week 7",
+          "days": [
+            {
+              "day": "mon",
+              "kind": "rest_cross",
+              "kind_label": "Rest",
+              "cell": "Rest"
+            },
+            {
+              "day": "tue",
+              "kind": "ga",
+              "kind_label": "GA",
+              "distance_mi": 9,
+              "distance_km": 14.5,
+              "cell": "GA 9"
+            },
+            {
+              "day": "wed",
+              "kind": "vo2max",
+              "kind_label": "VO₂",
+              "distance_mi": 9,
+              "distance_km": 14.5,
+              "detail": "6 × 1,000 m @ 3K–5K race pace",
+              "cell": "VO₂ 9 (6 × 1,000 m @ 3K–5K race pace)"
+            },
+            {
+              "day": "thu",
+              "kind": "endurance",
+              "kind_label": "End",
+              "distance_mi": 10,
+              "distance_km": 16.1,
+              "cell": "End 10"
+            },
+            {
+              "day": "fri",
+              "kind": "recovery",
+              "kind_label": "Rec",
+              "distance_mi": 4,
+              "distance_km": 6.4,
+              "cell": "Rec 4"
+            },
+            {
+              "day": "sat",
+              "kind": "ga_speed",
+              "kind_label": "GA+s",
+              "distance_mi": 8,
+              "distance_km": 12.9,
+              "detail": "6×12 s uphill + 8×100 m strides",
+              "cell": "GA+s 8 (6×12 s uphill + 8×100 m strides)"
+            },
+            {
+              "day": "sun",
+              "kind": "endurance",
+              "kind_label": "End",
+              "distance_mi": 12,
+              "distance_km": 19.3,
+              "cell": "End 12"
+            }
+          ]
+        },
+        {
+          "week": 6,
+          "weeks_to_go": 6,
+          "label": "6 weeks to go",
+          "in_plan": true,
+          "printed_volume_mi": 54,
+          "printed_volume_km": 86.9,
+          "volume_check": {
+            "cells_mi": 54,
+            "cells_km": 86.9,
+            "reconciles": true
+          },
+          "source": "spine §2.3.2, week 6",
+          "days": [
+            {
+              "day": "mon",
+              "kind": "rest_cross",
+              "kind_label": "Rest",
+              "cell": "Rest"
+            },
+            {
+              "day": "tue",
+              "kind": "ga",
+              "kind_label": "GA",
+              "distance_mi": 9,
+              "distance_km": 14.5,
+              "cell": "GA 9"
+            },
+            {
+              "day": "wed",
+              "kind": "lt",
+              "kind_label": "LT",
+              "distance_mi": 10,
+              "distance_km": 16.1,
+              "detail": "14 min, jog 4, 10 min, jog 4, 10 min",
+              "cell": "LT 10 (14 min, jog 4, 10 min, jog 4, 10 min)"
+            },
+            {
+              "day": "thu",
+              "kind": "endurance",
+              "kind_label": "End",
+              "distance_mi": 10,
+              "distance_km": 16.1,
+              "cell": "End 10"
+            },
+            {
+              "day": "fri",
+              "kind": "recovery",
+              "kind_label": "Rec",
+              "distance_mi": 5,
+              "distance_km": 8.0,
+              "cell": "Rec 5"
+            },
+            {
+              "day": "sat",
+              "kind": "speed_repetitions",
+              "kind_label": "SR",
+              "distance_mi": 8,
+              "distance_km": 12.9,
+              "detail": "3 sets of 4 × 200 m",
+              "cell": "SR 8 (3 sets of 4 × 200 m)"
+            },
+            {
+              "day": "sun",
+              "kind": "endurance",
+              "kind_label": "End",
+              "distance_mi": 12,
+              "distance_km": 19.3,
+              "cell": "End 12"
+            }
+          ]
+        },
+        {
+          "week": 5,
+          "weeks_to_go": 5,
+          "label": "5 weeks to go",
+          "in_plan": true,
+          "printed_volume_mi": 56,
+          "printed_volume_km": 90.1,
+          "volume_check": {
+            "cells_mi": 56,
+            "cells_km": 90.1,
+            "reconciles": true
+          },
+          "source": "spine §2.3.2, week 5",
+          "days": [
+            {
+              "day": "mon",
+              "kind": "rest_cross",
+              "kind_label": "Rest",
+              "cell": "Rest"
+            },
+            {
+              "day": "tue",
+              "kind": "ga",
+              "kind_label": "GA",
+              "distance_mi": 9,
+              "distance_km": 14.5,
+              "cell": "GA 9"
+            },
+            {
+              "day": "wed",
+              "kind": "race_pace",
+              "kind_label": "RP",
+              "distance_mi": 10,
+              "distance_km": 16.1,
+              "detail": "2 sets of 1,600 m, 1,200 m, 1,000 m @ 8K–10K race pace, jog 50 %",
+              "cell": "RP 10 (2 sets of 1,600 m, 1,200 m, 1,000 m @ 8K–10K race pace, jog 50 %)"
+            },
+            {
+              "day": "thu",
+              "kind": "endurance",
+              "kind_label": "End",
+              "distance_mi": 11,
+              "distance_km": 17.7,
+              "cell": "End 11"
+            },
+            {
+              "day": "fri",
+              "kind": "recovery",
+              "kind_label": "Rec",
+              "distance_mi": 5,
+              "distance_km": 8.0,
+              "cell": "Rec 5"
+            },
+            {
+              "day": "sat",
+              "kind": "ga_speed",
+              "kind_label": "GA+s",
+              "distance_mi": 9,
+              "distance_km": 14.5,
+              "detail": "2 sets of 6 × 100 m strides, jog 3 min between sets",
+              "cell": "GA+s 9 (2 sets of 6 × 100 m strides, jog 3 min between sets)"
+            },
+            {
+              "day": "sun",
+              "kind": "endurance",
+              "kind_label": "End",
+              "distance_mi": 12,
+              "distance_km": 19.3,
+              "cell": "End 12"
+            }
+          ]
+        },
+        {
+          "week": 4,
+          "weeks_to_go": 4,
+          "label": "4 weeks to go",
+          "in_plan": true,
+          "printed_volume_mi": 47,
+          "printed_volume_km": 75.6,
+          "volume_check": {
+            "cells_mi": 47,
+            "cells_km": 75.6,
+            "reconciles": true
+          },
+          "source": "spine §2.3.2, week 4",
+          "days": [
+            {
+              "day": "mon",
+              "kind": "rest_cross",
+              "kind_label": "Rest",
+              "cell": "Rest"
+            },
+            {
+              "day": "tue",
+              "kind": "ga_speed",
+              "kind_label": "GA+s",
+              "distance_mi": 9,
+              "distance_km": 14.5,
+              "detail": "2 sets of 5 × 150 m strides",
+              "cell": "GA+s 9 (2 sets of 5 × 150 m strides)"
+            },
+            {
+              "day": "wed",
+              "kind": "ga",
+              "kind_label": "GA",
+              "distance_mi": 8,
+              "distance_km": 12.9,
+              "cell": "GA 8"
+            },
+            {
+              "day": "thu",
+              "kind": "recovery",
+              "kind_label": "Rec",
+              "distance_mi": 7,
+              "distance_km": 11.3,
+              "cell": "Rec 7"
+            },
+            {
+              "day": "fri",
+              "kind": "recovery",
+              "kind_label": "Rec",
+              "distance_mi": 4,
+              "distance_km": 6.4,
+              "cell": "Rec 4"
+            },
+            {
+              "day": "sat",
+              "kind": "tune_up_race",
+              "kind_label": "tune-up race",
+              "distance_mi": 9,
+              "distance_km": 14.5,
+              "race_distance_m": 5000,
+              "race_distance_label": "5K",
+              "distance_basis": "the schedule's number is the miles it counts for this day in the weekly total; the race's own distance is in race_distance_m",
+              "cell": "5K tune-up race 9"
+            },
+            {
+              "day": "sun",
+              "kind": "endurance",
+              "kind_label": "End",
+              "distance_mi": 10,
+              "distance_km": 16.1,
+              "cell": "End 10"
+            }
+          ]
+        },
+        {
+          "week": 3,
+          "weeks_to_go": 3,
+          "label": "3 weeks to go",
+          "in_plan": true,
+          "printed_volume_mi": 57,
+          "printed_volume_km": 91.7,
+          "volume_check": {
+            "cells_mi": 57,
+            "cells_km": 91.7,
+            "reconciles": true
+          },
+          "source": "spine §2.3.2, week 3",
+          "days": [
+            {
+              "day": "mon",
+              "kind": "rest_cross",
+              "kind_label": "Rest",
+              "cell": "Rest"
+            },
+            {
+              "day": "tue",
+              "kind": "ga",
+              "kind_label": "GA",
+              "distance_mi": 9,
+              "distance_km": 14.5,
+              "cell": "GA 9"
+            },
+            {
+              "day": "wed",
+              "kind": "vo2max",
+              "kind_label": "VO₂",
+              "distance_mi": 10,
+              "distance_km": 16.1,
+              "detail": "3 × 1,200 m + 3 × 800 m @ 3K–5K",
+              "cell": "VO₂ 10 (3 × 1,200 m + 3 × 800 m @ 3K–5K)"
+            },
+            {
+              "day": "thu",
+              "kind": "endurance",
+              "kind_label": "End",
+              "distance_mi": 11,
+              "distance_km": 17.7,
+              "cell": "End 11"
+            },
+            {
+              "day": "fri",
+              "kind": "recovery",
+              "kind_label": "Rec",
+              "distance_mi": 5,
+              "distance_km": 8.0,
+              "cell": "Rec 5"
+            },
+            {
+              "day": "sat",
+              "kind": "ga_speed",
+              "kind_label": "GA+s",
+              "distance_mi": 9,
+              "distance_km": 14.5,
+              "detail": "2 sets of 6 × 100 m strides",
+              "cell": "GA+s 9 (2 sets of 6 × 100 m strides)"
+            },
+            {
+              "day": "sun",
+              "kind": "endurance",
+              "kind_label": "End",
+              "distance_mi": 13,
+              "distance_km": 20.9,
+              "cell": "End 13"
+            }
+          ]
+        },
+        {
+          "week": 2,
+          "weeks_to_go": 2,
+          "label": "2 weeks to go",
+          "in_plan": true,
+          "printed_volume_mi": 47,
+          "printed_volume_km": 75.6,
+          "volume_check": {
+            "cells_mi": 47,
+            "cells_km": 75.6,
+            "reconciles": true
+          },
+          "source": "spine §2.3.2, week 2",
+          "days": [
+            {
+              "day": "mon",
+              "kind": "rest_cross",
+              "kind_label": "Rest",
+              "cell": "Rest"
+            },
+            {
+              "day": "tue",
+              "kind": "ga_speed",
+              "kind_label": "GA+s",
+              "distance_mi": 9,
+              "distance_km": 14.5,
+              "detail": "2 sets of 5 × 150 m strides",
+              "cell": "GA+s 9 (2 sets of 5 × 150 m strides)"
+            },
+            {
+              "day": "wed",
+              "kind": "ga",
+              "kind_label": "GA",
+              "distance_mi": 8,
+              "distance_km": 12.9,
+              "cell": "GA 8"
+            },
+            {
+              "day": "thu",
+              "kind": "recovery",
+              "kind_label": "Rec",
+              "distance_mi": 7,
+              "distance_km": 11.3,
+              "cell": "Rec 7"
+            },
+            {
+              "day": "fri",
+              "kind": "recovery",
+              "kind_label": "Rec",
+              "distance_mi": 4,
+              "distance_km": 6.4,
+              "cell": "Rec 4"
+            },
+            {
+              "day": "sat",
+              "kind": "tune_up_race",
+              "kind_label": "tune-up race",
+              "distance_mi": 9,
+              "distance_km": 14.5,
+              "race_distance_m": 5000,
+              "race_distance_label": "5K",
+              "distance_basis": "the schedule's number is the miles it counts for this day in the weekly total; the race's own distance is in race_distance_m",
+              "cell": "5K tune-up race 9"
+            },
+            {
+              "day": "sun",
+              "kind": "endurance",
+              "kind_label": "End",
+              "distance_mi": 10,
+              "distance_km": 16.1,
+              "cell": "End 10"
+            }
+          ]
+        },
+        {
+          "week": 1,
+          "weeks_to_go": 1,
+          "label": "1 week to go",
+          "in_plan": true,
+          "printed_volume_mi": 40,
+          "printed_volume_km": 64.4,
+          "volume_check": {
+            "cells_mi": 40,
+            "cells_km": 64.4,
+            "reconciles": true
+          },
+          "source": "spine §2.3.2, week 1",
+          "days": [
+            {
+              "day": "mon",
+              "kind": "rest_cross",
+              "kind_label": "Rest",
+              "cell": "Rest"
+            },
+            {
+              "day": "tue",
+              "kind": "ga",
+              "kind_label": "GA",
+              "distance_mi": 7,
+              "distance_km": 11.3,
+              "cell": "GA 7"
+            },
+            {
+              "day": "wed",
+              "kind": "recovery",
+              "kind_label": "Rec",
+              "distance_mi": 5,
+              "distance_km": 8.0,
+              "cell": "Rec 5"
+            },
+            {
+              "day": "thu",
+              "kind": "vo2max",
+              "kind_label": "VO₂",
+              "distance_mi": 9,
+              "distance_km": 14.5,
+              "detail": "4 × 800 m + 3 × 600 m @ 3K–5K",
+              "cell": "VO₂ 9 (4 × 800 m + 3 × 600 m @ 3K–5K)"
+            },
+            {
+              "day": "fri",
+              "kind": "recovery",
+              "kind_label": "Rec",
+              "distance_mi": 4,
+              "distance_km": 6.4,
+              "cell": "Rec 4"
+            },
+            {
+              "day": "sat",
+              "kind": "ga_speed",
+              "kind_label": "GA+s",
+              "distance_mi": 6,
+              "distance_km": 9.7,
+              "detail": "8 × 100 m strides",
+              "cell": "GA+s 6 (8 × 100 m strides)"
+            },
+            {
+              "day": "sun",
+              "kind": "ga",
+              "kind_label": "GA",
+              "distance_mi": 9,
+              "distance_km": 14.5,
+              "cell": "GA 9"
+            }
+          ]
+        },
+        {
+          "week": 0,
+          "weeks_to_go": 0,
+          "label": "race week",
+          "in_plan": true,
+          "printed_volume_mi": 38,
+          "printed_volume_km": 61.2,
+          "volume_check": {
+            "cells_mi": 38,
+            "cells_km": 61.2,
+            "reconciles": true
+          },
+          "source": "spine §2.3.2, race week",
+          "days": [
+            {
+              "day": "mon",
+              "kind": "race_pace_speed",
+              "kind_label": "RP+s",
+              "distance_mi": 7,
+              "distance_km": 11.3,
+              "detail": "4 × 100 m strides, 1,200 m @ 8K–10K race pace",
+              "cell": "RP+s 7 (4 × 100 m strides, 1,200 m @ 8K–10K race pace)"
+            },
+            {
+              "day": "tue",
+              "kind": "ga",
+              "kind_label": "GA",
+              "distance_mi": 6,
+              "distance_km": 9.7,
+              "cell": "GA 6"
+            },
+            {
+              "day": "wed",
+              "kind": "recovery",
+              "kind_label": "Rec",
+              "distance_mi": 5,
+              "distance_km": 8.0,
+              "cell": "Rec 5"
+            },
+            {
+              "day": "thu",
+              "kind": "rest_cross",
+              "kind_label": "Rest",
+              "cell": "Rest"
+            },
+            {
+              "day": "fri",
+              "kind": "recovery",
+              "kind_label": "Rec",
+              "distance_mi": 4,
+              "distance_km": 6.4,
+              "detail": "4×100 m strides",
+              "cell": "Rec 4 + 4×100 m strides"
+            },
+            {
+              "day": "sat",
+              "kind": "goal_race",
+              "kind_label": "goal race",
+              "distance_mi": 11,
+              "distance_km": 17.7,
+              "race_distance_m": 10000,
+              "race_distance_label": "8K–10K",
+              "distance_basis": "the schedule's number is the miles it counts for this day in the weekly total; the race's own distance is in race_distance_m",
+              "cell": "8K–10K goal race 11"
+            },
+            {
+              "day": "sun",
+              "kind": "recovery",
+              "kind_label": "Rec",
+              "distance_mi": 5,
+              "distance_km": 8.0,
+              "cell": "Rec 5"
+            }
+          ]
+        },
+        {
+          "week": -1,
+          "weeks_to_go": null,
+          "label": "post-race week",
+          "in_plan": false,
+          "printed_volume_mi": 39,
+          "printed_volume_km": 62.8,
+          "volume_check": {
+            "cells_mi": 39,
+            "cells_km": 62.8,
+            "reconciles": true
+          },
+          "source": "spine §2.3.2, postrace row",
+          "days": [
+            {
+              "day": "mon",
+              "kind": "rest_cross",
+              "kind_label": "Rest",
+              "cell": "Rest"
+            },
+            {
+              "day": "tue",
+              "kind": "recovery",
+              "kind_label": "Rec",
+              "distance_mi": 5,
+              "distance_km": 8.0,
+              "cell": "Rec 5"
+            },
+            {
+              "day": "wed",
+              "kind": "recovery",
+              "kind_label": "Rec",
+              "distance_mi": 6,
+              "distance_km": 9.7,
+              "cell": "Rec 6"
+            },
+            {
+              "day": "thu",
+              "kind": "recovery",
+              "kind_label": "Rec",
+              "distance_mi": 6,
+              "distance_km": 9.7,
+              "cell": "Rec 6"
+            },
+            {
+              "day": "fri",
+              "kind": "recovery",
+              "kind_label": "Rec",
+              "distance_mi": 4,
+              "distance_km": 6.4,
+              "cell": "Rec 4"
+            },
+            {
+              "day": "sat",
+              "kind": "ga_speed",
+              "kind_label": "GA+s",
+              "distance_mi": 8,
+              "distance_km": 12.9,
+              "detail": "8 × 100 m strides",
+              "cell": "GA+s 8 (8 × 100 m strides)"
+            },
+            {
+              "day": "sun",
+              "kind": "ga",
+              "kind_label": "GA",
+              "distance_mi": 10,
+              "distance_km": 16.1,
+              "cell": "GA 10"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "pfitzinger-half-marathon-tier-1",
+      "label": "half marathon tier 1",
+      "method": "Pfitzinger",
+      "distance_m": 21097.5,
+      "weeks": 12,
+      "entry_mileage": {
+        "min_mi": 25,
+        "max_mi": 35,
+        "min_km": 40.2,
+        "max_km": 56.3,
+        "source": "spine §2.2 — the half-marathon plan's entry requirement for tier 1: '25–35' mi/wk of training"
+      },
+      "plan_mileage": {
+        "min_mi": 31,
+        "max_mi": 47,
+        "min_km": 49.9,
+        "max_km": 75.6,
+        "printed_km": "50–76 km",
+        "source": "spine §2.3.3 heading — '31 to 47 miles (50–76 km) per week'"
+      },
+      "goal_race": {
+        "label": "half marathon goal race",
+        "distance_m": 21097.5,
+        "distance_label": "half marathon",
+        "options": [
+          {
+            "label": "half marathon",
+            "distance_m": 21097.5
+          }
+        ],
+        "source": "spine §2.3.3 race-week cell — 'half marathon goal race 16'"
+      },
+      "source": {
+        "spine_section": "§2.3.3",
+        "book_chapter": "ch. 12 — the half-marathon plan",
+        "distance_m": 21097.5,
+        "method": "Pfitzinger"
+      },
+      "volume_series_mi": [
+        31,
+        34,
+        37,
+        32,
+        40,
+        43,
+        45,
+        38,
+        47,
+        38,
+        32,
+        35,
+        30,
+        38
+      ],
+      "notes": [
+        "Three progression long runs, in weeks 9, 7 and 5, each ending at LT pace (spine §2.3.3).",
+        "The tune-up races are 8K–10K, at 4 and 2 weeks to go (spine §2.3.3).",
+        "After the race: a recovery week of 30 miles and a transition week of 38 miles (spine §2.3.3)."
+      ],
+      "weeks_detail": [
+        {
+          "week": 11,
+          "weeks_to_go": 11,
+          "label": "11 weeks to go",
+          "in_plan": true,
+          "printed_volume_mi": 31,
+          "printed_volume_km": 49.9,
+          "volume_check": {
+            "cells_mi": 31,
+            "cells_km": 49.9,
+            "reconciles": true
+          },
+          "source": "spine §2.3.3, week 11",
+          "days": [
+            {
+              "day": "mon",
+              "kind": "rest_cross",
+              "kind_label": "Rest",
+              "cell": "Rest"
+            },
+            {
+              "day": "tue",
+              "kind": "ga_speed",
+              "kind_label": "GA+s",
+              "distance_mi": 6,
+              "distance_km": 9.7,
+              "detail": "8 × 100 m strides",
+              "cell": "GA+s 6 (8 × 100 m strides)"
+            },
+            {
+              "day": "wed",
+              "kind": "endurance",
+              "kind_label": "End",
+              "distance_mi": 8,
+              "distance_km": 12.9,
+              "cell": "End 8"
+            },
+            {
+              "day": "thu",
+              "kind": "rest_cross",
+              "kind_label": "Rest",
+              "cell": "Rest"
+            },
+            {
+              "day": "fri",
+              "kind": "lt",
+              "kind_label": "LT",
+              "distance_mi": 7,
+              "distance_km": 11.3,
+              "detail": "14 min, jog 4, 12 min",
+              "cell": "LT 7 (14 min, jog 4, 12 min)"
+            },
+            {
+              "day": "sat",
+              "kind": "rest_cross",
+              "kind_label": "Rest",
+              "cell": "Rest"
+            },
+            {
+              "day": "sun",
+              "kind": "endurance",
+              "kind_label": "End",
+              "distance_mi": 10,
+              "distance_km": 16.1,
+              "cell": "End 10"
+            }
+          ]
+        },
+        {
+          "week": 10,
+          "weeks_to_go": 10,
+          "label": "10 weeks to go",
+          "in_plan": true,
+          "printed_volume_mi": 34,
+          "printed_volume_km": 54.7,
+          "volume_check": {
+            "cells_mi": 34,
+            "cells_km": 54.7,
+            "reconciles": true
+          },
+          "source": "spine §2.3.3, week 10",
+          "days": [
+            {
+              "day": "mon",
+              "kind": "rest_cross",
+              "kind_label": "Rest",
+              "cell": "Rest"
+            },
+            {
+              "day": "tue",
+              "kind": "ga_speed",
+              "kind_label": "GA+s",
+              "distance_mi": 7,
+              "distance_km": 11.3,
+              "detail": "6×12 s uphill + 6×100 m strides",
+              "cell": "GA+s 7 (6×12 s uphill + 6×100 m strides)"
+            },
+            {
+              "day": "wed",
+              "kind": "endurance",
+              "kind_label": "End",
+              "distance_mi": 8,
+              "distance_km": 12.9,
+              "cell": "End 8"
+            },
+            {
+              "day": "thu",
+              "kind": "rest_cross",
+              "kind_label": "Rest",
+              "cell": "Rest"
+            },
+            {
+              "day": "fri",
+              "kind": "lt",
+              "kind_label": "LT",
+              "distance_mi": 8,
+              "distance_km": 12.9,
+              "detail": "18 min, jog 4, 12 min",
+              "cell": "LT 8 (18 min, jog 4, 12 min)"
+            },
+            {
+              "day": "sat",
+              "kind": "rest_cross",
+              "kind_label": "Rest",
+              "cell": "Rest"
+            },
+            {
+              "day": "sun",
+              "kind": "endurance",
+              "kind_label": "End",
+              "distance_mi": 11,
+              "distance_km": 17.7,
+              "cell": "End 11"
+            }
+          ]
+        },
+        {
+          "week": 9,
+          "weeks_to_go": 9,
+          "label": "9 weeks to go",
+          "in_plan": true,
+          "printed_volume_mi": 37,
+          "printed_volume_km": 59.5,
+          "volume_check": {
+            "cells_mi": 37,
+            "cells_km": 59.5,
+            "reconciles": true
+          },
+          "source": "spine §2.3.3, week 9",
+          "days": [
+            {
+              "day": "mon",
+              "kind": "rest_cross",
+              "kind_label": "Rest",
+              "cell": "Rest"
+            },
+            {
+              "day": "tue",
+              "kind": "ga_speed",
+              "kind_label": "GA+s",
+              "distance_mi": 8,
+              "distance_km": 12.9,
+              "detail": "6×12 s uphill + 6×100 m strides",
+              "cell": "GA+s 8 (6×12 s uphill + 6×100 m strides)"
+            },
+            {
+              "day": "wed",
+              "kind": "endurance",
+              "kind_label": "End",
+              "distance_mi": 9,
+              "distance_km": 14.5,
+              "cell": "End 9"
+            },
+            {
+              "day": "thu",
+              "kind": "rest_cross",
+              "kind_label": "Rest",
+              "cell": "Rest"
+            },
+            {
+              "day": "fri",
+              "kind": "lt",
+              "kind_label": "LT",
+              "distance_mi": 8,
+              "distance_km": 12.9,
+              "detail": "18 min, jog 4, 15 min",
+              "cell": "LT 8 (18 min, jog 4, 15 min)"
+            },
+            {
+              "day": "sat",
+              "kind": "rest_cross",
+              "kind_label": "Rest",
+              "cell": "Rest"
+            },
+            {
+              "day": "sun",
+              "kind": "progression_long_run",
+              "kind_label": "Prog",
+              "distance_mi": 12,
+              "distance_km": 19.3,
+              "lt_last_mi": 2,
+              "lt_last_km": 3.2,
+              "detail": "2 @ LT",
+              "cell": "Prog 12 (2 @ LT)"
+            }
+          ]
+        },
+        {
+          "week": 8,
+          "weeks_to_go": 8,
+          "label": "8 weeks to go — recovery week",
+          "in_plan": true,
+          "recovery_week": true,
+          "printed_volume_mi": 32,
+          "printed_volume_km": 51.5,
+          "volume_check": {
+            "cells_mi": 32,
+            "cells_km": 51.5,
+            "reconciles": true
+          },
+          "source": "spine §2.3.3, week 8 (recovery)",
+          "days": [
+            {
+              "day": "mon",
+              "kind": "rest_cross",
+              "kind_label": "Rest",
+              "cell": "Rest"
+            },
+            {
+              "day": "tue",
+              "kind": "ga_speed",
+              "kind_label": "GA+s",
+              "distance_mi": 8,
+              "distance_km": 12.9,
+              "detail": "2 sets of 5 × 150 m strides, jog 250 m, 4 min between sets",
+              "cell": "GA+s 8 (2 sets of 5 × 150 m strides, jog 250 m, 4 min between sets)"
+            },
+            {
+              "day": "wed",
+              "kind": "ga",
+              "kind_label": "GA",
+              "distance_mi": 7,
+              "distance_km": 11.3,
+              "cell": "GA 7"
+            },
+            {
+              "day": "thu",
+              "kind": "rest_cross",
+              "kind_label": "Rest",
+              "cell": "Rest"
+            },
+            {
+              "day": "fri",
+              "kind": "ga",
+              "kind_label": "GA",
+              "distance_mi": 8,
+              "distance_km": 12.9,
+              "cell": "GA 8"
+            },
+            {
+              "day": "sat",
+              "kind": "rest_cross",
+              "kind_label": "Rest",
+              "cell": "Rest"
+            },
+            {
+              "day": "sun",
+              "kind": "ga",
+              "kind_label": "GA",
+              "distance_mi": 9,
+              "distance_km": 14.5,
+              "cell": "GA 9"
+            }
+          ]
+        },
+        {
+          "week": 7,
+          "weeks_to_go": 7,
+          "label": "7 weeks to go",
+          "in_plan": true,
+          "printed_volume_mi": 40,
+          "printed_volume_km": 64.4,
+          "volume_check": {
+            "cells_mi": 40,
+            "cells_km": 64.4,
+            "reconciles": true
+          },
+          "source": "spine §2.3.3, week 7",
+          "days": [
+            {
+              "day": "mon",
+              "kind": "rest_cross",
+              "kind_label": "Rest",
+              "cell": "Rest"
+            },
+            {
+              "day": "tue",
+              "kind": "lt",
+              "kind_label": "LT",
+              "distance_mi": 8,
+              "distance_km": 12.9,
+              "detail": "20 min, jog 4, 16 min",
+              "cell": "LT 8 (20 min, jog 4, 16 min)"
+            },
+            {
+              "day": "wed",
+              "kind": "endurance",
+              "kind_label": "End",
+              "distance_mi": 9,
+              "distance_km": 14.5,
+              "cell": "End 9"
+            },
+            {
+              "day": "thu",
+              "kind": "rest_cross",
+              "kind_label": "Rest",
+              "cell": "Rest"
+            },
+            {
+              "day": "fri",
+              "kind": "ga_speed",
+              "kind_label": "GA+s",
+              "distance_mi": 7,
+              "distance_km": 11.3,
+              "detail": "10 × 100 m strides",
+              "cell": "GA+s 7 (10 × 100 m strides)"
+            },
+            {
+              "day": "sat",
+              "kind": "recovery",
+              "kind_label": "Rec",
+              "distance_mi": 4,
+              "distance_km": 6.4,
+              "cell": "Rec 4"
+            },
+            {
+              "day": "sun",
+              "kind": "progression_long_run",
+              "kind_label": "Prog",
+              "distance_mi": 12,
+              "distance_km": 19.3,
+              "lt_last_mi": 3,
+              "lt_last_km": 4.8,
+              "detail": "3 @ LT",
+              "cell": "Prog 12 (3 @ LT)"
+            }
+          ]
+        },
+        {
+          "week": 6,
+          "weeks_to_go": 6,
+          "label": "6 weeks to go",
+          "in_plan": true,
+          "printed_volume_mi": 43,
+          "printed_volume_km": 69.2,
+          "volume_check": {
+            "cells_mi": 43,
+            "cells_km": 69.2,
+            "reconciles": true
+          },
+          "source": "spine §2.3.3, week 6",
+          "days": [
+            {
+              "day": "mon",
+              "kind": "rest_cross",
+              "kind_label": "Rest",
+              "cell": "Rest"
+            },
+            {
+              "day": "tue",
+              "kind": "ga_speed",
+              "kind_label": "GA+s",
+              "distance_mi": 8,
+              "distance_km": 12.9,
+              "detail": "6×12 s uphill + 6×100 m strides",
+              "cell": "GA+s 8 (6×12 s uphill + 6×100 m strides)"
+            },
+            {
+              "day": "wed",
+              "kind": "endurance",
+              "kind_label": "End",
+              "distance_mi": 9,
+              "distance_km": 14.5,
+              "cell": "End 9"
+            },
+            {
+              "day": "thu",
+              "kind": "rest_cross",
+              "kind_label": "Rest",
+              "cell": "Rest"
+            },
+            {
+              "day": "fri",
+              "kind": "vo2max",
+              "kind_label": "VO₂",
+              "distance_mi": 9,
+              "distance_km": 14.5,
+              "detail": "6 × 1,000 m @ 3K–5K",
+              "cell": "VO₂ 9 (6 × 1,000 m @ 3K–5K)"
+            },
+            {
+              "day": "sat",
+              "kind": "recovery",
+              "kind_label": "Rec",
+              "distance_mi": 5,
+              "distance_km": 8.0,
+              "cell": "Rec 5"
+            },
+            {
+              "day": "sun",
+              "kind": "endurance",
+              "kind_label": "End",
+              "distance_mi": 12,
+              "distance_km": 19.3,
+              "cell": "End 12"
+            }
+          ]
+        },
+        {
+          "week": 5,
+          "weeks_to_go": 5,
+          "label": "5 weeks to go",
+          "in_plan": true,
+          "printed_volume_mi": 45,
+          "printed_volume_km": 72.4,
+          "volume_check": {
+            "cells_mi": 45,
+            "cells_km": 72.4,
+            "reconciles": true
+          },
+          "source": "spine §2.3.3, week 5",
+          "days": [
+            {
+              "day": "mon",
+              "kind": "rest_cross",
+              "kind_label": "Rest",
+              "cell": "Rest"
+            },
+            {
+              "day": "tue",
+              "kind": "lt",
+              "kind_label": "LT",
+              "distance_mi": 9,
+              "distance_km": 14.5,
+              "detail": "38 min tempo run",
+              "cell": "LT 9 (38 min tempo run)"
+            },
+            {
+              "day": "wed",
+              "kind": "endurance",
+              "kind_label": "End",
+              "distance_mi": 10,
+              "distance_km": 16.1,
+              "cell": "End 10"
+            },
+            {
+              "day": "thu",
+              "kind": "rest_cross",
+              "kind_label": "Rest",
+              "cell": "Rest"
+            },
+            {
+              "day": "fri",
+              "kind": "ga_speed",
+              "kind_label": "GA+s",
+              "distance_mi": 8,
+              "distance_km": 12.9,
+              "detail": "10 × 100 m strides",
+              "cell": "GA+s 8 (10 × 100 m strides)"
+            },
+            {
+              "day": "sat",
+              "kind": "recovery",
+              "kind_label": "Rec",
+              "distance_mi": 5,
+              "distance_km": 8.0,
+              "cell": "Rec 5"
+            },
+            {
+              "day": "sun",
+              "kind": "progression_long_run",
+              "kind_label": "Prog",
+              "distance_mi": 13,
+              "distance_km": 20.9,
+              "lt_last_mi": 3,
+              "lt_last_km": 4.8,
+              "detail": "3 @ LT",
+              "cell": "Prog 13 (3 @ LT)"
+            }
+          ]
+        },
+        {
+          "week": 4,
+          "weeks_to_go": 4,
+          "label": "4 weeks to go",
+          "in_plan": true,
+          "printed_volume_mi": 38,
+          "printed_volume_km": 61.2,
+          "volume_check": {
+            "cells_mi": 38,
+            "cells_km": 61.2,
+            "reconciles": true
+          },
+          "source": "spine §2.3.3, week 4",
+          "days": [
+            {
+              "day": "mon",
+              "kind": "rest_cross",
+              "kind_label": "Rest",
+              "cell": "Rest"
+            },
+            {
+              "day": "tue",
+              "kind": "ga_speed",
+              "kind_label": "GA+s",
+              "distance_mi": 8,
+              "distance_km": 12.9,
+              "detail": "2 sets of 4 × 150 m strides",
+              "cell": "GA+s 8 (2 sets of 4 × 150 m strides)"
+            },
+            {
+              "day": "wed",
+              "kind": "ga",
+              "kind_label": "GA",
+              "distance_mi": 7,
+              "distance_km": 11.3,
+              "cell": "GA 7"
+            },
+            {
+              "day": "thu",
+              "kind": "rest_cross",
+              "kind_label": "Rest",
+              "cell": "Rest"
+            },
+            {
+              "day": "fri",
+              "kind": "recovery",
+              "kind_label": "Rec",
+              "distance_mi": 3,
+              "distance_km": 4.8,
+              "detail": "4×100 m strides",
+              "cell": "Rec 3 + 4×100 m strides"
+            },
+            {
+              "day": "sat",
+              "kind": "tune_up_race",
+              "kind_label": "tune-up race",
+              "distance_mi": 10,
+              "distance_km": 16.1,
+              "race_distance_m": 10000,
+              "race_distance_label": "8K–10K",
+              "distance_basis": "the schedule's number is the miles it counts for this day in the weekly total; the race's own distance is in race_distance_m",
+              "cell": "8K–10K tune-up race 10"
+            },
+            {
+              "day": "sun",
+              "kind": "endurance",
+              "kind_label": "End",
+              "distance_mi": 10,
+              "distance_km": 16.1,
+              "cell": "End 10"
+            }
+          ]
+        },
+        {
+          "week": 3,
+          "weeks_to_go": 3,
+          "label": "3 weeks to go",
+          "in_plan": true,
+          "printed_volume_mi": 47,
+          "printed_volume_km": 75.6,
+          "volume_check": {
+            "cells_mi": 47,
+            "cells_km": 75.6,
+            "reconciles": true
+          },
+          "source": "spine §2.3.3, week 3",
+          "days": [
+            {
+              "day": "mon",
+              "kind": "rest_cross",
+              "kind_label": "Rest",
+              "cell": "Rest"
+            },
+            {
+              "day": "tue",
+              "kind": "ga",
+              "kind_label": "GA",
+              "distance_mi": 8,
+              "distance_km": 12.9,
+              "cell": "GA 8"
+            },
+            {
+              "day": "wed",
+              "kind": "endurance",
+              "kind_label": "End",
+              "distance_mi": 11,
+              "distance_km": 17.7,
+              "cell": "End 11"
+            },
+            {
+              "day": "thu",
+              "kind": "rest_cross",
+              "kind_label": "Rest",
+              "cell": "Rest"
+            },
+            {
+              "day": "fri",
+              "kind": "vo2max",
+              "kind_label": "VO₂",
+              "distance_mi": 10,
+              "distance_km": 16.1,
+              "detail": "2 sets of 2 × 1,200 m + 1 × 800 m @ 3K–5K",
+              "cell": "VO₂ 10 (2 sets of 2 × 1,200 m + 1 × 800 m @ 3K–5K)"
+            },
+            {
+              "day": "sat",
+              "kind": "recovery",
+              "kind_label": "Rec",
+              "distance_mi": 4,
+              "distance_km": 6.4,
+              "cell": "Rec 4"
+            },
+            {
+              "day": "sun",
+              "kind": "endurance",
+              "kind_label": "End",
+              "distance_mi": 14,
+              "distance_km": 22.5,
+              "cell": "End 14"
+            }
+          ]
+        },
+        {
+          "week": 2,
+          "weeks_to_go": 2,
+          "label": "2 weeks to go",
+          "in_plan": true,
+          "printed_volume_mi": 38,
+          "printed_volume_km": 61.2,
+          "volume_check": {
+            "cells_mi": 38,
+            "cells_km": 61.2,
+            "reconciles": true
+          },
+          "source": "spine §2.3.3, week 2",
+          "days": [
+            {
+              "day": "mon",
+              "kind": "rest_cross",
+              "kind_label": "Rest",
+              "cell": "Rest"
+            },
+            {
+              "day": "tue",
+              "kind": "ga_speed",
+              "kind_label": "GA+s",
+              "distance_mi": 8,
+              "distance_km": 12.9,
+              "detail": "2 sets of 4 × 150 m strides",
+              "cell": "GA+s 8 (2 sets of 4 × 150 m strides)"
+            },
+            {
+              "day": "wed",
+              "kind": "ga",
+              "kind_label": "GA",
+              "distance_mi": 7,
+              "distance_km": 11.3,
+              "cell": "GA 7"
+            },
+            {
+              "day": "thu",
+              "kind": "rest_cross",
+              "kind_label": "Rest",
+              "cell": "Rest"
+            },
+            {
+              "day": "fri",
+              "kind": "recovery",
+              "kind_label": "Rec",
+              "distance_mi": 3,
+              "distance_km": 4.8,
+              "detail": "4×100 m strides",
+              "cell": "Rec 3 + 4×100 m strides"
+            },
+            {
+              "day": "sat",
+              "kind": "tune_up_race",
+              "kind_label": "tune-up race",
+              "distance_mi": 10,
+              "distance_km": 16.1,
+              "race_distance_m": 10000,
+              "race_distance_label": "8K–10K",
+              "distance_basis": "the schedule's number is the miles it counts for this day in the weekly total; the race's own distance is in race_distance_m",
+              "cell": "8K–10K tune-up race 10"
+            },
+            {
+              "day": "sun",
+              "kind": "endurance",
+              "kind_label": "End",
+              "distance_mi": 10,
+              "distance_km": 16.1,
+              "cell": "End 10"
+            }
+          ]
+        },
+        {
+          "week": 1,
+          "weeks_to_go": 1,
+          "label": "1 week to go",
+          "in_plan": true,
+          "printed_volume_mi": 32,
+          "printed_volume_km": 51.5,
+          "volume_check": {
+            "cells_mi": 32,
+            "cells_km": 51.5,
+            "reconciles": true
+          },
+          "source": "spine §2.3.3, week 1",
+          "days": [
+            {
+              "day": "mon",
+              "kind": "rest_cross",
+              "kind_label": "Rest",
+              "cell": "Rest"
+            },
+            {
+              "day": "tue",
+              "kind": "ga_speed",
+              "kind_label": "GA+s",
+              "distance_mi": 6,
+              "distance_km": 9.7,
+              "detail": "2 sets of 6 × 100 m strides, jog 3 min between sets",
+              "cell": "GA+s 6 (2 sets of 6 × 100 m strides, jog 3 min between sets)"
+            },
+            {
+              "day": "wed",
+              "kind": "recovery",
+              "kind_label": "Rec",
+              "distance_mi": 4,
+              "distance_km": 6.4,
+              "cell": "Rec 4"
+            },
+            {
+              "day": "thu",
+              "kind": "rest_cross",
+              "kind_label": "Rest",
+              "cell": "Rest"
+            },
+            {
+              "day": "fri",
+              "kind": "vo2max",
+              "kind_label": "VO₂",
+              "distance_mi": 9,
+              "distance_km": 14.5,
+              "detail": "2 × 1,200 m, 2 × 1,000 m, 1 × 800 m @ 3K–5K",
+              "cell": "VO₂ 9 (2 × 1,200 m, 2 × 1,000 m, 1 × 800 m @ 3K–5K)"
+            },
+            {
+              "day": "sat",
+              "kind": "recovery",
+              "kind_label": "Rec",
+              "distance_mi": 3,
+              "distance_km": 4.8,
+              "cell": "Rec 3"
+            },
+            {
+              "day": "sun",
+              "kind": "endurance",
+              "kind_label": "End",
+              "distance_mi": 10,
+              "distance_km": 16.1,
+              "cell": "End 10"
+            }
+          ]
+        },
+        {
+          "week": 0,
+          "weeks_to_go": 0,
+          "label": "race week",
+          "in_plan": true,
+          "printed_volume_mi": 35,
+          "printed_volume_km": 56.3,
+          "volume_check": {
+            "cells_mi": 35,
+            "cells_km": 56.3,
+            "reconciles": true
+          },
+          "source": "spine §2.3.3, race week",
+          "days": [
+            {
+              "day": "mon",
+              "kind": "rest_cross",
+              "kind_label": "Rest",
+              "cell": "Rest"
+            },
+            {
+              "day": "tue",
+              "kind": "race_pace_speed",
+              "kind_label": "RP+s",
+              "distance_mi": 7,
+              "distance_km": 11.3,
+              "detail": "4 × 100 m strides, 2 miles @ half-marathon race pace",
+              "cell": "RP+s 7 (4 × 100 m strides, 2 miles @ half-marathon race pace)"
+            },
+            {
+              "day": "wed",
+              "kind": "recovery",
+              "kind_label": "Rec",
+              "distance_mi": 5,
+              "distance_km": 8.0,
+              "cell": "Rec 5"
+            },
+            {
+              "day": "thu",
+              "kind": "recovery",
+              "kind_label": "Rec",
+              "distance_mi": 4,
+              "distance_km": 6.4,
+              "cell": "Rec 4"
+            },
+            {
+              "day": "fri",
+              "kind": "rest_cross",
+              "kind_label": "Rest",
+              "cell": "Rest"
+            },
+            {
+              "day": "sat",
+              "kind": "recovery",
+              "kind_label": "Rec",
+              "distance_mi": 3,
+              "distance_km": 4.8,
+              "detail": "4×100 m strides",
+              "cell": "Rec 3 + 4×100 m strides"
+            },
+            {
+              "day": "sun",
+              "kind": "goal_race",
+              "kind_label": "goal race",
+              "distance_mi": 16,
+              "distance_km": 25.7,
+              "race_distance_m": 21097.5,
+              "race_distance_label": "half marathon",
+              "distance_basis": "the schedule's number is the miles it counts for this day in the weekly total; the race's own distance is in race_distance_m",
+              "cell": "half marathon goal race 16"
+            }
+          ]
+        },
+        {
+          "week": -1,
+          "weeks_to_go": null,
+          "label": "post-race recovery week",
+          "in_plan": false,
+          "printed_volume_mi": 30,
+          "printed_volume_km": 48.3,
+          "volume_check": {
+            "cells_mi": 30,
+            "cells_km": 48.3,
+            "reconciles": true
+          },
+          "source": "spine §2.3.3, recovery row",
+          "days": [
+            {
+              "day": "mon",
+              "kind": "recovery",
+              "kind_label": "Rec",
+              "distance_mi": 4,
+              "distance_km": 6.4,
+              "cell": "Rec 4"
+            },
+            {
+              "day": "tue",
+              "kind": "rest_cross",
+              "kind_label": "Rest",
+              "cell": "Rest"
+            },
+            {
+              "day": "wed",
+              "kind": "recovery",
+              "kind_label": "Rec",
+              "distance_mi": 5,
+              "distance_km": 8.0,
+              "cell": "Rec 5"
+            },
+            {
+              "day": "thu",
+              "kind": "recovery",
+              "kind_label": "Rec",
+              "distance_mi": 6,
+              "distance_km": 9.7,
+              "cell": "Rec 6"
+            },
+            {
+              "day": "fri",
+              "kind": "rest_cross",
+              "kind_label": "Rest",
+              "cell": "Rest"
+            },
+            {
+              "day": "sat",
+              "kind": "ga_speed",
+              "kind_label": "GA+s",
+              "distance_mi": 7,
+              "distance_km": 11.3,
+              "detail": "8 × 100 m strides",
+              "cell": "GA+s 7 (8 × 100 m strides)"
+            },
+            {
+              "day": "sun",
+              "kind": "ga",
+              "kind_label": "GA",
+              "distance_mi": 8,
+              "distance_km": 12.9,
+              "cell": "GA 8"
+            }
+          ]
+        },
+        {
+          "week": -2,
+          "weeks_to_go": null,
+          "label": "transition week",
+          "in_plan": false,
+          "printed_volume_mi": 38,
+          "printed_volume_km": 61.2,
+          "volume_check": {
+            "cells_mi": 38,
+            "cells_km": 61.2,
+            "reconciles": true
+          },
+          "source": "spine §2.3.3, transition row",
+          "days": [
+            {
+              "day": "mon",
+              "kind": "rest_cross",
+              "kind_label": "Rest",
+              "cell": "Rest"
+            },
+            {
+              "day": "tue",
+              "kind": "ga",
+              "kind_label": "GA",
+              "distance_mi": 7,
+              "distance_km": 11.3,
+              "cell": "GA 7"
+            },
+            {
+              "day": "wed",
+              "kind": "ga",
+              "kind_label": "GA",
+              "distance_mi": 8,
+              "distance_km": 12.9,
+              "cell": "GA 8"
+            },
+            {
+              "day": "thu",
+              "kind": "rest_cross",
+              "kind_label": "Rest",
+              "cell": "Rest"
+            },
+            {
+              "day": "fri",
+              "kind": "ga_speed",
+              "kind_label": "GA+s",
+              "distance_mi": 8,
+              "distance_km": 12.9,
+              "detail": "2 sets of 6 × 100 m strides",
+              "cell": "GA+s 8 (2 sets of 6 × 100 m strides)"
+            },
+            {
+              "day": "sat",
+              "kind": "recovery",
+              "kind_label": "Rec",
+              "distance_mi": 5,
+              "distance_km": 8.0,
+              "cell": "Rec 5"
+            },
+            {
+              "day": "sun",
+              "kind": "ga",
+              "kind_label": "GA",
+              "distance_mi": 10,
+              "distance_km": 16.1,
+              "cell": "GA 10"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "pfitzinger-half-marathon-tier-2",
+      "label": "half marathon tier 2",
+      "method": "Pfitzinger",
+      "distance_m": 21097.5,
+      "weeks": 12,
+      "entry_mileage": {
+        "min_mi": 40,
+        "max_mi": 50,
+        "min_km": 64.4,
+        "max_km": 80.5,
+        "source": "spine §2.2 — the half-marathon plan's entry requirement for tier 2: '40–50' mi/wk of training"
+      },
+      "plan_mileage": {
+        "min_mi": 46,
+        "max_mi": 63,
+        "min_km": 74.0,
+        "max_km": 101.4,
+        "printed_km": "73–102 km",
+        "source": "spine §2.3.4 heading — '46 to 63 miles (73–102 km) per week'"
+      },
+      "goal_race": {
+        "label": "half marathon goal race",
+        "distance_m": 21097.5,
+        "distance_label": "half marathon",
+        "options": [
+          {
+            "label": "half marathon",
+            "distance_m": 21097.5
+          }
+        ],
+        "source": "spine §2.3.4 race-week cell — 'half marathon goal race 17'"
+      },
+      "source": {
+        "spine_section": "§2.3.4",
+        "book_chapter": "ch. 12 — the half-marathon plan",
+        "distance_m": 21097.5,
+        "method": "Pfitzinger"
+      },
+      "volume_series_mi": [
+        46,
+        49,
+        52,
+        47,
+        55,
+        58,
+        61,
+        52,
+        63,
+        52,
+        43,
+        42,
+        37,
+        50
+      ],
+      "notes": [
+        "Two endurance days a week — Thursday and Sunday — with the Sunday long run (spine §2.3.4).",
+        "Three progression long runs, in weeks 9, 7 and 5, the last 2–3 miles at LT pace (spine §2.3.4).",
+        "The tune-up races are 8K–10K, at 4 and 2 weeks to go (spine §2.3.4).",
+        "The peak is week 3 at 63 miles — the book builds up to 63 miles with three weeks to go (spine §2.3.4).",
+        "After the race: a recovery week of 37 miles and a transition week of 50 miles (spine §2.3.4)."
+      ],
+      "weeks_detail": [
+        {
+          "week": 11,
+          "weeks_to_go": 11,
+          "label": "11 weeks to go",
+          "in_plan": true,
+          "printed_volume_mi": 46,
+          "printed_volume_km": 74.0,
+          "volume_check": {
+            "cells_mi": 46,
+            "cells_km": 74.0,
+            "reconciles": true
+          },
+          "source": "spine §2.3.4, week 11",
+          "days": [
+            {
+              "day": "mon",
+              "kind": "rest_cross",
+              "kind_label": "Rest",
+              "cell": "Rest"
+            },
+            {
+              "day": "tue",
+              "kind": "ga",
+              "kind_label": "GA",
+              "distance_mi": 9,
+              "distance_km": 14.5,
+              "cell": "GA 9"
+            },
+            {
+              "day": "wed",
+              "kind": "lt",
+              "kind_label": "LT",
+              "distance_mi": 8,
+              "distance_km": 12.9,
+              "detail": "15 min LT interval, jog 4 min recovery, 12 min LT interval",
+              "cell": "LT 8 (15 min LT interval, jog 4 min recovery, 12 min LT interval)"
+            },
+            {
+              "day": "thu",
+              "kind": "endurance",
+              "kind_label": "End",
+              "distance_mi": 10,
+              "distance_km": 16.1,
+              "cell": "End 10"
+            },
+            {
+              "day": "fri",
+              "kind": "rest_cross",
+              "kind_label": "Rest",
+              "cell": "Rest"
+            },
+            {
+              "day": "sat",
+              "kind": "ga_speed",
+              "kind_label": "GA+s",
+              "distance_mi": 7,
+              "distance_km": 11.3,
+              "detail": "2 sets of 6 × 100 m strides, jog 3 min between sets",
+              "cell": "GA+s 7 (2 sets of 6 × 100 m strides, jog 3 min between sets)"
+            },
+            {
+              "day": "sun",
+              "kind": "endurance",
+              "kind_label": "End",
+              "distance_mi": 12,
+              "distance_km": 19.3,
+              "cell": "End 12"
+            }
+          ]
+        },
+        {
+          "week": 10,
+          "weeks_to_go": 10,
+          "label": "10 weeks to go",
+          "in_plan": true,
+          "printed_volume_mi": 49,
+          "printed_volume_km": 78.9,
+          "volume_check": {
+            "cells_mi": 49,
+            "cells_km": 78.9,
+            "reconciles": true
+          },
+          "source": "spine §2.3.4, week 10",
+          "days": [
+            {
+              "day": "mon",
+              "kind": "rest_cross",
+              "kind_label": "Rest",
+              "cell": "Rest"
+            },
+            {
+              "day": "tue",
+              "kind": "ga",
+              "kind_label": "GA",
+              "distance_mi": 9,
+              "distance_km": 14.5,
+              "cell": "GA 9"
+            },
+            {
+              "day": "wed",
+              "kind": "lt",
+              "kind_label": "LT",
+              "distance_mi": 9,
+              "distance_km": 14.5,
+              "detail": "18 min LT interval, jog 4, 14 min",
+              "cell": "LT 9 (18 min LT interval, jog 4, 14 min)"
+            },
+            {
+              "day": "thu",
+              "kind": "endurance",
+              "kind_label": "End",
+              "distance_mi": 11,
+              "distance_km": 17.7,
+              "cell": "End 11"
+            },
+            {
+              "day": "fri",
+              "kind": "rest_cross",
+              "kind_label": "Rest",
+              "cell": "Rest"
+            },
+            {
+              "day": "sat",
+              "kind": "ga_speed",
+              "kind_label": "GA+s",
+              "distance_mi": 7,
+              "distance_km": 11.3,
+              "detail": "6 × 12 s uphill + 8 × 100 m strides",
+              "cell": "GA+s 7 (6 × 12 s uphill + 8 × 100 m strides)"
+            },
+            {
+              "day": "sun",
+              "kind": "endurance",
+              "kind_label": "End",
+              "distance_mi": 13,
+              "distance_km": 20.9,
+              "cell": "End 13"
+            }
+          ]
+        },
+        {
+          "week": 9,
+          "weeks_to_go": 9,
+          "label": "9 weeks to go",
+          "in_plan": true,
+          "printed_volume_mi": 52,
+          "printed_volume_km": 83.7,
+          "volume_check": {
+            "cells_mi": 52,
+            "cells_km": 83.7,
+            "reconciles": true
+          },
+          "source": "spine §2.3.4, week 9",
+          "days": [
+            {
+              "day": "mon",
+              "kind": "rest_cross",
+              "kind_label": "Rest",
+              "cell": "Rest"
+            },
+            {
+              "day": "tue",
+              "kind": "ga",
+              "kind_label": "GA",
+              "distance_mi": 9,
+              "distance_km": 14.5,
+              "cell": "GA 9"
+            },
+            {
+              "day": "wed",
+              "kind": "lt",
+              "kind_label": "LT",
+              "distance_mi": 10,
+              "distance_km": 16.1,
+              "detail": "20 min LT interval, jog 4, 16 min",
+              "cell": "LT 10 (20 min LT interval, jog 4, 16 min)"
+            },
+            {
+              "day": "thu",
+              "kind": "endurance",
+              "kind_label": "End",
+              "distance_mi": 11,
+              "distance_km": 17.7,
+              "cell": "End 11"
+            },
+            {
+              "day": "fri",
+              "kind": "rest_cross",
+              "kind_label": "Rest",
+              "cell": "Rest"
+            },
+            {
+              "day": "sat",
+              "kind": "ga_speed",
+              "kind_label": "GA+s",
+              "distance_mi": 8,
+              "distance_km": 12.9,
+              "detail": "6 × 12 s uphill + 8 × 100 m strides",
+              "cell": "GA+s 8 (6 × 12 s uphill + 8 × 100 m strides)"
+            },
+            {
+              "day": "sun",
+              "kind": "progression_long_run",
+              "kind_label": "Prog",
+              "distance_mi": 14,
+              "distance_km": 22.5,
+              "lt_last_mi": 2,
+              "lt_last_km": 3.2,
+              "detail": "2 @ LT",
+              "cell": "Prog 14 (2 @ LT)"
+            }
+          ]
+        },
+        {
+          "week": 8,
+          "weeks_to_go": 8,
+          "label": "8 weeks to go — recovery week",
+          "in_plan": true,
+          "recovery_week": true,
+          "printed_volume_mi": 47,
+          "printed_volume_km": 75.6,
+          "volume_check": {
+            "cells_mi": 47,
+            "cells_km": 75.6,
+            "reconciles": true
+          },
+          "source": "spine §2.3.4, week 8 (recovery)",
+          "days": [
+            {
+              "day": "mon",
+              "kind": "rest_cross",
+              "kind_label": "Rest",
+              "cell": "Rest"
+            },
+            {
+              "day": "tue",
+              "kind": "ga",
+              "kind_label": "GA",
+              "distance_mi": 8,
+              "distance_km": 12.9,
+              "cell": "GA 8"
+            },
+            {
+              "day": "wed",
+              "kind": "ga",
+              "kind_label": "GA",
+              "distance_mi": 10,
+              "distance_km": 16.1,
+              "cell": "GA 10"
+            },
+            {
+              "day": "thu",
+              "kind": "ga",
+              "kind_label": "GA",
+              "distance_mi": 9,
+              "distance_km": 14.5,
+              "detail": "2 sets of 5 × 150 m strides, jog 250 m, 4 min between sets",
+              "cell": "GA 9 (2 sets of 5 × 150 m strides, jog 250 m, 4 min between sets)"
+            },
+            {
+              "day": "fri",
+              "kind": "rest_cross",
+              "kind_label": "Rest",
+              "cell": "Rest"
+            },
+            {
+              "day": "sat",
+              "kind": "ga_speed",
+              "kind_label": "GA+s",
+              "distance_mi": 9,
+              "distance_km": 14.5,
+              "cell": "GA+s 9"
+            },
+            {
+              "day": "sun",
+              "kind": "endurance",
+              "kind_label": "End",
+              "distance_mi": 11,
+              "distance_km": 17.7,
+              "cell": "End 11"
+            }
+          ]
+        },
+        {
+          "week": 7,
+          "weeks_to_go": 7,
+          "label": "7 weeks to go",
+          "in_plan": true,
+          "printed_volume_mi": 55,
+          "printed_volume_km": 88.5,
+          "volume_check": {
+            "cells_mi": 55,
+            "cells_km": 88.5,
+            "reconciles": true
+          },
+          "source": "spine §2.3.4, week 7",
+          "days": [
+            {
+              "day": "mon",
+              "kind": "rest_cross",
+              "kind_label": "Rest",
+              "cell": "Rest"
+            },
+            {
+              "day": "tue",
+              "kind": "ga",
+              "kind_label": "GA",
+              "distance_mi": 9,
+              "distance_km": 14.5,
+              "cell": "GA 9"
+            },
+            {
+              "day": "wed",
+              "kind": "lt",
+              "kind_label": "LT",
+              "distance_mi": 10,
+              "distance_km": 16.1,
+              "detail": "22 min LT interval, jog 4, 18 min",
+              "cell": "LT 10 (22 min LT interval, jog 4, 18 min)"
+            },
+            {
+              "day": "thu",
+              "kind": "endurance",
+              "kind_label": "End",
+              "distance_mi": 11,
+              "distance_km": 17.7,
+              "cell": "End 11"
+            },
+            {
+              "day": "fri",
+              "kind": "recovery",
+              "kind_label": "Rec",
+              "distance_mi": 3,
+              "distance_km": 4.8,
+              "cell": "Rec 3"
+            },
+            {
+              "day": "sat",
+              "kind": "ga_speed",
+              "kind_label": "GA+s",
+              "distance_mi": 8,
+              "distance_km": 12.9,
+              "detail": "2 sets of 6 × 100 m strides, jog 3 min between sets",
+              "cell": "GA+s 8 (2 sets of 6 × 100 m strides, jog 3 min between sets)"
+            },
+            {
+              "day": "sun",
+              "kind": "progression_long_run",
+              "kind_label": "Prog",
+              "distance_mi": 14,
+              "distance_km": 22.5,
+              "lt_last_mi": 3,
+              "lt_last_km": 4.8,
+              "detail": "3 @ LT",
+              "cell": "Prog 14 (3 @ LT)"
+            }
+          ]
+        },
+        {
+          "week": 6,
+          "weeks_to_go": 6,
+          "label": "6 weeks to go",
+          "in_plan": true,
+          "printed_volume_mi": 58,
+          "printed_volume_km": 93.3,
+          "volume_check": {
+            "cells_mi": 58,
+            "cells_km": 93.3,
+            "reconciles": true
+          },
+          "source": "spine §2.3.4, week 6",
+          "days": [
+            {
+              "day": "mon",
+              "kind": "rest_cross",
+              "kind_label": "Rest",
+              "cell": "Rest"
+            },
+            {
+              "day": "tue",
+              "kind": "ga",
+              "kind_label": "GA",
+              "distance_mi": 9,
+              "distance_km": 14.5,
+              "cell": "GA 9"
+            },
+            {
+              "day": "wed",
+              "kind": "vo2max",
+              "kind_label": "VO₂",
+              "distance_mi": 10,
+              "distance_km": 16.1,
+              "detail": "3 × 1,200 m + 3 × 1,000 m @ 3K–5K race pace, jog 50–90 %",
+              "cell": "VO₂ 10 (3 × 1,200 m + 3 × 1,000 m @ 3K–5K race pace, jog 50–90 %)"
+            },
+            {
+              "day": "thu",
+              "kind": "endurance",
+              "kind_label": "End",
+              "distance_mi": 12,
+              "distance_km": 19.3,
+              "cell": "End 12"
+            },
+            {
+              "day": "fri",
+              "kind": "recovery",
+              "kind_label": "Rec",
+              "distance_mi": 4,
+              "distance_km": 6.4,
+              "cell": "Rec 4"
+            },
+            {
+              "day": "sat",
+              "kind": "ga_speed",
+              "kind_label": "GA+s",
+              "distance_mi": 8,
+              "distance_km": 12.9,
+              "detail": "6 × 12 s uphill + 8 × 100 m strides",
+              "cell": "GA+s 8 (6 × 12 s uphill + 8 × 100 m strides)"
+            },
+            {
+              "day": "sun",
+              "kind": "endurance",
+              "kind_label": "End",
+              "distance_mi": 15,
+              "distance_km": 24.1,
+              "cell": "End 15"
+            }
+          ]
+        },
+        {
+          "week": 5,
+          "weeks_to_go": 5,
+          "label": "5 weeks to go",
+          "in_plan": true,
+          "printed_volume_mi": 61,
+          "printed_volume_km": 98.2,
+          "volume_check": {
+            "cells_mi": 61,
+            "cells_km": 98.2,
+            "reconciles": true
+          },
+          "source": "spine §2.3.4, week 5",
+          "days": [
+            {
+              "day": "mon",
+              "kind": "rest_cross",
+              "kind_label": "Rest",
+              "cell": "Rest"
+            },
+            {
+              "day": "tue",
+              "kind": "ga",
+              "kind_label": "GA",
+              "distance_mi": 9,
+              "distance_km": 14.5,
+              "cell": "GA 9"
+            },
+            {
+              "day": "wed",
+              "kind": "lt",
+              "kind_label": "LT",
+              "distance_mi": 10,
+              "distance_km": 16.1,
+              "detail": "40 min tempo run",
+              "cell": "LT 10 (40 min tempo run)"
+            },
+            {
+              "day": "thu",
+              "kind": "endurance",
+              "kind_label": "End",
+              "distance_mi": 12,
+              "distance_km": 19.3,
+              "cell": "End 12"
+            },
+            {
+              "day": "fri",
+              "kind": "recovery",
+              "kind_label": "Rec",
+              "distance_mi": 5,
+              "distance_km": 8.0,
+              "cell": "Rec 5"
+            },
+            {
+              "day": "sat",
+              "kind": "ga_speed",
+              "kind_label": "GA+s",
+              "distance_mi": 9,
+              "distance_km": 14.5,
+              "detail": "10 × 100 m strides",
+              "cell": "GA+s 9 (10 × 100 m strides)"
+            },
+            {
+              "day": "sun",
+              "kind": "progression_long_run",
+              "kind_label": "Prog",
+              "distance_mi": 16,
+              "distance_km": 25.7,
+              "lt_last_mi": 3,
+              "lt_last_km": 4.8,
+              "detail": "3 @ LT",
+              "cell": "Prog 16 (3 @ LT)"
+            }
+          ]
+        },
+        {
+          "week": 4,
+          "weeks_to_go": 4,
+          "label": "4 weeks to go",
+          "in_plan": true,
+          "printed_volume_mi": 52,
+          "printed_volume_km": 83.7,
+          "volume_check": {
+            "cells_mi": 52,
+            "cells_km": 83.7,
+            "reconciles": true
+          },
+          "source": "spine §2.3.4, week 4",
+          "days": [
+            {
+              "day": "mon",
+              "kind": "rest_cross",
+              "kind_label": "Rest",
+              "cell": "Rest"
+            },
+            {
+              "day": "tue",
+              "kind": "ga_speed",
+              "kind_label": "GA+s",
+              "distance_mi": 10,
+              "distance_km": 16.1,
+              "detail": "2 sets of 5 × 150 m strides, jog 250 m, 4 min between sets",
+              "cell": "GA+s 10 (2 sets of 5 × 150 m strides, jog 250 m, 4 min between sets)"
+            },
+            {
+              "day": "wed",
+              "kind": "ga",
+              "kind_label": "GA",
+              "distance_mi": 9,
+              "distance_km": 14.5,
+              "cell": "GA 9"
+            },
+            {
+              "day": "thu",
+              "kind": "recovery",
+              "kind_label": "Rec",
+              "distance_mi": 7,
+              "distance_km": 11.3,
+              "cell": "Rec 7"
+            },
+            {
+              "day": "fri",
+              "kind": "recovery",
+              "kind_label": "Rec",
+              "distance_mi": 4,
+              "distance_km": 6.4,
+              "detail": "4 × 100 m strides",
+              "cell": "Rec 4 + 4 × 100 m strides"
+            },
+            {
+              "day": "sat",
+              "kind": "tune_up_race",
+              "kind_label": "tune-up race",
+              "distance_mi": 10,
+              "distance_km": 16.1,
+              "race_distance_m": 10000,
+              "race_distance_label": "8K–10K",
+              "distance_basis": "the schedule's number is the miles it counts for this day in the weekly total; the race's own distance is in race_distance_m",
+              "cell": "8K–10K tune-up race 10"
+            },
+            {
+              "day": "sun",
+              "kind": "endurance",
+              "kind_label": "End",
+              "distance_mi": 12,
+              "distance_km": 19.3,
+              "cell": "End 12"
+            }
+          ]
+        },
+        {
+          "week": 3,
+          "weeks_to_go": 3,
+          "label": "3 weeks to go",
+          "in_plan": true,
+          "printed_volume_mi": 63,
+          "printed_volume_km": 101.4,
+          "volume_check": {
+            "cells_mi": 63,
+            "cells_km": 101.4,
+            "reconciles": true
+          },
+          "source": "spine §2.3.4, week 3",
+          "days": [
+            {
+              "day": "mon",
+              "kind": "rest_cross",
+              "kind_label": "Rest",
+              "cell": "Rest"
+            },
+            {
+              "day": "tue",
+              "kind": "ga",
+              "kind_label": "GA",
+              "distance_mi": 9,
+              "distance_km": 14.5,
+              "cell": "GA 9"
+            },
+            {
+              "day": "wed",
+              "kind": "endurance",
+              "kind_label": "End",
+              "distance_mi": 11,
+              "distance_km": 17.7,
+              "cell": "End 11"
+            },
+            {
+              "day": "thu",
+              "kind": "vo2max",
+              "kind_label": "VO₂",
+              "distance_mi": 11,
+              "distance_km": 17.7,
+              "detail": "6 × 1,200 m @ 3K–5K race pace, jog 50–90 %",
+              "cell": "VO₂ 11 (6 × 1,200 m @ 3K–5K race pace, jog 50–90 %)"
+            },
+            {
+              "day": "fri",
+              "kind": "recovery",
+              "kind_label": "Rec",
+              "distance_mi": 6,
+              "distance_km": 9.7,
+              "cell": "Rec 6"
+            },
+            {
+              "day": "sat",
+              "kind": "ga_speed",
+              "kind_label": "GA+s",
+              "distance_mi": 10,
+              "distance_km": 16.1,
+              "cell": "GA+s 10"
+            },
+            {
+              "day": "sun",
+              "kind": "endurance",
+              "kind_label": "End",
+              "distance_mi": 16,
+              "distance_km": 25.7,
+              "cell": "End 16"
+            }
+          ]
+        },
+        {
+          "week": 2,
+          "weeks_to_go": 2,
+          "label": "2 weeks to go",
+          "in_plan": true,
+          "printed_volume_mi": 52,
+          "printed_volume_km": 83.7,
+          "volume_check": {
+            "cells_mi": 52,
+            "cells_km": 83.7,
+            "reconciles": true
+          },
+          "source": "spine §2.3.4, week 2",
+          "days": [
+            {
+              "day": "mon",
+              "kind": "rest_cross",
+              "kind_label": "Rest",
+              "cell": "Rest"
+            },
+            {
+              "day": "tue",
+              "kind": "ga_speed",
+              "kind_label": "GA+s",
+              "distance_mi": 10,
+              "distance_km": 16.1,
+              "detail": "2 sets of 5 × 150 m strides, jog 250 m, 4 min between sets",
+              "cell": "GA+s 10 (2 sets of 5 × 150 m strides, jog 250 m, 4 min between sets)"
+            },
+            {
+              "day": "wed",
+              "kind": "ga",
+              "kind_label": "GA",
+              "distance_mi": 9,
+              "distance_km": 14.5,
+              "cell": "GA 9"
+            },
+            {
+              "day": "thu",
+              "kind": "recovery",
+              "kind_label": "Rec",
+              "distance_mi": 7,
+              "distance_km": 11.3,
+              "cell": "Rec 7"
+            },
+            {
+              "day": "fri",
+              "kind": "recovery",
+              "kind_label": "Rec",
+              "distance_mi": 4,
+              "distance_km": 6.4,
+              "detail": "4 × 100 m strides",
+              "cell": "Rec 4 + 4 × 100 m strides"
+            },
+            {
+              "day": "sat",
+              "kind": "tune_up_race",
+              "kind_label": "tune-up race",
+              "distance_mi": 10,
+              "distance_km": 16.1,
+              "race_distance_m": 10000,
+              "race_distance_label": "8K–10K",
+              "distance_basis": "the schedule's number is the miles it counts for this day in the weekly total; the race's own distance is in race_distance_m",
+              "cell": "8K–10K tune-up race 10"
+            },
+            {
+              "day": "sun",
+              "kind": "endurance",
+              "kind_label": "End",
+              "distance_mi": 12,
+              "distance_km": 19.3,
+              "cell": "End 12"
+            }
+          ]
+        },
+        {
+          "week": 1,
+          "weeks_to_go": 1,
+          "label": "1 week to go",
+          "in_plan": true,
+          "printed_volume_mi": 43,
+          "printed_volume_km": 69.2,
+          "volume_check": {
+            "cells_mi": 43,
+            "cells_km": 69.2,
+            "reconciles": true
+          },
+          "source": "spine §2.3.4, week 1",
+          "days": [
+            {
+              "day": "mon",
+              "kind": "rest_cross",
+              "kind_label": "Rest",
+              "cell": "Rest"
+            },
+            {
+              "day": "tue",
+              "kind": "ga",
+              "kind_label": "GA",
+              "distance_mi": 7,
+              "distance_km": 11.3,
+              "cell": "GA 7"
+            },
+            {
+              "day": "wed",
+              "kind": "recovery",
+              "kind_label": "Rec",
+              "distance_mi": 5,
+              "distance_km": 8.0,
+              "cell": "Rec 5"
+            },
+            {
+              "day": "thu",
+              "kind": "vo2max",
+              "kind_label": "VO₂",
+              "distance_mi": 10,
+              "distance_km": 16.1,
+              "detail": "2 × 1,200 m + 4 × 800 m @ 3K–5K race pace, jog 50–90 %",
+              "cell": "VO₂ 10 (2 × 1,200 m + 4 × 800 m @ 3K–5K race pace, jog 50–90 %)"
+            },
+            {
+              "day": "fri",
+              "kind": "recovery",
+              "kind_label": "Rec",
+              "distance_mi": 4,
+              "distance_km": 6.4,
+              "cell": "Rec 4"
+            },
+            {
+              "day": "sat",
+              "kind": "ga_speed",
+              "kind_label": "GA+s",
+              "distance_mi": 6,
+              "distance_km": 9.7,
+              "detail": "2 sets of 6 × 100 m strides, jog 3 min between sets",
+              "cell": "GA+s 6 (2 sets of 6 × 100 m strides, jog 3 min between sets)"
+            },
+            {
+              "day": "sun",
+              "kind": "endurance",
+              "kind_label": "End",
+              "distance_mi": 11,
+              "distance_km": 17.7,
+              "cell": "End 11"
+            }
+          ]
+        },
+        {
+          "week": 0,
+          "weeks_to_go": 0,
+          "label": "race week",
+          "in_plan": true,
+          "printed_volume_mi": 42,
+          "printed_volume_km": 67.6,
+          "volume_check": {
+            "cells_mi": 42,
+            "cells_km": 67.6,
+            "reconciles": true
+          },
+          "source": "spine §2.3.4, race week",
+          "days": [
+            {
+              "day": "mon",
+              "kind": "rest_cross",
+              "kind_label": "Rest",
+              "cell": "Rest"
+            },
+            {
+              "day": "tue",
+              "kind": "race_pace_speed",
+              "kind_label": "RP+s",
+              "distance_mi": 8,
+              "distance_km": 12.9,
+              "detail": "6 × 100 m strides, 2 miles @ half-marathon race pace",
+              "cell": "RP+s 8 (6 × 100 m strides, 2 miles @ half-marathon race pace)"
+            },
+            {
+              "day": "wed",
+              "kind": "recovery",
+              "kind_label": "Rec",
+              "distance_mi": 7,
+              "distance_km": 11.3,
+              "cell": "Rec 7"
+            },
+            {
+              "day": "thu",
+              "kind": "recovery",
+              "kind_label": "Rec",
+              "distance_mi": 6,
+              "distance_km": 9.7,
+              "cell": "Rec 6"
+            },
+            {
+              "day": "fri",
+              "kind": "rest_cross",
+              "kind_label": "Rest",
+              "cell": "Rest"
+            },
+            {
+              "day": "sat",
+              "kind": "recovery",
+              "kind_label": "Rec",
+              "distance_mi": 4,
+              "distance_km": 6.4,
+              "detail": "4 × 100 m strides",
+              "cell": "Rec 4 + 4 × 100 m strides"
+            },
+            {
+              "day": "sun",
+              "kind": "goal_race",
+              "kind_label": "goal race",
+              "distance_mi": 17,
+              "distance_km": 27.4,
+              "race_distance_m": 21097.5,
+              "race_distance_label": "half marathon",
+              "distance_basis": "the schedule's number is the miles it counts for this day in the weekly total; the race's own distance is in race_distance_m",
+              "cell": "half marathon goal race 17"
+            }
+          ]
+        },
+        {
+          "week": -1,
+          "weeks_to_go": null,
+          "label": "post-race recovery week",
+          "in_plan": false,
+          "printed_volume_mi": 37,
+          "printed_volume_km": 59.5,
+          "volume_check": {
+            "cells_mi": 37,
+            "cells_km": 59.5,
+            "reconciles": true
+          },
+          "source": "spine §2.3.4, recovery row",
+          "days": [
+            {
+              "day": "mon",
+              "kind": "recovery",
+              "kind_label": "Rec",
+              "distance_mi": 4,
+              "distance_km": 6.4,
+              "cell": "Rec 4"
+            },
+            {
+              "day": "tue",
+              "kind": "rest_cross",
+              "kind_label": "Rest",
+              "cell": "Rest"
+            },
+            {
+              "day": "wed",
+              "kind": "recovery",
+              "kind_label": "Rec",
+              "distance_mi": 6,
+              "distance_km": 9.7,
+              "cell": "Rec 6"
+            },
+            {
+              "day": "thu",
+              "kind": "recovery",
+              "kind_label": "Rec",
+              "distance_mi": 6,
+              "distance_km": 9.7,
+              "cell": "Rec 6"
+            },
+            {
+              "day": "fri",
+              "kind": "recovery",
+              "kind_label": "Rec",
+              "distance_mi": 4,
+              "distance_km": 6.4,
+              "cell": "Rec 4"
+            },
+            {
+              "day": "sat",
+              "kind": "ga_speed",
+              "kind_label": "GA+s",
+              "distance_mi": 8,
+              "distance_km": 12.9,
+              "detail": "8 × 100 m strides",
+              "cell": "GA+s 8 (8 × 100 m strides)"
+            },
+            {
+              "day": "sun",
+              "kind": "ga",
+              "kind_label": "GA",
+              "distance_mi": 9,
+              "distance_km": 14.5,
+              "cell": "GA 9"
+            }
+          ]
+        },
+        {
+          "week": -2,
+          "weeks_to_go": null,
+          "label": "transition week",
+          "in_plan": false,
+          "printed_volume_mi": 50,
+          "printed_volume_km": 80.5,
+          "volume_check": {
+            "cells_mi": 50,
+            "cells_km": 80.5,
+            "reconciles": true
+          },
+          "source": "spine §2.3.4, transition row",
+          "days": [
+            {
+              "day": "mon",
+              "kind": "rest_cross",
+              "kind_label": "Rest",
+              "cell": "Rest"
+            },
+            {
+              "day": "tue",
+              "kind": "ga",
+              "kind_label": "GA",
+              "distance_mi": 9,
+              "distance_km": 14.5,
+              "cell": "GA 9"
+            },
+            {
+              "day": "wed",
+              "kind": "ga",
+              "kind_label": "GA",
+              "distance_mi": 7,
+              "distance_km": 11.3,
+              "cell": "GA 7"
+            },
+            {
+              "day": "thu",
+              "kind": "ga",
+              "kind_label": "GA",
+              "distance_mi": 10,
+              "distance_km": 16.1,
+              "cell": "GA 10"
+            },
+            {
+              "day": "fri",
+              "kind": "recovery",
+              "kind_label": "Rec",
+              "distance_mi": 5,
+              "distance_km": 8.0,
+              "cell": "Rec 5"
+            },
+            {
+              "day": "sat",
+              "kind": "ga_speed",
+              "kind_label": "GA+s",
+              "distance_mi": 8,
+              "distance_km": 12.9,
+              "detail": "2 sets of 6 × 100 m strides, jog 3 min between sets",
+              "cell": "GA+s 8 (2 sets of 6 × 100 m strides, jog 3 min between sets)"
+            },
+            {
+              "day": "sun",
+              "kind": "endurance",
+              "kind_label": "End",
+              "distance_mi": 11,
+              "distance_km": 17.7,
+              "cell": "End 11"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

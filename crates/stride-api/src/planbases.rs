@@ -4,14 +4,12 @@
 //! adopts, and the app never suggests one: the tier's entry requirement is
 //! carried beside the athlete's own mileage, and the athlete picks.
 //!
-//! ## The data lands with the plan's own step
+//! ## The catalogue is the core's
 //!
-//! The core's catalogue of the programmes is empty until the templates are
-//! read cell by cell from the book's own tables, and an empty list is a
-//! **no value with a reason** — never a programme that is not there.
-//!
-//! This module is the one place the core's own types become the api's
-//! shape, so the route does not change when the catalogue does.
+//! The core holds the four programmes that were read cell by cell from the
+//! book's own tables (`stride_core::plan_bases`), and this module is the
+//! one place the core's own types become the api's shape, so the route
+//! does not change when the catalogue does.
 
 use crate::dto::{BaseRow, BasesInsight};
 use crate::state::Api;

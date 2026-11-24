@@ -899,18 +899,22 @@ struct WeekdayCandidate {
 /// adopts, and the app never suggests one. It carries the tier's **entry
 /// requirement** — the weekly mileage the athlete is expected to be at —
 /// beside the athlete's own mileage, and the athlete picks.
-#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
+///
+/// The summary is the programme's face. The weeks themselves live in the
+/// catalogue ([`crate::plan_bases`]), which is where the programme's cells
+/// are read.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct PlanBase {
     /// The template's identifier: "pfitzinger.10k.tier1".
-    pub id: &'static str,
+    pub id: String,
     /// The template's name, in the runner's words: "10K tier 1".
-    pub label: &'static str,
+    pub label: String,
     /// The base's name: "Pfitzinger".
-    pub method: &'static str,
+    pub method: String,
     /// The goal distance, in metres.
     pub distance_m: f64,
     /// The distance's name: "10K".
-    pub distance_label: &'static str,
+    pub distance_label: String,
     /// The tier's entry requirement: the weekly distance, in metres.
     ///
     /// The book states it in miles; the core's own unit is the metre, and
@@ -922,15 +926,13 @@ pub struct PlanBase {
 
 /// The programmes the app can adopt.
 ///
-/// **The data lands with the plan's own step.** The templates are read
-/// cell by cell from the book's own tables, and the list is empty until
-/// they are. An empty list is a **no value with a reason**, never a
-/// programme that is not there.
-pub const BASES: &[PlanBase] = &[];
-
-/// The programmes the app can adopt.
+/// **The catalogue is the core's**, and it holds the four programmes that
+/// were read cell by cell from the book's own tables. A programme the
+/// catalogue does not hold is not offered: the app never invents one, and
+/// the 80/20 base stays a spec until its schedule has been read
+/// ([`crate::plan_bases`]).
 pub fn bases() -> &'static [PlanBase] {
-    BASES
+    crate::plan_bases::summaries()
 }
 
 /// The usable distance of a run: a finite, positive distance.
