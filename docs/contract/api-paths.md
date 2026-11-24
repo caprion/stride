@@ -30,6 +30,7 @@ reference only).
 | Route | Notes |
 |---|---|
 | `/plan/{current,today,week,blocks,sources,adherence,results,import}` | the plan engine |
+| `/plan/bases` | the **programmes** the app can adopt: the Pfitzinger 10K and half-marathon templates, with their entry requirement, their length and their weeks (see "The plan's bases" below) |
 | `/insights/{today,progress,load,chips,rolling,streaks,pace,challenges}` | Today and the feed chips; `progress` is the Progress screen's answer, `load` is the training load over the same window (see "The training load" below), `rolling` is the rolling view (see "The rolling view" below), `streaks` is the streak of days and weeks (see "The streaks" below), `pace` is the pace page's answer (see "The pace page" below) and `challenges` is the athlete's own challenges, week by week (see "The challenges" below) |
 | `/insights/{paces,pacing-curve,threshold,stimulus}` | the ladder of the training paces, the physiological-cost curve, the threshold's four candidates and the stimulus ledger (see "The four insight routes" below) |
 
@@ -56,6 +57,7 @@ reference only).
 | `/activities/{id}/update/payload` | the **payload** of a run: the facts a model may read, and nothing else (see "The run update" below) |
 | `/activities/{id}/update/request` | the **prompt** the rig sends to a model — the writer, the reviewer or the repair — with the payload it carries |
 | `/update/settings` | the update's own settings: which model writes, which model reviews, and whether anything may leave the machine at all |
+| `/athlete/{races,threshold}` | the **athlete's own facts**: the races they typed and the threshold they chose (see "The athlete's own facts" below) |
 
 The last five rows arrived with the settings slice (PLAN.md §8, slice 8), and they are
 the first change to the frozen table since the freeze. They travel with the plan edit
@@ -169,6 +171,10 @@ Two rules hold for every shape below.
 | `/insights/pacing-curve` | `generated_at`, `date`, `window: {from, from_label, to, to_label, weeks}`, `source: string \| null`, `sources: {kind, line, date, date_label}[]`, `curve: {minutes, percent_max, pace}[]`, `races: {label, time, minutes, percent_max, pace, date, date_label}[]`, `sessions: {kind, label, from_minutes, to_minutes, pace: PaceRow, rule: {id, citation, line}, missing}[]`, `field_test: {minutes, percent_max, pace} \| null`, `equivalents: {distance, time, vdot_time, pace, difference_s}[]`, `unavailable: string \| null` |
 | `/insights/threshold` | `generated_at`, `date`, `window: {from, from_label, to, to_label, weeks}`, `source: string \| null`, `sources: {kind, line, date, date_label}[]`, `candidates: {source, label, value, heart_rate_bpm, pace: PaceRow \| null, date, date_label, rule, note, missing}[]`, `in_force: ChoiceRow \| null`, `history: {date, date_label, line, value, base, in_force}[]`, `unavailable: string \| null` |
 | `/insights/stimulus` | `generated_at`, `date`, `window: {from, from_label, to, to_label, weeks}`, `source: string \| null`, `sources: {kind, line, date, date_label}[]`, `kinds: {key, label, time, share, runs, last: {date, date_label, days_before_end} \| null}[]`, `weeks: {week_start, week_start_label, bands: {key, label, time}[]}[]`, `coverage: {runs, with_heart_rate, measured, with_source_zones}`, `longest: {date, date_label, distance, time, share} \| null`, `repeated: {time, runs, last_on, last_on_label} \| null`, `repeated_missing: string \| null`, `source_zones: {zone, time, share, runs}[]`, `source_weeks: {week_start, week_start_label, zones}[]`, `overlap: {from, from_label, to, to_label, runs, app_moving, source_elapsed, difference} \| null`, `more_runs: boolean`, `unavailable: string \| null` |
+| `/athlete/races` | `generated_at`, `races: RaceRow[]` |
+| `/athlete/races` (the write) | `race: RaceRow`, `generated_at` |
+| `/athlete/threshold` (the write) | `choice: ChoiceRow`, `generated_at` |
+| `/plan/bases` | `generated_at`, `bases: {id, label, method, distance, distance_label, entry_requirement, entry_from_m, entry_to_m, weeks}[]`, `unavailable: string \| null` |
 
 | `/insights/year` | `generated_at`, `date`, `window: {from, from_label, to, to_label, days}`, `comparison: {from, from_label, to, to_label, days}`, `months: {key, label, sessions, distance, duration, elevation, longest, form, weeks: {start, start_label, distance, sessions}[], mix: {zone, share}[], high}[]`, `days: {date, sessions, distance, high}[]`, `changed: string[]` |
 
@@ -199,7 +205,8 @@ other**: a contract that is not checked is a document, not a gate.
 The routes the app does not read — `/physiology/{daily,hrv,latest,sources}`,
 `/stats/*`, `/plan/{current,today,blocks,sources,adherence,results}`,
 `/fitness/trends`, `/insights/chips`, `/insights/{paces,pacing-curve,threshold,stimulus}`,
-`/health/daily`, `/sync/{runs,history,settings}` and `/auth/garmin/logout` —
+`/plan/bases`, `/athlete/{races,threshold}`, `/health/daily`,
+`/sync/{runs,history,settings}` and `/auth/garmin/logout` —
 are the router's own, and they are written down in
 `crates/stride-api/src/dto.rs`. They follow the same two rules: a domain
 value is a rendered value, and a sentence is a sentence.
@@ -614,6 +621,90 @@ router's one decode cache, and the ledger reads the newest **64** runs —
 which is what the cache holds — so the second read of the same window
 costs no decodes at all. A store that holds more runs than that says so
 in `more_runs`, and the rows cover the runs that were read.
+
+### The athlete's own facts
+
+`/athlete/{races,threshold}` are the **athlete's own facts**: the races
+they ran and the threshold they use.
+
+**They are never synced.** They are typed into the app and stored locally,
+in the encrypted database, and they are the only things the athlete enters
+about themselves. Nothing here is inferred from the training: a race the
+athlete did not type is not a race, and a threshold the athlete did not
+choose is not one.
+
+#### The discipline every write carries
+
+The same discipline the wellness observations have: **the value, the day
+it was entered, the day it last changed, and the source.**
+
+| field | what it is |
+|---|---|
+| `race.source` | where the race came from: `typed` — the only source there is |
+| `race.entered_on` | the day the race was entered |
+| `race.updated_on` | the day the row was last changed |
+| `choice.entered_on` | the day the choice was made |
+| `choice.updated_on` | the day the row was last changed |
+| `choice.base` | the base the choice was made for: `pfitzinger` or `eighty_twenty` |
+
+#### The closed lists
+
+Three, and the app never reads a value outside them:
+
+* the **race's label** — `5K`, `10K`, `15K`, `10-mile`, `half marathon`,
+  `marathon`. The label names the distance, and the distance comes from
+  it: the app never invents a distance for a race it cannot name.
+* the **choice's candidate** — `watch_zone_model`, `race`, `field_test`,
+  `typed`.
+* the **typed number's label** — `lab_test`, `coach`, `another_app`,
+  `book_or_table`, `my_own_number`.
+
+The **base** is a closed list too: `pfitzinger` or `eighty_twenty`.
+
+#### Writing a race
+
+`POST /athlete/races` takes the **label**, the **time** in seconds, the
+**day** the race was run, and the athlete's own **name** for it. It
+answers with the race as it is now stored.
+
+#### Making a choice
+
+`POST /athlete/threshold` names **which candidate** the athlete picked —
+the watch's own zone model, a race, a field test, or a number they
+brought — and the **base** the choice was made for. The value comes from
+that candidate, so the choice and the candidate cannot disagree; a typed
+choice carries the value itself, as `heart_rate_bpm`, `pace_fast_s_per_km`
+and `pace_slow_s_per_km`.
+
+**One choice is in force at a time.** The earlier choices stay in the
+dated history with their base named, and a plan adopted in March is paced
+by March's number.
+
+#### What is refused
+
+* a **race with a label the app does not know**;
+* a **race with no time**, or with no day;
+* a **choice with no value** — an empty choice is not a choice, and a row
+  that holds nothing would be read as a threshold of no value, which is
+  not the same thing;
+* a **choice of a base the plan does not have**, or of a candidate that is
+  not one of the four.
+
+### The plan's bases
+
+`/plan/bases` answers with the **programmes** the app can adopt: the
+Pfitzinger 10K and half-marathon templates, each with its **entry
+requirement** — the weekly distance the athlete is expected to be at —
+its **length** in weeks, and its goal distance.
+
+A programme is **an intent**, not a baseline: it is what the athlete
+adopts, and **the app never suggests one**. The tier's entry requirement
+is carried beside the athlete's own mileage, and the athlete picks.
+
+**The data lands with the plan's own step.** The templates are read cell
+by cell from the book's own tables, and the list is empty until they are:
+an empty list is a **no value with a reason** in `unavailable`, never a
+programme that is not there.
 
 ### The heatmap
 

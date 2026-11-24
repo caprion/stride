@@ -3331,3 +3331,75 @@ pub struct StimulusInsight {
     /// Why there is no value at all, in the core's own words.
     pub unavailable: Option<String>,
 }
+
+// ------------------------------------------- the athlete's own facts, and the plan's bases
+
+/// The athlete's own races, newest first.
+///
+/// **The athlete's own facts are never synced.** They are typed into the
+/// app and stored locally, and the app never infers a race from the
+/// training.
+#[derive(Clone, Debug, PartialEq, Serialize)]
+pub struct RacesInsight {
+    /// When this answer was produced.
+    pub generated_at: String,
+    /// The races the athlete typed, newest first.
+    pub races: Vec<RaceRow>,
+}
+
+/// The race that was written.
+#[derive(Clone, Debug, PartialEq, Serialize)]
+pub struct RaceWritten {
+    /// The race, as it is now stored.
+    pub race: RaceRow,
+    /// When this answer was produced.
+    pub generated_at: String,
+}
+
+/// The choice that was made.
+#[derive(Clone, Debug, PartialEq, Serialize)]
+pub struct ChoiceWritten {
+    /// The choice, as it is now stored: the one in force.
+    pub choice: ChoiceRow,
+    /// When this answer was produced.
+    pub generated_at: String,
+}
+
+/// One adoptable programme.
+#[derive(Clone, Debug, PartialEq, Serialize)]
+pub struct BaseRow {
+    /// The template's identifier: "pfitzinger.10k.tier1".
+    pub id: String,
+    /// The template's name, in the runner's words: "10K tier 1".
+    pub label: String,
+    /// The base's name: "Pfitzinger".
+    pub method: String,
+    /// The goal distance.
+    pub distance: RenderedValue,
+    /// The distance's name: "10K".
+    pub distance_label: String,
+    /// The tier's entry requirement: the weekly distance, as the core
+    /// renders it: "48–67 km".
+    pub entry_requirement: Option<String>,
+    /// The lower edge of the entry requirement, in metres.
+    pub entry_from_m: Option<f64>,
+    /// The upper edge of the entry requirement, in metres.
+    pub entry_to_m: Option<f64>,
+    /// How many weeks the programme runs.
+    pub weeks: usize,
+}
+
+/// The programmes the app can adopt.
+///
+/// A programme is **an intent**, not a baseline: it is what the athlete
+/// adopts, and the app never suggests one. The tier's entry requirement is
+/// carried beside the athlete's own mileage, and the athlete picks.
+#[derive(Clone, Debug, PartialEq, Serialize)]
+pub struct BasesInsight {
+    /// When this answer was produced.
+    pub generated_at: String,
+    /// The programmes.
+    pub bases: Vec<BaseRow>,
+    /// Why there is no programme to adopt, in the core's own words.
+    pub unavailable: Option<String>,
+}

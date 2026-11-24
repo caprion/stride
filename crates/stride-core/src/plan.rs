@@ -740,6 +740,46 @@ struct WeekdayCandidate {
     typical_distance: f64,
 }
 
+/// One adoptable programme: the method's own template.
+///
+/// A programme is **an intent**, not a baseline: it is what the athlete
+/// adopts, and the app never suggests one. It carries the tier's **entry
+/// requirement** — the weekly mileage the athlete is expected to be at —
+/// beside the athlete's own mileage, and the athlete picks.
+#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
+pub struct PlanBase {
+    /// The template's identifier: "pfitzinger.10k.tier1".
+    pub id: &'static str,
+    /// The template's name, in the runner's words: "10K tier 1".
+    pub label: &'static str,
+    /// The base's name: "Pfitzinger".
+    pub method: &'static str,
+    /// The goal distance, in metres.
+    pub distance_m: f64,
+    /// The distance's name: "10K".
+    pub distance_label: &'static str,
+    /// The tier's entry requirement: the weekly distance, in metres.
+    ///
+    /// The book states it in miles; the core's own unit is the metre, and
+    /// the conversion happens where the data is read.
+    pub entry_m_per_week: Option<(f64, f64)>,
+    /// How many weeks the programme runs.
+    pub weeks: usize,
+}
+
+/// The programmes the app can adopt.
+///
+/// **The data lands with the plan's own step.** The templates are read
+/// cell by cell from the book's own tables, and the list is empty until
+/// they are. An empty list is a **no value with a reason**, never a
+/// programme that is not there.
+pub const BASES: &[PlanBase] = &[];
+
+/// The programmes the app can adopt.
+pub fn bases() -> &'static [PlanBase] {
+    BASES
+}
+
 /// The usable distance of a run: a finite, positive distance.
 ///
 /// A run with no distance is a fact, but it cannot describe a usual

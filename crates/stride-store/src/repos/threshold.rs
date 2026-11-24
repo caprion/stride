@@ -224,4 +224,19 @@ impl Store {
         })
         .map_err(|source| StoreError::query("count the threshold choices", source))
     }
+
+    /// How many choices are in force.
+    ///
+    /// **One threshold at a time.** The writer takes the flag from the
+    /// choice that held it, in one transaction, so this is one — and a
+    /// caller that wants to be sure of it can count them.
+    pub fn count_threshold_in_force(&self) -> Result<i64> {
+        let conn = self.lock()?;
+        conn.query_row(
+            "SELECT count(*) FROM threshold_observations WHERE in_force = 1",
+            [],
+            |row| row.get(0),
+        )
+        .map_err(|source| StoreError::query("count the thresholds in force", source))
+    }
 }

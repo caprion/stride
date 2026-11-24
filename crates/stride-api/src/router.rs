@@ -435,6 +435,30 @@ pub const ROUTES: &[Route] = &[
         method: Method::Post,
         handler: crate::routes::plan::import,
     },
+    // The programmes the app can adopt: the Pfitzinger 10K and half
+    // marathon templates, with their entry requirement and their weeks.
+    Route {
+        pattern: "/plan/bases",
+        method: Method::Get,
+        handler: crate::routes::plan::bases,
+    },
+    // The athlete's own facts: the races they typed, and the threshold
+    // they chose. They are never synced.
+    Route {
+        pattern: "/athlete/races",
+        method: Method::Get,
+        handler: crate::routes::athlete::races,
+    },
+    Route {
+        pattern: "/athlete/races",
+        method: Method::Post,
+        handler: crate::routes::athlete::write_race,
+    },
+    Route {
+        pattern: "/athlete/threshold",
+        method: Method::Post,
+        handler: crate::routes::athlete::write_threshold,
+    },
     // The insights.
     Route {
         pattern: "/insights/today",

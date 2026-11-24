@@ -312,6 +312,74 @@ copy of the route table travels with them.
   contract's list of the routes the app does not read. The app's own
   screens come with the frontend step.
 
+### Note — corrections to the plan of record (2026-11-25)
+
+These are **corrections, not proposals**. Each one is a decision the user has already made, and
+the file was carrying an older answer. Nothing here changes the product's behaviour; it makes the
+plan of record say what is true.
+
+* **Five destinations, not four** (D8). The code ships five: Today · Runs · Progress · Body ·
+  **Profile**. The profile keeps a door of its own, and the surface cut sizes both readings to
+  the same panel count, so this is a placement decision and not a size decision. §1 and §9 said
+  four and now say five. The older amendments that say *"the four destinations stay the four"*
+  are corrected by this note; their text is kept as history.
+* **Seven string types, not five** — the contract's, in `docs/contract/voice.md`. The four
+  registers are `vital` · `direction` · `option` · `pattern`; the three supporting types are
+  `statement` · `status` · `instruction`. §0 listed five and left out `statement`, which
+  carries the sentences that state a fact about a comparison, and `instruction`, which is the
+  product's own instruction to a model and the only kind the app never shows.
+* **The ban list is the contract's twenty-three, word for word**
+  (`crates/stride-core/src/strings.rs`, `BANNED_PHRASES`). §0 carried sixteen and was missing
+  seven: `good`, `keep it easy`, `red`, `readiness score`, `not recovered`, `you are ready` and
+  `you are not ready`. The core's own comment says why there is one list: *"two lists is how a
+  lint ends up passing a string the contract bans."*
+* **§2's scope is corrected in both directions.** The **heatmap** and the **monthly table** are
+  no longer out — the heatmap is computed on the device (its own amendment) and the year carries
+  the months (the year-as-film amendment). The **athlete profile** is in, and so are the things
+  this week's build brought: the **training paces** and the **cost curve**, the **threshold**
+  and the athlete's own races, the **stimulus ledger**, and the **plan programmes**.
+
+### Note — the athlete's own facts, and the programmes they can adopt (2026-11-24)
+
+This note travels with a change to `docs/contract/api-paths.md`, which the
+contract freeze says is a plan change: a frozen file changes only with a
+plan note in the same change. **Three routes were added**, and the phone's
+copy of the route table travels with them.
+
+* **The athlete's own facts.** `/athlete/races` reads the races the
+  athlete typed and writes new ones; `/athlete/threshold` makes the
+  choice of a threshold. **They are never synced**: they are entered in
+  the app and stored locally, in the encrypted database, and they are the
+  only things the athlete enters about themselves. Nothing here is
+  inferred from the training — a race the athlete did not type is not a
+  race, and a threshold the athlete did not choose is not one.
+* **The same discipline the wellness observations have.** Every write
+  carries **the value, the day it was entered, the day it last changed,
+  and the source**.
+* **The choice names its candidate, and the value comes from it.** The
+  body names which candidate the athlete picked — the watch's own zone
+  model, a race, a field test, or a number they brought — and the base
+  the choice was made for. The value is the candidate's own value, so the
+  choice and the candidate cannot disagree; a typed choice carries the
+  value itself.
+* **One threshold is in force at a time.** The earlier choices stay in the
+  dated history with their base named, and a plan adopted in March is
+  paced by March's number. A choice **with no value is refused**, and so
+  is a write that would leave two choices in force.
+* **The closed lists.** The race's **label** names the distance, and the
+  distance comes from it — the app never invents a distance for a race it
+  cannot name. The **candidate**, the **typed number's label** and the
+  **base** are closed lists too.
+* **`/plan/bases` answers with the programmes the app can adopt**: the
+  Pfitzinger 10K and half-marathon templates, with their entry
+  requirement, their length and their weeks. A programme is an intent, not
+  a baseline, and **the app never suggests one**: the tier's entry
+  requirement is carried beside the athlete's own mileage, and the athlete
+  picks. **The templates' data lands with the plan's own step**, and until
+  it does the list is empty and says why.
+* **The app does not read them yet.** The three routes are named in the
+  contract's list of the routes the app does not read.
+
 ### Proposed amendment — the zone model is a dated fact (2026-11-15)
 
 **Proposal, not approved.** The approvals below are the user's to give. This
@@ -548,11 +616,20 @@ measurements they are.
 
 ### Proposed amendment — the zone model's date on the run detail (2026-11-17)
 
+**Retired (2026-11-25).** Superseded by *"the fingerprint as observations on the run detail"*
+below, and by the Note of 24 November, *"the zone model in force on the day of the run"*, which
+is the rule this heading anticipated. Kept as history.
+
 **Proposal, not approved.** The approvals below are the user's to give. This
 section records the change and the rule it serves; it is not permission to
 ship, publish, migrate or sync production data.
 
 ### Proposed amendment — the fingerprint as observations on the run detail (2026-11-17)
+
+**Retired in part (2026-11-25).** The bullet *"the model is the current one"* is retired: every
+run is measured against **the zone model in force on the day of the run**, which is the Note of
+24 November, *"the zone model in force on the day of the run"*, and the load model's own move to
+the dated model is stage 2 of that migration (D3). The rest of this amendment stands.
 
 **Proposal, not approved.** The approvals below are the user's to give. This
 section records the change and the rule it serves; it is not permission to
@@ -716,6 +793,12 @@ This travels with the route's field table in `docs/contract/api-paths.md`.
 
 ### Proposed amendment — the rolling view on Progress, the streak on Today (2026-11-18)
 
+**Retired in part (2026-11-25).** The bullet on the window's basis is retired: the window is the
+last *N* **calendar weeks** through today, and the period it is weighed against is **the same
+span ending seven days earlier** — not the same number of days ending yesterday (D1, D2). See the
+Note of 24 November, *"one window for the whole wall, and one comparison"*. The rest of this
+amendment stands.
+
 ### Proposed amendment — the source's wellness observations are kept (2026-11-17)
 
 **Proposal, not approved.** The approvals below are the user's to give.
@@ -802,6 +885,12 @@ a fact against a stated period, and a shape is not a fact.** So:
 This travels with the fields of `/insights/rolling` in
 
 ### Proposed amendment — the year, as a film (2026-11-20)
+
+**Retired in part (2026-11-25).** The bullet on the comparison period is retired: the year is
+weighed against **the same span ending seven days earlier**, like every other window-shaped
+answer (D1, D2), and not against the same number of days ending a day earlier. See the Note of
+24 November, *"one window for the whole wall, and one comparison"*. The rest of this amendment
+stands.
 
 **Proposal, not approved.** The approvals below are the user's to give. This
 section records the change and the rule it serves; it is not permission to
@@ -1023,6 +1112,10 @@ This travels with the schema change (the `wellness_observations` table) in
 `docs/contract/schema.sql`.
 
 ### Proposed amendment — the pace page (2026-11-20)
+
+**Retired (2026-11-25).** Superseded by *"the pace engine: the chain, the ladder, and the cost
+curve"* below: the `/pace` page was retired into the Progress panels by the surface cut (D7),
+and the ladder and the cost curve are what the page became. The heading is kept as history.
 
 ### Proposed amendment — the run update, the model's reading of a run (2026-11-19)
 
@@ -1270,14 +1363,32 @@ absence row is corroborated by the run's own lap structure where the file
 carries one — and where the lap data is missing, the card says the lap data
 is missing.
 
-**The files it touches.** `crates/stride-core/src/stimulus.rs` (new, beside
-the other window-shaped analyses) · the api's read path, which decodes each
-run's stored FIT on read (the precedent is `stride_api::pace::pace_runs`) ·
-`crates/stride-ingest/src/fit.rs`, for the lap message's definition 24 and
-the `workout_step` message · the Progress wall's card and one line on the run
-detail · **a contract change**: the route `/insights/stimulus` and its field
-table in `docs/contract/api-paths.md`. Nothing is stored — every value is
-recomputed on read, like every other derived value.
+**The files it touches.** `crates/stride-core/src/stimulus.rs` — the ledger,
+beside the other window-shaped analyses: `ledger()`, `Ledger`, `KindRow`,
+`LastOccurrence`, `Coverage`, `AppBasis`, `SourceBasis`, `Overlap`, `Bases`,
+`LongestRun`, `RepeatedWork` · the api's read path,
+`crates/stride-api/src/routes/stimulus.rs`, which decodes each run's stored FIT
+on read through the shared decode cache · `crates/stride-ingest/src/fit.rs`,
+for the lap message's definition 24 and the `workout_step` message · the
+Progress wall's card and one line on the run detail · **a contract change**:
+the route `/insights/stimulus` and its field table in
+`docs/contract/api-paths.md` · the catalogue's strings, `stimulus.rule.*`,
+`stimulus.steps.no_data`, `stimulus.no_runs`. Nothing is stored — every value
+is recomputed on read, like every other derived value.
+
+**What changed since the draft (2026-11-25).** The module and the route
+exist: the two bases and the overlap are in the same answer. The core's
+`WorkoutStep` carries the FIT's step codes, but **the ingest does not read
+the step field yet** — the corpus's lap field numbering is the project's own
+convention, so the field was not guessed at — and the row answers **no value
+with its reason**, `stimulus.steps.no_data`. It stays blocked on **a real
+workout file from the athlete's watch**: no file in the corpus carries a
+workout step, and until one is recorded and synced the row has little to say,
+which is the correct answer and not a defect. The window the ledger reads is
+`rolling::Window::calendar_weeks(weeks, today)` — the Progress window, the
+same one the totals and the pace page draw — and the read is **bounded**: the
+newest **sixty-four** runs, which is what the decode cache holds, with a
+store that holds more saying so in `more_runs`.
 
 **What this does not settle.** Whether the repeated-work row ships at all
 before a structured workout file exists, or ships with its "no value" state
@@ -1336,7 +1447,7 @@ What changes:
   axis. Never a card of zeroes, never an empty chart that looks like a run of
   nothing.
 - **The physiological-cost curve is a second reading of the same athlete, on
-  its own route** (`/insights/pace-curve`), linked from the pace card — not a
+  its own route** (`/insights/pacing-curve`), linked from the pace card — not a
   second ladder, and not crowded onto the ladder. It carries the curve, the
   athlete's own races, the goal race, the method's sessions, and the
   45-minute time trial's place in time.
@@ -1361,15 +1472,29 @@ fitness verdict from the curve; it may not rank the athlete's races against
 the method's sessions; and it may not convert a pace into a heart rate or the
 reverse.
 
-**The files it touches.** `crates/stride-core/src/pace_engine.rs` (new) ·
-`crates/stride-core/src/units.rs`, which gains one renderer — a race's finish
-time is read as a clock ("41:36"), and the duration renderer would give
-"1 h 32 m" · **a schema change**: a `race_observations` table in
-`docs/contract/schema.sql`, holding the value, the day entered, the day last
-changed, the day of the race and the anchor flag · **a contract change**: the
-routes `/insights/paces` and `/insights/pace-curve` and their field tables in
-`docs/contract/api-paths.md` · the catalogue's strings, which the lint checks
-against the ban list.
+**The files it touches.** `crates/stride-core/src/vo2.rs` — the effort model:
+`effort_from_race()`, `equivalents()`, `cost_curve()`, `riegel_time()`,
+`pace_for_vdot()`, `time_for_vdot()` · `crates/stride-core/src/training_paces.rs`
+— the ladder: `ladder()`, `Ladder`, `Rung`, `RungKind`, `PaceBand`,
+`HeartRateBand`, `Anchor`, `MissingInput`, and the `RULE_*` constants that
+carry each rung's rule and its citation · `crates/stride-core/src/units.rs`,
+which gained the renderer that reads a finish time as a clock · **a schema
+change**: the `race_observations` table in `docs/contract/schema.sql` — the
+value, the day entered, the day last changed, the day of the race, the
+athlete's own label and the anchor flag · **a contract change**: the routes
+`/insights/paces` and `/insights/pacing-curve` and their field tables in
+`docs/contract/api-paths.md` · the catalogue's strings, `pace.chain`,
+`pace.source.*`, `pace.rule.*`, `pace.missing.*`.
+
+**What changed since the draft (2026-11-25).** The engine's names are **`vo2.rs`
+and `training_paces.rs`** — two modules, not one `pace_engine.rs`: the effort
+model and the ladder are separate, and the ladder reads the effort model. The
+cost curve's route is **`/insights/pacing-curve`**, not `/insights/pace-curve`.
+The race is stored with the **label the athlete gave it** — a closed list of
+six distances — and the distance is the label's own; the anchor is a flag, and
+**entering another race never moves it**. The ladder takes the athlete's
+maximum and resting heart rates as **inputs it may not have**, so a rung with
+no band says so and the other rungs still answer.
 
 **What this does not settle.** Which chain ships — the engine's own with the
 method's rules applied to it is the proposal here, and the book's own table
@@ -1466,13 +1591,31 @@ plan's anchor race, the ladder shows the method's rung, and the threshold
 card names the four ways a threshold could arrive — without a prompt to
 choose and without a warning colour.
 
-**The files it touches.** `crates/stride-core/src/threshold.rs` (new) ·
-**a schema change**: a `threshold_observations` table in
-`docs/contract/schema.sql`, holding the value or the band's two ends, the
-source, the rule, the origin date, the base it was made for, the day the
-choice was made and the in-force flag · **a contract change**: the
-candidates route and the choice route in `docs/contract/api-paths.md` · the
-catalogue's strings.
+**The files it touches.** `crates/stride-core/src/threshold.rs` — `candidates()`,
+`Candidate`, `ThresholdSource`, `ThresholdBase`, `TypedSource`,
+`field_test_estimate()`, and the `RULE_WATCH`, `RULE_RACE` and
+`RULE_FIELD_TEST` rules · **a schema change**: the `threshold_observations`
+table in `docs/contract/schema.sql` — the value or the band's two ends, the
+source, the rule, the base, the day the choice was made, the day it last
+changed and the `in_force` flag · **a contract change**: the route
+`/insights/threshold`, and — when the write route lands — the athlete's races
+and the threshold choice in `docs/contract/api-paths.md` · the catalogue's
+strings, `threshold.rule.*`, `threshold.limit.*` — the limits, which are
+annotations and not surface lines — `threshold.missing.*`, `threshold.in_use`,
+`threshold.history`.
+
+**What changed since the draft (2026-11-25).** The module and the read route
+exist: `crates/stride-core/src/threshold.rs` and `/insights/threshold`, which
+answers with the four candidates, the choice in force and the dated history.
+The field-test candidate computes **the book's 45-minute trial** and reads the
+last thirty minutes of it (`FIELD_TEST_MINUTES`, `FIELD_TEST_WINDOW_S`). The
+candidates are **computed and never stored**; the choice is stored, and the
+core keeps the **base** it was made for beside it — `ThresholdBase`. The write
+routes landed with the step: **`/athlete/threshold`** makes the choice, and
+**`/athlete/races`** reads and writes the races — and they are in the frozen
+route table, with the Note of 24 November, *"the athlete's own facts, and the
+programmes they can adopt"*. A choice with no value is refused, and so is a
+second choice that would leave two in force.
 
 **What this does not settle.** Whether the setup card may be re-entered for a
 second base, and what the second entry looks like beside the first; whether
@@ -1548,21 +1691,28 @@ absent. It may not sum the two bases, put a row of one block in a column of
 the other, declare a winner, grade the agreement, offer advice, or turn the
 period the app cannot measure into a failure.
 
-**The files it touches.** **a schema change**: the watch's zone minutes belong
-in the `activity_observations` table — one row per activity per zone, with
-the source, the endpoint it was read from, the source's own field name, the
-value, the unit, the day the response carried it and the day it was read — in
-`docs/contract/schema.sql`, with the matching edit to
-`crates/stride-store/src/schema.rs`, which the schema contract test compares
-statement for statement, and a schema version bump — each of the new tables is
-its own bump, and the order among them is the implementation's to set · the
-sync's search listing, which carries the values on the payload it already
-reads, so **no extra HTTP request** and no widening of the pull's request
-budget · the api's read seam in
-`crates/stride-api/src/zonemodel.rs`, which gains a third case: no model in
-force and the run carries the source's own zone time → answer with the
-source's numbers, under the second basis, with the zone edges rendered as
-unknown · **a contract change**: the fields in `docs/contract/api-paths.md`.
+**The files it touches.** **a schema change**: the `activity_observations` table in
+`docs/contract/schema.sql` — one row per (activity, source, field, item), with
+the value, the day the response carried it, the day it was read and the
+source; the watch's own zone minutes (`hrTimeInZone_1..5`, over the **elapsed**
+time) are in it · the sync's search listing, which captures the source's own
+fields from the payload it already holds, so **no extra request** — a test
+compares the request counts · `crates/stride-core/src/stimulus.rs`, where
+`AppBasis`, `SourceBasis`, `SourceZoneRow` and `Overlap` hold the two blocks
+and the check · the api's read path,
+`crates/stride-api/src/routes/stimulus.rs` · **a contract change**: the fields
+in `docs/contract/api-paths.md`.
+
+**What changed since the draft (2026-11-25).** The table is
+**`activity_observations`** and it holds more than the zone minutes: the
+source's own facts about a run, in the shape `wellness_observations` already
+uses. The sync captures them from the **search payload it already holds**, and
+the test that compares the request counts is the proof that the pull's budget
+did not grow. The api's read seam is the ledger's own route rather than the
+zone model's, and it reads the source's zone minutes **by their source's own
+field name**. Garmin's estimates — the VO₂ max, the training stress score,
+the activity training load, the lactate threshold, the intensity factor, the
+stress and the body battery — are **not stored**.
 
 **What this does not settle.** Whether the check survives if the strict
 reading is chosen instead — nothing from the watch before the first model, in
@@ -1611,6 +1761,12 @@ ledger's own route and field table travel with the ledger's amendment. **No
 contract change** — the shape of a card is a design decision, not an answer's
 shape.
 
+**What changed since the draft (2026-11-25).** Nothing in the rule, and the
+build is an instance of it: the ladder, the cost curve, the four candidates in
+two lanes and the weeks matrix are all pictures with a caption, and the app's
+own screens come with the frontend step — the rule binds them when they are
+drawn.
+
 ### Proposed amendment — explanation is not product content (2026-11-24)
 
 **Proposal, not approved.** The approvals below are the user's to give. This
@@ -1649,6 +1805,12 @@ review rather than by the lint.
 and whether the notes toggle is one switch for the app or a per-surface
 control.
 
+**What changed since the draft (2026-11-25).** Nothing in the rule, and the
+build applied it: the candidates' limits are already **annotations**
+(`threshold.limit.*`), the two-axis reasoning is a caption inside the frame,
+and every answer carries **one** source line for the screen to name, with the
+lines it was built from behind a click.
+
 ### Proposed amendment — the surface speaks the runner's language (2026-11-24)
 
 **Proposal, not approved.** The approvals below are the user's to give. This
@@ -1685,6 +1847,11 @@ lint — that would be a contract change, and would need its own note.
 in the notes and then used on a surface, and the app's own word for the zone
 model's maximum heart rate, which the surfaces have used inconsistently.
 
+**What changed since the draft (2026-11-25).** Nothing in the rule, and the
+build follows it: the zone model is **"your zones"**, the two bases are named
+by their basis in the runner's words, and the catalogue is
+`crates/stride-core/strings.json` and `frontend/src/i18n/catalogue.ts`.
+
 ### Proposed amendment — the plan bases: Pfitzinger first, 80/20 second, one at a time (2026-11-24)
 
 **Proposal, not approved.** The approvals below are the user's to give. This
@@ -1708,6 +1875,12 @@ What changes:
   different anchor (the athlete's race distance against the threshold). The
   athlete adopts one; **the app never recommends either**, and the plan card
   names the base it is following.
+- **The 80/20 base is a spec, and not yet a second base.** Its schedule has
+  **not** been read cell by cell, and a published 80/20 week is written in
+  **minutes** where the book's is written in distances — so there is no
+  80/20 template in the catalogue and the app holds one base at a time. The
+  amendment *"the plan bases: a versioned catalogue the athlete adopts"*
+  below records what a second base would need before it could be one.
 - **Two programmes ship: the 10K and the half marathon**, the book's tiers 1–2
   of each. The 5K and the 8K are cut, and so are the 15K/10-mile, the
   multi-distance plan, the higher tiers, the three base-training schedules
@@ -1745,6 +1918,22 @@ structure on the session · the store's `plan_sessions`, which already carries
 `pace_low_s_km` and `pace_high_s_km` and has nothing filling them · a module
 holding the two shipping templates · **a contract change**: the plan route's
 field table in `docs/contract/api-paths.md`.
+
+**What changed since the draft (2026-11-25).** The four programmes are now
+**data** — `exploration/plan-templates.json`, transcribed cell by cell from the
+spine — and the spec is `exploration/plan-bases-spec.md`. The spec settles
+five things, and the amendment below carries them: the catalogue is
+**versioned** and an adopted plan is a dated copy; the **tier** is the
+athlete's choice and the entry requirement is stated beside their own
+mileage; the **race date** anchors the twelve weeks; a session's paces are
+computed **once, at adoption**; and a race day's printed miles are the day's
+mileage, not the race's distance. The core holds the **shape** of a
+programme — `PlanBase`, `bases()` — and the route `/plan/bases` answers with
+the programmes the app can adopt; **the list is empty** until the templates
+land, and an empty list is a no value with a reason. Nothing is built yet —
+the store's columns and the adoption route are step 4b's work — and the spec
+settles one thing this amendment had proposed: an adopted programme is a
+**prescription** with a **base** beside it, not a fourth `PlanSource` value.
 
 **What this does not settle.** The plan's **source word** — a generated
 Pfitzinger plan is an intent and may say "not done", but it is not a file the
@@ -1798,11 +1987,282 @@ designed.
 plan's tiers, on the vocabulary and on what the product offers, and it
 constrains the amendments above.
 
+**What changed since the draft (2026-11-25).** Nothing in the rule, and the
+build is consistent with it: the four programmes are the 10K and the half
+marathon, at the levels the spine read cell by cell, and the entry
+requirement is **stated** beside the athlete's own mileage rather than
+enforced.
+
 **What this does not settle.** Whether an athlete below a tier's entry
 requirement is offered the base-training schedule as a note — the spine
 extracted the book's three base schedules and does not build the templates —
 and whether the app states the audience anywhere on the surface, which would
 be a statement about the product rather than a fact about the athlete.
+
+### Proposed amendment — the storage: three tables of dated facts (2026-11-25)
+
+**Proposal, not approved.** The approvals below are the user's to give. This
+section records the change and the rule it serves; it is not permission to
+ship, publish, migrate or sync production data.
+
+The build added the storage the four new answers read: **schema version 6**,
+and three tables. The Note of 24 November records what shipped and the
+contract change it travelled with; this amendment records the **rules** that
+storage obeys, which are the user's to approve.
+
+What the three tables hold, and the rule each one follows:
+
+* **`race_observations` — the athlete's own race.** The distance, the finish
+  time, the day of the race, the day it was entered, the day it was last
+  changed, the **label** the athlete gave it, and the **anchor** flag. The
+  rule it serves: **a race time is an observation, not a verdict.** The
+  athlete types it; the app never invents one, never infers one from the
+  training, and never moves the anchor by itself. **At most one row carries
+  the anchor**, and the distance is the label's own — the app never invents a
+  distance for a race it cannot name.
+* **`threshold_observations` — the athlete's own threshold choice.** The value
+  or the band's two ends, the **source** (the watch's zone model, a race, a
+  field test, or typed), the **rule** that computed it where one applied, the
+  **base** it was made for, the day the choice was made, the day the row was
+  last changed, and the `in_force` flag. The rule it serves: **one threshold
+  at a time, dated.** The earlier choices stay in the dated history with their
+  base named, and a plan adopted in March is paced by March's number. The
+  **candidates are computed and never stored**; only the choice is kept.
+* **`activity_observations` — the source's own facts about a run.** One row
+  per (activity, source, field, item), in the shape `wellness_observations`
+  already uses: the value, the day the response carried it, the day it was
+  read, and the source. The rule it serves: **absence is not zero.** A field
+  the source never sent has **no row**; a field it sent as null has a row
+  whose value is null; never a zero for "no time".
+
+And three rules that hold across all three:
+
+* **The athlete's own facts are never synced.** The races and the threshold
+  choice are typed into the app and stored locally, in the encrypted
+  database. The sync never reads them and never writes them.
+* **The source's own facts come from a payload the sync already holds.** The
+  watch's own zone minutes, the training effect and the athlete's own
+  recorded effort ride on the **activity-search response** the sync already
+  fetches to discover the runs — **no extra request**, and a test compares
+  the request counts so the pull's budget cannot grow by accident.
+* **Garmin's estimates are not stored.** The VO₂ max, the training stress
+  score, the activity training load, the lactate threshold, the intensity
+  factor, the stress and the body battery are **judgements**, and the
+  contract excludes them.
+
+**What it may and may not say.** Nothing: the storage holds facts and their
+provenance, and the sentences that name them are the catalogue's. A stored
+value never carries a verdict, a freshness rule, or a warning that it is old
+— a date is a date.
+
+**The files it touches.** `crates/stride-store/src/schema.rs` and
+`docs/contract/schema.sql` — version 5 → 6, the three tables and their
+indexes, in one transaction · `crates/stride-store/src/repos/races.rs`,
+`threshold.rs` and `activity_observations.rs` · the sync's search listing in
+`crates/stride-ingest` · the export's table list,
+`crates/stride-store/src/export.rs`, which copies all three tables and counts
+them in the manifest.
+
+**What this does not settle.** The build settled the order of the bumps: the
+three tables ship in **one** step, version 6, because they are read and
+written together — so the one-bump-each rule this amendment was drafted
+against is superseded by the Note of 24 November. The **write routes** landed
+with the step — `/athlete/races` and `/athlete/threshold` — and the Note of 24
+November, *"the athlete's own facts, and the programmes they can adopt"*, is
+their record.
+
+### Proposed amendment — the decode cache, and what it does not cache (2026-11-25)
+
+**Proposal, not approved.** The approvals below are the user's to give. This
+section records the change and the rule it serves; it is not permission to
+ship, publish, migrate or sync production data.
+
+Every route that reads a run's file decoded it again on every read, and the
+ledger reads about sixty files. The build put the decode in one place and
+gave it a bounded cache.
+
+The rule this serves: **a derived value is recomputed on read and never
+stored** — and the cache does not weaken it, because the cache holds the
+**decoded file**, not a derived value.
+
+What changes:
+
+- **One decode per run, in one place.**
+  `crates/stride-api/src/routes/series.rs::decoded` is the only reader of a
+  stored FIT file, and it keeps the decoded file in the api's **bounded
+  cache**: the key is the run's id **and the file's own SHA-256**, so a file
+  that is re-imported has a new digest and the old decode is never served for
+  it. The cache holds **sixty-four** decoded runs by default
+  (`decode_cache_capacity` on the api's configuration) and the oldest is
+  thrown away when it is full.
+- **Only the decode is cached.** Every derived series — the samples, the
+  laps, the zones, the fingerprint's features, the ledger's rows, the
+  ladder's rungs — is still **recomputed on read**, from the decoded file. A
+  changed engine needs no re-sync and a stored number can never rot: that is
+  the whole point of the rule, and the cache is not an exception to it.
+- **The read is bounded, and says so.** The ledger reads the newest
+  **sixty-four** runs — the cache's own capacity — so the second read of the
+  same window costs no decodes at all. A store that holds more runs than
+  that says so in `more_runs`, and the rows cover the runs that were read.
+
+**What it may and may not say.** The cache is an implementation fact and
+never appears on a surface. The bound is not a truncation the athlete has to
+be told about in words: it is a fact about the answer's coverage, and the
+answer carries it in `more_runs` for the surfaces that draw a coverage line.
+
+**The files it touches.** `crates/stride-api/src/routes/series.rs` — the one
+decode · `crates/stride-api/src/state.rs` — the `DecodeCache`, its capacity
+and its statistics · `crates/stride-api/src/routes/stimulus.rs` — the bound,
+`MAX_LEDGER_RUNS`.
+
+**What this does not settle.** Whether the capacity should follow the window
+rather than sit at sixty-four, and what the ledger does with a window that
+holds more runs than the bound — today it reads the newest sixty-four and
+says so in `more_runs`.
+
+### Proposed amendment — the plan bases: a versioned catalogue the athlete adopts (2026-11-25)
+
+**Proposal, not approved.** The approvals below are the user's to give. This
+section records the change and the rule it serves; it is not permission to
+ship, publish, migrate or sync production data.
+
+The four programmes are **data** — `exploration/plan-templates.json`,
+transcribed cell by cell from the spine — and the spec is
+`exploration/plan-bases-spec.md`. Nothing is built yet; this amendment records
+the rules the build will follow, so that the user approves them before the
+step writes them.
+
+The five decisions the catalogue and the adoption follow:
+
+- **B1 — The template is a versioned catalogue; an adopted plan is a dated
+  copy of one of them.** The catalogue may be corrected later; a plan that is
+  running keeps the template's id and version it was adopted from, so a later
+  correction cannot alter it. The adopted plan's own **snapshot** of the entry
+  requirement travels with it, for the same reason.
+- **B2 — The tier is the athlete's choice, and the app states the entry
+  requirement beside the athlete's own mileage and never suggests one.**
+  Three facts side by side, unranked: the level's requirement as the book
+  prints it, the plan's own mileage band, and the athlete's own last four
+  weeks. No comparison of the athlete to the book, no colour on a number, no
+  advice.
+- **B3 — The race date anchors the plan; the race week is the twelfth week
+  and the goal race is the book's day for that template.** The start date and
+  the race date must agree, or **adoption is refused** with the difference
+  stated — a refusal is a fact with a reason, the precedent being the plan
+  import. A race on another day shifts the race week alone, and the shift is
+  stated as a fact.
+- **B4 — A session's pace is computed once, at adoption, from the threshold
+  in force then; the plan stores the bands it was given and the threshold's
+  value and date.** **A later threshold choice does not re-pace a plan that
+  is running** — a threshold chosen on 3 December does not change the pace on
+  a session dated 10 November, and the card still names the threshold the
+  plan was paced with, with its date. Re-pacing is an **explicit act**: the
+  athlete asks, the bands are rewritten, and the new threshold's value and
+  date are recorded with them. With no threshold chosen, the method's rule on
+  the plan's anchor race paces the plan, and the card says which of the two
+  paced it.
+- **B5 — A race day's printed miles are the day's mileage in the weekly
+  total, not the race's distance.** The session's target distance is the
+  race's own distance; the printed number stays in the volume check.
+
+The three objects, and what the core would own:
+
+- **The template** — the programme, undated: its id, its label, its method,
+  its goal distance, its length, its **entry requirement**, its mileage band,
+  its goal race and its weeks, each week carrying the seven days, each day
+  carrying the method's kind, the distance in miles and in kilometres, and
+  the cell's own text.
+- **The week** — the weeks counted down from 11 to 1, then the race week,
+  then the weeks after the race. The **printed** weekly mileage, and the
+  reconciliation against the sum of the seven days. **All fifty-four
+  week-rows of the four programmes reconcile**, and the check stays in the
+  data: **no cell is ever adjusted to make a week sum** — a week that does not
+  reconcile is reported, with the gap, and the cells stand as the book prints
+  them.
+- **The session** — the day. The app's own kind is what the surface prints,
+  and the **method's kind travels as data**, because the ledger compares the
+  plan's kind against the watch's evidence. Two names, one day, never both
+  leading: the runner's wording is the label, the method's name is the title
+  beside it, and the cell's own parenthetical is the sentence under it.
+
+**What the plan card shows, and what it may not say.** The base, the level,
+the week's sessions with their distances, their details and their pace bands
+where there is one, the pacing's threshold with its date, the entry
+requirement beside the athlete's own mileage, the week's own countdown, and
+the week's volume. It may **not** say whether the athlete is keeping up,
+whether the level suits them, what to do next, or anything about a threshold
+they have not chosen. The plan's cells are **intent** and the watch's
+evidence is **evidence**, and the two are never merged into one number.
+
+**The 80/20 base is a spec, and not yet a second base.** Its schedule has
+**not** been read cell by cell, and it is published by level rather than by
+the book's shape: a published week is in **minutes**, not distances, so a
+template in the same shape needs a **duration on the session**, which the
+core's `PlanSession` has no field for today. Its bands are set from the
+**threshold** — seven zones, two of them deliberately avoided — where the
+app's zones come from the watch; its entry requirement is in **hours**, not
+miles; its threshold is a fifth source with a rule of its own; and its
+recovery weeks fall every third week, which the Pfitzinger templates do not
+have. **None of these weeks is invented**: there is no 80/20 template in the
+catalogue, and the app holds one base at a time.
+
+**The files it touches.** `crates/stride-core/src/plan_bases.rs` — the
+catalogue, the adoption, the pacing assignment and the card's rendering ·
+`crates/stride-core/src/plan.rs` — `PlanBase` and `bases()`, where the
+programmes are held · `crates/stride-store/src/schema.rs` and
+`docs/contract/schema.sql` — a schema version bump: `plan_blocks` gains the
+template's id and version, the base, the tier, the entry requirement's
+snapshot and the pacing anchor; `plan_sessions` gains the method's kind and the
+cell's text · `crates/stride-api/src/routes/plan.rs` — the catalogue route,
+`/plan/bases`, and, when it lands, the adoption write route, which needs a
+note in the same change because the route table is frozen · the catalogue's
+strings.
+
+**What changed since the draft (2026-11-25).** The core now holds the shape
+of a programme — `PlanBase`, with the template's id, its label, its method,
+its goal distance, its **entry requirement** and its length — and the route
+**`/plan/bases`** answers with the programmes the app can adopt. **The
+catalogue is empty**: the templates' data lands with the plan's own step, and
+an empty list is a **no value with a reason**, never a programme that is not
+there. The data itself is written in `exploration/plan-templates.json`, and
+the spine's transcription was corrected and re-read by row-index alignment, so
+**all fifty-four week-rows reconcile** — and the rule behind that check stays:
+*no cell is ever adjusted to make a week sum*.
+
+**What this does not settle.** Whether the frozen route table takes the
+adoption write route in this change or after the frontend step; whether the
+session gains a duration field now, for the 80/20 base that needs it, or only
+when that base lands; whether the method's kind is a column of its own or is
+folded into the session's title and details — the ledger needs it as data, and
+the surface can carry it as a title; and whether the 10K template, whose race
+is already on the Saturday, needs a shift rule of its own for a Sunday race.
+
+---
+
+**What the approval would cover.** Approving this set approves **twelve
+amendments** and **two corrections**. The amendments: the **stimulus ledger**
+and the card it lives on · the **pace engine** — the chain, the ladder and the
+cost curve, and the rule that the method's heart-rate bands are never drawn
+on a %maxVO₂ axis · the **threshold** — four candidates, one choice, a dated
+fact, and the rule that the watch's zone model and the athlete's threshold
+never merge · the **two bases of zone time** — the app's own and the watch's
+own, each with its basis, with the overlap as the app's check against itself
+· the **picture first** rule · **explanation is not product content** · **the
+surface speaks the runner's language** · the **plan bases** — two bases, one
+at a time, Pfitzinger first, and the 80/20 base a spec and not yet a second
+one · the **audience** — the intermediate runner · the **storage** — three
+tables of dated facts, the athlete's own facts never synced, and the source's
+own facts captured from a payload the sync already holds · the **decode
+cache** — one decode per run, bounded, with every derived value still
+recomputed on read · and the **versioned plan catalogue** the athlete adopts,
+with the tier stated rather than suggested, the paces worked out once at
+adoption, and a later threshold that does not re-pace a running plan. It
+approves the **rules and the refusals**, not a release: it is not permission
+to ship, publish, migrate or sync production data. The two corrections —
+**five destinations** rather than four, the contract's **seven string types**
+and its **twenty-three banned words**, and **§2's scope** in both directions —
+are not proposals at all, because the user has already decided them.
+
 
 ---
 
@@ -1851,9 +2311,12 @@ Also in plan a 5 km on Friday · a 30-minute one on Sunday
 Last run     8.4 km · 42 m · Sat 10 May
 ```
 
-Every user-facing string lives in one catalogue and is typed (`vital`, `direction`, `option`, `pattern`, `status`).
-The lint fails the build on banned words (`should`, `must`, `take the day`, `rest day`, `rest up`, `rest today`, `go easy`, `missed`, `bad`,
-`poor`, `fail`, `behind`, `ready to`, `recommended`, `better to`, `need to`), requires a `direction` string to come
+Every user-facing string lives in one catalogue and is typed — the four registers (`vital`, `direction`, `option`, `pattern`)
+and the three supporting types (`statement`, `status`, `instruction`), **seven in all**, and the contract's list is the
+authority (`docs/contract/voice.md`).
+The lint fails the build on banned words (`should`, `must`, `take the day`, `rest day`, `rest up`, `rest today`, `go easy`,
+`missed`, `bad`, `poor`, `fail`, `behind`, `good`, `keep it easy`, `ready to`, `recommended`, `better to`, `need to`, `red`,
+`readiness score`, `not recovered`, `you are ready`, `you are not ready`), requires a `direction` string to come
 from the closed set, and requires a `pattern` string to carry its sample size.
 
 | old product | v2 |
@@ -1873,19 +2336,25 @@ normal**, in plain language — and leaves the decision with you.
 - **Promise:** "Your data stays on this phone." One credential — a Garmin Personal API key — in the Android
   Keystore on Android. No Stride account or hosted Stride data store; desktop
   uses a local HTTP server and Garmin pulls require a network.
-- **Four destinations, at every width:** Today · Runs · Progress · Body. Compare and the Plan week are
+- **Five destinations, at every width:** Today · Runs · Progress · Body · Profile. Compare and the Plan week are
   reached **contextually**, never as extra tabs.
 - **The rule that kills drift:** *if a screen cannot exist on the phone, it does not exist.* The desktop is the
-  same four destinations with more room; it never grows features of its own.
+  same five destinations with more room; it never grows features of its own.
 
 ## 2. Scope
 
 **In:** Connect (Garmin key) · Sync (incremental) · Today · Runs · Activity detail · Run film · Progress · Body ·
-Plan week · Compare · FIT import (any watch) · Settings (goal, pause, note, connect, about).
+Profile · Plan week · Compare · FIT import (any watch) · Settings (goal, pause, note, connect, about) · the
+**heatmap**, computed on the device · the **year as a film**, with its months · the **training paces** and the
+**cost curve** · the **threshold**, the athlete's own races and the choice in force · the **stimulus ledger** ·
+the **plan programmes** — the 10K and the half marathon, as a catalogue the athlete adopts.
 
 **Out (deferred, with reasons):** Garmin account login/MFA and the scheduled-workout calendar · MCP/agent
-harness · running-form fingerprint page · gear · heatmap · tiles proxy · monthly stats table · HR-zone
-pages · network egress routing · phone plan editor · desktop-only screens.
+harness · running-form fingerprint **page** (the fingerprint itself is a section on the run detail) · gear ·
+tiles proxy · an HR-zone **page** (the zone time lives on the wall and in the ledger's card) · network egress
+routing · phone plan editor · desktop-only screens · the **method lens** — designed, then deferred (D13) ·
+the **5K, 8K and 15K plan programmes** — cut (D15) · the **80/20 base as a second base** — decided (D14), but its
+schedule has not been read cell by cell, so it is a spec and not a plan yet.
 
 ## 3. Architecture
 
@@ -2012,9 +2481,12 @@ Acceptance is a golden assertion wherever possible.
 
 AGPL-3.0 · public from day one · old repo kept private as the oracle, sanitised public archive at the end ·
 Rust core with a shared React UI and native host boundaries · desktop local host
-(loopback + CIDR allowlist) · four destinations
+(loopback + CIDR allowlist) · five destinations
 everywhere with Compare and Plan contextual · Garmin account flow out · MCP out · "issues welcome, features are
-mine" · **voice: vitals, direction (closed set), options — no verdicts** · **distance comparison only beyond a 10% gap**.
+mine" · **voice: vitals, direction (closed set), options — no verdicts** · **distance comparison only beyond a 10% gap** ·
+**the picture first, and the sentence second** · **explanation is not product content — the notes carry it** ·
+**one plan at a time: Pfitzinger first, 80/20 as the second base when its schedule has been read** ·
+**the athlete's own facts are typed, never synced**.
 
 **Still open to change on request:** MIT instead of AGPL · anything from the cut list · the destination names ·
 the plan-source set · a native phone UI (a separate project, not v2).

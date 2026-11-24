@@ -31,8 +31,9 @@ use stride_store::model::{plan_source, plan_status};
 use stride_store::{NewPlanBlock, NewPlanSession};
 
 use crate::dto::{
-    AdherenceWeek, Counts, CurrentPlan, PlanAdherence, PlanBlock, PlanBlocks, PlanImport,
-    PlanResult, PlanResults, PlanSession, PlanSource, PlanSources, PlanToday, PlanWeek,
+    AdherenceWeek, BaseRow, BasesInsight, Counts, CurrentPlan, PlanAdherence, PlanBlock,
+    PlanBlocks, PlanImport, PlanResult, PlanResults, PlanSession, PlanSource, PlanSources,
+    PlanToday, PlanWeek,
 };
 use crate::error::{ApiError, ApiResult};
 use crate::plan;
@@ -550,4 +551,44 @@ fn read_plan(
             Ok((read, plan_source::TYPED, name, start, end, goal))
         }
     }
+}
+
+/// The programmes the app can adopt.
+///
+/// A programme is **an intent**, not a baseline: it is what the athlete
+/// adopts, and the app never suggests one. Each carries the tier's
+/// **entry requirement** — the weekly distance the athlete is expected to
+/// be at — beside the athlete's own mileage, and the athlete picks.
+///
+/// **The data lands with the plan's own step.** The templates are read
+/// cell by cell from the book's own tables, and the list is empty until
+/// they are: an empty list is a **no value with a reason**, never a
+/// programme that is not there.
+pub fn bases(api: &Api, _request: &Request) -> ApiResult<Value> {
+    let bases = stride_core::plan::bases();
+    let answer = BasesInsight {
+        generated_at: api.generated_at(),
+        bases: bases
+            .iter()
+            .map(|base| BaseRow {
+                id: base.id.to_string(),
+                label: base.label.to_string(),
+                method: base.method.to_string(),
+                distance: render::distance_of(base.distance_m),
+                distance_label: base.distance_label.to_string(),
+                entry_requirement: base.entry_m_per_week.and_then(|(from, to)| {
+                    stride_core::units::render_distance_range(Some(from), Some(to))
+                }),
+                entry_from_m: base.entry_m_per_week.map(|(from, _)| from),
+                entry_to_m: base.entry_m_per_week.map(|(_, to)| to),
+                weeks: base.weeks,
+            })
+            .collect(),
+        unavailable: if bases.is_empty() {
+            super::core_line("plan.bases.none")
+        } else {
+            None
+        },
+    };
+    ok(&answer)
 }

@@ -46,6 +46,7 @@ class PhoneRoutesTest {
         "/plan/adherence",
         "/plan/results",
         "/plan/import",
+        "/plan/bases",
         "/insights/today",
         "/insights/progress",
         "/insights/load",
@@ -75,6 +76,8 @@ class PhoneRoutesTest {
         "/auth/garmin/fit-import",
         "/auth/garmin/logout",
         "/calendar",
+        "/athlete/races",
+        "/athlete/threshold",
         "/settings",
         "/settings/export",
         "/settings/import",
@@ -117,6 +120,19 @@ class PhoneRoutesTest {
         "/insights/pacing-curve",
         "/insights/threshold",
         "/insights/stimulus",
+    )
+
+    /**
+     * The athlete's own facts: the races they typed and the threshold they
+     * chose.
+     *
+     * They are written, not read, and the bridge's lock applies to a
+     * write like to a read: the athlete's own history is the athlete's
+     * own data.
+     */
+    private val athlete = listOf(
+        "/athlete/races",
+        "/athlete/threshold",
     )
 
     @Test
@@ -180,6 +196,24 @@ class PhoneRoutesTest {
             assertTrue("$route is not known", read.known)
             assertTrue("$route carries no data", read.carriesData)
             assertEquals("$route was classified wrongly", PhoneRoutes.Kind.Data, read.kind)
+        }
+    }
+
+    /**
+     * The athlete's own facts are known, and they are writes.
+     *
+     * A route the router serves and the bridge does not name is refused
+     * with a 404 before anything is sent, so the phone could not enter a
+     * race at all. The bridge treats anything that is not a read as a
+     * write, and a write carries the athlete's own data.
+     */
+    @Test
+    fun `the athlete's own facts are known and are writes`() {
+        for (route in athlete) {
+            val write = PhoneRoutes.decide("POST", route)
+            assertTrue("$route is not known", write.known)
+            assertTrue("$route carries no data", write.carriesData)
+            assertEquals("$route was classified wrongly", PhoneRoutes.Kind.Write, write.kind)
         }
     }
 

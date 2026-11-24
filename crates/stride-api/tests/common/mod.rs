@@ -263,6 +263,24 @@ pub fn run_with_fit(external_id: &str, local_date: &str, file_name: &str) -> New
     activity
 }
 
+/// The zone model the athlete's watch was set to.
+///
+/// The canonical athlete's own configuration: `HR_MAX`, a maximum heart
+/// rate of 183 and five floors.
+pub fn zone_model() -> NewHeartRateZoneModel {
+    NewHeartRateZoneModel {
+        sport: "DEFAULT".to_string(),
+        training_method: "HR_MAX".to_string(),
+        max_heart_rate: Some(183.0),
+        zone1_floor: 115.0,
+        zone2_floor: 128.0,
+        zone3_floor: 143.0,
+        zone4_floor: 159.0,
+        zone5_floor: 165.0,
+        read_at: instant(),
+    }
+}
+
 /// A day of wellness.
 pub fn wellness(date: &str) -> WellnessDaily {
     WellnessDaily {

@@ -13,6 +13,7 @@
 //! own and never writes a domain sentence of its own.
 
 pub mod app;
+pub mod athlete;
 pub mod challenges;
 pub mod data;
 pub mod export;
@@ -162,6 +163,22 @@ pub fn equivalents_of(ladder: &stride_core::training_paces::Ladder) -> Vec<Equiv
             difference_s: equivalent.difference_s,
         })
         .collect()
+}
+
+/// A threshold's value, as the core renders it: "165 bpm", "4:16–4:17 /km",
+/// or both.
+pub fn threshold_value(
+    heart_rate_bpm: Option<f64>,
+    pace: Option<&stride_core::training_paces::PaceBand>,
+) -> Option<String> {
+    let heart_rate = heart_rate_bpm.and_then(|bpm| units::render_heart_rate(Some(bpm)));
+    let pace = pace.and_then(|band| band.render());
+    match (heart_rate, pace) {
+        (Some(heart_rate), Some(pace)) => Some(format!("{heart_rate} \u{b7} {pace}")),
+        (Some(heart_rate), None) => Some(heart_rate),
+        (None, Some(pace)) => Some(pace),
+        (None, None) => None,
+    }
 }
 
 /// A sentence from the core's catalogue.

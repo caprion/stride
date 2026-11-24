@@ -69,11 +69,6 @@ pub fn threshold(api: &Api, request: &Request) -> ApiResult<Value> {
             .filter_map(|reference| reference.parse::<i64>().ok())
             .next(),
     };
-    let field_test = match run_id {
-        Some(id) => field_test_of(api, id)?,
-        None => None,
-    };
-
     // The typed number: the athlete's own most recent typed choice.
     let typed = stored
         .iter()
@@ -88,15 +83,8 @@ pub fn threshold(api: &Api, request: &Request) -> ApiResult<Value> {
             })
         });
 
-    let inputs = ThresholdInputs {
-        watch: facts.model.as_ref().map(|model| WatchZoneModel {
-            floors: model.floors,
-            read_on: model.read_on,
-        }),
-        race: facts.race.clone(),
-        field_test,
-        typed,
-    };
+    let mut inputs = inputs_of(api, &facts, run_id)?;
+    inputs.typed = typed;
     let computed = candidates(&inputs);
 
     // The source lines: the zone model's own line, and the race's.
@@ -117,6 +105,32 @@ pub fn threshold(api: &Api, request: &Request) -> ApiResult<Value> {
         unavailable: None,
     };
     ok(&answer)
+}
+
+/// The inputs the candidates are computed from.
+///
+/// The **watch's own zone model**, the athlete's **race**, and the **run**
+/// the field test reads. The typed number is the athlete's own, and it
+/// comes from the body when the athlete types one and from their last
+/// typed choice when the card reads them.
+pub fn inputs_of(
+    api: &Api,
+    facts: &crate::athlete::Facts,
+    run_id: Option<i64>,
+) -> ApiResult<ThresholdInputs> {
+    let field_test = match run_id {
+        Some(id) => field_test_of(api, id)?,
+        None => None,
+    };
+    Ok(ThresholdInputs {
+        watch: facts.model.as_ref().map(|model| WatchZoneModel {
+            floors: model.floors,
+            read_on: model.read_on,
+        }),
+        race: facts.race.clone(),
+        field_test,
+        typed: None,
+    })
 }
 
 /// One candidate, as the answer carries it.
