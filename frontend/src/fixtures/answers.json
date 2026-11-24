@@ -296,7 +296,6 @@
         "raw": 4020,
         "text": "1 h 7 m"
       },
-      "elevation": [],
       "elevation_gain": {
         "raw": 42,
         "text": "42 m"
@@ -7685,7 +7684,31 @@
         ],
         "shares": null,
         "source": "your zone model · HR_MAX · max heart rate 178 bpm · read on 10 May 2026",
-        "unavailable": "the split has no value — the runs in the window have no heart-rate samples"
+        "unavailable": "the split has no value — the runs in the window have no heart-rate samples",
+        "weeks": [
+          {
+            "bands": [
+              {
+                "key": "low",
+                "label": "Z1–Z2 low",
+                "time": null
+              },
+              {
+                "key": "moderate",
+                "label": "Z3 moderate",
+                "time": null
+              },
+              {
+                "key": "high",
+                "label": "Z4–Z5 high",
+                "time": null
+              }
+            ],
+            "sessions": 1,
+            "week_start": "2026-05-04",
+            "week_start_label": "4 May 2026"
+          }
+        ]
       }
     },
     "/insights/rolling?days=30": {
@@ -8191,7 +8214,31 @@
         ],
         "shares": null,
         "source": "your zone model · HR_MAX · max heart rate 178 bpm · read on 10 May 2026",
-        "unavailable": "the split has no value — the runs in the window have no heart-rate samples"
+        "unavailable": "the split has no value — the runs in the window have no heart-rate samples",
+        "weeks": [
+          {
+            "bands": [
+              {
+                "key": "low",
+                "label": "Z1–Z2 low",
+                "time": null
+              },
+              {
+                "key": "moderate",
+                "label": "Z3 moderate",
+                "time": null
+              },
+              {
+                "key": "high",
+                "label": "Z4–Z5 high",
+                "time": null
+              }
+            ],
+            "sessions": 1,
+            "week_start": "2026-05-04",
+            "week_start_label": "4 May 2026"
+          }
+        ]
       }
     },
     "/insights/rolling?days=60": {
@@ -8697,7 +8744,31 @@
         ],
         "shares": null,
         "source": "your zone model · HR_MAX · max heart rate 178 bpm · read on 10 May 2026",
-        "unavailable": "the split has no value — the runs in the window have no heart-rate samples"
+        "unavailable": "the split has no value — the runs in the window have no heart-rate samples",
+        "weeks": [
+          {
+            "bands": [
+              {
+                "key": "low",
+                "label": "Z1–Z2 low",
+                "time": null
+              },
+              {
+                "key": "moderate",
+                "label": "Z3 moderate",
+                "time": null
+              },
+              {
+                "key": "high",
+                "label": "Z4–Z5 high",
+                "time": null
+              }
+            ],
+            "sessions": 1,
+            "week_start": "2026-05-04",
+            "week_start_label": "4 May 2026"
+          }
+        ]
       }
     },
     "/insights/rolling?days=90": {
@@ -9203,7 +9274,31 @@
         ],
         "shares": null,
         "source": "your zone model · HR_MAX · max heart rate 178 bpm · read on 10 May 2026",
-        "unavailable": "the split has no value — the runs in the window have no heart-rate samples"
+        "unavailable": "the split has no value — the runs in the window have no heart-rate samples",
+        "weeks": [
+          {
+            "bands": [
+              {
+                "key": "low",
+                "label": "Z1–Z2 low",
+                "time": null
+              },
+              {
+                "key": "moderate",
+                "label": "Z3 moderate",
+                "time": null
+              },
+              {
+                "key": "high",
+                "label": "Z4–Z5 high",
+                "time": null
+              }
+            ],
+            "sessions": 1,
+            "week_start": "2026-05-04",
+            "week_start_label": "4 May 2026"
+          }
+        ]
       }
     },
     "/insights/rolling?weeks=13": {
@@ -9709,7 +9804,31 @@
         ],
         "shares": null,
         "source": "your zone model · HR_MAX · max heart rate 178 bpm · read on 10 May 2026",
-        "unavailable": "the split has no value — the runs in the window have no heart-rate samples"
+        "unavailable": "the split has no value — the runs in the window have no heart-rate samples",
+        "weeks": [
+          {
+            "bands": [
+              {
+                "key": "low",
+                "label": "Z1–Z2 low",
+                "time": null
+              },
+              {
+                "key": "moderate",
+                "label": "Z3 moderate",
+                "time": null
+              },
+              {
+                "key": "high",
+                "label": "Z4–Z5 high",
+                "time": null
+              }
+            ],
+            "sessions": 1,
+            "week_start": "2026-05-04",
+            "week_start_label": "4 May 2026"
+          }
+        ]
       }
     },
     "/insights/rolling?weeks=26": {
@@ -10215,7 +10334,31 @@
         ],
         "shares": null,
         "source": "your zone model · HR_MAX · max heart rate 178 bpm · read on 10 May 2026",
-        "unavailable": "the split has no value — the runs in the window have no heart-rate samples"
+        "unavailable": "the split has no value — the runs in the window have no heart-rate samples",
+        "weeks": [
+          {
+            "bands": [
+              {
+                "key": "low",
+                "label": "Z1–Z2 low",
+                "time": null
+              },
+              {
+                "key": "moderate",
+                "label": "Z3 moderate",
+                "time": null
+              },
+              {
+                "key": "high",
+                "label": "Z4–Z5 high",
+                "time": null
+              }
+            ],
+            "sessions": 1,
+            "week_start": "2026-05-04",
+            "week_start_label": "4 May 2026"
+          }
+        ]
       }
     },
     "/insights/rolling?weeks=4": {
@@ -10721,7 +10864,31 @@
         ],
         "shares": null,
         "source": "your zone model · HR_MAX · max heart rate 178 bpm · read on 10 May 2026",
-        "unavailable": "the split has no value — the runs in the window have no heart-rate samples"
+        "unavailable": "the split has no value — the runs in the window have no heart-rate samples",
+        "weeks": [
+          {
+            "bands": [
+              {
+                "key": "low",
+                "label": "Z1–Z2 low",
+                "time": null
+              },
+              {
+                "key": "moderate",
+                "label": "Z3 moderate",
+                "time": null
+              },
+              {
+                "key": "high",
+                "label": "Z4–Z5 high",
+                "time": null
+              }
+            ],
+            "sessions": 1,
+            "week_start": "2026-05-04",
+            "week_start_label": "4 May 2026"
+          }
+        ]
       }
     },
     "/insights/rolling?weeks=52": {
@@ -11227,7 +11394,31 @@
         ],
         "shares": null,
         "source": "your zone model · HR_MAX · max heart rate 178 bpm · read on 10 May 2026",
-        "unavailable": "the split has no value — the runs in the window have no heart-rate samples"
+        "unavailable": "the split has no value — the runs in the window have no heart-rate samples",
+        "weeks": [
+          {
+            "bands": [
+              {
+                "key": "low",
+                "label": "Z1–Z2 low",
+                "time": null
+              },
+              {
+                "key": "moderate",
+                "label": "Z3 moderate",
+                "time": null
+              },
+              {
+                "key": "high",
+                "label": "Z4–Z5 high",
+                "time": null
+              }
+            ],
+            "sessions": 1,
+            "week_start": "2026-05-04",
+            "week_start_label": "4 May 2026"
+          }
+        ]
       }
     },
     "/insights/rolling?weeks=8": {
@@ -11733,7 +11924,31 @@
         ],
         "shares": null,
         "source": "your zone model · HR_MAX · max heart rate 178 bpm · read on 10 May 2026",
-        "unavailable": "the split has no value — the runs in the window have no heart-rate samples"
+        "unavailable": "the split has no value — the runs in the window have no heart-rate samples",
+        "weeks": [
+          {
+            "bands": [
+              {
+                "key": "low",
+                "label": "Z1–Z2 low",
+                "time": null
+              },
+              {
+                "key": "moderate",
+                "label": "Z3 moderate",
+                "time": null
+              },
+              {
+                "key": "high",
+                "label": "Z4–Z5 high",
+                "time": null
+              }
+            ],
+            "sessions": 1,
+            "week_start": "2026-05-04",
+            "week_start_label": "4 May 2026"
+          }
+        ]
       }
     },
     "/insights/streaks": {
@@ -16004,7 +16219,6 @@
         "raw": 4020,
         "text": "1 h 7 m"
       },
-      "elevation": [],
       "elevation_gain": {
         "raw": 42,
         "text": "42 m"
@@ -23378,7 +23592,31 @@
         ],
         "shares": null,
         "source": "your zone model · HR_MAX · max heart rate 178 bpm · read on 10 May 2026",
-        "unavailable": "the split has no value — the runs in the window have no heart-rate samples"
+        "unavailable": "the split has no value — the runs in the window have no heart-rate samples",
+        "weeks": [
+          {
+            "bands": [
+              {
+                "key": "low",
+                "label": "Z1–Z2 low",
+                "time": null
+              },
+              {
+                "key": "moderate",
+                "label": "Z3 moderate",
+                "time": null
+              },
+              {
+                "key": "high",
+                "label": "Z4–Z5 high",
+                "time": null
+              }
+            ],
+            "sessions": 1,
+            "week_start": "2026-05-04",
+            "week_start_label": "4 May 2026"
+          }
+        ]
       }
     },
     "/insights/rolling?days=30": {
@@ -23884,7 +24122,31 @@
         ],
         "shares": null,
         "source": "your zone model · HR_MAX · max heart rate 178 bpm · read on 10 May 2026",
-        "unavailable": "the split has no value — the runs in the window have no heart-rate samples"
+        "unavailable": "the split has no value — the runs in the window have no heart-rate samples",
+        "weeks": [
+          {
+            "bands": [
+              {
+                "key": "low",
+                "label": "Z1–Z2 low",
+                "time": null
+              },
+              {
+                "key": "moderate",
+                "label": "Z3 moderate",
+                "time": null
+              },
+              {
+                "key": "high",
+                "label": "Z4–Z5 high",
+                "time": null
+              }
+            ],
+            "sessions": 1,
+            "week_start": "2026-05-04",
+            "week_start_label": "4 May 2026"
+          }
+        ]
       }
     },
     "/insights/rolling?days=60": {
@@ -24390,7 +24652,31 @@
         ],
         "shares": null,
         "source": "your zone model · HR_MAX · max heart rate 178 bpm · read on 10 May 2026",
-        "unavailable": "the split has no value — the runs in the window have no heart-rate samples"
+        "unavailable": "the split has no value — the runs in the window have no heart-rate samples",
+        "weeks": [
+          {
+            "bands": [
+              {
+                "key": "low",
+                "label": "Z1–Z2 low",
+                "time": null
+              },
+              {
+                "key": "moderate",
+                "label": "Z3 moderate",
+                "time": null
+              },
+              {
+                "key": "high",
+                "label": "Z4–Z5 high",
+                "time": null
+              }
+            ],
+            "sessions": 1,
+            "week_start": "2026-05-04",
+            "week_start_label": "4 May 2026"
+          }
+        ]
       }
     },
     "/insights/rolling?days=90": {
@@ -24896,7 +25182,31 @@
         ],
         "shares": null,
         "source": "your zone model · HR_MAX · max heart rate 178 bpm · read on 10 May 2026",
-        "unavailable": "the split has no value — the runs in the window have no heart-rate samples"
+        "unavailable": "the split has no value — the runs in the window have no heart-rate samples",
+        "weeks": [
+          {
+            "bands": [
+              {
+                "key": "low",
+                "label": "Z1–Z2 low",
+                "time": null
+              },
+              {
+                "key": "moderate",
+                "label": "Z3 moderate",
+                "time": null
+              },
+              {
+                "key": "high",
+                "label": "Z4–Z5 high",
+                "time": null
+              }
+            ],
+            "sessions": 1,
+            "week_start": "2026-05-04",
+            "week_start_label": "4 May 2026"
+          }
+        ]
       }
     },
     "/insights/rolling?weeks=13": {
@@ -25402,7 +25712,31 @@
         ],
         "shares": null,
         "source": "your zone model · HR_MAX · max heart rate 178 bpm · read on 10 May 2026",
-        "unavailable": "the split has no value — the runs in the window have no heart-rate samples"
+        "unavailable": "the split has no value — the runs in the window have no heart-rate samples",
+        "weeks": [
+          {
+            "bands": [
+              {
+                "key": "low",
+                "label": "Z1–Z2 low",
+                "time": null
+              },
+              {
+                "key": "moderate",
+                "label": "Z3 moderate",
+                "time": null
+              },
+              {
+                "key": "high",
+                "label": "Z4–Z5 high",
+                "time": null
+              }
+            ],
+            "sessions": 1,
+            "week_start": "2026-05-04",
+            "week_start_label": "4 May 2026"
+          }
+        ]
       }
     },
     "/insights/rolling?weeks=26": {
@@ -25908,7 +26242,31 @@
         ],
         "shares": null,
         "source": "your zone model · HR_MAX · max heart rate 178 bpm · read on 10 May 2026",
-        "unavailable": "the split has no value — the runs in the window have no heart-rate samples"
+        "unavailable": "the split has no value — the runs in the window have no heart-rate samples",
+        "weeks": [
+          {
+            "bands": [
+              {
+                "key": "low",
+                "label": "Z1–Z2 low",
+                "time": null
+              },
+              {
+                "key": "moderate",
+                "label": "Z3 moderate",
+                "time": null
+              },
+              {
+                "key": "high",
+                "label": "Z4–Z5 high",
+                "time": null
+              }
+            ],
+            "sessions": 1,
+            "week_start": "2026-05-04",
+            "week_start_label": "4 May 2026"
+          }
+        ]
       }
     },
     "/insights/rolling?weeks=4": {
@@ -26414,7 +26772,31 @@
         ],
         "shares": null,
         "source": "your zone model · HR_MAX · max heart rate 178 bpm · read on 10 May 2026",
-        "unavailable": "the split has no value — the runs in the window have no heart-rate samples"
+        "unavailable": "the split has no value — the runs in the window have no heart-rate samples",
+        "weeks": [
+          {
+            "bands": [
+              {
+                "key": "low",
+                "label": "Z1–Z2 low",
+                "time": null
+              },
+              {
+                "key": "moderate",
+                "label": "Z3 moderate",
+                "time": null
+              },
+              {
+                "key": "high",
+                "label": "Z4–Z5 high",
+                "time": null
+              }
+            ],
+            "sessions": 1,
+            "week_start": "2026-05-04",
+            "week_start_label": "4 May 2026"
+          }
+        ]
       }
     },
     "/insights/rolling?weeks=52": {
@@ -26920,7 +27302,31 @@
         ],
         "shares": null,
         "source": "your zone model · HR_MAX · max heart rate 178 bpm · read on 10 May 2026",
-        "unavailable": "the split has no value — the runs in the window have no heart-rate samples"
+        "unavailable": "the split has no value — the runs in the window have no heart-rate samples",
+        "weeks": [
+          {
+            "bands": [
+              {
+                "key": "low",
+                "label": "Z1–Z2 low",
+                "time": null
+              },
+              {
+                "key": "moderate",
+                "label": "Z3 moderate",
+                "time": null
+              },
+              {
+                "key": "high",
+                "label": "Z4–Z5 high",
+                "time": null
+              }
+            ],
+            "sessions": 1,
+            "week_start": "2026-05-04",
+            "week_start_label": "4 May 2026"
+          }
+        ]
       }
     },
     "/insights/rolling?weeks=8": {
@@ -27426,7 +27832,31 @@
         ],
         "shares": null,
         "source": "your zone model · HR_MAX · max heart rate 178 bpm · read on 10 May 2026",
-        "unavailable": "the split has no value — the runs in the window have no heart-rate samples"
+        "unavailable": "the split has no value — the runs in the window have no heart-rate samples",
+        "weeks": [
+          {
+            "bands": [
+              {
+                "key": "low",
+                "label": "Z1–Z2 low",
+                "time": null
+              },
+              {
+                "key": "moderate",
+                "label": "Z3 moderate",
+                "time": null
+              },
+              {
+                "key": "high",
+                "label": "Z4–Z5 high",
+                "time": null
+              }
+            ],
+            "sessions": 1,
+            "week_start": "2026-05-04",
+            "week_start_label": "4 May 2026"
+          }
+        ]
       }
     },
     "/insights/streaks": {

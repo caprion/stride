@@ -143,7 +143,7 @@ Two rules hold for every shape below.
 | route | the fields |
 |---|---|
 | `/activities` | `activities: ActivitySummary[]`, `next_cursor: string \| null`, `generated_at: string` |
-| `/activities/{id}` | `ActivitySummary` and `splits: {lap_index, distance, duration, pace, heart_rate}[]`, `elevation: {distance, elevation}[]`, `samples: {offset_s, pace, heart_rate}[]`, `plan_line: {text} \| null`, `note: string \| null` |
+| `/activities/{id}` | `ActivitySummary` and `splits: {lap_index, distance, duration, pace, heart_rate}[]`, `samples: {offset_s, distance_m, pace, heart_rate, altitude_m, kind}[]`, `plan_line: {text} \| null`, `note: string \| null` |
 | `/activities/{id}/film` | `activity_id`, `local_date`, `basis: string \| null`, `model: ZoneModel \| null`, `zones: {label, range, from_bpm, to_bpm}[]`, `outside_label: string \| null`, `samples: {elapsed, distance, pace, heart_rate, zone}[]`, `ground: {offset_s, elevation}[]`, `splits: {lap_index, offset_s, distance, duration, pace, heart_rate}[]`, `unavailable: string \| null`, `zones_unavailable: string \| null`, `generated_at` |
 | `/physiology/vitals` | `date`, `generated_at`, `rest: {label, line}`, `vitals: {key, label, value_text, direction_text, deviation_text, travel_text, status_text, band}[]`, `history: {sleep, hrv, resting_hr}` (each point: `date`, nullable `value`, nullable core-rendered `text` with units), `patterns: {id, text, sample_size}[]` |
 | `/plan/week` | `block_name`, `source`, `week_start`, `week_end`, `today`, `target`, `sessions: {date, session_type, title, sentence, target, actual, status, source}[]`, `adherence: {done, planned} \| null`, `counts: {done, planned, not_done}` |
@@ -161,7 +161,7 @@ Two rules hold for every shape below.
 | `/insights/today` | `generated_at`, `date`, `planned`, `options`, `last_run`, `distance_comparison: string \| null`, `week: {distance, sessions, days: {date, sessions}[]}` |
 | `/insights/progress` | `generated_at`, `date` (the core's local calendar date), `period: {from, to, distance, duration, sessions, recorded_weeks}`, `headline`, `headline_note`, `weekly_volume`, `typical_week`, `pace_at_hr`, `bests`, `consistency`, `sessions_per_week`, `adherence`, `eddington: {number, days_needed_for_next, longest_day} \| null` |
 | `/insights/load` | `generated_at`, `date`, `window: {from, from_label, to, to_label, weeks, warmup_days}`, `load: LoadSeries \| null`, `unavailable: string \| null`, `scenario: LoadScenario \| null` |
-| `/insights/rolling` | `generated_at`, `date`, `window: {from, from_label, to, to_label, days}`, `comparison: {from, from_label, to, to_label, days}`, `distance: {current, previous, difference}`, `duration: {current, previous, difference}`, `sessions: {current, previous, difference}`, `zones: {model, shares, distribution, unavailable}`, `distances: {key, label, sessions, distance, elevation, duration}[]`, `profile: {key, label, value, total, previous, movement}[]`, `weekday: {weekday, sessions, distance, duration, share}[]`, `daytime: {key, label, from_hour, to_hour, sessions, distance, duration}[]`, `months: {key, label, sessions, distance, duration, elevation}[]`, `years: {key, label, sessions, distance, duration, elevation}[]` |
+| `/insights/rolling` | `generated_at`, `date`, `window: {from, from_label, to, to_label, days}`, `comparison: {from, from_label, to, to_label, days}`, `distance: {current, previous, difference}`, `duration: {current, previous, difference}`, `sessions: {current, previous, difference}`, `zones: {models, source, shares, distribution, weeks, unavailable}`, `distances: {key, label, sessions, distance, elevation, duration}[]`, `profile: {key, label, value, total, previous, movement}[]`, `weekday: {weekday, sessions, distance, duration, share}[]`, `daytime: {key, label, from_hour, to_hour, sessions, distance, duration}[]`, `months: {key, label, sessions, distance, duration, elevation}[]`, `years: {key, label, sessions, distance, duration, elevation}[]` |
 | `/insights/streaks` | `generated_at`, `date`, `days: {current, longest}`, `weeks: {current, longest}` |
 | `/insights/pace` | `generated_at`, `date`, `window: {from, from_label, to, to_label, weeks}`, `weeks: {week_start, distance, sessions, longest, pace, heart_rate}[]`, `bands: {width_s_per_km, total, distance, rows: {from, to, label, time, distance, share}[], rest} \| null`, `unavailable: string \| null` |
 
@@ -400,6 +400,17 @@ Three more answers ride on the same window.
   the time in the zones that was. It comes from the same time-in-zone
   computation as the bands, so the two cannot disagree. The ranges are the
   model's own floors.
+* **`zones.weeks`** is the **window's weeks, and the band each one
+  held**: one row per calendar week that carries a run, oldest first, and
+  the time in each of the three bands — the low (Z1–Z2), the moderate
+  (Z3) and the high (Z4–Z5) — that week. The weeks come from the same
+  time-in-zone computation as the bands, so a week cannot disagree with
+  the window it belongs to.
+
+  **A band with no time in a week is no value, never a zero.** The field
+  is absent for that band in that week, so the absence can be drawn as
+  the white space it is: a week with no hard running is a hole in the
+  high row, and the hole is the finding.
 * **`distances`** is the **distance breakdown**: the runs by how far they
   went. The bucket size is the reference implementation's own — it is
   taken from the longest run in the window, so that the longest run lands
@@ -1015,11 +1026,16 @@ outside them.
 
 #### The ground is on the run's time axis
 
-The run detail's elevation is **distance-based**, and it stays that way: it
-is the profile of the ground, not a series over time. The film's ground is
-different — it is the same altitude on the **elapsed** axis, so the pace,
-the heart rate and the ground share one cursor, and the playhead crosses
-all three at the same moment.
+**One series, one axis.** The run detail's samples carry the distance,
+the altitude and the movement kind beside the pace and the heart rate,
+so every reading of the run is over the **elapsed** time — and the run
+detail draws one chart, with one cursor, over that axis. The altitude
+keeps **its own scale** on the chart: metres and seconds per kilometre
+cannot share one, and the ground is scenery, not an effort signal.
+
+The film's ground is the same altitude on the same elapsed axis, so the
+pace, the heart rate and the ground share one cursor there too, and the
+playhead crosses all three at the same moment.
 
 #### No value
 

@@ -77,7 +77,7 @@ function polygon(panel: HTMLElement, days: number): SVGPathElement | null {
 
 describe('the three windows on one chart', () => {
   it('draws one polygon for each window, each in a hue of its own', async () => {
-    renderApp('/profile')
+    renderApp('/profile/shape')
     const panel = await screen.findByTestId('progress-shape')
     await waitFor(() => expect(polygon(panel, 30)).toBeTruthy())
 
@@ -90,7 +90,7 @@ describe('the three windows on one chart', () => {
   })
 
   it('draws the axes as rates, so the windows can be read against each other', async () => {
-    renderApp('/profile')
+    renderApp('/profile/shape')
     const panel = await screen.findByTestId('progress-shape')
     await waitFor(() => expect(polygon(panel, 30)).toBeTruthy())
 
@@ -114,7 +114,7 @@ describe('the three windows on one chart', () => {
   })
 
   it('draws the focused window last, so it is not buried', async () => {
-    renderApp('/profile')
+    renderApp('/profile/shape')
     const panel = await screen.findByTestId('progress-shape')
     await waitFor(() => expect(polygon(panel, 30)).toBeTruthy())
 
@@ -130,7 +130,7 @@ describe('the three windows on one chart', () => {
   })
 
   it('says which window each polygon is, in the legend', async () => {
-    renderApp('/profile')
+    renderApp('/profile/shape')
     const panel = await screen.findByTestId('progress-shape')
     const legend = panel.querySelector('[data-testid="progress-shape-legend"]')
     expect(legend?.textContent).toContain('last 30 days')
@@ -139,7 +139,7 @@ describe('the three windows on one chart', () => {
   })
 
   it('the picker chooses the window the page is about, and not the chart', async () => {
-    renderApp('/profile')
+    renderApp('/profile/shape')
     const panel = await screen.findByTestId('progress-shape')
     await waitFor(() => expect(polygon(panel, 30)).toBeTruthy())
 
@@ -158,7 +158,7 @@ describe('the three windows on one chart', () => {
   })
 
   it('tells the reader which way each facet moved', async () => {
-    renderApp('/profile')
+    renderApp('/profile/shape')
     const panel = await screen.findByTestId('progress-shape')
     await waitFor(() => expect(polygon(panel, 30)).toBeTruthy())
 

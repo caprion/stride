@@ -45,7 +45,7 @@ use crate::dto::{
     DaytimeRow, DistanceBucketRow, MonthStreakDetail, MonthStreakValue, PeriodRow, ProfileFacet,
     RollingInsight, RollingWindow as RollingWindowDto, SessionComparison, StreakDetail,
     StreakInsight, StreakValue, WeekdayRow, WindowComparison, ZoneDistributionRow, ZoneModelSource,
-    ZoneShareRow, ZoneSplit,
+    ZoneShareRow, ZoneSplit, ZoneWeekBand, ZoneWeekRow,
 };
 use crate::error::{ApiError, ApiResult};
 use crate::render;
@@ -347,12 +347,36 @@ fn zones_of(split: &crate::rolling::ZoneSplitAnswer) -> ZoneSplit {
             })
             .collect()
     });
+    let weeks: Vec<ZoneWeekRow> = split
+        .weeks
+        .iter()
+        .map(|week| ZoneWeekRow {
+            week_start: week.week_start.to_iso(),
+            week_start_label: super::day_label(week.week_start),
+            sessions: week.sessions,
+            bands: stride_core::rolling::PolarisedZone::all()
+                .iter()
+                .enumerate()
+                .map(|(index, band)| {
+                    let seconds = week.bands.get(index).copied().unwrap_or(0.0);
+                    ZoneWeekBand {
+                        key: band.key().to_string(),
+                        label: band.label().to_string(),
+                        // **No value is not a zero.** A week that held no
+                        // time in a band says so by saying nothing.
+                        time: render::duration(if seconds > 0.0 { Some(seconds) } else { None }),
+                    }
+                })
+                .collect(),
+        })
+        .collect();
     ZoneSplit {
         models,
         source,
         shares,
         distribution,
         unavailable: split.unavailable.clone(),
+        weeks,
     }
 }
 

@@ -1,11 +1,13 @@
 /**
- * The narrow Progress: an index of the questions.
+ * The narrow Progress: an index of the wall's cards.
  *
- * Seven rows, each one a question with the athlete's answer in it, and
- * a doorway into the panel that answers it.
+ * Six rows on Progress and five on the athlete profile, each one a card
+ * of the wall with the athlete's answer in it, and a doorway into the
+ * panel that answers it.
  *
  * The rules the rows answer to:
  *
+ *   - the rows are the wall's cards, in the wall's order;
  *   - every number is the answer to that question, in the core's own
  *     rendering;
  *   - every row names the window its answer covers;
@@ -19,18 +21,17 @@ import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { api } from '../src/lib/api'
 import { t } from '../src/i18n'
-import { TASK_AREAS, WALL_CARDS, areasOf, cardRoute } from '../src/pages/taskAreas'
+import { WALL_CARDS, cardRoute, cardsOf } from '../src/pages/taskAreas'
 import { loadFixture, rollingFixture, streaksEmptyFixture } from '../src/fixtures'
 import { renderApp } from './helpers'
 
 afterEach(() => vi.restoreAllMocks())
 
 /**
- * The links of the index that are not the areas' own links: the picture's
- * doorway, and the six questions' rows.
+ * The links of the index: the rows themselves.
  */
-const QUESTION_LINKS =
-  'a[data-testid^="progress-index-"]:not([data-testid^="progress-index-area-"])'
+const QUESTION_LINKS = 'a[data-testid^="progress-index-"]'
+const PROFILE_LINKS = 'a[data-testid^="profile-index-"]'
 
 /** The text of one row's answer. */
 async function answer(id: string): Promise<string> {
@@ -45,39 +46,39 @@ async function windowOf(id: string): Promise<string> {
 }
 
 describe('the index of the questions', () => {
-  it('asks six questions, and each one is a question the app already asks', async () => {
+  it('asks the wall’s own six cards, in the wall’s order', async () => {
     renderApp('/progress')
     const index = await screen.findByTestId('progress-index')
 
     const questions = [...index.querySelectorAll(QUESTION_LINKS)].map((node) =>
       node.getAttribute('data-testid'),
     )
-    // The six questions themselves. Each one is a panel the app already
-    // has. The athlete profile's picture is not here: it is the
-    // profile's own, and the profile has an index of its own.
+    // The wall's cards, in the model's order: this week, the load, the
+    // weeks, where the time went, the pace, and the bests.
     expect(questions).toEqual([
-      'progress-index-window',
+      'progress-index-week',
       'progress-index-load',
-      'progress-index-year',
+      'progress-index-weeks',
+      'progress-index-time',
       'progress-index-pace',
-      'progress-index-zones',
-      'progress-index-habit',
+      'progress-index-bests',
     ])
 
-    expect(index.textContent).toContain('This window against the window before')
-    expect(index.textContent).toContain('The training load')
-    expect(index.textContent).toContain('The year')
-    expect(index.textContent).toContain('The pace')
-    expect(index.textContent).toContain('Your zones')
-    expect(index.textContent).toContain('The habit')
+    expect(index.textContent).toContain(t('progress.wall.thisWeek.heading'))
+    expect(index.textContent).toContain(t('progress.wall.load.heading'))
+    expect(index.textContent).toContain(t('progress.wall.weeks.heading'))
+    expect(index.textContent).toContain(t('progress.wall.time.heading'))
+    expect(index.textContent).toContain(t('progress.wall.pace.heading'))
+    expect(index.textContent).toContain(t('progress.wall.bests.heading'))
   })
 
-  it('answers the window with the window and the difference', async () => {
+  it('answers the week with the week and the difference', async () => {
     renderApp('/progress')
-    // The core's own rendering: "58.4 km" and "+31 km".
-    expect(await answer('window')).toBe('58.4 km · +31 km')
+    // The core's own rendering: the distance and the difference.
+    const text = await answer('week')
+    expect(text).toContain('·')
     // And the window it covers.
-    expect(await windowOf('window')).toBe('The last 80 days · 23 Feb 2026 – 13 May 2026')
+    expect(await windowOf('week')).toContain('–')
   })
 
   it('answers the load with the load, as of the day it was read', async () => {
@@ -86,10 +87,10 @@ describe('the index of the questions', () => {
     expect(await windowOf('load')).toBe('as of 13 May 2026')
   })
 
-  it('answers the year with the year, and says how many months are recorded', async () => {
+  it('answers the weeks with the distance and the runs', async () => {
     renderApp('/progress')
-    expect(await answer('year')).toBe('76.6 km · 7 runs')
-    expect(await windowOf('year')).toBe('2026 · 2 months with runs')
+    expect(await answer('weeks')).toBe('58.4 km · 6 runs')
+    expect(await windowOf('weeks')).toBe('23 Feb 2026 – 13 May 2026')
   })
 
   it('answers the pace with the pace at the heart rate', async () => {
@@ -100,15 +101,15 @@ describe('the index of the questions', () => {
     expect(await windowOf('pace')).toBe('The week of 4 May 2026')
   })
 
-  it('answers the zones with the split, or says why there is none', async () => {
+  it('answers the time with the split, or says why there is none', async () => {
     renderApp('/progress')
     // The fixture's runs carry no heart-rate samples, so the split has
     // no value: the row says so, in the core's own words, and shows no
     // number at all.
-    expect(await answer('zones')).toContain('no heart-rate samples')
+    expect(await answer('time')).toContain('no heart-rate samples')
   })
 
-  it('answers the zones with the split of the zones', async () => {
+  it('answers the time with the split of the zones', async () => {
     vi.spyOn(api, 'insightsRolling').mockResolvedValue({
       ...rollingFixture,
       zones: {
@@ -116,6 +117,7 @@ describe('the index of the questions', () => {
         source: rollingFixture.zones.source,
         unavailable: null,
         distribution: null,
+        weeks: [],
         shares: [
           {
             key: 'low',
@@ -142,19 +144,15 @@ describe('the index of the questions', () => {
       },
     })
     renderApp('/progress')
-    expect(await answer('zones')).toBe(
+    expect(await answer('time')).toBe(
       'Z1–Z2 low 6.28% · Z3 moderate 40.33% · Z4–Z5 high 53.39%',
     )
-    expect(await windowOf('zones')).toBe('The last 80 days')
+    expect(await windowOf('time')).toBe('The last 80 days')
   })
 
-  it('answers the habit with the streak and the Eddington number', async () => {
+  it('answers the bests with the records', async () => {
     renderApp('/progress')
-    // The fixture holds no current streak of days, so the row says so
-    // rather than showing a zero.
-    expect(await answer('habit')).toBe('no streak · 2 weeks · Eddington 5')
-    // And the window the Eddington number covers.
-    expect(await windowOf('habit')).toBe('The Eddington number over 23 Feb 2026 – 13 May 2026')
+    expect(await answer('bests')).toContain('18.2 km')
   })
 
   it('draws no verdict on a row', async () => {
@@ -167,83 +165,53 @@ describe('the index of the questions', () => {
   })
 })
 
-describe('the areas of the index', () => {
-  it('opens every panel of the model from the two indexes', async () => {
+describe('the index is the wall’s card list', () => {
+  it('opens every card of the model from the two indexes', async () => {
     renderApp('/progress')
     renderApp('/profile')
     const index = await screen.findByTestId('progress-index')
     const profile = await screen.findByTestId('profile-index')
 
-    // Every card of the wall has a doorway on the phone now: the
-    // questions' own rows count, the picture counts, and the areas carry
-    // the rest — and the two indexes carry them between them.
+    // Every card of the wall has a doorway on the phone: the rows are
+    // the cards, and the two indexes carry them between them.
     const hrefs = [
       ...[...index.querySelectorAll('a')].map((node) => node.getAttribute('href')),
       ...[...profile.querySelectorAll('a')].map((node) => node.getAttribute('href')),
     ]
-    for (const area of TASK_AREAS) {
-      for (const id of area.cards) {
-        expect(hrefs).toContain(cardRoute(id))
+    for (const card of WALL_CARDS) {
+      const panel = cardRoute(card.id)
+      if (panel.startsWith('/progress/') || panel.startsWith('/profile/')) {
+        expect(hrefs).toContain(panel)
       }
     }
   })
 
-  it("draws the areas in the model's order, and leaves out the ones with nothing in them", async () => {
+  it('draws the cards of a destination in the model’s order', async () => {
     renderApp('/progress')
     const index = await screen.findByTestId('progress-index')
 
-    // The panels the index opens already: the six questions' own panels.
-    const opened = new Set(
-      [...index.querySelectorAll(QUESTION_LINKS)].map((node) => node.getAttribute('href')),
+    const rows = [...index.querySelectorAll('li > a[data-testid^="progress-index-"]')].map(
+      (node) => node.getAttribute('data-testid'),
     )
-
-    const sections = [
-      ...index.querySelectorAll('nav[data-testid="progress-index-areas"] > section'),
-    ]
-    const drawn = sections.map((section) => section.querySelector('h3')?.textContent ?? '')
-
-    // The model's areas of this destination, in the model's order, minus
-    // the ones that have nothing left to open.
-    const expected = areasOf('progress')
-      .filter((area) => area.cards.some((id) => !opened.has(cardRoute(id))))
-      .map((area) => t(area.titleKey))
-
-    expect(drawn).toEqual(expected)
+    expect(rows).toEqual(cardsOf('progress').map((card) => `progress-index-${card.id}`))
   })
 
-  it('gives every panel a link, under the name the card gives it', async () => {
+  it('names each row with the card’s own name', async () => {
     renderApp('/progress')
     const index = await screen.findByTestId('progress-index')
 
-    for (const section of index.querySelectorAll(
-      'nav[data-testid="progress-index-areas"] > section',
-    )) {
-      const links = [...section.querySelectorAll('a')]
-      // An area with nothing in it is not drawn, so a drawn one has a
-      // link under it.
-      expect(links.length).toBeGreaterThan(0)
-
-      for (const link of links) {
-        const id = link.getAttribute('data-testid')?.replace('progress-index-area-', '')
-        const card = WALL_CARDS.find((entry) => entry.id === id)
-        expect(card).toBeTruthy()
-        // The panel's own name, and the card's own route.
-        expect(link.textContent).toBe(t(card!.titleKey))
-        expect(link.getAttribute('href')).toBe(cardRoute(card!.id))
-      }
+    for (const card of cardsOf('progress')) {
+      const row = index.querySelector(`[data-testid="progress-index-${card.id}"]`)
+      expect(row?.textContent).toContain(t(card.titleKey))
     }
   })
 
-  it('carries no answers and no numbers in the areas', async () => {
+  it('has no second index of the same cards', async () => {
     renderApp('/progress')
     const index = await screen.findByTestId('progress-index')
-    const areas = index.querySelector('nav[data-testid="progress-index-areas"]')
 
-    // The questions carry the answers; the wall's cards carry the
-    // numbers. The areas are a way in and nothing more.
-    expect(areas?.querySelectorAll('[data-testid$="-answer"]').length).toBe(0)
-    expect(areas?.querySelectorAll('[data-testid$="-window"]').length).toBe(0)
-    expect(areas?.textContent ?? '').not.toMatch(/\d/)
+    // The areas' link lists are gone: the rows are the cards.
+    expect(index.querySelector('nav[data-testid="progress-index-areas"]')).toBeNull()
   })
 })
 
@@ -261,9 +229,10 @@ describe('the empty states of the index', () => {
 
   it('says when there is no streak at all', async () => {
     vi.spyOn(api, 'insightsStreaks').mockResolvedValue(streaksEmptyFixture)
-    renderApp('/progress')
+    renderApp('/profile')
     // A streak of zero days is no streak: the row says so.
-    expect(await answer('habit')).toContain('no streak')
+    const node = await screen.findByTestId('profile-index-habit-answer')
+    expect(node.textContent).toContain('no streak')
   })
 
   it('says so when there is nothing recorded at all', async () => {
@@ -279,13 +248,13 @@ describe('the empty states of the index', () => {
 })
 
 describe('opening a row', () => {
-  it('opens the window panel on its own', async () => {
+  it('opens the week panel on its own', async () => {
     renderApp('/progress')
-    await userEvent.click(await screen.findByTestId('progress-index-window'))
+    await userEvent.click(await screen.findByTestId('progress-index-week'))
 
     // The panel, and only the panel.
-    const panel = await screen.findByTestId('progress-panel-window')
-    expect(panel.querySelector('[data-testid="progress-rolling"]')).toBeTruthy()
+    const panel = await screen.findByTestId('progress-panel-week')
+    expect(panel.querySelector('[data-testid="progress-wall-week"]')).toBeTruthy()
     // And the index is not there any more.
     expect(screen.queryByTestId('progress-index')).toBeNull()
   })
@@ -298,35 +267,22 @@ describe('opening a row', () => {
     expect(panel.querySelector('[data-testid="progress-load"]')).toBeTruthy()
   })
 
-  it('opens the year, the pace, the zones and the habit', async () => {
+  it('opens the pace and the time', async () => {
     renderApp('/progress')
-    await userEvent.click(await screen.findByTestId('progress-index-year'))
-    // The year is a panel of the athlete profile, so it opens under the
-    // profile — and the back link goes back to Progress, and says so.
-    let panel = await screen.findByTestId('profile-panel-year')
-    expect(panel.querySelector('[data-testid="progress-years"]')).toBeTruthy()
-
-    await userEvent.click(screen.getByTestId('profile-panel-back'))
     await userEvent.click(await screen.findByTestId('progress-index-pace'))
-    panel = await screen.findByTestId('progress-panel-pace')
+    let panel = await screen.findByTestId('progress-panel-pace')
     expect(panel.querySelector('[data-testid="progress-pace-window"]')).toBeTruthy()
 
     await userEvent.click(screen.getByTestId('progress-panel-back'))
-    await userEvent.click(await screen.findByTestId('progress-index-zones'))
-    panel = await screen.findByTestId('progress-panel-zones')
-    expect(panel.querySelector('[data-testid="progress-zones"]')).toBeTruthy()
-
-    await userEvent.click(screen.getByTestId('progress-panel-back'))
-    await userEvent.click(await screen.findByTestId('progress-index-habit'))
-    panel = await screen.findByTestId('profile-panel-habit')
-    expect(panel.querySelector('[data-testid="progress-streaks"]')).toBeTruthy()
-    expect(panel.querySelector('[data-testid="progress-eddington"]')).toBeTruthy()
+    await userEvent.click(await screen.findByTestId('progress-index-time'))
+    panel = await screen.findByTestId('progress-panel-zone-time')
+    expect(panel.querySelector('[data-testid="progress-zones-distribution"]')).toBeTruthy()
   })
 
   it('goes back to the questions', async () => {
     renderApp('/progress')
-    await userEvent.click(await screen.findByTestId('progress-index-window'))
-    await screen.findByTestId('progress-panel-window')
+    await userEvent.click(await screen.findByTestId('progress-index-load'))
+    await screen.findByTestId('progress-panel-load')
 
     await userEvent.click(screen.getByTestId('progress-panel-back'))
     expect(await screen.findByTestId('progress-index')).toBeTruthy()
@@ -334,47 +290,49 @@ describe('opening a row', () => {
 })
 
 /**
- * The narrow athlete profile: the picture, the questions, and the
- * areas' links.
+ * The narrow athlete profile: the profile's five cards.
  *
  * The same rules as Progress's index: every number is the answer to the
  * question, every row names the window it covers, and nothing on a row
  * is a verdict.
  */
 describe('the index of the athlete profile', () => {
-  const PROFILE_LINKS =
-    'a[data-testid^="profile-index-"]:not([data-testid^="profile-index-area-"])'
-
-  it('asks its own questions, and answers each one', async () => {
+  it('asks the profile’s own five cards, in the model’s order', async () => {
     renderApp('/profile')
     const index = await screen.findByTestId('profile-index')
 
-    // The picture, and the profile's own four questions.
     const questions = [...index.querySelectorAll(PROFILE_LINKS)].map((node) =>
       node.getAttribute('data-testid'),
     )
     expect(questions).toEqual([
-      'profile-index-shape-open',
-      'profile-index-goals',
-      'profile-index-schedule',
-      'profile-index-seasons',
+      'profile-index-shape',
       'profile-index-months',
+      'profile-index-schedule',
+      'profile-index-habit',
+      'profile-index-goals',
     ])
+  })
 
-    // The core's own numbers: the weeks of the challenges, the days of
-    // the week the runs fall on, the months of the history and the
-    // months in a row.
-    expect((await screen.findByTestId('profile-index-goals-answer')).textContent).toBe(
-      '2 of 3 weeks',
+  it('answers each one', async () => {
+    renderApp('/profile')
+
+    // The core's own numbers: the volume of the window, the months of
+    // the history, the days of the week the runs fall on, the streak and
+    // the Eddington number, and the weeks of the challenges.
+    expect((await screen.findByTestId('profile-index-shape-answer')).textContent).toContain(
+      '58.4 km',
+    )
+    expect((await screen.findByTestId('profile-index-months-answer')).textContent).toContain(
+      'May 2026',
     )
     expect((await screen.findByTestId('profile-index-schedule-answer')).textContent).toContain(
       'Monday',
     )
-    expect((await screen.findByTestId('profile-index-seasons-answer')).textContent).toContain(
-      'May 2026',
+    expect((await screen.findByTestId('profile-index-habit-answer')).textContent).toContain(
+      'Eddington 5',
     )
-    expect((await screen.findByTestId('profile-index-months-answer')).textContent).toBe(
-      '1 month in a row',
+    expect((await screen.findByTestId('profile-index-goals-answer')).textContent).toBe(
+      '2 of 3 weeks',
     )
   })
 
@@ -384,14 +342,10 @@ describe('the index of the athlete profile', () => {
 
     const hrefs = [...index.querySelectorAll('a')].map((node) => node.getAttribute('href'))
     expect(hrefs).toContain('/profile/shape')
-    expect(hrefs).toContain('/profile/challenges')
-    expect(hrefs).toContain('/profile/weekday')
     expect(hrefs).toContain('/profile/months')
+    expect(hrefs).toContain('/profile/weekday')
     expect(hrefs).toContain('/profile/habit')
-    // And the areas carry the rest of the profile's panels.
-    expect(hrefs).toContain('/profile/facets')
-    expect(hrefs).toContain('/profile/heatmap')
-    expect(hrefs).toContain('/profile/eddington')
+    expect(hrefs).toContain('/profile/challenges')
   })
 
   it('opens a panel of the profile, and comes back to the profile', async () => {

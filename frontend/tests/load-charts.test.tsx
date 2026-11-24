@@ -165,7 +165,7 @@ describe('the shape before the numbers', () => {
         ],
       },
     })
-    renderApp('/progress')
+    renderApp('/progress/zone-time')
     const card = await screen.findByTestId('progress-zones')
 
     // The three shares are bars as well as numbers.

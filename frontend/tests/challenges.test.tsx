@@ -49,7 +49,7 @@ describe('the challenge grid', () => {
 
   it('is on the wall, with the habits beside it', async () => {
     renderApp('/profile')
-    const card = await screen.findByTestId('progress-wall-challenges')
+    const card = await screen.findByTestId('progress-wall-goals')
     expect(card).toBeTruthy()
   })
 

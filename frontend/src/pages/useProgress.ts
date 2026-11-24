@@ -14,6 +14,7 @@ import { useQuery } from '@tanstack/react-query'
 import { api } from '../lib/api'
 import { axisTicks, calendarWeekStarts } from '../lib/chart'
 import { formatDateShort } from '../lib/format'
+import { shiftDate } from '../lib/history'
 import type { ConsistencyPoint, PacePoint, VolumePoint } from './progressPanels'
 
 /**
@@ -53,6 +54,33 @@ export function useProgress(range: number) {
   const streaks = useQuery({
     queryKey: ['insights-streaks'],
     queryFn: () => api.insightsStreaks(),
+  })
+  /**
+   * This week, against the same days of the week before.
+   *
+   * **The week is not a range.** The screen's range is the window the
+   * charts are drawn over; this week is the week the athlete is in, and
+   * it does not follow the range.
+   */
+  const today = useQuery({ queryKey: ['insights-today'], queryFn: () => api.insightsToday() })
+
+  /**
+   * The window's runs.
+   *
+   * **The pictures are drawn from the feed.** The week strip, the
+   * records' timeline and the habit's day marks are all facts about the
+   * runs themselves — the date and the distance — and the feed already
+   * carries them. The window starts a week earlier, so that the strip
+   * has the previous week's days to stand beside this week's.
+   */
+  const windowRuns = useQuery({
+    queryKey: ['activities', 'window', rolling.data?.window.from, rolling.data?.window.to],
+    queryFn: () =>
+      api.activities({
+        since: shiftDate(rolling.data!.window.from, -7),
+        until: rolling.data!.window.to,
+      }),
+    enabled: rolling.data !== undefined,
   })
   // The challenges: the athlete's own, against the same window.
   const challenges = useQuery({
@@ -132,6 +160,8 @@ export function useProgress(range: number) {
     rolling,
     streaks,
     challenges,
+    today,
+    windowRuns,
     shape: { short: shapeShort, long: shapeLong },
     data,
     weeks,

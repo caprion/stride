@@ -231,9 +231,6 @@ fn every_plan_sentence_is_catalogued_and_carries_no_hole() {
         "statement.plan.result.no_target",
         "statement.plan.result.no_run",
         "statement.plan.result.empty",
-        "statement.plan.status.done",
-        "statement.plan.status.planned",
-        "statement.plan.status.not_done",
     ] {
         let entry = strings::entry(id).expect("a catalogue entry");
         assert_eq!(entry.kind, StringKind::Statement, "{id}");

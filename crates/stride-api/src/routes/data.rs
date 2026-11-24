@@ -147,13 +147,11 @@ pub fn activity(api: &Api, request: &Request) -> ApiResult<Value> {
         None => return Err(ApiError::internal("the run could not be read")),
     };
     let mut splits = Vec::new();
-    let mut elevation = Vec::new();
     let mut samples = Vec::new();
     let mut why = None;
     if let Some(decoded) = series::decoded(api, id) {
         summary.geo_points = series::geo_points(&decoded, api.config().max_samples_in_response);
         splits = series::splits(&decoded);
-        elevation = series::elevation(&decoded, api.config().max_samples_in_response);
         samples = series::samples(&decoded, api.config().max_samples_in_response);
         // The detail knows the run's own shape: the why is the core's,
         // beside the same sentence the feed shows.
@@ -176,7 +174,6 @@ pub fn activity(api: &Api, request: &Request) -> ApiResult<Value> {
     let detail = ActivityDetail {
         summary,
         splits,
-        elevation,
         samples,
         plan_line,
         note,

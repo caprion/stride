@@ -41,7 +41,7 @@ import { t } from '../i18n'
 import type { CatalogueKey } from '../i18n'
 import { axisTick } from '../components/ChartAxis'
 import { AthleteShape, shapeWindows } from '../components/AthleteShape'
-import { RADAR_AXES } from '../components/ProfileRadar'
+import { SHAPE_AXES } from '../lib/shape'
 import { seriesColour } from '../lib/chart'
 import { LoadDaysChart, LoadProjectionChart, LoadSeriesChart } from './loadCharts'
 
@@ -1115,7 +1115,7 @@ export interface ShapeRow {
 
 /** The rows of the table under the chart, for the focused window. */
 export function shapeRows(rolling: RollingInsight | undefined): ShapeRow[] {
-  return RADAR_AXES.map((key) => {
+  return SHAPE_AXES.map((key) => {
     const facet = rolling?.profile.find((entry) => entry.key === key)
     return {
       key,
@@ -1216,10 +1216,10 @@ export function ShapeBody({
                     {t('progress.shape.axis')}
                   </th>
                   <th scope="col" className="py-1.5 text-right font-medium">
-                    {t('progress.wall.profile.window', { days })}
+                    {t('progress.shape.window', { days })}
                   </th>
                   <th scope="col" className="py-1.5 text-right font-medium">
-                    {t('progress.wall.profile.previous', { days })}
+                    {t('progress.shape.previous', { days })}
                   </th>
                   <th scope="col" className="py-1.5 text-right font-medium">
                     {t('progress.shape.movement')}

@@ -23,7 +23,7 @@ afterEach(() => vi.restoreAllMocks())
 
 describe('the rolling window on Progress', () => {
   it('shows the window, the window before it and the difference', async () => {
-    renderApp('/progress')
+    renderApp('/progress/week')
     const card = await screen.findByTestId('progress-rolling')
     // The card is there before its numbers are: the window line is what
     // the test waits for.
@@ -45,7 +45,7 @@ describe('the rolling window on Progress', () => {
   })
 
   it('names the window it describes', async () => {
-    renderApp('/progress')
+    renderApp('/progress/week')
     await screen.findByTestId('progress-rolling')
     const window = (await screen.findByTestId('progress-rolling-window')).textContent
 
@@ -57,17 +57,17 @@ describe('the rolling window on Progress', () => {
 
   it('follows the range the screen is showing', async () => {
     const asked = vi.spyOn(api, 'insightsRolling')
-    renderApp('/progress')
+    renderApp('/progress/week')
     await screen.findByTestId('progress-rolling')
 
-    await userEvent.click(screen.getByTestId('progress-range-4'))
+    await userEvent.click(screen.getByTestId('progress-panel-range-4'))
     await waitFor(() => expect(asked).toHaveBeenCalledWith(4))
   })
 })
 
 describe('the split of the zones on Progress', () => {
   it('has no value when the runs carry no heart-rate samples', async () => {
-    renderApp('/progress')
+    renderApp('/progress/zone-time')
     const card = await screen.findByTestId('progress-zones')
 
     // The reason is the core's own words.
@@ -87,6 +87,7 @@ describe('the split of the zones on Progress', () => {
         source: rollingFixture.zones.source,
         unavailable: null,
         distribution: null,
+        weeks: [],
         shares: [
           {
             key: 'low',
@@ -98,7 +99,7 @@ describe('the split of the zones on Progress', () => {
         ],
       },
     })
-    renderApp('/progress')
+    renderApp('/progress/zone-time')
     const card = await screen.findByTestId('progress-zones')
 
     // The share, and which way it moved against the window before it.
@@ -118,7 +119,7 @@ describe('the split of the zones on Progress', () => {
 
 describe('the zone distribution on Progress', () => {
   it('has no value when the runs carry no heart-rate samples', async () => {
-    renderApp('/progress')
+    renderApp('/progress/zone-time')
     const card = await screen.findByTestId('progress-zones-distribution')
 
     // The reason is the core's own words.
@@ -136,6 +137,7 @@ describe('the zone distribution on Progress', () => {
         models: rollingFixture.zones.models,
         source: rollingFixture.zones.source,
         unavailable: null,
+        weeks: rollingFixture.zones.weeks,
         shares: rollingFixture.zones.shares,
         distribution: [
           {
@@ -153,7 +155,7 @@ describe('the zone distribution on Progress', () => {
         ],
       },
     })
-    renderApp('/progress')
+    renderApp('/progress/zone-time')
     const card = await screen.findByTestId('progress-zones-distribution')
 
     // The zone, its range, the time in it and its share.
@@ -170,7 +172,7 @@ describe('the zone distribution on Progress', () => {
 
 describe('the distance breakdown on the athlete profile', () => {
   it('buckets the runs by how far they went', async () => {
-    renderApp('/profile')
+    renderApp('/profile/weekday')
     const card = await screen.findByTestId('progress-distances')
 
     // The buckets are the athlete's own scale: the longest run in the
@@ -190,7 +192,7 @@ describe('the distance breakdown on the athlete profile', () => {
 
 describe('the training profile on the athlete profile', () => {
   it('shows the seven facets as values, and no shape', async () => {
-    renderApp('/profile')
+    renderApp('/profile/facets')
     const card = await screen.findByTestId('progress-profile')
 
     // The facets, each with its own value.
@@ -228,7 +230,7 @@ describe('the training profile on the athlete profile', () => {
 
 describe('the splits and the tables on the athlete profile', () => {
   it('places the runs on their weekday', async () => {
-    renderApp('/profile')
+    renderApp('/profile/weekday')
     const card = await screen.findByTestId('progress-weekday')
     expect(card.textContent).toContain('Monday')
     // The run of the Monday and how far it went.
@@ -236,7 +238,7 @@ describe('the splits and the tables on the athlete profile', () => {
   })
 
   it('names the hours of the daytime split', async () => {
-    renderApp('/profile')
+    renderApp('/profile/weekday')
     const card = await screen.findByTestId('progress-daytime')
     expect(card.textContent).toContain('Morning')
     // The cut points, in the athlete's own local time.
@@ -244,16 +246,12 @@ describe('the splits and the tables on the athlete profile', () => {
     expect(card.textContent).toContain('Night')
   })
 
-  it('holds the months and the years that have runs', async () => {
-    renderApp('/profile')
+  it('holds the months that have runs', async () => {
+    renderApp('/profile/months')
     const months = await screen.findByTestId('progress-months')
     expect(months.textContent).toContain('May 2026')
     expect(months.textContent).toContain('58.4 km')
     expect(months.textContent).toContain('February 2026')
-
-    const years = await screen.findByTestId('progress-years')
-    expect(years.textContent).toContain('2026')
-    expect(years.textContent).toContain('76.6 km')
   })
 })
 

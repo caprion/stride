@@ -35,44 +35,37 @@ import {
   renderedText,
 } from '../lib/format'
 import { runsPath, shiftDate } from '../lib/history'
-import {
-  ProfileRadar,
-  RADAR_AXES,
-  type RadarAxis,
-  type RadarSeries,
-} from '../components/ProfileRadar'
 import { axisTicks } from '../lib/chart'
-import { YearCalendar } from '../components/YearCalendar'
 import type {
-  ActivitySummary,
-  ProfileWindow,
   RollingInsight,
   StreakInsight,
   TodayInsight,
-  VitalsSnapshot,
   YearDay,
 } from '../lib/types'
 import {
   AdherencePanel,
-  ProfileScopePicker,
   ChallengePanel,
-  BestsPanel,
   ConsistencyPanel,
-  EddingtonPanel,
   LoadPanel,
-  ProfilePanel,
-  RollingPanel,
-  ShapePanel,
   VolumePanel,
-  ZonesDistributionPanel,
-  ZonesPanel,
   hour,
-  shapeRows,
-  MOVEMENT,
 } from './progressPanels'
+import { PaceBandsPanel, PaceCloudChart } from './pacePanels'
+import {
+  BestsPicture,
+  HabitPicture,
+  LedgerMatrix,
+  LongRunsSeries,
+  SchedulePicture,
+  ShapeGauges,
+  WeekPicture,
+  ZonePicture,
+  daysOf,
+  pictureRuns,
+} from '../components/wallPictures'
 import type { ProgressAnswers } from './useProgress'
 import type { WallAnswers } from './useWall'
-import { areasOf, WALL_CARDS, cardRoute, type WallCardId } from './taskAreas'
+import { cardsOf, WALL_CARDS, cardRoute, type WallCardId } from './taskAreas'
 
 /* ------------------------------------------------ the ways into the runs */
 
@@ -180,126 +173,17 @@ function Window({ children }: { children: ReactNode }) {
 /* ---------------------------------------------------------- the answers */
 
 /**
- * The six axes of the athlete profile, in the order they are drawn.
- *
- * The facets are the answer's own — the key, the name and the value are
- * the core's — and the order is the chart's.
- *
- * The value is the **comparable** one: the rate, or the average of the
- * runs. So the three windows can be read against each other.
- */
-function axesOf(rolling: RollingInsight | undefined): RadarAxis[] {
-  return RADAR_AXES.map((key) => {
-    const facet = rolling?.profile.find((entry) => entry.key === key)
-    return {
-      key,
-      label: facet?.label ?? key,
-      value: facet?.value?.raw ?? null,
-      text: facet?.value?.text ?? null,
-    }
-  })
-}
-
-/**
- * The athlete profile: three windows on one chart.
- *
- * The radar draws the three polygons and the table under it holds the
- * numbers behind them — the focused window and the window before it of
- * the same length — so a reader who cannot read the shape can still
- * read the values, the core's own rendering of each one.
- */
-export function ProfileRadarBody({
-  windows,
-  days,
-  onScope,
-}: {
-  /** The three windows the chart draws, one on the other. */
-  windows: ProfileWindow[]
-  /** The window the page is about, in days. */
-  days: number
-  /** The scope the athlete chooses. */
-  onScope: (days: number) => void
-}) {
-  const focused = windows.find((window) => window.days === days)?.rolling
-  const series: RadarSeries[] = windows.map((window) => ({
-    key: String(window.days),
-    label: t('progress.shape.legend', { days: window.days }),
-    axes: axesOf(window.rolling),
-  }))
-
-  if (series.length === 0) {
-    return <p className="text-[13px] text-ink-muted">{t('common.loading')}</p>
-  }
-
-  return (
-    <div data-testid="progress-wall-radar">
-      <ProfileScopePicker days={days} onChange={onScope} />
-      <ProfileRadar series={series} focus={String(days)} />
-      <Note>{t('progress.wall.profile.note')}</Note>
-      <p className="mt-1 text-[12px] text-ink-faint">{t('progress.shape.rates')}</p>
-      {focused ? (
-        <table className="mt-2 w-full table-fixed border-collapse text-[12px]">
-          <thead>
-            <tr>
-              <th className="w-[30%] pb-1 text-left text-[10.5px] uppercase tracking-wide text-ink-faint">
-                {t('progress.wall.profile.axis')}
-              </th>
-              <th className="w-[26%] pb-1 text-right text-[10.5px] uppercase tracking-wide text-ink-faint">
-                {t('progress.wall.profile.window', { days })}
-              </th>
-              <th className="w-[26%] pb-1 text-right text-[10.5px] uppercase tracking-wide text-ink-faint">
-                {t('progress.wall.profile.previous', { days })}
-              </th>
-              <th className="w-[18%] pb-1 text-right text-[10.5px] uppercase tracking-wide text-ink-faint">
-                {t('progress.shape.movement')}
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {shapeRows(focused).map((row) => (
-              <tr key={row.key} className="border-t border-edge">
-                <td className="py-1 pr-2 text-left text-ink-soft">{row.label}</td>
-                <td
-                  className="py-1 text-right font-semibold tabular-nums text-ink"
-                  data-testid={`progress-wall-radar-now-${row.key}`}
-                >
-                  {row.now?.text ?? ABSENT}
-                </td>
-                <td
-                  className="py-1 text-right tabular-nums text-ink-muted"
-                  data-testid={`progress-wall-radar-before-${row.key}`}
-                >
-                  {row.before?.text ?? ABSENT}
-                </td>
-                <td
-                  className="py-1 text-right tabular-nums text-ink-muted"
-                  data-testid={`progress-wall-radar-movement-${row.key}`}
-                >
-                  {row.movement
-                    ? t(MOVEMENT[row.movement] ?? 'progress.rolling.trend.steady.short')
-                    : ABSENT}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      ) : null}
-    </div>
-  )
-}
-
-/**
  * The activity heatmap: the year's days, coloured by how far the day went.
  *
  * The bands are the mock's own, and they are named in the legend under
  * the drawing, so the colour is never a mystery.
  */
 const DISTANCE_BANDS = [
-  { key: 'progress.wall.heatmap.none', colour: 'var(--surface-sunken)' },
-  { key: 'progress.wall.heatmap.l1', colour: 'var(--brand-100)' },
-  { key: 'progress.wall.heatmap.l2', colour: 'var(--brand-300)' },
-  { key: 'progress.wall.heatmap.l3', colour: 'var(--brand-500)' },
-  { key: 'progress.wall.heatmap.l4', colour: 'var(--brand-700)' },
+  { key: 'progress.wall.calendar.none', colour: 'var(--surface-sunken)' },
+  { key: 'progress.wall.calendar.l1', colour: 'var(--brand-100)' },
+  { key: 'progress.wall.calendar.l2', colour: 'var(--brand-300)' },
+  { key: 'progress.wall.calendar.l3', colour: 'var(--brand-500)' },
+  { key: 'progress.wall.calendar.l4', colour: 'var(--brand-700)' },
 ] as const
 
 /** The band's a day's distance falls in. */
@@ -326,7 +210,7 @@ export function DistanceCalendar({ days }: { days: YearDay[] }) {
       preserveAspectRatio="xMinYMin meet"
       className="block h-auto w-full"
       role="group"
-      aria-label={t('progress.wall.heatmap.legend')}
+      aria-label={t('progress.wall.calendar.legend')}
       data-testid="progress-wall-calendar"
     >
       {days.map((day, index) => {
@@ -361,7 +245,7 @@ export function DistanceCalendar({ days }: { days: YearDay[] }) {
             key={day.date}
             to={runsPath(day.date)}
             aria-label={runsName('day', formatDateShort(day.date))}
-            data-testid={`progress-wall-heatmap-${day.date}`}
+            data-testid={`progress-wall-calendar-${day.date}`}
           >
             {rect}
           </Link>
@@ -459,61 +343,6 @@ export function PaceBars({
         )
       })}
     </div>
-  )
-}
-
-/**
- * The most recent activities, as the mock's table: the date, the name,
- * the distance, the time and the heart rate.
- *
- * Every cell is the answer's own — the core's rendering of the distance,
- * the time and the heart rate — and a run with no heart rate says so.
- */
-export function ActivitiesTable({ activities }: { activities: ActivitySummary[] }) {
-  if (activities.length === 0) {
-    return <p className="text-[13px] text-ink-muted">{t('runs.empty.title')}</p>
-  }
-  return (
-    <table
-      className="w-full table-fixed border-collapse text-[12.5px]"
-      data-testid="progress-wall-activities-table"
-    >
-      <thead>
-        <tr>
-          {[
-            { key: 'date', label: t('progress.wall.date'), width: 'w-[22%]' },
-            { key: 'name', label: t('progress.wall.name'), width: 'w-[28%]' },
-            { key: 'distance', label: t('vital.distance'), width: 'w-[16%]' },
-            { key: 'time', label: t('vital.time'), width: 'w-[16%]' },
-            { key: 'heart', label: t('vital.heartRate'), width: 'w-[18%]' },
-          ].map((column) => (
-            <th
-              key={column.key}
-              className={`${column.width} pb-1 text-left text-[10.5px] uppercase tracking-wide text-ink-faint`}
-            >
-              {column.label}
-            </th>
-          ))}
-        </tr>
-      </thead>
-      <tbody>
-        {activities.map((activity) => (
-          <tr key={activity.id} className="border-t border-edge align-top">
-            <td className="py-1 pr-2 text-ink-soft">{formatDateShort(activity.local_date)}</td>
-            <td className="py-1 pr-2 break-words text-ink-soft">{activity.name}</td>
-            <td className="py-1 pr-2 tabular-nums text-ink">
-              {renderedText(activity.distance)}
-            </td>
-            <td className="py-1 pr-2 tabular-nums text-ink">
-              {renderedText(activity.duration)}
-            </td>
-            <td className="py-1 tabular-nums text-ink">
-              {activity.heart_rate ? renderedText(activity.heart_rate) : ABSENT}
-            </td>
-          </tr>
-        ))}
-      </tbody>
-    </table>
   )
 }
 
@@ -746,20 +575,6 @@ export function MonthsChart({ rolling }: { rolling: RollingInsight | undefined }
   )
 }
 
-/** The years of the history, as the mock's chart. */
-export function YearsChart({ rolling }: { rolling: RollingInsight | undefined }) {
-  const rows = (rolling?.years ?? []).map((year) => ({
-    label: year.label,
-    km: year.distance?.raw == null ? null : year.distance.raw / 1000,
-    text: year.distance?.text ?? null,
-  }))
-  if (rows.length === 0)
-    return <p className="text-[13px] text-ink-muted">{t('progress.rolling.noRows')}</p>
-  return (
-    <PeriodBars rows={rows} testId="progress-years" label={t('progress.wall.years.heading')} />
-  )
-}
-
 /**
  * The weekday split, as the mock's table: the day, the runs and how far
  * they went.
@@ -897,40 +712,6 @@ export function DistancesTable({ rolling }: { rolling: RollingInsight | undefine
 }
 
 /**
- * Last night, as the mock's card: each reading and how it sits against
- * the athlete's own usual.
- */
-export function VitalsBody({ vitals }: { vitals: VitalsSnapshot | undefined }) {
-  if (!vitals) return <p className="text-[13px] text-ink-muted">{t('common.loading')}</p>
-  const readings = vitals.vitals ?? []
-  if (readings.length === 0) {
-    return <p className="text-[13px] text-ink-muted">{t('today.state.noVitals')}</p>
-  }
-  return (
-    <div data-testid="progress-wall-vitals">
-      <dl className="space-y-1.5">
-        {readings.map((reading) => (
-          <div key={reading.key} className="flex items-baseline justify-between gap-3">
-            <dt className="text-[12.5px] text-ink-soft">{reading.label}</dt>
-            <dd className="text-right">
-              <span className="text-[15px] font-semibold tabular-nums text-ink">
-                {reading.value_text ?? ABSENT}
-              </span>
-              {reading.direction_text ? (
-                <span className="ml-1.5 text-[11.5px] text-ink-muted">
-                  {reading.direction_text}
-                </span>
-              ) : null}
-            </dd>
-          </div>
-        ))}
-      </dl>
-      <Note>{t('progress.wall.body.note')}</Note>
-    </div>
-  )
-}
-
-/**
  * The weeks of the window, each one a doorway into that week's runs.
  *
  * The rolling window is the range the screen is showing, and its weeks
@@ -1033,16 +814,9 @@ export function ProgressWall({
 }) {
   const { data, load, rolling, streaks } = answers
   const {
-    today,
     year,
     pace,
-    activities,
     profile,
-    profileWindows,
-    profileScope,
-    profileError,
-    setProfileDays,
-    vitals,
   } = wall
 
   /**
@@ -1058,6 +832,49 @@ export function ProgressWall({
   })
 
   /**
+   * The runs the pictures are drawn from.
+   *
+   * **The feed is the answer for a picture about the runs themselves.**
+   * The window's runs are the range the screen is showing; the profile's
+   * runs are the profile's own window, and the two are never mixed.
+   */
+  const rangeRuns = pictureRuns(answers.windowRuns.data?.activities)
+
+  /**
+   * The window's calendar weeks.
+   *
+   * **They are the weeks the window covers**, whether or not a run fell
+   * in them: a week with no run is a hole in the matrix, and the hole
+   * has to have a column of its own to be drawn in.
+   */
+  const windowCalendarWeeks = rolling.data
+    ? daysOf(rolling.data.window.from, rolling.data.window.to).filter(
+        (_, index) => index % 7 === 0,
+      )
+    : []
+  const profileRuns = pictureRuns(wall.profileRuns.data?.activities)
+
+  /**
+   * This week, as a picture.
+   *
+   * **The comparison is in the picture.** The seven columns are this
+   * week's days, and the same days of the previous week stand beside
+   * them, so the difference is read off the drawing and not out of a
+   * sentence.
+   */
+  const todayWeek = answers.today.data?.week
+  const weekPicture = todayWeek ? (
+    <WeekPicture
+      runs={rangeRuns}
+      days={todayWeek.days.map((day) => day.date)}
+      previousDays={daysOf(todayWeek.previous.from, todayWeek.previous.to)}
+      difference={todayWeek.difference ?? null}
+    />
+  ) : (
+    <p className="text-[13px] text-ink-muted">{t('common.loading')}</p>
+  )
+
+  /**
    * The cards of the wall, each one exactly once.
    *
    * The map is keyed by the card's own id, so a card that is missing is
@@ -1065,6 +882,13 @@ export function ProgressWall({
    * The name of a card and the route it opens both come from the model.
    */
   const cards: Record<WallCardId, ReactNode> = {
+    /* --------------------------------- this week, and the window it is in */
+    week: (
+      <WallCard title={cardTitle('week')} to={cardRoute('week')} testId="progress-wall-week">
+        {weekPicture}
+      </WallCard>
+    ),
+
     /* -------------------------------------------- the training load */
     load: (
       <WallCard title={cardTitle('load')} to={cardRoute('load')} testId="progress-wall-load">
@@ -1074,13 +898,9 @@ export function ProgressWall({
       </WallCard>
     ),
 
-    /* --------------------------------------------- the weekly volume */
-    volume: (
-      <WallCard
-        title={cardTitle('volume')}
-        to={cardRoute('volume')}
-        testId="progress-wall-volume"
-      >
+    /* ------------------------------------ the weeks, and the sessions */
+    weeks: (
+      <WallCard title={cardTitle('weeks')} to={cardRoute('weeks')} testId="progress-wall-weeks">
         <VolumePanel
           volume={answers.volume}
           ticks={answers.volumeTicks}
@@ -1088,58 +908,33 @@ export function ProgressWall({
           onWeekClick={onWeekClick}
           bare
         />
-      </WallCard>
-    ),
-
-    /* ----------------------------------------------- the consistency */
-    consistency: (
-      <WallCard
-        title={cardTitle('consistency')}
-        to={cardRoute('consistency')}
-        testId="progress-wall-consistency"
-      >
-        <ConsistencyPanel consistency={answers.consistency} bare />
-      </WallCard>
-    ),
-
-    /* ---------------------------------------------- the time in zones */
-    zones: (
-      <WallCard
-        title={cardTitle('zones')}
-        to={cardRoute('zones')}
-        testId="progress-wall-zones"
-      >
-        <ZonesDistributionPanel rolling={rolling.data} bare />
-      </WallCard>
-    ),
-
-    /* ---------------------------------------------- the polarised split */
-    split: (
-      <WallCard
-        title={cardTitle('split')}
-        to={cardRoute('split')}
-        testId="progress-wall-split"
-      >
-        <ZonesPanel rolling={rolling.data} bare />
-      </WallCard>
-    ),
-
-    /* --------------------------------- this week against last week */
-    week: (
-      <WallCard title={cardTitle('week')} to={cardRoute('week')} testId="progress-wall-week">
-        <WeekBody today={today.data} />
-      </WallCard>
-    ),
-
-    /* --------------------------------------------- the rolling window */
-    window: (
-      <WallCard
-        title={cardTitle('window')}
-        to={cardRoute('window')}
-        testId="progress-wall-window"
-      >
-        <RollingPanel rolling={rolling.data} error={rolling.isError} bare />
+        <div className="mt-3">
+          <ConsistencyPanel consistency={answers.consistency} bare />
+        </div>
         <WindowWeeks weeks={answers.weeks} runs={windowRuns} />
+      </WallCard>
+    ),
+
+    /* ----------------------------------------- where the time went */
+    time: (
+      <WallCard title={cardTitle('time')} to={cardRoute('time')} wide testId="progress-wall-time">
+        {/*
+          The ledger: the one bar, the weeks × bands matrix, and the
+          longest runs. **The source line is hoisted to the screen** —
+          it is named once, above the cards, and no card repeats it.
+        */}
+        <ZonePicture rolling={rolling.data} />
+        <div className="mt-3">
+          <LedgerMatrix weeks={windowCalendarWeeks} rows={rolling.data?.zones.weeks ?? []} />
+        </div>
+        <div className="mt-3">
+          <LongRunsSeries runs={rangeRuns} />
+        </div>
+        <p className="mt-2 text-[12px] text-ink-faint" data-testid="progress-wall-time-window">
+          {rolling.data
+            ? t('progress.rolling.window', { days: rolling.data.window.days })
+            : null}
+        </p>
       </WallCard>
     ),
 
@@ -1152,13 +947,30 @@ export function ProgressWall({
         testId="progress-wall-pace"
         openTestId="progress-pace-link"
       >
-        {pace.data ? (
+        {pace.data && pace.data.weeks.length === 0 ? (
+          /* No run in the window: there is no pace to draw, and the card
+             says so rather than drawing an empty chart. */
+          <p className="text-[13px] text-ink-muted" data-testid="progress-wall-pace-empty">
+            {t('pace.empty.title')}
+          </p>
+        ) : null}
+        {pace.data && pace.data.weeks.length > 0 ? (
           <>
             <BigValue>
               {t('progress.wall.pace.weeks', { n: formatCount(pace.data.window.weeks) })}
             </BigValue>
             <Note>{t('progress.wall.pace.note')}</Note>
             <PaceBars pace={pace.data.weeks} />
+            <div className="mt-3">
+              <PaceCloudChart weeks={pace.data.weeks} bare />
+            </div>
+            <div className="mt-3">
+              <PaceBandsPanel
+                bands={pace.data.bands}
+                unavailable={pace.data.unavailable}
+                bare
+              />
+            </div>
             <Window>
               {pace.data.window.from_label} – {pace.data.window.to_label}
             </Window>
@@ -1176,136 +988,19 @@ export function ProgressWall({
         to={cardRoute('bests')}
         testId="progress-wall-bests"
       >
-        {data ? <BestsPanel bests={data.bests} bare /> : null}
+        <BestsPicture runs={rangeRuns} bests={data?.bests ?? []} />
       </WallCard>
     ),
 
-    /* ------------------------------------------ the athlete profile */
-    profile: (
-      <WallCard
-        title={cardTitle('profile')}
-        to={cardRoute('profile')}
-        testId="progress-wall-profile"
-      >
-        <ShapePanel
-          windows={profileWindows}
-          error={profileError}
-          days={profileScope.days}
-          onScope={setProfileDays}
-          bare
-        />
-      </WallCard>
-    ),
-
-    /* ------------------------------------------- the training profile */
-    facets: (
-      <WallCard
-        title={cardTitle('facets')}
-        to={cardRoute('facets')}
-        testId="progress-wall-facets"
-      >
+    /* ------------------------------------------- the athlete's shape */
+    shape: (
+      <WallCard title={cardTitle('shape')} to={cardRoute('shape')} testId="progress-wall-shape">
         {/* The facets are the profile's own facets, so they are read
-            over the **profile's scope** and not the page's range: the
-            two cards of the shape must not say "84 days" and "91 days"
-            beside each other. */}
-        <ProfilePanel rolling={profile} bare />
-      </WallCard>
-    ),
-
-    /* -------------------------------------------------- the challenges */
-    challenges: (
-      <WallCard
-        title={cardTitle('challenges')}
-        to={cardRoute('challenges')}
-        testId="progress-wall-challenges"
-      >
-        <ChallengePanel challenges={answers.challenges.data} bare />
-      </WallCard>
-    ),
-
-    /* --------------------------------------------------- the adherence */
-    adherence: data?.adherence ? (
-      <WallCard
-        title={cardTitle('adherence')}
-        to={cardRoute('adherence')}
-        testId="progress-wall-adherence"
-      >
-        <AdherencePanel adherence={data.adherence} bare />
-      </WallCard>
-    ) : null,
-
-    /* ------------------------------------------------- the weekday split */
-    weekday: (
-      <WallCard
-        title={cardTitle('weekday')}
-        to={cardRoute('weekday')}
-        wide
-        testId="progress-wall-weekday"
-      >
-        <WeekdayTable rolling={profile} />
-      </WallCard>
-    ),
-
-    /* ------------------------------------------------- the daytime split */
-    daytime: (
-      <WallCard
-        title={cardTitle('daytime')}
-        to={cardRoute('daytime')}
-        testId="progress-wall-daytime"
-      >
-        <DaytimeTable rolling={profile} />
-      </WallCard>
-    ),
-
-    /* --------------------------------------------- the distance breakdown */
-    distances: (
-      <WallCard
-        title={cardTitle('distances')}
-        to={cardRoute('distances')}
-        testId="progress-wall-distances"
-      >
-        <DistancesTable rolling={profile} />
-      </WallCard>
-    ),
-
-    /* ------------------------------------------------- the year */
-    year: (
-      <WallCard title={cardTitle('year')} to={cardRoute('year')} wide testId="progress-wall-year">
-        {year.data ? (
-          <>
-            <BigValue>
-              {t('progress.wall.year.months', { n: formatCount(year.data.months.length) })}
-            </BigValue>
-            <Note>{t('progress.wall.year.note')}</Note>
-            <Window>
-              {year.data.window.from_label} – {year.data.window.to_label}
-            </Window>
-            <div className="mt-2">
-              <YearCalendar days={year.data.days} />
-            </div>
-          </>
-        ) : (
-          <p className="text-[13px] text-ink-muted">{t('common.loading')}</p>
-        )}
-      </WallCard>
-    ),
-
-    /* -------------------------------------------- the activity heatmap */
-    heatmap: (
-      <WallCard
-        title={cardTitle('heatmap')}
-        to={cardRoute('heatmap')}
-        wide
-        testId="progress-wall-heatmap"
-      >
-        {year.data ? (
-          <>
-            <DistanceCalendar days={year.data.days} />
-            <DistanceLegend />
-          </>
-        ) : (
-          <p className="text-[13px] text-ink-muted">{t('common.loading')}</p>
-        )}
+            over the **profile's scope** and not the page's range. */}
+        <ShapeGauges facets={profile?.profile ?? []} />
+        <p className="mt-2 text-[12px] text-ink-faint" data-testid="progress-wall-shape-window">
+          {t('progress.rolling.window', { days: profile?.window.days ?? 0 })}
+        </p>
       </WallCard>
     ),
 
@@ -1318,58 +1013,49 @@ export function ProgressWall({
         testId="progress-wall-months"
       >
         <MonthsChart rolling={profile} />
+        {year.data ? (
+          <div className="mt-3">
+            <DistanceCalendar days={year.data.days} />
+            <DistanceLegend />
+          </div>
+        ) : null}
       </WallCard>
     ),
 
-    /* ---------------------------------------------------- the years */
-    years: (
+    /* ------------------------------------------------ the schedule */
+    schedule: (
       <WallCard
-        title={cardTitle('years')}
-        to={cardRoute('years')}
-        testId="progress-wall-years"
-      >
-        <YearsChart rolling={profile} />
-      </WallCard>
-    ),
-
-    /* --------------------------------------------------- the streaks */
-    streaks: (
-      <WallCard
-        title={cardTitle('streaks')}
-        to={cardRoute('streaks')}
-        testId="progress-wall-streaks"
-      >
-        <StreaksBody streaks={streaks.data} />
-      </WallCard>
-    ),
-
-    /* ----------------------------------------------- the Eddington number */
-    eddington: (
-      <WallCard
-        title={cardTitle('eddington')}
-        to={cardRoute('eddington')}
-        testId="progress-wall-eddington"
-      >
-        {data ? <EddingtonPanel data={data} bare /> : null}
-      </WallCard>
-    ),
-
-    /* ----------------------------------- the most recent activities */
-    activities: (
-      <WallCard
-        title={cardTitle('activities')}
-        to={cardRoute('activities')}
+        title={cardTitle('schedule')}
+        to={cardRoute('schedule')}
         wide
-        testId="progress-wall-activities"
+        testId="progress-wall-schedule"
       >
-        <ActivitiesTable activities={activities.data?.activities ?? []} />
+        <SchedulePicture rolling={profile} />
       </WallCard>
     ),
 
-    /* ------------------------------------------------- last night */
-    body: (
-      <WallCard title={cardTitle('body')} to={cardRoute('body')} testId="progress-wall-body">
-        <VitalsBody vitals={vitals.data} />
+    /* --------------------------------------------------- the habit */
+    habit: (
+      <WallCard title={cardTitle('habit')} to={cardRoute('habit')} testId="progress-wall-habit">
+        <HabitPicture
+          runs={profileRuns}
+          from={profile?.window.from ?? ''}
+          to={profile?.window.to ?? ''}
+          streak={streaks.data?.days.current ?? null}
+          eddington={data?.eddington ?? null}
+        />
+      </WallCard>
+    ),
+
+    /* --------------------------------------------------- the goals */
+    goals: (
+      <WallCard title={cardTitle('goals')} to={cardRoute('goals')} testId="progress-wall-goals">
+        <ChallengePanel challenges={answers.challenges.data} bare />
+        {data?.adherence ? (
+          <div className="mt-3">
+            <AdherencePanel adherence={data.adherence} bare />
+          </div>
+        ) : null}
       </WallCard>
     ),
   }
@@ -1377,25 +1063,40 @@ export function ProgressWall({
   return (
     <div className="progress-grid mt-3" data-testid="progress-wall">
       {/*
-        The wall draws the model's areas, in the model's order. An area
-        is a heading and nothing more: it names the group of cards and
-        says nothing about them.
+        The source line, hoisted.
+
+        **One per screen.** The zone model the window was measured
+        against is named once, here, and the list of the models is behind
+        a click — no card repeats it, and an answer that used a different
+        model says so in place.
       */}
-      {areasOf(destination).map((area) => (
-        <section
-          key={area.id}
-          className="progress-area"
-          data-testid={`progress-area-${area.id}`}
+      {destination === 'progress' && rolling.data?.zones.source ? (
+        <p
+          className="col-span-full text-[11.5px] text-ink-faint"
+          data-testid="progress-wall-zones-source"
         >
-          <h2 className="progress-area__heading text-[12px] font-semibold uppercase tracking-[0.07em] text-ink-faint">
-            {t(area.titleKey)}
-          </h2>
-          <div className="progress-area__grid">
-            {area.cards.map((id) => (
-              <Fragment key={id}>{cards[id]}</Fragment>
-            ))}
-          </div>
-        </section>
+          {rolling.data.zones.source}
+          {rolling.data.zones.models.length > 1 ? (
+            <details className="ml-1 inline" data-testid="progress-wall-zones-models">
+              <summary className="inline cursor-pointer">
+                {t('progress.rolling.zones.models')}
+              </summary>
+              <ul className="mt-1 space-y-0.5">
+                {rolling.data.zones.models.map((model) => (
+                  <li key={model.read_on}>{model.source}</li>
+                ))}
+              </ul>
+            </details>
+          ) : null}
+        </p>
+      ) : null}
+      {/*
+        The wall draws the model's cards, in the model's order. A card
+        is a question, and the panel behind it answers it: six cards on
+        Progress, five on the athlete profile.
+      */}
+      {cardsOf(destination).map((card) => (
+        <Fragment key={card.id}>{cards[card.id]}</Fragment>
       ))}
     </div>
   )

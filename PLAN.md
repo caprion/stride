@@ -314,6 +314,88 @@ what to do about either.
 This travels with the frozen route change (the `eddington` field of
 `/insights/progress`) in `docs/contract/api-paths.md`.
 
+### Proposed amendment — the ledger's weeks, and the band each one held (2026-11-24)
+
+**Proposal, not approved.** The approvals below are the user's to give. This
+section records the change and the rule it serves; it is not permission to
+ship, publish, migrate or sync production data.
+
+The wall's *Where the time went* card was one bar: how much of the window's
+time fell in each of the athlete's own zones, and the share of the time in
+the zones that was. That is the **whole window in one number per band**,
+and it cannot say *when* the training was hard. A five-week hole in the
+hard band and a window that was hard in one week look the same.
+
+The rule this serves: **absence is drawn, not described** — and a hole in
+the training has to be a hole in a picture, with the week it fell in named.
+
+What changes:
+
+- **`/insights/rolling` carries `zones.weeks`**: one row per calendar week
+  of the window that carries a run, oldest first, with the time in each of
+  the three bands that week. The weeks come from the **same**
+  time-in-zone computation as the bands, so a week cannot disagree with
+  the window it belongs to.
+- **A band with no time in a week is no value, never a zero.** The field
+  is absent for that band in that week, so the card can draw the absence
+  as white space: a week with no hard running is a hole in the high row.
+- The card draws the **weeks × bands matrix**, each row scaled to its own
+  busiest week, so a small row is still readable.
+
+This is a **contract change**: `docs/contract/api-paths.md` names the
+`/insights/rolling` shape and the zones, and both move with it.
+
+**What this does not settle.** The ledger's two *shape* rows — the longest
+run and the repeated work — are not in this change. The repeated work is
+the watch's own workout steps, and the corpus carries none: the decode
+cannot be proven end to end until the step names are decoded, and the
+frozen corpus is not the place to make them.
+
+### Proposed amendment — one chart on the run detail, over the run's own time (2026-11-24)
+
+**Proposal, not approved.** The approvals below are the user's to give. This
+section records the change and the rule it serves; it is not permission to
+ship, publish, migrate or sync production data.
+
+The run detail drew **three charts of one run**: the heart rate with the
+athlete's own zone bands behind it, the pace below it, and the altitude on
+its own axis. Three charts, three axes, two cursors, and a reader who had
+to hold three pictures of one run in their head to answer "how hard was
+that, and where".
+
+The rule this serves: **the surface carries the picture, its labels, the
+numbers, the period, and the reason something is missing** — and one run
+is one picture. Every observation the core makes about a run is a
+difference of **times**: the pace drift and the heart-rate drift are
+"second half minus first half", the decoupling is the heart rate's rise
+against the pace's, and the time in a zone is seconds of moving time. A
+stopped stretch covers no distance but is real elapsed time, and the
+product has a whole bucket for it — on a distance axis it would vanish.
+
+What changes:
+
+- **The samples carry the distance, the altitude and the movement kind**
+  beside the pace and the heart rate. One series, one axis: the seconds
+  from the start.
+- **The separate elevation array goes.** It was the same altitude on a
+  distance axis, and the run detail now reads the altitude off the
+  samples, over the time it was covered.
+- **The run detail draws one chart**: the pace and the heart rate over the
+  elapsed time, the athlete's own zone bands behind the heart rate, and
+  **one cursor** over both. The altitude keeps **its own scale and its own
+  metres label**, and it is **off by default** — the ground is scenery,
+  not an effort signal.
+- **The effort table keeps what it carries**: the zone numbers, the *not
+  moving* bucket and the model's source line. The chart shows a shape; the
+  table shows the bands, and the two are read together.
+- **The movement kind is the classification the zones already measure.**
+  The ingest classifies and the core reads, so the chart's stopped
+  stretches and the table's *not moving* bucket cannot disagree.
+
+This is a **contract change**: `docs/contract/api-paths.md` names the
+sample's fields and the run detail's elevation array, and both move with
+it.
+
 ### Proposed amendment — a stopped stretch is not time in a zone (2026-11-23)
 
 **Proposal, not approved.** The approvals below are the user's to give. This

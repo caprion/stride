@@ -481,6 +481,7 @@ export const rollingEmptyFixture: RollingInsight = {
     source: null,
     shares: null,
     distribution: null,
+    weeks: [],
     unavailable: 'zones unavailable — no zone model has been read',
   },
   weekday: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].map(

@@ -402,6 +402,18 @@ fn one_run_carries_the_shape_the_app_declares() {
             point["heart_rate"].is_null() || point["heart_rate"].is_object(),
             "the sample's heart rate is not a rendered value"
         );
+        assert!(
+            point["distance_m"].is_null() || point["distance_m"].is_object(),
+            "the sample's distance is not a rendered value"
+        );
+        assert!(
+            point["altitude_m"].is_null() || point["altitude_m"].is_object(),
+            "the sample's altitude is not a rendered value"
+        );
+        assert!(
+            point["kind"].is_null() || point["kind"].is_string(),
+            "the sample's kind is not a name"
+        );
     }
 }
 

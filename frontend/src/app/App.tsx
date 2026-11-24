@@ -19,7 +19,6 @@ import { ProgressPanelPage } from '../pages/ProgressPanelPage'
 import { ProfilePage, ProfilePanelPage } from '../pages/ProfilePage'
 import { panelDestination } from '../pages/taskAreas'
 
-import { PacePage } from '../pages/PacePage'
 import { BodyPage } from '../pages/BodyPage'
 import { ComparePage } from '../pages/ComparePage'
 import { PlanWeekPage } from '../pages/PlanWeekPage'
@@ -123,11 +122,11 @@ function AppRoutes() {
       <Route path="/profile/:panel" element={<ProfilePanelPage />} />
 
       {/*
-        The pace page is reached from Progress, the way the heatmap is
-        reached from Runs: it is not a destination of its own, and the
-        athlete asks for it.
+        The pace page is gone: the pace is drawn on Progress's own card,
+        and on the panel behind it. A link someone saved lands on that
+        panel — the same answer, on the screen that owns it.
       */}
-      <Route path="/pace" element={<PacePage />} />
+      <Route path="/pace" element={<Navigate to="/progress/pace" replace />} />
 
       {/*
         The year, as a film: the twelve months, the calendar of the days

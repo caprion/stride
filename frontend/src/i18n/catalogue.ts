@@ -109,10 +109,8 @@ export const catalogue = {
   'activity.zones.stopped': { type: 'status', text: 'Not moving' },
   'activity.zones.missing': { type: 'status', text: 'Time outside your zones' },
   'settings.preferences': { type: 'status', text: 'Training preferences' },
-  'settings.files': { type: 'status', text: 'Files and app information' },
   'settings.sections': { type: 'status', text: 'Settings sections' },
   'settings.tab.data': { type: 'status', text: 'Data' },
-  'common.saving': { type: 'status', text: 'Saving...' },
   'common.saveFailed': {
     type: 'status',
     text: 'This was not saved. Your changes are still here.',
@@ -124,7 +122,6 @@ export const catalogue = {
 
   // ------------------------------------------------------------- today
   'today.heading': { type: 'status', text: 'Today' },
-  'today.vitals.heading': { type: 'status', text: 'Vitals' },
   'today.session.source.imported': { type: 'status', text: 'from your imported plan' },
   'today.session.source.baseline': { type: 'status', text: 'from your inferred baseline' },
   'today.session.source.typed': { type: 'status', text: 'from your plan' },
@@ -143,7 +140,6 @@ export const catalogue = {
   'today.streak.daysLongest': { type: 'status', text: 'Longest days in a row' },
   'today.streak.weeks': { type: 'status', text: 'Weeks in a row' },
   'today.streak.weeksLongest': { type: 'status', text: 'Longest weeks in a row' },
-  'today.streak.longest': { type: 'status', text: 'Longest' },
   'today.streak.since': { type: 'status', text: 'since {date}' },
   'today.streak.range': { type: 'status', text: '{from} – {to}' },
   'today.streak.none': { type: 'status', text: 'no streak' },
@@ -194,7 +190,6 @@ export const catalogue = {
   'today.state.connectFailed': { type: 'status', text: 'The setup screen did not open' },
   'today.state.stale.days': { type: 'status', text: 'last synced {n} days ago' },
   'today.state.stale.hours': { type: 'status', text: 'last synced {n} hours ago' },
-  'today.state.stale.minutes': { type: 'status', text: 'last synced {n} minutes ago' },
   'today.state.syncIncomplete': { type: 'status', text: 'The last sync did not complete' },
   'today.state.historyPending': {
     type: 'status',
@@ -261,9 +256,6 @@ export const catalogue = {
   'runs.compareWith': { type: 'status', text: 'Compare with…' },
   'runs.addNote': { type: 'status', text: 'Add a note' },
   'runs.loadMore': { type: 'status', text: 'Load more' },
-  'runs.filter.all': { type: 'status', text: 'All' },
-  'runs.filter.runs': { type: 'status', text: 'Runs' },
-  'runs.filter.other': { type: 'status', text: 'Other' },
   'runs.search': { type: 'status', text: 'Search saved activities' },
   'runs.from': { type: 'status', text: 'From date' },
   'runs.to': { type: 'status', text: 'Through date' },
@@ -300,22 +292,56 @@ export const catalogue = {
   'progress.wall.runs.week': { type: 'status', text: 'The runs of the week starting {date}' },
   'progress.wall.runs.month': { type: 'status', text: 'The runs of {month}' },
   'progress.wall.window.weeks': { type: 'status', text: 'The weeks of the window' },
-  'progress.wall.year.heading': { type: 'status', text: 'The year' },
-  'progress.wall.year.months': { type: 'status', text: '{n} months' },
-  'progress.wall.year.note': {
+  /*
+    The eleven cards of the wall.
+
+    **A card is a question.** The name is the question and the picture
+    under it is the answer, so the names are short and they name the
+    thing: this week, the load, the weeks, where the time went, the
+    pace, the bests — and on the athlete profile, the shape, the months,
+    the schedule, the habit and the goals.
+  */
+  'progress.wall.thisWeek.heading': { type: 'status', text: 'This week' },
+  'progress.wall.load.heading': { type: 'status', text: 'The load' },
+  'progress.wall.weeks.heading': { type: 'status', text: 'The weeks' },
+  'progress.wall.time.heading': { type: 'status', text: 'Where the time went' },
+  'progress.wall.shape.heading': { type: 'status', text: 'Your shape' },
+  'progress.wall.schedule.heading': { type: 'status', text: 'The schedule' },
+  'progress.wall.habit.heading': { type: 'status', text: 'The habit' },
+  'progress.wall.goals.heading': { type: 'status', text: 'The goals' },
+  /*
+    The pictures' own words.
+
+    **A drawing is read by eye, and its labels are read aloud.** These
+    are the names the pictures carry: the key of a strip, the note under
+    a bar, the sentence that says a window holds nothing.
+  */
+  'progress.wall.week.picture': {
     type: 'status',
-    text: 'The year as a calendar, coloured by the zones you were in.',
+    text: 'This week, and the same days of the previous week.',
   },
+  'progress.wall.week.now': { type: 'status', text: 'this week' },
+  'progress.wall.week.previous': { type: 'status', text: 'the same days of the previous week' },
+  'progress.wall.week.difference': {
+    type: 'status',
+    text: '{difference} against the same days of the previous week',
+  },
+  'progress.wall.time.picture': { type: 'status', text: 'The time in each of the five zones.' },
+  'progress.wall.bests.empty': { type: 'status', text: 'No run recorded in the window.' },
+  'progress.wall.shape.empty': { type: 'status', text: 'No run recorded in the window.' },
+  'progress.wall.schedule.timeOfDay': { type: 'status', text: 'the time of day' },
+  'progress.wall.habit.picture': {
+    type: 'status',
+    text: 'A mark for every day of the window, filled where the day held a run.',
+  },
+  'progress.wall.habit.streak': { type: 'status', text: '{count} days in a row' },
+  'progress.wall.habit.eddington': { type: 'status', text: 'Eddington {n}' },
   'progress.wall.pace.heading': { type: 'status', text: 'The pace' },
   'progress.wall.pace.weeks': { type: 'status', text: '{n} weeks' },
   'progress.wall.pace.note': {
     type: 'status',
     text: 'The training week by week, and where the time went by pace.',
   },
-  'progress.wall.activities.heading': { type: 'status', text: 'Most recent activities' },
-  'progress.wall.date': { type: 'status', text: 'Date' },
-  'progress.wall.name': { type: 'status', text: 'Name' },
-  'progress.wall.week.heading': { type: 'status', text: 'This week against last week' },
   'progress.wall.week.distance': { type: 'status', text: 'Distance this week' },
   'progress.wall.week.sessions': { type: 'status', text: 'Recorded sessions' },
   'progress.wall.week.before': { type: 'status', text: 'The days before' },
@@ -323,17 +349,22 @@ export const catalogue = {
     type: 'status',
     text: '{from} – {to}, against {beforeFrom} – {beforeTo}.',
   },
-  'progress.wall.heatmap.heading': { type: 'status', text: 'Activity heatmap' },
-  'progress.wall.heatmap.legend': {
+  /*
+    The calendar of the year, coloured by the distance of the day.
+
+    **One calendar, and it is the wall's own.** The other calendar — the
+    one the year page draws — is a different thing, and the two are no
+    longer called the same thing.
+  */
+  'progress.wall.calendar.legend': {
     type: 'status',
     text: 'The days of the year, by distance.',
   },
-  'progress.wall.heatmap.none': { type: 'status', text: 'no run' },
-  'progress.wall.heatmap.l1': { type: 'status', text: 'under 5 km' },
-  'progress.wall.heatmap.l2': { type: 'status', text: '5–10 km' },
-  'progress.wall.heatmap.l3': { type: 'status', text: '10–15 km' },
-  'progress.wall.heatmap.l4': { type: 'status', text: 'over 15 km' },
-  'progress.wall.streaks.heading': { type: 'status', text: 'Streaks' },
+  'progress.wall.calendar.none': { type: 'status', text: 'no run' },
+  'progress.wall.calendar.l1': { type: 'status', text: 'under 5 km' },
+  'progress.wall.calendar.l2': { type: 'status', text: '5–10 km' },
+  'progress.wall.calendar.l3': { type: 'status', text: '10–15 km' },
+  'progress.wall.calendar.l4': { type: 'status', text: 'over 15 km' },
   'progress.wall.streaks.days': { type: 'status', text: 'Days' },
   'progress.wall.streaks.weeks': { type: 'status', text: 'Weeks' },
   'progress.wall.streaks.months': { type: 'status', text: 'Months' },
@@ -375,61 +406,14 @@ export const catalogue = {
     type: 'status',
     text: 'Four questions, and your answer to each.',
   },
-  'progress.profile.index.goals.question': { type: 'status', text: 'The goals' },
-  'progress.profile.index.schedule.question': { type: 'status', text: 'The schedule' },
-  'progress.profile.index.seasons.question': { type: 'status', text: 'The seasons' },
   'progress.profile.index.goals.empty': { type: 'status', text: 'No challenges yet' },
-  'progress.profile.index.habit.question': { type: 'status', text: 'The months in a row' },
-  'progress.profile.index.month': { type: 'status', text: '{n} month in a row' },
-  'progress.profile.index.months': { type: 'status', text: '{n} months in a row' },
 
-  'progress.area.work': { type: 'status', text: 'The work' },
-  'progress.area.time': { type: 'status', text: 'Where the time went' },
-  'progress.area.comparison': { type: 'status', text: 'The comparison' },
-  'progress.area.pace': { type: 'status', text: 'The pace and the results' },
-  'progress.area.shape': { type: 'status', text: 'The shape' },
-  'progress.area.goals': { type: 'status', text: 'The goals' },
-  'progress.area.schedule': { type: 'status', text: 'The schedule and the run lengths' },
-  'progress.area.seasons': { type: 'status', text: 'The seasons' },
-  'progress.area.habit': { type: 'status', text: 'The habit' },
-  'progress.area.elsewhere': { type: 'status', text: 'Somewhere else' },
-
-  'progress.wall.profile.heading': { type: 'status', text: 'The athlete profile' },
-  'progress.wall.profile.alt': {
-    type: 'status',
-    text: 'The athlete profile: three windows on one chart, each axis scaled to the largest of the three.',
-  },
-  'progress.wall.profile.axis': { type: 'status', text: 'The axis' },
-  'progress.wall.profile.previous': {
-    type: 'status',
-    text: 'the {days} days before',
-  },
-  'progress.wall.profile.window': { type: 'status', text: 'The last {days} days' },
-  'progress.wall.profile.note': {
-    type: 'status',
-    text: 'Each axis is scaled to the largest of the three windows.',
-  },
-  'progress.wall.zones.heading': { type: 'status', text: 'Time in each zone' },
-  'progress.wall.split.heading': { type: 'status', text: 'Polarised split' },
-  'progress.wall.split.note': {
-    type: 'status',
-    text: 'Low, moderate and high — the share of the time in each.',
-  },
-  'progress.wall.weekday.heading': { type: 'status', text: 'Stats per weekday' },
   'progress.wall.day': { type: 'status', text: 'Day' },
   'progress.wall.timeOfDay': { type: 'status', text: 'Time of day' },
-  'progress.wall.daytime.heading': { type: 'status', text: 'Daytime stats' },
-  'progress.wall.distances.heading': { type: 'status', text: 'Distance breakdown' },
   'progress.wall.distances.sessions': { type: 'status', text: 'Sessions' },
   'progress.wall.distances.total': { type: 'status', text: 'Total' },
-  'progress.wall.months.heading': { type: 'status', text: 'Monthly stats' },
-  'progress.wall.years.heading': { type: 'status', text: 'Yearly stats' },
+  'progress.wall.months.heading': { type: 'status', text: 'The months' },
   'progress.wall.bests.heading': { type: 'status', text: 'Bests & milestones' },
-  'progress.wall.body.heading': { type: 'status', text: 'Body, last night' },
-  'progress.wall.body.note': {
-    type: 'status',
-    text: 'Each against your own usual — the median of the last 30 nights.',
-  },
   'progress.volume.heading': { type: 'status', text: 'Weekly volume' },
   'progress.paceAtHr.heading': { type: 'status', text: 'Weekly median pace' },
   'progress.bests.heading': { type: 'status', text: 'Bests & milestones' },
@@ -566,7 +550,6 @@ export const catalogue = {
     type: 'status',
     text: 'The models this window was measured against',
   },
-  'progress.rolling.distances.heading': { type: 'status', text: 'By distance' },
   'progress.profile.heading': { type: 'status', text: 'Training profile' },
   'progress.profile.facets.note': { type: 'status', text: 'What the window holds.' },
 
@@ -600,6 +583,8 @@ export const catalogue = {
     text: 'This window holds no run, so it has no shape.',
   },
   'progress.shape.axis': { type: 'status', text: 'Facet' },
+  'progress.shape.window': { type: 'status', text: 'The last {days} days' },
+  'progress.shape.previous': { type: 'status', text: 'the {days} days before' },
   'progress.shape.legend': { type: 'status', text: 'last {days} days' },
   'progress.shape.movement': { type: 'status', text: 'Movement' },
   'progress.rolling.trend.up': { type: 'status', text: 'up on the {days} days before' },
@@ -611,11 +596,6 @@ export const catalogue = {
   'progress.rolling.trend.up.short': { type: 'status', text: 'up' },
   'progress.rolling.trend.down.short': { type: 'status', text: 'down' },
   'progress.rolling.trend.steady.short': { type: 'status', text: 'the same' },
-  'progress.rolling.weekday.heading': { type: 'status', text: 'By weekday' },
-  'progress.rolling.daytime.heading': { type: 'status', text: 'By time of day' },
-  'progress.rolling.months.heading': { type: 'status', text: 'By month' },
-  'progress.rolling.years.heading': { type: 'status', text: 'By year' },
-  'progress.rolling.history': { type: 'status', text: 'All saved runs' },
   'progress.rolling.noRows': { type: 'status', text: 'Nothing recorded yet.' },
   'progress.rolling.hours': { type: 'status', text: '{from} – {to}' },
 
@@ -629,7 +609,6 @@ export const catalogue = {
   'challenge.heading': { type: 'status', text: 'Your challenges' },
   'challenge.challenges': { type: 'status', text: 'The challenges' },
   'challenge.met': { type: 'status', text: '{n} of {of} weeks' },
-  'challenge.streak': { type: 'status', text: '{n} weeks in a row' },
   'challenge.inARow': { type: 'status', text: '{n} in a row' },
   'challenge.empty': {
     type: 'status',
@@ -646,26 +625,12 @@ export const catalogue = {
   'challenge.target': { type: 'status', text: 'Kilometres' },
   'challenge.remove': { type: 'status', text: 'Remove' },
   'progress.index.intro': { type: 'status', text: 'Six questions, and your answer to each.' },
-  'progress.index.shape.heading': { type: 'status', text: 'Your training, in one picture' },
-  'progress.index.shape.open': { type: 'status', text: 'Open →' },
   'progress.index.footnote': {
     type: 'status',
     text: 'Each question opens on its own. The wider screens show the panels side by side.',
   },
-  'progress.index.window.question': {
-    type: 'status',
-    text: 'This window against the window before',
-  },
-  'progress.index.load.question': { type: 'status', text: 'The training load' },
-  'progress.index.year.question': { type: 'status', text: 'The year' },
-  'progress.index.pace.question': { type: 'status', text: 'The pace' },
-  'progress.index.zones.question': { type: 'status', text: 'Your zones' },
-  'progress.index.habit.question': { type: 'status', text: 'The habit' },
-  'progress.index.shape.question': { type: 'status', text: 'Your shape' },
   'progress.index.run': { type: 'status', text: '{n} run' },
   'progress.index.runs': { type: 'status', text: '{n} runs' },
-  'progress.index.month': { type: 'status', text: '{n} month with runs' },
-  'progress.index.months': { type: 'status', text: '{n} months with runs' },
   'progress.index.day': { type: 'status', text: '{n} day' },
   'progress.index.days': { type: 'status', text: '{n} days' },
   'progress.index.week': { type: 'status', text: '{n} week' },
@@ -681,24 +646,12 @@ export const catalogue = {
 
   // ------------------------------------------------------------- pace
   //
-  // The pace page: the training week by week, the pace at a heart rate,
-  // and where the time went by pace.
+  // The pace, as Progress draws it: the pace at a heart rate, and where
+  // the time went by pace. The pace page is gone — these two panels are
+  // on The pace card and on the panel behind it.
   //
   // The sentences about the data are the core's, and they arrive already
   // written; what is here is the chrome around them.
-  'pace.heading': { type: 'status', text: 'The pace' },
-  'pace.open': { type: 'status', text: 'The pace' },
-  'pace.question': { type: 'status', text: 'How has my pace behaved?' },
-  'pace.summary': { type: 'status', text: '{weeks} weeks · {time} of running, read by pace' },
-  'pace.window': { type: 'status', text: 'The window: {from} – {to}' },
-  'pace.weeks.heading': { type: 'status', text: 'The training, week by week' },
-  'pace.weeks.note': {
-    type: 'status',
-    text: 'What you covered each week, the long run inside it, and the pace that week ran at.',
-  },
-  'pace.weeks.legend.distance': { type: 'status', text: "the week's distance" },
-  'pace.weeks.legend.longest': { type: 'status', text: 'the long run' },
-  'pace.weeks.legend.pace': { type: 'status', text: "the week's pace" },
   'pace.paceAtHr.heading': { type: 'status', text: 'The pace at a heart rate' },
   'pace.paceAtHr.note': {
     type: 'status',
@@ -728,11 +681,6 @@ export const catalogue = {
    * they arrive already written.
    */
   'year.heading': { type: 'status', text: 'The year' },
-  'year.intro': {
-    type: 'statement',
-    text: 'Twelve months, the calendar of the days, and what changed against your own past.',
-  },
-  'year.open': { type: 'status', text: 'Open the year' },
   'year.back': { type: 'status', text: 'Back to Progress' },
   'year.window': { type: 'status', text: 'The window: {from} – {to}' },
   'year.comparison': { type: 'status', text: 'against the {days} days before' },
@@ -814,8 +762,6 @@ export const catalogue = {
     text: 'Inside the band reads as about usual',
   },
   'body.patterns.heading': { type: 'status', text: 'Patterns' },
-  'body.sleep.duration': { type: 'status', text: 'duration' },
-  'body.sleep.stages': { type: 'status', text: 'stages' },
   'body.history.label': { type: 'status', text: 'Last {n} nights' },
 
   // ---------------------------------------------------------- compare
@@ -834,7 +780,6 @@ export const catalogue = {
    */
   'compare.share': { type: 'status', text: 'Share the comparison' },
   'compare.share.file': { type: 'status', text: 'stride-comparison' },
-  'compare.chart.toggle': { type: 'status', text: 'Show' },
   'compare.chart.signal': { type: 'status', text: 'Signal' },
   'compare.run.label': { type: 'status', text: 'Run' },
 
@@ -843,8 +788,6 @@ export const catalogue = {
   'plan.source.baseline': { type: 'status', text: 'Baseline (inferred from your history)' },
   'plan.source.prescribed': { type: 'status', text: 'Prescribed (imported)' },
   'plan.source.typed': { type: 'status', text: 'Typed' },
-  'plan.source.unclassified': { type: 'status', text: 'Unclassified' },
-  'plan.week.heading': { type: 'status', text: 'This week' },
   'plan.day.today': { type: 'status', text: 'Today' },
   'plan.status.done': { type: 'status', text: 'done' },
   'plan.status.planned': { type: 'status', text: 'planned' },
@@ -854,7 +797,6 @@ export const catalogue = {
   'plan.sources.heading': { type: 'status', text: 'Sources' },
   'plan.import': { type: 'status', text: 'Import a plan' },
   'plan.import.done': { type: 'status', text: 'The plan is imported' },
-  'plan.days.target': { type: 'status', text: '{distance}' },
   'plan.days.actual': { type: 'status', text: '{distance} run' },
 
   // --------------------------------------------------------- activity
@@ -941,9 +883,8 @@ export const catalogue = {
   'activity.route.startEnd': { type: 'status', text: 'Filled marker: start. Ring: finish.' },
   'activity.effort.cursor': {
     type: 'status',
-    text: 'Pace and heart rate share the same elapsed-time cursor. Elevation uses distance and is shown separately.',
+    text: 'Pace and heart rate share the same elapsed-time cursor, and the elevation has its own scale.',
   },
-  'activity.effort.minutes': { type: 'status', text: 'Minutes into the run' },
 
   // --------------------------------------------------------- the run film
   //
@@ -975,10 +916,6 @@ export const catalogue = {
   'film.splits.heading': { type: 'status', text: 'Splits' },
   'film.splits.column': { type: 'status', text: 'Split' },
   'film.splits.jump': { type: 'status', text: 'Play from this split' },
-  'film.alt': {
-    type: 'status',
-    text: "The route of the run, with the runner's position on it",
-  },
   'film.empty.title': { type: 'status', text: 'There is no film for this run' },
   'film.empty.body': {
     type: 'status',
@@ -1122,8 +1059,6 @@ export const catalogue = {
   'settings.storage.heading': { type: 'status', text: 'Storage' },
   'settings.storage.yourData': { type: 'status', text: 'Backup, restore and export' },
   'settings.storage.size': { type: 'status', text: 'Database size' },
-  'settings.storage.export': { type: 'status', text: 'Export a backup' },
-  'settings.storage.exported': { type: 'status', text: 'The backup is written' },
   'settings.storage.exportFailed': { type: 'status', text: 'The backup was not written' },
   'settings.storage.delete': { type: 'status', text: 'Delete all data' },
   'settings.storage.deleted': { type: 'status', text: 'Everything is deleted' },
@@ -1168,11 +1103,6 @@ export const catalogue = {
   'connect.connected': { type: 'status', text: 'Connected · {n} runs' },
   'connect.notNow': { type: 'status', text: 'Not now' },
   'connect.rejected': { type: 'status', text: 'That key was refused by Garmin' },
-  'connect.unreachable': {
-    type: 'status',
-    text: 'Garmin could not be reached, so the key was not checked',
-  },
-  'connect.blank': { type: 'status', text: 'A key is needed to connect' },
   'connect.test': { type: 'status', text: 'Test the key' },
   'connect.testOk': { type: 'status', text: 'Garmin accepted the key' },
   'connect.testRefused': { type: 'status', text: 'Garmin refused the key' },
@@ -1189,8 +1119,6 @@ export const catalogue = {
   'activity.note.none': { type: 'status', text: 'No note on this run' },
   'activity.note.edit': { type: 'status', text: 'Edit the note' },
   'activity.note.save': { type: 'status', text: 'Save the note' },
-  'activity.note.saved': { type: 'status', text: 'The note is saved' },
-  'activity.note.cleared': { type: 'status', text: 'The note is cleared' },
   'activity.note.placeholder': { type: 'status', text: 'A note about this run' },
   'progress.needsMore': { type: 'status', text: 'Needs {n} more weeks' },
   'progress.empty.title': { type: 'status', text: 'Nothing to show yet' },
@@ -1211,7 +1139,6 @@ export const catalogue = {
   'plan.counts.done': { type: 'status', text: '{n} done' },
   'plan.counts.planned': { type: 'status', text: '{n} planned' },
   'plan.counts.notDone': { type: 'status', text: '{n} not done' },
-  'plan.source.why': { type: 'status', text: 'Why this plan' },
   'plan.source.why.baseline': {
     type: 'status',
     text: 'Inferred from the runs you usually do',

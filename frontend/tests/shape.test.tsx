@@ -14,7 +14,7 @@ import { screen, waitFor } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { api } from '../src/lib/api'
 import { rollingFixture } from '../src/fixtures'
-import { RADAR_AXES } from '../src/components/ProfileRadar'
+import { SHAPE_AXES } from '../src/lib/shape'
 import { renderApp } from './helpers'
 
 /**
@@ -74,7 +74,7 @@ const CENTRE = 340 / 2
 
 describe("the athlete's shape", () => {
   it('is on the wall of panels, and draws the three windows', async () => {
-    renderApp('/profile')
+    renderApp('/profile/shape')
     const panel = await screen.findByTestId('progress-shape')
 
     // The chart itself, drawn by the app.
@@ -101,7 +101,7 @@ describe("the athlete's shape", () => {
   })
 
   it('shows the core\'s own numbers, and the windows they cover', async () => {
-    renderApp('/profile')
+    renderApp('/profile/shape')
     const panel = await screen.findByTestId('progress-shape')
 
     // The values are the core's rendering, and they are the **rates**:
@@ -135,7 +135,7 @@ describe("the athlete's shape", () => {
   })
 
   it('scales every axis to the largest of the three windows', async () => {
-    renderApp('/profile')
+    renderApp('/profile/shape')
     const panel = await screen.findByTestId('progress-shape')
     await waitFor(() =>
       expect(panel.querySelector('[data-testid="progress-shape-window-30"]')).toBeTruthy(),
@@ -152,7 +152,7 @@ describe("the athlete's shape", () => {
     // And on the axis the three windows agree on — the intensity — the
     // three shapes meet, because each axis is scaled to the largest of
     // the three.
-    const intensity = RADAR_AXES.indexOf('intensity')
+    const intensity = SHAPE_AXES.indexOf('intensity')
     expect(radiusOf(ninety[intensity]!, CENTRE)).toBeCloseTo(radiusOf(thirty[intensity]!, CENTRE), 5)
     expect(radiusOf(ninety[intensity]!, CENTRE)).toBeCloseTo(radiusOf(sixty[intensity]!, CENTRE), 5)
   })
@@ -172,7 +172,7 @@ describe("the athlete's shape", () => {
   })
 
   it('draws no verdict', async () => {
-    renderApp('/profile')
+    renderApp('/profile/shape')
     const panel = await screen.findByTestId('progress-shape')
     const text = (panel.textContent ?? '').toLowerCase()
     for (const word of ['score', 'grade', 'excellent', 'very active', 'optimal', 'good', 'bad']) {
@@ -188,7 +188,7 @@ describe("the athlete's shape", () => {
       return rollingFixture
     })
 
-    renderApp('/profile')
+    renderApp('/profile/shape')
     const panel = await screen.findByTestId('progress-shape')
     await waitFor(() =>
       expect(panel.querySelector('[data-testid="progress-shape-window-30"]')).toBeTruthy(),

@@ -55,9 +55,9 @@ describe('the ways into the runs behind the wall', () => {
     expect(link).toHaveAccessibleName('The runs of Sun 10 May')
   })
 
-  it('a day on the activity heatmap opens that day’s runs', async () => {
-    renderApp('/progress/heatmap')
-    const link = await screen.findByTestId('progress-wall-heatmap-2026-05-10')
+  it('a day on the calendar opens that day’s runs', async () => {
+    renderApp('/profile')
+    const link = await screen.findByTestId('progress-wall-calendar-2026-05-10')
 
     expect(link).toHaveAttribute('href', '/runs?from=2026-05-10&to=2026-05-10')
     expect(link).toHaveAccessibleName('The runs of Sun 10 May')

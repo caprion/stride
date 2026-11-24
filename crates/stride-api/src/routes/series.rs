@@ -13,7 +13,7 @@ use stride_core::pace::PacePoint;
 use stride_core::zones::{ZoneFloors, ZoneSample};
 use stride_ingest::{decode_fit, FitActivity, MAX_FIT_INPUT_BYTES};
 
-use crate::dto::{ElevationPoint, FilmGround, FilmSample, FilmSplit, SamplePoint, Split};
+use crate::dto::{FilmGround, FilmSample, FilmSplit, SamplePoint, Split};
 use crate::render;
 use crate::state::Api;
 use stride_core::units;
@@ -100,28 +100,6 @@ pub fn splits(activity: &FitActivity) -> Vec<Split> {
         .collect()
 }
 
-/// The elevation profile of a run.
-///
-/// The points are the ones the file carries: a run with no altitude has no
-/// profile, and the answer says so with an empty list rather than with a
-/// flat line.
-pub fn elevation(activity: &FitActivity, cap: usize) -> Vec<ElevationPoint> {
-    let mut points: Vec<ElevationPoint> = activity
-        .samples
-        .iter()
-        .filter_map(|sample| {
-            let distance = sample.distance_m?;
-            let altitude = sample.altitude_m?;
-            Some(ElevationPoint {
-                distance: render::distance_of(distance),
-                elevation: render::elevation_of(altitude),
-            })
-        })
-        .collect();
-    thin(&mut points, cap);
-    points
-}
-
 /// The series of a run.
 pub fn samples(activity: &FitActivity, cap: usize) -> Vec<SamplePoint> {
     let mut points: Vec<SamplePoint> = activity
@@ -129,8 +107,11 @@ pub fn samples(activity: &FitActivity, cap: usize) -> Vec<SamplePoint> {
         .iter()
         .map(|sample| SamplePoint {
             offset_s: units::round_time_s(sample.elapsed_s),
+            distance_m: sample.distance_m.map(render::distance_of),
             pace: render::pace(pace_of_sample(sample.speed_ms)),
             heart_rate: render::heart_rate(sample.heart_rate_bpm),
+            altitude_m: sample.altitude_m.map(render::elevation_of),
+            kind: Some(sample.kind.as_str()),
         })
         .collect();
     thin(&mut points, cap);

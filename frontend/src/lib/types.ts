@@ -254,8 +254,14 @@ export interface ActivityDetail extends ActivitySummary {
     heart_rate: RenderedValue | null
     pace: RenderedValue | null
   }[]
-  elevation: { distance: RenderedValue; elevation: RenderedValue }[]
-  samples: { offset_s: number; pace: RenderedValue | null; heart_rate: RenderedValue | null }[]
+  samples: {
+    offset_s: number
+    distance_m: RenderedValue | null
+    pace: RenderedValue | null
+    heart_rate: RenderedValue | null
+    altitude_m: RenderedValue | null
+    kind: string | null
+  }[]
   /** The line against the plan, already written: "8.4 km of a 10 km target". */
   plan_line: { text: string } | null
   /**
@@ -692,6 +698,37 @@ export interface ZoneSplit {
   distribution: ZoneDistributionRow[] | null
   /** Why there is no split, in the core's own words. */
   unavailable: string | null
+  /**
+   * The window's weeks, and the band each one held.
+   *
+   * One row per calendar week that holds a run, oldest first, and the
+   * time in each of the three bands that week. A band with no time in a
+   * week is **no value** — never a zero — so the absence can be drawn as
+   * the white space it is.
+   */
+  weeks: ZoneWeekRow[]
+}
+
+/** One week of the window, and the bands it held. */
+export interface ZoneWeekRow {
+  /** The Monday the week starts on. */
+  week_start: string
+  /** The same day, as the api writes a date: "4 May 2026". */
+  week_start_label: string
+  /** The runs the week holds. */
+  sessions: number
+  /** The time in each of the three bands, that week. */
+  bands: ZoneWeekBand[]
+}
+
+/** One band of one week. */
+export interface ZoneWeekBand {
+  /** The band's key: "low", "moderate" or "high". */
+  key: string
+  /** The band's name, in the core's words: "Z1–Z2 low". */
+  label: string
+  /** The time in the band that week, or null when the week held none. */
+  time: RenderedValue | null
 }
 
 /** One zone of the distribution: the time in it and its share. */

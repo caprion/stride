@@ -37,7 +37,7 @@ import { t } from '../i18n'
 import { linearScale, polygonPath, scaleToLargest, seriesColour, textWidth, type Point } from '../lib/chart'
 import { useWidth } from '../lib/useWidth'
 import type { ProfileWindow, RenderedValue } from '../lib/types'
-import { RADAR_AXES } from './ProfileRadar'
+import { SHAPE_AXES } from '../lib/shape'
 
 /**
  * One axis of the shape: the core's own name for it, and one window's
@@ -71,7 +71,7 @@ export interface ShapeWindow {
 export function shapeWindows(windows: ProfileWindow[]): ShapeWindow[] {
   return windows.map((window) => ({
     days: window.days,
-    axes: RADAR_AXES.map((key) => {
+    axes: SHAPE_AXES.map((key) => {
       const facet = window.rolling?.profile.find((entry) => entry.key === key)
       return {
         key,

@@ -9,44 +9,21 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
-import {
-  Area,
-  AreaChart,
-  CartesianGrid,
-  Line,
-  LineChart,
-  ReferenceArea,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from 'recharts'
 import { api } from '../lib/api'
-import { axisTicks } from '../lib/chart'
 import { canDeliverFile, downloadFile, fileName } from '../lib/download'
 import { formatDateMedium, renderedText, sportLabel } from '../lib/format'
 import { t } from '../i18n'
-import { axisTick } from '../components/ChartAxis'
 import { RunFlyby } from '../components/RunFlyby'
 import { SleepComposition } from '../components/SleepComposition'
 import { QueryError } from '../components/QueryError'
 import { RunUpdate } from '../components/RunUpdate'
+import { RunEffortChart } from '../components/RunEffortChart'
 import { PageHeader } from '../ui/layout/PageHeader'
 import { historyReturn } from '../lib/history'
 import { ZONE_COLOURS } from '../lib/zones'
 
-/** The minutes into the run, as the axis writes them. */
-function minuteTick(value: number): string {
-  const minutes = Math.round(value)
-  if (minutes < 60) return `${minutes}`
-  const hours = Math.floor(minutes / 60)
-  const rest = minutes % 60
-  return rest === 0 ? `${hours} h` : `${hours} h ${rest} m`
-}
-
 export function ActivityPage({ id }: { id: string }) {
   const [splitsOpen, setSplitsOpen] = useState(true)
-  const [elevationOpen, setElevationOpen] = useState(true)
   const [params] = useSearchParams()
   const returnTo = historyReturn(params.get('returnTo'))
   const [noteOpen, setNoteOpen] = useState(false)
@@ -130,48 +107,13 @@ export function ActivityPage({ id }: { id: string }) {
     )
   }
 
-  const samples = data.samples.map((sample) => ({
-    // The chart's own scale: minutes into the run.
-    minute: sample.offset_s / 60,
-    hr: sample.heart_rate?.raw ?? null,
-    hrText: sample.heart_rate?.text ?? null,
-    pace: sample.pace?.raw ?? null,
-    paceText: sample.pace?.text ?? null,
-  }))
   /**
-   * The axes' labels.
+   * The athlete's own zones, as the answer carries them.
    *
-   * They are the core's own words — "148 bpm", "5:24 /km" — so every
-   * label carries its unit. A bare number on the pace axis would be the
-   * app printing a domain number on its own.
+   * They are drawn behind the heart rate, on the run's own data: the
+   * athlete's configuration, and not a judgement about the run.
    */
-  const heartRateTicks = axisTicks(
-    data.samples.map((sample) => ({
-      value: sample.heart_rate?.raw ?? null,
-      text: sample.heart_rate?.text ?? null,
-    })),
-  )
-  const paceTicks = axisTicks(
-    data.samples.map((sample) => ({
-      value: sample.pace?.raw ?? null,
-      text: sample.pace?.text ?? null,
-    })),
-  )
-  const elevation = data.elevation.map((point) => ({
-    // The chart's own scale: the distance along the run, in kilometres.
-    // The words beside it are the core's — the tooltip shows the text the
-    // API sent, not a number this app rounded.
-    km: (point.distance.raw ?? 0) / 1000,
-    m: point.elevation.raw ?? 0,
-    elevationText: point.elevation.text,
-  }))
-  // The elevation's axis, in the core's words: "40 m".
-  const elevationTicks = axisTicks(
-    data.elevation.map((point) => ({
-      value: point.elevation.raw,
-      text: point.elevation.text,
-    })),
-  )
+  const zoneBands = zones.data?.zones ?? []
 
   return (
     <div>
@@ -319,72 +261,12 @@ export function ActivityPage({ id }: { id: string }) {
                 }}
               />
             ) : null}
-            <p className="mb-1 text-[12px] font-medium text-ink-muted">
-              {t('vital.heartRate')}
-            </p>
-            <div style={{ width: '100%', height: 150 }}>
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart
-                  data={samples}
-                  syncId={`effort-${id}`}
-                  margin={{ top: 4, right: 4, bottom: 0, left: 0 }}
-                >
-                  <CartesianGrid stroke="var(--chart-grid)" vertical={false} />
-                  <XAxis
-                    dataKey="minute"
-                    type="number"
-                    domain={[0, 'dataMax']}
-                    tickCount={5}
-                    tickFormatter={minuteTick}
-                    tick={{ fontSize: 11, fill: 'var(--chart-axis)' }}
-                  />
-                  <YAxis
-                    ticks={heartRateTicks.map((tick) => tick.value)}
-                    tick={axisTick(heartRateTicks)}
-                    width={64}
-                    tickLine={false}
-                    axisLine={false}
-                    domain={['dataMin - 5', 'dataMax + 5']}
-                  />
-                  {/*
-                The athlete's own zones: the bands the core computed, on
-                the numbers the core rendered the words from. They are
-                bands of the athlete's history, not a judgement — nothing
-                here says what the run should have been.
-              */}
-                  {(zones.data?.zones ?? [])
-                    .filter((band) => band.from_bpm !== null && band.to_bpm !== null)
-                    .map((band) => (
-                      <ReferenceArea
-                        key={band.label}
-                        y1={band.from_bpm ?? 0}
-                        y2={band.to_bpm ?? 0}
-                        fill="var(--chart-band)"
-                        fillOpacity={0.35}
-                        stroke="var(--chart-line-alt)"
-                        strokeOpacity={0.8}
-                      />
-                    ))}
-                  <Tooltip
-                    formatter={(_value, _name, item) => {
-                      const payload = item?.payload as
-                        { hrText?: string | null; paceText?: string | null } | undefined
-                      // The tooltip shows the core's words, not the chart's
-                      // numbers.
-                      return payload?.hrText ?? ''
-                    }}
-                  />
-                  <Line
-                    type="monotone"
-                    name={t('vital.heartRate')}
-                    dataKey="hr"
-                    stroke="var(--chart-line)"
-                    strokeWidth={2}
-                    dot={false}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
+            {/*
+              The run's one chart: the pace and the heart rate over the
+              run's own elapsed time, with the athlete's own bands
+              behind the heart rate, and one cursor over both.
+            */}
+            <RunEffortChart samples={data.samples} zones={zoneBands} runId={data.id} />
             {zones.data && zones.data.zones.length > 0 ? (
               <div className="mt-3" data-testid="activity-zones">
                 <p className="text-[11px] text-ink-muted">{t('activity.zones.basis')}</p>
@@ -449,51 +331,6 @@ export function ActivityPage({ id }: { id: string }) {
                 {zones.data.unavailable}
               </p>
             ) : null}
-            <p className="mb-1 mt-3 text-[12px] font-medium text-ink-muted">
-              {t('vital.pace')}
-            </p>
-            <div style={{ width: '100%', height: 120 }}>
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart
-                  data={samples}
-                  syncId={`effort-${id}`}
-                  margin={{ top: 4, right: 4, bottom: 0, left: 0 }}
-                >
-                  <CartesianGrid stroke="var(--chart-grid)" vertical={false} />
-                  <XAxis
-                    dataKey="minute"
-                    type="number"
-                    domain={[0, 'dataMax']}
-                    tickCount={5}
-                    tickFormatter={minuteTick}
-                    tick={{ fontSize: 11, fill: 'var(--chart-axis)' }}
-                  />
-                  <YAxis
-                    ticks={paceTicks.map((tick) => tick.value)}
-                    tick={axisTick(paceTicks)}
-                    width={64}
-                    tickLine={false}
-                    axisLine={false}
-                    domain={['dataMin - 5', 'dataMax + 5']}
-                  />
-                  <Tooltip
-                    formatter={(_value, _name, item) => {
-                      const payload = item?.payload as
-                        { hrText?: string | null; paceText?: string | null } | undefined
-                      return payload?.paceText ?? ''
-                    }}
-                  />
-                  <Line
-                    type="monotone"
-                    name={t('vital.pace')}
-                    dataKey="pace"
-                    stroke="var(--chart-reference)"
-                    strokeWidth={2}
-                    dot={false}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
           </section>
 
           {/* -------------------------------------------------------- splits */}
@@ -547,53 +384,6 @@ export function ActivityPage({ id }: { id: string }) {
                   ))}
                 </tbody>
               </table>
-            ) : null}
-          </section>
-
-          {/* ------------------------------------------------------ elevation */}
-          <section className="card mt-3 py-3">
-            <div className="flex items-center justify-between gap-3">
-              <h2 className="caps">
-                {t('activity.elevation.heading')}
-              </h2>
-              <button
-                type="button"
-                onClick={() => setElevationOpen((open) => !open)}
-                className="tap text-[13px] font-medium text-brand-600 underline underline-offset-2"
-              >
-                {elevationOpen ? t('activity.hideElevation') : t('activity.showElevation')}
-              </button>
-            </div>
-            {elevationOpen ? (
-              <div style={{ width: '100%', height: 140 }} className="mt-2">
-                <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={elevation} margin={{ top: 4, right: 4, bottom: 0, left: 0 }}>
-                    <CartesianGrid stroke="var(--chart-grid)" vertical={false} />
-                    <XAxis dataKey="km" tick={{ fontSize: 11, fill: 'var(--chart-axis)' }} />
-                    <YAxis
-                      ticks={elevationTicks.map((tick) => tick.value)}
-                      tick={axisTick(elevationTicks)}
-                      width={64}
-                      tickLine={false}
-                      axisLine={false}
-                      domain={['dataMin - 5', 'dataMax + 5']}
-                    />
-                    <Tooltip
-                      formatter={(_value, _name, item) =>
-                        (item?.payload as { elevationText?: string } | undefined)
-                          ?.elevationText ?? ''
-                      }
-                    />
-                    <Area
-                      type="monotone"
-                      name={t('activity.elevation.heading')}
-                      dataKey="m"
-                      stroke="var(--chart-line)"
-                      fill="var(--chart-band)"
-                    />
-                  </AreaChart>
-                </ResponsiveContainer>
-              </div>
             ) : null}
           </section>
 

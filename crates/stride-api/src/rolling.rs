@@ -68,6 +68,24 @@ pub struct ZoneSplitAnswer {
     /// The model the distribution's **ranges** are the model's own: the
     /// one that was in force at the end of the window.
     pub ranges: Option<ZoneModel>,
+    /// The window's weeks, and the band each one held.
+    ///
+    /// **One row per calendar week**, and the time in each of the three
+    /// bands that week. A week with no time in a band is **no value for
+    /// that band** — never a zero — so the absence can be drawn as the
+    /// white space it is.
+    pub weeks: Vec<ZoneWeek>,
+}
+
+/// One week of the window, and the bands it held.
+#[derive(Clone, Debug, PartialEq)]
+pub struct ZoneWeek {
+    /// The Monday the week starts on.
+    pub week_start: stride_core::date::Date,
+    /// The runs the week holds.
+    pub sessions: usize,
+    /// The time in each of the three bands, that week.
+    pub bands: [f64; 3],
 }
 
 /// One zone of the distribution: the time in it and its share.
@@ -189,11 +207,16 @@ pub fn zone_split(
             unavailable: core_line("zones.no_model"),
             models: Vec::new(),
             ranges: None,
+            weeks: Vec::new(),
         });
     }
 
     let mut current = ZoneTimes::default();
     let mut previous = ZoneTimes::default();
+    // The window's weeks, and the band each one held. The weeks are the
+    // calendar weeks of the window, and a week with no run is still a
+    // week: the absence is drawn as white space.
+    let mut weeks: Vec<ZoneWeek> = Vec::new();
     // The models the window's runs were measured against, oldest first.
     let mut used: Vec<ZoneModel> = Vec::new();
     let mut usable = false;
@@ -220,6 +243,26 @@ pub fn zone_split(
         };
         if window.contains(date) {
             add(&mut current, &time);
+            // The week this run belongs to, and the band it held that
+            // week. The rows are the weeks of the window, oldest first,
+            // and a week with no runs in it holds no time at all.
+            let week_start = crate::routes::week_start(date);
+            let bands = band_times(&time);
+            match weeks.iter_mut().find(|week| week.week_start == week_start) {
+                Some(week) => {
+                    week.sessions += 1;
+                    for (index, band) in week.bands.iter_mut().enumerate() {
+                        *band += bands[index];
+                    }
+                }
+                None => {
+                    weeks.push(ZoneWeek {
+                        week_start,
+                        sessions: 1,
+                        bands,
+                    });
+                }
+            }
         }
         if window.previous().contains(date) {
             add(&mut previous, &time);
@@ -235,6 +278,7 @@ pub fn zone_split(
             unavailable: core_line("zones.no_model_in_force"),
             models: Vec::new(),
             ranges: None,
+            weeks: Vec::new(),
         });
     }
     if !usable {
@@ -244,6 +288,7 @@ pub fn zone_split(
             unavailable: core_line("zones.unusable_model"),
             models: used,
             ranges: models.in_force(window.to()).cloned(),
+            weeks: Vec::new(),
         });
     }
 
@@ -279,10 +324,22 @@ pub fn zone_split(
         // bands as they are today. The models the window was measured
         // against are named beside them.
         ranges: models.in_force(window.to()).cloned(),
+        // The weeks, oldest first.
+        weeks: {
+            weeks.sort_by_key(|week| week.week_start);
+            weeks
+        },
     })
 }
 
 /// The time in the zones of one run, added to a total.
+/// The time in each of the three bands: the low, the moderate and the
+/// high one.
+fn band_times(time: &stride_core::zones::TimeInZone) -> [f64; 3] {
+    let zones = time.per_zone();
+    [zones[0] + zones[1], zones[2], zones[3] + zones[4]]
+}
+
 fn add(total: &mut ZoneTimes, time: &stride_core::zones::TimeInZone) {
     let times = time.per_zone();
     total.zone1_s += times[0];

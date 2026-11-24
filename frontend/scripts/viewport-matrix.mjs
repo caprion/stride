@@ -126,9 +126,9 @@ const ROUTES = [
   },
   {
     // The index opens one panel at a time: this is that doorway.
-    path: '/progress/window',
-    name: 'Progress · the window',
-    primary: '[data-testid="progress-panel-window"]',
+    path: '/progress/week',
+    name: 'Progress · this week',
+    primary: '[data-testid="progress-panel-week"]',
   },
   {
     // A panel of the athlete profile: the shape, on its own page.
@@ -149,11 +149,11 @@ const ROUTES = [
     primary: '[data-testid="profile-panel-shape"]',
   },
   {
-    // The pace page: reached from Progress, and it draws its own three
-    // panels.
-    path: '/pace',
-    name: 'Pace',
-    primary: '[data-testid="pace-weeks"]',
+    // The pace: a panel of Progress now, and the panel draws the cloud
+    // and the bands.
+    path: '/progress/pace',
+    name: 'Progress · the pace',
+    primary: '[data-testid="progress-panel-pace"]',
   },
   {
     // The year, as a film: the months, the calendar of the days and what

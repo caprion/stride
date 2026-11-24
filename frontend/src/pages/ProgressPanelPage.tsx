@@ -17,37 +17,21 @@ import type { ReactNode } from 'react'
 import { Link, Navigate, useParams } from 'react-router-dom'
 import { t } from '../i18n'
 import { PageHeader } from '../ui/layout/PageHeader'
-import { StreakCard } from '../components/StreakCard'
 import { useStaleness } from '../lib/staleness'
 import { PROGRESS_PANELS, type ProgressPanel } from './ProgressIndex'
 import { RangeSelector } from './progressRange'
 import {
-  AdherencePanel,
-  ChallengePanel,
   BestsPanel,
   ConsistencyPanel,
-  EddingtonPanel,
   LoadPanel,
   PaceAtHrPanel,
-  ProfilePanel,
   RollingPanel,
-  ShapePanel,
   VolumePanel,
   ZonesDistributionPanel,
   ZonesPanel,
 } from './progressPanels'
-import {
-  ActivitiesTable,
-  DaytimeTable,
-  DistanceCalendar,
-  DistanceLegend,
-  DistancesTable,
-  MonthsChart,
-  ProfileRadarBody,
-  WeekBody,
-  WeekdayTable,
-  YearsChart,
-} from './progressWall'
+import { WeekBody } from './progressWall'
+import { PaceBandsPanel, PaceCloudChart } from './pacePanels'
 import { useProgress } from './useProgress'
 import { useWall } from './useWall'
 
@@ -83,16 +67,7 @@ export function ProgressPanelPage() {
   // A name that is not a panel is not a page: back to the index.
   if (!isPanel(panel)) return <Navigate to="/progress" replace />
 
-  const { progress, load, rolling, streaks, challenges } = answers
-  const {
-    today,
-    year,
-    activities,
-    profileWindows,
-    profileScope,
-    profileError,
-    setProfileDays,
-  } = wall
+  const { progress, load, rolling } = answers
 
   if (progress.isError && !progress.data) {
     return (
@@ -152,106 +127,50 @@ export function ProgressPanelPage() {
         need the whole of a wide screen.
       */}
       <div className="mt-3 max-w-[680px] space-y-3" data-testid={`progress-panel-${panel}`}>
-        {panel === 'window' ? (
-          <RollingPanel rolling={rolling.data} error={rolling.isError} />
-        ) : null}
-        {panel === 'load' ? <LoadPanel load={load.data} error={load.isError} /> : null}
-        {panel === 'year' ? (
-          <PanelCard title={t('progress.wall.years.heading')}>
-            <YearsChart rolling={rolling.data} />
-          </PanelCard>
-        ) : null}
-        {panel === 'pace' ? (
-          <PaceAtHrPanel
-            pace={answers.pace}
-            ticks={answers.paceTicks}
-            window={t('progress.index.pace.weeks', { n: range })}
-          />
-        ) : null}
-        {panel === 'zones' ? <ZonesPanel rolling={rolling.data} /> : null}
-        {panel === 'shape' ? (
-          <ShapePanel
-            windows={profileWindows}
-            error={profileError}
-            days={profileScope.days}
-            onScope={setProfileDays}
-          />
-        ) : null}
-        {panel === 'zone-time' ? <ZonesDistributionPanel rolling={rolling.data} /> : null}
-        {panel === 'challenges' ? (
-          <ChallengePanel challenges={challenges.data} />
-        ) : null}
-        {panel === 'habit' ? (
+        {panel === 'week' ? (
           <>
-            {streaks.data ? (
-              <StreakCard
-                streaks={streaks.data}
-                className="card py-3"
-                testId="progress-streaks"
-              />
-            ) : null}
-            <EddingtonPanel data={progress.data} />
+            <PanelCard title={t('progress.wall.thisWeek.heading')}>
+              <WeekBody today={answers.today.data} />
+            </PanelCard>
+            <RollingPanel rolling={rolling.data} error={rolling.isError} />
           </>
         ) : null}
-        {panel === 'eddington' ? <EddingtonPanel data={progress.data} /> : null}
-        {panel === 'volume' ? (
-          <VolumePanel
-            volume={answers.volume}
-            ticks={answers.volumeTicks}
-            typicalWeek={progress.data.typical_week}
-          />
-        ) : null}
-        {panel === 'consistency' ? (
-          <ConsistencyPanel consistency={answers.consistency} />
-        ) : null}
-        {panel === 'adherence' ? <AdherencePanel adherence={progress.data.adherence} /> : null}
-        {panel === 'bests' ? <BestsPanel bests={progress.data.bests} /> : null}
-        {panel === 'facets' ? <ProfilePanel rolling={rolling.data} /> : null}
-        {panel === 'profile' ? (
-          <PanelCard title={t('progress.wall.profile.heading')}>
-            <ProfileRadarBody
-              windows={profileWindows}
-              days={profileScope.days}
-              onScope={setProfileDays}
+        {panel === 'load' ? <LoadPanel load={load.data} error={load.isError} /> : null}
+        {panel === 'pace' ? (
+          <>
+            <PaceAtHrPanel
+              pace={answers.pace}
+              ticks={answers.paceTicks}
+              window={t('progress.index.pace.weeks', { n: range })}
             />
-          </PanelCard>
+            {wall.pace.data ? (
+              <>
+                <PaceCloudChart weeks={wall.pace.data.weeks} />
+                <PaceBandsPanel
+                  bands={wall.pace.data.bands}
+                  unavailable={wall.pace.data.unavailable}
+                />
+              </>
+            ) : null}
+          </>
         ) : null}
-        {panel === 'week' ? (
-          <PanelCard title={t('progress.wall.week.heading')}>
-            <WeekBody today={today.data} />
-          </PanelCard>
+        {panel === 'zone-time' ? (
+          <>
+            <ZonesDistributionPanel rolling={rolling.data} />
+            <ZonesPanel rolling={rolling.data} />
+          </>
         ) : null}
-        {panel === 'activities' ? (
-          <PanelCard title={t('progress.wall.activities.heading')}>
-            <ActivitiesTable activities={activities.data?.activities ?? []} />
-          </PanelCard>
+        {panel === 'volume' ? (
+          <>
+            <VolumePanel
+              volume={answers.volume}
+              ticks={answers.volumeTicks}
+              typicalWeek={progress.data.typical_week}
+            />
+            <ConsistencyPanel consistency={answers.consistency} />
+          </>
         ) : null}
-        {panel === 'heatmap' ? (
-          <PanelCard title={t('progress.wall.heatmap.heading')}>
-            <DistanceCalendar days={year.data?.days ?? []} />
-            <DistanceLegend />
-          </PanelCard>
-        ) : null}
-        {panel === 'weekday' ? (
-          <PanelCard title={t('progress.wall.weekday.heading')}>
-            <WeekdayTable rolling={rolling.data} />
-          </PanelCard>
-        ) : null}
-        {panel === 'daytime' ? (
-          <PanelCard title={t('progress.wall.daytime.heading')}>
-            <DaytimeTable rolling={rolling.data} />
-          </PanelCard>
-        ) : null}
-        {panel === 'distances' ? (
-          <PanelCard title={t('progress.wall.distances.heading')}>
-            <DistancesTable rolling={rolling.data} />
-          </PanelCard>
-        ) : null}
-        {panel === 'months' ? (
-          <PanelCard title={t('progress.wall.months.heading')}>
-            <MonthsChart rolling={rolling.data} />
-          </PanelCard>
-        ) : null}
+        {panel === 'bests' ? <BestsPanel bests={progress.data.bests} /> : null}
       </div>
     </div>
   )

@@ -14,6 +14,7 @@ import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { api } from '../lib/api'
 import type { ProfileWindow } from '../lib/types'
+import { shiftDate } from '../lib/history'
 
 /**
  * The windows the athlete profile is drawn over.
@@ -42,9 +43,6 @@ export const PROFILE_SCOPES = [
  */
 export const PROFILE_SCOPE_DEFAULT = 90
 
-/** How many runs the wall's table shows. */
-const RECENT_ACTIVITIES = 8
-
 /**
  * The wall's answers.
  *
@@ -54,9 +52,6 @@ const RECENT_ACTIVITIES = 8
  * three the profile card names, whatever the range is.
  */
 export function useWall(range: number) {
-  /** This week, against the same days of the week before. */
-  const today = useQuery({ queryKey: ['insights-today'], queryFn: () => api.insightsToday() })
-
   /** The year: the months, the calendar of the days and what changed. */
   const year = useQuery({ queryKey: ['insights-year'], queryFn: () => api.insightsYear() })
 
@@ -64,12 +59,6 @@ export function useWall(range: number) {
   const pace = useQuery({
     queryKey: ['insights-pace', range],
     queryFn: () => api.insightsPace(range),
-  })
-
-  /** The most recent runs, for the wall's table. */
-  const activities = useQuery({
-    queryKey: ['activities', 'recent'],
-    queryFn: () => api.activities({ limit: RECENT_ACTIVITIES }),
   })
 
   /**
@@ -111,14 +100,33 @@ export function useWall(range: number) {
   const focusedQuery =
     profileScope.days === 30 ? profile30 : profileScope.days === 60 ? profile60 : profile90
 
-  /** Last night, as the body reads it. */
-  const vitals = useQuery({ queryKey: ['physiology-vitals'], queryFn: () => api.vitals() })
+  /**
+   * The profile's runs.
+   *
+   * **The pictures are drawn from the feed.** The schedule's days, the
+   * habit's day marks and the records' timeline are facts about the runs
+   * themselves, and the feed already carries them. The window starts a
+   * week earlier, so that a strip has the previous week's days to stand
+   * beside this week's.
+   */
+  const profileRuns = useQuery({
+    queryKey: [
+      'activities',
+      'profile',
+      focused?.rolling?.window.from,
+      focused?.rolling?.window.to,
+    ],
+    queryFn: () =>
+      api.activities({
+        since: shiftDate(focused!.rolling!.window.from, -7),
+        until: focused!.rolling!.window.to,
+      }),
+    enabled: focused?.rolling !== undefined,
+  })
 
   return {
-    today,
     year,
     pace,
-    activities,
     /** The three windows the chart draws, one on the other. */
     profileWindows,
     /** The focused window's answer: the numbers the page is about. */
@@ -127,7 +135,7 @@ export function useWall(range: number) {
     profileError: focusedQuery.isError,
     profileScope,
     setProfileDays,
-    vitals,
+    profileRuns,
   }
 }
 

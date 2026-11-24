@@ -181,49 +181,13 @@ pub struct Entry {
 }
 
 /// The catalogue.
-pub const CATALOGUE: [Entry; 202] = [
+pub const CATALOGUE: [Entry; 193] = [
     // The vitals.
-    Entry {
-        id: "vital.sleep.label",
-        kind: StringKind::Vital,
-        role: None,
-        template: "Sleep",
-    },
-    Entry {
-        id: "vital.hrv.label",
-        kind: StringKind::Vital,
-        role: None,
-        template: "HRV",
-    },
-    Entry {
-        id: "vital.resting_hr.label",
-        kind: StringKind::Vital,
-        role: None,
-        template: "Resting HR",
-    },
     Entry {
         id: "vital.rest.label",
         kind: StringKind::Vital,
         role: None,
         template: "Rest",
-    },
-    Entry {
-        // The heading of the reading. It names the *source* of the numbers —
-        // the night they were taken in — and never interprets them: "Rest —
-        // could be better" can be heard as an instruction, and the app
-        // informs and never instructs. The "Rest" label above stays the label
-        // of the summary row; the contract bans "rest" as a command, never as
-        // the noun.
-        id: "vital.rest.heading",
-        kind: StringKind::Vital,
-        role: None,
-        template: "Last night",
-    },
-    Entry {
-        id: "vital.sleep.value",
-        kind: StringKind::Vital,
-        role: None,
-        template: "{value}",
     },
     Entry {
         id: "vital.hrv.value",
@@ -337,12 +301,6 @@ pub const CATALOGUE: [Entry; 202] = [
         kind: StringKind::Option,
         role: None,
         template: "{day} — {summary}",
-    },
-    Entry {
-        id: "option.other_sessions",
-        kind: StringKind::Option,
-        role: None,
-        template: "Also in your plan — {summary}",
     },
     // The patterns.
     Entry {
@@ -967,24 +925,6 @@ pub const CATALOGUE: [Entry; 202] = [
         kind: StringKind::Statement,
         role: None,
         template: "run recorded · no distance recorded",
-    },
-    Entry {
-        id: "statement.plan.status.done",
-        kind: StringKind::Statement,
-        role: None,
-        template: "done",
-    },
-    Entry {
-        id: "statement.plan.status.planned",
-        kind: StringKind::Statement,
-        role: None,
-        template: "planned",
-    },
-    Entry {
-        id: "statement.plan.status.not_done",
-        kind: StringKind::Statement,
-        role: None,
-        template: "not done",
     },
     // The statements: factual sentences about the data, rendered by the core.
     Entry {

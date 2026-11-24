@@ -48,9 +48,7 @@ import {
   DistanceLegend,
   DistancesTable,
   MonthsChart,
-  ProfileRadarBody,
   WeekdayTable,
-  YearsChart,
 } from './progressWall'
 import { WALL_PANELS, panelDestination } from './taskAreas'
 
@@ -185,14 +183,7 @@ export function ProfilePage() {
         pattern answers, and the areas' links under them.
       */}
       <div className="progress-index" data-testid="profile-index-layout">
-        <ProfileIndex
-          answers={answers}
-          shape={{
-            windows: wall.profileWindows,
-            days: wall.profileScope.days,
-            onScope: wall.setProfileDays,
-          }}
-        />
+        <ProfileIndex answers={answers} profile={wall.profile} />
       </div>
     </div>
   )
@@ -231,8 +222,8 @@ export function ProfilePanelPage() {
     return <Navigate to={{ pathname: backTo, search: location.search }} replace />
   }
 
-  const { progress, rolling, streaks, challenges } = answers
-  const { year, profileWindows, profileScope, profileError, setProfileDays } = wall
+  const { progress, streaks, challenges } = answers
+  const { year, profile, profileWindows, profileScope, profileError, setProfileDays } = wall
 
   if (progress.isError && !progress.data) {
     return (
@@ -300,51 +291,33 @@ export function ProfilePanelPage() {
             onScope={setProfileDays}
           />
         ) : null}
-        {panel === 'profile' ? (
-          <PanelCard title={t('progress.wall.profile.heading')}>
-            <ProfileRadarBody
-              windows={profileWindows}
-              days={profileScope.days}
-              onScope={setProfileDays}
-            />
-          </PanelCard>
-        ) : null}
-        {panel === 'facets' ? <ProfilePanel rolling={rolling.data} /> : null}
+        {panel === 'facets' ? <ProfilePanel rolling={profile} /> : null}
         {panel === 'challenges' ? (
-          <ChallengePanel challenges={challenges.data} />
-        ) : null}
-        {panel === 'adherence' ? (
-          <AdherencePanel adherence={progress.data.adherence} />
+          <>
+            <ChallengePanel challenges={challenges.data} />
+            <AdherencePanel adherence={progress.data.adherence} />
+          </>
         ) : null}
         {panel === 'weekday' ? (
-          <PanelCard title={t('progress.wall.weekday.heading')}>
-            <WeekdayTable rolling={rolling.data} />
-          </PanelCard>
-        ) : null}
-        {panel === 'daytime' ? (
-          <PanelCard title={t('progress.wall.daytime.heading')}>
-            <DaytimeTable rolling={rolling.data} />
-          </PanelCard>
-        ) : null}
-        {panel === 'distances' ? (
-          <PanelCard title={t('progress.wall.distances.heading')}>
-            <DistancesTable rolling={rolling.data} />
-          </PanelCard>
-        ) : null}
-        {panel === 'heatmap' ? (
-          <PanelCard title={t('progress.wall.heatmap.heading')}>
-            <DistanceCalendar days={year.data?.days ?? []} />
-            <DistanceLegend />
+          <PanelCard title={t('progress.wall.schedule.heading')}>
+            <WeekdayTable rolling={profile} />
+            <div className="mt-3">
+              <DaytimeTable rolling={profile} />
+            </div>
+            <div className="mt-3">
+              <DistancesTable rolling={profile} />
+            </div>
           </PanelCard>
         ) : null}
         {panel === 'months' ? (
           <PanelCard title={t('progress.wall.months.heading')}>
-            <MonthsChart rolling={rolling.data} />
-          </PanelCard>
-        ) : null}
-        {panel === 'year' ? (
-          <PanelCard title={t('progress.wall.years.heading')}>
-            <YearsChart rolling={rolling.data} />
+            <MonthsChart rolling={profile} />
+            {year.data ? (
+              <div className="mt-3">
+                <DistanceCalendar days={year.data.days} />
+                <DistanceLegend />
+              </div>
+            ) : null}
           </PanelCard>
         ) : null}
         {panel === 'habit' ? (
@@ -359,7 +332,6 @@ export function ProfilePanelPage() {
             <EddingtonPanel data={progress.data} />
           </>
         ) : null}
-        {panel === 'eddington' ? <EddingtonPanel data={progress.data} /> : null}
       </div>
     </div>
   )

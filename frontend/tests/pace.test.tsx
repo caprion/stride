@@ -1,26 +1,30 @@
 /**
- * The pace page.
+ * The pace: **the cloud and the bands**.
  *
- * Three panels: the training week by week, the pace at a heart rate, and
- * where the time went by pace.
+ * The pace page is gone. Its two panels — the pace at a heart rate, and
+ * where the time went by pace — are drawn on Progress's **The pace**
+ * card, and on the panel behind it.
  *
- * The page says what happened. There is no target, no "too slow" and no
- * verdict on it, and the window every number belongs to is named on the
- * screen.
+ * The rules the drawings follow:
+ *
+ *   - the cloud is one point a week, and a week with no pace is not a
+ *     point;
+ *   - the bands are the answer's own, and a window with no samples says
+ *     so instead of drawing a band of zero;
+ *   - the time in the bands too small to draw is named, not lost.
  */
 
 import { screen } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { api } from '../src/lib/api'
 import { paceFixture } from '../src/fixtures'
-import { paceCloud, trainingWeeks } from '../src/pages/PacePage'
-import { calendarWeekStarts } from '../src/lib/chart'
+import { paceCloud } from '../src/pages/pacePanels'
 import { renderApp } from './helpers'
 
 afterEach(() => vi.restoreAllMocks())
 
 /**
- * The bands, for the state in which the page is reviewed.
+ * The bands, for the state in which the pace is reviewed.
  *
  * **The values are invented**, like every other value in the fixture set:
  * the seeded store holds no FIT file, so the router's own answer for the
@@ -51,47 +55,38 @@ const BANDS = {
   ],
 }
 
-describe('the pace page', () => {
-  it('renders the three panels', async () => {
-    renderApp('/pace')
+describe('the pace card', () => {
+  it('carries the cloud and the bands', async () => {
+    renderApp('/progress')
+    const card = await screen.findByTestId('progress-wall-pace')
 
-    expect(await screen.findByTestId('pace-weeks')).toBeTruthy()
+    expect(card.querySelector('[data-testid="pace-cloud"]')).toBeTruthy()
+    expect(card.querySelector('[data-testid="pace-bands"]')).toBeTruthy()
+  })
+
+  it('opens the pace panel, not a page of its own', async () => {
+    renderApp('/progress')
+    const link = await screen.findByTestId('progress-pace-link')
+
+    expect(link.getAttribute('href')).toBe('/progress/pace')
+  })
+})
+
+describe('the pace panel', () => {
+  it('carries the cloud and the bands', async () => {
+    renderApp('/progress/pace')
+
     expect(await screen.findByTestId('pace-pace-at-hr')).toBeTruthy()
-    expect(await screen.findByTestId('pace-bands')).toBeTruthy()
+    expect(await screen.findByTestId('pace-bands-panel')).toBeTruthy()
   })
 
-  it('names the window every number belongs to', async () => {
+  it('is where a saved /pace link lands', async () => {
     renderApp('/pace')
-    const window = await screen.findByTestId('pace-window')
 
-    expect(window.textContent).toContain('23 Feb 2026')
-    expect(window.textContent).toContain('13 May 2026')
-  })
-
-  it('draws the long run inside the week’s bar', () => {
-    const weeks = trainingWeeks(
-      paceFixture.weeks,
-      calendarWeekStarts(paceFixture.date, 12),
-    )
-    const week = weeks.find((entry) => entry.km === 52.1)
-
-    expect(week).toBeTruthy()
-    // The long run is a part of the week's bar, never beside it.
-    expect(week!.longestKm).toBe(16.1)
-    expect(week!.restKm).toBeCloseTo(52.1 - 16.1, 5)
-    expect(week!.longestKm! + week!.restKm!).toBeCloseTo(week!.km!, 5)
-  })
-
-  it('leaves a week with no run as a gap, not a bar of zero', () => {
-    const weeks = trainingWeeks(
-      paceFixture.weeks,
-      calendarWeekStarts(paceFixture.date, 12),
-    )
-    const gap = weeks.find((entry) => entry.label === 'Mon 23 Feb')
-
-    expect(gap).toBeTruthy()
-    expect(gap!.km).toBeNull()
-    expect(gap!.longestKm).toBeNull()
+    // The page is gone, and the link lands on the answer that replaced
+    // it — the same question, on the screen that owns it.
+    const panel = await screen.findByTestId('progress-panel-pace')
+    expect(panel.querySelector('[data-testid="pace-pace-at-hr"]')).toBeTruthy()
   })
 
   it('moves the pace-at-heart-rate cloud with the window', async () => {
@@ -104,7 +99,7 @@ describe('the pace page', () => {
       ...paceFixture,
       weeks: [paceFixture.weeks[1]!],
     })
-    const { container } = renderApp('/pace')
+    const { container } = renderApp('/progress/pace')
     await screen.findByTestId('pace-pace-at-hr')
 
     const cloud = container.querySelector('[data-points]')
@@ -112,13 +107,13 @@ describe('the pace page', () => {
   })
 
   it('says why there are no bands when the window holds no samples', async () => {
-    renderApp('/pace')
-    const bands = await screen.findByTestId('pace-bands')
+    renderApp('/progress/pace')
+    const bands = await screen.findByTestId('pace-bands-panel')
 
     // The reason is the core's own words, and no band of zero is drawn.
-    expect(
-      bands.querySelector('[data-testid="pace-bands-empty"]')?.textContent,
-    ).toContain('no moving samples')
+    expect(bands.querySelector('[data-testid="pace-bands-empty"]')?.textContent).toContain(
+      'no moving samples',
+    )
     expect(bands.querySelector('[data-testid="pace-bands-rows"]')).toBeNull()
   })
 
@@ -128,7 +123,7 @@ describe('the pace page', () => {
       bands: BANDS,
       unavailable: null,
     })
-    renderApp('/pace')
+    renderApp('/progress/pace')
     const rows = await screen.findByTestId('pace-bands-rows')
 
     // The labels are the core's own words, and the bar is the share.
@@ -145,22 +140,13 @@ describe('the pace page', () => {
       bands: { ...BANDS, rest: { text: '41 m', raw: 2460 } },
       unavailable: null,
     })
-    renderApp('/pace')
-    const bands = await screen.findByTestId('pace-bands')
+    renderApp('/progress/pace')
+    const bands = await screen.findByTestId('pace-bands-panel')
 
     // The time is not lost: it is beside the bands, not in one of them.
     expect(bands.querySelector('[data-testid="pace-bands-rest"]')?.textContent).toContain('41 m')
     expect(bands.querySelector('[data-testid="pace-bands-rest"]')?.textContent).toContain(
       'The smaller bands',
     )
-  })
-})
-
-describe('the pace page on Progress', () => {
-  it('is reached from the Progress screen', async () => {
-    renderApp('/progress')
-    const link = await screen.findByTestId('progress-pace-link')
-
-    expect(link.getAttribute('href')).toBe('/pace')
   })
 })

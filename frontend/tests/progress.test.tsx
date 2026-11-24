@@ -18,7 +18,7 @@ afterEach(() => vi.restoreAllMocks())
 
 describe('the Eddington number on the athlete profile', () => {
   it('shows the number, the days to the next one and the longest day', async () => {
-    const { container } = renderApp('/profile')
+    const { container } = renderApp('/profile/habit')
     const card = await screen.findByTestId('progress-eddington')
 
     expect(
@@ -34,14 +34,14 @@ describe('the Eddington number on the athlete profile', () => {
   })
 
   it('names the window the number covers', async () => {
-    const { container } = renderApp('/profile')
+    const { container } = renderApp('/profile/habit')
     const card = await screen.findByTestId('progress-eddington')
     const window = card.querySelector('[data-testid="progress-eddington-window"]')?.textContent
 
     expect(window).toContain('23 Feb')
     expect(window).toContain('13 May')
     // And it is the window the screen is showing.
-    expect(container.querySelector('[data-testid="profile-range"]')).toBeTruthy()
+    expect(container.querySelector('[data-testid="profile-panel-range"]')).toBeTruthy()
   })
 
   it('has no number when the window holds no distance', async () => {
@@ -49,7 +49,7 @@ describe('the Eddington number on the athlete profile', () => {
       ...progressFixture,
       eddington: null,
     })
-    renderApp('/profile')
+    renderApp('/profile/habit')
     const card = await screen.findByTestId('progress-eddington')
 
     expect(

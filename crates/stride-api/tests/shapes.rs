@@ -82,7 +82,6 @@ fn one_run_carries_the_shape_the_app_reads() {
         &[
             "distance",
             "duration",
-            "elevation",
             "elevation_gain",
             "geo_points",
             "group",

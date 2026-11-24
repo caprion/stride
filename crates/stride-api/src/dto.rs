@@ -144,24 +144,31 @@ pub struct Split {
     pub pace: Option<RenderedValue>,
 }
 
-/// One point of the elevation profile.
-#[derive(Clone, Debug, PartialEq, Serialize)]
-pub struct ElevationPoint {
-    /// The distance from the start, as the core renders it.
-    pub distance: RenderedValue,
-    /// The altitude, as the core renders it.
-    pub elevation: RenderedValue,
-}
-
 /// One point of the run's series.
+///
+/// **One series, one axis.** The seconds from the start are the x-axis
+/// of every reading of the run: the pace, the heart rate, the distance
+/// and the altitude. The distance is here so that a run's ground can be
+/// read against the time it was covered, and the kind is here so that
+/// the stretches the athlete was not running are visible as such.
 #[derive(Clone, Debug, PartialEq, Serialize)]
 pub struct SamplePoint {
     /// The seconds from the start of the run.
     pub offset_s: f64,
+    /// The distance from the start, as the core renders it.
+    pub distance_m: Option<RenderedValue>,
     /// The pace over the sample, as the core renders it.
     pub pace: Option<RenderedValue>,
     /// The heart rate over the sample, as the core renders it.
     pub heart_rate: Option<RenderedValue>,
+    /// The altitude over the sample, as the core renders it.
+    pub altitude_m: Option<RenderedValue>,
+    /// What the athlete was doing: "run", "walk" or "stand".
+    ///
+    /// **The ingest classifies, and the core reads.** The kind is the
+    /// classification the zones and the pace bands already measure, so
+    /// the chart and the table cannot disagree about a stopped stretch.
+    pub kind: Option<&'static str>,
 }
 
 /// The plan's line under a run: what was planned and what was run.
@@ -184,9 +191,8 @@ pub struct ActivityDetail {
     pub summary: ActivitySummary,
     /// The run's splits.
     pub splits: Vec<Split>,
-    /// The run's elevation profile.
-    pub elevation: Vec<ElevationPoint>,
-    /// The run's series.
+    /// The run's series: the pace, the heart rate, the distance, the
+    /// altitude and the movement kind, over the run's own time.
     pub samples: Vec<SamplePoint>,
     /// The plan's line under the run, when the plan had one.
     pub plan_line: Option<PlanLine>,
@@ -2101,6 +2107,40 @@ pub struct ZoneSplit {
     pub distribution: Option<Vec<ZoneDistributionRow>>,
     /// Why there is no split, in the core's own words.
     pub unavailable: Option<String>,
+    /// The window's weeks, and the band each one held.
+    ///
+    /// **One row per calendar week of the window**, oldest first, and the
+    /// time in each of the three bands that week. A week with no time in
+    /// a band is **no value for that band** — never a zero — so the
+    /// absence can be drawn as the white space it is.
+    pub weeks: Vec<ZoneWeekRow>,
+}
+
+/// One week of the window, and the bands it held.
+#[derive(Clone, Debug, PartialEq, Serialize)]
+pub struct ZoneWeekRow {
+    /// The Monday the week starts on.
+    pub week_start: String,
+    /// The same day, as the api writes a date: "10 May 2026".
+    pub week_start_label: String,
+    /// The runs the week holds.
+    pub sessions: usize,
+    /// The time in each of the three bands, that week.
+    pub bands: Vec<ZoneWeekBand>,
+}
+
+/// One band of one week.
+#[derive(Clone, Debug, PartialEq, Serialize)]
+pub struct ZoneWeekBand {
+    /// The band's key: "low", "moderate" or "high".
+    pub key: String,
+    /// The band's name, in the core's words: "Z1–Z2 low".
+    pub label: String,
+    /// The time in the band that week, as the core renders it.
+    ///
+    /// Absent when the week held no time in the band: that is no value,
+    /// and never a zero.
+    pub time: Option<RenderedValue>,
 }
 
 /// One zone of the distribution.
