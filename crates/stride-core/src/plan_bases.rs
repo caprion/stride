@@ -50,10 +50,15 @@
 
 use std::sync::OnceLock;
 
-use crate::date::Weekday;
-use crate::plan::SessionKind;
+use crate::date::{Date, Weekday};
+use crate::plan::{PlanSource, SessionKind};
 use crate::strings;
-use crate::training_paces::METRES_PER_MILE;
+use crate::threshold::ThresholdChoice;
+use crate::training_paces::{
+    self, LadderInput, LongRunKind, MissingInput, PaceBand, PaceValue, Race, RungKind,
+    METRES_PER_MILE,
+};
+use crate::units;
 
 /// The catalogue's version.
 ///
@@ -1042,5 +1047,640 @@ mod tests {
         // total; the race's own distance is the half marathon.
         assert_eq!(race.distance_m, Some(17.0 * METRES_PER_MILE));
         assert_eq!(race.race_distance_m, Some(21_097.5));
+    }
+}
+
+/// ## The adoption
+///
+/// An adopted plan is a **dated copy** of a programme (B1): the race date
+/// anchors it, the sessions carry the paces worked out once at that moment,
+/// and the plan keeps the record of what it was paced with. Nothing about
+/// it is read again from the catalogue afterwards — a later correction to
+/// the catalogue cannot alter a plan that is running.
+///
+/// ## What the athlete chose, and the facts the adoption reads
+///
+/// Every date is an argument: the core has no clock, and the adoption asks
+/// for the day it happened.
+#[derive(Clone, Debug, PartialEq)]
+pub struct AdoptionInput {
+    /// The programme the athlete chose, by its catalogue id.
+    pub programme_id: String,
+    /// The goal race's distance, in metres — one the programme prints.
+    pub goal_distance_m: f64,
+    /// The day of the goal race.
+    pub race_date: Date,
+    /// The day the plan was adopted.
+    ///
+    /// The threshold **in force that day** paces the plan (B4), and a
+    /// later threshold does not re-pace it.
+    pub adopted_on: Date,
+    /// The first day of the plan, when the athlete named one.
+    ///
+    /// It must agree with the race date: the race week is the twelfth
+    /// week, and the two cannot both be true otherwise.
+    pub start_date: Option<Date>,
+    /// The threshold in force on the day of the adoption.
+    pub threshold: Option<ThresholdChoice>,
+    /// The race the plan's own rule is read from.
+    ///
+    /// It is the athlete's own race, and it is the anchor the method's
+    /// bands are worked out from when no threshold carries a pace.
+    pub race: Option<Race>,
+    /// The athlete's own recent weekly mileage, in metres, oldest first.
+    ///
+    /// The app computes it from the athlete's runs; the core only states it
+    /// beside the tier's entry requirement.
+    pub weekly_mileage_m: Vec<f64>,
+}
+
+/// An adopted plan: a dated copy of a programme.
+#[derive(Clone, Debug, PartialEq)]
+pub struct AdoptedPlan {
+    /// The catalogue id of the programme.
+    pub template_id: String,
+    /// The catalogue version the plan was adopted from.
+    pub template_version: String,
+    /// The programme's label: "half marathon tier 2".
+    pub label: String,
+    /// The programme's method: "Pfitzinger".
+    pub method: String,
+    /// The goal distance, in metres.
+    pub distance_m: f64,
+    /// The goal distance's name: "half marathon".
+    pub distance_label: String,
+    /// The tier's entry requirement, as it was at the adoption.
+    ///
+    /// It is a **snapshot**: a later change to the catalogue does not
+    /// rewrite the athlete's plan.
+    pub entry_mileage: Option<MileageRange>,
+    /// The plan's own mileage band.
+    pub plan_mileage: Option<MileageRange>,
+    /// The goal race's distance, as the athlete chose it.
+    pub goal_distance_m: f64,
+    /// The goal race's distance, named.
+    pub goal_distance_label: String,
+    /// The day of the goal race.
+    pub race_date: Date,
+    /// The day the plan was adopted.
+    pub adopted_on: Date,
+    /// The first day of the plan.
+    pub start_date: Date,
+    /// The last day of the plan — the last day of the last week after the
+    /// race.
+    pub end_date: Date,
+    /// The weeks, in date order.
+    pub weeks: Vec<AdoptedWeek>,
+    /// What the plan was paced with.
+    pub pacing: Pacing,
+    /// The athlete's own recent weekly mileage, in metres, oldest first.
+    pub athlete_mileage_m: Vec<f64>,
+    /// Where the plan came from.
+    ///
+    /// An adopted programme is a **prescription**: the athlete chose it.
+    pub source: PlanSource,
+}
+
+/// One week of an adopted plan.
+#[derive(Clone, Debug, PartialEq)]
+pub struct AdoptedWeek {
+    /// The week's number: eleven down to one, zero for race week, and
+    /// negative for the weeks after the race.
+    pub week: i32,
+    /// The weeks to go: eleven down to one, zero for race week, and absent
+    /// for the weeks after the race.
+    pub weeks_to_go: Option<i32>,
+    /// The week's own label: "3 weeks to go", "race week".
+    pub label: String,
+    /// Whether the week is one of the plan's twelve.
+    pub in_plan: bool,
+    /// Whether the book prints the week as a recovery week.
+    pub recovery_week: bool,
+    /// The first day of the week.
+    pub start_date: Date,
+    /// The last day of the week.
+    pub end_date: Date,
+    /// The week's printed volume, in metres.
+    pub printed_volume_m: Option<f64>,
+    /// The reconciliation of the week's days against its printed volume.
+    pub volume_check: VolumeCheck,
+    /// The week's sessions, in date order.
+    pub sessions: Vec<AdoptedSession>,
+    /// The shift, when the race week was moved to the athlete's race day.
+    pub shift: Option<RaceWeekShift>,
+}
+
+/// One session of an adopted plan.
+#[derive(Clone, Debug, PartialEq)]
+pub struct AdoptedSession {
+    /// The day the session falls on.
+    pub date: Date,
+    /// The method's kind — the book's own vocabulary.
+    pub kind: SessionKind,
+    /// The session's distance, in metres.
+    ///
+    /// On a race day this is the **race's own distance** and not the
+    /// number the schedule prints beside it (B5).
+    pub distance_m: Option<f64>,
+    /// The cell's own detail: "3 × 8 min, jog 3".
+    pub detail: Option<String>,
+    /// The session's pace.
+    ///
+    /// A session with no pace is a session with no pace — never a zero
+    /// pace — and it says why.
+    pub pace: PaceValue,
+    /// The second end of a session with two: the long run's finish pace.
+    pub finish_pace: PaceValue,
+    /// On a progression long run: how many of the last miles are at the
+    /// threshold pace.
+    pub lt_last_m: Option<f64>,
+}
+
+/// The race week, moved to the day the athlete races.
+///
+/// The book's own rule for a race on another day is to move the race week
+/// alone: no other week moves, and the shift is stated as a fact.
+#[derive(Clone, Debug, PartialEq)]
+pub struct RaceWeekShift {
+    /// The days the week moved: negative is earlier.
+    pub days: i64,
+    /// The day the goal race falls on.
+    pub race_weekday: String,
+    /// The sessions that are not in this week.
+    pub dropped: Vec<DroppedSession>,
+}
+
+/// A session the shift left out of the race week.
+#[derive(Clone, Debug, PartialEq)]
+pub struct DroppedSession {
+    /// The day it was printed on.
+    pub weekday: String,
+    /// The runner's wording for its kind.
+    pub kind: String,
+}
+
+/// What the plan was paced with, and where the numbers came from.
+#[derive(Clone, Debug, PartialEq)]
+pub struct Pacing {
+    /// The threshold that was in force when the plan was adopted.
+    ///
+    /// The plan keeps it, and a later threshold does not re-pace it.
+    pub threshold: Option<PacingSource>,
+    /// The race the plan's own rule was read from.
+    pub race: Option<PacingSource>,
+    /// The reason the sessions that need a race have no pace.
+    pub missing: Option<String>,
+}
+
+/// One thing the plan's paces came from: a value and the day it was read.
+#[derive(Clone, Debug, PartialEq)]
+pub struct PacingSource {
+    /// The value, rendered: "165 bpm" or "4:16–4:21 /km".
+    pub value: String,
+    /// The day it was read.
+    pub date: Date,
+}
+
+/// Why an adoption could not be made.
+///
+/// A refusal is a **fact with a reason**, never a verdict.
+#[derive(Clone, Debug, PartialEq)]
+pub enum AdoptionRefusal {
+    /// The programme is not in the catalogue.
+    UnknownProgramme {
+        /// The id the athlete named.
+        id: String,
+    },
+    /// The goal race's distance is not one the programme prints.
+    GoalDistance {
+        /// The distances the programme prints.
+        printed: Vec<String>,
+        /// The distance that was given.
+        given_m: f64,
+    },
+    /// The start date and the race date cannot both be true.
+    StartDate {
+        /// The Monday the plan's first week has to begin on.
+        expected: Date,
+        /// The first day the athlete named.
+        given: Date,
+    },
+    /// The programme's own week does not add up to the mileage the book
+    /// prints beside it.
+    Volume {
+        /// The week that does not add up.
+        week: i32,
+        /// What its days add up to, in metres.
+        cells_m: f64,
+        /// What the book prints, in metres.
+        printed_m: Option<f64>,
+    },
+}
+
+impl AdoptionRefusal {
+    /// The refusal's reason, in the runner's words.
+    pub fn reason(&self) -> Option<String> {
+        match self {
+            AdoptionRefusal::UnknownProgramme { id } => {
+                strings::render("statement.plan.refusal.programme", &[("id", id)])
+            }
+            AdoptionRefusal::GoalDistance { printed, given_m } => {
+                let options = printed.join(" or ");
+                let distance = units::render_distance(Some(*given_m))?;
+                strings::render(
+                    "statement.plan.refusal.goal",
+                    &[("options", &options), ("distance", &distance)],
+                )
+            }
+            AdoptionRefusal::StartDate { expected, given } => {
+                let expected = expected.to_iso();
+                let given = given.to_iso();
+                strings::render(
+                    "statement.plan.refusal.start",
+                    &[("start", &expected), ("race", &given)],
+                )
+            }
+            AdoptionRefusal::Volume {
+                week,
+                cells_m,
+                printed_m,
+            } => {
+                let week = week.to_string();
+                let cells = units::render_distance(Some(*cells_m)).unwrap_or_default();
+                let volume = printed_m
+                    .and_then(|printed| units::render_distance(Some(printed)))
+                    .unwrap_or_default();
+                strings::render(
+                    "statement.plan.refusal.volume",
+                    &[("week", &week), ("cells", &cells), ("volume", &volume)],
+                )
+            }
+        }
+    }
+}
+
+/// The paces the plan was worked out with.
+#[derive(Clone, Debug, PartialEq)]
+struct PlanPaces {
+    /// The threshold pace.
+    threshold: PaceValue,
+    /// The long run's first end.
+    long_start: PaceValue,
+    /// The long run's second end.
+    long_finish: PaceValue,
+    /// The recovery pace.
+    recovery: PaceValue,
+    /// The VO₂max pace: the 3K-to-5K race pace.
+    vo2: PaceValue,
+    /// The speed-repetition pace: the 800 m-to-mile race pace.
+    speed: PaceValue,
+    /// The goal race's own pace.
+    race: PaceValue,
+    /// The tune-up race's own pace.
+    tune_up: PaceValue,
+}
+
+/// Adopt a programme.
+///
+/// The plan is a **dated copy** of the catalogue's programme:
+///
+/// * the **race date anchors it** (B3) — the race week is the twelfth
+///   week, and the goal race falls on the book's own day for the
+///   programme. A race on another day moves the race week alone, and the
+///   move is stated as a fact;
+/// * the **paces are worked out once, here** (B4), from the threshold in
+///   force on the day of the adoption, and they are stored with it. A
+///   later threshold does not re-pace a running plan;
+/// * a **race day's distance is the race's own distance** (B5) and not the
+///   number the schedule prints beside it.
+///
+/// The adoption is **refused**, with the reason, when the start date and
+/// the race date cannot both be true, when the goal race's distance is not
+/// one the programme prints, or when the programme's own week does not add
+/// up to the mileage the book prints beside it.
+pub fn adopt(input: &AdoptionInput) -> Result<AdoptedPlan, AdoptionRefusal> {
+    let programme =
+        programme(&input.programme_id).ok_or_else(|| AdoptionRefusal::UnknownProgramme {
+            id: input.programme_id.clone(),
+        })?;
+
+    // The goal race's distance must be one the programme prints: the 10K
+    // programme's race is the 8K or the 10K, and the half-marathon
+    // programme's race is the half marathon.
+    let option = programme
+        .goal_race
+        .options
+        .iter()
+        .find(|option| (option.distance_m - input.goal_distance_m).abs() < 1.0)
+        .ok_or_else(|| AdoptionRefusal::GoalDistance {
+            printed: programme
+                .goal_race
+                .options
+                .iter()
+                .map(|option| option.label.clone())
+                .collect(),
+            given_m: input.goal_distance_m,
+        })?;
+
+    // The race week is the twelfth week, and the plan begins eleven weeks
+    // before it.
+    let race_monday = week_start(input.race_date);
+    let start = race_monday.add_days(-((programme.weeks as i64) - 1) * 7);
+    if let Some(given) = input.start_date {
+        if given != start {
+            return Err(AdoptionRefusal::StartDate {
+                expected: start,
+                given,
+            });
+        }
+    }
+
+    // A programme whose own week does not add up is not adopted: the gap
+    // is reported, and no cell is adjusted to make it sum.
+    for week in programme.weeks_detail.iter() {
+        if week.volume_check.reconciles == Some(false) {
+            return Err(AdoptionRefusal::Volume {
+                week: week.week,
+                cells_m: week.volume_check.cells_m.unwrap_or(0.0),
+                printed_m: week.printed_volume_m,
+            });
+        }
+    }
+
+    // The tune-up race's own distance: the pace it is run at.
+    let tune_up_distance_m = programme
+        .weeks_detail
+        .iter()
+        .flat_map(|week| week.days.iter())
+        .find(|day| day.kind == SessionKind::TuneUpRace)
+        .and_then(|day| day.race_distance_m);
+
+    let paces = plan_paces(input, option.distance_m, tune_up_distance_m);
+    let pacing = pacing_of(input);
+
+    // The book's own day for the goal race, and the shift the athlete's
+    // race day asks for.
+    let book_race_day = programme
+        .race_week()
+        .and_then(|week| {
+            week.days
+                .iter()
+                .find(|day| day.kind == SessionKind::GoalRace)
+        })
+        .map(|day| day.weekday);
+    let shift_days = match book_race_day {
+        Some(book) => weekday_index(input.race_date.weekday()) - weekday_index(book),
+        None => 0,
+    };
+
+    let mut weeks = Vec::with_capacity(programme.weeks_detail.len());
+    for template_week in programme.weeks_detail.iter() {
+        let week_start_date = race_monday.add_days(-(template_week.week as i64) * 7);
+        let mut sessions = Vec::with_capacity(template_week.days.len());
+        let mut dropped = Vec::new();
+        for day in template_week.days.iter() {
+            let mut index = weekday_index(day.weekday);
+            if template_week.week == 0 && shift_days != 0 {
+                index += shift_days;
+                if !(0..=6).contains(&index) {
+                    // The session falls outside the week: it is not in this
+                    // week, and the week says which one it was.
+                    dropped.push(DroppedSession {
+                        weekday: day.weekday.name().to_string(),
+                        kind: day.kind.word(),
+                    });
+                    continue;
+                }
+            }
+            let date = week_start_date.add_days(index);
+            let distance_m = match day.kind {
+                // A race day's distance is the race's own distance (B5).
+                SessionKind::GoalRace => Some(option.distance_m),
+                SessionKind::TuneUpRace => day.race_distance_m.or(day.distance_m),
+                _ => day.distance_m,
+            };
+            let (pace, finish_pace) = pace_for(&day.kind, &paces);
+            sessions.push(AdoptedSession {
+                date,
+                kind: day.kind.clone(),
+                distance_m,
+                detail: day.detail.clone(),
+                pace,
+                finish_pace,
+                lt_last_m: day.lt_last_m,
+            });
+        }
+        let shift = if template_week.week == 0 && shift_days != 0 {
+            Some(RaceWeekShift {
+                days: shift_days,
+                race_weekday: input.race_date.weekday().name().to_string(),
+                dropped,
+            })
+        } else {
+            None
+        };
+        weeks.push(AdoptedWeek {
+            week: template_week.week,
+            weeks_to_go: template_week.weeks_to_go,
+            label: template_week.label.clone(),
+            in_plan: template_week.in_plan,
+            recovery_week: template_week.recovery_week,
+            start_date: week_start_date,
+            end_date: week_start_date.add_days(6),
+            printed_volume_m: template_week.printed_volume_m,
+            volume_check: template_week.volume_check.clone(),
+            sessions,
+            shift,
+        });
+    }
+
+    let end_date = weeks
+        .last()
+        .map(|week| week.end_date)
+        .unwrap_or(race_monday.add_days(6));
+
+    Ok(AdoptedPlan {
+        template_id: programme.id.clone(),
+        template_version: catalogue().version.clone(),
+        label: programme.label.clone(),
+        method: programme.method.clone(),
+        distance_m: programme.distance_m,
+        distance_label: programme.distance_label.clone(),
+        entry_mileage: programme.entry_mileage.clone(),
+        plan_mileage: programme.plan_mileage.clone(),
+        goal_distance_m: option.distance_m,
+        goal_distance_label: option.label.clone(),
+        race_date: input.race_date,
+        adopted_on: input.adopted_on,
+        start_date: start,
+        end_date,
+        weeks,
+        pacing,
+        athlete_mileage_m: input.weekly_mileage_m.clone(),
+        // An adopted programme is a prescription: the athlete chose it.
+        source: PlanSource::Prescribed,
+    })
+}
+
+/// The paces the plan was worked out with.
+///
+/// The **threshold in force on the day of the adoption** gives the
+/// threshold pace when it carries one (B4). Everything else comes from the
+/// method's own rule on the athlete's race, read through the ladder. A
+/// session whose pace cannot be worked out has **no pace with a reason** —
+/// never a zero pace.
+fn plan_paces(
+    input: &AdoptionInput,
+    goal_distance_m: f64,
+    tune_up_distance_m: Option<f64>,
+) -> PlanPaces {
+    let ladder = training_paces::ladder(&LadderInput {
+        race: input.race.clone(),
+        goal_distance_m: Some(goal_distance_m),
+        max_heart_rate: None,
+        resting_heart_rate: None,
+        long_run: LongRunKind::Standard,
+    });
+    let rung = |kind| {
+        ladder
+            .rung(kind)
+            .map(|rung| rung.pace)
+            .unwrap_or(PaceValue::Missing(MissingInput::NoRaceTime))
+    };
+
+    // The threshold pace: the threshold's own band when it carries one,
+    // and the method's rule on the race when it does not.
+    let threshold = match input.threshold.as_ref().and_then(|choice| choice.pace) {
+        Some(band) => PaceValue::Known(band),
+        None => rung(RungKind::LactateThreshold),
+    };
+
+    let long = ladder.rung(RungKind::LongRun);
+    let long_start = long
+        .map(|rung| rung.pace)
+        .unwrap_or(PaceValue::Missing(MissingInput::NoRaceTime));
+    let long_finish = long
+        .map(|rung| rung.finish_pace)
+        .unwrap_or(PaceValue::Missing(MissingInput::NoRaceTime));
+
+    // The VO₂max pace: the 3K-to-5K race pace. The engine reads the 5K
+    // equivalent — the fastest of the distances the method's own relations
+    // give — and the 3K pace is not one of them.
+    let vo2 = match equivalent_pace(&ladder, crate::vo2::FIVE_K) {
+        Some(pace) => PaceValue::Known(PaceBand::single(pace)),
+        None => PaceValue::Missing(MissingInput::NoRaceTime),
+    };
+
+    // The speed-repetition pace: the 800 m-to-mile race pace. The mile is
+    // not one of the ladder's equivalents, so it is read from the
+    // athlete's own race by the same relation the ladder uses.
+    let speed = match input.race.as_ref().and_then(mile_race_pace) {
+        Some(pace) => PaceValue::Known(PaceBand::single(pace)),
+        None => PaceValue::Missing(MissingInput::NoRaceTime),
+    };
+
+    // The tune-up race's own pace: the race's distance, as the athlete's
+    // own race gives it.
+    let tune_up = match tune_up_distance_m.and_then(|distance| equivalent_pace(&ladder, distance)) {
+        Some(pace) => PaceValue::Known(PaceBand::single(pace)),
+        None => PaceValue::Missing(MissingInput::NoRaceTime),
+    };
+
+    PlanPaces {
+        threshold,
+        long_start,
+        long_finish,
+        recovery: rung(RungKind::Recovery),
+        vo2,
+        speed,
+        race: rung(RungKind::GoalRace),
+        tune_up,
+    }
+}
+
+/// The pace of a session, and the second end of a session with two.
+fn pace_for(kind: &SessionKind, paces: &PlanPaces) -> (PaceValue, PaceValue) {
+    let none = PaceValue::NoneStated;
+    match kind {
+        // The general-aerobic day: the method fixes a heart-rate band and
+        // no pace.
+        SessionKind::GeneralAerobic | SessionKind::GeneralAerobicSpeed => (none, none),
+        // The rest day is not a run: it carries no pace at all.
+        SessionKind::RestCross | SessionKind::Rest => (none, none),
+        // The long run: from the start pace to the finish pace.
+        SessionKind::Endurance => (paces.long_start, paces.long_finish),
+        // The progression long run: the long run, then the last miles at
+        // the threshold pace.
+        SessionKind::ProgressionLongRun => (paces.long_start, paces.threshold),
+        SessionKind::Threshold => (paces.threshold, none),
+        SessionKind::Vo2Max => (paces.vo2, none),
+        SessionKind::SpeedRepetitions => (paces.speed, none),
+        SessionKind::Recovery => (paces.recovery, none),
+        SessionKind::RacePace | SessionKind::RacePaceSpeed => (paces.race, none),
+        SessionKind::TuneUpRace => (paces.tune_up, none),
+        SessionKind::GoalRace => (paces.race, none),
+        // The app's own kinds are not the method's: an adopted plan's
+        // sessions always carry one of the method's.
+        _ => (none, none),
+    }
+}
+
+/// What the plan was paced with.
+fn pacing_of(input: &AdoptionInput) -> Pacing {
+    let threshold = input.threshold.as_ref().and_then(|choice| {
+        choice.render().map(|value| PacingSource {
+            value,
+            date: choice.origin_date.unwrap_or(choice.entered_on),
+        })
+    });
+    let race = input.race.as_ref().map(|race| PacingSource {
+        value: training_paces::race_label(race.distance_m).to_string(),
+        date: race.date,
+    });
+    let missing = match input.race {
+        Some(_) => None,
+        None => MissingInput::NoRaceTime.reason(),
+    };
+    Pacing {
+        threshold,
+        race,
+        missing,
+    }
+}
+
+/// The pace of an equivalent race, in seconds per kilometre.
+fn equivalent_pace(ladder: &training_paces::Ladder, distance_m: f64) -> Option<f64> {
+    ladder
+        .equivalents
+        .iter()
+        .find(|equivalent| (equivalent.distance_m - distance_m).abs() < 1.0)
+        .and_then(|equivalent| equivalent.riegel_pace_s_per_km())
+}
+
+/// The pace of a mile race, worked out from the athlete's own race.
+///
+/// The speed repetitions are run at the 800 m-to-mile race pace. The mile
+/// is not one of the distances the ladder's own equivalents carry, so it is
+/// read by the same relation the ladder uses for every other distance.
+fn mile_race_pace(race: &Race) -> Option<f64> {
+    let time_s = crate::vo2::riegel_time(race.time_s, race.distance_m, METRES_PER_MILE)?;
+    Some(time_s / (METRES_PER_MILE / 1_000.0))
+}
+
+/// The Monday of the calendar week containing a day.
+fn week_start(day: Date) -> Date {
+    day.add_days(-weekday_index(day.weekday()))
+}
+
+/// The weekday's index, Monday is zero.
+fn weekday_index(weekday: Weekday) -> i64 {
+    match weekday {
+        Weekday::Monday => 0,
+        Weekday::Tuesday => 1,
+        Weekday::Wednesday => 2,
+        Weekday::Thursday => 3,
+        Weekday::Friday => 4,
+        Weekday::Saturday => 5,
+        Weekday::Sunday => 6,
     }
 }

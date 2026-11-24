@@ -662,6 +662,19 @@ pub fn history(choices: &[ThresholdChoice]) -> Vec<&ThresholdChoice> {
     dated
 }
 
+/// The choice in force **on a day**.
+///
+/// The history is a list of dated facts, and the one in force on a day is
+/// the last choice made on or before it. A plan adopted on a day is paced
+/// by the choice that was in force **that day** — and a choice made later
+/// does not reach back into it.
+pub fn in_force_at(choices: &[ThresholdChoice], day: Date) -> Option<&ThresholdChoice> {
+    choices
+        .iter()
+        .filter(|choice| choice.entered_on <= day)
+        .max_by_key(|choice| choice.entered_on)
+}
+
 #[cfg(test)]
 mod tests {
     #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
