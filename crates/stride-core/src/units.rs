@@ -212,6 +212,39 @@ pub fn render_distance(metres: Option<f64>) -> Option<String> {
     strings::render("value.distance", &[("value", &value)])
 }
 
+/// The rendered value of a distance in a week: "23.1 km a week".
+///
+/// The **rate** of a window's distance: the same training, a week at a
+/// time, in a thirty-day window and in a ninety-day one. The rate names
+/// its own unit — a number that does not say what it is says nothing.
+pub fn render_distance_per_week(metres_per_week: Option<f64>) -> Option<String> {
+    let metres = metres_per_week?;
+    if !metres.is_finite() {
+        return None;
+    }
+    let value = format_distance_km_short(metres);
+    strings::render("value.distance_per_week", &[("value", &value)])
+}
+
+/// The rendered value of a share of a window's days: "70.0% of the days".
+///
+/// The **rate** of a window's consistency: the share of the window's days
+/// that carry a run, so that a short window and a long one can be read
+/// against each other.
+///
+/// The share is written with one decimal: a whole per cent would round two
+/// different shares to the same number in a long window, and a table that
+/// says two numbers are the same and that they moved is a table that
+/// contradicts itself.
+pub fn render_share_of_days(percent: Option<f64>) -> Option<String> {
+    let percent = percent?;
+    if !percent.is_finite() {
+        return None;
+    }
+    let value = format_decimal(percent, 1);
+    strings::render("value.share_of_days", &[("value", &value)])
+}
+
 /// The rendered value of a duration: "6 h 10 m", "42 m".
 ///
 /// The rounding: minutes to the nearest minute, half to even, and an exact

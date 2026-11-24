@@ -120,6 +120,19 @@ export interface Chart {
   lineAlt: string
   /** The marker: the selected date, the pace beside the heart rate. */
   reference: string
+  /**
+   * The three series a chart draws on one plot: the athlete profile's
+   * three windows, each one a hue of its own.
+   *
+   * **They are chosen, not derived.** A chart that draws more than one
+   * series on the same axes needs hues that separate at a glance, and
+   * each of them has to hold against the card the chart is drawn on: a
+   * pale tint that reads well as a fill is invisible as a line. So each
+   * one here is a step deep enough to be seen against the card, and the
+   * first is the palette's own, the second the palette's warm other, and
+   * the third the palette's own third hue.
+   */
+  series: string[]
 }
 
 /** A whole set of roles: one palette. */
@@ -165,7 +178,7 @@ interface PaletteInput {
   usual: string
   could: string
   ramp: string[]
-  chart: { grid: string; axis: string }
+  chart: { grid: string; axis: string; series: string[] }
 }
 
 /**
@@ -193,6 +206,7 @@ function palette(input: PaletteInput): Palette {
       line: input.brand[500],
       lineAlt: input.brand[200],
       reference: input.accent[500],
+      series: input.chart.series,
     },
   }
 }
@@ -264,6 +278,10 @@ export const stride: Palette = palette({
   chart: {
     grid: '#EEF2F6',
     axis: '#8B9AAB',
+    // The three series of a chart that draws more than one: the deep
+    // azure, the deep amber and the teal. Each holds against the white
+    // card (5.3, 3.9 and 3.4 to one) and the three hues are far apart.
+    series: ['#1F6BC4', '#B57312', '#0E9C8A'],
   },
 })
 
@@ -328,6 +346,10 @@ export const dreeve: Palette = palette({
   chart: {
     grid: '#ECEEF0',
     axis: '#6B7280',
+    // The three series of a chart that draws more than one: the
+    // palette's own orange-red, its slate, and its deep red. Each holds
+    // against the white card (4.8, 4.8 and 8.4 to one).
+    series: ['#D03F00', '#6B7280', '#942319'],
   },
 })
 
@@ -391,6 +413,10 @@ export const night: Palette = palette({
   chart: {
     grid: '#24344A',
     axis: '#8497AC',
+    // The three series of a chart that draws more than one: the light
+    // blue, the gold and the teal. Each holds against the dark card
+    // (6.5, 9.9 and 8.8 to one).
+    series: ['#60A5FA', '#FBBF24', '#2DD4BF'],
   },
 })
 

@@ -181,7 +181,7 @@ pub struct Entry {
 }
 
 /// The catalogue.
-pub const CATALOGUE: [Entry; 198] = [
+pub const CATALOGUE: [Entry; 200] = [
     // The vitals.
     Entry {
         id: "vital.sleep.label",
@@ -379,6 +379,24 @@ pub const CATALOGUE: [Entry; 198] = [
         kind: StringKind::Statement,
         role: None,
         template: "{value}",
+    },
+    Entry {
+        // A distance in a week: the volume of a window, as a rate, so
+        // that two windows of different lengths can be read against each
+        // other. The rate names its own unit — a number that does not say
+        // what it is says nothing.
+        id: "value.distance_per_week",
+        kind: StringKind::Statement,
+        role: None,
+        template: "{value} km a week",
+    },
+    Entry {
+        // A share of the window's days: the consistency of a window, as a
+        // rate, for the same reason.
+        id: "value.share_of_days",
+        kind: StringKind::Statement,
+        role: None,
+        template: "{value}% of the days",
     },
     Entry {
         id: "value.heart_rate",

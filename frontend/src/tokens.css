@@ -59,6 +59,9 @@
   --chart-line: #2B7FE3;
   --chart-line-alt: #CFE0F3;
   --chart-reference: #E8A33D;
+  --chart-series-1: #1F6BC4;
+  --chart-series-2: #B57312;
+  --chart-series-3: #0E9C8A;
 }
 
 html[data-palette='dreeve'] {
@@ -112,6 +115,9 @@ html[data-palette='dreeve'] {
   --chart-line: #FC5200;
   --chart-line-alt: #FFD9C9;
   --chart-reference: #BD2D22;
+  --chart-series-1: #D03F00;
+  --chart-series-2: #6B7280;
+  --chart-series-3: #942319;
 }
 
 html[data-palette='night'] {
@@ -165,5 +171,8 @@ html[data-palette='night'] {
   --chart-line: #60A5FA;
   --chart-line-alt: #24486F;
   --chart-reference: #FBBF24;
+  --chart-series-1: #60A5FA;
+  --chart-series-2: #FBBF24;
+  --chart-series-3: #2DD4BF;
   color-scheme: dark;
 }

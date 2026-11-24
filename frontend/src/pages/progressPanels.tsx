@@ -30,16 +30,19 @@ import type {
   ChallengeInsight,
   LoadInsight,
   ProgressInsight,
+  ProfileWindow,
   RenderedValue,
   RollingInsight,
 } from '../lib/types'
 import { ChallengeGrid } from '../components/ChallengeGrid'
 import { PROFILE_SCOPES } from './useWall'
-import { formatCount, formatDateShort, renderedText } from '../lib/format'
+import { ABSENT, formatCount, formatDateShort, renderedText } from '../lib/format'
 import { t } from '../i18n'
 import type { CatalogueKey } from '../i18n'
 import { axisTick } from '../components/ChartAxis'
-import { AthleteShape, shapeAxes } from '../components/AthleteShape'
+import { AthleteShape, shapeWindows } from '../components/AthleteShape'
+import { RADAR_AXES } from '../components/ProfileRadar'
+import { seriesColour } from '../lib/chart'
 import { LoadDaysChart, LoadProjectionChart, LoadSeriesChart } from './loadCharts'
 
 /**
@@ -694,6 +697,11 @@ export function ZonesDistributionPanel({
  * shape, and the anchors are somebody else's coaching assumptions. These
  * are values, and each says which way it moved against the window before
  * it. The reader draws the shape.
+ *
+ * **These are the window's own totals**: the distance of the window, the
+ * days it carries a run — the number a reader asks for when they ask
+ * "how far did I run in three months?". The **rates** the chart is drawn
+ * from are on the shape, and the two never stand for one another.
  */
 export function ProfilePanel({
   rolling,
@@ -714,7 +722,7 @@ export function ProfilePanel({
                 className="text-[16px] font-semibold tabular-nums text-ink"
                 data-testid={`progress-profile-${facet.key}`}
               >
-                {renderedText(facet.value)}
+                {renderedText(facet.total)}
               </span>
               {facet.movement ? (
                 <span className="text-[11.5px] text-ink-muted">
@@ -730,6 +738,7 @@ export function ProfilePanel({
       <p className="mt-2 text-[12px] text-ink-faint" data-testid="progress-profile-window">
         {t('progress.rolling.window', { days: rolling?.window.days ?? 0 })}
       </p>
+      <p className="mt-0.5 text-[12px] text-ink-faint">{t('progress.profile.facets.note')}</p>
     </PanelShell>
 
   )
@@ -986,40 +995,47 @@ export function AdherencePanel({
 }
 
 /**
- * The athlete's shape: six axes, two windows, one chart.
+ * The athlete's shape: six axes, three windows, one chart.
  *
  * The same six facets of the training — the volume, the consistency, the
- * sport variety, the density, the duration, the intensity — over two
- * windows, drawn on one chart. **Each axis is scaled to the larger of the
- * two windows' values**, so the two shapes are read against each other
- * and not against anybody's idea of a good week.
+ * sport variety, the density, the duration, the intensity — over three
+ * windows, drawn on one chart. **Each axis is scaled to the largest of
+ * the three windows' values**, so the three shapes are read against each
+ * other and not against anybody's idea of a good week.
  *
- * The numbers beside the chart are the core's own rendering, one row for
- * each axis, and a facet with no value says so by showing nothing. The
- * windows are named, so a shape is never read apart from the period it
- * covers.
+ * **The axes are rates, and the core is where that happens.** The volume
+ * is a distance a week and the consistency the share of the window's
+ * days, so the windows can be read against each other at all. The
+ * numbers under the chart are the core's own rendering of the same
+ * numbers the chart draws, one row for each axis, and a facet with no
+ * value says so by showing nothing.
+ *
+ * The table under the chart is the **focused window against the window
+ * before it of the same length**: the equal-length comparison, and which
+ * way each facet moved.
  */
 export function ShapePanel({
-  rolling,
+  windows,
   error,
-  months,
+  days,
   onScope,
   bare = false,
 }: {
-  rolling: RollingInsight | undefined
+  /** The three windows the profile is drawn over. */
+  windows: ProfileWindow[]
   error: boolean
-  /** The window the profile is drawn over, in months. */
-  months: number
+  /** The window the page is about, in days. */
+  days: number
   /** The scope the athlete chooses. */
-  onScope: (months: number) => void
+  onScope: (days: number) => void
   /** The card is the wall's, and the heading is already said. */
   bare?: boolean
 }) {
   if (bare) {
     return (
       <div data-testid="progress-shape">
-        <ProfileScopePicker months={months} onChange={onScope} />
-        <ShapeBody rolling={rolling} error={error} />
+        <ProfileScopePicker days={days} onChange={onScope} />
+        <ShapeBody windows={windows} error={error} days={days} />
       </div>
     )
   }
@@ -1029,8 +1045,8 @@ export function ShapePanel({
       <h2 className="mb-2 caps">{t('progress.shape.heading')}</h2>
       {/* The note is drawn by the body below, and the body is inside the
           panel: drawing it here as well drew it twice. */}
-      <ProfileScopePicker months={months} onChange={onScope} />
-      <ShapeBody rolling={rolling} error={error} />
+      <ProfileScopePicker days={days} onChange={onScope} />
+      <ShapeBody windows={windows} error={error} days={days} />
     </section>
   )
 }
@@ -1038,30 +1054,30 @@ export function ShapePanel({
 /**
  * The windows the profile is drawn over.
  *
- * **Three months, six months, a year.** Each is compared with the window
- * before it of the same length, so the two shapes on the chart are the
- * same length and the shorter one is never smaller for the wrong reason.
+ * **Thirty days, sixty days, ninety days.** The chart draws all three of
+ * them, one on the other; the picker says which of them the rest of the
+ * page is about.
  */
 export function ProfileScopePicker({
-  months,
+  days,
   onChange,
 }: {
-  months: number
-  onChange: (months: number) => void
+  days: number
+  onChange: (days: number) => void
 }) {
   return (
     <div className="mb-2 flex flex-wrap gap-1.5" data-testid="profile-scope">
       {PROFILE_SCOPES.map((scope) => (
         <button
-          key={scope.months}
+          key={scope.days}
           type="button"
           className={`tap rounded-full border px-2.5 py-0.5 text-[11.5px] ${
-            scope.months === months
+            scope.days === days
               ? 'border-brand-600 bg-brand-600 font-semibold text-white'
               : 'border-edge text-ink-muted'
           }`}
-          onClick={() => onChange(scope.months)}
-          data-testid={`profile-scope-${scope.months}`}
+          onClick={() => onChange(scope.days)}
+          data-testid={`profile-scope-${scope.days}`}
         >
           {t(scope.labelKey)}
         </button>
@@ -1070,14 +1086,60 @@ export function ProfileScopePicker({
   )
 }
 
+/**
+ * One row of the table under the chart: an axis, the focused window's
+ * value, the window before it, and which way it moved.
+ *
+ * The values are the **comparable** ones — the rate, or the average of
+ * the runs — so that they are the numbers the chart draws.
+ */
+export interface ShapeRow {
+  key: string
+  label: string
+  now: RenderedValue | null
+  before: RenderedValue | null
+  movement: string | null
+}
+
+/** The rows of the table under the chart, for the focused window. */
+export function shapeRows(rolling: RollingInsight | undefined): ShapeRow[] {
+  return RADAR_AXES.map((key) => {
+    const facet = rolling?.profile.find((entry) => entry.key === key)
+    return {
+      key,
+      label: facet?.label ?? '',
+      now: facet?.value ?? null,
+      before: facet?.previous ?? null,
+      movement: facet?.movement ?? null,
+    }
+  })
+}
+
+/**
+ * The short words a movement is written in, for the table's own column.
+ *
+ * The word is the movement and nothing else: a share that grew and a
+ * facet that fell are both "up" and "down". Which way is the better way
+ * is not decided here.
+ */
+export const MOVEMENT: Record<string, CatalogueKey> = {
+  up: 'progress.rolling.trend.up.short',
+  down: 'progress.rolling.trend.down.short',
+  steady: 'progress.rolling.trend.steady.short',
+}
+
 /** The shape's body: the chart, the legend and the numbers. */
 export function ShapeBody({
-  rolling,
+  windows,
   error,
+  days,
   table = true,
 }: {
-  rolling: RollingInsight | undefined
+  /** The three windows the chart draws, one on the other. */
+  windows: ProfileWindow[]
   error: boolean
+  /** The window the page is about, in days. */
+  days: number
   /**
    * Whether the numbers under the chart are drawn.
    *
@@ -1087,99 +1149,101 @@ export function ShapeBody({
    */
   table?: boolean
 }) {
-  const axes = shapeAxes(rolling)
-  // The two windows are the same length: the window, and the window
-  // before it.
-  const shortDays = rolling?.window.days
-  const longDays = shortDays
+  const focused = windows.find((window) => window.days === days)?.rolling
+  const rows = shapeRows(focused)
+  const shapes = shapeWindows(windows)
   return (
     <>
       <p className="text-[12px] text-ink-muted">{t('progress.shape.note')}</p>
-      {error && !rolling ? (
+      {error && !focused ? (
         <p className="mt-2 text-[13px] text-ink-muted" data-testid="progress-shape-error">
           {t('common.error')}
         </p>
       ) : null}
-      {!rolling && !error ? (
+      {!focused && !error ? (
         <p className="mt-2 text-[13px] text-ink-muted">{t('common.loading')}</p>
       ) : null}
-      {rolling ? (
+      {focused ? (
         <>
-          <AthleteShape rolling={rolling} />
-          {/* The two windows, named: the chart is never read apart from
-              the period it covers. */}
+          {/* The three windows, one on the other: the whole shape on one
+              chart. */}
+          <AthleteShape windows={shapes} focus={days} />
+          {/* The windows, named: the chart is never read apart from the
+              periods it covers. */}
           <ul className="mt-2 flex flex-wrap gap-x-4 gap-y-1" data-testid="progress-shape-legend">
-            {[
-              {
-                days: shortDays,
-                colour: 'var(--chart-line)',
-                label: t('progress.rolling.window', { days: shortDays ?? 0 }),
-              },
-              {
-                days: longDays,
-                colour: 'var(--chart-line-alt)',
-                label: t('progress.wall.profile.previous', { days: longDays ?? 0 }),
-              },
-            ].map((entry) => (
+            {windows.map((window, index) => (
               <li
-                key={entry.colour}
+                key={window.days}
                 className="flex items-center gap-1.5 text-[11.5px] text-ink-muted"
               >
                 <span
                   className="inline-block h-2.5 w-4 rounded-sm"
-                  style={{ backgroundColor: entry.colour }}
+                  style={{ backgroundColor: seriesColour(index) }}
                 />
-                <span>{entry.days === undefined ? t('progress.shape.empty') : entry.label}</span>
+                <span>
+                  {window.rolling
+                    ? t('progress.shape.legend', { days: window.days })
+                    : t('progress.shape.empty')}
+                </span>
               </li>
             ))}
           </ul>
           <p className="mt-1 text-[12px] text-ink-faint">{t('progress.shape.scale')}</p>
+          <p className="mt-0.5 text-[12px] text-ink-faint">{t('progress.shape.rates')}</p>
           {/* The numbers, in the core's own words: a row for each axis,
-              and the two windows beside it. */}
+              the focused window, the window before it of the same
+              length, and which way it moved. */}
           {table ? (
             <table
               className="mt-3 w-full table-fixed text-[12px]"
               data-testid="progress-shape-values"
             >
-            <thead>
-              <tr className="border-b border-edge text-ink-muted">
-                <th scope="col" className="py-1.5 text-left font-medium">
-                  {t('progress.shape.axis')}
-                </th>
-                <th scope="col" className="py-1.5 text-right font-medium">
-                  {shortDays === undefined
-                    ? ''
-                    : t('progress.shape.window', { days: shortDays })}
-                </th>
-                <th scope="col" className="py-1.5 text-right font-medium">
-                  {longDays === undefined
-                    ? ''
-                    : t('progress.wall.profile.previous', { days: longDays })}
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {axes.map((axis) => (
-                <tr key={axis.key} className="border-b border-edge last:border-b-0">
-                  <th scope="row" className="py-1.5 text-left font-medium text-ink-soft">
-                    {axis.label}
+              <thead>
+                <tr className="border-b border-edge text-ink-muted">
+                  <th scope="col" className="py-1.5 text-left font-medium">
+                    {t('progress.shape.axis')}
                   </th>
-                  <td
-                    className="py-1.5 text-right tabular-nums text-ink"
-                    data-testid={`progress-shape-${axis.key}-now`}
-                  >
-                    {renderedText(axis.now)}
-                  </td>
-                  <td
-                    className="py-1.5 text-right tabular-nums text-ink-muted"
-                    data-testid={`progress-shape-${axis.key}-before`}
-                  >
-                    {renderedText(axis.before)}
-                  </td>
+                  <th scope="col" className="py-1.5 text-right font-medium">
+                    {t('progress.wall.profile.window', { days })}
+                  </th>
+                  <th scope="col" className="py-1.5 text-right font-medium">
+                    {t('progress.wall.profile.previous', { days })}
+                  </th>
+                  <th scope="col" className="py-1.5 text-right font-medium">
+                    {t('progress.shape.movement')}
+                  </th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {rows.map((row) => (
+                  <tr key={row.key} className="border-b border-edge last:border-b-0">
+                    <th scope="row" className="py-1.5 text-left font-medium text-ink-soft">
+                      {row.label}
+                    </th>
+                    <td
+                      className="py-1.5 text-right tabular-nums text-ink"
+                      data-testid={`progress-shape-${row.key}-now`}
+                    >
+                      {renderedText(row.now)}
+                    </td>
+                    <td
+                      className="py-1.5 text-right tabular-nums text-ink-muted"
+                      data-testid={`progress-shape-${row.key}-before`}
+                    >
+                      {renderedText(row.before)}
+                    </td>
+                    <td
+                      className="py-1.5 text-right tabular-nums text-ink-muted"
+                      data-testid={`progress-shape-${row.key}-movement`}
+                    >
+                      {row.movement
+                        ? t(MOVEMENT[row.movement] ?? 'progress.rolling.trend.steady.short')
+                        : ABSENT}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           ) : null}
         </>
       ) : null}

@@ -24,6 +24,35 @@
 //! | sport variety | the sports the window holds |
 //! | week days | the days of the week the window carries a run on |
 //!
+//! ## A facet is a total **and** a comparable number
+//!
+//! A facet that grows with the window cannot be compared with a facet of
+//! another length: a ninety-day window holds about three times the
+//! distance of a thirty-day one, and drawn as totals the longer window is
+//! always outside the shorter one. The chart says then only that the
+//! window is longer.
+//!
+//! So every facet carries **two** numbers, and the core decides which is
+//! which:
+//!
+//! * the **total** — what the window holds: the distance of the window,
+//!   the days it holds. This is the number a reader asks for when they
+//!   ask "how far did I run in three months?";
+//! * the **comparable value** — the same thing as a **rate**, so that a
+//!   thirty-day window and a ninety-day window can be read against each
+//!   other. The volume is a distance **a week**; the consistency is the
+//!   **share of the window's days** that carry a run.
+//!
+//! The facets that are already averages of the runs inside the window —
+//! the intensity (a median), the duration (a median), the density (an
+//! average per active day) — do not grow with the window, so their
+//! comparable value **is** their own number. The variety is a count of
+//! the sports the athlete does: it is bounded by the athlete's repertoire
+//! and not by the length of the window, so it is a count in every window.
+//!
+//! The division lives **here**, and not in the app: every consumer gets a
+//! comparable number, and nobody has to remember to divide.
+//!
 //! ## No value
 //!
 //! A facet that cannot be computed is **no value**: a window with no run
@@ -38,6 +67,9 @@ use serde::{Deserialize, Serialize};
 use crate::band;
 use crate::rolling::{Movement, RollingActivity};
 use crate::strings;
+
+/// The days a week holds: the volume's rate is a distance a week.
+const DAYS_PER_WEEK: f64 = 7.0;
 
 /// The seven facets of the athlete's shape.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -98,8 +130,28 @@ impl FacetKey {
         }
     }
 
-    /// The unit the facet's value is in.
+    /// The unit the facet's **comparable value** is in.
+    ///
+    /// This is the unit of the rate for the facets that grow with the
+    /// window, and the facet's own unit for the ones that do not.
     pub fn unit(&self) -> FacetUnit {
+        match self {
+            // The distance of the window, a week at a time.
+            FacetKey::Volume => FacetUnit::DistancePerWeek,
+            // The share of the window's days that carry a run.
+            FacetKey::Consistency => FacetUnit::Share,
+            // The rest are averages of the runs inside the window: the
+            // same number in a short window and a long one.
+            FacetKey::Intensity => FacetUnit::HeartRate,
+            FacetKey::Duration => FacetUnit::Duration,
+            FacetKey::Density => FacetUnit::Duration,
+            FacetKey::Variety => FacetUnit::Count,
+            FacetKey::WeekDays => FacetUnit::Count,
+        }
+    }
+
+    /// The unit the facet's **total** is in: what the window holds.
+    pub fn total_unit(&self) -> FacetUnit {
         match self {
             FacetKey::Volume => FacetUnit::Distance,
             FacetKey::Consistency => FacetUnit::Count,
@@ -117,8 +169,12 @@ impl FacetKey {
 pub enum FacetUnit {
     /// A distance, in metres.
     Distance,
+    /// A distance in a week, in metres.
+    DistancePerWeek,
     /// A count, with no unit.
     Count,
+    /// A share of the window's days, in per cent.
+    Share,
     /// A duration, in seconds.
     Duration,
     /// A heart rate, in beats per minute.
@@ -132,17 +188,30 @@ pub struct Facet {
     pub key: FacetKey,
     /// The facet's name, in the core's own words.
     pub label: &'static str,
-    /// The value in the window. `None` when it cannot be computed.
+    /// The comparable value: the rate, for the facets that grow with the
+    /// window, and the average of the runs for the ones that do not.
+    ///
+    /// `None` when it cannot be computed.
     pub value: Option<f64>,
-    /// The value in the window before it.
+    /// The comparable value in the window before it, of the same length.
     pub previous: Option<f64>,
-    /// The unit the value is in.
+    /// The unit the comparable values are in.
     pub unit: FacetUnit,
-    /// Which way the value moved.
+    /// The window's own total: what the window holds.
+    ///
+    /// `None` when it cannot be computed.
+    pub total: Option<f64>,
+    /// The unit the total is in.
+    pub total_unit: FacetUnit,
+    /// Which way the comparable value moved.
     ///
     /// `None` when there is no value to compare: a facet that cannot be
     /// computed has no movement, and one that has no value in the window
     /// before it has nothing to move against.
+    ///
+    /// The movement is the movement of the **comparable value**, and it is
+    /// the movement of the total as well: the two windows are the same
+    /// length, so the rate and the total move the same way.
     pub movement: Option<Movement>,
 }
 
@@ -150,9 +219,13 @@ pub struct Facet {
 ///
 /// The window before the one in question is the comparison period, the
 /// same way it is for every other comparison the product makes.
-pub fn facets(current: &[RollingActivity], previous: &[RollingActivity]) -> Vec<Facet> {
-    let now = Values::of(current);
-    let before = Values::of(previous);
+///
+/// `days` is the length of the window, and it is what the rates are
+/// measured against: the volume a week, and the share of the window's
+/// days that carry a run.
+pub fn facets(current: &[RollingActivity], previous: &[RollingActivity], days: i64) -> Vec<Facet> {
+    let now = Values::of(current, days);
+    let before = Values::of(previous, days);
     FacetKey::all()
         .iter()
         .map(|key| {
@@ -168,6 +241,8 @@ pub fn facets(current: &[RollingActivity], previous: &[RollingActivity]) -> Vec<
                 value,
                 previous,
                 unit: key.unit(),
+                total: now.as_ref().and_then(|values| values.total(*key)),
+                total_unit: key.total_unit(),
                 movement,
             }
         })
@@ -177,7 +252,9 @@ pub fn facets(current: &[RollingActivity], previous: &[RollingActivity]) -> Vec<
 /// The seven values of one window.
 struct Values {
     volume_m: f64,
+    volume_per_week_m: f64,
     active_days: u32,
+    active_share: f64,
     intensity_bpm: Option<f64>,
     duration_s: Option<f64>,
     density_s: Option<f64>,
@@ -192,11 +269,16 @@ impl Values {
     /// no shape, and every one of its values is **no value** — never a
     /// zero. The athlete's profile is about what they did, and a window
     /// in which they did nothing says nothing about their shape.
-    fn of(activities: &[RollingActivity]) -> Option<Values> {
+    ///
+    /// `days` is the length of the window: the volume is a distance a
+    /// week, and the consistency is the share of the window's days that
+    /// carry a run.
+    fn of(activities: &[RollingActivity], days: i64) -> Option<Values> {
         if activities.is_empty() {
             return None;
         }
-        let mut days: BTreeSet<crate::date::Date> = BTreeSet::new();
+        let days = days.max(1) as f64;
+        let mut days_with_a_run: BTreeSet<crate::date::Date> = BTreeSet::new();
         let mut sports: BTreeSet<&str> = BTreeSet::new();
         let mut weekdays: BTreeSet<crate::date::Weekday> = BTreeSet::new();
         let mut volume_m = 0.0_f64;
@@ -204,7 +286,7 @@ impl Values {
         let mut hearts: Vec<f64> = Vec::new();
         let mut durations: Vec<f64> = Vec::new();
         for activity in activities {
-            days.insert(activity.date);
+            days_with_a_run.insert(activity.date);
             sports.insert(activity.sport.as_str());
             weekdays.insert(activity.date.weekday());
             volume_m += activity.distance_m;
@@ -214,10 +296,16 @@ impl Values {
                 hearts.push(heart);
             }
         }
-        let active_days = days.len() as u32;
+        let active_days = days_with_a_run.len() as u32;
         Some(Values {
             volume_m,
+            // The distance of the window, a week at a time: the same
+            // number in a short window and a long one, so that the two
+            // can be read against each other.
+            volume_per_week_m: volume_m * DAYS_PER_WEEK / days,
             active_days,
+            // The share of the window's days that carry a run.
+            active_share: f64::from(active_days) / days * 100.0,
             intensity_bpm: band::median(&hearts),
             duration_s: band::median(&durations),
             density_s: if active_days > 0 {
@@ -230,8 +318,21 @@ impl Values {
         })
     }
 
-    /// The value of one facet.
+    /// The comparable value of one facet.
     fn get(&self, key: FacetKey) -> Option<f64> {
+        match key {
+            FacetKey::Volume => Some(self.volume_per_week_m),
+            FacetKey::Consistency => Some(self.active_share),
+            FacetKey::Intensity => self.intensity_bpm,
+            FacetKey::Duration => self.duration_s,
+            FacetKey::Density => self.density_s,
+            FacetKey::Variety => Some(f64::from(self.variety)),
+            FacetKey::WeekDays => Some(f64::from(self.week_days)),
+        }
+    }
+
+    /// The window's own total of one facet.
+    fn total(&self, key: FacetKey) -> Option<f64> {
         match key {
             FacetKey::Volume => Some(self.volume_m),
             FacetKey::Consistency => Some(f64::from(self.active_days)),
@@ -292,27 +393,34 @@ mod tests {
             Some(activities) => activities,
             None => return,
         };
-        let facets = facets(&activities, &[]);
+        let facets = facets(&activities, &[], 30);
 
-        // Volume: the distance of the window, 35 km.
+        // Volume: the distance of the window, 35 km, and 35 km a week
+        // over a thirty-day window.
         let volume = match facet_of(&facets, FacetKey::Volume) {
             Some(facet) => facet,
             None => return,
         };
-        assert_eq!(volume.value, Some(35_000.0));
-        assert_eq!(volume.unit, FacetUnit::Distance);
-        // Consistency: three days carry a run.
+        assert_eq!(volume.total, Some(35_000.0));
+        assert_eq!(volume.total_unit, FacetUnit::Distance);
+        assert_eq!(volume.value, Some(35_000.0 * 7.0 / 30.0));
+        assert_eq!(volume.unit, FacetUnit::DistancePerWeek);
+        // Consistency: three days carry a run, and three days of thirty
+        // is a tenth of the window.
         let consistency = match facet_of(&facets, FacetKey::Consistency) {
             Some(facet) => facet,
             None => return,
         };
-        assert_eq!(consistency.value, Some(3.0));
+        assert_eq!(consistency.total, Some(3.0));
+        assert_eq!(consistency.value, Some(10.0));
+        assert_eq!(consistency.unit, FacetUnit::Share);
         // Intensity: the median of 140, 150 and 160 is 150.
         let intensity = match facet_of(&facets, FacetKey::Intensity) {
             Some(facet) => facet,
             None => return,
         };
         assert_eq!(intensity.value, Some(150.0));
+        assert_eq!(intensity.total, Some(150.0));
         // Duration: the median of 1 500, 3 000 and 6 000 is 3 000.
         let duration = match facet_of(&facets, FacetKey::Duration) {
             Some(facet) => facet,
@@ -341,6 +449,78 @@ mod tests {
     }
 
     #[test]
+    fn the_same_training_reads_the_same_way_in_a_short_window_and_a_long_one() {
+        // Six runs in the last thirty days, and six more in the thirty
+        // days before them: the same training, twice as long a window.
+        let mut activities = match runs(&[
+            activity("2026-05-08", 10_000.0, 3_000.0, Some(150.0), "running"),
+            activity("2026-05-09", 10_000.0, 3_000.0, Some(150.0), "running"),
+            activity("2026-05-10", 10_000.0, 3_000.0, Some(150.0), "running"),
+            activity("2026-05-11", 10_000.0, 3_000.0, Some(150.0), "running"),
+            activity("2026-05-12", 10_000.0, 3_000.0, Some(150.0), "running"),
+            activity("2026-05-13", 10_000.0, 3_000.0, Some(150.0), "running"),
+        ]) {
+            Some(activities) => activities,
+            None => return,
+        };
+        activities.extend(
+            match runs(&[
+                activity("2026-04-08", 10_000.0, 3_000.0, Some(150.0), "running"),
+                activity("2026-04-09", 10_000.0, 3_000.0, Some(150.0), "running"),
+                activity("2026-04-10", 10_000.0, 3_000.0, Some(150.0), "running"),
+                activity("2026-04-11", 10_000.0, 3_000.0, Some(150.0), "running"),
+                activity("2026-04-12", 10_000.0, 3_000.0, Some(150.0), "running"),
+                activity("2026-04-13", 10_000.0, 3_000.0, Some(150.0), "running"),
+            ]) {
+                Some(activities) => activities,
+                None => return,
+            },
+        );
+
+        let short = facets(&activities[..6], &[], 30);
+        let long = facets(&activities, &[], 60);
+
+        let volume_short = match facet_of(&short, FacetKey::Volume) {
+            Some(facet) => facet,
+            None => return,
+        };
+        let volume_long = match facet_of(&long, FacetKey::Volume) {
+            Some(facet) => facet,
+            None => return,
+        };
+        // The totals are not the same: the window is twice as long.
+        assert_eq!(volume_short.total, Some(60_000.0));
+        assert_eq!(volume_long.total, Some(120_000.0));
+        // And the rate is the same: the same training, a week at a time.
+        assert_eq!(volume_short.value, Some(14_000.0));
+        assert_eq!(volume_long.value, Some(14_000.0));
+        // The consistency is a share of the window's days, and it is the
+        // same share: a fifth of the days in both.
+        let consistency_short = match facet_of(&short, FacetKey::Consistency) {
+            Some(facet) => facet,
+            None => return,
+        };
+        let consistency_long = match facet_of(&long, FacetKey::Consistency) {
+            Some(facet) => facet,
+            None => return,
+        };
+        assert_eq!(consistency_short.value, Some(20.0));
+        assert_eq!(consistency_long.value, Some(20.0));
+        // The intensity, the duration and the density are the averages of
+        // the runs inside the window: the same number in both.
+        let intensity_short = match facet_of(&short, FacetKey::Intensity) {
+            Some(facet) => facet,
+            None => return,
+        };
+        let intensity_long = match facet_of(&long, FacetKey::Intensity) {
+            Some(facet) => facet,
+            None => return,
+        };
+        assert_eq!(intensity_short.value, intensity_long.value);
+        assert_eq!(intensity_short.value, Some(150.0));
+    }
+
+    #[test]
     fn a_facet_moves_against_the_window_before_it() {
         let now = match runs(&[activity(
             "2026-05-13",
@@ -362,7 +542,7 @@ mod tests {
             Some(runs) => runs,
             None => return,
         };
-        let facets = facets(&now, &before);
+        let facets = facets(&now, &before, 7);
         // The distance grew: up.
         let volume = match facet_of(&facets, FacetKey::Volume) {
             Some(facet) => facet,
@@ -392,18 +572,18 @@ mod tests {
         };
         // The window before it holds nothing, so there is nothing to move
         // against.
-        let facets = facets(&activities, &[]);
+        let facets = facets(&activities, &[], 7);
         let volume = match facet_of(&facets, FacetKey::Volume) {
             Some(facet) => facet,
             None => return,
         };
-        assert_eq!(volume.value, Some(20_000.0));
+        assert_eq!(volume.total, Some(20_000.0));
         assert_eq!(volume.movement, None);
     }
 
     #[test]
     fn a_window_with_no_run_has_no_facets_at_all() {
-        let facets = facets(&[], &[]);
+        let facets = facets(&[], &[], 7);
         let intensity = match facet_of(&facets, FacetKey::Intensity) {
             Some(facet) => facet,
             None => return,
@@ -421,6 +601,7 @@ mod tests {
             None => return,
         };
         assert_eq!(volume.value, None);
+        assert_eq!(volume.total, None);
         // And no facet has a movement.
         assert!(facets.iter().all(|facet| facet.movement.is_none()));
     }

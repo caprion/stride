@@ -72,6 +72,9 @@ export function paletteVariables(palette) {
   variables['--chart-line'] = palette.chart.line
   variables['--chart-line-alt'] = palette.chart.lineAlt
   variables['--chart-reference'] = palette.chart.reference
+  palette.chart.series.forEach((colour, index) => {
+    variables[`--chart-series-${index + 1}`] = colour
+  })
   return variables
 }
 

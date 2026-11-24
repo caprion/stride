@@ -161,7 +161,7 @@ Two rules hold for every shape below.
 | `/insights/today` | `generated_at`, `date`, `planned`, `options`, `last_run`, `distance_comparison: string \| null`, `week: {distance, sessions, days: {date, sessions}[]}` |
 | `/insights/progress` | `generated_at`, `date` (the core's local calendar date), `period: {from, to, distance, duration, sessions, recorded_weeks}`, `headline`, `headline_note`, `weekly_volume`, `typical_week`, `pace_at_hr`, `bests`, `consistency`, `sessions_per_week`, `adherence`, `eddington: {number, days_needed_for_next, longest_day} \| null` |
 | `/insights/load` | `generated_at`, `date`, `window: {from, from_label, to, to_label, weeks, warmup_days}`, `load: LoadSeries \| null`, `unavailable: string \| null`, `scenario: LoadScenario \| null` |
-| `/insights/rolling` | `generated_at`, `date`, `window: {from, from_label, to, to_label, days}`, `comparison: {from, from_label, to, to_label, days}`, `distance: {current, previous, difference}`, `duration: {current, previous, difference}`, `sessions: {current, previous, difference}`, `zones: {model, shares, distribution, unavailable}`, `distances: {key, label, sessions, distance, elevation, duration}[]`, `profile: {key, label, value, previous, movement}[]`, `weekday: {weekday, sessions, distance, duration, share}[]`, `daytime: {key, label, from_hour, to_hour, sessions, distance, duration}[]`, `months: {key, label, sessions, distance, duration, elevation}[]`, `years: {key, label, sessions, distance, duration, elevation}[]` |
+| `/insights/rolling` | `generated_at`, `date`, `window: {from, from_label, to, to_label, days}`, `comparison: {from, from_label, to, to_label, days}`, `distance: {current, previous, difference}`, `duration: {current, previous, difference}`, `sessions: {current, previous, difference}`, `zones: {model, shares, distribution, unavailable}`, `distances: {key, label, sessions, distance, elevation, duration}[]`, `profile: {key, label, value, total, previous, movement}[]`, `weekday: {weekday, sessions, distance, duration, share}[]`, `daytime: {key, label, from_hour, to_hour, sessions, distance, duration}[]`, `months: {key, label, sessions, distance, duration, elevation}[]`, `years: {key, label, sessions, distance, duration, elevation}[]` |
 | `/insights/streaks` | `generated_at`, `date`, `days: {current, longest}`, `weeks: {current, longest}` |
 | `/insights/pace` | `generated_at`, `date`, `window: {from, from_label, to, to_label, weeks}`, `weeks: {week_start, distance, sessions, longest, pace, heart_rate}[]`, `bands: {width_s_per_km, total, distance, rows: {from, to, label, time, distance, share}[], rest} \| null`, `unavailable: string \| null` |
 
@@ -364,6 +364,11 @@ rather than left to be guessed at.
 the window is `weeks × 7` days, so the card on Progress follows the range
 selector the screen already has.
 
+**`days` is the same window, counted in days** (1 to 728), and it is what
+the athlete profile's ladder asks for: thirty, sixty and ninety days. A
+month is not four weeks, and the router answers the days exactly. When
+both parameters are given, **`days` is the one that counts**.
+
 The window applies to **the comparison, the split of the zones, the
 distance breakdown and the profile**. The weekday and daytime splits and
 the monthly and yearly tables cover the **whole saved history** — a
@@ -393,6 +398,19 @@ Three more answers ride on the same window.
   it. A window with no run has **no facets at all** — every value is no
   value, never a zero — and a facet with no value in the window before it
   has **no movement** to report.
+
+  **Each facet carries two numbers.** `total` is what the window holds:
+  the distance of the window, the days it carries a run — the number a
+  reader asks for when they ask "how far did I run in three months?".
+  `value` is the **comparable** number: the volume is a distance **a
+  week** and the consistency the **share of the window's days** that
+  carry a run, so that a thirty-day window and a ninety-day window can be
+  read against each other at all. The intensity (a median), the duration
+  (a median) and the density (an average per active day) do not grow with
+  the window, so their `value` **is** their own number; the variety is a
+  count of the athlete's sports and is a count in every window. The
+  division is the core's, so every consumer gets a comparable number and
+  nobody has to remember to divide.
 
 ### The pace page
 

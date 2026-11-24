@@ -53,20 +53,21 @@ use super::ok;
 /// How many weeks the window may cover — the Progress route's own bound.
 const MAX_WEEKS: i64 = 104;
 
+/// How many days the window may cover: the weeks' bound, in days.
+const MAX_DAYS: i64 = MAX_WEEKS * DAYS_PER_WEEK;
+
 /// The days a week holds: the window is measured in weeks, and it is
 /// measured in days.
 const DAYS_PER_WEEK: i64 = 7;
 
+/// The weeks the window covers when nothing is asked for.
+const DEFAULT_WEEKS: i64 = 12;
+
 /// The rolling view over a window.
 pub fn rolling(api: &Api, request: &Request) -> ApiResult<Value> {
-    let weeks = request.query.integer("weeks")?.unwrap_or(12);
-    if !(1..=MAX_WEEKS).contains(&weeks) {
-        return Err(ApiError::bad_request(
-            "the rolling window is not between 1 and 104 weeks",
-        ));
-    }
+    let days = window_days(request)?;
     let current = super::today(api)?;
-    let window = RollingWindow::new(weeks * DAYS_PER_WEEK, current);
+    let window = RollingWindow::new(days, current);
 
     // The whole history: the window's runs and the splits' runs are in it,
     // and it is one read of the store.
@@ -105,7 +106,7 @@ pub fn rolling(api: &Api, request: &Request) -> ApiResult<Value> {
         .cloned()
         .collect();
     let buckets = crate::rolling::distance_buckets(&in_window);
-    let profile = crate::rolling::profile_facets(&in_window, &in_previous);
+    let profile = crate::rolling::profile_facets(&in_window, &in_previous, window.days);
 
     let response = RollingInsight {
         generated_at: api.generated_at(),
@@ -157,6 +158,32 @@ pub fn streaks(api: &Api, _request: &Request) -> ApiResult<Value> {
 }
 
 // ------------------------------------------------------------------ helpers
+
+/// The length of the window, in days.
+///
+/// The window may be asked for in **weeks** — the Progress route's own
+/// parameter, and the range the screen shows — or in **days**, which is
+/// the athlete profile's ladder: thirty, sixty and ninety days.
+///
+/// **`days` is the one that counts** when both are given: it is the finer
+/// of the two, and thirty days is not four weeks and a bit.
+fn window_days(request: &Request) -> ApiResult<i64> {
+    if let Some(days) = request.query.integer("days")? {
+        if !(1..=MAX_DAYS).contains(&days) {
+            return Err(ApiError::bad_request(format!(
+                "the rolling window is not between 1 and {MAX_DAYS} days"
+            )));
+        }
+        return Ok(days);
+    }
+    let weeks = request.query.integer("weeks")?.unwrap_or(DEFAULT_WEEKS);
+    if !(1..=MAX_WEEKS).contains(&weeks) {
+        return Err(ApiError::bad_request(
+            "the rolling window is not between 1 and 104 weeks",
+        ));
+    }
+    Ok(weeks * DAYS_PER_WEEK)
+}
 
 /// A window of days, as the answer names it.
 fn window_of(window: RollingWindow) -> RollingWindowDto {
@@ -218,6 +245,7 @@ fn facet_of(facet: &stride_core::profile::Facet) -> ProfileFacet {
         key: facet.key.key().to_string(),
         label: facet.label.to_string(),
         value: facet_value(facet.value, facet.unit),
+        total: facet_value(facet.total, facet.total_unit),
         previous: facet_value(facet.previous, facet.unit),
         movement: facet.movement.map(|movement| movement.key().to_string()),
     }
@@ -231,7 +259,9 @@ fn facet_value(
     use stride_core::profile::FacetUnit;
     match unit {
         FacetUnit::Distance => render::distance(value),
+        FacetUnit::DistancePerWeek => render::distance_per_week(value),
         FacetUnit::Count => render::whole(value),
+        FacetUnit::Share => render::share_of_days(value),
         FacetUnit::Duration => render::duration(value),
         FacetUnit::HeartRate => render::heart_rate(value),
     }

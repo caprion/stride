@@ -1,23 +1,30 @@
 /**
  * The athlete's profile, as a radar.
  *
- * Two windows, one chart: the last thirty days and the last ninety, each
- * on its own polygon, each axis scaled to the **larger of the two values
- * on that axis**. So the chart says how the two windows differ in shape,
- * and it says nothing about what any of the numbers means — the scale is
- * the athlete's own, not an anchor somebody else chose.
+ * Three windows, one chart: the last thirty days, the last sixty and the
+ * last ninety, each on its own polygon, each axis scaled to the
+ * **largest of the three values on that axis**. So the chart says how
+ * the windows differ in shape, and it says nothing about what any of the
+ * numbers means — the scale is the athlete's own, not an anchor
+ * somebody else chose.
  *
  * **The values are the router's.** The facets come from
  * `/insights/rolling`, and every number here is the core's own rendering
  * of it. The chart draws; it computes nothing.
  *
  * The drawing is SVG, made by the app's own chart helpers (`lib/chart.ts`):
- * the scale that puts the larger of two values on the outside, the path of
- * a polygon and the point on a circle. It is sized by its own viewBox, so
+ * the scale that puts the largest of the values on the outside, the path
+ * of a polygon and the point on a circle. It is sized by its own viewBox, so
  * it shrinks with the card and never overflows it.
  */
 
-import { polygonPath, radialPoint, scaleToLargest, type Point } from '../lib/chart'
+import {
+  polygonPath,
+  radialPoint,
+  scaleToLargest,
+  seriesColour,
+  type Point,
+} from '../lib/chart'
 import { t } from '../i18n'
 
 /** One axis of the radar. */
@@ -26,17 +33,17 @@ export interface RadarAxis {
   key: string
   /** The facet's name, in the core's words: "Sport variety". */
   label: string
-  /** The value in the window, in the axis's own unit. Null when there is none. */
+  /** The comparable value in the window: the rate, or the average. Null when there is none. */
   value: number | null
-  /** The value as the core renders it: "58.4 km". */
+  /** The value as the core renders it: "23.1 km a week". */
   text: string | null
 }
 
 /** One window of the chart. */
 export interface RadarSeries {
-  /** The series' own key: "short". */
+  /** The series' own key: "30". */
   key: string
-  /** The window's name, in the app's words: "The last 28 days". */
+  /** The window's name, in the app's words: "last 30 days". */
   label: string
   /** The six axes, in the order they are drawn. */
   axes: RadarAxis[]
@@ -70,12 +77,6 @@ const LABEL_RADIUS = 84
 /** The rings the axes are drawn over: a third, two thirds and all of it. */
 const RINGS = [1 / 3, 2 / 3, 1]
 
-/** The colour of each series. */
-const COLOURS: Record<string, string> = {
-  short: 'var(--brand-500)',
-  long: 'var(--accent-500)',
-}
-
 /**
  * Where an axis' name sits, and which way it is written.
  *
@@ -98,15 +99,22 @@ function labelAnchor(
   return { x: point.x, y: point.y, anchor: 'middle' }
 }
 
-export function ProfileRadar({ series }: { series: RadarSeries[] }) {
+export function ProfileRadar({
+  series,
+  focus,
+}: {
+  series: RadarSeries[]
+  /** The key of the window the page is about: it is drawn last. */
+  focus?: string
+}) {
   if (series.length === 0) return null
 
   const count = series[0]?.axes.length ?? 0
   if (count < 3) return null
 
   /**
-   * Each axis' own scale: the larger of the two windows' values on that
-   * axis is the outside of the chart, and the other one sits inside it.
+   * Each axis' own scale: the largest of the windows' values on that
+   * axis is the outside of the chart, and the others sit inside it.
    */
   const scales = series[0]!.axes.map((_axis, index) =>
     scaleToLargest(series.map((entry) => entry.axes[index]?.value ?? null)),
@@ -123,6 +131,17 @@ export function ProfileRadar({ series }: { series: RadarSeries[] }) {
         count,
       ),
     )
+
+  /**
+   * The order the windows are drawn in: the two the page is not about
+   * first, and the focused one last, so that the shape the numbers
+   * belong to is never buried under the others.
+   */
+  const drawn = [
+    ...series.filter((entry) => entry.key !== focus),
+    ...series.filter((entry) => entry.key === focus),
+  ]
+
   return (
     <div data-testid="progress-radar">
       <svg
@@ -164,19 +183,41 @@ export function ProfileRadar({ series }: { series: RadarSeries[] }) {
           )
         })}
 
-        {/* the two windows, one polygon each */}
-        {series.map((entry, index) => {
-          const colour = COLOURS[entry.key] ?? 'var(--chart-line)'
+        {/*
+          the windows, one polygon each.
+
+          **The fills are drawn first, all of them, and the lines over
+          them**: a fill that covered another polygon's edge would hide
+          where that polygon is. Each fill is a light wash of the
+          polygon's own hue, and each line is thin and in that same hue.
+        */}
+        <g data-testid="progress-radar-fills">
+          {drawn.map((entry) => {
+            const points = pointsOf(entry)
+            if (points.length < 3) return null
+            return (
+              <path
+                key={`fill-${entry.key}`}
+                d={polygonPath(points)}
+                fill={seriesColour(series.indexOf(entry))}
+                fillOpacity={0.1}
+                stroke="none"
+                data-testid={`progress-radar-fill-${entry.key}`}
+              />
+            )
+          })}
+        </g>
+        {drawn.map((entry) => {
+          const colour = seriesColour(series.indexOf(entry))
+          const focused = entry.key === focus
           const points = pointsOf(entry)
           return (
             <path
               key={entry.key}
               d={polygonPath(points)}
-              fill={colour}
-              fillOpacity={index === 0 ? 0.18 : 0.08}
+              fill="none"
               stroke={colour}
-              strokeWidth="2"
-              strokeDasharray={index === 0 ? undefined : '5 3'}
+              strokeWidth={focused ? 2.5 : 2}
               data-testid={`progress-radar-${entry.key}`}
             />
           )
@@ -203,15 +244,15 @@ export function ProfileRadar({ series }: { series: RadarSeries[] }) {
       </svg>
 
       {/*
-        The legend: the two windows, in the words the answers use. The
-        chart draws the shape; the legend names what the shapes are.
+        The legend: the windows, in the words the answers use. The chart
+        draws the shape; the legend names what the shapes are.
       */}
       <ul className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1">
         {series.map((entry) => (
           <li key={entry.key} className="inline-flex items-center gap-1.5">
             <i
               className="inline-block h-2.5 w-2.5 rounded-[3px]"
-              style={{ background: COLOURS[entry.key] ?? 'var(--chart-line)' }}
+              style={{ background: seriesColour(series.indexOf(entry)) }}
             />
             <span className="text-[11.5px] text-ink-muted">{entry.label}</span>
           </li>

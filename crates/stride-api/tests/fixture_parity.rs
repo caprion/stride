@@ -308,6 +308,10 @@ fn router_answers(router: &Router) -> serde_json::Map<String, Value> {
         "/insights/rolling?weeks=13",
         "/insights/rolling?weeks=26",
         "/insights/rolling?weeks=52",
+        // The athlete profile's ladder: the windows of days.
+        "/insights/rolling?days=30",
+        "/insights/rolling?days=60",
+        "/insights/rolling?days=90",
         "/insights/streaks",
         "/insights/pace",
         "/insights/pace?weeks=4",

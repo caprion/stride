@@ -38,6 +38,8 @@
     { "id": "pattern.comparable_outcome.at_least", "kind": "pattern", "role": null, "template": "the {n} other times your {vital} was {side} your usual, you ran {distance} or more" },
     { "id": "value.distance", "kind": "statement", "role": null, "template": "{value} km" },
     { "id": "value.duration", "kind": "statement", "role": null, "template": "{value}" },
+    { "id": "value.distance_per_week", "kind": "statement", "role": null, "template": "{value} km a week" },
+    { "id": "value.share_of_days", "kind": "statement", "role": null, "template": "{value}% of the days" },
     { "id": "value.heart_rate", "kind": "statement", "role": null, "template": "{value} bpm" },
     { "id": "value.pace", "kind": "statement", "role": null, "template": "{value} /km" },
     { "id": "value.elevation", "kind": "statement", "role": null, "template": "{value} m" },

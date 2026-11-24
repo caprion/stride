@@ -2132,9 +2132,13 @@ pub struct ProfileFacet {
     pub key: String,
     /// The facet's name, in the core's words: "Sport variety".
     pub label: String,
-    /// The value in the window. Null when it cannot be computed.
+    /// The comparable value: the rate, for the facets that grow with the
+    /// window, and the average of the runs for the ones that do not.
+    /// Null when it cannot be computed.
     pub value: Option<RenderedValue>,
-    /// The value in the window before it.
+    /// The window's own total: what the window holds.
+    pub total: Option<RenderedValue>,
+    /// The comparable value in the window before it, of the same length.
     pub previous: Option<RenderedValue>,
     /// Which way it moved: "up", "down" or "steady".
     pub movement: Option<String>,

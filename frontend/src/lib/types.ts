@@ -715,18 +715,41 @@ export interface DistanceBucketRow {
  *
  * A value, and the way it moved against the window before it. There is
  * no polygon and no score: the reader draws the shape.
+ *
+ * **Two numbers, and the core says which is which.** The `value` is the
+ * comparable one: the volume is a distance a week and the consistency is
+ * the share of the window's days, so that a thirty-day window and a
+ * ninety-day window can be read against each other. The `total` is what
+ * the window holds: the distance of the window, the days it carries a
+ * run — the number a reader asks for when they ask "how far did I run in
+ * three months?".
  */
 export interface ProfileFacet {
   /** The facet's key: "volume", "consistency" and so on. */
   key: string
   /** The facet's name, in the core's words: "Sport variety". */
   label: string
-  /** The value in the window. Null when it cannot be computed. */
+  /** The comparable value: the rate, or the average of the runs. Null when it cannot be computed. */
   value: RenderedValue | null
-  /** The value in the window before it. */
+  /** The window's own total: what the window holds. */
+  total: RenderedValue | null
+  /** The comparable value in the window before it, of the same length. */
   previous: RenderedValue | null
   /** Which way it moved: "up", "down" or "steady". */
   movement: string | null
+}
+
+/**
+ * One window of the athlete profile.
+ *
+ * The profile is drawn over **three windows** — thirty, sixty and ninety
+ * days — and this is one of them: the answer, and the length it covers.
+ */
+export interface ProfileWindow {
+  /** How many days the window covers: 30, 60 or 90. */
+  days: number
+  /** The router's answer for the window. */
+  rolling: RollingInsight | undefined
 }
 
 /** The zone model a split was measured against. */

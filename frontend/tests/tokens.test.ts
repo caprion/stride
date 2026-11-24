@@ -61,8 +61,31 @@ function coloursOf(name: PaletteName): string[] {
     palette.usual,
     palette.could,
     ...palette.ramp,
-    ...Object.values(palette.chart),
+    ...Object.values(palette.chart).filter((value) => typeof value === 'string'),
+    ...palette.chart.series,
   ]
+}
+
+/** The relative luminance of a colour, as the contrast rules measure it. */
+function luminance(colour: string): number {
+  const channels = [1, 3, 5].map((offset) => {
+    const value = parseInt(colour.slice(offset, offset + 2), 16) / 255
+    return value <= 0.04045 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4
+  }) as [number, number, number]
+  const [red, green, blue] = channels
+  return 0.2126 * red + 0.7152 * green + 0.0722 * blue
+}
+
+/**
+ * The contrast of two colours: 1 is the same colour, and the ratio grows
+ * as they differ.
+ */
+function contrast(left: string, right: string): number {
+  const a = luminance(left)
+  const b = luminance(right)
+  const high = Math.max(a, b)
+  const low = Math.min(a, b)
+  return (high + 0.05) / (low + 0.05)
 }
 
 describe('the tokens', () => {
@@ -107,6 +130,20 @@ describe('the tokens', () => {
       expect(palette.better).toMatch(/^#[0-9A-F]{6}$/)
       expect(palette.usual).toMatch(/^#[0-9A-F]{6}$/)
       expect(palette.could).toMatch(/^#[0-9A-F]{6}$/)
+    }
+  })
+
+  it('draws a chart of several series in colours that hold against the card', () => {
+    // A chart that draws more than one series on the same axes needs
+    // hues that separate at a glance, and each of them has to be seen
+    // against the card the chart is drawn on: a pale tint that reads
+    // well as a fill is invisible as a line.
+    for (const [name, palette] of Object.entries(palettes)) {
+      expect(palette.chart.series, name).toHaveLength(3)
+      for (const colour of palette.chart.series) {
+        const ratio = contrast(colour, palette.surface.DEFAULT)
+        expect(ratio, `${name}: ${colour} on the card`).toBeGreaterThanOrEqual(3)
+      }
     }
   })
 })

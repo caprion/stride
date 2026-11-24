@@ -217,6 +217,22 @@ export function scaleToLargest(values: (number | null | undefined)[]): LargestSc
 
 
 /**
+ * The colour of one of a chart's series.
+ *
+ * The chart's own three: the deep azure, the deep amber and the teal.
+ * They are tokens, so a palette can change them, and they are chosen to
+ * hold against the card the chart is drawn on — a pale tint that reads
+ * well as a fill is invisible as a line.
+ *
+ * The series are told apart by their **hue**, not by their lightness, so
+ * the third one is a different colour and not a fainter first one.
+ */
+export function seriesColour(index: number): string {
+  const step = ((index % 3) + 3) % 3
+  return `var(--chart-series-${step + 1})`
+}
+
+/**
  * A point on a circle: the tip of an axis, or the end of a spoke.
  *
  * The first axis points up, and the axes go round clockwise — the way a

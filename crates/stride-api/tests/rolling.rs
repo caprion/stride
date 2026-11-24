@@ -270,6 +270,27 @@ fn the_distance_breakdown_buckets_the_runs() {
 }
 
 #[test]
+fn the_window_may_be_asked_for_in_days() {
+    let harness = Harness::empty("rolling-days");
+    harness.write_run(common::run("today", TODAY, 10_000.0, 3_000.0));
+    // Thirty days: the 13th of April to the 12th of May. A month is not
+    // four weeks, and the router answers the days exactly.
+    let answer = harness.ok_get("/insights/rolling?days=30");
+    assert_eq!(text(&answer, &["window", "from"]), "2026-04-13");
+    assert_eq!(text(&answer, &["window", "to"]), "2026-05-12");
+    assert_eq!(number(&answer, &["window", "days"]), 30.0);
+    // The comparison is the thirty days before it.
+    assert_eq!(text(&answer, &["comparison", "from"]), "2026-03-14");
+    assert_eq!(number(&answer, &["comparison", "days"]), 30.0);
+    // And the volume is a distance a week: ten kilometres in thirty days
+    // is 2.3 kilometres a week.
+    let profile = answer["profile"].as_array().expect("the facets");
+    assert_eq!(text(&profile[0], &["value", "text"]), "2.3 km a week");
+    // The total is the window's own: the ten kilometres.
+    assert_eq!(text(&profile[0], &["total", "text"]), "10 km");
+}
+
+#[test]
 fn the_profile_is_seven_values_and_their_movement() {
     let harness = Harness::empty("rolling-profile");
     harness.write_run(common::run("today", TODAY, 20_000.0, 3_000.0));
@@ -287,16 +308,25 @@ fn the_profile_is_seven_values_and_their_movement() {
     let volume = &profile[0];
     assert_eq!(text(volume, &["key"]), "volume");
     assert_eq!(text(volume, &["label"]), "Volume");
-    assert_eq!(text(volume, &["value", "text"]), "20 km");
-    assert_eq!(text(volume, &["previous", "text"]), "10 km");
+    // The total is the window's own distance.
+    assert_eq!(text(volume, &["total", "text"]), "20 km");
+    // And the comparable value is the distance a week, so that a window
+    // of thirty days and a window of ninety days can be read against each
+    // other. The window is seven days long here, so the two are the same
+    // number with different names.
+    assert_eq!(text(volume, &["value", "text"]), "20 km a week");
+    assert_eq!(text(volume, &["previous", "text"]), "10 km a week");
     assert_eq!(text(volume, &["movement"]), "up");
 
-    // The consistency: one day carries a run in each window.
+    // The consistency: one day carries a run in each window, and the
+    // window is seven days long — a seventh of its days.
     assert_eq!(text(&profile[1], &["key"]), "consistency");
-    assert_eq!(text(&profile[1], &["value", "text"]), "1");
+    assert_eq!(text(&profile[1], &["total", "text"]), "1");
+    assert_eq!(text(&profile[1], &["value", "text"]), "14.3% of the days");
     // The intensity: the median heart rate of the runs.
     assert_eq!(text(&profile[2], &["key"]), "intensity");
     assert_eq!(text(&profile[2], &["value", "text"]), "148 bpm");
+    assert_eq!(text(&profile[2], &["total", "text"]), "148 bpm");
     // And the rest of the facets are there, with their names.
     let keys: Vec<String> = profile.iter().map(|facet| text(facet, &["key"])).collect();
     assert_eq!(

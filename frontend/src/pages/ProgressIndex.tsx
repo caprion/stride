@@ -45,7 +45,7 @@ import { ChevronRight } from 'lucide-react'
 import { ABSENT, formatCount, formatDateMedium, renderedText } from '../lib/format'
 import { t } from '../i18n'
 import type { CatalogueKey } from '../i18n'
-import type { RollingInsight } from '../lib/types'
+import type { ProfileWindow } from '../lib/types'
 import type { ProgressAnswers } from './useProgress'
 import { LOAD_EMPTY, ShapeBody } from './progressPanels'
 import {
@@ -519,7 +519,7 @@ export function ProgressIndex({ answers }: { answers: ProgressAnswers }) {
  *
  * **And a picture above the questions.** The athlete profile is the one
  * answer in this product that is a shape and nothing else — six axes,
- * two windows, and not a number in the drawing. It answers "what does
+ * three windows, and not a number in the drawing. It answers "what does
  * my training look like?" in one glance, so it is above the list rather
  * than inside it. It opens the panel that has the numbers under it.
  */
@@ -528,11 +528,11 @@ export function ProfileIndex({
   shape,
 }: {
   answers: ProgressAnswers
-  /** The two windows the athlete profile is drawn over. */
+  /** The three windows the athlete profile is drawn over. */
   shape: {
-    rolling: RollingInsight | undefined
-    months: number
-    onScope: (months: number) => void
+    windows: ProfileWindow[]
+    days: number
+    onScope: (days: number) => void
   }
 }) {
   const rows = profileRows(answers)
@@ -553,7 +553,7 @@ export function ProfileIndex({
             {t('progress.index.shape.open')}
           </Link>
         </div>
-        <ShapeBody rolling={shape.rolling} error={false} table={false} />
+        <ShapeBody windows={shape.windows} error={false} days={shape.days} table={false} />
       </section>
       <p className="lede">{t('progress.profile.index.intro')}</p>
       <IndexRows rows={rows} prefix="profile-index" origin="/profile" />

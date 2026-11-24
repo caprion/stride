@@ -186,6 +186,27 @@ pub fn share(percent: Option<f64>) -> Option<RenderedValue> {
     Some(RenderedValue { text, raw: percent })
 }
 
+/// A distance in a week, as the core renders it: "23.1 km a week".
+///
+/// The **rate** of a window's distance: the same training, a week at a
+/// time, in a short window and in a long one.
+pub fn distance_per_week(metres_per_week: Option<f64>) -> Option<RenderedValue> {
+    let text = units::render_distance_per_week(metres_per_week)?;
+    Some(RenderedValue {
+        text,
+        raw: metres_per_week,
+    })
+}
+
+/// A share of a window's days, as the core renders it: "20.0% of the days".
+///
+/// The **rate** of a window's consistency: the share of the window's days
+/// that carry a run.
+pub fn share_of_days(percent: Option<f64>) -> Option<RenderedValue> {
+    let text = units::render_share_of_days(percent)?;
+    Some(RenderedValue { text, raw: percent })
+}
+
 /// The difference between two values, as the core renders it.
 ///
 /// **The core renders it, sign and all**: "+2.4 km", "−0.6 km", "+6 s/km".

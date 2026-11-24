@@ -188,9 +188,9 @@ export function ProfilePage() {
         <ProfileIndex
           answers={answers}
           shape={{
-            rolling: wall.profile.data,
-            months: wall.profileScope.months,
-            onScope: wall.setProfileMonths,
+            windows: wall.profileWindows,
+            days: wall.profileScope.days,
+            onScope: wall.setProfileDays,
           }}
         />
       </div>
@@ -232,7 +232,7 @@ export function ProfilePanelPage() {
   }
 
   const { progress, rolling, streaks, challenges } = answers
-  const { year, profile, profileScope, setProfileMonths } = wall
+  const { year, profileWindows, profileScope, profileError, setProfileDays } = wall
 
   if (progress.isError && !progress.data) {
     return (
@@ -294,18 +294,18 @@ export function ProfilePanelPage() {
       <div className="mt-3 max-w-[680px] space-y-3" data-testid={`profile-panel-${panel}`}>
         {panel === 'shape' ? (
           <ShapePanel
-            rolling={profile.data}
-            error={profile.isError}
-            months={profileScope.months}
-            onScope={setProfileMonths}
+            windows={profileWindows}
+            error={profileError}
+            days={profileScope.days}
+            onScope={setProfileDays}
           />
         ) : null}
         {panel === 'profile' ? (
           <PanelCard title={t('progress.wall.profile.heading')}>
             <ProfileRadarBody
-              rolling={profile.data}
-              months={profileScope.months}
-              onScope={setProfileMonths}
+              windows={profileWindows}
+              days={profileScope.days}
+              onScope={setProfileDays}
             />
           </PanelCard>
         ) : null}

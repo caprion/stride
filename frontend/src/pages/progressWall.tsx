@@ -45,6 +45,7 @@ import { axisTicks } from '../lib/chart'
 import { YearCalendar } from '../components/YearCalendar'
 import type {
   ActivitySummary,
+  ProfileWindow,
   RollingInsight,
   StreakInsight,
   TodayInsight,
@@ -66,6 +67,8 @@ import {
   ZonesDistributionPanel,
   ZonesPanel,
   hour,
+  shapeRows,
+  MOVEMENT,
 } from './progressPanels'
 import type { ProgressAnswers } from './useProgress'
 import type { WallAnswers } from './useWall'
@@ -181,52 +184,48 @@ function Window({ children }: { children: ReactNode }) {
  *
  * The facets are the answer's own — the key, the name and the value are
  * the core's — and the order is the chart's.
+ *
+ * The value is the **comparable** one: the rate, or the average of the
+ * runs. So the three windows can be read against each other.
  */
-function axesOf(rolling: RollingInsight, field: 'value' | 'previous'): RadarAxis[] {
+function axesOf(rolling: RollingInsight | undefined): RadarAxis[] {
   return RADAR_AXES.map((key) => {
-    const facet = rolling.profile.find((entry) => entry.key === key)
-    const value = field === 'value' ? facet?.value : facet?.previous
+    const facet = rolling?.profile.find((entry) => entry.key === key)
     return {
       key,
       label: facet?.label ?? key,
-      value: value?.raw ?? null,
-      text: value?.text ?? null,
+      value: facet?.value?.raw ?? null,
+      text: facet?.value?.text ?? null,
     }
   })
 }
 
 /**
- * The athlete profile: two windows on one chart.
+ * The athlete profile: three windows on one chart.
  *
- * The radar draws the two polygons and the table under it holds the
- * numbers behind them, so a reader who cannot read the shape can still
- * read the values — the core's own rendering of each one.
+ * The radar draws the three polygons and the table under it holds the
+ * numbers behind them — the focused window and the window before it of
+ * the same length — so a reader who cannot read the shape can still
+ * read the values, the core's own rendering of each one.
  */
 export function ProfileRadarBody({
-  rolling,
-  months,
+  windows,
+  days,
   onScope,
 }: {
-  rolling: RollingInsight | undefined
-  /** The window the profile is drawn over, in months. */
-  months: number
+  /** The three windows the chart draws, one on the other. */
+  windows: ProfileWindow[]
+  /** The window the page is about, in days. */
+  days: number
   /** The scope the athlete chooses. */
-  onScope: (months: number) => void
+  onScope: (days: number) => void
 }) {
-  const series: RadarSeries[] = []
-  if (rolling) {
-    // The window, and the window before it of the same length.
-    series.push({
-      key: 'now',
-      label: t('progress.wall.profile.window', { days: rolling.window.days }),
-      axes: axesOf(rolling, 'value'),
-    })
-    series.push({
-      key: 'before',
-      label: t('progress.wall.profile.previous', { days: rolling.window.days }),
-      axes: axesOf(rolling, 'previous'),
-    })
-  }
+  const focused = windows.find((window) => window.days === days)?.rolling
+  const series: RadarSeries[] = windows.map((window) => ({
+    key: String(window.days),
+    label: t('progress.shape.legend', { days: window.days }),
+    axes: axesOf(window.rolling),
+  }))
 
   if (series.length === 0) {
     return <p className="text-[13px] text-ink-muted">{t('common.loading')}</p>
@@ -234,42 +233,52 @@ export function ProfileRadarBody({
 
   return (
     <div data-testid="progress-wall-radar">
-      <ProfileScopePicker months={months} onChange={onScope} />
-      <ProfileRadar series={series} />
+      <ProfileScopePicker days={days} onChange={onScope} />
+      <ProfileRadar series={series} focus={String(days)} />
       <Note>{t('progress.wall.profile.note')}</Note>
-      {series.length > 1 ? (
+      <p className="mt-1 text-[12px] text-ink-faint">{t('progress.shape.rates')}</p>
+      {focused ? (
         <table className="mt-2 w-full table-fixed border-collapse text-[12px]">
           <thead>
             <tr>
-              <th className="w-[34%] pb-1 text-left text-[10.5px] uppercase tracking-wide text-ink-faint">
+              <th className="w-[30%] pb-1 text-left text-[10.5px] uppercase tracking-wide text-ink-faint">
                 {t('progress.wall.profile.axis')}
               </th>
-              {series.map((entry) => (
-                <th
-                  key={entry.key}
-                  className="w-[33%] pb-1 text-right text-[10.5px] uppercase tracking-wide text-ink-faint"
-                >
-                  {entry.label}
-                </th>
-              ))}
+              <th className="w-[26%] pb-1 text-right text-[10.5px] uppercase tracking-wide text-ink-faint">
+                {t('progress.wall.profile.window', { days })}
+              </th>
+              <th className="w-[26%] pb-1 text-right text-[10.5px] uppercase tracking-wide text-ink-faint">
+                {t('progress.wall.profile.previous', { days })}
+              </th>
+              <th className="w-[18%] pb-1 text-right text-[10.5px] uppercase tracking-wide text-ink-faint">
+                {t('progress.shape.movement')}
+              </th>
             </tr>
           </thead>
           <tbody>
-            {series[0]!.axes.map((axis, index) => (
-              <tr key={axis.key} className="border-t border-edge">
-                <td className="py-1 pr-2 text-left text-ink-soft">{axis.label}</td>
-                {series.map((entry) => {
-                  const other = entry.axes[index]
-                  return (
-                    <td
-                      key={entry.key}
-                      className="py-1 text-right font-semibold tabular-nums text-ink"
-                      data-testid={`progress-wall-radar-${entry.key}-${axis.key}`}
-                    >
-                      {other?.text ?? ABSENT}
-                    </td>
-                  )
-                })}
+            {shapeRows(focused).map((row) => (
+              <tr key={row.key} className="border-t border-edge">
+                <td className="py-1 pr-2 text-left text-ink-soft">{row.label}</td>
+                <td
+                  className="py-1 text-right font-semibold tabular-nums text-ink"
+                  data-testid={`progress-wall-radar-now-${row.key}`}
+                >
+                  {row.now?.text ?? ABSENT}
+                </td>
+                <td
+                  className="py-1 text-right tabular-nums text-ink-muted"
+                  data-testid={`progress-wall-radar-before-${row.key}`}
+                >
+                  {row.before?.text ?? ABSENT}
+                </td>
+                <td
+                  className="py-1 text-right tabular-nums text-ink-muted"
+                  data-testid={`progress-wall-radar-movement-${row.key}`}
+                >
+                  {row.movement
+                    ? t(MOVEMENT[row.movement] ?? 'progress.rolling.trend.steady.short')
+                    : ABSENT}
+                </td>
               </tr>
             ))}
           </tbody>
@@ -1023,7 +1032,18 @@ export function ProgressWall({
   destination?: 'progress' | 'profile'
 }) {
   const { data, load, rolling, streaks } = answers
-  const { today, year, pace, activities, profile, profileScope, setProfileMonths, vitals } = wall
+  const {
+    today,
+    year,
+    pace,
+    activities,
+    profile,
+    profileWindows,
+    profileScope,
+    profileError,
+    setProfileDays,
+    vitals,
+  } = wall
 
   /**
    * The weeks of the rolling window, and the runs in each of them.
@@ -1168,10 +1188,10 @@ export function ProgressWall({
         testId="progress-wall-profile"
       >
         <ShapePanel
-          rolling={profile.data}
-          error={profile.isError}
-          months={profileScope.months}
-          onScope={setProfileMonths}
+          windows={profileWindows}
+          error={profileError}
+          days={profileScope.days}
+          onScope={setProfileDays}
           bare
         />
       </WallCard>
@@ -1188,7 +1208,7 @@ export function ProgressWall({
             over the **profile's scope** and not the page's range: the
             two cards of the shape must not say "84 days" and "91 days"
             beside each other. */}
-        <ProfilePanel rolling={profile.data} bare />
+        <ProfilePanel rolling={profile} bare />
       </WallCard>
     ),
 
@@ -1222,7 +1242,7 @@ export function ProgressWall({
         wide
         testId="progress-wall-weekday"
       >
-        <WeekdayTable rolling={profile.data} />
+        <WeekdayTable rolling={profile} />
       </WallCard>
     ),
 
@@ -1233,7 +1253,7 @@ export function ProgressWall({
         to={cardRoute('daytime')}
         testId="progress-wall-daytime"
       >
-        <DaytimeTable rolling={profile.data} />
+        <DaytimeTable rolling={profile} />
       </WallCard>
     ),
 
@@ -1244,7 +1264,7 @@ export function ProgressWall({
         to={cardRoute('distances')}
         testId="progress-wall-distances"
       >
-        <DistancesTable rolling={profile.data} />
+        <DistancesTable rolling={profile} />
       </WallCard>
     ),
 
@@ -1297,7 +1317,7 @@ export function ProgressWall({
         wide
         testId="progress-wall-months"
       >
-        <MonthsChart rolling={profile.data} />
+        <MonthsChart rolling={profile} />
       </WallCard>
     ),
 
@@ -1308,7 +1328,7 @@ export function ProgressWall({
         to={cardRoute('years')}
         testId="progress-wall-years"
       >
-        <YearsChart rolling={profile.data} />
+        <YearsChart rolling={profile} />
       </WallCard>
     ),
 

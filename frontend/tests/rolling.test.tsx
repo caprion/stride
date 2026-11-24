@@ -181,7 +181,7 @@ describe('the distance breakdown on the athlete profile', () => {
     // The profile's own scope: the athlete profile's cards are all read
     // over the same window, and not over the page's range.
     expect(card.querySelector('[data-testid="progress-distances-window"]')?.textContent).toContain(
-      '91 days',
+      '90 days',
     )
   })
 })
@@ -213,9 +213,9 @@ describe('the training profile on the athlete profile', () => {
     // window before the window is the 91 days that end the day the window
     // begins, so it carries its own runs: some facets moved up, some down,
     // and the ones that did not move say so.
-    expect(card.textContent).toContain('up on the 91 days before')
-    expect(card.textContent).toContain('down on the 91 days before')
-    expect(card.textContent).toContain('the same as the 91 days before')
+    expect(card.textContent).toContain('up on the 90 days before')
+    expect(card.textContent).toContain('down on the 90 days before')
+    expect(card.textContent).toContain('the same as the 90 days before')
     // No polygon, no score, no grade.
     const text = (card.textContent ?? '').toLowerCase()
     for (const word of ['radar', 'profile score', 'shape score', 'excellent', 'very active']) {

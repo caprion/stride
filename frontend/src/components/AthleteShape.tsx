@@ -1,12 +1,25 @@
 /**
- * The athlete's shape: six axes, two windows, one chart.
+ * The athlete's shape: six axes, three windows, one chart.
  *
  * **The shape is the athlete's own.** Each axis is one of the core's own
  * facets — the volume, the consistency, the sport variety, the density,
- * the duration, the intensity — and each axis is scaled to **the larger of
- * the two windows' values**. So the two shapes are read against each
- * other and not against anybody's idea of a good week: there is no fixed
- * anchor here, and nothing on the chart is a grade.
+ * the duration, the intensity — and each axis is scaled to **the largest
+ * of the three windows' values**. So the three shapes are read against
+ * each other and not against anybody's idea of a good week: there is no
+ * fixed anchor here, and nothing on the chart is a grade.
+ *
+ * **The three windows are drawn one on the other.** Thirty days, sixty
+ * days and ninety days, each in a hue of its own, each a polygon of its
+ * own: one picture of the whole shape, instead of two shapes the reader
+ * has to hold in their head.
+ *
+ * **The axes are rates, and the core is where that happens.** The volume
+ * is a distance a week and the consistency is the share of the window's
+ * days, so a ninety-day window and a thirty-day window can be read
+ * against each other at all. The intensity, the duration and the density
+ * are averages of the runs inside the window, and the variety is a count
+ * of the athlete's sports: they do not grow with the window, and they
+ * are the same number in all three.
  *
  * **The drawing is the app's own**: an SVG, with the scale and the path
  * from the app's chart helpers, and the axes named in the core's own
@@ -14,68 +27,59 @@
  * the chart does, and the chart never runs past the edge of its column.
  *
  * **Nothing here is a number the app computed.** Every value on the
- * chart and in the table below it is the core's own rendering — "58.4 km",
- * "148 bpm" — and an axis with no value is left out of the shape rather
- * than drawn as a zero.
+ * chart and in the table below it is the core's own rendering — "23.1 km
+ * a week", "148 bpm" — and an axis with no value is left out of the shape
+ * rather than drawn as a zero.
  */
 
 import { useMemo, useRef } from 'react'
 import { t } from '../i18n'
-import { linearScale, polygonPath, textWidth, type Point } from '../lib/chart'
+import { linearScale, polygonPath, scaleToLargest, seriesColour, textWidth, type Point } from '../lib/chart'
 import { useWidth } from '../lib/useWidth'
-import type { RenderedValue, RollingInsight } from '../lib/types'
+import type { ProfileWindow, RenderedValue } from '../lib/types'
+import { RADAR_AXES } from './ProfileRadar'
 
 /**
- * The six axes, in the order the chart draws them.
- *
- * The order is the app's; the names are the core's — the answer carries
- * the label of every facet, and the chart draws the label the answer
- * gave.
- */
-const AXES = [
-  'volume',
-  'consistency',
-  'variety',
-  'density',
-  'duration',
-  'intensity',
-] as const
-
-/**
- * One axis: the core's own name for it, and the two windows' values.
- *
- * The two windows are **the window and the window before it**, and they
- * are the same length: the answer carries the comparison, and a window
- * of three months against a window of six is not a comparison at all.
+ * One axis of the shape: the core's own name for it, and one window's
+ * value.
  */
 export interface ShapeAxis {
   /** The facet's key: "volume", "consistency" and so on. */
   key: string
   /** The facet's name, in the core's own words: "Sport variety". */
   label: string
-  /** The value in the window. */
-  now: RenderedValue | null
-  /** The value in the window before it, of the same length. */
-  before: RenderedValue | null
+  /** The comparable value: the rate, or the average of the runs. */
+  value: RenderedValue | null
 }
 
 /**
- * The axes of the two windows, side by side.
+ * One window of the shape: its six axes, and the days it covers.
+ */
+export interface ShapeWindow {
+  /** How many days the window covers: 30, 60 or 90. */
+  days: number
+  /** The six axes, in the order they are drawn. */
+  axes: ShapeAxis[]
+}
+
+/**
+ * The six axes of every window, side by side.
  *
  * The values are the core's: the app reads them and draws them, and it
  * never derives one from another.
  */
-export function shapeAxes(rolling: RollingInsight | undefined): ShapeAxis[] {
-  const facet = (key: string) => rolling?.profile.find((entry) => entry.key === key)
-  return AXES.map((key) => {
-    const entry = facet(key)
-    return {
-      key,
-      label: entry?.label ?? '',
-      now: entry?.value ?? null,
-      before: entry?.previous ?? null,
-    }
-  })
+export function shapeWindows(windows: ProfileWindow[]): ShapeWindow[] {
+  return windows.map((window) => ({
+    days: window.days,
+    axes: RADAR_AXES.map((key) => {
+      const facet = window.rolling?.profile.find((entry) => entry.key === key)
+      return {
+        key,
+        label: facet?.label ?? '',
+        value: facet?.value ?? null,
+      }
+    }),
+  }))
 }
 
 /** The room between the chart and its labels. */
@@ -150,33 +154,57 @@ function layout(size: number, labels: string[]): { radius: number; fontSize: num
   return chosen
 }
 
-/** The athlete's shape, drawn. */
-export function AthleteShape({ rolling }: { rolling: RollingInsight | undefined }) {
+/**
+ * The athlete's shape, drawn.
+ *
+ * `focus` is the window the page is about: it is drawn **last**, on top
+ * of the other two, so the shape the numbers below the chart belong to is
+ * never buried under the others.
+ */
+export function AthleteShape({
+  windows,
+  focus,
+}: {
+  windows: ShapeWindow[]
+  /** The days of the window the page is about. */
+  focus: number
+}) {
   const host = useRef<HTMLDivElement>(null)
   const width = useWidth(host)
-  const axes = useMemo(() => shapeAxes(rolling), [rolling])
 
   /** The drawing is square, and it is never wider than its column. */
   const size = Math.min(width, 340)
-  const { radius, fontSize } = layout(size, axes.map((axis) => axis.label))
+  const labels = windows[0]?.axes.map((axis) => axis.label) ?? []
+  const { radius, fontSize } = layout(size, labels)
   const centre = size / 2
+
+  /**
+   * Each axis' own scale: the largest of the three windows' values on
+   * that axis is the outside of the chart.
+   */
+  const scales = useMemo(
+    () =>
+      (windows[0]?.axes ?? []).map((_axis, index) =>
+        scaleToLargest(windows.map((window) => window.axes[index]?.value?.raw ?? null)),
+      ),
+    [windows],
+  )
 
   /**
    * The shape of one window.
    *
-   * Each axis is scaled to the larger of the two windows' values, so the
-   * two shapes are read against each other. An axis with no value is left
-   * out: a shape is not drawn through a number that does not exist.
+   * An axis with no value is left out: a shape is not drawn through a
+   * number that does not exist.
    */
-  const pointsOf = (which: 'now' | 'before'): Point[] => {
+  const pointsOf = (window: ShapeWindow): Point[] => {
     const points: Point[] = []
-    axes.forEach((axis, index) => {
-      const value = which === 'now' ? axis.now : axis.before
-      const other = which === 'now' ? axis.before : axis.now
-      const largest = Math.max(value?.raw ?? 0, other?.raw ?? 0)
-      if (!value || value.raw === null || largest <= 0) return
-      const along = linearScale([0, largest], [0, radius])(value.raw)
-      const angle = angleOf(index, axes.length)
+    window.axes.forEach((axis, index) => {
+      const value = axis.value?.raw
+      if (value === null || value === undefined || !Number.isFinite(value)) return
+      const scale = scales[index]
+      if (!scale || scale.max <= 0) return
+      const along = linearScale([0, scale.max], [0, radius])(value)
+      const angle = angleOf(index, window.axes.length)
       points.push({
         x: centre + along * Math.cos(angle),
         y: centre + along * Math.sin(angle),
@@ -185,13 +213,19 @@ export function AthleteShape({ rolling }: { rolling: RollingInsight | undefined 
     return points
   }
 
-  const nowPoints = pointsOf('now')
-  const beforePoints = pointsOf('before')
+  /**
+   * The order the windows are drawn in: the two the page is not about
+   * first, and the focused one last.
+   */
+  const drawn = [
+    ...windows.filter((window) => window.days !== focus),
+    ...windows.filter((window) => window.days === focus),
+  ]
 
   /** The rings: the frame the shapes are read against. */
   const rings = [0.25, 0.5, 0.75, 1].map((share) =>
-    axes.map((_, index) => {
-      const angle = angleOf(index, axes.length)
+    (windows[0]?.axes ?? []).map((_axis, index) => {
+      const angle = angleOf(index, windows[0]?.axes.length ?? 0)
       const along = radius * share
       return { x: centre + along * Math.cos(angle), y: centre + along * Math.sin(angle) }
     }),
@@ -218,8 +252,8 @@ export function AthleteShape({ rolling }: { rolling: RollingInsight | undefined 
               style={{ stroke: 'var(--chart-grid)' }}
             />
           ))}
-          {axes.map((axis, index) => {
-            const angle = angleOf(index, axes.length)
+          {(windows[0]?.axes ?? []).map((axis, index) => {
+            const angle = angleOf(index, windows[0]?.axes.length ?? 0)
             return (
               <line
                 key={`spoke-${axis.key}`}
@@ -234,50 +268,66 @@ export function AthleteShape({ rolling }: { rolling: RollingInsight | undefined 
           })}
 
           {/*
-            The two shapes. The shorter window is filled in first, and
-            the longer one is drawn over it: when the two windows hold
-            the same shape, the quiet dashed edge of the longer one is
-            still there to be seen.
+            The three shapes, one on the other.
+
+            **The fills are drawn first, all of them, and the lines are
+            drawn over them.** A fill that covered another polygon's
+            edge would hide where that polygon is, and the reader has to
+            be able to see each of the three. Each fill is a light wash
+            of the polygon's own hue, and each line is thin and in that
+            same hue.
           */}
-          {nowPoints.length > 1 ? (
-            <path
-              d={polygonPath(nowPoints)}
-              strokeWidth={2}
-              style={{
-                fill: 'var(--chart-line)',
-                fillOpacity: 0.18,
-                stroke: 'var(--chart-line)',
-              }}
-              data-testid="progress-shape-now"
-            />
-          ) : null}
-          {beforePoints.length > 1 ? (
-            <path
-              d={polygonPath(beforePoints)}
-              strokeWidth={1.5}
-              strokeDasharray="4 3"
-              style={{
-                fill: 'var(--chart-line-alt)',
-                fillOpacity: 0.1,
-                stroke: 'var(--chart-line-alt)',
-              }}
-              data-testid="progress-shape-before"
-            />
-          ) : null}
-          {nowPoints.map((point, index) => (
-            <circle
-              key={`marker-${index}`}
-              cx={point.x}
-              cy={point.y}
-              r={3}
-              strokeWidth={1.5}
-              style={{ fill: 'var(--chart-reference)', stroke: 'var(--surface)' }}
-            />
-          ))}
+          <g data-testid="progress-shape-fills">
+            {drawn.map((window) => {
+              const points = pointsOf(window)
+              if (points.length < 2) return null
+              return (
+                <path
+                  key={`fill-${window.days}`}
+                  d={polygonPath(points)}
+                  fill={seriesColour(windows.indexOf(window))}
+                  fillOpacity={0.1}
+                  stroke="none"
+                  data-testid={`progress-shape-fill-${window.days}`}
+                />
+              )
+            })}
+          </g>
+          {drawn.map((window) => {
+            const points = pointsOf(window)
+            if (points.length < 2) return null
+            const colour = seriesColour(windows.indexOf(window))
+            const focused = window.days === focus
+            return (
+              <path
+                key={`window-${window.days}`}
+                d={polygonPath(points)}
+                fill="none"
+                strokeWidth={focused ? 2.5 : 2}
+                style={{ stroke: colour }}
+                data-testid={`progress-shape-window-${window.days}`}
+              />
+            )
+          })}
+
+          {/* The focused window's own points, so its shape can be read. */}
+          {drawn
+            .filter((window) => window.days === focus)
+            .flatMap((window) => pointsOf(window))
+            .map((point, index) => (
+              <circle
+                key={`marker-${index}`}
+                cx={point.x}
+                cy={point.y}
+                r={3}
+                strokeWidth={1.5}
+                style={{ fill: 'var(--chart-reference)', stroke: 'var(--surface)' }}
+              />
+            ))}
 
           {/* The axes' names, in the core's own words. */}
-          {axes.map((axis, index) => {
-            const angle = angleOf(index, axes.length)
+          {(windows[0]?.axes ?? []).map((axis, index) => {
+            const angle = angleOf(index, windows[0]?.axes.length ?? 0)
             const cos = Math.cos(angle)
             const sin = Math.sin(angle)
             const along = radius + GAP

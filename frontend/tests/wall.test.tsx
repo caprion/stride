@@ -336,27 +336,33 @@ describe('the athlete profile', () => {
 })
 
 /**
- * The athlete profile: two windows on one chart.
+ * The athlete profile: three windows on one chart.
  *
- * The radar draws the two polygons and the table under it holds the
+ * The chart draws the three polygons and the table under it holds the
  * numbers behind them. Every number is the core's own rendering, and the
- * two windows are named with the **answer's** count of days.
+ * windows are named with the **answer's** count of days.
  */
 describe('the athlete profile on its own wall', () => {
-  it('draws the two windows and names them', async () => {
+  it('draws the three windows and names them', async () => {
     const { container } = renderApp('/profile')
     const wall = await wallOf(container)
     const card = wall.querySelector('[data-testid="progress-wall-profile"]')
 
-    // One polygon for each window: the window, and the window before it.
-    expect(card?.querySelector('[data-testid="progress-shape-now"]')).toBeTruthy()
-    expect(card?.querySelector('[data-testid="progress-shape-before"]')).toBeTruthy()
+    // One polygon for each window: the last thirty days, the last sixty
+    // and the last ninety, drawn one on the other.
+    expect(card?.querySelector('[data-testid="progress-shape-window-30"]')).toBeTruthy()
+    expect(card?.querySelector('[data-testid="progress-shape-window-60"]')).toBeTruthy()
+    expect(card?.querySelector('[data-testid="progress-shape-window-90"]')).toBeTruthy()
 
-    // The windows are named with the answer's own count of days, and
-    // they are the **same length** — the window, and the window before
-    // it. The card says what it answered.
-    expect(card?.textContent).toContain('The last 91 days')
-    expect(card?.textContent).toContain('the 91 days before')
+    // The windows are named: the legend says which is which, and the
+    // table says which one the numbers are about.
+    expect(card?.textContent).toContain('last 30 days')
+    expect(card?.textContent).toContain('last 60 days')
+    expect(card?.textContent).toContain('last 90 days')
+    // The focused window and the window before it are named with the
+    // answer's own count of days, and they are the **same length**.
+    expect(card?.textContent).toContain('The last 90 days')
+    expect(card?.textContent).toContain('the 90 days before')
   })
 
   it("names the six axes in the core's own words", async () => {
@@ -386,15 +392,26 @@ describe('the athlete profile on its own wall', () => {
     const wall = await wallOf(container)
     const card = wall.querySelector('[data-testid="progress-wall-profile"]')
 
-    // The core's rendering of each facet, in the window's own units.
+    // The core's rendering of each facet, in the window's own units. The
+    // volume and the consistency are **rates** — a distance a week and a
+    // share of the days — so that the windows can be read against each
+    // other.
     expect(
       card?.querySelector('[data-testid="progress-shape-volume-now"]')?.textContent,
-    ).toBe('58.4 km')
+    ).toBe('4.5 km a week')
     expect(
       card?.querySelector('[data-testid="progress-shape-intensity-now"]')?.textContent,
     ).toBe('148 bpm')
     expect(
       card?.querySelector('[data-testid="progress-shape-variety-now"]')?.textContent,
     ).toBe('1')
+    // And the table says which way each facet moved against the window
+    // before it.
+    expect(
+      card?.querySelector('[data-testid="progress-shape-volume-movement"]')?.textContent,
+    ).toBe('up')
+    expect(
+      card?.querySelector('[data-testid="progress-shape-intensity-movement"]')?.textContent,
+    ).toBe('the same')
   })
 })

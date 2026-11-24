@@ -2506,11 +2506,17 @@ export function fixtureResponse(
       // Nothing in the store: the window holds no distance and the
       // tables hold no rows.
       if (variant === 'empty' || variant === 'fresh') return rollingEmptyFixture
+      // The window may be asked for in weeks (the Progress range) or in
+      // days (the athlete profile's ladder): the answer is the
+      // router's, under whichever name it was asked for.
+      const asked = params.days
+        ? `/insights/rolling?days=${params.days}`
+        : `/insights/rolling?weeks=${params.weeks}`
       // No zone model in the store: the split has no value, and the card
       // says why.
       if (variant === 'noload') {
         return {
-          ...(routerAnswers[`/insights/rolling?weeks=${params.weeks}`] ?? rollingFixture),
+          ...(routerAnswers[asked] ?? rollingFixture),
           zones: {
             model: null,
             shares: null,
@@ -2519,9 +2525,7 @@ export function fixtureResponse(
           },
         }
       }
-      return (
-        routerAnswers[`/insights/rolling?weeks=${params.weeks}`] ?? rollingFixture
-      )
+      return routerAnswers[asked] ?? rollingFixture
     }
     case '/insights/streaks':
       if (variant === 'empty' || variant === 'fresh') return streaksEmptyFixture

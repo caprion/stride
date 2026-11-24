@@ -345,6 +345,14 @@ export const api = {
    */
   insightsRolling: (weeks = 12) => get<RollingInsight>(ROUTES.insightsRolling, { weeks }),
   /**
+   * The rolling view over a window of **days**.
+   *
+   * The athlete profile's ladder: thirty, sixty and ninety days. The
+   * weeks are the Progress screen's range; the days are the profile's
+   * own windows, and a thirty-day window is not four weeks.
+   */
+  insightsRollingDays: (days: number) => get<RollingInsight>(ROUTES.insightsRolling, { days }),
+  /**
    * The streaks: the current run of days and weeks, and the longest one
    * of each.
    */

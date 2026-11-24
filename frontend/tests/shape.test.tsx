@@ -1,10 +1,10 @@
 /**
  * The athlete's shape.
  *
- * Six axes of the core's own facets, two windows, one chart. The chart
- * draws the two shapes against each other: each axis is scaled to the
- * larger of the two windows' values, so the reader compares the windows
- * and not a fixed anchor.
+ * Six axes of the core's own facets, three windows, one chart. The chart
+ * draws the three shapes against each other: each axis is scaled to the
+ * largest of the three windows' values, so the reader compares the
+ * windows and not a fixed anchor.
  *
  * The values are the core's own rendering, and nothing on the card is a
  * score, a grade or a verdict.
@@ -69,17 +69,22 @@ function radiusOf(point: [number, number], centre: number): number {
   return Math.hypot(point[0] - centre, point[1] - centre)
 }
 
+/** The middle of the drawing: the chart is 340 pixels wide at most. */
+const CENTRE = 340 / 2
+
 describe("the athlete's shape", () => {
-  it('is on the wall of panels, and draws the two windows', async () => {
+  it('is on the wall of panels, and draws the three windows', async () => {
     renderApp('/profile')
     const panel = await screen.findByTestId('progress-shape')
 
     // The chart itself, drawn by the app.
     const svg = panel.querySelector('[data-testid="progress-shape-svg"]')
     expect(svg).toBeTruthy()
-    // Both windows are drawn on it: the window, and the window before it.
-    expect(panel.querySelector('[data-testid="progress-shape-now"]')).toBeTruthy()
-    expect(panel.querySelector('[data-testid="progress-shape-before"]')).toBeTruthy()
+    // All three windows are drawn on it, one on the other: the last
+    // thirty days, the last sixty and the last ninety.
+    expect(panel.querySelector('[data-testid="progress-shape-window-30"]')).toBeTruthy()
+    expect(panel.querySelector('[data-testid="progress-shape-window-60"]')).toBeTruthy()
+    expect(panel.querySelector('[data-testid="progress-shape-window-90"]')).toBeTruthy()
 
     // The axes are named in the core's own words.
     const labels = [...panel.querySelectorAll('[data-testid="progress-shape-label"]')].map(
@@ -99,51 +104,57 @@ describe("the athlete's shape", () => {
     renderApp('/profile')
     const panel = await screen.findByTestId('progress-shape')
 
-    // The values are the core's rendering: "58.4 km", "148 bpm".
+    // The values are the core's rendering, and they are the **rates**:
+    // the volume a week and the consistency a share of the days, so that
+    // the windows can be read against each other.
     expect(panel.querySelector('[data-testid="progress-shape-volume-now"]')?.textContent).toBe(
-      '58.4 km',
+      '4.5 km a week',
     )
     expect(panel.querySelector('[data-testid="progress-shape-intensity-now"]')?.textContent).toBe(
       '148 bpm',
     )
     expect(panel.querySelector('[data-testid="progress-shape-consistency-now"]')?.textContent).toBe(
-      '6',
+      '6.7% of the days',
     )
-    // And the two windows are named: the window, and the window before
-    // it of the same length.
-    expect(panel.textContent).toContain('The last 91 days')
-    expect(panel.textContent).toContain('the 91 days before')
+    // And the window before it, of the same length.
+    expect(panel.querySelector('[data-testid="progress-shape-volume-before"]')?.textContent).toBe(
+      '1.4 km a week',
+    )
+    // The three windows are named: the legend says which is which.
+    const legend = panel.querySelector('[data-testid="progress-shape-legend"]')
+    expect(legend?.textContent).toContain('last 30 days')
+    expect(legend?.textContent).toContain('last 60 days')
+    expect(legend?.textContent).toContain('last 90 days')
     // And how the axes are scaled, so the shape is not read as a score.
-    expect(panel.textContent).toContain('Each axis is scaled to the larger of the two windows.')
+    expect(panel.textContent).toContain('Each axis is scaled to the largest of the three windows.')
+    // And what the rates are, so a number is not read apart from its
+    // unit.
+    expect(panel.textContent).toContain(
+      'The volume is a distance a week and the consistency the share of the days',
+    )
   })
 
-  it('scales every axis to the larger of the two windows', async () => {
-    // The window holds more than the window before it: its volume is the
-    // larger of the two, so it reaches the edge of the chart and the
-    // window before reaches the share of it that its own volume is.
-    const bigger = {
-      ...rollingFixture,
-      profile: rollingFixture.profile.map((facet) =>
-        facet.key === 'volume' ? { ...facet, value: { text: '76.6 km', raw: 76600 } } : facet,
-      ),
-    }
-    vi.spyOn(api, 'insightsRolling').mockResolvedValue(bigger)
-
+  it('scales every axis to the largest of the three windows', async () => {
     renderApp('/profile')
     const panel = await screen.findByTestId('progress-shape')
     await waitFor(() =>
-      expect(panel.querySelector('[data-testid="progress-shape-before"]')).toBeTruthy(),
+      expect(panel.querySelector('[data-testid="progress-shape-window-30"]')).toBeTruthy(),
     )
 
-    const now = pointsOf(panel.querySelector('[data-testid="progress-shape-now"]'))
-    const before = pointsOf(panel.querySelector('[data-testid="progress-shape-before"]'))
+    const thirty = pointsOf(panel.querySelector('[data-testid="progress-shape-window-30"]'))
+    const sixty = pointsOf(panel.querySelector('[data-testid="progress-shape-window-60"]'))
+    const ninety = pointsOf(panel.querySelector('[data-testid="progress-shape-window-90"]'))
     // The volume is the first axis, and it is at the top of the chart.
-    const centre = 640 / 2
-    expect(radiusOf(now[0]!, centre)).toBeGreaterThan(radiusOf(before[0]!, centre))
-    // And on the axis the two windows agree on — the intensity — the two
-    // shapes meet, because each axis is scaled to the larger of the two.
+    // The thirty-day window has the most distance a week, so it reaches
+    // the edge and the ninety-day one sits inside it.
+    expect(radiusOf(thirty[0]!, CENTRE)).toBeGreaterThan(radiusOf(sixty[0]!, CENTRE))
+    expect(radiusOf(sixty[0]!, CENTRE)).toBeGreaterThan(radiusOf(ninety[0]!, CENTRE))
+    // And on the axis the three windows agree on — the intensity — the
+    // three shapes meet, because each axis is scaled to the largest of
+    // the three.
     const intensity = RADAR_AXES.indexOf('intensity')
-    expect(radiusOf(now[intensity]!, centre)).toBeCloseTo(radiusOf(before[intensity]!, centre), 5)
+    expect(radiusOf(ninety[intensity]!, CENTRE)).toBeCloseTo(radiusOf(thirty[intensity]!, CENTRE), 5)
+    expect(radiusOf(ninety[intensity]!, CENTRE)).toBeCloseTo(radiusOf(sixty[intensity]!, CENTRE), 5)
   })
 
   it('opens on its own, like the other panels', async () => {
@@ -167,5 +178,23 @@ describe("the athlete's shape", () => {
     for (const word of ['score', 'grade', 'excellent', 'very active', 'optimal', 'good', 'bad']) {
       expect(text).not.toContain(word)
     }
+  })
+
+  it('is drawn from the answers the router gave', async () => {
+    // The three windows are three answers, and the chart draws each of
+    // them: a window the router did not answer has no polygon.
+    vi.spyOn(api, 'insightsRollingDays').mockImplementation(async (days: number) => {
+      if (days === 60) return { ...rollingFixture, profile: [] }
+      return rollingFixture
+    })
+
+    renderApp('/profile')
+    const panel = await screen.findByTestId('progress-shape')
+    await waitFor(() =>
+      expect(panel.querySelector('[data-testid="progress-shape-window-30"]')).toBeTruthy(),
+    )
+    // The window with no facets has no shape of its own.
+    expect(panel.querySelector('[data-testid="progress-shape-window-60"]')).toBeNull()
+    expect(panel.querySelector('[data-testid="progress-shape-window-90"]')).toBeTruthy()
   })
 })

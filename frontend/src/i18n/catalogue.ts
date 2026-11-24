@@ -356,10 +356,9 @@ export const catalogue = {
     own history and cannot be confused with either. It is one line
     here: "Profile" reads fine in the rail and the top bar.
   */
-  'progress.profile.scope.1': { type: 'status', text: '1 month' },
-  'progress.profile.scope.2': { type: 'status', text: '2 months' },
-  'progress.profile.scope.3': { type: 'status', text: '3 months' },
-  'progress.profile.scope.12': { type: 'status', text: '1 year' },
+  'progress.profile.scope.30': { type: 'status', text: '30 days' },
+  'progress.profile.scope.60': { type: 'status', text: '60 days' },
+  'progress.profile.scope.90': { type: 'status', text: '90 days' },
 
   'nav.profile': { type: 'status', text: 'My running' },
   'progress.profile.page': { type: 'status', text: 'The athlete profile' },
@@ -398,7 +397,7 @@ export const catalogue = {
   'progress.wall.profile.heading': { type: 'status', text: 'The athlete profile' },
   'progress.wall.profile.alt': {
     type: 'status',
-    text: 'The athlete profile: two windows on one chart, each axis scaled to the larger of the two.',
+    text: 'The athlete profile: three windows on one chart, each axis scaled to the largest of the three.',
   },
   'progress.wall.profile.axis': { type: 'status', text: 'The axis' },
   'progress.wall.profile.previous': {
@@ -408,7 +407,7 @@ export const catalogue = {
   'progress.wall.profile.window': { type: 'status', text: 'The last {days} days' },
   'progress.wall.profile.note': {
     type: 'status',
-    text: 'Each axis is scaled to the larger of the two windows.',
+    text: 'Each axis is scaled to the largest of the three windows.',
   },
   'progress.wall.zones.heading': { type: 'status', text: 'Time in each zone' },
   'progress.wall.split.heading': { type: 'status', text: 'Polarised split' },
@@ -565,40 +564,49 @@ export const catalogue = {
   'progress.rolling.zones.distribution': { type: 'status', text: 'By zone' },
   'progress.rolling.distances.heading': { type: 'status', text: 'By distance' },
   'progress.profile.heading': { type: 'status', text: 'Training profile' },
+  'progress.profile.facets.note': { type: 'status', text: 'What the window holds.' },
 
   /**
-   * The athlete's shape: the same six facets of the training, over two
+   * The athlete's shape: the same six facets of the training, over three
    * windows, drawn on one chart.
    *
-   * The chart is the athlete's own — every axis is scaled to the larger
-   * of the two windows' values, so the two shapes are read against each
-   * other and not against anybody's idea of a good week.
+   * The chart is the athlete's own — every axis is scaled to the largest
+   * of the three windows' values, so the three shapes are read against
+   * each other and not against anybody's idea of a good week.
    */
   'progress.shape.heading': { type: 'status', text: 'Your shape' },
   'progress.shape.note': {
     type: 'status',
-    text: 'Six facets of your training, over two windows, on one chart.',
+    text: 'Six facets of your training, over three windows, on one chart.',
   },
   'progress.shape.scale': {
     type: 'status',
-    text: 'Each axis is scaled to the larger of the two windows.',
+    text: 'Each axis is scaled to the largest of the three windows.',
+  },
+  'progress.shape.rates': {
+    type: 'status',
+    text: 'The volume is a distance a week and the consistency the share of the days, so the windows can be read against each other.',
   },
   'progress.shape.alt': {
     type: 'status',
-    text: 'Six axes, with the shape of each of the two windows drawn on them.',
+    text: 'Six axes, with the shape of each of the three windows drawn on them.',
   },
   'progress.shape.empty': {
     type: 'status',
     text: 'This window holds no run, so it has no shape.',
   },
   'progress.shape.axis': { type: 'status', text: 'Facet' },
-  'progress.shape.window': { type: 'status', text: '{days} days' },
+  'progress.shape.legend': { type: 'status', text: 'last {days} days' },
+  'progress.shape.movement': { type: 'status', text: 'Movement' },
   'progress.rolling.trend.up': { type: 'status', text: 'up on the {days} days before' },
   'progress.rolling.trend.down': { type: 'status', text: 'down on the {days} days before' },
   'progress.rolling.trend.steady': {
     type: 'status',
     text: 'the same as the {days} days before',
   },
+  'progress.rolling.trend.up.short': { type: 'status', text: 'up' },
+  'progress.rolling.trend.down.short': { type: 'status', text: 'down' },
+  'progress.rolling.trend.steady.short': { type: 'status', text: 'the same' },
   'progress.rolling.weekday.heading': { type: 'status', text: 'By weekday' },
   'progress.rolling.daytime.heading': { type: 'status', text: 'By time of day' },
   'progress.rolling.months.heading': { type: 'status', text: 'By month' },

@@ -343,8 +343,15 @@ pub fn distance_buckets(activities: &[RollingActivity]) -> Vec<DistanceBucket> {
 }
 
 /// The seven facets of the athlete's shape, and how they moved.
-pub fn profile_facets(current: &[RollingActivity], previous: &[RollingActivity]) -> Vec<Facet> {
-    facets(current, previous)
+///
+/// `days` is the length of the window: the rates are measured against it,
+/// and the core is where the division happens.
+pub fn profile_facets(
+    current: &[RollingActivity],
+    previous: &[RollingActivity],
+    days: i64,
+) -> Vec<Facet> {
+    facets(current, previous, days)
 }
 
 /// A sentence from the core's catalogue.
