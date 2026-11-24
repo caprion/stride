@@ -181,7 +181,7 @@ pub struct Entry {
 }
 
 /// The catalogue.
-pub const CATALOGUE: [Entry; 232] = [
+pub const CATALOGUE: [Entry; 279] = [
     // The vitals.
     Entry {
         id: "vital.rest.label",
@@ -823,6 +823,166 @@ pub const CATALOGUE: [Entry; 232] = [
         kind: StringKind::Statement,
         role: None,
         template: "{kind}",
+    },
+    // The method's own kinds, in the runner's wording (D24 — "the kinds of
+    // run"). The method's own name rides beside these; it never leads.
+    Entry {
+        id: "statement.plan.kind.rest_cross",
+        kind: StringKind::Statement,
+        role: None,
+        template: "rest or cross-training",
+    },
+    Entry {
+        id: "statement.plan.kind.ga",
+        kind: StringKind::Statement,
+        role: None,
+        template: "easy",
+    },
+    Entry {
+        id: "statement.plan.kind.ga_speed",
+        kind: StringKind::Statement,
+        role: None,
+        template: "easy, with strides",
+    },
+    Entry {
+        id: "statement.plan.kind.endurance",
+        kind: StringKind::Statement,
+        role: None,
+        template: "long run",
+    },
+    Entry {
+        id: "statement.plan.kind.progression_long_run",
+        kind: StringKind::Statement,
+        role: None,
+        template: "long run, finishing fast",
+    },
+    Entry {
+        id: "statement.plan.kind.lt",
+        kind: StringKind::Statement,
+        role: None,
+        template: "tempo",
+    },
+    Entry {
+        id: "statement.plan.kind.vo2max",
+        kind: StringKind::Statement,
+        role: None,
+        template: "intervals",
+    },
+    Entry {
+        id: "statement.plan.kind.speed_repetitions",
+        kind: StringKind::Statement,
+        role: None,
+        template: "speed repetitions",
+    },
+    Entry {
+        id: "statement.plan.kind.recovery",
+        kind: StringKind::Statement,
+        role: None,
+        template: "recovery",
+    },
+    Entry {
+        id: "statement.plan.kind.race_pace",
+        kind: StringKind::Statement,
+        role: None,
+        template: "race pace",
+    },
+    Entry {
+        id: "statement.plan.kind.race_pace_speed",
+        kind: StringKind::Statement,
+        role: None,
+        template: "race pace, with strides",
+    },
+    Entry {
+        id: "statement.plan.kind.tune_up_race",
+        kind: StringKind::Statement,
+        role: None,
+        template: "race",
+    },
+    Entry {
+        id: "statement.plan.kind.goal_race",
+        kind: StringKind::Statement,
+        role: None,
+        template: "race",
+    },
+    // The method's own names: the book's words, for the title that rides
+    // beside the runner's wording.
+    Entry {
+        id: "statement.plan.method.rest_cross",
+        kind: StringKind::Statement,
+        role: None,
+        template: "rest or cross-training",
+    },
+    Entry {
+        id: "statement.plan.method.ga",
+        kind: StringKind::Statement,
+        role: None,
+        template: "GA",
+    },
+    Entry {
+        id: "statement.plan.method.ga_speed",
+        kind: StringKind::Statement,
+        role: None,
+        template: "GA+speed",
+    },
+    Entry {
+        id: "statement.plan.method.endurance",
+        kind: StringKind::Statement,
+        role: None,
+        template: "endurance",
+    },
+    Entry {
+        id: "statement.plan.method.progression_long_run",
+        kind: StringKind::Statement,
+        role: None,
+        template: "progression long run",
+    },
+    Entry {
+        id: "statement.plan.method.lt",
+        kind: StringKind::Statement,
+        role: None,
+        template: "LT",
+    },
+    Entry {
+        id: "statement.plan.method.vo2max",
+        kind: StringKind::Statement,
+        role: None,
+        template: "VO₂max",
+    },
+    Entry {
+        id: "statement.plan.method.speed_repetitions",
+        kind: StringKind::Statement,
+        role: None,
+        template: "speed repetitions",
+    },
+    Entry {
+        id: "statement.plan.method.recovery",
+        kind: StringKind::Statement,
+        role: None,
+        template: "recovery",
+    },
+    Entry {
+        id: "statement.plan.method.race_pace",
+        kind: StringKind::Statement,
+        role: None,
+        template: "race pace",
+    },
+    Entry {
+        id: "statement.plan.method.race_pace_speed",
+        kind: StringKind::Statement,
+        role: None,
+        template: "race pace",
+    },
+    Entry {
+        id: "statement.plan.method.tune_up_race",
+        kind: StringKind::Statement,
+        role: None,
+        template: "the tune-up race",
+    },
+    Entry {
+        id: "statement.plan.method.goal_race",
+        kind: StringKind::Statement,
+        role: None,
+        template: "the goal race",
     },
     Entry {
         id: "statement.plan.session.label",
@@ -1699,7 +1859,148 @@ pub const CATALOGUE: [Entry; 232] = [
         role: None,
         template: "no programme to adopt yet",
     },
+    Entry {
+        id: "plan.bases.unreadable",
+        kind: StringKind::Status,
+        role: None,
+        template: "the programme catalogue could not be read",
+    },
 
+    // ---- The programmes: the plan you follow, and the plan's own week.
+    //
+    // The lines below are the plan card's rows. They state what the plan
+    // is, what it asks of the athlete, and what it was paced with — and
+    // they never say which level fits.
+    Entry {
+        id: "statement.plan.programme",
+        kind: StringKind::Statement,
+        role: None,
+        template: "the {method} {label} plan",
+    },
+    Entry {
+        // The tier's entry requirement, as the book prints it. The app
+        // states it beside the athlete's own mileage and never compares the
+        // two.
+        id: "statement.plan.entry.requirement",
+        kind: StringKind::Statement,
+        role: None,
+        template: "this level asks for {range} a week",
+    },
+    Entry {
+        id: "statement.plan.entry.plan",
+        kind: StringKind::Statement,
+        role: None,
+        template: "this plan runs {range} a week",
+    },
+    Entry {
+        id: "statement.plan.entry.athlete",
+        kind: StringKind::Statement,
+        role: None,
+        template: "your last {n} weeks: {values}",
+    },
+    Entry {
+        // The threshold the plan was paced with — its value and the day it
+        // was read. A later threshold does not re-pace a running plan.
+        id: "statement.plan.pacing.threshold",
+        kind: StringKind::Statement,
+        role: None,
+        template: "paced with the threshold of {date} · {value}",
+    },
+    Entry {
+        // The plan's own rule on the athlete's race — the fallback when no
+        // threshold was chosen.
+        id: "statement.plan.pacing.rule",
+        kind: StringKind::Statement,
+        role: None,
+        template: "paced with the plan's rule on your {distance} of {date}",
+    },
+    Entry {
+        id: "statement.plan.pacing.none",
+        kind: StringKind::Statement,
+        role: None,
+        template: "no paces were worked out — {reason}",
+    },
+    Entry {
+        // The general-aerobic day: the method fixes a heart-rate band and
+        // no pace. The session has no pace, and says so.
+        id: "statement.plan.pace.band_only",
+        kind: StringKind::Statement,
+        role: None,
+        template: "the method fixes a heart-rate band for this run and no pace",
+    },
+    Entry {
+        id: "statement.plan.progression.last",
+        kind: StringKind::Statement,
+        role: None,
+        template: "the last {distance} at LT pace",
+    },
+    Entry {
+        id: "statement.plan.race_week.shifted",
+        kind: StringKind::Statement,
+        role: None,
+        template: "your race is on {weekday} · this week's sessions are {direction} a day",
+    },
+    Entry {
+        id: "statement.plan.race_week.earlier",
+        kind: StringKind::Statement,
+        role: None,
+        template: "earlier",
+    },
+    Entry {
+        id: "statement.plan.race_week.later",
+        kind: StringKind::Statement,
+        role: None,
+        template: "later",
+    },
+    Entry {
+        id: "statement.plan.race_week.dropped",
+        kind: StringKind::Statement,
+        role: None,
+        template: "the {day} session is not in this week: {kind}",
+    },
+    Entry {
+        id: "statement.plan.session.line",
+        kind: StringKind::Statement,
+        role: None,
+        template: "{label} · {pace}",
+    },
+    Entry {
+        id: "statement.plan.volume.check",
+        kind: StringKind::Statement,
+        role: None,
+        template: "the week's seven days add up to {volume}",
+    },
+    Entry {
+        id: "statement.plan.volume.gap",
+        kind: StringKind::Statement,
+        role: None,
+        template: "the week's seven days add up to {cells}, and the book prints {volume}",
+    },
+    // The refusals. A refusal is a fact with a reason, never a verdict.
+    Entry {
+        id: "statement.plan.refusal.programme",
+        kind: StringKind::Statement,
+        role: None,
+        template: "there is no programme called {id} in the catalogue",
+    },
+    Entry {
+        id: "statement.plan.refusal.goal",
+        kind: StringKind::Statement,
+        role: None,
+        template: "this programme's goal race is {options}, and the distance given is {distance}",
+    },
+    Entry {
+        id: "statement.plan.refusal.start",
+        kind: StringKind::Statement,
+        role: None,
+        template: "the plan's first week begins on {start}, and the race on {race} falls in another week",
+    },
+    Entry {
+        id: "statement.plan.refusal.volume",
+        kind: StringKind::Statement,
+        role: None,
+        template: "week {week} adds up to {cells}, and the book prints {volume}",
+    },
 ];
 
 /// The catalogue entry with this id.

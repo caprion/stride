@@ -84,7 +84,22 @@ impl PlanSource {
     }
 }
 
-/// What a session is. This is the athlete's own vocabulary.
+/// What a session is.
+///
+/// The first five are the **app's own kinds** — the buckets the surface
+/// draws, and the kinds the baseline engine infers from the athlete's own
+/// history. The rest are **the method's kinds**: the book's own
+/// vocabulary, read cell by cell from the programme's schedule
+/// (`exploration/plan-bases-spec.md` §2).
+///
+/// The method's kind travels as **data**, not as a label: the ledger
+/// compares a session's kind against the watch's own evidence, and a label
+/// cannot be compared. Two names live side by side and never both lead:
+///
+/// * the **runner's wording** — [`SessionKind::word`] — is what the surface
+///   prints: "tempo", "long run", "easy, with strides";
+/// * the **method's own name** — [`SessionKind::method_name`] — rides beside
+///   it: "LT", "endurance", "GA+speed".
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum SessionKind {
@@ -98,10 +113,47 @@ pub enum SessionKind {
     Rest,
     /// A kind the athlete named themselves.
     Other(String),
+    /// The book's rest or cross-training day — the day that is not a run.
+    #[serde(rename = "rest_cross")]
+    RestCross,
+    /// The book's general aerobic run: "GA".
+    #[serde(rename = "ga")]
+    GeneralAerobic,
+    /// The book's general aerobic run with speed work: "GA+s".
+    #[serde(rename = "ga_speed")]
+    GeneralAerobicSpeed,
+    /// The book's endurance run — the long run.
+    Endurance,
+    /// The book's progression long run: the last miles at the threshold
+    /// pace.
+    ProgressionLongRun,
+    /// The book's lactate-threshold run — the tempo.
+    #[serde(rename = "lt")]
+    Threshold,
+    /// The book's VO₂max intervals.
+    #[serde(rename = "vo2max")]
+    Vo2Max,
+    /// The book's speed repetitions.
+    SpeedRepetitions,
+    /// The book's recovery run.
+    Recovery,
+    /// The book's race-pace run.
+    RacePace,
+    /// The book's race-pace run with strides.
+    RacePaceSpeed,
+    /// The book's tune-up race.
+    TuneUpRace,
+    /// The book's goal race.
+    GoalRace,
 }
 
 impl SessionKind {
-    /// The word the plan uses for this kind.
+    /// The word the plan uses for this kind — the runner's wording.
+    ///
+    /// The method's own kinds are named the way a runner names them: a
+    /// threshold run is a "tempo", a repetition session is "speed
+    /// repetitions", the general aerobic day with strides is "easy, with
+    /// strides". The book's own word rides beside it, never in place of it.
     pub fn word(&self) -> String {
         let id = match self {
             SessionKind::Easy => "statement.plan.kind.easy",
@@ -109,6 +161,19 @@ impl SessionKind {
             SessionKind::Quality => "statement.plan.kind.quality",
             SessionKind::Rest => "statement.plan.kind.rest",
             SessionKind::Other(_) => "statement.plan.kind.other",
+            SessionKind::RestCross => "statement.plan.kind.rest_cross",
+            SessionKind::GeneralAerobic => "statement.plan.kind.ga",
+            SessionKind::GeneralAerobicSpeed => "statement.plan.kind.ga_speed",
+            SessionKind::Endurance => "statement.plan.kind.endurance",
+            SessionKind::ProgressionLongRun => "statement.plan.kind.progression_long_run",
+            SessionKind::Threshold => "statement.plan.kind.lt",
+            SessionKind::Vo2Max => "statement.plan.kind.vo2max",
+            SessionKind::SpeedRepetitions => "statement.plan.kind.speed_repetitions",
+            SessionKind::Recovery => "statement.plan.kind.recovery",
+            SessionKind::RacePace => "statement.plan.kind.race_pace",
+            SessionKind::RacePaceSpeed => "statement.plan.kind.race_pace_speed",
+            SessionKind::TuneUpRace => "statement.plan.kind.tune_up_race",
+            SessionKind::GoalRace => "statement.plan.kind.goal_race",
         };
         let value = match self {
             SessionKind::Other(name) if name.trim().is_empty() => "other".to_string(),
@@ -116,6 +181,94 @@ impl SessionKind {
             _ => String::new(),
         };
         strings::render(id, &[("kind", &value)]).unwrap_or_default()
+    }
+
+    /// The method's own name for this kind, as the book prints it.
+    ///
+    /// "GA", "GA+speed", "endurance", "LT", "VO₂max", "the tune-up race".
+    /// The app's own kinds have no method's name: they are the app's, and
+    /// the method never wrote them.
+    pub fn method_name(&self) -> Option<String> {
+        let id = match self {
+            SessionKind::RestCross => "statement.plan.method.rest_cross",
+            SessionKind::GeneralAerobic => "statement.plan.method.ga",
+            SessionKind::GeneralAerobicSpeed => "statement.plan.method.ga_speed",
+            SessionKind::Endurance => "statement.plan.method.endurance",
+            SessionKind::ProgressionLongRun => "statement.plan.method.progression_long_run",
+            SessionKind::Threshold => "statement.plan.method.lt",
+            SessionKind::Vo2Max => "statement.plan.method.vo2max",
+            SessionKind::SpeedRepetitions => "statement.plan.method.speed_repetitions",
+            SessionKind::Recovery => "statement.plan.method.recovery",
+            SessionKind::RacePace => "statement.plan.method.race_pace",
+            SessionKind::RacePaceSpeed => "statement.plan.method.race_pace_speed",
+            SessionKind::TuneUpRace => "statement.plan.method.tune_up_race",
+            SessionKind::GoalRace => "statement.plan.method.goal_race",
+            _ => return None,
+        };
+        strings::text(id).map(|text| text.to_string())
+    }
+
+    /// The kind's key: the name it travels under.
+    ///
+    /// The method's keys are the book's own abbreviations, so a row read
+    /// from the catalogue and a row stored by the app say the same thing.
+    pub fn key(&self) -> &'static str {
+        match self {
+            SessionKind::Easy => "easy",
+            SessionKind::Long => "long",
+            SessionKind::Quality => "quality",
+            SessionKind::Rest => "rest",
+            SessionKind::Other(_) => "other",
+            SessionKind::RestCross => "rest_cross",
+            SessionKind::GeneralAerobic => "ga",
+            SessionKind::GeneralAerobicSpeed => "ga_speed",
+            SessionKind::Endurance => "endurance",
+            SessionKind::ProgressionLongRun => "progression_long_run",
+            SessionKind::Threshold => "lt",
+            SessionKind::Vo2Max => "vo2max",
+            SessionKind::SpeedRepetitions => "speed_repetitions",
+            SessionKind::Recovery => "recovery",
+            SessionKind::RacePace => "race_pace",
+            SessionKind::RacePaceSpeed => "race_pace_speed",
+            SessionKind::TuneUpRace => "tune_up_race",
+            SessionKind::GoalRace => "goal_race",
+        }
+    }
+
+    /// The kind with this key, when the core knows it.
+    ///
+    /// A key the core does not know is `None` — never a kind the athlete
+    /// never chose.
+    pub fn from_key(key: &str) -> Option<SessionKind> {
+        let kind = match key {
+            "easy" => SessionKind::Easy,
+            "long" => SessionKind::Long,
+            "quality" => SessionKind::Quality,
+            "rest" => SessionKind::Rest,
+            "rest_cross" => SessionKind::RestCross,
+            "ga" => SessionKind::GeneralAerobic,
+            "ga_speed" => SessionKind::GeneralAerobicSpeed,
+            "endurance" => SessionKind::Endurance,
+            "progression_long_run" => SessionKind::ProgressionLongRun,
+            "lt" => SessionKind::Threshold,
+            "vo2max" => SessionKind::Vo2Max,
+            "speed_repetitions" => SessionKind::SpeedRepetitions,
+            "recovery" => SessionKind::Recovery,
+            "race_pace" => SessionKind::RacePace,
+            "race_pace_speed" => SessionKind::RacePaceSpeed,
+            "tune_up_race" => SessionKind::TuneUpRace,
+            "goal_race" => SessionKind::GoalRace,
+            _ => return None,
+        };
+        Some(kind)
+    }
+
+    /// Whether this kind is a run.
+    ///
+    /// A rest or cross-training day is not a run: it leaves no trace in the
+    /// record, and it carries no pace.
+    pub fn is_run(&self) -> bool {
+        !matches!(self, SessionKind::Rest | SessionKind::RestCross)
     }
 }
 
