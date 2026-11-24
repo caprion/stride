@@ -261,6 +261,28 @@ fn the_threshold_carries_the_four_candidates_the_choice_and_the_history() {
 }
 
 #[test]
+fn the_threshold_without_any_fact_says_why_each_candidate_has_no_value() {
+    let harness = Harness::empty("insights-threshold-empty");
+    let body = harness.ok_get("/insights/threshold");
+
+    let candidates = body["candidates"].as_array().expect("the candidates");
+    assert_eq!(candidates.len(), 4);
+    for candidate in candidates {
+        assert!(
+            candidate["value"].is_null(),
+            "a candidate has a value: {candidate}"
+        );
+        assert!(
+            candidate["missing"].is_string(),
+            "a candidate has no reason: {candidate}"
+        );
+    }
+    // And there is no choice in force, and no history.
+    assert!(body["in_force"].is_null());
+    assert!(body["history"].as_array().unwrap().is_empty());
+}
+
+#[test]
 fn the_ledger_carries_the_kinds_the_weeks_the_coverage_and_the_two_bases() {
     let harness = Harness::empty("insights-ledger");
     let id = harness.write_run(run_with_fit("a-run", common::TODAY, "hr_gps_run.fit"));
