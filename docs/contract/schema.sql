@@ -339,6 +339,83 @@ CREATE TABLE activity_observations (
     CONSTRAINT uq_activity_observations UNIQUE (activity_id, source, field, ordinal)
 );
 
+-- Old: (nothing - the old app had no adoptable programme). v7: the adopted
+-- plan: a **dated copy** of a programme from the catalogue, with the sessions
+-- that were worked out on the day it was adopted.
+--
+-- The catalogue is data and it may be corrected later, so the plan keeps the
+-- programme's id **and the version** it was adopted from, and the sessions
+-- are stored with it. A later correction to the catalogue cannot alter a
+-- plan that is running, and a later threshold does not re-pace it either:
+-- the paces were worked out once, at the adoption, from the threshold that
+-- was in force that day.
+--
+-- The plan keeps the record of what it was paced with: the threshold's value
+-- and the day it was read, the source it came from, and the base it was made
+-- for. **One plan is in force at a time** - a second plan cannot start
+-- while another one is running.
+--
+-- A plan adopted before a race was typed carries its sessions without paces,
+-- and says why: `paced` is 0 and `pacing_missing` holds the reason.
+CREATE TABLE adopted_plans (
+    id                INTEGER NOT NULL PRIMARY KEY,
+    template_id       VARCHAR(96) NOT NULL,   -- the programme's catalogue id
+    template_version  VARCHAR(16) NOT NULL,   -- the catalogue version it was adopted from
+    label             VARCHAR(160) NOT NULL,  -- the programme's own name: 'half marathon tier 2'
+    method            VARCHAR(64) NOT NULL,   -- whose method it is: 'Pfitzinger'
+    tier              VARCHAR(32) NOT NULL,   -- the tier the athlete chose: 'tier 2'
+    goal_distance_m   REAL NOT NULL,          -- the goal race's own distance, in metres
+    goal_label        VARCHAR(32) NOT NULL,   -- the distance's name: 'half marathon'
+    race_date         VARCHAR(10) NOT NULL,   -- the day of the goal race, YYYY-MM-DD
+    start_date        VARCHAR(10) NOT NULL,   -- the plan's first day, YYYY-MM-DD
+    end_date          VARCHAR(10) NOT NULL,   -- the plan's last day, YYYY-MM-DD
+    adopted_on        VARCHAR(10) NOT NULL,   -- the day the plan was adopted
+    threshold_value   VARCHAR(96),            -- the threshold it was paced with: '165 bpm'
+    threshold_date    VARCHAR(10),            -- the day that threshold was read
+    threshold_source  VARCHAR(24),            -- 'watch_zone_model' | 'race' |
+                                             -- 'field_test' | 'typed'
+    threshold_base    VARCHAR(24),            -- the base it was made for:
+                                             -- 'pfitzinger' | 'eighty_twenty'
+    rule_value        VARCHAR(64),            -- the race the plan's own rule was read from
+    rule_date         VARCHAR(10),            -- the day of that race
+    paced             INTEGER NOT NULL DEFAULT 0, -- 1 when the sessions carry paces
+    pacing_missing    TEXT,                   -- the reason the sessions have no pace
+    source            VARCHAR(24) NOT NULL DEFAULT 'prescribed', -- an adopted plan is a prescription
+    status            VARCHAR(16) NOT NULL DEFAULT 'active', -- 'active' | 'archived'
+    created_at        DATETIME NOT NULL
+);
+
+-- Old: (nothing - the old app never held an adopted programme). v7: the
+-- plan's own dated sessions: the day, the kind, the distance, the pace
+-- where the session has one, the pacing's source, and the detail the book
+-- prints for that day.
+--
+-- The sessions are **stored, not derived**: the paces were worked out once,
+-- at the adoption, and a catalogue correction or a new threshold would
+-- silently re-pace a running plan if they were derived.
+--
+-- A session with no pace is a session with no pace - never a zero pace.
+-- The pace's two ends are NULL when the session has none, and the rule and
+-- the threshold beside it say where the pace came from.
+CREATE TABLE adopted_sessions (
+    id                  INTEGER NOT NULL PRIMARY KEY,
+    plan_id             INTEGER NOT NULL,
+    date                VARCHAR(10) NOT NULL, -- the day the session falls on
+    week                INTEGER NOT NULL,     -- the plan's week: 11 down to 1, 0 for the race week
+    kind                VARCHAR(32) NOT NULL, -- the method's own key: 'ga' | 'lt' | 'endurance' | ...
+    distance_m          REAL,                 -- NULL on a rest day: a day with no distance is not a zero
+    pace_low_s_per_km   REAL,                 -- NULL when the session has no pace
+    pace_high_s_per_km  REAL,
+    finish_low_s_per_km REAL,                 -- the long run's second end
+    finish_high_s_per_km REAL,
+    pace_rule           VARCHAR(48),          -- the rule the pace came from
+    threshold_value     VARCHAR(96),          -- the threshold the pace came from
+    detail              TEXT,                 -- the cell's own detail: '3 x 8 min, jog 3'
+    lt_last_m           REAL,                 -- the progression run's last miles at LT pace
+    FOREIGN KEY (plan_id) REFERENCES adopted_plans (id) ON DELETE CASCADE,
+    CONSTRAINT uq_adopted_sessions UNIQUE (plan_id, date, kind)
+);
+
 -- Indexes, created after the tables, in this order.
 CREATE INDEX ix_activities_local_date ON activities (local_date);
 CREATE INDEX ix_activities_sport      ON activities (sport_type);
@@ -352,3 +429,6 @@ CREATE INDEX ix_run_updates_activity ON run_updates (activity_id);
 CREATE INDEX ix_race_observations_race_date ON race_observations (race_date);
 CREATE INDEX ix_threshold_observations_entered_on ON threshold_observations (entered_on);
 CREATE INDEX ix_activity_observations_activity ON activity_observations (activity_id);
+CREATE INDEX ix_adopted_plans_start_date ON adopted_plans (start_date);
+CREATE INDEX ix_adopted_plans_race_date ON adopted_plans (race_date);
+CREATE INDEX ix_adopted_sessions_plan_date ON adopted_sessions (plan_id, date);

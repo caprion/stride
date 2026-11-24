@@ -162,6 +162,10 @@ pub struct ImportReport {
     pub thresholds: usize,
     /// How many of the source's own facts about a run were written.
     pub activity_observations: usize,
+    /// How many adopted plans were written.
+    pub adopted_plans: usize,
+    /// How many of the adopted plans' own sessions were written.
+    pub adopted_sessions: usize,
     /// How many rows there are in all.
     pub rows: usize,
 }
@@ -600,11 +604,44 @@ const ACTIVITY_OBSERVATIONS: FrozenTable = FrozenTable {
     columns: "PRAGMA main.table_info(\"activity_observations\")",
 };
 
+/// `adopted_plans`.
+const ADOPTED_PLANS: FrozenTable = FrozenTable {
+    name: "adopted_plans",
+    select: "SELECT id, template_id, template_version, label, method, tier, goal_distance_m, \
+             goal_label, race_date, start_date, end_date, adopted_on, threshold_value, \
+             threshold_date, threshold_source, threshold_base, rule_value, rule_date, paced, \
+             pacing_missing, source, status, created_at FROM adopted_plans",
+    insert: "INSERT INTO adopted_plans (id, template_id, template_version, label, method, tier, \
+              goal_distance_m, goal_label, race_date, start_date, end_date, adopted_on, \
+              threshold_value, threshold_date, threshold_source, threshold_base, rule_value, \
+              rule_date, paced, pacing_missing, source, status, created_at) \
+              VALUES (:id, :template_id, :template_version, :label, :method, :tier, \
+              :goal_distance_m, :goal_label, :race_date, :start_date, :end_date, :adopted_on, \
+              :threshold_value, :threshold_date, :threshold_source, :threshold_base, \
+              :rule_value, :rule_date, :paced, :pacing_missing, :source, :status, :created_at)",
+    columns: "PRAGMA main.table_info(\"adopted_plans\")",
+};
+
+/// `adopted_sessions`.
+const ADOPTED_SESSIONS: FrozenTable = FrozenTable {
+    name: "adopted_sessions",
+    select: "SELECT id, plan_id, date, week, kind, distance_m, pace_low_s_per_km, \
+             pace_high_s_per_km, finish_low_s_per_km, finish_high_s_per_km, pace_rule, \
+             threshold_value, detail, lt_last_m FROM adopted_sessions",
+    insert: "INSERT INTO adopted_sessions (id, plan_id, date, week, kind, distance_m, \
+              pace_low_s_per_km, pace_high_s_per_km, finish_low_s_per_km, finish_high_s_per_km, \
+              pace_rule, threshold_value, detail, lt_last_m) \
+              VALUES (:id, :plan_id, :date, :week, :kind, :distance_m, :pace_low_s_per_km, \
+              :pace_high_s_per_km, :finish_low_s_per_km, :finish_high_s_per_km, :pace_rule, \
+              :threshold_value, :detail, :lt_last_m)",
+    columns: "PRAGMA main.table_info(\"adopted_sessions\")",
+};
+
 /// The tables of the frozen schema, in the schema's order.
 ///
 /// The order is the schema's: parents before children, so a child never
 /// arrives before its parent.
-const FROZEN_TABLES: [FrozenTable; 15] = [
+const FROZEN_TABLES: [FrozenTable; 17] = [
     ACTIVITIES,
     ACTIVITY_SAMPLES,
     WELLNESS_DAILY,
@@ -620,6 +657,8 @@ const FROZEN_TABLES: [FrozenTable; 15] = [
     RACE_OBSERVATIONS,
     THRESHOLD_OBSERVATIONS,
     ACTIVITY_OBSERVATIONS,
+    ADOPTED_PLANS,
+    ADOPTED_SESSIONS,
 ];
 
 /// Copy every row of the schema from one database to another.
@@ -1232,6 +1271,89 @@ fn merge(source: &Connection, destination: &Connection) -> Result<ImportReport> 
         report.rows += 1;
     }
 
+    // The adopted plans, by the programme they were adopted from and the
+    // day they start: the same plan, adopted twice, is one plan.
+    //
+    // The sessions follow their plan, and a plan's id may change in the
+    // import, so the session is written against the id the plan has here.
+    let mut plan_ids: BTreeMap<i64, i64> = BTreeMap::new();
+    for row in read_rows(source, &ADOPTED_PLANS)? {
+        let template_id = text_of(&row, "template_id");
+        let template_version = text_of(&row, "template_version");
+        let start_date = text_of(&row, "start_date");
+        let existing =
+            find_adopted_plan(&transaction, &template_id, &template_version, &start_date)?;
+        let id = match existing {
+            Some(id) => {
+                update_adopted_plan(&transaction, id, &row)?;
+                id
+            }
+            None => insert_adopted_plan(&transaction, &row)?,
+        };
+        if let Some(old) = row.get("id").and_then(|value| value.as_i64()) {
+            plan_ids.insert(old, id);
+        }
+        report.adopted_plans += 1;
+        report.rows += 1;
+    }
+
+    // The adopted plans' own sessions, by the plan and the day.
+    for row in read_rows(source, &ADOPTED_SESSIONS)? {
+        let old = row
+            .get("plan_id")
+            .and_then(|value| value.as_i64())
+            .unwrap_or_default();
+        let plan_id = match plan_ids.get(&old) {
+            Some(id) => *id,
+            None => continue,
+        };
+        let date = text_of(&row, "date");
+        let kind = text_of(&row, "kind");
+        transaction
+            .execute(
+                "INSERT INTO adopted_sessions (
+                    plan_id, date, week, kind, distance_m, pace_low_s_per_km,
+                    pace_high_s_per_km, finish_low_s_per_km, finish_high_s_per_km,
+                    pace_rule, threshold_value, detail, lt_last_m
+                 ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13)
+                 ON CONFLICT(plan_id, date, kind) DO UPDATE SET
+                    week = excluded.week,
+                    distance_m = excluded.distance_m,
+                    pace_low_s_per_km = excluded.pace_low_s_per_km,
+                    pace_high_s_per_km = excluded.pace_high_s_per_km,
+                    finish_low_s_per_km = excluded.finish_low_s_per_km,
+                    finish_high_s_per_km = excluded.finish_high_s_per_km,
+                    pace_rule = excluded.pace_rule,
+                    threshold_value = excluded.threshold_value,
+                    detail = excluded.detail,
+                    lt_last_m = excluded.lt_last_m",
+                rusqlite::params![
+                    plan_id,
+                    date,
+                    row.get("week")
+                        .and_then(|value| value.as_i64())
+                        .unwrap_or_default(),
+                    kind,
+                    row.get("distance_m").and_then(|value| value.as_f64()),
+                    row.get("pace_low_s_per_km")
+                        .and_then(|value| value.as_f64()),
+                    row.get("pace_high_s_per_km")
+                        .and_then(|value| value.as_f64()),
+                    row.get("finish_low_s_per_km")
+                        .and_then(|value| value.as_f64()),
+                    row.get("finish_high_s_per_km")
+                        .and_then(|value| value.as_f64()),
+                    optional_text(&row, "pace_rule"),
+                    optional_text(&row, "threshold_value"),
+                    optional_text(&row, "detail"),
+                    row.get("lt_last_m").and_then(|value| value.as_f64()),
+                ],
+            )
+            .map_err(|error| StoreError::query("the adopted sessions", error))?;
+        report.adopted_sessions += 1;
+        report.rows += 1;
+    }
+
     transaction
         .commit()
         .map_err(|error| StoreError::query("COMMIT", error))?;
@@ -1662,6 +1784,120 @@ fn insert_race(
             |row| row.get::<_, i64>(0),
         )
         .map_err(|error| StoreError::query("insert the race", error))
+}
+
+/// Find the adopted plan of this programme, version and first day.
+///
+/// The natural key of a plan is the programme it was adopted from and the
+/// day it starts: the same programme, adopted for the same dates, is one
+/// plan.
+fn find_adopted_plan(
+    connection: &Connection,
+    template_id: &str,
+    template_version: &str,
+    start_date: &str,
+) -> Result<Option<i64>> {
+    connection
+        .query_row(
+            "SELECT id FROM adopted_plans
+             WHERE template_id = ?1 AND template_version = ?2 AND start_date = ?3
+             ORDER BY id ASC LIMIT 1",
+            rusqlite::params![template_id, template_version, start_date],
+            |row| row.get::<_, i64>(0),
+        )
+        .optional()
+        .map_err(|error| StoreError::query("find the adopted plan", error))
+}
+
+/// Update an adopted plan that is already in the destination.
+///
+/// The status is not touched: the plan in force is settled once the rows
+/// are in, and the merge never moves it by itself.
+fn update_adopted_plan(
+    transaction: &rusqlite::Transaction<'_>,
+    id: i64,
+    row: &BTreeMap<String, Value>,
+) -> Result<()> {
+    transaction
+        .execute(
+            "UPDATE adopted_plans
+             SET label = ?2, method = ?3, tier = ?4, goal_distance_m = ?5, goal_label = ?6,
+                 race_date = ?7, end_date = ?8, adopted_on = ?9, threshold_value = ?10,
+                 threshold_date = ?11, threshold_source = ?12, threshold_base = ?13,
+                 rule_value = ?14, rule_date = ?15, paced = ?16, pacing_missing = ?17,
+                 created_at = ?18
+             WHERE id = ?1",
+            rusqlite::params![
+                id,
+                text_of(row, "label"),
+                text_of(row, "method"),
+                text_of(row, "tier"),
+                row.get("goal_distance_m").and_then(|value| value.as_f64()),
+                text_of(row, "goal_label"),
+                text_of(row, "race_date"),
+                text_of(row, "end_date"),
+                text_of(row, "adopted_on"),
+                optional_text(row, "threshold_value"),
+                optional_text(row, "threshold_date"),
+                optional_text(row, "threshold_source"),
+                optional_text(row, "threshold_base"),
+                optional_text(row, "rule_value"),
+                optional_text(row, "rule_date"),
+                row.get("paced")
+                    .and_then(|value| value.as_i64())
+                    .unwrap_or_default(),
+                optional_text(row, "pacing_missing"),
+                text_of(row, "created_at"),
+            ],
+        )
+        .map_err(|error| StoreError::query("update the adopted plan", error))?;
+    Ok(())
+}
+
+/// Write an adopted plan that is not in the destination yet.
+fn insert_adopted_plan(
+    transaction: &rusqlite::Transaction<'_>,
+    row: &BTreeMap<String, Value>,
+) -> Result<i64> {
+    transaction
+        .query_row(
+            "INSERT INTO adopted_plans (
+                template_id, template_version, label, method, tier, goal_distance_m,
+                goal_label, race_date, start_date, end_date, adopted_on, threshold_value,
+                threshold_date, threshold_source, threshold_base, rule_value, rule_date,
+                paced, pacing_missing, source, status, created_at
+             ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15,
+                ?16, ?17, ?18, ?19, ?20, ?21, ?22)
+             RETURNING id",
+            rusqlite::params![
+                text_of(row, "template_id"),
+                text_of(row, "template_version"),
+                text_of(row, "label"),
+                text_of(row, "method"),
+                text_of(row, "tier"),
+                row.get("goal_distance_m").and_then(|value| value.as_f64()),
+                text_of(row, "goal_label"),
+                text_of(row, "race_date"),
+                text_of(row, "start_date"),
+                text_of(row, "end_date"),
+                text_of(row, "adopted_on"),
+                optional_text(row, "threshold_value"),
+                optional_text(row, "threshold_date"),
+                optional_text(row, "threshold_source"),
+                optional_text(row, "threshold_base"),
+                optional_text(row, "rule_value"),
+                optional_text(row, "rule_date"),
+                row.get("paced")
+                    .and_then(|value| value.as_i64())
+                    .unwrap_or_default(),
+                optional_text(row, "pacing_missing"),
+                text_of(row, "source"),
+                text_of(row, "status"),
+                text_of(row, "created_at"),
+            ],
+            |row| row.get::<_, i64>(0),
+        )
+        .map_err(|error| StoreError::query("insert the adopted plan", error))
 }
 
 /// Find the threshold choice of this day, source and values.

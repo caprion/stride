@@ -4,8 +4,8 @@ mod common;
 
 use stride_store::export::{self, Format};
 use stride_store::{
-    DatabaseKey, NewActivityObservation, NewRaceObservation, NewThresholdObservation,
-    NewWellnessObservation, Result, Store,
+    DatabaseKey, NewActivityObservation, NewAdoptedPlan, NewAdoptedSession, NewRaceObservation,
+    NewThresholdObservation, NewWellnessObservation, Result, Store,
 };
 
 /// An observation to write, with the values a test wants.
@@ -276,7 +276,10 @@ fn an_import_refuses_an_export_of_another_schema_version() -> Result<()> {
     // The manifest says a schema this build does not read.
     let path = target.join("manifest.json");
     let text = common::read_text(&path)?;
-    let text = text.replace("\"schema_version\": 6", "\"schema_version\": 99");
+    let text = text.replace(
+        &format!("\"schema_version\": {}", stride_store::SCHEMA_VERSION),
+        "\"schema_version\": 99",
+    );
     common::write(&path, &text)?;
 
     let other = Store::open_and_migrate(&dir.file("other.db"), &common::key()?)?;
@@ -295,7 +298,7 @@ fn an_import_refuses_an_export_of_another_schema_version() -> Result<()> {
         "the error does not say the version: {text}"
     );
     assert!(
-        text.contains("6"),
+        text.contains(&stride_store::SCHEMA_VERSION.to_string()),
         "the error does not say the version: {text}"
     );
 
@@ -371,7 +374,7 @@ fn a_plain_database_is_converted_into_an_encrypted_one() -> Result<()> {
 
     let report = export::convert_plaintext_to_encrypted(&path, &common::key()?)?;
 
-    assert_eq!(report.tables.len(), 15);
+    assert_eq!(report.tables.len(), 17);
     assert_eq!(report.rows, 1);
     assert!(
         report.schema_matches,
@@ -560,5 +563,110 @@ fn an_import_refuses_an_export_that_has_changed() -> Result<()> {
     let refused = export::import(&other, &target, &common::key()?);
     assert!(refused.is_err(), "the import accepted a changed export");
     assert_eq!(other.count_activities()?, 0);
+    Ok(())
+}
+
+/// The adopted plan the export carries: a dated copy of a programme, with
+/// its own sessions.
+fn adopted_plan() -> NewAdoptedPlan {
+    NewAdoptedPlan {
+        template_id: "pfitzinger-half-marathon-tier-2".to_string(),
+        template_version: "1".to_string(),
+        label: "half marathon tier 2".to_string(),
+        method: "Pfitzinger".to_string(),
+        tier: "tier 2".to_string(),
+        goal_distance_m: 21_097.5,
+        goal_label: "half marathon".to_string(),
+        race_date: "2027-01-24".to_string(),
+        start_date: "2026-11-02".to_string(),
+        end_date: "2027-02-07".to_string(),
+        adopted_on: "2026-11-04".to_string(),
+        threshold_value: Some("165 bpm".to_string()),
+        threshold_date: Some("2026-11-03".to_string()),
+        threshold_source: Some("watch_zone_model".to_string()),
+        threshold_base: Some("pfitzinger".to_string()),
+        rule_value: Some("10K".to_string()),
+        rule_date: Some("2026-10-12".to_string()),
+        paced: true,
+        pacing_missing: None,
+        created_at: common::instant(),
+    }
+}
+
+/// One session of that plan.
+fn adopted_session() -> NewAdoptedSession {
+    NewAdoptedSession {
+        plan_id: 0,
+        date: "2026-12-30".to_string(),
+        week: 3,
+        kind: "endurance".to_string(),
+        distance_m: Some(28_500.0),
+        pace_low_s_per_km: Some(300.0),
+        pace_high_s_per_km: Some(332.0),
+        finish_low_s_per_km: Some(299.0),
+        finish_high_s_per_km: Some(337.0),
+        pace_rule: Some("book.long_run".to_string()),
+        threshold_value: Some("165 bpm".to_string()),
+        detail: None,
+        lt_last_m: None,
+    }
+}
+
+#[test]
+fn the_adopted_plan_travels_with_the_export() -> Result<()> {
+    let (dir, store) = common::store("export-adopted")?;
+    store.write_adopted_plan(&adopted_plan(), &[adopted_session()])?;
+
+    let target = dir.file("export");
+    let manifest = export::export(&store, &target, &common::key()?)?;
+    assert_eq!(manifest.tables.get("adopted_plans"), Some(&1));
+    assert_eq!(manifest.tables.get("adopted_sessions"), Some(&1));
+
+    // A second database, empty, reads the export back.
+    let other = Store::open_and_migrate(&dir.file("other.db"), &common::key()?)?;
+    let report = export::import(&other, &target, &common::key()?)?;
+    assert_eq!(report.adopted_plans, 1);
+    assert_eq!(report.adopted_sessions, 1);
+
+    // The plan is there, with the programme it was adopted from and the
+    // threshold it was paced with.
+    let plans = other.adopted_plans()?;
+    assert_eq!(plans.len(), 1);
+    assert_eq!(plans[0].template_id, "pfitzinger-half-marathon-tier-2");
+    assert_eq!(plans[0].template_version, "1");
+    assert_eq!(plans[0].tier, "tier 2");
+    assert_eq!(plans[0].start_date, "2026-11-02");
+    assert_eq!(plans[0].race_date, "2027-01-24");
+    assert_eq!(plans[0].threshold_value.as_deref(), Some("165 bpm"));
+    assert!(plans[0].paced);
+
+    // And its session, with the pace it was worked out with.
+    let sessions = other.adopted_sessions(plans[0].id)?;
+    assert_eq!(sessions.len(), 1);
+    assert_eq!(sessions[0].kind, "endurance");
+    assert_eq!(sessions[0].distance_m, Some(28_500.0));
+    assert_eq!(sessions[0].pace_low_s_per_km, Some(300.0));
+    assert_eq!(sessions[0].pace_rule.as_deref(), Some("book.long_run"));
+
+    drop(dir);
+    Ok(())
+}
+
+#[test]
+fn importing_the_same_export_twice_changes_nothing() -> Result<()> {
+    let (dir, store) = common::store("export-adopted-twice")?;
+    store.write_adopted_plan(&adopted_plan(), &[adopted_session()])?;
+
+    let target = dir.file("export");
+    export::export(&store, &target, &common::key()?)?;
+
+    let other = Store::open_and_migrate(&dir.file("other.db"), &common::key()?)?;
+    export::import(&other, &target, &common::key()?)?;
+    export::import(&other, &target, &common::key()?)?;
+
+    assert_eq!(other.count_adopted_plans()?, 1);
+    assert_eq!(other.count_adopted_sessions()?, 1);
+
+    drop(dir);
     Ok(())
 }

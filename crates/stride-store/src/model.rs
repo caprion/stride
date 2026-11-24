@@ -999,3 +999,177 @@ pub struct NewActivityObservation {
     /// When the value was read.
     pub retrieved_at: DateTime<Utc>,
 }
+
+/// One adopted plan: a **dated copy** of a programme from the catalogue.
+///
+/// The catalogue is data and it may be corrected later, so the plan keeps
+/// the programme's id **and the version** it was adopted from, and the
+/// sessions are stored with it. The paces were worked out once, at the
+/// adoption, from the threshold in force that day, and the plan keeps the
+/// record of what it was paced with.
+///
+/// **One plan is in force at a time.**
+#[derive(Debug, Clone, PartialEq)]
+pub struct AdoptedPlan {
+    /// The row's primary key.
+    pub id: i64,
+    /// The programme's catalogue id.
+    pub template_id: String,
+    /// The catalogue version the plan was adopted from.
+    pub template_version: String,
+    /// The programme's own name: "half marathon tier 2".
+    pub label: String,
+    /// Whose method it is: "Pfitzinger".
+    pub method: String,
+    /// The tier the athlete chose: "tier 2".
+    pub tier: String,
+    /// The goal race's own distance, in metres.
+    pub goal_distance_m: f64,
+    /// The distance's name: "half marathon".
+    pub goal_label: String,
+    /// The day of the goal race.
+    pub race_date: String,
+    /// The plan's first day.
+    pub start_date: String,
+    /// The plan's last day.
+    pub end_date: String,
+    /// The day the plan was adopted.
+    pub adopted_on: String,
+    /// The threshold the plan was paced with, rendered: "165 bpm".
+    pub threshold_value: Option<String>,
+    /// The day that threshold was read.
+    pub threshold_date: Option<String>,
+    /// Where the threshold came from: `watch_zone_model`, `race`,
+    /// `field_test` or `typed`.
+    pub threshold_source: Option<String>,
+    /// The base the threshold was made for: `pfitzinger` or `eighty_twenty`.
+    pub threshold_base: Option<String>,
+    /// The race the plan's own rule was read from: "10K".
+    pub rule_value: Option<String>,
+    /// The day of that race.
+    pub rule_date: Option<String>,
+    /// Do the sessions carry paces?
+    pub paced: bool,
+    /// The reason the sessions have no pace, when they have none.
+    pub pacing_missing: Option<String>,
+    /// Where the plan came from: an adopted programme is a prescription.
+    pub source: String,
+    /// `active` or `archived`.
+    pub status: String,
+}
+
+/// An adopted plan to write.
+#[derive(Debug, Clone, PartialEq)]
+pub struct NewAdoptedPlan {
+    /// The programme's catalogue id.
+    pub template_id: String,
+    /// The catalogue version the plan is adopted from.
+    pub template_version: String,
+    /// The programme's own name.
+    pub label: String,
+    /// Whose method it is.
+    pub method: String,
+    /// The tier the athlete chose.
+    pub tier: String,
+    /// The goal race's own distance, in metres.
+    pub goal_distance_m: f64,
+    /// The distance's name.
+    pub goal_label: String,
+    /// The day of the goal race.
+    pub race_date: String,
+    /// The plan's first day.
+    pub start_date: String,
+    /// The plan's last day.
+    pub end_date: String,
+    /// The day the plan was adopted.
+    pub adopted_on: String,
+    /// The threshold the plan was paced with, rendered.
+    pub threshold_value: Option<String>,
+    /// The day that threshold was read.
+    pub threshold_date: Option<String>,
+    /// Where the threshold came from.
+    pub threshold_source: Option<String>,
+    /// The base the threshold was made for.
+    pub threshold_base: Option<String>,
+    /// The race the plan's own rule was read from.
+    pub rule_value: Option<String>,
+    /// The day of that race.
+    pub rule_date: Option<String>,
+    /// Do the sessions carry paces?
+    pub paced: bool,
+    /// The reason the sessions have no pace, when they have none.
+    pub pacing_missing: Option<String>,
+    /// When the plan was written.
+    pub created_at: DateTime<Utc>,
+}
+
+/// One session of an adopted plan.
+///
+/// The session is **dated and stored**: its day, the method's own kind, its
+/// distance, the pace it was worked out with — and the rule and the
+/// threshold that pace came from.
+///
+/// A session with no pace is a session with no pace: the pace's ends are
+/// `None`, never zero.
+#[derive(Debug, Clone, PartialEq)]
+pub struct AdoptedSession {
+    /// The row's primary key.
+    pub id: i64,
+    /// The plan the session belongs to.
+    pub plan_id: i64,
+    /// The day the session falls on.
+    pub date: String,
+    /// The plan's week: eleven down to one, zero for the race week.
+    pub week: i64,
+    /// The method's own key: `ga`, `lt`, `endurance`, …
+    pub kind: String,
+    /// The session's distance, in metres. `None` on a day that is not a run.
+    pub distance_m: Option<f64>,
+    /// The fast end of the pace, in seconds per kilometre.
+    pub pace_low_s_per_km: Option<f64>,
+    /// The slow end of the pace, in seconds per kilometre.
+    pub pace_high_s_per_km: Option<f64>,
+    /// The fast end of the long run's second pace.
+    pub finish_low_s_per_km: Option<f64>,
+    /// The slow end of the long run's second pace.
+    pub finish_high_s_per_km: Option<f64>,
+    /// The rule the pace came from.
+    pub pace_rule: Option<String>,
+    /// The threshold the pace came from.
+    pub threshold_value: Option<String>,
+    /// The cell's own detail: "3 × 8 min, jog 3".
+    pub detail: Option<String>,
+    /// On a progression long run: the last miles at the threshold pace.
+    pub lt_last_m: Option<f64>,
+}
+
+/// A session of an adopted plan, to write.
+#[derive(Debug, Clone, PartialEq)]
+pub struct NewAdoptedSession {
+    /// The plan the session belongs to.
+    pub plan_id: i64,
+    /// The day the session falls on.
+    pub date: String,
+    /// The plan's week.
+    pub week: i64,
+    /// The method's own key.
+    pub kind: String,
+    /// The session's distance, in metres.
+    pub distance_m: Option<f64>,
+    /// The fast end of the pace, in seconds per kilometre.
+    pub pace_low_s_per_km: Option<f64>,
+    /// The slow end of the pace, in seconds per kilometre.
+    pub pace_high_s_per_km: Option<f64>,
+    /// The fast end of the long run's second pace.
+    pub finish_low_s_per_km: Option<f64>,
+    /// The slow end of the long run's second pace.
+    pub finish_high_s_per_km: Option<f64>,
+    /// The rule the pace came from.
+    pub pace_rule: Option<String>,
+    /// The threshold the pace came from.
+    pub threshold_value: Option<String>,
+    /// The cell's own detail.
+    pub detail: Option<String>,
+    /// On a progression long run: the last miles at the threshold pace.
+    pub lt_last_m: Option<f64>,
+}

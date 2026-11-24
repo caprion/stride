@@ -380,6 +380,45 @@ copy of the route table travels with them.
 * **The app does not read them yet.** The three routes are named in the
   contract's list of the routes the app does not read.
 
+### Note — the storage for the adopted plan (2026-11-24)
+
+This note travels with a change to `docs/contract/schema.sql`, which the
+contract freeze says is a plan change: a frozen file changes only with a
+plan note in the same change. **The schema version moves from 6 to 7**, and
+two tables are added. No route changed in this step, and no shape changed.
+
+* **The adopted plan** (`adopted_plans`). An adopted plan is a **dated
+  copy** of a programme from the catalogue (B1), so the row keeps the
+  programme's id **and the version** it was adopted from, the tier the
+  athlete chose, the plan's first day, the goal race's own distance and
+  the day it was run, the day the plan was adopted, and the record of
+  **what it was paced with**: the threshold's value and the day it was
+  read, the source it came from, and the base it was made for. A plan
+  adopted before a race was typed carries its sessions **without paces**,
+  and says why: `paced` is 0 and the reason is in the row.
+* **The plan's own sessions** (`adopted_sessions`). The day, the method's
+  own kind, the distance, the pace where the session has one, the **rule**
+  the pace came from and the **threshold** it came from, and the **detail**
+  the book prints for that day ("3 × 8 min, jog 3"). A session with no
+  pace is a session with no pace: the pace's ends are null, never zero.
+* **Why the sessions are stored and not derived.** The plan's paces were
+  worked out **once**, at the adoption, from the threshold in force that
+  day (B4). Derived on read, a later correction to the catalogue — or a
+  new threshold — would silently re-pace a plan that is already running.
+  The dated copy is what makes "a later threshold does not re-pace a
+  running plan" true.
+* **One plan is in force at a time.** A plan is in force from its first
+  day to its last, and a second plan cannot start while another one is
+  running. The store reads the plan in force on a day, and the adoption
+  route refuses a second one with the core's own reason.
+* **The export and the backup carry every table**, with their counts in the
+  manifest, and an export of an older schema is still refused. The plan is
+  the athlete's own fact, held locally in an encrypted database.
+* **One bump.** The two tables are read and written together, so they ship
+  in one step: a database at version 6 takes version 7 and gets both
+  tables and their indexes, in one transaction, and a database that already
+  ran version 7 changes nothing.
+
 ### Proposed amendment — the zone model is a dated fact (2026-11-15)
 
 **Proposal, not approved.** The approvals below are the user's to give. This

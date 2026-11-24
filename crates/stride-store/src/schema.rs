@@ -33,7 +33,7 @@ use rusqlite::Connection;
 use crate::error::{Result, StoreError};
 
 /// The version of the schema this build reads and writes.
-pub const SCHEMA_VERSION: i64 = 6;
+pub const SCHEMA_VERSION: i64 = 7;
 
 /// The statements that create the tables, in creation order.
 ///
@@ -369,6 +369,95 @@ CREATE TABLE activity_observations (
     CONSTRAINT uq_activity_observations UNIQUE (activity_id, source, field, ordinal)
 );
 "#,
+    // The tables added in version 7: the adopted plan and its own sessions.
+    //
+    // An adopted plan is a **dated copy** of a programme from the
+    // catalogue, and the catalogue may be corrected later — so the plan
+    // keeps the programme's id and the version it was adopted from, and
+    // the sessions are stored with it. The paces were worked out once, at
+    // the adoption, from the threshold in force that day, and they are
+    // stored with the rule and the threshold they came from.
+    //
+    // **One plan is in force at a time.** A plan adopted before a race was
+    // typed carries its sessions without paces and says why: `paced` is 0
+    // and `pacing_missing` holds the reason.
+    r#"-- Old: (nothing - the old app had no adoptable programme). v7: the adopted
+-- plan: a **dated copy** of a programme from the catalogue, with the sessions
+-- that were worked out on the day it was adopted.
+--
+-- The catalogue is data and it may be corrected later, so the plan keeps the
+-- programme's id **and the version** it was adopted from, and the sessions
+-- are stored with it. A later correction to the catalogue cannot alter a
+-- plan that is running, and a later threshold does not re-pace it either:
+-- the paces were worked out once, at the adoption, from the threshold that
+-- was in force that day.
+--
+-- The plan keeps the record of what it was paced with: the threshold's value
+-- and the day it was read, the source it came from, and the base it was made
+-- for. **One plan is in force at a time** - a second plan cannot start
+-- while another one is running.
+--
+-- A plan adopted before a race was typed carries its sessions without paces,
+-- and says why: `paced` is 0 and `pacing_missing` holds the reason.
+CREATE TABLE adopted_plans (
+    id                INTEGER NOT NULL PRIMARY KEY,
+    template_id       VARCHAR(96) NOT NULL,   -- the programme's catalogue id
+    template_version  VARCHAR(16) NOT NULL,   -- the catalogue version it was adopted from
+    label             VARCHAR(160) NOT NULL,  -- the programme's own name: 'half marathon tier 2'
+    method            VARCHAR(64) NOT NULL,   -- whose method it is: 'Pfitzinger'
+    tier              VARCHAR(32) NOT NULL,   -- the tier the athlete chose: 'tier 2'
+    goal_distance_m   REAL NOT NULL,          -- the goal race's own distance, in metres
+    goal_label        VARCHAR(32) NOT NULL,   -- the distance's name: 'half marathon'
+    race_date         VARCHAR(10) NOT NULL,   -- the day of the goal race, YYYY-MM-DD
+    start_date        VARCHAR(10) NOT NULL,   -- the plan's first day, YYYY-MM-DD
+    end_date          VARCHAR(10) NOT NULL,   -- the plan's last day, YYYY-MM-DD
+    adopted_on        VARCHAR(10) NOT NULL,   -- the day the plan was adopted
+    threshold_value   VARCHAR(96),            -- the threshold it was paced with: '165 bpm'
+    threshold_date    VARCHAR(10),            -- the day that threshold was read
+    threshold_source  VARCHAR(24),            -- 'watch_zone_model' | 'race' |
+                                             -- 'field_test' | 'typed'
+    threshold_base    VARCHAR(24),            -- the base it was made for:
+                                             -- 'pfitzinger' | 'eighty_twenty'
+    rule_value        VARCHAR(64),            -- the race the plan's own rule was read from
+    rule_date         VARCHAR(10),            -- the day of that race
+    paced             INTEGER NOT NULL DEFAULT 0, -- 1 when the sessions carry paces
+    pacing_missing    TEXT,                   -- the reason the sessions have no pace
+    source            VARCHAR(24) NOT NULL DEFAULT 'prescribed', -- an adopted plan is a prescription
+    status            VARCHAR(16) NOT NULL DEFAULT 'active', -- 'active' | 'archived'
+    created_at        DATETIME NOT NULL
+);
+"#,
+    r#"-- Old: (nothing - the old app never held an adopted programme). v7: the
+-- plan's own dated sessions: the day, the kind, the distance, the pace
+-- where the session has one, the pacing's source, and the detail the book
+-- prints for that day.
+--
+-- The sessions are **stored, not derived**: the paces were worked out once,
+-- at the adoption, and a catalogue correction or a new threshold would
+-- silently re-pace a running plan if they were derived.
+--
+-- A session with no pace is a session with no pace - never a zero pace.
+-- The pace's two ends are NULL when the session has none, and the rule and
+-- the threshold beside it say where the pace came from.
+CREATE TABLE adopted_sessions (
+    id                  INTEGER NOT NULL PRIMARY KEY,
+    plan_id             INTEGER NOT NULL,
+    date                VARCHAR(10) NOT NULL, -- the day the session falls on
+    week                INTEGER NOT NULL,     -- the plan's week: 11 down to 1, 0 for the race week
+    kind                VARCHAR(32) NOT NULL, -- the method's own key: 'ga' | 'lt' | 'endurance' | ...
+    distance_m          REAL,                 -- NULL on a rest day: a day with no distance is not a zero
+    pace_low_s_per_km   REAL,                 -- NULL when the session has no pace
+    pace_high_s_per_km  REAL,
+    finish_low_s_per_km REAL,                 -- the long run's second end
+    finish_high_s_per_km REAL,
+    pace_rule           VARCHAR(48),          -- the rule the pace came from
+    threshold_value     VARCHAR(96),          -- the threshold the pace came from
+    detail              TEXT,                 -- the cell's own detail: '3 x 8 min, jog 3'
+    lt_last_m           REAL,                 -- the progression run's last miles at LT pace
+    FOREIGN KEY (plan_id) REFERENCES adopted_plans (id) ON DELETE CASCADE,
+    CONSTRAINT uq_adopted_sessions UNIQUE (plan_id, date, kind)
+);
+"#,
 ];
 
 /// The statements that create the indexes, in creation order.
@@ -414,6 +503,16 @@ pub const V6_INDEX_STATEMENTS: &[&str] = &[
 "#,
 ];
 
+/// The indexes that version 7 adds, in creation order.
+pub const V7_INDEX_STATEMENTS: &[&str] = &[
+    r#"CREATE INDEX ix_adopted_plans_start_date ON adopted_plans (start_date);
+"#,
+    r#"CREATE INDEX ix_adopted_plans_race_date ON adopted_plans (race_date);
+"#,
+    r#"CREATE INDEX ix_adopted_sessions_plan_date ON adopted_sessions (plan_id, date);
+"#,
+];
+
 /// Every statement of the schema, in order: the tables first, then the
 /// indexes.
 pub fn all_statements() -> Vec<&'static str> {
@@ -423,6 +522,7 @@ pub fn all_statements() -> Vec<&'static str> {
         .chain(V4_INDEX_STATEMENTS.iter())
         .chain(V5_INDEX_STATEMENTS.iter())
         .chain(V6_INDEX_STATEMENTS.iter())
+        .chain(V7_INDEX_STATEMENTS.iter())
         .copied()
         .collect()
 }
@@ -442,15 +542,17 @@ pub struct Migration {
 /// heart-rate zone model table. Version 4 adds the wellness observations
 /// table. Version 5 adds the run update's table and the update's own
 /// settings. Version 6 adds the athlete's race, the athlete's threshold
-/// choice and the source's own activity observations. A database at an older
-/// version gets the missing steps, each in its own transaction.
+/// choice and the source's own activity observations. Version 7 adds the
+/// adopted plan and its own dated sessions. A database at an older version
+/// gets the missing steps, each in its own transaction.
 ///
 /// The first seven tables of [`TABLE_STATEMENTS`] are version 1; the eighth
 /// — the tombstone table — is version 2; the ninth — the zone model table —
 /// is version 3; the tenth — the wellness observations table — is version 4;
 /// the eleventh and the twelfth — the run update and its settings — are
 /// version 5; the thirteenth, fourteenth and fifteenth — the race, the
-/// threshold and the activity observations — are version 6.
+/// threshold and the activity observations — are version 6; the sixteenth
+/// and the seventeenth — the adopted plan and its sessions — are version 7.
 pub fn migrations() -> Vec<Migration> {
     vec![
         Migration {
@@ -486,10 +588,18 @@ pub fn migrations() -> Vec<Migration> {
                 .collect(),
         },
         Migration {
-            version: SCHEMA_VERSION,
-            statements: TABLE_STATEMENTS[12..]
+            version: 6,
+            statements: TABLE_STATEMENTS[12..15]
                 .iter()
                 .chain(V6_INDEX_STATEMENTS.iter())
+                .copied()
+                .collect(),
+        },
+        Migration {
+            version: SCHEMA_VERSION,
+            statements: TABLE_STATEMENTS[15..]
+                .iter()
+                .chain(V7_INDEX_STATEMENTS.iter())
                 .copied()
                 .collect(),
         },

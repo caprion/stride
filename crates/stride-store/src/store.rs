@@ -237,6 +237,14 @@ impl Store {
             .execute("DELETE FROM threshold_observations", [])
             .map_err(|source| StoreError::query("threshold_observations", source))?;
         deleted += removed as i64;
+        let removed = transaction
+            .execute("DELETE FROM adopted_sessions", [])
+            .map_err(|source| StoreError::query("adopted_sessions", source))?;
+        deleted += removed as i64;
+        let removed = transaction
+            .execute("DELETE FROM adopted_plans", [])
+            .map_err(|source| StoreError::query("adopted_plans", source))?;
+        deleted += removed as i64;
 
         transaction
             .commit()

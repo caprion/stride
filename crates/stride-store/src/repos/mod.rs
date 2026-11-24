@@ -18,6 +18,7 @@
 //! |---|---|
 //! | [`activity`] | `activities`, `activity_samples` |
 //! | [`activity_observations`] | `activity_observations` |
+//! | [`adopted`] | `adopted_plans`, `adopted_sessions` |
 //! | [`wellness`] | `wellness_daily` |
 //! | [`observations`] | `wellness_observations` |
 //! | [`plan`] | `plan_blocks`, `plan_sessions` |
@@ -33,6 +34,7 @@ use crate::error::{Result, StoreError};
 
 pub mod activity;
 pub mod activity_observations;
+pub mod adopted;
 pub mod deleted;
 pub mod notes;
 pub mod observations;
