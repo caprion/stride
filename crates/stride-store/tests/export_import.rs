@@ -3,7 +3,10 @@
 mod common;
 
 use stride_store::export::{self, Format};
-use stride_store::{DatabaseKey, NewWellnessObservation, Result, Store};
+use stride_store::{
+    DatabaseKey, NewActivityObservation, NewRaceObservation, NewThresholdObservation,
+    NewWellnessObservation, Result, Store,
+};
 
 /// An observation to write, with the values a test wants.
 fn observation(field: &str, value: Option<f64>) -> NewWellnessObservation {
@@ -107,6 +110,136 @@ fn the_observations_travel_with_the_export() -> Result<()> {
     assert_eq!(stored[0].field, "lowStressDuration");
     assert_eq!(stored[0].value, Some(1_800.0));
     assert_eq!(stored[0].retrieved_at, common::instant());
+
+    drop(dir);
+    Ok(())
+}
+
+/// The athlete's own race, with the values a test wants.
+fn race() -> NewRaceObservation {
+    NewRaceObservation {
+        distance_m: 10_000.0,
+        time_s: 2_496.0,
+        race_date: "2026-10-12".to_string(),
+        label: "10K".to_string(),
+        name: None,
+        source: "typed".to_string(),
+        entered_on: "2026-10-13".to_string(),
+        updated_on: "2026-11-03".to_string(),
+    }
+}
+
+/// The athlete's own threshold choice, with the values a test wants.
+fn choice() -> NewThresholdObservation {
+    NewThresholdObservation {
+        hr_bpm: Some(165.0),
+        pace_low_s_per_km: None,
+        pace_high_s_per_km: None,
+        source: "watch_zone_model".to_string(),
+        rule_id: Some("zone_model.zone5_floor".to_string()),
+        base: Some("pfitzinger".to_string()),
+        origin_date: Some("2026-11-03".to_string()),
+        origin_ref: None,
+        label: None,
+        entered_on: "2026-11-03".to_string(),
+        updated_on: "2026-11-03".to_string(),
+    }
+}
+
+/// The source's own fact about a run, with the values a test wants.
+fn activity_observation(
+    activity_id: i64,
+    field: &str,
+    value: Option<f64>,
+) -> NewActivityObservation {
+    NewActivityObservation {
+        activity_id,
+        source: "garmin_personal".to_string(),
+        endpoint: "/activitylist-service/activities/search/activities".to_string(),
+        field: field.to_string(),
+        ordinal: 0,
+        value,
+        text_value: None,
+        unit: Some("s".to_string()),
+        observed_at: Some(common::instant()),
+        retrieved_at: common::instant(),
+    }
+}
+
+#[test]
+fn the_athletes_own_facts_travel_with_the_export() -> Result<()> {
+    let (dir, store) = common::store("export-athletes-own")?;
+    let activity = store.upsert_activity(&common::activity("run-1", "2026-05-10"))?;
+    store.write_race(&race())?;
+    store.write_threshold_choice(&choice(), true)?;
+    store.write_activity_observations(&[activity_observation(
+        activity,
+        "hrTimeInZone_3",
+        Some(359.0),
+    )])?;
+
+    let target = dir.file("export");
+    let manifest = export::export(&store, &target, &common::key()?)?;
+    assert_eq!(manifest.tables.get("race_observations"), Some(&1));
+    assert_eq!(manifest.tables.get("threshold_observations"), Some(&1));
+    assert_eq!(manifest.tables.get("activity_observations"), Some(&1));
+
+    // A second database, empty, reads the export back.
+    let other = Store::open_and_migrate(&dir.file("other.db"), &common::key()?)?;
+    let report = export::import(&other, &target, &common::key()?)?;
+    assert_eq!(report.races, 1);
+    assert_eq!(report.thresholds, 1);
+    assert_eq!(report.activity_observations, 1);
+
+    // The race is there, with its label and its days.
+    let races = other.races()?;
+    assert_eq!(races.len(), 1);
+    assert_eq!(races[0].label, "10K");
+    assert_eq!(races[0].race_date, "2026-10-12");
+    assert_eq!(races[0].entered_on, "2026-10-13");
+    assert_eq!(races[0].updated_on, "2026-11-03");
+    // And it is the race the paces come from.
+    let anchor = match other.anchor_race()? {
+        Some(race) => race,
+        None => {
+            return Err(stride_store::StoreError::Invariant(
+                "the anchored race was not imported".to_string(),
+            ))
+        }
+    };
+    assert!(anchor.anchor);
+
+    // The choice is there, with its source and its base, and it is the one
+    // in force.
+    let choices = other.threshold_choices()?;
+    assert_eq!(choices.len(), 1);
+    assert_eq!(choices[0].hr_bpm, Some(165.0));
+    assert_eq!(choices[0].source, "watch_zone_model");
+    assert_eq!(choices[0].base.as_deref(), Some("pfitzinger"));
+    let in_force = match other.threshold_in_force()? {
+        Some(choice) => choice,
+        None => {
+            return Err(stride_store::StoreError::Invariant(
+                "the threshold choice was not imported".to_string(),
+            ))
+        }
+    };
+    assert!(in_force.in_force);
+
+    // The source's own fact about the run is there, against the run's id
+    // in this database.
+    let run = match other.activity_by_external("garmin_personal", "run-1")? {
+        Some(run) => run,
+        None => {
+            return Err(stride_store::StoreError::Invariant(
+                "the run was not imported".to_string(),
+            ))
+        }
+    };
+    let observations = other.activity_observations(run.id)?;
+    assert_eq!(observations.len(), 1);
+    assert_eq!(observations[0].field, "hrTimeInZone_3");
+    assert_eq!(observations[0].value, Some(359.0));
 
     drop(dir);
     Ok(())

@@ -55,6 +55,17 @@ struct Listed {
     id: String,
     distance_m: f64,
     start: String,
+    /// The fields the search payload carries besides the run's own numbers:
+    /// the watch's own zone minutes, and whatever else the source sends.
+    fields: Vec<(String, Value)>,
+}
+
+impl Listed {
+    /// The search payload carries one more field.
+    fn with_field(mut self, name: &str, value: Value) -> Listed {
+        self.fields.push((name.to_string(), value));
+        self
+    }
 }
 
 /// A fake Garmin that pages the activity search and serves FIT downloads.
@@ -171,12 +182,18 @@ impl HttpTransport for SyncGarmin {
                 .skip(start)
                 .take(limit)
                 .map(|entry| {
-                    json!({
+                    let mut item = json!({
                         "activityId": entry.id,
                         "activityName": format!("run {}", entry.id),
                         "distance": entry.distance_m,
                         "startTimeGMT": entry.start,
-                    })
+                    });
+                    if let Some(object) = item.as_object_mut() {
+                        for (name, value) in &entry.fields {
+                            object.insert(name.clone(), value.clone());
+                        }
+                    }
+                    item
                 })
                 .collect();
             let body = serde_json::to_vec(&json!({ "activityList": page })).unwrap_or_default();
@@ -290,6 +307,7 @@ impl PullHarness {
             id: id.to_string(),
             distance_m,
             start: start.to_string(),
+            fields: Vec::new(),
         }
     }
 
@@ -493,6 +511,57 @@ fn a_changed_run_is_re_parsed_and_replaced() {
         .unwrap_or(None)
         .unwrap_or_else(|| panic!("the run was not replaced"));
     assert_eq!(stored.distance_m, distance);
+}
+
+#[test]
+fn the_pull_keeps_the_source_own_facts_about_a_run_and_asks_for_no_more() {
+    let (fit, distance, start) = decoded_truth();
+    let listed = PullHarness::listed("100", distance, &start.to_rfc3339());
+
+    // A pull of a list that carries the run's own numbers and nothing
+    // else.
+    let plain = PullHarness::new(vec![listed.clone()], fit.clone());
+    plain.pull(30);
+    let plain_requests = plain.garmin.requests().len();
+
+    // The same pull, from a list that carries the watch's own zone minutes
+    // — and the fields the contract excludes.
+    let with_fields = PullHarness::new(
+        vec![listed
+            .with_field("hrTimeInZone_3", json!(359))
+            .with_field("hrTimeInZone_4", json!(120))
+            .with_field("trainingStressScore", json!(245))],
+        fit,
+    );
+    with_fields.pull(30);
+
+    // The pull asked for exactly as much as it asked for before: the
+    // payload was already in hand, and no request was added.
+    assert_eq!(with_fields.garmin.requests().len(), plain_requests);
+
+    // And the run's own facts are kept.
+    let run = with_fields
+        .store
+        .activity_by_external("garmin_personal", "100")
+        .unwrap()
+        .expect("the run is there");
+    let observations = with_fields.store.activity_observations(run.id).unwrap();
+    assert_eq!(observations.len(), 2);
+    let third = observations
+        .iter()
+        .find(|row| row.field == "hrTimeInZone_3")
+        .expect("the zone minutes are there");
+    assert_eq!(third.value, Some(359.0));
+    assert_eq!(third.unit.as_deref(), Some("s"));
+    assert_eq!(
+        third.endpoint,
+        "/activitylist-service/activities/search/activities"
+    );
+
+    // The judgement the contract excludes is not kept.
+    assert!(observations
+        .iter()
+        .all(|row| row.field != "trainingStressScore"));
 }
 
 #[test]
