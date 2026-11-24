@@ -21,6 +21,20 @@
 //! the manifest, not in the file name, and not in the directory: it is an
 //! argument, like everywhere else in this crate.
 //!
+//! ## What the export carries
+//!
+//! Every table of the frozen schema, with the number of rows in each in
+//! the manifest: the runs and their FIT files, the wellness, the plan, the
+//! notes, the source's own observations — and the athlete's own facts, the
+//! races they typed and the threshold they chose.
+//!
+//! **These are the athlete's own facts, and they are held locally.** The
+//! database is encrypted with the key the caller passes, the export is a
+//! copy of that database, and nothing in it leaves the machine unless the
+//! athlete moves the directory there themselves. The export is the
+//! athlete's own backup: the manifest says what it is, and the key is never
+//! in it.
+//!
 //! ## The import
 //!
 //! The import is a **merge**, not a replace. A run is matched by its source
@@ -142,6 +156,12 @@ pub struct ImportReport {
     pub observations: usize,
     /// How many run updates were written.
     pub updates: usize,
+    /// How many of the athlete's own races were written.
+    pub races: usize,
+    /// How many of the athlete's own threshold choices were written.
+    pub thresholds: usize,
+    /// How many of the source's own facts about a run were written.
+    pub activity_observations: usize,
     /// How many rows there are in all.
     pub rows: usize,
 }
@@ -1058,6 +1078,160 @@ fn merge(source: &Connection, destination: &Connection) -> Result<ImportReport> 
         report.rows += 1;
     }
 
+    // The athlete's own races, by the day they were run and their label:
+    // a race the athlete entered twice is one race.
+    //
+    // The **anchor** is settled after the rows are in: the merge never
+    // moves the athlete's anchor by itself, and a destination that already
+    // has one keeps it.
+    let mut anchored_race: Option<i64> = None;
+    for row in read_rows(source, &RACE_OBSERVATIONS)? {
+        let race_date = text_of(&row, "race_date");
+        let label = text_of(&row, "label");
+        let was_anchored = row
+            .get("anchor")
+            .and_then(|value| value.as_i64())
+            .unwrap_or_default()
+            != 0;
+        let existing = find_race(&transaction, &race_date, &label)?;
+        let id = match existing {
+            Some(id) => {
+                update_race(&transaction, id, &row)?;
+                id
+            }
+            None => insert_race(&transaction, &row)?,
+        };
+        if was_anchored {
+            anchored_race = Some(id);
+        }
+        report.races += 1;
+        report.rows += 1;
+    }
+    if let Some(id) = anchored_race {
+        let anchored: i64 = transaction
+            .query_row(
+                "SELECT count(*) FROM race_observations WHERE anchor = 1",
+                [],
+                |row| row.get(0),
+            )
+            .map_err(|error| StoreError::query("the anchored race", error))?;
+        if anchored == 0 {
+            transaction
+                .execute(
+                    "UPDATE race_observations SET anchor = 1 WHERE id = ?1",
+                    rusqlite::params![id],
+                )
+                .map_err(|error| StoreError::query("the anchored race", error))?;
+        }
+    }
+
+    // The athlete's own threshold choices, by the day the choice was made,
+    // its source and the values it carries: the same choice is the same
+    // choice.
+    //
+    // The choice **in force** is settled after the rows are in, for the
+    // same reason the anchor is: one threshold at a time, and the merge
+    // never moves the athlete's choice by itself.
+    let mut chosen_threshold: Option<i64> = None;
+    for row in read_rows(source, &THRESHOLD_OBSERVATIONS)? {
+        let entered_on = text_of(&row, "entered_on");
+        let source_name = text_of(&row, "source");
+        let heart_rate = row.get("hr_bpm").and_then(|value| value.as_f64());
+        let pace_low = row
+            .get("pace_low_s_per_km")
+            .and_then(|value| value.as_f64());
+        let pace_high = row
+            .get("pace_high_s_per_km")
+            .and_then(|value| value.as_f64());
+        let was_in_force = row
+            .get("in_force")
+            .and_then(|value| value.as_i64())
+            .unwrap_or_default()
+            != 0;
+        let existing = find_threshold(
+            &transaction,
+            &entered_on,
+            &source_name,
+            heart_rate,
+            pace_low,
+            pace_high,
+        )?;
+        let id = match existing {
+            Some(id) => {
+                update_threshold(&transaction, id, &row)?;
+                id
+            }
+            None => insert_threshold(&transaction, &row)?,
+        };
+        if was_in_force {
+            chosen_threshold = Some(id);
+        }
+        report.thresholds += 1;
+        report.rows += 1;
+    }
+    if let Some(id) = chosen_threshold {
+        let in_force: i64 = transaction
+            .query_row(
+                "SELECT count(*) FROM threshold_observations WHERE in_force = 1",
+                [],
+                |row| row.get(0),
+            )
+            .map_err(|error| StoreError::query("the threshold in force", error))?;
+        if in_force == 0 {
+            transaction
+                .execute(
+                    "UPDATE threshold_observations SET in_force = 1 WHERE id = ?1",
+                    rusqlite::params![id],
+                )
+                .map_err(|error| StoreError::query("the threshold in force", error))?;
+        }
+    }
+
+    // The source's own facts about the runs, against the runs' new ids. A
+    // run's id may change in the import, so the observation follows its
+    // run and is written against the id the run has here.
+    for row in read_rows(source, &ACTIVITY_OBSERVATIONS)? {
+        let old = row
+            .get("activity_id")
+            .and_then(|value| value.as_i64())
+            .unwrap_or_default();
+        let activity_id = match activity_ids.get(&old) {
+            Some(id) => *id,
+            None => continue,
+        };
+        transaction
+            .execute(
+                "INSERT INTO activity_observations (
+                    activity_id, source, endpoint, field, ordinal, value, text_value,
+                    unit, observed_at, retrieved_at
+                 ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)
+                 ON CONFLICT(activity_id, source, field, ordinal) DO UPDATE SET
+                    endpoint = excluded.endpoint,
+                    value = excluded.value,
+                    text_value = excluded.text_value,
+                    unit = excluded.unit,
+                    observed_at = excluded.observed_at,
+                    retrieved_at = excluded.retrieved_at",
+                rusqlite::params![
+                    activity_id,
+                    text_of(&row, "source"),
+                    text_of(&row, "endpoint"),
+                    text_of(&row, "field"),
+                    row.get("ordinal")
+                        .and_then(|value| value.as_i64())
+                        .unwrap_or_default(),
+                    row.get("value").and_then(|value| value.as_f64()),
+                    optional_text(&row, "text_value"),
+                    optional_text(&row, "unit"),
+                    optional_text(&row, "observed_at"),
+                    text_of(&row, "retrieved_at"),
+                ],
+            )
+            .map_err(|error| StoreError::query("the activity observations", error))?;
+        report.activity_observations += 1;
+        report.rows += 1;
+    }
+
     transaction
         .commit()
         .map_err(|error| StoreError::query("COMMIT", error))?;
@@ -1413,6 +1587,181 @@ fn find_note(
         )
         .optional()
         .map_err(|error| StoreError::query("find the note", error))
+}
+
+/// Find the race of this day and label.
+fn find_race(connection: &Connection, race_date: &str, label: &str) -> Result<Option<i64>> {
+    connection
+        .query_row(
+            "SELECT id FROM race_observations
+             WHERE race_date = ?1 AND label = ?2
+             ORDER BY id ASC LIMIT 1",
+            rusqlite::params![race_date, label],
+            |row| row.get::<_, i64>(0),
+        )
+        .optional()
+        .map_err(|error| StoreError::query("find the race", error))
+}
+
+/// Update a race that is already in the destination.
+///
+/// The anchor is not touched: it is settled once the rows are in, and the
+/// merge never moves it by itself.
+fn update_race(
+    transaction: &rusqlite::Transaction<'_>,
+    id: i64,
+    row: &BTreeMap<String, Value>,
+) -> Result<()> {
+    transaction
+        .execute(
+            "UPDATE race_observations
+             SET distance_m = ?2, time_s = ?3, race_date = ?4, label = ?5, name = ?6,
+                 source = ?7, entered_on = ?8, updated_on = ?9
+             WHERE id = ?1",
+            rusqlite::params![
+                id,
+                row.get("distance_m").and_then(|value| value.as_f64()),
+                row.get("time_s").and_then(|value| value.as_f64()),
+                text_of(row, "race_date"),
+                text_of(row, "label"),
+                optional_text(row, "name"),
+                text_of(row, "source"),
+                text_of(row, "entered_on"),
+                text_of(row, "updated_on"),
+            ],
+        )
+        .map_err(|error| StoreError::query("update the race", error))?;
+    Ok(())
+}
+
+/// Add a race that is not in the destination yet.
+///
+/// The race arrives without the anchor: the anchor is settled once the
+/// rows are in.
+fn insert_race(
+    transaction: &rusqlite::Transaction<'_>,
+    row: &BTreeMap<String, Value>,
+) -> Result<i64> {
+    transaction
+        .query_row(
+            "INSERT INTO race_observations (
+                distance_m, time_s, race_date, label, name, source,
+                entered_on, updated_on, anchor
+             ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, 0)
+             RETURNING id",
+            rusqlite::params![
+                row.get("distance_m").and_then(|value| value.as_f64()),
+                row.get("time_s").and_then(|value| value.as_f64()),
+                text_of(row, "race_date"),
+                text_of(row, "label"),
+                optional_text(row, "name"),
+                text_of(row, "source"),
+                text_of(row, "entered_on"),
+                text_of(row, "updated_on"),
+            ],
+            |row| row.get::<_, i64>(0),
+        )
+        .map_err(|error| StoreError::query("insert the race", error))
+}
+
+/// Find the threshold choice of this day, source and values.
+///
+/// The values are compared with `IS`, so a choice that carries no pace
+/// band is matched by a choice that carries no pace band.
+fn find_threshold(
+    connection: &Connection,
+    entered_on: &str,
+    source: &str,
+    hr_bpm: Option<f64>,
+    pace_low: Option<f64>,
+    pace_high: Option<f64>,
+) -> Result<Option<i64>> {
+    connection
+        .query_row(
+            "SELECT id FROM threshold_observations
+             WHERE entered_on = ?1
+               AND source = ?2
+               AND hr_bpm IS ?3
+               AND pace_low_s_per_km IS ?4
+               AND pace_high_s_per_km IS ?5
+             ORDER BY id ASC LIMIT 1",
+            rusqlite::params![entered_on, source, hr_bpm, pace_low, pace_high],
+            |row| row.get::<_, i64>(0),
+        )
+        .optional()
+        .map_err(|error| StoreError::query("find the threshold choice", error))
+}
+
+/// Update a threshold choice that is already in the destination.
+///
+/// The choice in force is not touched: it is settled once the rows are in,
+/// and the merge never moves the athlete's choice by itself.
+fn update_threshold(
+    transaction: &rusqlite::Transaction<'_>,
+    id: i64,
+    row: &BTreeMap<String, Value>,
+) -> Result<()> {
+    transaction
+        .execute(
+            "UPDATE threshold_observations
+             SET hr_bpm = ?2, pace_low_s_per_km = ?3, pace_high_s_per_km = ?4,
+                 source = ?5, rule_id = ?6, base = ?7, origin_date = ?8, origin_ref = ?9,
+                 label = ?10, entered_on = ?11, updated_on = ?12
+             WHERE id = ?1",
+            rusqlite::params![
+                id,
+                row.get("hr_bpm").and_then(|value| value.as_f64()),
+                row.get("pace_low_s_per_km")
+                    .and_then(|value| value.as_f64()),
+                row.get("pace_high_s_per_km")
+                    .and_then(|value| value.as_f64()),
+                text_of(row, "source"),
+                optional_text(row, "rule_id"),
+                optional_text(row, "base"),
+                optional_text(row, "origin_date"),
+                optional_text(row, "origin_ref"),
+                optional_text(row, "label"),
+                text_of(row, "entered_on"),
+                text_of(row, "updated_on"),
+            ],
+        )
+        .map_err(|error| StoreError::query("update the threshold choice", error))?;
+    Ok(())
+}
+
+/// Add a threshold choice that is not in the destination yet.
+///
+/// The choice arrives without the flag: the choice in force is settled
+/// once the rows are in.
+fn insert_threshold(
+    transaction: &rusqlite::Transaction<'_>,
+    row: &BTreeMap<String, Value>,
+) -> Result<i64> {
+    transaction
+        .query_row(
+            "INSERT INTO threshold_observations (
+                hr_bpm, pace_low_s_per_km, pace_high_s_per_km, source, rule_id, base,
+                origin_date, origin_ref, label, entered_on, updated_on, in_force
+             ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, 0)
+             RETURNING id",
+            rusqlite::params![
+                row.get("hr_bpm").and_then(|value| value.as_f64()),
+                row.get("pace_low_s_per_km")
+                    .and_then(|value| value.as_f64()),
+                row.get("pace_high_s_per_km")
+                    .and_then(|value| value.as_f64()),
+                text_of(row, "source"),
+                optional_text(row, "rule_id"),
+                optional_text(row, "base"),
+                optional_text(row, "origin_date"),
+                optional_text(row, "origin_ref"),
+                optional_text(row, "label"),
+                text_of(row, "entered_on"),
+                text_of(row, "updated_on"),
+            ],
+            |row| row.get::<_, i64>(0),
+        )
+        .map_err(|error| StoreError::query("insert the threshold choice", error))
 }
 
 // --------------------------------------------------------------- conversion
