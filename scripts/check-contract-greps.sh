@@ -58,4 +58,23 @@ if grep -rnE '\bunsafe\b' --include='*.rs' --include='*.kt' --include='*.kts' an
   fail=1
 fi
 
+# The phone's bridge carries a **copy** of the frozen route table — the file
+# says so: the table is frozen, so it is copied and not derived. A copy
+# drifts, and a route the router serves and the copy does not name is a
+# **404 on the phone**: the bridge refuses a path that is not in its table
+# before anything is sent. The two are compared here, so a route cannot go
+# missing from the phone again.
+#
+# Both sides are read out of the code, not copied into this script: the
+# router's patterns out of the router, the bridge's out of its table.
+if ! diff -u \
+    <(grep -oE 'pattern: "[^"]+"' crates/stride-api/src/router.rs \
+       | sed 's/pattern: "//; s/"$//' | sort -u) \
+    <(awk '/private val TABLE/,/^    \)/' \
+       android/app/src/main/java/app/stride/running/bridge/PhoneRoutes.kt \
+       | grep -oE '"/[^"]+"' | tr -d '"' | sort -u); then
+  echo "check-contract-greps: the phone's bridge and the router do not name the same routes" >&2
+  fail=1
+fi
+
 exit "$fail"

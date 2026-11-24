@@ -118,7 +118,7 @@ describe("the athlete's shape", () => {
     )
     // And the window before it, of the same length.
     expect(panel.querySelector('[data-testid="progress-shape-volume-before"]')?.textContent).toBe(
-      '1.4 km a week',
+      '3.5 km a week',
     )
     // The three windows are named: the legend says which is which.
     const legend = panel.querySelector('[data-testid="progress-shape-legend"]')

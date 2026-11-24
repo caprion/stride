@@ -22,11 +22,12 @@
 //! sound and because the numbers are worth matching:
 //!
 //! * **the running-only classification** — a lap is walked rather than run
-//!   when its cadence is well below running *and* its pace is slow. Both
-//!   conditions must hold, so a short-strided runner is not mistaken for a
-//!   walker. When every lap looks like walking, the classification is not
-//!   trustworthy and the original laps are used instead: analysing nothing
-//!   would be worse than analysing a run that was mostly walking;
+//!   when the **one movement rule** says it was walked: the rule the
+//!   ingest classifies its samples with, read here at the lap's own grain
+//!   (see [`crate::movement`]). When every lap looks like walking, the
+//!   classification is not trustworthy and the original laps are used
+//!   instead: analysing nothing would be worse than analysing a run that
+//!   was mostly walking;
 //! * **the thirds and the halves** — the drift is measured between the first
 //!   and the last third of the running laps, and the half-split drift
 //!   between the two halves. An average heart rate across a run that
@@ -68,21 +69,10 @@
 use serde::{Deserialize, Serialize};
 
 use crate::date::Date;
+use crate::movement::{movement_of, Movement};
 use crate::strings;
 use crate::units::{self, ValueUnit};
 use crate::zones::{time_in_zone, ZoneFloors, ZoneSample};
-
-/// The cadence below which a lap was walked rather than run.
-///
-/// Running cadence sits around 150-170 steps per minute and walking around
-/// 110-120. The reference implementation's threshold, kept.
-pub const WALKING_CADENCE_SPM: f64 = 125.0;
-
-/// The speed below which a lap was walked rather than run, in metres per
-/// second.
-///
-/// The reference implementation's threshold, kept.
-pub const WALKING_SPEED_MPS: f64 = 2.2;
 
 /// The longest stride length that is plausible, in metres.
 ///
@@ -522,18 +512,14 @@ pub fn measurable(laps: &[LapReading]) -> Vec<LapReading> {
 }
 
 /// Whether a lap was walked rather than run.
+///
+/// **The one movement rule**, read at the lap's grain: the lap's own mean
+/// speed and mean cadence, and the same thresholds the ingest classifies
+/// its samples with (see [`crate::movement`]). A lap that was standing
+/// still is not a lap that was walked — it is not running either, and it
+/// is not what the fingerprint excludes.
 fn was_walked(lap: &LapReading) -> bool {
-    let cadence = match lap.avg_cadence_spm {
-        Some(cadence) if cadence.is_finite() && cadence > 0.0 => cadence,
-        _ => return false,
-    };
-    if cadence >= WALKING_CADENCE_SPM {
-        return false;
-    }
-    match lap.avg_speed_ms {
-        Some(speed) if speed.is_finite() && speed > 0.0 => speed < WALKING_SPEED_MPS,
-        _ => true,
-    }
+    movement_of(lap.avg_speed_ms, lap.avg_cadence_spm) == Movement::Walk
 }
 
 /// The pace of a lap, in seconds per kilometre.

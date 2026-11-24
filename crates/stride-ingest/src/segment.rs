@@ -1,10 +1,16 @@
 //! Run / walk / stand segmentation for a FIT record stream.
 //!
 //! A record owns the interval that follows it, up to the next record. A hole
-//! in the stream is therefore charged to the record before the hole. The
-//! thresholds below are the frozen rules from `docs/contract/core-contract.md`.
+//! in the stream is therefore charged to the record before the hole.
+//!
+//! **The rule is the core's.** How the athlete was moving is decided by
+//! `stride_core::movement` — one rule, one set of thresholds, and the
+//! fingerprint reads the same one. This module keeps only the *stream*
+//! logic: which sample owns which span.
 
 use serde::{Deserialize, Serialize};
+
+use stride_core::movement::{movement_of, Movement};
 
 /// How the athlete was moving in one sample.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -98,25 +104,17 @@ pub struct Segmentation {
 
 /// Classify one sample from its own speed and its own stored cadence.
 ///
-/// The stored cadence is deliberately not corrected before classification:
-/// a watch that stores running cadence halved writes about `80`, and that
+/// **The rule is the core's** (`stride_core::movement`): the ingest
+/// classifies, and it does not keep a second copy of the thresholds. The
+/// stored cadence is deliberately not corrected before the comparison: a
+/// watch that stores running cadence halved writes about `80`, and that
 /// value is what distinguishes a run from a walk here.
 pub fn classify_sample(speed_ms: Option<f64>, stored_cadence: Option<f64>) -> SegmentKind {
-    if speed_ms.is_some_and(|speed| speed < 0.30) {
-        return SegmentKind::Stand;
+    match movement_of(speed_ms, stored_cadence) {
+        Movement::Run => SegmentKind::Run,
+        Movement::Walk => SegmentKind::Walk,
+        Movement::Stand => SegmentKind::Stand,
     }
-    if stored_cadence.is_some_and(|cadence| cadence == 0.0) {
-        return SegmentKind::Stand;
-    }
-    if stored_cadence.is_some_and(|cadence| cadence < 60.0)
-        && speed_ms.map_or(true, |speed| speed < 2.2)
-    {
-        return SegmentKind::Walk;
-    }
-    if speed_ms.is_some_and(|speed| speed < 1.55) {
-        return SegmentKind::Walk;
-    }
-    SegmentKind::Run
 }
 
 /// Split a record stream into run / walk / stand stretches and totals.

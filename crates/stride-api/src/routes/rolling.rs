@@ -19,10 +19,14 @@
 //!
 //! ## The window
 //!
-//! The window is **the last *N* days ending on the day the answer is
-//! about**, and the comparison period is **the same *N* days ending a day
-//! earlier**. The card names both, so a number is never read apart from
-//! the period it describes.
+//! The window is **the last *N* calendar weeks, from the start of the
+//! earliest one through the day the answer is about**, and the comparison
+//! period is **the same span, seven days earlier**. The card names both,
+//! so a number is never read apart from the period it describes.
+//!
+//! The athlete profile's own ladder asks for the window in **days** —
+//! thirty, sixty and ninety — and it is the same window type with the
+//! same comparison rule.
 //!
 //! ## No value is the absence of the value
 //!
@@ -33,7 +37,7 @@
 
 use serde_json::Value;
 use stride_core::date::Date;
-use stride_core::rolling::{DaytimeCuts, RollingWindow};
+use stride_core::rolling::{DaytimeCuts, Window};
 use stride_core::streaks::Streak;
 use stride_core::units;
 
@@ -65,9 +69,8 @@ const DEFAULT_WEEKS: i64 = 12;
 
 /// The rolling view over a window.
 pub fn rolling(api: &Api, request: &Request) -> ApiResult<Value> {
-    let days = window_days(request)?;
     let current = super::today(api)?;
-    let window = RollingWindow::new(days, current);
+    let window = window_of_request(request, current)?;
 
     // The whole history: the window's runs and the splits' runs are in it,
     // and it is one read of the store.
@@ -106,7 +109,7 @@ pub fn rolling(api: &Api, request: &Request) -> ApiResult<Value> {
         .cloned()
         .collect();
     let buckets = crate::rolling::distance_buckets(&in_window);
-    let profile = crate::rolling::profile_facets(&in_window, &in_previous, window.days);
+    let profile = crate::rolling::profile_facets(&in_window, &in_previous, window);
 
     let response = RollingInsight {
         generated_at: api.generated_at(),
@@ -159,22 +162,27 @@ pub fn streaks(api: &Api, _request: &Request) -> ApiResult<Value> {
 
 // ------------------------------------------------------------------ helpers
 
-/// The length of the window, in days.
+/// The window the answer is about.
 ///
 /// The window may be asked for in **weeks** — the Progress route's own
 /// parameter, and the range the screen shows — or in **days**, which is
 /// the athlete profile's ladder: thirty, sixty and ninety days.
 ///
+/// A window asked for in weeks is **the last *N* calendar weeks**, from
+/// the Monday of the earliest one through the day the answer is about: the
+/// same window the Progress totals and the pace page draw. Its length is
+/// therefore the window's own length and not a round number of days.
+///
 /// **`days` is the one that counts** when both are given: it is the finer
 /// of the two, and thirty days is not four weeks and a bit.
-fn window_days(request: &Request) -> ApiResult<i64> {
+fn window_of_request(request: &Request, today: Date) -> ApiResult<Window> {
     if let Some(days) = request.query.integer("days")? {
         if !(1..=MAX_DAYS).contains(&days) {
             return Err(ApiError::bad_request(format!(
                 "the rolling window is not between 1 and {MAX_DAYS} days"
             )));
         }
-        return Ok(days);
+        return Ok(Window::of_days(days, today));
     }
     let weeks = request.query.integer("weeks")?.unwrap_or(DEFAULT_WEEKS);
     if !(1..=MAX_WEEKS).contains(&weeks) {
@@ -182,19 +190,19 @@ fn window_days(request: &Request) -> ApiResult<i64> {
             "the rolling window is not between 1 and 104 weeks",
         ));
     }
-    Ok(weeks * DAYS_PER_WEEK)
+    Ok(Window::calendar_weeks(weeks, today))
 }
 
 /// A window of days, as the answer names it.
-fn window_of(window: RollingWindow) -> RollingWindowDto {
+fn window_of(window: Window) -> RollingWindowDto {
     let from = window.from();
-    let to = window.to;
+    let to = window.to();
     RollingWindowDto {
         from: from.to_iso(),
         from_label: super::day_label(from),
         to: to.to_iso(),
         to_label: super::day_label(to),
-        days: window.days,
+        days: window.days(),
     }
 }
 
@@ -269,21 +277,45 @@ fn facet_value(
 
 /// The split of the training across the athlete's zones.
 ///
-/// The model's own source line travels with the shares: a number that
-/// cannot say where its input came from is not inspectable.
+/// The models travel with the shares: a number that cannot say where its
+/// input came from is not inspectable. **The source line is hoisted** —
+/// one line for the screen, naming the model the window was measured
+/// against — and the models themselves are the detail behind it.
 fn zones_of(split: &crate::rolling::ZoneSplitAnswer) -> ZoneSplit {
-    let model = split.model.as_ref().map(|model| {
-        let read_on_label = super::day_label(model.read_on);
-        ZoneModelSource {
-            read_on: model.read_on.to_iso(),
-            read_on_label: read_on_label.clone(),
-            source: stride_core::model_source(
-                &model.training_method,
-                model.max_heart_rate,
-                &read_on_label,
-            ),
+    let models: Vec<ZoneModelSource> = split
+        .models
+        .iter()
+        .map(|model| {
+            let read_on_label = super::day_label(model.read_on);
+            ZoneModelSource {
+                read_on: model.read_on.to_iso(),
+                read_on_label: read_on_label.clone(),
+                source: stride_core::model_source(
+                    &model.training_method,
+                    model.max_heart_rate,
+                    &read_on_label,
+                ),
+            }
+        })
+        .collect();
+    // One model keeps its own line; several models are named by the days
+    // they were read.
+    let source = match split.models.as_slice() {
+        [] => None,
+        [one] => stride_core::model_source(
+            &one.training_method,
+            one.max_heart_rate,
+            &super::day_label(one.read_on),
+        ),
+        many => {
+            let dates: Vec<String> = many
+                .iter()
+                .map(|model| super::day_label(model.read_on))
+                .collect();
+            let dates: Vec<&str> = dates.iter().map(String::as_str).collect();
+            stride_core::models_source(&dates)
         }
-    });
+    };
     let shares = split.shares.as_ref().map(|shares| {
         shares
             .iter()
@@ -298,7 +330,7 @@ fn zones_of(split: &crate::rolling::ZoneSplitAnswer) -> ZoneSplit {
     });
     let distribution = split.distribution.as_ref().map(|rows| {
         let edges = split
-            .model
+            .ranges
             .as_ref()
             .map(|model| stride_core::zones::zone_edges(&model.floors, model.max_heart_rate));
         rows.iter()
@@ -316,7 +348,8 @@ fn zones_of(split: &crate::rolling::ZoneSplitAnswer) -> ZoneSplit {
             .collect()
     });
     ZoneSplit {
-        model,
+        models,
+        source,
         shares,
         distribution,
         unavailable: split.unavailable.clone(),

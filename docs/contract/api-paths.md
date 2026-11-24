@@ -22,7 +22,7 @@ reference only).
 | `/activities/{id}/fit` | the run's **original FIT file** — the source of truth, byte for byte as Garmin served it | the athlete's own file, downloaded to their own machine; the app never uploads it anywhere |
 | `/activities/{id}/film` | the run's **film** — the run's own series, playable: the samples with their pace, their heart rate and **the zone each one sits in**, the ground, the splits, and the zone model the zones were measured against (see "The run film" below) |
 | `/physiology/{daily,sleep,hrv,vitals,latest,sources}` | Body inputs: the vitals and their directions (no score) |
-| `/fitness/{fingerprint,trends,zones}` | `fingerprint` answers **one run's fingerprint** — the observations of the run's mechanics, and the shares of the moving time in the athlete's own zones — and the **run detail shows them** (see "The fingerprint and the run's mechanics" below). `trends` is the measured trend of pace and heart rate. `zones` answers the per-run time in zone from the athlete's **stored zone model**, and names the model with the day it was read (see "The zones and the zone model" below) |
+| `/fitness/{fingerprint,trends,zones}` | `fingerprint` answers **one run's fingerprint** — the observations of the run's mechanics, and the shares of the moving time in the athlete's own zones — and the **run detail shows them** (see "The fingerprint and the run's mechanics" below). `trends` is the measured trend of pace and heart rate. `zones` answers the per-run time in zone from the athlete's **stored zone model** — the one in force on the day of the run — and names the model with the day it was read (see "The zones and the zone model" below) |
 | `/stats/{summary,weekly,pace-trends,elevation,personal-records}` | Progress |
 
 ## Plan & insight
@@ -191,12 +191,20 @@ other**: a contract that is not checked is a document, not a gate.
 
 ### The shapes the app does not read
 
-The routes the app does not type — `/physiology/{daily,hrv,latest,sources}`,
-`/stats/*`, `/plan/{current,today,blocks,sources,adherence,results,import}`,
-`/insights/chips`, `/sync/{runs,history,settings}` and `/auth/*` —
+The routes the app does not read — `/physiology/{daily,hrv,latest,sources}`,
+`/stats/*`, `/plan/{current,today,blocks,sources,adherence,results}`,
+`/fitness/trends`, `/insights/chips`, `/health/daily`,
+`/sync/{runs,history,settings}` and `/auth/garmin/logout` —
 are the router's own, and they are written down in
 `crates/stride-api/src/dto.rs`. They follow the same two rules: a domain
 value is a rendered value, and a sentence is a sentence.
+
+The list was corrected on 2026-11-24. The app reads `/plan/import` and four
+of the five `/auth/*` routes, and it reads neither `/fitness/trends` nor
+`/health/daily`. **No route changed**: the table above is the table, and
+what was corrected is the prose about which of its routes the app reads.
+It travels with the phone's bridge, whose own copy of the table was eleven
+routes short.
 
 Each non-null sync history resource has `target_from`, nullable `checked_from`,
 nullable `checked_to` and nullable `next_date`. These describe one contiguous
@@ -353,21 +361,29 @@ derived value.
 
 #### The window
 
-The window is **the last `N` days ending on the day the answer is about**,
-and the comparison period is **the same `N` days ending a day earlier**.
-That is the reference implementation's own comparison — its rolling window
-is a window that moves one day at a time, and its zone split is compared
-against "the same window as of the previous day" — and it is stated here
-rather than left to be guessed at.
+The window is **the last `N` calendar weeks, from the start of the
+earliest one through the day the answer is about**, and the comparison
+period is **the same span, seven days earlier** — the week that came in
+weighed against the week that fell out, so a partial week is compared with
+a partial week.
+
+**One window, one comparison.** Every window-shaped answer in the product
+uses this rule: the Progress totals and the pace page already draw the
+calendar weeks, and this route now draws the same ones. The window's
+length is therefore **the window's own length** and not a round number of
+days: the last twelve calendar weeks are seventy-eight days on a Monday
+and eighty-four on a Sunday, and `window.days` says which.
 
 `weeks` is the Progress route's own parameter (1 to 104, default 12) and
-the window is `weeks × 7` days, so the card on Progress follows the range
-selector the screen already has.
+the window is the last `weeks` calendar weeks, so the card on Progress
+follows the range selector the screen already has.
 
 **`days` is the same window, counted in days** (1 to 728), and it is what
 the athlete profile's ladder asks for: thirty, sixty and ninety days. A
 month is not four weeks, and the router answers the days exactly. When
-both parameters are given, **`days` is the one that counts**.
+both parameters are given, **`days` is the one that counts**. The days'
+window is compared with **the same span, seven days earlier**, like every
+other window.
 
 The window applies to **the comparison, the split of the zones, the
 distance breakdown and the profile**. The weekday and daytime splits and
@@ -489,10 +505,11 @@ higher one, east or north.
 | `window.from` · `window.to` | the first and last day of the window, in the athlete's own calendar |
 | `window.from_label` · `window.to_label` | the same days, **as the api writes a date**: "18 Feb 2026" |
 | `window.days` | how many days the window covers |
-| `comparison` | the same window, a day earlier: the period the window is compared against |
+| `comparison` | the same span, seven days earlier: the period the window is compared against |
 | `distance` · `duration` | the value in the window, the value in the period before it, and the difference between them |
 | `sessions` | the runs in the window, the runs in the period before it, and the difference |
-| `zones.model` | the zone model the split was measured against: the day it was read and the model's own source line |
+| `zones.models` | the models the window's runs were measured against, oldest first: each with the day it was read and the model's own source line. **Each run is measured against the model that was in force on its own day**, so a window that spans a change of the athlete's configuration holds more than one model |
+| `zones.source` | the **one source line the screen names**: the model's own line when the window was measured against one model, and the line that names them all — by the days they were read — when it was measured against several |
 | `zones.shares` | the three bands — low (Z1–Z2), moderate (Z3), high (Z4–Z5) — with the share of the time in the zones, the share in the window before it, and which way it moved |
 | `zones.distribution` | the five zones one by one: the label, the range the model gives the zone, the time in it and its share of the time in the zones |
 | `zones.unavailable` | why there is no split, in the core's own words |
@@ -509,10 +526,14 @@ the answer says which way is the better way.
 #### The zones
 
 The split of the training is measured against the athlete's **stored zone
-model**, and the model travels with it: the day it was read and its own
-source line. The time in the zones comes from the runs' own FIT files,
-decoded on read, and only the moving samples — the same filter
-`/fitness/zones` has always used, so the two cannot disagree.
+model**, and the models travel with it: **each run is measured against the
+model that was in force on its own day**, so the answer names every model
+it used — `zones.models` — and carries **one hoisted source line**,
+`zones.source`, for the screen to name. A window measured against more than
+one model says so: the line names the days the models were read. The time
+in the zones comes from the runs' own FIT files, decoded on read, and only
+the moving samples — the same filter `/fitness/zones` has always used, so
+the two cannot disagree.
 
 The three bands are named for what they are — **low (Z1–Z2), moderate (Z3),
 high (Z4–Z5)** — and there is **no target range beside them**: a range
@@ -525,6 +546,9 @@ what happened, and the product does not prescribe.
 
 - no zone model has been read → `zones.shares: null` and the reason in
   `zones.unavailable`;
+- zone models have been read, but **none of them was in force** for the
+  runs in the window — they all predate the first stored model →
+  `zones.shares: null` and that reason;
 - the stored model's floors do not increase → the model is named, and
   there is no value: `zones.shares: null` and the reason;
 - the runs in the window carry no heart-rate samples → `zones.shares: null`
@@ -643,8 +667,8 @@ other derived value.
 #### The window
 
 The window is **the last twelve calendar months**, ending on the day the
-answer is about, and the period it is compared against is **the same number
-of days, ending a day earlier** — the rolling view's own comparison. The
+answer is about, and the period it is compared against is **the same span,
+seven days earlier** — the one comparison rule the product has. The
 current month is the month so far. The answer names both windows, so a
 number is never read apart from the period it describes.
 
@@ -671,8 +695,9 @@ is not a map.
 #### The zone mix
 
 The mix of a day — and of a month — is the **same time-in-zone
-computation** the bands use: the athlete's **stored model**, the runs' own
-FIT files decoded on read, and only the moving samples. A day's mix is the
+computation** the bands use: the athlete's **stored model** — **the one in
+force on the day of each run** — the runs' own FIT files decoded on read,
+and only the moving samples. A day's mix is the
 time of the runs that could be measured; a day whose runs carry none has
 **no mix at all**.
 
@@ -762,6 +787,17 @@ The route does not rebuild bands from the run's own maximum heart rate: two
 runs measured on two scales are not comparable, and a band that is not the
 athlete's configuration cannot be named, dated or audited.
 
+**The model is the one in force on the day of the run.** Every run is
+measured against the last model that was read **on or before the end of the
+day the run fell on** — the configuration the athlete was wearing when
+they ran it. A run that **predates the first stored model** has no model
+in force: it is not calibrated, the answer says so, and it never borrows a
+later model. The rule is the same for every zone-time answer: the run
+detail's zone table, the run's film, the fingerprint's distribution and
+efficiency factor, the window's split and the year's mix. **The training
+load is the exception**: it weighs a whole window of days against one
+model, and that moves with its own change.
+
 The route keeps its name and its place in the table; its **meaning** changed,
 and the old computation is gone rather than left beside the new one.
 
@@ -770,7 +806,7 @@ and the old computation is gone rather than left beside the new one.
 | field | what it is |
 |---|---|
 | `basis` | the basis the times were computed on: `"moving"` — the spans of the run's FIT file whose sample says the athlete was moving |
-| `model` | the zone model the times were computed against, or `null` when no model has been read |
+| `model` | the zone model the times were computed against — **the one in force on the day of the run** — or `null` when no model was in force |
 | `model.sport` | the sport Garmin reported the model for: `"DEFAULT"` |
 | `model.training_method` | the training method the model was set with: `"HR_MAX"`, `"LACTATE_THRESHOLD"`, `"HR_RESERVE"` or `"CUSTOM"` |
 | `model.max_heart_rate` | the maximum heart rate the model was built on, when Garmin reported one: a rendered value |
@@ -860,7 +896,7 @@ which says what it measured.
 | `observations[].value` | the value, as the core renders it: "163.0 spm" |
 | `observations[].reason` | why there is no value, in the core's words |
 | `zones` | the zone distribution: the shares of the moving time in the athlete's own zones |
-| `zones.model` | the stored zone model the shares were measured against, named and dated |
+| `zones.model` | the zone model the shares were measured against — **the one in force on the day of the run** — named and dated |
 | `zones.shares` | one per zone: `label` ("Z1"), `share` (the share of the time **in the zones**) and `time` |
 | `zones.outside` | the time outside the zones: no heart-rate reading, or a reading at or below the first floor |
 | `zones.note` | where the model came from, in the core's words: "your zone model, read on 2026-05-10" |
@@ -916,7 +952,9 @@ on read from the FIT file and are never stored.
 The maximum heart rate the efficiency factor is measured against is the one
 from the athlete's **stored zone model**: their watch's own configuration,
 read once and stored with the day it was read. It is never the run's own
-observed maximum — two runs, two scales — and never an age formula.
+observed maximum — two runs, two scales — and never an age formula. It is
+**the model in force on the day of the run**: the configuration the athlete
+was wearing when they ran it.
 
 ### The run film
 
@@ -948,7 +986,7 @@ named and dated, exactly as it travels with `/fitness/zones`.
 | `activity_id` | the run's id |
 | `local_date` | the athlete's local date of the run |
 | `basis` | the basis the series was read on: `"samples"` — every sample of the run's file, standing ones included |
-| `model` | the zone model the zones were measured against, named and dated; `null` when no model has been read |
+| `model` | the zone model the zones were measured against — **the one in force on the day of the run** — named and dated; `null` when no model was in force |
 | `zones` | the five bands of the athlete's zones: `label` ("Z1"), `range` ("106-121 bpm"), `from_bpm` and `to_bpm` |
 | `outside_label` | the name of the space **outside** the zones, in the core's words: "outside your zones" |
 | `samples` | the run's samples: `elapsed`, `distance`, `pace`, `heart_rate` and `zone` |

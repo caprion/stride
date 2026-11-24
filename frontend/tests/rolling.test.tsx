@@ -40,7 +40,7 @@ describe('the rolling window on Progress', () => {
 
     // The window before it, and the difference: a comparison, not a
     // verdict.
-    expect(card.textContent).toContain('The 84 days before')
+    expect(card.textContent).toContain('The 80 days before')
     expect(card.textContent).toContain('Difference')
   })
 
@@ -50,9 +50,9 @@ describe('the rolling window on Progress', () => {
     const window = (await screen.findByTestId('progress-rolling-window')).textContent
 
     // The api's own rendering of a date, and the length of the window.
-    expect(window).toContain('19 Feb 2026')
+    expect(window).toContain('23 Feb 2026')
     expect(window).toContain('13 May 2026')
-    expect(window).toContain('84')
+    expect(window).toContain('80')
   })
 
   it('follows the range the screen is showing', async () => {
@@ -83,7 +83,8 @@ describe('the split of the zones on Progress', () => {
     vi.spyOn(api, 'insightsRolling').mockResolvedValue({
       ...rollingFixture,
       zones: {
-        model: rollingFixture.zones.model,
+        models: rollingFixture.zones.models,
+        source: rollingFixture.zones.source,
         unavailable: null,
         distribution: null,
         shares: [
@@ -102,7 +103,7 @@ describe('the split of the zones on Progress', () => {
 
     // The share, and which way it moved against the window before it.
     expect(card.querySelector('[data-testid="progress-zones-low"]')?.textContent).toBe('72.53%')
-    expect(card.textContent).toContain('up on the 84 days before')
+    expect(card.textContent).toContain('up on the 80 days before')
     // The model, with the day it was read.
     expect(card.querySelector('[data-testid="progress-zones-model"]')?.textContent).toContain(
       'read on 10 May 2026',
@@ -132,7 +133,8 @@ describe('the zone distribution on Progress', () => {
     vi.spyOn(api, 'insightsRolling').mockResolvedValue({
       ...rollingFixture,
       zones: {
-        model: rollingFixture.zones.model,
+        models: rollingFixture.zones.models,
+        source: rollingFixture.zones.source,
         unavailable: null,
         shares: rollingFixture.zones.shares,
         distribution: [

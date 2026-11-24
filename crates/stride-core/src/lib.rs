@@ -67,6 +67,7 @@ pub mod fingerprint;
 
 pub mod heatmap;
 pub mod load;
+pub mod movement;
 pub mod pace;
 pub mod pattern;
 pub mod plan;
@@ -95,8 +96,7 @@ pub use eddington::{
 };
 pub use fingerprint::{
     fingerprint, running_only, Fingerprint, FingerprintInput, FingerprintZoneModel, LapReading,
-    NoValue, Observation, ZoneDistribution, ZoneShare, MAX_STRIDE_LENGTH_M, WALKING_CADENCE_SPM,
-    WALKING_SPEED_MPS,
+    NoValue, Observation, ZoneDistribution, ZoneShare, MAX_STRIDE_LENGTH_M,
 };
 
 pub use heatmap::{bounds_of, cell_of, cell_size_m, heatmap, Bounds, Cell, Heatmap, HeatmapCell};
@@ -118,7 +118,7 @@ pub use rest::RestSummary;
 pub use rolling::{
     compare_windows, daytime_split, distance_breakdown, monthly_totals, polarised_shares,
     totals_in, weekday_split, yearly_totals, Daytime, DaytimeCuts, DaytimeTotals, DistanceBucket,
-    Movement, PeriodTotals, PolarisedZone, RollingActivity, RollingWindow, WeekdayTotals,
+    Movement, PeriodTotals, PolarisedZone, RollingActivity, WeekdayTotals, Window,
     WindowComparison, WindowTotals, ZoneTimes,
 };
 pub use statement::{
@@ -146,4 +146,6 @@ pub use year::{
     days_of, months_of, totals_of, weeks_of, what_changed, year_window, DayFacts, MonthFacts,
     WeekFacts, YearRun, YearTotals, YEAR_MONTHS,
 };
-pub use zones::{model_source, time_in_zone, zone_edges, TimeInZone, ZoneFloors, ZoneSample};
+pub use zones::{
+    model_source, models_source, time_in_zone, zone_edges, TimeInZone, ZoneFloors, ZoneSample,
+};

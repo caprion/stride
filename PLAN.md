@@ -120,6 +120,96 @@ No publish, install or production-data pull is part of verification.
 Optional explainable nudges are accepted product direction, but no new nudge
 contract or wording is introduced by this slice; existing voice checks remain.
 
+### Note — the phone's route table and the contract's list of unread routes (2026-11-24)
+
+This note travels with a change to `docs/contract/api-paths.md`, which the
+contract freeze says is a plan change: a frozen file changes only with a
+plan note in the same change. **No route changed.** What changed is the
+phone's copy of the route table, and one sentence of prose.
+
+* **The phone's bridge was eleven routes short.** The bridge refuses a path
+  that its table does not name, so the phone **404'd** on the Progress
+  wall's load card, the rolling window, the pace panel, challenges and
+  streaks, on the run's film, and on the run update — the model's own
+  reading of a run. The bridge's table now names every route the router
+  serves, in the router's own relative order.
+* **A copy that drifts is now checked.** `scripts/check-contract-greps.sh`
+  compares the router's patterns with the bridge's table, both read out of
+  the code, so a route cannot go missing from the phone again.
+* **The contract's list of the routes the app does not read was wrong in
+  both directions.** The app reads `/plan/import` and four of the five
+  `/auth/*` routes, and reads neither `/fitness/trends` nor `/health/daily`.
+  The list is corrected. The table of routes itself is untouched.
+* **One limitation is recorded rather than papered over.**
+  `/activities/{id}/fit` answers with the file's bytes and not with a DTO.
+  The bridge carries JSON, so the file travels base64 and the phone does not
+  offer the file for download; the export control is the desktop's. A native
+  delivery path on the phone is a separate piece of work, not a route.
+
+### Note — one window for the whole wall, and one comparison (2026-11-24)
+
+This note travels with a change to `docs/contract/api-paths.md`, which the
+contract freeze says is a plan change: a frozen file changes only with a
+plan note in the same change. **No route changed, and no shape changed.**
+What changed is the window the rolling view draws, the period it is
+compared against, and the length of the window the answer names.
+
+* **The window is the last *N* calendar weeks, through today.** From the
+  Monday of the earliest week to the day the answer is about, with the
+  current week in it and partial. This is the window the Progress totals
+  and the pace page already draw; the rolling view is the odd one out, and
+  it now draws the same one.
+* **The comparison is the same span, seven days earlier.** The week that
+  came in is weighed against the week that fell out, so a partial week is
+  compared with a partial week. It is one rule for every window-shaped
+  answer, and it replaces the one-day shift the rolling view used.
+* **The window has two ends now.** Its length is not a constant: the last
+  twelve calendar weeks are seventy-eight days on a Monday and eighty-four
+  on a Sunday, so a window that stored a number of days could not say which
+  days it covered. `window.days` says how many days the window holds.
+* **What the athlete reads.** The Progress totals do not change: they
+  already used the calendar weeks. The **profile's volume a week and its
+  consistency do**, because the rate is now measured against the window's
+  own length — eighty days for a twelve-week window through a Wednesday,
+  not eighty-four. The **year's "what changed"** compares the same span
+  seven days earlier instead of the days before it.
+* **The numbers, for the record.** A twelve-week window through Wednesday
+  the 13th of May 2026 is the 23rd of February to the 13th of May: eighty
+  days. The period it is compared against is the 16th of February to the
+  6th of May.
+
+### Note — the zone model in force on the day of the run (2026-11-24)
+
+This note travels with a change to `docs/contract/api-paths.md`, which the
+contract freeze says is a plan change: a frozen file changes only with a
+plan note in the same change. **The zone model's shape changed on one
+route** (`/insights/rolling`), and the rule behind every zone-time answer
+changed with it.
+
+* **The rule.** Every run is measured against the **zone model in force on
+  the day of the run** — the last model that was read on or before the end
+  of that day. It is the configuration the athlete was wearing when they
+  ran it. The answers that carry it: the run detail's zone table, the
+  run's film, the fingerprint's distribution and efficiency factor, the
+  window's split, and the year's mix.
+* **A run that predates the first stored model is not calibrated.** It has
+  no model in force, the answer says so, and it never borrows a later
+  model. **Every zone number therefore changes, retroactively**, for an
+  athlete who has changed their watch configuration, and a run from before
+  the first stored model has **no zone times at all**.
+* **The source line is hoisted.** The window's answer names **every**
+  model it used — `zones.models`, oldest first — and carries **one**
+  source line for the screen to name, `zones.source`. When the window was
+  measured against more than one model, the line names them by the days
+  they were read. The single-run answers keep their own line, and a run
+  measured on a different model still says which one.
+* **The load model does not move.** The training load weighs a whole
+  window of days against one model, and it moves later, in its own change,
+  with its own announcement.
+* **One seam.** The api reads the stored models in one place
+  (`crates/stride-api/src/zonemodel.rs`), so the rule is in one place and
+  the store's dated history is read as a history.
+
 ### Proposed amendment — the zone model is a dated fact (2026-11-15)
 
 **Proposal, not approved.** The approvals below are the user's to give. This

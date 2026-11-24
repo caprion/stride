@@ -15,8 +15,10 @@
 //! * the **runs** — their local day, their distance, their moving time and
 //!   their elevation gain;
 //! * the **stored zone model** — the athlete's own configuration, read
-//!   once from the watch and stored with the day it was read. A model that
-//!   is not there is "no value", never a default;
+//!   once from the watch and stored with the day it was read. It is read
+//!   through the api's own seam ([`crate::zonemodel`]), so there is one
+//!   way to get the zones. A model that is not there is "no value", never
+//!   a default;
 //! * the **FIT files** of the runs, decoded on read, so that the time in
 //!   the zones can be measured against the stored model;
 //! * the **training load** — for the form at the end of each month.
@@ -34,46 +36,27 @@ use crate::state::Api;
 /// The runs of a range of days, as the core's year reads them.
 ///
 /// The zone times are measured against the athlete's **stored model**: the
-/// watch's own configuration, with the day it was read. A run whose file
-/// carries no heart rate — or a store with no model at all — has **no zone
-/// times**, and the day it falls on has no mix: that is no value, never a
-/// mix of zero.
+/// watch's own configuration, with the day it was read. **Each run is
+/// measured against the model that was in force on its own day.** A run
+/// whose file carries no heart rate — or a run that predates the first
+/// stored model — has **no zone times**, and the day it falls on has no
+/// mix: that is no value, never a mix of zero.
 pub fn year_runs(api: &Api, from: &str, to: &str) -> ApiResult<Vec<YearRun>> {
     let runs = api
         .store()
         .activities_between(from, to)
         .map_err(|error| api.store_error("the runs could not be read", &error))?;
-    let model = match crate::rolling::stored_model(api)? {
-        Some(model) => model,
-        None => {
-            // No model has been read: the runs are not calibrated, and no
-            // run of them carries zone times.
-            return Ok(runs
-                .iter()
-                .filter_map(|run| {
-                    let date = Date::parse(&run.local_date)?;
-                    Some(YearRun {
-                        date,
-                        distance_m: run.distance_m,
-                        moving_time_s: run.moving_time_s,
-                        elevation_gain_m: run.elevation_gain_m,
-                        times: None,
-                    })
-                })
-                .collect());
-        }
-    };
-    let floors = model.floors;
-    let usable = floors.is_usable();
+    let models = crate::zonemodel::ZoneModels::read(api)?;
 
     Ok(runs
         .iter()
         .filter_map(|run| {
             let date = Date::parse(&run.local_date)?;
-            let times = if usable {
-                run_times(api, floors, run.id)
-            } else {
-                None
+            // The model in force on the day of the run: a run that
+            // predates the first stored model is not calibrated.
+            let times = match models.in_force(date) {
+                Some(model) if model.floors.is_usable() => run_times(api, model.floors, run.id),
+                _ => None,
             };
             Some(YearRun {
                 date,

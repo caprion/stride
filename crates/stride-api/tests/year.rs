@@ -126,9 +126,10 @@ fn the_year_names_the_window_and_the_period_before_it() {
     assert_eq!(text(&answer, &["window", "to_label"]), "12 May 2026");
     assert_eq!(number(&answer, &["window", "days"]), 346.0);
 
-    // The period before it: the same number of days, ending a day
-    // earlier. The two never share a day.
-    assert_eq!(text(&answer, &["comparison", "to"]), "2025-05-31");
+    // The period it is compared against: the same span, seven days
+    // earlier.
+    assert_eq!(text(&answer, &["comparison", "from"]), "2025-05-25");
+    assert_eq!(text(&answer, &["comparison", "to"]), "2026-05-05");
     assert_eq!(number(&answer, &["comparison", "days"]), 346.0);
 }
 
@@ -301,10 +302,12 @@ fn what_changed_says_the_facts_about_the_two_periods() {
         20_000.0,
         6_000.0,
     ));
-    // The period before it: 5 km in one run, in March of last year.
+    // The period it is compared against: 5 km in one run, in the days
+    // the comparison holds and the year itself does not — the last days
+    // of May, last year.
     harness.write_run(common::run(
-        "a-run-in-march-last-year",
-        "2025-03-08",
+        "a-run-in-may-last-year",
+        "2025-05-28",
         5_000.0,
         1_500.0,
     ));
@@ -317,16 +320,15 @@ fn what_changed_says_the_facts_about_the_two_periods() {
         .collect();
 
     // The distance, the runs and the longest run: the numbers of the two
-    // periods, side by side.
+    // periods, side by side. The period the year is compared against is
+    // **the same span, seven days earlier**, so it holds the two runs of
+    // April as well as the one of last May.
     assert_eq!(
         lines[0],
-        "+25 km against the period before (30 km against 5 km)"
+        "−5 km against the period before (30 km against 35 km)"
     );
-    assert_eq!(lines[1], "+1 recorded sessions (2 against 1)");
-    assert_eq!(
-        lines[2],
-        "the longest run grew by 15 km (20 km against 5 km)"
-    );
+    assert_eq!(lines[1], "−1 recorded sessions (2 against 3)");
+    assert_eq!(lines[2], "the longest run was 20 km in both periods");
     // The pace: the window's moving time over its distance.
     assert_eq!(lines[3], "the average pace was 5:00 /km against 5:00 /km");
 

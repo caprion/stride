@@ -16,8 +16,10 @@
 //! * the **runs** — their local day, their distance, their moving time and
 //!   the hour they started in the athlete's own local time;
 //! * the **stored zone model** — the athlete's own configuration, read
-//!   once from the watch and stored with the day it was read. A model that
-//!   is not there is "no value", never a default;
+//!   once from the watch and stored with the day it was read. It is read
+//!   through the api's own seam ([`crate::zonemodel`]), so there is one
+//!   way to get the zones. A model that is not there is "no value", never
+//!   a default;
 //! * the **FIT files** of the runs in the window, decoded on read, so that
 //!   the time in the zones can be measured against the stored model.
 
@@ -29,30 +31,15 @@ use stride_core::profile::{facets, Facet};
 use stride_core::rolling::{
     compare_windows, daytime_split, distance_breakdown, monthly_totals, polarised_shares,
     weekday_split, yearly_totals, DaytimeCuts, DaytimeTotals, DistanceBucket, PeriodTotals,
-    RollingActivity, RollingWindow, WeekdayTotals, WindowComparison, ZoneShare, ZoneTimes,
+    RollingActivity, WeekdayTotals, Window, WindowComparison, ZoneShare, ZoneTimes,
 };
 use stride_core::streaks::{streaks, Streak, Streaks};
-use stride_core::zones::{time_in_zone, ZoneFloors, ZoneSample};
+use stride_core::zones::{time_in_zone, ZoneSample};
 use stride_store::ActivitySummary as StoredActivity;
 
 use crate::error::ApiResult;
 use crate::state::Api;
-
-/// The stored zone model, as the rolling view reads it.
-#[derive(Clone, Debug, PartialEq)]
-pub struct StoredModel {
-    /// The sport Garmin reported the model for.
-    pub sport: String,
-    /// The training method the model was set with.
-    pub training_method: String,
-    /// The maximum heart rate the model was built on, when Garmin reported
-    /// one.
-    pub max_heart_rate: Option<f64>,
-    /// The model's five floors.
-    pub floors: ZoneFloors,
-    /// The day the model was read, in the athlete's own calendar.
-    pub read_on: Date,
-}
+use crate::zonemodel::ZoneModel;
 
 /// The split of the training across the athlete's zones.
 #[derive(Clone, Debug, PartialEq)]
@@ -71,8 +58,16 @@ pub struct ZoneSplitAnswer {
     pub distribution: Option<Vec<ZoneDistributionRow>>,
     /// Why there is no split, in the core's own words.
     pub unavailable: Option<String>,
-    /// The model the split was measured against, when there is one.
-    pub model: Option<StoredModel>,
+    /// The models the window's runs were measured against, oldest first.
+    ///
+    /// **Each run is measured against the model that was in force on its
+    /// own day**, so a window that spans a change of the athlete's
+    /// configuration is measured on more than one scale — and the answer
+    /// names every one of them.
+    pub models: Vec<ZoneModel>,
+    /// The model the distribution's **ranges** are the model's own: the
+    /// one that was in force at the end of the window.
+    pub ranges: Option<ZoneModel>,
 }
 
 /// One zone of the distribution: the time in it and its share.
@@ -159,57 +154,67 @@ fn local_hour(api: &Api, instant: chrono::DateTime<chrono::Utc>) -> u32 {
 
 /// The window's totals and the window before it.
 ///
-/// The window before it is the same number of days, ending a day earlier:
-/// that is the period the answer compares itself against.
-pub fn window_comparison(
-    activities: &[RollingActivity],
-    window: RollingWindow,
-) -> WindowComparison {
+/// The window before it is **the same span, seven days earlier**: that is
+/// the period the answer compares itself against.
+pub fn window_comparison(activities: &[RollingActivity], window: Window) -> WindowComparison {
     compare_windows(activities, window)
 }
 
 /// The split of the training across the athlete's zones, over a window.
 ///
 /// The shares are measured against the athlete's **stored model**: the
-/// watch's own configuration, with the day it was read. The time in the
-/// zones comes from the runs' own FIT files, decoded on read, and only the
-/// moving samples — the same filter the zones route has always used.
+/// watch's own configuration, with the day it was read. **Each run is
+/// measured against the model that was in force on its own day** — the
+/// configuration the athlete was wearing when they ran it — so a window
+/// that spans a change of the configuration is measured on more than one
+/// scale, and the answer names every model it used.
 ///
-/// There is no value when there is no model, when the model's floors do
-/// not increase, or when the runs in the window carry no heart-rate
-/// samples. None of those is a zero.
+/// The time in the zones comes from the runs' own FIT files, decoded on
+/// read, and only the moving samples — the same filter the zones route
+/// has always used.
+///
+/// There is no value when no model has been read, when the models that
+/// were in force do not increase, or when the runs in the window carry no
+/// heart-rate samples. None of those is a zero.
 pub fn zone_split(
     api: &Api,
     runs: &[&StoredActivity],
-    window: RollingWindow,
+    window: Window,
 ) -> ApiResult<ZoneSplitAnswer> {
-    let model = match stored_model(api)? {
-        Some(model) => model,
-        None => {
-            return Ok(ZoneSplitAnswer {
-                shares: None,
-                distribution: None,
-                unavailable: core_line("zones.no_model"),
-                model: None,
-            })
-        }
-    };
-    if !model.floors.is_usable() {
+    let models = crate::zonemodel::ZoneModels::read(api)?;
+    if models.models().is_empty() {
         return Ok(ZoneSplitAnswer {
             shares: None,
             distribution: None,
-            unavailable: core_line("zones.unusable_model"),
-            model: Some(model),
+            unavailable: core_line("zones.no_model"),
+            models: Vec::new(),
+            ranges: None,
         });
     }
 
     let mut current = ZoneTimes::default();
     let mut previous = ZoneTimes::default();
+    // The models the window's runs were measured against, oldest first.
+    let mut used: Vec<ZoneModel> = Vec::new();
+    let mut usable = false;
     for run in runs {
         let date = match Date::parse(&run.local_date) {
             Some(date) => date,
             None => continue,
         };
+        // The model in force on the day of the run. A run that predates
+        // the first stored model is not calibrated, and it carries no zone
+        // time at all.
+        let Some(model) = models.in_force(date) else {
+            continue;
+        };
+        if !used.iter().any(|seen| seen.read_on == model.read_on) {
+            used.push(model.clone());
+        }
+        if !model.floors.is_usable() {
+            continue;
+        }
+        usable = true;
         let Some(time) = time_in_zone(model.floors, &zone_samples(api, run.id)) else {
             continue;
         };
@@ -219,6 +224,27 @@ pub fn zone_split(
         if window.previous().contains(date) {
             add(&mut previous, &time);
         }
+    }
+
+    if used.is_empty() {
+        // Models have been read, but none of them was in force for the
+        // runs in this window: they all predate the first stored model.
+        return Ok(ZoneSplitAnswer {
+            shares: None,
+            distribution: None,
+            unavailable: core_line("zones.no_model_in_force"),
+            models: Vec::new(),
+            ranges: None,
+        });
+    }
+    if !usable {
+        return Ok(ZoneSplitAnswer {
+            shares: None,
+            distribution: None,
+            unavailable: core_line("zones.unusable_model"),
+            models: used,
+            ranges: models.in_force(window.to()).cloned(),
+        });
     }
 
     let shares = polarised_shares(&current, &previous);
@@ -241,11 +267,18 @@ pub fn zone_split(
     } else {
         core_line("rolling.zones.no_samples")
     };
+    // The models are named **oldest first**: the order they were read in.
+    used.sort_by_key(|model| model.read_on);
     Ok(ZoneSplitAnswer {
         shares,
         distribution,
         unavailable,
-        model: Some(model),
+        models: used,
+        // The ranges are the model's own floors, and the model is the one
+        // that was in force at the end of the window: the athlete's own
+        // bands as they are today. The models the window was measured
+        // against are named beside them.
+        ranges: models.in_force(window.to()).cloned(),
     })
 }
 
@@ -257,41 +290,6 @@ fn add(total: &mut ZoneTimes, time: &stride_core::zones::TimeInZone) {
     total.zone3_s += times[2];
     total.zone4_s += times[3];
     total.zone5_s += times[4];
-}
-
-/// The stored zone model, when there is one.
-///
-/// `None` when no model has been read yet: the split then answers "no
-/// value", with the reason, and never a guessed maximum heart rate.
-pub fn stored_model(api: &Api) -> ApiResult<Option<StoredModel>> {
-    let model = api
-        .store()
-        .current_hr_zone_model()
-        .map_err(|error| api.store_error("the zone model could not be read", &error))?;
-    let model = match model {
-        Some(model) => model,
-        None => return Ok(None),
-    };
-    // The day the model was read, in the athlete's own calendar.
-    let offset = chrono::Duration::minutes(api.utc_offset_minutes() as i64);
-    let naive = (model.read_at + offset).naive_utc();
-    let read_on = match Date::parse(&naive.format("%Y-%m-%d").to_string()) {
-        Some(date) => date,
-        None => return Ok(None),
-    };
-    Ok(Some(StoredModel {
-        sport: model.sport.clone(),
-        training_method: model.training_method.clone(),
-        max_heart_rate: model.max_heart_rate,
-        floors: ZoneFloors {
-            zone1: model.zone1_floor,
-            zone2: model.zone2_floor,
-            zone3: model.zone3_floor,
-            zone4: model.zone4_floor,
-            zone5: model.zone5_floor,
-        },
-        read_on,
-    }))
 }
 
 /// The heart-rate samples of a run, decoded on read.
@@ -344,14 +342,15 @@ pub fn distance_buckets(activities: &[RollingActivity]) -> Vec<DistanceBucket> {
 
 /// The seven facets of the athlete's shape, and how they moved.
 ///
-/// `days` is the length of the window: the rates are measured against it,
-/// and the core is where the division happens.
+/// The **window's own length** is the denominator of the rates: the volume
+/// a week and the share of the window's days that carry a run. The core is
+/// where the division happens.
 pub fn profile_facets(
     current: &[RollingActivity],
     previous: &[RollingActivity],
-    days: i64,
+    window: Window,
 ) -> Vec<Facet> {
-    facets(current, previous, days)
+    facets(current, previous, window)
 }
 
 /// A sentence from the core's catalogue.

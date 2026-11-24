@@ -2084,8 +2084,16 @@ pub struct SessionComparison {
 /// range beside them and nothing that says whether the split is any good.
 #[derive(Clone, Debug, PartialEq, Serialize)]
 pub struct ZoneSplit {
-    /// The model the split was measured against, when there is one.
-    pub model: Option<ZoneModelSource>,
+    /// The models the window's runs were measured against, oldest first.
+    ///
+    /// **Each run is measured against the model that was in force on its
+    /// own day**, so a window that spans a change of the athlete's
+    /// configuration holds more than one model — and this names them all.
+    pub models: Vec<ZoneModelSource>,
+    /// The one source line the screen names: the model's own line when the
+    /// window was measured against one model, and the line that names them
+    /// all when it was measured against several.
+    pub source: Option<String>,
     /// The shares, when there is a value.
     pub shares: Option<Vec<ZoneShareRow>>,
     /// The distribution: the time in each of the five zones and the share

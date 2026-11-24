@@ -141,7 +141,7 @@ object PhoneRoutes {
      * that appeared or vanished because a core crate changed would be a
      * change to a contract, and contracts are not changed by the shell.
      *
-     * Two of the routes are worth naming:
+     * Three of the routes are worth naming:
      *
      * * `/fitness/fingerprint` is in the table and has no screen: the data
      *   is already synced, and the route is a documented endpoint with no
@@ -149,12 +149,21 @@ object PhoneRoutes {
      * * `/physiology/vitals` is not `/physiology/readiness`: v2 has no
      *   readiness score, so the route answers with the vitals and their
      *   directions.
+     * * `/activities/{id}/fit` answers with the file's bytes and not with
+     *   a DTO. The bridge carries JSON, so the file travels base64 — the
+     *   contract says the same — and the phone does not offer the file
+     *   for download.
      */
     private val TABLE: List<String> = listOf(
         // Data
         "/activities",
         "/activities/{id}",
+        "/activities/{id}/fit",
+        "/activities/{id}/film",
         "/activities/{id}/note",
+        "/activities/{id}/update",
+        "/activities/{id}/update/payload",
+        "/activities/{id}/update/request",
         "/physiology/daily",
         "/physiology/sleep",
         "/physiology/hrv",
@@ -180,6 +189,11 @@ object PhoneRoutes {
         "/plan/import",
         "/insights/today",
         "/insights/progress",
+        "/insights/load",
+        "/insights/rolling",
+        "/insights/pace",
+        "/insights/challenges",
+        "/insights/streaks",
         "/insights/heatmap",
         "/insights/chips",
         "/insights/year",
@@ -203,6 +217,7 @@ object PhoneRoutes {
         "/settings/export",
         "/settings/import",
         "/settings/delete",
+        "/update/settings",
     )
 
     /**

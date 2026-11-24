@@ -8,7 +8,7 @@
 
 mod common;
 
-use chrono::{DateTime, Utc};
+use chrono::{DateTime, Duration, Utc};
 use serde_json::json;
 use stride_store::{NewActivity, NewHeartRateZoneModel};
 
@@ -73,9 +73,11 @@ fn write_settings(harness: &common::Harness) {
 fn the_payload_carries_the_facts_and_nothing_else() {
     let harness = common::Harness::empty("update-payload");
     let id = write_fit_run(&harness, "hr_gps_run.fit");
+    // The model is read **before** the run: the model in force on the day
+    // of a run is the one that was read on or before it.
     harness
         .store
-        .write_hr_zone_model_if_new(&model(common::instant()))
+        .write_hr_zone_model_if_new(&model(common::instant() - Duration::days(3)))
         .unwrap();
     write_settings(&harness);
 
@@ -131,9 +133,11 @@ fn a_run_with_no_file_has_no_payload() {
 fn the_prompt_is_the_core_s_own_instruction() {
     let harness = common::Harness::empty("update-prompt");
     let id = write_fit_run(&harness, "hr_gps_run.fit");
+    // The model is read **before** the run: the model in force on the day
+    // of a run is the one that was read on or before it.
     harness
         .store
-        .write_hr_zone_model_if_new(&model(common::instant()))
+        .write_hr_zone_model_if_new(&model(common::instant() - Duration::days(3)))
         .unwrap();
     write_settings(&harness);
 
@@ -166,9 +170,11 @@ fn the_prompt_is_the_core_s_own_instruction() {
 fn a_draft_that_fails_the_checks_is_not_kept() {
     let harness = common::Harness::empty("update-refuse");
     let id = write_fit_run(&harness, "hr_gps_run.fit");
+    // The model is read **before** the run: the model in force on the day
+    // of a run is the one that was read on or before it.
     harness
         .store
-        .write_hr_zone_model_if_new(&model(common::instant()))
+        .write_hr_zone_model_if_new(&model(common::instant() - Duration::days(3)))
         .unwrap();
     write_settings(&harness);
 
@@ -208,9 +214,11 @@ fn a_draft_that_fails_the_checks_is_not_kept() {
 fn a_draft_that_passes_is_kept_with_its_checks() {
     let harness = common::Harness::empty("update-keep");
     let id = write_fit_run(&harness, "hr_gps_run.fit");
+    // The model is read **before** the run: the model in force on the day
+    // of a run is the one that was read on or before it.
     harness
         .store
-        .write_hr_zone_model_if_new(&model(common::instant()))
+        .write_hr_zone_model_if_new(&model(common::instant() - Duration::days(3)))
         .unwrap();
     write_settings(&harness);
 

@@ -7,9 +7,9 @@
 //!
 //! ## What is in here
 //!
-//! * [`compare_windows`] — the last *N* days against the same *N* days
-//!   ending a day earlier. The comparison is a comparison: two numbers
-//!   side by side and the difference between them, never a verdict.
+//! * [`compare_windows`] — the window against the same span, seven days
+//!   earlier. The comparison is a comparison: two numbers side by side and
+//!   the difference between them, never a verdict.
 //! * [`polarised_shares`] — how the training was distributed across the
 //!   athlete's own zones: low (Z1–Z2), moderate (Z3), high (Z4–Z5), as
 //!   shares of the time in the zones.
@@ -21,12 +21,16 @@
 //!
 //! ## The window
 //!
-//! The window is **the last *N* days ending on the day the answer is
-//! about**, and the comparison period is **the same *N* days ending a day
-//! earlier**. That is the reference implementation's own comparison — its
-//! rolling window is a window that moves one day at a time, and its
-//! zone split is compared against "the same window as of the previous
-//! day" — and it is stated here rather than left to be guessed at.
+//! The window is **the last *N* calendar weeks, from the start of the
+//! earliest one through the day the answer is about**, and the comparison
+//! period is **the same span, seven days earlier**. The window therefore
+//! has **two ends** and no fixed length: the last twelve calendar weeks
+//! through a Wednesday is seventy-nine days, and through a Sunday it is
+//! eighty-four.
+//!
+//! The comparison is the same span seven days earlier — the week that came
+//! in against the week that fell out, so a partial week is compared with a
+//! partial week. It is one rule, and it is the only one the core has.
 //!
 //! ## No value
 //!
@@ -72,42 +76,85 @@ pub struct RollingActivity {
     pub sport: String,
 }
 
-/// A window of days: how long it is, and the day it ends on.
+/// A window of days: where it begins and where it ends.
+///
+/// The window has **two ends** and no stored length, because its length is
+/// not a constant: the last twelve calendar weeks through a Wednesday is
+/// seventy-nine days, and through a Sunday it is eighty-four. A window that
+/// stored a number of days could not say which days it covered, and every
+/// rate measured against it would divide by a number that is not the
+/// window's length.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
-pub struct RollingWindow {
-    /// How many days the window covers.
-    pub days: i64,
+pub struct Window {
+    /// The first day of the window.
+    from: Date,
     /// The last day of the window.
-    pub to: Date,
+    to: Date,
 }
 
-impl RollingWindow {
-    /// A window of `days` days ending on `to`.
-    pub fn new(days: i64, to: Date) -> Self {
-        Self { days, to }
+impl Window {
+    /// The window of the last `weeks` **calendar weeks**, through `today`.
+    ///
+    /// The window begins on the Monday of the earliest week and ends on the
+    /// day the answer is about, so the current week is in it and is the
+    /// partial one. This is the Progress window: the same one the volume
+    /// chart and the pace page draw.
+    pub fn calendar_weeks(weeks: i64, today: Date) -> Self {
+        let from = crate::plan::week_start(today).add_days(-7 * (weeks - 1));
+        Self { from, to: today }
+    }
+
+    /// The window of the last `days` days, through `today`.
+    ///
+    /// This is the athlete profile's own ladder — thirty, sixty and ninety
+    /// days. A month is not four weeks, and the athlete asked for days.
+    pub fn of_days(days: i64, today: Date) -> Self {
+        Self {
+            from: today.add_days(-(days - 1)),
+            to: today,
+        }
+    }
+
+    /// A window between two days.
+    ///
+    /// The year is one: the last twelve calendar months, the current month
+    /// included and the month so far only as far as today.
+    pub fn span(from: Date, to: Date) -> Self {
+        Self { from, to }
     }
 
     /// The first day of the window.
     pub fn from(&self) -> Date {
-        self.to.add_days(-(self.days - 1))
+        self.from
     }
 
-    /// The window **before** this one: the same number of days, ending the
-    /// day before this window begins.
-    ///
-    /// This is the period the answer compares itself against, and it must
-    /// not overlap the window it is compared with: the two are meant to be
-    /// two halves of a longer story, not the same days twice.
-    pub fn previous(&self) -> RollingWindow {
-        RollingWindow {
-            days: self.days,
-            to: self.from().add_days(-1),
-        }
+    /// The last day of the window.
+    pub fn to(&self) -> Date {
+        self.to
+    }
+
+    /// How many days the window covers: the days it holds, counted.
+    pub fn days(&self) -> i64 {
+        self.to.days_since(self.from) + 1
     }
 
     /// Whether a day falls inside the window.
     pub fn contains(&self, date: Date) -> bool {
-        date >= self.from() && date <= self.to
+        date >= self.from && date <= self.to
+    }
+
+    /// The window **before** this one: **the same span, seven days
+    /// earlier**.
+    ///
+    /// This is the period the answer compares itself against, and it is one
+    /// rule for every window the product draws: the same days, shifted a
+    /// week back. The week that came in is weighed against the week that
+    /// fell out, so a partial week is compared with a partial week.
+    pub fn previous(&self) -> Window {
+        Window {
+            from: self.from.add_days(-7),
+            to: self.to.add_days(-7),
+        }
     }
 }
 
@@ -138,12 +185,12 @@ impl WindowTotals {
 pub struct WindowComparison {
     /// The window the answer is about.
     pub current: WindowTotals,
-    /// The same window, a day earlier.
+    /// The same span, seven days earlier.
     pub previous: WindowTotals,
 }
 
 /// The totals of a window of days.
-pub fn totals_in(activities: &[RollingActivity], window: RollingWindow) -> WindowTotals {
+pub fn totals_in(activities: &[RollingActivity], window: Window) -> WindowTotals {
     let mut totals = WindowTotals::empty();
     for activity in activities {
         if !window.contains(activity.date) {
@@ -161,7 +208,7 @@ pub fn totals_in(activities: &[RollingActivity], window: RollingWindow) -> Windo
 /// The comparison is a comparison: the two sets of numbers and the
 /// difference between them. Nothing here says whether the difference is
 /// good, and nothing here tells the athlete what to do about it.
-pub fn compare_windows(activities: &[RollingActivity], window: RollingWindow) -> WindowComparison {
+pub fn compare_windows(activities: &[RollingActivity], window: Window) -> WindowComparison {
     WindowComparison {
         current: totals_in(activities, window),
         previous: totals_in(activities, window.previous()),
@@ -821,7 +868,7 @@ mod tests {
             None => return,
         };
         let window = match date("2026-05-13") {
-            Some(day) => RollingWindow::new(3, day),
+            Some(day) => Window::of_days(3, day),
             None => return,
         };
         // The last three days ending on the 13th: the 11th, the 12th and
@@ -833,10 +880,10 @@ mod tests {
     }
 
     #[test]
-    fn the_comparison_is_the_window_before_the_window() {
+    fn the_comparison_is_the_same_span_seven_days_earlier() {
         let runs = match runs(&[
-            activity("2026-05-08", 5_000.0, 1_500.0, 7),
-            activity("2026-05-09", 6_000.0, 1_800.0, 7),
+            activity("2026-05-04", 5_000.0, 1_500.0, 7),
+            activity("2026-05-06", 6_000.0, 1_800.0, 7),
             activity("2026-05-11", 10_000.0, 3_000.0, 7),
             activity("2026-05-12", 8_000.0, 2_400.0, 18),
             activity("2026-05-13", 12_000.0, 3_600.0, 7),
@@ -845,25 +892,46 @@ mod tests {
             None => return,
         };
         let window = match date("2026-05-13") {
-            Some(day) => RollingWindow::new(3, day),
+            Some(day) => Window::of_days(3, day),
             None => return,
         };
         let comparison = compare_windows(&runs, window);
         // The window holds the 11th, the 12th and the 13th.
         assert_eq!(comparison.current.sessions, 3);
         assert_eq!(comparison.current.distance_m, 30_000.0);
-        // The window **before** it holds the 8th, the 9th and the 10th: the
-        // two runs of that period, and nothing of the window it is compared
-        // with. The two windows never share a day.
+        // The period it is compared against is **the same span, seven days
+        // earlier**: the 4th, the 5th and the 6th. The window that fell out
+        // is weighed against the week that came in.
         assert_eq!(comparison.previous.sessions, 2);
         assert_eq!(comparison.previous.distance_m, 11_000.0);
         assert_eq!(comparison.previous.moving_time_s, 3_300.0);
     }
 
     #[test]
+    fn a_window_of_calendar_weeks_has_two_ends_and_no_round_length() {
+        // The 13th of May 2026 is a Wednesday: the last twelve calendar
+        // weeks through it are eighty days — the Monday of the earliest
+        // week through the Wednesday of the current one — and not the
+        // eighty-four a fixed number of weeks would be.
+        let today = match date("2026-05-13") {
+            Some(day) => day,
+            None => return,
+        };
+        let window = Window::calendar_weeks(12, today);
+        assert_eq!(window.from().to_iso(), "2026-02-23");
+        assert_eq!(window.to().to_iso(), "2026-05-13");
+        assert_eq!(window.days(), 80);
+        // The period it is compared against is the same span, seven days
+        // earlier.
+        assert_eq!(window.previous().from().to_iso(), "2026-02-16");
+        assert_eq!(window.previous().to().to_iso(), "2026-05-06");
+        assert_eq!(window.previous().days(), 80);
+    }
+
+    #[test]
     fn a_window_with_no_runs_has_no_totals_to_speak_of() {
         let window = match date("2026-05-13") {
-            Some(day) => RollingWindow::new(7, day),
+            Some(day) => Window::of_days(7, day),
             None => return,
         };
         let comparison = compare_windows(&[], window);

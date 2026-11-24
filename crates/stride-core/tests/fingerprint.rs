@@ -173,19 +173,34 @@ fn the_pace_drift_is_the_half_split_of_the_paces() {
 }
 
 #[test]
-fn a_lap_is_walked_only_when_the_cadence_and_the_pace_both_say_so() {
+fn a_lap_is_walked_only_when_the_movement_rule_says_so() {
     let walked = lap(600.0, Some(95.0), Some(110.0), Some(1.5));
     let short_strided = lap(300.0, Some(160.0), Some(120.0), Some(3.3));
     let run = lap(300.0, Some(160.0), Some(168.0), Some(3.3));
 
     let running = running_only(&[walked, short_strided, run]);
 
-    // The walking lap is dropped. The short-strided runner is kept: the
-    // cadence is low but the pace is not slow, and both conditions must
-    // hold for a lap to be walked.
+    // The walking lap is dropped: its speed says it was a walk. The
+    // short-strided runner is kept: the speed is not slow, and the one
+    // rule needs the cadence **and** the speed before it walks a stretch.
     assert_eq!(running.len(), 2);
     assert_eq!(running[0].avg_cadence_spm, Some(120.0));
     assert_eq!(running[1].avg_cadence_spm, Some(168.0));
+}
+
+/// **The one rule, at the lap's grain.** A lap at a hundred steps a minute
+/// and two metres a second is a **run**: the rule that walks a stretch
+/// needs a cadence below sixty, or a speed below 1.55 metres a second.
+/// The ingest's own thresholds are the core's now, and the fingerprint
+/// reads them.
+#[test]
+fn a_short_strided_lap_is_run_under_the_one_rule() {
+    let lap = lap(300.0, Some(160.0), Some(100.0), Some(2.0));
+
+    let running = running_only(&[lap]);
+
+    assert_eq!(running.len(), 1);
+    assert_eq!(running[0].avg_cadence_spm, Some(100.0));
 }
 
 #[test]

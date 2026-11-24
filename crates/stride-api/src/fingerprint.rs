@@ -16,8 +16,10 @@
 //!   of a last lap from a lap;
 //! * the **zone model** — the athlete's own stored configuration, read once
 //!   from the watch and stored with the day it was read. It is read through
-//!   the store's own repository, so there is **one** way to get the zones:
-//!   the same one the time-in-zone computation reads;
+//!   the api's own seam ([`crate::zonemodel`]), so there is **one** way to
+//!   get the zones: the same one the time-in-zone computation reads. It is
+//!   **the model in force on the day of the run** — the configuration the
+//!   athlete was wearing when they ran it;
 //! * the **file** — the run's own FIT file, decoded on read. The derived
 //!   series are recomputable and are never stored, so a run with no file
 //!   has no fingerprint: there is nothing to measure, and the answer says
@@ -29,7 +31,7 @@ use stride_core::fingerprint::{
     ZoneDistribution,
 };
 use stride_core::units;
-use stride_core::zones::{ZoneFloors, ZoneSample};
+use stride_core::zones::ZoneSample;
 
 use crate::dto::{
     Fingerprint, FingerprintObservation, FingerprintZones, RenderedValue, ZoneModel, ZoneShare,
@@ -67,7 +69,7 @@ pub fn fingerprint(api: &Api, id: i64) -> ApiResult<Fingerprint> {
             "there is no run with the id {id}"
         )));
     };
-    let model = stored_model(api)?;
+    let model = stored_model(api, &run.local_date)?;
 
     // The run's own file, decoded on read. A run with no file has no laps
     // and no samples, and there is nothing to measure.
@@ -180,46 +182,39 @@ fn zones_without_value(model: Option<&StoredModel>) -> FingerprintZones {
 
 /// The athlete's stored zone model, as the core and the payload read it.
 ///
-/// `None` when no model has been read yet: the zone shares are then "no
+/// The model is **the one in force on the day of the run**: the
+/// configuration the athlete was wearing when they ran it.
+///
+/// `None` when no model was in force: the zone shares are then "no
 /// value", with the reason, and never a default.
-fn stored_model(api: &Api) -> ApiResult<Option<StoredModel>> {
-    let model = api
-        .store()
-        .current_hr_zone_model()
-        .map_err(|error| api.store_error("the zone model could not be read", &error))?;
-    let model = match model {
+fn stored_model(api: &Api, local_date: &str) -> ApiResult<Option<StoredModel>> {
+    let date = match Date::parse(local_date) {
+        Some(date) => date,
+        None => return Ok(None),
+    };
+    let model_for = crate::zonemodel::model_for(api, date)?;
+    let model = match model_for.model() {
         Some(model) => model,
         None => return Ok(None),
     };
-    // The day the model was read, in the athlete's own calendar.
-    let offset = chrono::Duration::minutes(api.utc_offset_minutes() as i64);
-    let naive = (model.read_at + offset).naive_utc();
-    let read_on = Date::parse(&naive.format("%Y-%m-%d").to_string());
-    let floors = ZoneFloors {
-        zone1: model.zone1_floor,
-        zone2: model.zone2_floor,
-        zone3: model.zone3_floor,
-        zone4: model.zone4_floor,
-        zone5: model.zone5_floor,
-    };
     // the api's own rendering of the day the model was read
-    let read_on_label = read_on.map(crate::routes::day_label).unwrap_or_default();
+    let read_on_label = crate::routes::day_label(model.read_on);
     Ok(Some(StoredModel {
         core: FingerprintZoneModel {
             max_heart_rate: model.max_heart_rate,
-            floors,
-            read_on,
+            floors: model.floors,
+            read_on: Some(model.read_on),
         },
         payload: ZoneModel {
             sport: model.sport.clone(),
             training_method: model.training_method.clone(),
             max_heart_rate: render::heart_rate(model.max_heart_rate),
             floors: crate::dto::ZoneModelFloors {
-                zone1: floor_value(model.zone1_floor),
-                zone2: floor_value(model.zone2_floor),
-                zone3: floor_value(model.zone3_floor),
-                zone4: floor_value(model.zone4_floor),
-                zone5: floor_value(model.zone5_floor),
+                zone1: floor_value(model.floors.zone1),
+                zone2: floor_value(model.floors.zone2),
+                zone3: floor_value(model.floors.zone3),
+                zone4: floor_value(model.floors.zone4),
+                zone5: floor_value(model.floors.zone5),
             },
             read_at: crate::state::format_instant(model.read_at),
             // the api's own rendering of the day, as the run detail uses it

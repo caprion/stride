@@ -562,6 +562,10 @@ export const catalogue = {
   'progress.rolling.sessions': { type: 'status', text: 'Runs' },
   'progress.rolling.zones.heading': { type: 'status', text: 'Time in zones' },
   'progress.rolling.zones.distribution': { type: 'status', text: 'By zone' },
+  'progress.rolling.zones.models': {
+    type: 'status',
+    text: 'The models this window was measured against',
+  },
   'progress.rolling.distances.heading': { type: 'status', text: 'By distance' },
   'progress.profile.heading': { type: 'status', text: 'Training profile' },
   'progress.profile.facets.note': { type: 'status', text: 'What the window holds.' },

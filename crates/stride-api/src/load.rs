@@ -15,9 +15,9 @@
 //!
 //! * the **zone model** — the athlete's own stored configuration, read once
 //!   from the watch and stored with the day it was read. It is read through
-//!   the store's own repository, so there is **one** way to get the zones:
-//!   the same one the time-in-zone computation reads. A model that is not
-//!   there is "no value", never a default;
+//!   the api's own seam ([`crate::zonemodel`]), so there is **one** way to
+//!   get the zones: the same one the time-in-zone computation reads. A
+//!   model that is not there is "no value", never a default;
 //! * the **resting heart rate** — the measured one from the daily summary.
 //!   The core falls back to the most recent reading on or before the day,
 //!   so the readings before the window are read as well;
@@ -30,7 +30,6 @@ use stride_core::load::{
     ActivityLoad, DayInput, LoadAnswer, LoadInputs, LoadZoneModel, RestingHrReading,
 };
 use stride_core::types::{HeartRate, RestingHr};
-use stride_core::zones::ZoneFloors;
 
 use crate::error::ApiResult;
 use crate::state::Api;
@@ -156,30 +155,13 @@ pub fn load_inputs(api: &Api, from: Date, to: Date) -> ApiResult<LoadInputs> {
 /// `None` when no model has been read yet: the load then answers "no
 /// value", with the reason, and never a guessed max heart rate.
 fn zone_model(api: &Api) -> ApiResult<Option<LoadZoneModel>> {
-    let model = api
-        .store()
-        .current_hr_zone_model()
-        .map_err(|error| api.store_error("the zone model could not be read", &error))?;
-    let model = match model {
+    let model = match crate::zonemodel::current_model(api)? {
         Some(model) => model,
-        None => return Ok(None),
-    };
-    // The day the model was read, in the athlete's own calendar.
-    let offset = chrono::Duration::minutes(api.utc_offset_minutes() as i64);
-    let naive = (model.read_at + offset).naive_utc();
-    let read_on = match Date::parse(&naive.format("%Y-%m-%d").to_string()) {
-        Some(date) => date,
         None => return Ok(None),
     };
     Ok(Some(LoadZoneModel {
         max_heart_rate: model.max_heart_rate,
-        floors: ZoneFloors {
-            zone1: model.zone1_floor,
-            zone2: model.zone2_floor,
-            zone3: model.zone3_floor,
-            zone4: model.zone4_floor,
-            zone5: model.zone5_floor,
-        },
-        read_on,
+        floors: model.floors,
+        read_on: model.read_on,
     }))
 }

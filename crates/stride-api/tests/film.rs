@@ -19,6 +19,7 @@
 
 mod common;
 
+use chrono::Duration;
 use serde_json::Value;
 
 /// The zone model the tests store: the watch's own configuration, with the
@@ -33,7 +34,9 @@ fn model() -> stride_store::NewHeartRateZoneModel {
         zone3_floor: 140.0,
         zone4_floor: 160.0,
         zone5_floor: 175.0,
-        read_at: common::instant(),
+        // The model is read **before** the runs: the model in force on the
+        // day of a run is the one that was read on or before it.
+        read_at: common::instant() - Duration::days(3),
     }
 }
 
@@ -171,7 +174,7 @@ fn the_model_is_named_and_dated() {
     assert_eq!(model["max_heart_rate"]["text"], "190 bpm");
     // The day the model was read, in the api's own rendering, and the
     // model's own source line.
-    assert_eq!(model["read_on"], "12 May 2026");
+    assert_eq!(model["read_on"], "9 May 2026");
     let source = model["source"]
         .as_str()
         .expect("the model has a source line");
@@ -180,7 +183,7 @@ fn the_model_is_named_and_dated() {
         "the source line names the method"
     );
     assert!(
-        source.contains("12 May 2026"),
+        source.contains("9 May 2026"),
         "the source line names the day"
     );
 }

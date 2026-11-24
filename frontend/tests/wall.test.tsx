@@ -235,7 +235,8 @@ describe('the wall on Progress', () => {
     vi.spyOn(api, 'insightsRolling').mockResolvedValue({
       ...rollingFixture,
       zones: {
-        model: null,
+        models: [],
+        source: null,
         unavailable: 'the runs in the window carry no heart-rate samples',
         shares: null,
         distribution: null,

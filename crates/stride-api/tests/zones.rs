@@ -157,9 +157,11 @@ fn two_runs_are_measured_on_the_same_scale() {
     let harness = common::Harness::empty("zones-comparable");
     let easy = write_fit_run(&harness, "hr_gps_run.fit");
     let hard = write_fit_run(&harness, "mixed_run.fit");
+    // The model is read **before** the runs: the model in force on the
+    // day of a run is the one that was read on or before it.
     harness
         .store
-        .write_hr_zone_model_if_new(&model(common::instant()))
+        .write_hr_zone_model_if_new(&model(common::instant() - Duration::days(3)))
         .unwrap();
 
     let one = harness.ok_get(&format!("/fitness/zones?id={easy}"));
@@ -203,7 +205,7 @@ fn a_run_with_no_stored_model_has_no_value() {
 fn a_model_with_no_maximum_heart_rate_is_named_without_one() {
     let harness = common::Harness::empty("zones-no-max");
     let id = write_fit_run(&harness, "hr_gps_run.fit");
-    let mut stored = model(common::instant());
+    let mut stored = model(common::instant() - Duration::days(3));
     // Garmin reported no maximum heart rate for this model.
     stored.max_heart_rate = None;
     harness.store.write_hr_zone_model_if_new(&stored).unwrap();
@@ -216,7 +218,7 @@ fn a_model_with_no_maximum_heart_rate_is_named_without_one() {
     assert!(named["max_heart_rate"].is_null());
     assert_eq!(
         named["source"].as_str(),
-        Some("your zone model · HR_MAX · read on 12 May 2026")
+        Some("your zone model · HR_MAX · read on 9 May 2026")
     );
     // And the top band has no upper edge to draw.
     let zones = body["zones"].as_array().unwrap();
@@ -227,7 +229,7 @@ fn a_model_with_no_maximum_heart_rate_is_named_without_one() {
 fn a_model_whose_floors_are_not_in_order_is_reported_as_unusable() {
     let harness = common::Harness::empty("zones-unusable-model");
     let id = write_fit_run(&harness, "hr_gps_run.fit");
-    let mut stored = model(common::instant());
+    let mut stored = model(common::instant() - Duration::days(3));
     // The floors no longer increase: the model cannot be used.
     stored.zone2_floor = 90.0;
     harness.store.write_hr_zone_model_if_new(&stored).unwrap();
@@ -247,9 +249,10 @@ fn a_model_whose_floors_are_not_in_order_is_reported_as_unusable() {
 fn a_run_with_no_samples_says_so_in_the_cores_words() {
     let harness = common::Harness::empty("zones-no-samples");
     // A model, and a run with an empty FIT file: there is nothing to read.
+    // The model is read before the run, so it is the one in force.
     harness
         .store
-        .write_hr_zone_model_if_new(&model(common::instant()))
+        .write_hr_zone_model_if_new(&model(common::instant() - Duration::days(3)))
         .unwrap();
     let id = harness.write_run(common::run("a-run", "2026-05-10", 10_000.0, 3_000.0));
 

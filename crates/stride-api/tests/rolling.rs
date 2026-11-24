@@ -89,6 +89,27 @@ fn zone_model(harness: &Harness) {
         .unwrap();
 }
 
+/// A zone model, read on the day named.
+///
+/// The model in force on the day of a run is the one that was read **on
+/// or before** it: the configuration the athlete was wearing when they
+/// ran.
+fn model_read_on(day: &str, floors: [f64; 5]) -> NewHeartRateZoneModel {
+    NewHeartRateZoneModel {
+        sport: "DEFAULT".to_string(),
+        training_method: "HR_MAX".to_string(),
+        max_heart_rate: Some(178.0),
+        zone1_floor: floors[0],
+        zone2_floor: floors[1],
+        zone3_floor: floors[2],
+        zone4_floor: floors[3],
+        zone5_floor: floors[4],
+        read_at: DateTime::parse_from_rfc3339(&format!("{day}T06:30:00Z"))
+            .unwrap()
+            .with_timezone(&Utc),
+    }
+}
+
 /// The text of a field of the answer.
 fn text(answer: &Value, path: &[&str]) -> String {
     let mut current = answer;
@@ -118,7 +139,7 @@ fn number(answer: &Value, path: &[&str]) -> f64 {
 
 /// The rolling view over a window of days.
 #[test]
-fn the_window_is_the_last_days_ending_today() {
+fn the_window_is_the_last_calendar_weeks_through_today() {
     let harness = Harness::empty("rolling-window");
     // A run today, and one a week and a bit ago: inside the window
     // before it, outside the window.
@@ -127,20 +148,21 @@ fn the_window_is_the_last_days_ending_today() {
 
     let answer = harness.ok_get("/insights/rolling?weeks=1");
 
-    // Seven days ending today: the 6th to the 12th of May.
-    assert_eq!(text(&answer, &["window", "from"]), "2026-05-06");
+    // One calendar week through today: the Monday of this week — the
+    // 11th — and the 12th of May. The window's length is its own.
+    assert_eq!(text(&answer, &["window", "from"]), "2026-05-11");
     assert_eq!(text(&answer, &["window", "to"]), "2026-05-12");
-    assert_eq!(number(&answer, &["window", "days"]), 7.0);
-    // The comparison is the seven days **before** the window: the 29th of
-    // April to the 5th of May. The two windows share no day.
-    assert_eq!(text(&answer, &["comparison", "from"]), "2026-04-29");
+    assert_eq!(number(&answer, &["window", "days"]), 2.0);
+    // The comparison is **the same span, seven days earlier**: the 4th to
+    // the 5th of May.
+    assert_eq!(text(&answer, &["comparison", "from"]), "2026-05-04");
     assert_eq!(text(&answer, &["comparison", "to"]), "2026-05-05");
 
     // The window holds the run of today: 10 km in 50 minutes.
     assert_eq!(text(&answer, &["distance", "current", "text"]), "10 km");
     assert_eq!(text(&answer, &["duration", "current", "text"]), "50 m");
     assert_eq!(number(&answer, &["sessions", "current"]), 1.0);
-    // The window before it holds the run of the 5th: 5 km.
+    // The period it is compared against holds the run of the 5th: 5 km.
     assert_eq!(text(&answer, &["distance", "previous", "text"]), "5 km");
     // And the difference between them: five kilometres more.
     assert_eq!(text(&answer, &["distance", "difference", "text"]), "+5 km");
@@ -154,10 +176,12 @@ fn the_window_follows_the_range_it_is_asked_for() {
     let harness = Harness::empty("rolling-weeks");
     harness.write_run(common::run("today", TODAY, 10_000.0, 3_000.0));
     let answer = harness.ok_get("/insights/rolling?weeks=12");
-    // Twelve weeks are eighty-four days: the 18th of February to the
-    // 12th of May.
-    assert_eq!(text(&answer, &["window", "from"]), "2026-02-18");
-    assert_eq!(number(&answer, &["window", "days"]), 84.0);
+    // Twelve calendar weeks: the Monday of the earliest of them — the
+    // 23rd of February — through the 12th of May. The window is
+    // seventy-nine days long, not eighty-four: it ends on the day the
+    // answer is about, and the current week is the partial one.
+    assert_eq!(text(&answer, &["window", "from"]), "2026-02-23");
+    assert_eq!(number(&answer, &["window", "days"]), 79.0);
 }
 
 #[test]
@@ -182,19 +206,84 @@ fn the_split_names_the_model_it_was_measured_against() {
     zone_model(&harness);
     harness.write_run(common::run("today", TODAY, 10_000.0, 3_000.0));
     let answer = harness.ok_get("/insights/rolling?weeks=1");
-    // The model is named, with the day it was read.
-    assert_eq!(text(&answer, &["zones", "model", "read_on"]), "2026-05-10");
-    assert_eq!(
-        text(&answer, &["zones", "model", "read_on_label"]),
-        "10 May 2026"
-    );
-    assert!(text(&answer, &["zones", "model", "source"]).contains("your zone model"));
+    // The model is named, with the day it was read, and the source line
+    // is **hoisted**: one line for the screen.
+    let models = answer["zones"]["models"].as_array().expect("the models");
+    assert_eq!(models.len(), 1);
+    assert_eq!(text(&models[0], &["read_on"]), "2026-05-10");
+    assert_eq!(text(&models[0], &["read_on_label"]), "10 May 2026");
+    assert!(text(&models[0], &["source"]).contains("your zone model"));
+    assert!(text(&answer, &["zones", "source"]).contains("your zone model"));
     // The runs carry no heart-rate samples, so the split has no value —
     // and the reason is the core's own words.
     assert!(answer["zones"]["shares"].is_null());
     assert_eq!(
         text(&answer, &["zones", "unavailable"]),
         "the split has no value — the runs in the window have no heart-rate samples"
+    );
+}
+
+/// **The rule of stage 1**: a run is measured against the model that was
+/// in force on the day of the run — the last one read on or before it.
+#[test]
+fn each_run_is_measured_against_the_model_that_was_in_force_on_its_day() {
+    let harness = Harness::empty("rolling-model-in-force");
+    // Two models, read on two days.
+    harness
+        .store
+        .write_hr_zone_model_if_new(&model_read_on("2026-05-01", FLOORS))
+        .unwrap();
+    harness
+        .store
+        .write_hr_zone_model_if_new(&model_read_on(
+            "2026-05-08",
+            [110.0, 125.0, 140.0, 155.0, 170.0],
+        ))
+        .unwrap();
+    // Two runs: one before the second model was read, and one after.
+    harness.write_run(common::run("before", "2026-05-05", 10_000.0, 3_000.0));
+    harness.write_run(common::run("after", "2026-05-10", 10_000.0, 3_000.0));
+
+    let answer = harness.ok_get("/insights/rolling?weeks=4");
+
+    // Both models are named, oldest first, with the days they were read.
+    let models = answer["zones"]["models"].as_array().expect("the models");
+    assert_eq!(models.len(), 2);
+    assert_eq!(text(&models[0], &["read_on"]), "2026-05-01");
+    assert_eq!(text(&models[1], &["read_on"]), "2026-05-08");
+    // And the source line is **hoisted**: one line for the screen, naming
+    // the models the window was measured against.
+    let source = text(&answer, &["zones", "source"]);
+    assert!(source.contains("2 models"), "the source line: {source}");
+    assert!(source.contains("1 May 2026"), "the source line: {source}");
+    assert!(source.contains("8 May 2026"), "the source line: {source}");
+}
+
+/// A run that predates the first stored model is **not calibrated**: it has
+/// no model in force, and the answer says so rather than borrowing a
+/// later one.
+#[test]
+fn a_run_that_predates_the_first_model_has_no_model_in_force() {
+    let harness = Harness::empty("rolling-model-too-late");
+    harness
+        .store
+        .write_hr_zone_model_if_new(&model_read_on("2026-05-08", FLOORS))
+        .unwrap();
+    // The only run in the window is before the model was read.
+    harness.write_run(common::run("before", "2026-05-05", 10_000.0, 3_000.0));
+
+    let answer = harness.ok_get("/insights/rolling?weeks=4");
+
+    // No model was in force for it, so the split has no value — and the
+    // reason says which one it is.
+    assert!(answer["zones"]["shares"].is_null());
+    assert!(answer["zones"]["models"]
+        .as_array()
+        .expect("the models")
+        .is_empty());
+    assert_eq!(
+        text(&answer, &["zones", "unavailable"]),
+        "zones unavailable — no zone model was in force for these runs"
     );
 }
 
@@ -252,7 +341,7 @@ fn the_distance_breakdown_buckets_the_runs() {
     harness.write_run(common::run("middle", "2026-05-11", 7_000.0, 2_100.0));
     harness.write_run(common::run("long", TODAY, 21_000.0, 6_300.0));
 
-    let answer = harness.ok_get("/insights/rolling?weeks=1");
+    let answer = harness.ok_get("/insights/rolling?weeks=2");
     let buckets = answer["distances"].as_array().expect("the buckets");
     // The longest run is 21 km: the buckets are 5 km wide, five of them,
     // and the longest run lands in the last one.
@@ -279,8 +368,8 @@ fn the_window_may_be_asked_for_in_days() {
     assert_eq!(text(&answer, &["window", "from"]), "2026-04-13");
     assert_eq!(text(&answer, &["window", "to"]), "2026-05-12");
     assert_eq!(number(&answer, &["window", "days"]), 30.0);
-    // The comparison is the thirty days before it.
-    assert_eq!(text(&answer, &["comparison", "from"]), "2026-03-14");
+    // The comparison is the same span, seven days earlier.
+    assert_eq!(text(&answer, &["comparison", "from"]), "2026-04-06");
     assert_eq!(number(&answer, &["comparison", "days"]), 30.0);
     // And the volume is a distance a week: ten kilometres in thirty days
     // is 2.3 kilometres a week.
@@ -294,9 +383,9 @@ fn the_window_may_be_asked_for_in_days() {
 fn the_profile_is_seven_values_and_their_movement() {
     let harness = Harness::empty("rolling-profile");
     harness.write_run(common::run("today", TODAY, 20_000.0, 3_000.0));
-    // A run in the window **before** it: half the distance. The window
-    // before the window is the 29th of April to the 5th of May, so the run
-    // belongs on the 4th.
+    // A run in the period the window is compared against: half the
+    // distance. The comparison is the same span, seven days earlier — the
+    // 4th to the 5th of May — so the run belongs on the 4th.
     harness.write_run(common::run("before", "2026-05-04", 10_000.0, 3_000.0));
 
     let answer = harness.ok_get("/insights/rolling?weeks=1");
@@ -304,25 +393,25 @@ fn the_profile_is_seven_values_and_their_movement() {
     assert_eq!(profile.len(), 7);
 
     // The volume: the run of today is in the window (20 km), and the
-    // earlier one is in the window before it (10 km) — up.
+    // earlier one is in the period it is compared against (10 km) — up.
     let volume = &profile[0];
     assert_eq!(text(volume, &["key"]), "volume");
     assert_eq!(text(volume, &["label"]), "Volume");
     // The total is the window's own distance.
     assert_eq!(text(volume, &["total", "text"]), "20 km");
-    // And the comparable value is the distance a week, so that a window
-    // of thirty days and a window of ninety days can be read against each
-    // other. The window is seven days long here, so the two are the same
-    // number with different names.
-    assert_eq!(text(volume, &["value", "text"]), "20 km a week");
-    assert_eq!(text(volume, &["previous", "text"]), "10 km a week");
+    // And the comparable value is the distance a week, measured against
+    // the window's own length. The window is two days long here — Monday
+    // and Tuesday — so twenty kilometres over two days is seventy
+    // kilometres a week.
+    assert_eq!(text(volume, &["value", "text"]), "70 km a week");
+    assert_eq!(text(volume, &["previous", "text"]), "35 km a week");
     assert_eq!(text(volume, &["movement"]), "up");
 
     // The consistency: one day carries a run in each window, and the
-    // window is seven days long — a seventh of its days.
+    // window is two days long — half of its days.
     assert_eq!(text(&profile[1], &["key"]), "consistency");
     assert_eq!(text(&profile[1], &["total", "text"]), "1");
-    assert_eq!(text(&profile[1], &["value", "text"]), "14.3% of the days");
+    assert_eq!(text(&profile[1], &["value", "text"]), "50.0% of the days");
     // The intensity: the median heart rate of the runs.
     assert_eq!(text(&profile[2], &["key"]), "intensity");
     assert_eq!(text(&profile[2], &["value", "text"]), "148 bpm");
@@ -527,10 +616,12 @@ fn the_window_is_refused_outside_its_bound() {
         .router
         .call("GET", "/insights/rolling?weeks=105", None);
     assert!(!answer.is_ok());
-    // And a window of a hundred and four weeks is fine.
+    // And a window of a hundred and four weeks is fine: it is the last
+    // hundred and four calendar weeks, which through a Tuesday is
+    // seven hundred and twenty-three days.
     let answer = harness
         .router
         .call("GET", "/insights/rolling?weeks=104", None);
     assert!(answer.is_ok());
-    assert_eq!(number(&answer.body, &["window", "days"]), 728.0);
+    assert_eq!(number(&answer.body, &["window", "days"]), 723.0);
 }

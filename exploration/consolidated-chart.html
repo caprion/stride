@@ -1,0 +1,1048 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Stride — one chart, and the Progress wall after the cut</title>
+<style>
+  /* Stride's own palette, copied from exploration/charts-first.html,
+     with the app's own chart tokens from frontend/src/tokens.css. */
+  :root {
+    --brand-50:#EEF5FB; --brand-100:#D6E6F3; --brand-300:#A9C8E8; --brand-500:#1E5E96;
+    --brand-600:#124A7C; --brand-700:#0D3A63;
+    --accent-50:#FEF8EA; --accent-100:#FDEDC7; --accent-400:#F2B01E; --accent-700:#B57312;
+    --ink:#112B40; --ink-soft:#31465A; --ink-muted:#4E6577; --ink-faint:#586F82;
+    --surface:#FFFFFF; --surface-soft:#F1F5F8; --surface-sunken:#E9EFF4; --edge:#CEDAE4;
+    --chart-line:#2B7FE3;        /* azure  — heart rate */
+    --chart-reference:#E8A33D;   /* amber  — pace */
+    --chart-band:#E6EFF9;        /* pale   — altitude fill */
+    --chart-line-alt:#CFE0F3;
+    --chart-grid:#EEF2F6;
+    --radius:9px;
+    --font: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin:0; padding:0; background:var(--surface-soft); }
+  body { font-family: var(--font); color:var(--ink); }
+  .wrap { max-width:1460px; margin:0 auto; padding:26px 22px 60px; }
+  h1 { font-size:21px; color:var(--brand-700); margin:0 0 4px; letter-spacing:-.01em; }
+  .lede { font-size:13.5px; color:var(--ink-muted); margin:0 0 8px; max-width:1000px; line-height:1.55; }
+  .lede b { color:var(--ink-soft); }
+  h2 { font-size:15px; color:var(--brand-700); margin:32px 0 4px; }
+  h2 .n { color:var(--ink-faint); font-weight:600; margin-right:7px; }
+  h3 { font-size:12px; text-transform:uppercase; letter-spacing:.07em; color:var(--ink-faint); margin:0 0 6px; }
+  .note { font-size:12.5px; color:var(--ink-muted); margin:0 0 14px; max-width:1020px; line-height:1.55; }
+  .note b { color:var(--ink-soft); }
+  .phones { display:flex; gap:20px; flex-wrap:wrap; align-items:flex-start; }
+  .phonewrap { display:flex; flex-direction:column; gap:8px; align-items:center; }
+  .caption { font-size:11.5px; color:var(--ink-muted); max-width:330px; text-align:center; line-height:1.45; }
+  .caption b { display:block; color:var(--brand-700); font-size:12px; margin-bottom:3px; }
+
+  .phone { width:320px; height:660px; border-radius:26px; border:1px solid #cfd8e0; background:var(--surface);
+    box-shadow:0 8px 26px rgba(17,43,64,.14); overflow:hidden; display:flex; flex-direction:column;
+    position:relative; font-size:13px; }
+  .bar { display:flex; align-items:center; justify-content:space-between; padding:10px 13px 6px; }
+  .bar h1 { font-size:16px; font-weight:650; color:var(--brand-700); margin:0; letter-spacing:-.01em; }
+  .bar .meta { font-size:10.5px; color:var(--ink-faint); margin-top:1px; }
+  .body { flex:1; overflow-y:auto; padding:0 13px 13px; }
+  .body::-webkit-scrollbar { width:0; }
+
+  .desktop { width:620px; border:1px solid #cfd8e0; border-radius:14px; background:var(--surface);
+    box-shadow:0 8px 26px rgba(17,43,64,.10); overflow:hidden; }
+  .desktop .bar { padding:14px 18px 8px; border-bottom:1px solid var(--surface-sunken); }
+  .desktop .body { padding:12px 18px 18px; overflow:visible; }
+
+  .card { border:1px solid var(--edge); border-radius:var(--radius); background:var(--surface);
+    box-shadow:0 1px 2px rgba(11,27,39,.04),0 1px 3px rgba(11,27,39,.06); padding:10px 12px; margin-bottom:9px; }
+  .h { font-size:10px; font-weight:650; letter-spacing:.07em; text-transform:uppercase; color:var(--ink-faint);
+    margin:0 0 3px; display:flex; justify-content:space-between; align-items:baseline; gap:8px; }
+  .h .sub { font-weight:500; letter-spacing:0; text-transform:none; font-size:10.5px; color:var(--ink-faint); }
+  .tiny { font-size:10.5px; line-height:1.4; color:var(--ink-faint); }
+  .small { font-size:11.5px; line-height:1.45; color:var(--ink-muted); }
+  .say { font-size:12.5px; line-height:1.5; color:var(--ink-soft); }
+  .say b { color:var(--ink); font-weight:650; }
+
+  /* ---------------- the series toggles: real controls ---------------- */
+  .controls { border:0; margin:0 0 8px; padding:0; }
+  .controls legend { font-size:10px; font-weight:650; letter-spacing:.07em; text-transform:uppercase;
+    color:var(--ink-faint); padding:0; margin-bottom:5px; }
+  .chips { display:flex; flex-wrap:wrap; gap:6px; }
+  .chip { display:inline-flex; align-items:center; gap:6px; font-size:12px; color:var(--ink-soft);
+    border:1px solid var(--edge); border-radius:99px; padding:4px 10px 4px 7px; background:var(--surface);
+    cursor:pointer; user-select:none; }
+  .chip:hover { background:var(--brand-50); }
+  .chip input[type=checkbox] {
+    appearance:none; -webkit-appearance:none; width:15px; height:15px; margin:0; flex:none;
+    border:1.5px solid var(--brand-500); border-radius:4px; background:var(--surface); position:relative; cursor:pointer; }
+  .chip input[type=checkbox]:checked { background:var(--brand-500); }
+  .chip input[type=checkbox]:checked::after { content:''; position:absolute; left:4px; top:1px; width:4px; height:8px;
+    border:solid var(--surface); border-width:0 2px 2px 0; transform:rotate(42deg); }
+  .chip input[type=checkbox]:focus-visible { outline:2px solid var(--brand-700); outline-offset:2px; }
+  .chip .glyph { width:16px; height:12px; flex:none; display:inline-block; }
+
+  /* the glyphs are the legend: shape, not only colour */
+  .g-pace { height:0; border-top:2px dashed var(--chart-reference); }
+  .g-hr { height:0; border-top:2px solid var(--chart-line); }
+  .g-alt { height:9px; background:
+      repeating-linear-gradient(45deg, var(--chart-line-alt) 0 1.5px, transparent 1.5px 4px),
+      var(--chart-band);
+    border-top:1.5px solid var(--chart-line-alt); border-radius:1px; }
+
+  .legend { display:flex; flex-wrap:wrap; gap:5px 16px; margin-top:7px; }
+  .legend span { display:inline-flex; align-items:center; gap:5px; font-size:10.5px; color:var(--ink-muted); }
+
+  /* ---------------------- the chart ---------------------- */
+  .chartwrap { position:relative; }
+  .chartwrap svg { display:block; width:100%; }
+  .chartwrap svg:focus-visible { outline:2px solid var(--brand-700); outline-offset:2px; border-radius:4px; }
+  .tip { position:absolute; z-index:5; pointer-events:none; background:var(--surface); color:var(--ink);
+    border:1px solid var(--edge); border-radius:7px; box-shadow:0 4px 14px rgba(17,43,64,.16);
+    padding:6px 9px; font-size:11.5px; line-height:1.45; white-space:nowrap; min-width:132px; }
+  .tip .t { font-weight:650; }
+  .tip .r { display:flex; justify-content:space-between; gap:10px; color:var(--ink-muted); }
+  .tip .r b { color:var(--ink); font-weight:600; font-variant-numeric:tabular-nums; }
+  .tip .note { color:var(--ink-muted); border-top:1px solid var(--surface-sunken); margin-top:4px; padding-top:3px;
+    white-space:normal; max-width:210px; font-size:11px; }
+  .sr { position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; }
+  .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size:0.92em; }
+
+  .charthead { display:flex; justify-content:space-between; align-items:baseline; gap:10px; margin-bottom:2px; }
+  .charthead .t { font-size:12.5px; font-weight:650; color:var(--ink); }
+  .charthead .w { font-size:10.5px; color:var(--ink-faint); }
+
+  /* the movement strip, under the ground band */
+  .strip-key { display:flex; flex-wrap:wrap; gap:4px 14px; margin-top:6px; }
+  .strip-key span { display:inline-flex; align-items:center; gap:5px; font-size:10.5px; color:var(--ink-muted); }
+  .strip-key i { width:16px; height:8px; display:inline-block; border:1px solid var(--edge); }
+
+  /* ---------------- the Progress wall after the cut ---------------- */
+  .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .grid3 { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; }
+  .areah { font-size:10px; font-weight:650; letter-spacing:.07em; text-transform:uppercase; color:var(--ink-faint);
+    margin:12px 0 6px; padding-top:8px; border-top:1px solid var(--surface-sunken); }
+  .areah:first-child { margin-top:0; border-top:0; padding-top:0; }
+  .kv { display:flex; justify-content:space-between; align-items:baseline; gap:8px; font-size:11.5px;
+    color:var(--ink-soft); padding:3px 0; border-bottom:1px solid var(--surface-sunken); }
+  .kv:last-child { border-bottom:0; }
+  .kv b { color:var(--ink); font-weight:650; font-variant-numeric:tabular-nums; }
+  .big { font-size:22px; font-weight:650; color:var(--brand-700); font-variant-numeric:tabular-nums; line-height:1.1; }
+  .open { font-size:11.5px; font-weight:650; color:var(--brand-700); text-decoration:underline; }
+  .merged { font-size:10.5px; color:var(--ink-faint); margin-top:6px; line-height:1.4; }
+  .merged b { color:var(--brand-700); font-weight:600; }
+  .rows { list-style:none; margin:0; padding:0; }
+  .rows li { display:flex; align-items:flex-start; justify-content:space-between; gap:10px; padding:7px 0;
+    border-bottom:1px solid var(--surface-sunken); }
+  .rows li:last-child { border-bottom:0; }
+  .rows .q { font-size:12.5px; font-weight:600; color:var(--ink); display:block; }
+  .rows .a { font-size:12px; color:var(--ink-muted); display:block; margin-top:1px; }
+  .rows .w { font-size:10.5px; color:var(--ink-faint); display:block; margin-top:1px; }
+
+  table.tbl { border-collapse:collapse; width:100%; font-size:11px; }
+  table.tbl th { text-align:left; font-weight:600; font-size:9.5px; letter-spacing:.05em; text-transform:uppercase;
+    color:var(--ink-faint); padding:2px 6px 3px 0; }
+  table.tbl td { padding:2px 6px 2px 0; border-top:1px solid var(--surface-sunken); color:var(--ink-soft); }
+  table.tbl td.n { text-align:right; font-variant-numeric:tabular-nums; color:var(--ink); font-weight:600; }
+
+  .vs { display:grid; grid-template-columns:1fr 1fr; gap:16px; max-width:1080px; margin:10px 0 0; }
+  .vs .col h3 { font-size:11.5px; text-transform:uppercase; letter-spacing:.07em; color:var(--ink-faint); margin:0 0 6px; }
+  .vs .col.win h3 { color:var(--brand-700); }
+  .vs ul { margin:0; padding-left:17px; font-size:12.5px; color:var(--ink-muted); line-height:1.55; }
+  .vs ul li { margin-bottom:5px; }
+  .rule { border-left:3px solid var(--brand-500); padding:4px 0 4px 12px; margin:14px 0 0; max-width:920px; }
+  .rule .t { font-size:14px; font-weight:650; color:var(--brand-700); }
+  .rule .d { font-size:12.5px; color:var(--ink-muted); margin-top:3px; line-height:1.5; }
+  table.map { border-collapse:collapse; width:100%; font-size:12px; max-width:1080px; }
+  table.map th { text-align:left; font-size:10px; letter-spacing:.07em; text-transform:uppercase;
+    color:var(--ink-faint); padding:0 10px 7px 0; font-weight:650; }
+  table.map td { padding:6px 10px 6px 0; border-top:1px solid var(--surface-sunken); vertical-align:top; line-height:1.45; }
+  table.map td.s { color:var(--ink-soft); }
+  table.map td.g { color:var(--brand-700); font-weight:600; }
+  .cut { color:var(--ink-faint); }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <h1>One chart — and the Progress wall after the cut</h1>
+  <p class="lede">
+    The prototype for the surface cut. <b>One chart</b> carries the pace, the heart rate
+    and the altitude, with the series switched on and off; the Progress wall keeps
+    <b>eleven cards</b> instead of twenty-four. The reasoning is in
+    <span class="mono">exploration/surface-inventory.md</span>. Everything below is
+    synthetic data, drawn in the browser, with no network and no framework.
+  </p>
+
+  <h2><span class="n">1</span>The one chart</h2>
+  <p class="note">
+    <b>One cursor, one crosshair, one tooltip.</b> The horizontal cursor is
+    <b>elapsed time</b> — not distance. Every observation the core makes about a run is a
+    difference of <i>times</i> (the pace drift and the heart-rate drift are "second half minus
+    first half", the decoupling is the heart rate's rise against the pace's, the time in a zone is
+    seconds of moving time), and a stopped stretch covers no distance but is real elapsed time.
+    On a distance axis "the second half" would not be the second half the core measured.
+    <br><br>
+    <b>Altitude is not a pace, so it does not share the pace's scale.</b> Metres and seconds per
+    kilometre on one axis would flatten the pace curve into a straight line and imply a
+    comparison the data does not support. So the altitude gets <b>its own band</b> — a filled,
+    hatched area anchored to the bottom of the plot, with its own scale (its two labels live
+    inside that band) — while the pace and the heart rate share the effort band above it.
+    The cursor runs through both bands: the reader takes "at 22 minutes: 5:08 /km, 162 bpm,
+    44 m" from a single crosshair, and the ground under it stays scenery.
+    <br><br>
+    <b>The default is pace and heart rate on, altitude off.</b> The pace and the heart rate are
+    the two rates every observation in <span class="mono">fingerprint.rs</span> is measured
+    from, and they are only interesting <i>against each other</i> — that is the decoupling, and
+    it is the condition story the wedge is about. The altitude is a context, not an effort
+    signal, and it is the one toggle most people will press, because hills are what they look
+    for. Turning it on restores the ground band; the x-axis never moves.
+  </p>
+
+  <div class="phones">
+
+    <!-- -------------------------------------------------- phone -->
+    <div class="phonewrap">
+      <div class="phone">
+        <div class="bar">
+          <div><h1>Tuesday morning run</h1><div class="meta">9.0 km · 50 m 00 s</div></div>
+        </div>
+        <div class="body">
+          <div class="card">
+            <div class="charthead">
+              <span class="t">The run, in one chart</span>
+              <span class="w">elapsed time</span>
+            </div>
+
+            <fieldset class="controls" data-controls>
+              <legend>Series</legend>
+              <div class="chips">
+                <label class="chip"><input type="checkbox" data-series="pace" checked /><span class="glyph g-pace"></span><span>Pace</span></label>
+                <label class="chip"><input type="checkbox" data-series="hr" checked /><span class="glyph g-hr"></span><span>Heart rate</span></label>
+                <label class="chip"><input type="checkbox" data-series="alt" /><span class="glyph g-alt"></span><span>Altitude</span></label>
+              </div>
+            </fieldset>
+
+            <div class="chartwrap" data-chart>
+              <svg role="img" tabindex="0" aria-label="One chart of the run: the pace and the heart rate over elapsed time, with the altitude in a band below. Use the left and right arrow keys to move the cursor."></svg>
+              <div class="tip" hidden></div>
+            </div>
+            <div class="sr" aria-live="polite" data-live></div>
+
+            <div class="legend">
+              <span><i class="glyph g-pace"></i>Pace · /km</span>
+              <span><i class="glyph g-hr"></i>Heart rate · bpm</span>
+              <span><i class="glyph g-alt"></i>Altitude · m</span>
+            </div>
+            <div class="strip-key">
+              <span><i style="background:var(--brand-100)"></i>Running</span>
+              <span><i style="background:repeating-linear-gradient(45deg,var(--accent-400) 0 2px,var(--accent-100) 2px 5px)"></i>Walking</span>
+              <span><i style="background:repeating-linear-gradient(90deg,var(--ink-faint) 0 1px,var(--surface-sunken) 1px 4px)"></i>Not moving</span>
+            </div>
+            <p class="tiny" style="margin:7px 0 0;">
+              A gap in the pace line is a stretch the athlete was not running in: the strip below
+              says whether it was a walk or a stop. A stop is not time in a zone; a walk is not a
+              running lap.
+            </p>
+          </div>
+        </div>
+      </div>
+      <div class="caption"><b>Phone, 320 px.</b> One chart, one cursor, three switches. The
+        effort band carries the pace and the heart rate; the ground band under it carries the
+        altitude, and only when it is asked for.</div>
+    </div>
+
+    <!-- -------------------------------------------------- desktop -->
+    <div class="phonewrap">
+      <div class="desktop">
+        <div class="bar">
+          <div><h1>Tuesday morning run</h1><div class="meta">9.0 km · 50 m 00 s · 12 Nov 2026</div></div>
+        </div>
+        <div class="body">
+          <div class="card">
+            <div class="charthead">
+              <span class="t">The run, in one chart</span>
+              <span class="w">elapsed time · 0 to 50 m</span>
+            </div>
+
+            <fieldset class="controls" data-controls>
+              <legend>Series</legend>
+              <div class="chips">
+                <label class="chip"><input type="checkbox" data-series="pace" checked /><span class="glyph g-pace"></span><span>Pace</span></label>
+                <label class="chip"><input type="checkbox" data-series="hr" checked /><span class="glyph g-hr"></span><span>Heart rate</span></label>
+                <label class="chip"><input type="checkbox" data-series="alt" /><span class="glyph g-alt"></span><span>Altitude</span></label>
+              </div>
+            </fieldset>
+
+            <div class="chartwrap" data-chart>
+              <svg role="img" tabindex="0" aria-label="One chart of the run: the pace and the heart rate over elapsed time, with the altitude in a band below. Use the left and right arrow keys to move the cursor."></svg>
+              <div class="tip" hidden></div>
+            </div>
+            <div class="sr" aria-live="polite" data-live></div>
+
+            <div class="legend">
+              <span><i class="glyph g-pace"></i>Pace · /km</span>
+              <span><i class="glyph g-hr"></i>Heart rate · bpm</span>
+              <span><i class="glyph g-alt"></i>Altitude · m</span>
+            </div>
+            <div class="strip-key">
+              <span><i style="background:var(--brand-100)"></i>Running</span>
+              <span><i style="background:repeating-linear-gradient(45deg,var(--accent-400) 0 2px,var(--accent-100) 2px 5px)"></i>Walking</span>
+              <span><i style="background:repeating-linear-gradient(90deg,var(--ink-faint) 0 1px,var(--surface-sunken) 1px 4px)"></i>Not moving</span>
+            </div>
+            <p class="tiny" style="margin:7px 0 0;">
+              Time in a zone is measured over the moving samples only. The stopped stretch is
+              shown as a gap and is counted in its own bucket, beside the zones — never as one.
+            </p>
+          </div>
+        </div>
+      </div>
+      <div class="caption"><b>Desktop, 620 px.</b> The same chart, the same controls. The pace
+        axis is on the left and reversed, so a faster pace reads higher; the heart rate has the
+        right; the altitude has its own scale inside the ground band.</div>
+    </div>
+  </div>
+
+  <h2><span class="n">2</span>What the chart decided, and why</h2>
+  <div class="vs">
+    <div class="col win">
+      <h3>Decided</h3>
+      <ul>
+        <li><b>One cursor, on time.</b> Not three charts with three axes and three tooltips.</li>
+        <li><b>Altitude gets a band, not an axis.</b> A shared axis with the pace would flatten
+          the pace curve; the band keeps the pace curve readable and keeps the metres from
+          pretending to be an effort.</li>
+        <li><b>The stopped stretch is a gap.</b> The pace line breaks where the athlete was not
+          moving, because there is no pace there (speed 0) and because that time is not time in
+          a zone. The strip under the axis says so in words as well as marks.</li>
+        <li><b>The walking stretch is a gap too.</b> A walk is not a running lap: the
+          fingerprint's <span class="mono">running_only</span> excludes it, and so does this
+          chart. There is no walking pace drawn at all — 11:54 /km on a 5:08-to-5:39 scale would
+          flatten the running curve into the floor. The strip under the axis says which gap is
+          which.</li>
+        <li><b>The heart rate runs through the stop.</b> The reading is real; the
+          <i>time in a zone</i> is not taken from it. The strip and the tooltip keep the two
+          apart.</li>
+        <li><b>The zone bands come out of the drawing.</b> They are a fact about time, so they
+          live in the table under the chart, with the model and the day it was read.</li>
+        <li><b>The toggles are real controls.</b> Native checkboxes, keyboard reachable, a
+          visible focus ring, and the legend is drawn in the series' own shape — a dashed line,
+          a solid line, a hatched fill — so nothing depends on colour.</li>
+      </ul>
+    </div>
+    <div class="col">
+      <h3>Still open</h3>
+      <ul>
+        <li><b>The zone bands on the heart-rate axis.</b> Out of the drawing here, but a reader
+          who wants to see where their zones fall on this run will ask for them back.</li>
+        <li><b>Two thresholds for "walking".</b> The sample-level rule in
+          <span class="mono">segment.rs</span> (speed &lt; 1.55 m/s) and the lap-level rule in
+          <span class="mono">fingerprint.rs</span> (cadence &lt; 125 spm <i>and</i> speed
+          &lt; 2.2 m/s). The chart uses the sample-level one, because that is the one the zone
+          time and the pace bands already use — but the two should become one rule.</li>
+        <li><b>Whether the ground band stays when the altitude is off.</b> Here it disappears and
+          the effort band takes the height. A quieter option is a thin, always-present ground
+          line — but then the reader is shown a shape they cannot read the scale of.</li>
+        <li><b>Whether the phone can afford a 46 px ground band.</b> It can, just.</li>
+      </ul>
+    </div>
+  </div>
+
+  <h2><span class="n">3</span>The Progress wall after the cut</h2>
+  <p class="note">
+    <b>Twenty-four cards become eleven.</b> Six on Progress, five on the athlete profile, in
+    the order a runner asks: happening now → the comparison → the shape of the months → the
+    habits. Every merged card says one thing, and the merged sources are named under it. The
+    phone's index is the same list of cards, one row each — the areas' link lists are gone,
+    because a second index of the same eleven things is a worse index.
+    <br><br>
+    <b>The four destinations stay.</b> Today, Runs, Progress and Body — and the athlete
+    profile, which already ships as a fifth in
+    <span class="mono">frontend/src/app/destinations.ts</span>. See the open question below.
+  </p>
+
+  <div class="phones">
+
+    <!-- ---------------------------------------- phone: the index -->
+    <div class="phonewrap">
+      <div class="phone">
+        <div class="bar"><div><h1>Progress</h1><div class="meta">12 weeks · 23 Feb – 13 May</div></div></div>
+        <div class="body">
+
+          <div class="card" style="padding:10px 0 4px;">
+            <ul class="rows" style="padding:0 12px;">
+              <li><span><span class="q">This week</span><span class="a">24.6 km · 3 runs</span><span class="w">against the same days last week</span></span><span class="open">open</span></li>
+              <li><span><span class="q">The load</span><span class="a">acute 118 · chronic 84 · form +34</span><span class="w">as of 12 Nov 2026</span></span><span class="open">open</span></li>
+              <li><span><span class="q">The weeks</span><span class="a">12 weeks · 612 km · typical week 22.1 km</span><span class="w">23 Feb – 13 May</span></span><span class="open">open</span></li>
+              <li><span><span class="q">Where the time went</span><span class="a">Z1 18% · Z2 41% · Z3 26% · Z4 11% · Z5 4%</span><span class="w">the moving time · model read 12 Nov</span></span><span class="open">open</span></li>
+              <li><span><span class="q">The pace</span><span class="a">5:24 /km at 152 bpm</span><span class="w">the last 12 weeks</span></span><span class="open">open</span></li>
+              <li><span><span class="q">Bests &amp; milestones</span><span class="a">10 km — 43:12 on 9 Nov</span><span class="w">the last 12 weeks</span></span><span class="open">open</span></li>
+            </ul>
+          </div>
+
+          <div class="card" style="padding:10px 0 4px;">
+            <div class="h" style="padding:0 12px;">The athlete profile</div>
+            <ul class="rows" style="padding:0 12px;">
+              <li><span><span class="q">Your shape</span><span class="a">volume 612 km · consistency 0.84 · intensity 0.41</span><span class="w">28 days, against the 28 before</span></span><span class="open">open</span></li>
+              <li><span><span class="q">The months</span><span class="a">Feb 38.4 km · Mar 61.2 km · Apr 54.8 km</span><span class="w">the last 12 months</span></span><span class="open">open</span></li>
+              <li><span><span class="q">The schedule</span><span class="a">Mon 4 runs · 48.2 km</span><span class="w">the last 12 weeks</span></span><span class="open">open</span></li>
+              <li><span><span class="q">The habit</span><span class="a">6 days in a row · Eddington 7</span><span class="w">12 weeks</span></span><span class="open">open</span></li>
+              <li><span><span class="q">The goals</span><span class="a">A 10 km a week — met in 5 of 12 weeks</span><span class="w">the plan: 9 of 10 sessions done</span></span><span class="open">open</span></li>
+            </ul>
+          </div>
+
+          <p class="tiny">Eleven cards, one order, one list — the wall above and this index are
+            the same eleven things.</p>
+        </div>
+      </div>
+      <div class="caption"><b>The phone.</b> The index is the wall's card list: a question, an
+        answer, and the window the answer covers. The ten "areas" and their link lists are
+        gone.</div>
+    </div>
+
+    <!-- ---------------------------------------- desktop: the wall -->
+    <div class="phonewrap">
+      <div class="desktop">
+        <div class="bar">
+          <div><h1>Progress</h1><div class="meta">12 weeks · 23 Feb – 13 May · 612 km · 4 h 58 m · 26 runs</div></div>
+        </div>
+        <div class="body">
+
+          <div class="areah">Progress — the work</div>
+          <div class="grid2">
+
+            <div class="card">
+              <div class="h">This week <span class="sub">the comparison</span></div>
+              <div class="big">24.6 km</div>
+              <div class="small">the same days last week: 19.1 km · 2 runs</div>
+              <div class="small"><b style="color:var(--ink)">+5.5 km</b></div>
+              <div class="tiny" style="margin-top:4px;">Mon 17 Nov – Sun 23 Nov, against Mon 10 Nov – Sun 16 Nov</div>
+              <div class="merged"><b>merged:</b> “This week against last week” + “Rolling window”</div>
+            </div>
+
+            <div class="card">
+              <div class="h">The load <span class="sub">acute · chronic</span></div>
+              <div class="kv"><span>acute</span><b>118</b></div>
+              <div class="kv"><span>chronic</span><b>84</b></div>
+              <div class="kv"><span>form</span><b>+34</b></div>
+              <div class="kv"><span>ratio</span><b>1.40</b></div>
+              <div class="tiny" style="margin-top:4px;">Banister k = 1.92 · max heart rate 197 bpm from your zone model, read on 12 Nov 2026</div>
+              <div class="merged"><b>kept whole:</b> the series, the scenario and its assumption</div>
+            </div>
+
+            <div class="card">
+              <div class="h">The weeks <span class="sub">volume · consistency</span></div>
+              <svg viewBox="0 0 240 74" height="74" role="img" aria-label="Twelve weekly bars, with a line at the typical week.">
+                <text x="0" y="10" font-size="8.5" fill="var(--ink-faint)">your typical week · 22.1 km</text>
+                <line x1="0" y1="15" x2="240" y2="15" stroke="var(--ink-faint)" stroke-width="1.4" stroke-dasharray="4 3"/>
+                <g fill="var(--brand-500)">
+                  <rect x="2" y="38" width="11" height="26" rx="2"/><rect x="22" y="35" width="11" height="29" rx="2"/>
+                  <rect x="42" y="41" width="11" height="23" rx="2"/><rect x="62" y="32" width="11" height="32" rx="2"/>
+                  <rect x="82" y="36" width="11" height="28" rx="2"/><rect x="102" y="28" width="11" height="36" rx="2"/>
+                  <rect x="122" y="33" width="11" height="31" rx="2"/><rect x="142" y="37" width="11" height="27" rx="2"/>
+                  <rect x="162" y="30" width="11" height="34" rx="2"/><rect x="182" y="34" width="11" height="30" rx="2"/>
+                  <rect x="202" y="26" width="11" height="38" rx="2"/><rect x="222" y="29" width="11" height="35" rx="2"/>
+                </g>
+              </svg>
+              <div class="tiny">the days of each week that held a run, drawn as marks under the bar</div>
+              <div class="merged"><b>merged:</b> “Weekly volume” + “Consistency”</div>
+            </div>
+
+            <div class="card">
+              <div class="h">Where the time went <span class="sub">the moving time</span></div>
+              <div class="kv"><span>Z1</span><b>18%</b></div>
+              <div class="kv"><span>Z2</span><b>41%</b></div>
+              <div class="kv"><span>Z3</span><b>26%</b></div>
+              <div class="kv"><span>Z4</span><b>11%</b></div>
+              <div class="kv"><span>Z5</span><b>4%</b></div>
+              <div class="kv"><span>outside</span><b>0%</b></div>
+              <div class="tiny" style="margin-top:4px;">low 59% · moderate 26% · high 15%</div>
+              <div class="tiny">your zone model, read on 12 Nov 2026</div>
+              <div class="merged"><b>merged:</b> “Time in each zone” + “Polarised split” — the split is the same five numbers regrouped into three</div>
+            </div>
+
+            <div class="card">
+              <div class="h">The pace <span class="sub">at 152 bpm</span></div>
+              <div class="big">5:24 /km</div>
+              <div class="small">this week, at a median heart rate of 152 bpm</div>
+              <div class="tiny" style="margin-top:4px;">where the time went, by pace: 5% above 4:50 · 26% between 5:00 and 5:30 · 69% slower than 5:30</div>
+              <div class="merged"><b>merged:</b> the wall’s “The pace” + the /pace page’s cloud and its bands</div>
+            </div>
+
+            <div class="card">
+              <div class="h">Bests &amp; milestones <span class="sub">the last 12 weeks</span></div>
+              <div class="kv"><span>5 km</span><b>20:48 · 3 Nov</b></div>
+              <div class="kv"><span>10 km</span><b>43:12 · 9 Nov</b></div>
+              <div class="kv"><span>longest run</span><b>21.4 km · 2 Nov</b></div>
+              <div class="merged"><b>kept whole:</b> a list of dates and distances</div>
+            </div>
+
+          </div>
+
+          <div class="areah">The athlete profile — the long pattern</div>
+          <div class="grid3">
+
+            <div class="card">
+              <div class="h">Your shape <span class="sub">28 days</span></div>
+              <div class="kv"><span>volume</span><b>612 km</b></div>
+              <div class="kv"><span>consistency</span><b>0.84</b></div>
+              <div class="kv"><span>intensity</span><b>0.41</b></div>
+              <div class="kv"><span>duration</span><b>51 min</b></div>
+              <div class="kv"><span>density</span><b>4.1</b></div>
+              <div class="kv"><span>variety</span><b>3</b></div>
+              <div class="kv"><span>days of the week</span><b>4</b></div>
+              <div class="tiny" style="margin-top:4px;">each value against the 28 days before</div>
+              <div class="merged"><b>merged:</b> the radar is <b>retired</b> — the same seven numbers, drawn as a list</div>
+            </div>
+
+            <div class="card">
+              <div class="h">The months <span class="sub">the last 12 months</span></div>
+              <svg viewBox="0 0 170 44" height="44" role="img" aria-label="Twelve monthly bars.">
+                <g fill="var(--brand-500)">
+                  <rect x="1" y="26" width="9" height="16" rx="2"/><rect x="15" y="21" width="9" height="21" rx="2"/>
+                  <rect x="29" y="14" width="9" height="28" rx="2"/><rect x="43" y="16" width="9" height="26" rx="2"/>
+                  <rect x="57" y="9" width="9" height="33" rx="2"/><rect x="71" y="12" width="9" height="30" rx="2"/>
+                  <rect x="85" y="18" width="9" height="24" rx="2"/><rect x="99" y="15" width="9" height="27" rx="2"/>
+                  <rect x="113" y="11" width="9" height="31" rx="2"/><rect x="127" y="7" width="9" height="35" rx="2"/>
+                  <rect x="141" y="13" width="9" height="29" rx="2"/><rect x="155" y="19" width="9" height="23" rx="2"/>
+                </g>
+              </svg>
+              <div class="tiny">and the year as a calendar, coloured by distance</div>
+              <div class="merged"><b>merged:</b> “Monthly stats” + “The year” + “Activity heatmap”; “Yearly stats” retires to the year page</div>
+            </div>
+
+            <div class="card">
+              <div class="h">The schedule <span class="sub">the last 12 weeks</span></div>
+              <table class="tbl">
+                <thead><tr><th>day</th><th style="text-align:right">runs</th><th style="text-align:right">km</th></tr></thead>
+                <tbody>
+                  <tr><td>Mon</td><td class="n">4</td><td class="n">48.2</td></tr>
+                  <tr><td>Tue</td><td class="n">3</td><td class="n">34.9</td></tr>
+                  <tr><td>Wed</td><td class="n">3</td><td class="n">41.0</td></tr>
+                  <tr><td>Thu</td><td class="n">2</td><td class="n">26.4</td></tr>
+                  <tr><td>Fri</td><td class="n">4</td><td class="n">52.7</td></tr>
+                  <tr><td>Sat</td><td class="n">5</td><td class="n">71.3</td></tr>
+                  <tr><td>Sun</td><td class="n">5</td><td class="n">63.8</td></tr>
+                </tbody>
+              </table>
+              <div class="merged"><b>merged:</b> “Stats per weekday” + “Daytime stats” + “Distance breakdown”</div>
+            </div>
+
+            <div class="card">
+              <div class="h">The habit <span class="sub">12 weeks</span></div>
+              <div class="kv"><span>days in a row</span><b>6</b></div>
+              <div class="kv"><span>longest</span><b>11</b></div>
+              <div class="kv"><span>months in a row</span><b>2</b></div>
+              <div class="kv"><span>Eddington</span><b>7</b></div>
+              <div class="tiny" style="margin-top:4px;">7 days of at least 7 km · 5 days still needed for 8</div>
+              <div class="merged"><b>merged:</b> “Streaks” + “Eddington number”</div>
+            </div>
+
+            <div class="card">
+              <div class="h">The goals <span class="sub">the plan</span></div>
+              <div class="kv"><span>A 10 km a week</span><b>5 of 12 weeks</b></div>
+              <div class="kv"><span>A half marathon</span><b>1 of 12 weeks</b></div>
+              <div class="kv"><span>sessions done</span><b>9 of 10</b></div>
+              <div class="tiny" style="margin-top:4px;">typed · Mon 10 km · Wed easy · Fri 8 km</div>
+              <div class="merged"><b>merged:</b> “Your challenges” + “Adherence”</div>
+            </div>
+
+          </div>
+
+          <div class="card" style="background:var(--brand-50); border-color:var(--brand-100);">
+            <div class="h" style="color:var(--brand-700)">Gone from the wall</div>
+            <div class="small">“Most recent activities” (Runs has it) · “Body, last night” (Today and Body have it) ·
+              “Activity heatmap” (one calendar survives) · “Yearly stats” (the year page compares the years) ·
+              “Polarised split”, “Consistency”, “Rolling window” (merged) · the athlete-profile radar (retired).</div>
+          </div>
+
+        </div>
+      </div>
+      <div class="caption"><b>The wall.</b> Six cards on Progress, five on the athlete profile.
+        Every merged card names what it merged; nothing is merged without saying what the
+        merged card now says.</div>
+    </div>
+  </div>
+
+  <h2><span class="n">4</span>Every card, before and after</h2>
+  <table class="map">
+    <thead><tr><th>card</th><th>after the cut</th><th>why</th></tr></thead>
+    <tbody>
+      <tr><td class="s">Training load</td><td class="g">kept</td><td class="s">A series, a scenario and an assumption. Two of the three sentences a chart cannot carry.</td></tr>
+      <tr><td class="s">Weekly volume + Consistency</td><td class="g">merged → The weeks</td><td class="s">The same weeks, the same window, drawn twice.</td></tr>
+      <tr><td class="s">Time in each zone + Polarised split</td><td class="g">merged → Where the time went</td><td class="s">The split is the five zone numbers regrouped into three.</td></tr>
+      <tr><td class="s">This week against last week + Rolling window</td><td class="g">merged → This week</td><td class="s">One comparison card that names two windows.</td></tr>
+      <tr><td class="s">The pace</td><td class="g">merged → The pace</td><td class="s">With the /pace page's cloud and bands. The pace lived on three surfaces; now it lives on two.</td></tr>
+      <tr><td class="s">Bests &amp; milestones</td><td class="g">kept</td><td class="s">A list of dates and distances. Cutting it would be a real loss.</td></tr>
+      <tr><td class="s">The athlete profile (radar) + Training profile</td><td class="g">merged → Your shape</td><td class="s">The radar is retired: the core's own module argues against a polygon over fixed anchors.</td></tr>
+      <tr><td class="s">Your challenges + Adherence</td><td class="g">merged → The goals</td><td class="s">Both are the plan against what happened.</td></tr>
+      <tr><td class="s">Stats per weekday + Daytime stats + Distance breakdown</td><td class="g">merged → The schedule</td><td class="s">One card, one heading, three tables.</td></tr>
+      <tr><td class="s">The year + Activity heatmap + Monthly stats</td><td class="g">merged → The months</td><td class="s">Two calendars of the same year become one, coloured by distance.</td></tr>
+      <tr><td class="s">Yearly stats</td><td class="g">retired</td><td class="s">The year page already compares the years.</td></tr>
+      <tr><td class="s">Streaks + Eddington number</td><td class="g">merged → The habit</td><td class="s">One question — how steady is this — answered two ways.</td></tr>
+      <tr><td class="s">Most recent activities</td><td class="g">retired</td><td class="s">The Runs destination holds it, with a calendar, filters and search.</td></tr>
+      <tr><td class="s">Body, last night</td><td class="g">retired</td><td class="s">A third copy of last night.</td></tr>
+    </tbody>
+  </table>
+
+  <div class="rule">
+    <div class="t">The chart is one chart; the wall is eleven cards; the pace page stops being a page.</div>
+    <div class="d">
+      Nothing in the core changes. Every answer on the wall is an answer the router already
+      gave — the cut is in <i>which</i> answers reach a screen, not in how an answer is computed.
+    </div>
+  </div>
+
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  /* ===================================================================
+     The synthetic run.
+
+     The classification is the product's own rule, from
+     crates/stride-ingest/src/segment.rs:
+       speed < 0.30 m/s, or a stored cadence of 0  ->  stand
+       cadence < 60 spm and speed < 2.2 m/s, or
+       speed < 1.55 m/s                              ->  walk
+       otherwise                                      ->  run
+     The segment kinds below are what that rule returns for these speeds.
+     =================================================================== */
+  function buildRun() {
+    var segments = [
+      { kind: 'run',   dur: 12 * 60,      speed: 3.05, hr0: 132, hr1: 146, alt0: 30, alt1: 34 },
+      { kind: 'walk',  dur: 60,           speed: 1.40, hr0: 146, hr1: 148, alt0: 34, alt1: 34 },
+      { kind: 'run',   dur: 15 * 60,      speed: 3.25, hr0: 150, hr1: 168, alt0: 34, alt1: 52 },
+      { kind: 'stand', dur: 90,           speed: 0.00, hr0: 168, hr1: 158, alt0: 52, alt1: 52 },
+      { kind: 'run',   dur: 14 * 60 + 30, speed: 3.18, hr0: 158, hr1: 174, alt0: 52, alt1: 28 },
+      { kind: 'run',   dur: 6 * 60,       speed: 2.95, hr0: 174, hr1: 152, alt0: 28, alt1: 30 }
+    ];
+    var out = [];
+    var t = 0, dist = 0;
+    for (var s = 0; s < segments.length; s++) {
+      var seg = segments[s];
+      for (var i = 0; i < seg.dur; i++) {
+        var f = seg.dur > 1 ? i / (seg.dur - 1) : 0;
+        /* a small, deterministic wobble, so the trace looks like a run
+           and not like six straight lines. It never moves a sample across
+           a classification threshold. */
+        var wobble = 1 + 0.030 * Math.sin(t / 97) + 0.015 * Math.sin(t / 31);
+        var speed = seg.speed * wobble;
+        var hr = Math.round(seg.hr0 + (seg.hr1 - seg.hr0) * f + 2 * Math.sin(t / 47));
+        var alt = seg.alt0 + (seg.alt1 - seg.alt0) * f + 0.8 * Math.sin(t / 113);
+        out.push({
+          t: t,
+          dist: dist,
+          speed: speed,
+          pace: speed > 0 ? 1000 / speed : null,   // no speed, no pace
+          hr: hr,
+          alt: alt,
+          kind: seg.kind
+        });
+        t += 1;
+        dist += speed;
+      }
+    }
+    return out;
+  }
+
+  var SAMPLES = buildRun();
+  var TOTAL_T = SAMPLES[SAMPLES.length - 1].t;
+  var TOTAL_M = SAMPLES[SAMPLES.length - 1].dist;
+  var STOPPED = SAMPLES.filter(function (s) { return s.kind === 'stand'; }).length;
+  var WALKED = SAMPLES.filter(function (s) { return s.kind === 'walk'; }).length;
+
+  function paceText(v) {
+    if (v == null || !isFinite(v)) return '—';
+    var m = Math.floor(v / 60), s = Math.round(v % 60);
+    if (s === 60) { m += 1; s = 0; }
+    return m + ':' + (s < 10 ? '0' + s : '' + s);
+  }
+  function clock(sec) {
+    var m = Math.floor(sec / 60), s = Math.round(sec % 60);
+    return m + ' m ' + (s < 10 ? '0' + s : '' + s) + ' s';
+  }
+  function km(m) { return (m / 1000).toFixed(2) + ' km'; }
+
+  /* the paces of the running samples only — a walk is not a running pace */
+  var runPaces = SAMPLES.filter(function (s) { return s.kind === 'run'; })
+                      .map(function (s) { return s.pace; });
+  var PACE_MIN = Math.min.apply(null, runPaces);
+  var PACE_MAX = Math.max.apply(null, runPaces);
+  var HR_MIN = Math.min.apply(null, SAMPLES.map(function (s) { return s.hr; }));
+  var HR_MAX = Math.max.apply(null, SAMPLES.map(function (s) { return s.hr; }));
+  var ALT_MIN = Math.min.apply(null, SAMPLES.map(function (s) { return s.alt; }));
+  var ALT_MAX = Math.max.apply(null, SAMPLES.map(function (s) { return s.alt; }));
+
+  /* the paths, split so a gap and a walk can be drawn differently */
+  function splitPaths(kind) {
+    var paths = [], cur = null, curKind = null;
+    for (var i = 0; i < SAMPLES.length; i++) {
+      var s = SAMPLES[i];
+      if (s.kind !== curKind) {
+        curKind = s.kind;
+        cur = [];
+        if (kind === 'alt') { paths.push(cur); }
+        else if (curKind === kind) { paths.push(cur); }
+      }
+      if (kind === 'alt') { cur.push([s.t, s.alt]); }
+      else if (curKind === kind && s.pace != null) { cur.push([s.t, s.pace]); }
+    }
+    return paths;
+  }
+  var RUN_PATHS = splitPaths('run');
+  var ALT_PATHS = splitPaths('alt');
+  /* There is no walking pace on the chart. A walking stretch is 11:54 /km
+     against a running pace of 5:08 to 5:39 /km: put it on the same scale
+     and it flattens the running curve into the floor. So the walking
+     stretch is a GAP in the pace line, like the stopped one, and the two
+     are told apart by the strip under the axis and by the tooltip. A walk
+     is not a running lap. */
+  var WALK_PATHS = [];
+  var HR_PATH = SAMPLES.map(function (s) { return [s.t, s.hr]; });
+
+  /* the movement strip: the segments, in time */
+  var SEGMENTS = (function () {
+    var segs = [], start = 0, kind = SAMPLES[0].kind;
+    for (var i = 1; i <= SAMPLES.length; i++) {
+      if (i === SAMPLES.length || SAMPLES[i].kind !== kind) {
+        segs.push({ kind: kind, from: SAMPLES[start].t, to: SAMPLES[i - 1].t });
+        if (i < SAMPLES.length) { start = i; kind = SAMPLES[i].kind; }
+      }
+    }
+    return segs;
+  })();
+
+  var SVGNS = 'http://www.w3.org/2000/svg';
+  function el(name, attrs) {
+    var node = document.createElementNS(SVGNS, name);
+    if (attrs) for (var k in attrs) if (attrs.hasOwnProperty(k)) node.setAttribute(k, attrs[k]);
+    return node;
+  }
+  function pathOf(points, x, y) {
+    var d = '';
+    for (var i = 0; i < points.length; i++) {
+      d += (i === 0 ? 'M' : 'L') + x(points[i][0]).toFixed(2) + ' ' + y(points[i][1]).toFixed(2);
+    }
+    return d;
+  }
+
+  /* ===================================================================
+     The chart.
+     =================================================================== */
+  function mount(frame) {
+    var wrap = frame.querySelector('[data-chart]');
+    var svg = wrap.querySelector('svg');
+    var tip = wrap.querySelector('.tip');
+    var live = frame.querySelector('[data-live]');
+    var boxes = frame.querySelectorAll('[data-series]');
+
+    var state = { pace: true, hr: true, alt: false };
+    var cursor = Math.floor(SAMPLES.length / 2);
+    var geo = null;
+
+    function seriesOn() {
+      var on = [];
+      if (state.pace) on.push('pace');
+      if (state.hr) on.push('hr');
+      if (state.alt) on.push('alt');
+      return on;
+    }
+
+    function draw() {
+      var W = wrap.clientWidth || 296;
+      var H = svg.getAttribute('data-h') ? +svg.getAttribute('data-h') : (W < 400 ? 268 : 288);
+      var PL = 50, PR = 44;           /* the pace axis, the heart-rate axis */
+      var effTop = 8;
+      var stripTop = H - 18, stripH = 7;
+      var groundBottom = stripTop - 4;
+      var groundH = 46;
+      var groundTop = groundBottom - groundH;
+      /* the ground band takes its space only when the altitude is on: the
+         effort band then grows into it, and the x-axis never moves. */
+      var effBottom = state.alt ? (groundTop - 8) : groundBottom;
+
+      var x = function (t) { return PL + (t / TOTAL_T) * (W - PL - PR); };
+      var yPace = function (v) {
+        /* reversed: a faster pace reads higher */
+        var pad = (PACE_MAX - PACE_MIN) * 0.15 || 1;
+        var lo = PACE_MIN - pad, hi = PACE_MAX + pad;
+        return effTop + ((v - lo) / (hi - lo)) * (effBottom - effTop);
+      };
+      var yHr = function (v) {
+        var pad = (HR_MAX - HR_MIN) * 0.18 || 1;
+        var lo = HR_MIN - pad, hi = HR_MAX + pad;
+        return effBottom - ((v - lo) / (hi - lo)) * (effBottom - effTop);
+      };
+      var yAlt = function (v) {
+        var pad = (ALT_MAX - ALT_MIN) * 0.25 || 1;
+        var lo = ALT_MIN - pad, hi = ALT_MAX + pad;
+        return groundBottom - ((v - lo) / (hi - lo)) * (groundH - 8);
+      };
+
+      geo = { x: x, yPace: yPace, yHr: yHr, yAlt: yAlt, PL: PL, PR: PR, W: W, H: H,
+              effTop: effTop, effBottom: effBottom, groundTop: groundTop, groundBottom: groundBottom };
+
+      svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
+      svg.setAttribute('width', W);
+      svg.setAttribute('height', H);
+      while (svg.firstChild) svg.removeChild(svg.firstChild);
+
+      /* the defs: the hatch that tells the ground apart without colour */
+      var defs = el('defs');
+      var pat = el('pattern', { id: 'altHatch', width: 6, height: 6, patternUnits: 'userSpaceOnUse',
+                                patternTransform: 'rotate(45)' });
+      pat.appendChild(el('rect', { width: 6, height: 6, fill: 'var(--chart-band)' }));
+      pat.appendChild(el('line', { x1: 0, y1: 0, x2: 0, y2: 6, stroke: 'var(--chart-line-alt)', 'stroke-width': 1.6 }));
+      defs.appendChild(pat);
+      svg.appendChild(defs);
+
+      /* the grid */
+      var grid = el('g', { stroke: 'var(--chart-grid)', 'stroke-width': 1 });
+      for (var g = 1; g <= 3; g++) {
+        var gy = effTop + (effBottom - effTop) * (g / 4);
+        grid.appendChild(el('line', { x1: PL, y1: gy, x2: W - PR, y2: gy }));
+      }
+      svg.appendChild(grid);
+
+      /* the ground band — its own scale, its own place */
+      if (state.alt) {
+        svg.appendChild(el('rect', { x: PL, y: groundTop, width: W - PL - PR, height: groundH,
+          fill: 'var(--surface-soft)' }));
+        var altArea = '';
+        for (var a = 0; a < ALT_PATHS.length; a++) {
+          var pts = ALT_PATHS[a];
+          var d = pathOf(pts, x, yAlt) +
+                  ' L' + x(pts[pts.length - 1][0]).toFixed(2) + ' ' + groundBottom +
+                  ' L' + x(pts[0][0]).toFixed(2) + ' ' + groundBottom + ' Z';
+          altArea += d;
+        }
+        svg.appendChild(el('path', { d: altArea, fill: 'url(#altHatch)', stroke: 'none' }));
+        var altLine = '';
+        for (var b = 0; b < ALT_PATHS.length; b++) altLine += pathOf(ALT_PATHS[b], x, yAlt);
+        svg.appendChild(el('path', { d: altLine, fill: 'none', stroke: 'var(--chart-line-alt)', 'stroke-width': 1.6 }));
+
+        /* the altitude's own scale, inside its own band */
+        var altLbl = el('g');
+        var altMax = el('text', { x: W - PR + 5, y: groundTop + 10, 'font-size': 9,
+          fill: 'var(--ink-faint)' });
+        altMax.textContent = Math.round(ALT_MAX) + ' m';
+        var altMin = el('text', { x: W - PR + 5, y: groundBottom - 2, 'font-size': 9,
+          fill: 'var(--ink-faint)' });
+        altMin.textContent = Math.round(ALT_MIN) + ' m';
+        altLbl.appendChild(altMax); altLbl.appendChild(altMin);
+        svg.appendChild(altLbl);
+      }
+
+      /* the heart rate: a solid azure line */
+      if (state.hr) {
+        svg.appendChild(el('path', { d: pathOf(HR_PATH, x, yHr), fill: 'none',
+          stroke: 'var(--chart-line)', 'stroke-width': 2, 'stroke-linejoin': 'round' }));
+      }
+
+      /* the pace: a dashed amber line, over the running samples only */
+      if (state.pace) {
+        var runD = '';
+        for (var r = 0; r < RUN_PATHS.length; r++) runD += pathOf(RUN_PATHS[r], x, yPace);
+        svg.appendChild(el('path', { d: runD, fill: 'none', stroke: 'var(--chart-reference)',
+          'stroke-width': 2, 'stroke-dasharray': '7 3', 'stroke-linejoin': 'round' }));
+      }
+
+      /* the axes: the core's own words, so no number is bare */
+      var ax = el('g', { 'font-size': 9, fill: 'var(--ink-faint)' });
+      function tick(xpos, ypos, text, anchor) {
+        var n = el('text', { x: xpos, y: ypos, 'text-anchor': anchor || 'end' });
+        n.textContent = text;
+        ax.appendChild(n);
+      }
+      if (state.pace) {
+        tick(PL - 4, yPace(PACE_MIN) + 3, paceText(PACE_MIN) + ' /km');
+        tick(PL - 4, yPace(PACE_MAX) + 3, paceText(PACE_MAX) + ' /km');
+        tick(PL - 4, (yPace(PACE_MIN) + yPace(PACE_MAX)) / 2 + 3, paceText((PACE_MIN + PACE_MAX) / 2) + ' /km');
+      }
+      if (state.hr) {
+        tick(W - PR + 4, yHr(HR_MAX) + 3, HR_MAX + ' bpm', 'start');
+        tick(W - PR + 4, yHr(HR_MIN) + 3, HR_MIN + ' bpm', 'start');
+      }
+      svg.appendChild(ax);
+
+      /* the x axis: elapsed time */
+      var xa = el('g', { 'font-size': 9, fill: 'var(--ink-faint)' });
+      var steps = W < 400 ? 3 : 5;
+      for (var k = 0; k <= steps; k++) {
+        var tt = (TOTAL_T / steps) * k;
+        var n2 = el('text', { x: x(tt), y: H - 6, 'text-anchor': k === 0 ? 'start' : (k === steps ? 'end' : 'middle') });
+        n2.textContent = Math.round(tt / 60) + ' m';
+        xa.appendChild(n2);
+        svg.appendChild(el('line', { x1: x(tt), y1: stripTop + stripH + 1, x2: x(tt), y2: stripTop + stripH + 4,
+          stroke: 'var(--chart-grid)' }));
+      }
+      var xlab = el('text', { x: (PL + W - PR) / 2, y: H - 6, 'text-anchor': 'middle', fill: 'var(--ink-faint)' });
+      xlab.textContent = '';
+      xa.appendChild(xlab);
+      svg.appendChild(xa);
+
+      /* the movement strip: run, walk and not moving, in time */
+      var strip = el('g');
+      for (var s2 = 0; s2 < SEGMENTS.length; s2++) {
+        var sg = SEGMENTS[s2];
+        var sx = x(sg.from), sw = Math.max(1.5, x(sg.to) - x(sg.from));
+        var fill = 'var(--brand-100)';
+        if (sg.kind === 'walk') fill = 'url(#walkHatch)';
+        if (sg.kind === 'stand') fill = 'url(#standHatch)';
+        strip.appendChild(el('rect', { x: sx, y: stripTop, width: sw, height: stripH, fill: fill }));
+      }
+      /* the two extra hatches */
+      var defs2 = svg.querySelector('defs');
+      var p2 = el('pattern', { id: 'walkHatch', width: 5, height: 5, patternUnits: 'userSpaceOnUse',
+                                patternTransform: 'rotate(45)' });
+      p2.appendChild(el('rect', { width: 5, height: 5, fill: 'var(--accent-100)' }));
+      p2.appendChild(el('line', { x1: 0, y1: 0, x2: 0, y2: 5, stroke: 'var(--accent-400)', 'stroke-width': 2.2 }));
+      defs2.appendChild(p2);
+      var p3 = el('pattern', { id: 'standHatch', width: 4, height: 4, patternUnits: 'userSpaceOnUse' });
+      p3.appendChild(el('rect', { width: 4, height: 4, fill: 'var(--surface-sunken)' }));
+      p3.appendChild(el('line', { x1: 0, y1: 1.5, x2: 4, y2: 1.5, stroke: 'var(--ink-faint)', 'stroke-width': 1 }));
+      defs2.appendChild(p3);
+      svg.appendChild(strip);
+
+      /* the cursor: one rule, one crosshair, one tooltip */
+      var cursorG = el('g', { id: 'cursor' });
+      var rule = el('line', { x1: 0, y1: effTop, x2: 0, y2: groundBottom, stroke: 'var(--brand-700)',
+                              'stroke-width': 1.2, opacity: 0.55 });
+      cursorG.appendChild(rule);
+      var mPace = el('circle', { r: 3.4, fill: 'var(--chart-reference)', stroke: 'var(--surface)', 'stroke-width': 1.4 });
+      var mHr = el('circle', { r: 3.4, fill: 'var(--chart-line)', stroke: 'var(--surface)', 'stroke-width': 1.4 });
+      var mAlt = el('circle', { r: 3.4, fill: 'var(--chart-line-alt)', stroke: 'var(--surface)', 'stroke-width': 1.4 });
+      cursorG.appendChild(mPace); cursorG.appendChild(mHr); cursorG.appendChild(mAlt);
+      svg.appendChild(cursorG);
+
+      geo.cursor = { rule: rule, mPace: mPace, mHr: mHr, mAlt: mAlt };
+      update(cursor);
+    }
+
+    function update(i) {
+      if (!geo) return;
+      cursor = Math.max(0, Math.min(SAMPLES.length - 1, i));
+      var s = SAMPLES[cursor];
+      var px = geo.x(s.t);
+      var c = geo.cursor;
+
+      c.rule.setAttribute('x1', px);
+      c.rule.setAttribute('x2', px);
+
+      var showPace = state.pace && s.pace != null && s.kind === 'run';
+      c.mPace.setAttribute('cx', px);
+      c.mPace.setAttribute('cy', geo.yPace(s.pace != null ? s.pace : PACE_MIN));
+      c.mPace.setAttribute('visibility', showPace ? 'visible' : 'hidden');
+
+      c.mHr.setAttribute('cx', px);
+      c.mHr.setAttribute('cy', geo.yHr(s.hr));
+      c.mHr.setAttribute('visibility', state.hr ? 'visible' : 'hidden');
+
+      c.mAlt.setAttribute('cx', px);
+      c.mAlt.setAttribute('cy', geo.yAlt(s.alt));
+      c.mAlt.setAttribute('visibility', state.alt ? 'visible' : 'hidden');
+
+      /* the tooltip: one, carrying every series that is on */
+      var rows = '<div class="t">' + clock(s.t) + ' · ' + km(s.dist) + '</div>';
+      if (state.pace) {
+        if (s.kind === 'run') {
+          rows += '<div class="r"><span>Pace</span><b>' + paceText(s.pace) + ' /km</b></div>';
+        } else if (s.kind === 'walk') {
+          rows += '<div class="r"><span>Pace</span><b>walking</b></div>';
+        } else {
+          rows += '<div class="r"><span>Pace</span><b>not moving</b></div>';
+        }
+      }
+      if (state.hr) rows += '<div class="r"><span>Heart rate</span><b>' + s.hr + ' bpm</b></div>';
+      if (state.alt) rows += '<div class="r"><span>Altitude</span><b>' + Math.round(s.alt) + ' m</b></div>';
+      if (s.kind === 'stand') {
+        rows += '<div class="note">Not moving · ' + clock(STOPPED) +
+                ' in this run. This time is not time in a zone.</div>';
+      } else if (s.kind === 'walk') {
+        rows += '<div class="note">Walking at ' + paceText(s.pace) + ' /km · ' + clock(WALKED) +
+                ' in this run. This stretch is not a running lap.</div>';
+      }
+      tip.innerHTML = rows;
+      tip.hidden = false;
+
+      var tw = tip.offsetWidth || 140;
+      var th = tip.offsetHeight || 60;
+      var left = px + 12;
+      if (left + tw > geo.W - 2) left = px - tw - 12;
+      if (left < 2) left = 2;
+      /* the tooltip follows the cursor vertically, and never leaves the plot */
+      var cy = geo.effTop + 10;
+      if (state.pace && s.kind === 'run') cy = geo.yPace(s.pace);
+      else if (state.hr) cy = geo.yHr(s.hr);
+      else if (state.alt) cy = geo.yAlt(s.alt);
+      var top = cy - th - 10;
+      if (top < 2) top = cy + 12;
+      if (top + th > geo.H - 2) top = Math.max(2, geo.H - th - 2);
+      tip.style.left = left + 'px';
+      tip.style.top = top + 'px';
+
+      if (live) {
+        live.textContent = clock(s.t) + ', ' +
+          (state.pace && s.pace != null ? 'pace ' + paceText(s.pace) + ' per kilometre, ' : '') +
+          (state.hr ? 'heart rate ' + s.hr + ', ' : '') +
+          (state.alt ? 'altitude ' + Math.round(s.alt) + ' metres, ' : '') +
+          (s.kind === 'stand' ? 'not moving' : s.kind === 'walk' ? 'walking' : 'running');
+      }
+    }
+
+    /* ---- pointer ---- */
+    function nearest(clientX) {
+      var rect = svg.getBoundingClientRect();
+      var scale = geo.W / rect.width;
+      var px = (clientX - rect.left) * scale;
+      var t = ((px - geo.PL) / (geo.W - geo.PL - geo.PR)) * TOTAL_T;
+      t = Math.max(0, Math.min(TOTAL_T, t));
+      return Math.round(t);
+    }
+    svg.addEventListener('pointermove', function (ev) { update(nearest(ev.clientX)); });
+    svg.addEventListener('pointerdown', function (ev) { update(nearest(ev.clientX)); });
+    svg.addEventListener('focus', function () { update(cursor); });
+    svg.addEventListener('keydown', function (ev) {
+      var step = 10;
+      if (ev.key === 'ArrowRight' || ev.key === 'ArrowUp') { update(cursor + step); ev.preventDefault(); }
+      else if (ev.key === 'ArrowLeft' || ev.key === 'ArrowDown') { update(cursor - step); ev.preventDefault(); }
+      else if (ev.key === 'Home') { update(0); ev.preventDefault(); }
+      else if (ev.key === 'End') { update(SAMPLES.length - 1); ev.preventDefault(); }
+    });
+
+    /* ---- the toggles ---- */
+    for (var b = 0; b < boxes.length; b++) {
+      boxes[b].addEventListener('change', function () {
+        state[this.getAttribute('data-series')] = this.checked;
+        draw();
+      });
+    }
+
+    draw();
+    var resizeTimer = null;
+    window.addEventListener('resize', function () {
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(draw, 120);
+    });
+  }
+
+  var frames = document.querySelectorAll('[data-frame], .phone, .desktop');
+  for (var f = 0; f < frames.length; f++) {
+    if (frames[f].querySelector('[data-chart]')) mount(frames[f]);
+  }
+
+  /* a line of provenance under the prototypes */
+  var foot = document.createElement('p');
+  foot.className = 'tiny';
+  foot.style.maxWidth = '900px';
+  foot.innerHTML = 'Synthetic run: ' + km(TOTAL_M) + ' over ' + clock(TOTAL_T) +
+    ' · ' + clock(WALKED) + ' walked · ' + clock(STOPPED) + ' not moving. ' +
+    'Classified by the rule in <span class="mono">crates/stride-ingest/src/segment.rs</span>. ' +
+    'The pace scale is reversed, as it already is on the pace page, so a faster pace reads higher.';
+  document.querySelector('.wrap').appendChild(foot);
+
+})();
+</script>
+</body>
+</html>

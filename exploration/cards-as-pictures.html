@@ -1,0 +1,1047 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Stride — the cards as pictures (prototype)</title>
+<style>
+  /* Stride's own palette, copied from exploration/consolidated-chart.html */
+  :root {
+    --brand-50:#EEF5FB; --brand-100:#D6E6F3; --brand-300:#A9C8E8; --brand-500:#1E5E96;
+    --brand-600:#124A7C; --brand-700:#0D3A63;
+    --accent-50:#FEF8EA; --accent-100:#FDEDC7; --accent-400:#F2B01E; --accent-700:#B57312;
+    --ink:#112B40; --ink-soft:#31465A; --ink-muted:#4E6577; --ink-faint:#586F82;
+    --surface:#FFFFFF; --surface-soft:#F1F5F8; --surface-sunken:#E9EFF4; --edge:#CEDAE4;
+    --chart-line:#2B7FE3; --chart-reference:#E8A33D; --chart-band:#E6EFF9; --chart-grid:#EEF2F6;
+    --radius:9px;
+    --font: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin:0; padding:0; background:var(--surface-soft); }
+  body { font-family: var(--font); color:var(--ink); }
+  .wrap { max-width:1500px; margin:0 auto; padding:26px 22px 60px; }
+  h1 { font-size:21px; color:var(--brand-700); margin:0 0 4px; letter-spacing:-.01em; }
+  .lede { font-size:13.5px; color:var(--ink-muted); margin:0 0 10px; max-width:1020px; line-height:1.55; }
+  .lede b { color:var(--ink-soft); }
+  h2 { font-size:15px; color:var(--brand-700); margin:32px 0 4px; }
+  h2 .n { color:var(--ink-faint); font-weight:600; margin-right:7px; }
+  h2 .where { color:var(--ink-faint); font-weight:500; font-size:12px; margin-left:8px; text-transform:uppercase; letter-spacing:.07em; }
+  .note { font-size:12.5px; color:var(--ink-muted); margin:0 0 12px; max-width:1020px; line-height:1.55; }
+  .note b { color:var(--ink-soft); }
+  .note .cap { font-style:italic; }
+
+  .phones { display:flex; gap:20px; flex-wrap:wrap; align-items:flex-start; }
+  .phonewrap { display:flex; flex-direction:column; gap:8px; align-items:center; }
+  .caption { font-size:11.5px; color:var(--ink-muted); max-width:340px; text-align:center; line-height:1.45; }
+  .caption b { display:block; color:var(--brand-700); font-size:12px; margin-bottom:3px; }
+  .caption .cc { font-style:italic; }
+
+  .phone { width:320px; height:660px; border-radius:26px; border:1px solid #cfd8e0; background:var(--surface);
+    box-shadow:0 8px 26px rgba(17,43,64,.14); overflow:hidden; display:flex; flex-direction:column;
+    position:relative; font-size:13px; }
+  .phone.state { width:280px; height:520px; }
+  .bar { display:flex; align-items:center; justify-content:space-between; padding:10px 13px 6px; }
+  .bar h1 { font-size:16px; font-weight:650; color:var(--brand-700); margin:0; letter-spacing:-.01em; }
+  .bar .meta { font-size:10.5px; color:var(--ink-faint); margin-top:1px; }
+  .body { flex:1; overflow-y:auto; padding:0 13px 13px; }
+  .body::-webkit-scrollbar { width:0; }
+
+  .desktop { width:640px; border:1px solid #cfd8e0; border-radius:14px; background:var(--surface);
+    box-shadow:0 8px 26px rgba(17,43,64,.10); overflow:hidden; }
+  .desktop .bar { padding:14px 18px 8px; border-bottom:1px solid var(--surface-sunken); }
+  .desktop .body { padding:12px 18px 18px; overflow:visible; }
+
+  .card { border:1px solid var(--edge); border-radius:var(--radius); background:var(--surface);
+    box-shadow:0 1px 2px rgba(11,27,39,.04),0 1px 3px rgba(11,27,39,.06); padding:10px 12px; margin-bottom:9px; }
+  .h { font-size:10px; font-weight:650; letter-spacing:.07em; text-transform:uppercase; color:var(--ink-faint);
+    margin:0 0 5px; display:flex; justify-content:space-between; align-items:baseline; gap:8px; }
+  .h .sub { font-weight:500; letter-spacing:0; text-transform:none; font-size:10.5px; color:var(--ink-faint); }
+  .capline { font-size:11px; color:var(--ink-muted); line-height:1.4; margin:7px 0 0; padding-top:6px;
+    border-top:1px solid var(--surface-sunken); }
+  .srcbar { display:flex; align-items:baseline; justify-content:space-between; gap:10px;
+    font-size:10.5px; color:var(--ink-faint); line-height:1.35; margin:0 2px 7px; }
+  .srcbar a { color:var(--brand-600); font-weight:600; text-decoration:none; white-space:nowrap; }
+
+  /* the picture is an SVG; the words live in the caption and in the labels */
+  .pic svg { display:block; width:100%; height:auto; }
+  .s-lbl { font-size:8.5px; fill:var(--ink-faint); }
+  .s-lbl-b { font-size:8.5px; fill:var(--ink-soft); font-weight:600; }
+  .s-txt { font-size:9.5px; fill:var(--ink-soft); }
+  .s-txt-b { font-size:9.5px; fill:var(--ink); font-weight:650; }
+  .s-val { font-size:10.5px; fill:var(--ink); font-weight:650; }
+  .s-note { font-size:9px; fill:var(--ink-muted); }
+  .s-key { font-size:8.5px; fill:var(--ink-faint); }
+
+  .statebar { display:flex; gap:16px; flex-wrap:wrap; align-items:flex-start; margin-top:4px; }
+  .statewrap { display:flex; flex-direction:column; gap:6px; align-items:center; }
+  .statewrap .sname { font-size:10.5px; color:var(--brand-700); font-weight:650; }
+  .statewrap .swhat { font-size:10.5px; color:var(--ink-muted); max-width:250px; text-align:center; line-height:1.4; }
+
+  .rules { border:1px solid var(--edge); background:var(--surface); border-radius:var(--radius);
+    padding:11px 14px; margin:14px 0 4px; max-width:1020px; }
+  .rules h3 { font-size:10px; text-transform:uppercase; letter-spacing:.07em; color:var(--ink-faint); margin:0 0 6px; }
+  .rules ul { margin:0; padding-left:17px; font-size:12.5px; color:var(--ink-muted); line-height:1.55; }
+  .rules li { margin-bottom:3px; }
+  .rules li b { color:var(--ink-soft); }
+  .ban { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size:11.5px; color:var(--ink-soft);
+    background:var(--surface-soft); border:1px solid var(--edge); border-radius:6px; padding:2px 6px; }
+
+  .drop { border-left:3px solid var(--accent-400); background:var(--accent-50); border-radius:0 6px 6px 0;
+    padding:8px 12px; margin:10px 0 0; max-width:1020px; font-size:12.5px; color:var(--ink-soft); line-height:1.55; }
+  .drop b { color:var(--ink); }
+  .sr { position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <h1>The cards as pictures</h1>
+  <p class="lede">
+    The wall after D11, redrawn. Eleven cards, each read as a <b>picture</b> first: the numbers are
+    labels on the picture, absence is white space, and the caption says only what the picture cannot —
+    the period, and the reason something is missing. Azure and amber, no red, no score, no grade.
+    Synthetic data: one athlete, 7 Sep – 24 Nov 2026, 58 runs. Phone and desktop widths.
+  </p>
+
+  <div class="rules">
+    <h3>The test each card is held to</h3>
+    <ul>
+      <li><b>No card is a list of sentences.</b> A card that cannot be drawn is merged or dropped.</li>
+      <li><b>No caption repeats a number the picture shows.</b> A number the picture can carry is a
+        <i>label on the picture</i>.</li>
+      <li><b>Absence is drawn.</b> An empty cell, an empty column, a gap — white space, not a clause.</li>
+      <li><b>The caption names the period</b>, and the reason a row is empty. Nothing else.</li>
+      <li><b>Every string is checked against the ban list</b> —
+        <span class="ban">should · must · take the day · rest day · go easy · missed · bad · poor ·
+        fail · behind · good · red · readiness score · not recovered · you are ready</span></li>
+    </ul>
+  </div>
+
+  <h2><span class="n">·</span>The eleven cards</h2>
+  <p class="note">
+    Six on Progress, five on the athlete profile. Each is shown in its ordinary state on the phone and
+    on the desktop, then its states — the empty window, the one run, the missing model, the missing
+    race time, the plan not adopted. A state is a fact, not a placeholder.
+  </p>
+
+  <!-- 1 -->
+  <h2><span class="n">1</span>This week<span class="where">Progress</span></h2>
+  <p class="note">
+    <b>The picture:</b> seven columns, one per day, each holding the session drawn to its length and
+    its kind; the plan's own pacing shown over it as a faint outline. The previous week's same days
+    sit in grey beside them, so the comparison is in the picture. <b>The caption:</b> the period.
+    <b>The states:</b> no run recorded this week (seven empty columns); no plan adopted (no outlines).
+  </p>
+  <div class="phones" id="c1"></div>
+
+  <!-- 2 -->
+  <h2><span class="n">2</span>Where the time went<span class="where">Progress</span></h2>
+  <p class="note">
+    <b>The picture:</b> the weeks of the window as columns, the bands as rows, each cell filled in
+    proportion to the time that band held that week — a density, not a category. A marker on the last
+    filled cell of each row, dated. The row label carries the numbers, compactly. Below it, the two
+    shape rows: the window's long runs as a bar series with the largest held out, and the repeated
+    work as marks on the strip of weeks where the watch recorded a workout step.
+    <b>The caption:</b> the period and the basis.
+    <b>The states:</b> one run in the window; no zone model (the band rows have no value, the shape
+    rows still answer); no workout step recorded (the repeated-work row says so in one short line).
+  </p>
+  <div class="phones" id="c2"></div>
+
+  <!-- 3 -->
+  <h2><span class="n">3</span>The load<span class="where">Progress</span></h2>
+  <p class="note">
+    <b>The picture:</b> the fitness and fatigue curves over the window, the form filled as the area
+    between them, today's value a dot. <b>The caption:</b> the model's own constants and the
+    scenario. <b>The states:</b> no run recorded in the window; no zone model (the load needs the
+    model's maximum heart rate).
+  </p>
+  <div class="phones" id="c3"></div>
+
+  <!-- 4 -->
+  <h2><span class="n">4</span>The weeks<span class="where">Progress</span></h2>
+  <p class="note">
+    <b>The picture:</b> the weekly bars, the typical week as a line across them, and under each bar
+    the days that held a run as marks. <b>The caption:</b> the period.
+    <b>The states:</b> no run recorded in the window (twelve empty columns).
+  </p>
+  <div class="phones" id="c4"></div>
+
+  <!-- 5 -->
+  <h2><span class="n">5</span>The pace<span class="where">Progress</span></h2>
+  <p class="note">
+    <b>The picture:</b> the athlete's own scatter — pace against heart rate, one point per run — with
+    the training paces as the ladder's marks on the pace axis. <b>The caption:</b> the period, and the
+    race the paces came from. <b>The states:</b> no race time entered, so the ladder has no value and
+    only the scatter is drawn.
+  </p>
+  <div class="phones" id="c5"></div>
+
+  <!-- 6 -->
+  <h2><span class="n">6</span>Bests &amp; milestones<span class="where">Progress</span></h2>
+  <p class="note">
+    <b>The picture:</b> a timeline — distance against date — with every run as a dot and the records
+    marked. <b>The caption:</b> the period.
+    <b>The states:</b> no run recorded in the window (an empty axis).
+  </p>
+  <div class="phones" id="c6"></div>
+
+  <!-- 7 -->
+  <h2><span class="n">7</span>Your shape<span class="where">Profile</span></h2>
+  <p class="note">
+    <b>The picture:</b> the seven facets as seven horizontal gauges on a common scale, each labelled
+    with its value, each with the way it moved against the previous window.
+    <b>The caption:</b> the period and the comparison.
+    <b>The states:</b> no run recorded in the window (no gauges).
+  </p>
+  <div class="phones" id="c7"></div>
+
+  <!-- 8 -->
+  <h2><span class="n">8</span>The months<span class="where">Profile</span></h2>
+  <p class="note">
+    <b>The picture:</b> twelve columns of monthly volume, each column split by the zone mix.
+    <b>The caption:</b> the period.
+    <b>The states:</b> no zone model (the columns carry distance, the mix has no value).
+  </p>
+  <div class="phones" id="c8"></div>
+
+  <!-- 9 -->
+  <h2><span class="n">9</span>The schedule<span class="where">Profile</span></h2>
+  <p class="note">
+    <b>The picture:</b> a week × hour grid — seven rows, twenty-four columns — with each run a mark
+    sized by its distance. That <i>is</i> the shape of the athlete's week; three tables of numbers
+    was not a picture. <b>The caption:</b> the period.
+    <b>The states:</b> no run recorded in the window (an empty grid).
+  </p>
+  <div class="phones" id="c9"></div>
+
+  <!-- 10 -->
+  <h2><span class="n">10</span>The habit<span class="where">Profile</span></h2>
+  <p class="note">
+    <b>The picture:</b> the streak as a row of day marks, and the Eddington as a ladder of ticks —
+    one tick per distance, each as tall as the number of days that reached it.
+    <b>The caption:</b> the period.
+    <b>The states:</b> no run recorded in the window; too few days for the Eddington to have a value.
+  </p>
+  <div class="phones" id="c10"></div>
+
+  <!-- 11 -->
+  <h2><span class="n">11</span>The goals<span class="where">Profile</span></h2>
+  <p class="note">
+    <b>The picture:</b> the challenge weeks as a small grid of met and not-met marks, and the plan's
+    own sessions for the week as marks under it — done, planned, planned and the day gone by. Never
+    red; a mark that is not met is an empty square. <b>The caption:</b> the period and the plan.
+    <b>The states:</b> no plan adopted (the session row is absent, and says why).
+  </p>
+  <div class="phones" id="c11"></div>
+
+  <div class="drop" id="verdict"></div>
+
+</div>
+<script>
+(function(){
+'use strict';
+
+/* ================= the data — one synthetic athlete ================= */
+/* a run: [dow, km, min, mod, hard, steps, hr, hour, kind] */
+const WEEKS = [
+ {lab:'7 Sep',  off:0,  r:[[0,8.0,40,6,0,0,138,6,'endurance'],[1,8.4,42,7,0,0,149,18,'aerobic'],[2,7.2,36,6,0,0,136,6,'endurance'],[3,9.2,46,7,0,0,149,18,'aerobic'],[4,7.6,38,6,0,0,137,7,'endurance'],[5,18.9,114,10,0,0,142,9,'long run'],[6,6.0,30,6,0,0,133,9,'endurance']]},
+ {lab:'14 Sep', off:7,  r:[[0,8.0,40,6,0,0,137,6,'endurance'],[1,8.4,42,7,0,0,149,18,'aerobic'],[2,7.2,36,6,0,0,135,6,'endurance'],[3,12.4,62,11,14,45,164,17,'intervals'],[5,19.5,114,9,0,0,143,9,'long run'],[6,6.0,30,6,0,0,132,9,'endurance']]},
+ {lab:'21 Sep', off:14, r:[[0,8.0,40,6,0,0,138,6,'endurance'],[1,8.4,42,7,0,0,150,18,'aerobic'],[2,7.2,36,6,0,0,136,6,'endurance'],[3,9.2,46,7,0,0,148,18,'aerobic'],[5,19.7,115,10,0,0,141,9,'long run'],[6,6.0,30,6,0,0,133,9,'endurance']]},
+ {lab:'28 Sep', off:21, r:[[0,8.0,40,6,0,0,137,6,'endurance'],[1,8.4,42,7,0,0,149,18,'aerobic'],[2,7.2,36,6,0,0,135,6,'endurance'],[3,12.4,62,8,12,42,162,17,'intervals'],[5,18.9,110,9,0,0,142,9,'long run'],[6,6.0,30,6,0,0,132,9,'endurance']]},
+ {lab:'5 Oct',  off:28, r:[[0,8.0,40,6,0,0,138,6,'endurance'],[1,8.4,42,7,0,0,150,18,'aerobic'],[2,7.2,36,6,0,0,136,6,'endurance'],[3,9.2,46,7,0,0,149,18,'aerobic'],[4,7.6,38,6,0,0,137,7,'endurance'],[5,19.5,114,10,0,0,142,9,'long run'],[6,6.0,30,6,0,0,133,9,'endurance']]},
+ {lab:'12 Oct', off:35, r:[[0,8.0,40,6,0,0,137,6,'endurance'],[1,8.4,42,7,0,0,149,18,'aerobic'],[2,7.2,36,6,0,0,135,6,'endurance'],[3,12.4,62,11,12,48,165,17,'intervals'],[5,19.4,115,9,0,0,143,9,'long run'],[6,6.4,32,6,0,0,132,9,'endurance']]},
+ {lab:'19 Oct', off:42, r:[[0,7.2,36,6,0,0,138,6,'endurance'],[1,12.6,63,13,30,0,166,17,'intervals'],[2,7.2,36,6,0,0,136,6,'endurance'],[3,9.2,46,7,0,0,149,18,'aerobic'],[5,18.9,110,9,0,0,142,9,'long run'],[6,6.0,30,6,0,0,133,9,'endurance']]},
+ {lab:'26 Oct', off:49, r:[[0,8.0,40,6,0,0,137,6,'endurance'],[1,8.4,42,7,0,0,148,18,'aerobic'],[3,9.2,46,7,0,0,149,18,'aerobic'],[4,8.8,44,6,0,0,140,7,'endurance'],[5,19.6,114,10,0,0,143,8,'long run'],[6,6.0,30,6,0,0,132,9,'endurance']]},
+ {lab:'2 Nov',  off:56, r:[[6,6.0,30,6,0,0,133,9,'endurance']]},
+ {lab:'9 Nov',  off:63, r:[]},
+ {lab:'16 Nov', off:70, r:[[0,8.0,40,6,0,0,138,6,'endurance'],[1,8.4,42,7,0,0,150,18,'aerobic'],[2,10.0,49,6,0,0,171,9,'aerobic'],[5,20.4,119,10,0,0,144,8,'long run'],[6,6.0,30,6,0,0,133,9,'endurance']]},
+ {lab:'23 Nov', off:77, r:[[0,5.0,23,6,0,0,168,8,'aerobic'],[1,6.0,30,6,0,0,134,7,'endurance']]}
+];
+/* the week before the window — the comparison period's first week */
+const PRIOR = {lab:'31 Aug', off:-7, r:[[0,8.0,40,6,0,0,137,6,'endurance'],[1,8.4,42,7,0,0,149,18,'aerobic'],[2,7.2,36,6,0,0,135,6,'endurance'],[3,9.2,46,7,0,30,150,18,'aerobic'],[5,18.5,108,9,0,0,142,9,'long run'],[6,6.0,30,6,0,0,132,9,'endurance']]};
+
+const DAY = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+const MONTHS_BEFORE = [
+ {lab:'Dec', km:186, mix:[.72,.24,.04]}, {lab:'Jan', km:214, mix:[.66,.28,.06]},
+ {lab:'Feb', km:198, mix:[.70,.25,.05]}, {lab:'Mar', km:172, mix:[.74,.22,.04]},
+ {lab:'Apr', km:196, mix:[.78,.19,.03]}, {lab:'May', km:224, mix:[.68,.26,.06]},
+ {lab:'Jun', km:208, mix:[.71,.24,.05]}, {lab:'Jul', km:246, mix:[.67,.27,.06]},
+ {lab:'Aug', km:231, mix:[.72,.24,.04]}
+];
+const BESTS = [
+ {d:77, km:5.0,  t:'23:20',   day:'23 Nov', shape:'circle',  short:'5 km'},
+ {d:72, km:10.0, t:'49:12',   day:'18 Nov', shape:'square',  short:'10 km'},
+ {d:75, km:20.4, t:'1 h 59 m', day:'21 Nov', shape:'diamond', short:'longest run'}
+];
+const LADDER = [
+ {name:'recovery', sec:385}, {name:'easy', sec:320}, {name:'long run', sec:335}, {name:'threshold', sec:285}
+];
+const PLAN = {
+ adopted:'30 Sep 2026',
+ week:[8,8,8,12,8,18,6],                       /* km, Mon..Sun */
+ names:['endurance','endurance','endurance','intervals','endurance','long run','endurance']
+};
+function challengeMarks(ws){
+  const wk = byWeek(ws);
+  return [
+    {name:'a 10 km a week', met: wk.map(w=> w.km>=10 ? 1:0)},
+    {name:'a half marathon', met: wk.map(w=> w.runs.some(r=>r.km>=21.0975) ? 1:0)}
+  ];
+}
+
+/* ================= helpers ================= */
+const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+const r2 = n => Math.round(n*100)/100;
+const MIN = 60;
+function dur(m){ m = Math.round(m); const h = Math.floor(m/MIN), r = m%MIN; return h ? `${h} h ${String(r).padStart(2,'0')} m` : `${r} m`; }
+function minSigned(m){ const s = m<0?'−':m>0?'+':''; const v = Math.abs(Math.round(m));
+  return s + (v>=60 ? dur(v) : v + ' m'); }
+function runsLabel(n){ return n + (n===1 ? ' run' : ' runs'); }
+function km(k){ return (Math.round(k*10)/10).toFixed(1) + ' km'; }
+function kmSigned(k){ const v = Math.round(k*10)/10; return (v<0?'−':v>0?'+':'') + Math.abs(v).toFixed(1) + ' km'; }
+function pct(x){ return Math.round(x) + '%'; }
+function dayLabel(off){ /* offset from 7 Sep 2026 */ const d = new Date(Date.UTC(2026,8,7) + off*86400000);
+  return d.getUTCDate() + ' ' + ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][d.getUTCMonth()]; }
+function dateFull(off){ const d = new Date(Date.UTC(2026,8,7) + off*86400000);
+  return d.getUTCDate() + ' ' + ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][d.getUTCMonth()] + ' ' + d.getUTCFullYear(); }
+function T(x,y,s,cls,anchor){ return `<text x="${r2(x)}" y="${r2(y)}" class="${cls||''}"${anchor?` text-anchor="${anchor}"`:''}>${esc(s)}</text>`; }
+function RC(x,y,w,h,fill,extra){ return `<rect x="${r2(x)}" y="${r2(y)}" width="${r2(w)}" height="${r2(h)}"${fill?` fill="${fill}"`:` fill="none"`}${extra||''}/>`; }
+function LN(x1,y1,x2,y2,stroke,w,dash,cap){ return `<line x1="${r2(x1)}" y1="${r2(y1)}" x2="${r2(x2)}" y2="${r2(y2)}" stroke="${stroke}" stroke-width="${w||1}"${dash?` stroke-dasharray="${dash}"`:''}${cap?` stroke-linecap="${cap}"`:''}/>`; }
+function CI(cx,cy,rr,fill,extra){ return `<circle cx="${r2(cx)}" cy="${r2(cy)}" r="${r2(rr)}" fill="${fill||'none'}"${extra||''}/>`; }
+function PA(d,fill,extra){ return `<path d="${d}" fill="${fill||'none'}"${extra||''}/>`; }
+function pic(w,h,label,inner){ return `<svg viewBox="0 0 ${r2(w)} ${r2(h)}" width="100%" role="img" aria-label="${esc(label)}">${inner}</svg>`; }
+
+/* ================= the aggregates ================= */
+function allRuns(variant){
+  const ws = WEEKS.map((w,i)=>({lab:w.lab, off:w.off, runs:w.r.map(r=>Object.assign({wi:i, off:w.off}, r2run(r)))}));
+  if (variant === 'onerun') ws.forEach((w,i)=>{ if(i!==8) w.runs=[]; });      /* the window holds one run */
+  else if (variant === 'empty') ws.forEach(w=>{ w.runs=[]; });
+  else if (variant === 'weekEmpty') ws[11].runs = [];                          /* this week, nothing recorded */
+  else if (variant === 'toofew') ws.forEach((w,i)=>{ if(i!==11) w.runs=[]; });
+  else if (variant === 'nosteps') ws.forEach(w=>w.runs.forEach(r=>{ r.steps = 0; }));
+  return ws;
+}
+function r2run(r){ return {d:r[0], km:r[1], min:r[2], mod:r[3], hard:r[4], steps:r[5], hr:r[6], hour:r[7], kind:r[8]}; }
+function prevRuns(){
+  const out = PRIOR.r.map(r=>Object.assign({wi:-1, off:PRIOR.off}, r2run(r)));
+  WEEKS.forEach((w,i)=>{ if(i<=9) w.r.forEach(r=>out.push(Object.assign({wi:i, off:w.off}, r2run(r))));
+    if(i===10) w.r.filter(r=>r[0]<=1).forEach(r=>out.push(Object.assign({wi:i, off:w.off}, r2run(r)))); });
+  return out;
+}
+function bands(runs){
+  let low=0, mod=0, hard=0, min=0, km=0, steps=0, stepRuns=0, lastHard=null, lastStep=null;
+  runs.forEach(r=>{ const lo = r.min - r.mod - r.hard; low+=lo; mod+=r.mod; hard+=r.hard; min+=r.min; km+=r.km;
+    if(r.steps>0){ steps+=r.steps; stepRuns++; } });
+  return {low, mod, hard, min, km, steps, stepRuns};
+}
+function byWeek(ws){
+  return ws.map(w=>{ let low=0,mod=0,hard=0,km=0,min=0,steps=0,n=0;
+    w.runs.forEach(r=>{ low += r.min-r.mod-r.hard; mod+=r.mod; hard+=r.hard; km+=r.km; min+=r.min; if(r.steps>0) steps+=r.steps; n++; });
+    return {lab:w.lab, off:w.off, low, mod, hard, km, min, steps, n, days:w.runs.map(r=>r.d), runs:w.runs}; });
+}
+const LOAD_IF = {endurance:1.0, aerobic:1.25, 'long run':1.35, intervals:1.9};
+function dailyLoads(ws, offFrom, offTo){
+  const m = {};
+  PRIOR.r.forEach(r=>{ const o=PRIOR.off+r[0]; m[o]=(m[o]||0) + r[2]*LOAD_IF[r[8]]; });
+  ws.forEach(w=>w.runs.forEach(r=>{ const o=w.off+r.d; m[o]=(m[o]||0) + r.min*LOAD_IF[r.kind]; }));
+  const out=[]; for(let o=offFrom;o<=offTo;o++) out.push([o, m[o]||0]);
+  return out;
+}
+function loadSeries(ws){
+  const daily = dailyLoads(ws, -7, 78);
+  let acute=0, chronic=0, first=true;
+  const pts=[];
+  daily.forEach(d=>{ const l = d[1]*2.0;
+    if(first){ acute=l; chronic=l; first=false; }
+    else { acute = acute + (l-acute)/7; chronic = chronic + (l-chronic)/42; }
+    pts.push({o:d[0], a:acute, c:chronic}); });
+  return pts;
+}
+function facets(ws, weeks){
+  const runs = ws.flatMap(w=>w.runs);
+  const b = bands(runs);
+  const wk = byWeek(ws);
+  const days = new Set(); runs.forEach(r=>days.add(r.d));
+  const kinds = new Set(); runs.forEach(r=>kinds.add(r.kind));
+  return {
+    volume: b.km,
+    consistency: wk.filter(w=>w.n>=4).length/weeks,
+    intensity: b.min ? (b.mod+b.hard)/b.min : 0,
+    duration: runs.length ? b.min/runs.length : 0,
+    density: runs.length/weeks,
+    variety: kinds.size,
+    days: days.size
+  };
+}
+function eddington(ws){
+  const byDay = {};
+  ws.forEach(w=>w.runs.forEach(r=>{ const k = w.off+r.d; byDay[k]=(byDay[k]||0)+r.km; }));
+  const days = Object.keys(byDay).map(Number);
+  const counts = [];
+  for(let e=1;e<=20;e++) counts.push({e, n:days.filter(d=>byDay[d]>=e).length});
+  let num = 0;
+  counts.forEach(c=>{ if(c.n>=c.e) num=c.e; });
+  return {counts, num, days:days.length};
+}
+function streak(ws){
+  const days = new Set(); ws.forEach(w=>w.runs.forEach(r=>days.add(w.off+r.d)));
+  let s=0, o=78;
+  while(days.has(o)){ s++; o--; }
+  return s;
+}
+function monthsSeries(ws){
+  /* the months the window touches, computed from the runs; the rest synthetic */
+  const buckets = {};
+  ws.forEach(w=>w.runs.forEach(r=>{ const d=new Date(Date.UTC(2026,8,7)+(w.off+r.d)*86400000);
+    const key = d.getUTCFullYear()+'-'+String(d.getUTCMonth()+1).padStart(2,'0');
+    const b = buckets[key] || (buckets[key]={km:0,low:0,mod:0,hard:0});
+    b.km += r.km; b.low += r.min-r.mod-r.hard; b.mod += r.mod; b.hard += r.hard; }));
+  const out = MONTHS_BEFORE.map(x=>({lab:x.lab, km:x.km, mix:x.mix, partial:false}));
+  const mp = [['2026-09','Sep'],['2026-10','Oct'],['2026-11','Nov']];
+  mp.forEach(([k,lab])=>{ const b = buckets[k] || {km:0,low:0,mod:0,hard:0};
+    const t = b.low+b.mod+b.hard;
+    out.push({lab, km: b.km, mix: t? [b.low/t,b.mod/t,b.hard/t] : [0,0,0], partial: lab==='Nov'}); });
+  return out;
+}
+
+/* ================= the pictures ================= */
+const C = {
+  b300:'#A9C8E8', b500:'#1E5E96', b600:'#124A7C', b700:'#0D3A63', b100:'#D6E6F3', b50:'#EEF5FB',
+  a400:'#F2B01E', a700:'#B57312', a50:'#FEF8EA', a100:'#FDEDC7',
+  ink:'#112B40', soft:'#31465A', muted:'#4E6577', faint:'#586F82',
+  surface:'#FFFFFF', sunken:'#E9EFF4', edge:'#CEDAE4', grid:'#EEF2F6',
+  line:'#2B7FE3', ref:'#E8A33D', band:'#E6EFF9'
+};
+
+/* ---- 1 · this week ---- */
+function drawWeek(v, W){
+  const ws = allRuns(v);
+  const cur = ws[11], prev = ws[10];
+  if(v==='weekEmpty'){ /* the previous week still stands: the comparison is drawn */ }
+  const m = W*0.05, plotH = 96;
+  const cw = (W-2*m)/7;
+  const plan = (v==='noplan') ? null : PLAN;
+  const all = [];
+  if(v!=='weekEmpty') cur.runs.forEach(r=>all.push(r.km));
+  prev.runs.filter(r=>r.d<=1).forEach(r=>all.push(r.km));
+  if(plan) plan.week.forEach(k=>all.push(k));
+  const max = Math.max.apply(null, all.concat([8])) * 1.12;
+  /* the key — the picture's own legend, wrapped to the width */
+  const items = [ {fill:C.b500, label:'this week'}, {fill:C.b100, label:'the same days of the previous week'} ];
+  if(plan) items.push({dash:true, label:'the plan'});
+  let s = '', lx = m, ly = 6, rows = 1;
+  items.forEach(it=>{
+    const w = 11 + it.label.length*4.4 + 14;
+    if(lx + w > W-m && lx > m){ lx = m; ly += 11; rows++; }
+    s += RC(lx, ly-6, 7, 7, it.dash?'none':it.fill, it.dash? ` stroke="${C.a400}" stroke-width="1" stroke-dasharray="2 1.5"` : '');
+    s += T(lx+11, ly+1, it.label, 's-key');
+    lx += w;
+  });
+  const top = ly + 10;
+  const H = top + plotH + 26;
+  /* the columns */
+  for(let d=0; d<7; d++){
+    const cx = m + d*cw;
+    const c = (v==='weekEmpty')?null:cur.runs.find(r=>r.d===d);
+    const p = prev.runs.find(r=>r.d===d && r.d<=1);
+    if(plan){ const k = plan.week[d]; const h = k/max*plotH;
+      s += RC(cx+cw*0.5-11, top+plotH-h, 22, h, 'none', ` stroke="${C.a400}" stroke-width="1" stroke-dasharray="2.5 2" opacity=".85"`); }
+    if(p){ const h = p.km/max*plotH;
+      s += RC(cx+cw*0.12, top+plotH-h, 6, h, C.b100, ` rx="1.5"`); }
+    if(c){ const h = c.km/max*plotH;
+      s += RC(cx+cw*0.42, top+plotH-h, 8, h, C.b500, ` rx="1.5"`); }
+    s += LN(cx, top+plotH, cx+cw, top+plotH, C.edge, 1);
+    const today = (d===1);
+    s += T(cx+cw/2, top+plotH+12, DAY[d], today?'s-txt-b':'s-lbl', 'middle');
+  }
+  /* the change, as a label on the picture */
+  const cKm = (v==='weekEmpty')?0:cur.runs.reduce((a,r)=>a+r.km,0);
+  const pKm = prev.runs.filter(r=>r.d<=1).reduce((a,r)=>a+r.km,0);
+  if(v!=='weekEmpty'){
+    s += T(W-m, top+10, kmSigned(cKm-pKm), 's-note', 'end');
+    s += T(W-m, top+20, 'against the same days of the previous week', 's-key', 'end');
+  }
+  return {h:H, s, caption: v==='weekEmpty' ? 'no run recorded this week'
+    : (v==='noplan' ? 'Mon 23 Nov – Tue 24 Nov 2026 · no plan adopted' : 'Mon 23 Nov – Tue 24 Nov 2026')};
+}
+
+/* ---- 2 · where the time went ---- */
+function drawLedger(v, W){
+  const ws = allRuns(v);
+  const runs = ws.flatMap(w=>w.runs);
+  const b = bands(runs), pb = bands(prevRuns());
+  const wk = byWeek(ws);
+  const m = W*0.045, lw = Math.max(86, W*0.33);
+  const x0 = m+lw+6, x1 = W-m;
+  const pitch = (x1-x0)/12;
+  const cellW = Math.max(6, pitch-3);
+  const rowH = 30, gap = 6;
+  let s = '';
+  /* the zone split — one bar, printed once */
+  const z = {z1:.424, z2:.417, z3:.139, z4:.020, z5:.003};
+  const zsum = z.z1+z.z2+z.z3+z.z4+z.z5;
+  const barY = 0, barH = 9;
+  let bx = m;
+  const cols = [[z.z1,C.b100],[z.z2,C.b300],[z.z3,C.b500],[z.z4,C.a400],[z.z5,C.a700]];
+  if(v==='nomodel'){
+    s += RC(m, barY, x1-m, barH, 'none', ` stroke="${C.edge}" stroke-width="1" stroke-dasharray="3 2"`);
+    s += T(m, barH+19, 'no zone model has been read — the split has no value', 's-key');
+  } else {
+    cols.forEach(c=>{ const w = (c[0]/zsum)*(x1-m); s += RC(bx, barY, w, barH, c[1]); bx += w; });
+    let lx = m;
+    cols.forEach((c,i)=>{ const w=(c[0]/zsum)*(x1-m);
+      if(w>14) s += T(lx+w/2, barH+8, 'Z'+(i+1), 's-key', 'middle'); lx+=w; });
+    s += T(m, barH+19, 'the moving time of the window, by zone', 's-key');
+    const kx = W-m-42;
+    s += RC(kx, barH+12, 7, 7, C.a400);
+    s += T(kx+11, barH+19, 'Z4–Z5', 's-key');
+  }
+  let y = barH + 24;
+  /* the key for the signed figure */
+  s += T(m, y+8, 'the signed figure is the change vs the period before', 's-key');
+  y += 16;
+  /* the matrix — the weeks across, the bands down */
+  const rows = [
+    {name:'Z1–Z2 low', key:'low', b:b.low, p:pb.low, runs:runs.filter(r=>(r.min-r.mod-r.hard)>0).length},
+    {name:'Z3 moderate', key:'mod', b:b.mod, p:pb.mod, runs:runs.filter(r=>r.mod>0).length},
+    {name:'Z4–Z5 high', key:'hard', b:b.hard, p:pb.hard, runs:runs.filter(r=>r.hard>0).length}
+  ];
+  const noModel = (v==='nomodel');
+  rows.forEach(rw=>{
+    const max = Math.max.apply(null, wk.map(w=>w[rw.key]).concat([1]));
+    const top = y;
+    /* the label — the numbers, compactly */
+    s += T(m, top+9, rw.name, 's-txt-b');
+    if(noModel){ s += T(m, top+19, 'no value', 's-key'); s += T(m, top+28, 'no zone model read', 's-key'); }
+    else {
+      s += T(m, top+19, `${dur(rw.b)} · ${pct(b.min? rw.b/b.min*100:0)}`, 's-key');
+      s += T(m, top+28, `${runsLabel(rw.runs)} · ${minSigned(rw.b-rw.p)}`, 's-key');
+    }
+    /* the cells — a density, not a category */
+    for(let i=0;i<12;i++){
+      const cx = x0 + i*pitch, cy = top;
+      const val = noModel ? 0 : wk[i][rw.key];
+      if(val>0){ const a = 0.16 + 0.84*(val/max);
+        s += RC(cx, cy, cellW, 16, C.b500, ` opacity="${r2(a)}" rx="1.5"`); }
+      else s += RC(cx, cy, cellW, 16, C.sunken, ` rx="1.5"`);
+    }
+    /* the marker on the last filled cell */
+    if(!noModel){
+      let last=-1; wk.forEach((w,i)=>{ if(w[rw.key]>0) last=i; });
+      if(last>=0){
+        const cx = x0 + last*pitch;
+        s += LN(cx, top+16, cx+cellW, top+16, C.a400, 2.2);
+        s += T(cx+cellW/2, top+25, dayLabel(lastBandDay(runs, rw.key)), 's-key', 'middle');
+      }
+    }
+    y += rowH + gap;
+  });
+  /* the column heads — the weeks, labelled sparsely */
+  const headY = y - gap + 2;
+  for(let i=0;i<12;i+=4){
+    const cx = x0 + i*pitch + cellW/2;
+    s += T(cx, headY+8, dayLabel(wk[i].off), 's-key', 'middle');
+  }
+  s += T(x0+11*pitch+cellW/2, headY+8, dayLabel(77), 's-key', 'middle');
+  y = headY + 14;
+  /* ---- the shape rows ---- */
+  s += LN(m, y, x1, y, C.edge, 1);
+  y += 10;
+  const topRuns = runs.slice().sort((a,c)=>c.km-a.km).slice(0,5);
+  const pr = prevRuns();
+  const prevLongRun = pr.slice().sort((a,c)=>c.km-a.km)[0];
+  const prevLong = prevLongRun ? prevLongRun.km : 0;
+  const maxKm = Math.max.apply(null, runs.map(r=>r.km).concat([prevLong]));
+  /* the longest run — a bar series of the window's long runs */
+  const lb = runs.slice().sort((a,c)=>c.km-a.km)[0];
+  s += T(m, y+9, 'the longest run', 's-txt-b');
+  s += T(m, y+19, lb ? `${km(lb.km)} · ${dur(lb.min)}` : 'no value', 's-key');
+  s += T(m, y+28, lb ? `${dayLabel(lb.off+lb.d)} · ${kmSigned(lb.km-prevLong)}` : 'no run recorded', 's-key');
+  const bx0 = x0, bx1 = x1-52;
+  const scale = k => (bx1-bx0)*(k/maxKm);
+  const refX = bx0 + scale(prevLong);
+  s += LN(refX, y+2, refX, y+5+5*11, C.ref, 1, '2 2');
+  s += T(refX, y+1, `${km(prevLong)} · ${dayLabel(prevLongRun.off+prevLongRun.d)}`, 's-key', 'middle');
+  topRuns.forEach((r,i)=>{
+    const yy = y + 4 + i*11;
+    const bw = scale(r.km);
+    const isMax = (r===lb);
+    s += RC(bx0, yy, bw, 7, isMax?C.b500:C.b100, ` rx="1.5"`);
+    s += T(bx1+4, yy+6.5, `${km(r.km)}`, isMax?'s-txt-b':'s-key');
+  });
+  y += 4 + 5*11 + 6;
+  /* the repeated work — marks where the watch recorded a workout step */
+  s += T(m, y+9, 'repeated work', 's-txt-b');
+  if(b.stepRuns===0){
+    s += T(m, y+19, 'no value', 's-key');
+    s += T(m, y+28, 'no workout steps', 's-key');
+  } else {
+    s += T(m, y+19, `${dur(b.steps)}`, 's-key');
+    s += T(m, y+28, `${runsLabel(b.stepRuns)} · ${minSigned(b.steps-pb.steps)}`, 's-key');
+  }
+  let lastStepWk = -1;
+  wk.forEach((w,i)=>{ if(w.steps>0) lastStepWk = i; });
+  for(let i=0;i<12;i++){
+    const cx = x0 + i*pitch;
+    if(wk[i].steps>0) s += RC(cx+1, y+2, cellW-2, 12, C.a400, ` rx="1.5"`);
+    else s += RC(cx+1, y+2, cellW-2, 12, C.sunken, ` rx="1.5"`);
+  }
+  if(lastStepWk>=0) s += T(x0+lastStepWk*pitch+cellW/2, y+24, dayLabel(stepLastDay(runs)), 's-key', 'middle');
+  y += 32;
+  const H = y;
+  const cap = v==='onerun' ? '7 Sep – 24 Nov 2026 · one run recorded · measured over the moving time'
+    : v==='nomodel' ? '7 Sep – 24 Nov 2026 · no zone model has been read — the band rows have no value'
+    : '7 Sep – 24 Nov 2026 · measured over the moving time';
+  return {h:H, s, caption:cap};
+}
+
+function lastBandDay(runs, key){
+  /* the last day a kind was recorded, searched over the history */
+  let best=null;
+  runs.forEach(r=>{ const has = key==='hard' ? r.hard>0 : key==='mod' ? r.mod>0 : (r.min-r.mod-r.hard)>0;
+    if(has){ const o = r.off+r.d; if(best===null || o>best) best=o; } });
+  return best===null ? 0 : best;
+}
+function stepLastDay(runs){ let best=null; runs.forEach(r=>{ if(r.steps>0){ const o=r.off+r.d; if(best===null||o>best) best=o; } }); return best; }
+
+/* ---- 3 · the load ---- */
+function drawLoad(v, W){
+  const ws = allRuns(v);
+  const m = W*0.06, plotH = 104, top = 16;
+  const H = top+plotH+18;
+  if(v==='empty' || v==='nomodel'){
+    let s = RC(m, top, W-2*m, plotH, 'none', ` stroke="${C.edge}" stroke-dasharray="3 3"`);
+    return {h:H, s, caption: v==='empty' ? 'no run recorded in the window' : 'no zone model has been read — the load has no value'};
+  }
+  const pts = loadSeries(ws);
+  const maxV = Math.max.apply(null, pts.map(p=>Math.max(p.a,p.c)));
+  const X = o => m + (o+7)/85*(W-2*m);
+  const Y = val => top + plotH - (val/maxV)*plotH*0.92;
+  let s = '';
+  for(let g=0; g<=4; g++){ const yy = top + plotH - g*plotH*0.23; s += LN(m, yy, W-m, yy, C.grid, 1); }
+  const path = key => pts.map((p,i)=>(i?'L':'M') + r2(X(p.o)) + ' ' + r2(Y(p[key]))).join(' ');
+  const area = PA(pts.map((p,i)=>(i?'L':'M')+r2(X(p.o))+' '+r2(Y(p.a))).join(' ') + ' ' +
+    pts.slice().reverse().map(p=>'L'+r2(X(p.o))+' '+r2(Y(p.c))).join(' ') + ' Z', C.band);
+  s += area;
+  s += PA(path('c'), 'none', ` stroke="${C.ref}" stroke-width="1.6" stroke-dasharray="4 3" stroke-linejoin="round"`);
+  s += PA(path('a'), 'none', ` stroke="${C.line}" stroke-width="1.8" stroke-linejoin="round"`);
+  const last = pts[pts.length-1];
+  s += CI(X(last.o), Y(last.a), 3.2, C.line);
+  s += T(X(last.o)-6, Y(last.a)-6, `acute ${Math.round(last.a)}`, 's-txt-b', 'end');
+  s += T(X(last.o)-6, Y(last.c)+12, `chronic ${Math.round(last.c)}`, 's-note', 'end');
+  const form = last.c - last.a;
+  s += T(m+4, top+12, `form ${form>=0?'+':'−'}${Math.abs(Math.round(form))}`, 's-txt-b');  s += T(m+4, top+plotH+12, '7 Sep', 's-key');
+  s += T(W-m, top+plotH+12, '24 Nov', 's-key', 'end');
+  s += RC(m+70, top+5, 7, 7, 'none', ` stroke="${C.line}" stroke-width="1.8"`);
+  s += T(m+81, top+12, 'acute', 's-key');
+  s += RC(m+118, top+5, 7, 7, 'none', ` stroke="${C.ref}" stroke-width="1.6" stroke-dasharray="3 2"`);
+  s += T(m+129, top+12, 'chronic', 's-key');
+  const ratio = last.a/last.c;
+  const scenario = ratio>1.3
+    ? 'with no training for 7 days the ratio is expected back inside 0.8 to 1.3 in about a day'
+    : ratio<0.8
+    ? 'with seven days of training the ratio is expected to rise inside 0.8 to 1.3 in about a day'
+    : 'the ratio is inside 0.8 to 1.3';
+  return {h:H, s, caption:`Banister k = 1.92 · ${scenario}`};
+}
+
+/* ---- 4 · the weeks ---- */
+function drawWeeks(v, W){
+  const ws = allRuns(v);
+  const wk = byWeek(ws);
+  const m = W*0.05, plotH = 92, top = 18;
+  const H = top+plotH+30;
+  let s = '';
+  const max = Math.max.apply(null, wk.map(w=>w.km).concat([10]))*1.1;
+  const pitch = (W-2*m)/12;
+  const cw = pitch*0.56;
+  wk.forEach((w,i)=>{
+    const cx = m + i*pitch + (pitch-cw)/2;
+    const h = w.km/max*plotH;
+    s += RC(cx, top+plotH-h, cw, h, C.b300, ` rx="2"`);
+    s += T(cx+cw/2, top+plotH+11, w.lab.split(' ')[0], 's-key', 'middle');
+    /* the days that held a run */
+    for(let d=0; d<7; d++){
+      const has = w.days.indexOf(d)>=0;
+      const dx = m + i*pitch + (pitch-7*2)/2 + d*2;
+      s += RC(dx, top+plotH+15, 1.4, 5, has?C.b500:'transparent', ` rx=".6"`);
+    }
+  });
+  /* the typical week, as a line */
+  const sorted = wk.map(w=>w.km).sort((a,b)=>a-b);
+  const med = sorted[Math.floor(sorted.length/2)];
+  if(med>0){
+    const my = top + plotH - med/max*plotH;
+    s += LN(m, my, W-m, my, C.ref, 1.2, '5 3');
+    s += T(W-m, my-4, `typical week ${km(med)}`, 's-note', 'end');
+  }
+  s += LN(m, top+plotH, W-m, top+plotH, C.edge, 1);
+  return {h:H, s, caption: v==='empty' ? 'no run recorded in the window' : '12 weeks · 7 Sep – 24 Nov 2026'};
+}
+
+/* ---- 5 · the pace ---- */
+function drawPace(v, W){
+  const ws = allRuns(v);
+  const runs = ws.flatMap(w=>w.runs);
+  const m = W*0.07, plotH = 116, top = 14;
+  const H = top+plotH+24;
+  let s = '';
+  const minP = 275, maxP = 395; /* 4:35 .. 6:35 */
+  const hrMin = 125, hrMax = 172;
+  const X = hr => m + (hr-hrMin)/(hrMax-hrMin)*(W-2*m-34);
+  const Y = sec => top + (sec-minP)/(maxP-minP)*plotH;
+  /* the ladder — the training paces */
+  if(v!=='norace'){
+    LADDER.forEach(l=>{
+      const yy = Y(l.sec);
+      s += LN(m, yy, W-m-38, yy, C.a400, 1.6, '6 3');
+      s += T(W-m-34, yy+3, l.name, 's-key');
+    });
+  }
+  /* the athlete's own scatter */
+  runs.forEach(r=>{
+    const sec = Math.round(r.min*60/r.km);
+    s += CI(X(r.hr), Y(sec), 2, C.b500, ' opacity=".55"');
+  });
+  s += RC(m, top, W-2*m-38, plotH, 'none', ` stroke="${C.edge}" stroke-width="1"`);
+  s += LN(m, top+plotH, W-m-38, top+plotH, C.edge, 1);
+  s += LN(m, top, m, top+plotH, C.edge, 1);
+  /* the axes' labels */
+  s += T(m, top+plotH+12, '125 bpm', 's-key');
+  s += T(W-m-38, top+plotH+12, '172 bpm', 's-key', 'end');
+  s += T(m-2, top+8, '6:35', 's-key', 'end');
+  s += T(m-2, top+plotH, '4:35', 's-key', 'end');
+  s += T(W/2-16, top+plotH+22, 'pace against heart rate', 's-key', 'middle');
+  return {h:H, s, caption: v==='norace'
+    ? '7 Sep – 24 Nov 2026 · no race time entered — the training paces have no value'
+    : '7 Sep – 24 Nov 2026 · the training paces from the 10 km of 49:12 on 18 Nov 2026'};
+}
+
+/* ---- 6 · bests & milestones ---- */
+function drawBests(v, W){
+  const ws = allRuns(v);
+  const runs = ws.flatMap(w=>w.runs);
+  const m = W*0.07, plotH = 112, top = 30;
+  const H = top+plotH+24;
+  let s = '';
+  const maxKm = 22;
+  const X = off => m + (off+0)/79*(W-2*m);
+  const Y = k => top + plotH - k/maxKm*plotH;
+  if(runs.length===0){
+    for(let g=0;g<=4;g++){ const yy = top+plotH - g*plotH/4; s += LN(m, yy, W-m, yy, C.grid, 1);
+      s += T(m-3, yy+3, String(Math.round(g*maxKm/4)), 's-key', 'end'); }
+    s += LN(m, top+plotH, W-m, top+plotH, C.edge, 1);
+    s += T(m, top+plotH+12, '7 Sep', 's-key');
+    s += T(W-m, top+plotH+12, '24 Nov', 's-key', 'end');
+    s += T(m, top-8, 'kilometres', 's-key');
+    return {h:H, s, caption:'no run recorded in the window'};
+  }
+  /* the key — the shape carries the meaning */
+  let kx = m;
+  BESTS.forEach(b=>{
+    if(b.shape==='circle') s += CI(kx+3, 7, 3.4, C.a400);
+    else if(b.shape==='square') s += RC(kx, 3.6, 6.8, 6.8, C.a400, ' rx="1"');
+    else s += PA(`M ${r2(kx+3.4)} ${r2(2.4)} L ${r2(kx+7.8)} ${r2(7)} L ${r2(kx+3.4)} ${r2(11.6)} L ${r2(kx-1)} ${r2(7)} Z`, C.a400);
+    s += T(kx+11, 10, b.short, 's-key');
+    kx += 11 + b.short.length*4.6 + 10;
+  });
+  for(let g=0;g<=4;g++){ const yy = top+plotH - g*plotH/4; s += LN(m, yy, W-m, yy, C.grid, 1);
+    s += T(m-3, yy+3, String(Math.round(g*maxKm/4)), 's-key', 'end'); }
+  s += LN(m, top+plotH, W-m, top+plotH, C.edge, 1);
+  s += T(m, top+plotH+12, '7 Sep', 's-key');
+  s += T(W-m, top+plotH+12, '24 Nov', 's-key', 'end');
+  runs.forEach(r=>{ s += CI(X(r.off+r.d), Y(r.km), 2, C.b300, ' opacity=".9"'); });
+  BESTS.forEach(b=>{
+    const x = X(b.d), y = Y(b.km);
+    if(b.shape==='circle') s += CI(x, y, 4, C.a400, ` stroke="${C.surface}" stroke-width="1.2"`);
+    else if(b.shape==='square') s += RC(x-3.6, y-3.6, 7.2, 7.2, C.a400, ` stroke="${C.surface}" stroke-width="1.2" rx="1"`);
+    else s += PA(`M ${r2(x)} ${r2(y-4.6)} L ${r2(x+4.6)} ${r2(y)} L ${r2(x)} ${r2(y+4.6)} L ${r2(x-4.6)} ${r2(y)} Z`, C.a400, ` stroke="${C.surface}" stroke-width="1.2"`);
+    const ly = (b.shape==='circle') ? y+14 : y-6;
+    s += T(x-7, ly, `${b.km} km · ${b.t} · ${b.day}`, 's-note', 'end');
+  });
+  s += T(m, top-8, 'kilometres', 's-key');
+  return {h:H, s, caption: v==='empty' ? 'no run recorded in the window' : '7 Sep – 24 Nov 2026'};
+}
+
+/* ---- 7 · your shape ---- */
+const FACETS = [
+  {k:'volume', name:'volume', unit:'km', scale:600, dp:1},
+  {k:'consistency', name:'consistency', unit:'', scale:1, dp:2},
+  {k:'intensity', name:'intensity', unit:'', scale:1, dp:2},
+  {k:'duration', name:'duration', unit:'min', scale:120, dp:0},
+  {k:'density', name:'density', unit:'a week', scale:7, dp:1},
+  {k:'variety', name:'variety', unit:'kinds', scale:7, dp:0},
+  {k:'days', name:'days of the week', unit:'', scale:7, dp:0}
+];
+function drawShape(v, W){
+  const ws = allRuns(v);
+  const f = facets(ws, 12);
+  const pf = facets(weekObjs(prevRuns()), 12);
+  const m = W*0.05, rowH = 22;
+  const H = 16 + FACETS.length*rowH + 14;
+  let s = '';
+  if(v==='empty'){
+    s += RC(m, 4, W-2*m, 70, 'none', ` stroke="${C.edge}" stroke-dasharray="3 3"`);
+    return {h:H, s, caption:'no run recorded in the window'};
+  }
+  const lw = 74, vw = 58;
+  const x0 = m+lw, x1 = W-m-vw;
+  FACETS.forEach((fc,i)=>{
+    const yy = 10 + i*rowH;
+    s += T(m, yy+9, fc.name, 's-lbl-b');
+    /* the track — one scale for all seven */
+    s += RC(x0, yy+2, x1-x0, 8, C.sunken, ` rx="4"`);
+    const frac = Math.max(0, Math.min(1, f[fc.k]/fc.scale));
+    s += RC(x0, yy+2, (x1-x0)*frac, 8, C.b500, ` rx="4"`);
+    const val = fc.k==='volume'? km(f.volume) : fc.k==='duration'? `${Math.round(f.duration)} min`
+      : fc.k==='density'? `${f.density.toFixed(1)} a week` : fc.k==='variety'? `${f.variety} kinds`
+      : fc.k==='days'? `${f.days} days` : f[fc.k].toFixed(2);
+    s += T(W-m, yy+9, val, 's-txt-b', 'end');
+    /* the way it moved — a signed figure, muted */
+    const d = f[fc.k] - pf[fc.k];
+    const unit = fc.k==='volume'?' km':fc.k==='duration'?' min':fc.k==='density'?' a week':'';
+    const prec = fc.k==='volume'?1:fc.k==='duration'?0:fc.k==='density'?1:2;
+    const mag = Math.abs(Number(d.toFixed(prec)));
+    const arrow = mag===0 ? '▬' : (d>0?'▲':'▼');
+    const txt = mag===0 ? 'no change' : (d>0?'+':'−') + mag.toFixed(prec) + unit;
+    s += T(W-m, yy+18, `${arrow} ${txt}`, 's-key', 'end');
+  });
+  return {h:H, s, caption:'12 weeks, against the same span one week earlier'};
+}
+function weekObjs(runs){
+  const by = {};
+  runs.forEach(r=>{ const w = Math.floor((r.off+7)/7); (by[w]=by[w]||{lab:'w'+w, off:w*7-7, runs:[]}).runs.push(r); });
+  return Object.keys(by).sort((a,b)=>a-b).map(k=>by[k]);
+}
+
+/* ---- 8 · the months ---- */
+function drawMonths(v, W){
+  const ws = allRuns(v);
+  const ms = monthsSeries(ws);
+  const m = W*0.05, plotH = 100, top = 16;
+  const H = top+plotH+26;
+  let s = '';
+  const max = Math.max.apply(null, ms.map(x=>x.km))*1.08;
+  const pitch = (W-2*m)/12;
+  const cw = pitch*0.6;
+  ms.forEach((x,i)=>{
+    const cx = m + i*pitch + (pitch-cw)/2;
+    const h = x.km/max*plotH;
+    const noModel = (v==='nomodel');
+    let acc = 0;
+    const mix = noModel ? [1,0,0] : x.mix;
+    const fills = [C.b100, C.b500, C.a400];
+    mix.forEach((frac,j)=>{
+      const hh = h*frac; if(hh<=0) return;
+      s += RC(cx, top+plotH-acc-hh, cw, hh, fills[j], ` ${j===mix.length-1?`rx="2"`:''}`);
+      acc += hh;
+    });
+    s += T(cx+cw/2, top+plotH+11, x.lab, 's-key', 'middle');
+  });
+  s += LN(m, top+plotH, W-m, top+plotH, C.edge, 1);
+  /* the key */
+  if(v==='nomodel'){ s += RC(m, top-9, 7, 7, C.b100); s += T(m+11, top-2, 'distance', 's-key'); }
+  else {
+    s += RC(m, top-9, 7, 7, C.b100); s += T(m+11, top-2, 'low', 's-key');
+    s += RC(m+34, top-9, 7, 7, C.b500); s += T(m+45, top-2, 'moderate', 's-key');
+    s += RC(m+88, top-9, 7, 7, C.a400); s += T(m+99, top-2, 'high', 's-key');
+  }
+  return {h:H, s, caption: v==='nomodel'
+    ? 'the last 12 months · no zone model has been read — the mix has no value'
+    : 'the last 12 months · November to the 24th'};
+}
+
+/* ---- 9 · the schedule ---- */
+function drawSchedule(v, W){
+  const ws = allRuns(v);
+  const runs = ws.flatMap(w=>w.runs);
+  const lw = 26, m = W*0.05;
+  const H = 26 + 7*16 + 20;
+  let s = '';
+  const x0 = m+lw, x1 = W-m;
+  const pitch = (x1-x0)/24;
+  for(let d=0; d<7; d++){
+    const yy = 20 + d*16;
+    s += T(m, yy+9, DAY[d], 's-lbl');
+    for(let h=0; h<24; h++){
+      s += RC(x0+h*pitch, yy, pitch-0.8, 11, C.grid, ` rx="1"`);
+    }
+  }
+  runs.forEach(r=>{
+    const d = r.d, h = r.hour;
+    const cx = x0 + h*pitch + pitch/2, cy = 20 + d*16 + 5.5;
+    const rr = 1.6 + Math.min(3.4, r.km/6);
+    s += CI(cx, cy, rr, r.kind==='long run'?C.a400:C.b500, ' opacity=".85"');
+  });
+  [0,6,12,18,23].forEach(h=>{ s += T(x0+h*pitch, 16+7*16+11, String(h).padStart(2,'0'), 's-key', 'middle'); });
+  s += T(x0, 16+7*16+22, 'hour of the day', 's-key');
+  return {h:H, s, caption: v==='empty' ? 'no run recorded in the window' : '7 Sep – 24 Nov 2026 · the runs by weekday and hour'};
+}
+
+/* ---- 10 · the habit ---- */
+function drawHabit(v, W){
+  const ws = allRuns(v);
+  const m = W*0.05;
+  const H = 118;
+  let s = '';
+  /* the streak — a row of day marks */
+  const pitch = (W-2*m)/84;
+  const dayset = new Set(); ws.forEach(w=>w.runs.forEach(r=>dayset.add(w.off+r.d)));
+  for(let o=-7;o<=77;o++){
+    const x = m + (o+7)*pitch;
+    const on = dayset.has(o);
+    s += RC(x, 16, Math.max(1.2,pitch-0.7), 6, on?C.b500:C.sunken, ` rx="1"`);
+  }
+  s += T(m, 32, 'the last 12 weeks, day by day', 's-key');
+  const st = streak(ws);
+  if(v!=='empty') s += T(W-m, 32, `${st} ${st===1?'day':'days'} in a row`, 's-txt-b', 'end');
+  /* the Eddington — a ladder of ticks */
+  const ed = eddington(ws);
+  s += LN(m, 96, W-m, 96, C.edge, 1);
+  if(v==='toofew' || ed.days===0){
+    s += T(W/2, 70, 'the Eddington has no value', 's-note', 'middle');
+    return {h:H, s, caption: ed.days===0 ? 'no run recorded in the window' : `7 Sep – 24 Nov 2026 · ${ed.days} days recorded`};
+  }
+  const maxN = Math.max(1, Math.max.apply(null, ed.counts.map(c=>c.n)));
+  const bw = (W-2*m)/ed.counts.length;
+  ed.counts.forEach((c,i)=>{
+    const h = (c.n/maxN)*46;
+    const on = (c.e===ed.num);
+    s += RC(m+i*bw+bw*0.28, 96-h, bw*0.44, h, on?C.a400:C.b100, ` rx="1.5"`);
+    if(on) s += T(m+i*bw+bw/2, 96-h-4, `${c.e}`, 's-txt-b', 'middle');
+    if(i%2===0) s += T(m+i*bw+bw/2, 106, String(c.e), 's-key', 'middle');
+  });
+  s += T(m, 116, 'the days that reached each distance', 's-key');
+  return {h:H, s, caption: v==='empty' ? 'no run recorded in the window' : '7 Sep – 24 Nov 2026'};
+}
+
+/* ---- 11 · the goals ---- */
+function drawGoals(v, W){
+  const ws = allRuns(v);
+  const m = W*0.05;
+  const H = 128;
+  let s = '';
+  const lw = 92;
+  const x0 = m+lw, x1 = W-m-34;
+  const pitch = (x1-x0)/12;
+  const CHALLENGES = challengeMarks(ws);
+  CHALLENGES.forEach((ch,r)=>{
+    const yy = 12 + r*22;
+    s += T(m, yy+9, ch.name, 's-lbl-b');
+    for(let i=0;i<12;i++){
+      const cx = x0+i*pitch, cy = yy+1;
+      if(ch.met[i]) s += RC(cx, cy, pitch-3.5, 11, C.b500, ` rx="2"`);
+      else s += RC(cx, cy, pitch-3.5, 11, 'none', ` stroke="${C.edge}" stroke-width="1" rx="2"`);
+    }
+    const n = ch.met.filter(Boolean).length;
+    s += T(W-m, yy+9, `${n} of 12`, 's-note', 'end');
+  });
+  s += LN(m, 58, W-m, 58, C.edge, 1);
+  /* the plan's sessions this week — absent when no plan is adopted */
+  if(v!=='noplan'){
+    s += T(m, 74, 'the plan’s sessions this week', 's-lbl-b');
+    const cur = ws[11];
+    const done = {};
+    cur.runs.forEach(r=>done[r.d]=true);
+    for(let d=0; d<7; d++){
+      const cx = x0 + d*(x1-x0)/7, cy = 82;
+      const w = (x1-x0)/7 - 5;
+      if(done[d]) s += RC(cx, cy, w, 11, C.b500, ` rx="2"`);
+      else if(d>1) s += RC(cx, cy, w, 11, 'none', ` stroke="${C.a400}" stroke-width="1.2" stroke-dasharray="3 2" rx="2"`);
+      else s += RC(cx, cy, w, 11, 'none', ` stroke="${C.edge}" stroke-width="1.2" rx="2"`);
+      s += T(cx+w/2, cy+21, DAY[d], 's-key', 'middle');
+    }
+    /* the key */
+    s += RC(m, 110, 7, 7, C.b500); s += T(m+11, 117, 'a run recorded', 's-key');
+    s += RC(m+82, 110, 7, 7, 'none', ` stroke="${C.a400}" stroke-width="1.2" stroke-dasharray="3 2"`); s += T(m+93, 117, 'planned', 's-key');
+  }
+  return {h:H, s, caption: v==='noplan' ? '12 weeks · no plan adopted'
+    : v==='empty' ? '12 weeks · no run recorded in the window'
+    : `12 weeks · the plan adopted ${PLAN.adopted}`};
+}
+
+/* ================= the cards ================= */
+const CARDS = [
+  {id:'c1', title:'This week', draw:drawWeek, states:[
+    {v:'weekEmpty', n:'no run recorded this week', w:'seven empty columns; the caption names the absence'},
+    {v:'noplan', n:'no plan adopted', w:'the plan’s outline is gone; the runs are drawn as they are'}]},
+  {id:'c2', title:'Where the time went', draw:drawLedger, states:[
+    {v:'onerun', n:'one run in the window', w:'one filled cell in the low row; the other rows are white space'},
+    {v:'nomodel', n:'no zone model', w:'the band rows have no value; the shape rows still answer'},
+    {v:'nosteps', n:'no workout step recorded', w:'the repeated-work row says so in one short line'}]},
+  {id:'c3', title:'The load', draw:drawLoad, states:[
+    {v:'empty', n:'no run recorded in the window', w:'no curves; the caption carries the absence'},
+    {v:'nomodel', n:'no zone model', w:'the load needs the model’s maximum heart rate'}]},
+  {id:'c4', title:'The weeks', draw:drawWeeks, states:[
+    {v:'empty', n:'no run recorded in the window', w:'twelve empty columns'}]},
+  {id:'c5', title:'The pace', draw:drawPace, states:[
+    {v:'norace', n:'no race time', w:'the scatter is drawn; the ladder has no value'}]},
+  {id:'c6', title:'Bests & milestones', draw:drawBests, states:[
+    {v:'empty', n:'no run recorded in the window', w:'an empty axis'}]},
+  {id:'c7', title:'Your shape', draw:drawShape, states:[
+    {v:'empty', n:'no run recorded in the window', w:'no gauges'}]},
+  {id:'c8', title:'The months', draw:drawMonths, states:[
+    {v:'nomodel', n:'no zone model', w:'the columns carry distance; the mix has no value'}]},
+  {id:'c9', title:'The schedule', draw:drawSchedule, states:[
+    {v:'empty', n:'no run recorded in the window', w:'an empty grid'}]},
+  {id:'c10', title:'The habit', draw:drawHabit, states:[
+    {v:'empty', n:'no run recorded in the window', w:'no marks; the ladder has no value'},
+    {v:'toofew', n:'too few days', w:'the ladder is not drawn; the caption says how many days there are'}]},
+  {id:'c11', title:'The goals', draw:drawGoals, states:[
+    {v:'noplan', n:'no plan adopted', w:'the session row is absent, and says why'},
+    {v:'empty', n:'no run recorded in the window', w:'the challenge weeks are empty'}]}
+];
+
+function cardHTML(spec, variant, W){
+  const r = spec.draw(variant, W);
+  return `<div class="card">
+    <div class="h"><span>${spec.title}</span></div>
+    <div class="pic">${pic(W, r.h, spec.title + ' — ' + (r.caption||''), r.s)}</div>
+    <p class="capline">${r.caption}</p></div>`;
+}
+function phoneHTML(spec, variant, W){
+  return `<div class="phone"><div class="bar"><h1>Progress</h1><div class="meta">Stride</div></div>
+    <div class="body"><div class="srcbar"><span>your zone model · running · HR_MAX · max heart rate 183 bpm · read on 12 Nov 2026</span></div>
+    ${cardHTML(spec, variant, W)}</div></div>`;
+}
+function desktopHTML(spec, variant, W){
+  return `<div class="desktop"><div class="bar"><h1>Progress</h1><div class="meta">the wall · 12 weeks</div></div>
+    <div class="body"><div class="srcbar"><span>your zone model · running · HR_MAX · max heart rate 183 bpm · read on 12 Nov 2026</span><a href="#">details ›</a></div>
+    ${cardHTML(spec, variant, W)}</div></div>`;
+}
+function stateHTML(spec, variant, W){
+  return `<div class="phone state"><div class="bar"><h1>Progress</h1></div><div class="body">
+    ${cardHTML(spec, variant, W)}</div></div>`;
+}
+
+CARDS.forEach(spec=>{
+  const host = document.getElementById(spec.id);
+  if(!host) return;
+  const wrap = document.createElement('div');
+  wrap.className = 'phones';
+  wrap.innerHTML =
+    `<div class="phonewrap">${phoneHTML(spec, 'default', 268)}<p class="caption"><b>phone</b>the picture first; the caption says only the period</p></div>
+     <div class="phonewrap">${desktopHTML(spec, 'default', 578)}<p class="caption"><b>desktop</b>the same card, drawn for the wall</p></div>`;
+  host.appendChild(wrap);
+  const st = document.createElement('div');
+  st.className = 'statebar';
+  st.style.marginTop = '14px';
+  st.innerHTML = spec.states.map(s=>
+    `<div class="statewrap">${stateHTML(spec, s.v, 248)}<div class="sname">${s.n}</div><div class="swhat">${s.w}</div></div>`).join('');
+  host.appendChild(st);
+});
+
+/* the note at the foot of the page */
+document.getElementById('verdict').innerHTML =
+  `<b>What was dropped or merged.</b> Nothing was dropped: all eleven cards survive, because every one of them
+   can be drawn. Three were merged into their neighbours rather than kept as pictures of their own: <b>the radar</b>
+   (retired by D7 — the seven facets are now seven gauges on one scale), <b>the /pace page</b> (retired — its cloud and
+   bands are the scatter and the ladder on <i>the pace</i>), and <b>the polarised split</b> (the five zone shares are one
+   bar, printed once, and the roll-up is the matrix's rows). The card that came closest to resisting a picture was
+   <b>the goals</b>: its challenge grid was already a picture, but its adherence line was a sentence, so the sentence was
+   drawn into the grid as a row of session marks — the grid and the line are now one drawing.`;
+})();
+</script>
+</body>
+</html>

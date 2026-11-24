@@ -181,7 +181,7 @@ pub struct Entry {
 }
 
 /// The catalogue.
-pub const CATALOGUE: [Entry; 200] = [
+pub const CATALOGUE: [Entry; 202] = [
     // The vitals.
     Entry {
         id: "vital.sleep.label",
@@ -776,6 +776,27 @@ pub const CATALOGUE: [Entry; 200] = [
         kind: StringKind::Statement,
         role: None,
         template: "your zone model · {method} · read on {date}",
+    },
+    Entry {
+        // The line for a window that was measured against **more than one**
+        // model: the days the models were read, so the reader can see that
+        // the window spans a change of the athlete's own configuration.
+        //
+        // The days are **rendered by the caller**, like the day of the
+        // single model's line.
+        id: "zones.models.source",
+        kind: StringKind::Statement,
+        role: None,
+        template: "your zone models · {count} models · read on {dates}",
+    },
+    Entry {
+        // The reason a split has no value when a model **has** been read
+        // but none of them was in force for the runs in question: a run
+        // that predates the first stored model is not calibrated.
+        id: "zones.no_model_in_force",
+        kind: StringKind::Statement,
+        role: None,
+        template: "zones unavailable — no zone model was in force for these runs",
     },
     // The plan's statements: what the athlete intended, what happened, and
     // where the intent came from. They are facts, never verdicts.

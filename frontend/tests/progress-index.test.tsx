@@ -74,10 +74,10 @@ describe('the index of the questions', () => {
 
   it('answers the window with the window and the difference', async () => {
     renderApp('/progress')
-    // The core's own rendering: "58.4 km" and "+40.2 km".
-    expect(await answer('window')).toBe('58.4 km · +40.2 km')
+    // The core's own rendering: "58.4 km" and "+31 km".
+    expect(await answer('window')).toBe('58.4 km · +31 km')
     // And the window it covers.
-    expect(await windowOf('window')).toBe('The last 84 days · 19 Feb 2026 – 13 May 2026')
+    expect(await windowOf('window')).toBe('The last 80 days · 23 Feb 2026 – 13 May 2026')
   })
 
   it('answers the load with the load, as of the day it was read', async () => {
@@ -112,7 +112,8 @@ describe('the index of the questions', () => {
     vi.spyOn(api, 'insightsRolling').mockResolvedValue({
       ...rollingFixture,
       zones: {
-        model: rollingFixture.zones.model,
+        models: rollingFixture.zones.models,
+        source: rollingFixture.zones.source,
         unavailable: null,
         distribution: null,
         shares: [
@@ -144,7 +145,7 @@ describe('the index of the questions', () => {
     expect(await answer('zones')).toBe(
       'Z1–Z2 low 6.28% · Z3 moderate 40.33% · Z4–Z5 high 53.39%',
     )
-    expect(await windowOf('zones')).toBe('The last 84 days')
+    expect(await windowOf('zones')).toBe('The last 80 days')
   })
 
   it('answers the habit with the streak and the Eddington number', async () => {

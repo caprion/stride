@@ -220,10 +220,17 @@ pub struct Facet {
 /// The window before the one in question is the comparison period, the
 /// same way it is for every other comparison the product makes.
 ///
-/// `days` is the length of the window, and it is what the rates are
-/// measured against: the volume a week, and the share of the window's
-/// days that carry a run.
-pub fn facets(current: &[RollingActivity], previous: &[RollingActivity], days: i64) -> Vec<Facet> {
+/// The **window's own length** is what the rates are measured against: the
+/// volume a week, and the share of the window's days that carry a run. The
+/// window knows its own length — the last twelve calendar weeks are
+/// seventy-eight days on a Monday and eighty-four on a Sunday — so the
+/// denominator is never a number somebody remembered.
+pub fn facets(
+    current: &[RollingActivity],
+    previous: &[RollingActivity],
+    window: crate::rolling::Window,
+) -> Vec<Facet> {
+    let days = window.days();
     let now = Values::of(current, days);
     let before = Values::of(previous, days);
     FacetKey::all()
@@ -383,6 +390,13 @@ mod tests {
         facets.iter().find(|facet| facet.key == key)
     }
 
+    /// A window of `days` days ending on the 13th of May 2026 — the day
+    /// the fixtures of these tests are on.
+    fn window(days: i64) -> Option<crate::rolling::Window> {
+        let today = date("2026-05-13")?;
+        Some(crate::rolling::Window::of_days(days, today))
+    }
+
     #[test]
     fn the_facets_are_the_athlete_s_own_numbers() {
         let activities = match runs(&[
@@ -393,7 +407,11 @@ mod tests {
             Some(activities) => activities,
             None => return,
         };
-        let facets = facets(&activities, &[], 30);
+        let window = match window(30) {
+            Some(window) => window,
+            None => return,
+        };
+        let facets = facets(&activities, &[], window);
 
         // Volume: the distance of the window, 35 km, and 35 km a week
         // over a thirty-day window.
@@ -477,8 +495,16 @@ mod tests {
             },
         );
 
-        let short = facets(&activities[..6], &[], 30);
-        let long = facets(&activities, &[], 60);
+        let short_window = match window(30) {
+            Some(window) => window,
+            None => return,
+        };
+        let long_window = match window(60) {
+            Some(window) => window,
+            None => return,
+        };
+        let short = facets(&activities[..6], &[], short_window);
+        let long = facets(&activities, &[], long_window);
 
         let volume_short = match facet_of(&short, FacetKey::Volume) {
             Some(facet) => facet,
@@ -542,7 +568,11 @@ mod tests {
             Some(runs) => runs,
             None => return,
         };
-        let facets = facets(&now, &before, 7);
+        let window = match window(7) {
+            Some(window) => window,
+            None => return,
+        };
+        let facets = facets(&now, &before, window);
         // The distance grew: up.
         let volume = match facet_of(&facets, FacetKey::Volume) {
             Some(facet) => facet,
@@ -572,7 +602,11 @@ mod tests {
         };
         // The window before it holds nothing, so there is nothing to move
         // against.
-        let facets = facets(&activities, &[], 7);
+        let window = match window(7) {
+            Some(window) => window,
+            None => return,
+        };
+        let facets = facets(&activities, &[], window);
         let volume = match facet_of(&facets, FacetKey::Volume) {
             Some(facet) => facet,
             None => return,
@@ -583,7 +617,11 @@ mod tests {
 
     #[test]
     fn a_window_with_no_run_has_no_facets_at_all() {
-        let facets = facets(&[], &[], 7);
+        let window = match window(7) {
+            Some(window) => window,
+            None => return,
+        };
+        let facets = facets(&[], &[], window);
         let intensity = match facet_of(&facets, FacetKey::Intensity) {
             Some(facet) => facet,
             None => return,

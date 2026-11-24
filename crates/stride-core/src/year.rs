@@ -21,10 +21,9 @@
 //!
 //! The year is **the last twelve calendar months**, ending on the day the
 //! answer is about ([`year_window`]), and the period it is compared
-//! against is **the same number of days, ending a day earlier** — the
-//! rolling view's own comparison ([`RollingWindow::previous`]). The
-//! current month is the month so far, and the card says so by showing
-//! the days it holds.
+//! against is **the same span, seven days earlier** — the one comparison
+//! rule the core has ([`Window::previous`]). The current month is the
+//! month so far, and the card says so by showing the days it holds.
 //!
 //! ## No value is the absence of the value
 //!
@@ -40,7 +39,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::date::Date;
 use crate::plan::week_start;
-use crate::rolling::{PolarisedZone, RollingWindow, ZoneTimes};
+use crate::rolling::{PolarisedZone, Window, ZoneTimes};
 use crate::strings;
 use crate::units;
 
@@ -203,13 +202,12 @@ pub struct YearTotals {
 /// The window ends on the day the answer is about, and it starts on the
 /// first day of the month eleven months before it — twelve calendar months,
 /// the current one included and the month so far only as far as today.
-pub fn year_window(today: Date) -> RollingWindow {
+pub fn year_window(today: Date) -> Window {
     let mut from = first_of_month(today);
     for _ in 1..YEAR_MONTHS {
         from = first_of_month(from.add_days(-1));
     }
-    let days = today.days_since(from) + 1;
-    RollingWindow::new(days, today)
+    Window::span(from, today)
 }
 
 /// The first day of the month a day is in.
@@ -228,7 +226,7 @@ fn month_key(date: Date) -> String {
 /// a day with **no values**: no distance, no time, no mix. The day's zone
 /// mix is the time of the runs that could be measured, and a day whose
 /// runs carry none has no mix at all.
-pub fn days_of(runs: &[YearRun], window: RollingWindow) -> Vec<DayFacts> {
+pub fn days_of(runs: &[YearRun], window: Window) -> Vec<DayFacts> {
     let mut by_day: BTreeMap<String, Vec<&YearRun>> = BTreeMap::new();
     for run in runs {
         if !window.contains(run.date) {
@@ -239,7 +237,7 @@ pub fn days_of(runs: &[YearRun], window: RollingWindow) -> Vec<DayFacts> {
 
     let mut days: Vec<DayFacts> = Vec::new();
     let mut day = window.from();
-    while day <= window.to {
+    while day <= window.to() {
         let runs = by_day.get(&day.to_iso()).map(|runs| runs.as_slice());
         days.push(day_of(day, runs));
         day = day.add_days(1);
@@ -404,7 +402,7 @@ pub fn weeks_of(days: &[DayFacts]) -> Vec<WeekFacts> {
 /// fact about the window rather than a missing measurement. The **pace**
 /// and the **form** are the values that are absent when they cannot be
 /// computed.
-pub fn totals_of(days: &[DayFacts], window: RollingWindow) -> YearTotals {
+pub fn totals_of(days: &[DayFacts], window: Window) -> YearTotals {
     let mut totals = YearTotals {
         distance_m: 0.0,
         moving_time_s: 0.0,
@@ -599,7 +597,7 @@ mod tests {
             None => return,
         };
         let window = match date("2026-05-10") {
-            Some(day) => RollingWindow::new(3, day),
+            Some(day) => Window::of_days(3, day),
             None => return,
         };
         let days = days_of(&runs, window);
@@ -635,7 +633,7 @@ mod tests {
             None => return,
         };
         let window = match date("2026-05-10") {
-            Some(day) => RollingWindow::new(1, day),
+            Some(day) => Window::of_days(1, day),
             None => return,
         };
         let days = days_of(&runs, window);
@@ -655,10 +653,13 @@ mod tests {
         };
         let window = year_window(today);
         assert_eq!(window.from().to_iso(), "2025-06-01");
-        assert_eq!(window.to.to_iso(), "2026-05-13");
-        assert_eq!(window.days, 347);
-        // The period before it does not share a day with the window.
-        assert_eq!(window.previous().to.to_iso(), "2025-05-31");
+        assert_eq!(window.to().to_iso(), "2026-05-13");
+        assert_eq!(window.days(), 347);
+        // The period it is compared against is the same span, seven days
+        // earlier.
+        assert_eq!(window.previous().to().to_iso(), "2026-05-06");
+        assert_eq!(window.previous().from().to_iso(), "2025-05-25");
+        assert_eq!(window.previous().days(), 347);
     }
 
     #[test]
@@ -739,7 +740,7 @@ mod tests {
             Some(day) => day,
             None => return,
         };
-        let window = RollingWindow::new(11, today);
+        let window = Window::of_days(11, today);
         let days = days_of(&runs, window);
         let totals = totals_of(&days, window);
         assert_eq!(totals.sessions, 3);
@@ -747,11 +748,14 @@ mod tests {
         assert_eq!(totals.longest_m, 20_000.0);
         // The pace of the window: the moving time over the distance.
         assert_eq!(totals.pace_s_per_km, Some(333.33));
-        // And the window before it holds nothing at all.
-        let before = totals_of(&days, window.previous());
-        assert_eq!(before.sessions, 0);
-        assert_eq!(before.distance_m, 0.0);
-        assert_eq!(before.pace_s_per_km, None);
+        // The period it is compared against is the same span, seven days
+        // earlier: the 3rd to the 13th of May, which holds two of the
+        // three runs.
+        let before_days = days_of(&runs, window.previous());
+        let before = totals_of(&before_days, window.previous());
+        assert_eq!(before.sessions, 2);
+        assert_eq!(before.distance_m, 30_000.0);
+        assert_eq!(before.longest_m, 20_000.0);
     }
 
     #[test]

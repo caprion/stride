@@ -672,8 +672,20 @@ export interface SessionComparison {
  * target range beside them.
  */
 export interface ZoneSplit {
-  /** The model the split was measured against, when there is one. */
-  model: ZoneModelSource | null
+  /**
+   * The models the window's runs were measured against, oldest first.
+   *
+   * Each run is measured against the model that was in force on its own
+   * day, so a window that spans a change of the athlete's configuration
+   * holds more than one model — and this names them all.
+   */
+  models: ZoneModelSource[]
+  /**
+   * The one source line the screen names: the model's own line when the
+   * window was measured against one model, and the line that names them
+   * all when it was measured against several.
+   */
+  source: string | null
   /** The shares, when there is a value. */
   shares: ZoneShareRow[] | null
   /** The distribution: the time in each of the five zones. */

@@ -5,12 +5,13 @@ use std::collections::BTreeMap;
 use serde_json::Value;
 
 use stride_core::band;
+use stride_core::date::Date;
 use stride_core::direction::day_directions;
 use stride_core::pattern::{patterns, HistoryDay, PatternKind};
 use stride_core::types::{Distance, VitalKind};
 use stride_core::units;
 use stride_core::zones::{time_in_zone, TimeInZone, ZoneFloors};
-use stride_store::{ActivitySummary as StoredActivity, HeartRateZoneModel, WellnessDaily};
+use stride_store::{ActivitySummary as StoredActivity, WellnessDaily};
 
 use crate::dto::{
     ActivityDetail, ActivityListResponse, ActivitySummary, ElevationStats, ElevationWeek,
@@ -25,7 +26,7 @@ use crate::router::Request;
 use crate::state::Api;
 
 use super::series;
-use super::{core_date, day_label, day_of, ok, pace_of, today, week_start};
+use super::{core_date, day_label, ok, pace_of, today, week_start};
 
 // ------------------------------------------------------------------- the feed
 
@@ -678,30 +679,27 @@ pub fn fitness_zones(api: &Api, request: &Request) -> ApiResult<Value> {
         Some(id) => id,
         None => return Err(ApiError::bad_request("the zones need a run")),
     };
-    let exists = api
+    let run = api
         .store()
         .activity(id)
-        .map_err(|error| api.store_error("the run could not be read", &error))?
-        .is_some();
-    if !exists {
+        .map_err(|error| api.store_error("the run could not be read", &error))?;
+    let Some(run) = run else {
         return Err(ApiError::not_found(format!(
             "there is no run with the id {id}"
         )));
-    }
+    };
 
-    // The athlete's model: the one read most recently.
-    let stored = api
-        .store()
-        .current_hr_zone_model()
-        .map_err(|error| api.store_error("the zone model could not be read", &error))?;
-    let Some(stored) = stored else {
+    // The athlete's model: **the one in force on the day of the run** —
+    // the configuration the athlete was wearing when they ran it.
+    let Some(date) = Date::parse(&run.local_date) else {
         return ok(&no_value_zones(None, "zones.no_model"));
     };
-    // The day the model was read, in the athlete's own calendar and in the
-    // api's own date rendering: "10 May 2026".
-    let read_on = day_label(day_of(api, stored.read_at)?);
-    let model = zone_model_of(&stored, &read_on);
-    let floors = floors_of(&stored);
+    let model_for = crate::zonemodel::model_for(api, date)?;
+    let Some(stored) = model_for.model() else {
+        return ok(&no_value_zones(None, model_for.reason_id()));
+    };
+    let model = zone_model_of(stored);
+    let floors = stored.floors;
     if !floors.is_usable() {
         return ok(&no_value_zones(Some(model), "zones.unusable_model"));
     }
@@ -791,14 +789,8 @@ fn floors_of_edges(floors: &ZoneFloors, max_heart_rate: Option<f64>) -> [(f64, O
 }
 
 /// The stored model's floors, as the core takes them.
-pub(crate) fn floors_of(model: &HeartRateZoneModel) -> ZoneFloors {
-    ZoneFloors {
-        zone1: model.zone1_floor,
-        zone2: model.zone2_floor,
-        zone3: model.zone3_floor,
-        zone4: model.zone4_floor,
-        zone5: model.zone5_floor,
-    }
+pub(crate) fn floors_of(model: &crate::zonemodel::ZoneModel) -> ZoneFloors {
+    model.floors
 }
 
 /// The model as the payload names it.
@@ -808,21 +800,22 @@ pub(crate) fn floors_of(model: &HeartRateZoneModel) -> ZoneFloors {
 /// "10 May 2026". The core's canonical form stays inside the core, so the
 /// source line the core renders carries the api's form and not a third
 /// one.
-pub(crate) fn zone_model_of(model: &HeartRateZoneModel, read_on: &str) -> ZoneModel {
+pub(crate) fn zone_model_of(model: &crate::zonemodel::ZoneModel) -> ZoneModel {
+    let read_on = day_label(model.read_on);
     ZoneModel {
         sport: model.sport.clone(),
         training_method: model.training_method.clone(),
         max_heart_rate: render::heart_rate(model.max_heart_rate),
         floors: ZoneModelFloors {
-            zone1: floor_value(model.zone1_floor),
-            zone2: floor_value(model.zone2_floor),
-            zone3: floor_value(model.zone3_floor),
-            zone4: floor_value(model.zone4_floor),
-            zone5: floor_value(model.zone5_floor),
+            zone1: floor_value(model.floors.zone1),
+            zone2: floor_value(model.floors.zone2),
+            zone3: floor_value(model.floors.zone3),
+            zone4: floor_value(model.floors.zone4),
+            zone5: floor_value(model.floors.zone5),
         },
         read_at: crate::state::format_instant(model.read_at),
-        read_on: read_on.to_string(),
-        source: stride_core::model_source(&model.training_method, model.max_heart_rate, read_on),
+        read_on: read_on.clone(),
+        source: stride_core::model_source(&model.training_method, model.max_heart_rate, &read_on),
     }
 }
 

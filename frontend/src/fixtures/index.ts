@@ -477,7 +477,8 @@ export const rollingEmptyFixture: RollingInsight = {
   },
   sessions: { current: 0, previous: 0, difference: value('0', 0) },
   zones: {
-    model: null,
+    models: [],
+    source: null,
     shares: null,
     distribution: null,
     unavailable: 'zones unavailable — no zone model has been read',

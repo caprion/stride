@@ -594,10 +594,22 @@ export function ZonesPanel({
               </li>
             ))}
           </ul>
-          {rolling.zones.model?.source ? (
+          {rolling.zones.source ? (
             <p className="mt-2 text-[11.5px] text-ink-faint" data-testid="progress-zones-model">
-              {rolling.zones.model.source}
+              {rolling.zones.source}
             </p>
+          ) : null}
+          {rolling.zones.models.length > 1 ? (
+            /* The window was measured against more than one model: the
+               hoisted line names them, and the detail is a click away. */
+            <details className="mt-1 text-[11.5px] text-ink-faint" data-testid="progress-zones-models">
+              <summary>{t('progress.rolling.zones.models')}</summary>
+              <ul className="mt-1 space-y-0.5">
+                {rolling.zones.models.map((model) => (
+                  <li key={model.read_on}>{model.source}</li>
+                ))}
+              </ul>
+            </details>
           ) : null}
           <p className="mt-1 text-[12px] text-ink-faint" data-testid="progress-zones-window">
             {t('progress.rolling.window', { days: rolling.window.days })}
@@ -668,9 +680,9 @@ export function ZonesDistributionPanel({
               </li>
             ))}
           </ul>
-          {rolling.zones.model?.source ? (
+          {rolling.zones.source ? (
             <p className="mt-2 text-[11.5px] text-ink-faint" data-testid="progress-zones-model">
-              {rolling.zones.model.source}
+              {rolling.zones.source}
             </p>
           ) : null}
         </>

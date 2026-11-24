@@ -220,6 +220,39 @@ pub fn model_source(method: &str, max_heart_rate: Option<f64>, read_on: &str) ->
     }
 }
 
+/// The source line for a window that was measured against **more than one**
+/// model.
+///
+/// One model is the ordinary case and keeps its own line ([`model_source`]):
+/// the method it was set with, the maximum heart rate it was built on and
+/// the day it was read. Several models are named by **the days they were
+/// read**, so the reader can see that the window spans a change of the
+/// athlete's own configuration — and that the numbers beside it were
+/// measured on more than one scale.
+///
+/// The days are **rendered by the caller**, like the day of the single
+/// model's line: the core does not format a date for a screen.
+///
+/// `None` when there are no models: there is nothing to name.
+pub fn models_source(dates: &[&str]) -> Option<String> {
+    if dates.is_empty() {
+        return None;
+    }
+    let count = dates.len().to_string();
+    let joined = match dates {
+        [only] => (*only).to_string(),
+        [first, second] => format!("{first} and {second}"),
+        many => {
+            let (last, rest) = many.split_last().unwrap_or((&"", &[] as &[&str]));
+            format!("{} and {last}", rest.join(", "))
+        }
+    };
+    strings::render(
+        "zones.models.source",
+        &[("count", &count), ("dates", &joined)],
+    )
+}
+
 /// The zone a **sample** sits in, as an index from 0 (zone 1) to 4 (zone 5).
 ///
 /// The same classifier the time-in-zone computation uses, so the zone of a

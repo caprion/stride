@@ -158,6 +158,7 @@ mod sync;
 pub mod update;
 pub mod wellness;
 pub mod year;
+pub mod zonemodel;
 
 pub use dto::RenderedValue;
 pub use error::{ApiError, ApiResult, ErrorEnvelope, ErrorKind};

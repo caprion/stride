@@ -1,0 +1,693 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Stride — the stimulus ledger (prototype)</title>
+<style>
+  /* Stride's own palette, copied from exploration/information-shapes.html */
+  :root {
+    --brand-50:#EEF5FB; --brand-100:#D6E6F3; --brand-300:#A9C8E8; --brand-500:#1E5E96;
+    --brand-600:#124A7C; --brand-700:#0D3A63;
+    --accent-50:#FEF8EA; --accent-100:#FDEDC7; --accent-400:#F2B01E;
+    --ink:#112B40; --ink-soft:#31465A; --ink-muted:#4E6577; --ink-faint:#586F82;
+    --surface:#FFFFFF; --surface-soft:#F1F5F8; --surface-sunken:#E9EFF4; --edge:#CEDAE4;
+    --radius:9px;
+    --font: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin:0; padding:0; background:var(--surface-soft); }
+  body { font-family: var(--font); color:var(--ink); }
+  .wrap { max-width:1500px; margin:0 auto; padding:26px 22px 60px; }
+  h1 { font-size:21px; color:var(--brand-700); margin:0 0 4px; letter-spacing:-.01em; }
+  .lede { font-size:13.5px; color:var(--ink-muted); margin:0 0 8px; max-width:940px; line-height:1.5; }
+  h2 { font-size:15px; color:var(--brand-700); margin:30px 0 4px; }
+  h2 .n { color:var(--ink-faint); font-weight:600; margin-right:7px; }
+  .note { font-size:12.5px; color:var(--ink-muted); margin:0 0 12px; max-width:1000px; line-height:1.5; }
+  .note b { color:var(--ink-soft); }
+  .phones { display:flex; gap:18px; flex-wrap:wrap; align-items:flex-start; }
+  .phonewrap { display:flex; flex-direction:column; gap:8px; align-items:center; }
+  .caption { font-size:11.5px; color:var(--ink-muted); max-width:300px; text-align:center; line-height:1.4; }
+  .caption b { display:block; color:var(--brand-700); font-size:12px; margin-bottom:3px; }
+
+  .phone { width:306px; height:660px; border-radius:26px; border:1px solid #cfd8e0; background:var(--surface);
+    box-shadow:0 8px 26px rgba(17,43,64,.14); overflow:hidden; display:flex; flex-direction:column;
+    position:relative; font-size:13px; }
+  .phone.small { width:268px; height:470px; }
+  .bar { display:flex; align-items:center; justify-content:space-between; padding:10px 12px 6px; }
+  .bar h1 { font-size:16px; font-weight:650; color:var(--brand-700); margin:0; letter-spacing:-.01em; }
+  .bar .meta { font-size:10.5px; color:var(--ink-faint); margin-top:1px; }
+  .body { flex:1; overflow-y:auto; padding:0 12px 12px; }
+  .body::-webkit-scrollbar { width:0; }
+
+  .card { border:1px solid var(--edge); border-radius:var(--radius); background:var(--surface);
+    box-shadow:0 1px 2px rgba(11,27,39,.04),0 1px 3px rgba(11,27,39,.06); padding:10px 12px; margin-bottom:9px; }
+  /* the screen's one source line — the model, named once, at the top */
+  .srcbar { display:flex; align-items:baseline; justify-content:space-between; gap:10px;
+    font-size:10.5px; color:var(--ink-faint); line-height:1.35; margin:0 2px 7px; }
+  .srcbar a { color:var(--brand-600); font-weight:600; text-decoration:none; white-space:nowrap; }
+  .h { font-size:10px; font-weight:650; letter-spacing:.07em; text-transform:uppercase; color:var(--ink-faint); margin:0 0 6px; }
+  .muted { color:var(--ink-muted); }
+  .faint { color:var(--ink-faint); }
+  .small { font-size:11.5px; line-height:1.4; }
+  .tiny { font-size:10.5px; line-height:1.35; }
+  .src { font-size:10.5px; color:var(--ink-faint); line-height:1.35; margin:7px 0 0;
+    padding-top:7px; border-top:1px solid var(--surface-sunken); }
+
+  /* ---- the card ---- */
+  .dist { font-size:13px; font-weight:650; color:var(--ink); font-variant-numeric:tabular-nums; letter-spacing:-.01em; }
+  .dist span { font-weight:400; color:var(--ink-faint); }
+  .rollup { font-size:11px; color:var(--ink-soft); margin-top:4px; font-variant-numeric:tabular-nums; }
+  .basis { font-size:10.5px; color:var(--ink-faint); margin-top:5px; line-height:1.35; }
+
+  .block + .block { margin-top:10px; padding-top:9px; border-top:1px solid var(--surface-sunken); }
+  .blockname { font-size:10px; font-weight:650; letter-spacing:.06em; text-transform:uppercase;
+    color:var(--ink-faint); margin:0 0 2px; display:flex; justify-content:space-between; align-items:baseline; gap:8px; }
+  .blockname .cov { font-weight:400; letter-spacing:0; text-transform:none; font-size:10px; text-align:right; }
+  .kind { padding:7px 0; border-bottom:1px solid var(--surface-sunken); }
+  .kind:last-child { border-bottom:0; padding-bottom:0; }
+  .kind:first-of-type { padding-top:4px; }
+  .krow { display:flex; align-items:baseline; justify-content:space-between; gap:8px; }
+  .kname { font-size:13px; font-weight:650; color:var(--ink); }
+  .kname em { font-style:normal; font-weight:500; color:var(--ink-muted); font-size:11.5px; }
+  .ktime { font-size:13px; font-weight:650; font-variant-numeric:tabular-nums; color:var(--ink); white-space:nowrap; }
+  .kmeta { display:flex; gap:6px; flex-wrap:wrap; margin-top:4px; }
+  .pill { font-size:10.5px; color:var(--ink-soft); background:var(--surface-soft); border:1px solid var(--edge);
+    border-radius:99px; padding:1.5px 8px; font-variant-numeric:tabular-nums; }
+  .pill.amber { background:var(--accent-50); border-color:var(--accent-100); color:#7A5310; }
+  .klast { font-size:11.5px; color:var(--ink-soft); margin-top:5px; line-height:1.35; }
+  .klast b { font-weight:650; color:var(--ink); }
+  .kchg { font-size:10.5px; color:var(--ink-faint); margin-top:2px; line-height:1.35; }
+  .caveat { font-size:10.5px; color:var(--ink-muted); margin-top:6px; padding:6px 8px; line-height:1.4;
+    background:var(--surface-soft); border-left:2px solid var(--brand-300); border-radius:0 5px 5px 0; }
+  .novalue { font-size:11.5px; color:var(--ink-muted); line-height:1.4; padding:6px 0; }
+  .novalue b { color:var(--ink-soft); font-weight:600; }
+
+  /* ---- the reading ---- */
+  .reading p { margin:0 0 7px; font-size:12.5px; line-height:1.5; color:var(--ink); }
+  .reading p:last-child { margin-bottom:0; }
+  .reading .dim { color:var(--ink-muted); }
+  .reading b { font-weight:650; }
+
+  /* ---- the desktop ---- */
+  .desk { width:100%; max-width:1120px; border:1px solid var(--edge); border-radius:12px; background:var(--surface);
+    box-shadow:0 2px 10px rgba(11,27,39,.07); padding:16px 18px; }
+  .deskgrid { display:grid; grid-template-columns: 1.3fr 1fr; gap:22px; }
+  @media (max-width:920px) { .deskgrid { grid-template-columns:1fr; } }
+  table.ledger { width:100%; border-collapse:collapse; font-size:12px; }
+  table.ledger th { text-align:left; font-weight:650; font-size:9.5px; letter-spacing:.06em; text-transform:uppercase;
+    color:var(--ink-faint); padding:0 8px 5px 0; border-bottom:1px solid var(--edge); }
+  table.ledger th.num, table.ledger td.num { text-align:right; font-variant-numeric:tabular-nums; }
+  table.ledger td { padding:7px 8px 7px 0; border-bottom:1px solid var(--surface-sunken); vertical-align:top;
+    color:var(--ink-soft); }
+  table.ledger td.k { color:var(--ink); font-weight:650; white-space:nowrap; }
+  table.ledger td.k span { display:block; font-weight:400; color:var(--ink-faint); font-size:10.5px; }
+  table.ledger tr:last-child td { border-bottom:0; }
+  .rule { border-top:1px solid var(--surface-sunken); margin-top:10px; padding-top:9px; }
+  .rule .t { font-size:10px; font-weight:650; letter-spacing:.06em; text-transform:uppercase; color:var(--ink-faint); }
+
+  .foot { font-size:11.5px; color:var(--ink-faint); line-height:1.5; margin-top:26px; max-width:1000px; }
+  .foot b { color:var(--ink-soft); }
+  code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size:11px;
+    background:var(--surface-sunken); border-radius:4px; padding:1px 4px; color:var(--ink-soft); }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <h1>Where the time went — the Progress card, extended</h1>
+  <p class="lede">
+    The stimulus ledger is <b>not a new card</b>. It is the cut Progress wall's <b>"Where the time
+    went"</b> card — the one that merges the zone card, the polarised split and the zone-time
+    distribution — with the ledger's rows added to it: the last date each band occurred, the change
+    against the period before, the longest run and the repeated work. Facts only: no verdict, no
+    score, no readiness, no plan advice.
+  </p>
+  <p class="note">
+    The data below is <b>synthetic</b>: one athlete, 25 weeks, 135 runs. The window is
+    <b>7 September – 24 November 2026</b> — the last 12 calendar weeks through today — 58 runs,
+    49 h 33 m of moving time; the period it is compared against is the same span ending seven days
+    earlier, 31 August – 17 November. There is <b>no run above the Z4 floor for five weeks</b>: the
+    last one was on 20 October 2026, 35 days before the end of the window. The rules and the wording
+    are in <code>exploration/stimulus-ledger.md</code>.
+  </p>
+
+  <h2><span class="n">1</span>The card, on the phone</h2>
+  <p class="note">
+    Two blocks, because the two families are measured differently: <b>by intensity</b> (the athlete's
+    own zones, so the three rows share the window's moving time) and <b>by shape</b> (the run's own
+    structure — the longest run and the repeated work, measured by the watch's workout steps, which
+    do not use heart rate). The coverage line sits with the rows it qualifies; the caveat sits with
+    the absence row it qualifies. The <b>source line is at the top of the screen</b>, once — the
+    model and the day it was read — and no row names the model again.
+  </p>
+
+  <div class="phones">
+    <div class="phonewrap">
+      <div class="phone">
+        <div class="bar">
+          <div><h1>Progress</h1><div class="meta">7 Sep – 24 Nov 2026 · last 12 weeks</div></div>
+        </div>
+        <div class="body">
+          <div class="srcbar"><span>your zone model · running · HR_MAX · max heart rate 183 bpm · read on 3 Nov 2026</span><a>details ›</a></div>
+
+          <div class="card">
+            <div class="h">The load</div>
+            <div class="dist" style="font-size:12.5px;">acute <b>118</b> · chronic <b>84</b> · form <b>+34</b> · ratio <b>1.40</b></div>
+            <div class="basis">Banister k = 1.92 · with no training for 7 days the ratio is expected back
+              inside 0.8 to 1.3 in about a day</div>
+          </div>
+
+          <div class="card">
+            <div class="h">Where the time went</div>
+            <div class="dist">Z1 42.4% · Z2 41.7% · Z3 13.9% · Z4 2.0% · Z5 0.3% <span>· outside 0%</span></div>
+            <div class="rollup">low 84.1% · moderate 13.9% · high 2.3%</div>
+            <div class="basis">measured over the moving time</div>
+
+            <div class="block">
+              <div class="blockname"><span>By intensity · your zones</span>
+                <span class="cov">58 of 58 runs carry heart-rate samples</span></div>
+
+              <div class="kind">
+                <div class="krow"><span class="kname">Z1–Z2 <em>low</em></span><span class="ktime">41 h 32 m</span></div>
+                <div class="kmeta"><span class="pill">84% of the moving time</span><span class="pill">58 runs</span></div>
+                <div class="klast">The last run in Z1–Z2 was on <b>24 Nov 2026</b>.</div>
+                <div class="kchg">37 m more against the period before (41 h 32 m against 40 h 54 m)</div>
+              </div>
+
+              <div class="kind">
+                <div class="krow"><span class="kname">Z3 <em>moderate</em></span><span class="ktime">6 h 52 m</span></div>
+                <div class="kmeta"><span class="pill">14% of the moving time</span><span class="pill">58 runs</span></div>
+                <div class="klast">The last run in Z3 was on <b>24 Nov 2026</b>.</div>
+                <div class="kchg">8 m less against the period before (6 h 52 m against 7 h 01 m)</div>
+              </div>
+
+              <div class="kind">
+                <div class="krow"><span class="kname">Z4–Z5 <em>high</em></span><span class="ktime">1 h 08 m</span></div>
+                <div class="kmeta"><span class="pill">2% of the moving time</span><span class="pill">4 runs</span>
+                  <span class="pill amber">last 35 days</span></div>
+                <div class="klast">The last run in Z4–Z5 was on <b>20 Oct 2026</b> — 35 days before the end of
+                  the window.</div>
+                <div class="kchg">15 m less against the period before (1 h 08 m against 1 h 23 m) · 4 runs against 5</div>
+                <div class="caveat">Heart-rate time in zone counts hard running slowly and easy running
+                  generously — the last run in Z4–Z5 is what the watch recorded.</div>
+              </div>
+            </div>
+
+            <div class="block">
+              <div class="blockname"><span>By shape · the run's own structure</span>
+                <span class="cov">a measurement that does not use heart rate</span></div>
+
+              <div class="kind">
+                <div class="krow"><span class="kname">Longest run</span><span class="ktime">20.4 km</span></div>
+                <div class="kmeta"><span class="pill">1 h 59 m</span><span class="pill">4% of the moving time</span>
+                  <span class="pill">21 Nov 2026</span></div>
+                <div class="kchg">0.8 km more than the longest run in the period before (19.6 km on 31 Oct 2026)</div>
+              </div>
+
+              <div class="kind">
+                <div class="krow"><span class="kname">Repeated work</span><span class="ktime">2 h 15 m</span></div>
+                <div class="kmeta"><span class="pill">5% of the moving time</span><span class="pill">3 runs</span></div>
+                <div class="klast">The last run with a workout step was on <b>15 Oct 2026</b>.</div>
+                <div class="kchg">45 m less against the period before (2 h 15 m against 3 h 00 m) · 3 runs against 4</div>
+                <div class="kchg">3 runs carry the watch's workout steps</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="h">The window, in sentences</div>
+            <div class="reading">
+              <p><b>41 h 32 m</b> of the window's moving time was in Z1–Z2 — 84% of it — across 58 runs.
+                The last run in Z1–Z2 was on 24 Nov 2026.</p>
+              <p><b>1 h 08 m</b> was in Z4–Z5 — 2% of the moving time — across 4 runs. The last run in
+                Z4–Z5 was on 20 Oct 2026, 35 days before the end of the window.</p>
+              <p>The longest run in the window was <b>20.4 km</b> in 1 h 59 m, on 21 Nov 2026. The longest
+                run in the 12 weeks before it was 19.6 km.</p>
+              <p class="dim">Z4–Z5: 1 h 08 m in the window against 1 h 23 m in the 12 weeks before (4 runs
+                against 5).</p>
+            </div>
+          </div>
+
+        </div>
+      </div>
+      <div class="caption"><b>The main state.</b> The screen's source line names the model once, above
+        the cards; the load card's scenario does not repeat it, and neither does any row. The Z4–Z5
+        row carries the absence and the caveat about what heart rate measures.</div>
+    </div>
+
+    <div class="phonewrap">
+      <div class="phone">
+        <div class="bar">
+          <div><h1>Progress</h1><div class="meta">7 Sep – 24 Nov 2026 · last 12 weeks</div></div>
+        </div>
+        <div class="body">
+          <div class="srcbar"><span>your zone model · running · HR_MAX · max heart rate 183 bpm · read on 3 Nov 2026</span><a>details ›</a></div>
+
+          <div class="card">
+            <div class="h">Where the time went</div>
+            <div class="dist">Z1 42.4% · Z2 41.7% · Z3 13.9% · Z4 2.0% · Z5 0.3% <span>· outside 0%</span></div>
+            <div class="rollup">low 84.1% · moderate 13.9% · high 2.3%</div>
+            <div class="basis">measured over the moving time</div>
+
+            <div class="block">
+              <div class="blockname"><span>By intensity · your zones</span>
+                <span class="cov">58 of 58 runs carry heart-rate samples</span></div>
+
+              <div class="kind">
+                <div class="krow"><span class="kname">Z1–Z2 <em>low</em></span><span class="ktime">41 h 32 m</span></div>
+                <div class="kmeta"><span class="pill">84%</span><span class="pill">58 runs</span></div>
+                <div class="klast">last <b>24 Nov 2026</b></div>
+              </div>
+
+              <div class="kind">
+                <div class="krow"><span class="kname">Z3 <em>moderate</em></span><span class="ktime">6 h 52 m</span></div>
+                <div class="kmeta"><span class="pill">14%</span><span class="pill">58 runs</span></div>
+                <div class="klast">last <b>24 Nov 2026</b></div>
+              </div>
+
+              <div class="kind">
+                <div class="krow"><span class="kname">Z4–Z5 <em>high</em></span><span class="ktime">1 h 08 m</span></div>
+                <div class="kmeta"><span class="pill">2%</span><span class="pill">4 runs</span>
+                  <span class="pill amber">last 35 days</span></div>
+                <div class="klast">last <b>20 Oct 2026</b> — 35 days before the end of the window</div>
+              </div>
+            </div>
+
+            <div class="block">
+              <div class="blockname"><span>By shape · the run's own structure</span></div>
+              <div class="kind">
+                <div class="krow"><span class="kname">Longest run</span><span class="ktime">20.4 km</span></div>
+                <div class="kmeta"><span class="pill">1 h 59 m</span><span class="pill">21 Nov 2026</span></div>
+              </div>
+              <div class="kind">
+                <div class="krow"><span class="kname">Repeated work</span><span class="ktime">2 h 15 m</span></div>
+                <div class="kmeta"><span class="pill">3 runs</span><span class="pill">last 15 Oct 2026</span></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="h">The window, in sentences</div>
+            <div class="reading">
+              <p><b>41 h 32 m</b> of the window's moving time was in Z1–Z2 — 84% of it — across 58 runs.</p>
+              <p><b>1 h 08 m</b> was in Z4–Z5 — 2% of the moving time — across 4 runs. The last run in
+                Z4–Z5 was on 20 Oct 2026, 35 days before the end of the window.</p>
+              <p class="dim">The longest run in the window was <b>20.4 km</b> in 1 h 59 m, on 21 Nov 2026.</p>
+            </div>
+          </div>
+
+        </div>
+      </div>
+      <div class="caption"><b>The compact form.</b> The same card with the change lines and the caveat
+        folded away — the shape the phone would take when the card sits under the range selector.</div>
+    </div>
+  </div>
+
+  <h2><span class="n">2</span>The card, on the desktop</h2>
+  <p class="note">
+    The wide width has room for the whole ledger as one table — every kind, every number, the last
+    date and the change in the same row — and the sentences beside it. The app writes none of the
+    sentences: the core's catalogue holds them.
+  </p>
+
+  <div class="desk">
+    <div class="srcbar" style="margin:0 0 10px;"><span>your zone model · running · HR_MAX · max heart rate 183 bpm · read on 3 Nov 2026</span><a>details ›</a></div>
+    <div class="deskgrid">
+      <div>
+        <div class="h" style="margin-bottom:8px;">Where the time went · 7 Sep – 24 Nov 2026</div>
+        <div class="dist" style="margin-bottom:3px;">Z1 42.4% · Z2 41.7% · Z3 13.9% · Z4 2.0% · Z5 0.3% <span>· outside 0%</span></div>
+        <div class="rollup" style="margin-bottom:8px;">low 84.1% · moderate 13.9% · high 2.3%</div>
+        <table class="ledger">
+          <thead>
+            <tr>
+              <th>Kind</th>
+              <th class="num">Time</th>
+              <th class="num">Share</th>
+              <th class="num">Runs</th>
+              <th>Last date</th>
+              <th class="num">Against the period before</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="k">Z1–Z2 low<span>the athlete's own zones</span></td>
+              <td class="num">41 h 32 m</td><td class="num">84%</td><td class="num">58</td>
+              <td>24 Nov 2026</td><td class="num">+37 m</td>
+            </tr>
+            <tr>
+              <td class="k">Z3 moderate<span>the athlete's own zones</span></td>
+              <td class="num">6 h 52 m</td><td class="num">14%</td><td class="num">58</td>
+              <td>24 Nov 2026</td><td class="num">−8 m</td>
+            </tr>
+            <tr>
+              <td class="k">Z4–Z5 high<span>the athlete's own zones</span></td>
+              <td class="num">1 h 08 m</td><td class="num">2%</td><td class="num">4</td>
+              <td>20 Oct 2026<br /><span class="faint">35 days before the end of the window</span></td>
+              <td class="num">−15 m</td>
+            </tr>
+            <tr>
+              <td class="k">Longest run<span>the run's own distance and time</span></td>
+              <td class="num">1 h 59 m<br /><span class="faint">20.4 km</span></td>
+              <td class="num">4%</td><td class="num">1</td>
+              <td>21 Nov 2026</td><td class="num">+0.8 km</td>
+            </tr>
+            <tr>
+              <td class="k">Repeated work<span>the watch's own workout steps</span></td>
+              <td class="num">2 h 15 m</td><td class="num">5%</td><td class="num">3</td>
+              <td>15 Oct 2026</td><td class="num">−45 m</td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="rule">
+          <div class="t">The window</div>
+          <p class="small muted" style="margin:5px 0 0;">49 h 33 m of moving time across 58 runs.
+            The period before it — the same span, ending seven days earlier — 49 h 20 m across 58 runs.
+            3 runs carry the watch's workout steps.</p>
+        </div>
+        <div class="rule">
+          <div class="t">The load</div>
+          <p class="small muted" style="margin:5px 0 0;">acute <b>118</b> · chronic <b>84</b> · form
+            <b>+34</b> · ratio <b>1.40</b></p>
+          <p class="tiny faint" style="margin:3px 0 0;">Banister k = 1.92 · with no training for 7 days
+            the ratio is expected back inside 0.8 to 1.3 in about a day</p>
+        </div>
+      </div>
+
+      <div>
+        <div class="h" style="margin-bottom:8px;">The window, in sentences</div>
+        <div class="reading">
+          <p><b>41 h 32 m</b> of the window's moving time was in Z1–Z2 — 84% of it — across 58 runs.
+            The last run in Z1–Z2 was on 24 Nov 2026.</p>
+          <p><b>6 h 52 m</b> was in Z3 — 14% of the moving time — across 58 runs. The last run in Z3 was
+            on 24 Nov 2026.</p>
+          <p><b>1 h 08 m</b> was in Z4–Z5 — 2% of the moving time — across 4 runs. The last run in Z4–Z5
+            was on 20 Oct 2026, 35 days before the end of the window.</p>
+          <p>The longest run in the window was <b>20.4 km</b> in 1 h 59 m, on 21 Nov 2026. The longest run
+            in the 12 weeks before it was 19.6 km.</p>
+          <p><b>2 h 15 m</b> was repeated work — 5% of the moving time — across 3 runs. The last run with
+            a workout step was on 15 Oct 2026.</p>
+          <p class="dim">Heart-rate time in zone counts hard running slowly and easy running generously
+            — the last run in Z4–Z5 is what the watch recorded.</p>
+          <p class="dim">Z4–Z5: 1 h 08 m in the window against 1 h 23 m in the 12 weeks before (4 runs
+            against 5).</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <h2><span class="n">3</span>The states the card has to hold</h2>
+  <p class="note">
+    A missing value is never a zero, and a measured zero is not a missing value: a run with a zone
+    model and no time in Z4–Z5 <b>has</b> a measured zero, and a window with no stored model has
+    <b>no value</b> at all, with the reason in the core's own words. The card can answer one family
+    and not the other. The frames below are real windows of the same synthetic athlete.
+  </p>
+
+  <div class="phones">
+
+    <!-- empty window -->
+    <div class="phonewrap">
+      <div class="phone small">
+        <div class="bar"><div><h1>Progress</h1><div class="meta">9 – 15 Nov 2026 · last 1 week</div></div></div>
+        <div class="body">
+          <div class="srcbar"><span>your zone model · running · HR_MAX · max heart rate 183 bpm · read on 3 Nov 2026</span><a>details ›</a></div>
+          <div class="card">
+            <div class="h">Where the time went</div>
+            <p class="novalue"><b>No run recorded in the window.</b></p>
+            <p class="tiny faint" style="margin:0;">The kinds, the distribution and the zone model are
+              not shown: there is nothing for them to hold. A day with no recorded run may be a run the
+              watch did not record.</p>
+          </div>
+        </div>
+      </div>
+      <div class="caption"><b>No run recorded.</b> One line, in the core's words — never "rest": a day
+        without a recorded run may be a forgotten watch.</div>
+    </div>
+
+    <!-- one run -->
+    <div class="phonewrap">
+      <div class="phone small">
+        <div class="bar"><div><h1>Progress</h1><div class="meta">2 – 8 Nov 2026 · last 1 week</div></div></div>
+        <div class="body">
+          <div class="srcbar"><span>your zone model · running · HR_MAX · max heart rate 183 bpm · read on 3 Nov 2026</span><a>details ›</a></div>
+          <div class="card">
+            <div class="h">Where the time went</div>
+            <div class="dist">Z1 50.0% · Z2 45.0% · Z3 5.0% · Z4 0.0% · Z5 0.0% <span>· outside 0%</span></div>
+            <div class="rollup">low 95.0% · moderate 5.0% · high 0.0%</div>
+            <div class="basis">measured over the moving time</div>
+            <div class="block">
+              <div class="blockname"><span>By intensity · your zones</span>
+                <span class="cov">1 of 1 runs carry heart-rate samples</span></div>
+              <div class="kind">
+                <div class="krow"><span class="kname">Z1–Z2 <em>low</em></span><span class="ktime">33 m</span></div>
+                <div class="kmeta"><span class="pill">95% of the moving time</span><span class="pill">1 run</span></div>
+                <div class="klast">The last run in Z1–Z2 was on <b>8 Nov 2026</b>.</div>
+                <div class="kchg">3 h 02 m less against the period before (33 m against 4 h 35 m)</div>
+              </div>
+              <div class="kind">
+                <div class="krow"><span class="kname">Z3 <em>moderate</em></span><span class="ktime">2 m</span></div>
+                <div class="kmeta"><span class="pill">5% of the moving time</span><span class="pill">1 run</span></div>
+                <div class="klast">The last run in Z3 was on <b>8 Nov 2026</b>.</div>
+                <div class="kchg">38 m less against the period before (2 m against 40 m)</div>
+              </div>
+              <div class="kind">
+                <div class="krow"><span class="kname">Z4–Z5 <em>high</em></span><span class="ktime">0 m</span></div>
+                <div class="kmeta"><span class="pill">0% of the moving time</span><span class="pill">0 runs</span></div>
+                <div class="klast">No run in the window was in Z4–Z5.</div>
+                <div class="kchg">the same as the period before (0 m against 0 m)</div>
+              </div>
+            </div>
+            <div class="block">
+              <div class="blockname"><span>By shape · the run's own structure</span></div>
+              <div class="kind">
+                <div class="krow"><span class="kname">Longest run</span><span class="ktime">6 km</span></div>
+                <div class="kmeta"><span class="pill">35 m</span><span class="pill">8 Nov 2026</span></div>
+              </div>
+              <div class="kind">
+                <div class="krow"><span class="kname">Repeated work</span><span class="ktime">—</span></div>
+                <div class="novalue" style="padding:3px 0 0;">no value — the runs in the window carry no
+                  workout steps</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="caption"><b>One run in the window.</b> A measured zero (Z4–Z5) is shown as a zero, with
+        no date; a value the run cannot carry is <b>no value</b>, with its reason.</div>
+    </div>
+
+    <!-- no zone model -->
+    <div class="phonewrap">
+      <div class="phone small">
+        <div class="bar"><div><h1>Progress</h1><div class="meta">7 Sep – 24 Nov 2026 · last 12 weeks</div></div></div>
+        <div class="body">
+          <div class="card">
+            <div class="h">Where the time went</div>
+            <div class="block" style="border-top:0; padding-top:0;">
+              <div class="blockname"><span>By intensity · your zones</span></div>
+              <p class="novalue"><b>Zones unavailable</b> — no zone model has been read.</p>
+              <p class="tiny faint" style="margin:0;">No distribution, no band times, no shares and no
+                last dates. The runs themselves are still there.</p>
+            </div>
+            <div class="block">
+              <div class="blockname"><span>By shape · the run's own structure</span></div>
+              <div class="kind">
+                <div class="krow"><span class="kname">Longest run</span><span class="ktime">20.4 km</span></div>
+                <div class="kmeta"><span class="pill">1 h 59 m</span><span class="pill">21 Nov 2026</span></div>
+              </div>
+              <div class="kind">
+                <div class="krow"><span class="kname">Repeated work</span><span class="ktime">2 h 15 m</span></div>
+                <div class="kmeta"><span class="pill">3 runs</span><span class="pill">last 15 Oct 2026</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="caption"><b>No stored zone model.</b> The intensity family has no value and says why, in
+        the core's words. The shape family does not depend on the model, so it still answers.</div>
+    </div>
+
+    <!-- no heart-rate data -->
+    <div class="phonewrap">
+      <div class="phone small">
+        <div class="bar"><div><h1>Progress</h1><div class="meta">7 Sep – 24 Nov 2026 · last 12 weeks</div></div></div>
+        <div class="body">
+          <div class="srcbar"><span>your zone model · running · HR_MAX · max heart rate 183 bpm · read on 3 Nov 2026</span><a>details ›</a></div>
+          <div class="card">
+            <div class="h">Where the time went</div>
+            <div class="block" style="border-top:0; padding-top:0;">
+              <div class="blockname"><span>By intensity · your zones</span></div>
+              <p class="novalue"><b>The split has no value</b> — the runs in the window have no
+                heart-rate samples.</p>
+              <p class="tiny faint" style="margin:0;">No distribution and no band rows. The absence is
+                not the athlete's: no band row means no value, never 0 m.</p>
+            </div>
+            <div class="block">
+              <div class="blockname"><span>By shape · the run's own structure</span></div>
+              <div class="kind">
+                <div class="krow"><span class="kname">Longest run</span><span class="ktime">20.4 km</span></div>
+                <div class="kmeta"><span class="pill">1 h 59 m</span><span class="pill">21 Nov 2026</span></div>
+              </div>
+              <div class="kind">
+                <div class="krow"><span class="kname">Repeated work</span><span class="ktime">2 h 15 m</span></div>
+                <div class="kmeta"><span class="pill">3 runs</span><span class="pill">last 15 Oct 2026</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="caption"><b>No heart-rate data in the window.</b> One family answers and the other does
+        not — the shape rows come from distance, time and workout steps, and need no heart rate.</div>
+    </div>
+
+    <!-- partial coverage, and no workout steps -->
+    <div class="phonewrap">
+      <div class="phone small">
+        <div class="bar"><div><h1>Progress</h1><div class="meta">7 Sep – 24 Nov 2026 · last 12 weeks</div></div></div>
+        <div class="body">
+          <div class="srcbar"><span>your zone model · running · HR_MAX · max heart rate 183 bpm · read on 3 Nov 2026</span><a>details ›</a></div>
+          <div class="card">
+            <div class="h">Where the time went</div>
+            <div class="dist">Z1 42.0% · Z2 41.4% · Z3 14.2% · Z4 2.0% · Z5 0.3% <span>· outside 0%</span></div>
+            <div class="rollup">low 83.4% · moderate 14.2% · high 2.3%</div>
+            <div class="basis">measured over the moving time</div>
+            <div class="block">
+              <div class="blockname"><span>By intensity · your zones</span>
+                <span class="cov">55 of 58 runs carry heart-rate samples</span></div>
+              <div class="kind">
+                <div class="krow"><span class="kname">Z1–Z2 <em>low</em></span><span class="ktime">39 h 51 m</span></div>
+                <div class="kmeta"><span class="pill">83% of the measured time</span><span class="pill">55 runs</span></div>
+                <div class="klast">The last run in Z1–Z2 was on <b>24 Nov 2026</b>.</div>
+              </div>
+              <div class="kind">
+                <div class="krow"><span class="kname">Z4–Z5 <em>high</em></span><span class="ktime">1 h 08 m</span></div>
+                <div class="kmeta"><span class="pill">2% of the measured time</span><span class="pill">4 runs</span></div>
+                <div class="klast">The last run in Z4–Z5 was on <b>20 Oct 2026</b>.</div>
+                <div class="caveat">Heart-rate time in zone counts hard running slowly and easy running
+                  generously — the last run in Z4–Z5 is what the watch recorded.</div>
+              </div>
+              <p class="src">the change against the period before is not reported — the two periods do
+                not hold the same runs</p>
+            </div>
+            <div class="block">
+              <div class="blockname"><span>By shape · the run's own structure</span></div>
+              <div class="kind">
+                <div class="krow"><span class="kname">Repeated work</span><span class="ktime">—</span></div>
+                <div class="novalue" style="padding:3px 0 0;">no value — the runs in the window carry no
+                  workout steps</div>
+                <div class="kchg" style="margin-top:5px;">the runs in the window carry no workout steps —
+                  the date above is the heart rate's answer alone</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="caption"><b>Partial coverage, and no workout steps.</b> The card names the coverage, measures
+        the share over the measured time, does not compare two periods that do not hold the same runs,
+        and says what it could not measure.</div>
+    </div>
+
+    <!-- runs before the first stored model -->
+    <div class="phonewrap">
+      <div class="phone small">
+        <div class="bar"><div><h1>Progress</h1><div class="meta">7 Sep – 24 Nov 2026 · last 12 weeks</div></div></div>
+        <div class="body">
+          <div class="srcbar"><span>your zone model · running · HR_MAX · max heart rate 183 bpm · read on 10 Sep 2026</span><a>details ›</a></div>
+          <div class="card">
+            <div class="h">Where the time went</div>
+            <div class="dist">Z1 42.2% · Z2 41.6% · Z3 13.8% · Z4 2.1% · Z5 0.3% <span>· outside 0%</span></div>
+            <div class="rollup">low 83.8% · moderate 13.8% · high 2.4%</div>
+            <div class="basis">measured over the moving time</div>
+            <div class="block">
+              <div class="blockname"><span>By intensity · your zones</span>
+                <span class="cov">58 of 58 runs carry heart-rate samples</span></div>
+              <div class="kind">
+                <div class="krow"><span class="kname">Z1–Z2 <em>low</em></span><span class="ktime">39 h 44 m</span></div>
+                <div class="kmeta"><span class="pill">84% of the measured time</span><span class="pill">55 runs</span></div>
+                <div class="klast">The last run in Z1–Z2 was on <b>24 Nov 2026</b>.</div>
+                <div class="kchg" style="color:var(--ink-soft);">no zone time for 3 runs in the window — the
+                  first stored zone model was read on 10 Sep 2026</div>
+              </div>
+              <div class="kind">
+                <div class="krow"><span class="kname">Z4–Z5 <em>high</em></span><span class="ktime">1 h 08 m</span></div>
+                <div class="kmeta"><span class="pill">2% of the measured time</span><span class="pill">4 runs</span></div>
+                <div class="klast">The last run in Z4–Z5 was on <b>20 Oct 2026</b>.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="caption"><b>Three runs predate the first stored model.</b> The screen's source line names
+        the model once; the row that lost those runs says so in place, because a silent difference
+        would be a wrong number.</div>
+    </div>
+
+  </div>
+
+  <h2><span class="n">4</span>The run detail's one line</h2>
+  <p class="note">
+    The run's own row in the ledger — the same kinds, the same last dates, measured against the zone
+    model <b>in force on the run's date</b>, so the run detail and the card cannot disagree.
+  </p>
+
+  <div class="phones">
+    <div class="phonewrap">
+      <div class="phone small">
+        <div class="bar"><div><h1>Run</h1><div class="meta">Long run · 21 Nov 2026 · 20.4 km</div></div></div>
+        <div class="body">
+          <div class="srcbar"><span>your zone model · running · HR_MAX · max heart rate 183 bpm · read on 3 Nov 2026</span><a>details ›</a></div>
+          <div class="card">
+            <div class="h">Effort</div>
+            <div class="dist" style="font-size:12.5px;">Z1 42.4% · Z2 41.7% · Z3 13.9% · Z4 2.0% · Z5 0.3%</div>
+            <div class="basis">this run</div>
+            <div class="block" style="border-top:0; padding-top:8px;">
+              <div class="blockname"><span>In the ledger</span></div>
+              <div class="kind" style="border-bottom:0;">
+                <div class="klast">Z1–Z2 — <b>1 h 25 m</b> of this run's 1 h 59 m · Z4–Z5 <b>0 m</b></div>
+                <div class="kchg">the last run in Z4–Z5 was on 20 Oct 2026 — 35 days before the end of the
+                  window</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="caption"><b>The run's own row.</b> Where this run sits in the ledger, and when the band it
+        did not reach last occurred.</div>
+    </div>
+  </div>
+
+  <h2><span class="n">5</span>What the card does not say</h2>
+  <div class="foot">
+    <p><b>No verdict.</b> Nothing here says the training was unbalanced, that the athlete needs
+      threshold work, or that five weeks without a run above Z4 is a problem. The card says when the
+      last one was and how the time moved; the reader draws the conclusion.</p>
+    <p><b>No advice.</b> There is no suggestion, no "next week", no plan.</p>
+    <p><b>No score.</b> No readiness, no form, no traffic light.</p>
+    <p><b>No miss.</b> The absence is a <b>date</b> — "the last run in Z4–Z5 was on 20 Oct 2026" — and
+      never a list of what was not done. The word "missed" is on the product's ban list, and the ledger
+      is the reason it can be.</p>
+    <p><b>No rest.</b> A window with no runs says "no run recorded in the window": a day without a
+      recorded run may be a forgotten watch, and the card states the record, not an inference about
+      the athlete's week.</p>
+    <p><b>No zero where a value is missing.</b> A kind with no stored model, or a window with no
+      workout steps, has no value and says why. A measured zero — no time in Z4–Z5 — is a measurement
+      and is shown as one.</p>
+    <p><b>The caveat is a fact about the measurement, not a hedge.</b> Heart-rate time in zone counts
+      hard running slowly and easy running generously, so the date in the Z4–Z5 row is the watch's
+      answer. Where the watch's workout steps are available, they stand beside it as a second
+      measurement that does not use heart rate; where they are not, the card says so instead of
+      implying agreement.</p>
+    <p><b>No structure the watch did not write.</b> The repeated-work row counts the watch's own
+      workout steps. A run with no steps is not a run of "no repeated work" — it is a run the row
+      cannot measure, and the row says so.</p>
+    <p><b>One source line per screen.</b> The model and the day it was read are named once, at the top
+      of the screen, and the rows stay clean — the picture carries the numbers, the source line carries
+      the model, and the model's detail is one click away. Where an answer used a different model — a
+      run that predates the first stored model — the row says so in place, because a silent
+      difference would be a wrong number.</p>
+  </div>
+
+</div>
+</body>
+</html>

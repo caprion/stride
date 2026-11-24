@@ -71,9 +71,9 @@ describe('the year', () => {
   it('says what changed, in the core own sentences', async () => {
     renderApp('/year')
     const lines = await screen.findByTestId('year-changed-lines')
-    expect(lines.textContent).toContain('+76.6 km against the period before')
-    expect(lines.textContent).toContain('+7 recorded sessions')
-    expect(lines.textContent).toContain('the longest run grew by 18.2 km')
+    expect(lines.textContent).toContain('+31 km against the period before')
+    expect(lines.textContent).toContain('+3 recorded sessions')
+    expect(lines.textContent).toContain('the longest run was 18.2 km in both periods')
   })
 
   it('names the window it describes', async () => {

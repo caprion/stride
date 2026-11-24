@@ -18,6 +18,7 @@
 //! looks like a run of nothing.
 
 use serde_json::Value;
+use stride_core::date::Date;
 use stride_core::units;
 use stride_core::zones::ZoneFloors;
 
@@ -27,8 +28,8 @@ use crate::router::Request;
 use crate::state::Api;
 
 use super::data::{floors_of, zone_model_of};
+use super::ok;
 use super::series;
-use super::{day_label, day_of, ok};
 
 /// The run's film.
 pub fn film(api: &Api, request: &Request) -> ApiResult<Value> {
@@ -43,22 +44,23 @@ pub fn film(api: &Api, request: &Request) -> ApiResult<Value> {
         )));
     };
 
-    // The athlete's model: the one read most recently, named and dated.
+    // The athlete's model: **the one in force on the day of the run**,
+    // named and dated.
     //
     // A model whose floors are not in order cannot be used, and the reason
     // is the core's own — the film itself is still there, because the pace,
-    // the heart rate and the ground do not need a zone model.
-    let stored = api
-        .store()
-        .current_hr_zone_model()
-        .map_err(|error| api.store_error("the zone model could not be read", &error))?;
-    let (model, floors, max_heart_rate, zones_unavailable) = match stored {
-        None => (None, None, None, core_line("zones.no_model")),
+    // the heart rate and the ground do not need a zone model. A run that
+    // predates the first stored model has no model in force, and says so.
+    let model_for = match Date::parse(&run.local_date) {
+        Some(date) => crate::zonemodel::model_for(api, date)?,
+        None => crate::zonemodel::ModelFor::NoneRead,
+    };
+    let (model, floors, max_heart_rate, zones_unavailable) = match model_for.model() {
+        None => (None, None, None, core_line(model_for.reason_id())),
         Some(stored) => {
-            let read_on = day_label(day_of(api, stored.read_at)?);
-            let model = zone_model_of(&stored, &read_on);
+            let model = zone_model_of(stored);
             let max_heart_rate = stored.max_heart_rate;
-            let floors = floors_of(&stored);
+            let floors = floors_of(stored);
             if floors.is_usable() {
                 (Some(model), Some(floors), max_heart_rate, None)
             } else {

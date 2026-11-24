@@ -19,9 +19,9 @@
 //!
 //! The window is **the last twelve calendar months**, ending on the day the
 //! answer is about, and the period it is compared against is **the same
-//! number of days, ending a day earlier** — the rolling view's own
-//! comparison. The answer names both, so a number is never read apart from
-//! the period it describes.
+//! span, seven days earlier** — the one comparison rule the core has. The
+//! answer names both, so a number is never read apart from the period it
+//! describes.
 //!
 //! ## The privacy line
 //!
@@ -39,7 +39,7 @@
 //! diff with nothing to compare has no line for that value.
 
 use serde_json::Value;
-use stride_core::rolling::RollingWindow;
+use stride_core::rolling::Window;
 use stride_core::units;
 use stride_core::year::{DayFacts, MonthFacts};
 
@@ -97,15 +97,15 @@ pub fn year(api: &Api, _request: &Request) -> ApiResult<Value> {
 // ------------------------------------------------------------------ helpers
 
 /// A window of days, as the answer names it.
-fn window_of(window: RollingWindow) -> YearWindow {
+fn window_of(window: Window) -> YearWindow {
     let from = window.from();
-    let to = window.to;
+    let to = window.to();
     YearWindow {
         from: from.to_iso(),
         from_label: super::day_label(from),
         to: to.to_iso(),
         to_label: super::day_label(to),
-        days: window.days,
+        days: window.days(),
     }
 }
 

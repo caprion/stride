@@ -18,6 +18,12 @@ class PhoneRoutesTest {
     private val frozen = listOf(
         "/activities",
         "/activities/{id}",
+        "/activities/{id}/fit",
+        "/activities/{id}/film",
+        "/activities/{id}/note",
+        "/activities/{id}/update",
+        "/activities/{id}/update/payload",
+        "/activities/{id}/update/request",
         "/physiology/daily",
         "/physiology/sleep",
         "/physiology/hrv",
@@ -42,6 +48,11 @@ class PhoneRoutesTest {
         "/plan/import",
         "/insights/today",
         "/insights/progress",
+        "/insights/load",
+        "/insights/rolling",
+        "/insights/pace",
+        "/insights/challenges",
+        "/insights/streaks",
         "/insights/heatmap",
         "/insights/chips",
         "/insights/year",
@@ -60,6 +71,33 @@ class PhoneRoutesTest {
         "/auth/garmin/fit-import",
         "/auth/garmin/logout",
         "/calendar",
+        "/settings",
+        "/settings/export",
+        "/settings/import",
+        "/settings/delete",
+        "/update/settings",
+    )
+
+    /**
+     * The routes the bridge's table was missing.
+     *
+     * The table is a copy of the frozen route table, and a copy drifts: a
+     * route the router serves and the copy does not name is a 404 on the
+     * phone. These are the eleven that were missing, and they are named
+     * here so that the table cannot lose one of them again.
+     */
+    private val added = listOf(
+        "/insights/load",
+        "/insights/rolling",
+        "/insights/pace",
+        "/insights/challenges",
+        "/insights/streaks",
+        "/activities/{id}/fit",
+        "/activities/{id}/film",
+        "/activities/{id}/update",
+        "/activities/{id}/update/payload",
+        "/activities/{id}/update/request",
+        "/update/settings",
     )
 
     @Test
@@ -67,6 +105,43 @@ class PhoneRoutesTest {
         for (route in frozen) {
             val decision = PhoneRoutes.decide("GET", route)
             assertTrue("$route is not known", decision.known)
+        }
+    }
+
+    /**
+     * The eleven routes the table was missing are known.
+     *
+     * A route the router serves and the bridge does not name is refused
+     * with a 404 before anything is sent, so the phone's own screens
+     * cannot reach it: the Progress wall's cards, the pace page, the run
+     * film, the run update and the FIT file all failed that way.
+     */
+    @Test
+    fun `the routes the table was missing are known`() {
+        for (route in added) {
+            assertTrue("$route is not known", PhoneRoutes.decide("GET", route).known)
+        }
+    }
+
+    /**
+     * A missing route carries the athlete's data, so the bridge's own
+     * lock applies to it.
+     *
+     * The added routes are reads of the athlete's own history, and the
+     * ones that are written are writes: a route the bridge refuses to
+     * name would be a route the phone cannot see at all, and a route the
+     * bridge names as a read would be a route a locked screen could read.
+     */
+    @Test
+    fun `the routes the table was missing carry the athlete's data`() {
+        for (route in added) {
+            val read = PhoneRoutes.decide("GET", route)
+            assertTrue("$route carries no data", read.carriesData)
+            assertEquals("$route was classified wrongly", PhoneRoutes.Kind.Data, read.kind)
+
+            val write = PhoneRoutes.decide("POST", route)
+            assertTrue("$route carries no data", write.carriesData)
+            assertEquals("$route was classified wrongly", PhoneRoutes.Kind.Write, write.kind)
         }
     }
 
