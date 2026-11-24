@@ -31,6 +31,7 @@ reference only).
 |---|---|
 | `/plan/{current,today,week,blocks,sources,adherence,results,import}` | the plan engine |
 | `/insights/{today,progress,load,chips,rolling,streaks,pace,challenges}` | Today and the feed chips; `progress` is the Progress screen's answer, `load` is the training load over the same window (see "The training load" below), `rolling` is the rolling view (see "The rolling view" below), `streaks` is the streak of days and weeks (see "The streaks" below), `pace` is the pace page's answer (see "The pace page" below) and `challenges` is the athlete's own challenges, week by week (see "The challenges" below) |
+| `/insights/{paces,pacing-curve,threshold,stimulus}` | the ladder of the training paces, the physiological-cost curve, the threshold's four candidates and the stimulus ledger (see "The four insight routes" below) |
 
 | `/insights/{today,progress,load,chips,rolling,streaks,year,challenges}` | Today and the feed chips; `progress` is the Progress screen's answer, `load` is the training load over the same window (see "The training load" below), `rolling` is the rolling view (see "The rolling view" below), `streaks` is the streak of days and weeks (see "The streaks" below) and `year` is the year: the months, the calendar of the days and what changed (see "The year" below) |
 
@@ -164,6 +165,10 @@ Two rules hold for every shape below.
 | `/insights/rolling` | `generated_at`, `date`, `window: {from, from_label, to, to_label, days}`, `comparison: {from, from_label, to, to_label, days}`, `distance: {current, previous, difference}`, `duration: {current, previous, difference}`, `sessions: {current, previous, difference}`, `zones: {models, source, shares, distribution, weeks, unavailable}`, `distances: {key, label, sessions, distance, elevation, duration}[]`, `profile: {key, label, value, total, previous, movement}[]`, `weekday: {weekday, sessions, distance, duration, share}[]`, `daytime: {key, label, from_hour, to_hour, sessions, distance, duration}[]`, `months: {key, label, sessions, distance, duration, elevation}[]`, `years: {key, label, sessions, distance, duration, elevation}[]` |
 | `/insights/streaks` | `generated_at`, `date`, `days: {current, longest}`, `weeks: {current, longest}` |
 | `/insights/pace` | `generated_at`, `date`, `window: {from, from_label, to, to_label, weeks}`, `weeks: {week_start, distance, sessions, longest, pace, heart_rate}[]`, `bands: {width_s_per_km, total, distance, rows: {from, to, label, time, distance, share}[], rest} \| null`, `unavailable: string \| null` |
+| `/insights/paces` | `generated_at`, `date`, `window: {from, from_label, to, to_label, weeks}`, `source: string \| null`, `sources: {kind, line, date, date_label}[]`, `chain: string \| null`, `race: RaceRow \| null`, `equivalents: {distance, time, vdot_time, pace, difference_s}[]`, `rungs: {kind, label, rule: {id, citation, line}, anchor, pace: PaceRow, finish_pace: PaceRow, heart_rate: HeartRateRow, heart_rate_reserve: HeartRateRow}[]`, `unavailable: string \| null` |
+| `/insights/pacing-curve` | `generated_at`, `date`, `window: {from, from_label, to, to_label, weeks}`, `source: string \| null`, `sources: {kind, line, date, date_label}[]`, `curve: {minutes, percent_max, pace}[]`, `races: {label, time, minutes, percent_max, pace, date, date_label}[]`, `sessions: {kind, label, from_minutes, to_minutes, pace: PaceRow, rule: {id, citation, line}, missing}[]`, `field_test: {minutes, percent_max, pace} \| null`, `equivalents: {distance, time, vdot_time, pace, difference_s}[]`, `unavailable: string \| null` |
+| `/insights/threshold` | `generated_at`, `date`, `window: {from, from_label, to, to_label, weeks}`, `source: string \| null`, `sources: {kind, line, date, date_label}[]`, `candidates: {source, label, value, heart_rate_bpm, pace: PaceRow \| null, date, date_label, rule, note, missing}[]`, `in_force: ChoiceRow \| null`, `history: {date, date_label, line, value, base, in_force}[]`, `unavailable: string \| null` |
+| `/insights/stimulus` | `generated_at`, `date`, `window: {from, from_label, to, to_label, weeks}`, `source: string \| null`, `sources: {kind, line, date, date_label}[]`, `kinds: {key, label, time, share, runs, last: {date, date_label, days_before_end} \| null}[]`, `weeks: {week_start, week_start_label, bands: {key, label, time}[]}[]`, `coverage: {runs, with_heart_rate, measured, with_source_zones}`, `longest: {date, date_label, distance, time, share} \| null`, `repeated: {time, runs, last_on, last_on_label} \| null`, `repeated_missing: string \| null`, `source_zones: {zone, time, share, runs}[]`, `source_weeks: {week_start, week_start_label, zones}[]`, `overlap: {from, from_label, to, to_label, runs, app_moving, source_elapsed, difference} \| null`, `more_runs: boolean`, `unavailable: string \| null` |
 
 | `/insights/year` | `generated_at`, `date`, `window: {from, from_label, to, to_label, days}`, `comparison: {from, from_label, to, to_label, days}`, `months: {key, label, sessions, distance, duration, elevation, longest, form, weeks: {start, start_label, distance, sessions}[], mix: {zone, share}[], high}[]`, `days: {date, sessions, distance, high}[]`, `changed: string[]` |
 
@@ -193,8 +198,8 @@ other**: a contract that is not checked is a document, not a gate.
 
 The routes the app does not read — `/physiology/{daily,hrv,latest,sources}`,
 `/stats/*`, `/plan/{current,today,blocks,sources,adherence,results}`,
-`/fitness/trends`, `/insights/chips`, `/health/daily`,
-`/sync/{runs,history,settings}` and `/auth/garmin/logout` —
+`/fitness/trends`, `/insights/chips`, `/insights/{paces,pacing-curve,threshold,stimulus}`,
+`/health/daily`, `/sync/{runs,history,settings}` and `/auth/garmin/logout` —
 are the router's own, and they are written down in
 `crates/stride-api/src/dto.rs`. They follow the same two rules: a domain
 value is a rendered value, and a sentence is a sentence.
@@ -473,6 +478,142 @@ the volume chart draws, the current partial week included — and the answer
 * **No value is the absence of the whole result.** A window with no moving
   samples has **no bands**: `bands` is `null` and `unavailable` says why,
   in the core's own words. It is never a band of zero.
+
+### The four insight routes
+
+`/insights/{paces,pacing-curve,threshold,stimulus}` answer four questions
+about the athlete's own facts: **the ladder** of the training paces, **the
+physiological-cost curve**, **the threshold** and **the ledger**.
+
+They are four routes and not one field on `/insights/progress`: each has
+its own inputs, its own "no value" reasons and its own tables, and the
+progress payload is already wide.
+
+#### The window
+
+Every one of them takes the Progress window's own parameter — `weeks`,
+from 1 to 104, twelve by default — and **names the window it answers
+for**: the last `weeks` calendar weeks through the day the answer is
+about, the current week in it and partial. The ladder's own numbers do
+not depend on the window (the paces come from the athlete's own race, and
+a race is a fact about a day rather than a period), but the answer still
+names the window it is shown over.
+
+#### The source line is hoisted
+
+Every answer carries **one** source line for the screen to name —
+`source` — and the lines it was built from travel behind a click, in
+`sources`. The hoisted line is the **zone model's** own line, the one the
+bands were measured against, and the list behind it carries the model's
+read day and the race the paces came from. The lines are the core's own
+words; the api asks the core's catalogue for them and passes them on.
+
+#### No value
+
+**No value is the absence of the whole value**, and it is never a zero:
+
+| route | when there is no value | what the answer carries |
+|---|---|---|
+| `/insights/paces` | no race has been entered | the rungs are still there, each pace `null` with its reason; `unavailable` says why |
+| `/insights/pacing-curve` | no race has been entered | an empty curve; `unavailable` says why |
+| `/insights/threshold` | a candidate's own input is missing | that candidate is `null` with its reason, and the other three still stand |
+| `/insights/stimulus` | the period could not be measured | the rows are absent and `unavailable` says why |
+
+The reasons are the **core's own** — the api maps the core's reasons onto
+stable keys and never writes a reason of its own.
+
+#### The ladder
+
+The ladder is the method's own chain, read from the athlete's own facts:
+**a race the athlete typed → a fitness number → the equivalent race times
+→ the rungs**.
+
+* **`rungs`** — the rungs, fastest first. Each carries its **pace** (or
+  the reason it has none), its **heart-rate band** in both of the
+  method's forms — the share of the athlete's maximum heart rate, and the
+  share of their heart-rate reserve — its **rule** and its **citation**.
+  A rung with no pace is still a rung: the method fixes no pace for the
+  general-aerobic day, and the card says that rather than inventing one.
+* **`anchors`** — each rung names what its numbers hang on. The **goal
+  race pace** and the **hour-pace band** are two different numbers, and
+  neither is ever quoted as the other.
+* **`race`** — the athlete's own race: the distance, the time, the day,
+  the label, the day it was entered, the day it was last changed and its
+  source.
+* **`equivalents`** — the equivalent race times, by both models, with the
+  gap between them.
+
+#### The cost curve
+
+The curve is the engine's own relation: **the share of VO₂max that a
+duration holds**, against the time it is held for. It is a second reading
+of the athlete, not a second ladder.
+
+* **`curve`** — the relation, read over the durations the surface draws.
+* **`races`** — the athlete's own races, each at its own time and the
+  share of their maximum that time held.
+* **`sessions`** — the method's own sessions: the **threshold session**
+  (twenty to forty minutes at the hour-pace band) and the **recovery run**
+  (three to five miles at its pace), each as a band over its duration and
+  its prescribed pace. The **long run's** length comes with the plan's own
+  weeks: its duration is `null` with the reason. The general-aerobic day
+  is not here — the method fixes no pace and no duration for it.
+* **`field_test`** — the book's forty-five-minute time trial, and its
+  place on the curve.
+* **`equivalents`** — the pace equivalents, along the bottom.
+
+The method's heart-rate bands and this curve's %maxVO₂ axis are two
+different numbers, and the route never converts one into the other.
+
+#### The threshold
+
+The app **computes candidates**; the athlete **chooses one**. The route
+never says which candidate is right.
+
+* **`candidates`** — the four, in the product's own order: the **watch's
+  own zone model** (the floor of the fifth zone), **from a race** (the
+  hour-pace band), **from a field test** (the estimate from the run the
+  athlete pointed at) and **typed** (the athlete's own most recent typed
+  number). Each carries its value, its date, its rule, the note that
+  says what it cannot know, and the reason it has no value.
+* **`in_force`** — the choice in force: the value, the base it was made
+  for, the day it was made and the day the row was last changed.
+* **`history`** — the choices in their dated history, newest first. The
+  earlier choices are not deleted and not edited.
+
+The run the field test reads is named by the **`run`** query — the
+activity's id. Without it, the field-test candidate is "no value" with its
+reason; the athlete points at the run, and the app never picks one.
+
+#### The ledger
+
+The ledger answers against the athlete's **own recorded history**.
+
+* **`kinds`** — the athlete's own bands (Z1–Z2 low, Z3 moderate, Z4–Z5
+  high): the time in each, the share of the measured moving time, the
+  runs that carried it, and **when it last happened** — searched over the
+  athlete's whole retained history, not over the window alone.
+* **`weeks`** — the weeks × bands matrix. **A band a week held none has no
+  cell**: the absence is drawn as white space, never as a zero.
+* **`coverage`** — what the period covers: the runs, the runs that carried
+  heart-rate samples, the runs the app could measure, and the runs that
+  carried the source's own zone minutes.
+* **`longest`** — the run in the period that moved for the longest time.
+* **`repeated`** — the runs the watch recorded as workouts with interval
+  steps. **The watch's own workout steps are not read from the file yet**,
+  so the row is a no value with its reason.
+* **`source_zones`** · **`source_weeks`** — the watch's own zone minutes,
+  over the whole run. They are **never rolled up** into the athlete's own
+  bands: the app does not know where those zones started.
+* **`overlap`** — where both bases exist: the runs the app could measure
+  and the watch recorded its own zone minutes for. It states the distance
+  between the two measurements and says nothing about which is right.
+
+**The read is bounded.** Every run's file is decoded on read, through the
+router's one decode cache, and the ledger reads the newest **64** runs —
+which is what the cache holds — so the second read of the same window
+costs no decodes at all. A store that holds more runs than that says so
+in `more_runs`, and the rows cover the runs that were read.
 
 ### The heatmap
 

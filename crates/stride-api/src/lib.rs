@@ -27,6 +27,7 @@
 //! | [`planfile`] | the plan files the athlete may import: markdown, CSV, JSON, the Garmin schedule |
 //! | [`wellness`] | the source's own wellness observations: a Garmin payload and the rows it carries |
 //! | [`activity_observations`] | the source's own facts about a run: an activity search payload and the rows it carries |
+//! | [`athlete`] | the athlete's own facts: the race, the zone model and the resting heart rate |
 //!
 //! ## The rules this crate keeps
 //!
@@ -141,6 +142,7 @@ pub const VERSION: &str = match option_env!("STRIDE_VERSION") {
 };
 
 pub mod activity_observations;
+pub mod athlete;
 pub mod dto;
 pub mod error;
 pub mod ffi;

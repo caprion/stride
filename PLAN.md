@@ -259,6 +259,59 @@ three tables are added. No route changed, and no shape changed.
   gets all three tables and their indexes, in one transaction, and a
   database that already ran version 6 changes nothing.
 
+### Note — the four insight routes, and the decode cache they read through (2026-11-24)
+
+This note travels with a change to `docs/contract/api-paths.md`, which the
+contract freeze says is a plan change: a frozen file changes only with a
+plan note in the same change. **Four routes were added**, and the phone's
+copy of the route table travels with them.
+
+* **The four routes.** `/insights/paces` is the **ladder** — the training
+  paces, each with the rule it comes from, its citation, its heart-rate
+  band and the anchor its numbers hang on. `/insights/pacing-curve` is the
+  **cost curve** — the share of VO₂max against the time it is held for,
+  with the athlete's own races as points, the method's own sessions as
+  bands, the field test's marker and the pace equivalents.
+  `/insights/threshold` is the **four candidates**, the choice in force
+  and the dated history. `/insights/stimulus` is the **ledger** — the
+  weeks × bands matrix, the last occurrence of each kind, the coverage,
+  the longest run, the repeated work, and the two bases with the overlap.
+* **One window for all of them.** Each takes the Progress window's own
+  `weeks` parameter and **names the window it answers for**. The ladder's
+  own numbers do not depend on the window — the paces come from the
+  athlete's own race, and a race is a fact about a day — but the answer
+  still names the window it is shown over.
+* **The source line is hoisted.** Every answer carries **one** line for
+  the screen to name — the zone model's own line, with its read day — and
+  the lines it was built from travel behind a click, in `sources`. The
+  lines are the core's own words; the api asks the core's catalogue for
+  them and passes them on.
+* **The decode cache.** Every route that reads a run's file decoded it
+  again on every read, and the ledger reads about sixty files. **The
+  decode now happens in one place** — `routes/series.rs::decoded` — and
+  the decoded file is held in a **bounded cache** on the `Api`: the run's
+  id and the file's own SHA-256 are the key, the cache holds sixty-four
+  decoded runs by default, and the oldest is thrown away when it is full.
+  A file that is re-imported has a new digest, so the old decode is never
+  served for it. **Only the decode is cached**: every derived series is
+  still recomputed on read, from the decoded file.
+* **The read is bounded.** The ledger reads the newest **sixty-four**
+  runs — which is what the cache holds — so the second read of the same
+  window costs no decodes at all. A store that holds more runs than that
+  says so in `more_runs`, and the rows cover the runs that were read.
+* **What the ledger cannot read yet.** The **repeated-work row** is a no
+  value: the watch's own workout steps are not read from the FIT file
+  yet, and the corpus's lap field numbering is the project's own
+  convention, so the step name's field was not guessed at. The row names
+  the reason, and the reason is the core's own.
+* **The phone's table.** The bridge carries a copy of the frozen route
+  table, and a route the router serves and the copy does not name is a
+  **404 on the phone**. The copy names the four new routes, and the
+  bridge's test says so.
+* **The app does not read them yet.** The four routes are named in the
+  contract's list of the routes the app does not read. The app's own
+  screens come with the frontend step.
+
 ### Proposed amendment — the zone model is a dated fact (2026-11-15)
 
 **Proposal, not approved.** The approvals below are the user's to give. This

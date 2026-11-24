@@ -2422,7 +2422,7 @@ pub struct PaceInsight {
     /// The athlete's local calendar date the answer is about.
     pub date: String,
     /// The window the answer describes.
-    pub window: PaceWindow,
+    pub window: InsightWindow,
     /// The weeks of the window, oldest first.
     pub weeks: Vec<TrainingWeek>,
     /// The bands the window's time falls into, or `None` when the window
@@ -2433,9 +2433,14 @@ pub struct PaceInsight {
     pub unavailable: Option<String>,
 }
 
-/// The window the pace answer describes.
+/// The window a window-shaped answer describes.
+///
+/// **The Progress window**: the last `weeks` calendar weeks through the day
+/// the answer is about, the current week in it and partial. Every
+/// window-shaped answer names the window it covers, so that a number is
+/// never read apart from the period it describes.
 #[derive(Clone, Debug, PartialEq, Serialize)]
-pub struct PaceWindow {
+pub struct InsightWindow {
     /// The first day of the window, in the athlete's own calendar.
     pub from: String,
     /// The same day, as the api writes a date: "31 Aug 2026".
@@ -2800,4 +2805,529 @@ pub struct UpdateSettingsResponse {
     pub updated_at: String,
     /// When this answer was produced.
     pub generated_at: String,
+}
+
+// -------------------------------------------- the ladder, the curve, the threshold, the ledger
+
+/// One source line, behind the click.
+///
+/// **The source line is hoisted**: every answer carries **one** line for
+/// the screen to name, and the lines it was built from travel behind a
+/// click. A line is the core's own sentence, and the day beside it is the
+/// api's own rendering of the day the source was read or run.
+#[derive(Clone, Debug, PartialEq, Serialize)]
+pub struct SourceLine {
+    /// What the source is: `race` or `zone_model`.
+    pub kind: String,
+    /// The line, in the core's own words.
+    pub line: Option<String>,
+    /// The day the source was read or run, in the athlete's own calendar.
+    pub date: Option<String>,
+    /// The same day, as the api writes a date: "3 Nov 2026".
+    pub date_label: Option<String>,
+}
+
+/// The rule a number comes from.
+///
+/// The rule carries its **identifier**, its **citation** — the chapter it
+/// comes from — and the **wording** the surface prints beside the number.
+#[derive(Clone, Debug, PartialEq, Serialize)]
+pub struct RuleRow {
+    /// The rule's identifier: "book.lt_pace_band".
+    pub id: String,
+    /// Where the rule comes from: "ch. 1, ch. 7".
+    pub citation: String,
+    /// The wording, in the core's own words.
+    pub line: Option<String>,
+}
+
+/// A pace, or the reason there is none.
+///
+/// **A missing pace is `null` with a reason**, never a band of zero: the
+/// method fixes no pace for some rungs, and an input the athlete has not
+/// given makes the others no values.
+#[derive(Clone, Debug, PartialEq, Serialize)]
+pub struct PaceRow {
+    /// The band, in the core's own words: "4:16–4:21 /km".
+    pub value: Option<String>,
+    /// The fast edge, in seconds per kilometre.
+    pub fast_s_per_km: Option<f64>,
+    /// The slow edge, in seconds per kilometre.
+    pub slow_s_per_km: Option<f64>,
+    /// Why there is no value, in the core's own words.
+    pub missing: Option<String>,
+}
+
+/// A heart-rate band, or the reason there is none.
+///
+/// The band is the athlete's own: the method's share of **their**
+/// maximum heart rate, or of their heart-rate reserve.
+#[derive(Clone, Debug, PartialEq, Serialize)]
+pub struct HeartRateRow {
+    /// The band, in the core's own words: "146–167 bpm".
+    pub value: Option<String>,
+    /// The lower edge, in beats per minute.
+    pub from_bpm: Option<f64>,
+    /// The upper edge, in beats per minute.
+    pub to_bpm: Option<f64>,
+    /// The ceiling, in beats per minute, when the band is a ceiling.
+    pub below_bpm: Option<f64>,
+    /// The maximum heart rate the band was computed on.
+    pub max_heart_rate: Option<f64>,
+    /// The resting heart rate the reserve was computed on.
+    pub resting_heart_rate: Option<f64>,
+    /// Why there is no value, in the core's own words.
+    pub missing: Option<String>,
+}
+
+/// One rung of the ladder.
+///
+/// A rung is **two things**: a pace where the method states one, and a
+/// heart-rate band where it states one. The two are never turned into one
+/// another, and a rung with no pace says so.
+#[derive(Clone, Debug, PartialEq, Serialize)]
+pub struct RungRow {
+    /// What the rung is: "lactate_threshold", "recovery", …
+    pub kind: String,
+    /// The rung's name, in the core's own words.
+    pub label: String,
+    /// The rule the rung's numbers come from.
+    pub rule: RuleRow,
+    /// What the rung's numbers hang on: "goal_race", "threshold_band", …
+    pub anchor: String,
+    /// The pace the rung is run at.
+    pub pace: PaceRow,
+    /// The pace the long run finishes at — the second end of the one rung.
+    pub finish_pace: PaceRow,
+    /// The band, as a share of the athlete's maximum heart rate.
+    pub heart_rate: HeartRateRow,
+    /// The same band as a share of the athlete's heart-rate reserve.
+    pub heart_rate_reserve: HeartRateRow,
+}
+
+/// A race the athlete typed.
+///
+/// A race is an **observation**, not a verdict: the athlete types it, and
+/// the app never invents one and never infers one from the training.
+#[derive(Clone, Debug, PartialEq, Serialize)]
+pub struct RaceRow {
+    /// The race's id.
+    pub id: i64,
+    /// The athlete's own label for the race: "10K".
+    pub label: String,
+    /// The distance, as the core renders it.
+    pub distance: RenderedValue,
+    /// The finish time, as the core renders it.
+    pub time: RenderedValue,
+    /// The pace the race was run at.
+    pub pace: Option<RenderedValue>,
+    /// The day of the race, in the athlete's own calendar.
+    pub date: String,
+    /// The same day, as the api writes a date: "12 Oct 2026".
+    pub date_label: String,
+    /// The athlete's own words for the race.
+    pub name: Option<String>,
+    /// Where the race came from: "typed".
+    pub source: String,
+    /// The day the race was entered.
+    pub entered_on: String,
+    /// The day the row was last changed.
+    pub updated_on: String,
+    /// Do the paces come from this race? At most one race carries it.
+    pub anchor: bool,
+}
+
+/// One equivalent race time, and the two ways it was reached.
+///
+/// The two models are kept side by side and never merged: the gap between
+/// them is a fact about two models.
+#[derive(Clone, Debug, PartialEq, Serialize)]
+pub struct EquivalentRow {
+    /// The distance's name: "10K", "half marathon".
+    pub distance: String,
+    /// The time by Riegel's form, as the core renders it.
+    pub time: Option<String>,
+    /// The time by the inversion of the relations, as the core renders it.
+    pub vdot_time: Option<String>,
+    /// The pace by Riegel's form, in the core's own words.
+    pub pace: Option<String>,
+    /// The gap between the two models, in seconds.
+    pub difference_s: Option<f64>,
+}
+
+/// The ladder: the rungs, the anchors and the chain that produced them.
+#[derive(Clone, Debug, PartialEq, Serialize)]
+pub struct PacesInsight {
+    /// When this answer was produced.
+    pub generated_at: String,
+    /// The athlete's local calendar date the answer is about.
+    pub date: String,
+    /// The window the answer is shown over.
+    pub window: InsightWindow,
+    /// The one source line the screen names.
+    pub source: Option<String>,
+    /// The lines behind the click.
+    pub sources: Vec<SourceLine>,
+    /// The chain that produced the number, in the core's own words.
+    pub chain: Option<String>,
+    /// The race the paces come from.
+    pub race: Option<RaceRow>,
+    /// The equivalent race times.
+    pub equivalents: Vec<EquivalentRow>,
+    /// The rungs, fastest first.
+    pub rungs: Vec<RungRow>,
+    /// Why there is no value at all, in the core's own words.
+    pub unavailable: Option<String>,
+}
+
+/// One point of the physiological-cost curve.
+#[derive(Clone, Debug, PartialEq, Serialize)]
+pub struct CurvePointRow {
+    /// The duration, in minutes.
+    pub minutes: f64,
+    /// The share of the maximum the duration holds, as a fraction.
+    pub percent_max: f64,
+    /// The pace that costs it, in the core's own words.
+    pub pace: Option<RenderedValue>,
+}
+
+/// One of the athlete's own races, as a point on the curve.
+#[derive(Clone, Debug, PartialEq, Serialize)]
+pub struct CurveRaceRow {
+    /// The distance's name: "10K".
+    pub label: String,
+    /// The finish time, as the core renders it.
+    pub time: String,
+    /// The duration, in minutes.
+    pub minutes: f64,
+    /// The share of the maximum the race held, as a fraction.
+    pub percent_max: f64,
+    /// The pace the race was run at.
+    pub pace: Option<RenderedValue>,
+    /// The day of the race, in the athlete's own calendar.
+    pub date: String,
+    /// The same day, as the api writes a date.
+    pub date_label: String,
+}
+
+/// One of the method's own sessions, as a band on the curve.
+///
+/// The band is the method's: its duration and its prescribed pace. The
+/// general-aerobic day is **not** here: the method fixes no pace and no
+/// duration for it.
+#[derive(Clone, Debug, PartialEq, Serialize)]
+pub struct CurveSessionRow {
+    /// What the session is: "threshold", "recovery", "long_run".
+    pub kind: String,
+    /// The session's name, in the core's own words.
+    pub label: String,
+    /// The first minute of the band's duration.
+    pub from_minutes: Option<f64>,
+    /// The last minute of the band's duration.
+    pub to_minutes: Option<f64>,
+    /// The pace the session is run at.
+    pub pace: Option<PaceRow>,
+    /// The rule the session comes from.
+    pub rule: RuleRow,
+    /// Why the band has no value, in the core's own words.
+    pub missing: Option<String>,
+}
+
+/// The physiological-cost curve: the share of the maximum against time.
+#[derive(Clone, Debug, PartialEq, Serialize)]
+pub struct CurveInsight {
+    /// When this answer was produced.
+    pub generated_at: String,
+    /// The athlete's local calendar date the answer is about.
+    pub date: String,
+    /// The window the answer is shown over.
+    pub window: InsightWindow,
+    /// The one source line the screen names.
+    pub source: Option<String>,
+    /// The lines behind the click.
+    pub sources: Vec<SourceLine>,
+    /// The curve's own points.
+    pub curve: Vec<CurvePointRow>,
+    /// The athlete's own races, as points on the curve.
+    pub races: Vec<CurveRaceRow>,
+    /// The method's own sessions, as bands on the curve.
+    pub sessions: Vec<CurveSessionRow>,
+    /// The field test's place in time.
+    pub field_test: Option<CurvePointRow>,
+    /// The pace equivalents.
+    pub equivalents: Vec<EquivalentRow>,
+    /// Why there is no value at all, in the core's own words.
+    pub unavailable: Option<String>,
+}
+
+/// One candidate: a value, a date, and the rule that computed it.
+#[derive(Clone, Debug, PartialEq, Serialize)]
+pub struct CandidateRow {
+    /// Where the candidate comes from: "watch_zone_model", "race", …
+    pub source: String,
+    /// The source's name, in the runner's words.
+    pub label: String,
+    /// The value, in the core's own words.
+    pub value: Option<String>,
+    /// The heart rate, in beats per minute.
+    pub heart_rate_bpm: Option<f64>,
+    /// The pace band, when the candidate carries one.
+    pub pace: Option<PaceRow>,
+    /// The day of the fact the value came from.
+    pub date: Option<String>,
+    /// The same day, as the api writes a date.
+    pub date_label: Option<String>,
+    /// The rule that computed the value, where a rule did.
+    pub rule: Option<RuleRow>,
+    /// The note that says what the candidate cannot know.
+    pub note: Option<String>,
+    /// Why there is no value, in the core's own words.
+    pub missing: Option<String>,
+}
+
+/// The choice in force, and the choices that came before it.
+#[derive(Clone, Debug, PartialEq, Serialize)]
+pub struct ChoiceRow {
+    /// Where the choice came from.
+    pub source: String,
+    /// The source's name, in the runner's words.
+    pub label: String,
+    /// The value, in the core's own words.
+    pub value: Option<String>,
+    /// The heart rate, in beats per minute.
+    pub heart_rate_bpm: Option<f64>,
+    /// The pace band, when the choice carries one.
+    pub pace: Option<PaceRow>,
+    /// The base the choice was made for: "pfitzinger", "eighty_twenty".
+    pub base: String,
+    /// The athlete's own label for a typed number.
+    pub typed_label: Option<String>,
+    /// The day of the fact the number came from.
+    pub origin_date: Option<String>,
+    /// The day the choice was made.
+    pub entered_on: String,
+    /// The day the row was last changed.
+    pub updated_on: String,
+    /// Is this the choice in force now?
+    pub in_force: bool,
+}
+
+/// One choice in the dated history.
+#[derive(Clone, Debug, PartialEq, Serialize)]
+pub struct HistoryRow {
+    /// The day the choice was made, in the athlete's own calendar.
+    pub date: String,
+    /// The same day, as the api writes a date: "3 Nov 2026".
+    pub date_label: String,
+    /// The choice's own sentence, in the core's words.
+    pub line: Option<String>,
+    /// The value, in the core's own words.
+    pub value: Option<String>,
+    /// The base the choice was made for.
+    pub base: String,
+    /// Is this the choice in force now?
+    pub in_force: bool,
+}
+
+/// The threshold: the four candidates, the choice in force, and the history.
+#[derive(Clone, Debug, PartialEq, Serialize)]
+pub struct ThresholdInsight {
+    /// When this answer was produced.
+    pub generated_at: String,
+    /// The athlete's local calendar date the answer is about.
+    pub date: String,
+    /// The window the answer is shown over.
+    pub window: InsightWindow,
+    /// The one source line the screen names.
+    pub source: Option<String>,
+    /// The lines behind the click.
+    pub sources: Vec<SourceLine>,
+    /// The four candidates, in the product's own order.
+    pub candidates: Vec<CandidateRow>,
+    /// The choice in force.
+    pub in_force: Option<ChoiceRow>,
+    /// The choices in their dated history, newest first.
+    pub history: Vec<HistoryRow>,
+    /// Why there is no value at all, in the core's own words.
+    pub unavailable: Option<String>,
+}
+
+/// One of the athlete's own bands, over the period.
+#[derive(Clone, Debug, PartialEq, Serialize)]
+pub struct KindRow {
+    /// The band's key: "low", "moderate" or "high".
+    pub key: String,
+    /// The band's name, in the core's own words: "Z1–Z2 low".
+    pub label: String,
+    /// The time in the band.
+    pub time: Option<RenderedValue>,
+    /// The share of the measured moving time.
+    pub share: Option<RenderedValue>,
+    /// The runs that carried the band.
+    pub runs: usize,
+    /// When the band last happened, over the athlete's own history.
+    pub last: Option<LastRow>,
+}
+
+/// When a kind last happened.
+#[derive(Clone, Debug, PartialEq, Serialize)]
+pub struct LastRow {
+    /// The day, in the athlete's own calendar.
+    pub date: String,
+    /// The same day, as the api writes a date: "20 Oct 2026".
+    pub date_label: String,
+    /// The days between that day and the end of the window.
+    pub days_before_end: Option<i64>,
+}
+
+/// One band of a week, in the weeks matrix.
+#[derive(Clone, Debug, PartialEq, Serialize)]
+pub struct WeekBandRow {
+    /// The band's key: "low", "moderate" or "high".
+    pub key: String,
+    /// The band's name, in the core's own words.
+    pub label: String,
+    /// The time in the band that week.
+    ///
+    /// **A band a week held none has no value**: the absence is drawn as
+    /// white space, never as a zero.
+    pub time: Option<RenderedValue>,
+}
+
+/// One week of the weeks matrix.
+#[derive(Clone, Debug, PartialEq, Serialize)]
+pub struct LedgerWeekRow {
+    /// The Monday the week begins on, in the athlete's own calendar.
+    pub week_start: String,
+    /// The same day, as the api writes a date: "7 Sep 2026".
+    pub week_start_label: String,
+    /// The bands that week, in the product's own order.
+    pub bands: Vec<WeekBandRow>,
+}
+
+/// What the period covers.
+#[derive(Clone, Copy, Debug, PartialEq, Serialize)]
+pub struct CoverageRow {
+    /// The runs in the period.
+    pub runs: usize,
+    /// The runs that carried heart-rate samples.
+    pub with_heart_rate: usize,
+    /// The runs the app could measure — a zone model was in force.
+    pub measured: usize,
+    /// The runs that carried the source's own zone minutes.
+    pub with_source_zones: usize,
+}
+
+/// The longest run in the period.
+#[derive(Clone, Debug, PartialEq, Serialize)]
+pub struct LongestRow {
+    /// The day of the run, in the athlete's own calendar.
+    pub date: String,
+    /// The same day, as the api writes a date: "21 Nov 2026".
+    pub date_label: String,
+    /// The run's distance.
+    pub distance: Option<RenderedValue>,
+    /// How long the run moved.
+    pub time: RenderedValue,
+    /// The share of the period's moving time.
+    pub share: Option<RenderedValue>,
+}
+
+/// The repeated work: the runs the watch recorded as workouts.
+#[derive(Clone, Debug, PartialEq, Serialize)]
+pub struct RepeatedRow {
+    /// The time in those runs.
+    pub time: RenderedValue,
+    /// The runs.
+    pub runs: usize,
+    /// The last day one of them was run.
+    pub last_on: Option<String>,
+    /// The same day, as the api writes a date.
+    pub last_on_label: Option<String>,
+}
+
+/// One of the watch's own zones, over the period.
+#[derive(Clone, Debug, PartialEq, Serialize)]
+pub struct SourceZoneRow {
+    /// The watch's zone, one through five.
+    pub zone: usize,
+    /// The time in it.
+    pub time: Option<RenderedValue>,
+    /// The share of the source's own zone minutes.
+    pub share: Option<RenderedValue>,
+    /// The runs that carried it.
+    pub runs: usize,
+}
+
+/// One week of the source's own matrix.
+#[derive(Clone, Debug, PartialEq, Serialize)]
+pub struct SourceWeekRow {
+    /// The Monday the week begins on, in the athlete's own calendar.
+    pub week_start: String,
+    /// The same day, as the api writes a date: "7 Sep 2026".
+    pub week_start_label: String,
+    /// The time in each of the watch's five zones, that week.
+    pub zones: Vec<Option<RenderedValue>>,
+}
+
+/// Where both bases exist.
+#[derive(Clone, Debug, PartialEq, Serialize)]
+pub struct OverlapRow {
+    /// The first day of the overlap, in the athlete's own calendar.
+    pub from: String,
+    /// The same day, as the api writes a date.
+    pub from_label: String,
+    /// The last day of the overlap.
+    pub to: String,
+    /// The same day, as the api writes a date.
+    pub to_label: String,
+    /// The runs in the overlap.
+    pub runs: usize,
+    /// The app's own zone time over the overlap — over the time the athlete
+    /// was running.
+    pub app_moving: RenderedValue,
+    /// The source's own zone minutes over the overlap — over the whole run.
+    pub source_elapsed: RenderedValue,
+    /// The distance between the two measurements, in seconds.
+    pub difference: RenderedValue,
+}
+
+/// The ledger: the athlete's own bands, the shape rows, and the two bases.
+#[derive(Clone, Debug, PartialEq, Serialize)]
+pub struct StimulusInsight {
+    /// When this answer was produced.
+    pub generated_at: String,
+    /// The athlete's local calendar date the answer is about.
+    pub date: String,
+    /// The window the answer covers.
+    pub window: InsightWindow,
+    /// The one source line the screen names.
+    pub source: Option<String>,
+    /// The lines behind the click.
+    pub sources: Vec<SourceLine>,
+    /// The kinds' rows, in the product's own order.
+    pub kinds: Vec<KindRow>,
+    /// The weeks matrix: the band each week held.
+    pub weeks: Vec<LedgerWeekRow>,
+    /// What the period covers.
+    pub coverage: CoverageRow,
+    /// The longest run in the period.
+    pub longest: Option<LongestRow>,
+    /// The repeated work in the period.
+    pub repeated: Option<RepeatedRow>,
+    /// Why the repeated-work row has no value, in the core's own words.
+    pub repeated_missing: Option<String>,
+    /// The watch's own zone minutes: the source's own basis.
+    pub source_zones: Vec<SourceZoneRow>,
+    /// The source's own weeks matrix.
+    pub source_weeks: Vec<SourceWeekRow>,
+    /// Where both bases exist.
+    pub overlap: Option<OverlapRow>,
+    /// Whether the store holds runs this answer did not read.
+    ///
+    /// The answer is bounded, and says so rather than letting a partial
+    /// history read as the whole of it.
+    pub more_runs: bool,
+    /// Why there is no value at all, in the core's own words.
+    pub unavailable: Option<String>,
 }

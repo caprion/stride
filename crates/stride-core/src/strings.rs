@@ -181,7 +181,7 @@ pub struct Entry {
 }
 
 /// The catalogue.
-pub const CATALOGUE: [Entry; 228] = [
+pub const CATALOGUE: [Entry; 232] = [
     // The vitals.
     Entry {
         id: "vital.rest.label",
@@ -1674,6 +1674,30 @@ pub const CATALOGUE: [Entry; 228] = [
         kind: StringKind::Status,
         role: None,
         template: "no runs recorded",
+    },
+    Entry {
+        id: "pace.none_stated",
+        kind: StringKind::Status,
+        role: None,
+        template: "the method states no pace for this run",
+    },
+    Entry {
+        id: "threshold.none_stated",
+        kind: StringKind::Status,
+        role: None,
+        template: "the method states no heart-rate band for this run",
+    },
+    Entry {
+        id: "curve.long_run.no_length",
+        kind: StringKind::Status,
+        role: None,
+        template: "the long run's length is set by the plan's own weeks",
+    },
+    Entry {
+        id: "plan.bases.none",
+        kind: StringKind::Status,
+        role: None,
+        template: "no programme to adopt yet",
     },
 
 ];

@@ -34,7 +34,7 @@ use serde_json::Value;
 use stride_core::eddington::Period;
 use stride_core::pace::PaceBands as CoreBands;
 
-use crate::dto::{PaceBandRow, PaceBands, PaceInsight, PaceLongest, PaceWindow, TrainingWeek};
+use crate::dto::{InsightWindow, PaceBandRow, PaceBands, PaceInsight, PaceLongest, TrainingWeek};
 use crate::error::{ApiError, ApiResult};
 use crate::render;
 use crate::router::Request;
@@ -76,7 +76,7 @@ pub fn pace(api: &Api, request: &Request) -> ApiResult<Value> {
     let answer = PaceInsight {
         generated_at: api.generated_at(),
         date: today.to_iso(),
-        window: PaceWindow {
+        window: InsightWindow {
             from: from.to_iso(),
             from_label: super::day_label(from),
             to: today.to_iso(),

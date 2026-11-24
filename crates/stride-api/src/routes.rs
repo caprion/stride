@@ -21,10 +21,14 @@ pub mod heatmap;
 pub mod insight;
 pub mod load;
 pub mod pace;
+pub mod paces;
+pub mod pacing_curve;
 pub mod plan;
 pub mod rolling;
 pub mod series;
 pub mod settings;
+pub mod stimulus;
+pub mod threshold;
 pub mod year;
 
 pub mod update;
@@ -40,13 +44,194 @@ use stride_core::types::{Duration, Hrv, RestingHr, Sleep, Vitals, WellnessDay};
 use stride_core::units;
 use stride_store::{ActivitySummary as StoredActivity, WellnessDaily};
 
-use crate::dto::{ActivitySummary, PersonalRecord};
+use crate::dto::{
+    ActivitySummary, EquivalentRow, InsightWindow, PaceRow, PersonalRecord, RaceRow, RenderedValue,
+    SourceLine,
+};
 use crate::error::{ApiError, ApiResult};
 use crate::render;
+use crate::router::Request;
 use crate::state::Api;
 
 /// The most runs one answer may carry.
 pub const MAX_RUNS_IN_ANSWER: usize = 500;
+
+/// How many weeks a window-shaped answer may cover — the Progress route's
+/// own bound.
+pub const MAX_WINDOW_WEEKS: i64 = 104;
+
+/// The source lines of an answer.
+///
+/// **The source line is hoisted**: the answer carries **one** line for the
+/// screen to name — the zone model's own line when the bands were measured
+/// against one — and every line the answer was built from travels behind a
+/// click.
+pub fn source_lines(
+    facts: &crate::athlete::Facts,
+    ladder: &stride_core::training_paces::Ladder,
+) -> (Option<String>, Vec<SourceLine>) {
+    let (model_line, model_day) = match facts.model.as_ref() {
+        Some(model) => {
+            let read_on = day_label(model.read_on);
+            (
+                stride_core::model_source(&model.training_method, model.max_heart_rate, &read_on),
+                Some(read_on),
+            )
+        }
+        None => (None, None),
+    };
+    let mut sources: Vec<SourceLine> = Vec::new();
+    if let Some(race) = ladder.race.as_ref() {
+        let date = day_label(race.date);
+        sources.push(SourceLine {
+            kind: "race".to_string(),
+            line: ladder.source_line(&date),
+            date: Some(race.date.to_iso()),
+            date_label: Some(date),
+        });
+    }
+    if let Some(line) = model_line.as_ref() {
+        sources.push(SourceLine {
+            kind: "zone_model".to_string(),
+            line: Some(line.clone()),
+            date: facts.model.as_ref().map(|model| model.read_on.to_iso()),
+            date_label: model_day.clone(),
+        });
+    }
+    let source = model_line
+        .clone()
+        .or_else(|| sources.first().and_then(|line| line.line.clone()));
+    (source, sources)
+}
+
+/// A pace, or the reason there is none.
+///
+/// **A missing pace is `null` with a reason**, never a band of zero: the
+/// method fixes no pace for some rungs, and an input the athlete has not
+/// given makes the others no values.
+pub fn pace_row(value: &stride_core::training_paces::PaceValue) -> PaceRow {
+    use stride_core::training_paces::PaceValue;
+    match value {
+        PaceValue::Known(band) => pace_band_row(band),
+        // The method states no pace for this rung: that is the method's
+        // own answer, and the rule's line says so.
+        PaceValue::NoneStated => PaceRow {
+            value: None,
+            fast_s_per_km: None,
+            slow_s_per_km: None,
+            missing: core_line("pace.none_stated"),
+        },
+        PaceValue::Missing(missing) => PaceRow {
+            value: None,
+            fast_s_per_km: None,
+            slow_s_per_km: None,
+            missing: missing.reason(),
+        },
+    }
+}
+
+/// A pace band, as the answer carries it.
+pub fn pace_band_row(band: &stride_core::training_paces::PaceBand) -> PaceRow {
+    PaceRow {
+        value: band.render(),
+        fast_s_per_km: Some(band.fast_s_per_km),
+        slow_s_per_km: Some(band.slow_s_per_km),
+        missing: None,
+    }
+}
+
+/// The equivalent race times, and the two ways each was reached.
+///
+/// The two models are kept side by side and never merged: the gap between
+/// them is a fact about two models, and the surface may print it.
+pub fn equivalents_of(ladder: &stride_core::training_paces::Ladder) -> Vec<EquivalentRow> {
+    ladder
+        .equivalents
+        .iter()
+        .map(|equivalent| EquivalentRow {
+            distance: stride_core::training_paces::race_label(equivalent.distance_m).to_string(),
+            time: equivalent
+                .riegel_time_s
+                .map(stride_core::units::format_race_time),
+            vdot_time: equivalent
+                .vdot_time_s
+                .map(stride_core::units::format_race_time),
+            pace: equivalent
+                .riegel_pace_s_per_km()
+                .and_then(|pace| stride_core::units::render_pace(Some(pace))),
+            difference_s: equivalent.difference_s,
+        })
+        .collect()
+}
+
+/// A sentence from the core's catalogue.
+///
+/// The api never writes a sentence of its own: it asks the core's
+/// catalogue for it and passes it on.
+pub fn core_line(id: &str) -> Option<String> {
+    stride_core::strings::render(id, &[])
+}
+
+/// A race the athlete typed, as the answer carries it.
+///
+/// A race is an **observation**, not a verdict: the athlete types it, and
+/// the app never invents one and never infers one from the training. The
+/// row carries the value, the day it was entered, the day it was last
+/// changed and its source — the same discipline the wellness observations
+/// have.
+pub fn race_row(race: &stride_store::RaceObservation) -> RaceRow {
+    let date = core_date(&race.race_date).ok();
+    let pace = match race.distance_m > 0.0 && race.time_s > 0.0 {
+        true => Some(race.time_s / (race.distance_m / 1_000.0)),
+        false => None,
+    };
+    RaceRow {
+        id: race.id,
+        label: race.label.clone(),
+        distance: render::distance_of(race.distance_m),
+        time: RenderedValue {
+            text: units::format_race_time(race.time_s),
+            raw: Some(race.time_s),
+        },
+        pace: render::pace(pace),
+        date: race.race_date.clone(),
+        date_label: date.map(day_label).unwrap_or_default(),
+        name: race.name.clone(),
+        source: race.source.clone(),
+        entered_on: race.entered_on.clone(),
+        updated_on: race.updated_on.clone(),
+        anchor: race.anchor,
+    }
+}
+
+/// The Progress window: the last `weeks` calendar weeks through today.
+///
+/// **One window for the whole wall.** The bound is the Progress route's
+/// own — one to a hundred and four weeks, twelve by default — and the
+/// window is the calendar weeks, the current one in it and partial. Every
+/// window-shaped answer names the window it covers, so that a number is
+/// never read apart from the period it describes.
+pub fn insight_window(api: &Api, request: &Request) -> ApiResult<(InsightWindow, Date, Date)> {
+    let weeks = request.query.integer("weeks")?.unwrap_or(12);
+    if !(1..=MAX_WINDOW_WEEKS).contains(&weeks) {
+        return Err(ApiError::bad_request(
+            "the window is not between 1 and 104 weeks",
+        ));
+    }
+    let today = today(api)?;
+    let from = week_start(today).add_days(-7 * (weeks - 1));
+    Ok((
+        InsightWindow {
+            from: from.to_iso(),
+            from_label: day_label(from),
+            to: today.to_iso(),
+            to_label: day_label(today),
+            weeks,
+        },
+        from,
+        today,
+    ))
+}
 
 /// A value on its way out.
 pub fn ok<T: Serialize>(value: &T) -> ApiResult<Value> {

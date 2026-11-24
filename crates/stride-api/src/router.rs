@@ -463,6 +463,31 @@ pub const ROUTES: &[Route] = &[
         method: Method::Get,
         handler: crate::routes::pace::pace,
     },
+    // The ladder: the training paces, each with the rule it comes from.
+    Route {
+        pattern: "/insights/paces",
+        method: Method::Get,
+        handler: crate::routes::paces::paces,
+    },
+    // The cost curve: the share of the maximum against the time it is
+    // held for.
+    Route {
+        pattern: "/insights/pacing-curve",
+        method: Method::Get,
+        handler: crate::routes::pacing_curve::pacing_curve,
+    },
+    // The threshold: four candidates, one choice, a dated history.
+    Route {
+        pattern: "/insights/threshold",
+        method: Method::Get,
+        handler: crate::routes::threshold::threshold,
+    },
+    // The ledger: the athlete's own bands, the shape rows, the two bases.
+    Route {
+        pattern: "/insights/stimulus",
+        method: Method::Get,
+        handler: crate::routes::stimulus::stimulus,
+    },
     // The challenges: the athlete's own, measured week by week.
     Route {
         pattern: "/insights/challenges",

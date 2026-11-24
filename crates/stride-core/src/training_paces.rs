@@ -977,6 +977,137 @@ fn ceiling_of_reserve(max_hr: Option<f64>, resting_hr: Option<f64>, share: f64) 
     })
 }
 
+/// What a session of the method is.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub enum MethodSessionKind {
+    /// The lactate-threshold session: twenty to forty minutes at the
+    /// hour-pace band (ch. 1, ch. 7).
+    Threshold,
+    /// The recovery run: three to five miles at the recovery pace
+    /// (ch. 2, ch. 7).
+    Recovery,
+    /// The long run: from the start pace to the finish pace. Its length
+    /// comes with the plan's own weeks.
+    LongRun,
+}
+
+impl MethodSessionKind {
+    /// The key the app reads the session by.
+    pub fn key(&self) -> &'static str {
+        match self {
+            MethodSessionKind::Threshold => "threshold",
+            MethodSessionKind::Recovery => "recovery",
+            MethodSessionKind::LongRun => "long_run",
+        }
+    }
+
+    /// The session's name, in the runner's words.
+    pub fn label(&self) -> &'static str {
+        match self {
+            MethodSessionKind::Threshold => "Lactate threshold",
+            MethodSessionKind::Recovery => "Recovery run",
+            MethodSessionKind::LongRun => "Long run",
+        }
+    }
+}
+
+/// The threshold session's duration: twenty to forty minutes (ch. 1, ch. 7).
+pub const LT_SESSION_MINUTES: (f64, f64) = (20.0, 40.0);
+
+/// The recovery run's length: three to five miles (ch. 2, ch. 7).
+pub const RECOVERY_RUN_MILES: (f64, f64) = (3.0, 5.0);
+
+/// A mile, in metres — the recovery run's length is stated in miles.
+const METRES_PER_MILE_SESSION: f64 = 1_609.344;
+
+/// One of the method's own sessions: what the book prescribes, and for how
+/// long.
+///
+/// The session is the **method's**, and so is its duration: the threshold
+/// session runs for twenty to forty minutes (ch. 1, ch. 7), and the
+/// recovery run is three to five miles at its own pace (ch. 2, ch. 7). The
+/// long run's length comes with the plan's own weeks, and is **no value**
+/// until they land — never a guess and never a zero.
+#[derive(Clone, Debug, PartialEq, Serialize)]
+pub struct MethodSession {
+    /// What the session is.
+    pub kind: MethodSessionKind,
+    /// The session's name, in the runner's words.
+    pub label: &'static str,
+    /// The duration, in minutes: the first minute and the last.
+    ///
+    /// `None` when the method's own length for the session is not known.
+    pub minutes: Option<(f64, f64)>,
+    /// The pace the session is run at.
+    pub pace: Option<PaceBand>,
+    /// The rule the session comes from.
+    pub rule: Rule,
+}
+
+/// The method's own sessions, over the ladder's rungs.
+///
+/// The sessions are the ones the method states a length for, and the long
+/// run, whose length comes with the plan's weeks. **The general-aerobic
+/// day is not here**: the method fixes no pace and no duration for it, and
+/// there is nothing to place.
+pub fn method_sessions(ladder: &Ladder) -> Vec<MethodSession> {
+    let mut sessions: Vec<MethodSession> = Vec::new();
+
+    // The threshold session: twenty to forty minutes at the hour-pace
+    // band.
+    if let Some(rung) = ladder.rung(RungKind::LactateThreshold) {
+        sessions.push(MethodSession {
+            kind: MethodSessionKind::Threshold,
+            label: MethodSessionKind::Threshold.label(),
+            minutes: Some(LT_SESSION_MINUTES),
+            pace: rung.pace.band(),
+            rule: RULE_THRESHOLD,
+        });
+    }
+
+    // The recovery run: three to five miles at the recovery pace. The
+    // duration is the distance at the pace: the book's own two facts.
+    if let Some(rung) = ladder.rung(RungKind::Recovery) {
+        let pace = rung.pace.band();
+        let minutes = pace.map(|band| {
+            let pace_s_per_km = band.fast_s_per_km.max(band.slow_s_per_km);
+            let miles = METRES_PER_MILE_SESSION;
+            (
+                RECOVERY_RUN_MILES.0 * miles / 1_000.0 * pace_s_per_km / 60.0,
+                RECOVERY_RUN_MILES.1 * miles / 1_000.0 * pace_s_per_km / 60.0,
+            )
+        });
+        sessions.push(MethodSession {
+            kind: MethodSessionKind::Recovery,
+            label: MethodSessionKind::Recovery.label(),
+            minutes,
+            pace,
+            rule: RULE_RECOVERY,
+        });
+    }
+
+    // The long run: from the start pace to the finish pace. Its length
+    // comes with the plan's own weeks, and is no value until they land.
+    if let Some(rung) = ladder.rung(RungKind::LongRun) {
+        let pace = match (rung.pace.band(), rung.finish_pace.band()) {
+            (Some(start), Some(finish)) => Some(PaceBand::between(
+                start.fast_s_per_km.min(finish.fast_s_per_km),
+                start.slow_s_per_km.max(finish.slow_s_per_km),
+            )),
+            _ => None,
+        };
+        sessions.push(MethodSession {
+            kind: MethodSessionKind::LongRun,
+            label: MethodSessionKind::LongRun.label(),
+            minutes: None,
+            pace,
+            rule: rung.rule,
+        });
+    }
+
+    sessions
+}
+
 #[cfg(test)]
 mod tests {
     #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]

@@ -21,7 +21,10 @@ use serde_json::Value;
 use stride_api::{Api, Config, FixedClock, Router};
 use stride_ingest::{HttpRequest, HttpResponse, HttpTransport, TransportError};
 use stride_store::scratch::ScratchDir;
-use stride_store::{DatabaseKey, NewActivity, NewPlanBlock, NewPlanSession, Store, WellnessDaily};
+use stride_store::{
+    DatabaseKey, NewActivity, NewHeartRateZoneModel, NewPlanBlock, NewPlanSession,
+    NewRaceObservation, NewThresholdObservation, Store, WellnessDaily,
+};
 
 /// The instant the tests read the clock at.
 pub const NOW: &str = "2026-05-12T06:30:00Z";
@@ -112,6 +115,29 @@ impl Harness {
         match self.store.upsert_activity(&activity) {
             Ok(id) => id,
             Err(_) => panic!("the run could be written"),
+        }
+    }
+
+    /// Write the athlete's zone model.
+    pub fn write_zone_model(&self, model: NewHeartRateZoneModel) {
+        if let Err(error) = self.store.write_hr_zone_model_if_new(&model) {
+            panic!("the zone model could not be written: {error}");
+        }
+    }
+
+    /// Write a race the athlete typed.
+    pub fn write_race(&self, race: NewRaceObservation) -> i64 {
+        match self.store.write_race(&race) {
+            Ok(id) => id,
+            Err(_) => panic!("the race could not be written"),
+        }
+    }
+
+    /// Write a threshold choice the athlete made.
+    pub fn write_threshold_choice(&self, choice: &NewThresholdObservation, in_force: bool) -> i64 {
+        match self.store.write_threshold_choice(choice, in_force) {
+            Ok(id) => id,
+            Err(_) => panic!("the threshold choice could not be written"),
         }
     }
 

@@ -51,6 +51,10 @@ class PhoneRoutesTest {
         "/insights/load",
         "/insights/rolling",
         "/insights/pace",
+        "/insights/paces",
+        "/insights/pacing-curve",
+        "/insights/threshold",
+        "/insights/stimulus",
         "/insights/challenges",
         "/insights/streaks",
         "/insights/heatmap",
@@ -100,6 +104,21 @@ class PhoneRoutesTest {
         "/update/settings",
     )
 
+    /**
+     * The four insight routes.
+     *
+     * A route the router serves and the bridge does not name is refused
+     * with a 404 before anything is sent, so the phone could not reach
+     * them at all. The bridge's table is a copy of the frozen route
+     * table, and it names every route the router serves.
+     */
+    private val insights = listOf(
+        "/insights/paces",
+        "/insights/pacing-curve",
+        "/insights/threshold",
+        "/insights/stimulus",
+    )
+
     @Test
     fun `every route of the frozen table is known`() {
         for (route in frozen) {
@@ -142,6 +161,25 @@ class PhoneRoutesTest {
             val write = PhoneRoutes.decide("POST", route)
             assertTrue("$route carries no data", write.carriesData)
             assertEquals("$route was classified wrongly", PhoneRoutes.Kind.Write, write.kind)
+        }
+    }
+
+    /**
+     * The four insight routes are known, and they carry the athlete's
+     * own data.
+     *
+     * The bridge refuses a path that its table does not name, so a route
+     * the router serves and the copy does not name is a 404 on the
+     * phone. The insight routes are reads of the athlete's own history,
+     * and the bridge's lock applies to them like to any other read.
+     */
+    @Test
+    fun `the insight routes are known and carry the athlete's data`() {
+        for (route in insights) {
+            val read = PhoneRoutes.decide("GET", route)
+            assertTrue("$route is not known", read.known)
+            assertTrue("$route carries no data", read.carriesData)
+            assertEquals("$route was classified wrongly", PhoneRoutes.Kind.Data, read.kind)
         }
     }
 

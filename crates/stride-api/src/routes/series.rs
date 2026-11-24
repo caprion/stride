@@ -118,6 +118,21 @@ pub fn pace_points(activity: &FitActivity) -> Vec<PacePoint> {
         .collect()
 }
 
+/// The heart-rate samples of a run, decoded on read.
+///
+/// The stopped samples stay in the list: a sample owns the span until the
+/// next one, so a stretch the athlete stood through is owned by the sample
+/// before it. The flag travels with each sample so that the core can keep
+/// the stopped time apart from the zones.
+///
+/// A run with no file has no samples: that is no value, never a zero.
+pub fn zone_samples_of(api: &Api, activity_id: i64) -> Vec<ZoneSample> {
+    match decoded(api, activity_id) {
+        Some(decoded) => zone_samples(&decoded),
+        None => Vec::new(),
+    }
+}
+
 /// The splits of a run.
 pub fn splits(activity: &FitActivity) -> Vec<Split> {
     activity
