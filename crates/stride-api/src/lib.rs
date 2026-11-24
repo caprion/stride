@@ -17,6 +17,7 @@
 //! | [`ffi`] | the FFI surface: JSON in, JSON out, and the panic boundary |
 //! | [`routes`] | the handlers, and the helpers they share |
 //! | [`plan`] | the seam to the core's plan engine: the store's rows in, the core's answers out |
+//! | [`planbases`] | the seam to the core's programmes: the templates the athlete can adopt |
 //! | [`load`] | the seam to the core's training-load engine: the stored zone model, the measured resting heart rate and the stored activities in, the core's series and its scenario out |
 //! | [`fingerprint`] | the seam to the core's fingerprint engine: the run's own laps and samples in, the core's observations out |
 //! | [`update`] | the seam to the core's run update: the run's own facts in, the payload the model may read out |
@@ -150,6 +151,7 @@ pub mod fingerprint;
 pub mod load;
 pub mod pace;
 pub mod plan;
+pub mod planbases;
 pub mod planfile;
 pub mod render;
 pub mod reread;
