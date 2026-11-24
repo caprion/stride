@@ -7,10 +7,11 @@ use chrono::{DateTime, NaiveDate, NaiveDateTime, Utc};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use stride_ingest::{
-    BODY_BATTERY_PATH, HRV_DAILY_PATH, SLEEP_DAILY_PATH, STRESS_PATH, USER_SUMMARY_PATH,
+    ACTIVITIES_PATH, BODY_BATTERY_PATH, HRV_DAILY_PATH, SLEEP_DAILY_PATH, STRESS_PATH,
+    USER_SUMMARY_PATH,
 };
 use stride_store::model::{note_kind, source, sync_kind};
-use stride_store::{NewActivity, SyncState};
+use stride_store::{NewActivity, NewActivityObservation, SyncState};
 
 use crate::dto::{
     AuthConnect, AuthStatus, AuthTest, Calendar, CalendarDay, FitImport, Health, SyncFailure,
@@ -243,6 +244,10 @@ pub fn sync_run(api: &Api, request: &Request) -> ApiResult<Value> {
             newest_seen = entry_id(&list[0]);
         }
         let mut page_complete = true;
+        // The source's own facts about the runs, taken from the search
+        // payload this loop already holds. No extra request: the payload is
+        // here either way.
+        let mut observations: Vec<NewActivityObservation> = Vec::new();
         for entry in &list {
             let activity_id = match entry_id(entry) {
                 Some(id) => id,
@@ -272,6 +277,17 @@ pub fn sync_run(api: &Api, request: &Request) -> ApiResult<Value> {
                     // Known, unchanged, and the file is held: nothing to
                     // download.
                     skipped += 1;
+                    // The source's own facts about the run are read from
+                    // the payload in hand, whether the run was downloaded
+                    // this time or not: a run whose zone minutes arrived
+                    // later is still a run the payload carries.
+                    observations.extend(crate::activity_observations::observations(
+                        entry,
+                        existing.id,
+                        existing.start_time,
+                        ACTIVITIES_PATH,
+                        api.now(),
+                    ));
                 }
                 Some(_) | None => {
                     if attempted >= budget {
@@ -312,12 +328,31 @@ pub fn sync_run(api: &Api, request: &Request) -> ApiResult<Value> {
                         }
                     };
                     let row = new_activity(api, entry, &decoded, &fit, &activity_id, &to);
-                    api.store()
+                    let activity = api
+                        .store()
                         .upsert_activity(&row)
                         .map_err(|error| api.store_error("the run could not be written", &error))?;
                     pulled += 1;
+                    observations.extend(crate::activity_observations::observations(
+                        entry,
+                        activity,
+                        row.start_time,
+                        ACTIVITIES_PATH,
+                        api.now(),
+                    ));
                 }
             }
+        }
+        // The observations of the page are written together: they are one
+        // response's readings, and they land together or not at all. A
+        // field the payload did not carry keeps the value already stored,
+        // and the day it was read.
+        if !observations.is_empty() {
+            api.store()
+                .write_activity_observations(&observations)
+                .map_err(|error| {
+                    api.store_error("the activity observations could not be written", &error)
+                })?;
         }
         if !page_complete {
             break;
