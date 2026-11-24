@@ -383,7 +383,7 @@ fn read_programme(value: &json::Value) -> Option<Programme> {
         .unwrap_or_default();
     let mut weeks_detail = Vec::new();
     for week in value.get("weeks_detail")?.as_array()? {
-        weeks_detail.push(read_week(week)?);
+        weeks_detail.push(read_template_week(week)?);
     }
     Some(Programme {
         id,
@@ -449,8 +449,8 @@ fn read_mileage_range(value: &json::Value) -> Option<MileageRange> {
     })
 }
 
-/// Read one week.
-fn read_week(value: &json::Value) -> Option<TemplateWeek> {
+/// Read one week of the file.
+fn read_template_week(value: &json::Value) -> Option<TemplateWeek> {
     let week = value.get("week")?.as_f64()? as i32;
     let weeks_to_go = value
         .get("weeks_to_go")
@@ -1682,5 +1682,376 @@ fn weekday_index(weekday: Weekday) -> i64 {
         Weekday::Friday => 4,
         Weekday::Saturday => 5,
         Weekday::Sunday => 6,
+    }
+}
+
+/// ## The plan's own reading
+///
+/// A reading is the plan answering for one week: the seven sessions with
+/// their kinds, their distances and their paces, the plan's own source, the
+/// threshold the plan was paced with, and the tier's entry requirement
+/// beside the athlete's own mileage.
+///
+/// Every sentence is the core's, and the dates are the caller's: the core
+/// never formats a day for a screen, so the reading takes the words it
+/// needs in [`DateWords`].
+///
+/// The entry requirement and the athlete's own mileage are **three facts
+/// side by side, unranked** (B2). The app states them and never compares
+/// them, never marks one as the right one, and never says which level
+/// fits.
+/// The caller's own wording for the days the plan's lines carry.
+///
+/// The api writes dates in its own form; the core keeps its own canonical
+/// form inside itself and asks for the words it needs.
+#[derive(Clone, Debug, Default, PartialEq)]
+pub struct DateWords {
+    /// The threshold's day: "3 Nov 2026".
+    pub threshold: Option<String>,
+    /// The race's day: "12 Oct 2026".
+    pub race: Option<String>,
+}
+
+/// The plan's own reading of one week.
+#[derive(Clone, Debug, PartialEq)]
+pub struct WeekReading {
+    /// The week's number: eleven down to one, zero for race week, and
+    /// negative for the weeks after the race.
+    pub week: i32,
+    /// The weeks to go.
+    pub weeks_to_go: Option<i32>,
+    /// The week's own label: "3 weeks to go", "race week".
+    pub label: String,
+    /// The first day of the week.
+    pub start_date: Date,
+    /// The last day of the week.
+    pub end_date: Date,
+    /// The week's printed volume, rendered: "42 km".
+    pub printed_volume: Option<String>,
+    /// The week's own reconciliation: the seven days against the mileage
+    /// the book prints beside them.
+    pub volume: Option<String>,
+    /// The week's seven sessions, in date order.
+    pub sessions: Vec<SessionReading>,
+    /// The plan's own source.
+    pub source: PlanReading,
+    /// What the plan was paced with.
+    pub pacing: PacingReading,
+    /// The tier's entry requirement beside the athlete's own mileage.
+    pub entry: EntryReading,
+    /// The shift, when the race week was moved to the athlete's race day.
+    pub shift: Option<ShiftReading>,
+}
+
+/// One session, as the plan reads it.
+#[derive(Clone, Debug, PartialEq)]
+pub struct SessionReading {
+    /// The day the session falls on.
+    pub date: Date,
+    /// The day's name: "Wednesday".
+    pub weekday: String,
+    /// The runner's wording for the kind: "tempo".
+    pub kind: String,
+    /// The method's own name, when the kind is one of the method's.
+    pub method_kind: Option<String>,
+    /// The distance, rendered: "17.7 km".
+    pub distance: Option<String>,
+    /// The session's pace: "4:16–4:21 /km".
+    pub pace: Option<String>,
+    /// The second end of a session with two: the long run's finish pace.
+    pub finish_pace: Option<String>,
+    /// The cell's own detail: "3 × 8 min, jog 3".
+    pub detail: Option<String>,
+    /// The line the surface leads with: "17.7 km · tempo".
+    pub label: String,
+    /// The line with the pace beside it, when the session has one.
+    pub line: Option<String>,
+    /// The reason the session has no pace, when it has none.
+    pub no_pace: Option<String>,
+    /// On a progression long run: the last miles at the threshold pace.
+    pub lt_last: Option<String>,
+}
+
+/// The plan's own source: the programme the plan was adopted from.
+#[derive(Clone, Debug, PartialEq)]
+pub struct PlanReading {
+    /// Where the plan came from. An adopted programme is a prescription:
+    /// the athlete chose it.
+    pub source: PlanSource,
+    /// The line: "the Pfitzinger half marathon tier 2 plan".
+    pub line: String,
+    /// The catalogue id the plan was adopted from.
+    pub template_id: String,
+    /// The catalogue version the plan was adopted from.
+    pub template_version: String,
+}
+
+/// What the plan was paced with.
+#[derive(Clone, Debug, PartialEq)]
+pub struct PacingReading {
+    /// The threshold the plan was paced with: its value and the day it was
+    /// read.
+    pub threshold: Option<PacingSource>,
+    /// The race the plan's own rule was read from.
+    pub race: Option<PacingSource>,
+    /// The reason the sessions that need a race have no pace.
+    pub missing: Option<String>,
+    /// The line: "paced with the threshold of 3 Nov 2026 · 165 bpm".
+    pub threshold_line: Option<String>,
+    /// The line: "paced with the plan's rule on your 10K of 12 Oct 2026".
+    pub rule_line: Option<String>,
+}
+
+/// The tier's entry requirement, beside the athlete's own mileage.
+///
+/// Three facts, side by side, unranked. The app states them and never
+/// compares them.
+#[derive(Clone, Debug, PartialEq)]
+pub struct EntryReading {
+    /// "this level asks for 64.4-80.5 km a week".
+    pub requirement: Option<String>,
+    /// "this plan runs 74-101.4 km a week".
+    pub plan_band: Option<String>,
+    /// "your last 4 weeks: 60.8, 61.1, 50.8, 6 km".
+    pub athlete: Option<String>,
+}
+
+/// The race week, moved to the day the athlete races.
+#[derive(Clone, Debug, PartialEq)]
+pub struct ShiftReading {
+    /// The days the week moved: negative is earlier.
+    pub days: i64,
+    /// The line: "your race is on Saturday · this week's sessions are
+    /// earlier a day".
+    pub line: Option<String>,
+    /// The sessions that are not in this week.
+    pub dropped: Vec<String>,
+}
+
+/// The plan's own reading of a week.
+///
+/// `None` when the plan has no such week.
+pub fn read_week(plan: &AdoptedPlan, week: i32, words: &DateWords) -> Option<WeekReading> {
+    let found = plan.weeks.iter().find(|candidate| candidate.week == week)?;
+    Some(reading_of(plan, found, words))
+}
+
+/// The plan's own reading of the week containing a day.
+///
+/// `None` when the day is not in the plan.
+pub fn read_week_at(plan: &AdoptedPlan, day: Date, words: &DateWords) -> Option<WeekReading> {
+    let found = plan
+        .weeks
+        .iter()
+        .find(|week| day >= week.start_date && day <= week.end_date)?;
+    Some(reading_of(plan, found, words))
+}
+
+/// The reading of one week.
+fn reading_of(plan: &AdoptedPlan, week: &AdoptedWeek, words: &DateWords) -> WeekReading {
+    let sessions = week.sessions.iter().map(session_reading).collect();
+    WeekReading {
+        week: week.week,
+        weeks_to_go: week.weeks_to_go,
+        label: week.label.clone(),
+        start_date: week.start_date,
+        end_date: week.end_date,
+        printed_volume: units::render_distance(week.printed_volume_m),
+        volume: volume_line(week),
+        sessions,
+        source: plan_reading(plan),
+        pacing: pacing_reading(&plan.pacing, words),
+        entry: entry_reading(plan),
+        shift: week.shift.as_ref().map(shift_reading),
+    }
+}
+
+/// One session, as the plan reads it.
+fn session_reading(session: &AdoptedSession) -> SessionReading {
+    let kind = session.kind.word();
+    let distance = units::render_distance(session.distance_m);
+    let label = match &distance {
+        Some(distance) => strings::render(
+            "statement.plan.session.label",
+            &[("distance", distance), ("kind", &kind)],
+        )
+        .unwrap_or_default(),
+        None => strings::render("statement.plan.session.no_target", &[("kind", &kind)])
+            .unwrap_or_default(),
+    };
+    let pace = session.pace.render();
+    let finish_pace = session.finish_pace.render();
+    let line = match &pace {
+        Some(pace) => strings::render(
+            "statement.plan.session.line",
+            &[("label", &label), ("pace", pace)],
+        ),
+        None => None,
+    };
+    let lt_last = session.lt_last_m.and_then(|metres| {
+        let distance = units::render_distance(Some(metres))?;
+        strings::render(
+            "statement.plan.progression.last",
+            &[("distance", &distance)],
+        )
+    });
+    SessionReading {
+        date: session.date,
+        weekday: session.date.weekday().name().to_string(),
+        kind,
+        method_kind: session.kind.method_name(),
+        distance,
+        pace,
+        finish_pace,
+        detail: session.detail.clone(),
+        label,
+        line,
+        no_pace: no_pace_reason(&session.kind, &session.pace),
+        lt_last,
+    }
+}
+
+/// The reason a session has no pace, when it has none.
+///
+/// A session with no pace is a session with no pace, with the reason —
+/// never a zero pace. A day that is not a run has no pace to explain.
+fn no_pace_reason(kind: &SessionKind, pace: &PaceValue) -> Option<String> {
+    if !kind.is_run() {
+        return None;
+    }
+    match pace {
+        PaceValue::Known(_) => None,
+        PaceValue::NoneStated => {
+            strings::text("statement.plan.pace.band_only").map(|text| text.to_string())
+        }
+        PaceValue::Missing(missing) => missing.reason(),
+    }
+}
+
+/// The week's own reconciliation.
+fn volume_line(week: &AdoptedWeek) -> Option<String> {
+    let cells = week.volume_check.cells_m?;
+    let cells = units::render_distance(Some(cells))?;
+    match week.printed_volume_m {
+        Some(printed) => {
+            let printed = units::render_distance(Some(printed))?;
+            if week.volume_check.reconciles == Some(true) {
+                strings::render("statement.plan.volume.check", &[("volume", &cells)])
+            } else {
+                strings::render(
+                    "statement.plan.volume.gap",
+                    &[("cells", &cells), ("volume", &printed)],
+                )
+            }
+        }
+        None => strings::render("statement.plan.volume.check", &[("volume", &cells)]),
+    }
+}
+
+/// The plan's own source.
+fn plan_reading(plan: &AdoptedPlan) -> PlanReading {
+    let line = strings::render(
+        "statement.plan.programme",
+        &[("method", &plan.method), ("label", &plan.label)],
+    )
+    .unwrap_or_default();
+    PlanReading {
+        source: plan.source,
+        line,
+        template_id: plan.template_id.clone(),
+        template_version: plan.template_version.clone(),
+    }
+}
+
+/// What the plan was paced with.
+fn pacing_reading(pacing: &Pacing, words: &DateWords) -> PacingReading {
+    let threshold_line = match (&pacing.threshold, &words.threshold) {
+        (Some(threshold), Some(date)) => strings::render(
+            "statement.plan.pacing.threshold",
+            &[("date", date), ("value", &threshold.value)],
+        ),
+        _ => None,
+    };
+    let rule_line = match (&pacing.race, &words.race) {
+        (Some(race), Some(date)) => strings::render(
+            "statement.plan.pacing.rule",
+            &[("distance", &race.value), ("date", date)],
+        ),
+        _ => None,
+    };
+    PacingReading {
+        threshold: pacing.threshold.clone(),
+        race: pacing.race.clone(),
+        missing: pacing.missing.clone(),
+        threshold_line,
+        rule_line,
+    }
+}
+
+/// The tier's entry requirement beside the athlete's own mileage.
+fn entry_reading(plan: &AdoptedPlan) -> EntryReading {
+    let requirement = plan.entry_mileage.as_ref().and_then(|range| {
+        let range = range.render()?;
+        strings::render("statement.plan.entry.requirement", &[("range", &range)])
+    });
+    let plan_band = plan.plan_mileage.as_ref().and_then(|range| {
+        let range = range.render()?;
+        strings::render("statement.plan.entry.plan", &[("range", &range)])
+    });
+    let athlete = athlete_mileage_line(&plan.athlete_mileage_m);
+    EntryReading {
+        requirement,
+        plan_band,
+        athlete,
+    }
+}
+
+/// The athlete's own recent weekly mileage.
+fn athlete_mileage_line(mileage_m: &[f64]) -> Option<String> {
+    if mileage_m.is_empty() {
+        return None;
+    }
+    let values: Vec<String> = mileage_m
+        .iter()
+        .filter(|metres| metres.is_finite() && **metres >= 0.0)
+        .map(|metres| units::format_distance_km_short(*metres))
+        .collect();
+    if values.is_empty() {
+        return None;
+    }
+    let count = values.len().to_string();
+    let values = values.join(", ");
+    strings::render(
+        "statement.plan.entry.athlete",
+        &[("n", &count), ("values", &values)],
+    )
+}
+
+/// The race week, moved to the day the athlete races.
+fn shift_reading(shift: &RaceWeekShift) -> ShiftReading {
+    let direction = if shift.days < 0 {
+        "statement.plan.race_week.earlier"
+    } else {
+        "statement.plan.race_week.later"
+    };
+    let direction = strings::text(direction).unwrap_or_default().to_string();
+    let line = strings::render(
+        "statement.plan.race_week.shifted",
+        &[("weekday", &shift.race_weekday), ("direction", &direction)],
+    );
+    let dropped = shift
+        .dropped
+        .iter()
+        .filter_map(|dropped| {
+            strings::render(
+                "statement.plan.race_week.dropped",
+                &[("day", &dropped.weekday), ("kind", &dropped.kind)],
+            )
+        })
+        .collect();
+    ShiftReading {
+        days: shift.days,
+        line,
+        dropped,
     }
 }

@@ -270,7 +270,7 @@
     { "id": "statement.plan.programme", "kind": "statement", "role": null, "template": "the {method} {label} plan" },
     { "id": "statement.plan.entry.requirement", "kind": "statement", "role": null, "template": "this level asks for {range} a week" },
     { "id": "statement.plan.entry.plan", "kind": "statement", "role": null, "template": "this plan runs {range} a week" },
-    { "id": "statement.plan.entry.athlete", "kind": "statement", "role": null, "template": "your last {n} weeks: {values}" },
+    { "id": "statement.plan.entry.athlete", "kind": "statement", "role": null, "template": "your last {n} weeks: {values} km" },
     { "id": "statement.plan.pacing.threshold", "kind": "statement", "role": null, "template": "paced with the threshold of {date} · {value}" },
     { "id": "statement.plan.pacing.rule", "kind": "statement", "role": null, "template": "paced with the plan's rule on your {distance} of {date}" },
     { "id": "statement.plan.pacing.none", "kind": "statement", "role": null, "template": "no paces were worked out — {reason}" },

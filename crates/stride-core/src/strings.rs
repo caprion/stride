@@ -1896,7 +1896,7 @@ pub const CATALOGUE: [Entry; 279] = [
         id: "statement.plan.entry.athlete",
         kind: StringKind::Statement,
         role: None,
-        template: "your last {n} weeks: {values}",
+        template: "your last {n} weeks: {values} km",
     },
     Entry {
         // The threshold the plan was paced with — its value and the day it
