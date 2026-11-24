@@ -197,7 +197,7 @@ fn history_row(choice: &ThresholdChoice) -> HistoryRow {
 ///
 /// A row whose day cannot be read is not a choice the app can show: the
 /// history is dated, and a choice with no date has no place in it.
-fn choice_of(stored: &ThresholdObservation) -> Option<ThresholdChoice> {
+pub(crate) fn choice_of(stored: &ThresholdObservation) -> Option<ThresholdChoice> {
     let entered_on = super::core_date(&stored.entered_on).ok()?;
     let updated_on = super::core_date(&stored.updated_on).ok()?;
     Some(ThresholdChoice {
@@ -244,7 +244,7 @@ fn base_of(base: &str) -> stride_core::threshold::ThresholdBase {
 }
 
 /// The typed label the store holds, as the core reads it.
-fn typed_source_of(label: &str) -> Option<TypedSource> {
+pub(crate) fn typed_source_of(label: &str) -> Option<TypedSource> {
     match label {
         "lab test" => Some(TypedSource::LabTest),
         "coach" => Some(TypedSource::Coach),

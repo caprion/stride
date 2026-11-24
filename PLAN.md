@@ -339,6 +339,47 @@ plan of record say what is true.
   this week's build brought: the **training paces** and the **cost curve**, the **threshold**
   and the athlete's own races, the **stimulus ledger**, and the **plan programmes**.
 
+### Note — the adoption, and the plan that is in force (2026-11-24)
+
+This note travels with a change to `docs/contract/api-paths.md`, which the
+contract freeze says is a plan change: a frozen file changes only with a
+plan note in the same change. **Two routes were added** and one was
+extended, and the phone's copy of the route table travels with them.
+
+* **The two routes.** `POST /plan/adopt` is the athlete **adopting a
+  programme**: the body names the programme, the tier, the plan's first
+  day, the goal race's distance and the day it is run, and the threshold
+  to pace with — a candidate, or a number the athlete brought. `GET
+  /plan/adopt` reads back the plan that is in force: its programme, its
+  tier, its dates, what it was paced with and the threshold it was paced
+  with, and the tier's entry requirement **beside the athlete's own
+  weekly mileage**.
+* **The paces are worked out once, at the adoption** (B4), from the
+  threshold **in force on the day of the adoption**, and they are stored
+  with the plan. A later threshold does not re-pace a running plan, and a
+  later correction to the catalogue cannot either: the sessions are the
+  dated copy (B1).
+* **The refusals**, each with the core's own reason: a programme or a
+  tier that is not in the catalogue, a start date that leaves no room for
+  the twelve weeks and the race week, a goal race the programme does not
+  print, and a plan that is already in force — **one plan at a time**
+  (D13/D14).
+* **What is not a refusal:** the athlete's own weekly mileage being below
+  the tier's entry requirement. The requirement is **stated beside** their
+  mileage (B2) and the athlete chooses; the app never suggests a tier and
+  never blocks one.
+* **A plan may be adopted before a race is typed.** Its sessions carry
+  their kinds and their distances and **no paces**, with the reason, and
+  the plan records that it has no pacing yet. The paces are worked out
+  **once**, when there is something to work them out from.
+* **`/plan/week` now carries the adopted week's own sessions**: their
+  kinds, their distances, their paces where they have one, and the plan's
+  own source. The adopted week is `null` when no plan is in force, or when
+  the week asked for is not in it.
+* **The phone does not need a screen for this.** The route is in the
+  bridge's table and in its test; the pace page is the precedent — a
+  route with no screen. The app does not read the two routes yet.
+
 ### Note — the athlete's own facts, and the programmes they can adopt (2026-11-24)
 
 This note travels with a change to `docs/contract/api-paths.md`, which the

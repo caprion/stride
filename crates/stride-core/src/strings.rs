@@ -181,7 +181,7 @@ pub struct Entry {
 }
 
 /// The catalogue.
-pub const CATALOGUE: [Entry; 279] = [
+pub const CATALOGUE: [Entry; 285] = [
     // The vitals.
     Entry {
         id: "vital.rest.label",
@@ -1698,6 +1698,24 @@ pub const CATALOGUE: [Entry; 279] = [
         template: "your own race at the goal distance",
     },
     Entry {
+        id: "pace.rule.vo2max",
+        kind: StringKind::Statement,
+        role: None,
+        template: "the 3K-to-5K race pace, run as intervals",
+    },
+    Entry {
+        id: "pace.rule.speed",
+        kind: StringKind::Statement,
+        role: None,
+        template: "the 800 m-to-mile race pace, run as repetitions",
+    },
+    Entry {
+        id: "pace.rule.tune_up",
+        kind: StringKind::Statement,
+        role: None,
+        template: "the tune-up race's own distance, at the pace that distance is run",
+    },
+    Entry {
         id: "pace.missing.race",
         kind: StringKind::Status,
         role: None,
@@ -1993,13 +2011,31 @@ pub const CATALOGUE: [Entry; 279] = [
         id: "statement.plan.refusal.start",
         kind: StringKind::Statement,
         role: None,
-        template: "the plan's first week begins on {start}, and the race on {race} falls in another week",
+        template: "the plan's first week begins on {start}, and the race on {race} falls in another week \u{2014} the plan named begins on {given}",
     },
     Entry {
         id: "statement.plan.refusal.volume",
         kind: StringKind::Statement,
         role: None,
         template: "week {week} adds up to {cells}, and the book prints {volume}",
+    },
+    Entry {
+        id: "statement.plan.adoption.none",
+        kind: StringKind::Status,
+        role: None,
+        template: "no plan has been adopted",
+    },
+    Entry {
+        id: "statement.plan.refusal.in_force",
+        kind: StringKind::Statement,
+        role: None,
+        template: "a plan is already in force until {date}",
+    },
+    Entry {
+        id: "statement.plan.refusal.tier",
+        kind: StringKind::Statement,
+        role: None,
+        template: "{id} is the {tier} programme",
     },
 ];
 

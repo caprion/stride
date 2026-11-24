@@ -190,6 +190,111 @@ export interface PlanWeek {
    * second answer to the same question.
    */
   counts: { done: number; planned: number; not_done: number }
+  /**
+   * The adopted plan's own week, when a plan is in force.
+   *
+   * The adopted plan is the athlete's own programme: the sessions it
+   * holds, their kinds, their distances, their paces where they have one,
+   * and the plan's own source. `null` when no plan is in force, or when
+   * the week asked for is not in it.
+   */
+  adopted: AdoptedWeek | null
+}
+
+/**
+ * The adopted plan's week.
+ *
+ * The sessions are the athlete's own programme: a dated copy of one of
+ * the catalogue's programmes, worked out once at the adoption.
+ */
+export interface AdoptedWeek {
+  /** The week's number: eleven down to one, zero for the race week. */
+  week: number
+  /** The weeks to go. */
+  weeks_to_go: number | null
+  /** The week's own label: "3 weeks to go". */
+  label: string
+  start_date: string
+  end_date: string
+  sessions: AdoptedSession[]
+  /** The plan's own source: baseline, prescribed or typed. */
+  source: 'baseline' | 'prescribed' | 'typed'
+  /** The line: "the Pfitzinger half marathon tier 2 plan". */
+  source_line: string
+  /** What the plan was paced with. */
+  pacing: PlanPacing
+  /** The tier's entry requirement beside the athlete's own mileage. */
+  entry: PlanEntry
+}
+
+/** One session of the adopted plan. */
+export interface AdoptedSession {
+  date: string
+  /** The day's name: "Wednesday". */
+  weekday: string
+  /** The runner's wording for the kind: "tempo". */
+  kind: string
+  /** The method's own name, when the kind is one of the method's. */
+  method_kind: string | null
+  /** The distance, as the core renders it: "17.7 km". */
+  distance: string | null
+  /** The session's pace: "4:16–4:21 /km". */
+  pace: string | null
+  /** The second end of a session with two: the long run's finish pace. */
+  finish_pace: string | null
+  /** The cell's own detail: "3 × 8 min, jog 3". */
+  detail: string | null
+  /** The line the surface leads with: "17.7 km · tempo". */
+  label: string
+  /** The line with the pace beside it, when the session has one. */
+  line: string | null
+  /** The reason the session has no pace, when it has none. */
+  no_pace: string | null
+  /** On a progression long run: the last miles at the threshold pace. */
+  lt_last: string | null
+}
+
+/** What the plan was paced with, and where the numbers came from. */
+export interface PlanPacing {
+  /** Do the plan's sessions carry paces? */
+  paced: boolean
+  /** The threshold the plan was paced with. */
+  threshold: PlanSourceValue | null
+  /** The race the plan's own rule was read from. */
+  rule: PlanSourceValue | null
+  /** The reason the sessions that need a race have no pace. */
+  missing: string | null
+  /** The line: "paced with the threshold of 3 Nov 2026 · 165 bpm". */
+  threshold_line: string | null
+  /** The line: "paced with the plan's rule on your 10K of 12 Oct 2026". */
+  rule_line: string | null
+}
+
+/** One thing the plan's numbers came from: a value and the day it was read. */
+export interface PlanSourceValue {
+  /** The value, as the core rendered it: "165 bpm". */
+  value: string
+  date: string
+  date_label: string
+  /** Where the value came from. */
+  source: string | null
+  /** The base the choice was made for. */
+  base: string | null
+}
+
+/**
+ * The tier's entry requirement, beside the athlete's own mileage.
+ *
+ * Three facts, side by side, unranked. The app states them and never
+ * compares them.
+ */
+export interface PlanEntry {
+  /** "this level asks for 64.4-80.5 km a week". */
+  requirement: string | null
+  /** "this plan runs 74-101.4 km a week". */
+  plan_band: string | null
+  /** "your last 4 weeks: 60.8, 61.1, 50.8, 6 km". */
+  athlete: string | null
 }
 
 /**

@@ -276,9 +276,14 @@ fn the_adoption_is_refused_when_the_dates_cannot_both_be_true() {
     input.start_date = Some(date("2026-10-26"));
     let refusal = adopt(&input).expect_err("the adoption is refused");
     match &refusal {
-        AdoptionRefusal::StartDate { expected, given } => {
+        AdoptionRefusal::StartDate {
+            expected,
+            given,
+            race,
+        } => {
             assert_eq!(*expected, date("2026-11-02"));
             assert_eq!(*given, date("2026-10-26"));
+            assert_eq!(*race, date("2027-01-24"));
         }
         other => panic!("the wrong refusal: {other:?}"),
     }
@@ -406,4 +411,87 @@ fn the_five_k_and_the_mile_are_the_ones_the_method_names() {
     // The five-kilometre equivalent of the canonical 10K is 19:57, which
     // is the 3:59 /km the intervals carry.
     assert!((stride_core::vo2::FIVE_K - 5_000.0).abs() < 0.1);
+}
+
+#[test]
+fn the_catalogue_names_the_tier_of_every_programme() {
+    use stride_core::plan_bases::programmes;
+    let tiers: Vec<String> = programmes()
+        .iter()
+        .map(|programme| programme.tier())
+        .collect();
+    assert_eq!(
+        tiers,
+        vec![
+            "tier 1".to_string(),
+            "tier 2".to_string(),
+            "tier 1".to_string(),
+            "tier 2".to_string(),
+        ]
+    );
+}
+
+#[test]
+fn a_programme_is_named_by_its_id_and_its_tier() {
+    use stride_core::plan_bases::{programme_of, AdoptionRefusal};
+
+    // The id on its own.
+    let programme = programme_of("pfitzinger-half-marathon-tier-2", None).expect("a programme");
+    assert_eq!(programme.id, "pfitzinger-half-marathon-tier-2");
+
+    // The id with the tier beside it.
+    let programme = programme_of("pfitzinger-half-marathon", Some("tier 2")).expect("a programme");
+    assert_eq!(programme.id, "pfitzinger-half-marathon-tier-2");
+
+    // The tier as a number.
+    let programme = programme_of("pfitzinger-half-marathon", Some("2")).expect("a programme");
+    assert_eq!(programme.id, "pfitzinger-half-marathon-tier-2");
+
+    // A tier the programme does not have.
+    let refusal = programme_of("pfitzinger-half-marathon-tier-2", Some("tier 3"))
+        .expect_err("the tier is refused");
+    match &refusal {
+        AdoptionRefusal::Tier { id, tier } => {
+            assert_eq!(id, "pfitzinger-half-marathon-tier-2");
+            assert_eq!(tier, "tier 2");
+        }
+        other => panic!("the wrong refusal: {other:?}"),
+    }
+    let reason = refusal.reason().expect("a reason");
+    assert_eq!(
+        reason,
+        "pfitzinger-half-marathon-tier-2 is the tier 2 programme"
+    );
+
+    // A programme the catalogue does not hold.
+    let refusal =
+        programme_of("pfitzinger-80-20-tier-1", None).expect_err("the programme is refused");
+    let reason = refusal.reason().expect("a reason");
+    assert_eq!(
+        reason,
+        "there is no programme called pfitzinger-80-20-tier-1 in the catalogue"
+    );
+}
+
+#[test]
+fn a_stored_session_keeps_the_pace_it_was_worked_out_with() {
+    use stride_core::plan_bases::stored_pace;
+
+    // A session with a pace: the band it was stored with.
+    let pace = stored_pace(&SessionKind::Threshold, Some(239.0), Some(261.0));
+    assert_eq!(pace.render(), Some("3:59–4:21 /km".to_string()));
+
+    // The general aerobic day: the method fixes a band and states no pace.
+    let pace = stored_pace(&SessionKind::GeneralAerobic, None, None);
+    assert!(matches!(
+        pace,
+        stride_core::training_paces::PaceValue::NoneStated
+    ));
+
+    // A run whose pace could not be worked out: a value with a reason.
+    let pace = stored_pace(&SessionKind::Endurance, None, None);
+    assert!(matches!(
+        pace,
+        stride_core::training_paces::PaceValue::Missing(_)
+    ));
 }

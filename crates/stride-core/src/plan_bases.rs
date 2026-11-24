@@ -136,6 +136,95 @@ impl Programme {
             .filter(|week| !week.in_plan)
             .count()
     }
+
+    /// The tier the programme is: "tier 1" or "tier 2".
+    ///
+    /// The catalogue's id carries it — "pfitzinger-half-marathon-tier-2" —
+    /// and the programme's own label carries it too ("half marathon tier
+    /// 2"). The tier is the last part of the id, and the two cannot
+    /// disagree: the catalogue's own test holds them to each other.
+    pub fn tier(&self) -> String {
+        let last = self.id.rsplit('-').next().unwrap_or_default();
+        match last.parse::<u32>() {
+            Ok(number) => format!("tier {number}"),
+            Err(_) => last.replace('-', " "),
+        }
+    }
+}
+
+/// One programme, by the id the athlete named and the tier they chose.
+///
+/// The catalogue's ids carry the tier, and the athlete may name the
+/// programme with it ("pfitzinger-half-marathon-tier-2") or without it
+/// ("pfitzinger-half-marathon" and the tier beside it). The **pair** — the
+/// programme and the tier — is what names a programme, and a pair that is
+/// not in the catalogue is not a programme.
+///
+/// A refusal, with its reason:
+/// * `UnknownProgramme` when the pair is not in the catalogue;
+/// * `Tier` when the programme is there and the tier is not its own.
+pub fn programme_of(id: &str, tier: Option<&str>) -> Result<&'static Programme, AdoptionRefusal> {
+    let wanted = tier.map(normalise_tier);
+    let found = match programme(id) {
+        Some(programme) => Some(programme),
+        None => match &wanted {
+            Some(tier) => programme(&format!("{id}-{}", tier.replace(' ', "-"))),
+            None => None,
+        },
+    };
+    let found = match found {
+        Some(found) => found,
+        None => {
+            return Err(AdoptionRefusal::UnknownProgramme {
+                id: catalogue_id(id, tier),
+            })
+        }
+    };
+    if let Some(tier) = &wanted {
+        if found.tier() != *tier {
+            return Err(AdoptionRefusal::Tier {
+                id: found.id.clone(),
+                tier: found.tier(),
+            });
+        }
+    }
+    Ok(found)
+}
+
+/// The catalogue id of a programme and a tier.
+///
+/// The id the athlete named, with the tier they chose: the id the
+/// catalogue holds, or the id it would hold if the pair were in it.
+pub fn catalogue_id(id: &str, tier: Option<&str>) -> String {
+    match tier {
+        None => id.to_string(),
+        Some(tier) => {
+            let tier = normalise_tier(tier);
+            let suffix = tier.replace(' ', "-");
+            if id.ends_with(&suffix) {
+                id.to_string()
+            } else {
+                format!("{id}-{suffix}")
+            }
+        }
+    }
+}
+
+/// The tier the athlete named, in the catalogue's own words: "tier 2".
+///
+/// The tier may be written as a number ("2"), as the catalogue writes it
+/// ("tier 2") or as the id's own last part ("tier-2"); they are one tier.
+fn normalise_tier(tier: &str) -> String {
+    let trimmed = tier.trim().to_ascii_lowercase().replace('-', " ");
+    let number = trimmed
+        .split_whitespace()
+        .last()
+        .and_then(|part| part.parse::<u32>().ok());
+    match number {
+        Some(number) => format!("tier {number}"),
+        None if trimmed.is_empty() => String::new(),
+        None => trimmed,
+    }
 }
 
 /// A weekly mileage band.
@@ -1105,6 +1194,8 @@ pub struct AdoptedPlan {
     pub label: String,
     /// The programme's method: "Pfitzinger".
     pub method: String,
+    /// The tier the athlete chose: "tier 2".
+    pub tier: String,
     /// The goal distance, in metres.
     pub distance_m: f64,
     /// The goal distance's name: "half marathon".
@@ -1191,6 +1282,12 @@ pub struct AdoptedSession {
     pub pace: PaceValue,
     /// The second end of a session with two: the long run's finish pace.
     pub finish_pace: PaceValue,
+    /// The rule the pace came from.
+    ///
+    /// The rule is the method's own ("book.lt_pace_band",
+    /// "book.long_run"), and it is `None` only where the pace could not
+    /// be worked out at all.
+    pub pace_rule: Option<String>,
     /// On a progression long run: how many of the last miles are at the
     /// threshold pace.
     pub lt_last_m: Option<f64>,
@@ -1239,6 +1336,14 @@ pub struct PacingSource {
     pub value: String,
     /// The day it was read.
     pub date: Date,
+    /// Where the value came from: the watch's own zone model, a race, a
+    /// field test, or a number the athlete brought.
+    ///
+    /// `None` for the race the plan's own rule was read from: the race is
+    /// the source, and it says so itself.
+    pub source: Option<String>,
+    /// The base the choice was made for: "pfitzinger" or "eighty_twenty".
+    pub base: Option<String>,
 }
 
 /// Why an adoption could not be made.
@@ -1264,6 +1369,20 @@ pub enum AdoptionRefusal {
         expected: Date,
         /// The first day the athlete named.
         given: Date,
+        /// The day of the goal race.
+        race: Date,
+    },
+    /// The tier the athlete named is not the programme's tier.
+    Tier {
+        /// The programme the athlete named.
+        id: String,
+        /// The tier the programme is.
+        tier: String,
+    },
+    /// A plan is already in force.
+    PlanInForce {
+        /// The day the plan in force ends.
+        until: Date,
     },
     /// The programme's own week does not add up to the mileage the book
     /// prints beside it.
@@ -1292,13 +1411,25 @@ impl AdoptionRefusal {
                     &[("options", &options), ("distance", &distance)],
                 )
             }
-            AdoptionRefusal::StartDate { expected, given } => {
+            AdoptionRefusal::StartDate {
+                expected,
+                given,
+                race,
+            } => {
                 let expected = expected.to_iso();
                 let given = given.to_iso();
+                let race = race.to_iso();
                 strings::render(
                     "statement.plan.refusal.start",
-                    &[("start", &expected), ("race", &given)],
+                    &[("start", &expected), ("race", &race), ("given", &given)],
                 )
+            }
+            AdoptionRefusal::Tier { id, tier } => {
+                strings::render("statement.plan.refusal.tier", &[("id", id), ("tier", tier)])
+            }
+            AdoptionRefusal::PlanInForce { until } => {
+                let until = until.to_iso();
+                strings::render("statement.plan.refusal.in_force", &[("date", &until)])
             }
             AdoptionRefusal::Volume {
                 week,
@@ -1323,21 +1454,40 @@ impl AdoptionRefusal {
 #[derive(Clone, Debug, PartialEq)]
 struct PlanPaces {
     /// The threshold pace.
-    threshold: PaceValue,
+    threshold: SourcedPace,
     /// The long run's first end.
-    long_start: PaceValue,
+    long_start: SourcedPace,
     /// The long run's second end.
-    long_finish: PaceValue,
+    long_finish: SourcedPace,
     /// The recovery pace.
-    recovery: PaceValue,
+    recovery: SourcedPace,
     /// The VO₂max pace: the 3K-to-5K race pace.
-    vo2: PaceValue,
+    vo2: SourcedPace,
     /// The speed-repetition pace: the 800 m-to-mile race pace.
-    speed: PaceValue,
+    speed: SourcedPace,
     /// The goal race's own pace.
-    race: PaceValue,
+    race: SourcedPace,
     /// The tune-up race's own pace.
-    tune_up: PaceValue,
+    tune_up: SourcedPace,
+}
+
+/// One pace, and the rule it came from.
+///
+/// The rule is the method's own, and it is named on the session: the
+/// session's pace is not a number without a rule behind it.
+#[derive(Clone, Debug, PartialEq)]
+struct SourcedPace {
+    /// The pace itself.
+    value: PaceValue,
+    /// The rule that gave it.
+    rule: &'static str,
+}
+
+impl SourcedPace {
+    /// A pace the ladder's rung gave.
+    fn of(rule: &'static str, value: PaceValue) -> SourcedPace {
+        SourcedPace { value, rule }
+    }
 }
 
 /// Adopt a programme.
@@ -1391,6 +1541,7 @@ pub fn adopt(input: &AdoptionInput) -> Result<AdoptedPlan, AdoptionRefusal> {
             return Err(AdoptionRefusal::StartDate {
                 expected: start,
                 given,
+                race: input.race_date,
             });
         }
     }
@@ -1465,8 +1616,9 @@ pub fn adopt(input: &AdoptionInput) -> Result<AdoptedPlan, AdoptionRefusal> {
                 kind: day.kind.clone(),
                 distance_m,
                 detail: day.detail.clone(),
-                pace,
-                finish_pace,
+                pace: pace.value,
+                finish_pace: finish_pace.value,
+                pace_rule: Some(pace.rule.to_string()),
                 lt_last_m: day.lt_last_m,
             });
         }
@@ -1504,6 +1656,7 @@ pub fn adopt(input: &AdoptionInput) -> Result<AdoptedPlan, AdoptionRefusal> {
         template_version: catalogue().version.clone(),
         label: programme.label.clone(),
         method: programme.method.clone(),
+        tier: programme.tier(),
         distance_m: programme.distance_m,
         distance_label: programme.distance_label.clone(),
         entry_mileage: programme.entry_mileage.clone(),
@@ -1541,87 +1694,123 @@ fn plan_paces(
         resting_heart_rate: None,
         long_run: LongRunKind::Standard,
     });
-    let rung = |kind| {
+    let rung = |kind, rule| {
         ladder
             .rung(kind)
-            .map(|rung| rung.pace)
-            .unwrap_or(PaceValue::Missing(MissingInput::NoRaceTime))
+            .map(|rung| SourcedPace::of(rule, rung.pace))
+            .unwrap_or_else(|| SourcedPace::of(rule, PaceValue::Missing(MissingInput::NoRaceTime)))
     };
 
     // The threshold pace: the threshold's own band when it carries one,
     // and the method's rule on the race when it does not.
     let threshold = match input.threshold.as_ref().and_then(|choice| choice.pace) {
-        Some(band) => PaceValue::Known(band),
-        None => rung(RungKind::LactateThreshold),
+        Some(band) => SourcedPace::of(training_paces::RULE_THRESHOLD.id, PaceValue::Known(band)),
+        None => rung(
+            RungKind::LactateThreshold,
+            training_paces::RULE_THRESHOLD.id,
+        ),
     };
 
     let long = ladder.rung(RungKind::LongRun);
     let long_start = long
-        .map(|rung| rung.pace)
-        .unwrap_or(PaceValue::Missing(MissingInput::NoRaceTime));
+        .map(|rung| SourcedPace::of(training_paces::RULE_LONG_RUN.id, rung.pace))
+        .unwrap_or_else(|| {
+            SourcedPace::of(
+                training_paces::RULE_LONG_RUN.id,
+                PaceValue::Missing(MissingInput::NoRaceTime),
+            )
+        });
     let long_finish = long
-        .map(|rung| rung.finish_pace)
-        .unwrap_or(PaceValue::Missing(MissingInput::NoRaceTime));
+        .map(|rung| SourcedPace::of(training_paces::RULE_LONG_RUN.id, rung.finish_pace))
+        .unwrap_or_else(|| {
+            SourcedPace::of(
+                training_paces::RULE_LONG_RUN.id,
+                PaceValue::Missing(MissingInput::NoRaceTime),
+            )
+        });
 
     // The VO₂max pace: the 3K-to-5K race pace. The engine reads the 5K
     // equivalent — the fastest of the distances the method's own relations
     // give — and the 3K pace is not one of them.
     let vo2 = match equivalent_pace(&ladder, crate::vo2::FIVE_K) {
-        Some(pace) => PaceValue::Known(PaceBand::single(pace)),
-        None => PaceValue::Missing(MissingInput::NoRaceTime),
+        Some(pace) => SourcedPace::of(
+            training_paces::RULE_VO2MAX.id,
+            PaceValue::Known(PaceBand::single(pace)),
+        ),
+        None => SourcedPace::of(
+            training_paces::RULE_VO2MAX.id,
+            PaceValue::Missing(MissingInput::NoRaceTime),
+        ),
     };
 
     // The speed-repetition pace: the 800 m-to-mile race pace. The mile is
     // not one of the ladder's equivalents, so it is read from the
     // athlete's own race by the same relation the ladder uses.
     let speed = match input.race.as_ref().and_then(mile_race_pace) {
-        Some(pace) => PaceValue::Known(PaceBand::single(pace)),
-        None => PaceValue::Missing(MissingInput::NoRaceTime),
+        Some(pace) => SourcedPace::of(
+            training_paces::RULE_SPEED.id,
+            PaceValue::Known(PaceBand::single(pace)),
+        ),
+        None => SourcedPace::of(
+            training_paces::RULE_SPEED.id,
+            PaceValue::Missing(MissingInput::NoRaceTime),
+        ),
     };
 
     // The tune-up race's own pace: the race's distance, as the athlete's
     // own race gives it.
     let tune_up = match tune_up_distance_m.and_then(|distance| equivalent_pace(&ladder, distance)) {
-        Some(pace) => PaceValue::Known(PaceBand::single(pace)),
-        None => PaceValue::Missing(MissingInput::NoRaceTime),
+        Some(pace) => SourcedPace::of(
+            training_paces::RULE_TUNE_UP.id,
+            PaceValue::Known(PaceBand::single(pace)),
+        ),
+        None => SourcedPace::of(
+            training_paces::RULE_TUNE_UP.id,
+            PaceValue::Missing(MissingInput::NoRaceTime),
+        ),
     };
 
     PlanPaces {
         threshold,
         long_start,
         long_finish,
-        recovery: rung(RungKind::Recovery),
+        recovery: rung(RungKind::Recovery, training_paces::RULE_RECOVERY.id),
         vo2,
         speed,
-        race: rung(RungKind::GoalRace),
+        race: rung(RungKind::GoalRace, training_paces::RULE_GOAL_RACE.id),
         tune_up,
     }
 }
 
 /// The pace of a session, and the second end of a session with two.
-fn pace_for(kind: &SessionKind, paces: &PlanPaces) -> (PaceValue, PaceValue) {
-    let none = PaceValue::NoneStated;
+fn pace_for(kind: &SessionKind, paces: &PlanPaces) -> (SourcedPace, SourcedPace) {
+    let none = SourcedPace::of(
+        training_paces::RULE_GENERAL_AEROBIC.id,
+        PaceValue::NoneStated,
+    );
     match kind {
         // The general-aerobic day: the method fixes a heart-rate band and
         // no pace.
-        SessionKind::GeneralAerobic | SessionKind::GeneralAerobicSpeed => (none, none),
+        SessionKind::GeneralAerobic | SessionKind::GeneralAerobicSpeed => {
+            (none.clone(), none.clone())
+        }
         // The rest day is not a run: it carries no pace at all.
-        SessionKind::RestCross | SessionKind::Rest => (none, none),
+        SessionKind::RestCross | SessionKind::Rest => (none.clone(), none.clone()),
         // The long run: from the start pace to the finish pace.
-        SessionKind::Endurance => (paces.long_start, paces.long_finish),
+        SessionKind::Endurance => (paces.long_start.clone(), paces.long_finish.clone()),
         // The progression long run: the long run, then the last miles at
         // the threshold pace.
-        SessionKind::ProgressionLongRun => (paces.long_start, paces.threshold),
-        SessionKind::Threshold => (paces.threshold, none),
-        SessionKind::Vo2Max => (paces.vo2, none),
-        SessionKind::SpeedRepetitions => (paces.speed, none),
-        SessionKind::Recovery => (paces.recovery, none),
-        SessionKind::RacePace | SessionKind::RacePaceSpeed => (paces.race, none),
-        SessionKind::TuneUpRace => (paces.tune_up, none),
-        SessionKind::GoalRace => (paces.race, none),
+        SessionKind::ProgressionLongRun => (paces.long_start.clone(), paces.threshold.clone()),
+        SessionKind::Threshold => (paces.threshold.clone(), none.clone()),
+        SessionKind::Vo2Max => (paces.vo2.clone(), none.clone()),
+        SessionKind::SpeedRepetitions => (paces.speed.clone(), none.clone()),
+        SessionKind::Recovery => (paces.recovery.clone(), none.clone()),
+        SessionKind::RacePace | SessionKind::RacePaceSpeed => (paces.race.clone(), none.clone()),
+        SessionKind::TuneUpRace => (paces.tune_up.clone(), none.clone()),
+        SessionKind::GoalRace => (paces.race.clone(), none.clone()),
         // The app's own kinds are not the method's: an adopted plan's
         // sessions always carry one of the method's.
-        _ => (none, none),
+        _ => (none.clone(), none.clone()),
     }
 }
 
@@ -1631,11 +1820,15 @@ fn pacing_of(input: &AdoptionInput) -> Pacing {
         choice.render().map(|value| PacingSource {
             value,
             date: choice.origin_date.unwrap_or(choice.entered_on),
+            source: Some(choice.source.key().to_string()),
+            base: Some(choice.base.key().to_string()),
         })
     });
     let race = input.race.as_ref().map(|race| PacingSource {
         value: training_paces::race_label(race.distance_m).to_string(),
         date: race.date,
+        source: None,
+        base: None,
     });
     let missing = match input.race {
         Some(_) => None,
@@ -1710,6 +1903,55 @@ pub struct DateWords {
     pub threshold: Option<String>,
     /// The race's day: "12 Oct 2026".
     pub race: Option<String>,
+}
+
+/// The pace of a **stored** session, from the two ends it was stored with.
+///
+/// The stored session carries the pace's two ends, or nothing. A session
+/// with no pace is a session with no pace: whether that is the method's
+/// own answer — the general aerobic day carries a heart-rate band and no
+/// pace — or a value that could not be worked out is the kind's own.
+pub fn stored_pace(kind: &SessionKind, low: Option<f64>, high: Option<f64>) -> PaceValue {
+    match (low, high) {
+        (Some(low), Some(high)) => PaceValue::Known(PaceBand::between(low, high)),
+        _ => match kind {
+            // The method fixes a band for these days and states no pace.
+            SessionKind::GeneralAerobic
+            | SessionKind::GeneralAerobicSpeed
+            | SessionKind::RestCross
+            | SessionKind::Rest => PaceValue::NoneStated,
+            // Everything else depends on the athlete's own race.
+            _ => PaceValue::Missing(MissingInput::NoRaceTime),
+        },
+    }
+}
+
+/// The second end of a **stored** session, from the two ends it was
+/// stored with.
+///
+/// Only the long run and the progression long run have a second end; every
+/// other session has one pace, and the second end is the method's own
+/// silence rather than a missing value.
+pub fn stored_finish_pace(kind: &SessionKind, low: Option<f64>, high: Option<f64>) -> PaceValue {
+    match kind {
+        SessionKind::Endurance | SessionKind::ProgressionLongRun => stored_pace(kind, low, high),
+        _ => PaceValue::NoneStated,
+    }
+}
+
+/// The check on a week: do its seven days add up to the mileage the book
+/// prints beside them?
+///
+/// The days are the plan's own copy and the printed mileage is the book's,
+/// and the check is the difference between them. A week that does not
+/// reconcile is reported as it is: the gap is never closed by adjusting a
+/// cell.
+pub fn volume_check_of(cells_m: f64, printed_m: Option<f64>) -> VolumeCheck {
+    VolumeCheck {
+        cells_m: Some(cells_m),
+        reconciles: printed_m.map(|printed| (cells_m - printed).abs() < 1.0),
+        note: None,
+    }
 }
 
 /// The plan's own reading of one week.
@@ -1834,6 +2076,28 @@ pub struct ShiftReading {
 pub fn read_week(plan: &AdoptedPlan, week: i32, words: &DateWords) -> Option<WeekReading> {
     let found = plan.weeks.iter().find(|candidate| candidate.week == week)?;
     Some(reading_of(plan, found, words))
+}
+
+/// The plan's own reading of its pacing.
+///
+/// The threshold the plan was paced with — its value and the day it was
+/// read — the race the plan's own rule was read from, and the reason the
+/// sessions that need a race have no pace.
+pub fn read_pacing(plan: &AdoptedPlan, words: &DateWords) -> PacingReading {
+    pacing_reading(&plan.pacing, words)
+}
+
+/// The tier's entry requirement beside the athlete's own mileage.
+///
+/// Three facts, side by side, unranked. The app states them and never
+/// compares them.
+pub fn read_entry(plan: &AdoptedPlan) -> EntryReading {
+    entry_reading(plan)
+}
+
+/// The plan's own source: the programme the plan was adopted from.
+pub fn read_source(plan: &AdoptedPlan) -> PlanReading {
+    plan_reading(plan)
 }
 
 /// The plan's own reading of the week containing a day.

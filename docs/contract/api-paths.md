@@ -31,6 +31,7 @@ reference only).
 |---|---|
 | `/plan/{current,today,week,blocks,sources,adherence,results,import}` | the plan engine |
 | `/plan/bases` | the **programmes** the app can adopt: the Pfitzinger 10K and half-marathon templates, with their entry requirement, their length and their weeks (see "The plan's bases" below) |
+| `/plan/adopt` | the **adoption**: the athlete adopts a programme, and the plan that is in force is read back — its programme, its tier, its dates, what it was paced with, and the tier's entry requirement beside the athlete's own weekly mileage (see "The adopted plan" below) |
 | `/insights/{today,progress,load,chips,rolling,streaks,pace,challenges}` | Today and the feed chips; `progress` is the Progress screen's answer, `load` is the training load over the same window (see "The training load" below), `rolling` is the rolling view (see "The rolling view" below), `streaks` is the streak of days and weeks (see "The streaks" below), `pace` is the pace page's answer (see "The pace page" below) and `challenges` is the athlete's own challenges, week by week (see "The challenges" below) |
 | `/insights/{paces,pacing-curve,threshold,stimulus}` | the ladder of the training paces, the physiological-cost curve, the threshold's four candidates and the stimulus ledger (see "The four insight routes" below) |
 
@@ -149,7 +150,7 @@ Two rules hold for every shape below.
 | `/activities/{id}` | `ActivitySummary` and `splits: {lap_index, distance, duration, pace, heart_rate}[]`, `samples: {offset_s, distance_m, pace, heart_rate, altitude_m, kind}[]`, `plan_line: {text} \| null`, `note: string \| null` |
 | `/activities/{id}/film` | `activity_id`, `local_date`, `basis: string \| null`, `model: ZoneModel \| null`, `zones: {label, range, from_bpm, to_bpm}[]`, `outside_label: string \| null`, `samples: {elapsed, distance, pace, heart_rate, zone}[]`, `ground: {offset_s, elevation}[]`, `splits: {lap_index, offset_s, distance, duration, pace, heart_rate}[]`, `unavailable: string \| null`, `zones_unavailable: string \| null`, `generated_at` |
 | `/physiology/vitals` | `date`, `generated_at`, `rest: {label, line}`, `vitals: {key, label, value_text, direction_text, deviation_text, travel_text, status_text, band}[]`, `history: {sleep, hrv, resting_hr}` (each point: `date`, nullable `value`, nullable core-rendered `text` with units), `patterns: {id, text, sample_size}[]` |
-| `/plan/week` | `block_name`, `source`, `week_start`, `week_end`, `today`, `target`, `sessions: {date, session_type, title, sentence, target, actual, status, source}[]`, `adherence: {done, planned} \| null`, `counts: {done, planned, not_done}` |
+| `/plan/week` | `block_name`, `source`, `week_start`, `week_end`, `today`, `target`, `sessions: {date, session_type, title, sentence, target, actual, status, source}[]`, `adherence: {done, planned} \| null`, `counts: {done, planned, not_done}`, `adopted: AdoptedWeek \| null` |
 | `/settings` | `goal: {value: {text, raw} \| null, km: number \| null}`, `pause: {start_date, end_date, reason} \| null`, `storage: {size, activity_count, wellness_day_count, plan_session_count, note_count}`, `generated_at` |
 | `/settings/export` | `exported: boolean`, `size: {text, raw} \| null`, `generated_at` |
 | `/settings/delete` | `deleted: boolean`, `generated_at` |
@@ -175,6 +176,8 @@ Two rules hold for every shape below.
 | `/athlete/races` (the write) | `race: RaceRow`, `generated_at` |
 | `/athlete/threshold` (the write) | `choice: ChoiceRow`, `generated_at` |
 | `/plan/bases` | `generated_at`, `bases: {id, label, method, distance, distance_label, entry_requirement, entry_from_m, entry_to_m, weeks}[]`, `unavailable: string \| null` |
+| `/plan/adopt` | `generated_at`, `plan: AdoptedPlan \| null`, `unavailable: string \| null` |
+| `/plan/adopt` (the write) | `adopted: boolean`, `plan: AdoptedPlan`, `generated_at` |
 
 | `/insights/year` | `generated_at`, `date`, `window: {from, from_label, to, to_label, days}`, `comparison: {from, from_label, to, to_label, days}`, `months: {key, label, sessions, distance, duration, elevation, longest, form, weeks: {start, start_label, distance, sessions}[], mix: {zone, share}[], high}[]`, `days: {date, sessions, distance, high}[]`, `changed: string[]` |
 
@@ -205,7 +208,7 @@ other**: a contract that is not checked is a document, not a gate.
 The routes the app does not read — `/physiology/{daily,hrv,latest,sources}`,
 `/stats/*`, `/plan/{current,today,blocks,sources,adherence,results}`,
 `/fitness/trends`, `/insights/chips`, `/insights/{paces,pacing-curve,threshold,stimulus}`,
-`/plan/bases`, `/athlete/{races,threshold}`, `/health/daily`,
+`/plan/bases`, `/plan/adopt`, `/athlete/{races,threshold}`, `/health/daily`,
 `/sync/{runs,history,settings}` and `/auth/garmin/logout` —
 are the router's own, and they are written down in
 `crates/stride-api/src/dto.rs`. They follow the same two rules: a domain
@@ -705,6 +708,62 @@ is carried beside the athlete's own mileage, and the athlete picks.
 by cell from the book's own tables, and the list is empty until they are:
 an empty list is a **no value with a reason** in `unavailable`, never a
 programme that is not there.
+
+### The adopted plan
+
+`POST /plan/adopt` is the athlete **adopting a programme**; `GET
+/plan/adopt` reads back the plan that is in force.
+
+An adopted plan is a **dated copy** of a programme: the sessions are
+worked out **once**, at the adoption, from the threshold in force that
+day, and they are stored with it. A later correction to the catalogue
+cannot re-pace a running plan, and a later threshold does not re-pace it
+either.
+
+#### The body
+
+| field | what it is |
+|---|---|
+| `programme_id` | the programme's catalogue id — "pfitzinger-half-marathon-tier-2" |
+| `tier` | the tier the athlete chose — "tier 2", or the number 2. Optional: the id carries it |
+| `start_date` | the plan's first day. Optional: it is the Monday eleven weeks before the race week |
+| `race_date` | the day of the goal race |
+| `goal_distance_m` | the goal race's own distance. Optional: the programme's own goal distance is used |
+| `threshold` | the threshold to pace with: `{"source": "watch_zone_model" \| "race" \| "field_test" \| "typed"}`, and for a typed one the `heart_rate_bpm`, the `pace_fast_s_per_km` and the `pace_slow_s_per_km` with its `label` |
+
+#### What is refused
+
+* a **programme or a tier that is not in the catalogue**;
+* a **start date that leaves no room** for the twelve weeks and the race
+  week — the two dates cannot both be true;
+* a **goal race the programme does not print**;
+* a **plan that is already in force** — one plan at a time.
+
+**The athlete's own mileage being below the tier's entry requirement is
+not a refusal.** The requirement is stated beside their own mileage and the
+athlete chooses; the app never suggests a tier and never blocks one.
+
+#### A plan may be adopted before a race is typed
+
+Its sessions then carry their kinds and their distances and **no paces**,
+with the reason, and the plan records that it has no pacing yet. The paces
+are worked out **once**, when there is something to work them out from.
+
+#### The fields
+
+| field | what it is |
+|---|---|
+| `plan.programme_id` · `plan.programme_version` | the programme it was adopted from, and the catalogue's version at the time |
+| `plan.label` · `plan.method` · `plan.tier` | the programme's own name, whose method it is, and the tier the athlete chose |
+| `plan.goal_distance` · `plan.goal_label` | the goal race's own distance, and its name |
+| `plan.race_date` · `plan.start_date` · `plan.end_date` · `plan.adopted_on` | the plan's own days |
+| `plan.source` | where the plan came from — an adopted programme is a **prescription** |
+| `plan.pacing` | what the plan was paced with: `paced`, the `threshold` (its `value`, the `date` it was read, its `source` and its `base`), the `rule` (the race the plan's own rule was read from), the `missing` reason, and the two lines that say it |
+| `plan.entry` | the tier's `requirement`, the plan's own `band`, and the athlete's own `mileage` — **three facts side by side, unranked** |
+| `adopted.week` · `adopted.label` · `adopted.start_date` · `adopted.end_date` | the adopted week's own facts |
+| `adopted.sessions` | the week's sessions: their `date`, `weekday`, `kind`, `method_kind`, `distance`, `pace`, `finish_pace`, `detail`, `label`, `line`, `no_pace` and `lt_last` |
+| `adopted.source` · `adopted.source_line` | the plan's own source, and the line that names it |
+| `adopted.pacing` · `adopted.entry` | as the plan's own |
 
 ### The heatmap
 

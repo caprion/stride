@@ -320,7 +320,7 @@ fn choice_row_of(stored: &ThresholdObservation) -> ChoiceRow {
 ///
 /// The closed list is the core's: the app sends the label's **key**, and
 /// the store keeps the label the athlete gave it.
-fn typed_source_of(key: &str) -> Option<TypedSource> {
+pub(crate) fn typed_source_of(key: &str) -> Option<TypedSource> {
     match key {
         "lab_test" => Some(TypedSource::LabTest),
         "coach" => Some(TypedSource::Coach),

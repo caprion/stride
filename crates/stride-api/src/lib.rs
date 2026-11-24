@@ -143,6 +143,7 @@ pub const VERSION: &str = match option_env!("STRIDE_VERSION") {
 };
 
 pub mod activity_observations;
+pub mod adoption;
 pub mod athlete;
 pub mod dto;
 pub mod error;

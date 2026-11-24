@@ -442,6 +442,18 @@ pub const ROUTES: &[Route] = &[
         method: Method::Get,
         handler: crate::routes::plan::bases,
     },
+    // The adoption: the athlete adopts a programme, and the plan that is
+    // in force is read back.
+    Route {
+        pattern: "/plan/adopt",
+        method: Method::Post,
+        handler: crate::routes::plan::adopt,
+    },
+    Route {
+        pattern: "/plan/adopt",
+        method: Method::Get,
+        handler: crate::routes::plan::adopted,
+    },
     // The athlete's own facts: the races they typed, and the threshold
     // they chose. They are never synced.
     Route {

@@ -324,6 +324,85 @@ fn the_statistics_routes_carry_their_shapes() {
 }
 
 #[test]
+fn the_adoption_routes_carry_their_shapes() {
+    let harness = common::Harness::empty("shape-adoption");
+
+    // Nothing is adopted: the answer says so, and it says it in the
+    // core's own words.
+    let none = harness.ok_get("/plan/adopt");
+    assert_keys(
+        &none,
+        &["generated_at", "plan", "unavailable"],
+        "/plan/adopt",
+    );
+    assert!(none["plan"].is_null());
+
+    // The athlete adopts the half-marathon tier 2.
+    let body = serde_json::json!({
+        "programme_id": "pfitzinger-half-marathon-tier-2",
+        "tier": 2,
+        "race_date": "2027-01-24",
+        "goal_distance_m": 21_097.5,
+    })
+    .to_string();
+    let answer = harness.router.call("POST", "/plan/adopt", Some(&body));
+    assert_eq!(
+        answer.status, 200,
+        "the adoption was refused: {}",
+        answer.body
+    );
+
+    let plan = &answer.body["plan"];
+    assert_keys(
+        plan,
+        &[
+            "adopted_on",
+            "end_date",
+            "entry",
+            "goal_distance",
+            "goal_label",
+            "label",
+            "method",
+            "pacing",
+            "programme_id",
+            "programme_version",
+            "race_date",
+            "race_date_label",
+            "source",
+            "start_date",
+            "tier",
+        ],
+        "/plan/adopt: the plan",
+    );
+    assert_keys(
+        &plan["pacing"],
+        &[
+            "missing",
+            "paced",
+            "rule",
+            "rule_line",
+            "threshold",
+            "threshold_line",
+        ],
+        "/plan/adopt: the pacing",
+    );
+    assert_keys(
+        &plan["entry"],
+        &["athlete", "plan_band", "requirement"],
+        "/plan/adopt: the entry",
+    );
+
+    // And it is read back.
+    let read = harness.ok_get("/plan/adopt");
+    assert_keys(
+        &read,
+        &["generated_at", "plan", "unavailable"],
+        "/plan/adopt",
+    );
+    assert_eq!(read["plan"]["tier"], "tier 2");
+}
+
+#[test]
 fn the_plan_routes_carry_their_shapes() {
     let harness = common::Harness::seeded("shape-plan");
     harness.write_plan(
@@ -353,6 +432,7 @@ fn the_plan_routes_carry_their_shapes() {
         &week,
         &[
             "adherence",
+            "adopted",
             "block_name",
             "counts",
             "sessions",

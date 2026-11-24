@@ -15774,6 +15774,7 @@
         "done": 0,
         "planned": 7
       },
+      "adopted": null,
       "block_name": "Base block",
       "counts": {
         "done": 0,
@@ -31594,6 +31595,7 @@
         "done": 0,
         "planned": 0
       },
+      "adopted": null,
       "block_name": "No plan",
       "counts": {
         "done": 0,

@@ -239,6 +239,38 @@ pub fn run(
     }
 }
 
+/// The athlete's own race: the 10K of the autumn, the race the paces come
+/// from.
+pub fn race() -> NewRaceObservation {
+    NewRaceObservation {
+        distance_m: 10_000.0,
+        time_s: 2_496.0,
+        race_date: "2026-10-12".to_string(),
+        label: "10K".to_string(),
+        name: None,
+        source: "typed".to_string(),
+        entered_on: "2026-10-13".to_string(),
+        updated_on: "2026-11-03".to_string(),
+    }
+}
+
+/// The athlete's own threshold choice: the watch's own zone model.
+pub fn choice() -> NewThresholdObservation {
+    NewThresholdObservation {
+        hr_bpm: Some(165.0),
+        pace_low_s_per_km: None,
+        pace_high_s_per_km: None,
+        source: "watch_zone_model".to_string(),
+        rule_id: Some("zone_model.zone5_floor".to_string()),
+        base: Some("pfitzinger".to_string()),
+        origin_date: Some("2026-05-01".to_string()),
+        origin_ref: None,
+        label: None,
+        entered_on: "2026-05-01".to_string(),
+        updated_on: "2026-05-01".to_string(),
+    }
+}
+
 /// A run with no heart rate and no elevation.
 pub fn run_without_readings(
     external_id: &str,

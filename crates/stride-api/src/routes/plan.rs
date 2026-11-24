@@ -31,8 +31,9 @@ use stride_store::model::{plan_source, plan_status};
 use stride_store::{NewPlanBlock, NewPlanSession};
 
 use crate::dto::{
-    AdherenceWeek, Counts, CurrentPlan, PlanAdherence, PlanBlock, PlanBlocks, PlanImport,
-    PlanResult, PlanResults, PlanSession, PlanSource, PlanSources, PlanToday, PlanWeek,
+    AdherenceWeek, AdoptionInsight, AdoptionWritten, Counts, CurrentPlan, PlanAdherence, PlanBlock,
+    PlanBlocks, PlanImport, PlanResult, PlanResults, PlanSession, PlanSource, PlanSources,
+    PlanToday, PlanWeek,
 };
 use crate::error::{ApiError, ApiResult};
 use crate::plan;
@@ -95,6 +96,10 @@ pub fn today(api: &Api, _request: &Request) -> ApiResult<Value> {
 /// rendered text, not a number the app has to format — and the plain
 /// status of the session. The week's counts are the api's count of the
 /// core's statuses.
+///
+/// The week also carries the **adopted** plan's own week, when a plan is
+/// in force: the sessions it holds, their kinds, their distances, their
+/// paces where they have one, and the plan's own source.
 pub fn week(api: &Api, request: &Request) -> ApiResult<Value> {
     let day = match request.query.get("date") {
         Some(text) if !text.trim().is_empty() => core_date(text.trim())?,
@@ -138,6 +143,10 @@ pub fn week(api: &Api, request: &Request) -> ApiResult<Value> {
     );
     let target = render::distance(if metres > 0.0 { Some(metres) } else { None });
 
+    // The adopted plan's own week, when a plan is in force and the week
+    // asked for is in it.
+    let adopted = crate::adoption::week_at(api, day)?.map(|week| crate::adoption::week_row(&week));
+
     let response = PlanWeek {
         block_name: active.name.clone(),
         source: active.source_name().to_string(),
@@ -151,6 +160,7 @@ pub fn week(api: &Api, request: &Request) -> ApiResult<Value> {
         }),
         counts,
         sessions: rendered,
+        adopted,
     };
     ok(&response)
 }
@@ -558,4 +568,317 @@ fn read_plan(
 /// catalogue is empty until the plan's own step lands the templates.
 pub fn bases(api: &Api, _request: &Request) -> ApiResult<Value> {
     ok(&crate::planbases::bases(api))
+}
+
+// ---------------------------------------------------------------- adoption
+
+/// What is adopted.
+///
+/// The plan in force: its programme, its tier, its dates, what it was
+/// paced with and the threshold it was paced with, and the tier's entry
+/// requirement **beside the athlete's own weekly mileage**.
+///
+/// The entry requirement and the athlete's own mileage are three facts side
+/// by side, unranked (B2): the app states them and never compares them,
+/// never marks one as the right one, and never says which level fits.
+pub fn adopted(api: &Api, _request: &Request) -> ApiResult<Value> {
+    let plan = crate::adoption::in_force(api)?;
+    let answer = match plan.as_ref() {
+        Some(plan) => {
+            let words = crate::adoption::words_of(plan);
+            AdoptionInsight {
+                generated_at: api.generated_at(),
+                plan: Some(crate::adoption::plan_row(plan, &words)),
+                unavailable: None,
+            }
+        }
+        None => AdoptionInsight {
+            generated_at: api.generated_at(),
+            plan: None,
+            unavailable: crate::routes::core_line("statement.plan.adoption.none"),
+        },
+    };
+    ok(&answer)
+}
+
+/// Adopt a programme.
+///
+/// The body names the **programme** and the **tier**, the plan's first
+/// day, the goal race's distance and the day it is run, and the threshold
+/// to pace with — a candidate, or a number the athlete brought.
+///
+/// The **paces are worked out once, here**, from the threshold in force on
+/// the day of the adoption, and they are stored with the plan. A later
+/// threshold does not re-pace a running plan.
+///
+/// The refusals, each with the core's own reason: a programme or a tier
+/// that is not in the catalogue, a start date that leaves no room for the
+/// twelve weeks and the race week, a goal race the programme does not
+/// print, and a plan that is already in force.
+///
+/// **The athlete's own mileage being below the tier's entry requirement is
+/// not a refusal.** The app states the requirement beside their mileage
+/// and the athlete chooses.
+pub fn adopt(api: &Api, request: &Request) -> ApiResult<Value> {
+    let today = super::today(api)?;
+
+    // The programme and the tier the athlete chose.
+    let programme_id = body_text(request, "programme_id")
+        .ok_or_else(|| ApiError::bad_request("the adoption needs the programme it is for"))?;
+    let tier = body_text(request, "tier");
+    let programme = stride_core::plan_bases::programme_of(&programme_id, tier.as_deref())
+        .map_err(|refusal| refusal_error(&refusal))?;
+
+    // The goal race: its distance and the day it is run.
+    let race_date = body_date(request, "race_date")?
+        .ok_or_else(|| ApiError::bad_request("the adoption needs the day of the goal race"))?;
+    let start_date = body_date(request, "start_date")?;
+    let goal_distance_m = match request.body_f64("goal_distance_m")? {
+        Some(distance) if distance.is_finite() && distance > 0.0 => distance,
+        Some(_) => {
+            return Err(ApiError::bad_request(
+                "the goal race's distance is not a number",
+            ))
+        }
+        None => programme.goal_race.distance_m,
+    };
+
+    // The threshold to pace with, and the race the plan's own rule is read
+    // from.
+    let threshold = threshold_of(api, request, today)?;
+    let race = race_of(api)?;
+
+    // The athlete's own recent mileage: the app computes it, the core only
+    // states it beside the tier's entry requirement.
+    let mileage = crate::adoption::mileage(api)?;
+
+    let input = stride_core::plan_bases::AdoptionInput {
+        programme_id: programme.id.clone(),
+        goal_distance_m,
+        race_date,
+        adopted_on: today,
+        start_date,
+        threshold,
+        race,
+        weekly_mileage_m: mileage,
+    };
+    let plan = stride_core::plan_bases::adopt(&input).map_err(|refusal| refusal_error(&refusal))?;
+
+    // **One plan at a time.** A second plan cannot be adopted while
+    // another one is in force.
+    let in_force = api
+        .store()
+        .active_adopted_plans()
+        .map_err(|error| api.store_error("the adopted plans could not be read", &error))?;
+    for existing in in_force.iter() {
+        let overlaps = !(existing.end_date < plan.start_date.to_iso()
+            || existing.start_date > plan.end_date.to_iso());
+        if overlaps {
+            let until = core_date(&existing.end_date)?;
+            return Err(refusal_error(
+                &stride_core::plan_bases::AdoptionRefusal::PlanInForce { until },
+            ));
+        }
+    }
+
+    // The plan and its own sessions, written together.
+    let (row, sessions) = crate::adoption::rows_of(&plan, api.now());
+    api.store()
+        .write_adopted_plan(&row, &sessions)
+        .map_err(|error| api.store_error("the adopted plan could not be written", &error))?;
+
+    let words = crate::adoption::words_of(&plan);
+    let answer = AdoptionWritten {
+        adopted: true,
+        plan: crate::adoption::plan_row(&plan, &words),
+        generated_at: api.generated_at(),
+    };
+    ok(&answer)
+}
+
+/// A refusal, as the api carries it: the core's own reason.
+fn refusal_error(refusal: &stride_core::plan_bases::AdoptionRefusal) -> ApiError {
+    let reason = refusal
+        .reason()
+        .unwrap_or_else(|| "the adoption could not be made".to_string());
+    ApiError::bad_request(reason)
+}
+
+/// The threshold the athlete named, as the core reads it.
+///
+/// The body names which candidate the plan is paced with — the watch's own
+/// zone model, a race, a field test, or a number the athlete brought — and
+/// the value comes from that candidate, so the plan and the candidate
+/// cannot disagree. A typed choice carries the value itself.
+///
+/// `None` when the body names no threshold: the plan is then paced by the
+/// threshold **in force on the day of the adoption**, and by nothing else.
+fn threshold_of(
+    api: &Api,
+    request: &Request,
+    today: stride_core::date::Date,
+) -> ApiResult<Option<stride_core::threshold::ThresholdChoice>> {
+    use stride_core::threshold::{ThresholdBase, ThresholdChoice, ThresholdSource};
+
+    let named = match request.body.as_ref().and_then(|body| body.get("threshold")) {
+        Some(named) => named.clone(),
+        // No threshold is named: the **threshold in force on the day of
+        // the adoption** paces the plan, and nothing else does (B4).
+        None => return in_force_threshold(api, today),
+    };
+    let source = named
+        .get("source")
+        .and_then(|value| value.as_str())
+        .unwrap_or_default()
+        .trim()
+        .to_string();
+    let base = match named
+        .get("base")
+        .and_then(|value| value.as_str())
+        .unwrap_or("pfitzinger")
+    {
+        "eighty_twenty" => ThresholdBase::EightyTwenty,
+        _ => ThresholdBase::Pfitzinger,
+    };
+
+    match source.as_str() {
+        "watch_zone_model" | "race" | "field_test" => {
+            let facts = crate::athlete::Facts::read(api, today)?;
+            let run_id = named
+                .get("origin_ref")
+                .and_then(|value| value.as_str())
+                .and_then(|text| text.trim().parse::<i64>().ok());
+            let inputs = super::threshold::inputs_of(api, &facts, run_id)?;
+            let computed = stride_core::threshold::candidates(&inputs);
+            let candidate = computed
+                .iter()
+                .find(|candidate| candidate.source.key() == source)
+                .ok_or_else(|| {
+                    ApiError::bad_request("the choice names a candidate that is not there")
+                })?;
+            let heart_rate_bpm = candidate.value.heart_rate_bpm();
+            let pace = candidate.value.pace();
+            Ok(Some(ThresholdChoice {
+                source: candidate.source,
+                heart_rate_bpm,
+                pace,
+                rule_id: candidate.rule.map(|rule| rule.id.to_string()),
+                base,
+                origin_date: candidate.date,
+                origin_ref: None,
+                label: None,
+                entered_on: today,
+                updated_on: today,
+                in_force: false,
+            }))
+        }
+        "typed" => {
+            let heart_rate_bpm = number_of(&named, "heart_rate_bpm");
+            let fast = number_of(&named, "pace_fast_s_per_km");
+            let slow = number_of(&named, "pace_slow_s_per_km");
+            if heart_rate_bpm.is_none() && fast.is_none() {
+                return Err(ApiError::bad_request("the choice carries no value"));
+            }
+            let label = named
+                .get("label")
+                .and_then(|value| value.as_str())
+                .and_then(super::athlete::typed_source_of)
+                .ok_or_else(|| ApiError::bad_request("the label is not one the app knows"))?;
+            let (low, high) = match (fast, slow) {
+                (Some(fast), Some(slow)) => (Some(fast.min(slow)), Some(fast.max(slow))),
+                (Some(fast), None) => (Some(fast), Some(fast)),
+                (None, Some(slow)) => (Some(slow), Some(slow)),
+                (None, None) => (None, None),
+            };
+            let pace = low.map(|low| {
+                stride_core::training_paces::PaceBand::between(low, high.unwrap_or(low))
+            });
+            Ok(Some(ThresholdChoice {
+                source: ThresholdSource::Typed,
+                heart_rate_bpm,
+                pace,
+                rule_id: None,
+                base,
+                origin_date: None,
+                origin_ref: None,
+                label: Some(label),
+                entered_on: today,
+                updated_on: today,
+                in_force: false,
+            }))
+        }
+        _ => Err(ApiError::bad_request(
+            "the candidate is not one of the four",
+        )),
+    }
+}
+
+/// The threshold in force on the day of the adoption.
+///
+/// The athlete's own choice, dated: the last choice made on or before the
+/// day the plan was adopted. A choice made later does not reach back into
+/// a plan that is already running.
+fn in_force_threshold(
+    api: &Api,
+    today: stride_core::date::Date,
+) -> ApiResult<Option<stride_core::threshold::ThresholdChoice>> {
+    let stored = api
+        .store()
+        .threshold_choices()
+        .map_err(|error| api.store_error("the threshold choices could not be read", &error))?;
+    let choices: Vec<stride_core::threshold::ThresholdChoice> = stored
+        .iter()
+        .filter_map(super::threshold::choice_of)
+        .collect();
+    Ok(stride_core::threshold::in_force_at(&choices, today).cloned())
+}
+
+/// The race the plan's own rule is read from: the athlete's own race.
+fn race_of(api: &Api) -> ApiResult<Option<stride_core::training_paces::Race>> {
+    let stored = api
+        .store()
+        .anchor_race()
+        .map_err(|error| api.store_error("the race could not be read", &error))?;
+    Ok(stored.as_ref().and_then(|race| {
+        let date = stride_core::date::Date::parse(&race.race_date)?;
+        Some(stride_core::training_paces::Race::new(
+            race.distance_m,
+            race.time_s,
+            date,
+        ))
+    }))
+}
+
+/// A field of the body, as a trimmed string. A number counts as one too.
+fn body_text(request: &Request, name: &str) -> Option<String> {
+    let value = request.body.as_ref()?.get(name)?;
+    let text = match value {
+        serde_json::Value::String(text) => text.trim().to_string(),
+        serde_json::Value::Number(number) => number.to_string(),
+        _ => return None,
+    };
+    if text.is_empty() {
+        None
+    } else {
+        Some(text)
+    }
+}
+
+/// A field of the body, as a day.
+fn body_date(request: &Request, name: &str) -> ApiResult<Option<stride_core::date::Date>> {
+    let text = match body_text(request, name) {
+        Some(text) => text,
+        None => return Ok(None),
+    };
+    match core_date(&text) {
+        Ok(date) => Ok(Some(date)),
+        Err(_) => Err(ApiError::bad_request("the day could not be read")),
+    }
+}
+
+/// A number in a body object.
+fn number_of(body: &serde_json::Value, name: &str) -> Option<f64> {
+    body.get(name)
+        .and_then(|value| value.as_f64())
+        .filter(|value| value.is_finite() && *value > 0.0)
 }

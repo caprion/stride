@@ -239,6 +239,9 @@
     { "id": "pace.rule.long_run", "kind": "statement", "role": null, "template": "20–33 % slower than your 10K race pace at the start · 17–29 % slower than your 15K-to-half-marathon race pace at the finish" },
     { "id": "pace.rule.progression", "kind": "statement", "role": null, "template": "the last 3 miles at the threshold pace" },
     { "id": "pace.rule.goal_race", "kind": "statement", "role": null, "template": "your own race at the goal distance" },
+    { "id": "pace.rule.vo2max", "kind": "statement", "role": null, "template": "the 3K-to-5K race pace, run as intervals" },
+    { "id": "pace.rule.speed", "kind": "statement", "role": null, "template": "the 800 m-to-mile race pace, run as repetitions" },
+    { "id": "pace.rule.tune_up", "kind": "statement", "role": null, "template": "the tune-up race's own distance, at the pace that distance is run" },
     { "id": "pace.missing.race", "kind": "status", "role": null, "template": "no race time entered — the paces have no value yet" },
     { "id": "pace.missing.max_hr", "kind": "status", "role": null, "template": "no maximum heart rate — your watch's zones hold none, so the heart-rate bands have no value" },
     { "id": "pace.missing.resting_hr", "kind": "status", "role": null, "template": "no resting heart rate — the bands as a share of your heart-rate reserve have no value" },
@@ -285,7 +288,10 @@
     { "id": "statement.plan.volume.gap", "kind": "statement", "role": null, "template": "the week's seven days add up to {cells}, and the book prints {volume}" },
     { "id": "statement.plan.refusal.programme", "kind": "statement", "role": null, "template": "there is no programme called {id} in the catalogue" },
     { "id": "statement.plan.refusal.goal", "kind": "statement", "role": null, "template": "this programme's goal race is {options}, and the distance given is {distance}" },
-    { "id": "statement.plan.refusal.start", "kind": "statement", "role": null, "template": "the plan's first week begins on {start}, and the race on {race} falls in another week" },
-    { "id": "statement.plan.refusal.volume", "kind": "statement", "role": null, "template": "week {week} adds up to {cells}, and the book prints {volume}" }
+    { "id": "statement.plan.refusal.start", "kind": "statement", "role": null, "template": "the plan's first week begins on {start}, and the race on {race} falls in another week — the plan named begins on {given}" },
+    { "id": "statement.plan.refusal.volume", "kind": "statement", "role": null, "template": "week {week} adds up to {cells}, and the book prints {volume}" },
+    { "id": "statement.plan.adoption.none", "kind": "status", "role": null, "template": "no plan has been adopted" },
+    { "id": "statement.plan.refusal.in_force", "kind": "statement", "role": null, "template": "a plan is already in force until {date}" },
+    { "id": "statement.plan.refusal.tier", "kind": "statement", "role": null, "template": "{id} is the {tier} programme" }
   ]
 }

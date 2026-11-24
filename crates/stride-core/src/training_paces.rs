@@ -213,6 +213,28 @@ pub const RULE_GOAL_RACE: Rule = Rule {
     string_id: "pace.rule.goal_race",
 };
 
+/// The VO₂max rule: the 3K-to-5K race pace (ch. 7).
+pub const RULE_VO2MAX: Rule = Rule {
+    id: "book.vo2max",
+    citation: "ch. 7",
+    string_id: "pace.rule.vo2max",
+};
+
+/// The speed-repetition rule: the 800 m-to-mile race pace (ch. 7).
+pub const RULE_SPEED: Rule = Rule {
+    id: "book.speed_repetitions",
+    citation: "ch. 7",
+    string_id: "pace.rule.speed",
+};
+
+/// The tune-up race's own rule: the pace its own distance is run at
+/// (ch. 10, ch. 12).
+pub const RULE_TUNE_UP: Rule = Rule {
+    id: "book.tune_up_race",
+    citation: "ch. 10, ch. 12",
+    string_id: "pace.rule.tune_up",
+};
+
 /// The two ends of a band the method states, as shares of something.
 ///
 /// The ends are **named**, and each is written on its own line: a pair of

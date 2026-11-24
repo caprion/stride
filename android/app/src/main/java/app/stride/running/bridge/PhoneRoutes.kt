@@ -188,6 +188,7 @@ object PhoneRoutes {
         "/plan/results",
         "/plan/import",
         "/plan/bases",
+        "/plan/adopt",
         "/insights/today",
         "/insights/progress",
         "/insights/load",

@@ -932,6 +932,170 @@ pub struct PlanBlock {
     pub is_baseline: bool,
 }
 
+/// What is adopted: the plan in force, and the facts about it.
+///
+/// The plan's programme, its tier, its dates, what it was paced with, and
+/// the tier's entry requirement beside the athlete's own mileage. The
+/// entry requirement and the athlete's own mileage are **three facts side
+/// by side, unranked** (B2): the app states them and never compares them.
+#[derive(Clone, Debug, PartialEq, Serialize)]
+pub struct AdoptionInsight {
+    /// When this answer was produced.
+    pub generated_at: String,
+    /// The plan in force. `null` when no plan has been adopted.
+    pub plan: Option<AdoptedPlanRow>,
+    /// Why there is no plan, in the core's own words.
+    pub unavailable: Option<String>,
+}
+
+/// The adopted plan, as the answer carries it.
+#[derive(Clone, Debug, PartialEq, Serialize)]
+pub struct AdoptedPlanRow {
+    /// The programme's catalogue id.
+    pub programme_id: String,
+    /// The catalogue version the plan was adopted from.
+    pub programme_version: String,
+    /// The programme's own name: "half marathon tier 2".
+    pub label: String,
+    /// Whose method it is: "Pfitzinger".
+    pub method: String,
+    /// The tier the athlete chose: "tier 2".
+    pub tier: String,
+    /// The goal race's own distance, as the core renders it.
+    pub goal_distance: RenderedValue,
+    /// The distance's name: "half marathon".
+    pub goal_label: String,
+    /// The day of the goal race.
+    pub race_date: String,
+    /// The day of the goal race, as the app shows it.
+    pub race_date_label: String,
+    /// The plan's first day.
+    pub start_date: String,
+    /// The plan's last day.
+    pub end_date: String,
+    /// The day the plan was adopted.
+    pub adopted_on: String,
+    /// Where the plan came from. An adopted programme is a prescription.
+    pub source: String,
+    /// What the plan was paced with.
+    pub pacing: PacingRow,
+    /// The tier's entry requirement beside the athlete's own mileage.
+    pub entry: EntryRow,
+}
+
+/// What the plan was paced with, and where the numbers came from.
+#[derive(Clone, Debug, PartialEq, Serialize)]
+pub struct PacingRow {
+    /// Do the plan's sessions carry paces?
+    pub paced: bool,
+    /// The threshold the plan was paced with: its value and the day it was
+    /// read.
+    pub threshold: Option<SourceRow>,
+    /// The race the plan's own rule was read from.
+    pub rule: Option<SourceRow>,
+    /// The reason the sessions that need a race have no pace.
+    pub missing: Option<String>,
+    /// The line: "paced with the threshold of 3 Nov 2026 · 165 bpm".
+    pub threshold_line: Option<String>,
+    /// The line: "paced with the plan's rule on your 10K of 12 Oct 2026".
+    pub rule_line: Option<String>,
+}
+
+/// One thing the plan's numbers came from: a value and the day it was read.
+#[derive(Clone, Debug, PartialEq, Serialize)]
+pub struct SourceRow {
+    /// The value, as the core rendered it: "165 bpm".
+    pub value: String,
+    /// The day it was read.
+    pub date: String,
+    /// The day it was read, as the app shows it.
+    pub date_label: String,
+    /// Where the value came from: the watch's own zone model, a race, a
+    /// field test, or a number the athlete brought.
+    pub source: Option<String>,
+    /// The base the choice was made for: "pfitzinger" or "eighty_twenty".
+    pub base: Option<String>,
+}
+
+/// The tier's entry requirement, beside the athlete's own mileage.
+///
+/// Three facts, side by side, unranked. The app states them and never
+/// compares them.
+#[derive(Clone, Debug, PartialEq, Serialize)]
+pub struct EntryRow {
+    /// "this level asks for 64.4-80.5 km a week".
+    pub requirement: Option<String>,
+    /// "this plan runs 74-101.4 km a week".
+    pub plan_band: Option<String>,
+    /// "your last 4 weeks: 60.8, 61.1, 50.8, 6 km".
+    pub athlete: Option<String>,
+}
+
+/// The adopted plan's week: its sessions, and what they were paced with.
+#[derive(Clone, Debug, PartialEq, Serialize)]
+pub struct AdoptedWeekRow {
+    /// The week's number: eleven down to one, zero for race week.
+    pub week: i32,
+    /// The weeks to go.
+    pub weeks_to_go: Option<i32>,
+    /// The week's own label: "3 weeks to go".
+    pub label: String,
+    /// The first day of the week.
+    pub start_date: String,
+    /// The last day of the week.
+    pub end_date: String,
+    /// The week's sessions, in date order.
+    pub sessions: Vec<AdoptedSessionRow>,
+    /// The plan's own source.
+    pub source: String,
+    /// The line: "the Pfitzinger half marathon tier 2 plan".
+    pub source_line: String,
+    /// What the plan was paced with.
+    pub pacing: PacingRow,
+    /// The tier's entry requirement beside the athlete's own mileage.
+    pub entry: EntryRow,
+}
+
+/// One session of the adopted plan, as the plan reads it.
+#[derive(Clone, Debug, PartialEq, Serialize)]
+pub struct AdoptedSessionRow {
+    /// The day the session falls on.
+    pub date: String,
+    /// The day's name: "Wednesday".
+    pub weekday: String,
+    /// The runner's wording for the kind: "tempo".
+    pub kind: String,
+    /// The method's own name, when the kind is one of the method's.
+    pub method_kind: Option<String>,
+    /// The distance, as the core renders it: "17.7 km".
+    pub distance: Option<String>,
+    /// The session's pace: "4:16–4:21 /km".
+    pub pace: Option<String>,
+    /// The second end of a session with two: the long run's finish pace.
+    pub finish_pace: Option<String>,
+    /// The cell's own detail: "3 × 8 min, jog 3".
+    pub detail: Option<String>,
+    /// The line the surface leads with: "17.7 km · tempo".
+    pub label: String,
+    /// The line with the pace beside it, when the session has one.
+    pub line: Option<String>,
+    /// The reason the session has no pace, when it has none.
+    pub no_pace: Option<String>,
+    /// On a progression long run: the last miles at the threshold pace.
+    pub lt_last: Option<String>,
+}
+
+/// The plan that was adopted.
+#[derive(Clone, Debug, PartialEq, Serialize)]
+pub struct AdoptionWritten {
+    /// Whether the plan was adopted.
+    pub adopted: bool,
+    /// The plan, as the answer carries it.
+    pub plan: AdoptedPlanRow,
+    /// When this answer was produced.
+    pub generated_at: String,
+}
+
 /// The plan's week.
 #[derive(Clone, Debug, PartialEq, Serialize)]
 pub struct PlanWeek {
@@ -959,6 +1123,13 @@ pub struct PlanWeek {
     /// Three numbers and never a percentage: the api counts them, so the
     /// app never counts the plan's sessions itself.
     pub counts: Counts,
+    /// The adopted plan's week, when a plan is in force.
+    ///
+    /// The **adopted** plan is the athlete's own programme: the sessions
+    /// it holds, their kinds, their distances, their paces where they have
+    /// one, and the plan's own source. `null` when no plan is in force, or
+    /// when the week is not in it.
+    pub adopted: Option<AdoptedWeekRow>,
 }
 
 /// How many of the planned sessions were run.
