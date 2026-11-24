@@ -24,6 +24,7 @@ pub mod profile;
 pub mod rest;
 pub mod rolling;
 pub mod statement;
+pub mod stimulus;
 pub mod story;
 pub mod streaks;
 pub mod strings;

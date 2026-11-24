@@ -181,7 +181,7 @@ pub struct Entry {
 }
 
 /// The catalogue.
-pub const CATALOGUE: [Entry; 222] = [
+pub const CATALOGUE: [Entry; 228] = [
     // The vitals.
     Entry {
         id: "vital.rest.label",
@@ -1638,6 +1638,42 @@ pub const CATALOGUE: [Entry; 222] = [
         kind: StringKind::Statement,
         role: None,
         template: "the heart rate's drift across the window: {drift} bpm",
+    },
+    Entry {
+        id: "stimulus.rule.zones",
+        kind: StringKind::Statement,
+        role: None,
+        template: "the time in each of your own bands, measured over the time you were running, with the model your watch was set to on the run's day",
+    },
+    Entry {
+        id: "stimulus.rule.source_zones",
+        kind: StringKind::Statement,
+        role: None,
+        template: "the watch's own zone minutes, measured over the whole run — where each of those zones starts is not recorded here",
+    },
+    Entry {
+        id: "stimulus.rule.longest",
+        kind: StringKind::Statement,
+        role: None,
+        template: "the run in the period that moved for the longest time",
+    },
+    Entry {
+        id: "stimulus.rule.repeated",
+        kind: StringKind::Statement,
+        role: None,
+        template: "the runs the watch recorded as workouts with interval steps — the shape of the laps is not used",
+    },
+    Entry {
+        id: "stimulus.steps.no_data",
+        kind: StringKind::Status,
+        role: None,
+        template: "not recorded — the runs in this period carry no workout steps",
+    },
+    Entry {
+        id: "stimulus.no_runs",
+        kind: StringKind::Status,
+        role: None,
+        template: "no runs recorded",
     },
 
 ];
