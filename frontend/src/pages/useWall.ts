@@ -25,12 +25,17 @@ import { api } from '../lib/api'
  * length and nothing more.
  *
  * The lengths are in months because that is how the runner thinks of
- * them, and in weeks because the router measures in weeks.
+ * them, and in weeks because the router measures in weeks. The ladder
+ * is a month, two months, three months and a year: the short end
+ * answers "how has this month gone?", and the year answers "how has
+ * this year gone?" — one control, in the same place, and no second
+ * page to change.
  */
 export const PROFILE_SCOPES = [
-  { months: 3, weeks: 13 },
-  { months: 6, weeks: 26 },
-  { months: 12, weeks: 52 },
+  { months: 1, weeks: 4, labelKey: 'progress.profile.scope.1' },
+  { months: 2, weeks: 9, labelKey: 'progress.profile.scope.2' },
+  { months: 3, weeks: 13, labelKey: 'progress.profile.scope.3' },
+  { months: 12, weeks: 52, labelKey: 'progress.profile.scope.12' },
 ] as const
 
 /**

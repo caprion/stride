@@ -356,6 +356,11 @@ export const catalogue = {
     own history and cannot be confused with either. It is one line
     here: "Profile" reads fine in the rail and the top bar.
   */
+  'progress.profile.scope.1': { type: 'status', text: '1 month' },
+  'progress.profile.scope.2': { type: 'status', text: '2 months' },
+  'progress.profile.scope.3': { type: 'status', text: '3 months' },
+  'progress.profile.scope.12': { type: 'status', text: '1 year' },
+
   'nav.profile': { type: 'status', text: 'My running' },
   'progress.profile.page': { type: 'status', text: 'The athlete profile' },
   'progress.profile.lede': { type: 'status', text: 'What does my training look like?' },

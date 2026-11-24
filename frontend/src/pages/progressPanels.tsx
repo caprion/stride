@@ -1027,7 +1027,8 @@ export function ShapePanel({
   return (
     <section className="card px-4 py-3" data-testid="progress-shape">
       <h2 className="mb-2 caps">{t('progress.shape.heading')}</h2>
-      <p className="text-[12px] text-ink-muted">{t('progress.shape.note')}</p>
+      {/* The note is drawn by the body below, and the body is inside the
+          panel: drawing it here as well drew it twice. */}
       <ProfileScopePicker months={months} onChange={onScope} />
       <ShapeBody rolling={rolling} error={error} />
     </section>
@@ -1062,7 +1063,7 @@ export function ProfileScopePicker({
           onClick={() => onChange(scope.months)}
           data-testid={`profile-scope-${scope.months}`}
         >
-          {scope.months} months
+          {t(scope.labelKey)}
         </button>
       ))}
     </div>
