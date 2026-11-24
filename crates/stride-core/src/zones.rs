@@ -99,7 +99,7 @@ impl ZoneSample {
 /// Every field is a duration: a value can be `0.0` (a real measurement of
 /// no time in that zone), but the whole result is `None` when the run has no
 /// model — "no value" is a different thing from "zero".
-#[derive(Debug, Clone, Copy, PartialEq, Default)]
+#[derive(Debug, Clone, Copy, PartialEq, Default, Serialize, Deserialize)]
 pub struct TimeInZone {
     /// Time in zone 1, in seconds.
     pub zone1_s: f64,

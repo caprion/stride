@@ -181,7 +181,7 @@ pub struct Entry {
 }
 
 /// The catalogue.
-pub const CATALOGUE: [Entry; 193] = [
+pub const CATALOGUE: [Entry; 209] = [
     // The vitals.
     Entry {
         id: "vital.rest.label",
@@ -1457,6 +1457,109 @@ pub const CATALOGUE: [Entry; 193] = [
         role: None,
         template:
             "You are writing the run update for a running log — a private record of the runner's own runs. Another model wrote a draft from the same payload, and a reviewer has said what is wrong with it.\n\nHere is the run, exactly as the app recorded it. Every number you may use is in this payload. Do not use any other number, do not estimate, and do not carry a number over from another run. The notes inside the payload say what the app's fields mean; follow them.\n\n{payload}\n\nHere is the draft:\n\n{draft}\n\nHere is what the reviewer found:\n\n{findings}\n\nWrite the update again, in four to six sentences.\n\n- Keep what the findings do not question, and correct what they question.\n- Address the runner as \"you\".\n- Observations only: no advice, no verdict, no score, no commands. Do not tell the runner what to do, and do not call the run good or bad.\n- Do not use these words: should, must, missed, bad, poor, fail, behind, good, red, recommended, better to, need to, ready to.\n- Plain prose. No preamble, no markdown, no bullet points, no labels, no sign-off.\n\nReturn only the update.",
+    },
+
+
+    // ---- The effort model, the ladder and the threshold (rig v2, step 2).
+    //
+    // The heart-rate **band** is a computed boundary — the method's
+    // percentage of the athlete's own maximum heart rate — so its edges are
+    // written as a band with an en dash, and the ceiling is written as one.
+    Entry {
+        id: "value.heart_rate_band",
+        kind: StringKind::Statement,
+        role: None,
+        template: "{from}–{to} bpm",
+    },
+    Entry {
+        id: "value.heart_rate_below",
+        kind: StringKind::Statement,
+        role: None,
+        template: "below {value} bpm",
+    },
+    Entry {
+        id: "pace.chain",
+        kind: StringKind::Statement,
+        role: None,
+        template: "VDOT {vdot} · Daniels' relations",
+    },
+    Entry {
+        id: "pace.source.race",
+        kind: StringKind::Statement,
+        role: None,
+        template: "from your {distance} in {time} on {date}",
+    },
+    Entry {
+        id: "pace.source.equivalents",
+        kind: StringKind::Statement,
+        role: None,
+        template: "{equivalents} — the equivalent race times, by Riegel's exponent 1.06",
+    },
+    Entry {
+        id: "pace.rule.line",
+        kind: StringKind::Statement,
+        role: None,
+        template: "{wording} ({citation})",
+    },
+    Entry {
+        id: "pace.rule.general_aerobic",
+        kind: StringKind::Statement,
+        role: None,
+        template: "70–81 % of your maximum heart rate · 62–75 % of your heart-rate reserve — the method fixes no pace",
+    },
+    Entry {
+        id: "pace.rule.recovery",
+        kind: StringKind::Statement,
+        role: None,
+        template: "+120 s/mi (+75 s/km) slower than your 15K-to-half-marathon race pace · below 76 % of your maximum heart rate",
+    },
+    Entry {
+        id: "pace.rule.threshold",
+        kind: StringKind::Statement,
+        role: None,
+        template: "the pace you could race for about an hour — the book places it at your 15K-to-10-mile race pace",
+    },
+    Entry {
+        id: "pace.rule.long_run",
+        kind: StringKind::Statement,
+        role: None,
+        template: "20–33 % slower than your 10K race pace at the start · 17–29 % slower than your 15K-to-half-marathon race pace at the finish",
+    },
+    Entry {
+        id: "pace.rule.progression",
+        kind: StringKind::Statement,
+        role: None,
+        template: "the last 3 miles at the threshold pace",
+    },
+    Entry {
+        id: "pace.rule.goal_race",
+        kind: StringKind::Statement,
+        role: None,
+        template: "your own race at the goal distance",
+    },
+    Entry {
+        id: "pace.missing.race",
+        kind: StringKind::Status,
+        role: None,
+        template: "no race time entered — the paces have no value yet",
+    },
+    Entry {
+        id: "pace.missing.max_hr",
+        kind: StringKind::Status,
+        role: None,
+        template: "no maximum heart rate — your watch's zones hold none, so the heart-rate bands have no value",
+    },
+    Entry {
+        id: "pace.missing.resting_hr",
+        kind: StringKind::Status,
+        role: None,
+        template: "no resting heart rate — the bands as a share of your heart-rate reserve have no value",
+    },
+    Entry {
+        id: "pace.missing.goal",
+        kind: StringKind::Status,
+        role: None,
+        template: "no goal distance — the rule that places the threshold band needs to know which distance you race",
     },
 
 ];

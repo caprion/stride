@@ -168,6 +168,28 @@ pub fn format_pace(seconds_per_km: f64) -> String {
     format!("{minutes}:{seconds:02}")
 }
 
+/// The dense form of a **race time**: "41:36" from 2 496 seconds, and
+/// "1:03:56" from 3 836 seconds.
+///
+/// A race time is read as a clock, not as a duration: `format_duration` would
+/// write "41 m" for forty-one minutes, which is not how a finish time is
+/// written. The seconds are rounded half to even to a whole second, as a
+/// pace's are, and the hours are written only when there are any.
+pub fn format_race_time(seconds: f64) -> String {
+    if !seconds.is_finite() || seconds <= 0.0 {
+        return String::new();
+    }
+    let total = round_half_even(seconds, 0) as i64;
+    let hours = total / 3_600;
+    let minutes = (total % 3_600) / 60;
+    let rest = total % 60;
+    if hours > 0 {
+        format!("{hours}:{minutes:02}:{rest:02}")
+    } else {
+        format!("{minutes}:{rest:02}")
+    }
+}
+
 /// The rendered value of a range of distances: "0-5 km".
 ///
 /// The range is a range of the contract's own unit, and the decimals are
@@ -398,6 +420,45 @@ pub fn render_heart_rate_range_edges(from: Option<f64>, to: Option<f64>) -> Opti
         return None;
     }
     Some((truncate_heart_rate(from), truncate_heart_rate(to)))
+}
+
+/// The rendered **band** of a heart rate: "128–148 bpm".
+///
+/// A band here is a **computed boundary** — the method's percentage of the
+/// athlete's own maximum heart rate, or of the reserve — and not a measured
+/// reading. Its edges are therefore **rounded to the nearest beat**, which
+/// is what a boundary is written as: the athlete's own watch holds whole
+/// numbers as its floors.
+///
+/// This is deliberately not [`render_heart_rate_range`], which truncates:
+/// truncation is the contract's rule for a heart rate that was **measured**
+/// (148.7 is 148), and a band edge is not a measurement. The two renderers
+/// are siblings, not the same function twice.
+pub fn render_heart_rate_band(from_bpm: f64, to_bpm: f64) -> Option<String> {
+    if !from_bpm.is_finite() || !to_bpm.is_finite() {
+        return None;
+    }
+    let from = units_round_beat(from_bpm);
+    let to = units_round_beat(to_bpm);
+    strings::render("value.heart_rate_band", &[("from", &from), ("to", &to)])
+}
+
+/// The rendered **ceiling** of a heart rate: "below 139 bpm".
+///
+/// The method states some bands as a ceiling rather than a band — the
+/// recovery run is "below 76 % of your maximum heart rate" — and a ceiling
+/// is written as one.
+pub fn render_heart_rate_ceiling(below_bpm: f64) -> Option<String> {
+    if !below_bpm.is_finite() {
+        return None;
+    }
+    let value = units_round_beat(below_bpm);
+    strings::render("value.heart_rate_below", &[("value", &value)])
+}
+
+/// A heart-rate edge, rounded to the nearest beat.
+fn units_round_beat(value: f64) -> String {
+    format!("{}", round_half_even(value, 0) as i64)
 }
 
 /// The rendered name of a band: "Z1".
