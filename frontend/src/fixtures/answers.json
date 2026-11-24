@@ -367,7 +367,7 @@
         },
         "read_at": "2026-05-10T06:30:00Z",
         "read_on": "10 May 2026",
-        "source": "your zone model · HR_MAX · max heart rate 178 bpm · read on 10 May 2026",
+        "source": "your zones · HR_MAX · max heart rate 178 bpm · taken from your watch on 10 May 2026",
         "sport": "DEFAULT",
         "training_method": "HR_MAX"
       },
@@ -1251,13 +1251,13 @@
           },
           "read_at": "2026-05-10T06:30:00Z",
           "read_on": "10 May 2026",
-          "source": "your zone model · HR_MAX · max heart rate 178 bpm · read on 10 May 2026",
+          "source": "your zones · HR_MAX · max heart rate 178 bpm · taken from your watch on 10 May 2026",
           "sport": "DEFAULT",
           "training_method": "HR_MAX"
         },
         "outside": null,
         "shares": [],
-        "source": "your zone model, read on 2026-05-10",
+        "source": "your zones, taken from your watch on 2026-05-10",
         "unavailable": null
       }
     },
@@ -1292,13 +1292,13 @@
         },
         "read_at": "2026-05-10T06:30:00Z",
         "read_on": "10 May 2026",
-        "source": "your zone model · HR_MAX · max heart rate 178 bpm · read on 10 May 2026",
+        "source": "your zones · HR_MAX · max heart rate 178 bpm · taken from your watch on 10 May 2026",
         "sport": "DEFAULT",
         "training_method": "HR_MAX"
       },
       "outside": null,
       "stopped": null,
-      "unavailable": "zones unavailable — the run has no heart-rate samples",
+      "unavailable": "No zones yet — this run recorded no heart rate",
       "zones": []
     },
     "/health": {
@@ -1326,7 +1326,7 @@
           "chronic_window_days": 42,
           "forecast_days": 7,
           "max_heart_rate_bpm": 178.0,
-          "statement": "no training for 7 days · Banister k = 1.92 · max heart rate 178 bpm from your zone model, read on 10 May 2026 · acute window 7 days, chronic window 42 days",
+          "statement": "no training for 7 days · Banister k = 1.92 · max heart rate 178 bpm from your zones, taken from your watch on 10 May 2026 · the last 7 days · the last 6 weeks",
           "threshold_hr_bpm": 163.0,
           "zone_model_read_on": "2026-05-10",
           "zone_model_read_on_label": "10 May 2026"
@@ -2221,7 +2221,7 @@
         }
       },
       "scenario": {
-        "assumption": "no training for 7 days · Banister k = 1.92 · max heart rate 178 bpm from your zone model, read on 10 May 2026 · acute window 7 days, chronic window 42 days",
+        "assumption": "no training for 7 days · Banister k = 1.92 · max heart rate 178 bpm from your zones, taken from your watch on 10 May 2026 · the last 7 days · the last 6 weeks",
         "band": "0.8 to 1.3",
         "days_to_positive_form": null,
         "days_to_ratio_band": 7,
@@ -2304,7 +2304,7 @@
             }
           }
         ],
-        "statement": "the acute-to-chronic ratio is expected back inside 0.8 to 1.3 in 7 days · the form does not turn positive within 7 days"
+        "statement": "the last 7 days are expected back inside 0.8 to 1.3 times the last 6 weeks in 7 days · the difference does not turn positive within 7 days"
       },
       "unavailable": null,
       "window": {
@@ -2326,7 +2326,7 @@
           "chronic_window_days": 42,
           "forecast_days": 7,
           "max_heart_rate_bpm": 178.0,
-          "statement": "no training for 7 days · Banister k = 1.92 · max heart rate 178 bpm from your zone model, read on 10 May 2026 · acute window 7 days, chronic window 42 days",
+          "statement": "no training for 7 days · Banister k = 1.92 · max heart rate 178 bpm from your zones, taken from your watch on 10 May 2026 · the last 7 days · the last 6 weeks",
           "threshold_hr_bpm": 163.0,
           "zone_model_read_on": "2026-05-10",
           "zone_model_read_on_label": "10 May 2026"
@@ -3247,7 +3247,7 @@
         }
       },
       "scenario": {
-        "assumption": "no training for 7 days · Banister k = 1.92 · max heart rate 178 bpm from your zone model, read on 10 May 2026 · acute window 7 days, chronic window 42 days",
+        "assumption": "no training for 7 days · Banister k = 1.92 · max heart rate 178 bpm from your zones, taken from your watch on 10 May 2026 · the last 7 days · the last 6 weeks",
         "band": "0.8 to 1.3",
         "days_to_positive_form": null,
         "days_to_ratio_band": 7,
@@ -3330,7 +3330,7 @@
             }
           }
         ],
-        "statement": "the acute-to-chronic ratio is expected back inside 0.8 to 1.3 in 7 days · the form does not turn positive within 7 days"
+        "statement": "the last 7 days are expected back inside 0.8 to 1.3 times the last 6 weeks in 7 days · the difference does not turn positive within 7 days"
       },
       "unavailable": null,
       "window": {
@@ -3352,7 +3352,7 @@
           "chronic_window_days": 42,
           "forecast_days": 7,
           "max_heart_rate_bpm": 178.0,
-          "statement": "no training for 7 days · Banister k = 1.92 · max heart rate 178 bpm from your zone model, read on 10 May 2026 · acute window 7 days, chronic window 42 days",
+          "statement": "no training for 7 days · Banister k = 1.92 · max heart rate 178 bpm from your zones, taken from your watch on 10 May 2026 · the last 7 days · the last 6 weeks",
           "threshold_hr_bpm": 163.0,
           "zone_model_read_on": "2026-05-10",
           "zone_model_read_on_label": "10 May 2026"
@@ -4073,7 +4073,7 @@
         }
       },
       "scenario": {
-        "assumption": "no training for 7 days · Banister k = 1.92 · max heart rate 178 bpm from your zone model, read on 10 May 2026 · acute window 7 days, chronic window 42 days",
+        "assumption": "no training for 7 days · Banister k = 1.92 · max heart rate 178 bpm from your zones, taken from your watch on 10 May 2026 · the last 7 days · the last 6 weeks",
         "band": "0.8 to 1.3",
         "days_to_positive_form": null,
         "days_to_ratio_band": 7,
@@ -4156,7 +4156,7 @@
             }
           }
         ],
-        "statement": "the acute-to-chronic ratio is expected back inside 0.8 to 1.3 in 7 days · the form does not turn positive within 7 days"
+        "statement": "the last 7 days are expected back inside 0.8 to 1.3 times the last 6 weeks in 7 days · the difference does not turn positive within 7 days"
       },
       "unavailable": null,
       "window": {
@@ -4178,7 +4178,7 @@
           "chronic_window_days": 42,
           "forecast_days": 7,
           "max_heart_rate_bpm": 178.0,
-          "statement": "no training for 7 days · Banister k = 1.92 · max heart rate 178 bpm from your zone model, read on 10 May 2026 · acute window 7 days, chronic window 42 days",
+          "statement": "no training for 7 days · Banister k = 1.92 · max heart rate 178 bpm from your zones, taken from your watch on 10 May 2026 · the last 7 days · the last 6 weeks",
           "threshold_hr_bpm": 163.0,
           "zone_model_read_on": "2026-05-10",
           "zone_model_read_on_label": "10 May 2026"
@@ -5099,7 +5099,7 @@
         }
       },
       "scenario": {
-        "assumption": "no training for 7 days · Banister k = 1.92 · max heart rate 178 bpm from your zone model, read on 10 May 2026 · acute window 7 days, chronic window 42 days",
+        "assumption": "no training for 7 days · Banister k = 1.92 · max heart rate 178 bpm from your zones, taken from your watch on 10 May 2026 · the last 7 days · the last 6 weeks",
         "band": "0.8 to 1.3",
         "days_to_positive_form": null,
         "days_to_ratio_band": 7,
@@ -5182,7 +5182,7 @@
             }
           }
         ],
-        "statement": "the acute-to-chronic ratio is expected back inside 0.8 to 1.3 in 7 days · the form does not turn positive within 7 days"
+        "statement": "the last 7 days are expected back inside 0.8 to 1.3 times the last 6 weeks in 7 days · the difference does not turn positive within 7 days"
       },
       "unavailable": null,
       "window": {
@@ -5204,7 +5204,7 @@
           "chronic_window_days": 42,
           "forecast_days": 7,
           "max_heart_rate_bpm": 178.0,
-          "statement": "no training for 7 days · Banister k = 1.92 · max heart rate 178 bpm from your zone model, read on 10 May 2026 · acute window 7 days, chronic window 42 days",
+          "statement": "no training for 7 days · Banister k = 1.92 · max heart rate 178 bpm from your zones, taken from your watch on 10 May 2026 · the last 7 days · the last 6 weeks",
           "threshold_hr_bpm": 163.0,
           "zone_model_read_on": "2026-05-10",
           "zone_model_read_on_label": "10 May 2026"
@@ -6099,7 +6099,7 @@
         }
       },
       "scenario": {
-        "assumption": "no training for 7 days · Banister k = 1.92 · max heart rate 178 bpm from your zone model, read on 10 May 2026 · acute window 7 days, chronic window 42 days",
+        "assumption": "no training for 7 days · Banister k = 1.92 · max heart rate 178 bpm from your zones, taken from your watch on 10 May 2026 · the last 7 days · the last 6 weeks",
         "band": "0.8 to 1.3",
         "days_to_positive_form": null,
         "days_to_ratio_band": 7,
@@ -6182,7 +6182,7 @@
             }
           }
         ],
-        "statement": "the acute-to-chronic ratio is expected back inside 0.8 to 1.3 in 7 days · the form does not turn positive within 7 days"
+        "statement": "the last 7 days are expected back inside 0.8 to 1.3 times the last 6 weeks in 7 days · the difference does not turn positive within 7 days"
       },
       "unavailable": null,
       "window": {
@@ -6198,7 +6198,7 @@
       "bands": null,
       "date": "2026-05-13",
       "generated_at": "2026-05-13T06:30:00Z",
-      "unavailable": "pace bands unavailable — the window holds no moving samples",
+      "unavailable": "No pace bands yet — none of the runs in this period recorded a pace",
       "weeks": [
         {
           "distance": {
@@ -6265,7 +6265,7 @@
       "bands": null,
       "date": "2026-05-13",
       "generated_at": "2026-05-13T06:30:00Z",
-      "unavailable": "pace bands unavailable — the window holds no moving samples",
+      "unavailable": "No pace bands yet — none of the runs in this period recorded a pace",
       "weeks": [
         {
           "distance": {
@@ -6358,7 +6358,7 @@
       "bands": null,
       "date": "2026-05-13",
       "generated_at": "2026-05-13T06:30:00Z",
-      "unavailable": "pace bands unavailable — the window holds no moving samples",
+      "unavailable": "No pace bands yet — none of the runs in this period recorded a pace",
       "weeks": [
         {
           "distance": {
@@ -6425,7 +6425,7 @@
       "bands": null,
       "date": "2026-05-13",
       "generated_at": "2026-05-13T06:30:00Z",
-      "unavailable": "pace bands unavailable — the window holds no moving samples",
+      "unavailable": "No pace bands yet — none of the runs in this period recorded a pace",
       "weeks": [
         {
           "distance": {
@@ -6518,7 +6518,7 @@
       "bands": null,
       "date": "2026-05-13",
       "generated_at": "2026-05-13T06:30:00Z",
-      "unavailable": "pace bands unavailable — the window holds no moving samples",
+      "unavailable": "No pace bands yet — none of the runs in this period recorded a pace",
       "weeks": [
         {
           "distance": {
@@ -7441,7 +7441,7 @@
         },
         {
           "key": "intensity",
-          "label": "Intensity",
+          "label": "Heart rate",
           "movement": "steady",
           "previous": {
             "raw": 148,
@@ -7679,12 +7679,12 @@
           {
             "read_on": "2026-05-10",
             "read_on_label": "10 May 2026",
-            "source": "your zone model · HR_MAX · max heart rate 178 bpm · read on 10 May 2026"
+            "source": "your zones · HR_MAX · max heart rate 178 bpm · taken from your watch on 10 May 2026"
           }
         ],
         "shares": null,
-        "source": "your zone model · HR_MAX · max heart rate 178 bpm · read on 10 May 2026",
-        "unavailable": "the split has no value — the runs in the window have no heart-rate samples",
+        "source": "your zones · HR_MAX · max heart rate 178 bpm · taken from your watch on 10 May 2026",
+        "unavailable": "No heart rate recorded — none of the runs in this period recorded a heart rate",
         "weeks": [
           {
             "bands": [
@@ -7971,7 +7971,7 @@
         },
         {
           "key": "intensity",
-          "label": "Intensity",
+          "label": "Heart rate",
           "movement": "steady",
           "previous": {
             "raw": 148,
@@ -8209,12 +8209,12 @@
           {
             "read_on": "2026-05-10",
             "read_on_label": "10 May 2026",
-            "source": "your zone model · HR_MAX · max heart rate 178 bpm · read on 10 May 2026"
+            "source": "your zones · HR_MAX · max heart rate 178 bpm · taken from your watch on 10 May 2026"
           }
         ],
         "shares": null,
-        "source": "your zone model · HR_MAX · max heart rate 178 bpm · read on 10 May 2026",
-        "unavailable": "the split has no value — the runs in the window have no heart-rate samples",
+        "source": "your zones · HR_MAX · max heart rate 178 bpm · taken from your watch on 10 May 2026",
+        "unavailable": "No heart rate recorded — none of the runs in this period recorded a heart rate",
         "weeks": [
           {
             "bands": [
@@ -8501,7 +8501,7 @@
         },
         {
           "key": "intensity",
-          "label": "Intensity",
+          "label": "Heart rate",
           "movement": "steady",
           "previous": {
             "raw": 148,
@@ -8739,12 +8739,12 @@
           {
             "read_on": "2026-05-10",
             "read_on_label": "10 May 2026",
-            "source": "your zone model · HR_MAX · max heart rate 178 bpm · read on 10 May 2026"
+            "source": "your zones · HR_MAX · max heart rate 178 bpm · taken from your watch on 10 May 2026"
           }
         ],
         "shares": null,
-        "source": "your zone model · HR_MAX · max heart rate 178 bpm · read on 10 May 2026",
-        "unavailable": "the split has no value — the runs in the window have no heart-rate samples",
+        "source": "your zones · HR_MAX · max heart rate 178 bpm · taken from your watch on 10 May 2026",
+        "unavailable": "No heart rate recorded — none of the runs in this period recorded a heart rate",
         "weeks": [
           {
             "bands": [
@@ -9031,7 +9031,7 @@
         },
         {
           "key": "intensity",
-          "label": "Intensity",
+          "label": "Heart rate",
           "movement": "steady",
           "previous": {
             "raw": 148,
@@ -9269,12 +9269,12 @@
           {
             "read_on": "2026-05-10",
             "read_on_label": "10 May 2026",
-            "source": "your zone model · HR_MAX · max heart rate 178 bpm · read on 10 May 2026"
+            "source": "your zones · HR_MAX · max heart rate 178 bpm · taken from your watch on 10 May 2026"
           }
         ],
         "shares": null,
-        "source": "your zone model · HR_MAX · max heart rate 178 bpm · read on 10 May 2026",
-        "unavailable": "the split has no value — the runs in the window have no heart-rate samples",
+        "source": "your zones · HR_MAX · max heart rate 178 bpm · taken from your watch on 10 May 2026",
+        "unavailable": "No heart rate recorded — none of the runs in this period recorded a heart rate",
         "weeks": [
           {
             "bands": [
@@ -9561,7 +9561,7 @@
         },
         {
           "key": "intensity",
-          "label": "Intensity",
+          "label": "Heart rate",
           "movement": "steady",
           "previous": {
             "raw": 148,
@@ -9799,12 +9799,12 @@
           {
             "read_on": "2026-05-10",
             "read_on_label": "10 May 2026",
-            "source": "your zone model · HR_MAX · max heart rate 178 bpm · read on 10 May 2026"
+            "source": "your zones · HR_MAX · max heart rate 178 bpm · taken from your watch on 10 May 2026"
           }
         ],
         "shares": null,
-        "source": "your zone model · HR_MAX · max heart rate 178 bpm · read on 10 May 2026",
-        "unavailable": "the split has no value — the runs in the window have no heart-rate samples",
+        "source": "your zones · HR_MAX · max heart rate 178 bpm · taken from your watch on 10 May 2026",
+        "unavailable": "No heart rate recorded — none of the runs in this period recorded a heart rate",
         "weeks": [
           {
             "bands": [
@@ -10091,7 +10091,7 @@
         },
         {
           "key": "intensity",
-          "label": "Intensity",
+          "label": "Heart rate",
           "movement": "steady",
           "previous": {
             "raw": 148,
@@ -10329,12 +10329,12 @@
           {
             "read_on": "2026-05-10",
             "read_on_label": "10 May 2026",
-            "source": "your zone model · HR_MAX · max heart rate 178 bpm · read on 10 May 2026"
+            "source": "your zones · HR_MAX · max heart rate 178 bpm · taken from your watch on 10 May 2026"
           }
         ],
         "shares": null,
-        "source": "your zone model · HR_MAX · max heart rate 178 bpm · read on 10 May 2026",
-        "unavailable": "the split has no value — the runs in the window have no heart-rate samples",
+        "source": "your zones · HR_MAX · max heart rate 178 bpm · taken from your watch on 10 May 2026",
+        "unavailable": "No heart rate recorded — none of the runs in this period recorded a heart rate",
         "weeks": [
           {
             "bands": [
@@ -10621,7 +10621,7 @@
         },
         {
           "key": "intensity",
-          "label": "Intensity",
+          "label": "Heart rate",
           "movement": "steady",
           "previous": {
             "raw": 148,
@@ -10859,12 +10859,12 @@
           {
             "read_on": "2026-05-10",
             "read_on_label": "10 May 2026",
-            "source": "your zone model · HR_MAX · max heart rate 178 bpm · read on 10 May 2026"
+            "source": "your zones · HR_MAX · max heart rate 178 bpm · taken from your watch on 10 May 2026"
           }
         ],
         "shares": null,
-        "source": "your zone model · HR_MAX · max heart rate 178 bpm · read on 10 May 2026",
-        "unavailable": "the split has no value — the runs in the window have no heart-rate samples",
+        "source": "your zones · HR_MAX · max heart rate 178 bpm · taken from your watch on 10 May 2026",
+        "unavailable": "No heart rate recorded — none of the runs in this period recorded a heart rate",
         "weeks": [
           {
             "bands": [
@@ -11151,7 +11151,7 @@
         },
         {
           "key": "intensity",
-          "label": "Intensity",
+          "label": "Heart rate",
           "movement": "steady",
           "previous": {
             "raw": 148,
@@ -11389,12 +11389,12 @@
           {
             "read_on": "2026-05-10",
             "read_on_label": "10 May 2026",
-            "source": "your zone model · HR_MAX · max heart rate 178 bpm · read on 10 May 2026"
+            "source": "your zones · HR_MAX · max heart rate 178 bpm · taken from your watch on 10 May 2026"
           }
         ],
         "shares": null,
-        "source": "your zone model · HR_MAX · max heart rate 178 bpm · read on 10 May 2026",
-        "unavailable": "the split has no value — the runs in the window have no heart-rate samples",
+        "source": "your zones · HR_MAX · max heart rate 178 bpm · taken from your watch on 10 May 2026",
+        "unavailable": "No heart rate recorded — none of the runs in this period recorded a heart rate",
         "weeks": [
           {
             "bands": [
@@ -11681,7 +11681,7 @@
         },
         {
           "key": "intensity",
-          "label": "Intensity",
+          "label": "Heart rate",
           "movement": "steady",
           "previous": {
             "raw": 148,
@@ -11919,12 +11919,12 @@
           {
             "read_on": "2026-05-10",
             "read_on_label": "10 May 2026",
-            "source": "your zone model · HR_MAX · max heart rate 178 bpm · read on 10 May 2026"
+            "source": "your zones · HR_MAX · max heart rate 178 bpm · taken from your watch on 10 May 2026"
           }
         ],
         "shares": null,
-        "source": "your zone model · HR_MAX · max heart rate 178 bpm · read on 10 May 2026",
-        "unavailable": "the split has no value — the runs in the window have no heart-rate samples",
+        "source": "your zones · HR_MAX · max heart rate 178 bpm · taken from your watch on 10 May 2026",
+        "unavailable": "No heart rate recorded — none of the runs in this period recorded a heart rate",
         "weeks": [
           {
             "bands": [
@@ -12212,11 +12212,11 @@
     },
     "/insights/year": {
       "changed": [
-        "+31 km against the period before (76.6 km against 45.6 km)",
+        "+31 km against the same days, a week earlier (76.6 km against 45.6 km)",
         "+3 recorded sessions (7 against 4)",
         "the longest run was 18.2 km in both periods",
         "the average pace was 5:17 /km against 5:16 /km",
-        "the form was -12.7 at the end of the window against -13.6 at the end of the period before"
+        "the difference was -12.7 at the end of this period against -13.6 at the end of the same days, a week earlier"
       ],
       "comparison": {
         "days": 347,
@@ -16290,7 +16290,7 @@
         },
         "read_at": "2026-05-10T06:30:00Z",
         "read_on": "10 May 2026",
-        "source": "your zone model · HR_MAX · max heart rate 178 bpm · read on 10 May 2026",
+        "source": "your zones · HR_MAX · max heart rate 178 bpm · taken from your watch on 10 May 2026",
         "sport": "DEFAULT",
         "training_method": "HR_MAX"
       },
@@ -17174,13 +17174,13 @@
           },
           "read_at": "2026-05-10T06:30:00Z",
           "read_on": "10 May 2026",
-          "source": "your zone model · HR_MAX · max heart rate 178 bpm · read on 10 May 2026",
+          "source": "your zones · HR_MAX · max heart rate 178 bpm · taken from your watch on 10 May 2026",
           "sport": "DEFAULT",
           "training_method": "HR_MAX"
         },
         "outside": null,
         "shares": [],
-        "source": "your zone model, read on 2026-05-10",
+        "source": "your zones, taken from your watch on 2026-05-10",
         "unavailable": null
       }
     },
@@ -17215,13 +17215,13 @@
         },
         "read_at": "2026-05-10T06:30:00Z",
         "read_on": "10 May 2026",
-        "source": "your zone model · HR_MAX · max heart rate 178 bpm · read on 10 May 2026",
+        "source": "your zones · HR_MAX · max heart rate 178 bpm · taken from your watch on 10 May 2026",
         "sport": "DEFAULT",
         "training_method": "HR_MAX"
       },
       "outside": null,
       "stopped": null,
-      "unavailable": "zones unavailable — the run has no heart-rate samples",
+      "unavailable": "No zones yet — this run recorded no heart rate",
       "zones": []
     },
     "/health": {
@@ -17249,7 +17249,7 @@
           "chronic_window_days": 42,
           "forecast_days": 7,
           "max_heart_rate_bpm": 178.0,
-          "statement": "no training for 7 days · Banister k = 1.92 · max heart rate 178 bpm from your zone model, read on 10 May 2026 · acute window 7 days, chronic window 42 days",
+          "statement": "no training for 7 days · Banister k = 1.92 · max heart rate 178 bpm from your zones, taken from your watch on 10 May 2026 · the last 7 days · the last 6 weeks",
           "threshold_hr_bpm": 163.0,
           "zone_model_read_on": "2026-05-10",
           "zone_model_read_on_label": "10 May 2026"
@@ -18144,7 +18144,7 @@
         }
       },
       "scenario": {
-        "assumption": "no training for 7 days · Banister k = 1.92 · max heart rate 178 bpm from your zone model, read on 10 May 2026 · acute window 7 days, chronic window 42 days",
+        "assumption": "no training for 7 days · Banister k = 1.92 · max heart rate 178 bpm from your zones, taken from your watch on 10 May 2026 · the last 7 days · the last 6 weeks",
         "band": "0.8 to 1.3",
         "days_to_positive_form": null,
         "days_to_ratio_band": 7,
@@ -18227,7 +18227,7 @@
             }
           }
         ],
-        "statement": "the acute-to-chronic ratio is expected back inside 0.8 to 1.3 in 7 days · the form does not turn positive within 7 days"
+        "statement": "the last 7 days are expected back inside 0.8 to 1.3 times the last 6 weeks in 7 days · the difference does not turn positive within 7 days"
       },
       "unavailable": null,
       "window": {
@@ -18249,7 +18249,7 @@
           "chronic_window_days": 42,
           "forecast_days": 7,
           "max_heart_rate_bpm": 178.0,
-          "statement": "no training for 7 days · Banister k = 1.92 · max heart rate 178 bpm from your zone model, read on 10 May 2026 · acute window 7 days, chronic window 42 days",
+          "statement": "no training for 7 days · Banister k = 1.92 · max heart rate 178 bpm from your zones, taken from your watch on 10 May 2026 · the last 7 days · the last 6 weeks",
           "threshold_hr_bpm": 163.0,
           "zone_model_read_on": "2026-05-10",
           "zone_model_read_on_label": "10 May 2026"
@@ -19170,7 +19170,7 @@
         }
       },
       "scenario": {
-        "assumption": "no training for 7 days · Banister k = 1.92 · max heart rate 178 bpm from your zone model, read on 10 May 2026 · acute window 7 days, chronic window 42 days",
+        "assumption": "no training for 7 days · Banister k = 1.92 · max heart rate 178 bpm from your zones, taken from your watch on 10 May 2026 · the last 7 days · the last 6 weeks",
         "band": "0.8 to 1.3",
         "days_to_positive_form": null,
         "days_to_ratio_band": 7,
@@ -19253,7 +19253,7 @@
             }
           }
         ],
-        "statement": "the acute-to-chronic ratio is expected back inside 0.8 to 1.3 in 7 days · the form does not turn positive within 7 days"
+        "statement": "the last 7 days are expected back inside 0.8 to 1.3 times the last 6 weeks in 7 days · the difference does not turn positive within 7 days"
       },
       "unavailable": null,
       "window": {
@@ -19275,7 +19275,7 @@
           "chronic_window_days": 42,
           "forecast_days": 7,
           "max_heart_rate_bpm": 178.0,
-          "statement": "no training for 7 days · Banister k = 1.92 · max heart rate 178 bpm from your zone model, read on 10 May 2026 · acute window 7 days, chronic window 42 days",
+          "statement": "no training for 7 days · Banister k = 1.92 · max heart rate 178 bpm from your zones, taken from your watch on 10 May 2026 · the last 7 days · the last 6 weeks",
           "threshold_hr_bpm": 163.0,
           "zone_model_read_on": "2026-05-10",
           "zone_model_read_on_label": "10 May 2026"
@@ -19996,7 +19996,7 @@
         }
       },
       "scenario": {
-        "assumption": "no training for 7 days · Banister k = 1.92 · max heart rate 178 bpm from your zone model, read on 10 May 2026 · acute window 7 days, chronic window 42 days",
+        "assumption": "no training for 7 days · Banister k = 1.92 · max heart rate 178 bpm from your zones, taken from your watch on 10 May 2026 · the last 7 days · the last 6 weeks",
         "band": "0.8 to 1.3",
         "days_to_positive_form": null,
         "days_to_ratio_band": 7,
@@ -20079,7 +20079,7 @@
             }
           }
         ],
-        "statement": "the acute-to-chronic ratio is expected back inside 0.8 to 1.3 in 7 days · the form does not turn positive within 7 days"
+        "statement": "the last 7 days are expected back inside 0.8 to 1.3 times the last 6 weeks in 7 days · the difference does not turn positive within 7 days"
       },
       "unavailable": null,
       "window": {
@@ -20101,7 +20101,7 @@
           "chronic_window_days": 42,
           "forecast_days": 7,
           "max_heart_rate_bpm": 178.0,
-          "statement": "no training for 7 days · Banister k = 1.92 · max heart rate 178 bpm from your zone model, read on 10 May 2026 · acute window 7 days, chronic window 42 days",
+          "statement": "no training for 7 days · Banister k = 1.92 · max heart rate 178 bpm from your zones, taken from your watch on 10 May 2026 · the last 7 days · the last 6 weeks",
           "threshold_hr_bpm": 163.0,
           "zone_model_read_on": "2026-05-10",
           "zone_model_read_on_label": "10 May 2026"
@@ -21022,7 +21022,7 @@
         }
       },
       "scenario": {
-        "assumption": "no training for 7 days · Banister k = 1.92 · max heart rate 178 bpm from your zone model, read on 10 May 2026 · acute window 7 days, chronic window 42 days",
+        "assumption": "no training for 7 days · Banister k = 1.92 · max heart rate 178 bpm from your zones, taken from your watch on 10 May 2026 · the last 7 days · the last 6 weeks",
         "band": "0.8 to 1.3",
         "days_to_positive_form": null,
         "days_to_ratio_band": 7,
@@ -21105,7 +21105,7 @@
             }
           }
         ],
-        "statement": "the acute-to-chronic ratio is expected back inside 0.8 to 1.3 in 7 days · the form does not turn positive within 7 days"
+        "statement": "the last 7 days are expected back inside 0.8 to 1.3 times the last 6 weeks in 7 days · the difference does not turn positive within 7 days"
       },
       "unavailable": null,
       "window": {
@@ -21127,7 +21127,7 @@
           "chronic_window_days": 42,
           "forecast_days": 7,
           "max_heart_rate_bpm": 178.0,
-          "statement": "no training for 7 days · Banister k = 1.92 · max heart rate 178 bpm from your zone model, read on 10 May 2026 · acute window 7 days, chronic window 42 days",
+          "statement": "no training for 7 days · Banister k = 1.92 · max heart rate 178 bpm from your zones, taken from your watch on 10 May 2026 · the last 7 days · the last 6 weeks",
           "threshold_hr_bpm": 163.0,
           "zone_model_read_on": "2026-05-10",
           "zone_model_read_on_label": "10 May 2026"
@@ -22022,7 +22022,7 @@
         }
       },
       "scenario": {
-        "assumption": "no training for 7 days · Banister k = 1.92 · max heart rate 178 bpm from your zone model, read on 10 May 2026 · acute window 7 days, chronic window 42 days",
+        "assumption": "no training for 7 days · Banister k = 1.92 · max heart rate 178 bpm from your zones, taken from your watch on 10 May 2026 · the last 7 days · the last 6 weeks",
         "band": "0.8 to 1.3",
         "days_to_positive_form": null,
         "days_to_ratio_band": 7,
@@ -22105,7 +22105,7 @@
             }
           }
         ],
-        "statement": "the acute-to-chronic ratio is expected back inside 0.8 to 1.3 in 7 days · the form does not turn positive within 7 days"
+        "statement": "the last 7 days are expected back inside 0.8 to 1.3 times the last 6 weeks in 7 days · the difference does not turn positive within 7 days"
       },
       "unavailable": null,
       "window": {
@@ -22121,7 +22121,7 @@
       "bands": null,
       "date": "2026-05-13",
       "generated_at": "2026-05-13T06:30:00Z",
-      "unavailable": "pace bands unavailable — the window holds no moving samples",
+      "unavailable": "No pace bands yet — none of the runs in this period recorded a pace",
       "weeks": [
         {
           "distance": {
@@ -22188,7 +22188,7 @@
       "bands": null,
       "date": "2026-05-13",
       "generated_at": "2026-05-13T06:30:00Z",
-      "unavailable": "pace bands unavailable — the window holds no moving samples",
+      "unavailable": "No pace bands yet — none of the runs in this period recorded a pace",
       "weeks": [
         {
           "distance": {
@@ -22281,7 +22281,7 @@
       "bands": null,
       "date": "2026-05-13",
       "generated_at": "2026-05-13T06:30:00Z",
-      "unavailable": "pace bands unavailable — the window holds no moving samples",
+      "unavailable": "No pace bands yet — none of the runs in this period recorded a pace",
       "weeks": [
         {
           "distance": {
@@ -22348,7 +22348,7 @@
       "bands": null,
       "date": "2026-05-13",
       "generated_at": "2026-05-13T06:30:00Z",
-      "unavailable": "pace bands unavailable — the window holds no moving samples",
+      "unavailable": "No pace bands yet — none of the runs in this period recorded a pace",
       "weeks": [
         {
           "distance": {
@@ -22441,7 +22441,7 @@
       "bands": null,
       "date": "2026-05-13",
       "generated_at": "2026-05-13T06:30:00Z",
-      "unavailable": "pace bands unavailable — the window holds no moving samples",
+      "unavailable": "No pace bands yet — none of the runs in this period recorded a pace",
       "weeks": [
         {
           "distance": {
@@ -23349,7 +23349,7 @@
         },
         {
           "key": "intensity",
-          "label": "Intensity",
+          "label": "Heart rate",
           "movement": "steady",
           "previous": {
             "raw": 148,
@@ -23587,12 +23587,12 @@
           {
             "read_on": "2026-05-10",
             "read_on_label": "10 May 2026",
-            "source": "your zone model · HR_MAX · max heart rate 178 bpm · read on 10 May 2026"
+            "source": "your zones · HR_MAX · max heart rate 178 bpm · taken from your watch on 10 May 2026"
           }
         ],
         "shares": null,
-        "source": "your zone model · HR_MAX · max heart rate 178 bpm · read on 10 May 2026",
-        "unavailable": "the split has no value — the runs in the window have no heart-rate samples",
+        "source": "your zones · HR_MAX · max heart rate 178 bpm · taken from your watch on 10 May 2026",
+        "unavailable": "No heart rate recorded — none of the runs in this period recorded a heart rate",
         "weeks": [
           {
             "bands": [
@@ -23879,7 +23879,7 @@
         },
         {
           "key": "intensity",
-          "label": "Intensity",
+          "label": "Heart rate",
           "movement": "steady",
           "previous": {
             "raw": 148,
@@ -24117,12 +24117,12 @@
           {
             "read_on": "2026-05-10",
             "read_on_label": "10 May 2026",
-            "source": "your zone model · HR_MAX · max heart rate 178 bpm · read on 10 May 2026"
+            "source": "your zones · HR_MAX · max heart rate 178 bpm · taken from your watch on 10 May 2026"
           }
         ],
         "shares": null,
-        "source": "your zone model · HR_MAX · max heart rate 178 bpm · read on 10 May 2026",
-        "unavailable": "the split has no value — the runs in the window have no heart-rate samples",
+        "source": "your zones · HR_MAX · max heart rate 178 bpm · taken from your watch on 10 May 2026",
+        "unavailable": "No heart rate recorded — none of the runs in this period recorded a heart rate",
         "weeks": [
           {
             "bands": [
@@ -24409,7 +24409,7 @@
         },
         {
           "key": "intensity",
-          "label": "Intensity",
+          "label": "Heart rate",
           "movement": "steady",
           "previous": {
             "raw": 148,
@@ -24647,12 +24647,12 @@
           {
             "read_on": "2026-05-10",
             "read_on_label": "10 May 2026",
-            "source": "your zone model · HR_MAX · max heart rate 178 bpm · read on 10 May 2026"
+            "source": "your zones · HR_MAX · max heart rate 178 bpm · taken from your watch on 10 May 2026"
           }
         ],
         "shares": null,
-        "source": "your zone model · HR_MAX · max heart rate 178 bpm · read on 10 May 2026",
-        "unavailable": "the split has no value — the runs in the window have no heart-rate samples",
+        "source": "your zones · HR_MAX · max heart rate 178 bpm · taken from your watch on 10 May 2026",
+        "unavailable": "No heart rate recorded — none of the runs in this period recorded a heart rate",
         "weeks": [
           {
             "bands": [
@@ -24939,7 +24939,7 @@
         },
         {
           "key": "intensity",
-          "label": "Intensity",
+          "label": "Heart rate",
           "movement": "steady",
           "previous": {
             "raw": 148,
@@ -25177,12 +25177,12 @@
           {
             "read_on": "2026-05-10",
             "read_on_label": "10 May 2026",
-            "source": "your zone model · HR_MAX · max heart rate 178 bpm · read on 10 May 2026"
+            "source": "your zones · HR_MAX · max heart rate 178 bpm · taken from your watch on 10 May 2026"
           }
         ],
         "shares": null,
-        "source": "your zone model · HR_MAX · max heart rate 178 bpm · read on 10 May 2026",
-        "unavailable": "the split has no value — the runs in the window have no heart-rate samples",
+        "source": "your zones · HR_MAX · max heart rate 178 bpm · taken from your watch on 10 May 2026",
+        "unavailable": "No heart rate recorded — none of the runs in this period recorded a heart rate",
         "weeks": [
           {
             "bands": [
@@ -25469,7 +25469,7 @@
         },
         {
           "key": "intensity",
-          "label": "Intensity",
+          "label": "Heart rate",
           "movement": "steady",
           "previous": {
             "raw": 148,
@@ -25707,12 +25707,12 @@
           {
             "read_on": "2026-05-10",
             "read_on_label": "10 May 2026",
-            "source": "your zone model · HR_MAX · max heart rate 178 bpm · read on 10 May 2026"
+            "source": "your zones · HR_MAX · max heart rate 178 bpm · taken from your watch on 10 May 2026"
           }
         ],
         "shares": null,
-        "source": "your zone model · HR_MAX · max heart rate 178 bpm · read on 10 May 2026",
-        "unavailable": "the split has no value — the runs in the window have no heart-rate samples",
+        "source": "your zones · HR_MAX · max heart rate 178 bpm · taken from your watch on 10 May 2026",
+        "unavailable": "No heart rate recorded — none of the runs in this period recorded a heart rate",
         "weeks": [
           {
             "bands": [
@@ -25999,7 +25999,7 @@
         },
         {
           "key": "intensity",
-          "label": "Intensity",
+          "label": "Heart rate",
           "movement": "steady",
           "previous": {
             "raw": 148,
@@ -26237,12 +26237,12 @@
           {
             "read_on": "2026-05-10",
             "read_on_label": "10 May 2026",
-            "source": "your zone model · HR_MAX · max heart rate 178 bpm · read on 10 May 2026"
+            "source": "your zones · HR_MAX · max heart rate 178 bpm · taken from your watch on 10 May 2026"
           }
         ],
         "shares": null,
-        "source": "your zone model · HR_MAX · max heart rate 178 bpm · read on 10 May 2026",
-        "unavailable": "the split has no value — the runs in the window have no heart-rate samples",
+        "source": "your zones · HR_MAX · max heart rate 178 bpm · taken from your watch on 10 May 2026",
+        "unavailable": "No heart rate recorded — none of the runs in this period recorded a heart rate",
         "weeks": [
           {
             "bands": [
@@ -26529,7 +26529,7 @@
         },
         {
           "key": "intensity",
-          "label": "Intensity",
+          "label": "Heart rate",
           "movement": "steady",
           "previous": {
             "raw": 148,
@@ -26767,12 +26767,12 @@
           {
             "read_on": "2026-05-10",
             "read_on_label": "10 May 2026",
-            "source": "your zone model · HR_MAX · max heart rate 178 bpm · read on 10 May 2026"
+            "source": "your zones · HR_MAX · max heart rate 178 bpm · taken from your watch on 10 May 2026"
           }
         ],
         "shares": null,
-        "source": "your zone model · HR_MAX · max heart rate 178 bpm · read on 10 May 2026",
-        "unavailable": "the split has no value — the runs in the window have no heart-rate samples",
+        "source": "your zones · HR_MAX · max heart rate 178 bpm · taken from your watch on 10 May 2026",
+        "unavailable": "No heart rate recorded — none of the runs in this period recorded a heart rate",
         "weeks": [
           {
             "bands": [
@@ -27059,7 +27059,7 @@
         },
         {
           "key": "intensity",
-          "label": "Intensity",
+          "label": "Heart rate",
           "movement": "steady",
           "previous": {
             "raw": 148,
@@ -27297,12 +27297,12 @@
           {
             "read_on": "2026-05-10",
             "read_on_label": "10 May 2026",
-            "source": "your zone model · HR_MAX · max heart rate 178 bpm · read on 10 May 2026"
+            "source": "your zones · HR_MAX · max heart rate 178 bpm · taken from your watch on 10 May 2026"
           }
         ],
         "shares": null,
-        "source": "your zone model · HR_MAX · max heart rate 178 bpm · read on 10 May 2026",
-        "unavailable": "the split has no value — the runs in the window have no heart-rate samples",
+        "source": "your zones · HR_MAX · max heart rate 178 bpm · taken from your watch on 10 May 2026",
+        "unavailable": "No heart rate recorded — none of the runs in this period recorded a heart rate",
         "weeks": [
           {
             "bands": [
@@ -27589,7 +27589,7 @@
         },
         {
           "key": "intensity",
-          "label": "Intensity",
+          "label": "Heart rate",
           "movement": "steady",
           "previous": {
             "raw": 148,
@@ -27827,12 +27827,12 @@
           {
             "read_on": "2026-05-10",
             "read_on_label": "10 May 2026",
-            "source": "your zone model · HR_MAX · max heart rate 178 bpm · read on 10 May 2026"
+            "source": "your zones · HR_MAX · max heart rate 178 bpm · taken from your watch on 10 May 2026"
           }
         ],
         "shares": null,
-        "source": "your zone model · HR_MAX · max heart rate 178 bpm · read on 10 May 2026",
-        "unavailable": "the split has no value — the runs in the window have no heart-rate samples",
+        "source": "your zones · HR_MAX · max heart rate 178 bpm · taken from your watch on 10 May 2026",
+        "unavailable": "No heart rate recorded — none of the runs in this period recorded a heart rate",
         "weeks": [
           {
             "bands": [
@@ -28032,11 +28032,11 @@
     },
     "/insights/year": {
       "changed": [
-        "+31 km against the period before (76.6 km against 45.6 km)",
+        "+31 km against the same days, a week earlier (76.6 km against 45.6 km)",
         "+3 recorded sessions (7 against 4)",
         "the longest run was 18.2 km in both periods",
         "the average pace was 5:17 /km against 5:16 /km",
-        "the form was -12.7 at the end of the window against -13.6 at the end of the period before"
+        "the difference was -12.7 at the end of this period against -13.6 at the end of the same days, a week earlier"
       ],
       "comparison": {
         "days": 347,

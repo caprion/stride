@@ -325,7 +325,7 @@ fn what_changed_says_the_facts_about_the_two_periods() {
     // April as well as the one of last May.
     assert_eq!(
         lines[0],
-        "−5 km against the period before (30 km against 35 km)"
+        "−5 km against the same days, a week earlier (30 km against 35 km)"
     );
     assert_eq!(lines[1], "−1 recorded sessions (2 against 3)");
     assert_eq!(lines[2], "the longest run was 20 km in both periods");

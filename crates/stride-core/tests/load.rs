@@ -508,12 +508,12 @@ fn the_scenario_names_its_assumption() {
     // two windows, and the assumption of no training.
     assert_eq!(
         statement,
-        "the acute-to-chronic ratio is expected back inside 0.8 to 1.3 in 3 days \
-         · the form turns positive in 5 days \
+        "the last 7 days are expected back inside 0.8 to 1.3 times the last 6 weeks in 3 days \
+         · the difference turns positive in 5 days \
          · no training for 7 days \
          · Banister k = 1.92 \
-         · max heart rate 190 bpm from your zone model, read on 12 Mar 2026 \
-         · acute window 7 days, chronic window 42 days"
+         · max heart rate 190 bpm from your zones, taken from your watch on 12 Mar 2026 \
+         · the last 7 days · the last 6 weeks"
     );
     assert!(statement.contains("1.92"));
     assert!(statement.contains("12 Mar 2026"));
@@ -524,8 +524,8 @@ fn the_scenario_names_its_assumption() {
     let scenario_only = scenario.scenario_text();
     assert_eq!(
         scenario_only,
-        "the acute-to-chronic ratio is expected back inside 0.8 to 1.3 in 3 days \
-         · the form turns positive in 5 days"
+        "the last 7 days are expected back inside 0.8 to 1.3 times the last 6 weeks in 3 days \
+         · the difference turns positive in 5 days"
     );
     assert!(!scenario_only.contains("Banister"));
 }
@@ -547,10 +547,10 @@ fn a_scenario_that_is_already_inside_its_band_says_so() {
     assert_eq!(scenario.days_to_positive_form, Some(0));
     assert!(scenario
         .statement("12 Mar 2026")
-        .contains("is inside 0.8 to 1.3 now"));
+        .contains("are already inside 0.8 to 1.3 times the last 6 weeks"));
     assert!(scenario
         .statement("12 Mar 2026")
-        .contains("the form is positive now"));
+        .contains("the difference is positive now"));
 }
 
 #[test]

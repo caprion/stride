@@ -71,7 +71,7 @@ describe('the year', () => {
   it('says what changed, in the core own sentences', async () => {
     renderApp('/year')
     const lines = await screen.findByTestId('year-changed-lines')
-    expect(lines.textContent).toContain('+31 km against the period before')
+    expect(lines.textContent).toContain('+31 km against the same days, a week earlier')
     expect(lines.textContent).toContain('+3 recorded sessions')
     expect(lines.textContent).toContain('the longest run was 18.2 km in both periods')
   })

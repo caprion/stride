@@ -77,7 +77,7 @@ describe('the heatmap', () => {
     ).toBe(true)
     // And the summary names the runs and the cells.
     expect(screen.getByTestId('heatmap-summary')).toHaveTextContent('6 runs')
-    expect(screen.getByTestId('heatmap-summary')).toHaveTextContent('5 cells')
+    expect(screen.getByTestId('heatmap-summary')).toHaveTextContent('5 places')
   })
 
   it('shows an empty state when no run carries a position', async () => {

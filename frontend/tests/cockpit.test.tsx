@@ -111,10 +111,10 @@ describe('where you stand', () => {
     // Form: the load's own state, with the ratio and the band.
     expect(container.querySelector('[data-testid="today-form-value"]')?.textContent).toBe('-12.7')
     expect(container.querySelector('[data-testid="today-form-ratio"]')?.textContent).toContain(
-      'the acute-to-chronic ratio is 2.82',
+      '2.82 times the last 6 weeks',
     )
     expect(container.querySelector('[data-testid="today-form-band"]')?.textContent).toContain(
-      'the band is 0.8 to 1.3',
+      'the usual range is 0.8 to 1.3',
     )
 
     // The habit: the streak, the months and the Eddington number.
@@ -125,7 +125,7 @@ describe('where you stand', () => {
       '1 month in a row',
     )
     expect(container.querySelector('[data-testid="today-habit-eddington"]')?.textContent).toContain(
-      'Eddington 5',
+      '5 km on at least 5 days',
     )
   })
 

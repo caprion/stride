@@ -54,7 +54,7 @@ describe('the zone model on the run detail', () => {
     // No model, so no source line: there is nothing to name.
     expect(line).toBe('')
     // And the honest reason, in the core's own words.
-    expect(unavailable).toContain('zones unavailable — no zone model has been read')
+    expect(unavailable).toContain("No zones yet — your watch's heart-rate zones have not come through")
     window.history.pushState({}, '', '/?fixtures=1')
   })
 })

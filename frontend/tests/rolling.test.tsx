@@ -40,7 +40,7 @@ describe('the rolling window on Progress', () => {
 
     // The window before it, and the difference: a comparison, not a
     // verdict.
-    expect(card.textContent).toContain('The 80 days before')
+    expect(card.textContent).toContain('The same 80 days, a week earlier')
     expect(card.textContent).toContain('Difference')
   })
 
@@ -72,7 +72,7 @@ describe('the split of the zones on Progress', () => {
 
     // The reason is the core's own words.
     expect(card.querySelector('[data-testid="progress-zones-empty"]')?.textContent).toContain(
-      'no heart-rate samples',
+      'none of the runs in this period recorded a heart rate',
     )
     // No value, not a zero: the card shows no share at all.
     expect(card.querySelector('[data-testid="progress-zones-shares"]')).toBeNull()
@@ -104,10 +104,10 @@ describe('the split of the zones on Progress', () => {
 
     // The share, and which way it moved against the window before it.
     expect(card.querySelector('[data-testid="progress-zones-low"]')?.textContent).toBe('72.53%')
-    expect(card.textContent).toContain('up on the 80 days before')
+    expect(card.textContent).toContain('up on the same 80 days, a week earlier')
     // The model, with the day it was read.
     expect(card.querySelector('[data-testid="progress-zones-model"]')?.textContent).toContain(
-      'read on 10 May 2026',
+      'taken from your watch on 10 May 2026',
     )
     // And no verdict anywhere on the card.
     const text = (card.textContent ?? '').toLowerCase()
@@ -125,7 +125,7 @@ describe('the zone distribution on Progress', () => {
     // The reason is the core's own words.
     expect(
       card.querySelector('[data-testid="progress-zones-distribution-empty"]')?.textContent,
-    ).toContain('no heart-rate samples')
+    ).toContain('none of the runs in this period recorded a heart rate')
     // No value, not a zero: there is no distribution at all.
     expect(card.querySelector('[data-testid="progress-zones-distribution-rows"]')).toBeNull()
   })
@@ -165,7 +165,7 @@ describe('the zone distribution on Progress', () => {
     expect(card.textContent).toContain('72.53%')
     // And the model the split was measured against.
     expect(card.querySelector('[data-testid="progress-zones-model"]')?.textContent).toContain(
-      'read on 10 May 2026',
+      'taken from your watch on 10 May 2026',
     )
   })
 })
@@ -217,9 +217,9 @@ describe('the training profile on the athlete profile', () => {
     // window before the window is the 91 days that end the day the window
     // begins, so it carries its own runs: some facets moved up, some down,
     // and the ones that did not move say so.
-    expect(card.textContent).toContain('up on the 90 days before')
-    expect(card.textContent).toContain('down on the 90 days before')
-    expect(card.textContent).toContain('the same as the 90 days before')
+    expect(card.textContent).toContain('up on the same 90 days, a week earlier')
+    expect(card.textContent).toContain('down on the same 90 days, a week earlier')
+    expect(card.textContent).toContain('the same as the 90 days, a week earlier')
     // No polygon, no score, no grade.
     const text = (card.textContent ?? '').toLowerCase()
     for (const word of ['radar', 'profile score', 'shape score', 'excellent', 'very active']) {

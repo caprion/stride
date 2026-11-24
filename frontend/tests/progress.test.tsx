@@ -54,7 +54,7 @@ describe('the Eddington number on the athlete profile', () => {
 
     expect(
       card.querySelector('[data-testid="progress-eddington-empty"]')?.textContent,
-    ).toContain('No recorded distance in this window')
+    ).toContain('No recorded distance in this period')
     // No value, not a zero: the card shows no number at all.
     expect(card.querySelector('[data-testid="progress-eddington-number"]')).toBeNull()
     expect(card.textContent).not.toContain('Longest distance in a day')
@@ -97,15 +97,15 @@ describe('the training load on Progress', () => {
 
     // The scenario, in the core's words.
     const scenario = card.querySelector('[data-testid="progress-load-scenario"]')?.textContent
-    expect(scenario).toContain('acute-to-chronic ratio')
+    expect(scenario).toContain('times the last 6 weeks')
     expect(scenario).toContain('0.8 to 1.3')
 
     // And the assumption with it: the coefficient, where the maximum
     // heart rate came from and the day it was read, and the windows.
     const assumption = card.querySelector('[data-testid="progress-load-assumption"]')?.textContent
     expect(assumption).toContain('Banister k = 1.92')
-    expect(assumption).toContain('read on 10 May 2026')
-    expect(assumption).toContain('chronic window 42 days')
+    expect(assumption).toContain('taken from your watch on 10 May 2026')
+    expect(assumption).toContain('the last 6 weeks')
 
     // And no verdict anywhere on the card.
     const text = card.textContent ?? ''
@@ -141,7 +141,7 @@ describe('the training load on Progress', () => {
 
     // The reason is the core's, in the app's words.
     expect(card.querySelector('[data-testid="progress-load-empty"]')?.textContent).toContain(
-      'No zone model has been read',
+      "Your watch's zones have not come through",
     )
     // No value, not a zero: the card shows no number at all.
     expect(card.querySelector('[data-testid="progress-load-acute"]')).toBeNull()

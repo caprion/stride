@@ -780,7 +780,7 @@ mod tests {
         assert_eq!(lines.len(), 5);
         assert_eq!(
             lines[0],
-            "+51 km against the period before (217.3 km against 166.3 km)"
+            "+51 km against the same days, a week earlier (217.3 km against 166.3 km)"
         );
         assert_eq!(lines[1], "+9 recorded sessions (26 against 17)");
         assert_eq!(
@@ -790,7 +790,7 @@ mod tests {
         assert_eq!(lines[3], "the average pace was 7:11 /km against 7:15 /km");
         assert_eq!(
             lines[4],
-            "the form was 12.3 at the end of the window against -3.4 at the end of the period before"
+            "the difference was 12.3 at the end of this period against -3.4 at the end of the same days, a week earlier"
         );
         // Nothing in the diff is a verdict or an instruction.
         for line in lines {
@@ -818,7 +818,7 @@ mod tests {
         assert_eq!(lines.len(), 3);
         assert_eq!(
             lines[0],
-            "0 km against the period before (0 km against 0 km)"
+            "0 km against the same days, a week earlier (0 km against 0 km)"
         );
         assert_eq!(lines[1], "0 recorded sessions (0 against 0)");
         assert_eq!(lines[2], "the longest run was 0 km in both periods");

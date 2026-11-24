@@ -150,8 +150,8 @@ fn the_route_answers_with_the_series_the_core_computed() {
     assert_eq!(assumption["chronic_window_days"], 42);
     let statement = assumption["statement"].as_str().expect("the statement");
     assert!(statement.contains("Banister k = 1.92"));
-    assert!(statement.contains("read on 12 May 2026"));
-    assert!(statement.contains("chronic window 42 days"));
+    assert!(statement.contains("taken from your watch on 12 May 2026"));
+    assert!(statement.contains("the last 6 weeks"));
 }
 
 #[test]
@@ -171,7 +171,7 @@ fn the_scenario_is_the_core_s_scenario_with_its_assumption() {
     // back inside the band, and how many until the form turns positive.
     let statement = scenario["statement"].as_str().expect("the statement");
     assert!(
-        statement.contains("acute-to-chronic ratio"),
+        statement.contains("times the last 6 weeks"),
         "the scenario does not name the ratio: {statement}"
     );
     assert!(
@@ -179,15 +179,15 @@ fn the_scenario_is_the_core_s_scenario_with_its_assumption() {
         "the scenario does not name the band: {statement}"
     );
     assert!(
-        statement.contains("the form"),
-        "the scenario does not name the form: {statement}"
+        statement.contains("the difference"),
+        "the scenario does not name the difference: {statement}"
     );
 
     // The assumption travels with it.
     let assumption = scenario["assumption"].as_str().expect("the assumption");
     assert!(assumption.contains("Banister k = 1.92"));
     assert!(assumption.contains("no training for 7 days"));
-    assert!(assumption.contains("chronic window 42 days"));
+    assert!(assumption.contains("the last 6 weeks"));
 
     // The projection: seven days of no training.
     let projection = scenario["projection"].as_array().expect("the projection");

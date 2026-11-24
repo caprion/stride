@@ -164,7 +164,7 @@ describe('the three windows on one chart', () => {
 
     // The table compares the focused window with the window before it of
     // the same length, and says which way each facet moved.
-    expect(panel.textContent).toContain('the 90 days before')
+    expect(panel.textContent).toContain('the same 90 days, a week earlier')
     expect(
       panel.querySelector('[data-testid="progress-shape-volume-movement"]')?.textContent,
     ).toBe('up')

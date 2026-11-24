@@ -482,7 +482,7 @@ export const rollingEmptyFixture: RollingInsight = {
     shares: null,
     distribution: null,
     weeks: [],
-    unavailable: 'zones unavailable — no zone model has been read',
+    unavailable: "No zones yet — your watch's heart-rate zones have not come through",
   },
   weekday: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].map(
     (weekday) => ({
@@ -1218,7 +1218,7 @@ export const filmFixture: RunFilm = {
     },
     read_at: '2026-05-10T06:30:00Z',
     read_on: '10 May 2026',
-    source: 'your zone model · HR_MAX · max heart rate 178 bpm · read on 10 May 2026',
+    source: 'your zones · HR_MAX · max heart rate 178 bpm · taken from your watch on 10 May 2026',
   },
   zones: [
     { label: 'Z1', range: '106-121 bpm', from_bpm: 106, to_bpm: 121 },
@@ -1801,7 +1801,7 @@ export const zonesUncalibratedFixture: FitnessZones = {
   zones: [],
   outside: null,
   stopped: null,
-  unavailable: 'zones unavailable — no zone model has been read',
+  unavailable: "No zones yet — your watch's heart-rate zones have not come through",
 }
 
 /**
@@ -2523,7 +2523,7 @@ export function fixtureResponse(
             model: null,
             shares: null,
             distribution: null,
-            unavailable: 'zones unavailable — no zone model has been read',
+            unavailable: "No zones yet — your watch's heart-rate zones have not come through",
           },
         }
       }

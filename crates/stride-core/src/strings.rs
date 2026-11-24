@@ -562,35 +562,41 @@ pub const CATALOGUE: [Entry; 193] = [
         // *derived* from the run's own samples, not stored, and no threshold
         // is stored either: what is missing is a sample that carries a heart
         // rate, so no maximum can be read.
+        //
+        // The line says **what is missing**, in the runner's words: there are
+        // no zones yet, and here is why.
         id: "zones.unavailable",
         kind: StringKind::Statement,
         role: None,
-        template: "zones unavailable — the run has no heart-rate samples",
+        template: "No zones yet — this run recorded no heart rate",
     },
     Entry {
         // No model has been read yet: the run is not calibrated, and the
-        // answer is "no value" — never band 1 and never a zero.
+        // answer is "not recorded" — never band 1 and never a zero.
         id: "zones.no_model",
         kind: StringKind::Statement,
         role: None,
-        template: "zones unavailable — no zone model has been read",
+        template: "No zones yet — your watch's heart-rate zones have not come through",
     },
     Entry {
         // A model is stored, but its floors are not strictly increasing, so
         // it cannot be used.
+        //
+        // "Where your zones start" is the runner's phrase for the floors:
+        // the line says that the order is wrong, not that the bands are.
         id: "zones.unusable_model",
         kind: StringKind::Statement,
         role: None,
-        template: "zones unavailable — the stored zone model's floors are not in order",
+        template: "No zones yet — your watch's zones do not start in order",
     },
     Entry {
-        // The split of a window of runs: the model is there, but the runs
+        // The split of a period of runs: the model is there, but the runs
         // carry no heart-rate samples to measure. There is no share, and
         // the answer says why.
         id: "rolling.zones.no_samples",
         kind: StringKind::Statement,
         role: None,
-        template: "the split has no value — the runs in the window have no heart-rate samples",
+        template: "No heart rate recorded — none of the runs in this period recorded a heart rate",
     },
     Entry {
         // The seven facets of the athlete's shape: the names of the
@@ -610,7 +616,7 @@ pub const CATALOGUE: [Entry; 193] = [
         id: "profile.intensity",
         kind: StringKind::Statement,
         role: None,
-        template: "Intensity",
+        template: "Heart rate",
     },
     Entry {
         id: "profile.duration",
@@ -654,12 +660,12 @@ pub const CATALOGUE: [Entry; 193] = [
         template: "{from}–{to} /km",
     },
     Entry {
-        // No value for the pace bands: the window holds no moving samples,
-        // so there is no distribution to draw. Never a band of zero.
+        // Not worked out for the pace bands: the period holds no moving
+        // samples, so there is no distribution to draw. Never a band of zero.
         id: "pace.no_samples",
         kind: StringKind::Statement,
         role: None,
-        template: "pace bands unavailable — the window holds no moving samples",
+        template: "No pace bands yet — none of the runs in this period recorded a pace",
     },
     Entry {
         // The three bands the training is distributed across. They are the
@@ -725,7 +731,7 @@ pub const CATALOGUE: [Entry; 193] = [
         id: "zones.model.source",
         kind: StringKind::Statement,
         role: None,
-        template: "your zone model · {method} · max heart rate {max_hr} · read on {date}",
+        template: "your zones · {method} · max heart rate {max_hr} · taken from your watch on {date}",
     },
     Entry {
         // The same line for a model Garmin reported no maximum heart rate
@@ -733,7 +739,7 @@ pub const CATALOGUE: [Entry; 193] = [
         id: "zones.model.source.no_max",
         kind: StringKind::Statement,
         role: None,
-        template: "your zone model · {method} · read on {date}",
+        template: "your zones · {method} · taken from your watch on {date}",
     },
     Entry {
         // The line for a window that was measured against **more than one**
@@ -745,7 +751,7 @@ pub const CATALOGUE: [Entry; 193] = [
         id: "zones.models.source",
         kind: StringKind::Statement,
         role: None,
-        template: "your zone models · {count} models · read on {dates}",
+        template: "your zones · {count} readings · taken from your watch on {dates}",
     },
     Entry {
         // The reason a split has no value when a model **has** been read
@@ -754,7 +760,7 @@ pub const CATALOGUE: [Entry; 193] = [
         id: "zones.no_model_in_force",
         kind: StringKind::Statement,
         role: None,
-        template: "zones unavailable — no zone model was in force for these runs",
+        template: "No zones yet — your watch's zones were not read for these runs",
     },
     // The plan's statements: what the athlete intended, what happened, and
     // where the intent came from. They are facts, never verdicts.
@@ -999,43 +1005,46 @@ pub const CATALOGUE: [Entry; 193] = [
         id: "statement.load.scenario.ratio.now",
         kind: StringKind::Statement,
         role: None,
-        template: "the acute-to-chronic ratio is inside {band} now",
+        template:
+            "the last {acute} days are already inside {band} times the last {chronic}",
     },
     Entry {
         id: "statement.load.scenario.ratio.days",
         kind: StringKind::Statement,
         role: None,
-        template: "the acute-to-chronic ratio is expected back inside {band} in {days}",
+        template:
+            "the last {acute} days are expected back inside {band} times the last {chronic} in {days}",
     },
     Entry {
         id: "statement.load.scenario.ratio.undetermined",
         kind: StringKind::Statement,
         role: None,
-        template: "the acute-to-chronic ratio is not back inside {band} within {days} days",
+        template:
+            "the last {acute} days are not back inside {band} times the last {chronic} within {days} days",
     },
     Entry {
         id: "statement.load.scenario.form.now",
         kind: StringKind::Statement,
         role: None,
-        template: "the form is positive now",
+        template: "the difference is positive now",
     },
     Entry {
         id: "statement.load.scenario.form.days",
         kind: StringKind::Statement,
         role: None,
-        template: "the form turns positive in {days}",
+        template: "the difference turns positive in {days}",
     },
     Entry {
         id: "statement.load.scenario.form.undetermined",
         kind: StringKind::Statement,
         role: None,
-        template: "the form does not turn positive within {days} days",
+        template: "the difference does not turn positive within {days} days",
     },
     Entry {
         id: "statement.load.assumptions",
         kind: StringKind::Statement,
         role: None,
-        template: "no training for {forecast} days · Banister k = {k} · max heart rate {max_hr} from your zone model, read on {date} · acute window {acute} days, chronic window {chronic} days",
+        template: "no training for {forecast} days · Banister k = {k} · max heart rate {max_hr} from your zones, taken from your watch on {date} · the last {acute} days · the last {chronic}",
     },
     // The fingerprint: the labels of the observations, and the reasons a
     // run has none of them. They are facts about the run and never about
@@ -1160,7 +1169,7 @@ pub const CATALOGUE: [Entry; 193] = [
         id: "fingerprint.zones.source",
         kind: StringKind::Statement,
         role: None,
-        template: "your zone model, read on {date}",
+        template: "your zones, taken from your watch on {date}",
     },
     // The statuses.
     Entry {
@@ -1194,7 +1203,7 @@ pub const CATALOGUE: [Entry; 193] = [
         id: "year.changed.distance",
         kind: StringKind::Statement,
         role: None,
-        template: "{difference} against the period before ({current} against {previous})",
+        template: "{difference} against the same days, a week earlier ({current} against {previous})",
     },
     Entry {
         id: "year.changed.sessions",
@@ -1237,7 +1246,7 @@ pub const CATALOGUE: [Entry; 193] = [
         kind: StringKind::Statement,
         role: None,
         template:
-            "the form was {current} at the end of the window against {previous} at the end of the period before",
+            "the difference was {current} at the end of this period against {previous} at the end of the same days, a week earlier",
     },
 
     Entry {
@@ -1373,7 +1382,7 @@ pub const CATALOGUE: [Entry; 193] = [
         kind: StringKind::Instruction,
         role: None,
         template:
-            "The zones are the athlete's own zone model, read from the app: the first band is the slowest and the last the fastest. The share is the share of the run's time in that band.",
+            "The zones are the athlete's own zones, read from the app: the first band is the slowest and the last the fastest. The share is the share of the run's time in that band.",
     },
     Entry {
         id: "update.payload.note.pace_drift",
@@ -1841,7 +1850,7 @@ mod tests {
         // is stored: what is missing is a sample that carries a heart rate.
         assert_eq!(
             text("zones.unavailable"),
-            Some("zones unavailable — the run has no heart-rate samples")
+            Some("No zones yet — this run recorded no heart rate")
         );
     }
 

@@ -96,7 +96,7 @@ describe("the athlete's shape", () => {
       'Sport variety',
       'Density',
       'Duration',
-      'Intensity',
+      'Heart rate',
     ])
   })
 
@@ -126,7 +126,7 @@ describe("the athlete's shape", () => {
     expect(legend?.textContent).toContain('last 60 days')
     expect(legend?.textContent).toContain('last 90 days')
     // And how the axes are scaled, so the shape is not read as a score.
-    expect(panel.textContent).toContain('Each axis is scaled to the largest of the three windows.')
+    expect(panel.textContent).toContain('Each axis is scaled to the largest of the three periods.')
     // And what the rates are, so a number is not read apart from its
     // unit.
     expect(panel.textContent).toContain(

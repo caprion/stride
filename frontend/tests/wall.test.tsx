@@ -188,7 +188,7 @@ describe('the wall on Progress', () => {
       zones: {
         models: [],
         source: null,
-        unavailable: 'the runs in the window carry no heart-rate samples',
+        unavailable: "No heart rate recorded — none of the runs in this period recorded a heart rate",
         shares: null,
         distribution: null,
         weeks: [],
@@ -198,7 +198,7 @@ describe('the wall on Progress', () => {
     const card = await screen.findByTestId('progress-wall-time')
 
     // The reason is the answer's own words, and no share is drawn.
-    expect(card.textContent).toContain('no heart-rate samples')
+    expect(card.textContent).toContain('none of the runs in this period recorded a heart rate')
     expect(card.textContent).not.toContain('%')
   })
 })
@@ -297,7 +297,7 @@ describe('the athlete profile on its own wall', () => {
     // The focused window and the window before it are named with the
     // answer's own count of days, and they are the **same length**.
     expect(card?.textContent).toContain('The last 90 days')
-    expect(card?.textContent).toContain('the 90 days before')
+    expect(card?.textContent).toContain('the same 90 days, a week earlier')
   })
 
   it("names the six axes in the core's own words", async () => {
@@ -314,7 +314,7 @@ describe('the athlete profile on its own wall', () => {
       'Sport variety',
       'Density',
       'Duration',
-      'Intensity',
+      'Heart rate',
     ])
     expect(card?.textContent).toContain('Sport variety')
     // The week days are not an axis: a week has no shape.

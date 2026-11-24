@@ -429,7 +429,7 @@ mod tests {
         assert_eq!(
             line,
             Some(
-                "your zone model · HR_MAX · max heart rate 178 bpm · read on 10 May 2026"
+                "your zones · HR_MAX · max heart rate 178 bpm · taken from your watch on 10 May 2026"
                     .to_string()
             )
         );
@@ -439,7 +439,7 @@ mod tests {
     fn a_model_with_no_maximum_heart_rate_is_described_without_one() {
         assert_eq!(
             model_source("HR_MAX", None, "10 May 2026"),
-            Some("your zone model · HR_MAX · read on 10 May 2026".to_string())
+            Some("your zones · HR_MAX · taken from your watch on 10 May 2026".to_string())
         );
     }
 

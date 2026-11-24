@@ -136,7 +136,7 @@ fn the_zone_shares_are_the_stored_models_own() {
     );
     assert_eq!(
         body["zones"]["source"].as_str(),
-        Some("your zone model, read on 2026-05-10")
+        Some("your zones, taken from your watch on 2026-05-10")
     );
 
     // The five shares are there, and they add up to a hundred per cent of
@@ -166,7 +166,7 @@ fn a_run_with_no_stored_model_has_no_shares() {
     assert!(body["zones"]["model"].is_null());
     assert_eq!(
         body["zones"]["unavailable"].as_str(),
-        Some("zones unavailable — no zone model has been read")
+        Some("No zones yet — your watch's heart-rate zones have not come through")
     );
     // The observations are still there: the model is only the zones' input.
     assert!(!body["observations"].as_array().unwrap().is_empty());

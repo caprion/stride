@@ -117,7 +117,7 @@ fn a_window_with_no_samples_has_no_bands() {
     assert!(body["bands"].is_null(), "no value is not a band of zero");
     assert_eq!(
         body["unavailable"],
-        "pace bands unavailable — the window holds no moving samples"
+        "No pace bands yet — none of the runs in this period recorded a pace"
     );
 }
 

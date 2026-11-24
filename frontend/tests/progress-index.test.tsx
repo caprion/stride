@@ -83,7 +83,7 @@ describe('the index of the questions', () => {
 
   it('answers the load with the load, as of the day it was read', async () => {
     renderApp('/progress')
-    expect(await answer('load')).toBe('Acute load 19.7 · Form -12.7')
+    expect(await answer('load')).toBe('The last 7 days 19.7 · The difference -12.7')
     expect(await windowOf('load')).toBe('as of 13 May 2026')
   })
 
@@ -106,7 +106,7 @@ describe('the index of the questions', () => {
     // The fixture's runs carry no heart-rate samples, so the split has
     // no value: the row says so, in the core's own words, and shows no
     // number at all.
-    expect(await answer('time')).toContain('no heart-rate samples')
+    expect(await answer('time')).toContain('none of the runs in this period recorded a heart rate')
   })
 
   it('answers the time with the split of the zones', async () => {
@@ -224,7 +224,7 @@ describe('the empty states of the index', () => {
       unavailable: 'no_zone_model',
     })
     renderApp('/progress')
-    expect(await answer('load')).toContain('No zone model has been read')
+    expect(await answer('load')).toContain("Your watch's zones have not come through")
   })
 
   it('says when there is no streak at all', async () => {
@@ -329,7 +329,7 @@ describe('the index of the athlete profile', () => {
       'Monday',
     )
     expect((await screen.findByTestId('profile-index-habit-answer')).textContent).toContain(
-      'Eddington 5',
+      '5 km on at least 5 days',
     )
     expect((await screen.findByTestId('profile-index-goals-answer')).textContent).toBe(
       '2 of 3 weeks',

@@ -403,8 +403,7 @@ impl LoadAssumptions {
         let k = format!("{:.2}", self.banister_k);
         let max_hr = units::render_heart_rate(Some(self.max_heart_rate_bpm)).unwrap_or_default();
         let date = zone_model_read_on.to_string();
-        let acute = self.acute_window_days.to_string();
-        let chronic = self.chronic_window_days.to_string();
+        let (acute, chronic) = self.windows();
         strings::render(
             "statement.load.assumptions",
             &[
@@ -417,6 +416,24 @@ impl LoadAssumptions {
             ],
         )
         .unwrap_or_default()
+    }
+
+    /// The two windows, as the product names them: the short one in days
+    /// and the long one in weeks when it is a whole number of weeks.
+    ///
+    /// **The product says "the last 7 days" and "the last 6 weeks".** The
+    /// windows are the same ones the series are weighted over, so they are
+    /// written from the numbers the assumptions carry and not written out
+    /// in the strings: a change to a window changes the sentence with it.
+    /// A long window that is not a whole number of weeks keeps its days.
+    fn windows(&self) -> (String, String) {
+        let acute = self.acute_window_days.to_string();
+        let chronic = if self.chronic_window_days > 0 && self.chronic_window_days % 7 == 0 {
+            format!("{} weeks", self.chronic_window_days / 7)
+        } else {
+            format!("{} days", self.chronic_window_days)
+        };
+        (acute, chronic)
     }
 }
 
@@ -519,20 +536,34 @@ impl RecoveryScenario {
     /// The two sentences of the scenario: the ratio and the form.
     fn scenario_parts(&self) -> Vec<String> {
         let band = ratio_band_text();
+        let (acute, chronic) = self.assumptions.windows();
         let ratio = match self.days_to_ratio_band {
-            Some(0) => strings::render("statement.load.scenario.ratio.now", &[("band", &band)]),
+            Some(0) => strings::render(
+                "statement.load.scenario.ratio.now",
+                &[("band", &band), ("acute", &acute), ("chronic", &chronic)],
+            ),
             Some(days) => {
                 let days = day_count(days);
                 strings::render(
                     "statement.load.scenario.ratio.days",
-                    &[("band", &band), ("days", &days)],
+                    &[
+                        ("band", &band),
+                        ("days", &days),
+                        ("acute", &acute),
+                        ("chronic", &chronic),
+                    ],
                 )
             }
             None => {
                 let days = FORECAST_DAYS.to_string();
                 strings::render(
                     "statement.load.scenario.ratio.undetermined",
-                    &[("band", &band), ("days", &days)],
+                    &[
+                        ("band", &band),
+                        ("days", &days),
+                        ("acute", &acute),
+                        ("chronic", &chronic),
+                    ],
                 )
             }
         };

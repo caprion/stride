@@ -55,13 +55,13 @@ describe('the charts of the training load', () => {
     const card = await screen.findByTestId('progress-load')
 
     expect(card.querySelector('[data-testid="progress-load-legend-chronic"]')?.textContent).toBe(
-      'Chronic load',
+      'The last 6 weeks',
     )
     expect(card.querySelector('[data-testid="progress-load-legend-acute"]')?.textContent).toBe(
-      'Acute load',
+      'The last 7 days',
     )
     expect(card.querySelector('[data-testid="progress-load-legend-form"]')?.textContent).toBe(
-      'Form',
+      'The difference',
     )
   })
 
@@ -70,7 +70,7 @@ describe('the charts of the training load', () => {
     const card = await screen.findByTestId('progress-load')
 
     expect(card.querySelector('[data-testid="progress-load-series-note"]')?.textContent).toContain(
-      'The form is positive above the line',
+      'The difference is positive above the line',
     )
     // A day with no load and a day with a load of zero look the same on
     // the chart, and are not the same thing.

@@ -50,8 +50,8 @@ describe('linked history exploration', () => {
       date: params?.date ?? vitalsFixture.date,
     }))
     renderApp('/body?date=2026-05-12')
-    await userEvent.selectOptions(await screen.findByLabelText('History window'), '90')
-    await userEvent.click(screen.getByRole('button', { name: 'Previous week' }))
+    await userEvent.selectOptions(await screen.findByLabelText('History period'), '90')
+    await userEvent.click(screen.getByRole('button', { name: 'A week earlier' }))
     await waitFor(() =>
       expect(vitals).toHaveBeenLastCalledWith({ date: '2026-05-05', days: 90 }),
     )

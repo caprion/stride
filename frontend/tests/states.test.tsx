@@ -162,7 +162,7 @@ describe('the Runs page', () => {
       expect(container.querySelector('[data-testid="runs-empty"]')).toBeTruthy(),
     )
 
-    expect(container.textContent).toContain('No activities yet')
+    expect(container.textContent).toContain('No runs yet')
     expect(container.textContent).toContain('Connect Garmin')
     expect(container.querySelector('[data-testid="fit-import"]')).toBeTruthy()
   })
@@ -269,7 +269,7 @@ describe('the Plan week', () => {
 
     // The source is named as the source it is.
     expect(container.querySelector('[data-testid="plan-source"]')?.textContent).toContain(
-      'Prescribed (imported)',
+      'Your imported plan',
     )
 
     // The counts, and never a percentage that hides them.

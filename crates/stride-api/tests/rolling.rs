@@ -196,7 +196,7 @@ fn a_window_with_no_runs_holds_no_distance_and_no_shares() {
     assert!(answer["zones"]["shares"].is_null());
     assert_eq!(
         text(&answer, &["zones", "unavailable"]),
-        "zones unavailable — no zone model has been read"
+        "No zones yet — your watch's heart-rate zones have not come through"
     );
 }
 
@@ -212,14 +212,14 @@ fn the_split_names_the_model_it_was_measured_against() {
     assert_eq!(models.len(), 1);
     assert_eq!(text(&models[0], &["read_on"]), "2026-05-10");
     assert_eq!(text(&models[0], &["read_on_label"]), "10 May 2026");
-    assert!(text(&models[0], &["source"]).contains("your zone model"));
-    assert!(text(&answer, &["zones", "source"]).contains("your zone model"));
+    assert!(text(&models[0], &["source"]).contains("your zones"));
+    assert!(text(&answer, &["zones", "source"]).contains("your zones"));
     // The runs carry no heart-rate samples, so the split has no value —
     // and the reason is the core's own words.
     assert!(answer["zones"]["shares"].is_null());
     assert_eq!(
         text(&answer, &["zones", "unavailable"]),
-        "the split has no value — the runs in the window have no heart-rate samples"
+        "No heart rate recorded — none of the runs in this period recorded a heart rate"
     );
 }
 
@@ -254,7 +254,7 @@ fn each_run_is_measured_against_the_model_that_was_in_force_on_its_day() {
     // And the source line is **hoisted**: one line for the screen, naming
     // the models the window was measured against.
     let source = text(&answer, &["zones", "source"]);
-    assert!(source.contains("2 models"), "the source line: {source}");
+    assert!(source.contains("2 readings"), "the source line: {source}");
     assert!(source.contains("1 May 2026"), "the source line: {source}");
     assert!(source.contains("8 May 2026"), "the source line: {source}");
 }
@@ -283,7 +283,7 @@ fn a_run_that_predates_the_first_model_has_no_model_in_force() {
         .is_empty());
     assert_eq!(
         text(&answer, &["zones", "unavailable"]),
-        "zones unavailable — no zone model was in force for these runs"
+        "No zones yet — your watch's zones were not read for these runs"
     );
 }
 

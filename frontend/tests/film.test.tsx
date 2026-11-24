@@ -69,7 +69,7 @@ describe('the run film', () => {
     await screen.findByTestId('film-svg')
     const readout = screen.getByTestId('film-readout')
     // The six numbers the readout carries, in the app's own words.
-    expect(readout).toHaveTextContent('Elapsed')
+    expect(readout).toHaveTextContent('The whole run')
     expect(readout).toHaveTextContent('Distance')
     expect(readout).toHaveTextContent('Pace')
     expect(readout).toHaveTextContent('Heart rate')
@@ -126,7 +126,7 @@ describe('the run film', () => {
     expect(zones).toHaveTextContent('Z5')
     expect(zones).toHaveTextContent('106-121 bpm')
     // And the model's own source line, with the day it was read.
-    expect(screen.getByTestId('film-zones-source')).toHaveTextContent('read on 10 May 2026')
+    expect(screen.getByTestId('film-zones-source')).toHaveTextContent('taken from your watch on 10 May 2026')
   })
 
   it('says that the street tiles come from OpenStreetMap', async () => {

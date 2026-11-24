@@ -125,7 +125,7 @@ fn a_run_with_a_stored_model_answers_with_the_five_times_and_the_models_date() {
     // And the model's own source line, in the core's words.
     assert_eq!(
         named["source"].as_str(),
-        Some("your zone model · HR_MAX · max heart rate 178 bpm · read on 10 May 2026")
+        Some("your zones · HR_MAX · max heart rate 178 bpm · taken from your watch on 10 May 2026")
     );
     assert!(body["unavailable"].is_null());
 
@@ -194,7 +194,7 @@ fn a_run_with_no_stored_model_has_no_value() {
     assert!(body["model"].is_null());
     assert_eq!(
         body["unavailable"].as_str(),
-        Some("zones unavailable — no zone model has been read")
+        Some("No zones yet — your watch's heart-rate zones have not come through")
     );
     // Never band 1, and never a zero.
     assert!(body["zones"].as_array().unwrap().is_empty());
@@ -218,7 +218,7 @@ fn a_model_with_no_maximum_heart_rate_is_named_without_one() {
     assert!(named["max_heart_rate"].is_null());
     assert_eq!(
         named["source"].as_str(),
-        Some("your zone model · HR_MAX · read on 9 May 2026")
+        Some("your zones · HR_MAX · taken from your watch on 9 May 2026")
     );
     // And the top band has no upper edge to draw.
     let zones = body["zones"].as_array().unwrap();
@@ -241,7 +241,7 @@ fn a_model_whose_floors_are_not_in_order_is_reported_as_unusable() {
     assert!(body["outside"].is_null());
     assert_eq!(
         body["unavailable"].as_str(),
-        Some("zones unavailable — the stored zone model's floors are not in order")
+        Some("No zones yet — your watch's zones do not start in order")
     );
 }
 
@@ -262,7 +262,7 @@ fn a_run_with_no_samples_says_so_in_the_cores_words() {
     assert!(body["outside"].is_null());
     assert_eq!(
         body["unavailable"].as_str(),
-        Some("zones unavailable — the run has no heart-rate samples")
+        Some("No zones yet — this run recorded no heart rate")
     );
 }
 

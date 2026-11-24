@@ -105,7 +105,7 @@ describe('missing readings', () => {
       date: params?.date ?? vitalsFixture.date,
     }))
     renderApp('/body')
-    await userEvent.selectOptions(await screen.findByLabelText('History window'), '90')
+    await userEvent.selectOptions(await screen.findByLabelText('History period'), '90')
     await waitFor(() => expect(vitals).toHaveBeenLastCalledWith({ date: undefined, days: 90 }))
     fireEvent.change(screen.getByLabelText('Date'), { target: { value: '2026-04-15' } })
     await waitFor(() =>

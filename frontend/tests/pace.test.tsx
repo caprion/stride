@@ -112,7 +112,7 @@ describe('the pace panel', () => {
 
     // The reason is the core's own words, and no band of zero is drawn.
     expect(bands.querySelector('[data-testid="pace-bands-empty"]')?.textContent).toContain(
-      'no moving samples',
+      'none of the runs in this period recorded a pace',
     )
     expect(bands.querySelector('[data-testid="pace-bands-rows"]')).toBeNull()
   })

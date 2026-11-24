@@ -80,10 +80,10 @@ export const catalogue = {
   'nav.foot.two': { type: 'statement', text: 'Every number here is your own.' },
   'common.local': { type: 'status', text: 'Stored on this device' },
   'common.saved': { type: 'statement', text: 'Your history is stored locally on this device.' },
-  'history.previousWeek': { type: 'status', text: 'Previous week' },
-  'history.nextWeek': { type: 'status', text: 'Next week' },
-  'history.previousMonth': { type: 'status', text: 'Previous month' },
-  'history.nextMonth': { type: 'status', text: 'Next month' },
+  'history.previousWeek': { type: 'status', text: 'A week earlier' },
+  'history.nextWeek': { type: 'status', text: 'A week later' },
+  'history.previousMonth': { type: 'status', text: 'A month earlier' },
+  'history.nextMonth': { type: 'status', text: 'A month later' },
   'history.invalidRange': {
     type: 'status',
     text: 'The through date is before the from date.',
@@ -96,7 +96,7 @@ export const catalogue = {
   'runs.calendar.hide': { type: 'status', text: 'Hide calendar' },
   'runs.calendar.note': {
     type: 'status',
-    text: 'Dots mark saved activities, not complete source coverage.',
+    text: 'Dots mark saved runs, not complete source coverage.',
   },
   'progress.summary.sessions': { type: 'status', text: 'Recorded sessions' },
   'progress.summary.weeks': { type: 'status', text: 'Weeks with activity' },
@@ -104,7 +104,7 @@ export const catalogue = {
   'progress.viewRuns': { type: 'status', text: 'View runs this week' },
   'activity.zones.basis': {
     type: 'status',
-    text: 'Bands from your own zone model.',
+    text: 'Bands from your own zones.',
   },
   'activity.zones.stopped': { type: 'status', text: 'Not moving' },
   'activity.zones.missing': { type: 'status', text: 'Time outside your zones' },
@@ -123,8 +123,8 @@ export const catalogue = {
   // ------------------------------------------------------------- today
   'today.heading': { type: 'status', text: 'Today' },
   'today.session.source.imported': { type: 'status', text: 'from your imported plan' },
-  'today.session.source.baseline': { type: 'status', text: 'from your inferred baseline' },
-  'today.session.source.typed': { type: 'status', text: 'from your plan' },
+  'today.session.source.baseline': { type: 'status', text: 'from your usual week' },
+  'today.session.source.typed': { type: 'status', text: 'from your typed plan' },
   'today.options.heading': { type: 'status', text: 'Also in your plan' },
   'today.lastRun.label': { type: 'status', text: 'Last run' },
   /**
@@ -163,9 +163,9 @@ export const catalogue = {
   'today.hero.open': { type: 'status', text: 'Open the run' },
   'today.hero.zones': { type: 'status', text: 'Time in zones' },
   'today.week.against': { type: 'status', text: '{difference} against {from} – {to}' },
-  'today.form.label': { type: 'status', text: 'Form' },
-  'today.form.ratio': { type: 'status', text: 'the acute-to-chronic ratio is {ratio}' },
-  'today.form.band': { type: 'status', text: 'the band is {band}' },
+  'today.form.label': { type: 'status', text: 'The difference' },
+  'today.form.ratio': { type: 'status', text: '{ratio} times the last 6 weeks' },
+  'today.form.band': { type: 'status', text: 'the usual range is {band}' },
   'today.form.asOf': { type: 'status', text: 'as of {date}' },
   'today.habit.label': { type: 'status', text: 'The habit' },
   'today.habit.day': { type: 'status', text: '{n} day in a row' },
@@ -173,10 +173,13 @@ export const catalogue = {
   'today.habit.month': { type: 'status', text: '{n} month in a row' },
   'today.habit.months': { type: 'status', text: '{n} months in a row' },
   'today.habit.months.none': { type: 'status', text: 'no months in a row' },
-  'today.habit.eddington': { type: 'status', text: 'Eddington {number} over {from} – {to}' },
+  'today.habit.eddington': {
+    type: 'status',
+    text: '{number} km on at least {number} days, over {from} – {to}',
+  },
   'today.habit.eddington.empty': {
     type: 'status',
-    text: 'No recorded distance in this window, so there is no number.',
+    text: 'No recorded distance in this period, so there is no number.',
   },
   'today.state.noData': {
     type: 'status',
@@ -227,7 +230,7 @@ export const catalogue = {
    */
   'vital.rest.heading': { type: 'vital', text: 'Last night' },
   'vital.distance': { type: 'vital', text: 'Distance' },
-  'vital.time': { type: 'vital', text: 'Time' },
+  'vital.time': { type: 'vital', text: 'Time you were running' },
   'vital.pace': { type: 'vital', text: 'Pace' },
   'vital.heartRate': { type: 'vital', text: 'Heart rate' },
   'vital.sleep': { type: 'vital', text: 'Sleep' },
@@ -248,18 +251,18 @@ export const catalogue = {
   'runs.group.thisWeek': { type: 'status', text: 'This week' },
   'runs.group.date': { type: 'status', text: '{date}' },
   'runs.group.total': { type: 'status', text: '{distance} · {time}' },
-  'runs.empty.title': { type: 'status', text: 'No activities yet' },
-  'runs.empty.body': { type: 'status', text: 'Activities appear here after the first sync' },
+  'runs.empty.title': { type: 'status', text: 'No runs yet' },
+  'runs.empty.body': { type: 'status', text: 'Runs appear here after the first sync' },
   'runs.import': { type: 'status', text: 'Import a FIT file' },
   'runs.importing': { type: 'status', text: 'Importing…' },
   'runs.duplicate': { type: 'status', text: 'Already have this run ({date}, {distance})' },
   'runs.compareWith': { type: 'status', text: 'Compare with…' },
   'runs.addNote': { type: 'status', text: 'Add a note' },
   'runs.loadMore': { type: 'status', text: 'Load more' },
-  'runs.search': { type: 'status', text: 'Search saved activities' },
+  'runs.search': { type: 'status', text: 'Search saved runs' },
   'runs.from': { type: 'status', text: 'From date' },
   'runs.to': { type: 'status', text: 'Through date' },
-  'runs.noMatches': { type: 'status', text: 'No saved activities match these filters.' },
+  'runs.noMatches': { type: 'status', text: 'No saved runs match these filters.' },
   'runs.select': { type: 'status', text: 'Select {date} for comparison' },
   'runs.selected': { type: 'status', text: '{n} of 2 runs selected' },
   'runs.compareSelected': { type: 'status', text: 'Compare selected runs' },
@@ -291,7 +294,7 @@ export const catalogue = {
   'progress.wall.runs.day': { type: 'status', text: 'The runs of {date}' },
   'progress.wall.runs.week': { type: 'status', text: 'The runs of the week starting {date}' },
   'progress.wall.runs.month': { type: 'status', text: 'The runs of {month}' },
-  'progress.wall.window.weeks': { type: 'status', text: 'The weeks of the window' },
+  'progress.wall.window.weeks': { type: 'status', text: 'The weeks of the period' },
   /*
     The eleven cards of the wall.
 
@@ -302,7 +305,7 @@ export const catalogue = {
     the schedule, the habit and the goals.
   */
   'progress.wall.thisWeek.heading': { type: 'status', text: 'This week' },
-  'progress.wall.load.heading': { type: 'status', text: 'The load' },
+  'progress.wall.load.heading': { type: 'status', text: 'Training load' },
   'progress.wall.weeks.heading': { type: 'status', text: 'The weeks' },
   'progress.wall.time.heading': { type: 'status', text: 'Where the time went' },
   'progress.wall.shape.heading': { type: 'status', text: 'Your shape' },
@@ -318,24 +321,24 @@ export const catalogue = {
   */
   'progress.wall.week.picture': {
     type: 'status',
-    text: 'This week, and the same days of the previous week.',
+    text: 'This week, and the same days, a week earlier.',
   },
   'progress.wall.week.now': { type: 'status', text: 'this week' },
-  'progress.wall.week.previous': { type: 'status', text: 'the same days of the previous week' },
+  'progress.wall.week.previous': { type: 'status', text: 'the same days, a week earlier' },
   'progress.wall.week.difference': {
     type: 'status',
-    text: '{difference} against the same days of the previous week',
+    text: '{difference} against the same days, a week earlier',
   },
   'progress.wall.time.picture': { type: 'status', text: 'The time in each of the five zones.' },
-  'progress.wall.bests.empty': { type: 'status', text: 'No run recorded in the window.' },
-  'progress.wall.shape.empty': { type: 'status', text: 'No run recorded in the window.' },
+  'progress.wall.bests.empty': { type: 'status', text: 'No runs recorded.' },
+  'progress.wall.shape.empty': { type: 'status', text: 'No runs recorded.' },
   'progress.wall.schedule.timeOfDay': { type: 'status', text: 'the time of day' },
   'progress.wall.habit.picture': {
     type: 'status',
-    text: 'A mark for every day of the window, filled where the day held a run.',
+    text: 'A mark for every day of the period, filled where the day held a run.',
   },
   'progress.wall.habit.streak': { type: 'status', text: '{count} days in a row' },
-  'progress.wall.habit.eddington': { type: 'status', text: 'Eddington {n}' },
+  'progress.wall.habit.eddington': { type: 'status', text: '{n} km on at least {n} days' },
   'progress.wall.pace.heading': { type: 'status', text: 'The pace' },
   'progress.wall.pace.weeks': { type: 'status', text: '{n} weeks' },
   'progress.wall.pace.note': {
@@ -344,7 +347,7 @@ export const catalogue = {
   },
   'progress.wall.week.distance': { type: 'status', text: 'Distance this week' },
   'progress.wall.week.sessions': { type: 'status', text: 'Recorded sessions' },
-  'progress.wall.week.before': { type: 'status', text: 'The days before' },
+  'progress.wall.week.before': { type: 'status', text: 'A week earlier' },
   'progress.wall.week.window': {
     type: 'status',
     text: '{from} – {to}, against {beforeFrom} – {beforeTo}.',
@@ -419,7 +422,7 @@ export const catalogue = {
   'progress.bests.heading': { type: 'status', text: 'Bests & milestones' },
   'progress.consistency.heading': { type: 'status', text: 'Consistency' },
   'progress.consistency.unit': { type: 'status', text: 'sessions a week' },
-  'progress.adherence.heading': { type: 'status', text: 'Adherence' },
+  'progress.adherence.heading': { type: 'status', text: 'Sessions run' },
   'progress.adherence.count': { type: 'status', text: '{done} of {planned} sessions run' },
   /**
    * The Eddington number: consistency over peaks.
@@ -429,16 +432,16 @@ export const catalogue = {
    * next number are days at one kilometre more. The note carries no
    * number of its own, so it stays true when the window changes.
    */
-  'progress.eddington.heading': { type: 'status', text: 'Eddington number' },
+  'progress.eddington.heading': { type: 'status', text: 'A distance, and the days you reach it' },
   'progress.eddington.note': {
     type: 'status',
-    text: 'The number counts the days you covered at least that many kilometres. The days to the next number are days at one kilometre more.',
+    text: 'The number is a distance, and the days are the days you reached that distance or more. The days to the next one are days at one kilometre more.',
   },
-  'progress.eddington.daysToNext': { type: 'status', text: 'Days to the next number' },
+  'progress.eddington.daysToNext': { type: 'status', text: 'Days to the next distance' },
   'progress.eddington.longestDay': { type: 'status', text: 'Longest distance in a day' },
   'progress.eddington.empty': {
     type: 'status',
-    text: 'No recorded distance in this window, so there is no number.',
+    text: 'No recorded distance in this period, so there is no number.',
   },
   /**
    * The training load.
@@ -454,52 +457,52 @@ export const catalogue = {
    */
   'progress.load.heading': { type: 'status', text: 'Training load' },
   'progress.load.asOf': { type: 'status', text: 'as of {date}' },
-  'progress.load.acute': { type: 'status', text: 'Acute load' },
-  'progress.load.chronic': { type: 'status', text: 'Chronic load' },
-  'progress.load.form': { type: 'status', text: 'Form' },
-  'progress.load.ratio': { type: 'status', text: 'Acute-to-chronic ratio' },
-  'progress.load.band': { type: 'status', text: 'The band is {band}' },
-  'progress.load.week.heading': { type: 'status', text: 'The last seven days' },
-  'progress.load.impulse': { type: 'status', text: 'Weekly impulse' },
-  'progress.load.monotony': { type: 'status', text: 'Monotony' },
-  'progress.load.strain': { type: 'status', text: 'Strain' },
-  'progress.load.window': { type: 'status', text: 'The window: {from} – {to}' },
+  'progress.load.acute': { type: 'status', text: 'The last 7 days' },
+  'progress.load.chronic': { type: 'status', text: 'The last 6 weeks' },
+  'progress.load.form': { type: 'status', text: 'The difference' },
+  'progress.load.ratio': { type: 'status', text: 'Times the last 6 weeks' },
+  'progress.load.band': { type: 'status', text: 'The usual range is {band}' },
+  'progress.load.week.heading': { type: 'status', text: 'The last 7 days' },
+  'progress.load.impulse': { type: 'status', text: 'The load of the week' },
+  'progress.load.monotony': { type: 'status', text: 'How even the week was' },
+  'progress.load.strain': { type: 'status', text: 'The week as one effort' },
+  'progress.load.window': { type: 'status', text: 'The period: {from} – {to}' },
   /*
     The charts of the load: the series over the window, the load of each
     day, and the form the scenario projects. The charts draw what the
     answer already carried — the shape of the training was on the wire
     and not on the screen.
   */
-  'progress.load.series.heading': { type: 'status', text: 'The load over the window' },
+  'progress.load.series.heading': { type: 'status', text: 'The load over the period' },
   'progress.load.series.note': {
     type: 'statement',
-    text: 'The acute load, the chronic load and the form. The form is positive above the line.',
+    text: 'The load of the last 7 days, the load of the last 6 weeks, and the difference. The difference is positive above the line.',
   },
   'progress.load.days.heading': { type: 'status', text: 'The load of each day' },
   'progress.load.days.note': {
     type: 'statement',
     text: 'A day with no training has a load of zero, and a day with nothing to weigh has no load.',
   },
-  'progress.load.projection.heading': { type: 'status', text: 'The form, projected' },
+  'progress.load.projection.heading': { type: 'status', text: 'The difference, projected' },
   'progress.load.projection.note': {
     type: 'status',
     text: 'The next {n} days, with no training.',
   },
   'progress.load.empty.no_zone_model': {
     type: 'status',
-    text: 'No zone model has been read, so there is no load to show.',
+    text: "Your watch's zones have not come through, so there is no load to show.",
   },
   'progress.load.empty.no_max_heart_rate': {
     type: 'status',
-    text: 'The stored zone model carries no maximum heart rate, so there is no load to show.',
+    text: "Your watch's zones carry no maximum heart rate, so there is no load to show.",
   },
   'progress.load.empty.unusable_zone_model': {
     type: 'status',
-    text: "The stored zone model's floors are not in order, so there is no load to show.",
+    text: "Your watch's zones do not start in order, so there is no load to show.",
   },
   'progress.load.empty.no_history': {
     type: 'status',
-    text: 'No recorded days in this window, so there is no load to show.',
+    text: 'No recorded days in this period, so there is no load to show.',
   },
   'progress.load.empty.other': {
     type: 'status',
@@ -516,7 +519,7 @@ export const catalogue = {
   'progress.partial': { type: 'status', text: 'Striped bar: this week is still in progress.' },
   'progress.scope': {
     type: 'status',
-    text: 'Saved activity history; gaps are not confirmed rest weeks. History may still be arriving.',
+    text: 'Saved running history; gaps are not confirmed rest weeks. History may still be arriving.',
   },
   'progress.paceNote': {
     type: 'status',
@@ -538,60 +541,63 @@ export const catalogue = {
    * The window is named on the card, so a number is never read apart from
    * the period it describes.
    */
-  'progress.rolling.heading': { type: 'status', text: 'Rolling window' },
+  'progress.rolling.heading': { type: 'status', text: 'Against a week earlier' },
   'progress.rolling.window': { type: 'status', text: 'The last {days} days' },
   'progress.rolling.range': { type: 'status', text: '{from} – {to}' },
-  'progress.rolling.before': { type: 'status', text: 'The {days} days before' },
+  'progress.rolling.before': { type: 'status', text: 'The same {days} days, a week earlier' },
   'progress.rolling.difference': { type: 'status', text: 'Difference' },
   'progress.rolling.sessions': { type: 'status', text: 'Runs' },
   'progress.rolling.zones.heading': { type: 'status', text: 'Time in zones' },
   'progress.rolling.zones.distribution': { type: 'status', text: 'By zone' },
   'progress.rolling.zones.models': {
     type: 'status',
-    text: 'The models this window was measured against',
+    text: 'The zones this period was measured against',
   },
   'progress.profile.heading': { type: 'status', text: 'Training profile' },
-  'progress.profile.facets.note': { type: 'status', text: 'What the window holds.' },
+  'progress.profile.facets.note': { type: 'status', text: 'What the period holds.' },
 
   /**
-   * The athlete's shape: the same six facets of the training, over three
-   * windows, drawn on one chart.
+   * The athlete's shape: the same six measures of the training, over three
+   * periods, drawn on one chart.
    *
    * The chart is the athlete's own — every axis is scaled to the largest
-   * of the three windows' values, so the three shapes are read against
+   * of the three periods' values, so the three shapes are read against
    * each other and not against anybody's idea of a good week.
    */
   'progress.shape.heading': { type: 'status', text: 'Your shape' },
   'progress.shape.note': {
     type: 'status',
-    text: 'Six facets of your training, over three windows, on one chart.',
+    text: 'Six measures of your training, over three periods, on one chart.',
   },
   'progress.shape.scale': {
     type: 'status',
-    text: 'Each axis is scaled to the largest of the three windows.',
+    text: 'Each axis is scaled to the largest of the three periods.',
   },
   'progress.shape.rates': {
     type: 'status',
-    text: 'The volume is a distance a week and the consistency the share of the days, so the windows can be read against each other.',
+    text: 'The volume is a distance a week and the consistency the share of the days, so the periods can be read against each other.',
   },
   'progress.shape.alt': {
     type: 'status',
-    text: 'Six axes, with the shape of each of the three windows drawn on them.',
+    text: 'Six axes, with the shape of each of the three periods drawn on them.',
   },
   'progress.shape.empty': {
     type: 'status',
-    text: 'This window holds no run, so it has no shape.',
+    text: 'This period holds no runs, so it has no shape.',
   },
-  'progress.shape.axis': { type: 'status', text: 'Facet' },
+  'progress.shape.axis': { type: 'status', text: 'Measure' },
   'progress.shape.window': { type: 'status', text: 'The last {days} days' },
-  'progress.shape.previous': { type: 'status', text: 'the {days} days before' },
+  'progress.shape.previous': { type: 'status', text: 'the same {days} days, a week earlier' },
   'progress.shape.legend': { type: 'status', text: 'last {days} days' },
   'progress.shape.movement': { type: 'status', text: 'Movement' },
-  'progress.rolling.trend.up': { type: 'status', text: 'up on the {days} days before' },
-  'progress.rolling.trend.down': { type: 'status', text: 'down on the {days} days before' },
+  'progress.rolling.trend.up': { type: 'status', text: 'up on the same {days} days, a week earlier' },
+  'progress.rolling.trend.down': {
+    type: 'status',
+    text: 'down on the same {days} days, a week earlier',
+  },
   'progress.rolling.trend.steady': {
     type: 'status',
-    text: 'the same as the {days} days before',
+    text: 'the same as the {days} days, a week earlier',
   },
   'progress.rolling.trend.up.short': { type: 'status', text: 'up' },
   'progress.rolling.trend.down.short': { type: 'status', text: 'down' },
@@ -635,12 +641,12 @@ export const catalogue = {
   'progress.index.days': { type: 'status', text: '{n} days' },
   'progress.index.week': { type: 'status', text: '{n} week' },
   'progress.index.weeks': { type: 'status', text: '{n} weeks' },
-  'progress.index.eddington': { type: 'status', text: 'Eddington {n}' },
+  'progress.index.eddington': { type: 'status', text: '{n} km on at least {n} days' },
   'progress.index.pace.week': { type: 'status', text: 'The week of {date}' },
   'progress.index.pace.weeks': { type: 'status', text: 'The last {n} weeks' },
   'progress.index.habit.window': {
     type: 'status',
-    text: 'The Eddington number over {from} – {to}',
+    text: 'The distance and the days, over {from} – {to}',
   },
   'progress.back': { type: 'status', text: 'Back to Progress' },
 
@@ -670,7 +676,7 @@ export const catalogue = {
   'pace.empty.title': { type: 'status', text: 'Nothing to show yet' },
   'pace.empty.body': {
     type: 'status',
-    text: 'No run in this window. The pace is read from the runs that are saved.',
+    text: 'No run in this period. The pace is read from the runs that are saved.',
   },
 
   /*
@@ -682,12 +688,12 @@ export const catalogue = {
    */
   'year.heading': { type: 'status', text: 'The year' },
   'year.back': { type: 'status', text: 'Back to Progress' },
-  'year.window': { type: 'status', text: 'The window: {from} – {to}' },
-  'year.comparison': { type: 'status', text: 'against the {days} days before' },
+  'year.window': { type: 'status', text: 'The period: {from} – {to}' },
+  'year.comparison': { type: 'status', text: 'against the same {days} days, a week earlier' },
   'year.months.heading': { type: 'status', text: 'The months' },
   'year.month.runs': { type: 'status', text: 'Runs' },
   'year.month.longest': { type: 'status', text: 'Longest run' },
-  'year.month.form': { type: 'status', text: 'Form at the end' },
+  'year.month.form': { type: 'status', text: 'The difference at the end' },
   'year.month.weeks': { type: 'status', text: 'The weeks of the month' },
   'year.month.mix': { type: 'status', text: 'Where the time went' },
   'year.month.high': { type: 'status', text: '{share} in the high zones' },
@@ -745,7 +751,7 @@ export const catalogue = {
   'body.additional.heading': { type: 'status', text: 'More measurements' },
   'body.history.controls': { type: 'status', text: 'Explore recorded history' },
   'body.history.date': { type: 'status', text: 'Date' },
-  'body.history.range': { type: 'status', text: 'History window' },
+  'body.history.range': { type: 'status', text: 'History period' },
   'body.history.days': { type: 'status', text: '{n} days' },
   'body.history.latest': { type: 'status', text: 'Latest' },
   'body.additional.body': {
@@ -755,11 +761,11 @@ export const catalogue = {
   'body.howToRead.heading': { type: 'status', text: 'How to read this' },
   'body.howToRead.band': {
     type: 'status',
-    text: 'The band is the recent usual range for the selected date, not a medical reference range',
+    text: 'The range is the recent usual one for the selected date, not a medical reference range',
   },
   'body.howToRead.inside': {
     type: 'status',
-    text: 'Inside the band reads as about usual',
+    text: 'Inside the range reads as about usual',
   },
   'body.patterns.heading': { type: 'status', text: 'Patterns' },
   'body.history.label': { type: 'status', text: 'Last {n} nights' },
@@ -785,14 +791,14 @@ export const catalogue = {
 
   // ------------------------------------------------------------- plan
   'plan.heading': { type: 'status', text: 'Plan' },
-  'plan.source.baseline': { type: 'status', text: 'Baseline (inferred from your history)' },
-  'plan.source.prescribed': { type: 'status', text: 'Prescribed (imported)' },
-  'plan.source.typed': { type: 'status', text: 'Typed' },
+  'plan.source.baseline': { type: 'status', text: 'Your usual week (inferred from your history)' },
+  'plan.source.prescribed': { type: 'status', text: 'Your imported plan' },
+  'plan.source.typed': { type: 'status', text: 'Your typed plan' },
   'plan.day.today': { type: 'status', text: 'Today' },
   'plan.status.done': { type: 'status', text: 'done' },
   'plan.status.planned': { type: 'status', text: 'planned' },
   'plan.status.notDone': { type: 'status', text: 'not done' },
-  'plan.adherence.heading': { type: 'status', text: 'Adherence' },
+  'plan.adherence.heading': { type: 'status', text: 'Sessions run' },
   'plan.adherence.count': { type: 'status', text: '{done} of {planned} sessions run' },
   'plan.sources.heading': { type: 'status', text: 'Sources' },
   'plan.import': { type: 'status', text: 'Import a plan' },
@@ -806,7 +812,7 @@ export const catalogue = {
   'activity.story.heading': { type: 'status', text: 'What it meant' },
   'activity.effort.heading': { type: 'status', text: 'Effort' },
   'activity.splits.heading': { type: 'status', text: 'Splits' },
-  'activity.form.heading': { type: 'status', text: 'Form' },
+  'activity.form.heading': { type: 'status', text: 'The difference' },
   'activity.elevation.heading': { type: 'status', text: 'Elevation' },
   'activity.route.heading': { type: 'status', text: 'Route' },
   /*
@@ -883,7 +889,7 @@ export const catalogue = {
   'activity.route.startEnd': { type: 'status', text: 'Filled marker: start. Ring: finish.' },
   'activity.effort.cursor': {
     type: 'status',
-    text: 'Pace and heart rate share the same elapsed-time cursor, and the elevation has its own scale.',
+    text: 'Pace and heart rate share the same cursor along the whole run, and the elevation has its own scale.',
   },
 
   // --------------------------------------------------------- the run film
@@ -903,9 +909,9 @@ export const catalogue = {
   'film.speed': { type: 'status', text: 'The run plays at sixty times its own time.' },
   'film.chart.alt': {
     type: 'status',
-    text: "The run over time: the pace, the heart rate, the ground, and the athlete's own zones",
+    text: "The run over time: the pace, the heart rate, the ground, and your own zones",
   },
-  'film.elapsed': { type: 'status', text: 'Elapsed' },
+  'film.elapsed': { type: 'status', text: 'The whole run' },
   'film.ground': { type: 'status', text: 'Ground' },
   'film.now': { type: 'status', text: 'Right now' },
   'film.axis.pace': { type: 'status', text: 'Pace — faster is higher' },
@@ -943,24 +949,24 @@ export const catalogue = {
   // The heatmap is a grid over the positions the stored runs carry, and it
   // is made on this device. The disclosure says so, in the app's own words:
   // the aggregation is local, and nothing is sent anywhere.
-  'heatmap.heading': { type: 'status', text: 'Heatmap' },
-  'heatmap.action': { type: 'status', text: 'Heatmap' },
+  'heatmap.heading': { type: 'status', text: 'Where you run' },
+  'heatmap.action': { type: 'status', text: 'Where you run' },
   'heatmap.disclosure': {
     type: 'status',
-    text: 'The heatmap is made on this device from the stored runs. Nothing is sent anywhere.',
+    text: 'The map is made on this device from the stored runs. Nothing is sent anywhere.',
   },
-  'heatmap.summary': { type: 'status', text: '{runs} runs in {cells} cells' },
+  'heatmap.summary': { type: 'status', text: '{runs} runs in {cells} places' },
   'heatmap.outside': {
     type: 'status',
     text: '{n} runs are in other places, outside this picture.',
   },
-  'heatmap.cellSize': { type: 'status', text: 'Each cell is about {size} across' },
+  'heatmap.cellSize': { type: 'status', text: 'Each square is about {size} across' },
   'heatmap.legend.one': { type: 'status', text: '1 run' },
   'heatmap.legend.many': { type: 'status', text: '{n} runs' },
   'heatmap.empty.title': { type: 'status', text: 'No run has a saved route yet' },
   'heatmap.empty.body': {
     type: 'status',
-    text: 'The heatmap is made from the routes in the stored runs.',
+    text: 'The map is made from the routes in the stored runs.',
   },
   'heatmap.moreRuns': {
     type: 'status',
@@ -968,7 +974,7 @@ export const catalogue = {
   },
   'heatmap.alt': {
     type: 'status',
-    text: 'A grid of cells, shaded by how many runs went through each cell',
+    text: 'A grid of squares, shaded by how many runs went through each square',
   },
   // --------------------------------------------------------- settings
   'settings.heading': { type: 'status', text: 'Data & connection' },
