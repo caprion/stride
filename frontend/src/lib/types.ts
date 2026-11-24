@@ -225,6 +225,23 @@ export interface AdoptedWeek {
   pacing: PlanPacing
   /** The tier's entry requirement beside the athlete's own mileage. */
   entry: PlanEntry
+  /** The race week, moved to the day the athlete races. */
+  shift: PlanShift | null
+}
+
+/**
+ * The race week, moved to the day the athlete races.
+ *
+ * The move is a **fact**: the week says how far it moved and which
+ * sessions it left out.
+ */
+export interface PlanShift {
+  /** The days the week moved: negative is earlier. */
+  days: number
+  /** The line: "your race is on Saturday · this week's sessions are earlier a day". */
+  line: string | null
+  /** The sessions that are not in this week. */
+  dropped: string[]
 }
 
 /** One session of the adopted plan. */

@@ -149,7 +149,13 @@ fn plan_of(
             printed_volume_m: printed,
             volume_check: plan_bases::volume_check_of(cells, printed),
             sessions,
-            shift: None,
+            // The race week may have moved to the day the athlete races:
+            // the book's own rule, and the move is stated as a fact.
+            shift: if *number == 0 {
+                programme.and_then(|programme| plan_bases::race_week_shift(programme, race_date))
+            } else {
+                None
+            },
         });
     }
 
@@ -229,16 +235,24 @@ fn session_of(row: &stride_store::AdoptedSession) -> Option<AdoptedSession> {
     })
 }
 
-/// The first and the last day of a week's sessions.
+/// The first and the last day of a week.
+///
+/// The week is the **calendar** week the plan's own sessions fall in: the
+/// Monday of the latest week the sessions touch, and the Sunday six days
+/// later. A race week that was moved — the goal race on another day — may
+/// hold a session that falls outside its own week, and the week says the
+/// days it runs on anyway.
 ///
 /// A week with no sessions has no days of its own, and the plan's own
 /// first day stands in for it.
 fn bounds_of(sessions: &[AdoptedSession], fallback: Date) -> (Date, Date) {
-    let first = sessions.iter().map(|session| session.date).min();
-    let last = sessions.iter().map(|session| session.date).max();
-    match (first, last) {
-        (Some(first), Some(last)) => (first, last),
-        _ => (fallback, fallback),
+    let monday = sessions
+        .iter()
+        .map(|session| crate::routes::week_start(session.date))
+        .max();
+    match monday {
+        Some(monday) => (monday, monday.add_days(6)),
+        None => (fallback, fallback),
     }
 }
 
@@ -413,6 +427,16 @@ pub fn week_row(week: &stride_core::plan_bases::WeekReading) -> crate::dto::Adop
         source_line: week.source.line.clone(),
         pacing: pacing_row(&week.pacing),
         entry: entry_row(&week.entry),
+        shift: week.shift.as_ref().map(shift_row),
+    }
+}
+
+/// The race week, moved to the day the athlete races.
+fn shift_row(shift: &stride_core::plan_bases::ShiftReading) -> crate::dto::ShiftRow {
+    crate::dto::ShiftRow {
+        days: shift.days,
+        line: shift.line.clone(),
+        dropped: shift.dropped.clone(),
     }
 }
 

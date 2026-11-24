@@ -1450,6 +1450,46 @@ impl AdoptionRefusal {
     }
 }
 
+/// The race week, moved to the day the athlete races.
+///
+/// The book's own rule for a race on another day is to move the race week
+/// alone: no other week moves, and the move is stated as a fact. The
+/// sessions that fall outside the week are **not** in it, and the shift
+/// names them.
+///
+/// `None` when the race falls on the book's own day: the week did not
+/// move.
+pub fn race_week_shift(programme: &Programme, race_date: Date) -> Option<RaceWeekShift> {
+    let week = programme.race_week()?;
+    let book = week
+        .days
+        .iter()
+        .find(|day| day.kind == SessionKind::GoalRace)?
+        .weekday;
+    let days = weekday_index(race_date.weekday()) - weekday_index(book);
+    if days == 0 {
+        return None;
+    }
+    let mut dropped = Vec::new();
+    for day in week.days.iter() {
+        let index = weekday_index(day.weekday) + days;
+        if (0..=6).contains(&index) {
+            continue;
+        }
+        // The session falls outside the week: it is not in this week, and
+        // the week says which one it was.
+        dropped.push(DroppedSession {
+            weekday: day.weekday.name().to_string(),
+            kind: day.kind.word(),
+        });
+    }
+    Some(RaceWeekShift {
+        days,
+        race_weekday: race_date.weekday().name().to_string(),
+        dropped,
+    })
+}
+
 /// The paces the plan was worked out with.
 #[derive(Clone, Debug, PartialEq)]
 struct PlanPaces {
@@ -1569,20 +1609,9 @@ pub fn adopt(input: &AdoptionInput) -> Result<AdoptedPlan, AdoptionRefusal> {
     let paces = plan_paces(input, option.distance_m, tune_up_distance_m);
     let pacing = pacing_of(input);
 
-    // The book's own day for the goal race, and the shift the athlete's
-    // race day asks for.
-    let book_race_day = programme
-        .race_week()
-        .and_then(|week| {
-            week.days
-                .iter()
-                .find(|day| day.kind == SessionKind::GoalRace)
-        })
-        .map(|day| day.weekday);
-    let shift_days = match book_race_day {
-        Some(book) => weekday_index(input.race_date.weekday()) - weekday_index(book),
-        None => 0,
-    };
+    // The shift the athlete's race day asks for.
+    let shift = race_week_shift(programme, input.race_date);
+    let shift_days = shift.as_ref().map(|shift| shift.days).unwrap_or(0);
 
     let mut weeks = Vec::with_capacity(programme.weeks_detail.len());
     for template_week in programme.weeks_detail.iter() {

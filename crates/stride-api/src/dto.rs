@@ -1054,6 +1054,23 @@ pub struct AdoptedWeekRow {
     pub pacing: PacingRow,
     /// The tier's entry requirement beside the athlete's own mileage.
     pub entry: EntryRow,
+    /// The race week, moved to the day the athlete races.
+    pub shift: Option<ShiftRow>,
+}
+
+/// The race week, moved to the day the athlete races.
+///
+/// The move is a **fact**: the week says how far it moved and which
+/// sessions it left out.
+#[derive(Clone, Debug, PartialEq, Serialize)]
+pub struct ShiftRow {
+    /// The days the week moved: negative is earlier.
+    pub days: i64,
+    /// The line: "your race is on Saturday · this week's sessions are
+    /// earlier a day".
+    pub line: Option<String>,
+    /// The sessions that are not in this week.
+    pub dropped: Vec<String>,
 }
 
 /// One session of the adopted plan, as the plan reads it.

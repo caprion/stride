@@ -222,6 +222,37 @@ fn the_adopted_week_carries_its_seven_sessions_with_their_paces() {
 }
 
 #[test]
+fn a_race_on_another_day_moves_the_race_week_alone() {
+    let harness = Harness::empty("adopt-shift");
+    athlete(&harness);
+    // The race on the Saturday instead of the Sunday.
+    let (status, _) = post(
+        &harness,
+        "/plan/adopt",
+        r#"{"programme_id": "pfitzinger-half-marathon-tier-2", "race_date": "2027-01-23"}"#,
+    );
+    assert_eq!(status, 200);
+
+    // The race week is still the twelfth week, and its sessions moved a
+    // day earlier.
+    let answer = harness.ok_get("/plan/week?date=2027-01-18");
+    let adopted = &answer["adopted"];
+    assert_eq!(adopted["week"], 0);
+    assert_eq!(adopted["label"], "race week");
+    let sessions = adopted["sessions"].as_array().expect("the sessions");
+    // The week moved a day earlier: the Monday's session falls outside the
+    // week and is not in it, and the goal race is on the Saturday.
+    assert_eq!(sessions[0]["date"], "2027-01-18");
+    let race = sessions
+        .iter()
+        .find(|session| session["kind"] == "race")
+        .expect("the goal race");
+    assert_eq!(race["date"], "2027-01-23");
+    // And the race's own distance is the race's, not the printed miles.
+    assert_eq!(race["distance"], "21.1 km");
+}
+
+#[test]
 fn a_programme_the_catalogue_does_not_hold_is_refused() {
     let harness = Harness::empty("adopt-unknown");
     athlete(&harness);
