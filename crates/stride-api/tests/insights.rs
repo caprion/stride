@@ -147,7 +147,8 @@ fn the_curve_carries_the_relation_the_races_and_the_method_s_sessions() {
     let curve = body["curve"].as_array().expect("the curve");
     assert!(!curve.is_empty());
     let first = &curve[0];
-    assert!(first["percent_max"].as_f64().unwrap_or_default() > 0.0);
+    assert!(first["percent_max"]["raw"].as_f64().unwrap_or_default() > 0.0);
+    assert!(first["percent_max"]["text"].is_string());
     assert!(first["pace"]["text"].is_string());
 
     // The athlete's own races, as points.

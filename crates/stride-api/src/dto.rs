@@ -2985,8 +2985,9 @@ pub struct PacesInsight {
 pub struct CurvePointRow {
     /// The duration, in minutes.
     pub minutes: f64,
-    /// The share of the maximum the duration holds, as a fraction.
-    pub percent_max: f64,
+    /// The share of the maximum the duration holds: the core's words and
+    /// the number a chart draws.
+    pub percent_max: RenderedValue,
     /// The pace that costs it, in the core's own words.
     pub pace: Option<RenderedValue>,
 }
@@ -3000,8 +3001,8 @@ pub struct CurveRaceRow {
     pub time: String,
     /// The duration, in minutes.
     pub minutes: f64,
-    /// The share of the maximum the race held, as a fraction.
-    pub percent_max: f64,
+    /// The share of the maximum the race held.
+    pub percent_max: RenderedValue,
     /// The pace the race was run at.
     pub pace: Option<RenderedValue>,
     /// The day of the race, in the athlete's own calendar.

@@ -63,7 +63,12 @@ pub fn pacing_curve(api: &Api, request: &Request) -> ApiResult<Value> {
             .iter()
             .map(|point| CurvePointRow {
                 minutes: point.minutes,
-                percent_max: point.percent_max,
+                percent_max: render::percent(Some(point.percent_max * 100.0)).unwrap_or(
+                    crate::dto::RenderedValue {
+                        text: String::new(),
+                        raw: Some(point.percent_max * 100.0),
+                    },
+                ),
                 pace: render::pace(point.pace_s_per_km),
             })
             .collect(),
@@ -88,7 +93,12 @@ pub fn pacing_curve(api: &Api, request: &Request) -> ApiResult<Value> {
                 label: race.label.clone(),
                 time: stride_core::units::format_race_time(race.time_s),
                 minutes,
-                percent_max: vo2::percent_max_at(minutes),
+                percent_max: render::percent(Some(vo2::percent_max_at(minutes) * 100.0)).unwrap_or(
+                    crate::dto::RenderedValue {
+                        text: String::new(),
+                        raw: Some(vo2::percent_max_at(minutes) * 100.0),
+                    },
+                ),
                 pace: render::pace(pace),
                 date: race.race_date.clone(),
                 date_label: super::core_date(&race.race_date)
@@ -127,7 +137,12 @@ pub fn pacing_curve(api: &Api, request: &Request) -> ApiResult<Value> {
         let point = vo2::cost_curve(vdot, &[FIELD_TEST_MINUTES]);
         point.first().map(|point| CurvePointRow {
             minutes: point.minutes,
-            percent_max: point.percent_max,
+            percent_max: render::percent(Some(point.percent_max * 100.0)).unwrap_or(
+                crate::dto::RenderedValue {
+                    text: String::new(),
+                    raw: Some(point.percent_max * 100.0),
+                },
+            ),
             pace: render::pace(point.pace_s_per_km),
         })
     });

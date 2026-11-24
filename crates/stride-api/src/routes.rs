@@ -160,7 +160,7 @@ pub fn equivalents_of(ladder: &stride_core::training_paces::Ladder) -> Vec<Equiv
             pace: equivalent
                 .riegel_pace_s_per_km()
                 .and_then(|pace| stride_core::units::render_pace(Some(pace))),
-            difference_s: equivalent.difference_s,
+            difference_s: equivalent.difference_s.map(units::round_time_s),
         })
         .collect()
 }
