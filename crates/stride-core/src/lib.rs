@@ -5,60 +5,9 @@
 //! drawn from — is injected by the caller. That is what makes the golden
 //! corpus reproducible and the tests meaningful.
 //!
-//! * [`units`] — the contract's units, its rounding table and the human
-//!   rendering ("6 h 10 m", not "6.166 h"). Every rounding helper in the
-//!   crate lives here.
-//! * [`types`] — the domain types: [`types::Distance`], [`types::Duration`],
-//!   [`types::HeartRate`], [`types::Hrv`], [`types::Sleep`],
-//!   [`types::RestingHr`], [`types::Effort`]. "No value" is `None`, never `0`.
-//! * [`date`] — a civil date, with no clock and no timezone.
-//! * [`band`] — "usual": the median of the last 30 nights, and the band around
-//!   it, median ± 1.5 × MAD.
-//! * [`strings`] — the typed string catalogue and the lint that holds it to
-//!   `docs/contract/voice.md`.
-//! * [`rest`] — the "Rest" line: a count and a direction, never a verdict.
-//! * [`direction`] — the engine: a vital and its band become one of exactly
-//!   three words, with the arithmetic and the direction of travel beside it.
-//! * [`eddington`] — the Eddington number: consistency over peaks, counted
-//!   from the daily distance in kilometres or miles.
-//! * [`pattern`] — what usually happened, with its sample size, never from
-//!   fewer than three comparable days.
-//! * [`plan`] — the plan engine: the inferred baseline, the week, the
-//!   adherence, the results and the distance comparison.
-//! * [`statement`] — the sixth kind: a factual sentence about the data — the
-//!   distance comparison, the Progress headline, the Compare basis.
-//! * [`story`] — the one sentence every run carries: descriptive, never
-//!   evaluative, and read from the same primitives the charts read.
-//! * [`zones`] — the heart-rate zone model and the time-in-zone computation,
-//!   from the athlete's stored configuration, never a run's observed maximum.
-//! * [`pace`] — the pace bands: where a window's moving time went, by the
-//!   pace it was held at.
-//! * [`fingerprint`] — the run's own mechanics: the cadence, the pace and
-//!   the heart rate as they moved across the run, and the shares of the
-//!   moving time in the athlete's own zones. Observations, never a score.
-
-//! * [`streaks`] — the streaks: the current run of days (or weeks) and the
-//!   longest one, with the days they cover.
-//! * [`rolling`] — the rolling view: a window of days against the window
-//!   before it, the split of the training across the athlete's zones, the
-//!   weekday and daytime splits, the distance breakdown, and the monthly
-//!   and yearly tables.
-//! * [`profile`] — the athlete's shape over a window: seven facets, as
-//!   values with a direction of travel, never as a shape.
-
-//! * [`heatmap`] — the grid over the stored positions: a count of runs per
-//!   cell, computed on the device, never a route.
-//! * [`load`] — the training load: the daily series, the acute and chronic
-//!   loads, the form, the ratio, and the recovery scenario — a scenario
-//!   with its assumption attached, never a verdict.
-//! * [`year`] — the year: the months, the calendar of the days coloured by
-//!   the zones they were run in, and what changed against the athlete's
-//!   own past.
-//!
-//! The voice, in one line: facts first, no judgements. The app informs; it
-//! never instructs.
 
 pub mod band;
+
 pub mod challenges;
 pub mod date;
 pub mod direction;
@@ -80,6 +29,7 @@ pub mod streaks;
 pub mod strings;
 pub mod types;
 pub mod units;
+pub mod vo2;
 pub mod year;
 
 pub mod update;
