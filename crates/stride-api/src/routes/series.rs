@@ -8,6 +8,22 @@
 //! Every answer here is bounded: the file is bounded by the ingest crate's
 //! ceiling, and the number of points in an answer is bounded by the
 //! configuration.
+//!
+//! ## The one place a file is decoded
+//!
+//! [`decoded`] is the **single choke point** for every decode in the
+//! router — the pace page, the rolling view, the year, the heatmap, the
+//! run detail, the run film and the ledger all read their runs' files
+//! through it. A twelve-week window is about sixty runs, and without a
+//! cache every one of those files was decoded again on every read.
+//!
+//! The decode is held in the router's **bounded cache** (the `Api`'s
+//! `DecodeCache`): the run's id and the file's own SHA-256 are the key,
+//! the cache holds a fixed number of decoded runs, and the oldest is
+//! thrown away when it is full. **Only the decode is cached** — every
+//! derived series is recomputed on read, from the decoded file.
+
+use std::sync::Arc;
 
 use stride_core::pace::PacePoint;
 use stride_core::zones::{ZoneFloors, ZoneSample};
@@ -19,12 +35,29 @@ use crate::state::Api;
 use stride_core::units;
 
 /// The decoded FIT of a run, when there is one and it can be decoded.
-pub fn decoded(api: &Api, activity_id: i64) -> Option<FitActivity> {
+///
+/// **The decode is cached**, and the cache is bounded: the run's id and
+/// the file's own digest are the key, and a file that was re-imported
+/// has a new digest, so the old decode is never served for it.
+///
+/// The lock is not held across the decode: the file is read and decoded
+/// outside the cache's lock, and the result is put in afterwards.
+pub fn decoded(api: &Api, activity_id: i64) -> Option<Arc<FitActivity>> {
+    // The file's digest: the key the cache is checked against. It is a
+    // small read, and it is what makes a re-imported file invalidate its
+    // own entry.
+    let sha256 = api.store().fit_sha256(activity_id).ok()??;
+    if let Some(activity) = api.decoded_cache().get(activity_id, &sha256) {
+        return Some(activity);
+    }
     let blob = api.store().fit_blob(activity_id).ok()??;
     if blob.is_empty() || blob.len() > MAX_FIT_INPUT_BYTES {
         return None;
     }
-    decode_fit(&blob, "activity.fit").ok()
+    let activity = Arc::new(decode_fit(&blob, "activity.fit").ok()?);
+    api.decoded_cache()
+        .put(activity_id, &sha256, Arc::clone(&activity));
+    Some(activity)
 }
 
 /// The series of a run, read from its file.

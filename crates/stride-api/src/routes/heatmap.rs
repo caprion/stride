@@ -22,6 +22,8 @@
 //! database: like every other derived series, the grid is recomputed on
 //! read and never written down.
 
+use std::sync::Arc;
+
 use serde_json::Value;
 use stride_core::heatmap::{cell_size_m, heatmap as grid_of, Heatmap};
 use stride_core::units;
@@ -58,7 +60,7 @@ pub fn heatmap(api: &Api, _request: &Request) -> ApiResult<Value> {
     let more_runs = stored > selected.len() as i64;
 
     // The positions, decoded from the files the runs were stored with.
-    let decoded: Vec<FitActivity> = selected
+    let decoded: Vec<Arc<FitActivity>> = selected
         .iter()
         .filter_map(|run| super::series::decoded(api, run.id))
         .collect();

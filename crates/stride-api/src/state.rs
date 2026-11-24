@@ -17,11 +17,11 @@
 
 use std::fmt;
 use std::path::PathBuf;
-use std::sync::atomic::{AtomicI32, Ordering};
+use std::sync::atomic::{AtomicI32, AtomicU64, Ordering};
 use std::sync::{Arc, Mutex, MutexGuard, TryLockError};
 
 use chrono::{DateTime, SecondsFormat, Utc};
-use stride_ingest::{GarminClient, HttpTransport, ReqwestTransport, TransportError};
+use stride_ingest::{FitActivity, GarminClient, HttpTransport, ReqwestTransport, TransportError};
 use stride_store::{DatabaseKey, Store, StoreError};
 
 use crate::error::{ApiError, ApiResult};
@@ -204,6 +204,14 @@ pub struct Config {
     /// The baseline is inferred, and the weeks it was read from are said
     /// out loud: "your usual week, from the last 8 weeks".
     pub baseline_weeks: usize,
+    /// How many decoded runs the router holds in memory.
+    ///
+    /// **The decode cache is bounded.** A run's file is decoded on read,
+    /// and a twelve-week window is about sixty runs: without a bound the
+    /// router would hold every file it has ever decoded, and the phone
+    /// would run out of memory. Sixty-four holds a window's worth of runs
+    /// and evicts the oldest when it is full.
+    pub decode_cache_capacity: usize,
 }
 
 impl Default for Config {
@@ -226,6 +234,7 @@ impl Default for Config {
             utc_offset_minutes: 0,
             export_root: None,
             baseline_weeks: 8,
+            decode_cache_capacity: 64,
         }
     }
 }
@@ -240,6 +249,7 @@ pub struct Api {
     transport: Arc<dyn HttpTransport>,
     export: Mutex<Option<DatabaseKey>>,
     sync: Mutex<()>,
+    decoded: DecodeCache,
 }
 
 impl fmt::Debug for Api {
@@ -272,6 +282,7 @@ impl Api {
         clock: Arc<dyn Clock>,
         transport: Arc<dyn HttpTransport>,
     ) -> Self {
+        let capacity = config.decode_cache_capacity;
         Self {
             store,
             utc_offset_minutes: AtomicI32::new(config.utc_offset_minutes),
@@ -281,6 +292,7 @@ impl Api {
             transport,
             export: Mutex::new(None),
             sync: Mutex::new(()),
+            decoded: DecodeCache::new(capacity),
         }
     }
 
@@ -292,6 +304,15 @@ impl Api {
     /// The configuration.
     pub fn config(&self) -> &Config {
         &self.config
+    }
+
+    /// The decoded runs the router holds in memory.
+    ///
+    /// **The cache is the one place a file is decoded**, and it is
+    /// bounded: the oldest decoded run is thrown away when the cache is
+    /// full.
+    pub fn decoded_cache(&self) -> &DecodeCache {
+        &self.decoded
     }
 
     /// The host's current calendar offset, including daylight-saving changes.
@@ -503,6 +524,139 @@ impl Api {
                 "this device has no key for the export",
             )),
         }
+    }
+}
+
+/// One decoded run, in the cache.
+struct DecodedEntry {
+    /// The run's id.
+    activity_id: i64,
+    /// The SHA-256 of the file it was decoded from.
+    sha256: String,
+    /// The decoded file.
+    activity: Arc<FitActivity>,
+}
+
+/// The decoded runs the router holds in memory.
+///
+/// **What is cached is the decode, and nothing else.** Every derived
+/// series — the samples, the splits, the zones, the pace bands — is
+/// recomputed on read, from the decoded file, and the cache is not a
+/// place where a derived value is stored.
+///
+/// **The key is the run's identity and the file's own digest.** A file
+/// that is re-imported changes its digest, so the entry it had is not
+/// the entry it gets: a new file is never served from the old decode.
+///
+/// **The bound is a number of runs.** The cache holds
+/// `decode_cache_capacity` decoded files — sixty-four by default, which
+/// is a window's worth of runs — and throws the oldest away when it is
+/// full. The lock is held for the length of one lookup and never across
+/// a decode.
+pub struct DecodeCache {
+    /// The decoded runs, newest first.
+    entries: Mutex<Vec<DecodedEntry>>,
+    /// How many decoded runs the cache holds at most.
+    capacity: usize,
+    /// How many times a run was served from the cache.
+    hits: AtomicU64,
+    /// How many times a run had to be decoded.
+    misses: AtomicU64,
+}
+
+/// What the cache has done.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct DecodeCacheStats {
+    /// How many times a run was served from the cache.
+    pub hits: u64,
+    /// How many times a run had to be decoded.
+    pub misses: u64,
+    /// How many decoded runs the cache holds now.
+    pub entries: usize,
+    /// How many decoded runs the cache holds at most.
+    pub capacity: usize,
+}
+
+impl DecodeCache {
+    /// A cache that holds `capacity` decoded runs.
+    pub fn new(capacity: usize) -> Self {
+        Self {
+            entries: Mutex::new(Vec::new()),
+            capacity,
+            hits: AtomicU64::new(0),
+            misses: AtomicU64::new(0),
+        }
+    }
+
+    /// The decoded run, when the cache holds that file.
+    ///
+    /// The run's id **and** the file's digest must both match: a file
+    /// that was re-imported has a new digest, and the old decode is not
+    /// the new file.
+    pub fn get(&self, activity_id: i64, sha256: &str) -> Option<Arc<FitActivity>> {
+        let mut entries = self.lock();
+        let position = entries
+            .iter()
+            .position(|entry| entry.activity_id == activity_id);
+        let position = match position {
+            Some(position) => position,
+            None => {
+                // The cache holds no decode of this run: the file has to
+                // be decoded.
+                self.misses.fetch_add(1, Ordering::Relaxed);
+                return None;
+            }
+        };
+        if entries[position].sha256 != sha256 {
+            // The file behind this id changed: the decode that is held is
+            // of a file that is not there any more.
+            self.misses.fetch_add(1, Ordering::Relaxed);
+            return None;
+        }
+        let entry = entries.remove(position);
+        let activity = Arc::clone(&entry.activity);
+        entries.insert(0, entry);
+        self.hits.fetch_add(1, Ordering::Relaxed);
+        Some(activity)
+    }
+
+    /// Keep the decoded run, and throw the oldest away when the cache is
+    /// full.
+    pub fn put(&self, activity_id: i64, sha256: &str, activity: Arc<FitActivity>) {
+        let mut entries = self.lock();
+        entries.retain(|entry| entry.activity_id != activity_id);
+        entries.insert(
+            0,
+            DecodedEntry {
+                activity_id,
+                sha256: sha256.to_string(),
+                activity,
+            },
+        );
+        while entries.len() > self.capacity {
+            entries.pop();
+        }
+    }
+
+    /// What the cache has done.
+    pub fn stats(&self) -> DecodeCacheStats {
+        DecodeCacheStats {
+            hits: self.hits.load(Ordering::Relaxed),
+            misses: self.misses.load(Ordering::Relaxed),
+            entries: self.lock().len(),
+            capacity: self.capacity,
+        }
+    }
+
+    /// The lock on the cache.
+    ///
+    /// A poisoned lock is taken back rather than propagated: the cache
+    /// holds decoded files and counters, and neither is worth refusing
+    /// every read over.
+    fn lock(&self) -> MutexGuard<'_, Vec<DecodedEntry>> {
+        self.entries
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner())
     }
 }
 
