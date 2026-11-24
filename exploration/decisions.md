@@ -189,6 +189,56 @@ third-party summary), Norwegian Singles (LT1 lactate plus RPE and talk test).
 5. **No lens on a run's own page** — a run's page shows the run's own facts;
    a lens reads a window.
 
+## D23 — There is no zone-model history; the watch's own zone minutes are the fourth path (binds: ledger, sync, Pass 3)
+
+**The finding (verified against the spec and one live read):** the Garmin
+Personal API serves the zone configuration **as it stands now** — one record,
+no date, no effective-from (`/biometric-service/heartRateZones/v2`, its only
+parameter `generateDefaults`). **There is nothing to backfill.** The only date
+Stride can ever attach is the day it read it.
+
+So Z's rule leaves **every imported run** with no zone times — and the
+ledger's intensity rows would be empty over exactly the athlete's history.
+
+**The fourth path:** `hrTimeInZone_1..5` ride on the **search payload Stride
+already fetches** — **zero extra requests** — and fill 106 of 107 imported
+runs coherently (zone seconds sum to elapsed duration within 2 %). They
+cannot: give the zone **boundaries** (the app does not know what heart rate
+was zone 3 that day); agree by construction with the app's **moving-time**
+basis (the source sums to **elapsed**); say which configuration produced
+them; or exist for a run with no heart rate.
+
+**DECIDED by the user: option A.** **Two blocks**, each naming its basis,
+never added together: the app's own zone time (over the time the athlete was
+moving) and the watch's own zone minutes (over the whole run) for the runs
+with no model in force. The same discipline the ledger already uses for its
+intensity and shape families. The **overlap** — the weeks where both exist —
+is where the app checks its own arithmetic against the watch's, stated as a
+fact, with no verdict on which is right. Under option B there would be no
+overlap at all, and the app could never check itself.
+
+**Storage (proposal only, for Pass 3):** the watch's zone minutes belong in
+the `activity_observations` table (D10) — one row per activity per zone,
+with the source, the day the response carried it and the day it was read.
+
+## D24 — Precision belongs in the notes; the surface speaks the runner's language (binds: every surface)
+
+The user, on the language of the two-basis design: *"The language again — the
+watch's own zone minutes, elapsed time. We need to work on everything like
+that if we are showing that in the surface."*
+
+* The **notes** (the annotation layer) may use the precise terms — "elapsed
+  time", "moving time", "the zone model's floors", a field name — because a
+  note is written for someone reading *about* the product.
+* The **surface** is written for a runner looking at their own training: no
+  field names, no model names, no jargon, no internal vocabulary, and no
+  phrase that only makes sense to whoever wrote the code.
+* **The test:** *would a runner who has never read the code understand this
+  line without it being explained?* If not, it is too technical, too
+  abstract, or it is explanation that belongs in a note (D22).
+* Numbers and their formats are not touched — the app's own conventions
+  (`crates/stride-core/src/units.rs`) are the authority. **Words only.**
+
 ## D22 — Explanation is not product content (binds: every surface, every implementation)
 
 The user's words, after walking the end-to-end:
@@ -491,3 +541,25 @@ shape) · `thr_crvvnnhwtz` (the pace engine — design note and prototype).
 profile's five cards stay on the profile, and `PLAN.md` + `README.md` are
 corrected as part of the documentation pass. The consolidation thread's
 cut (24 wall cards → 11) is unchanged by this decision.
+
+---
+
+## D25 — The rig is recoverable (binds: every deployment)
+
+The user, 24 November 2026: *"as we deploy this, after completion, the current
+stride desktop rig — keep it as a separate branch we can recover easily."*
+
+**Two anchors, both on the remote:**
+
+| what | where it lives | how to recover |
+|---|---|---|
+| the **released rig** (v1.0.0, before any of this work) | the tag **`v1.0.0`** at `66432bb` | `git checkout v1.0.0` |
+| the **rig as it stands today** (Pass 1 + Pass 2) | the branch **`rig/window-zone-model-and-the-cut`** at `75d1627` | `git checkout rig/window-zone-model-and-the-cut` |
+
+Both are pushed to `origin` (`github.com/caprion/stride`), so they survive a
+lost disk.
+
+**The rule for every deployment from here:** before a release, cut a branch
+at the state being released and push it — the tag says *what* was shipped, the
+branch says *what it looked like the moment before the next thing landed*.
+Recovery is then a checkout, not an archaeology.
