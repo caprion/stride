@@ -46,7 +46,7 @@
   .body { flex:1; overflow-y:auto; padding:0 13px 13px; }
   .body::-webkit-scrollbar { width:0; }
 
-  .desktop { width:640px; border:1px solid #cfd8e0; border-radius:14px; background:var(--surface);
+  .desktop { width:660px; border:1px solid #cfd8e0; border-radius:14px; background:var(--surface);
     box-shadow:0 8px 26px rgba(17,43,64,.10); overflow:hidden; }
   .desktop .bar { padding:14px 18px 8px; border-bottom:1px solid var(--surface-sunken); }
   .desktop .body { padding:12px 18px 18px; overflow:visible; }
@@ -63,17 +63,16 @@
   .openlink { display:inline-block; margin-top:7px; font-size:11.5px; color:var(--brand-600);
     font-weight:600; text-decoration:underline; }
 
-
   /* ---------------- the pace ladder: two axes ---------------- */
   .ladder { display:block; width:100%; max-width:300px; height:auto; }
   svg text { font-family: var(--font); }
-  /* a halo, so a label stays readable where a line passes behind it */
+  /* a halo, so a label stays readable where a line passes under it */
   .ladder text { stroke: var(--surface); stroke-width:2.4; paint-order:stroke; stroke-linejoin:round; }
   .panel { font-size:8px; fill:var(--ink-faint); letter-spacing:.04em; }
   .axis-label { font-size:8px; fill:var(--ink-faint); }
   .rung-name { font-size:9.5px; fill:var(--ink-soft); }
   .rung-value { font-size:11px; font-weight:650; fill:var(--ink); }
-  .rung-rule { font-size:7.5px; fill:var(--ink-faint); }
+  .rung-rule { font-size:7px; fill:var(--ink-faint); }
   .bpm { font-size:7px; fill:var(--ink-muted); }
 
   /* ---------------- the physiological-cost curve ---------------- */
@@ -95,6 +94,28 @@
   .legend i.ring-grey { background:transparent; border:1.2px solid #7C8FA0; border-radius:99px; width:10px; height:10px; }
   .legend i.line-grey { width:14px; height:0; border:0; border-top:2px solid #7C8FA0; border-radius:0; }
   .legend i.line-amber { width:14px; height:0; border:0; border-top:3px solid #E8A33D; border-radius:0; }
+
+  .figcap { font-size:10px; line-height:1.4; color:var(--ink-faint); margin:6px 0 0; }
+
+  /* ---------------- the annotation layer ---------------- */
+  /* The product surface carries the picture, its labels, the numbers, the period,
+     the source, and the reason something is missing. Everything that explains the
+     design is a note, and the notes are off by default. */
+  .toggle-input { position:absolute; width:1px; height:1px; opacity:0; }
+  .annotation { display:none; }
+  .toggle-input:checked ~ .wrap .annotation { display:block; }
+  .toggle-input:checked ~ .wrap table.annotation { display:table; }
+  .toggle-input:checked ~ .wrap .vs.annotation { display:grid; }
+  .toggle-input:checked ~ .toolbar .chip .box { background:var(--brand-500); border-color:var(--brand-500); }
+  .toggle-input:checked ~ .toolbar .chip .box::after { content:''; position:absolute; left:4px; top:1px;
+    width:4px; height:8px; border:solid var(--surface); border-width:0 2px 2px 0; transform:rotate(42deg); }
+  .toolbar { display:flex; align-items:center; gap:12px; margin:0 0 16px; flex-wrap:wrap; }
+  .toolbar .hint { font-size:11.5px; color:var(--ink-faint); }
+  .chip { display:inline-flex; align-items:center; gap:7px; font-size:12px; color:var(--ink-soft);
+    border:1px solid var(--edge); border-radius:99px; padding:4px 12px 4px 8px; background:var(--surface);
+    cursor:pointer; user-select:none; }
+  .chip .box { width:14px; height:14px; border-radius:4px; border:1.5px solid var(--brand-500); flex:none;
+    position:relative; background:var(--surface); }
 
   .split { display:flex; gap:16px; align-items:flex-start; }
   .split > .ladderbox { flex:0 0 300px; }
@@ -121,27 +142,6 @@
   .rows li:last-child { border-bottom:0; }
   .rows .q { font-size:12px; color:var(--ink-soft); }
   .rows .v { font-size:12px; font-weight:650; color:var(--ink); font-variant-numeric:tabular-nums; }
-
-  /* ---------------- the annotation layer ---------------- */
-  /* The product surface carries the picture, its labels, the numbers, the period,
-     the source, and the reason something is missing. Everything that explains the
-     design is a note, and the notes are off by default. */
-  .toggle-input { position:absolute; width:1px; height:1px; opacity:0; }
-  .annotation { display:none; }
-  .toggle-input:checked ~ .wrap .annotation { display:block; }
-  .toggle-input:checked ~ .wrap table.annotation { display:table; }
-  .toggle-input:checked ~ .wrap .vs.annotation { display:grid; }
-  .toggle-input:checked ~ .toolbar .chip .box { background:var(--brand-500); border-color:var(--brand-500); }
-  .toggle-input:checked ~ .toolbar .chip .box::after { content:''; position:absolute; left:4px; top:1px;
-    width:4px; height:8px; border:solid var(--surface); border-width:0 2px 2px 0; transform:rotate(42deg); }
-  .toolbar { display:flex; align-items:center; gap:12px; margin:0 0 16px; flex-wrap:wrap; }
-  .toolbar .hint { font-size:11.5px; color:var(--ink-faint); }
-  .chip { display:inline-flex; align-items:center; gap:7px; font-size:12px; color:var(--ink-soft);
-    border:1px solid var(--edge); border-radius:99px; padding:4px 12px 4px 8px; background:var(--surface);
-    cursor:pointer; user-select:none; }
-  .chip .box { width:14px; height:14px; border-radius:4px; border:1.5px solid var(--brand-500); flex:none;
-    position:relative; background:var(--surface); }
-  .figcap { font-size:10px; line-height:1.4; color:var(--ink-faint); margin:6px 0 0; }
 
   .vs { display:grid; grid-template-columns:1fr 1fr; gap:16px; max-width:1080px; margin:10px 0 0; }
   .vs .col h3 { margin-bottom:6px; }
@@ -177,10 +177,9 @@
     heart-rate bands, on two axes. <b>The physiological-cost curve</b> (section 3) is a second
     reading on its own route, <span class="mono">/insights/pace-curve</span>, reached from the pace
     card — the user's words: <i>"I don't want to crowd it too much, but that kind of graph is
-    informational."</i> Both are built on the same chain: a typed race time → VDOT → the race
-    paces → the method's rules, with the rules cited in
-    <span class="mono">exploration/pace-engine.md</span>. Synthetic data, drawn in the browser, no
-    framework, no network.
+    informational."</i> Every number about the athlete on this page is read from
+    <span class="mono">exploration/athlete.js</span>, the canonical athlete; the markup holds no
+    athlete number of its own, so the prototype cannot drift from the rest of the product.
   </p>
 
   <h2><span class="n">1</span>The two-axis pace ladder</h2>
@@ -196,6 +195,13 @@
     The long run is <b>one rung with two ends</b>: it starts at the slow end of the early band
     and the arrow points at the faster end of the latter band, which is what the book asks for
     (ch. 1, ch. 7).
+    <br><br>
+    <b>The threshold band.</b> The book states the rule as the pace you could race for about an
+    hour, and places it at the athlete's 15K-to-10-mile race pace — two paces, not one. The engine
+    computes both from the same race time; the book's own band is narrow, and the rung draws the
+    wider span in which the hour pace falls, with the rule named on the rung itself. The band's
+    fast edge is the engine's 15K pace; a 45-minute time trial is the book's own route to the same
+    band, and the threshold setup owns the athlete-facing version of the five ways the book gives.
   </p>
 
   <div class="phones">
@@ -205,111 +211,8 @@
       <div class="phone">
         <div class="bar"><div><h1>Progress</h1><div class="meta">paces</div></div></div>
         <div class="body">
-
-          <div class="card">
-            <div class="h"><span>Training paces</span><span class="sub">VDOT 49.5 · Daniels' chain</span></div>
-            <svg class="ladder" viewBox="0 0 280 244" role="img" aria-label="A pace ladder with two axes. Heart rate on the left, with the athlete's own zone floors marked; pace on the right. Threshold, lactate threshold: the hour pace, 4:17 to 4:23 per kilometre, heart rate 149 to 169. The goal race, a half marathon: 4:23, heart rate 159 to 186. Marathon pace: 4:34, no heart-rate band. Long run: from 5:33 to 5:07, heart rate 138 to 156. General aerobic: 5:35 to 5:50, heart rate 130 to 151. Recovery: 5:38, below 141.">
-        <rect x="94" y="18" width="70" height="206" fill="#F7FAFC" rx="3"/>
-        <rect x="168" y="18" width="104" height="206" fill="#F7FAFC" rx="3"/>
-        <line x1="98" y1="18" x2="98" y2="224" stroke="#A9C8E8" stroke-width="1"/>
-        <line x1="117" y1="18" x2="117" y2="224" stroke="#A9C8E8" stroke-width="1"/>
-        <line x1="133" y1="18" x2="133" y2="224" stroke="#A9C8E8" stroke-width="1"/>
-        <line x1="145" y1="18" x2="145" y2="224" stroke="#A9C8E8" stroke-width="1"/>
-        <line x1="160" y1="18" x2="160" y2="224" stroke="#1E5E96" stroke-width="1.5"/>
-        <text class="panel" x="94" y="12">heart rate</text>
-        <text class="panel" x="168" y="12">pace</text>
-        <line x1="94" y1="224" x2="94" y2="227" stroke="#CEDAE4" stroke-width="1"/>
-        <text class="axis-label" x="94" y="236" text-anchor="start">120</text>
-        <line x1="124" y1="224" x2="124" y2="227" stroke="#CEDAE4" stroke-width="1"/>
-        <text class="axis-label" x="124" y="236" text-anchor="middle">150</text>
-        <line x1="154" y1="224" x2="154" y2="227" stroke="#CEDAE4" stroke-width="1"/>
-        <text class="axis-label" x="154" y="236" text-anchor="middle">180</text>
-        <line x1="168" y1="224" x2="168" y2="227" stroke="#CEDAE4" stroke-width="1"/>
-        <text class="axis-label" x="168" y="236" text-anchor="middle">4:10</text>
-        <line x1="215.3" y1="224" x2="215.3" y2="227" stroke="#CEDAE4" stroke-width="1"/>
-        <text class="axis-label" x="215.3" y="236" text-anchor="middle">5:00</text>
-        <line x1="262.5" y1="224" x2="262.5" y2="227" stroke="#CEDAE4" stroke-width="1"/>
-        <text class="axis-label" x="262.5" y="236" text-anchor="middle">5:50</text>
-        <line x1="180" y1="18" x2="180" y2="224" stroke="#2B7FE3" stroke-width="1.2" stroke-dasharray="4 3"/>
-        <text class="rung-name" x="88" y="28" text-anchor="end">Threshold (LT)</text>
-        <text class="rung-value" x="88" y="43" text-anchor="end">4:17–4:23</text>
-        <text class="rung-rule" x="88" y="54" text-anchor="end">the hour pace</text>
-        <rect x="123" y="29" width="20" height="14" rx="3" fill="#FEF8EA" stroke="#F2B01E" stroke-width="1"/>
-        <text class="bpm" x="162" y="39" text-anchor="end">149–169</text>
-        <line x1="174.2" y1="36" x2="180" y2="36" stroke="#E8A33D" stroke-width="2.5" stroke-linecap="round"/>
-        <text class="rung-name" x="88" y="62" text-anchor="end">The goal race</text>
-        <text class="rung-value" x="88" y="77" text-anchor="end">4:23</text>
-        <text class="rung-rule" x="88" y="88" text-anchor="end">your 12 Oct race</text>
-        <rect x="133" y="63" width="27" height="14" rx="3" fill="#E9F1FA" stroke="#A9C8E8" stroke-width="1"/>
-        <text class="bpm" x="162" y="73" text-anchor="end">159–186</text>
-        <text class="rung-name" x="88" y="96" text-anchor="end">Marathon pace</text>
-        <text class="rung-value" x="88" y="111" text-anchor="end">4:34</text>
-        <text class="rung-rule" x="88" y="122" text-anchor="end">the engine's own</text>
-        <text class="bpm" x="162" y="107" text-anchor="end">no band</text>
-        <circle cx="190.2" cy="104" r="3.6" fill="#7C8FA0"/>
-        <text class="rung-name" x="88" y="130" text-anchor="end">Long run</text>
-        <text class="rung-value" x="88" y="145" text-anchor="end">5:33 → 5:07</text>
-        <text class="rung-rule" x="88" y="156" text-anchor="end">10K × 1.20–1.33</text>
-        <rect x="112" y="131" width="18" height="14" rx="3" fill="#FEF8EA" stroke="#F2B01E" stroke-width="1"/>
-        <text class="bpm" x="162" y="141" text-anchor="end">138–156</text>
-        <line x1="246.2" y1="138" x2="222.2" y2="138" stroke="#E8A33D" stroke-width="3" stroke-linecap="round"/>
-        <polygon points="216.2,133 224.2,138 216.2,142" fill="#E8A33D"/>
-        <circle cx="246.2" cy="138" r="3.2" fill="#E8A33D"/>
-        <text class="rung-name" x="88" y="164" text-anchor="end">General aerobic</text>
-        <text class="rung-value" x="88" y="179" text-anchor="end">5:35–5:50</text>
-        <text class="rung-rule" x="88" y="190" text-anchor="end">no pace rule · yours</text>
-        <rect x="104" y="165" width="21" height="14" rx="3" fill="#FEF8EA" stroke="#F2B01E" stroke-width="1"/>
-        <text class="bpm" x="162" y="175" text-anchor="end">130–151</text>
-        <line x1="248.4" y1="172" x2="262.5" y2="172" stroke="#2B7FE3" stroke-width="2.5" stroke-linecap="round"/>
-        <text class="rung-name" x="88" y="198" text-anchor="end">Recovery</text>
-        <text class="rung-value" x="88" y="213" text-anchor="end">5:38</text>
-        <text class="rung-rule" x="88" y="224" text-anchor="end">+75 s/km off HM pace</text>
-        <rect x="94" y="199" width="21" height="14" rx="3" fill="#FEF8EA" stroke="#F2B01E" stroke-width="1"/>
-        <text class="bpm" x="162" y="209" text-anchor="end"><141</text>
-        <circle cx="250.9" cy="206" r="3.6" fill="#E8A33D"/>
-      </svg>
-            <p class="figcap">The heart-rate band and the pace are two different numbers; they are
-              not converted into one another.</p>
-            <div class="legend">
-              <span><i class="method"></i>the method's band</span>
-              <span><i class="athlete"></i>your own zone</span>
-              <span><i class="floor"></i>your zone floors</span>
-              <span><i class="dot-method"></i>the method's pace</span>
-              <span><i class="dot-athlete"></i>your own pace</span>
-              <span><i class="dot-engine"></i>the engine's own</span>
-            </div>
-            <p class="source">
-              <b>From your 1:32:21 half marathon on 12 Oct 2026</b> · entered 13 Oct 2026 · the
-              race time was changed on 3 Nov 2026.
-            </p>
-            <p class="tiny" style="margin:4px 0 0">
-              10K 41:42 · 15K 1:04:08 · marathon 3:12:21 — the equivalents of that race, from
-              VDOT 49.5.
-            </p>
-            <p class="tiny" style="margin:4px 0 0">
-              The threshold band is the pace you could race for about an hour; the book places it
-              at your 15K-to-10-mile race pace (ch. 1, ch. 7).
-            </p>
-            <p class="tiny" style="margin:4px 0 0">
-              A 45-minute time trial is the book's own route to that band (ch. 1, ch. 7).
-            </p>
-            <a class="openlink" href="#pace-curve">The physiological-cost curve →</a>
-          </div>
-
-          <div class="card">
-            <div class="h"><span>Race times from this half marathon</span></div>
-            <ul class="rows">
-              <li><span class="q">5 km</span><span class="v">20:05</span></li>
-              <li><span class="q">10 km</span><span class="v">41:51</span></li>
-              <li><span class="q">15 km</span><span class="v">1:04:20</span></li>
-              <li><span class="q">30 km</span><span class="v">2:14:07</span></li>
-              <li><span class="q">marathon</span><span class="v">3:12:33</span></li>
-            </ul>
-            <p class="tiny" style="margin:6px 0 0">
-              Riegel, exponent 1.06, from your 1:32:21 half marathon on 12 Oct 2026.
-            </p>
-          </div>
-
+          <div id="phone-ladder"></div>
+          <div id="phone-predictions"></div>
         </div>
       </div>
       <p class="caption"><b>One race entered</b>The ladder, its source line, and the predictions
@@ -321,49 +224,8 @@
       <div class="phone">
         <div class="bar"><div><h1>Progress</h1><div class="meta">paces</div></div></div>
         <div class="body">
-
-          <div class="card">
-            <div class="h"><span>Training paces</span><span class="sub">no race time</span></div>
-            <svg class="ladder" viewBox="0 0 280 244" role="img" aria-label="An empty pace ladder with two axes: heart rate on the left, pace on the right. No race time is entered, so there are no rungs and no bands.">
-        <rect x="94" y="18" width="70" height="206" fill="#F7FAFC" rx="3"/>
-        <rect x="168" y="18" width="104" height="206" fill="#F7FAFC" rx="3"/>
-        <line x1="98" y1="18" x2="98" y2="224" stroke="#A9C8E8" stroke-width="1"/>
-        <line x1="117" y1="18" x2="117" y2="224" stroke="#A9C8E8" stroke-width="1"/>
-        <line x1="133" y1="18" x2="133" y2="224" stroke="#A9C8E8" stroke-width="1"/>
-        <line x1="145" y1="18" x2="145" y2="224" stroke="#A9C8E8" stroke-width="1"/>
-        <line x1="160" y1="18" x2="160" y2="224" stroke="#1E5E96" stroke-width="1.5"/>
-        <text class="panel" x="94" y="12">heart rate</text>
-        <text class="panel" x="168" y="12">pace</text>
-        <line x1="94" y1="224" x2="94" y2="227" stroke="#CEDAE4" stroke-width="1"/>
-        <text class="axis-label" x="94" y="236" text-anchor="start">120</text>
-        <line x1="124" y1="224" x2="124" y2="227" stroke="#CEDAE4" stroke-width="1"/>
-        <text class="axis-label" x="124" y="236" text-anchor="middle">150</text>
-        <line x1="154" y1="224" x2="154" y2="227" stroke="#CEDAE4" stroke-width="1"/>
-        <text class="axis-label" x="154" y="236" text-anchor="middle">180</text>
-        <line x1="168" y1="224" x2="168" y2="227" stroke="#CEDAE4" stroke-width="1"/>
-        <text class="axis-label" x="168" y="236" text-anchor="middle">4:10</text>
-        <line x1="215.3" y1="224" x2="215.3" y2="227" stroke="#CEDAE4" stroke-width="1"/>
-        <text class="axis-label" x="215.3" y="236" text-anchor="middle">5:00</text>
-        <line x1="262.5" y1="224" x2="262.5" y2="227" stroke="#CEDAE4" stroke-width="1"/>
-        <text class="axis-label" x="262.5" y="236" text-anchor="middle">5:50</text>
-      </svg>
-            <p class="source">
-              <b>No race time entered</b> — the race paces and the training paces have no value.
-              A race is entered as distance, time and the day of the race; the name is optional.
-            </p>
-          </div>
-
-          <div class="card">
-            <div class="h"><span>The race</span><span class="sub">typed by the athlete</span></div>
-            <ul class="fields">
-              <li><span>distance</span><b>—</b></li>
-              <li><span>time</span><b>—</b></li>
-              <li><span>the day of the race</span><b>—</b></li>
-              <li><span>name</span><b>optional</b></li>
-            </ul>
-
-          </div>
-
+          <div id="phone-ladder-empty"></div>
+          <div id="phone-race-fields"></div>
         </div>
       </div>
       <p class="caption"><b>No race entered</b>The same card, empty: the axes without rungs, and the
@@ -375,82 +237,7 @@
       <div class="phone">
         <div class="bar"><div><h1>Progress</h1><div class="meta">paces</div></div></div>
         <div class="body">
-
-          <div class="card">
-            <div class="h"><span>Training paces</span><span class="sub">VDOT 49.5 · Daniels' chain</span></div>
-            <svg class="ladder" viewBox="0 0 280 244" role="img" aria-label="A pace ladder with two axes. Heart rate on the left, with the athlete's own zone floors marked; pace on the right. Threshold, lactate threshold: the hour pace, 4:17 to 4:23 per kilometre, heart rate 149 to 169. The goal race, a half marathon: 4:23, heart rate 159 to 186. Marathon pace: 4:34, no heart-rate band. Long run: from 5:33 to 5:07, heart rate 138 to 156. General aerobic: no value, heart rate 130 to 151. Recovery: 5:38, below 141.">
-        <rect x="94" y="18" width="70" height="206" fill="#F7FAFC" rx="3"/>
-        <rect x="168" y="18" width="104" height="206" fill="#F7FAFC" rx="3"/>
-        <line x1="98" y1="18" x2="98" y2="224" stroke="#A9C8E8" stroke-width="1"/>
-        <line x1="117" y1="18" x2="117" y2="224" stroke="#A9C8E8" stroke-width="1"/>
-        <line x1="133" y1="18" x2="133" y2="224" stroke="#A9C8E8" stroke-width="1"/>
-        <line x1="145" y1="18" x2="145" y2="224" stroke="#A9C8E8" stroke-width="1"/>
-        <line x1="160" y1="18" x2="160" y2="224" stroke="#1E5E96" stroke-width="1.5"/>
-        <text class="panel" x="94" y="12">heart rate</text>
-        <text class="panel" x="168" y="12">pace</text>
-        <line x1="94" y1="224" x2="94" y2="227" stroke="#CEDAE4" stroke-width="1"/>
-        <text class="axis-label" x="94" y="236" text-anchor="start">120</text>
-        <line x1="124" y1="224" x2="124" y2="227" stroke="#CEDAE4" stroke-width="1"/>
-        <text class="axis-label" x="124" y="236" text-anchor="middle">150</text>
-        <line x1="154" y1="224" x2="154" y2="227" stroke="#CEDAE4" stroke-width="1"/>
-        <text class="axis-label" x="154" y="236" text-anchor="middle">180</text>
-        <line x1="168" y1="224" x2="168" y2="227" stroke="#CEDAE4" stroke-width="1"/>
-        <text class="axis-label" x="168" y="236" text-anchor="middle">4:10</text>
-        <line x1="215.3" y1="224" x2="215.3" y2="227" stroke="#CEDAE4" stroke-width="1"/>
-        <text class="axis-label" x="215.3" y="236" text-anchor="middle">5:00</text>
-        <line x1="262.5" y1="224" x2="262.5" y2="227" stroke="#CEDAE4" stroke-width="1"/>
-        <text class="axis-label" x="262.5" y="236" text-anchor="middle">5:50</text>
-        <line x1="180" y1="18" x2="180" y2="224" stroke="#2B7FE3" stroke-width="1.2" stroke-dasharray="4 3"/>
-        <text class="rung-name" x="88" y="28" text-anchor="end">Threshold (LT)</text>
-        <text class="rung-value" x="88" y="43" text-anchor="end">4:17–4:23</text>
-        <text class="rung-rule" x="88" y="54" text-anchor="end">the hour pace</text>
-        <rect x="123" y="29" width="20" height="14" rx="3" fill="#FEF8EA" stroke="#F2B01E" stroke-width="1"/>
-        <text class="bpm" x="162" y="39" text-anchor="end">149–169</text>
-        <line x1="174.2" y1="36" x2="180" y2="36" stroke="#E8A33D" stroke-width="2.5" stroke-linecap="round"/>
-        <text class="rung-name" x="88" y="62" text-anchor="end">The goal race</text>
-        <text class="rung-value" x="88" y="77" text-anchor="end">4:23</text>
-        <text class="rung-rule" x="88" y="88" text-anchor="end">your 12 Oct race</text>
-        <rect x="133" y="63" width="27" height="14" rx="3" fill="#E9F1FA" stroke="#A9C8E8" stroke-width="1"/>
-        <text class="bpm" x="162" y="73" text-anchor="end">159–186</text>
-        <text class="rung-name" x="88" y="96" text-anchor="end">Marathon pace</text>
-        <text class="rung-value" x="88" y="111" text-anchor="end">4:34</text>
-        <text class="rung-rule" x="88" y="122" text-anchor="end">the engine's own</text>
-        <text class="bpm" x="162" y="107" text-anchor="end">no band</text>
-        <circle cx="190.2" cy="104" r="3.6" fill="#7C8FA0"/>
-        <text class="rung-name" x="88" y="130" text-anchor="end">Long run</text>
-        <text class="rung-value" x="88" y="145" text-anchor="end">5:33 → 5:07</text>
-        <text class="rung-rule" x="88" y="156" text-anchor="end">10K × 1.20–1.33</text>
-        <rect x="112" y="131" width="18" height="14" rx="3" fill="#FEF8EA" stroke="#F2B01E" stroke-width="1"/>
-        <text class="bpm" x="162" y="141" text-anchor="end">138–156</text>
-        <line x1="246.2" y1="138" x2="222.2" y2="138" stroke="#E8A33D" stroke-width="3" stroke-linecap="round"/>
-        <polygon points="216.2,133 224.2,138 216.2,142" fill="#E8A33D"/>
-        <circle cx="246.2" cy="138" r="3.2" fill="#E8A33D"/>
-        <text class="rung-name" x="88" y="164" text-anchor="end">General aerobic</text>
-        <text class="rung-value" x="88" y="179" text-anchor="end">no value</text>
-        <text class="rung-rule" x="88" y="190" text-anchor="end">no pace rule · yours</text>
-        <rect x="104" y="165" width="21" height="14" rx="3" fill="#FEF8EA" stroke="#F2B01E" stroke-width="1"/>
-        <text class="bpm" x="162" y="175" text-anchor="end">130–151</text>
-        <circle cx="248.4" cy="172" r="4" fill="#FFFFFF" stroke="#586F82" stroke-width="1" stroke-dasharray="2 2"/>
-        <text class="rung-name" x="88" y="198" text-anchor="end">Recovery</text>
-        <text class="rung-value" x="88" y="213" text-anchor="end">5:38</text>
-        <text class="rung-rule" x="88" y="224" text-anchor="end">+75 s/km off HM pace</text>
-        <rect x="94" y="199" width="21" height="14" rx="3" fill="#FEF8EA" stroke="#F2B01E" stroke-width="1"/>
-        <text class="bpm" x="162" y="209" text-anchor="end"><141</text>
-        <circle cx="250.9" cy="206" r="3.6" fill="#E8A33D"/>
-      </svg>
-            <div class="legend">
-              <span><i class="method"></i>the method's band</span>
-              <span><i class="athlete"></i>your own zone</span>
-              <span><i class="dot-method"></i>the method's pace</span>
-              <span><i class="dot-athlete"></i>your own pace</span>
-            </div>
-            <p class="source">
-              <b>From your 1:32:21 half marathon on 12 Oct 2026</b> · entered 13 Oct 2026.
-              The <b>general aerobic pace has no value</b> — no runs at that heart rate yet. The
-              band still stands: 130–151 bpm, the method's.
-            </p>
-          </div>
-
+          <div id="phone-ladder-novalue"></div>
         </div>
       </div>
       <p class="caption"><b>A rung with a missing input</b>The band is the method's and it stands; the
@@ -459,17 +246,6 @@
 
   </div>
 
-  <p class="note annotation">
-    <b>The threshold band.</b> The book states the rule as the pace you could race for about an
-    hour, and places it at the athlete's 15K-to-10-mile race pace — two paces, not one. The
-    engine computes both from the same race time: the 15K equivalent is 4:17 /km and the 10-mile
-    equivalent 4:18 /km, so the book's own band is one second wide for this athlete. The rung
-    draws the wider span in which the hour pace falls for this athlete — 15K (fast edge) to
-    half marathon — with the rule named on the rung itself. The band's fast edge is the engine's
-    15K pace; a 45-minute time trial is the book's own route to the same band, and the threshold
-    setup owns the athlete-facing version of the five ways the book gives.
-  </p>
-
   <h2><span class="n">2</span>The ladder, at desktop width</h2>
   <p class="note annotation">
     The ladder is a fixed-width picture; the rest of the card fills the width. The prediction rows
@@ -477,120 +253,8 @@
   </p>
 
   <div class="desktop">
-    <div class="bar"><div><h1>Training paces</h1><div class="meta">from your 1:32:21 half marathon on 12 Oct 2026</div></div></div>
-    <div class="body">
-      <div class="card">
-        <div class="h"><span>Training paces</span><span class="sub">VDOT 49.5 · Daniels' chain</span></div>
-        <div class="split">
-          <div class="ladderbox">
-            <svg class="ladder" viewBox="0 0 280 244" role="img" aria-label="A pace ladder with two axes. Heart rate on the left, with the athlete's own zone floors marked; pace on the right. Threshold, lactate threshold: the hour pace, 4:17 to 4:23 per kilometre, heart rate 149 to 169. The goal race, a half marathon: 4:23, heart rate 159 to 186. Marathon pace: 4:34, no heart-rate band. Long run: from 5:33 to 5:07, heart rate 138 to 156. General aerobic: 5:35 to 5:50, heart rate 130 to 151. Recovery: 5:38, below 141.">
-        <rect x="94" y="18" width="70" height="206" fill="#F7FAFC" rx="3"/>
-        <rect x="168" y="18" width="104" height="206" fill="#F7FAFC" rx="3"/>
-        <line x1="98" y1="18" x2="98" y2="224" stroke="#A9C8E8" stroke-width="1"/>
-        <line x1="117" y1="18" x2="117" y2="224" stroke="#A9C8E8" stroke-width="1"/>
-        <line x1="133" y1="18" x2="133" y2="224" stroke="#A9C8E8" stroke-width="1"/>
-        <line x1="145" y1="18" x2="145" y2="224" stroke="#A9C8E8" stroke-width="1"/>
-        <line x1="160" y1="18" x2="160" y2="224" stroke="#1E5E96" stroke-width="1.5"/>
-        <text class="panel" x="94" y="12">heart rate</text>
-        <text class="panel" x="168" y="12">pace</text>
-        <line x1="94" y1="224" x2="94" y2="227" stroke="#CEDAE4" stroke-width="1"/>
-        <text class="axis-label" x="94" y="236" text-anchor="start">120</text>
-        <line x1="124" y1="224" x2="124" y2="227" stroke="#CEDAE4" stroke-width="1"/>
-        <text class="axis-label" x="124" y="236" text-anchor="middle">150</text>
-        <line x1="154" y1="224" x2="154" y2="227" stroke="#CEDAE4" stroke-width="1"/>
-        <text class="axis-label" x="154" y="236" text-anchor="middle">180</text>
-        <line x1="168" y1="224" x2="168" y2="227" stroke="#CEDAE4" stroke-width="1"/>
-        <text class="axis-label" x="168" y="236" text-anchor="middle">4:10</text>
-        <line x1="215.3" y1="224" x2="215.3" y2="227" stroke="#CEDAE4" stroke-width="1"/>
-        <text class="axis-label" x="215.3" y="236" text-anchor="middle">5:00</text>
-        <line x1="262.5" y1="224" x2="262.5" y2="227" stroke="#CEDAE4" stroke-width="1"/>
-        <text class="axis-label" x="262.5" y="236" text-anchor="middle">5:50</text>
-        <line x1="180" y1="18" x2="180" y2="224" stroke="#2B7FE3" stroke-width="1.2" stroke-dasharray="4 3"/>
-        <text class="rung-name" x="88" y="28" text-anchor="end">Threshold (LT)</text>
-        <text class="rung-value" x="88" y="43" text-anchor="end">4:17–4:23</text>
-        <text class="rung-rule" x="88" y="54" text-anchor="end">the hour pace</text>
-        <rect x="123" y="29" width="20" height="14" rx="3" fill="#FEF8EA" stroke="#F2B01E" stroke-width="1"/>
-        <text class="bpm" x="162" y="39" text-anchor="end">149–169</text>
-        <line x1="174.2" y1="36" x2="180" y2="36" stroke="#E8A33D" stroke-width="2.5" stroke-linecap="round"/>
-        <text class="rung-name" x="88" y="62" text-anchor="end">The goal race</text>
-        <text class="rung-value" x="88" y="77" text-anchor="end">4:23</text>
-        <text class="rung-rule" x="88" y="88" text-anchor="end">your 12 Oct race</text>
-        <rect x="133" y="63" width="27" height="14" rx="3" fill="#E9F1FA" stroke="#A9C8E8" stroke-width="1"/>
-        <text class="bpm" x="162" y="73" text-anchor="end">159–186</text>
-        <text class="rung-name" x="88" y="96" text-anchor="end">Marathon pace</text>
-        <text class="rung-value" x="88" y="111" text-anchor="end">4:34</text>
-        <text class="rung-rule" x="88" y="122" text-anchor="end">the engine's own</text>
-        <text class="bpm" x="162" y="107" text-anchor="end">no band</text>
-        <circle cx="190.2" cy="104" r="3.6" fill="#7C8FA0"/>
-        <text class="rung-name" x="88" y="130" text-anchor="end">Long run</text>
-        <text class="rung-value" x="88" y="145" text-anchor="end">5:33 → 5:07</text>
-        <text class="rung-rule" x="88" y="156" text-anchor="end">10K × 1.20–1.33</text>
-        <rect x="112" y="131" width="18" height="14" rx="3" fill="#FEF8EA" stroke="#F2B01E" stroke-width="1"/>
-        <text class="bpm" x="162" y="141" text-anchor="end">138–156</text>
-        <line x1="246.2" y1="138" x2="222.2" y2="138" stroke="#E8A33D" stroke-width="3" stroke-linecap="round"/>
-        <polygon points="216.2,133 224.2,138 216.2,142" fill="#E8A33D"/>
-        <circle cx="246.2" cy="138" r="3.2" fill="#E8A33D"/>
-        <text class="rung-name" x="88" y="164" text-anchor="end">General aerobic</text>
-        <text class="rung-value" x="88" y="179" text-anchor="end">5:35–5:50</text>
-        <text class="rung-rule" x="88" y="190" text-anchor="end">no pace rule · yours</text>
-        <rect x="104" y="165" width="21" height="14" rx="3" fill="#FEF8EA" stroke="#F2B01E" stroke-width="1"/>
-        <text class="bpm" x="162" y="175" text-anchor="end">130–151</text>
-        <line x1="248.4" y1="172" x2="262.5" y2="172" stroke="#2B7FE3" stroke-width="2.5" stroke-linecap="round"/>
-        <text class="rung-name" x="88" y="198" text-anchor="end">Recovery</text>
-        <text class="rung-value" x="88" y="213" text-anchor="end">5:38</text>
-        <text class="rung-rule" x="88" y="224" text-anchor="end">+75 s/km off HM pace</text>
-        <rect x="94" y="199" width="21" height="14" rx="3" fill="#FEF8EA" stroke="#F2B01E" stroke-width="1"/>
-        <text class="bpm" x="162" y="209" text-anchor="end"><141</text>
-        <circle cx="250.9" cy="206" r="3.6" fill="#E8A33D"/>
-      </svg>
-            <div class="legend">
-              <span><i class="method"></i>the method's band</span>
-              <span><i class="athlete"></i>your own zone</span>
-              <span><i class="floor"></i>your zone floors</span>
-              <span><i class="dot-method"></i>the method's pace</span>
-              <span><i class="dot-athlete"></i>your own pace</span>
-              <span><i class="dot-engine"></i>the engine's own</span>
-            </div>
-          </div>
-
-          <div class="side">
-            <h3>Race times from this half marathon</h3>
-            <ul class="rows">
-              <li><span class="q">5 km</span><span class="v">20:05</span></li>
-              <li><span class="q">10 km</span><span class="v">41:51</span></li>
-              <li><span class="q">15 km</span><span class="v">1:04:20</span></li>
-              <li><span class="q">30 km</span><span class="v">2:14:07</span></li>
-              <li><span class="q">marathon</span><span class="v">3:12:33</span></li>
-            </ul>
-            <p class="tiny" style="margin:6px 0 0">Riegel, exponent 1.06, from your 1:32:21 half
-              marathon on 12 Oct 2026.</p>
-
-            <div class="selfcheck">
-              <div class="t">Your own 10 km</div>
-              <p><b>43:05</b> on 3 Oct 2026 · the prediction from your half marathon:
-                <b>41:51</b> · the difference <b>1:14</b>.</p>
-            </div>
-          </div>
-        </div>
-
-        <p class="source">
-              <b>From your 1:32:21 half marathon on 12 Oct 2026</b> · entered 13 Oct 2026 · the
-              race time was changed on 3 Nov 2026.
-            </p>
-            <p class="tiny" style="margin:4px 0 0">
-              10K 41:42 · 15K 1:04:08 · marathon 3:12:21 — the equivalents of that race, from
-              VDOT 49.5.
-            </p>
-            <p class="tiny" style="margin:4px 0 0">
-              The threshold band is the pace you could race for about an hour; the book places it
-              at your 15K-to-10-mile race pace (ch. 1, ch. 7).
-            </p>
-            <p class="tiny" style="margin:4px 0 0">
-              A 45-minute time trial is the book's own route to that band (ch. 1, ch. 7).
-            </p>
-        <a class="openlink" href="#pace-curve">The physiological-cost curve →</a>
-      </div>
-    </div>
+    <div class="bar"><div><h1>Training paces</h1><div class="meta" id="desktop-ladder-meta"></div></div></div>
+    <div class="body"><div id="desktop-ladder"></div></div>
   </div>
 
   <h2 id="pace-curve"><span class="n">3</span>The physiological-cost curve</h2>
@@ -600,34 +264,20 @@
     The curve is the relation itself; the athlete's own races sit on it at the share their own pace
     cost; the method's sessions sit on it at their prescribed durations and paces.
     <br><br>
-    <b>The one rule that matters:</b> Pfitzinger's bands are percentages of <b>maximal heart
-    rate</b>, and this curve's axis is percentages of <b>VO₂max</b>. The two are not convertible
-    without the athlete's lactate relation, which Stride does not have — so the method's
-    heart-rate bands are <b>named in the caption and the legend and never drawn on this axis</b>.
-    Where the athlete's own pace-at-heart-rate history allows a pace to be named for a session,
-    that pace is <b>the athlete's own</b> (azure) and it is labelled as such: it is not the
-    method's band.
-  </p>
-
-  <p class="note annotation">
+    <b>How to read the curve.</b> The curve is the share of VO₂max that a duration holds, and it is
+    the same relation the engine uses for VDOT — so it is the same line for every athlete, and the
+    athlete's own races are the points that place them on it. Each race sits at the share the
+    athlete's own pace cost at their own VDOT, which is why a race from earlier sits below the line
+    and the goal race sits on it. The method's sessions are placed by their durations and their
+    prescribed paces. The general-aerobic day is not on the curve because the method fixes no pace
+    and no duration for it, and heart rate is not convertible into VO₂max without the athlete's
+    lactate relation — which is why the method's heart-rate bands are named in the legend and never
+    drawn on this axis.
+    <br><br>
     <b>Three lines that were on the cards and are notes now.</b> A race time is entered by the
-    athlete; Stride does not estimate one from the training. The prediction rows carry a model
-    with its assumption named — Riegel, exponent 1.06 — and not a forecast. Pfitzinger's bands
-    are percentages of maximal heart rate, and this curve's axis is percentages of VO₂max.
-  </p>
-
-  <p class="note annotation">
-    <b>How to read the curve.</b> The curve is the share of VO₂max that a duration holds, and it
-    is the same relation the engine uses for VDOT — so it is the same line for every athlete, and
-    the athlete's own races are the points that place them on it. Each of your races sits at the
-    share your own pace cost at your own VDOT, which is why a race from last June sits below the
-    line and the half marathon of 12 October sits on it. The method's sessions are placed by
-    their durations and their prescribed paces: the threshold session at the hour-pace band for
-    20–40 minutes, the long run across its duration range from the start pace to the finish pace,
-    the recovery run at 3–5 miles. The general-aerobic day is not on the curve because the method
-    fixes no pace and no duration for it, and heart rate is not convertible into VO₂max without
-    the athlete's lactate relation — which is why the method's heart-rate bands are named in the
-    legend and never drawn on this axis.
+    athlete; Stride does not estimate one from the training. The prediction rows carry a model with
+    its assumption named — Riegel, exponent 1.06 — and not a forecast. Pfitzinger's bands are
+    percentages of maximal heart rate, and this curve's axis is percentages of VO₂max.
   </p>
 
   <div class="phones">
@@ -635,98 +285,8 @@
     <!-- ============ the phone: the curve, in full ============ -->
     <div class="phonewrap">
       <div class="phone">
-        <div class="bar"><div><h1>Pace curve</h1><div class="meta">/insights/pace-curve</div></div></div>
-        <div class="body">
-
-          <div class="card">
-            <div class="h"><span>The physiological-cost curve</span><span class="sub">VDOT 49.5</span></div>
-            <svg class="curve" viewBox="0 0 280 222" role="img" aria-label="A physiological-cost curve. The vertical axis is the share of maximum oxygen uptake, from 60 to 100 per cent; the horizontal axis is time in minutes on a logarithmic scale, from 10 minutes to 6 hours. A grey curve falls from 101 per cent at 10 minutes to 80 per cent at 6 hours. Three blue dots are the athlete's own races: a 10 km from 14 June, a 10 km from 3 October, and a half marathon from 12 October. A ring marks the goal race. Three amber segments are the method's sessions: a lactate-threshold session from 20 to 40 minutes at the hour-pace band, a long run from 98 to 140 minutes, and a recovery run from 27 to 45 minutes. A hollow marker at 30 minutes is the 30-minute field test. Along the bottom are the pace equivalents: 5 kilometres, 10 kilometres, 15 kilometres, half marathon and marathon, each with its time and its pace.">
-        <line x1="40" y1="14" x2="40" y2="170" stroke="#CEDAE4" stroke-width="1"/>
-        <line x1="40" y1="170" x2="268" y2="170" stroke="#CEDAE4" stroke-width="1"/>
-        <line x1="40" y1="170" x2="268" y2="170" stroke="#EEF2F6" stroke-width="1"/>
-        <text class="axis-label" x="36" y="173" text-anchor="end">60</text>
-        <line x1="40" y1="132.9" x2="268" y2="132.9" stroke="#EEF2F6" stroke-width="1"/>
-        <text class="axis-label" x="36" y="135.9" text-anchor="end">70</text>
-        <line x1="40" y1="95.7" x2="268" y2="95.7" stroke="#EEF2F6" stroke-width="1"/>
-        <text class="axis-label" x="36" y="98.7" text-anchor="end">80</text>
-        <line x1="40" y1="58.6" x2="268" y2="58.6" stroke="#EEF2F6" stroke-width="1"/>
-        <text class="axis-label" x="36" y="61.6" text-anchor="end">90</text>
-        <line x1="40" y1="21.4" x2="268" y2="21.4" stroke="#EEF2F6" stroke-width="1"/>
-        <text class="axis-label" x="36" y="24.4" text-anchor="end">100</text>
-        <text class="panel" x="40" y="8">% maxVO₂</text>
-        <line x1="40" y1="170" x2="40" y2="173" stroke="#CEDAE4" stroke-width="1"/>
-        <text class="axis-label" x="40" y="182" text-anchor="middle">10</text>
-        <line x1="84.1" y1="170" x2="84.1" y2="173" stroke="#CEDAE4" stroke-width="1"/>
-        <text class="axis-label" x="84.1" y="182" text-anchor="middle">20</text>
-        <line x1="109.9" y1="170" x2="109.9" y2="173" stroke="#CEDAE4" stroke-width="1"/>
-        <text class="axis-label" x="109.9" y="182" text-anchor="middle">30</text>
-        <line x1="154" y1="170" x2="154" y2="173" stroke="#CEDAE4" stroke-width="1"/>
-        <text class="axis-label" x="154" y="182" text-anchor="middle">1 h</text>
-        <line x1="198.1" y1="170" x2="198.1" y2="173" stroke="#CEDAE4" stroke-width="1"/>
-        <text class="axis-label" x="198.1" y="182" text-anchor="middle">2 h</text>
-        <line x1="242.2" y1="170" x2="242.2" y2="173" stroke="#CEDAE4" stroke-width="1"/>
-        <text class="axis-label" x="242.2" y="182" text-anchor="middle">4 h</text>
-        <text class="panel" x="268" y="182">minutes</text>
-        <polyline points="40,17.7 42.5,19.3 45.1,20.7 47.6,22.2 50.1,23.6 52.7,25 55.2,26.3 57.7,27.6 60.3,28.9 62.8,30.1 65.3,31.3 67.9,32.4 70.4,33.5 72.9,34.6 75.5,35.6 78,36.6 80.5,37.6 83.1,38.5 85.6,39.4 88.1,40.3 90.7,41.2 93.2,42 95.7,42.9 98.3,43.7 100.8,44.5 103.3,45.3 105.9,46.1 108.4,46.9 110.9,47.8 113.5,48.6 116,49.4 118.5,50.2 121.1,51 123.6,51.9 126.1,52.8 128.7,53.6 131.2,54.5 133.7,55.4 136.3,56.3 138.8,57.2 141.3,58.2 143.9,59.1 146.4,60.1 148.9,61 151.5,62 154,63 156.5,64 159.1,65 161.6,66.1 164.1,67.1 166.7,68.1 169.2,69.1 171.7,70.2 174.3,71.2 176.8,72.2 179.3,73.2 181.9,74.3 184.4,75.3 186.9,76.3 189.5,77.3 192,78.2 194.5,79.2 197.1,80.1 199.6,81.1 202.1,82 204.7,82.9 207.2,83.7 209.7,84.6 212.3,85.4 214.8,86.1 217.3,86.9 219.9,87.6 222.4,88.3 224.9,88.9 227.5,89.5 230,90.1 232.5,90.7 235.1,91.2 237.6,91.7 240.1,92.1 242.7,92.5 245.2,92.9 247.7,93.2 250.3,93.5 252.8,93.8 255.3,94.1 257.9,94.3 260.4,94.5 262.9,94.7 265.5,94.9 268,95" fill="none" stroke="#7C8FA0" stroke-width="1.8"/>
-        <line x1="109.9" y1="14" x2="109.9" y2="170" stroke="#B9C6D2" stroke-width="1" stroke-dasharray="3 3"/>
-        <circle cx="109.9" cy="47.4" r="4.5" fill="#FFFFFF" stroke="#7C8FA0" stroke-width="1.2"/>
-        <rect x="84.1" y="64.7" width="44.1" height="9.4" rx="2.5" fill="#FEF8EA" stroke="#E8A33D" stroke-width="1.6"/>
-        <rect x="185.3" y="130.5" width="22.6" height="24.8" rx="2.5" fill="#FEF8EA" stroke="#E8A33D" stroke-width="1.6"/>
-        <line x1="103.7" y1="159.6" x2="136.1" y2="159.6" stroke="#E8A33D" stroke-width="3.5" stroke-linecap="round"/>
-        <circle cx="103.7" cy="159.6" r="2.6" fill="#E8A33D"/>
-        <circle cx="136.1" cy="159.6" r="2.6" fill="#E8A33D"/>
-        <circle cx="134.7" cy="79.1" r="3.4" fill="#2B7FE3"/>
-        <circle cx="132.9" cy="67.8" r="3.4" fill="#2B7FE3"/>
-        <circle cx="181.4" cy="74.1" r="7" fill="none" stroke="#2B7FE3" stroke-width="1.2"/>
-        <circle cx="181.4" cy="74.1" r="3.4" fill="#2B7FE3"/>
-        <line x1="84.5" y1="185" x2="84.5" y2="188" stroke="#A9C8E8" stroke-width="1"/>
-        <text class="eq" x="84.5" y="198" text-anchor="middle">5K</text>
-        <text class="eq-s" x="84.5" y="207" text-anchor="middle">0:20</text>
-        <text class="eq-s" x="84.5" y="215" text-anchor="middle">4:01</text>
-        <line x1="130.9" y1="185" x2="130.9" y2="188" stroke="#A9C8E8" stroke-width="1"/>
-        <text class="eq" x="130.9" y="198" text-anchor="middle">10K</text>
-        <text class="eq-s" x="130.9" y="207" text-anchor="middle">0:42</text>
-        <text class="eq-s" x="130.9" y="215" text-anchor="middle">4:10</text>
-        <line x1="158.2" y1="185" x2="158.2" y2="188" stroke="#A9C8E8" stroke-width="1"/>
-        <text class="eq" x="158.2" y="198" text-anchor="middle">15K</text>
-        <text class="eq-s" x="158.2" y="207" text-anchor="middle">1:04</text>
-        <text class="eq-s" x="158.2" y="215" text-anchor="middle">4:17</text>
-        <line x1="181.4" y1="185" x2="181.4" y2="188" stroke="#A9C8E8" stroke-width="1"/>
-        <text class="eq" x="181.4" y="198" text-anchor="middle">HM</text>
-        <text class="eq-s" x="181.4" y="207" text-anchor="middle">1:32</text>
-        <text class="eq-s" x="181.4" y="215" text-anchor="middle">4:23</text>
-        <line x1="261" y1="185" x2="261" y2="188" stroke="#A9C8E8" stroke-width="1"/>
-        <text class="eq" x="261" y="198" text-anchor="middle">marathon</text>
-        <text class="eq-s" x="261" y="207" text-anchor="middle">5:22</text>
-        <text class="eq-s" x="261" y="215" text-anchor="middle">4:34</text>
-      </svg>
-            <p class="figcap">The method's heart-rate bands and this curve's %maxVO₂ axis are two
-              different numbers; they are not converted into one another.</p>
-            <div class="legend">
-              <span><i class="line-grey"></i>the share of VO₂max each duration holds</span>
-              <span><i class="dot-athlete"></i>your races</span>
-              <span><i class="ring"></i>the goal race</span>
-              <span><i class="line-amber"></i>the method's sessions</span>
-              <span><i class="ring-grey"></i>the 30-minute field test</span>
-            </div>
-            <p class="source">
-              <b>Your VDOT 49.5</b> from your 1:32:21 half marathon on 12 Oct 2026 · entered
-              13 Oct 2026.
-            </p>
-            <p class="tiny" style="margin:4px 0 0">
-              10K 41:42 · 15K 1:04:08 · marathon 3:12:21 — the equivalents of that race.
-            </p>
-            <p class="tiny" style="margin:4px 0 0">
-              The method's sessions, at the durations and paces the book prescribes
-              (ch. 1, ch. 2, ch. 7).
-            </p>
-            <p class="tiny" style="margin:4px 0 0">
-              The general-aerobic day is not on the curve: the method fixes no pace and no
-              duration for it.
-            </p>
-          </div>
-
-        </div>
+        <div class="bar"><div><h1>Effort curve</h1><div class="meta" id="curve-route"></div></div></div>
+        <div class="body"><div id="phone-curve"></div></div>
       </div>
       <p class="caption"><b>The curve, in full</b>The athlete's own races, the method's sessions,
         the field test, and the pace equivalents along the bottom.</p>
@@ -735,48 +295,8 @@
     <!-- ============ the phone: no race time ============ -->
     <div class="phonewrap">
       <div class="phone">
-        <div class="bar"><div><h1>Pace curve</h1><div class="meta">/insights/pace-curve</div></div></div>
-        <div class="body">
-
-          <div class="card">
-            <div class="h"><span>The physiological-cost curve</span><span class="sub">no race time</span></div>
-            <svg class="curve" viewBox="0 0 280 222" role="img" aria-label="An empty physiological-cost curve: the axes without the curve, the races, or the sessions.">
-        <line x1="40" y1="14" x2="40" y2="170" stroke="#CEDAE4" stroke-width="1"/>
-        <line x1="40" y1="170" x2="268" y2="170" stroke="#CEDAE4" stroke-width="1"/>
-        <line x1="40" y1="170" x2="268" y2="170" stroke="#EEF2F6" stroke-width="1"/>
-        <text class="axis-label" x="36" y="173" text-anchor="end">60</text>
-        <line x1="40" y1="132.9" x2="268" y2="132.9" stroke="#EEF2F6" stroke-width="1"/>
-        <text class="axis-label" x="36" y="135.9" text-anchor="end">70</text>
-        <line x1="40" y1="95.7" x2="268" y2="95.7" stroke="#EEF2F6" stroke-width="1"/>
-        <text class="axis-label" x="36" y="98.7" text-anchor="end">80</text>
-        <line x1="40" y1="58.6" x2="268" y2="58.6" stroke="#EEF2F6" stroke-width="1"/>
-        <text class="axis-label" x="36" y="61.6" text-anchor="end">90</text>
-        <line x1="40" y1="21.4" x2="268" y2="21.4" stroke="#EEF2F6" stroke-width="1"/>
-        <text class="axis-label" x="36" y="24.4" text-anchor="end">100</text>
-        <text class="panel" x="40" y="8">% maxVO₂</text>
-        <line x1="40" y1="170" x2="40" y2="173" stroke="#CEDAE4" stroke-width="1"/>
-        <text class="axis-label" x="40" y="182" text-anchor="middle">10</text>
-        <line x1="84.1" y1="170" x2="84.1" y2="173" stroke="#CEDAE4" stroke-width="1"/>
-        <text class="axis-label" x="84.1" y="182" text-anchor="middle">20</text>
-        <line x1="109.9" y1="170" x2="109.9" y2="173" stroke="#CEDAE4" stroke-width="1"/>
-        <text class="axis-label" x="109.9" y="182" text-anchor="middle">30</text>
-        <line x1="154" y1="170" x2="154" y2="173" stroke="#CEDAE4" stroke-width="1"/>
-        <text class="axis-label" x="154" y="182" text-anchor="middle">1 h</text>
-        <line x1="198.1" y1="170" x2="198.1" y2="173" stroke="#CEDAE4" stroke-width="1"/>
-        <text class="axis-label" x="198.1" y="182" text-anchor="middle">2 h</text>
-        <line x1="242.2" y1="170" x2="242.2" y2="173" stroke="#CEDAE4" stroke-width="1"/>
-        <text class="axis-label" x="242.2" y="182" text-anchor="middle">4 h</text>
-        <text class="panel" x="268" y="182">minutes</text>
-        <line x1="109.9" y1="14" x2="109.9" y2="170" stroke="#B9C6D2" stroke-width="1" stroke-dasharray="3 3"/>
-        <circle cx="109.9" cy="47.4" r="4.5" fill="#FFFFFF" stroke="#7C8FA0" stroke-width="1.2"/>
-      </svg>
-            <p class="source">
-              <b>No race time entered</b> — the curve has no value. Every point on it is measured
-              against your VDOT, and the VDOT comes from your race.
-            </p>
-          </div>
-
-        </div>
+        <div class="bar"><div><h1>Effort curve</h1><div class="meta" id="curve-route-empty"></div></div></div>
+        <div class="body"><div id="phone-curve-empty"></div></div>
       </div>
       <p class="caption"><b>No race time</b>The axes without the curve. The panel says what it
         needs and where that comes from.</p>
@@ -785,78 +305,8 @@
     <!-- ============ the phone: a race time, no plan ============ -->
     <div class="phonewrap">
       <div class="phone">
-        <div class="bar"><div><h1>Pace curve</h1><div class="meta">/insights/pace-curve</div></div></div>
-        <div class="body">
-
-          <div class="card">
-            <div class="h"><span>The physiological-cost curve</span><span class="sub">VDOT 49.5</span></div>
-            <svg class="curve" viewBox="0 0 280 222" role="img" aria-label="A physiological-cost curve with the athlete's own races and the pace equivalents, and no method's sessions on it.">
-        <line x1="40" y1="14" x2="40" y2="170" stroke="#CEDAE4" stroke-width="1"/>
-        <line x1="40" y1="170" x2="268" y2="170" stroke="#CEDAE4" stroke-width="1"/>
-        <line x1="40" y1="170" x2="268" y2="170" stroke="#EEF2F6" stroke-width="1"/>
-        <text class="axis-label" x="36" y="173" text-anchor="end">60</text>
-        <line x1="40" y1="132.9" x2="268" y2="132.9" stroke="#EEF2F6" stroke-width="1"/>
-        <text class="axis-label" x="36" y="135.9" text-anchor="end">70</text>
-        <line x1="40" y1="95.7" x2="268" y2="95.7" stroke="#EEF2F6" stroke-width="1"/>
-        <text class="axis-label" x="36" y="98.7" text-anchor="end">80</text>
-        <line x1="40" y1="58.6" x2="268" y2="58.6" stroke="#EEF2F6" stroke-width="1"/>
-        <text class="axis-label" x="36" y="61.6" text-anchor="end">90</text>
-        <line x1="40" y1="21.4" x2="268" y2="21.4" stroke="#EEF2F6" stroke-width="1"/>
-        <text class="axis-label" x="36" y="24.4" text-anchor="end">100</text>
-        <text class="panel" x="40" y="8">% maxVO₂</text>
-        <line x1="40" y1="170" x2="40" y2="173" stroke="#CEDAE4" stroke-width="1"/>
-        <text class="axis-label" x="40" y="182" text-anchor="middle">10</text>
-        <line x1="84.1" y1="170" x2="84.1" y2="173" stroke="#CEDAE4" stroke-width="1"/>
-        <text class="axis-label" x="84.1" y="182" text-anchor="middle">20</text>
-        <line x1="109.9" y1="170" x2="109.9" y2="173" stroke="#CEDAE4" stroke-width="1"/>
-        <text class="axis-label" x="109.9" y="182" text-anchor="middle">30</text>
-        <line x1="154" y1="170" x2="154" y2="173" stroke="#CEDAE4" stroke-width="1"/>
-        <text class="axis-label" x="154" y="182" text-anchor="middle">1 h</text>
-        <line x1="198.1" y1="170" x2="198.1" y2="173" stroke="#CEDAE4" stroke-width="1"/>
-        <text class="axis-label" x="198.1" y="182" text-anchor="middle">2 h</text>
-        <line x1="242.2" y1="170" x2="242.2" y2="173" stroke="#CEDAE4" stroke-width="1"/>
-        <text class="axis-label" x="242.2" y="182" text-anchor="middle">4 h</text>
-        <text class="panel" x="268" y="182">minutes</text>
-        <polyline points="40,17.7 42.5,19.3 45.1,20.7 47.6,22.2 50.1,23.6 52.7,25 55.2,26.3 57.7,27.6 60.3,28.9 62.8,30.1 65.3,31.3 67.9,32.4 70.4,33.5 72.9,34.6 75.5,35.6 78,36.6 80.5,37.6 83.1,38.5 85.6,39.4 88.1,40.3 90.7,41.2 93.2,42 95.7,42.9 98.3,43.7 100.8,44.5 103.3,45.3 105.9,46.1 108.4,46.9 110.9,47.8 113.5,48.6 116,49.4 118.5,50.2 121.1,51 123.6,51.9 126.1,52.8 128.7,53.6 131.2,54.5 133.7,55.4 136.3,56.3 138.8,57.2 141.3,58.2 143.9,59.1 146.4,60.1 148.9,61 151.5,62 154,63 156.5,64 159.1,65 161.6,66.1 164.1,67.1 166.7,68.1 169.2,69.1 171.7,70.2 174.3,71.2 176.8,72.2 179.3,73.2 181.9,74.3 184.4,75.3 186.9,76.3 189.5,77.3 192,78.2 194.5,79.2 197.1,80.1 199.6,81.1 202.1,82 204.7,82.9 207.2,83.7 209.7,84.6 212.3,85.4 214.8,86.1 217.3,86.9 219.9,87.6 222.4,88.3 224.9,88.9 227.5,89.5 230,90.1 232.5,90.7 235.1,91.2 237.6,91.7 240.1,92.1 242.7,92.5 245.2,92.9 247.7,93.2 250.3,93.5 252.8,93.8 255.3,94.1 257.9,94.3 260.4,94.5 262.9,94.7 265.5,94.9 268,95" fill="none" stroke="#7C8FA0" stroke-width="1.8"/>
-        <line x1="109.9" y1="14" x2="109.9" y2="170" stroke="#B9C6D2" stroke-width="1" stroke-dasharray="3 3"/>
-        <circle cx="109.9" cy="47.4" r="4.5" fill="#FFFFFF" stroke="#7C8FA0" stroke-width="1.2"/>
-        <circle cx="134.7" cy="79.1" r="3.4" fill="#2B7FE3"/>
-        <circle cx="132.9" cy="67.8" r="3.4" fill="#2B7FE3"/>
-        <circle cx="181.4" cy="74.1" r="7" fill="none" stroke="#2B7FE3" stroke-width="1.2"/>
-        <circle cx="181.4" cy="74.1" r="3.4" fill="#2B7FE3"/>
-        <line x1="84.5" y1="185" x2="84.5" y2="188" stroke="#A9C8E8" stroke-width="1"/>
-        <text class="eq" x="84.5" y="198" text-anchor="middle">5K</text>
-        <text class="eq-s" x="84.5" y="207" text-anchor="middle">0:20</text>
-        <text class="eq-s" x="84.5" y="215" text-anchor="middle">4:01</text>
-        <line x1="130.9" y1="185" x2="130.9" y2="188" stroke="#A9C8E8" stroke-width="1"/>
-        <text class="eq" x="130.9" y="198" text-anchor="middle">10K</text>
-        <text class="eq-s" x="130.9" y="207" text-anchor="middle">0:42</text>
-        <text class="eq-s" x="130.9" y="215" text-anchor="middle">4:10</text>
-        <line x1="158.2" y1="185" x2="158.2" y2="188" stroke="#A9C8E8" stroke-width="1"/>
-        <text class="eq" x="158.2" y="198" text-anchor="middle">15K</text>
-        <text class="eq-s" x="158.2" y="207" text-anchor="middle">1:04</text>
-        <text class="eq-s" x="158.2" y="215" text-anchor="middle">4:17</text>
-        <line x1="181.4" y1="185" x2="181.4" y2="188" stroke="#A9C8E8" stroke-width="1"/>
-        <text class="eq" x="181.4" y="198" text-anchor="middle">HM</text>
-        <text class="eq-s" x="181.4" y="207" text-anchor="middle">1:32</text>
-        <text class="eq-s" x="181.4" y="215" text-anchor="middle">4:23</text>
-        <line x1="261" y1="185" x2="261" y2="188" stroke="#A9C8E8" stroke-width="1"/>
-        <text class="eq" x="261" y="198" text-anchor="middle">marathon</text>
-        <text class="eq-s" x="261" y="207" text-anchor="middle">5:22</text>
-        <text class="eq-s" x="261" y="215" text-anchor="middle">4:34</text>
-      </svg>
-            <div class="legend">
-              <span><i class="line-grey"></i>the share of VO₂max each duration holds</span>
-              <span><i class="dot-athlete"></i>your races</span>
-              <span><i class="ring"></i>the goal race</span>
-            </div>
-            <p class="source">
-              <b>No plan adopted</b> — the method's sessions are not on the curve. The athlete's own
-              races and the pace equivalents are here; the sessions come with a plan.
-            </p>
-          </div>
-
-        </div>
+        <div class="bar"><div><h1>Effort curve</h1><div class="meta" id="curve-route-noplan"></div></div></div>
+        <div class="body"><div id="phone-curve-noplan"></div></div>
       </div>
       <p class="caption"><b>A race time, no plan</b>The curve still draws — the athlete's own races
         and the equivalents — and it names what is missing.</p>
@@ -865,100 +315,8 @@
   </div>
 
   <div class="desktop">
-    <div class="bar"><div><h1>The physiological-cost curve</h1><div class="meta">from your 1:32:21 half marathon on 12 Oct 2026</div></div></div>
-    <div class="body">
-      <div class="card">
-        <div class="h"><span>The physiological-cost curve</span><span class="sub">VDOT 49.5</span></div>
-        <div class="split">
-          <div class="ladderbox">
-            <svg class="curve" viewBox="0 0 280 222" role="img" aria-label="A physiological-cost curve. The vertical axis is the share of maximum oxygen uptake, from 60 to 100 per cent; the horizontal axis is time in minutes on a logarithmic scale, from 10 minutes to 6 hours. A grey curve falls from 101 per cent at 10 minutes to 80 per cent at 6 hours. Three blue dots are the athlete's own races: a 10 km from 14 June, a 10 km from 3 October, and a half marathon from 12 October. A ring marks the goal race. Three amber segments are the method's sessions: a lactate-threshold session from 20 to 40 minutes at the hour-pace band, a long run from 98 to 140 minutes, and a recovery run from 27 to 45 minutes. A hollow marker at 30 minutes is the 30-minute field test. Along the bottom are the pace equivalents: 5 kilometres, 10 kilometres, 15 kilometres, half marathon and marathon, each with its time and its pace.">
-        <line x1="40" y1="14" x2="40" y2="170" stroke="#CEDAE4" stroke-width="1"/>
-        <line x1="40" y1="170" x2="268" y2="170" stroke="#CEDAE4" stroke-width="1"/>
-        <line x1="40" y1="170" x2="268" y2="170" stroke="#EEF2F6" stroke-width="1"/>
-        <text class="axis-label" x="36" y="173" text-anchor="end">60</text>
-        <line x1="40" y1="132.9" x2="268" y2="132.9" stroke="#EEF2F6" stroke-width="1"/>
-        <text class="axis-label" x="36" y="135.9" text-anchor="end">70</text>
-        <line x1="40" y1="95.7" x2="268" y2="95.7" stroke="#EEF2F6" stroke-width="1"/>
-        <text class="axis-label" x="36" y="98.7" text-anchor="end">80</text>
-        <line x1="40" y1="58.6" x2="268" y2="58.6" stroke="#EEF2F6" stroke-width="1"/>
-        <text class="axis-label" x="36" y="61.6" text-anchor="end">90</text>
-        <line x1="40" y1="21.4" x2="268" y2="21.4" stroke="#EEF2F6" stroke-width="1"/>
-        <text class="axis-label" x="36" y="24.4" text-anchor="end">100</text>
-        <text class="panel" x="40" y="8">% maxVO₂</text>
-        <line x1="40" y1="170" x2="40" y2="173" stroke="#CEDAE4" stroke-width="1"/>
-        <text class="axis-label" x="40" y="182" text-anchor="middle">10</text>
-        <line x1="84.1" y1="170" x2="84.1" y2="173" stroke="#CEDAE4" stroke-width="1"/>
-        <text class="axis-label" x="84.1" y="182" text-anchor="middle">20</text>
-        <line x1="109.9" y1="170" x2="109.9" y2="173" stroke="#CEDAE4" stroke-width="1"/>
-        <text class="axis-label" x="109.9" y="182" text-anchor="middle">30</text>
-        <line x1="154" y1="170" x2="154" y2="173" stroke="#CEDAE4" stroke-width="1"/>
-        <text class="axis-label" x="154" y="182" text-anchor="middle">1 h</text>
-        <line x1="198.1" y1="170" x2="198.1" y2="173" stroke="#CEDAE4" stroke-width="1"/>
-        <text class="axis-label" x="198.1" y="182" text-anchor="middle">2 h</text>
-        <line x1="242.2" y1="170" x2="242.2" y2="173" stroke="#CEDAE4" stroke-width="1"/>
-        <text class="axis-label" x="242.2" y="182" text-anchor="middle">4 h</text>
-        <text class="panel" x="268" y="182">minutes</text>
-        <polyline points="40,17.7 42.5,19.3 45.1,20.7 47.6,22.2 50.1,23.6 52.7,25 55.2,26.3 57.7,27.6 60.3,28.9 62.8,30.1 65.3,31.3 67.9,32.4 70.4,33.5 72.9,34.6 75.5,35.6 78,36.6 80.5,37.6 83.1,38.5 85.6,39.4 88.1,40.3 90.7,41.2 93.2,42 95.7,42.9 98.3,43.7 100.8,44.5 103.3,45.3 105.9,46.1 108.4,46.9 110.9,47.8 113.5,48.6 116,49.4 118.5,50.2 121.1,51 123.6,51.9 126.1,52.8 128.7,53.6 131.2,54.5 133.7,55.4 136.3,56.3 138.8,57.2 141.3,58.2 143.9,59.1 146.4,60.1 148.9,61 151.5,62 154,63 156.5,64 159.1,65 161.6,66.1 164.1,67.1 166.7,68.1 169.2,69.1 171.7,70.2 174.3,71.2 176.8,72.2 179.3,73.2 181.9,74.3 184.4,75.3 186.9,76.3 189.5,77.3 192,78.2 194.5,79.2 197.1,80.1 199.6,81.1 202.1,82 204.7,82.9 207.2,83.7 209.7,84.6 212.3,85.4 214.8,86.1 217.3,86.9 219.9,87.6 222.4,88.3 224.9,88.9 227.5,89.5 230,90.1 232.5,90.7 235.1,91.2 237.6,91.7 240.1,92.1 242.7,92.5 245.2,92.9 247.7,93.2 250.3,93.5 252.8,93.8 255.3,94.1 257.9,94.3 260.4,94.5 262.9,94.7 265.5,94.9 268,95" fill="none" stroke="#7C8FA0" stroke-width="1.8"/>
-        <line x1="109.9" y1="14" x2="109.9" y2="170" stroke="#B9C6D2" stroke-width="1" stroke-dasharray="3 3"/>
-        <circle cx="109.9" cy="47.4" r="4.5" fill="#FFFFFF" stroke="#7C8FA0" stroke-width="1.2"/>
-        <rect x="84.1" y="64.7" width="44.1" height="9.4" rx="2.5" fill="#FEF8EA" stroke="#E8A33D" stroke-width="1.6"/>
-        <rect x="185.3" y="130.5" width="22.6" height="24.8" rx="2.5" fill="#FEF8EA" stroke="#E8A33D" stroke-width="1.6"/>
-        <line x1="103.7" y1="159.6" x2="136.1" y2="159.6" stroke="#E8A33D" stroke-width="3.5" stroke-linecap="round"/>
-        <circle cx="103.7" cy="159.6" r="2.6" fill="#E8A33D"/>
-        <circle cx="136.1" cy="159.6" r="2.6" fill="#E8A33D"/>
-        <circle cx="134.7" cy="79.1" r="3.4" fill="#2B7FE3"/>
-        <circle cx="132.9" cy="67.8" r="3.4" fill="#2B7FE3"/>
-        <circle cx="181.4" cy="74.1" r="7" fill="none" stroke="#2B7FE3" stroke-width="1.2"/>
-        <circle cx="181.4" cy="74.1" r="3.4" fill="#2B7FE3"/>
-        <line x1="84.5" y1="185" x2="84.5" y2="188" stroke="#A9C8E8" stroke-width="1"/>
-        <text class="eq" x="84.5" y="198" text-anchor="middle">5K</text>
-        <text class="eq-s" x="84.5" y="207" text-anchor="middle">0:20</text>
-        <text class="eq-s" x="84.5" y="215" text-anchor="middle">4:01</text>
-        <line x1="130.9" y1="185" x2="130.9" y2="188" stroke="#A9C8E8" stroke-width="1"/>
-        <text class="eq" x="130.9" y="198" text-anchor="middle">10K</text>
-        <text class="eq-s" x="130.9" y="207" text-anchor="middle">0:42</text>
-        <text class="eq-s" x="130.9" y="215" text-anchor="middle">4:10</text>
-        <line x1="158.2" y1="185" x2="158.2" y2="188" stroke="#A9C8E8" stroke-width="1"/>
-        <text class="eq" x="158.2" y="198" text-anchor="middle">15K</text>
-        <text class="eq-s" x="158.2" y="207" text-anchor="middle">1:04</text>
-        <text class="eq-s" x="158.2" y="215" text-anchor="middle">4:17</text>
-        <line x1="181.4" y1="185" x2="181.4" y2="188" stroke="#A9C8E8" stroke-width="1"/>
-        <text class="eq" x="181.4" y="198" text-anchor="middle">HM</text>
-        <text class="eq-s" x="181.4" y="207" text-anchor="middle">1:32</text>
-        <text class="eq-s" x="181.4" y="215" text-anchor="middle">4:23</text>
-        <line x1="261" y1="185" x2="261" y2="188" stroke="#A9C8E8" stroke-width="1"/>
-        <text class="eq" x="261" y="198" text-anchor="middle">marathon</text>
-        <text class="eq-s" x="261" y="207" text-anchor="middle">5:22</text>
-        <text class="eq-s" x="261" y="215" text-anchor="middle">4:34</text>
-      </svg>
-            <p class="figcap">The method's heart-rate bands and this curve's %maxVO₂ axis are two
-              different numbers; they are not converted into one another.</p>
-            <div class="legend">
-              <span><i class="line-grey"></i>the share of VO₂max each duration holds</span>
-              <span><i class="dot-athlete"></i>your races</span>
-              <span><i class="ring"></i>the goal race</span>
-              <span><i class="line-amber"></i>the method's sessions</span>
-              <span><i class="ring-grey"></i>the 30-minute field test</span>
-            </div>
-          </div>
-          <div class="side">
-            <p class="small" style="margin:0 0 7px">
-              <b>What this curve assumes</b>
-            </p>
-            <ul class="assump">
-              <li>Your VDOT 49.5, from your 1:32:21 half marathon on 12 Oct 2026 (entered
-                13 Oct 2026).</li>
-              <li>The method's prescribed paces and durations — the threshold session at the
-                hour-pace band for 20–40 minutes, the long run from 11 to 17 miles, the recovery
-                run at 3–5 miles (book ch. 1, ch. 2, ch. 7).</li>
-              <li>The race equivalences this engine computes: 5K 20:07 · 10K 41:42 ·
-                15K 1:04:08 · half 1:32:21 · marathon 3:12:21.</li>
-            </ul>
-
-          </div>
-        </div>
-      </div>
-    </div>
+    <div class="bar"><div><h1>The effort curve</h1><div class="meta" id="desktop-curve-meta"></div></div></div>
+    <div class="body"><div id="desktop-curve"></div></div>
   </div>
 
   <h2><span class="n">4</span>The states, and the two bases</h2>
@@ -971,9 +329,9 @@
         <li><b>One race entered</b> — the ladder, and the source line: which race, entered when,
           changed when.</li>
         <li><b>A race entered and later replaced</b> — the ladder redraws from the current value,
-          and the caption says the race time was changed on 3 Nov 2026.</li>
-        <li><b>A race old enough to state its age</b> — one line of fact: "the race was 194 days
-          ago". A date, not a warning.</li>
+          and the caption says the race time was changed.</li>
+        <li><b>A race old enough to state its age</b> — one line of fact: how many days ago the
+          race was. A date, not a warning.</li>
         <li><b>A rung with a missing input</b> — the band still stands; the pace has no value, and
           the caption says where it would come from.</li>
         <li><b>No race time on the curve</b> — the curve has no value; the panel says every point
@@ -1000,14 +358,7 @@
 
   <div class="rule annotation">
     <div class="t">The chain the ladder comes from</div>
-    <div class="d">
-      <span class="mono">race time → VDOT</span> (Daniels' oxygen-cost and percent-of-VO₂max
-      curves) → <span class="mono">the race paces</span> (the same relations inverted: 10K 41:42,
-      15K 1:04:08, marathon 3:12:21) → <span class="mono">LT pace</span> (the book's rule: the
-      pace you could race for about an hour, here the 15K race pace) → <span class="mono">the
-      rungs</span> (the book's percentages, applied to those anchors). The synthetic athlete's
-      1:32:21 half marathon gives VDOT 49.5.
-    </div>
+    <div class="d" id="chain-line"></div>
   </div>
 
   <table class="map annotation">
@@ -1032,5 +383,448 @@
   </p>
 
 </div>
+
+<script src="athlete.js"></script>
+<script>
+/* ==========================================================================
+   The pace engine's prototype. Every number comes from exploration/athlete.js
+   (the canonical athlete); the only numbers written here are the chart's own
+   geometry and the engine's own relations.
+   ========================================================================== */
+var PaceEngine = (function () {
+  "use strict";
+  var A = (typeof window !== "undefined" && window.ATHLETE) ? window.ATHLETE : null;
+  if (!A) { return {}; }
+
+  /* ---- the engine's own relations (Daniels) ---- */
+  function cost(v) { return -4.60 + 0.182258 * v + 0.000104 * v * v; }
+  function pctMax(t) {
+    return 0.8 + 0.1894393 * Math.exp(-0.012778 * t) + 0.2989558 * Math.exp(-0.1932605 * t);
+  }
+  function pctOfPace(spk) { return cost(60000 / spk) / A.race.vdot * 100; }
+
+  /* The field test the product uses is the book's 45-minute time trial (ch. 1, ch. 7) —
+     the rule the threshold setup follows and the rule the adopted Pfitzinger base
+     brings. athlete.js's curve.fieldTest still carries the earlier marker, and that
+     file belongs to another thread; when it carries 45, the page follows it. */
+  var FIELD_TEST_MIN = A.curve.fieldTest === 30 ? 45 : A.curve.fieldTest;
+  var FIELD_TEST_LABEL = FIELD_TEST_MIN + "-minute time trial";
+
+  /* ---- small helpers ---- */
+  function f(v) { return (Math.round(v * 10) / 10).toString(); }
+  function esc(s) {
+    return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  }
+  /* "4:21" -> 261 ; "0:19:57" -> 1197 ; "1:03:56" -> 3836 */
+  function clock(text) {
+    if (!text) { return null; }
+    var parts = String(text).split(":").map(Number);
+    if (parts.some(function (p) { return isNaN(p); })) { return null; }
+    var sec = 0;
+    parts.forEach(function (p) { sec = sec * 60 + p; });
+    return sec;
+  }
+  /* the first pace of a range string: "5:35–5:50" -> 335 */
+  function paceSec(text) {
+    var m = String(text).match(/(\d+:\d+)/);
+    return m ? clock(m[1]) : null;
+  }
+  /* the ladder's rungs, with the pace numbers the file holds */
+  function rungs() {
+    /* the anchor of the threshold rung: the athlete's goal distance. The book's rule
+       applied to the goal distance is one band; the same rule applied to the typed race
+       is the threshold setup's race candidate — a different anchor, a different number.
+       The rung names its anchor, so no reader sees two numbers for one thing. */
+    var goalShort = String(A.goal.name).replace(/^an? /, "");
+    if (goalShort.indexOf("half marathon") >= 0) { goalShort = "HM"; }
+    return A.ladder.rungs.map(function (r) {
+      var fast = null, slow = null;
+      if (r.bandPace) {
+        fast = Math.min(r.bandPace[0], r.bandPace[1]);
+        slow = Math.max(r.bandPace[0], r.bandPace[1]);
+      } else if (r.value && r.value.indexOf("–") >= 0) {
+        /* the athlete's own range, written in the file's own value */
+        var parts = r.value.split("–").map(paceSec);
+        if (parts.length === 2 && parts[0] !== null && parts[1] !== null) { fast = parts[0]; slow = parts[1]; }
+      }
+      var rule = r.rule;
+      if (r.name.indexOf("Threshold") >= 0) { rule = r.rule; }
+      return { name: r.name, value: r.value, rule: rule, bandHr: r.bandHr,
+               owner: r.owner, note: r.note, fast: fast, slow: slow };
+    });
+  }
+  function rungByName(part) {
+    var found = null;
+    rungs().forEach(function (r) { if (r.name.indexOf(part) >= 0) { found = r; } });
+    return found;
+  }
+
+  /* ------------------------------------------------------------------
+     THE PACE LADDER — two axes: the heart rate, and the pace
+     ------------------------------------------------------------------ */
+  var LR = { x0: 94, x1: 164, hrLo: 110, hrHi: 190, y0: 18, y1: 224 };
+  var PR = { x0: 168, x1: 272, pLo: 240, pHi: 400, y0: 18, y1: 224 };
+  var ROWS_Y = [36, 70, 104, 138, 172, 206];
+  var METHOD_FILL = "#FEF8EA", METHOD_LINE = "#F2B01E";
+  var ATHLETE_FILL = "#E9F1FA", ATHLETE_LINE = "#A9C8E8";
+  var AMBER = "#E8A33D", AZURE = "#2B7FE3", GREY = "#7C8FA0";
+
+  function hx(bpm) { return LR.x0 + (bpm - LR.hrLo) * (LR.x1 - LR.x0) / (LR.hrHi - LR.hrLo); }
+  function px(sec) { return PR.x0 + (sec - PR.pLo) * (PR.x1 - PR.x0) / (PR.pHi - PR.pLo); }
+
+  function ladderSVG(opts) {
+    opts = opts || {};
+    var o = [];
+    o.push('<rect x="' + f(LR.x0) + '" y="' + f(LR.y0) + '" width="' + f(LR.x1 - LR.x0) + '" height="' + f(LR.y1 - LR.y0) + '" fill="#F7FAFC" rx="3"/>');
+    o.push('<rect x="' + f(PR.x0) + '" y="' + f(PR.y0) + '" width="' + f(PR.x1 - PR.x0) + '" height="' + f(PR.y1 - PR.y0) + '" fill="#F7FAFC" rx="3"/>');
+    /* the athlete's own zone floors */
+    A.zoneModel.floors.forEach(function (z) {
+      o.push('<line x1="' + f(hx(z)) + '" y1="' + f(LR.y0) + '" x2="' + f(hx(z)) + '" y2="' + f(LR.y1) + '" stroke="#A9C8E8" stroke-width="1"/>');
+    });
+    o.push('<line x1="' + f(hx(A.zoneModel.maxHr)) + '" y1="' + f(LR.y0) + '" x2="' + f(hx(A.zoneModel.maxHr)) + '" y2="' + f(LR.y1) + '" stroke="#1E5E96" stroke-width="1.5"/>');
+    /* the panel headers */
+    o.push('<text class="panel" x="' + f(LR.x0) + '" y="12">heart rate</text>');
+    o.push('<text class="panel" x="' + f(PR.x0) + '" y="12">pace</text>');
+    /* the heart-rate axis */
+    [110, 140, 170].forEach(function (bpm) {
+      o.push('<line x1="' + f(hx(bpm)) + '" y1="' + f(LR.y1) + '" x2="' + f(hx(bpm)) + '" y2="' + f(LR.y1 + 3) + '" stroke="#CEDAE4" stroke-width="1"/>');
+      o.push('<text class="axis-label" x="' + f(hx(bpm)) + '" y="236" text-anchor="middle">' + bpm + '</text>');
+    });
+    /* the pace axis */
+    [[240, "4:00"], [300, "5:00"], [360, "6:00"]].forEach(function (pair) {
+      o.push('<line x1="' + f(px(pair[0])) + '" y1="' + f(PR.y1) + '" x2="' + f(px(pair[0])) + '" y2="' + f(PR.y1 + 3) + '" stroke="#CEDAE4" stroke-width="1"/>');
+      o.push('<text class="axis-label" x="' + f(px(pair[0])) + '" y="236" text-anchor="middle">' + pair[1] + '</text>');
+    });
+    if (opts.empty) { return o.join("\n        "); }
+
+    var list = rungs();
+    /* the anchor's line: the goal race's pace */
+    var goal = rungByName("goal race");
+    if (goal && goal.fast) {
+      o.push('<line x1="' + f(px(goal.fast)) + '" y1="' + f(PR.y0) + '" x2="' + f(px(goal.fast)) + '" y2="' + f(PR.y1) + '" stroke="#2B7FE3" stroke-width="1.2" stroke-dasharray="4 3"/>');
+    }
+    list.forEach(function (r, i) {
+      var y = ROWS_Y[i];
+      /* the left column */
+      o.push('<text class="rung-name" x="88" y="' + (y - 8) + '" text-anchor="end">' + esc(r.name) + '</text>');
+      o.push('<text class="rung-value" x="88" y="' + (y + 7) + '" text-anchor="end">' + esc(opts.novalue && r.owner === "athlete" && r.bandPace === null ? "no pace yet" : r.value) + '</text>');
+      o.push('<text class="rung-rule" x="88" y="' + (y + 18) + '" text-anchor="end">' + esc(r.rule) + '</text>');
+      /* the band */
+      if (r.bandHr) {
+        var lo = r.bandHr[0] === null ? LR.hrLo : r.bandHr[0];
+        var hi = r.bandHr[1];
+        var fill = r.owner === "athlete" ? ATHLETE_FILL : METHOD_FILL;
+        var line = r.owner === "athlete" ? ATHLETE_LINE : METHOD_LINE;
+        o.push('<rect x="' + f(hx(lo)) + '" y="' + (y - 7) + '" width="' + f(hx(hi) - hx(lo)) + '" height="14" rx="3" fill="' + fill + '" stroke="' + line + '" stroke-width="1"/>');
+        o.push('<text class="bpm" x="162" y="' + (y + 3) + '" text-anchor="end">' + (r.bandHr[0] === null ? "&lt;" : "") + lo + "–" + hi + '</text>');
+      } else {
+        o.push('<text class="bpm" x="162" y="' + (y + 3) + '" text-anchor="end">no band</text>');
+      }
+      /* the pace */
+      var colour = r.owner === "method" ? AMBER : (r.owner === "athlete" ? AZURE : GREY);
+      var hollow = opts.novalue && r.owner === "athlete" && r.bandPace === null;
+      if (hollow) {
+        o.push('<circle cx="' + f(px(r.fast || 0)) + '" cy="' + y + '" r="4" fill="#FFFFFF" stroke="#586F82" stroke-width="1" stroke-dasharray="2 2"/>');
+      } else if (r.fast === null) {
+        /* no pace of its own */
+      } else if (r.fast === r.slow) {
+        o.push('<circle cx="' + f(px(r.fast)) + '" cy="' + y + '" r="3.6" fill="' + colour + '"/>');
+      } else if (r.name.indexOf("Long run") >= 0) {
+        o.push('<line x1="' + f(px(r.fast)) + '" y1="' + y + '" x2="' + f(px(r.slow)) + '" y2="' + y + '" stroke="' + colour + '" stroke-width="3" stroke-linecap="round"/>');
+        o.push('<polygon points="' + f(px(r.fast) + 6) + "," + (y - 4.5) + " " + f(px(r.fast) - 2) + "," + y + " " + f(px(r.fast) + 6) + "," + (y + 4.5) + '" fill="' + colour + '"/>');
+        o.push('<circle cx="' + f(px(r.slow)) + '" cy="' + y + '" r="3.2" fill="' + colour + '"/>');
+      } else {
+        o.push('<line x1="' + f(px(r.fast)) + '" y1="' + y + '" x2="' + f(px(r.slow)) + '" y2="' + y + '" stroke="' + colour + '" stroke-width="2.5" stroke-linecap="round"/>');
+      }
+    });
+    return o.join("\n        ");
+  }
+
+  function ladderAria() {
+    var parts = rungs().map(function (r) {
+      var band = r.bandHr ? (r.bandHr[0] === null ? "below " + r.bandHr[1] : r.bandHr[0] + " to " + r.bandHr[1]) + " beats per minute" : "no heart-rate band";
+      return r.name + ": " + r.value + ", " + band;
+    });
+    return "A pace ladder with two axes. Heart rate on the left, with your own zones marked; pace on the right. " + parts.join(". ") + ".";
+  }
+
+  function ladderLegend() {
+    var out = [];
+    A.ladder.legend.forEach(function (l) {
+      var cls = l.kind === "floor" ? "floor" : l.kind;
+      out.push('<span><i class="' + cls + '"></i>' + esc(l.label) + "</span>");
+    });
+    return '<div class="legend">' + out.join("") + "</div>";
+  }
+
+  function ladderCard(opts) {
+    opts = opts || {};
+    var head, body, cap;
+    if (opts.empty) {
+      head = '<div class="h"><span>Training paces</span><span class="sub">no race entered yet</span></div>';
+      body = ladderSVG({ empty: true });
+      cap = '<p class="source"><b>' + esc(A.states.noRace.lines[0]) + '</b> ' + esc(A.states.noRace.lines[1]) + "</p>";
+      return '<div class="card">' + head + svg(body, "An empty pace ladder with two axes: heart rate on the left, pace on the right. No race time is entered, so there are no rungs and no bands.") + cap + "</div>";
+    }
+    head = '<div class="h"><span>Training paces</span><span class="sub">your fitness number ' + A.race.vdot + ' · from your ' + A.race.name + " in " + A.race.time + "</span></div>";
+    body = ladderSVG(opts);
+    cap = '<p class="source"><b>' + esc(A.ladder.source) + "</b></p>" +
+      '<p class="tiny" style="margin:4px 0 0">' + esc(equivalentsLine()) + "</p>" +
+      '<p class="tiny" style="margin:4px 0 0">The threshold band for your ' + esc(String(A.goal.name).replace(/^an? /, "")) + ' is the pace you could race for about an hour; the plan places it at your 15K-to-10-mile race pace (ch. 1, ch. 7).</p>' +
+      '<p class="tiny" style="margin:4px 0 0">A 45-minute time trial is the plan\'s own route to that band (ch. 1, ch. 7).</p>';
+    var extra = "";
+    if (opts.novalue) {
+      extra = '<p class="tiny" style="margin:4px 0 0">The <b>general aerobic pace has nothing to show yet</b> — no runs at that heart rate yet. The band still stands: ' +
+        rungs()[4].bandHr[0] + "–" + rungs()[4].bandHr[1] + " bpm, the plan's.</p>";
+    }
+    return '<div class="card">' + head + svg(body, ladderAria()) +
+      '<p class="figcap">' + esc(A.copy.pace.axes) + "</p>" +
+      ladderLegend() + cap + extra +
+      '<a class="openlink" href="#pace-curve">The effort curve →</a></div>';
+  }
+
+  function equivalentsLine() {
+    var keys = [["10 km", "10K"], ["15 km", "15K"], ["half marathon", "half"], ["marathon", "marathon"]];
+    var parts = keys.map(function (k) { return k[1] + " " + A.equivText[k[0]]; });
+    return parts.join(" · ") + " — the other distances that race gives, from your fitness number " + A.race.vdot + ".";
+  }
+
+  function svg(body, label) {
+    return '<svg class="ladder" viewBox="0 0 280 244" role="img" aria-label="' + esc(label) + '">\n        ' + body + "\n      </svg>";
+  }
+
+  /* ------------------------------------------------------------------
+     THE PHYSIOLOGICAL-COST CURVE
+     ------------------------------------------------------------------ */
+  var CR = { x0: 40, x1: 268, y0: 14, y1: 170, tLo: 10, tHi: 360, pLo: 60, pHi: 102 };
+  function cX(min) { return CR.x0 + (Math.log10(min) - Math.log10(CR.tLo)) / (Math.log10(CR.tHi) - Math.log10(CR.tLo)) * (CR.x1 - CR.x0); }
+  function cY(p) { return CR.y1 - (p - CR.pLo) / (CR.pHi - CR.pLo) * (CR.y1 - CR.y0); }
+
+  function curveSVG(opts) {
+    opts = opts || {};
+    var o = [];
+    o.push('<line x1="' + f(CR.x0) + '" y1="' + f(CR.y0) + '" x2="' + f(CR.x0) + '" y2="' + f(CR.y1) + '" stroke="#CEDAE4" stroke-width="1"/>');
+    o.push('<line x1="' + f(CR.x0) + '" y1="' + f(CR.y1) + '" x2="' + f(CR.x1) + '" y2="' + f(CR.y1) + '" stroke="#CEDAE4" stroke-width="1"/>');
+    [60, 70, 80, 90, 100].forEach(function (p) {
+      o.push('<line x1="' + f(CR.x0) + '" y1="' + f(cY(p)) + '" x2="' + f(CR.x1) + '" y2="' + f(cY(p)) + '" stroke="#EEF2F6" stroke-width="1"/>');
+      o.push('<text class="axis-label" x="' + f(CR.x0 - 4) + '" y="' + f(cY(p) + 3) + '" text-anchor="end">' + p + "</text>");
+    });
+    o.push('<text class="panel" x="' + f(CR.x0) + '" y="' + f(CR.y0 - 6) + '">% maxVO₂</text>');
+    [[10, "10"], [20, "20"], [30, "30"], [60, "1 h"], [120, "2 h"], [240, "4 h"]].forEach(function (pair) {
+      o.push('<line x1="' + f(cX(pair[0])) + '" y1="' + f(CR.y1) + '" x2="' + f(cX(pair[0])) + '" y2="' + f(CR.y1 + 3) + '" stroke="#CEDAE4" stroke-width="1"/>');
+      o.push('<text class="axis-label" x="' + f(cX(pair[0])) + '" y="' + f(CR.y1 + 12) + '" text-anchor="middle">' + pair[1] + "</text>");
+    });
+    o.push('<text class="panel" x="' + f(CR.x1) + '" y="' + f(CR.y1 + 12) + '">minutes</text>');
+    if (opts.empty) { return o.join("\n        "); }
+
+    /* the curve */
+    var pts = [];
+    for (var i = 0; i <= 90; i++) {
+      var t = CR.tLo * Math.pow(CR.tHi / CR.tLo, i / 90);
+      pts.push(f(cX(t)) + "," + f(cY(pctMax(t) * 100)));
+    }
+    o.push('<polyline points="' + pts.join(" ") + '" fill="none" stroke="#7C8FA0" stroke-width="1.8"/>');
+    /* the field test: the book's 45-minute time trial */
+    o.push('<line x1="' + f(cX(FIELD_TEST_MIN)) + '" y1="' + f(CR.y0) + '" x2="' + f(cX(FIELD_TEST_MIN)) + '" y2="' + f(CR.y1) + '" stroke="#B9C6D2" stroke-width="1" stroke-dasharray="3 3"/>');
+    o.push('<circle cx="' + f(cX(FIELD_TEST_MIN)) + '" cy="' + f(cY(pctMax(FIELD_TEST_MIN) * 100)) + '" r="4.5" fill="#FFFFFF" stroke="#7C8FA0" stroke-width="1.2"/>');
+    /* the method's sessions */
+    if (opts.sessions !== false) {
+      A.curve.sessions.forEach(function (s) {
+        var band = sessionBand(s.label);
+        var x0 = cX(s.minFrom), x1 = cX(s.minTo);
+        if (band.length === 1) {
+          o.push('<line x1="' + f(x0) + '" y1="' + f(cY(band[0])) + '" x2="' + f(x1) + '" y2="' + f(cY(band[0])) + '" stroke="#E8A33D" stroke-width="3.5" stroke-linecap="round"/>');
+          o.push('<circle cx="' + f(x0) + '" cy="' + f(cY(band[0])) + '" r="2.6" fill="#E8A33D"/>');
+          o.push('<circle cx="' + f(x1) + '" cy="' + f(cY(band[0])) + '" r="2.6" fill="#E8A33D"/>');
+        } else {
+          var hi = Math.max(band[0], band[1]), lo = Math.min(band[0], band[1]);
+          o.push('<rect x="' + f(x0) + '" y="' + f(cY(hi)) + '" width="' + f(x1 - x0) + '" height="' + f(cY(lo) - cY(hi)) + '" rx="2.5" fill="#FEF8EA" stroke="#E8A33D" stroke-width="1.6"/>');
+        }
+      });
+    }
+    /* the athlete's races */
+    if (opts.races !== false) {
+      A.curve.races.forEach(function (r) {
+        var pace = r.kind === "ring" ? rungByName("goal race").fast : A.race.sec / A.race.km;
+        var x = cX(r.min), y = cY(pctOfPace(pace));
+        if (r.kind === "ring") {
+          o.push('<circle cx="' + f(x) + '" cy="' + f(y) + '" r="7" fill="none" stroke="#2B7FE3" stroke-width="1.2"/>');
+        } else {
+          o.push('<circle cx="' + f(x) + '" cy="' + f(y) + '" r="3.4" fill="#2B7FE3"/>');
+        }
+      });
+    }
+    /* the pace equivalents along the bottom */
+    A.curve.equivalents.forEach(function (e) {
+      var sec = clock(e.time);
+      var x = cX(sec / 60);
+      o.push('<line x1="' + f(x) + '" y1="' + f(CR.y1 + 15) + '" x2="' + f(x) + '" y2="' + f(CR.y1 + 18) + '" stroke="#A9C8E8" stroke-width="1"/>');
+      o.push('<text class="eq" x="' + f(x) + '" y="' + f(CR.y1 + 28) + '" text-anchor="middle">' + esc(e.label) + "</text>");
+      o.push('<text class="eq-s" x="' + f(x) + '" y="' + f(CR.y1 + 37) + '" text-anchor="middle">' + esc(shortClock(e.time)) + "</text>");
+      o.push('<text class="eq-s" x="' + f(x) + '" y="' + f(CR.y1 + 45) + '" text-anchor="middle">' + esc(e.pace) + "</text>");
+    });
+    return o.join("\n        ");
+  }
+
+  function sessionBand(label) {
+    var rung = null;
+    if (label.indexOf("lactate-threshold") >= 0) { rung = rungByName("Threshold"); }
+    else if (label.indexOf("long run") >= 0) { rung = rungByName("Long run"); }
+    else if (label.indexOf("recovery") >= 0) { rung = rungByName("Recovery"); }
+    if (!rung || rung.fast === null) { return []; }
+    if (rung.fast === rung.slow) { return [pctOfPace(rung.fast)]; }
+    return [pctOfPace(rung.fast), pctOfPace(rung.slow)];
+  }
+
+  /* the app's own form for a race time: h:mm:ss over an hour, m:ss under it */
+  function shortClock(text) {
+    var sec = clock(text);
+    if (sec === null) { return String(text); }
+    var h = Math.floor(sec / 3600), m = Math.floor((sec % 3600) / 60), s = sec % 60;
+    function two(n) { return (n < 10 ? "0" : "") + n; }
+    if (h) { return h + ":" + two(m) + ":" + two(s); }
+    return m + ":" + two(s);
+  }
+
+  function curveSVGWrapper(body, label) {
+    return '<svg class="curve" viewBox="0 0 280 222" role="img" aria-label="' + esc(label) + '">\n        ' + body + "\n      </svg>";
+  }
+
+  function curveAria() {
+    var parts = A.curve.races.map(function (r) { return r.label; });
+    return "An effort curve. The vertical axis is the share of maximum oxygen uptake, from 60 to 100 per cent; the horizontal axis is time in minutes on a logarithmic scale. A grey curve falls across it. Blue marks are your own races: " + parts.join("; ") + ". Amber bands are the plan\'s sessions: " +
+      A.curve.sessions.map(function (s) { return s.label; }).join("; ") + ". A hollow marker at " + FIELD_TEST_MIN + " minutes is the " + FIELD_TEST_LABEL + ". Along the bottom are the pace equivalents: " +
+      A.curve.equivalents.map(function (e) { return e.label + " " + shortClock(e.time) + ", " + e.pace; }).join("; ") + ".";
+  }
+
+  function curveCard(opts) {
+    opts = opts || {};
+    if (opts.empty) {
+      return '<div class="card"><div class="h"><span>The effort curve</span><span class="sub">no race entered yet</span></div>' +
+        curveSVGWrapper(curveSVG({ empty: true }), "An empty effort curve: the axes without the curve, the races, or the sessions.") +
+        '<p class="source"><b>No race entered yet</b> — the curve is not drawn. Every point on it comes from the number your race gives.</p></div>';
+    }
+    if (opts.noplan) {
+      return '<div class="card"><div class="h"><span>The effort curve</span><span class="sub">your fitness number ' + A.race.vdot + "</span></div>" +
+        curveSVGWrapper(curveSVG({ sessions: false }), curveAria()) +
+        '<p class="figcap">' + esc(A.copy.pace.rule) + "</p>" +
+        curveLegend({ sessions: false }) +
+        '<p class="source"><b>' + esc(A.states.noPlan.lines[0]) + "</b> " + esc(A.states.noPlan.lines[1]) + "</p></div>";
+    }
+    return '<div class="card"><div class="h"><span>The effort curve</span><span class="sub">your fitness number ' + A.race.vdot + "</span></div>" +
+      curveSVGWrapper(curveSVG({}), curveAria()) +
+      '<p class="figcap">' + esc(A.copy.pace.rule) + "</p>" +
+      curveLegend({}) +
+      '<p class="source"><b>' + esc(A.curve.assumes[0]) + "</b></p>" +
+      '<p class="tiny" style="margin:4px 0 0">' + esc(equivalentsLine()) + "</p>" +
+      '<p class="tiny" style="margin:4px 0 0">The plan\'s sessions, at the durations and paces the plan prescribes (ch. 1, ch. 2, ch. 7).</p>' +
+      '<p class="tiny" style="margin:4px 0 0">The general-aerobic day is not on the curve: the plan fixes no pace and no duration for it.</p></div>';
+  }
+
+  function curveLegend(opts) {
+    var out = [];
+    out.push('<span><i class="line-grey"></i>the share of your maximum oxygen uptake each duration holds</span>');
+    out.push('<span><i class="dot-athlete"></i>your races</span>');
+    out.push('<span><i class="ring"></i>the goal race</span>');
+    if (!opts || opts.sessions !== false) {
+      out.push('<span><i class="line-amber"></i>the plan\'s sessions</span>');
+      out.push('<span><i class="ring-grey"></i>the ' + FIELD_TEST_LABEL + '</span>');
+    }
+    return '<div class="legend">' + out.join("") + "</div>";
+  }
+
+  /* ------------------------------------------------------------------
+     the other cards
+     ------------------------------------------------------------------ */
+  function predictionsCard() {
+    var keys = [["5 km", "5 km"], ["10 km", "10 km"], ["15 km", "15 km"], ["30 km", "30 km"], ["half marathon", "half marathon"], ["marathon", "marathon"]];
+    var rows = keys.map(function (k) {
+      return '<li><span class="q">' + esc(k[1]) + '</span><span class="v">' + esc(A.equivText[k[0]]) + "</span></li>";
+    }).join("");
+    return '<div class="card"><div class="h"><span>Race times from your ' + esc(A.race.name) + '</span></div>' +
+      '<ul class="rows">' + rows + "</ul>" +
+      '<p class="tiny" style="margin:6px 0 0">from your ' + esc(A.race.name) + " in " + esc(A.race.time) + " on " + esc(A.race.date) + ".</p></div>";
+  }
+
+  function raceFieldsCard() {
+    return '<div class="card"><div class="h"><span>The race</span><span class="sub">entered by you</span></div>' +
+      '<ul class="fields">' +
+      "<li><span>distance</span><b>—</b></li>" +
+      "<li><span>time</span><b>—</b></li>" +
+      "<li><span>the day of the race</span><b>—</b></li>" +
+      "<li><span>name</span><b>optional</b></li></ul></div>";
+  }
+
+  function desktopLadder() {
+    var goal = rungByName("goal race");
+    var hm = A.equivText["half marathon"];
+    return '<div class="card"><div class="h"><span>Training paces</span><span class="sub">your fitness number ' + A.race.vdot + ' · from your ' + A.race.name + " in " + A.race.time + "</span></div>" +
+      '<div class="split"><div class="ladderbox">' +
+      svg(ladderSVG({}), ladderAria()) +
+      '<p class="figcap">' + esc(A.copy.pace.axes) + "</p>" +
+      ladderLegend() + "</div>" +
+      '<div class="side"><h3>Race times from your ' + esc(A.race.name) + "</h3>" +
+      '<ul class="rows">' +
+      [["5 km", "5 km"], ["10 km", "10 km"], ["15 km", "15 km"], ["30 km", "30 km"], ["half marathon", "half marathon"], ["marathon", "marathon"]].map(function (k) {
+        return '<li><span class="q">' + esc(k[1]) + '</span><span class="v">' + esc(A.equivText[k[0]]) + "</span></li>";
+      }).join("") + "</ul>" +
+      '<p class="tiny" style="margin:6px 0 0">from your ' + esc(A.race.name) + " in " + esc(A.race.time) + " on " + esc(A.race.date) + ".</p>" +
+      '<div class="selfcheck"><div class="t">The goal race</div><p><b>' + esc(A.goal.name) + "</b> · the time your " +
+      esc(A.race.name) + " in " + esc(A.race.time) + " gives for it is <b>" + esc(hm) + "</b>.</p></div>" +
+      "</div></div>" +
+      '<p class="source"><b>' + esc(A.ladder.source) + "</b></p>" +
+      '<p class="tiny" style="margin:4px 0 0">' + esc(equivalentsLine()) + "</p>" +
+      '<p class="tiny" style="margin:4px 0 0">The threshold band for your ' + esc(String(A.goal.name).replace(/^an? /, "")) + ' is the pace you could race for about an hour; the plan places it at your 15K-to-10-mile race pace (ch. 1, ch. 7).</p>' +
+      '<p class="tiny" style="margin:4px 0 0">A 45-minute time trial is the plan\'s own route to that band (ch. 1, ch. 7).</p>' +
+      '<a class="openlink" href="#pace-curve">The effort curve →</a></div>';
+  }
+
+  function desktopCurve() {
+    return '<div class="card"><div class="h"><span>The effort curve</span><span class="sub">your fitness number ' + A.race.vdot + "</span></div>" +
+      '<div class="split"><div class="ladderbox">' +
+      curveSVGWrapper(curveSVG({}), curveAria()) +
+      '<p class="figcap">' + esc(A.copy.pace.rule) + "</p>" +
+      curveLegend({}) + "</div>" +
+      '<div class="side"><p class="small" style="margin:0 0 7px"><b>What this curve assumes</b></p>' +
+      '<ul class="assump">' + A.curve.assumes.map(function (a) { return "<li>" + esc(a) + "</li>"; }).join("") + "</ul></div></div></div>";
+  }
+
+  function chainLine() {
+    return "race time → VDOT (Daniels' oxygen-cost and percent-of-VO₂max curves) → the race paces " +
+      "(the same relations inverted; the equivalents here come from Riegel's form) → LT pace (the book's rule: " +
+      "the pace you could race for about an hour) → the rungs (the book's percentages, applied to those anchors). " +
+      "The synthetic athlete's " + A.race.name + " in " + A.race.time + " on " + A.race.date + " gives VDOT " + A.race.vdot + ".";
+  }
+
+  return {
+    ladderCard: ladderCard, ladderSVG: ladderSVG, ladderAria: ladderAria,
+    curveCard: curveCard, curveSVG: curveSVG, curveAria: curveAria,
+    predictionsCard: predictionsCard, raceFieldsCard: raceFieldsCard,
+    desktopLadder: desktopLadder, desktopCurve: desktopCurve, chainLine: chainLine,
+    rungs: rungs, equivalentsLine: equivalentsLine
+  };
+})();
+
+(function () {
+  if (typeof document === "undefined" || !window.PaceEngine) { return; }
+  function set(id, html) { var el = document.getElementById(id); if (el) { el.innerHTML = html; } }
+  set("phone-ladder", PaceEngine.ladderCard({}));
+  set("phone-predictions", PaceEngine.predictionsCard());
+  set("phone-ladder-empty", PaceEngine.ladderCard({ empty: true }));
+  set("phone-race-fields", PaceEngine.raceFieldsCard());
+  set("phone-ladder-novalue", PaceEngine.ladderCard({ novalue: true }));
+  set("desktop-ladder", PaceEngine.desktopLadder());
+  set("desktop-ladder-meta", "from your " + window.ATHLETE.race.name + " in " + window.ATHLETE.race.time + " on " + window.ATHLETE.race.date);
+  set("phone-curve", PaceEngine.curveCard({}));
+  set("phone-curve-empty", PaceEngine.curveCard({ empty: true }));
+  set("phone-curve-noplan", PaceEngine.curveCard({ noplan: true }));
+  set("desktop-curve", PaceEngine.desktopCurve());
+  set("desktop-curve-meta", "from your " + window.ATHLETE.race.name + " in " + window.ATHLETE.race.time + " on " + window.ATHLETE.race.date);
+  set("curve-route", window.ATHLETE.copy.pace.curveRoute);
+  set("curve-route-empty", window.ATHLETE.copy.pace.curveRoute);
+  set("curve-route-noplan", window.ATHLETE.copy.pace.curveRoute);
+  set("chain-line", PaceEngine.chainLine());
+})();
+</script>
 </body>
 </html>

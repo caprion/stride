@@ -4,6 +4,8 @@
 only; nothing under `crates/`, `frontend/`, `android/` or `desktop/` was touched, and nothing was
 committed.*
 
+*The surface copy in this note and in its prototype follows the language pass — `exploration/language.md`.*
+
 **The brief.** The user, looking at the ledger card prototype: *"the cards at this time look very
 verbose. we need to find a way to make them look like charts or other things."* D11 answered that
 with a direction — the picture first, the sentence second. This note carries it the rest of the way:
@@ -59,25 +61,26 @@ heart rate's answer point at different dates, as the ledger says they do.
     largest held out, and the previous period's longest as a faint reference line across them;
     *repeated work* as marks on the strip of weeks where the watch recorded a workout step, with the
     empty weeks white.
-* **The caption.** `7 Sep – 24 Nov 2026 · measured over the moving time` — the period and the
+* **The caption.** `7 Sep – 24 Nov 2026 · measured over the time you were running` — the period and the
   denominator (D5), and no number the picture already shows.
 * **The states.** *One run in the window* — one filled cell in the low row, every other cell white;
   the caption says `one run recorded`. *No zone model* — the split bar is an empty outline and the
-  three band rows read **no value / no zone model read**, while **the shape rows still answer**
+  three band rows read **not measured / your watch's zones have not come through**, while **the shape rows still answer**
   (the longest run and the repeated work need no zone model), exactly as the ledger's §4.3 says.
   *No workout step recorded* — the repeated-work row has no marks and says so in one short line
-  (`no value` / `no workout steps`); the row is not a zero.
+  (`not recorded` / `no workout steps recorded`); the row is not a zero.
 
 ### 3 · The load — Progress
 
 * **The picture.** The fitness and fatigue curves over the window — azure solid, amber dashed —
   with the **form filled as the area between them**, today's value a dot, and the two curves'
   values and the form as labels on the picture.
-* **The caption.** `Banister k = 1.92 · the ratio is inside 0.8 to 1.3` — the model's own constants
+* **The caption.** `1.40 is inside 0.8 to 1.3` — the model's own expectation
   and the scenario (the scenario sentence changes with the ratio: the ratio above 1.3 gets the
   product's "with no training for 7 days…" line, below 0.8 gets its mirror). The zone model is not
   named here: it is the screen's one source line (D18.3).
-* **The states.** *No run recorded in the window* — an empty frame, no curves. *No zone model* — the
+  *The constant behind it — **Banister k = 1.92** — is in the note, not on the surface (D22).*
+* **The states.** *No runs recorded* — an empty frame, no curves. *No zones yet* — the
   same empty frame, because the load model needs the model's maximum heart rate.
 
 ### 4 · The weeks — Progress
@@ -203,10 +206,10 @@ the wall needs, and the words they use:
 |---|---|---|
 | **an empty window** | the frame, the strip or the grid, empty | `no run recorded in the window` |
 | **one run in the window** | one cell filled, the rest white | `one run recorded` |
-| **no zone model** | the band rows read `no value / no zone model read`; the shape rows still answer | `no zone model has been read — the band rows have no value` |
-| **no race time** | the scatter without the ladder | `no race time entered — the training paces have no value` |
+| **no zones yet** | the band rows read `not measured / your watch's zones have not come through`; the shape rows still answer | `your watch's zones have not come through — the band rows are not worked out` |
+| **no race entered yet** | the scatter without the ladder | `no race entered yet — the training paces are not worked out` |
 | **no plan adopted** | the plan's row and outlines are absent | `no plan adopted` |
-| **no workout step recorded** | the repeated-work row has no marks and says `no value` | the period, and the row's own short line |
+| **no workout steps recorded** | the repeated-work row has no marks and says `not recorded` | the period, and the row's own short line |
 
 Two of these were the hardest to draw, and both turned on the same thing — **an absence that has a
 count is a fact, and an absence that has no count is only a reason**:

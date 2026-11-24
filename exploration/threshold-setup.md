@@ -4,6 +4,8 @@
 `desktop/`. The two files are this note and `exploration/threshold-setup.html`. Nothing is
 committed.*
 
+*The surface copy in this note and in its prototype follows the language pass — `exploration/language.md`.*
+
 *Read with:* `exploration/decisions.md` (**D3** the zone model's dated facts, **D10** the
 judgements kept out, **D11** the picture first, **D13** the first drop is Pfitzinger's plan,
 **D14** the two bases, one at a time), `docs/contract/voice.md` (the ban list),
@@ -171,6 +173,10 @@ threshold heart rate the model was built around". So:
 | `zone5_floor` | **the threshold**, by the product's existing convention | not a measurement the app can check |
 | `max_heart_rate` | the maximum the model was built on (read from the watch) | not a threshold, and never derived from an age |
 
+**The canonical athlete's model** (`exploration/athlete.js`): `HR_MAX`, maximum heart rate
+**183**, floors **115 · 128 · 143 · 159 · 165**, read on **3 Nov 2026**. The fifth floor —
+**165 bpm** — is the threshold this prototype shows.
+
 The model's own `training_method` says how the watch was configured — `HR_MAX`,
 `LACTATE_THRESHOLD`, `HR_RESERVE` or `CUSTOM` — and the card shows it. Under `HR_MAX` and
 `HR_RESERVE` the fifth floor is a share of the maximum rather than a threshold the athlete
@@ -185,7 +191,7 @@ configuration, and the athlete is the one who put that number there.
 
 Nothing to type. The model has to have been read from the watch; when it has not, this
 candidate has **no value with a reason** — the same reason the rest of the product uses:
-`zones.no_model` — "zones unavailable — no zone model has been read".
+`zones.no_model` — "no zones yet — your watch's heart-rate zones have not come through".
 
 ### 2.3 How it is computed
 
@@ -193,7 +199,27 @@ No arithmetic. The candidate **is** `zone5_floor` of the stored model, read as t
 read (`read_at`). The card's source line is the product's own:
 
 ```
-your zone model · {method} · max heart rate {max_hr} · read on {date}
+your zones · running · max heart rate 183 bpm · taken from your watch on 3 Nov 2026
+### OLD
+| `threshold.card.watch` | statement | "{value} — the start of your watch's fifth zone, from your zones read on {date}." |
+### NEW
+| `threshold.card.watch` | statement | "{value} — the start of your watch's fifth zone, from your zones read on {date}." |
+### OLD
+| `threshold.missing.base` | status | "the easy-day band is not set — the plan's bands come from a threshold heart rate, and no choice has been made for this plan. It could come from your watch's zones, a race, a field test, or a number you enter." |
+### NEW
+| `threshold.missing.base` | status | "the easy-day band is not set — the plan's bands come from a threshold heart rate, and no choice has been made for this plan. It could come from your watch's zones, a race, a field test, or a number you enter." |
+### OLD
+| `threshold.ways` | status | "four ways a threshold can arrive: your watch's zones, a race, a field test, or a number you enter" |
+### NEW
+| `threshold.ways` | status | "four ways a threshold can arrive: your watch's zones, a race, a field test, or a number you enter" |
+### OLD
+| the **80/20 plan's easy-day band** | "the easy-day band is not set — the plan's bands come from a threshold heart rate, and no choice has been made for this plan. It could come from your watch's zones, a race, a field test, or a number you enter." |
+### NEW
+| the **80/20 plan's easy-day band** | "the easy-day band is not set — the plan's bands come from a threshold heart rate, and no choice has been made for this plan. It could come from your watch's zones, a race, a field test, or a number you enter." |
+### OLD
+zones.check.heads          "your zones · the time you were running" | "the watch's own zones · the whole run, stops included"
+### NEW
+zones.check.heads          "your zones · the time you were running" | "the watch's own zones · the whole run, stops included"
 ```
 
 ### 2.4 What it cannot know
@@ -213,7 +239,7 @@ stored (§6.2) and the model stays where it is.
 
 ### 2.6 How it is named in a sentence
 
-> **170 bpm — the floor of your watch's fifth zone, from the zone model read on 12 Oct 2026.**
+> **165 bpm — the floor of your watch's fifth zone, from the zone model read on 3 Nov 2026.**
 
 with the model's own line under it, and the limit as an annotation:
 
@@ -264,9 +290,10 @@ The band, in the first branch, is **the 15K pace and the 10-mile pace** — two 
 athlete's own race time (the engine's equivalents), and the band sits between them, slightly
 faster than the 15K pace for most athletes, whose 15K is a little over an hour (spine §5.5.1).
 
-**Worked example (synthetic).** The athlete's 10K in 41:36. The book's own equivalent row
-(App. B, read directly in the spine §1.2) gives 1:03:51 for the 15K and 1:09:28 for the
-10-mile: **4:15 /km** and **4:19 /km**. The candidate carries the band **4:15–4:19 /km**.
+**Worked example (the canonical athlete).** The athlete's 10K in 41:36 on 12 Oct 2026, typed on
+13 Oct 2026 and changed on 3 Nov 2026; **VDOT 49.7**. The engine computes the equivalents from
+that race by Riegel's exponent (1.06): **1:03:56** for the 15K, at **4:16 /km**, and **1:08:53**
+for the 10-mile, at **4:17 /km**. The candidate carries the band **4:16–4:17 /km**.
 
 The heart-rate band the book's LT session runs in sits beside it: **80–91 % of maxHR, 75–88 % of
 HR reserve** (S1 ch. 7), and the narrower **82–90 % maxHR / 76–87 % HRR** of ch. 1.
@@ -290,8 +317,8 @@ race, and the branch that ran.
 
 ### 3.6 How it is named in a sentence
 
-> **4:15–4:19 /km — threshold pace from your 10K in 41:36 on 12 Oct 2026: the band between your
-> 15K pace (1:03:51) and your 10-mile pace (1:09:28), by the book's rule — the pace you could
+> **4:16–4:17 /km — threshold pace from your 10K in 41:36 on 12 Oct 2026: the band between your
+> 15K pace (1:03:56) and your 10-mile pace (1:08:53), by the book's rule — the pace you could
 > race for about an hour.**
 
 with the limit as an annotation:
@@ -540,14 +567,14 @@ one plan at a time (D14), and one threshold in force at a time.
 A change writes **another row**. The previous row stops being in force; it is not deleted and
 not edited. The history card then reads as a list of facts:
 
-> *Your threshold on 12 Nov 2026 was 168 bpm. On 3 Mar 2026 it was 172 bpm.*
+> *Your threshold on 3 Nov 2026 was 165 bpm. On 3 Mar 2026 it was 172 bpm.*
 
 The app does not say that the threshold has changed, does not ask whether the old value still
 applies, and does not mark any row as old. The dates do that work.
 
 ### 6.4 A disagreement is shown, not resolved
 
-If the watch's fifth-zone floor says 170 and the field test says 166, both cards are on the
+If the watch's fifth-zone floor says 165 and the typed number says 168, both cards are on the
 screen, each with its source and its date, and the two marks stand on the heart-rate lane at
 the two values. The app:
 
@@ -567,7 +594,7 @@ Skipping is a normal state, and it is a **state with a reason**, not an error:
 
 | the answer | what it says when no threshold is chosen |
 |---|---|
-| the **80/20 base's easy-day band** | "the easy-day band has no value — the base's bands are set from a threshold heart rate, and no choice has been made for this base. It could come from the watch's zone model, a race, a field test, or a number you enter." |
+| the **80/20 plan's easy-day band** | "the easy-day band is not set — the plan's bands come from a threshold heart rate, and no choice has been made for this plan. It could come from your watch's zones, a race, a field test, or a number you enter." |
 | the **plan's lactate-threshold session** | with no threshold chosen for the base, the session is paced from the method's own rule on the plan's anchor race; when the plan has no anchor race either, "the session's pace has no value — it is paced from a threshold pace, and none has been chosen, and the plan carries no race time." |
 
 The **ladder's threshold rung** is not on this list: it answers from the method's own chain on
@@ -604,6 +631,10 @@ anchor** — the book's hour pace, the 15K-to-10-mile band or the shorter-distan
 (S1, spine §5.5.1) — so the rung is a **band**, drawn with its two ends, the way the book's
 own anchor is a band.
 
+**The canonical rung** (`exploration/athlete.js`, the ladder's threshold rung): the
+**hour-pace band**, **4:16–4:21 /km**, with the heart-rate band **146–167 bpm** — the 15K pace
+to the half-marathon pace, both computed from the typed 10K by the same chain.
+
 **The ladder does not read the athlete's chosen threshold.** The threshold is the athlete's
 number, and the ladder is the method's chain; the app does not put one in place of the other
 here. Where the athlete has chosen a threshold, it lives on the candidates card, with its
@@ -639,10 +670,17 @@ threshold, which value, and the day it was chosen. When the athlete changes the 
 the sessions **from the day of the change** take the new band, and the sessions before it
 keep the band they were given.
 
-When there is no chosen threshold for this base, the session's pace comes from the **method's
-own rule** on the plan's anchor race (§8.1); when the plan has no anchor race either, the pace
-is a **no value with a reason** and the session itself still stands: date, kind and target
-distance are unaffected (§8).
+**The canonical athlete's plan** (`exploration/athlete.js`): the Pfitzinger 10K plan, adopted
+30 Sep 2026, anchored on the 10K in 41:36 on 12 Oct 2026, and **paced with the threshold the
+athlete chose from the watch's zone model — 165 bpm, 3 Nov 2026**. The threshold carries a
+heart rate and no pace, so the session's pace band is the **method's hour-pace band**,
+**4:16–4:21 /km** (146–167 bpm), and the card names the threshold it was paced with.
+
+When the chosen threshold carries a pace band of its own, the session is paced at **that**
+band. When there is no chosen threshold for this base, the session's pace comes from the
+**method's own rule** on the plan's anchor race (§8.1); when the plan has no anchor race
+either, the pace is a **no value with a reason** and the session itself still stands: date,
+kind and target distance are unaffected (§8).
 
 ### 7.5 The ledger — where it does not go
 
@@ -690,6 +728,13 @@ LT session pace band  ←  the chosen threshold's pace band      (the athlete's 
 **When both are there, the plan is paced with the athlete's own number**, and the card names
 that threshold, its value and the day it was chosen. The method's band is the plan's rule
 when the athlete has chosen nothing for that base.
+
+**The canonical athlete** (`exploration/athlete.js`): the plan is the Pfitzinger 10K plan,
+adopted 30 Sep 2026, anchored on the 10K in 41:36 on 12 Oct 2026, and paced with the
+threshold the athlete chose from the watch's zone model — **165 bpm, 3 Nov 2026**. The
+threshold carries no pace, so the sessions take the **hour-pace band, 4:16–4:21 /km**
+(146–167 bpm) — the method's rule — while the card names the threshold the plan was paced
+with.
 
 **The plan names the threshold it was paced with — the value and the date.** A plan adopted in
 March and still running in July is paced by March's number, and the card says so. When the
@@ -770,7 +815,7 @@ Following the catalogue's shape (`crates/stride-core/strings.json`):
 
 | id | kind | template |
 |---|---|---|
-| `threshold.card.watch` | statement | "{value} — the floor of your watch's fifth zone, from the zone model read on {date}." |
+| `threshold.card.watch` | statement | "{value} — the start of your watch's fifth zone, from your zones read on {date}." |
 | `threshold.card.race` | statement | "{band} — threshold pace from your {race} on {date}: the band between your {pace_a} pace ({time_a}) and your {pace_b} pace ({time_b}), by the book's rule — the pace you could race for about an hour." |
 | `threshold.card.test` | statement | "{value} — an estimate from your {test} on {date}: your pace and heart rate over the last {window} minutes (the book's rule)." |
 | `threshold.card.typed` | statement | "{value} — entered on {date}, from {label}." |
@@ -783,11 +828,11 @@ Following the catalogue's shape (`crates/stride-core/strings.json`):
 | `threshold.history` | statement | "your threshold on {date} was {value}" |
 | `threshold.paced_with` | statement | "this plan is paced with your threshold of {value}, chosen on {date}" |
 | `threshold.other_rules` | status | "other rules are published for this test — the card names the one it used" |
-| `threshold.missing.rung` | status | "the threshold pace has no value — the rule needs a race time, and none has been entered." |
-| `threshold.missing.base` | status | "the easy-day band has no value — the base's bands are set from a threshold heart rate, and no choice has been made for this base. It could come from the watch's zone model, a race, a field test, or a number you enter." |
-| `threshold.missing.session` | status | "the session's pace has no value — it is paced from a threshold pace, and none has been chosen, and the plan carries no race time." |
+| `threshold.missing.rung` | status | "the threshold pace is not worked out — the rule needs a race time, and none has been entered." |
+| `threshold.missing.base` | status | "the easy-day band is not set — the plan's bands come from a threshold heart rate, and no choice has been made for this plan. It could come from your watch's zones, a race, a field test, or a number you enter." |
+| `threshold.missing.session` | status | "the session's pace is not worked out — it is paced from a threshold pace, and none has been chosen, and the plan carries no race time." |
 | `threshold.drift` | statement | "the heart rate's drift across the window: {drift} bpm" |
-| `threshold.ways` | status | "four ways a threshold can arrive: the watch's own zone model, a race, a field test, or a number you enter" |
+| `threshold.ways` | status | "four ways a threshold can arrive: your watch's zones, a race, a field test, or a number you enter" |
 
 Every one of them is a `statement` or a `status`; none of them is a `direction`, an `option`
 or a `pattern`, because none of them judges anything.
@@ -806,7 +851,7 @@ they sit in the note under it (§15). A card renders the value, the source and t
 | 3 | **no test run pointed at** | the field-test card is empty, with the reason "no run chosen for the estimate"; the other cards stand |
 | 4 | **candidates, none chosen** | all the cards that have values, each with its source and its date; no card marked; the setup card names the four ways a threshold could arrive |
 | 5 | **a choice made** | the chosen card is marked "in use"; every other card is still there, with its value, its source and its date |
-| 6 | **a choice changed** | the history card lists both: "your threshold on 12 Nov 2026 was 168 bpm — on 3 Mar 2026 it was 172 bpm"; the old card stays in the list of candidates with its own date |
+| 6 | **a choice changed** | the history card lists both: "your threshold on 3 Nov 2026 was 165 bpm — on 3 Mar 2026 it was 172 bpm"; the old card stays in the list of candidates with its own date |
 | 7 | **two candidates disagreeing** | both cards, both marked on the heart-rate lane at their own values; the distance drawn; nothing written about the distance |
 | 8 | **a threshold chosen, the dependent answers asked** | the dependent answers use the chosen value and name its source; the unchosen candidates stay visible |
 | 9 | **a base adopted with its own choice** | the new choice is marked "in use" and names the base it was made for; the earlier choice stays in the history with its own base and date |
@@ -918,6 +963,7 @@ session types, never as commands; and the noun "rest", which this note does not 
 | **R1** | the repository | `hr_zone_models` (schema v3), `zones::zone_of` and `zones::model_source`, `load.rs` reading the zone-5 floor as the threshold, `plan_sessions.pace_low_s_km` / `pace_high_s_km`, `PlanSession` and `SessionKind` | **[repo]** |
 | **R2** | the repository | `exploration/pace-engine.md` (the chain, the race observation, the ladder, the plan's block anchor), `exploration/pfitzinger-spine.md` (§5.5 the chain, **§5.5.1** the LT-pace rule and the five methods), `exploration/stimulus-ledger.md` (the ledger's rows), `exploration/decisions.md` (D3, D10, D11, D13, D14) | **[repo]** |
 | **R3** | the repository | `exploration/methods-and-products.md` §2.6 — the Norwegian family (Bakken's model, Norwegian Singles, Ørnskæg's "Fthreshold 2:1 / 3:2" ratios and 4×4 / 2×4 / 3×4 cycles, marked unverified) — the family RCRS names, and a future base that brings its own rule | **[repo]** |
+| **R4** | the repository | `exploration/athlete.js` — the canonical synthetic athlete: the window, the zone model, the 58 runs, the race, the VDOT, the ladder, the curve, the threshold candidates and the plan. The prototype loads it and reads every number from it (§16) | **[repo]** |
 
 ---
 
@@ -980,3 +1026,47 @@ reason. The lines that failed the test moved to the notes, and none was deleted.
 The rule applies to the **whole product surface**, so it applies to this note too: a note
 is the annotation layer's own record, and the prototype's toggle carries the same reasoning
 that this file carries in prose.
+
+---
+
+## 16. The canonical athlete — what is read from where
+
+`exploration/athlete.js` is the single source of the synthetic data. The prototype **loads it**
+(`<script src="athlete.js">`) and reads every number from it, so the two files cannot drift:
+the zone model, the race, the ladder's hour-pace band, the four candidates, the choice, the
+history, the plan's pacing and the zone-model line all come from that file.
+
+### 16.1 The canonical set, as it stands here
+
+| | canonical | where it is used here |
+|---|---|---|
+| the zone model | `HR_MAX`, max heart rate **183**, floors **115 · 128 · 143 · 159 · 165**, read **3 Nov 2026** | the watch's candidate (the fifth floor, **165 bpm**), the zone-model picture, the ledger and load card's source line |
+| the typed race | **10K in 41:36 on 12 Oct 2026** (entered 13 Oct, changed 3 Nov) | the race's candidate, the ladder card's source, the plan's anchor |
+| VDOT | **49.7** | the chain the equivalents come from |
+| the threshold band | the **hour-pace band** in both places | the race candidate's band **4:16–4:17 /km** (the 15K-to-10-mile anchor) and the ladder rung's band **4:16–4:21 /km** (the 15K-to-HM span) — the same rule, two spans |
+| the disagreement | **165** and **168** | the watch's fifth-zone floor and the typed number |
+| the choice | the watch's floor, **165 bpm**, **3 Nov 2026**, made for **the Pfitzinger 10K plan** | the header card, the history, the plan's pacing line |
+
+### 16.2 The numbers that are derived, and from what
+
+Every number in this prototype that is **not** in the canonical set is derived from the
+canonical race and VDOT, and the derivation is the engine's own:
+
+| the number | how it is derived |
+|---|---|
+| the 15K pace **4:16 /km** (1:03:56) and the 10-mile pace **4:17 /km** (1:08:53) | Riegel's exponent 1.06 from the typed 10K — the engine's chain, not the book's lookup table |
+| the race candidate's band **4:16–4:17 /km** | the book's anchor: the 15K pace and the 10-mile pace |
+| the ladder rung's band **4:16–4:21 /km** (146–167 bpm) | the hour pace's own span: the 15K pace to the half-marathon pace, with the method's heart-rate band |
+| the lane scales on the two-lane chart | derived from the candidates' own numbers, so the chart fits whatever they are |
+
+### 16.3 Two wording flags for the end-to-end thread
+
+1. **The curve's field-test marker.** `athlete.js` places the curve's field-test marker at
+   **30 minutes**, because the pace-engine prototype drew a 30-minute test. This design's
+   field-test candidate follows the **book's 45-minute time trial** (S1 ch. 1, ch. 7), so its
+   marker sits at **45 minutes** — the test's own duration. The two files disagree on that one
+   marker, and the book is the rule this file follows.
+2. **The race candidate's rule string.** `athlete.js` prints the two equivalent race times
+   without the hour — "63:56" and "68:53" — inside the rule clause. As clocks they are
+   **1:03:56** and **1:08:53**. The prototype shows `athlete.js`'s string verbatim, so the two
+   files cannot drift; the wording is `athlete.js`'s to change.

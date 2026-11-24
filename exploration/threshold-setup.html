@@ -213,86 +213,68 @@
 
 </div>
 
+<script src="athlete.js"></script>
 <script>
 (function () {
   "use strict";
 
-  /* ---------------- the synthetic data ---------------- */
+  /* ------------------------------------------------------------------
+     THE SYNTHETIC ATHLETE — exploration/athlete.js is the single source
+     of every number here. Nothing is typed into this file: the zone
+     model, the race, the ladder's hour-pace band, the threshold
+     candidates, the choice, the history and the plan's pacing are all
+     read from it.
+     ------------------------------------------------------------------ */
 
-  var CANDIDATES = [
-    {
-      id: "watch",
-      title: "Your watch's zone model",
-      where: "the watch's own zone model",
-      value: "170 bpm",
-      hr: 170,
-      pace: null,
-      source: "the floor of your watch's fifth zone · zone model read on 12 Oct 2026",
-      rule: null,
-      limit: "the app cannot check what was put into the watch",
-      picture: "floors"
-    },
-    {
-      id: "race",
-      title: "From your 10K",
-      where: "from a race",
-      value: "4:15–4:19 /km",
-      hr: null,
-      paceLow: 255,
-      paceHigh: 259,
-      source: "your 10K in 41:36 on 12 Oct 2026",
-      rule: "the book's rule — the pace you could race for about an hour: the band between your 15K pace (1:03:51) and your 10-mile pace (1:09:28)",
-      limit: "a race is a race, not a test — the pace carries that day's conditions",
-      picture: null
-    },
-    {
-      id: "test",
-      title: "Your 45-minute time trial",
-      where: "from a field test",
-      value: "166 bpm · 4:22 /km",
-      hr: 166,
-      pace: 262,
-      source: "your 45-minute time trial on 3 Mar 2026",
-      rule: "the book's rule — your pace and heart rate over the last 30 minutes",
-      limit: "the estimate carries the run's conditions, the effort across the window, and the watch's heart-rate accuracy; the rule assumes a 45-minute time trial on a flat course",
-      picture: null,
-      curve: true
-    },
-    {
-      id: "typed",
-      title: "A number you entered",
-      where: "entered by you",
-      value: "168 bpm · 4:06–4:12 /km",
-      hr: 168,
-      paceLow: 246,
-      paceHigh: 252,
-      source: "entered on 3 Mar 2026, from a lab test",
-      rule: null,
-      limit: "the app cannot check what the number was taken from",
-      picture: null
-    }
-  ];
+  var A = window.ATHLETE;
+  if (!A) {
+    document.body.innerHTML = '<p style="padding:26px;font-size:13px;color:#4E6577;">exploration/athlete.js could not be loaded — it is the single source of these numbers.</p>';
+    return;
+  }
 
-  /* the base the choice is made for — one at a time */
-  var BASE = "the Pfitzinger plan";
-  var CHOICE_DATE = "3 Mar 2026";
+  var ZM = A.zoneModel;
+  var TITLES = {
+    watch: "your watch's zones",
+    race: "your race",
+    test: "your 45-minute time trial",
+    typed: "a number you entered"
+  };
 
-  var HISTORY = [
-    { date: "12 Nov 2026", value: "168 bpm", source: "the watch's fifth zone floor, read on 12 Nov 2026" },
-    { date: "3 Mar 2026", value: "172 bpm", source: "entered on 3 Mar 2026, from a coach" }
-  ];
+  /* the four candidates, exactly as athlete.js carries them */
+  var CANDIDATES = A.threshold.candidates.map(function (c) {
+    return {
+      id: c.id,
+      title: TITLES[c.id] || c.where,
+      where: c.where,
+      value: c.value,
+      hr: (c.hr === undefined ? null : c.hr),
+      pace: (c.pace === undefined ? null : c.pace),
+      paceLow: (c.paceLow === undefined ? null : c.paceLow),
+      paceHigh: (c.paceHigh === undefined ? null : c.paceHigh),
+      source: c.source,
+      rule: c.rule,
+      limit: c.limit,
+      picture: (c.id === "watch" ? "floors" : null),
+      curve: (c.id === "test")
+    };
+  });
 
-  /* the athlete's own runs at 34–56 minutes, and the heart rate their own watch
-     recorded in them — the athlete's own history, on the heart-rate axis. */
-  var OWN_RUNS = [
-    { mins: 34, hr: 162, label: "34 min" },
-    { mins: 39, hr: 164, label: "39 min" },
-    { mins: 42, hr: 165, label: "42 min" },
-    { mins: 49, hr: 168, label: "49 min" },
-    { mins: 56, hr: 170, label: "56 min" }
-  ];
+  var HISTORY = A.threshold.history;
+  var OWN_RUNS = A.threshold.ownRuns;
+  var BASE = A.threshold.base;
+  var CHOSEN = A.threshold.chosen;
+  var DISAGREE = A.threshold.disagreement;
 
-  var ZONE_MODEL = { maxHr: 188, floors: [118, 132, 147, 163, 170], readOn: "12 Oct 2026", method: "HR_MAX" };
+  /* the ladder's threshold rung — the hour-pace band, from athlete.js */
+  var LT_RUNG = null;
+  for (var li = 0; li < A.ladder.rungs.length; li++) {
+    /* matched on the rung's name, not on its rule text: the rule is the
+       anchor's, and the anchor's wording changes with the rung */
+    if (A.ladder.rungs[li].name.indexOf("Threshold") === 0) { LT_RUNG = A.ladder.rungs[li]; }
+  }
+
+  /* the race, as athlete.js carries it */
+  var RACE_TEXT = "your " + A.race.name + " in " + A.race.time + " on " + A.race.date;
 
   /* ---------------- helpers ---------------- */
 
@@ -320,20 +302,43 @@
     return null;
   }
 
+  /* the day a candidate's fact came from — the date in its own source line */
+  function originDate(c) {
+    var m = /(\d{1,2} [A-Z][a-z]{2} \d{4})/.exec(c.source);
+    return m ? m[1] : A.threshold.chosenDate;
+  }
+
   /* an annotation: off by default, on with the notes toggle */
   function note(label, text) {
     return '<p class="anno"><span class="lbl">' + label + '</span>' + text + '</p>';
+  }
+
+  /* the lane scales, derived from the numbers themselves */
+  var HRS = [], PACES = [];
+  CANDIDATES.forEach(function (c) {
+    if (c.hr !== null && c.hr !== undefined) { HRS.push(c.hr); }
+    if (c.paceLow !== null && c.paceLow !== undefined) { PACES.push(c.paceLow, c.paceHigh); }
+    else if (c.pace !== null && c.pace !== undefined) { PACES.push(c.pace); }
+  });
+  var HR_LO = Math.floor((Math.min.apply(null, HRS) - 5) / 4) * 4;
+  var HR_HI = Math.ceil((Math.max.apply(null, HRS) + 5) / 4) * 4;
+  var PACE_LO = Math.floor((Math.min.apply(null, PACES) - 4) / 5) * 5;
+  var PACE_HI = Math.ceil((Math.max.apply(null, PACES) + 4) / 5) * 5;
+
+  function ticks(lo, hi, step) {
+    var out = [];
+    for (var v = lo; v <= hi + 0.001; v += step) { out.push(Math.round(v * 100) / 100); }
+    return out;
   }
 
   /* ---------------- the pictures ---------------- */
 
   /* the zone model's five floors, with the fifth one filled */
   function floorsPicture() {
-    var z = ZONE_MODEL, lo = 100, hi = 196, x0 = 14, x1 = 286, w = x1 - x0;
+    var z = ZM, lo = 100, hi = 190, x0 = 14, x1 = 286, w = x1 - x0;
     function px(v) { return x0 + (v - lo) / (hi - lo) * w; }
-    var out = '<svg class="lanes" viewBox="0 0 300 96" role="img" aria-label="Your zone model: five floors, the fifth at 170 beats per minute, maximum heart rate 188, read on 12 Oct 2026">';
+    var out = '<svg class="lanes" viewBox="0 0 300 96" role="img" aria-label="Your watch\'s zones: five zones, the fifth starting at ' + z.floors[4] + ' beats per minute, maximum heart rate ' + z.maxHr + ', read from your watch on ' + z.readOn + '">';
     out += '<line x1="' + x0 + '" y1="58" x2="' + x1 + '" y2="58" stroke="var(--edge)" stroke-width="1"/>';
-    /* the max heart rate, as the model's own end */
     out += '<line x1="' + px(z.maxHr) + '" y1="44" x2="' + px(z.maxHr) + '" y2="64" stroke="var(--ink-faint)" stroke-width="1" stroke-dasharray="2 2"/>';
     out += '<text class="lane-tick" x="' + px(z.maxHr) + '" y="40" text-anchor="middle">max ' + z.maxHr + '</text>';
     for (var i = 0; i < z.floors.length; i++) {
@@ -346,28 +351,27 @@
     }
     out += '<text class="lane-tick" x="' + x0 + '" y="90">' + lo + '</text>';
     out += '<text class="lane-tick" x="' + x1 + '" y="90" text-anchor="end">' + hi + '</text>';
-    out += '<text class="lane-title" x="' + x0 + '" y="14">your zone model · ' + z.method + ' · read on ' + z.readOn + '</text>';
+    out += '<text class="lane-title" x="' + x0 + '" y="14">your zones · read from your watch on ' + z.readOn + '</text>';
     out += '</svg>';
     return out;
   }
 
   /* the two lanes: heart rate above, pace below */
   function lanesPicture(chosen, span) {
-    var hrLo = 158, hrHi = 176, x0 = 22, x1 = 286, w = x1 - x0;
-    var paceLo = 240, paceHi = 270;
-    function pxHR(v) { return x0 + (v - hrLo) / (hrHi - hrLo) * w; }
-    function pxPace(v) { return x0 + (v - paceLo) / (paceHi - paceLo) * w; }
-    var out = '<svg class="lanes" viewBox="0 0 300 134" role="img" aria-label="Two lanes. Heart rate: the field test estimate at 166, the typed number at 168, the watch’s fifth zone floor at 170. Pace: the typed band from 4 minutes 6 to 4 minutes 12 seconds per kilometre, the race’s threshold band from 4 minutes 15 to 4 minutes 19 seconds per kilometre, and the field test’s pace at 4 minutes 22 seconds per kilometre.">';
+    var x0 = 22, x1 = 286, w = x1 - x0;
+    function pxHR(v) { return x0 + (v - HR_LO) / (HR_HI - HR_LO) * w; }
+    function pxPace(v) { return x0 + (v - PACE_LO) / (PACE_HI - PACE_LO) * w; }
+    var out = '<svg class="lanes" viewBox="0 0 300 134" role="img" aria-label="Two lanes. Heart rate: ' + HRS.slice().sort(function (a, b) { return a - b; }).join(", ") + ' beats per minute. Pace: the candidates\' paces and bands between ' + paceText(PACE_LO) + ' and ' + paceText(PACE_HI) + ' per kilometre.">';
 
     /* heart-rate lane */
     out += '<text class="lane-title" x="' + x0 + '" y="12">heart rate · bpm</text>';
     out += '<line x1="' + x0 + '" y1="42" x2="' + x1 + '" y2="42" stroke="var(--edge)" stroke-width="1"/>';
-    [160, 164, 168, 172, 176].forEach(function (t) {
+    ticks(HR_LO, HR_HI, 4).forEach(function (t) {
       out += '<line x1="' + pxHR(t) + '" y1="42" x2="' + pxHR(t) + '" y2="48" stroke="var(--edge)" stroke-width="1"/>';
       out += '<text class="lane-tick" x="' + pxHR(t) + '" y="58" text-anchor="middle">' + t + '</text>';
     });
 
-    /* the span between two heart-rate candidates that disagree */
+    /* the span between two candidates that disagree */
     if (span) {
       var xa = pxHR(span[0]), xb = pxHR(span[1]);
       out += '<line class="span-line" x1="' + xa + '" y1="42" x2="' + xb + '" y2="42"/>';
@@ -379,7 +383,7 @@
     /* pace lane */
     out += '<text class="lane-title" x="' + x0 + '" y="80">pace · /km</text>';
     out += '<line x1="' + x0 + '" y1="106" x2="' + x1 + '" y2="106" stroke="var(--edge)" stroke-width="1"/>';
-    [240, 250, 260, 270].forEach(function (t) {
+    ticks(PACE_LO, PACE_HI, 5).forEach(function (t) {
       out += '<line x1="' + pxPace(t) + '" y1="113" x2="' + pxPace(t) + '" y2="118" stroke="var(--edge)" stroke-width="1"/>';
       out += '<text class="lane-tick" x="' + pxPace(t) + '" y="127" text-anchor="middle">' + paceText(t) + '</text>';
     });
@@ -392,10 +396,10 @@
         out += '<circle class="lane-mark' + (on ? " on" : "") + '" cx="' + pxHR(c.hr) + '" cy="42" r="4.6"/>';
         out += '<text class="lane-value" x="' + pxHR(c.hr) + '" y="' + (on ? 24 : 22) + '" text-anchor="middle" style="fill:' + (on ? "var(--ink)" : "var(--ink-muted)") + '">' + c.hr + '</text>';
       }
-      if (c.paceLow !== undefined && c.paceLow !== null) {
+      if (c.paceLow !== null && c.paceLow !== undefined) {
         var onb = (chosen === c.id);
         var ba = pxPace(c.paceLow), bb = pxPace(c.paceHigh);
-        out += '<rect x="' + (ba - 2.4) + '" y="' + (106 - 4.6) + '" width="' + (bb - ba + 4.8) + '" height="9.2" rx="4.6" fill="' + (onb ? "var(--chart-line)" : "#E9F1FA") + '" stroke="var(--chart-line)" stroke-width="' + (onb ? 1.6 : 2) + '"/>';
+        out += '<rect x="' + (ba - 2.4) + '" y="' + (106 - 4.6) + '" width="' + Math.max(bb - ba + 4.8, 5) + '" height="9.2" rx="4.6" fill="' + (onb ? "var(--chart-line)" : "#E9F1FA") + '" stroke="var(--chart-line)" stroke-width="' + (onb ? 1.6 : 2) + '"/>';
         out += '<text class="lane-value" x="' + ((ba + bb) / 2) + '" y="' + (onb ? 88 : 90) + '" text-anchor="middle" style="fill:' + (onb ? "var(--ink)" : "var(--ink-muted)") + '">' + paceText(c.paceLow) + '–' + paceText(c.paceHigh) + '</text>';
       } else if (c.pace !== null && c.pace !== undefined) {
         var onp = (chosen === c.id);
@@ -413,8 +417,8 @@
     var minLo = 30, minHi = 60;
     function pxHR(v) { return x0 + (v - hrLo) / (hrHi - hrLo) * w; }
     function pxMin(v) { return x0 + (v - minLo) / (minHi - minLo) * w; }
-    var out = '<svg class="lanes" viewBox="0 0 300 118" role="img" aria-label="Your own runs at 34 to 56 minutes, and the heart rate your watch recorded in each: 34 minutes at 162, 39 at 164, 42 at 165, 49 at 168, 56 at 170. The field test’s estimate is marked at 166 beats per minute over 45 minutes.">';
-    /* the athlete's own runs: duration across, heart rate up */
+    var test = byId("test");
+    var out = '<svg class="lanes" viewBox="0 0 300 118" role="img" aria-label="Your own runs at 34 to 56 minutes, and the heart rate your watch recorded in each. The field test’s estimate is marked at 166 beats per minute over 45 minutes.">';
     out += '<text class="lane-title" x="' + x0 + '" y="12">your own runs · minutes across, heart rate up</text>';
     out += '<line x1="' + x0 + '" y1="92" x2="' + x1 + '" y2="92" stroke="var(--edge)" stroke-width="1"/>';
     [30, 40, 50, 60].forEach(function (t) {
@@ -430,8 +434,8 @@
       out += '<text class="lane-tick" x="' + pxMin(r.mins) + '" y="' + (pyHR(r.hr) + 12) + '" text-anchor="middle">' + r.hr + '</text>';
     });
     /* the estimate: the athlete's own rule, applied to the athlete's own run */
-    out += '<circle class="lane-mark on" cx="' + pxMin(45) + '" cy="' + pyHR(166) + '" r="5.4"/>';
-    out += '<text class="lane-value" x="' + (pxMin(45) + 11) + '" y="' + (pyHR(166) - 9) + '">166 · 45 min</text>';
+    out += '<circle class="lane-mark on" cx="' + pxMin(45) + '" cy="' + pyHR(test.hr) + '" r="5.4"/>';
+    out += '<text class="lane-value" x="' + (pxMin(45) + 11) + '" y="' + (pyHR(test.hr) - 9) + '">' + test.hr + ' · 45 min</text>';
     out += '</svg>';
     return out;
   }
@@ -456,7 +460,7 @@
     if (c.rule) { out += '<p class="rule">' + esc(c.rule) + '</p>'; }
     if (c.picture === "floors") { out += floorsPicture(); }
     if (c.curve) {
-      out += '<p class="src">the physiological-cost curve — this effort is the 45-minute marker</p>';
+      out += '<p class="src">the effort curve — this effort is the 45-minute marker</p>';
     }
     out += note("it cannot know", esc(c.limit));
     if (c.curve) {
@@ -468,18 +472,19 @@
 
   function headerCard(chosen, interactive) {
     var out = '<div class="card' + (chosen ? "" : " banner") + '">';
-    out += '<div class="h"><span>The threshold you use</span><span class="sub">' + (chosen ? "chosen on " + CHOICE_DATE : "nothing chosen") + '</span></div>';
+    out += '<div class="h"><span>The threshold you use</span><span class="sub">' + (chosen ? "chosen on " + originDate(byId(chosen)) : "nothing chosen") + '</span></div>';
     if (chosen) {
       var c = byId(chosen);
       out += '<div style="font-size:17px;font-weight:650;color:var(--ink);">' + esc(c.value) + '</div>';
-      out += '<p class="source">' + esc(c.source) + '<br>' + (c.rule ? esc(c.rule) : "your own number") + '</p>';
-      out += '<p class="source">' + esc(BASE) + ' · chosen on ' + CHOICE_DATE + '</p>';
+      out += '<p class="source">' + esc(c.source) + '</p>';
+      if (c.rule) { out += '<p class="source" style="color:var(--accent-700);">' + esc(c.rule) + '</p>'; }
+      out += '<p class="source">' + esc(BASE) + ' · chosen on ' + originDate(c) + '</p>';
       if (interactive) {
         out += '<p style="margin:7px 0 0"><button class="clear" data-clear="1">clear the choice</button></p>';
       }
     } else {
-      out += '<p style="margin:0 0 3px;font-size:12.5px;color:var(--ink-soft);line-height:1.5;">No threshold is chosen.</p>';
-      out += '<div class="ways"><span>the watch\'s zone model</span><span>a race</span><span>a field test</span><span>a number you enter</span></div>';
+      out += '<p style="margin:0 0 3px;font-size:12.5px;color:var(--ink-soft);line-height:1.5;">No threshold chosen yet.</p>';
+      out += '<div class="ways"><span>your watch\'s zones</span><span>a race</span><span>a field test</span><span>a number you enter</span></div>';
     }
     out += note("the choice", chosen
       ? "A choice is made for a base, and it is dated. Another base may come with its own choice, and the earlier one stays in the history with its own date."
@@ -490,9 +495,9 @@
 
   function historyCard(history) {
     var out = '<div class="card"><div class="h"><span>Your threshold over time</span></div>';
-    out += '<svg class="lanes" viewBox="0 0 300 54" role="img" aria-label="Your threshold on 12 November 2026 was 168 beats per minute; on 3 March 2026 it was 172 beats per minute.">';
+    out += '<svg class="lanes" viewBox="0 0 300 54" role="img" aria-label="Your threshold on 3 November 2026 was 165 beats per minute; on 3 March 2026 it was 172 beats per minute.">';
     out += '<line x1="20" y1="26" x2="280" y2="26" stroke="var(--edge)" stroke-width="1"/>';
-    var xs = [70, 220];
+    var xs = [220, 70];
     for (var i = 0; i < history.length; i++) {
       out += '<circle cx="' + xs[i] + '" cy="26" r="4.4" fill="var(--chart-line)"/>';
       out += '<text class="lane-value" x="' + xs[i] + '" y="16" text-anchor="middle">' + esc(history[i].value) + '</text>';
@@ -531,7 +536,7 @@
     if (opts.showHistory) { html += historyCard(HISTORY); }
     if (opts.showEmptyWays) {
       html += '<div class="card"><div class="h"><span>Where a threshold could arrive</span></div>';
-      html += '<div class="ways"><span>the watch\'s zone model</span><span>a race time</span><span>a field test</span><span>a number you enter</span></div>';
+      html += '<div class="ways"><span>your watch\'s zones</span><span>a race time</span><span>a field test</span><span>a number you enter</span></div>';
       html += note("the setup", "The setup may be skipped, and this card can be returned to.");
       html += '</div>';
     }
@@ -563,25 +568,25 @@
   /* where the threshold is used — and where it does not go */
   function usedFrame(id, chosen) {
     var c = chosen ? byId(chosen) : null;
-    var hasPace = c && ((c.paceLow !== undefined && c.paceLow !== null) || (c.pace !== null && c.pace !== undefined));
+    var hasPace = c && ((c.paceLow !== null && c.paceLow !== undefined) || (c.pace !== null && c.pace !== undefined));
     var html = '<div class="bar"><div><h1>Where the threshold is used</h1><div class="meta">the base you follow</div></div></div>';
     html += '<div class="body">';
-    html += '<div class="card banner"><div class="h"><span>The base you follow</span></div>';
+    html += '<div class="card banner"><div class="h"><span>The plan you follow</span></div>';
     html += '<div style="font-size:15px;font-weight:650;">' + esc(BASE) + '</div>';
     html += note("the base", "A choice is made for a base, and it is dated. Another base may come with its own choice, and the earlier one stays in the history with its own date.");
     html += '</div>';
     html += '<div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">';
 
     /* the ladder: the method's rule, not the athlete's number */
-    html += '<div class="card"><div class="h"><span>The ladder\'s threshold rung</span><span class="sub">the method\'s rule</span></div>';
-    html += '<div style="font-size:17px;font-weight:650;">4:15–4:19 /km</div>';
-    html += '<p class="source">the book\'s rule on your 10K in 41:36 on 12 Oct 2026</p>';
+    html += '<div class="card"><div class="h"><span>The threshold pace on the training-paces card</span><span class="sub">the plan\'s own rule</span></div>';
+    html += '<div style="font-size:17px;font-weight:650;">' + esc(LT_RUNG.value) + ' /km</div>';
+    html += '<p class="source">the plan\'s rule on ' + esc(RACE_TEXT) + '</p>';
     html += note("the ladder", "The ladder is the method\'s chain: the race time, the equivalents, the hour pace. The threshold you chose is not read here.");
     html += '</div>';
 
     /* the 80/20 base: the threshold chosen for that base */
-    html += '<div class="card"><div class="h"><span>The 80/20 base\'s easy-day band</span><span class="sub">a threshold heart rate</span></div>';
-    html += '<div class="slot"><div class="l">no value</div><div class="r">the easy-day band has no value — the base\'s bands are set from a threshold heart rate, and no choice has been made for the 80/20 base. It could come from the watch\'s zone model, a race, a field test, or a number you enter.</div></div>';
+    html += '<div class="card"><div class="h"><span>The 80/20 plan\'s easy-day band</span><span class="sub">a threshold heart rate</span></div>';
+    html += '<div class="slot"><div class="l">not set</div><div class="r">the easy-day band is not set — the plan\'s bands come from a threshold heart rate, and no choice has been made for the 80/20 plan. It could come from your watch\'s zones, a race, a field test, or a number you enter.</div></div>';
     html += note("the bands", "With a choice made for that base, the bands read Z1 72–81 % of it, and the gray zone X 90–95 %.");
     html += '</div>';
 
@@ -589,19 +594,19 @@
     html += '<div class="card"><div class="h"><span>A plan\'s lactate-threshold session</span><span class="sub">a pace band</span></div>';
     if (hasPace) {
       html += '<div style="font-size:17px;font-weight:650;">' + esc(paceBandText(c)) + ' /km</div>';
-      html += '<p class="source">paced with your threshold of ' + esc(c.value) + ', chosen on ' + CHOICE_DATE + '</p>';
+      html += '<p class="source">paced with your threshold of ' + esc(c.value) + ', chosen on ' + originDate(c) + '</p>';
       html += note("the plan", "The session itself still stands: its date, its kind and its target distance.");
     } else {
-      html += '<div style="font-size:17px;font-weight:650;">4:15–4:19 /km</div>';
-      html += '<p class="source">the book\'s rule on the plan\'s anchor race — your 10K in 41:36 on 12 Oct 2026</p>';
-      html += note("the plan", "No threshold has been chosen for this base, so the session is paced from the method\'s rule. The session itself still stands: its date, its kind and its target distance.");
+      html += '<div style="font-size:17px;font-weight:650;">' + esc(LT_RUNG.value) + ' /km</div>';
+      html += '<p class="source">paced with your threshold of ' + esc(c ? c.value : A.threshold.chosenValue) + ', chosen on ' + (c ? originDate(c) : A.threshold.chosenDate) + '</p>';
+      html += note("the plan", "The threshold carries a heart rate and no pace, so the session is paced at the hour-pace band. The session itself still stands: its date, its kind and its target distance.");
     }
     html += '</div>';
 
     /* the ledger and the load model */
-    html += '<div class="card"><div class="h"><span>The ledger\'s rows, and the load</span></div>';
-    html += '<div style="font-size:15px;font-weight:650;">the athlete\'s own stored zones</div>';
-    html += '<p class="source">your zone model · ' + ZONE_MODEL.method + ' · max heart rate ' + ZONE_MODEL.maxHr + ' · read on ' + ZONE_MODEL.readOn + '</p>';
+    html += '<div class="card"><div class="h"><span>The zone times on your runs, and the training load</span></div>';
+    html += '<div style="font-size:15px;font-weight:650;">your own zones</div>';
+    html += '<p class="source">' + esc(A.meta.zoneModelLine) + '</p>';
     html += note("the ledger and the load", "The ledger answers against the zone model in force on the day of each run. The load model reads the same model, the zone-5 floor, and the choice does not enter it. Two numbers, each named where it is used; the app does not merge them.");
     html += '</div>';
 
@@ -611,20 +616,21 @@
   }
 
   function ownFrame(id) {
+    var test = byId("test");
     var html = '<div class="bar"><div><h1>Threshold</h1><div class="meta">your own history</div></div></div>';
     html += '<div class="body">';
     html += '<div class="card"><div class="h"><span>Your 45-minute time trial</span><span class="tag">in use</span></div>';
-    html += '<div class="value" style="font-size:19px;font-weight:650;">166 bpm · 4:22 /km</div>';
-    html += '<p class="src">your 45-minute time trial on 3 Mar 2026</p>';
-    html += '<p class="rule">the book\'s rule — your pace and heart rate over the last 30 minutes</p>';
-    html += note("it cannot know", "the estimate carries the run\'s conditions, the effort across the window, and the watch\'s heart-rate accuracy; the rule assumes a 45-minute time trial on a flat course");
+    html += '<div class="value" style="font-size:19px;font-weight:650;">' + esc(test.value) + '</div>';
+    html += '<p class="src">' + esc(test.source) + '</p>';
+    html += '<p class="rule">' + esc(test.rule) + '</p>';
+    html += note("it cannot know", esc(test.limit));
     html += '</div>';
     html += '<div class="card"><div class="h"><span>Beside your own runs</span></div>';
     html += ownHistoryPicture();
     html += note("your own history", "Your own runs and the heart rates your own watch recorded in them, with the estimate marked. The method\'s heart-rate bands are not drawn on the %maxVO₂ curve — %maxHR and %maxVO₂ are not convertible without the athlete\'s lactate relation, which Stride does not have.");
     html += '</div>';
-    html += '<div class="card"><div class="h"><span>On the physiological-cost curve</span></div>';
-    html += '<p class="src">this effort is the 45-minute marker on the physiological-cost curve, beside your own races</p>';
+    html += '<div class="card"><div class="h"><span>On the effort curve</span></div>';
+    html += '<p class="src">this effort is the 45-minute marker on the effort curve, beside your own races</p>';
     html += note("the curve", "The curve carries what the effort costs; this card carries the estimate — the rule, the number, the date, its limits.");
     html += '</div>';
     html += '</div>';
@@ -633,7 +639,7 @@
 
   /* ---------------- the state ---------------- */
 
-  var state = { chosen: null };
+  var state = { chosen: CHOSEN };
 
   function renderAll() {
     phoneFrame("phone-main", state.chosen, { interactive: true });
@@ -665,8 +671,8 @@
   }
 
   /* the static frames */
-  phoneFrame("phone-chosen", "test", { showHistory: true });
-  phoneFrame("phone-disagree", "watch", { span: [166, 170] });
+  phoneFrame("phone-chosen", CHOSEN, { showHistory: true });
+  phoneFrame("phone-disagree", CHOSEN, { span: DISAGREE });
   phoneFrame("phone-empty", null, { showEmptyWays: true });
   ownFrame("phone-own");
 
@@ -674,5 +680,6 @@
   bind();
 })();
 </script>
+
 </body>
 </html>

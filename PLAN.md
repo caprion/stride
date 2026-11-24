@@ -1082,6 +1082,626 @@ This travels with the two route families and their field tables in
 `docs/contract/api-paths.md`, and with the schema change (the `run_updates`
 and `update_settings` tables) in `docs/contract/schema.sql`.
 
+*The nine amendments that follow record the week of 24 November 2026 — the direction the wedge opened: the stimulus ledger, the pace engine, the threshold, the two bases of zone time, the plan's bases, the audience, and the three rules that now govern every surface. Each binds the decisions named in `exploration/decisions.md` (D1–D25) and is drawn from the documents in `exploration/`, which are cited by path rather than copied. Each is a proposal until the user approves it, and each names the rule it serves, what it may and may not say, the files it touches, and what is still open.*
+
+### Proposed amendment — the stimulus ledger, the rows it holds, and the card it lives on (2026-11-24)
+
+**Proposal, not approved.** The approvals below are the user's to give. This
+section records the change and the rule it serves; it is not permission to
+ship, publish, migrate or sync production data.
+
+The wall's *Where the time went* card is one bar: how much of the window's
+moving time fell in each of the athlete's own five heart-rate bands, and the
+share of that time in the bands grouped three ways. That is the whole window
+in one number per band, and it cannot say *when* the training was hard, nor
+what the window lacks. A five-week hole in the hard band and a window that
+was hard in one week look the same.
+
+The rule this serves: **absence is drawn, not described** — and a hole in the
+training has to be a hole in a picture, with the week it fell in named. The
+design is `exploration/stimulus-ledger.md`; the decisions it binds are D1,
+D3, D4, D5, D7, D11 and D23.
+
+What changes:
+
+- **The card carries two families, and they are never added together.** Three
+  **kinds** partition the window's moving time — **Z1–Z2 low · Z3 moderate ·
+  Z4–Z5 high** — and two **values** overlap it: the **longest run** and the
+  **repeated work**. The kinds' shares are over the record stream's movement,
+  so the bands and the outside add up to 100 %; the longest run's share is
+  over the window's stored moving time, the watch's own timer. Each row names
+  its own denominator, and no total on the card adds the two families
+  together.
+- **Each row carries four things and no more**: the time, the number of runs,
+  the **last date** the kind occurred, and the change against the period
+  before — the same span, seven days earlier. The shares are read from the
+  distribution printed once above the rows; no number is printed twice.
+- **The last date is searched over the athlete's whole retained history**, at
+  or before the end of the window, not inside the window alone — because a
+  kind absent for longer than the window would otherwise show nothing at all.
+  When the date falls outside the window the card says so ("35 days before the
+  end of this period").
+- **A measured zero is not a missing value.** A window with one easy run
+  answers **0 m** of Z4–Z5 and no date — a measurement. A window with no
+  stored zone model answers **no value**, with the reason. A run dated before
+  the first stored model is a run the app cannot measure: its cell is empty,
+  and the coverage line says why.
+- **The weeks × bands matrix** is the 24 November amendment's, and this
+  amendment sits on top of it: one row per calendar week, coloured by what
+  that week held, each row scaled to its own busiest week so a small row is
+  still readable. A band with no time in a week is **no value**, and the card
+  draws it as white space.
+- **The source line is hoisted once per screen** — the model, its method, its
+  maximum heart rate and the day it was read, at the top of the screen, once —
+  and an answer that used a different model says so in place.
+- **One line on the run detail**: the run's own band, its time in that band,
+  and the last date the band occurred. The run detail's own zone table and
+  the ledger must not disagree, which is why the ledger ships **after stage 1**
+  of the zone-model migration (D3).
+
+**The repeated-work row depends on the watch's own workout steps.** A run is
+repeated work when two or more of its own laps carry the step name
+`interval` — the FIT lap message's definition 24, `wkt_step_name`. The
+product adds no threshold and infers no structure: the watch wrote the step
+names. The states are: steps present → the row answers, measured by the
+watch's own structure; **no run in the window carries steps → no value**, in
+the core's own words ("not recorded — the runs in this period carry no
+workout steps"), never "0 m of repeated work"; steps present but none of them
+`interval` → a measured fact about the file, not a missing value.
+
+**The lap-shape heuristic is rejected, and the reason is kept.** "Three
+consecutive laps of at least a kilometre within ±10 % of each other" answers
+"repeated work" for a plain run with three equal auto-laps — and auto-laps
+are equal by construction, so a shape rule cannot tell a workout from a lapped
+run. The row is therefore **blocked on a file the corpus does not carry**: the
+watch's own path cannot be built or tested until a structured workout is
+recorded and synced. Until then the row has little to say, and that is the
+correct answer, not a defect.
+
+**What the card may and may not say.** The absence is a **date**, never a
+verdict: the card says when the kind last occurred and does not say what was
+not done, so it never needs the word the ban list reserves for that. It may
+not say the training was unbalanced, that the athlete needs threshold work, or
+that a week without hard running is a problem. And because heart-rate time in
+zone under-counts hard running and over-counts easy running (Seiler 2010), an
+absence row is corroborated by the run's own lap structure where the file
+carries one — and where the lap data is missing, the card says the lap data
+is missing.
+
+**The files it touches.** `crates/stride-core/src/stimulus.rs` (new, beside
+the other window-shaped analyses) · the api's read path, which decodes each
+run's stored FIT on read (the precedent is `stride_api::pace::pace_runs`) ·
+`crates/stride-ingest/src/fit.rs`, for the lap message's definition 24 and
+the `workout_step` message · the Progress wall's card and one line on the run
+detail · **a contract change**: the route `/insights/stimulus` and its field
+table in `docs/contract/api-paths.md`. Nothing is stored — every value is
+recomputed on read, like every other derived value.
+
+**What this does not settle.** Whether the repeated-work row ships at all
+before a structured workout file exists, or ships with its "no value" state
+until one does; whether the card carries both the one-week-shift change and
+the full-length comparison, or only the first; the card's density on the
+phone — the merged card is long, and the phone may fold the change lines
+away; which of the ledger's fields travel to the run detail; and whether the
+card marks the window's partial current week.
+
+### Proposed amendment — the pace engine: the chain, the ladder, and the cost curve (2026-11-24)
+
+**Proposal, not approved.** The approvals below are the user's to give. This
+section records the change and the rule it serves; it is not permission to
+ship, publish, migrate or sync production data.
+
+The product has no race store, no VDOT, no race prediction and no pace of its
+own, and the pace page the plan describes was retired into the Progress panels
+by the surface cut (D7). So the one thing every training plan is written in —
+the pace — is not in the product at all, and a Pfitzinger plan would arrive as
+a set of distances with nothing to run them at. The design is
+`exploration/pace-engine.md`; the decisions are D13, D14, D16, D17, D19, D20
+and D24.
+
+What changes:
+
+- **The chain.** `race time (typed, dated) → VDOT → the race-pace equivalents
+  → LT pace → the rungs`, with Riegel for a prediction. The **VDOT is the
+  engine's own** — Daniels' oxygen-cost and percent-of-VO₂max curves,
+  computed rather than looked up, so a table update cannot move a number
+  under the athlete's feet — and the **rules applied to it are the method's**,
+  quoted and cited. The chain replaces the book's lookup tables: the app
+  computes the 10K, the 15K and the half-marathon pace from the athlete's own
+  race time, and the card names which chain produced the number.
+- **A race time is an observation, not a verdict.** The athlete types it; the
+  store keeps the value, the day it was entered, the day it was last changed
+  and the day of the race. The engine never invents one, never infers one from
+  the training, and never derives a maximum heart rate from an age — there is
+  no birthdate in Stride, and none is added.
+- **The ladder is the picture, and it has two axes.** The rows are the
+  method's run types, ordered by pace; the left axis is the **heart rate**
+  (the method's band for that rung, drawn against the athlete's own zone
+  floors) and the right axis is the **pace** (the method's rule, the athlete's
+  own data, or the engine's own). Amber is the method's rule, azure is the
+  athlete's own data, grey is the engine's own derivation. **No green and no
+  colour that marks a problem** — the colours say *whose* number it is, not
+  how it compares.
+- **Every rung is a band and a pace, kept apart.** The threshold rung is a
+  **band** (the hour pace, its fast edge the 15K equivalent), the long run is
+  one rung with two ends, and the general-aerobic rung has **no pace from the
+  method at all** — the athlete's own pace at that heart rate, or the athlete's
+  own hand. Where there is no history at that heart rate the pace is a **no
+  value with a reason**, and the band still stands.
+- **Absence is drawn.** No race time → an empty ladder: the axes drawn, no
+  rungs, and the caption names the missing input. A rung with no pace → a
+  hollow marker on the pace axis, with the band still drawn on the heart-rate
+  axis. Never a card of zeroes, never an empty chart that looks like a run of
+  nothing.
+- **The physiological-cost curve is a second reading of the same athlete, on
+  its own route** (`/insights/pace-curve`), linked from the pace card — not a
+  second ladder, and not crowded onto the ladder. It carries the curve, the
+  athlete's own races, the goal race, the method's sessions, and the
+  45-minute time trial's place in time.
+- **Every derived number names its source**: the race it came from, the day it
+  was entered, the day it was last changed, and which chain produced it.
+
+**The rule this serves: the method's heart-rate bands are never drawn on a
+%maxVO₂ axis.** Pfitzinger's bands are percentages of maximal heart rate; the
+curve's axis is percentages of VO₂max. Converting one into the other needs
+the athlete's lactate relation, which Stride does not have and will not
+estimate. So the bands are **quoted in the caption and the legend** and are
+never drawn on the curve, and where the athlete's own history allows a pace to
+be named for a session, that pace is the athlete's own and is labelled as
+such. One small caption inside each chart's frame says so in the chart's own
+voice.
+
+**What it may and may not say.** It may name the chain, the rule, the
+citation, the race and the dates. It may not present the athlete's own pace as
+the method's; it may not present the method's rule applied to the engine's
+anchor without saying which is which; it may not state a readiness or a
+fitness verdict from the curve; it may not rank the athlete's races against
+the method's sessions; and it may not convert a pace into a heart rate or the
+reverse.
+
+**The files it touches.** `crates/stride-core/src/pace_engine.rs` (new) ·
+`crates/stride-core/src/units.rs`, which gains one renderer — a race's finish
+time is read as a clock ("41:36"), and the duration renderer would give
+"1 h 32 m" · **a schema change**: a `race_observations` table in
+`docs/contract/schema.sql`, holding the value, the day entered, the day last
+changed, the day of the race and the anchor flag · **a contract change**: the
+routes `/insights/paces` and `/insights/pace-curve` and their field tables in
+`docs/contract/api-paths.md` · the catalogue's strings, which the lint checks
+against the ban list.
+
+**What this does not settle.** Which chain ships — the engine's own with the
+method's rules applied to it is the proposal here, and the book's own table
+chain and the author's own framing stay on the table; how old a race may be
+before the card states its age (90 days is the prototype's); which race pace
+anchors the recovery rule; whether the general-aerobic pace comes from the
+history or from the athlete's hand; **what rule turns stored samples into
+"your pace at 128–148 bpm"** — a median, a spread, a minimum sample size,
+which is a new derivation and belongs in its own note; how wide the threshold
+band is drawn; and whether the curve needs the 10-mile equivalent.
+
+**A conflict to reconcile.** The heading *"Proposed amendment — the pace page
+(2026-11-20)"* above describes a page reached from Progress, carrying the
+training chart, the pace at a heart rate and the pace bands. The surface cut
+(D7) retired the `/pace` page into the Progress panels. This amendment
+supersedes that heading: the ladder and the curve are its successors, and the
+heading should be retired rather than left standing beside its replacement.
+
+### Proposed amendment — the threshold: four candidates, one choice, a dated fact (2026-11-24)
+
+**Proposal, not approved.** The approvals below are the user's to give. This
+section records the change and the rule it serves; it is not permission to
+ship, publish, migrate or sync production data.
+
+The word "threshold" already lives in the product, and it lives there as the
+**zone model's fifth-zone floor** — the load model reads it as the TRIMP
+threshold. That is the watch's configuration, not the athlete's own number,
+and the athlete has no way to state theirs. The design is
+`exploration/threshold-setup.md`; the decisions are D19, D20 and D24.
+
+**The line this design holds:** the app computes candidates, the athlete
+chooses one, and the choice is stored as a dated fact with its source.
+
+What changes:
+
+- **Four candidates, and they are four sources rather than four rules.** The
+  **watch's own zone model** (its fifth zone's floor — no typing at all) ·
+  **from a race** (a band of paces, by the book's rule, "the pace you could
+  race for about an hour") · **from a field test** (the book's 45-minute time
+  trial, computed from the stored FIT) · **typed by the athlete** (from a lab
+  or a coach; a **pair** is allowed — a pace band and/or a heart rate). Each
+  candidate is computed by **one** rule and names it, and for the Pfitzinger
+  base that rule is the book's. Friel's 30-minute test, Anderson's estimate and
+  the 80/20 family's 20-minute test stay **named as published alternatives**:
+  the card may say that other rules exist, and it does not compute four
+  estimates and choose among them. The book's own fifth method (a heart-rate
+  estimate, 82–90 % of maximum) is **not a fifth card** — it is the same kind
+  of thing as the watch's own number and sits beside it.
+- **A candidate carries the value, the source and the date.** Nothing else. A
+  pace candidate is a **band**, drawn as a band with its two ends labelled and
+  never collapsed to a midpoint, because a midpoint is a number the method
+  does not state. The candidate's limitation is an annotation under the card,
+  not a line on it.
+- **Two lanes, and no conversion.** The candidates are also drawn as a
+  heart-rate lane and a pace lane, each candidate a mark on its own lane. Two
+  marks in one lane are two numbers about the same thing and the distance
+  between them is drawn; two marks in different lanes are two kinds of number,
+  and **no lane converts into the other**.
+- **The athlete chooses; the app never chooses.** The candidates are listed
+  side by side, in a fixed order that is not a ranking, with no chip naming
+  one as the one to take and no colour that judges. The pick writes a choice
+  row and marks that card as the one in use, and **the others stay exactly
+  where they are** — choosing one is not deleting the others.
+- **One threshold at a time, dated, and tied to the base it was made for.** A
+  later change writes another row: the previous row stops being in force, is
+  not deleted and is not edited. The history reads as a list of facts. The app
+  **never warns** that a threshold needs retesting or that anything is stale
+  — a date is a date.
+- **A disagreement is shown, not resolved.** If the watch's fifth-zone floor
+  says 165 and the typed number says 168, both marks stand on the lane at the
+  two values; the app does not average them, does not pick between them, and
+  does not call the distance between them a problem.
+
+**The rule this serves: the watch's zone model and the athlete's threshold
+are two different numbers, and the app never merges them.** The athlete's
+threshold is read in **two places only** — the **plan's pacing** and the
+**80/20 base's bands**. Everywhere else the app keeps the watch's own
+numbers: not the ladder, which keeps the method's rule on the race time; not
+the ledger, whose rows answer against the model in force on each run's day;
+and not the load model, which keeps the watch's model as its reference, so
+the load history does not move because the athlete chose a different number,
+and the load model's own inputs are examined separately, in stage 2 of the
+zone-model migration (D3).
+
+**What it may and may not say.** It may name the value, the source, the rule
+and the date. It may not say which candidate is right or which to take, and
+may not say that any of them is old; it may not score, rank, recommend, or
+colour a candidate as a problem; it may not compute a threshold or a maximum
+heart rate from an age — there is no birthdate in Stride and none is added;
+it may not convert a pace into a heart rate or the reverse; and it may not
+collapse a pace band to a point. **A base may be adopted with no threshold
+chosen**: then the plan's pacing falls back to the method's rule on the
+plan's anchor race, the ladder shows the method's rung, and the threshold
+card names the four ways a threshold could arrive — without a prompt to
+choose and without a warning colour.
+
+**The files it touches.** `crates/stride-core/src/threshold.rs` (new) ·
+**a schema change**: a `threshold_observations` table in
+`docs/contract/schema.sql`, holding the value or the band's two ends, the
+source, the rule, the origin date, the base it was made for, the day the
+choice was made and the in-force flag · **a contract change**: the
+candidates route and the choice route in `docs/contract/api-paths.md` · the
+catalogue's strings.
+
+**What this does not settle.** Whether the setup card may be re-entered for a
+second base, and what the second entry looks like beside the first; whether
+the field-test candidate's window is the book's "last 30 minutes" of a
+45-minute trial exactly, and what the app does when the pointed-at run is
+shorter than the trial; and where the threshold's detail lives — a sheet on
+the screen it was opened from, or a panel of its own.
+
+**Three of the design note's open questions are closed by D20**, and this
+amendment adopts them: the ladder's rung and the plan's session pace are
+**never drawn together**, because putting them on one axis would imply they
+are the same number; a typed value carries **two dates** — the day the
+measurement was taken and the day it was entered — and the sentence names the
+entered day while the detail shows both; and the "other rules exist" line
+has its wording: *"One rule is used here: your pace and heart rate over the
+last 30 minutes. Other rules for this test are published; they are not
+computed here."*
+
+### Proposed amendment — the two bases of zone time (2026-11-24)
+
+**Proposal, not approved.** The approvals below are the user's to give. This
+section records the change and the rule it serves; it is not permission to
+ship, publish, migrate or sync production data.
+
+The zone model has no history in the source: Garmin serves the zone
+configuration as it stands now — one record, no date, no effective-from. So
+the rule that every run is measured with the model in force on the day of the
+run leaves **every imported run** with no zone time, and the ledger's
+intensity rows would be empty over exactly the athlete's history. The
+measurement is in `exploration/zone-model-history.md`; the design is
+`exploration/two-bases.md`; the decisions are D3, D10, D11, D18 and D23.
+
+What changes — **two blocks on the ledger card, each naming its basis, and
+never added together**:
+
+| block | what it is | basis | where it comes from |
+|---|---|---|---|
+| **your zones** | the app's own zone time, in the athlete's own bands — Z1–Z2 low · Z3 moderate · Z4–Z5 high | **the moving time** — the time the athlete was running | the app's computation over the stored dated model, run by run |
+| **the watch's own zones** | the watch's own record of each run — its zone 1 … its zone 5, five rows and no roll-up | **the elapsed time** — the whole run, stops included | `hrTimeInZone_1..5` on the activity-search payload the sync already fetches — **no extra request** |
+
+- **One block per period.** The first answers the runs with a model in force;
+  the second answers the runs without one. Their coverage does not overlap, and
+  where the app holds the model the watch's minutes appear **only inside the
+  check** — so no week ever carries two zone times that could be added.
+- **The overlap is the third element, and it is a check.** Over the weeks
+  where both exist, the app compares its own arithmetic with the watch's own
+  record: the two numbers per week and in total, the difference as arithmetic
+  ("3 minutes apart — one counts the time you were running, the other the
+  whole run"), and what could account for it — the two spans, the boundaries
+  the app does not hold, and the watch's own configuration of that day. **It
+  is the app checking itself; the watch is the witness, not the defendant.**
+- **The check may not say** which is right; that the agreement is accurate,
+  consistent or inconsistent; that a difference is an error; that the model
+  has not changed; or anything at all about the runs outside the overlap. It
+  may not score the agreement, and it may not extend its result past the
+  period it covers.
+- **The names differ deliberately.** The first block's rows are the athlete's
+  own bands, which the app holds the boundaries for; the second block's rows
+  are the watch's own numbers, and the line under them says so — the
+  boundaries of those zones are not recorded — because a reader who sees
+  "watch zone 3 — 4 h 12 m" must not be left to assume the app knows what
+  zone 3 was.
+- **The picture separates them.** The app's own zone time is drawn as a solid
+  fill, the watch's own minutes as a hatched fill, and the overlap as a
+  marker strip over the weeks where both exist; a week the app cannot measure
+  is an **empty cell**, a week with no runs a **blank** cell, and a measured
+  zero a **light** cell. The two fills cannot be mistaken for two parts of one
+  bar.
+
+**What it may and may not say.** The card may state the two numbers, the
+difference, the coverage, the basis of each block and the reason a value is
+absent. It may not sum the two bases, put a row of one block in a column of
+the other, declare a winner, grade the agreement, offer advice, or turn the
+period the app cannot measure into a failure.
+
+**The files it touches.** **a schema change**: the watch's zone minutes belong
+in the `activity_observations` table — one row per activity per zone, with
+the source, the endpoint it was read from, the source's own field name, the
+value, the unit, the day the response carried it and the day it was read — in
+`docs/contract/schema.sql`, with the matching edit to
+`crates/stride-store/src/schema.rs`, which the schema contract test compares
+statement for statement, and a schema version bump — each of the new tables is
+its own bump, and the order among them is the implementation's to set · the
+sync's search listing, which carries the values on the payload it already
+reads, so **no extra HTTP request** and no widening of the pull's request
+budget · the api's read seam in
+`crates/stride-api/src/zonemodel.rs`, which gains a third case: no model in
+force and the run carries the source's own zone time → answer with the
+source's numbers, under the second basis, with the zone edges rendered as
+unknown · **a contract change**: the fields in `docs/contract/api-paths.md`.
+
+**What this does not settle.** Whether the check survives if the strict
+reading is chosen instead — nothing from the watch before the first model, in
+which case the check would cover the model period only; whether the first
+block keeps a last-date row while its coverage is partial; whether the
+watch's rows carry their own last dates; what the run detail does with the
+same two-base question for a run before the first model; and the load model,
+which is untouched — it keeps the model's own constants, and the second block
+has no part in it.
+
+### Proposed amendment — the picture first, and the sentence second (2026-11-24)
+
+**Proposal, not approved.** The approvals below are the user's to give. This
+section records the change and the rule it serves; it is not permission to
+ship, publish, migrate or sync production data.
+
+The user's directive, 24 November 2026: **less verbose, more visual**. The
+decision is D11; the sweep it drives is `exploration/cards-as-pictures.md`.
+
+What changes:
+
+- **A card is read as a picture first** — the shape, the band, the gap, the
+  streak — and the sentence is the **caption** under it.
+- **Absence is drawn, not described.** The twelve-week strip, coloured by what
+  each week held, makes a five-week hole in the hard band visible as a hole
+  before any sentence is read; the sentence then names the date. A band with
+  no time in a week is **no value** — the cell is empty — and never a zero in
+  a table.
+- **The chart must be readable on its own**, and the caption must not repeat
+  what the picture already says.
+- **Two bars are not two facts.** The five zone shares and the polarised
+  roll-up are **one bar, printed once**, and the ledger's rows read the share
+  from it.
+- **A surviving card that is only a sentence is redrawn as a picture, or
+  merged.** This applies to the ledger card, the method-lens card (deferred,
+  D13), the consolidated chart, and every card that survives the cut.
+- **The accessible fallback is still a number**, and a number needs its period
+  and its reason stated in words — which is what the caption is.
+
+**What this does not change.** The numbers, the ban list, and the rule that
+the app writes no sentence of its own: the core's catalogue owns the words. It
+does not make the picture a decoration, and it does not remove the caption.
+
+**The files it touches.** The frontend's surfaces and the chart code. The
+ledger's own route and field table travel with the ledger's amendment. **No
+contract change** — the shape of a card is a design decision, not an answer's
+shape.
+
+### Proposed amendment — explanation is not product content (2026-11-24)
+
+**Proposal, not approved.** The approvals below are the user's to give. This
+section records the change and the rule it serves; it is not permission to
+ship, publish, migrate or sync production data.
+
+The user, after walking the end-to-end: *"overall i think great visuals. I am
+seeing that we are adding text where it is not required."* The decision is
+D22; the note is `exploration/rule-explanation-is-not-product.md`.
+
+The rule, in one line: **the product surface carries the picture, its labels,
+the numbers, the period, and — only where something is missing — the reason
+something is missing. Nothing else.**
+
+- **Every line that explains the design rather than the data moves to the
+  annotation layer** — the notes, off by default in the clean view. That
+  includes a header that explains the drawing; the reasoning behind two axes,
+  which belongs as a small caption inside the chart's frame; a candidate's
+  limitation; and any basis line that only explains the drawing.
+- **The test.** If the line would still make sense on a card showing a
+  different measurement, it is explanation and it goes. If it is the
+  **period**, or the **source** where the source is the fact, or the **reason
+  a value is absent**, it stays.
+- **Explanation is moved, never deleted.** Every line that leaves a product
+  surface appears as a note — or as a caption where it belongs with the
+  picture.
+
+**The files it touches.** The frontend's surfaces and the notes toggle; the
+catalogue's strings, where a sentence that moved out of a surface may be
+re-typed as a note. **No contract change** — `docs/contract/voice.md` freezes
+the string types, the closed direction set and the ban list, and none of them
+moves. This rule is a rule about what sits on a surface, and it is enforced by
+review rather than by the lint.
+
+**What this does not settle.** Whether a note may be edited by the athlete,
+and whether the notes toggle is one switch for the app or a per-surface
+control.
+
+### Proposed amendment — the surface speaks the runner's language (2026-11-24)
+
+**Proposal, not approved.** The approvals below are the user's to give. This
+section records the change and the rule it serves; it is not permission to
+ship, publish, migrate or sync production data.
+
+The user, on the language of the two-basis design: *"The language again — the
+watch's own zone minutes, elapsed time. We need to work on everything like
+that if we are showing that in the surface."* The decision is D24.
+
+- **The notes may use the precise terms** — "elapsed time", "moving time", the
+  zone model's floors, a field name — because a note is written for someone
+  reading *about* the product.
+- **The surface is written for a runner looking at their own training**: no
+  field names, no model names, no jargon, no internal vocabulary, and no
+  phrase that only makes sense to whoever wrote the code. So the two bases are
+  named on the card as *the time you were running* and *the whole run, stops
+  included*, and the zone model is *your zones*.
+- **The test:** would a runner who has never read the code understand this
+  line without it being explained? If not, it is too technical, too abstract,
+  or it is explanation that belongs in a note.
+- **Numbers and their formats are not touched.** The app's own conventions
+  (`crates/stride-core/src/units.rs`) are the authority. **Words only.**
+
+**The files it touches.** The catalogue's strings —
+`crates/stride-core/strings.json` and `frontend/src/i18n/catalogue.ts`. **No
+contract change** — `docs/contract/voice.md` keeps its seven string types and
+its ban list; this rule governs the wording, which the lint cannot check, so
+it lives in the plan and is enforced by review. If the user wants it
+machine-checked — a new list of forbidden field names and model names in the
+lint — that would be a contract change, and would need its own note.
+
+**What this does not settle.** Whether a piece of jargon may be defined once
+in the notes and then used on a surface, and the app's own word for the zone
+model's maximum heart rate, which the surfaces have used inconsistently.
+
+### Proposed amendment — the plan bases: Pfitzinger first, 80/20 second, one at a time (2026-11-24)
+
+**Proposal, not approved.** The approvals below are the user's to give. This
+section records the change and the rule it serves; it is not permission to
+ship, publish, migrate or sync production data.
+
+The plan engine today knows two things about a plan: a **baseline** inferred
+from the athlete's own history, and a **prescribed** plan imported or typed.
+It has no method, no session vocabulary and no generated programme — and a
+baseline is what the athlete usually does, not what they were told to do. The
+plan's bases are D13, D14, D15, D16 and D18; the design is
+`exploration/pfitzinger-spine.md` and `exploration/race-and-level-plans.md`.
+
+What changes:
+
+- **Two plan bases, one at a time.** **Pfitzinger is the first** — the plan's
+  spine. **80/20 is a separate second method**, not a lens and not a variant:
+  the two band their easy days differently (Pfitzinger against the athlete's
+  maximum heart rate, 80/20 against the athlete's threshold), they run a
+  different week (one hard session against two), and they pace from a
+  different anchor (the athlete's race distance against the threshold). The
+  athlete adopts one; **the app never recommends either**, and the plan card
+  names the base it is following.
+- **Two programmes ship: the 10K and the half marathon**, the book's tiers 1–2
+  of each. The 5K and the 8K are cut, and so are the 15K/10-mile, the
+  multi-distance plan, the higher tiers, the three base-training schedules
+  and the marathon book's MP-relative rules. The method's **rules** still come
+  from the whole book; only the plan **templates** are cut.
+- **The plan's shape is the book's, read cell by cell**: twelve weeks, weeks
+  to go counted 11 → 1 and then race week, a recovery week at eight weeks to
+  go in every tier, one quality session a week whose type moves with the
+  phase, the long run on Sunday, two tune-up races, and a recovery week and a
+  transition week after the race. The app claims **no** weekly skeleton for a
+  tier the spine has not read cell by cell.
+- **The tier's entry requirement is stated beside the athlete's own weekly
+  mileage, and the athlete picks.** The app never suggests a tier.
+- **The plan carries the method's vocabulary** — the session kinds become
+  endurance, general aerobic, recovery, progression long run, lactate
+  threshold, VO₂max, speed, tune-up race and race — because the plan's kind is
+  what the ledger's evidence is measured against.
+- **The plan's pacing names the threshold it was paced with** — the value and
+  the day it was chosen. A plan adopted in March and still running in July is
+  paced by March's number, and the card says so. Sessions from the day of a
+  change take the new band, and **sessions before it keep the band they were
+  given** — the same discipline the zone model follows.
+
+**What it may and may not say.** The plan card may name the base, the goal
+race and its date, the tier's entry requirement, and the threshold it was
+paced with. It may **not** say whether the athlete did what they were told:
+the plan's cells are **intent** and the watch's zones and lap structure are
+**evidence**, and no adherence score, no count of what was not done, no
+quality verdict on a session and no measure of how far the training was from
+the plan may exist anywhere. The two are never merged into one number.
+
+**The files it touches.** `crates/stride-core/src/plan.rs` — a method value
+on `PlanSource`, the book's run types on `SessionKind`, and a pace band and a
+structure on the session · the store's `plan_sessions`, which already carries
+`pace_low_s_km` and `pace_high_s_km` and has nothing filling them · a module
+holding the two shipping templates · **a contract change**: the plan route's
+field table in `docs/contract/api-paths.md`.
+
+**What this does not settle.** The plan's **source word** — a generated
+Pfitzinger plan is an intent and may say "not done", but it is not a file the
+athlete imported, and a fourth source value is proposed; whether the 80/20
+base's weekly structure is a template or a rule, and what its recovery week
+looks like against Pfitzinger's; and what a plan carries when the athlete
+adopts it with no threshold chosen — the pacing then falls back to the
+method's rule on the plan's anchor race, and the session's pace is a no value
+with a reason when the plan carries no race time either.
+
+### Proposed amendment — the audience: the intermediate runner (2026-11-24)
+
+**Proposal, not approved.** The approvals below are the user's to give. This
+section records the change and the rule it serves; it is not permission to
+ship, publish, migrate or sync production data.
+
+The user's words: *"Mark this whole app for intermediate runners. For entry
+level, Strava/Garmin is enough."* The decision is D14.
+
+What the audience means for what the product offers:
+
+- **The athlete already trains, has a base, and is chasing a specific
+  distance.** So the product offers a **plan with a goal race and a date** (the
+  10K and the half marathon), a **ledger that reads a window of history
+  against that intent**, a **pace engine anchored on a race time the athlete
+  has already run**, a **threshold the athlete can state** from their own
+  watch, a race, a field test or a lab, and **two plan bases** to choose
+  between. Every one of those starts from something the athlete already has.
+- **The product offers no onboarding for a first run.** There is no
+  "getting started" path, no first-week plan, no beginner's tier and no
+  beginner's vocabulary: the session kinds are the method's, the plan's cells
+  are the book's, and the ledger's rows assume a reader who already knows
+  what a threshold session is.
+- **The tier's entry requirement is stated, not enforced.** The plan card
+  carries the requirement beside the athlete's own weekly mileage, and the
+  athlete picks. The app does not turn a reader away, and does not suggest a
+  tier.
+- **The absence rows are for a trained reader.** "The last run above Z4 was 35
+  days before the end of this period" is a fact about an athlete who already
+  knows what a hard week is. The product attaches no interpretation to it —
+  and no beginner's reading of it either.
+
+**What this does not become.** Not a coach, not a marketplace, not a plan
+recommender and not a scored product: the app still never says what to do, and
+the audience does not license a verdict. The method lens — a catalogue of
+coaching methods quoted over the athlete's own numbers — was designed and
+**deferred** (D13); it stays in `exploration/` as the record of what was
+designed.
+
+**The files it touches.** No contract change: it is a constraint on the
+plan's tiers, on the vocabulary and on what the product offers, and it
+constrains the amendments above.
+
+**What this does not settle.** Whether an athlete below a tier's entry
+requirement is offered the base-training schedule as a note — the spine
+extracted the book's three base schedules and does not build the templates —
+and whether the app states the audience anywhere on the surface, which would
+be a statement about the product rather than a fact about the athlete.
+
 ---
 
 ## 0. The voice — vitals, direction, options; no verdicts

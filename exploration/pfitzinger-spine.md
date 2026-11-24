@@ -150,7 +150,7 @@ Ranked by how much of the plan depends on them.
 | **4** | **Recovery = below 76 % maxHR / below 70 % HRR, or 2 min/mi slower than 15K–HM race pace** | S1 ch. 7, ch. 2 | **[book]** |
 | **5** | **Long run = 74–84 % maxHR / 65–78 % HRR; 20–33 % slower than 10K pace, 17–29 % slower than 15K–HM pace; start slow, finish fast** | S1 ch. 1, ch. 7 | **[book]** |
 | **6** | **LT pace = the pace you could race for about an hour** (15K–10-mile race pace; or 10–15 s/mi slower than 10K pace / 20–30 s/mi slower than 5K pace for shorter-distance runners); **80–91 % maxHR / 75–88 % HRR** | S1 ch. 1, ch. 7 | **[book]** |
-| **7** | **LT session = 20–40 min** continuous (or 16/12/8-min intervals with 4-min jogs) | S1 ch. 1, ch. 7 | **[book]** |
+| **7** | **LT session: 20–40 min** continuous (or 16/12/8-min intervals with 4-min jogs) | S1 ch. 1, ch. 7 | **[book]** |
 | **8** | **VO₂max = 3K–5K race pace; 94–98 % maxHR / 92–97 % HRR; reps of 2–6 min, 5,000–8,000 m total; recovery jog 50–90 % of interval time** | S1 ch. 1, ch. 7 | **[book]** |
 | **9** | **Recovery week = ≤ 80 % of normal volume, long run ≤ 80 % of normal distance, no VO₂max/tempo** | S1 ch. 2 | **[book]** |
 | **10** | **Taper = 2 weeks, 20–60 % mileage cut, intensity maintained in smaller doses** | S1 ch. 6 | **[book]** |
@@ -621,7 +621,7 @@ The parent reads the LT anchor as *"the pace for a ~15K (10-mile) race from the 
 4. **Recovery: below 76 % maxHR / below 70 % HRR, or 2 min/mi slower than 15K–HM race pace** — **[book]** (ch. 7, ch. 2).
 5. **Endurance run: 74–84 % maxHR / 65–78 % HRR; 20–33 % slower than 10K pace; 17–29 % slower than 15K–HM pace; start slow, finish faster** — **[book]** (ch. 1, ch. 7).
 6. **LT pace = the pace you could race for about an hour; 80–91 % maxHR / 75–88 % HRR** — **[book]** (ch. 1, ch. 7).
-7. **LT session = 20–40 min continuous, or 16/12/8-min intervals with 4-min jogs** — **[book]** (ch. 1, ch. 7).
+7. **LT session: 20–40 min continuous, or 16/12/8-min intervals with 4-min jogs** — **[book]** (ch. 1, ch. 7).
 8. **VO₂max: 3K–5K race pace; 94–98 % maxHR / 92–97 % HRR; 2–6-min reps, 5,000–8,000 m total** — **[book]** (ch. 1, ch. 7).
 9. **Recovery week ≤ 80 % of normal volume; long run ≤ 80 % of normal distance; no VO₂max/tempo** — **[book]** (ch. 2).
 10. **Taper = 2 weeks, 20–60 % mileage cut, intensity kept in smaller doses** — **[book]** (ch. 6).

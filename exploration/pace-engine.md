@@ -4,6 +4,8 @@
 > merged. Two new files under `exploration/` and nothing else: this note and
 > `exploration/pace-engine.html` (the prototype). No code in `crates/`, `frontend/`, `android/`
 > or `desktop/`; no change to `PLAN.md`, `docs/` or the contract.
+
+*The surface copy in this note and in its prototype follows the language pass — `exploration/language.md`.*
 >
 > **Revision 2 — 24 November 2026**, after `exploration/pfitzinger-spine.md` landed. The spine
 > changed the design: the method's rules are **percentages of a named race pace**, the shipping
@@ -12,7 +14,10 @@
 > **marathon pace is no longer the anchor**. Every rule below carries the book's chapter; every
 > formula that is the engine's own is marked as such.
 >
-> The numbers in the prototype are **synthetic**; the rules are **Pfitzinger's** and cited.
+> The numbers in the prototype are **synthetic** and come from **one place**:
+> `exploration/athlete.js`, the canonical athlete (D21). The prototype reads them from there —
+> nothing is typed into its markup — so a number cannot drift between this file and the rest
+> of the product. The rules are **Pfitzinger's** and cited.
 >
 > Read with: `exploration/pfitzinger-spine.md` (**the rules and their sources — do not re-derive
 > them**), `exploration/decisions.md` (D11 the picture first, D12 the lens that is out, **D13 the
@@ -63,7 +68,7 @@ from the method.
 
 1. **A race time is an observation, not a verdict.** The athlete types it. Stride never invents
    one and never infers one from the training.
-2. **Every derived number names its source.** "From your 1:32:21 half marathon on 12 Oct 2026."
+2. **Every derived number names its source.** "From your 10K in 41:36 on 12 Oct 2026."
    The card names the race, the day of the race, the day it was entered and the day it was last
    changed.
 3. **Absence is not zero.** No race time → no race paces → no rungs → *no value*, with the reason
@@ -71,6 +76,27 @@ from the method.
 4. **No score, no grade, no verdict**, and **no age, no birthday** — a maximum heart rate is never
    an age formula. The book's own HR bands are computed from the athlete's own max HR (read from
    the dated zone model) and resting HR (read from wellness).
+
+### The canonical athlete (D21)
+
+The prototype's numbers are **not written in this file, and not written into the prototype's
+markup**: they are read from **`exploration/athlete.js`**, the canonical athlete every screen in
+the product now uses (D21).
+
+| the fact | the canonical value |
+|---|---|
+| the zone model | read **3 Nov 2026**, method HR_MAX, **max heart rate 183 bpm**, floors 115 · 128 · 143 · 159 · 165 |
+| the typed race | a **10K in 41:36 on 12 Oct 2026**, entered 13 Oct 2026, changed 3 Nov 2026 |
+| the VDOT | **49.7** |
+| the goal | a half marathon |
+| the threshold band | the **hour-pace band** — the ladder's threshold rung and the curve's threshold session, the same band in both places |
+
+Everything else the prototype shows is **derived from the canonical race and the canonical
+VDOT**, by the engine's own relations: the equivalents (Riegel's form), the LT band (the book's
+rule on the 15K and half-marathon equivalents), the long run's two ends, the recovery pace, the
+heart-rate bands (the method's percentages of the canonical max HR) and the curve's %maxVO₂ for
+every mark. The prototype **draws them from `athlete.js` at run time** — its markup holds no
+athlete number of its own — so the two cannot drift again.
 
 ---
 
@@ -111,30 +137,34 @@ used.
   one word.
 * **Missing input:** no value, with the reason "no race time entered". Never a default, never a
   VDOT carried over from another race.
-* **Worked example (synthetic):** 21 097.5 m in 1:32:21 → `v` = 228.45 m/min, `VO2` = 42.47,
-  `%max` = 0.8582 → **VDOT 49.5**.
+* **Worked example (the canonical athlete):** 10 000 m in 41:36 → `v` = 240.38 m/min,
+  `VO2` = 45.22, `%max` = 0.9114 → **VDOT 49.6**, which the canonical file carries as
+  **49.7** (`exploration/athlete.js`, `race.vdot`). The prototype shows the canonical value.
 
 ### 2.2 ② VDOT → the athlete's race paces — the same relations, inverted
 
-For each distance the engine finds the pace at which a race of that distance would produce the
-same VDOT — a bisection on the pace, run at each target distance. The outputs are the
-athlete's **equivalent race paces**: 5K, 10K, 15K, 10-mile, half marathon, marathon.
+The **equivalent race paces** — 5K, 10K, 15K, 10-mile, half marathon, marathon — come from
+**Riegel's form** applied at each distance (§2.5's formula), because that is what the canonical
+athlete computes (`exploration/athlete.js`). The **VDOT inversion** — finding, at each distance,
+the pace at which a race of that distance would produce the same VDOT — is the engine's
+**independent check** on them, and the two agree (below).
 
 * **Formula:** the engine's own — the same Daniels relations inverted at each distance
   (`VO2(v) = VDOT × %max(d·p/60000)`), solved for the pace `p`.
-* **Self-test:** when the entered race *is* a half marathon, the inversion reproduces the entered
-  pace exactly (1:32:21 → 4:23 /km). A round trip that does not return the entered value is a
+* **Self-test:** the inversion reproduces the entered race's own pace exactly (the canonical
+  athlete's 10K in 41:36 → 4:10 /km). A round trip that does not return the entered value is a
   bug, not a rounding artefact.
 * **Cross-check against the method's own table (this is the important one).** The book's
   Appendix B gives the equivalent performances for a 20:00 5K as **10K 41:36 · 15K 1:03:51 · HM
-  1:32:21**. The engine's chain, from that same 20:00 5K, gives **10K 41:28 · 15K 1:03:46 · HM
-  1:31:50** — **5 to 31 seconds** away, which is inside the book's own 30-second table steps.
-  The two chains agree; the engine's is a smooth interpolation of the method's table, and the
-  card says which chain produced the number (§2.6).
-* **A second, independent check: Riegel.** Riegel's form (§2.5) applied to the synthetic
-  athlete's own half marathon gives a **10K 41:51** and a **marathon 3:12:33**, against the
-  engine's VDOT equivalents of **41:42** and **3:12:21** — **9 and 12 seconds** apart. Two
-  different models, one answer: the equivalents are sound.
+  1:32:21**. Riegel's form, from that same 20:00 5K, gives **10K 41:50 · 15K 1:03:46 · HM
+  1:32:03** — within **18 seconds**, inside the book's own 30-second table steps. The VDOT
+  inversion gives **10K 41:28 · 15K 1:03:46 · HM 1:31:50** — the same, within the table's steps.
+  Both routes agree with the method's table; the card says which chain produced the number
+  (§2.6).
+* **The two routes on the canonical athlete.** Riegel's form from the 10K in 41:36 gives a
+  **15K 1:03:56 · half 1:31:47 · marathon 3:11:22**; the VDOT inversion on the same VDOT gives
+  **1:03:53 · 1:32:00 · 3:11:38** — **3, 12 and 15 seconds** apart. Two different models, one
+  answer: the equivalents are sound.
 * **Missing input:** no value.
 
 ### 2.3 ③ The race pace → LT pace — the method's rule, on the engine's anchor
@@ -160,15 +190,23 @@ The engine therefore:
 | **10K** (a shorter-distance athlete) | the **10K race pace + 10–15 s/mi** (+16 to +24 s/km) | ch. 1, ch. 7 — the shorter-distance branch, which the book states as a **floor**, not a substitute |
 | a 5K goal | the 5K race pace + 20–30 s/mi | ch. 1, ch. 7 |
 
-For the synthetic athlete the numbers are: the 15K equivalent **4:17 /km**, the 10-mile
-equivalent **4:18 /km** — the book's own 15K-to-10-mile band is **one second wide** for this
-athlete — and the half-marathon pace **4:23 /km**, so the rung reads **4:17–4:23 /km**. The card
-names the route it used: *"the threshold pace — the pace you could race for about an hour; the book
-places it at your 15K-to-10-mile race pace, and the 15K pace is the fast edge of that band"*.
+For the canonical athlete the numbers are: the 15K equivalent **4:16 /km**, the 10-mile
+equivalent **4:17 /km** — the book's own 15K-to-10-mile band is **one second wide** for this
+athlete — and the half-marathon pace **4:21 /km**, so the rung reads **4:16–4:21 /km**. The card
+names the route it used: *"the threshold band is the pace you could race for about an hour; the
+book places it at your 15K-to-10-mile race pace"*, and the 45-minute time trial is named as the
+book's own route to the same band.
 
 * **The anchor is the engine's; the rule is the method's.** The 15K and 10-mile equivalents come
   from ② (the engine's own inversion); the *choice* of them as the band's edges is the book's,
   cited above.
+* **The same rule, two anchors — and the rung names its anchor.** The ladder's threshold rung is
+  the hour-pace band **for the athlete's goal distance**: for the canonical athlete, a half
+  marathon, **4:16–4:21 /km**. The threshold setup's **race candidate** is the same rule on a
+  different anchor — the athlete's **typed race**, the 10K — and gives **4:16–4:17 /km**. Two
+  numbers for two anchors, so the rung carries its anchor (*the hour pace · your HM*) and the
+  card names it in full (*the threshold band for your half marathon*). Neither of them is ever quoted
+  as the other.
 * **The book's five ways to find LT pace** (ch. 1, ch. 7 — spine §5.5.1): a **lactate test** (six
   4-minute stages, a blood sample at each); a **race of about 45–60 minutes**; a **45-minute time
   trial** ("your pace and heart rate during the last 30 minutes"); a **training-software estimate**;
@@ -179,10 +217,10 @@ places it at your 15K-to-10-mile race pace, and the 15K pace is the fast edge of
   for the same band, and the ladder may name it as a route — while the ladder itself stays about
   paces and bands.
 * **A useful cross-check, also the method's:** the marathon is "a couple of percent slower than
-  lactate threshold" (the author, 2025 interview — spine S3). For the synthetic athlete the
-  engine's numbers agree: the band sits inside 4:17–4:23 and the marathon equivalent is
-  **4:34 /km** — within the method's own tolerance band, and the check is printed in the note
-  rather than hidden.
+  lactate threshold" (the author, 2025 interview — spine S3). For the canonical athlete the
+  numbers agree: the band sits inside 4:16–4:21 and the marathon equivalent is **4:32 /km** —
+  within the method's own tolerance band, and the check is printed in the note rather than
+  hidden.
 
 ### 2.4 ④ The rungs — a pace **and** a heart-rate band
 
@@ -202,8 +240,9 @@ T₂ = T₁ · (D₂ ÷ D₁)^1.06
 ```
 
 with `T₁` = the goal race time (the anchor) and `D₂` the target distance. The exponent **1.06** is
-Riegel's and is named in the card. *Missing input:* no value. *Worked example (synthetic):* from
-the 1:32:21 half marathon → 5K 20:05, 10K 41:51, 15K 1:04:20, marathon 3:12:33.
+Riegel's and is named in the card. *Missing input:* no value. *Worked example (the canonical
+athlete):* from the 10K in 41:36 → 5K 19:57, 15K 1:03:56, 30K 2:13:18, half 1:31:47,
+marathon 3:11:22.
 
 ### 2.6 Which chain — named, not implied
 
@@ -215,7 +254,7 @@ The spine §5.5 puts three chains on the table and says the app names the one it
 | **(b) the model's** — **the engine's own, used here** | race time → VDOT (Daniels) → the equivalent race paces → the method's rules applied to them | the *rules* are Pfitzinger's; the *anchors* are Daniels' — and the two agree to within the book's own table step (§2.2) |
 | **(c) the author's current framing** | every workout pace set relative to LT pace (his own site's framing, S4) | makes LT pace the single anchor; needs his published LT table |
 
-**This engine is (b), and the card says so** — the header carries "VDOT 49.5 · Daniels' chain".
+**This engine is (b), and the card says so** — the header carries "your fitness number 49.7 · from your 10K in 41:36".
 **The chain replaces the book's lookup tables**: the app does not transcribe Appendix B and
 Appendix C; it computes the 10K, the 15K and the half-marathon pace from the athlete's race time,
 and then applies the **book's rules**, which are quoted and cited. The rules are never presented
@@ -356,14 +395,15 @@ CREATE TABLE race_observations (
 The source line is the caption under the picture:
 
 ```
-From your 1:32:21 half marathon on 12 Oct 2026 · entered 13 Oct 2026
+From your 10K in 41:36 on 12 Oct 2026 · entered 13 Oct 2026 · the race time was changed on
+3 Nov 2026
 ```
 
 and, because the anchors are now derived rather than given, one more line names them:
 
 ```
-the 10K (41:42), 15K (1:04:08) and marathon (3:12:21) paces are this engine's equivalents
-of that race, from VDOT 49.5
+10K 41:36 · 15K 1:03:56 · half 1:31:47 · marathon 3:11:22 — the equivalents of that race,
+from VDOT 49.7
 ```
 
 * **The race it came from** — distance, time, day, and the athlete's own name for it if they gave
@@ -371,7 +411,7 @@ of that race, from VDOT 49.5
 * **The day it was entered, and the day it was last changed.**
 * **How old the race is**, once it is old enough to matter: *"the race was 194 days ago"*. A fact,
   not a warning. The threshold is ours to choose (**90 days**, §15 Q2).
-* **Which chain produced the anchors** — the header carries "VDOT 49.5 · Daniels' chain".
+* **Which chain produced the anchors** — the header carries "VDOT 49.7 · Daniels' chain".
 
 When the race time changes, the answers change with it, because the answers are derived and never
 stored: the ladder redraws, and the caption says which race time it used and that the value was
@@ -420,7 +460,8 @@ increase" (book ch. 1). The progression long run's finish is the LT pace for the
 the plan says which long run it is, and the rung says.
 
 **Where a rule gives a range, the range is drawn.** The threshold rung is a band too — the hour
-pace, whose fast edge is the engine's 15K pace — and it is drawn as one. The long run's band and
+pace **for the athlete's goal distance**, whose fast edge is the engine's 15K pace — and it is
+drawn as one, with its anchor on the label. The long run's band and
 the recovery rule's single value are both the method's; the general-aerobic rung's range is the
 athlete's own spread at that heart rate. Each says which.
 
@@ -464,7 +505,7 @@ repeated.
 | **the athlete's own races** | the race's own time, and the share of their VDOT that the race's own pace cost | azure, filled dots | the athlete's own data |
 | **the goal race** | the equivalent time for its distance — a hollow dot when it is not one of the entered races | azure, a ring | the plan's |
 | **the method's sessions** | each session's duration **and** its prescribed pace — the threshold session (20–40 min at the hour-pace band, book ch. 1, ch. 7), the long run (its duration range, from the start pace to the finish pace), the recovery run (3–5 mi at its pace, book ch. 2, ch. 7) | amber, a band over its duration and its pace | the method's rule |
-| **the 30-minute field test** | 30 minutes, on the curve | a hollow grey marker | the test's place in time |
+| **the 45-minute time trial** | 45 minutes, on the curve | a hollow grey marker | the test's place in time |
 | **the pace equivalents** | each distance's equivalent time and pace, along the bottom | azure ticks | the engine's own |
 
 **The general-aerobic day is not on the curve.** The method fixes no pace and no duration for it
@@ -523,7 +564,7 @@ nothing fills them and the core type cannot hold them
 * **a pace band on the session** — the store's existing columns — plus the **heart-rate band**
   the method states for that run type, and the **structure** where the method states one (the
   long run's "last 3 miles at LT pace", the VO₂max reps, the stride sets — book ch. 1, ch. 7).
-  The core's label then reads "16 km · long · 5:33 → 5:07 /km · 138–156 bpm".
+  The core's label then reads "18 km · long · 5:32 → 5:00 /km · 135–154 bpm".
 * **a block-level anchor**: the id of the race the block was paced from, the race's time as it
   stood, and the day it was read, so the block can always say what it was built from.
 * **a method value** on `PlanSource` — the spine's §4.3: `PlanSource` gains
@@ -653,12 +694,12 @@ pub struct PaceSet {
 }
 ```
 
-**Rendering — reuse, do not reinvent.** Pace values use the core's `units::format_pace` ("4:17")
-and `units::render_pace` ("4:17 /km"), a range uses `units::render_pace_range` ("5:00–5:39 /km"),
+**Rendering — reuse, do not reinvent.** Pace values use the core's `units::format_pace` ("4:16")
+and `units::render_pace` ("4:16 /km"), a range uses `units::render_pace_range` ("4:16–4:21 /km"),
 the heart rate uses `units::render_heart_rate` and `units::render_heart_rate_range`, the distance
 uses `units::render_distance`, the duration uses `units::format_duration`, and the VDOT uses
-`units::format_decimal(value, 1)` ("49.5"). **One new renderer is needed**, a sibling of
-`format_pace` beside it in `units.rs`: a race's finish time is read as a clock ("1:32:21"), and
+`units::format_decimal(value, 1)` ("49.7"). **One new renderer is needed**, a sibling of
+`format_pace` beside it in `units.rs`: a race's finish time is read as a clock ("41:36"), and
 `format_duration` would give "1 h 32 m", which is not how a race time is written. Dates are the
 frontend's existing chrome (`formatDateMedium` — "12 Oct 2026"); the core supplies the ISO day.
 
@@ -691,18 +732,20 @@ The ban list in `docs/contract/voice.md` is the contract's, and the core enforce
 match (`contains_phrase`: a banned phrase matches only when the characters around it are not word
 characters). The same rule was applied to the prototype and to the proposed strings:
 
-1. the prototype's visible text was extracted (tags stripped, `<script>`/`<style>` removed,
-   entities decoded) and lower-cased — **2 744 words**, including the `aria-label`s the screen
-   reader reads;
-2. each of the 23 banned phrases was matched with the core's word-boundary rule, on bytes, the
+1. the prototype's **rendered product surfaces** were drawn from `athlete.js` in a headless run
+   and their text extracted (tags stripped, entities decoded, the `aria-label`s included) — **1 028
+   words**;
+2. the page's own static text, the drawing script's string literals and `athlete.js`'s own strings
+   were added to it — **8 187 words** in all;
+3. each of the 23 banned phrases was matched with the core's word-boundary rule, on bytes, the
    way `contains_phrase` does it (a phrase matches only when the characters on both sides are not
    word characters — so a word that merely contains a banned fragment, such as "entered" or
    "prediction", is not a hit);
-3. the proposed catalogue strings in §11 were checked the same way, plus the rule that a
+4. the proposed catalogue strings in §11 were checked the same way, plus the rule that a
    `statement` may not carry a hole and that an `option` may not name a vital.
 
-**Result: zero hits** — in the prototype's 2 744 words, in the fifteen proposed strings, and in
-this note's own prose. The words that come closest are the plan's own vocabulary — "easy", "long", "recovery" —
+**Result: zero hits** — in the prototype's 8 187 words (1 028 of them the rendered product
+surfaces), in the fifteen proposed strings, and in this note's own prose. The words that come closest are the plan's own vocabulary — "easy", "long", "recovery" —
 which the contract keeps as *session types*, never as commands and never linked to a vital; and
 the noun "Rest", which the contract exempts by name. The prototype contains no imperative, no
 score, no colour that marks a problem, no verdict, and no age.
@@ -748,10 +791,11 @@ run's variant, which the ladder shows when the plan says so.
 | The threshold session | 20–40 minutes at the hour-pace band | book ch. 1, ch. 7 | the method's rule |
 | The long run | its duration range, from the start pace to the finish pace | book ch. 1, ch. 7 | the method's rule |
 | The recovery run | 3–5 miles at the 15K–HM pace + 75 s/km | book ch. 2, ch. 7 | the method's rule |
-| The 30-minute field test | 30 minutes, on the curve | book ch. 1, ch. 7 | the test's place in time |
+| The 45-minute time trial | 45 minutes, on the curve | book ch. 1, ch. 7 | the test's place in time |
 
-**The word count checked in §12** is the prototype's visible word count (2 744), plus the same
-check on the fifteen proposed strings in §11 and on this note's prose.
+**The word count checked in §12** is the prototype's rendered text (1 016 words on the product
+surfaces, 8 187 with the page, the script and `athlete.js`), plus the same check on the fifteen
+proposed strings in §11 and on this note's prose.
 
 ---
 
@@ -772,13 +816,13 @@ is explanation and it goes. If it is the period, or the reason a value is absent
 | the line | why it stays |
 |---|---|
 | the ladder's rungs, their values, their heart-rate bands and their **rule labels** | the rule is the source of the number |
-| "From your 1:32:21 half marathon on 12 Oct 2026 · entered 13 Oct 2026 · the race time was changed on 3 Nov 2026" | the source, and the dates |
-| "10K 41:42 · 15K 1:04:08 · marathon 3:12:21 — the equivalents of that race, from VDOT 49.5" | the source of the derived paces |
+| "From your 10K in 41:36 on 12 Oct 2026 · entered 13 Oct 2026 · the race time was changed on 3 Nov 2026" | the source, and the dates |
+| "10K 41:36 · 15K 1:03:56 · half 1:31:47 · marathon 3:11:22 — the equivalents of that race, from VDOT 49.7" | the source of the derived paces |
 | "The threshold band is the pace you could race for about an hour; the book places it at your 15K-to-10-mile race pace (ch. 1, ch. 7)" | the source of the band's numbers |
 | "A 45-minute time trial is the book's own route to that band (ch. 1, ch. 7)" | the source route for the band |
 | "the general-aerobic day is not on the curve: the method fixes no pace and no duration for it" | **the reason a mark is absent** |
 | "No race time entered — the race paces and the training paces have no value…" | the reason the values are absent |
-| "the general aerobic pace has no value — no runs at that heart rate yet. The band still stands: 130–151 bpm" | the reason the pace is absent |
+| "the general aerobic pace has no value — no runs at that heart rate yet. The band still stands: 128–148 bpm" | the reason the pace is absent |
 | "No plan adopted — the method's sessions are not on the curve…" | the reason the sessions are absent |
 | the small caption under each chart | the one line that belongs with the picture |
 
@@ -790,7 +834,7 @@ is explanation and it goes. If it is the period, or the reason a value is absent
 | "the method's heart-rate bands and this curve's %maxVO₂ axis are two different numbers; they are not converted into one another" | the desktop curve's assumptions list | the **small caption under the chart**, and a note |
 | "the curve is the share of VO₂max each duration holds; each of your races sits at the share your own pace cost" | the curve card's caption | a note |
 | "the method's sessions are placed at their prescribed durations and paces" | the curve card's caption | a note — the legend keeps "the method's sessions" |
-| "the 15K pace, 4:17, is the fast edge of that band" | the ladder card's caption | a note |
+| "the 15K pace, 4:16, is the fast edge of that band" | the ladder card's caption | a note |
 | "a race time is entered by the athlete; Stride does not estimate one from the training" | the empty ladder's fields card | a note |
 | "a model with its assumption named — not a forecast" | the desktop ladder's prediction card | a note |
 | "Pfitzinger's bands are percentages of maximal heart rate; this curve's axis is percentages of VO₂max" | the desktop curve's assumptions list | the chart's small caption, and a note |
@@ -818,7 +862,7 @@ explanation, and **every line that left a surface is in them** — nothing was d
    card supports both and says which. The athlete's history is the default because it is the
    athlete's own data; typing one is legitimate because the method leaves the pace to them.
 5. **What is a "run at that heart rate"?** The app needs a rule for turning stored samples into
-   "your pace at 130–151 bpm" — a median, a spread, a minimum sample size. That is a new
+   "your pace at 128–148 bpm" — a median, a spread, a minimum sample size. That is a new
    derivation and it belongs in its own note.
 6. **Does the zone lane get a pace-zone model?** The ladder's heart-rate axis uses the athlete's
    **heart-rate** zones, which exist and are dated; no pace-zone model is needed, and none is
@@ -827,7 +871,7 @@ explanation, and **every line that left a surface is in them** — nothing was d
    avoids the middle; its rungs are a different set. The app holds one base at a time, so the
    second ladder is a separate card the athlete switches to, not a second ladder on one card.
 8. **How wide is the threshold band?** The book anchors LT pace between the 15K and 10-mile race
-   paces — for the synthetic athlete those differ by **one second per kilometre** (4:17 and 4:18) —
+   paces — for the canonical athlete those differ by **one second per kilometre** (4:16 and 4:17) —
    so the book's own band is nearly a point, and the ladder draws the wider 15K-to-half-marathon
    span in which the "hour pace" actually falls. Whether the card shows the narrow book band, the
    wider span, or both (the narrow one marked inside the wide one) is a product choice; the note

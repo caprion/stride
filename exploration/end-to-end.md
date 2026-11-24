@@ -4,6 +4,8 @@
 `crates/`, `frontend/`, `android/`, `desktop/`, `PLAN.md` or `docs/` was changed, and nothing
 was committed.*
 
+*The surface copy in this note and in its prototype follows the language pass — `exploration/language.md`.*
+
 **The three files**
 
 | file | what it is |
@@ -81,13 +83,13 @@ agree, and both are marked in `athlete.js`:
 | 3 | **Run detail** | *Everything about one run* — and only about that run. The sleep before it is a link, not a card. | 17–29 |
 | 4 | **Progress** | *What the window says.* Eleven cards, each read as a picture first. | 30–33 |
 | 5 | **The pace card** | *What pace to hold for what, and what the racing costs.* The ladder and the curve. | 34–41 |
-| 6 | **The threshold** | *What the app is using as the threshold, where that number came from, and what it is not used for.* | 42–47, 73–76 |
-| 7 | **The plan** | *What the athlete's own plan says for this week* — sessions, kinds, paces, and where the paces came from. | 48–53 |
-| 8 | **The athlete profile** | *The shape of the athlete.* Five cards, each a picture first. | 54–58 |
-| 9 | **Body** | *How the body has been* — the night, the three signals, and what usually happens. | 59–62 |
-| 10 | **Compare** | *How two runs differ*, on one basis, with the numbers side by side. | 63–67 |
-| 11 | **The year** | *What the year held* — the months, the calendar, and what changed. | 68–70 |
-| 12 | **The film and the heatmap** | *The deep view of one run, and where the athlete runs.* Two contextual surfaces. | 71–72 |
+| 6 | **The threshold** | *What the app is using as the threshold, where that number came from, and what it is not used for.* | 42–51 |
+| 7 | **The plan** | *What the athlete's own plan says for this week* — sessions, kinds, paces, and where the paces came from. | 52–57 |
+| 8 | **The athlete profile** | *The shape of the athlete.* Five cards, each a picture first. | 58–62 |
+| 9 | **Body** | *How the body has been* — the night, the three signals, and what usually happens. | 63–66 |
+| 10 | **Compare** | *How two runs differ*, on one basis, with the numbers side by side. | 67–71 |
+| 11 | **The year** | *What the year held* — the months, the calendar, and what changed. | 72–74 |
+| 12 | **The film and the heatmap** | *The deep view of one run, and where the athlete runs.* Two contextual surfaces. | 75–76 |
 | + | **The states** | *The same screens with their absences.* | 77–82 |
 
 **What was left out of the walk-through, and why**
@@ -121,7 +123,7 @@ explains the build, not the product.
 
 **1 · The source line**
 
-> your zone model · running · HR_MAX · max heart rate 183 bpm · read on 3 Nov 2026
+> your zones · running · max heart rate 183 bpm · taken from your watch on 3 Nov 2026
 
 *What it is.* The screen's one source line. It names the model every number on the screen was measured against, and the day the model was read.
 
@@ -157,7 +159,7 @@ explains the build, not the product.
 
 **4 · Where you stand · this week**
 
-> 11.0 km · −5.4 km against the same days of the previous week
+> 11.0 km · −5.4 km against the same days a week earlier
 
 *What it is.* The same two days of this week and of the week before, compared. It is a difference, not a verdict.
 
@@ -169,7 +171,7 @@ explains the build, not the product.
 
 **5 · Where you stand · form**
 
-> acute 118 · chronic 84 · form +34 · ratio 1.40
+> last 7 days 118 · last 6 weeks 84 · the difference +34 · 1.40 times the last 6 weeks
 
 *What it is.* The load engine's own numbers: TRIMP over the athlete's zone model, with Banister k = 1.92. The scenario under it is the model's expectation, not a prediction.
 
@@ -181,7 +183,7 @@ explains the build, not the product.
 
 **6 · Where you stand · habit**
 
-> 4 days in a row · Eddington 12
+> 4 days in a row · 12 km on 13 days
 
 *What it is.* Two answers to one question — how steady the running has been. The streak is days in a row; the Eddington is the distance that has been reached on at least that many days.
 
@@ -268,7 +270,7 @@ explains the build, not the product.
 
 **13 · The filters**
 
-> search · from 7 Sep 2026 · through 24 Nov 2026 · scope: runs
+> search · from 7 Sep 2026 · through 24 Nov 2026 · showing: runs
 
 *What it is.* The four ways the list can be narrowed. They change what the list holds; they do not change what a run means.
 
@@ -331,7 +333,7 @@ explains the build, not the product.
 
 **18 · The core's sentence**
 
-> 20.4 km in 1 h 59 m — the longest run of the window
+> 20.4 km in 1 h 59 m — the longest run of the last 12 weeks
 
 *What it is.* One sentence the core writes about the run, from facts it has already computed. The app owns this sentence; no model writes it.
 
@@ -478,7 +480,7 @@ explains the build, not the product.
 
 **30 · The source line, once**
 
-> your zone model · running · HR_MAX · max heart rate 183 bpm · read on 3 Nov 2026
+> your zones · running · max heart rate 183 bpm · taken from your watch on 3 Nov 2026
 
 *What it is.* The wall's one source line, at the top of the screen. Every card below is measured against the model named here.
 
@@ -490,7 +492,7 @@ explains the build, not the product.
 
 **31 · The eleven cards**
 
-> this week · where the time went · the load · the weeks · the pace · bests · your shape · the months · the schedule · the habit · the goals
+> this week · where the time went · training load · the weeks · the pace · bests · your shape · the months · the schedule · the habit · the goals
 
 *What it is.* The wall after the cut: six cards on Progress and five on the athlete profile, each read as a picture first. Where a card carries a signed figure, it is the change against the period before, and the sign is the direction of the change.
 
@@ -514,7 +516,7 @@ explains the build, not the product.
 
 **33 · A card's caption**
 
-> 7 Sep – 24 Nov 2026 · measured over the moving time
+> 7 Sep – 24 Nov 2026 · measured over the time you were running
 
 *What it is.* The line under a picture: the period, and the reason something is missing. The caption names the period, and the reason something is missing — nothing else.
 
@@ -531,7 +533,7 @@ explains the build, not the product.
 
 > threshold 4:16–4:21 · the goal race 4:21 · marathon 4:32 · long run 5:32 → 5:00 · general aerobic 5:35–5:50 · recovery 5:36
 
-*What it is.* The training paces and the heart-rate bands on two axes: the athlete's own heart rate on the left, the pace on the right, each rung kept apart.
+*What it is.* The training paces and the heart-rate bands on two axes: the athlete's own heart rate on the left, the pace on the right, each rung kept apart. The threshold rung's band is the hour-pace band on the half-marathon span, because the adopted plan is a half; the race candidate's band is the same rule on the shorter distance — the athlete's typed 10K. Each names its anchor, so the two numbers are two anchors of one rule and not two answers to one question.
 
 *Where it comes from.* The ladder design in `exploration/pace-engine.html`; the numbers come from the chain in `crates/stride-core/src/pace.rs` — race time → VDOT → race paces → the book's percentages.
 
@@ -553,7 +555,7 @@ explains the build, not the product.
 
 **36 · The colours**
 
-> amber — the method's rule · azure — the athlete's own data · grey — the engine's own derivation
+> amber — the plan's rule · azure — your own data · grey — worked out from your race
 
 *What it is.* Three colours, and none of them is a verdict. Amber is the book, azure is the athlete, grey is the engine's arithmetic. Amber is the method's rule. Azure is the athlete's own data. Grey is the engine's own derivation.
 
@@ -565,7 +567,7 @@ explains the build, not the product.
 
 **37 · The ladder's source**
 
-> From your 10K in 41:36 on 12 Oct 2026 · entered 13 Oct 2026 · the race time was changed on 3 Nov 2026
+> From your 10K in 41:36 on 12 Oct 2026 · entered 13 Oct 2026 · changed 3 Nov 2026
 
 *What it is.* Which race the paces came from, when it was typed, and when it was changed.
 
@@ -589,7 +591,7 @@ explains the build, not the product.
 
 **39 · The physiological-cost curve**
 
-> the share of VO₂max each duration holds, against time on a log scale
+> the share of your maximum oxygen uptake each duration holds, against time on a log scale
 
 *What it is.* A second reading of the same athlete: the cost a duration holds, with the athlete's own races sitting on the curve at the share their own pace cost.
 
@@ -601,7 +603,7 @@ explains the build, not the product.
 
 **40 · The rule on the curve**
 
-> the method's heart-rate bands are named in the caption and never drawn on the %maxVO₂ axis
+> the training plan's heart-rate bands are named in the caption and never drawn on this axis
 
 *What it is.* Pfitzinger's bands are percentages of maximal heart rate; the curve's axis is percentages of VO₂max. The two are not convertible without the athlete's lactate relation, which Stride does not have.
 
@@ -628,7 +630,7 @@ explains the build, not the product.
 
 **42 · The threshold you use**
 
-> 165 bpm · the floor of your watch's fifth zone · made for the Pfitzinger 10K plan · chosen on 3 Nov 2026
+> 165 bpm · the start of your watch's fifth zone · made for the Pfitzinger 10K plan · chosen on 3 Nov 2026
 
 *What it is.* The chosen threshold, stored as a dated fact with its source and the base it was made for.
 
@@ -640,7 +642,7 @@ explains the build, not the product.
 
 **43 · The four candidates**
 
-> the watch's zone model · from your 10K · from your 45-minute time trial · a number you entered
+> your watch's zones · from your 10K · from your 45-minute time trial · a number you entered
 
 *What it is.* Four sources, each computed by one rule, each card naming the rule it used. They are listed side by side, and the arrangement is not a ranking.
 
@@ -688,7 +690,7 @@ explains the build, not the product.
 
 **47 · Where the threshold is used**
 
-> the plan's pacing and the 80/20 base's bands — and nowhere else
+> the plan's pacing and the 80/20 plan's easy-day bands — and nowhere else
 
 *What it is.* The chosen threshold is read in two places. The ladder's rung is the method's own rule on the race time; the ledger's rows and the load model answer against the athlete's own stored zones. The choice does not re-band the ledger, and the load model does not read it: two numbers, each named where it is used.
 
@@ -714,7 +716,7 @@ explains the build, not the product.
 
 > a race is a race, not a test — the pace carries that day's conditions
 
-*What it is.* The candidate taken from the typed race, by the book's own rule. The card shows the value, the source and the rule; this note holds what the rule cannot know.
+*What it is.* The candidate taken from the typed race — the athlete's own 10K — by the book's own rule: the pace you could race for about an hour, on the shorter-distance branch, between the 15K pace and the 10-mile pace. The card shows the value, the source and the rule; this note holds what the rule cannot know.
 
 *Where it comes from.* The candidate's own rule and limit — the candidate block in `exploration/threshold-setup.html` §1.
 
@@ -862,7 +864,7 @@ explains the build, not the product.
 
 **61 · The habit**
 
-> 4 days in a row · Eddington 12 · 58 days recorded
+> 4 days in a row · 12 km on 13 days · 58 days recorded
 
 *What it is.* The streak as a row of day marks, and the Eddington as a ladder of ticks — one tick per distance, as tall as the number of days that reached it.
 
@@ -1052,9 +1054,6 @@ explains the build, not the product.
 
 **KEEP** — the film carries no reading of its own
 
-
-### 12 · The film and the heatmap
-
 **76 · The heatmap**
 
 > a grid over the stored positions of the run
@@ -1072,7 +1071,7 @@ explains the build, not the product.
 
 **77 · No zone model**
 
-> Zones unavailable — no zone model has been read.
+> No zones yet — your watch's heart-rate zones have not come through.
 
 *What it is.* The intensity family has no value and says why, in the core's own words. The shape family does not depend on the model, so it still answers.
 
@@ -1084,7 +1083,7 @@ explains the build, not the product.
 
 **78 · No race time**
 
-> No race time entered — the race paces and the training paces have no value.
+> No race entered yet — the race times and the training paces are not worked out.
 
 *What it is.* The ladder and the curve drawn empty, each naming the fields the athlete can type.
 
@@ -1096,7 +1095,7 @@ explains the build, not the product.
 
 **79 · No plan adopted**
 
-> No plan adopted — the plan's sessions have no value.
+> No plan adopted yet — there are no sessions to show.
 
 *What it is.* The plan's outline is gone from the pictures, the session row is absent, and each says why.
 
@@ -1108,7 +1107,7 @@ explains the build, not the product.
 
 **80 · No threshold chosen**
 
-> No threshold is chosen. Every answer that needs one is a no value with a reason.
+> No threshold chosen yet. Everything that needs one says what is missing.
 
 *What it is.* Nothing is stored. The reasons name where the number would come from, and the setup may be returned to later.
 
@@ -1120,7 +1119,7 @@ explains the build, not the product.
 
 **81 · An empty window**
 
-> No run recorded in the window.
+> No runs recorded.
 
 *What it is.* One line, in the core's words — never 'rest': a day without a recorded run may be a forgotten watch.
 
@@ -1132,7 +1131,7 @@ explains the build, not the product.
 
 **82 · A run with no heart-rate data**
 
-> The split has no value — the runs in the window have no heart-rate samples.
+> No heart rate recorded — none of the runs in this period recorded a heart rate.
 
 *What it is.* One family answers and the other does not. The shape rows come from distance, time and the watch's workout steps, and need no heart rate.
 
@@ -1149,12 +1148,12 @@ not a missing value. These are the product's honesty, so they belong in the end-
 
 | state | what it is | what it says | the note |
 |---|---|---|---|
-| **No zone model** | the intensity family has no value and says why; the shape family does not depend on the model, so it still answers | *"Zones unavailable — no zone model has been read."* No distribution, no band times, no shares, no last dates. The runs themselves are still there. | 77 |
-| **No race time** | the ladder and the curve are drawn empty, and each names the fields the athlete can type | *"No race time entered — the race paces and the training paces have no value."* A race is entered as distance, time and the day of the race; the name is optional. | 78 |
-| **No plan adopted** | the plan's outline is gone from the pictures and the session row is absent, and each says why | *"No plan adopted — the plan's sessions have no value."* The runs are still drawn, as they are. | 79 |
-| **No threshold chosen** | nothing is stored; every answer that depends on one is a no value with a reason | *"No threshold is chosen. Every answer that needs one is a no value with a reason."* It could come from the watch's zone model, a race, a field test, or a number you enter. The setup may be skipped, and the card can be returned to. | 80 |
-| **An empty window** | one line, in the core's words | *"No run recorded in the window."* A day without a recorded run may be a run the watch did not record. | 81 |
-| **A run with no heart-rate data** | one family answers and the other does not; the shape rows need no heart rate | *"The split has no value — the runs in the window have no heart-rate samples."* No band row means no value, never 0 m. | 82 |
+| **No zones yet** | the intensity family has no value and says why; the shape family does not depend on the model, so it still answers | *"No zones yet — your watch's heart-rate zones have not come through."* No split, no zone times, no shares, no last dates. The runs themselves are still there. | 77 |
+| **No race entered yet** | the ladder and the curve are drawn empty, and each names the fields the athlete can type | *"No race entered yet — the race times and the training paces are not worked out."* A race is entered as distance, time and the day of the race; the name is optional. | 78 |
+| **No plan adopted yet** | the plan's outline is gone from the pictures and the session row is absent, and each says why | *"No plan adopted yet — there are no sessions to show."* The runs are still drawn, as they are. | 79 |
+| **No threshold chosen yet** | nothing is stored; every answer that depends on one is a no value with a reason | *"No threshold chosen yet. Everything that needs one says what is missing."* It could come from your watch's zones, a race, a field test, or a number you enter. The setup may be skipped, and the card can be returned to. | 80 |
+| **An empty window** | one line, in the core's words | *"No runs recorded."* A day without a recorded run may be a run the watch did not record. | 81 |
+| **A run with no heart-rate data** | one family answers and the other does not; the shape rows need no heart rate | *"No heart rate recorded — none of the runs in this period recorded a heart rate."* No zone row means nothing was measured, never 0 m. | 82 |
 
 **The states that were hard to say without a verdict.** Two of them wanted a judgement and were
 not given one:
@@ -1204,11 +1203,14 @@ same product disagree, and each needed a decision to make one page.
    the training paces came from **the 10 km of 49:12 on 18 Nov 2026**. *Used: the 10K in 41:36,
    and the ladder and the curve were re-anchored on it (Riegel) — which is why the ladder's
    rungs and the VDOT differ from the pace-engine prototype's.*
-3. **The threshold band is defined two ways.** `pace-engine.html`'s threshold rung is the
-   hour-pace band, from the 15K pace to the half marathon's (4:17–4:23 for their athlete);
-   `threshold-setup.html`'s "from your 10K" candidate is the band from the 15K pace to the
-   10-mile pace (4:15–4:19). *Used: the hour-pace band in both places — 4:16–4:21 — so the
-   ladder and the candidate card do not contradict each other on the page.*
+3. **The threshold band is drawn twice, on two anchors.** `pace-engine.html`'s threshold rung is
+   the hour-pace band, from the 15K pace to the half marathon's (4:17–4:23 for their athlete);
+   `threshold-setup.html`'s candidate is the band from the 15K pace to the 10-mile pace
+   (4:15–4:19). **These are not a contradiction** — they are the same rule on two anchors. *Used:
+   the ladder's rung is the half-marathon span (**4:16–4:21**, labelled "for your half
+   marathon", because the adopted plan is a half) and the candidate card is the shorter-distance
+   branch, from the athlete's typed **10K** (**4:16–4:17**, labelled "from your 10K"). Each
+   names its anchor, so no reader sees two numbers for one thing.*
 4. **The last run in Z4–Z5.** The brief says **15 Oct 2026**; the ledger says the last run in
    Z4–Z5 was **20 Oct 2026** and the last run with a workout step was **15 Oct 2026**. The run
    table agrees with the ledger: the four hard runs are 17 Sep, 1 Oct, 15 Oct and 20 Oct.
@@ -1277,19 +1279,19 @@ each line is now a note, or a small caption inside the frame of the picture it b
 | The threshold | "Both marks stand at their own values. Nothing is written about the distance between them." | note **46** |
 | The threshold | "The choice does not re-band the ledger, and the load model does not read it…" | note **47** |
 | The threshold | "a dated fact" (the choice's sub-header) | note **42** |
-| The threshold | each candidate's **"it cannot know · …"** line | four new notes: **73**, **74**, **75**, **76** — one per candidate |
-| The plan | "one at a time" (the base's sub-header) | note **48** |
-| The plan | "Two days of the week have happened: 5.0 km on Monday and 6.0 km on Tuesday…" | note **49** (the rows themselves carry "5.0 km recorded") |
-| The plan | "Endurance, Intervals and Long run are the book's own names for the training components…" | note **50** (the three kinds stay on the card, as chips) |
-| The plan | "Each pace comes from the ladder's rungs, and each carries the heart-rate band beside it." | note **51** |
-| The plan | "A race time is typed by the athlete. The plan is never built from an estimated one…" | note **53** (the source line — the 10K, its time and its date — stays) |
-| Body | "The date, and how much history beside it." | note **62** (the date and the count of nights stay) |
-| Body | "A pattern is a fact about the past, and it is only ever drawn here." | note **61** |
-| Compare | "the same one chart as the run detail" (the chart's sub-header) | note **66** |
-| Compare | "one chart, two runs, one scale" (in the picture) | note **66** |
-| Compare | "the picker is a list, not a ranking" | note **67** |
-| The film | "The timeline, the band the run was in, and the playhead at 1 h 15 m." | note **71** |
-| The heatmap | "The run's recorded positions, laid on a grid and counted…" | note **72** |
+| The threshold | each candidate's **"it cannot know · …"** line | four new notes: **48**, **49**, **50**, **51** — one per candidate |
+| The plan | "one at a time" (the base's sub-header) | note **52** |
+| The plan | "Two days of the week have happened: 5.0 km on Monday and 6.0 km on Tuesday…" | note **53** (the rows themselves carry "5.0 km recorded") |
+| The plan | "Endurance, Intervals and Long run are the book's own names for the training components…" | note **54** (the three kinds stay on the card, as chips) |
+| The plan | "Each pace comes from the ladder's rungs, and each carries the heart-rate band beside it." | note **55** |
+| The plan | "A race time is typed by the athlete. The plan is never built from an estimated one…" | note **57** (the source line — the 10K, its time and its date — stays) |
+| Body | "The date, and how much history beside it." | note **66** (the date and the count of nights stay) |
+| Body | "A pattern is a fact about the past, and it is only ever drawn here." | note **65** |
+| Compare | "the same one chart as the run detail" (the chart's sub-header) | note **70** |
+| Compare | "one chart, two runs, one scale" (in the picture) | note **70** |
+| Compare | "the picker is a list, not a ranking" | note **71** |
+| The film | "The timeline, the band the run was in, and the playhead at 1 h 15 m." | note **75** |
+| The heatmap | "The run's recorded positions, laid on a grid and counted…" | note **76** |
 | Runs | "the browse calendar" (the calendar's sub-header) | note **12** |
 | Runs | "A file the watch, or another app, wrote." | note **15** |
 | Today | "Body holds sleep for any date, the three signals, and the patterns." | note **11** |

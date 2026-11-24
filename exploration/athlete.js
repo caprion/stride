@@ -52,7 +52,7 @@
     km: 564.8,
     priorLabel: "31 Aug – 17 Nov 2026",
     priorText: "49 h 20 m across 58 runs",
-    zoneModelLine: "your zone model · running · HR_MAX · max heart rate 183 bpm · read on 3 Nov 2026",
+    zoneModelLine: "your zones · running · max heart rate 183 bpm · taken from your watch on 3 Nov 2026",
     today: "24 Nov 2026"
   };
 
@@ -289,31 +289,31 @@
       {
         name: "Z1–Z2", kind: "low", time: "41 h 32 m", mins: bandTotals.low, share: 84,
         runs: 58, last: "24 Nov 2026",
-        change: "+37 m", changeText: "37 m more against the period before (41 h 32 m against 40 h 54 m)",
+        change: "+37 m", changeText: "37 m more than the same span, one week earlier (41 h 32 m against 40 h 54 m)",
         caveat: null
       },
       {
         name: "Z3", kind: "moderate", time: "6 h 52 m", mins: bandTotals.mod, share: 14,
         runs: 58, last: "24 Nov 2026",
-        change: "−8 m", changeText: "8 m less against the period before (6 h 52 m against 7 h 01 m)",
+        change: "−8 m", changeText: "8 m less than the same span, one week earlier (6 h 52 m against 7 h 01 m)",
         caveat: null
       },
       {
         name: "Z4–Z5", kind: "high", time: "1 h 08 m", mins: bandTotals.hard, share: 2,
-        runs: 4, last: "20 Oct 2026", lastNote: "35 days before the end of the window",
-        change: "−15 m", changeText: "15 m less against the period before (1 h 08 m against 1 h 23 m) · 4 runs against 5",
+        runs: 4, last: "20 Oct 2026", lastNote: "35 days before the end of this period",
+        change: "−15 m", changeText: "15 m less than the same span, one week earlier (1 h 08 m against 1 h 23 m) · 4 runs against 5",
         caveat: "Heart-rate time in zone counts hard running slowly and easy running generously — the last run in Z4–Z5 is what the watch recorded."
       }
     ],
     longest: {
       name: "Longest run", km: 20.4, time: "1 h 59 m", date: "21 Nov 2026", share: 4,
-      change: "+0.8 km", changeText: "0.8 km more than the longest run in the period before (19.6 km on 31 Oct 2026)"
+      change: "+0.8 km", changeText: "0.8 km more than the longest run in the same 12 weeks, one week earlier (19.6 km on 31 Oct 2026)"
     },
     repeated: {
       name: "Repeated work", time: "2 h 15 m", share: 5, runs: 3, last: "15 Oct 2026",
-      change: "−45 m", changeText: "45 m less against the period before (2 h 15 m against 3 h 00 m) · 3 runs against 4"
+      change: "−45 m", changeText: "45 m less than the same span, one week earlier (2 h 15 m against 3 h 00 m) · 3 runs against 4"
     },
-    coverage: "58 of 58 runs carry heart-rate samples"
+    coverage: "58 of 58 runs recorded a heart rate"
   };
 
   /* ------------------------------------------------------------------
@@ -322,7 +322,7 @@
 
   var load = {
     acute: 118, chronic: 84, form: 34, ratio: 1.40, k: 1.92,
-    scenario: "with no training for 7 days the ratio is expected back inside 0.8 to 1.3 in about a day",
+    scenario: "with no training for 7 days, 1.40 is expected to come back inside 0.8 to 1.3 in about a day",
     band: [0.8, 1.3]
   };
 
@@ -355,46 +355,46 @@
   var tenK = race.sec / race.km;
 
   var ladder = {
-    source: "From your 10K in 41:36 on 12 Oct 2026 · entered 13 Oct 2026 · the race time was changed on 3 Nov 2026.",
+    source: "From your 10K in 41:36 on 12 Oct 2026 · entered 13 Oct 2026 · changed 3 Nov 2026.",
     rungs: [
       {
         name: "Threshold (LT)", value: paceText(k15Pace) + "–" + paceText(hmPace),
-        rule: "the hour pace", bandHr: [146, 167], bandPace: [k15Pace, hmPace],
-        owner: "method", note: "the pace you could race for about an hour (ch. 1, ch. 7)"
+        rule: "for your half marathon", bandHr: [146, 167], bandPace: [k15Pace, hmPace],
+        owner: "method", note: "the hour pace — the pace you could race for about an hour (ch. 1, ch. 7) — on the half-marathon span, because the adopted plan is a half"
       },
       {
         name: "The goal race", value: paceText(hmPace),
-        rule: "your 12 Oct race", bandHr: [155, 181], bandPace: [hmPace, hmPace],
-        owner: "athlete", note: "the distance and time the plan was built for"
+        rule: "a half marathon", bandHr: [155, 181], bandPace: [hmPace, hmPace],
+        owner: "athlete", note: "the goal distance — its pace is the equivalent of the typed 10K (Riegel), not a race that was run"
       },
       {
         name: "Marathon pace", value: paceText(marPace),
-        rule: "the engine's own", bandHr: null, bandPace: [marPace, marPace],
+        rule: "worked out from your race", bandHr: null, bandPace: [marPace, marPace],
         owner: "engine", note: "no method rule ships; no band"
       },
       {
         name: "Long run", value: paceText(tenK * 1.33) + " → " + paceText(tenK * 1.20),
-        rule: "10K × 1.20–1.33", bandHr: [135, 154], bandPace: [tenK * 1.33, tenK * 1.20],
+        rule: "your 10K pace × 1.20–1.33", bandHr: [135, 154], bandPace: [tenK * 1.33, tenK * 1.20],
         owner: "method", note: "it starts at the slow end of the early band and points at the faster end of the latter"
       },
       {
         name: "General aerobic", value: "5:35–5:50",
-        rule: "no pace rule · yours", bandHr: [128, 148], bandPace: null,
+        rule: "yours — no rule of its own", bandHr: [128, 148], bandPace: null,
         owner: "athlete", note: "70–81 % maxHR / 62–75 % HRR — no pace rule (ch. 7, ch. 8)"
       },
       {
         name: "Recovery", value: paceText(hmPace + 75),
-        rule: "+75 s/km off HM pace", bandHr: [null, 138], bandPace: [hmPace + 75, hmPace + 75],
+        rule: "+75 s/km slower than your half-marathon pace", bandHr: [null, 138], bandPace: [hmPace + 75, hmPace + 75],
         owner: "method", note: "+120 s/mi (+75 s/km) off the 15K–HM race pace; below 76 % maxHR (ch. 2, ch. 7)"
       }
     ],
     legend: [
-      { kind: "method", label: "the method's band" },
-      { kind: "athlete", label: "your own zone" },
-      { kind: "floor", label: "your zone floors" },
-      { kind: "dot-method", label: "the method's pace" },
+      { kind: "method", label: "the plan's band" },
+      { kind: "athlete", label: "your own band" },
+      { kind: "floor", label: "where your zones start" },
+      { kind: "dot-method", label: "the plan's pace" },
       { kind: "dot-athlete", label: "your own pace" },
-      { kind: "dot-engine", label: "the engine's own" }
+      { kind: "dot-engine", label: "worked out from your race" }
     ]
   };
 
@@ -411,18 +411,18 @@
       { label: "the long run", minFrom: 98, minTo: 140, kind: "rect" },
       { label: "the recovery run", minFrom: 27, minTo: 45, kind: "line" }
     ],
-    fieldTest: 30,
+    fieldTest: 45,
     equivalents: [
-      { label: "5K", time: paceText(equivalents["5 km"]), pace: paceText(equivalents["5 km"] / 5) },
-      { label: "10K", time: paceText(equivalents["10 km"]), pace: paceText(equivalents["10 km"] / 10) },
-      { label: "15K", time: paceText(equivalents["15 km"]), pace: paceText(equivalents["15 km"] / 15) },
-      { label: "HM", time: paceText(equivalents["half marathon"]), pace: paceText(hmPace) },
-      { label: "marathon", time: paceText(equivalents["marathon"]), pace: paceText(marPace) }
+      { label: "5K", time: timeText(equivalents["5 km"]), pace: paceText(equivalents["5 km"] / 5) },
+      { label: "10K", time: timeText(equivalents["10 km"]), pace: paceText(equivalents["10 km"] / 10) },
+      { label: "15K", time: timeText(equivalents["15 km"]), pace: paceText(equivalents["15 km"] / 15) },
+      { label: "HM", time: timeText(equivalents["half marathon"]), pace: paceText(hmPace) },
+      { label: "marathon", time: timeText(equivalents["marathon"]), pace: paceText(marPace) }
     ],
     assumes: [
-      "Your VDOT " + race.vdot + ", from your 10K in 41:36 on 12 Oct 2026 (entered 13 Oct 2026).",
-      "The method's prescribed paces and durations — the threshold session at the hour-pace band for 20–40 minutes, the long run from 11 to 17 miles, the recovery run at 3–5 miles (book ch. 1, ch. 2, ch. 7).",
-      "The race equivalences this engine computes: 5K " + timeText(equivalents["5 km"]) + " · 10K " + timeText(equivalents["10 km"]) + " · 15K " + timeText(equivalents["15 km"]) + " · half " + timeText(equivalents["half marathon"]) + " · marathon " + timeText(equivalents["marathon"]) + "."
+      "Your fitness number " + race.vdot + ", from your 10K in 41:36 on 12 Oct 2026 (entered 13 Oct 2026).",
+      "The training plan's paces and durations — the threshold session at the hour-pace band for 20–40 minutes, the long run from 11 to 17 miles, the recovery run at 3–5 miles (book ch. 1, ch. 2, ch. 7).",
+      "The times your 10K gives for the other distances: 5K " + timeText(equivalents["5 km"]) + " · 10K " + timeText(equivalents["10 km"]) + " · 15K " + timeText(equivalents["15 km"]) + " · half " + timeText(equivalents["half marathon"]) + " · marathon " + timeText(equivalents["marathon"]) + "."
     ]
   };
 
@@ -435,28 +435,28 @@
     chosen: "watch",
     chosenDate: "3 Nov 2026",
     chosenValue: zoneModel.floors[4] + " bpm",
-    chosenSource: "the floor of your watch's fifth zone · zone model read on 3 Nov 2026",
+    chosenSource: "the start of your watch's fifth zone · read from your watch on 3 Nov 2026",
     candidates: [
       {
-        id: "watch", where: "the watch's own zone model",
+        id: "watch", where: "your watch's zones",
         value: zoneModel.floors[4] + " bpm", hr: zoneModel.floors[4], pace: null,
-        source: "the floor of your watch's fifth zone · zone model read on 3 Nov 2026",
+        source: "the start of your watch's fifth zone · read from your watch on 3 Nov 2026",
         rule: null,
         limit: "the app cannot check what was put into the watch"
       },
       {
-        id: "race", where: "from a race",
+        id: "race", where: "from your 10K",
         value: paceText(k15Pace) + "–" + paceText(mile10Pace) + " /km", hr: null,
         paceLow: k15Pace, paceHigh: mile10Pace,
         source: "your 10K in 41:36 on 12 Oct 2026",
-        rule: "the book's rule — the pace you could race for about an hour: the band between your 15K pace (" + paceText(k15) + ") and your 10-mile pace (" + paceText(mile10) + ")",
+        rule: "the plan's rule — the pace you could race for about an hour: the band between your 15K pace (" + timeText(k15) + ") and your 10-mile pace (" + timeText(mile10) + ")",
         limit: "a race is a race, not a test — the pace carries that day's conditions"
       },
       {
         id: "test", where: "from a field test",
         value: "166 bpm · 4:22 /km", hr: 166, pace: 262,
         source: "your 45-minute time trial on 3 Mar 2026",
-        rule: "the book's rule — your pace and heart rate over the last 30 minutes",
+        rule: "the plan's rule — your pace and heart rate over the last 30 minutes",
         limit: "the estimate carries the run's conditions, the effort across the window, and the watch's heart-rate accuracy; the rule assumes a 45-minute time trial on a flat course"
       },
       {
@@ -468,7 +468,7 @@
       }
     ],
     history: [
-      { date: "3 Nov 2026", value: "165 bpm", source: "the watch's fifth zone floor, read on 3 Nov 2026" },
+      { date: "3 Nov 2026", value: "165 bpm", source: "the start of your watch's fifth zone, read on 3 Nov 2026" },
       { date: "3 Mar 2026", value: "172 bpm", source: "entered on 3 Mar 2026, from a coach" }
     ],
     ownRuns: [
@@ -487,7 +487,7 @@
     adopted: "30 Sep 2026",
     anchor: "your 10K in 41:36 on 12 Oct 2026",
     pacing: "165 bpm · 3 Nov 2026",
-    pacingSource: "the threshold you chose from the watch's zone model, on 3 Nov 2026",
+    pacingSource: "the threshold you chose from your watch's zones, on 3 Nov 2026",
     weekLabel: "Mon 23 Nov – Sun 29 Nov 2026",
     week: [
       { dow: 0, day: "Mon 23 Nov", kind: "Endurance", km: 8.0, pace: "5:12–5:38 /km", hr: "128–148 bpm", state: "recorded", actual: "5.0 km recorded" },
@@ -581,7 +581,7 @@
     againstPlan: "18.0 km planned · 20.4 km recorded · 2.4 km more than the 18 km target",
     note: "the last 5 km were into a headwind",
     ledgerRow: "Z1–Z2 — 1 h 25 m of this run's 1 h 59 m · Z4–Z5 0 m",
-    ledgerNote: "the last run in Z4–Z5 was on 20 Oct 2026 — 35 days before the end of the window",
+    ledgerNote: "the last run in Z4–Z5 was on 20 Oct 2026 — 35 days before the end of this period",
     sleepLink: "Sleep on 20 – 21 Nov 2026 — 6 h 45 m",
     /* the route: points in metres, relative to the start */
     route: [
@@ -620,7 +620,7 @@
     },
     metrics: [
       { name: "distance", a: "20.4 km", b: "19.6 km", diff: "+0.8 km" },
-      { name: "moving time", a: "1 h 59 m", b: "1 h 54 m", diff: "+5 m" },
+      { name: "time you were running", a: "1 h 59 m", b: "1 h 54 m", diff: "+5 m" },
       { name: "pace", a: "5:50 /km", b: "5:49 /km", diff: "−0:01 /km" },
       { name: "average heart rate", a: "145 bpm", b: "144 bpm", diff: "+1 bpm" },
       { name: "elevation gain", a: "86 m", b: "74 m", diff: "+12 m" },
@@ -648,7 +648,7 @@
       { what: "the longest run", a: "22.4 km", b: "20.4 km" },
       { what: "the zone mix", a: "84 % low", b: "84 % low" }
     ],
-    changedNote: "The two periods are different lengths; the comparison is between the same span of the year and the nine months before it."
+    changedNote: "The two periods are different lengths — this is the same span of the year, and the nine months before it."
   };
 
   function buildYearDays() {
@@ -697,51 +697,51 @@
 
   var states = {
     noZoneModel: {
-      name: "No zone model",
+      name: "No zones yet",
       says: "The intensity family has no value and says why, in the core's own words. The shape family does not depend on the model, so it still answers.",
       lines: [
-        "Zones unavailable — no zone model has been read.",
-        "No distribution, no band times, no shares and no last dates. The runs themselves are still there."
+        "No zones yet — your watch's heart-rate zones have not come through.",
+        "No split, no zone times, no shares and no last dates. The runs themselves are still there."
       ]
     },
     noRace: {
-      name: "No race time",
+      name: "No race entered yet",
       says: "The ladder and the curve are drawn empty, and each says what it needs and where that would come from.",
       lines: [
-        "No race time entered — the race paces and the training paces have no value.",
+        "No race entered yet — the race times and the training paces are not worked out.",
         "A race is entered as distance, time and the day of the race; the name is optional."
       ]
     },
     noPlan: {
-      name: "No plan adopted",
+      name: "No plan adopted yet",
       says: "The plan's outline is gone from the pictures, the session row is absent, and each says why.",
       lines: [
-        "No plan adopted — the plan's sessions have no value.",
+        "No plan adopted yet — there are no sessions to show.",
         "The runs themselves are still drawn, as they are."
       ]
     },
     noThreshold: {
-      name: "No threshold chosen",
+      name: "No threshold chosen yet",
       says: "Nothing is stored. Every answer that depends on a threshold is a no value with a reason, and the reasons name where the number would come from.",
       lines: [
-        "No threshold is chosen. Every answer that needs one is a no value with a reason.",
-        "It could come from the watch's zone model, a race, a field test, or a number you enter."
+        "No threshold chosen yet. Everything that needs one says what is missing.",
+        "It could come from your watch's zones, a race, a field test, or a number you enter."
       ]
     },
     emptyWindow: {
-      name: "An empty window",
+      name: "No runs recorded",
       says: "One line, in the core's words — never 'rest': a day without a recorded run may be a forgotten watch.",
       lines: [
-        "No run recorded in the window.",
-        "The kinds, the distribution and the zone model are not shown: there is nothing for them to hold."
+        "No runs recorded.",
+        "The kinds of run, the split and your zones are not shown: there is nothing for them to hold."
       ]
     },
     noHeartRate: {
-      name: "A run with no heart-rate data",
+      name: "No heart rate recorded",
       says: "One family answers and the other does not. The shape rows come from distance, time and the watch's workout steps, and need no heart rate.",
       lines: [
-        "The split has no value — the runs in the window have no heart-rate samples.",
-        "The absence is not the athlete's: no band row means no value, never 0 m."
+        "No heart rate recorded — none of the runs in this period recorded a heart rate.",
+        "Nothing was measured, so there are no zone rows — never 0 m."
       ]
     }
   };
@@ -758,19 +758,19 @@
         title: "The last run", date: "24 Nov 2026",
         dist: "6.0 km", time: "30 m", pace: "5:00 /km", hr: "134 bpm",
         kind: "endurance", band: "Z1–Z2", bandTime: "30 m",
-        bandShare: "100 % of the moving time", hour: "07:00"
+        bandShare: "100 % of the time you were running", hour: "07:00"
       },
       figures: [
-        ["distance", "6.0 km"], ["moving time", "30 m"],
+        ["distance", "6.0 km"], ["time you were running", "30 m"],
         ["pace", "5:00 /km"], ["average heart rate", "134 bpm"]
       ],
       week: {
         value: "11.0 km", change: "−5.4 km",
-        note: "Mon 23 Nov and Tue 24 Nov, against the same two days of the previous week."
+        note: "Mon 23 Nov and Tue 24 Nov, against the same two days a week earlier."
       },
-      form: { value: "+34", detail: "118 acute / 84 chronic · 1.40" },
-      habit: { streak: "4 days in a row", eddington: "Eddington 12",
-        days: "58 days recorded in the window of 12 weeks." },
+      form: { value: "+34", detail: "the difference · last 7 days 118 · last 6 weeks 84 · 1.40 times the last 6 weeks" },
+      habit: { streak: "4 days in a row", eddington: "12 km on 13 days",
+        days: "58 days with a run recorded, in the last 12 weeks." },
       options: [
         { kind: "Endurance", km: "8.0 km", pace: "5:12–5:38 /km", hr: "128–148 bpm", day: "Tue 24 Nov" },
         { kind: "Recovery", km: "6.0 km", pace: "5:36 /km", hr: "below 138 bpm", day: "Tue 24 Nov" }
@@ -786,19 +786,19 @@
     },
     progress: {
       window: { label: "7 Sep – 24 Nov 2026", sub: "last 12 weeks",
-        line: "58 runs · 49 h 32 m of moving time · 564.8 km" }
+        line: "58 runs · 49 h 32 m of the time you were running · 564.8 km" }
     },
     runs: {
-      filters: [["search", "—"], ["from", "7 Sep 2026"], ["through", "24 Nov 2026"], ["scope", "runs"]],
+      filters: [["search", "—"], ["from", "7 Sep 2026"], ["through", "24 Nov 2026"], ["showing", "runs"]],
       tray: { a: "21 Nov 2026 · 20.4 km", b: "31 Oct 2026 · 19.6 km", action: "compare these two →" },
-      listCount: "58 in the window"
+      listCount: "58 runs in the last 12 weeks"
     },
     run: {
       title: "Long run", date: "Sat 21 Nov 2026",
       headline: "20.4 km · 1 h 59 m · 5:50 /km · 145 bpm",
-      rows: [["moving time", "1 h 59 m"], ["elapsed", "2 h 02 m"],
+      rows: [["time you were running", "1 h 59 m"], ["the whole run", "2 h 02 m"],
              ["elevation gain", "86 m"], ["average cadence", "178 spm"]],
-      sentence: "20.4 km in 1 h 59 m — the longest run of the window.",
+      sentence: "20.4 km in 1 h 59 m — the longest run of the last 12 weeks.",
       ledgerRow: "Z1–Z2 — 1 h 25 m of this run’s 1 h 59 m · Z4–Z5 0 m",
 
       cursor: { at: "14:20", distance: "10.2 km", pace: "5:48 /km", hr: "148 bpm", alt: "27 m" },
@@ -808,33 +808,33 @@
       splitsNote: "the watch’s own laps",
     },
     pace: {
-      axes: "Heart rate on the left, from the zone model’s own floors; pace on the right, from the race the athlete typed. They are numbers about different things, so they are never converted into one another.",
+      axes: "Heart rate on the left, from your own zones; pace on the right, from the race you entered. A heart rate and a pace are different things, and one is never turned into the other.",
       curveRoute: "/insights/pace-curve",
-      rule: "Pfitzinger’s bands are percentages of maximal heart rate; this curve’s axis is percentages of VO₂max. The two are not convertible without the athlete’s lactate relation, which Stride does not have — so the method’s heart-rate bands are named here and are never drawn on this axis."
+      rule: "The training plan’s heart-rate bands are percentages of your maximum heart rate. This curve is a different measure — the share of your maximum oxygen uptake a duration holds — so the plan’s bands are named here and never drawn on it."
     },
     threshold: {
-      used: [["the plan’s pacing", "read"], ["the 80/20 base’s bands", "no value"],
-             ["the ladder’s threshold rung", "the method’s rule"],
-             ["the ledger’s rows", "the athlete’s own zones"]],
+      used: [["the plan’s pacing", "used"], ["the 80/20 plan’s easy-day bands", "not set yet"],
+             ["the threshold pace on the training-paces card", "the plan’s own rule"],
+             ["the zone times on your runs", "your own zones"]],
     },
     plan: {
       paces: [["Endurance", "5:12–5:38 /km"], ["Intervals", "4:16–4:21 /km"], ["Long run", "5:32 → 5:00 /km"]],
       source: "Your 10K in 41:36 on 12 Oct 2026.",
     },
     body: {
-      signalsNote: "Each signal on its own: the value, its direction against the athlete’s own usual band, and the arithmetic that produced the direction."
+      signalsNote: "Each signal on its own: the value, its direction against your own usual band, and the arithmetic that produced the direction."
     },
     compare: {
       picker: "31 Oct 2026 · 19.6 km"
     },
     film: {},
     states: {
-      noZoneModel: { title: "Zones unavailable", note: "no zone model has been read." },
-      noRace: { title: "No race time entered", note: "the race paces and the training paces have no value." },
-      noPlan: { title: "No plan adopted", note: "the plan’s sessions have no value." },
-      noThreshold: { title: "No threshold is chosen.", note: "Every answer that needs one is a no value with a reason." },
-      emptyWindow: { title: "No run recorded in the window." },
-      noHeartRate: { title: "The split has no value", note: "the runs in the window have no heart-rate samples." }
+      noZoneModel: { title: "No zones yet", note: "your watch’s heart-rate zones have not come through." },
+      noRace: { title: "No race entered yet", note: "the training paces are not worked out." },
+      noPlan: { title: "No plan adopted yet", note: "there are no sessions to show." },
+      noThreshold: { title: "No threshold chosen yet.", note: "it could come from your watch’s zones, a race, a field test, or a number you enter." },
+      emptyWindow: { title: "No runs recorded." },
+      noHeartRate: { title: "No heart rate recorded", note: "none of the runs in this period recorded a heart rate." }
     }
   };
 

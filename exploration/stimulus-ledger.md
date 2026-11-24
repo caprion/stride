@@ -4,6 +4,8 @@
 the zone model's **staged, product-wide migration**; **one window for the Progress wall, ending
 today**) and the cleanup thread's brief.*
 
+*The surface copy in this note and in its prototype follows the language pass — `exploration/language.md`.*
+
 **Prototype only.** Nothing under `crates/`, `frontend/` or `android/` has been touched. The two
 files are this note and `exploration/stimulus-ledger.html`.
 
@@ -122,11 +124,11 @@ Two consequences:
 
 | missing | what the ledger answers |
 |---|---|
-| no stored zone model at all | the three kinds have **no value**, and the reason in the core's own words: `zones.no_model` — "zones unavailable — no zone model has been read". Never band 1, never zero. |
+| no stored zone model at all | the three kinds have **no value**, and the reason in the core's own words: `zones.no_model` — "no zones yet — your watch's heart-rate zones have not come through". Never band 1, never zero. |
 | the stored model's floors are not strictly increasing | no value: `zones.unusable_model` — "zones unavailable — the stored zone model's floors are not in order". (`ZoneFloors::is_usable` is the test.) |
 | a run dated before the first stored model | that run has **no zone time** and is not counted in any kind. It is not a zero in the band; it is a run the ledger cannot measure. The coverage line names the gap. |
 | a run's file carries no heart-rate samples | as above. |
-| no run in the window has any heart-rate samples | the whole intensity block has no value: `rolling.zones.no_samples` — "the split has no value — the runs in the window have no heart-rate samples". |
+| no run in this period has any heart-rate samples | the whole intensity block has no value: `rolling.zones.no_samples` — "no heart rate recorded — none of the runs in this period recorded a heart rate". |
 | the run's file is missing or unreadable | as above. |
 
 **A measured zero is not a missing value.** The core already draws this line, and the ledger keeps
@@ -187,7 +189,7 @@ no threshold, and the row is a fact rather than an inference.
 | the window's runs | what the row answers |
 |---|---|
 | some runs carry the watch's workout steps | the row answers, measured by the watch's own structure: the time, the count, the last date, and the change against the comparison period. The card says which measurement answered ("3 runs carry the watch's workout steps"). |
-| **no run carries workout steps** | the row has **no value**, and the reason in the core's own words: "no value — the runs in the window carry no workout steps". Never "0 m of repeated work", never a zero. |
+| **no run carries workout steps** | the row has **no value**, and the reason in the core's own words: "not recorded — the runs in this period carry no workout steps". Never "0 m of repeated work", never a zero. |
 | a run carries steps but none of them is `interval` | that run is not repeated work — a measured fact about the file, not a missing value. |
 
 **The consequence, stated plainly.** Until the athlete records sessions that carry the watch's own
@@ -435,7 +437,67 @@ except the empty-window line, which is a `status`.
 **The screen's source line — one per screen, at the top, above the cards:**
 
 ```
-stimulus.source              "your zone model · {sport} · {method} · max heart rate {max_hr} · read on {date}"
+stimulus.source              "your zones · {sport} · max heart rate {max_hr} · taken from your watch on {date}"
+### OLD
+stimulus.zones.basis         "measured over the time you were running"
+### NEW
+stimulus.zones.basis         "measured over the time you were running"
+### OLD
+stimulus.coverage.hr         "{runs} of {total} runs recorded a heart rate"
+### NEW
+stimulus.coverage.hr         "{runs} of {total} runs recorded a heart rate"
+### OLD
+stimulus.band.none           "no run in this period was in {band}"
+### NEW
+stimulus.band.none           "no run in this period was in {band}"
+### OLD
+stimulus.band.before_model   "no zone time for {runs} runs in this period — your watch's zones were first read on {date}"
+### NEW
+stimulus.band.before_model   "no zone time for {runs} runs in this period — your watch's zones were first read on {date}"
+### OLD
+stimulus.changed             "{difference} against the same span, one week earlier ({current} against {previous})"
+### NEW
+stimulus.changed             "{difference} against the same span, one week earlier ({current} against {previous})"
+### OLD
+stimulus.run.before_model    "no zone time — your watch's zones were not read on this run's date"
+### NEW
+stimulus.run.before_model    "no zone time — your watch's zones were not read on this run's date"
+### OLD
+stimulus.longest.changed     "{difference} more than the longest run in the same span, one week earlier ({current} against {previous})"
+### NEW
+stimulus.longest.changed     "{difference} more than the longest run in the same span, one week earlier ({current} against {previous})"
+### OLD
+stimulus.steps.not_corroborated "the runs in this period carry no workout steps — the date above is the heart rate's answer alone"
+### NEW
+stimulus.steps.not_corroborated "the runs in this period carry no workout steps — the date above is the heart rate's answer alone"
+### OLD
+stimulus.no_runs             "no runs recorded"                                (status)
+stimulus.steps.no_data       "not recorded — the runs in this period carry no workout steps"
+### NEW
+stimulus.no_runs             "no runs recorded"                                (status)
+stimulus.steps.no_data       "not recorded — the runs in this period carry no workout steps"
+### OLD
+> **41 h 32 m** of the time you were running was in Z1–Z2 — 84% of it — across 58 runs. The last run
+> in Z1–Z2 was on 24 Nov 2026.
+### NEW
+> **41 h 32 m** of the time you were running was in Z1–Z2 — 84% of it — across 58 runs. The last run
+> in Z1–Z2 was on 24 Nov 2026.
+### OLD
+> **1 h 08 m** was in Z4–Z5 — 2% of the time you were running — across 4 runs. The last run in Z4–Z5 was
+> on 20 Oct 2026, 35 days before the end of this period.
+### NEW
+> **1 h 08 m** was in Z4–Z5 — 2% of the time you were running — across 4 runs. The last run in Z4–Z5 was
+> on 20 Oct 2026, 35 days before the end of this period.
+### OLD
+* **The absence is a date.** The ledger states **when** the kind last occurred. It never states
+  what was not done, and it does not need the word the ban list reserves for that.
+### NEW
+* **The absence is a date.** The ledger states **when** the kind last occurred. It never states
+  what was not done, and it does not need the word the ban list reserves for that.
+### OLD
+`zones.no_model` — "no zones yet — your watch's heart-rate zones have not come through".
+### NEW
+`zones.no_model` — "no zones yet — your watch's heart-rate zones have not come through".
 ```
 
 The line is the model's **identity and its date**: the sport and the method, the maximum heart rate,
@@ -453,13 +515,13 @@ is missing.
 ```
 stimulus.zones.distribution  "Z1 {z1} · Z2 {z2} · Z3 {z3} · Z4 {z4} · Z5 {z5} · outside {outside}"
 stimulus.zones.rollup        "low {low} · moderate {moderate} · high {high}"
-stimulus.zones.basis         "measured over the moving time"
+stimulus.zones.basis         "measured over the time you were running"
 ```
 
 **The coverage, with the rows it qualifies (never in a footer):**
 
 ```
-stimulus.coverage.hr         "{runs} of {total} runs carry heart-rate samples"
+stimulus.coverage.hr         "{runs} of {total} runs recorded a heart rate"
 stimulus.coverage.steps      "{runs} runs carry the watch's workout steps"
 ```
 
@@ -469,23 +531,23 @@ stimulus.coverage.steps      "{runs} runs carry the watch's workout steps"
 stimulus.band.time           "{time} · {runs} runs"
 stimulus.band.last           "the last run in {band} was on {date}"
 stimulus.band.last_gap       "the last run in {band} was on {date} — {days} days before the end of the window"
-stimulus.band.none           "no run in the window was in {band}"
-stimulus.band.before_model   "no zone time for {runs} runs in the window — the first stored zone model was read on {date}"
-stimulus.changed             "{difference} against the period before ({current} against {previous})"
+stimulus.band.none           "no run in this period was in {band}"
+stimulus.band.before_model   "no zone time for {runs} runs in this period — your watch's zones were first read on {date}"
+stimulus.changed             "{difference} against the same span, one week earlier ({current} against {previous})"
 stimulus.changed.runs        "{current} runs against {previous} runs"
 ```
 
 and, on the run detail, the same exception for one run:
 
 ```
-stimulus.run.before_model    "no zone time — no zone model was in force on this run's date"
+stimulus.run.before_model    "no zone time — your watch's zones were not read on this run's date"
 ```
 
 **The values:**
 
 ```
 stimulus.longest             "{distance} · {duration} · on {date}"
-stimulus.longest.changed     "{difference} more than the longest run in the period before ({current} against {previous})"
+stimulus.longest.changed     "{difference} more than the longest run in the same span, one week earlier ({current} against {previous})"
 stimulus.repeated            "{time} · {runs} runs"
 stimulus.repeated.last       "the last run with a workout step was on {date}"
 ```
@@ -495,23 +557,23 @@ stimulus.repeated.last       "the last run with a workout step was on {date}"
 ```
 stimulus.zone.lag            "heart-rate time in zone counts hard running slowly and easy running generously — the last run in {band} is what the watch recorded"
 stimulus.steps.corroborates  "the last run with a workout step was on {date} — {runs} runs carry the watch's workout steps"
-stimulus.steps.not_corroborated "the runs in the window carry no workout steps — the date above is the heart rate's answer alone"
+stimulus.steps.not_corroborated "the runs in this period carry no workout steps — the date above is the heart rate's answer alone"
 ```
 
 **The states:**
 
 ```
-stimulus.no_runs             "no run recorded in the window"                    (status)
-stimulus.steps.no_data       "no value — the runs in the window carry no workout steps"
+stimulus.no_runs             "no runs recorded"                                (status)
+stimulus.steps.no_data       "not recorded — the runs in this period carry no workout steps"
 ```
 
 ### 3.2 The three sentences the prototype shows, in full
 
-> **41 h 32 m** of the window's moving time was in Z1–Z2 — 84% of it — across 58 runs. The last run
+> **41 h 32 m** of the time you were running was in Z1–Z2 — 84% of it — across 58 runs. The last run
 > in Z1–Z2 was on 24 Nov 2026.
 
-> **1 h 08 m** was in Z4–Z5 — 2% of the moving time — across 4 runs. The last run in Z4–Z5 was on 20 Oct
-> 2026, 35 days before the end of the window.
+> **1 h 08 m** was in Z4–Z5 — 2% of the time you were running — across 4 runs. The last run in Z4–Z5 was
+> on 20 Oct 2026, 35 days before the end of this period.
 
 > The longest run in the window was **20.4 km** in 1 h 59 m, on 21 Nov 2026. The longest run in the 12
 > weeks before it was 19.6 km.
@@ -528,7 +590,7 @@ And the two lines that sit with the absence:
 * **Facts only.** Every sentence is checkable against the stored runs. There is no verdict, no
   score, no readiness, no form, and nothing that tells the athlete what to do.
 * **The absence is a date.** The ledger states **when** the kind last occurred. It never states
-  what was not done: "missed" is on the ban list, and this surface does not need the word.
+  what was not done, and it does not need the word the ban list reserves for that.
 * **"No run recorded", never "rest".** A window with no runs says "no run recorded in the window".
   A day without a recorded run may be a forgotten watch, not a day off — the research states it
   plainly, and the vocabulary follows (§4.1).
@@ -545,7 +607,7 @@ And the two lines that sit with the absence:
   hoisting applies to the run detail's zone table, the window's split and the load card's scenario:
   one place per screen, not one place per answer.
 * **No "you".** The sentences are about the runs. The one place the athlete is named is the source
-  line, which the product already owns: `zones.model.source` — "your zone model · HR_MAX · max heart
+  line, which the product already owns: `zones.model.source` — "your zones · max heart
   rate 183 bpm · read on 3 Nov 2026".
 * **The window is named.** A number is only a fact against a stated period, so the card names the
   window and the comparison period with it.
@@ -596,14 +658,14 @@ The card answers for the run that is there.
 * A kind the run does not carry shows a **measured zero**: "0 m", "0% of the moving time", "0 runs",
   and **no date**. The sentence is "no run in the window was in Z4–Z5" — a fact about the window,
   and not a complaint.
-* The repeated-work row shows **no value** and its reason: "no value — the runs in the window carry
+* The repeated-work row shows **no value** and its reason: "not recorded — the runs in this period carry
   no workout steps". Not "0 m of repeated work".
 * The change against the period before is reported normally — the two periods are the same length,
   and the product's rule is the same length, not the same content.
 
 ### 4.3 No stored zone model
 
-* The three kinds have **no value**: "zones unavailable — no zone model has been read"
+* The three kinds have **no value**: "no zones yet — your watch's heart-rate zones have not come through"
   (`zones.no_model`, the string the zones route already uses). No time, no share, no run count, no
   last date, and no distribution line.
 * The two values **still answer** — the longest run and the repeated work do not depend on the zone
@@ -617,7 +679,7 @@ The card answers for the run that is there.
 The same shape as §4.3, for a different reason: the model is there, but the runs carry no
 heart-rate samples.
 
-* The intensity block has **no value**: `rolling.zones.no_samples` — "the split has no value — the
+* The intensity block has **no value**: `rolling.zones.no_samples` — "no heart rate recorded — none of the
   runs in the window have no heart-rate samples". No distribution line, no band rows, no last dates.
 * The shape block **still answers**: the longest run and the repeated work come from the runs'
   distance, time and workout steps, and none of those needs a heart rate. **One family answers and
@@ -641,7 +703,7 @@ Some of the window's runs carry heart-rate samples and some do not.
   * **with workout steps** — "the last run with a workout step was on 15 Oct 2026 — 3 runs carry the
     watch's workout steps": the second, independent measurement stands beside the first, and the
     card does not say whether they agree;
-  * **without workout steps** — the repeated-work row shows **no value** ("no value — the runs in
+  * **without workout steps** — the repeated-work row shows **no value** ("not recorded — the runs in
     the window carry no workout steps"), and one line under it says what could not be measured:
     "the runs in the window carry no workout steps — the date above is the heart rate's answer
     alone". The card says so rather than implying agreement it cannot support.
@@ -724,7 +786,7 @@ Progress wall from 24 cards to 6, and card 4 is:
 > **4. Where the time went** — *(merges `zones` + `split` + the zone-time distribution)*
 > Z1 **18%** · Z2 **41%** · Z3 **26%** · Z4 **11%** · Z5 **4%** · outside **0%**
 > *low 59% · moderate 26% · high 15%*
-> *measured over the moving time · your zone model, read on 12 Nov 2026*
+> *measured over the time you were running · your zones, taken from your watch on 12 Nov 2026*
 
 **That card becomes the ledger card**, extended with the rows this note describes:
 
@@ -802,7 +864,7 @@ and the pace page have the same shape of cost today).
 **The rule that holds in both stages:** **one source line per screen** — at the top, above the
 cards — names the model and the day that model was read, and **an answer that used a different model
 says so in place**. The core has `zones::model_source` for the line; the api adds the sport, and
-"details ›" opens the model's detail. In the prototype the screen's line reads "your zone model ·
+"details ›" opens the model's detail. In the prototype the screen's line reads "your zones ·
 running · HR_MAX · max heart rate 183 bpm · read on 3 Nov 2026", once, at the top.
 
 **The alignment, not the invention.** `docs/garmin-api-capabilities.md` already says it: *"today's
@@ -820,7 +882,7 @@ Stage 1 lands.
 `fit.rs` reads the lap message (`MESG_LAP`) by definition number — 7, 8, 9, 13, 14, 15, 16, 17, 18,
 21, 22 today — and does not read **24** (`wkt_step_name`); it does not read the `workout_step`
 message (27) at all. Both are one branch and one field away, and both are in `crates/`, so they are
-not in this slice. The repeated-work row is **no value** until they are.
+not in this slice. The repeated-work row has no value until they are.
 
 ---
 

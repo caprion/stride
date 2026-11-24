@@ -99,7 +99,7 @@
   <p class="lede">
     The wall after D11, redrawn. Eleven cards, each read as a <b>picture</b> first: the numbers are
     labels on the picture, absence is white space, and the caption says only what the picture cannot —
-    the period, and the reason something is missing. Azure and amber, no red, no score, no grade.
+    the period, and the reason something is missing. Azure and amber, no colour that means a problem, no score, no grade.
     Synthetic data: one athlete, 7 Sep – 24 Nov 2026, 58 runs. Phone and desktop widths.
   </p>
 
@@ -230,7 +230,7 @@
   <p class="note">
     <b>The picture:</b> the challenge weeks as a small grid of met and not-met marks, and the plan's
     own sessions for the week as marks under it — done, planned, planned and the day gone by. Never
-    red; a mark that is not met is an empty square. <b>The caption:</b> the period and the plan.
+    a colour that means a problem; a mark that is not met is an empty square. <b>The caption:</b> the period and the plan.
     <b>The states:</b> no plan adopted (the session row is absent, and says why).
   </p>
   <div class="phones" id="c11"></div>
@@ -428,7 +428,7 @@ function drawWeek(v, W){
   if(plan) plan.week.forEach(k=>all.push(k));
   const max = Math.max.apply(null, all.concat([8])) * 1.12;
   /* the key — the picture's own legend, wrapped to the width */
-  const items = [ {fill:C.b500, label:'this week'}, {fill:C.b100, label:'the same days of the previous week'} ];
+  const items = [ {fill:C.b500, label:'this week'}, {fill:C.b100, label:'the same days a week earlier'} ];
   if(plan) items.push({dash:true, label:'the plan'});
   let s = '', lx = m, ly = 6, rows = 1;
   items.forEach(it=>{
@@ -460,10 +460,10 @@ function drawWeek(v, W){
   const pKm = prev.runs.filter(r=>r.d<=1).reduce((a,r)=>a+r.km,0);
   if(v!=='weekEmpty'){
     s += T(W-m, top+10, kmSigned(cKm-pKm), 's-note', 'end');
-    s += T(W-m, top+20, 'against the same days of the previous week', 's-key', 'end');
+    s += T(W-m, top+20, 'against the same days a week earlier', 's-key', 'end');
   }
-  return {h:H, s, caption: v==='weekEmpty' ? 'no run recorded this week'
-    : (v==='noplan' ? 'Mon 23 Nov – Tue 24 Nov 2026 · no plan adopted' : 'Mon 23 Nov – Tue 24 Nov 2026')};
+  return {h:H, s, caption: v==='weekEmpty' ? 'no runs recorded this week'
+    : (v==='noplan' ? 'Mon 23 Nov – Tue 24 Nov 2026 · no plan adopted yet' : 'Mon 23 Nov – Tue 24 Nov 2026')};
 }
 
 /* ---- 2 · where the time went ---- */
@@ -486,20 +486,20 @@ function drawLedger(v, W){
   const cols = [[z.z1,C.b100],[z.z2,C.b300],[z.z3,C.b500],[z.z4,C.a400],[z.z5,C.a700]];
   if(v==='nomodel'){
     s += RC(m, barY, x1-m, barH, 'none', ` stroke="${C.edge}" stroke-width="1" stroke-dasharray="3 2"`);
-    s += T(m, barH+19, 'no zone model has been read — the split has no value', 's-key');
+    s += T(m, barH+19, 'your watch\'s zones have not come through — the split is not worked out', 's-key');
   } else {
     cols.forEach(c=>{ const w = (c[0]/zsum)*(x1-m); s += RC(bx, barY, w, barH, c[1]); bx += w; });
     let lx = m;
     cols.forEach((c,i)=>{ const w=(c[0]/zsum)*(x1-m);
       if(w>14) s += T(lx+w/2, barH+8, 'Z'+(i+1), 's-key', 'middle'); lx+=w; });
-    s += T(m, barH+19, 'the moving time of the window, by zone', 's-key');
+    s += T(m, barH+19, 'the time you were running, by zone', 's-key');
     const kx = W-m-42;
     s += RC(kx, barH+12, 7, 7, C.a400);
     s += T(kx+11, barH+19, 'Z4–Z5', 's-key');
   }
   let y = barH + 24;
   /* the key for the signed figure */
-  s += T(m, y+8, 'the signed figure is the change vs the period before', 's-key');
+  s += T(m, y+8, 'the signed figure is the change against a week earlier', 's-key');
   y += 16;
   /* the matrix — the weeks across, the bands down */
   const rows = [
@@ -513,7 +513,7 @@ function drawLedger(v, W){
     const top = y;
     /* the label — the numbers, compactly */
     s += T(m, top+9, rw.name, 's-txt-b');
-    if(noModel){ s += T(m, top+19, 'no value', 's-key'); s += T(m, top+28, 'no zone model read', 's-key'); }
+    if(noModel){ s += T(m, top+19, 'not measured', 's-key'); s += T(m, top+28, 'your watch\'s zones have not come through', 's-key'); }
     else {
       s += T(m, top+19, `${dur(rw.b)} · ${pct(b.min? rw.b/b.min*100:0)}`, 's-key');
       s += T(m, top+28, `${runsLabel(rw.runs)} · ${minSigned(rw.b-rw.p)}`, 's-key');
@@ -557,7 +557,7 @@ function drawLedger(v, W){
   const lb = runs.slice().sort((a,c)=>c.km-a.km)[0];
   s += T(m, y+9, 'the longest run', 's-txt-b');
   s += T(m, y+19, lb ? `${km(lb.km)} · ${dur(lb.min)}` : 'no value', 's-key');
-  s += T(m, y+28, lb ? `${dayLabel(lb.off+lb.d)} · ${kmSigned(lb.km-prevLong)}` : 'no run recorded', 's-key');
+  s += T(m, y+28, lb ? `${dayLabel(lb.off+lb.d)} · ${kmSigned(lb.km-prevLong)}` : 'no runs recorded', 's-key');
   const bx0 = x0, bx1 = x1-52;
   const scale = k => (bx1-bx0)*(k/maxKm);
   const refX = bx0 + scale(prevLong);
@@ -574,8 +574,8 @@ function drawLedger(v, W){
   /* the repeated work — marks where the watch recorded a workout step */
   s += T(m, y+9, 'repeated work', 's-txt-b');
   if(b.stepRuns===0){
-    s += T(m, y+19, 'no value', 's-key');
-    s += T(m, y+28, 'no workout steps', 's-key');
+    s += T(m, y+19, 'not recorded', 's-key');
+    s += T(m, y+28, 'no workout steps recorded', 's-key');
   } else {
     s += T(m, y+19, `${dur(b.steps)}`, 's-key');
     s += T(m, y+28, `${runsLabel(b.stepRuns)} · ${minSigned(b.steps-pb.steps)}`, 's-key');
@@ -590,9 +590,9 @@ function drawLedger(v, W){
   if(lastStepWk>=0) s += T(x0+lastStepWk*pitch+cellW/2, y+24, dayLabel(stepLastDay(runs)), 's-key', 'middle');
   y += 32;
   const H = y;
-  const cap = v==='onerun' ? '7 Sep – 24 Nov 2026 · one run recorded · measured over the moving time'
-    : v==='nomodel' ? '7 Sep – 24 Nov 2026 · no zone model has been read — the band rows have no value'
-    : '7 Sep – 24 Nov 2026 · measured over the moving time';
+  const cap = v==='onerun' ? '7 Sep – 24 Nov 2026 · one run recorded · measured over the time you were running'
+    : v==='nomodel' ? '7 Sep – 24 Nov 2026 · your watch\'s zones have not come through — the band rows are not worked out'
+    : '7 Sep – 24 Nov 2026 · measured over the time you were running';
   return {h:H, s, caption:cap};
 }
 
@@ -612,7 +612,7 @@ function drawLoad(v, W){
   const H = top+plotH+18;
   if(v==='empty' || v==='nomodel'){
     let s = RC(m, top, W-2*m, plotH, 'none', ` stroke="${C.edge}" stroke-dasharray="3 3"`);
-    return {h:H, s, caption: v==='empty' ? 'no run recorded in the window' : 'no zone model has been read — the load has no value'};
+    return {h:H, s, caption: v==='empty' ? 'no runs recorded' : 'your watch\'s zones have not come through — the training load is not worked out'};
   }
   const pts = loadSeries(ws);
   const maxV = Math.max.apply(null, pts.map(p=>Math.max(p.a,p.c)));
@@ -628,22 +628,22 @@ function drawLoad(v, W){
   s += PA(path('a'), 'none', ` stroke="${C.line}" stroke-width="1.8" stroke-linejoin="round"`);
   const last = pts[pts.length-1];
   s += CI(X(last.o), Y(last.a), 3.2, C.line);
-  s += T(X(last.o)-6, Y(last.a)-6, `acute ${Math.round(last.a)}`, 's-txt-b', 'end');
-  s += T(X(last.o)-6, Y(last.c)+12, `chronic ${Math.round(last.c)}`, 's-note', 'end');
+  s += T(X(last.o)-6, Y(last.a)-6, `last 7 days ${Math.round(last.a)}`, 's-txt-b', 'end');
+  s += T(X(last.o)-6, Y(last.c)+12, `last 6 weeks ${Math.round(last.c)}`, 's-note', 'end');
   const form = last.c - last.a;
-  s += T(m+4, top+12, `form ${form>=0?'+':'−'}${Math.abs(Math.round(form))}`, 's-txt-b');  s += T(m+4, top+plotH+12, '7 Sep', 's-key');
+  s += T(m+4, top+12, `the difference ${form>=0?'+':'−'}${Math.abs(Math.round(form))}`, 's-txt-b');  s += T(m+4, top+plotH+12, '7 Sep', 's-key');
   s += T(W-m, top+plotH+12, '24 Nov', 's-key', 'end');
   s += RC(m+70, top+5, 7, 7, 'none', ` stroke="${C.line}" stroke-width="1.8"`);
-  s += T(m+81, top+12, 'acute', 's-key');
+  s += T(m+81, top+12, 'last 7 days', 's-key');
   s += RC(m+118, top+5, 7, 7, 'none', ` stroke="${C.ref}" stroke-width="1.6" stroke-dasharray="3 2"`);
-  s += T(m+129, top+12, 'chronic', 's-key');
+  s += T(m+129, top+12, 'last 6 weeks', 's-key');
   const ratio = last.a/last.c;
   const scenario = ratio>1.3
-    ? 'with no training for 7 days the ratio is expected back inside 0.8 to 1.3 in about a day'
+    ? `with no training for 7 days, ${ratio.toFixed(2)} is expected to come back inside 0.8 to 1.3 in about a day`
     : ratio<0.8
-    ? 'with seven days of training the ratio is expected to rise inside 0.8 to 1.3 in about a day'
-    : 'the ratio is inside 0.8 to 1.3';
-  return {h:H, s, caption:`Banister k = 1.92 · ${scenario}`};
+    ? `with seven days of training, ${ratio.toFixed(2)} is expected to rise inside 0.8 to 1.3 in about a day`
+    : `${ratio.toFixed(2)} is inside 0.8 to 1.3`;
+  return {h:H, s, caption:scenario};
 }
 
 /* ---- 4 · the weeks ---- */
@@ -677,7 +677,7 @@ function drawWeeks(v, W){
     s += T(W-m, my-4, `typical week ${km(med)}`, 's-note', 'end');
   }
   s += LN(m, top+plotH, W-m, top+plotH, C.edge, 1);
-  return {h:H, s, caption: v==='empty' ? 'no run recorded in the window' : '12 weeks · 7 Sep – 24 Nov 2026'};
+  return {h:H, s, caption: v==='empty' ? 'no runs recorded' : '12 weeks · 7 Sep – 24 Nov 2026'};
 }
 
 /* ---- 5 · the pace ---- */
@@ -714,7 +714,7 @@ function drawPace(v, W){
   s += T(m-2, top+plotH, '4:35', 's-key', 'end');
   s += T(W/2-16, top+plotH+22, 'pace against heart rate', 's-key', 'middle');
   return {h:H, s, caption: v==='norace'
-    ? '7 Sep – 24 Nov 2026 · no race time entered — the training paces have no value'
+    ? '7 Sep – 24 Nov 2026 · no race entered yet — the training paces are not worked out'
     : '7 Sep – 24 Nov 2026 · the training paces from the 10 km of 49:12 on 18 Nov 2026'};
 }
 
@@ -735,7 +735,7 @@ function drawBests(v, W){
     s += T(m, top+plotH+12, '7 Sep', 's-key');
     s += T(W-m, top+plotH+12, '24 Nov', 's-key', 'end');
     s += T(m, top-8, 'kilometres', 's-key');
-    return {h:H, s, caption:'no run recorded in the window'};
+    return {h:H, s, caption:'no runs recorded'};
   }
   /* the key — the shape carries the meaning */
   let kx = m;
@@ -761,7 +761,7 @@ function drawBests(v, W){
     s += T(x-7, ly, `${b.km} km · ${b.t} · ${b.day}`, 's-note', 'end');
   });
   s += T(m, top-8, 'kilometres', 's-key');
-  return {h:H, s, caption: v==='empty' ? 'no run recorded in the window' : '7 Sep – 24 Nov 2026'};
+  return {h:H, s, caption: v==='empty' ? 'no runs recorded' : '7 Sep – 24 Nov 2026'};
 }
 
 /* ---- 7 · your shape ---- */
@@ -783,7 +783,7 @@ function drawShape(v, W){
   let s = '';
   if(v==='empty'){
     s += RC(m, 4, W-2*m, 70, 'none', ` stroke="${C.edge}" stroke-dasharray="3 3"`);
-    return {h:H, s, caption:'no run recorded in the window'};
+    return {h:H, s, caption:'no runs recorded'};
   }
   const lw = 74, vw = 58;
   const x0 = m+lw, x1 = W-m-vw;
@@ -848,7 +848,7 @@ function drawMonths(v, W){
     s += RC(m+88, top-9, 7, 7, C.a400); s += T(m+99, top-2, 'high', 's-key');
   }
   return {h:H, s, caption: v==='nomodel'
-    ? 'the last 12 months · no zone model has been read — the mix has no value'
+    ? 'the last 12 months · your watch\'s zones have not come through — the mix is not worked out'
     : 'the last 12 months · November to the 24th'};
 }
 
@@ -876,7 +876,7 @@ function drawSchedule(v, W){
   });
   [0,6,12,18,23].forEach(h=>{ s += T(x0+h*pitch, 16+7*16+11, String(h).padStart(2,'0'), 's-key', 'middle'); });
   s += T(x0, 16+7*16+22, 'hour of the day', 's-key');
-  return {h:H, s, caption: v==='empty' ? 'no run recorded in the window' : '7 Sep – 24 Nov 2026 · the runs by weekday and hour'};
+  return {h:H, s, caption: v==='empty' ? 'no runs recorded' : '7 Sep – 24 Nov 2026 · the runs by weekday and hour'};
 }
 
 /* ---- 10 · the habit ---- */
@@ -900,8 +900,8 @@ function drawHabit(v, W){
   const ed = eddington(ws);
   s += LN(m, 96, W-m, 96, C.edge, 1);
   if(v==='toofew' || ed.days===0){
-    s += T(W/2, 70, 'the Eddington has no value', 's-note', 'middle');
-    return {h:H, s, caption: ed.days===0 ? 'no run recorded in the window' : `7 Sep – 24 Nov 2026 · ${ed.days} days recorded`};
+    s += T(W/2, 70, 'not enough days yet', 's-note', 'middle');
+    return {h:H, s, caption: ed.days===0 ? 'no runs recorded' : `7 Sep – 24 Nov 2026 · ${ed.days} days recorded`};
   }
   const maxN = Math.max(1, Math.max.apply(null, ed.counts.map(c=>c.n)));
   const bw = (W-2*m)/ed.counts.length;
@@ -913,7 +913,7 @@ function drawHabit(v, W){
     if(i%2===0) s += T(m+i*bw+bw/2, 106, String(c.e), 's-key', 'middle');
   });
   s += T(m, 116, 'the days that reached each distance', 's-key');
-  return {h:H, s, caption: v==='empty' ? 'no run recorded in the window' : '7 Sep – 24 Nov 2026'};
+  return {h:H, s, caption: v==='empty' ? 'no runs recorded' : '7 Sep – 24 Nov 2026'};
 }
 
 /* ---- 11 · the goals ---- */
@@ -956,7 +956,7 @@ function drawGoals(v, W){
     s += RC(m, 110, 7, 7, C.b500); s += T(m+11, 117, 'a run recorded', 's-key');
     s += RC(m+82, 110, 7, 7, 'none', ` stroke="${C.a400}" stroke-width="1.2" stroke-dasharray="3 2"`); s += T(m+93, 117, 'planned', 's-key');
   }
-  return {h:H, s, caption: v==='noplan' ? '12 weeks · no plan adopted'
+  return {h:H, s, caption: v==='noplan' ? '12 weeks · no plan adopted yet'
     : v==='empty' ? '12 weeks · no run recorded in the window'
     : `12 weeks · the plan adopted ${PLAN.adopted}`};
 }
@@ -964,33 +964,33 @@ function drawGoals(v, W){
 /* ================= the cards ================= */
 const CARDS = [
   {id:'c1', title:'This week', draw:drawWeek, states:[
-    {v:'weekEmpty', n:'no run recorded this week', w:'seven empty columns; the caption names the absence'},
-    {v:'noplan', n:'no plan adopted', w:'the plan’s outline is gone; the runs are drawn as they are'}]},
+    {v:'weekEmpty', n:'no runs recorded this week', w:'seven empty columns; the caption names the absence'},
+    {v:'noplan', n:'no plan adopted yet', w:'the plan’s outline is gone; the runs are drawn as they are'}]},
   {id:'c2', title:'Where the time went', draw:drawLedger, states:[
     {v:'onerun', n:'one run in the window', w:'one filled cell in the low row; the other rows are white space'},
-    {v:'nomodel', n:'no zone model', w:'the band rows have no value; the shape rows still answer'},
-    {v:'nosteps', n:'no workout step recorded', w:'the repeated-work row says so in one short line'}]},
-  {id:'c3', title:'The load', draw:drawLoad, states:[
-    {v:'empty', n:'no run recorded in the window', w:'no curves; the caption carries the absence'},
-    {v:'nomodel', n:'no zone model', w:'the load needs the model’s maximum heart rate'}]},
+    {v:'nomodel', n:'no zones yet', w:'the band rows are not worked out; the shape rows still answer'},
+    {v:'nosteps', n:'no workout steps recorded', w:'the repeated-work row says so in one short line'}]},
+  {id:'c3', title:'Training load', draw:drawLoad, states:[
+    {v:'empty', n:'no runs recorded', w:'no curves; the caption carries the absence'},
+    {v:'nomodel', n:'no zones yet', w:'the load needs your watch’s maximum heart rate'}]},
   {id:'c4', title:'The weeks', draw:drawWeeks, states:[
-    {v:'empty', n:'no run recorded in the window', w:'twelve empty columns'}]},
+    {v:'empty', n:'no runs recorded', w:'twelve empty columns'}]},
   {id:'c5', title:'The pace', draw:drawPace, states:[
-    {v:'norace', n:'no race time', w:'the scatter is drawn; the ladder has no value'}]},
+    {v:'norace', n:'no race entered yet', w:'the scatter is drawn; the ladder is not worked out'}]},
   {id:'c6', title:'Bests & milestones', draw:drawBests, states:[
-    {v:'empty', n:'no run recorded in the window', w:'an empty axis'}]},
+    {v:'empty', n:'no runs recorded', w:'an empty axis'}]},
   {id:'c7', title:'Your shape', draw:drawShape, states:[
-    {v:'empty', n:'no run recorded in the window', w:'no gauges'}]},
+    {v:'empty', n:'no runs recorded', w:'no gauges'}]},
   {id:'c8', title:'The months', draw:drawMonths, states:[
-    {v:'nomodel', n:'no zone model', w:'the columns carry distance; the mix has no value'}]},
+    {v:'nomodel', n:'no zones yet', w:'the columns carry distance; the mix is not worked out'}]},
   {id:'c9', title:'The schedule', draw:drawSchedule, states:[
-    {v:'empty', n:'no run recorded in the window', w:'an empty grid'}]},
+    {v:'empty', n:'no runs recorded', w:'an empty grid'}]},
   {id:'c10', title:'The habit', draw:drawHabit, states:[
-    {v:'empty', n:'no run recorded in the window', w:'no marks; the ladder has no value'},
+    {v:'empty', n:'no runs recorded', w:'no marks; the ladder has no value'},
     {v:'toofew', n:'too few days', w:'the ladder is not drawn; the caption says how many days there are'}]},
   {id:'c11', title:'The goals', draw:drawGoals, states:[
-    {v:'noplan', n:'no plan adopted', w:'the session row is absent, and says why'},
-    {v:'empty', n:'no run recorded in the window', w:'the challenge weeks are empty'}]}
+    {v:'noplan', n:'no plan adopted yet', w:'the session row is absent, and says why'},
+    {v:'empty', n:'no runs recorded', w:'the challenge weeks are empty'}]}
 ];
 
 function cardHTML(spec, variant, W){
@@ -1002,12 +1002,12 @@ function cardHTML(spec, variant, W){
 }
 function phoneHTML(spec, variant, W){
   return `<div class="phone"><div class="bar"><h1>Progress</h1><div class="meta">Stride</div></div>
-    <div class="body"><div class="srcbar"><span>your zone model · running · HR_MAX · max heart rate 183 bpm · read on 12 Nov 2026</span></div>
+    <div class="body"><div class="srcbar"><span>your zones · running · max heart rate 183 bpm · taken from your watch on 12 Nov 2026</span></div>
     ${cardHTML(spec, variant, W)}</div></div>`;
 }
 function desktopHTML(spec, variant, W){
   return `<div class="desktop"><div class="bar"><h1>Progress</h1><div class="meta">the wall · 12 weeks</div></div>
-    <div class="body"><div class="srcbar"><span>your zone model · running · HR_MAX · max heart rate 183 bpm · read on 12 Nov 2026</span><a href="#">details ›</a></div>
+    <div class="body"><div class="srcbar"><span>your zones · running · max heart rate 183 bpm · taken from your watch on 12 Nov 2026</span><a href="#">details ›</a></div>
     ${cardHTML(spec, variant, W)}</div></div>`;
 }
 function stateHTML(spec, variant, W){

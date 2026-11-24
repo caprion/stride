@@ -279,7 +279,7 @@
 
   var NOTES = [
     /* ---- 1 · Today ---- */
-    { n:1, screen:"today", el:"The source line", v:"your zone model · running · HR_MAX · max heart rate 183 bpm · read on 3 Nov 2026",
+    { n:1, screen:"today", el:"The source line", v:"your zones · running · max heart rate 183 bpm · taken from your watch on 3 Nov 2026",
       is:"The screen's one source line. It names the model every number on the screen was measured against, and the day the model was read.",
       from:"The dated zone model the core stores — <code>crates/stride-core/src/zones.rs</code> — read from the watch's own configuration and kept with the day it was read.",
       not:"It may not claim the model is current, and it may not be repeated on any row below. One screen, one line." },
@@ -291,15 +291,15 @@
       is:"The run's own facts: distance, moving time, pace and average heart rate, in the order a runner reads them.",
       from:"The run record and its heart-rate summary — <code>crates/stride-core/src/types.rs</code> and the pace helpers in <code>units.rs</code>.",
       not:"Pace is moving time over distance. It is not a grade, and the heart rate is the average, never a judgement." },
-    { n:4, screen:"today", el:"Where you stand · this week", v:"11.0 km · −5.4 km against the same days of the previous week",
+    { n:4, screen:"today", el:"Where you stand · this week", v:"11.0 km · −5.4 km against the same days a week earlier",
       is:"The same two days of this week and of the week before, compared. It is a difference, not a verdict.",
       from:"The weekly aggregate and the period comparison — <code>crates/stride-core/src/rolling.rs</code>; the picture it sits on is the <i>This week</i> card in <code>exploration/cards-as-pictures.html</code>.",
       not:"It may not say the week is going badly, and it may not link the difference to sleep or to any other vital." },
-    { n:5, screen:"today", el:"Where you stand · form", v:"acute 118 · chronic 84 · form +34 · ratio 1.40",
+    { n:5, screen:"today", el:"Where you stand · form", v:"last 7 days 118 · last 6 weeks 84 · the difference +34 · 1.40 times the last 6 weeks",
       is:"The load engine's own numbers: TRIMP over the athlete's zone model, with Banister k = 1.92. The scenario under it is the model's expectation, not a prediction.",
-      from:"<code>crates/stride-core/src/load.rs</code>; the card is the <i>The load</i> card in <code>exploration/cards-as-pictures.html</code>.",
+      from:"<code>crates/stride-core/src/load.rs</code>; the card is the <i>Training load</i> card in <code>exploration/cards-as-pictures.html</code>.",
       not:"It may not say the athlete is fresh, tired or ready — the direction words are the only judgement allowed, and this card does not use them." },
-    { n:6, screen:"today", el:"Where you stand · habit", v:"4 days in a row · Eddington 12",
+    { n:6, screen:"today", el:"Where you stand · habit", v:"4 days in a row · 12 km on 13 days",
       is:"Two answers to one question — how steady the running has been. The streak is days in a row; the Eddington is the distance that has been reached on at least that many days.",
       from:"<code>crates/stride-core/src/streaks.rs</code> and <code>eddington.rs</code>; the picture is the <i>The habit</i> card.",
       not:"It may not be a score, and the two numbers may not be added together or compared with anything else." },
@@ -310,11 +310,11 @@
     { n:8, screen:"today", el:"Rest — the summary line", v:"could be better · 2 of 3 signals below your usual",
       is:"A count and a direction, computed from the three vitals beneath it: how many of them sit below their own usual band.",
       from:"The direction words and the band rule — <code>crates/stride-core/src/direction.rs</code> and the median ± 1.5 × MAD band in <code>docs/contract/core-contract.md</code> §4.",
-      not:"It may not become a conclusion. <i>Rest</i> is the name of the row here; it is never an instruction, and the summary may not say the athlete should do anything." },
+      not:"It may not become a conclusion. <i>Rest</i> is the name of the row here; it is never an instruction, and the summary may not tell the athlete what to do." },
     { n:9, screen:"today", el:"The three vitals", v:"Sleep — 6 h 10 m · could be better   Resting heart rate — 54 bpm · about usual   HRV — 48 ms · could be better",
       is:"Each vital on its own: the value, a direction from the closed set, and the arithmetic that produced the direction.",
       from:"The wellness record and the direction rule — <code>crates/stride-core/src/rest.rs</code>, <code>direction.rs</code>, <code>pattern.rs</code>.",
-      not:"The three may never be combined into a verdict. There is no readiness score, and no line may say the athlete is or is not recovered." },
+      not:"The three may never be combined into a verdict. There is no single number for readiness, and no line may say whether the athlete is recovered." },
     { n:10, screen:"today", el:"The sleep chart", v:"6 h 10 m — deep 78 m · REM 94 m · light 174 m · awake 24 m",
       is:"One night, drawn as the stages the watch recorded, over the hours they happened.",
       from:"The wellness sleep record — the same one Body shows for any date; <code>crates/stride-core/src/body.rs</code> is not a module, so this is the wellness surface's own read.",
@@ -328,8 +328,8 @@
     { n:12, screen:"runs", el:"The browse calendar", v:"November 2026 — one mark per day that holds a run",
       is:"The month as a grid, with a mark on every day the watch recorded a run. The calendar is the screen's own control.",
       from:"The day index over the stored activities — the calendar panel on <code>/runs</code>, from the same store the run list reads.",
-      not:"A day without a mark is a day without a recorded run — never a missed day, never a rest day." },
-    { n:13, screen:"runs", el:"The filters", v:"search · from 7 Sep 2026 · through 24 Nov 2026 · scope: runs",
+      not:"A day without a mark is a day without a recorded run — never a day marked as skipped, never a day named as a day off." },
+    { n:13, screen:"runs", el:"The filters", v:"search · from 7 Sep 2026 · through 24 Nov 2026 · showing: runs",
       is:"The four ways the list can be narrowed. They change what the list holds; they do not change what a run means.",
       from:"The runs query in <code>crates/stride-api/src/routes/</code> and the filter controls on <code>RunsPage.tsx</code>.",
       not:"A filter may not rank, colour or hide a run to make a list look better, and an empty result is never an error." },
@@ -351,7 +351,7 @@
       is:"The run's own facts at the top: distance, moving time, pace and average heart rate.",
       from:"The run record — <code>crates/stride-core/src/types.rs</code>; moving time and pace come from <code>units.rs</code>.",
       not:"Moving time is not elapsed time, and it may not be described. The heart rate is the average of the samples the watch took while moving." },
-    { n:18, screen:"run", el:"The core's sentence", v:"20.4 km in 1 h 59 m — the longest run of the window",
+    { n:18, screen:"run", el:"The core's sentence", v:"20.4 km in 1 h 59 m — the longest run of the last 12 weeks",
       is:"One sentence the core writes about the run, from facts it has already computed. The app owns this sentence; no model writes it.",
       from:"The story builder — <code>crates/stride-core/src/story.rs</code>, using the <code>statement</code> register from <code>docs/contract/voice.md</code>.",
       not:"It may not compare the run to the plan, may not call it hard or easy, and may not mention a vital." },
@@ -386,11 +386,11 @@
     { n:26, screen:"run", el:"The run update", v:"The second half was faster than the first by 0:06 /km, and your heart rate was higher by 3 bpm over the run.",
       is:"The one place a model writes. It arranges the facts the app computed — the drifts, the decoupling, the laps — and does nothing else. A model wrote this sentence from the numbers above and nothing else.",
       from:"The update payload and its checks — <code>crates/stride-core/src/update.rs</code>, with the register and the fixed signs set out in <code>docs/contract/voice.md</code>.",
-      not:"It may not use the closed direction set, may not call the run good or bad, may not mention the plan, and may not carry the run's title — a title is the athlete's own words." },
+      not:"It may not use the closed direction set, may not judge the run, may not mention the plan, and may not carry the run's title — a title is the athlete's own words." },
     { n:27, screen:"run", el:"Against the plan", v:"18.0 km planned · 20.4 km recorded · 2.4 km more than the 18 km target",
       is:"The plan's session for that day, and the run beside it. A statement about the athlete's own plan.",
       from:"The plan's dated session and the run — <code>crates/stride-core/src/plan.rs</code>.",
-      not:"It may not say the run met the plan or missed it. The number is the difference; the reader draws the conclusion." },
+      not:"It may not say whether the run met the plan. The number is the difference; the reader draws the conclusion." },
     { n:28, screen:"run", el:"The note", v:"the last 5 km were into a headwind",
       is:"The only free text the product stores. It belongs to the run and to the athlete.",
       from:"The note field on the activity record.",
@@ -401,7 +401,7 @@
       not:"It may not sit next to the run's numbers and imply a cause. The run's page holds facts about the run; Body holds the night." },
 
     /* ---- 4 · Progress ---- */
-    { n:30, screen:"progress", el:"The source line, once", v:"your zone model · running · HR_MAX · max heart rate 183 bpm · read on 3 Nov 2026",
+    { n:30, screen:"progress", el:"The source line, once", v:"your zones · running · max heart rate 183 bpm · taken from your watch on 3 Nov 2026",
       is:"The wall's one source line, at the top of the screen. Every card below is measured against the model named here.",
       from:"<code>crates/stride-core/src/zones.rs</code>; the wall's own layout in <code>exploration/cards-as-pictures.html</code>.",
       not:"No card below may name the model again. Where an answer used a different model, the card says so in place, because a silent difference would be a wrong number." },
@@ -413,25 +413,25 @@
       is:"The range the wall is answering about. Every card on the wall is about this window.",
       from:"The range state on <code>frontend/src/pages/progressWall.tsx</code>.",
       not:"Changing the window changes every card, including the sentences. A card may name two windows; it may not mix them." },
-    { n:33, screen:"progress", el:"A card's caption", v:"7 Sep – 24 Nov 2026 · measured over the moving time",
+    { n:33, screen:"progress", el:"A card's caption", v:"7 Sep – 24 Nov 2026 · measured over the time you were running",
       is:"The line under a picture: the period, and the reason something is missing. The caption names the period, and the reason something is missing — nothing else.",
       from:"The card captions in <code>exploration/cards-as-pictures.html</code>.",
       not:"It may not interpret the picture. If the caption has to explain the picture, the picture is the wrong picture." },
 
     /* ---- 5 · The pace card ---- */
     { n:34, screen:"pace", el:"The two-axis ladder", v:"threshold 4:16–4:21 · the goal race 4:21 · marathon 4:32 · long run 5:32 → 5:00 · general aerobic 5:35–5:50 · recovery 5:36",
-      is:"The training paces and the heart-rate bands on two axes: the athlete's own heart rate on the left, the pace on the right, each rung kept apart.",
+      is:"The training paces and the heart-rate bands on two axes: the athlete's own heart rate on the left, the pace on the right, each rung kept apart. The threshold rung's band is the hour-pace band on the half-marathon span, because the adopted plan is a half; the race candidate's band is the same rule on the shorter distance — the athlete's typed 10K. Each names its anchor, so the two numbers are two anchors of one rule and not two answers to one question.",
       from:"The ladder design in <code>exploration/pace-engine.html</code>; the numbers come from the chain in <code>crates/stride-core/src/pace.rs</code> — race time → VDOT → race paces → the book's percentages.",
       not:"The band is the method's rule and the pace is either the method's rule or the athlete's own; they are never merged, and the athlete's own pace is never presented as the method's number." },
     { n:35, screen:"pace", el:"The two axes", v:"heart rate 115–190 bpm on the left · pace 4:10–5:50 /km on the right",
       is:"A heart rate and a pace are numbers about different things, so they get a scale each, and the app never converts between them. Heart rate on the left, from the zone model's own floors; pace on the right, from the race the athlete typed. They are numbers about different things, so they are never converted into one another.",
       from:"The zone model's floors for the heart-rate axis; <code>crates/stride-core/src/pace.rs</code> for the pace axis.",
       not:"No rung may be drawn where a heart rate has been converted into a pace, or the reverse." },
-    { n:36, screen:"pace", el:"The colours", v:"amber — the method's rule · azure — the athlete's own data · grey — the engine's own derivation",
+    { n:36, screen:"pace", el:"The colours", v:"amber — the plan's rule · azure — your own data · grey — worked out from your race",
       is:"Three colours, and none of them is a verdict. Amber is the book, azure is the athlete, grey is the engine's arithmetic. Amber is the method's rule. Azure is the athlete's own data. Grey is the engine's own derivation.",
       from:"The chart tokens in <code>frontend/src/tokens.css</code>; the rule in <code>exploration/pace-engine.html</code> §1.",
       not:"No colour may mean better or worse, and no colour may rank one rung above another." },
-    { n:37, screen:"pace", el:"The ladder's source", v:"From your 10K in 41:36 on 12 Oct 2026 · entered 13 Oct 2026 · the race time was changed on 3 Nov 2026",
+    { n:37, screen:"pace", el:"The ladder's source", v:"From your 10K in 41:36 on 12 Oct 2026 · entered 13 Oct 2026 · changed 3 Nov 2026",
       is:"Which race the paces came from, when it was typed, and when it was changed.",
       from:"The stored race record and its change history — <code>crates/stride-core/src/pace.rs</code>.",
       not:"A race time is typed by the athlete. The app never estimates one from the training, and never invents one." },
@@ -443,7 +443,7 @@
       is:"A second reading of the same athlete: the cost a duration holds, with the athlete's own races sitting on the curve at the share their own pace cost.",
       from:"The curve design in <code>exploration/pace-engine.html</code> §3, on its own route <code>/insights/pace-curve</code>; the VO₂max it is measured against comes from <code>pace.rs</code>.",
       not:"It may not be drawn on a calendar or a training-week axis, and it never carries a readiness reading." },
-    { n:40, screen:"pace", el:"The rule on the curve", v:"the method's heart-rate bands are named in the caption and never drawn on the %maxVO₂ axis",
+    { n:40, screen:"pace", el:"The rule on the curve", v:"the training plan's heart-rate bands are named in the caption and never drawn on this axis",
       is:"Pfitzinger's bands are percentages of maximal heart rate; the curve's axis is percentages of VO₂max. The two are not convertible without the athlete's lactate relation, which Stride does not have.",
       from:"The rule is stated in <code>exploration/pace-engine.md</code> and in <code>exploration/pfitzinger-spine.md</code>.",
       not:"No band may be drawn on this axis, and the curve may not be used to check a heart-rate band." },
@@ -453,11 +453,11 @@
       not:"It may not be folded back into the pace card, and it may not be shown without its own assumptions listed." },
 
     /* ---- 6 · The threshold ---- */
-    { n:42, screen:"threshold", el:"The threshold you use", v:"165 bpm · the floor of your watch's fifth zone · made for the Pfitzinger 10K plan · chosen on 3 Nov 2026",
+    { n:42, screen:"threshold", el:"The threshold you use", v:"165 bpm · the start of your watch's fifth zone · made for the Pfitzinger 10K plan · chosen on 3 Nov 2026",
       is:"The chosen threshold, stored as a dated fact with its source and the base it was made for.",
-      from:"The stored choice and its history — <code>crates/stride-core/src/plan.rs</code> and the threshold store behind it; the design is in <code>exploration/threshold-setup.html</code>.",
+      from:"The stored choice and its history — <code>crates/stride-core/src/plan.rs</code> and the threshold store it comes from; the design is in <code>exploration/threshold-setup.html</code>.",
       not:"It may not be updated silently, and it may not be checked for whether the number still applies — the app does not ask." },
-    { n:43, screen:"threshold", el:"The four candidates", v:"the watch's zone model · from your 10K · from your 45-minute time trial · a number you entered",
+    { n:43, screen:"threshold", el:"The four candidates", v:"your watch's zones · from your 10K · from your 45-minute time trial · a number you entered",
       is:"Four sources, each computed by one rule, each card naming the rule it used. They are listed side by side, and the arrangement is not a ranking.",
       from:"The threshold candidates — <code>crates/stride-core/src/</code>'s threshold rules; the card design in <code>exploration/threshold-setup.html</code> §1.",
       not:"They are never ranked, no chip may name one as the one to take, and no candidate may be called stale or wrong." },
@@ -467,13 +467,13 @@
       not:"A pace band is drawn as a band — its two ends, never a midpoint — and the app never converts a heart rate into a pace." },
     { n:45, screen:"threshold", el:"The history", v:"3 Nov 2026 · 165 bpm · 3 Mar 2026 · 172 bpm",
       is:"Each choice that has been made, with its own date and its own source. A change writes another row and the old one stays. Each row is one choice, made for a base, on its own day: the app does not say the threshold has changed, and does not ask whether a value still applies.",
-      from:"The threshold history — the store behind <code>exploration/threshold-setup.html</code> §2.",
+      from:"The threshold history — the store that holds it — <code>exploration/threshold-setup.html</code> §2.",
       not:"The app does not say the threshold has changed, and it does not ask whether a value still applies." },
     { n:46, screen:"threshold", el:"The disagreement", v:"165 bpm and 168 bpm — both are shown",
       is:"Two candidates that disagree, drawn at their own values with a marker over the span between them. Both marks stand at their own values; nothing is written about the distance between them.",
       from:"The disagreement state in <code>exploration/threshold-setup.html</code> §2.",
       not:"The app does not reconcile them and does not write about the distance between them. It may not suggest which is closer to the truth." },
-    { n:47, screen:"threshold", el:"Where the threshold is used", v:"the plan's pacing and the 80/20 base's bands — and nowhere else",
+    { n:47, screen:"threshold", el:"Where the threshold is used", v:"the plan's pacing and the 80/20 plan's easy-day bands — and nowhere else",
       is:"The chosen threshold is read in two places. The ladder's rung is the method's own rule on the race time; the ledger's rows and the load model answer against the athlete's own stored zones. The choice does not re-band the ledger, and the load model does not read it: two numbers, each named where it is used.",
       from:"<code>exploration/threshold-setup.html</code> §3 — the same separation the core keeps between <code>zones.rs</code> and <code>pace.rs</code>.",
       not:"The choice does not re-band the ledger, and the load model does not read it. Two numbers, each named where it is used." },
@@ -486,7 +486,7 @@
     { n:53, screen:"plan", el:"The week's sessions", v:"Mon 23 Nov … Sun 29 Nov 2026 — seven sessions with their kinds",
       is:"The plan's own week, in the order the days fall. Two days of it have happened: 5.0 km on Monday and 6.0 km on Tuesday, against 8.0 km planned on each. The plan is not restated as a verdict.",
       from:"The plan's dated sessions — <code>crates/stride-core/src/plan.rs</code>.",
-      not:"A session may not be marked as recommended, and the week may not be ordered by anything but the calendar." },
+      not:"A session may not be marked as the one to take, and the week may not be ordered by anything but the calendar." },
     { n:54, screen:"plan", el:"The session kinds", v:"Endurance · Intervals · Long run",
       is:"The book's own names for the training components. They are the plan's vocabulary, and they are not commands. Endurance, Intervals and Long run are the book's own names for the training components; they are the plan's vocabulary — never commands.",
       from:"The run types in <code>exploration/pfitzinger-spine.md</code> §1.1, each with its chapter citation.",
@@ -516,15 +516,15 @@
     { n:60, screen:"profile", el:"The schedule", v:"seven rows for the days of the week, twenty-four columns for the hours",
       is:"Every run in the window placed by the weekday and the hour it was run. That is the shape of the athlete's week.",
       from:"The weekday and time-of-day aggregates — <code>crates/stride-core/src/profile.rs</code>; the picture is in <code>exploration/cards-as-pictures.html</code> card 9.",
-      not:"It may not be read as a routine or a discipline, and it may not suggest the athlete should move their runs." },
-    { n:61, screen:"profile", el:"The habit", v:"4 days in a row · Eddington 12 · 58 days recorded",
+      not:"It may not be read as a routine or a discipline, and it may not tell the athlete to move their runs." },
+    { n:61, screen:"profile", el:"The habit", v:"4 days in a row · 12 km on 13 days · 58 days recorded",
       is:"The streak as a row of day marks, and the Eddington as a ladder of ticks — one tick per distance, as tall as the number of days that reached it.",
       from:"<code>crates/stride-core/src/streaks.rs</code> and <code>eddington.rs</code>; the picture is in <code>exploration/cards-as-pictures.html</code> card 10.",
       not:"The Eddington needs three comparable days before it is drawn at all, and it is not a score the athlete is graded on." },
     { n:62, screen:"profile", el:"The goals", v:"a 10 km a week · a half marathon — 12 weeks of marks, and the plan's sessions under them",
       is:"The athlete's own challenges, drawn as marks, with the plan's sessions for the week beneath them.",
       from:"<code>crates/stride-core/src/challenges.rs</code>; the picture is in <code>exploration/cards-as-pictures.html</code> card 11.",
-      not:"A week without the distance is a quiet empty square, never a red cross, and a session that was not done is not a miss." },
+      not:"A week without the distance is a quiet empty square, never a cross, and a session that was not done is not a miss." },
 
     /* ---- 9 · Body ---- */
     { n:63, screen:"body", el:"Sleep on 24 Nov 2026", v:"6 h 10 m — deep 78 m · REM 94 m · light 174 m · awake 24 m",
@@ -532,9 +532,9 @@
       from:"The wellness sleep record — the same data Today shows for last night.",
       not:"It may not be scored or rated, and one night may not be read as a trend." },
     { n:64, screen:"body", el:"The three signals", v:"Resting heart rate — 54 bpm · about usual   HRV — 48 ms · could be better",
-      is:"Each signal on its own: the value, its direction against the athlete's own usual band, and the arithmetic behind it.",
+      is:"Each signal on its own: the value, its direction against the athlete's own usual band, and the arithmetic that produced it.",
       from:"<code>crates/stride-core/src/direction.rs</code> — the band is the median of the last 30 nights ± 1.5 × MAD.",
-      not:"The signals may not be combined into a verdict, and there is no readiness score." },
+      not:"The signals may not be combined into a verdict, and there is no single number for readiness." },
     { n:65, screen:"body", el:"The patterns", v:"On the 5 other nights you ran before 06:00, your sleep was 7 h 02 m — longer than your usual.",
       is:"What usually happened, as a fact about the past, with the number of comparable days beside it. A pattern is a fact about the past, and it is only ever drawn here.",
       from:"<code>crates/stride-core/src/pattern.rs</code>; the <code>pattern</code> register in <code>docs/contract/voice.md</code>.",
@@ -574,40 +574,40 @@
     { n:73, screen:"year", el:"The year as a calendar", v:"2026 — one cell per day, filled by distance",
       is:"The year as a calendar. It is the only calendar in the product.",
       from:"<code>crates/stride-core/src/year.rs</code>; the retired wall calendar is in <code>exploration/surface-inventory.md</code> §1.",
-      not:"A day with no run is an empty cell, never a red one, and the calendar may not be coloured as a problem." },
+      not:"A day with no run is an empty cell, never a coloured one, and the calendar may not be coloured as a problem." },
     { n:74, screen:"year", el:"What changed", v:"Jan – Aug · 1 676 km · 187 runs   —   Sep – 24 Nov · 565 km · 58 runs",
       is:"The year over year, or the span over the span before it, as a set of figures.",
       from:"<code>crates/stride-core/src/year.rs</code> and the <code>statement</code> register.",
-      not:"It may not say the athlete got better or worse, and the two periods must be named so the reader can see they are different lengths." },
+      not:"It may not say the athlete got better or worse, and the two periods are named, so the reader can see they are different lengths." },
 
     /* ---- 12 · The film and the heatmap ---- */
     { n:75, screen:"film", el:"The film", v:"21 Nov 2026 — the timeline, the zone ribbon, the playhead at 1 h 15 m",
       is:"The deep view of one run: the timeline, the band the run was in, and a playhead that moves. The playhead stands at 1 h 15 m.",
       from:"The film page — <code>frontend/src/pages/FilmPage.tsx</code>; the design is in <code>exploration/surface-inventory.md</code> §1.",
       not:"The film carries no reading of its own. Its lap column is a link into the run detail, not a second table." },
-    { n:76, screen:"heatmap", el:"The heatmap", v:"a grid over the stored positions of the run",
+    { n:76, screen:"film", el:"The heatmap", v:"a grid over the stored positions of the run",
       is:"Where the athlete runs: the run's recorded positions, laid on a grid and counted. Each cell counts the recorded positions that fall in it, and the grid is over the run, not over the calendar.",
       from:"<code>crates/stride-core/src/heatmap.rs</code>; the panel is the <code>/heatmap</code> route in <code>exploration/surface-inventory.md</code> §1.",
       not:"It is not the calendar of days coloured by distance — that name is a collision the catalogue still has to settle. A grid cell may not be read as a favourite place." },
 
     /* ---- the states ---- */
-    { n:77, screen:"states", el:"No zone model", v:"Zones unavailable — no zone model has been read.",
+    { n:77, screen:"states", el:"No zones yet", v:"No zones yet — your watch's heart-rate zones have not come through.",
       is:"The intensity family has no value and says why, in the core's own words. The shape family does not depend on the model, so it still answers.",
       from:"<code>crates/stride-core/src/zones.rs</code> — a run with no stored model is not calibrated; the result is no value, never band 1 and never zero.",
       not:"The absence may not be shown as zero, and the runs themselves may not disappear with the model." },
-    { n:78, screen:"states", el:"No race time", v:"No race time entered — the race paces and the training paces have no value.",
+    { n:78, screen:"states", el:"No race entered yet", v:"No race entered yet — the race times and the training paces are not worked out.",
       is:"The ladder and the curve drawn empty, each naming the fields the athlete can type.",
       from:"<code>crates/stride-core/src/pace.rs</code>; the states are in <code>exploration/pace-engine.html</code> §4.",
       not:"The app never estimates a race from the training, and an empty ladder is not a failed one." },
-    { n:79, screen:"states", el:"No plan adopted", v:"No plan adopted — the plan's sessions have no value.",
+    { n:79, screen:"states", el:"No plan adopted yet", v:"No plan adopted yet — there are no sessions to show.",
       is:"The plan's outline is gone from the pictures, the session row is absent, and each says why.",
       from:"<code>crates/stride-core/src/plan.rs</code>; the state is in <code>exploration/cards-as-pictures.html</code> card 1.",
       not:"The runs are still drawn as they are, and the absence may not be filled with a suggestion." },
-    { n:80, screen:"states", el:"No threshold chosen", v:"No threshold is chosen. Every answer that needs one is a no value with a reason.",
+    { n:80, screen:"states", el:"No threshold chosen yet", v:"No threshold chosen yet. Everything that needs one says what is missing.",
       is:"Nothing is stored. The reasons name where the number would come from, and the setup may be returned to later.",
       from:"The threshold store — the design is in <code>exploration/threshold-setup.html</code> §2.",
       not:"The setup may not be forced, and no answer may fall back to the watch's zone model silently." },
-    { n:81, screen:"states", el:"An empty window", v:"No run recorded in the window.",
+    { n:81, screen:"states", el:"An empty window", v:"No runs recorded.",
       is:"One line, in the core's words — never 'rest': a day without a recorded run may be a forgotten watch.",
       from:"<code>crates/stride-core/src/rolling.rs</code>; the state is in <code>exploration/stimulus-ledger.html</code> §3.",
       not:"It may not say the athlete rested, and it may not list what was not done." },
@@ -616,7 +616,7 @@
       from:"The candidate's own rule and limit — the candidate block in <code>exploration/threshold-setup.html</code> §1, stored with the threshold choice.",
       not:"The app may not check what was put into the watch, and may not treat the floor as a measured threshold." },
     { n:49, screen:"threshold", el:"From your 10K — what it cannot know", v:"a race is a race, not a test — the pace carries that day's conditions",
-      is:"The candidate taken from the typed race, by the book's own rule. The card shows the value, the source and the rule; this note holds what the rule cannot know.",
+      is:"The candidate taken from the typed race — the athlete's own 10K — by the book's own rule: the pace you could race for about an hour, on the shorter-distance branch, between the 15K pace and the 10-mile pace. The card shows the value, the source and the rule; this note holds what the rule cannot know.",
       from:"The candidate's own rule and limit — the candidate block in <code>exploration/threshold-setup.html</code> §1.",
       not:"A race is a race, not a test: the pace carries that day's conditions, and the app may not present it as a measured threshold." },
     { n:50, screen:"threshold", el:"From your 45-minute time trial — what it cannot know", v:"the estimate carries the run's conditions, the effort across the window, and the watch's heart-rate accuracy",
@@ -627,7 +627,7 @@
       is:"The candidate the athlete typed in. The card shows the value and where it came from; this note holds what the app cannot know about it.",
       from:"The candidate's own rule and limit — the candidate block in <code>exploration/threshold-setup.html</code> §1.",
       not:"The app may not check what the number was taken from, and may not weigh it above or below the other candidates." },
-    { n:82, screen:"states", el:"A run with no heart-rate data", v:"The split has no value — the runs in the window have no heart-rate samples.",
+    { n:82, screen:"states", el:"A run with no heart-rate data", v:"No heart rate recorded — none of the runs in this period recorded a heart rate.",
       is:"One family answers and the other does not. The shape rows come from distance, time and the watch's workout steps, and need no heart rate.",
       from:"<code>crates/stride-core/src/zones.rs</code>; the state is in <code>exploration/stimulus-ledger.html</code> §3.",
       not:"The absence is not the athlete's: no band row means no value, never 0 m." }
@@ -700,7 +700,7 @@
     prev.r.forEach(function (r) { if (r[0] <= 1) { all.push(r[1]); } });
     plan.week.forEach(function (s) { all.push(s.km); });
     var max = Math.max.apply(null, all.concat([8])) * 1.12;
-    var items = [{ fill:C.b500, label:"this week" }, { fill:C.b100, label:"the same days of the previous week" }, { dash:true, label:"the plan" }];
+    var items = [{ fill:C.b500, label:"this week" }, { fill:C.b100, label:"the same days a week earlier" }, { dash:true, label:"the plan" }];
     var s = "", lx = m, ly = 6;
     items.forEach(function (it) {
       var w = 11 + it.label.length * 4.4 + 14;
@@ -724,7 +724,7 @@
     var cKm = cur.r.reduce(function (a, r) { return a + r[1]; }, 0);
     var pKm = prev.r.filter(function (r) { return r[0] <= 1; }).reduce(function (a, r) { return a + r[1]; }, 0);
     s += T(W - m, top + 10, A.signedKm(cKm - pKm), "s-note", "end");
-    s += T(W - m, top + 20, "against the same days of the previous week", "s-key", "end");
+    s += T(W - m, top + 20, "against the same days a week earlier", "s-key", "end");
     return { h:H, s:s, caption:"Mon 23 Nov – Tue 24 Nov 2026" };
   }
 
@@ -743,7 +743,7 @@
     cols.forEach(function (c) { var w = (c[0] / zsum) * (x1 - m); s += RC(bx, barY, w, barH, c[1]); bx += w; });
     var lx = m;
     cols.forEach(function (c, i) { var w = (c[0] / zsum) * (x1 - m); if (w > 14) { s += T(lx + w / 2, barH + 8, "Z" + (i + 1), "s-key", "middle"); } lx += w; });
-    s += T(m, barH + 19, "the moving time of the window, by zone", "s-key");
+    s += T(m, barH + 19, "the time you were running, by zone", "s-key");
     var kx = W - m - 42;
     s += RC(kx, barH + 12, 7, 7, C.a400);
     s += T(kx + 11, barH + 19, "Z4–Z5", "s-key");
@@ -837,16 +837,16 @@
     s += PA(path("a"), "none", ' stroke="' + C.line + '" stroke-width="1.8" stroke-linejoin="round"');
     var last = pts[pts.length - 1];
     s += CI(X(last.o), Y(last.a), 3.2, C.line);
-    s += T(X(last.o) - 6, Y(last.a) - 6, "acute " + Math.round(last.a), "s-txt-b", "end");
-    s += T(X(last.o) - 6, Y(last.c) + 12, "chronic " + Math.round(last.c), "s-note", "end");
-    s += T(m + 4, top + 12, "form " + (A.load.form >= 0 ? "+" : "−") + Math.abs(A.load.form), "s-txt-b");
+    s += T(X(last.o) - 6, Y(last.a) - 6, "last 7 days " + Math.round(last.a), "s-txt-b", "end");
+    s += T(X(last.o) - 6, Y(last.c) + 12, "last 6 weeks " + Math.round(last.c), "s-note", "end");
+    s += T(m + 4, top + 12, "the difference " + (A.load.form >= 0 ? "+" : "−") + Math.abs(A.load.form), "s-txt-b");
     s += T(m + 4, top + plotH + 12, "7 Sep", "s-key");
     s += T(W - m, top + plotH + 12, "24 Nov", "s-key", "end");
     s += RC(W - m - 92, top + 4, 7, 7, "none", ' stroke="' + C.line + '" stroke-width="1.8"');
-    s += T(W - m - 81, top + 11, "acute", "s-key");
+    s += T(W - m - 81, top + 11, "last 7 days", "s-key");
     s += RC(W - m - 44, top + 4, 7, 7, "none", ' stroke="' + C.ref + '" stroke-width="1.6" stroke-dasharray="3 2"');
-    s += T(W - m - 33, top + 11, "chronic", "s-key");
-    return { h:H, s:s, caption:"Banister k = " + A.load.k + " · " + A.load.scenario };
+    s += T(W - m - 33, top + 11, "last 6 weeks", "s-key");
+    return { h:H, s:s, caption:A.load.scenario };
   }
   function loadSeries() {
     var IF = { endurance:1.0, aerobic:1.25, "long run":1.35, intervals:1.9 };
@@ -1077,7 +1077,7 @@
   var CARDS = [
     { id:"c1", title:"This week", draw:function (W) { return drawWeek(W); } },
     { id:"c2", title:"Where the time went", draw:function (W) { return drawLedger(W); } },
-    { id:"c3", title:"The load", draw:function (W) { return drawLoad(W); } },
+    { id:"c3", title:"Training load", draw:function (W) { return drawLoad(W); } },
     { id:"c4", title:"The weeks", draw:function (W) { return drawWeeks(W); } },
     { id:"c5", title:"The pace", draw:function (W) { return drawPace(W); } },
     { id:"c6", title:"Bests & milestones", draw:function (W) { return drawBests(W); } },
@@ -1133,17 +1133,17 @@
         '<ul class="rows">' +
         '<li><span class="l">This week</span><span class="v">' + K.today.week.value +
         ' <span class="faint">· ' + K.today.week.change + '</span></span></li>' +
-        '<li><span class="l">Form</span><span class="v">' + K.today.form.value +
+        '<li><span class="l">Training load</span><span class="v">' + K.today.form.value +
         ' <span class="faint">· ' + K.today.form.detail + '</span></span></li>' +
         '<li><span class="l">Habit</span><span class="v">' + K.today.habit.streak +
         ' <span class="faint">· ' + K.today.habit.eddington + '</span></span></li>' +
         '</ul>' +
         '<p class="tiny" style="margin:6px 0 0">' + K.today.week.note + '</p></div>' },
       { note: 5, title: "form", html:
-        '<div class="card"><div class="h"><span>Form</span><span class="sub">the load engine</span></div>' +
-        '<div class="dist">acute ' + A.load.acute + ' · chronic ' + A.load.chronic + ' · form ' +
-        (A.load.form >= 0 ? "+" : "−") + Math.abs(A.load.form) + ' · ratio ' + A.load.ratio.toFixed(2) + '</div>' +
-        '<p class="tiny" style="margin:5px 0 0">Banister k = ' + A.load.k + ' · ' + A.load.scenario + '</p></div>' },
+        '<div class="card"><div class="h"><span>Training load</span></div>' +
+        '<div class="dist">last 7 days ' + A.load.acute + ' · last 6 weeks ' + A.load.chronic + ' · the difference ' +
+        (A.load.form >= 0 ? "+" : "−") + Math.abs(A.load.form) + ' · ' + A.load.ratio.toFixed(2) + ' times the last 6 weeks</div>' +
+        '<p class="tiny" style="margin:5px 0 0">' + A.load.scenario + '</p></div>' },
       { note: 6, title: "habit", html:
         '<div class="card"><div class="h"><span>Habit</span></div>' +
         '<div class="dist">' + K.today.habit.streak + ' <span>·</span> ' + K.today.habit.eddington + '</div>' +
@@ -1335,7 +1335,7 @@
         '<div class="pic">' + routeSVG() + '</div></div>' },
       { note: 24, title: "splits", html:
         '<div class="card"><div class="h"><span>Splits</span><span class="sub">' + K.run.splitsNote + '</span></div>' +
-        '<table class="t"><thead><tr><th>lap</th><th class="num">distance</th><th class="num">time</th><th class="num">pace</th><th class="num">hr</th></tr></thead><tbody>' +
+        '<table class="t"><thead><tr><th>lap</th><th class="num">distance</th><th class="num">time</th><th class="num">pace</th><th class="num">heart rate</th></tr></thead><tbody>' +
         F.splits.map(function (s) {
           return '<tr><td class="k">lap ' + s.lap + '</td><td class="num">' + A.kmText(s.km) + "</td><td class=\"num\">" +
             A.timeText(s.sec) + "</td><td class=\"num\">" + A.paceText(s.pace) + " /km</td><td class=\"num\">" + s.hr + " bpm</td></tr>";
@@ -1348,7 +1348,7 @@
         }).join("") + '</ul>' +
         '</div>' },
       { note: 26, title: "update", html:
-        '<div class="card"><div class="h"><span>The run update</span><span class="sub">the model’s own words</span></div>' +
+        '<div class="card"><div class="h"><span>The run update</span><span class="sub">written from the run’s own numbers</span></div>' +
         '<p class="reading">' + F.update + "</p>" +
         '<p class="tiny" style="margin:7px 0 0">From: ' + F.updateFacts.join(" · ") + "</p>" +
         '</div>' },
@@ -1357,7 +1357,7 @@
         '<p class="reading">' + F.againstPlan + "</p>" +
         '<p class="tiny" style="margin:6px 0 0">the Pfitzinger 10K plan · adopted ' + A.plan.adopted + "</p></div>" },
       { note: 28, title: "note", html:
-        '<div class="card"><div class="h"><span>Note</span><span class="sub">the athlete’s own words</span></div>' +
+        '<div class="card"><div class="h"><span>Note</span><span class="sub">your own words</span></div>' +
         '<p class="reading">“' + F.note + '”</p></div>' },
       { note: 29, title: "sleep link", html:
         '<div class="card"><p class="small" style="margin:0"><a class="link" href="#s-body">' + F.sleepLink + ' →</a></p></div>' }
@@ -1417,15 +1417,15 @@
     what: "<b>What it answers:</b> what pace to hold for what — and what the racing costs. The ladder is the method's rules on the athlete's own race; the curve is the second reading.",
     blocks: [
       { note: 34, title: "ladder", html:
-        '<div class="card"><div class="h"><span>Training paces</span><span class="sub">VDOT ' + A.race.vdot + " · Daniels' chain</span></div>" +
+        '<div class="card"><div class="h"><span>Training paces</span><span class="sub">your fitness number ' + A.race.vdot + ' · from your ' + A.race.name + ' in ' + A.race.time + '</span></div>' +
         '<div class="pic">' + ladderSVG() + '</div>' +
         '<div class="legend" data-note="36">' +
-        '<span><i class="method"></i>the method\'s band</span>' +
-        '<span><i class="athlete"></i>your own zone</span>' +
-        '<span><i class="floor"></i>your zone floors</span>' +
-        '<span><i class="dot-method"></i>the method\'s pace</span>' +
+        '<span><i class="method"></i>the plan\'s band</span>' +
+        '<span><i class="athlete"></i>your own band</span>' +
+        '<span><i class="floor"></i>where your zones start</span>' +
+        '<span><i class="dot-method"></i>the plan\'s pace</span>' +
         '<span><i class="dot-athlete"></i>your own pace</span>' +
-        '<span><i class="dot-engine"></i>the engine\'s own</span>' +
+        '<span><i class="dot-engine"></i>worked out from your race</span>' +
         '</div>' +
         '<p class="chartcap" data-note="35">' + K.pace.axes + '</p></div>', wide: true },
       { note: 37, title: "source", html:
@@ -1437,21 +1437,21 @@
         Object.keys(A.equivText).map(function (k) {
           return '<li><span class="l">' + k + '</span><span class="v">' + A.equivText[k] + "</span></li>";
         }).join("") + '</ul>' +
-        '<p class="tiny" style="margin:6px 0 0">Riegel, exponent 1.06, from your ' + A.race.name + ' in ' + A.race.time + ' on ' + A.race.date + '.</p></div>' },
+        '<p class="tiny" style="margin:6px 0 0">from your ' + A.race.name + ' in ' + A.race.time + ' on ' + A.race.date + '.</p></div>' },
       { note: 39, title: "curve", html:
-        '<div class="card"><div class="h"><span>The physiological-cost curve</span><span class="sub">VDOT ' + A.race.vdot + '</span></div>' +
+        '<div class="card"><div class="h"><span>The effort curve</span><span class="sub">your fitness number ' + A.race.vdot + '</span></div>' +
         '<div class="pic">' + curveSVG() + '</div>' +
         '<div class="legend">' +
-        '<span><i class="line-grey"></i>the share of VO₂max each duration holds</span>' +
+        '<span><i class="line-grey"></i>the share of your maximum oxygen uptake each duration holds</span>' +
         '<span><i class="dot-athlete"></i>your races</span>' +
         '<span><i class="ring"></i>the goal race</span>' +
-        '<span><i class="line-amber"></i>the method\'s sessions</span>' +
+        '<span><i class="line-amber"></i>the plan\'s sessions</span>' +
         '<span><i class="ring-grey"></i>the ' + A.curve.fieldTest + '-minute field test</span>' +
         '</div>' +
         '<p class="chartcap" data-note="40">' + K.pace.rule + '</p></div>', wide: true },
       { note: 41, title: "route", html:
-        '<div class="card"><div class="h"><span>The curve’s own route</span></div>' +
-        '<p class="small" style="margin:0"><span class="pill">' + K.pace.curveRoute + '</span></p></div>' }
+        '<div class="card"><div class="h"><span>The effort curve has a page of its own</span></div>' +
+        '<p class="small" style="margin:0"><a class="link" href="#s-pace">open the effort curve →</a></p></div>' }
     ]
   });
 
@@ -1507,7 +1507,7 @@
   }
 
   function curveSVG() {
-    var s = '<svg class="curve" viewBox="0 0 280 222" role="img" aria-label="A physiological-cost curve. The vertical axis is the share of maximum oxygen uptake; the horizontal axis is time in minutes on a logarithmic scale. The curve falls from about 99 per cent at 10 minutes to about 79 per cent at six hours. Two blue dots are the athlete\'s own races; a ring marks the goal race. Three amber segments are the method\'s sessions.">';
+    var s = '<svg class="curve" viewBox="0 0 280 222" role="img" aria-label="A physiological-cost curve. The vertical axis is the share of maximum oxygen uptake; the horizontal axis is time in minutes on a logarithmic scale. The curve falls from about 99 per cent at 10 minutes to about 79 per cent at six hours. Two blue dots are the athlete\'s own races; a ring marks the goal race. Three amber segments are the method\'s sessions; a hollow marker at 45 minutes is the 45-minute field test.">';
     var X = function (min) { return 40 + 63.6 * Math.log(min / 10); };
     var Y = function (pct) { return 170 - (pct - 60) * 3.9; };
     s += LN(40, 14, 40, 170, C.edge, 1);
@@ -1522,9 +1522,8 @@
     /* the curve itself — the shape the prototype drew */
     var pts = "40,17.7 42.5,19.3 45.1,20.7 47.6,22.2 50.1,23.6 52.7,25 55.2,26.3 57.7,27.6 60.3,28.9 62.8,30.1 65.3,31.3 67.9,32.4 70.4,33.5 72.9,34.6 75.5,35.6 78,36.6 80.5,37.6 83.1,38.5 85.6,39.4 88.1,40.3 90.7,41.2 93.2,42 95.7,42.9 98.3,43.7 100.8,44.5 103.3,45.3 105.9,46.1 108.4,46.9 110.9,47.8 113.5,48.6 116,49.4 118.5,50.2 121.1,51 123.6,51.9 126.1,52.8 128.7,53.6 131.2,54.5 133.7,55.4 136.3,56.3 138.8,57.2 141.3,58.2 143.9,59.1 146.4,60.1 148.9,61 151.5,62 154,63 156.5,64 159.1,65 161.6,66.1 164.1,67.1 166.7,68.1 169.2,69.1 171.7,70.2 174.3,71.2 176.8,72.2 179.3,73.2 181.9,74.3 184.4,75.3 186.9,76.3 189.5,77.3 192,78.2 194.5,79.2 197.1,80.1 199.6,81.1 202.1,82 204.7,82.9 207.2,83.7 209.7,84.6 212.3,85.4 214.8,86.1 217.3,86.9 219.9,87.6 222.4,88.3 224.9,88.9 227.5,89.5 230,90.1 232.5,90.7 235.1,91.2 237.6,91.7 240.1,92.1 242.7,92.5 245.2,92.9 247.7,93.2 250.3,93.5 252.8,93.8 255.3,94.1 257.9,94.3 260.4,94.5 262.9,94.7 265.5,94.9 268,95";
     s += '<polyline points="' + pts + '" fill="none" stroke="#7C8FA0" stroke-width="1.8"/>';
-    /* the 30-minute field test */
-    s += LN(X(30), 14, X(30), 170, "#B9C6D2", 1, "3 3");
-    s += CI(X(30), Y(91.5), 4.5, "#FFFFFF", ' stroke="#7C8FA0" stroke-width="1.2"');
+    /* the field test — the book's 45-minute time trial */
+    s += LN(X(A.curve.fieldTest), 14, X(A.curve.fieldTest), 170, "#B9C6D2", 1, "3 3");
     /* the method's sessions */
     s += RC(X(20), Y(88.5), X(40) - X(20), 9.4, "#FEF8EA", ' stroke="#E8A33D" stroke-width="1.6" rx="2.5"');
     s += RC(X(98), Y(83.5), X(140) - X(98), 24.8, "#FEF8EA", ' stroke="#E8A33D" stroke-width="1.6" rx="2.5"');
@@ -1535,9 +1534,11 @@
       if (rc.kind === "ring") { s += CI(cx, cy, 7, "none", ' stroke="#2B7FE3" stroke-width="1.2"'); }
       s += CI(cx, cy, 3.4, "#2B7FE3");
     });
+    /* the field test, drawn over the races: it sits beside the 10K, and the ring is hollow */
+    s += CI(X(A.curve.fieldTest), Y(curvePct(A.curve.fieldTest)), 6, "none", ' stroke="#7C8FA0" stroke-width="1.4"');
     /* the pace equivalents along the bottom */
     var eqs = A.curve.equivalents;
-    var xs = [84.5, 130.9, 158.2, 181.4, 261];
+    var xs = [84.5, 130.9, 156.5, 184, 261];
     eqs.forEach(function (e, i) {
       s += LN(xs[i], 185, xs[i], 188, "#A9C8E8", 1);
       s += T(xs[i], 198, e.label, "eq", "middle");
@@ -1580,7 +1581,7 @@
             (on ? '<span class="tag">in use</span>' : '<span class="tag plain">not in use</span>') + "</div>" +
             '<div style="font-size:13.5px;font-weight:650;margin-top:2px">' + c.value + "</div>" +
             '<p class="tiny" style="margin:3px 0 0">' + c.source + "</p>" +
-            (c.rule ? '<p class="tiny" style="margin:3px 0 0;color:var(--accent-700)"><b>the rule · </b>' + c.rule + "</p>" : "") +
+            (c.rule ? '<p class="tiny" style="margin:3px 0 0;color:var(--accent-700)"><b>how it was worked out · </b>' + c.rule + "</p>" : "") +
             "</div>";
         }).join("") + '</div>', wide: true },
       { note: 44, title: "lanes", html:
@@ -1671,11 +1672,11 @@
     id: "plan", n: 7, name: "The plan",
     what: "<b>What it answers:</b> what the athlete's own plan says for this week — its sessions, their kinds, their paces, and where the paces came from.",
     blocks: [
-      { note: 48, title: "base", html:
-        '<div class="card"><div class="h"><span>The base</span></div>' +
+      { note: 52, title: "base", html:
+        '<div class="card"><div class="h"><span>The plan you follow</span></div>' +
         '<div class="dist" style="font-size:15px">' + A.plan.base + '</div>' +
         '<p class="small" style="margin:4px 0 0">adopted ' + A.plan.adopted + ' · built from ' + A.plan.anchor + '</p></div>' },
-      { note: 49, title: "sessions", html:
+      { note: 53, title: "sessions", html:
         '<div class="card"><div class="h"><span>This week</span><span class="sub">' + A.plan.weekLabel + '</span></div>' +
         '<ul class="rows">' +
         A.plan.week.map(function (s) {
@@ -1684,23 +1685,23 @@
             '<span class="v">' + s.pace + "<br /><span class=\"tiny\">" + s.hr + "</span></span></li>";
         }).join("") + '</ul>' +
         '</div>', wide: true },
-      { note: 50, title: "kinds", html:
-        '<div class="card"><div class="h"><span>The kinds</span></div>' +
+      { note: 54, title: "kinds", html:
+        '<div class="card"><div class="h"><span>The kinds of run</span></div>' +
         '<div class="wayin">' +
         ["Endurance", "Intervals", "Long run"].map(function (k) { return "<span>" + k + "</span>"; }).join("") +
         '</div></div>' },
-      { note: 51, title: "paces", html:
+      { note: 55, title: "paces", html:
         '<div class="card"><div class="h"><span>The paces</span></div>' +
         '<ul class="rows">' +
         K.plan.paces.map(function (r) {
           return '<li><span class="l">' + r[0] + '</span><span class="v">' + r[1] + "</span></li>";
         }).join("") +
         '</ul></div>' },
-      { note: 52, title: "pacing threshold", html:
+      { note: 56, title: "pacing threshold", html:
         '<div class="card"><div class="h"><span>The pacing’s threshold</span></div>' +
         '<div class="dist" style="font-size:15px">' + A.threshold.chosenValue + ' <span>·</span> ' + A.threshold.chosenDate + '</div>' +
         '<p class="tiny" style="margin:5px 0 0">' + A.threshold.chosenSource + '</p></div>' },
-      { note: 53, title: "plan source", html:
+      { note: 57, title: "plan source", html:
         '<div class="card"><div class="h"><span>The plan’s source</span></div>' +
         '<p class="reading">' + K.plan.source + '</p></div>' }
     ]
@@ -1711,11 +1712,11 @@
     id: "profile", n: 8, name: "The athlete profile",
     what: "<b>What it answers:</b> the shape of the athlete — five cards, each read as a picture first.",
     blocks: [
-      { note: 54, title: "shape", html: cardHTML(CARDS[6], 268) },
-      { note: 55, title: "months", html: cardHTML(CARDS[7], 268) },
-      { note: 56, title: "schedule", html: cardHTML(CARDS[8], 268) },
-      { note: 57, title: "habit", html: cardHTML(CARDS[9], 268) },
-      { note: 58, title: "goals", html: cardHTML(CARDS[10], 268) }
+      { note: 58, title: "shape", html: cardHTML(CARDS[6], 268) },
+      { note: 59, title: "months", html: cardHTML(CARDS[7], 268) },
+      { note: 60, title: "schedule", html: cardHTML(CARDS[8], 268) },
+      { note: 61, title: "habit", html: cardHTML(CARDS[9], 268) },
+      { note: 62, title: "goals", html: cardHTML(CARDS[10], 268) }
     ]
   });
 
@@ -1724,11 +1725,11 @@
     id: "body", n: 9, name: "Body",
     what: "<b>What it answers:</b> how the body has been — the night, the three signals, and what usually happens. Patterns live here and nowhere else.",
     blocks: [
-      { note: 62, title: "controls", html:
+      { note: 66, title: "controls", html:
         '<div class="card"><div class="h"><span>' + A.body.date + '</span><span class="sub">last ' + A.body.dates.length + ' nights</span></div>' +
         '</div>' },
-      { note: 59, title: "sleep", html:
-        '<div class="card"><div class="h"><span>Sleep on ' + A.body.date + '</span><span class="sub">' + A.body.sleepStages.total + ' min</span></div>' +
+      { note: 63, title: "sleep", html:
+        '<div class="card"><div class="h"><span>Sleep on ' + A.body.date + '</span><span class="sub">' + A.dur(A.body.sleepStages.total) + '</span></div>' +
         '<div class="pic">' + sleepChart() + '</div>' +
         '<ul class="rows" style="margin-top:6px">' +
         '<li><span class="l">deep</span><span class="v">' + A.body.sleepStages.deep + ' m</span></li>' +
@@ -1736,7 +1737,7 @@
         '<li><span class="l">light</span><span class="v">' + A.body.sleepStages.light + ' m</span></li>' +
         '<li><span class="l">awake</span><span class="v">' + A.body.sleepStages.awake + ' m</span></li>' +
         '</ul></div>' },
-      { note: 60, title: "signals", html:
+      { note: 64, title: "signals", html:
         '<div class="card"><div class="h"><span>The three signals</span></div>' +
         '<ul class="rows">' +
         A.body.signals.map(function (v) {
@@ -1744,7 +1745,7 @@
         }).join("") +
         '</ul>' +
         '<div class="pic" style="margin-top:8px">' + signalsSVG() + '</div></div>' },
-      { note: 61, title: "patterns", html:
+      { note: 65, title: "patterns", html:
         '<div class="card"><div class="h"><span>Patterns</span></div>' +
         '<ul class="rows">' +
         A.body.patterns.map(function (p) {
@@ -1781,26 +1782,26 @@
     id: "compare", n: 10, name: "Compare",
     what: "<b>What it answers:</b> how two runs differ, on one basis, with the numbers side by side.",
     blocks: [
-      { note: 63, title: "basis", html:
+      { note: 67, title: "basis", html:
         '<div class="card banner"><div class="h" style="color:var(--brand-700)">The basis</div>' +
         '<p style="font-size:13.5px;color:var(--ink);font-weight:650">' + A.compare.basis + '</p></div>' },
-      { note: 65, title: "the runs", html:
+      { note: 69, title: "the runs", html:
         '<div class="card"><div class="h"><span>The two runs</span></div>' +
         '<ul class="rows">' +
         '<li><span class="l">A</span><span class="v">' + A.compare.a.date + ' · ' + A.compare.a.km + ' km · ' + A.compare.a.moving + '</span></li>' +
         '<li><span class="l">B</span><span class="v">' + A.compare.b.date + ' · ' + A.compare.b.km + ' km · ' + A.compare.b.moving + '</span></li>' +
         '</ul></div>' },
-      { note: 64, title: "metrics", html:
+      { note: 68, title: "metrics", html:
         '<div class="card"><div class="h"><span>The metrics</span></div>' +
         '<table class="t"><thead><tr><th>metric</th><th class="num">A</th><th class="num">B</th><th class="num">difference</th></tr></thead><tbody>' +
         A.compare.metrics.map(function (m) {
           return '<tr><td class="k">' + m.name + '</td><td class="num">' + m.a + '</td><td class="num">' + m.b + '</td><td class="num">' + m.diff + "</td></tr>";
         }).join("") + '</tbody></table></div>', wide: true },
-      { note: 66, title: "chart", html:
+      { note: 70, title: "chart", html:
         '<div class="card"><div class="h"><span>The shared chart</span></div>' +
         '<div class="pic">' + compareSVG() + '</div>' +
         '<div class="legend"><span><i class="dot-athlete"></i>run A · 21 Nov</span><span><i style="background:#A9C8E8;border-color:#A9C8E8"></i>run B · 31 Oct</span></div></div>', wide: true },
-      { note: 67, title: "picker", html:
+      { note: 71, title: "picker", html:
         '<div class="card"><div class="h"><span>Choose the other run</span></div>' +
         '<p class="small" style="margin:0">' + K.compare.picker + '</p></div>' }
     ]
@@ -1827,13 +1828,13 @@
     id: "year", n: 11, name: "The year",
     what: "<b>What it answers:</b> what the year held — the months, the calendar, and what changed.",
     blocks: [
-      { note: 68, title: "months", html:
+      { note: 72, title: "months", html:
         '<div class="card"><div class="h"><span>The months</span><span class="sub">2026</span></div>' +
         '<div class="pic">' + cardHTML(CARDS[7], 268).match(/<svg[\s\S]*?<\/svg>/)[0] + '</div></div>' },
-      { note: 69, title: "calendar", html:
+      { note: 73, title: "calendar", html:
         '<div class="card"><div class="h"><span>The year as a calendar</span></div>' +
         '<div class="pic">' + yearCalendar() + '</div></div>', wide: true },
-      { note: 70, title: "changed", html:
+      { note: 74, title: "changed", html:
         '<div class="card"><div class="h"><span>What changed</span></div>' +
         '<table class="t"><thead><tr><th></th><th class="num">Jan – Aug</th><th class="num">Sep – 24 Nov</th></tr></thead><tbody>' +
         A.year.changed.map(function (c) {
@@ -1874,12 +1875,12 @@
     id: "film", n: 12, name: "The film and the heatmap",
     what: "<b>What it answers:</b> the deep view of one run, and where the athlete runs. Two contextual surfaces, reached from a run and from Runs.",
     blocks: [
-      { note: 71, title: "the film", html:
+      { note: 75, title: "the film", html:
         '<div class="card"><div class="h"><span>The film</span><span class="sub">' + A.featured.date + ' · ' + A.featured.moving + '</span></div>' +
         '<div class="pic">' + filmSVG() + '</div>' +
         '</div>', wide: true },
-      { note: 72, title: "the heatmap", html:
-        '<div class="card"><div class="h"><span>The heatmap</span><span class="sub">the stored positions</span></div>' +
+      { note: 76, title: "the heatmap", html:
+        '<div class="card"><div class="h"><span>Where you run</span><span class="sub">the positions your watch recorded</span></div>' +
         '<div class="pic">' + heatmapSVG() + '</div>' +
         '</div>', wide: true }
     ]
@@ -1936,32 +1937,32 @@
      ================================================================== */
 
   var STATE_CARDS = [
-    { note: 73, key: "noZoneModel", frame:
+    { note: 81, key: "noZoneModel", frame:
       '<div class="frame"><div class="h">Where the time went</div>' +
-      '<p><b>Zones unavailable</b> — no zone model has been read.</p>' +
-      '<p class="faint">No distribution, no band times, no shares and no last dates. The runs themselves are still there.</p>' +
+      '<p><b>No zones yet</b> — your watch’s heart-rate zones have not come through.</p>' +
+      '<p class="faint">No split, no zone times, no shares and no last dates. The runs themselves are still there.</p>' +
       '<p class="faint">Longest run — ' + A.ledger.longest.km + ' km · ' + A.ledger.longest.time + ' · ' + A.ledger.longest.date + '</p></div>' },
-    { note: 74, key: "noRace", frame:
+    { note: 82, key: "noRace", frame:
       '<div class="frame"><div class="h">Training paces</div>' +
-      '<p><b>No race time entered</b> — the race paces and the training paces have no value.</p>' +
+      '<p><b>No race entered yet</b> — the race times and the training paces are not worked out.</p>' +
       '<p class="faint">A race is entered as distance, time and the day of the race; the name is optional.</p>' +
-      '<p class="faint">The physiological-cost curve has no value either: every point on it is measured against the VDOT, and the VDOT comes from your race.</p></div>' },
-    { note: 75, key: "noPlan", frame:
+      '<p class="faint">The effort curve is not drawn either: every point on it comes from the number your race gives.</p></div>' },
+    { note: 79, key: "noPlan", frame:
       '<div class="frame"><div class="h">This week</div>' +
-      '<p><b>No plan adopted</b> — the plan’s sessions have no value.</p>' +
-      '<p class="faint">The runs are still drawn, as they are. The plan’s outline is simply not on the picture.</p></div>' },
-    { note: 76, key: "noThreshold", frame:
+      '<p><b>No plan adopted yet</b> — there are no sessions to show.</p>' +
+      '<p class="faint">The runs are still drawn, as they are.</p></div>' },
+    { note: 80, key: "noThreshold", frame:
       '<div class="frame"><div class="h">The threshold you use</div>' +
-      '<p><b>No threshold is chosen.</b> Every answer that needs one is a no value with a reason.</p>' +
-      '<p class="faint">It could come from the watch’s zone model, a race, a field test, or a number you enter. The setup may be skipped, and this card can be returned to.</p></div>' },
+      '<p><b>No threshold chosen yet.</b> Everything that needs one says what is missing.</p>' +
+      '<p class="faint">It could come from your watch’s zones, a race, a field test, or a number you enter.</p></div>' },
     { note: 77, key: "emptyWindow", frame:
       '<div class="frame"><div class="h">Where the time went</div>' +
-      '<p><b>No run recorded in the window.</b></p>' +
-      '<p class="faint">The kinds, the distribution and the zone model are not shown: there is nothing for them to hold. A day with no recorded run may be a run the watch did not record.</p></div>' },
+      '<p><b>No runs recorded.</b></p>' +
+      '<p class="faint">The kinds of run, the split and your zones are not shown: there is nothing for them to hold. A day with no recorded run may be a run the watch did not record.</p></div>' },
     { note: 78, key: "noHeartRate", frame:
       '<div class="frame"><div class="h">Where the time went</div>' +
-      '<p><b>The split has no value</b> — the runs in the window have no heart-rate samples.</p>' +
-      '<p class="faint">No distribution and no band rows. The absence is not the athlete’s: no band row means no value, never 0 m.</p>' +
+      '<p><b>No heart rate recorded</b> — none of the runs in this period recorded a heart rate.</p>' +
+      '<p class="faint">No split and no zone rows: nothing was measured, so there is nothing to show.</p>' +
       '<p class="faint">Longest run — ' + A.ledger.longest.km + ' km · ' + A.ledger.longest.time + ' · ' + A.ledger.longest.date + '</p></div>' }
   ];
 
@@ -2061,12 +2062,14 @@
 
   /* the rail: only the notes of the screen you are in */
   function currentScreen() {
-    /* the last section whose top is above the fold */
+    /* the last section whose top is above the fold; the last section if none is */
     var ids = SCREENS.map(function (sc) { return sc.id; }).concat(["states"]);
-    var cur = ids[0];
+    var cur = ids[ids.length - 1];
     ids.forEach(function (id) {
       var el = document.getElementById("s-" + id);
-      if (el && el.getBoundingClientRect().top <= 140) { cur = id; }
+      if (!el) { return; }
+      var r = el.getBoundingClientRect();
+      if (r.top <= 140 || (r.top < window.innerHeight * 0.75 && r.bottom > 140)) { cur = id; }
     });
     return cur;
   }
