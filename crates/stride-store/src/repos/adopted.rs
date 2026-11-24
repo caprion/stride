@@ -90,6 +90,10 @@ impl Store {
     /// in together or not at all: a plan whose sessions are half written
     /// is a plan the app cannot read.
     ///
+    /// **One plan is in force at a time.** The plans that were in force go
+    /// to the archive in the same transaction, so a database can never hold
+    /// two plans in force — the same discipline the plan blocks keep.
+    ///
     /// Returns the plan's primary key.
     pub fn write_adopted_plan(
         &self,
@@ -100,6 +104,15 @@ impl Store {
         let transaction = conn
             .transaction_with_behavior(TransactionBehavior::Immediate)
             .map_err(|source| StoreError::query("BEGIN", source))?;
+
+        // The plans that were in force go to the archive: one plan at a
+        // time, and the new one is the one in force.
+        transaction
+            .execute(
+                "UPDATE adopted_plans SET status = 'archived' WHERE status = 'active'",
+                [],
+            )
+            .map_err(|source| StoreError::query("archive the other adopted plans", source))?;
 
         let id = transaction
             .query_row(

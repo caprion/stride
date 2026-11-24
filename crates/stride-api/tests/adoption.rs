@@ -303,6 +303,33 @@ fn a_second_plan_while_one_is_in_force_is_refused() {
 }
 
 #[test]
+fn a_plan_that_has_finished_is_replaced_and_the_old_one_is_archived() {
+    let harness = Harness::empty("adopt-replace");
+    athlete(&harness);
+    // A plan for a race that has already been run.
+    let (status, _) = post(
+        &harness,
+        "/plan/adopt",
+        r#"{"programme_id": "pfitzinger-half-marathon-tier-2", "race_date": "2026-04-12"}"#,
+    );
+    assert_eq!(status, 200);
+
+    // And one for the race that is coming.
+    let (status, _) = post(&harness, "/plan/adopt", &body());
+    assert_eq!(status, 200, "the second plan was refused");
+
+    // One plan is in force: the old one is in the archive.
+    let active = harness.store.active_adopted_plans().expect("the plans");
+    assert_eq!(active.len(), 1);
+    assert_eq!(active[0].race_date, "2027-01-24");
+    let plans = harness.store.adopted_plans().expect("the plans");
+    assert_eq!(plans.len(), 2);
+    assert!(plans
+        .iter()
+        .any(|plan| plan.status == "archived" && plan.race_date == "2026-04-12"));
+}
+
+#[test]
 fn a_plan_may_be_adopted_before_a_race_is_typed() {
     let harness = Harness::empty("adopt-no-race");
     // No race, and no threshold: the plan is adopted anyway, and it says

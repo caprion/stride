@@ -196,3 +196,28 @@ fn a_plan_without_paces_says_why() -> Result<()> {
     drop(dir);
     Ok(())
 }
+
+#[test]
+fn one_plan_is_in_force_at_a_time() -> Result<()> {
+    let (dir, store) = common::store("adopted-one-at-a-time")?;
+    store.write_adopted_plan(&plan(), &[])?;
+
+    // A second plan: the first one goes to the archive.
+    let mut later = plan();
+    later.start_date = "2027-03-01".to_string();
+    later.end_date = "2027-04-05".to_string();
+    later.race_date = "2027-03-21".to_string();
+    store.write_adopted_plan(&later, &[])?;
+
+    let active = store.active_adopted_plans()?;
+    assert_eq!(active.len(), 1);
+    assert_eq!(active[0].start_date, "2027-03-01");
+
+    // And the plan that was in force is still there, in the archive.
+    let all = store.adopted_plans()?;
+    assert_eq!(all.len(), 2);
+    assert!(all.iter().any(|row| row.status == "archived"));
+
+    drop(dir);
+    Ok(())
+}
