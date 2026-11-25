@@ -113,7 +113,7 @@ describe('linked history exploration', () => {
     const exportBackup = vi.spyOn(api, 'exportBackup')
     expect(
       await screen.findByRole('link', { name: 'Backup, restore and export' }),
-    ).toHaveAttribute('href', '/rig')
+    ).toHaveAttribute('href', '/rig/tools')
     expect(screen.queryByTestId('settings-goal-input')).toBeNull()
     await userEvent.click(screen.getByRole('link', { name: 'Training preferences' }))
     expect(await screen.findByTestId('settings-goal-input')).toBeVisible()

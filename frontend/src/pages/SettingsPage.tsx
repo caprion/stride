@@ -616,7 +616,7 @@ export function SettingsPage() {
             <div className="mt-2 flex flex-wrap items-center gap-3">
               {currentHost() === 'http' ? (
                 <a
-                  href="/rig"
+                  href="/rig/tools"
                   data-testid="settings-export"
                   className="tap-inline rounded-md border border-edge bg-surface px-4 text-[14px] font-semibold text-ink-soft"
                 >
