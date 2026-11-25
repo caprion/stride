@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Stride rig v2 — what we got</title>
+<style>
+  :root {
+    --brand-50:#EEF5FB; --brand-100:#D6E6F3; --brand-300:#A9C8E8; --brand-500:#1E5E96;
+    --brand-600:#124A7C; --brand-700:#0D3A63;
+    --accent-50:#FEF8EA; --accent-400:#F2B01E;
+    --ink:#112B40; --ink-soft:#31465A; --ink-muted:#4E6577; --ink-faint:#586F82;
+    --surface:#FFFFFF; --surface-soft:#F1F5F8; --edge:#CEDAE4;
+    --font: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  }
+  * { box-sizing:border-box; }
+  body { margin:0; padding:18px; background:var(--surface-soft); font-family:var(--font); color:var(--ink); }
+  h1 { font-size:17px; color:var(--brand-700); margin:0 0 2px; letter-spacing:-.01em; }
+  .lede { font-size:12px; color:var(--ink-muted); margin:0 0 16px; }
+  .grid { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+  .card { background:var(--surface); border:1px solid var(--edge); border-radius:9px; overflow:hidden; }
+  .cap { padding:9px 12px; border-bottom:1px solid var(--edge); }
+  .cap b { font-size:12.5px; color:var(--brand-700); display:block; }
+  .cap span { font-size:11px; color:var(--ink-muted); }
+  .card img { display:block; width:100%; height:auto; }
+  .phone { display:grid; grid-template-columns:1fr 1fr 1fr; gap:14px; margin-top:14px; }
+  .phone .card img { max-height:520px; object-fit:cover; object-position:top; }
+  .full { grid-column:1 / -1; }
+</style>
+</head>
+<body>
+  <h1>Stride rig v2 — what we got</h1>
+  <p class="lede">The real app, served from the built rig's branch, with the seeded athlete. Every screenshot is the shipped code, not a mock-up.</p>
+
+  <div class="grid">
+    <div class="card">
+      <div class="cap"><b>The wall — eleven cards</b><span>24 became 11. Six on Progress, five on the athlete profile.</span></div>
+      <img src="wall.png" alt="the Progress wall" />
+    </div>
+    <div class="card">
+      <div class="cap"><b>The ledger's two blocks</b><span>Your zones over the time you were running; the watch's own zones over the whole run; the overlap underneath.</span></div>
+      <img src="ledger.png" alt="the ledger" />
+    </div>
+    <div class="card">
+      <div class="cap"><b>The ladder</b><span>Every rung with its pace, its band, and the rule it comes from.</span></div>
+      <img src="ladder.png" alt="the training paces" />
+    </div>
+    <div class="card">
+      <div class="cap"><b>The cost curve</b><span>The athlete's races, the method's sessions, the field test's marker — one curve.</span></div>
+      <img src="curve.png" alt="the physiological cost curve" />
+    </div>
+    <div class="card">
+      <div class="cap"><b>The threshold</b><span>Four candidates, the choice in force, the dated history. The note about what a candidate cannot know is not on the card.</span></div>
+      <img src="settings.png" alt="the threshold" />
+    </div>
+    <div class="card">
+      <div class="cap"><b>The plan's week</b><span>The kinds of run, the distances, the paces — and the threshold the plan was paced with.</span></div>
+      <img src="plan.png" alt="the plan" />
+    </div>
+    <div class="card full">
+      <div class="cap"><b>Adopting a programme</b><span>The four programmes, the tier's entry requirement beside the athlete's own mileage, unranked.</span></div>
+      <img src="bases.png" alt="the plan bases" />
+    </div>
+  </div>
+
+  <div class="phone">
+    <div class="card">
+      <div class="cap"><b>Today</b><span>the phone's cockpit</span></div>
+      <img src="today-phone.png" alt="Today on the phone" />
+    </div>
+    <div class="card">
+      <div class="cap"><b>The ladder</b><span>on the phone</span></div>
+      <img src="ladder-phone.png" alt="the ladder on the phone" />
+    </div>
+    <div class="card">
+      <div class="cap"><b>The ledger</b><span>on the phone</span></div>
+      <img src="ledger-phone.png" alt="the ledger on the phone" />
+    </div>
+  </div>
+</body>
+</html>
