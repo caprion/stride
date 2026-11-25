@@ -39,6 +39,7 @@ import { PageHeader } from '../ui/layout/PageHeader'
 import { SyncControls } from '../components/SyncControls'
 import { UpdateSettings } from '../components/UpdateSettings'
 import { Choice, Field, Notice, SettingRow, SettingsGroup } from '../ui/settings/SettingsGroup'
+import { ThresholdCard } from './threshold'
 
 /** The reasons a pause can have. The athlete's own words for it. */
 const REASONS: { value: string; label: string }[] = [
@@ -391,6 +392,20 @@ export function SettingsPage() {
                 {t('challenge.add')}
               </button>
             </div>
+          </SettingsGroup>
+        ) : null}
+
+        {/* ------------------------------------------ the threshold */}
+        {section === 'training' ? (
+          <SettingsGroup title={t('settings.threshold.heading')} testId="settings-threshold">
+            {/*
+              The threshold: the four candidates, the choice in force, and
+              the dated history. **The app computes the candidates and the
+              athlete chooses one** — it never says which candidate is
+              right, and it never carries the note that says what a
+              candidate cannot know.
+            */}
+            <ThresholdCard />
           </SettingsGroup>
         ) : null}
 

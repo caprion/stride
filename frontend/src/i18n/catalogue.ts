@@ -1213,6 +1213,8 @@ export const catalogue = {
   'threshold.card.history': { type: 'status', text: 'the choices you have made' },
   'threshold.card.typed': { type: 'status', text: 'a number you brought' },
   'threshold.card.typedField': { type: 'status', text: 'your number, in bpm' },
+  'threshold.card.typedSource': { type: 'status', text: 'where it came from' },
+  'threshold.card.base': { type: 'status', text: 'the base the choice is made for' },
   'threshold.card.saved': { type: 'status', text: 'Your threshold is saved' },
   'threshold.card.refused': { type: 'status', text: 'That choice could not be saved' },
 
