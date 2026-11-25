@@ -31,7 +31,8 @@ import {
   ZonesPanel,
 } from './progressPanels'
 import { WeekBody } from './progressWall'
-import { PaceBandsPanel, PaceCloudChart } from './pacePanels'
+import { LadderCard } from './ladder'
+import { CurveCard } from './curve'
 import { useProgress } from './useProgress'
 import { useWall } from './useWall'
 
@@ -138,21 +139,16 @@ export function ProgressPanelPage() {
         {panel === 'load' ? <LoadPanel load={load.data} error={load.isError} /> : null}
         {panel === 'pace' ? (
           <>
+            <LadderCard paces={wall.paces.data} error={wall.paces.isError} hoist />
             <PaceAtHrPanel
               pace={answers.pace}
               ticks={answers.paceTicks}
               window={t('progress.index.pace.weeks', { n: range })}
             />
-            {wall.pace.data ? (
-              <>
-                <PaceCloudChart weeks={wall.pace.data.weeks} />
-                <PaceBandsPanel
-                  bands={wall.pace.data.bands}
-                  unavailable={wall.pace.data.unavailable}
-                />
-              </>
-            ) : null}
           </>
+        ) : null}
+        {panel === 'curve' ? (
+          <CurveCard curve={wall.curve.data} error={wall.curve.isError} hoist />
         ) : null}
         {panel === 'zone-time' ? (
           <>

@@ -11,9 +11,14 @@ import type {
   ActivityCalendar,
   ActivityDetail,
   ActivityListResponse,
+  AdoptionInsight,
+  AdoptionWritten,
+  BasesInsight,
+  ChoiceWritten,
   CompareCandidate,
   CompareResponse,
   ConnectionStatus,
+  CurveInsight,
   FitImportResult,
   FitnessZones,
   Fingerprint,
@@ -25,9 +30,11 @@ import type {
   LoadInsight,
   NoteResult,
   PaceInsight,
+  PacesInsight,
   PlanImportResult,
   PlanWeek,
   ProgressInsight,
+  RacesInsight,
   RollingInsight,
   RunFilm,
   SettingsDeleteResult,
@@ -35,11 +42,13 @@ import type {
   RunUpdateResponse,
   SettingsState,
   SleepDays,
+  StimulusInsight,
   SyncStatus,
   ChallengeInsight,
   ChallengeKind,
   StreakInsight,
   SyncRunResult,
+  ThresholdInsight,
   TodayInsight,
   UpdatePayloadResponse,
   UpdateSettings,
@@ -116,6 +125,29 @@ export const ROUTES = {
   insightsStreaks: '/insights/streaks',
   insightsChallenges: '/insights/challenges',
   insightsYear: '/insights/year',
+
+  /**
+   * The four insight routes of the second build.
+   *
+   * The ladder of the training paces, the physiological-cost curve, the
+   * threshold's four candidates and the stimulus ledger — four questions,
+   * four routes, and no second field on `/insights/progress`.
+   */
+  insightsPaces: '/insights/paces',
+  insightsPacingCurve: '/insights/pacing-curve',
+  insightsThreshold: '/insights/threshold',
+  insightsStimulus: '/insights/stimulus',
+
+  /**
+   * The athlete's own facts, and the plan's programmes.
+   *
+   * The races and the threshold are the athlete's own: they are typed
+   * into the app and stored on this machine, and they are never synced.
+   */
+  athleteRaces: '/athlete/races',
+  athleteThreshold: '/athlete/threshold',
+  planBases: '/plan/bases',
+  planAdopt: '/plan/adopt',
 
   insightsHeatmap: '/insights/heatmap',
   insightsChips: '/insights/chips',
@@ -385,6 +417,86 @@ export const api = {
   insightsHeatmap: () => get<HeatmapInsight>(ROUTES.insightsHeatmap),
   insightsChips: (id: number | string) =>
     get<unknown>(ROUTES.insightsChips, { id: String(id) }),
+
+  /**
+   * The ladder: the training paces, each with the rule it comes from.
+   *
+   * The rungs, the anchors they hang on, the race the paces came from and
+   * the equivalent race times. **The ladder's own numbers do not depend on
+   * the window** — the paces come from the athlete's own race — but the
+   * answer names the window it is shown over.
+   */
+  insightsPaces: (weeks = 12) => get<PacesInsight>(ROUTES.insightsPaces, { weeks }),
+  /**
+   * The physiological-cost curve: the share of the maximum a duration
+   * holds, against the time it is held for.
+   *
+   * A second reading of the same athlete, and not a second ladder.
+   */
+  insightsPacingCurve: (weeks = 12) => get<CurveInsight>(ROUTES.insightsPacingCurve, { weeks }),
+  /**
+   * The threshold: the four candidates, the choice in force and the dated
+   * history of the choices.
+   */
+  insightsThreshold: (weeks = 12) => get<ThresholdInsight>(ROUTES.insightsThreshold, { weeks }),
+  /**
+   * The ledger: the athlete's own bands, the shape rows, and the two
+   * bases the time was measured on.
+   */
+  insightsStimulus: (weeks = 12) => get<StimulusInsight>(ROUTES.insightsStimulus, { weeks }),
+
+  /**
+   * The programmes the app can adopt.
+   *
+   * The four of the catalogue, each with its tier and its entry
+   * requirement — and the athlete's own mileage beside it.
+   */
+  planBases: () => get<BasesInsight>(ROUTES.planBases),
+  /**
+   * The plan in force, and the programme it was adopted from.
+   */
+  planAdopted: () => get<AdoptionInsight>(ROUTES.planAdopt),
+  /**
+   * Adopt a programme.
+   *
+   * The paces are worked out once, here, from the threshold in force on
+   * the day of the adoption.
+   */
+  adoptPlan: (adoption: {
+    programme_id: string
+    tier?: string
+    goal_distance_m?: number
+    race_date: string
+    start_date?: string
+    threshold?: {
+      source: string
+      base?: string
+      origin_ref?: string
+      heart_rate_bpm?: number
+      pace_fast_s_per_km?: number
+      pace_slow_s_per_km?: number
+      label?: string
+    }
+  }) => post<AdoptionWritten>(ROUTES.planAdopt, adoption),
+  /**
+   * The athlete's own races.
+   */
+  athleteRaces: () => get<RacesInsight>(ROUTES.athleteRaces),
+  /**
+   * Make a threshold choice.
+   *
+   * The body names the candidate the athlete picked, or the number they
+   * brought, and the base the choice was made for.
+   */
+  chooseThreshold: (choice: {
+    source: string
+    base: string
+    origin_ref?: string
+    heart_rate_bpm?: number
+    pace_fast_s_per_km?: number
+    pace_slow_s_per_km?: number
+    label?: string
+  }) => post<ChoiceWritten>(ROUTES.athleteThreshold, choice),
 
   /** The metric diff. */
   compare: (a: number | string, b: number | string) =>

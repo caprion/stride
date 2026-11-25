@@ -2299,8 +2299,23 @@ fn entry_reading(plan: &AdoptedPlan) -> EntryReading {
     }
 }
 
-/// The athlete's own recent weekly mileage.
-fn athlete_mileage_line(mileage_m: &[f64]) -> Option<String> {
+/// The tier's entry requirement, in the core's own words.
+///
+/// **The requirement is the programme's own**, and it is said once, in
+/// the words the core owns: "this level asks for 64.4-80.5 km a week".
+/// The app states it beside the athlete's own mileage and never compares
+/// the two.
+pub fn entry_requirement_line(programme: &Programme) -> Option<String> {
+    programme.entry_mileage.as_ref().and_then(|range| {
+        let range = range.render()?;
+        strings::render("statement.plan.entry.requirement", &[("range", &range)])
+    })
+}
+
+/// The athlete's own recent weekly mileage, in the core's own words.
+///
+/// "your last 4 weeks: 60.8, 61.1, 50.8, 6 km"
+pub fn athlete_mileage_line(mileage_m: &[f64]) -> Option<String> {
     if mileage_m.is_empty() {
         return None;
     }

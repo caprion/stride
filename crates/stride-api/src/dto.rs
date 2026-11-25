@@ -3216,6 +3216,16 @@ pub struct CurveSessionRow {
     pub to_minutes: Option<f64>,
     /// The pace the session is run at.
     pub pace: Option<PaceRow>,
+    /**
+     * The share of the maximum the session's **fast** end costs.
+     *
+     * The curve's vertical axis is the share of the maximum, so the
+     * session needs it to be placed — and the core's own relation
+     * computes it, so the app never does.
+     */
+    pub from_percent_max: Option<RenderedValue>,
+    /// The share of the maximum the session's **slow** end costs.
+    pub to_percent_max: Option<RenderedValue>,
     /// The rule the session comes from.
     pub rule: RuleRow,
     /// Why the band has no value, in the core's own words.
@@ -3250,6 +3260,11 @@ pub struct CurveInsight {
 }
 
 /// One candidate: a value, a date, and the rule that computed it.
+///
+/// **The note that says what the candidate cannot know is not here.**
+/// That line is the explanation, and the explanation is not product
+/// content: the card carries the value, the source and the date, and the
+/// core keeps the wording for the notes to read.
 #[derive(Clone, Debug, PartialEq, Serialize)]
 pub struct CandidateRow {
     /// Where the candidate comes from: "watch_zone_model", "race", …
@@ -3268,8 +3283,6 @@ pub struct CandidateRow {
     pub date_label: Option<String>,
     /// The rule that computed the value, where a rule did.
     pub rule: Option<RuleRow>,
-    /// The note that says what the candidate cannot know.
-    pub note: Option<String>,
     /// Why there is no value, in the core's own words.
     pub missing: Option<String>,
 }
@@ -3570,6 +3583,11 @@ pub struct BaseRow {
     /// The tier's entry requirement: the weekly distance, as the core
     /// renders it: "48–67 km".
     pub entry_requirement: Option<String>,
+    /// The entry requirement, in the core's own words.
+    ///
+    /// "this level asks for 48–67 km a week" — the programme's own line,
+    /// and the one the screen states **beside** the athlete's own mileage.
+    pub entry_line: Option<String>,
     /// The lower edge of the entry requirement, in metres.
     pub entry_from_m: Option<f64>,
     /// The upper edge of the entry requirement, in metres.
@@ -3589,6 +3607,12 @@ pub struct BasesInsight {
     pub generated_at: String,
     /// The programmes.
     pub bases: Vec<BaseRow>,
+    /// The athlete's own recent weekly mileage, in the core's own words.
+    ///
+    /// "your last 4 weeks: 60.8, 61.1, 50.8, 6 km" — the fact the tier's
+    /// entry requirement is stated beside. **The app never compares the
+    /// two**: the requirement and the mileage are two facts, side by side.
+    pub athlete_mileage: Option<String>,
     /// Why there is no programme to adopt, in the core's own words.
     pub unavailable: Option<String>,
 }

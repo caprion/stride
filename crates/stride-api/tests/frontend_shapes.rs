@@ -618,6 +618,98 @@ fn the_pace_carries_the_shape_the_app_declares() {
 }
 
 #[test]
+fn the_ladder_carries_the_shape_the_app_declares() {
+    let declarations = declarations();
+    let harness = common::Harness::seeded("frontend-ladder");
+    let body = harness.ok_get("/insights/paces");
+    assert_declared(&declarations, "PacesInsight", &body);
+    if let Some(window) = at(&body, &["window"]) {
+        assert_declared(&declarations, "InsightWindow", window);
+    }
+    if let Some(rung) = first_at(&body, &["rungs"]) {
+        assert_declared(&declarations, "RungRow", rung);
+        if let Some(rule) = at(rung, &["rule"]) {
+            assert_declared(&declarations, "RuleRow", rule);
+        }
+        if let Some(pace) = at(rung, &["pace"]) {
+            assert_declared(&declarations, "PaceRow", pace);
+        }
+        if let Some(heart) = at(rung, &["heart_rate"]) {
+            assert_declared(&declarations, "HeartRateRow", heart);
+        }
+    }
+    if let Some(race) = at(&body, &["race"]) {
+        if race.is_object() {
+            assert_declared(&declarations, "RaceRow", race);
+        }
+    }
+}
+
+#[test]
+fn the_curve_carries_the_shape_the_app_declares() {
+    let declarations = declarations();
+    let harness = common::Harness::seeded("frontend-curve");
+    let body = harness.ok_get("/insights/pacing-curve");
+    assert_declared(&declarations, "CurveInsight", &body);
+    if let Some(point) = first_at(&body, &["curve"]) {
+        assert_declared(&declarations, "CurvePointRow", point);
+    }
+    if let Some(session) = first_at(&body, &["sessions"]) {
+        assert_declared(&declarations, "CurveSessionRow", session);
+    }
+    if let Some(race) = first_at(&body, &["races"]) {
+        assert_declared(&declarations, "CurveRaceRow", race);
+    }
+}
+
+#[test]
+fn the_threshold_carries_the_shape_the_app_declares() {
+    let declarations = declarations();
+    let harness = common::Harness::seeded("frontend-threshold");
+    let body = harness.ok_get("/insights/threshold");
+    assert_declared(&declarations, "ThresholdInsight", &body);
+    if let Some(candidate) = first_at(&body, &["candidates"]) {
+        assert_declared(&declarations, "CandidateRow", candidate);
+    }
+    if let Some(choice) = at(&body, &["in_force"]) {
+        if choice.is_object() {
+            assert_declared(&declarations, "ChoiceRow", choice);
+        }
+    }
+    if let Some(entry) = first_at(&body, &["history"]) {
+        assert_declared(&declarations, "HistoryRow", entry);
+    }
+}
+
+#[test]
+fn the_ledger_carries_the_shape_the_app_declares() {
+    let declarations = declarations();
+    let harness = common::Harness::seeded("frontend-ledger");
+    let body = harness.ok_get("/insights/stimulus");
+    assert_declared(&declarations, "StimulusInsight", &body);
+    if let Some(kind) = first_at(&body, &["kinds"]) {
+        assert_declared(&declarations, "KindRow", kind);
+    }
+    if let Some(week) = first_at(&body, &["weeks"]) {
+        assert_declared(&declarations, "LedgerWeekRow", week);
+    }
+    if let Some(coverage) = at(&body, &["coverage"]) {
+        assert_declared(&declarations, "CoverageRow", coverage);
+    }
+}
+
+#[test]
+fn the_bases_carry_the_shape_the_app_declares() {
+    let declarations = declarations();
+    let harness = common::Harness::seeded("frontend-bases");
+    let body = harness.ok_get("/plan/bases");
+    assert_declared(&declarations, "BasesInsight", &body);
+    if let Some(base) = first_at(&body, &["bases"]) {
+        assert_declared(&declarations, "BaseRow", base);
+    }
+}
+
+#[test]
 fn the_year_carries_the_shape_the_app_declares() {
     let declarations = declarations();
     let harness = common::Harness::seeded("frontend-year");

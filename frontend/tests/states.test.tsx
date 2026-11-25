@@ -138,7 +138,14 @@ describe('Progress, with too little history', () => {
     expect(
       container.querySelector('[data-testid="progress-needs-more"]')?.textContent,
     ).toContain('Needs 4 more weeks')
-    expect(container.textContent).not.toContain('%')
+    /*
+      No percentage of the training — **in the summary itself**. The
+      ladder's bands are a share of the athlete's maximum heart rate,
+      which is another number, and it is not a trend.
+    */
+    expect(
+      container.querySelector('[data-testid="progress-headline"]')?.textContent,
+    ).not.toContain('%')
   })
 })
 

@@ -35,7 +35,8 @@ use serde_json::{json, Value};
 use stride_api::{Api, Config, FixedClock, Router};
 use stride_store::scratch::ScratchDir;
 use stride_store::{
-    DatabaseKey, NewHeartRateZoneModel, NewPlanBlock, NewPlanSession, Store, WellnessDaily,
+    DatabaseKey, NewHeartRateZoneModel, NewPlanBlock, NewPlanSession, NewRaceObservation,
+    NewThresholdObservation, Store, WellnessDaily,
 };
 
 /// The day the fixture renders: the app's "today".
@@ -188,6 +189,76 @@ fn seed(store: &Store, seed: &Value, with_plan: bool) {
         }
     }
 
+    if let Some(races) = seed.get("races").and_then(|value| value.as_array()) {
+        // The athlete's own races: the observations the paces come from.
+        // They are typed into the app and stored on this machine, and the
+        // app never infers one from the training.
+        for race in races {
+            let label = text(race, "label");
+            let distance_m =
+                stride_store::model::race_label::distance_m(&label).unwrap_or_default();
+            let row = NewRaceObservation {
+                distance_m,
+                time_s: race
+                    .get("time_s")
+                    .and_then(|value| value.as_f64())
+                    .unwrap_or_default(),
+                race_date: text(race, "race_date"),
+                label,
+                name: race
+                    .get("name")
+                    .and_then(|value| value.as_str())
+                    .map(String::from),
+                source: stride_store::model::race_source::TYPED.to_string(),
+                entered_on: text(race, "entered_on"),
+                updated_on: text(race, "updated_on"),
+            };
+            store
+                .write_race(&row)
+                .unwrap_or_else(|error| panic!("the race could not be seeded: {error}"));
+        }
+    }
+
+    if let Some(choices) = seed.get("thresholds").and_then(|value| value.as_array()) {
+        // The threshold the athlete chose: one choice in force, and the
+        // earlier choices in the dated history.
+        for choice in choices {
+            let row = NewThresholdObservation {
+                hr_bpm: choice.get("hr_bpm").and_then(|value| value.as_f64()),
+                pace_low_s_per_km: choice
+                    .get("pace_low_s_per_km")
+                    .and_then(|value| value.as_f64()),
+                pace_high_s_per_km: choice
+                    .get("pace_high_s_per_km")
+                    .and_then(|value| value.as_f64()),
+                source: text(choice, "source"),
+                rule_id: choice
+                    .get("rule_id")
+                    .and_then(|value| value.as_str())
+                    .map(String::from),
+                base: Some(text(choice, "base")),
+                origin_date: choice
+                    .get("origin_date")
+                    .and_then(|value| value.as_str())
+                    .map(String::from),
+                origin_ref: None,
+                label: choice
+                    .get("label")
+                    .and_then(|value| value.as_str())
+                    .map(String::from),
+                entered_on: text(choice, "entered_on"),
+                updated_on: text(choice, "updated_on"),
+            };
+            let in_force = choice
+                .get("in_force")
+                .and_then(|value| value.as_bool())
+                .unwrap_or(false);
+            store
+                .write_threshold_choice(&row, in_force)
+                .unwrap_or_else(|error| panic!("the threshold could not be seeded: {error}"));
+        }
+    }
+
     if with_plan {
         if let Some(sessions) = seed.get("plan_sessions").and_then(|value| value.as_array()) {
             let start = sessions
@@ -318,6 +389,13 @@ fn router_answers(router: &Router) -> serde_json::Map<String, Value> {
         "/insights/pace?weeks=8",
         "/insights/pace?weeks=26",
         "/insights/pace?weeks=52",
+        "/insights/paces",
+        "/insights/pacing-curve",
+        "/insights/threshold",
+        "/insights/stimulus",
+        "/plan/bases",
+        "/plan/adopt",
+        "/athlete/races",
         "/insights/year",
         "/calendar",
         "/compare/candidates",

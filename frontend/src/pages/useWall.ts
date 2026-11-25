@@ -55,10 +55,26 @@ export function useWall(range: number) {
   /** The year: the months, the calendar of the days and what changed. */
   const year = useQuery({ queryKey: ['insights-year'], queryFn: () => api.insightsYear() })
 
-  /** The pace: the training week by week. */
-  const pace = useQuery({
-    queryKey: ['insights-pace', range],
-    queryFn: () => api.insightsPace(range),
+  /**
+   * The ladder: the training paces, each with the rule it comes from.
+   *
+   * **The ladder's own numbers do not depend on the window** — the paces
+   * come from the athlete's own race — but the answer is asked for over
+   * the window the screen is showing, so the card and the panel are
+   * never read apart from the control that changes it.
+   */
+  const paces = useQuery({
+    queryKey: ['insights-paces', range],
+    queryFn: () => api.insightsPaces(range),
+  })
+
+  /**
+   * The physiological-cost curve: the share of the maximum a duration
+   * holds.
+   */
+  const curve = useQuery({
+    queryKey: ['insights-pacing-curve', range],
+    queryFn: () => api.insightsPacingCurve(range),
   })
 
   /**
@@ -126,7 +142,8 @@ export function useWall(range: number) {
 
   return {
     year,
-    pace,
+    paces,
+    curve,
     /** The three windows the chart draws, one on the other. */
     profileWindows,
     /** The focused window's answer: the numbers the page is about. */

@@ -27,17 +27,6 @@ import { renderApp } from './helpers'
 const daysWithRuns = yearFixture.days.filter((day) => day.sessions > 0)
 
 describe('the ways into the runs behind the wall', () => {
-  it('a week on the pace card opens that week’s runs', async () => {
-    renderApp('/progress')
-    const link = await screen.findByTestId('progress-wall-pace-2026-04-27')
-
-    // The week is the Monday and the six days after it — the same seven
-    // days the weekly volume chart uses.
-    expect(link).toHaveAttribute('href', '/runs?from=2026-04-27&to=2026-05-03')
-    // And the link says what it opens.
-    expect(link).toHaveAccessibleName('The runs of the week starting Mon 27 Apr')
-  })
-
   it('a week on the rolling window opens that week’s runs', async () => {
     renderApp('/progress')
     const link = await screen.findByTestId('progress-wall-window-2026-04-27')

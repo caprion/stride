@@ -169,13 +169,13 @@ Two rules hold for every shape below.
 | `/insights/streaks` | `generated_at`, `date`, `days: {current, longest}`, `weeks: {current, longest}` |
 | `/insights/pace` | `generated_at`, `date`, `window: {from, from_label, to, to_label, weeks}`, `weeks: {week_start, distance, sessions, longest, pace, heart_rate}[]`, `bands: {width_s_per_km, total, distance, rows: {from, to, label, time, distance, share}[], rest} \| null`, `unavailable: string \| null` |
 | `/insights/paces` | `generated_at`, `date`, `window: {from, from_label, to, to_label, weeks}`, `source: string \| null`, `sources: {kind, line, date, date_label}[]`, `chain: string \| null`, `race: RaceRow \| null`, `equivalents: {distance, time, vdot_time, pace, difference_s}[]`, `rungs: {kind, label, rule: {id, citation, line}, anchor, pace: PaceRow, finish_pace: PaceRow, heart_rate: HeartRateRow, heart_rate_reserve: HeartRateRow}[]`, `unavailable: string \| null` |
-| `/insights/pacing-curve` | `generated_at`, `date`, `window: {from, from_label, to, to_label, weeks}`, `source: string \| null`, `sources: {kind, line, date, date_label}[]`, `curve: {minutes, percent_max, pace}[]`, `races: {label, time, minutes, percent_max, pace, date, date_label}[]`, `sessions: {kind, label, from_minutes, to_minutes, pace: PaceRow, rule: {id, citation, line}, missing}[]`, `field_test: {minutes, percent_max, pace} \| null`, `equivalents: {distance, time, vdot_time, pace, difference_s}[]`, `unavailable: string \| null` |
-| `/insights/threshold` | `generated_at`, `date`, `window: {from, from_label, to, to_label, weeks}`, `source: string \| null`, `sources: {kind, line, date, date_label}[]`, `candidates: {source, label, value, heart_rate_bpm, pace: PaceRow \| null, date, date_label, rule, note, missing}[]`, `in_force: ChoiceRow \| null`, `history: {date, date_label, line, value, base, in_force}[]`, `unavailable: string \| null` |
+| `/insights/pacing-curve` | `generated_at`, `date`, `window: {from, from_label, to, to_label, weeks}`, `source: string \| null`, `sources: {kind, line, date, date_label}[]`, `curve: {minutes, percent_max, pace}[]`, `races: {label, time, minutes, percent_max, pace, date, date_label}[]`, `sessions: {kind, label, from_minutes, to_minutes, pace: PaceRow, from_percent_max, to_percent_max, rule: {id, citation, line}, missing}[]`, `field_test: {minutes, percent_max, pace} \| null`, `equivalents: {distance, time, vdot_time, pace, difference_s}[]`, `unavailable: string \| null` |
+| `/insights/threshold` | `generated_at`, `date`, `window: {from, from_label, to, to_label, weeks}`, `source: string \| null`, `sources: {kind, line, date, date_label}[]`, `candidates: {source, label, value, heart_rate_bpm, pace: PaceRow \| null, date, date_label, rule, missing}[]`, `in_force: ChoiceRow \| null`, `history: {date, date_label, line, value, base, in_force}[]`, `unavailable: string \| null` |
 | `/insights/stimulus` | `generated_at`, `date`, `window: {from, from_label, to, to_label, weeks}`, `source: string \| null`, `sources: {kind, line, date, date_label}[]`, `kinds: {key, label, time, share, runs, last: {date, date_label, days_before_end} \| null}[]`, `weeks: {week_start, week_start_label, bands: {key, label, time}[]}[]`, `coverage: {runs, with_heart_rate, measured, with_source_zones}`, `longest: {date, date_label, distance, time, share} \| null`, `repeated: {time, runs, last_on, last_on_label} \| null`, `repeated_missing: string \| null`, `source_zones: {zone, time, share, runs}[]`, `source_weeks: {week_start, week_start_label, zones}[]`, `overlap: {from, from_label, to, to_label, runs, app_moving, source_elapsed, difference} \| null`, `more_runs: boolean`, `unavailable: string \| null` |
 | `/athlete/races` | `generated_at`, `races: RaceRow[]` |
 | `/athlete/races` (the write) | `race: RaceRow`, `generated_at` |
 | `/athlete/threshold` (the write) | `choice: ChoiceRow`, `generated_at` |
-| `/plan/bases` | `generated_at`, `bases: {id, label, method, distance, distance_label, entry_requirement, entry_from_m, entry_to_m, weeks}[]`, `unavailable: string \| null` |
+| `/plan/bases` | `generated_at`, `bases: {id, label, method, distance, distance_label, entry_requirement, entry_line, entry_from_m, entry_to_m, weeks}[]`, `athlete_mileage: string \| null`, `unavailable: string \| null` |
 | `/plan/adopt` | `generated_at`, `plan: AdoptedPlan \| null`, `unavailable: string \| null` |
 | `/plan/adopt` (the write) | `adopted: boolean`, `plan: AdoptedPlan`, `generated_at` |
 
@@ -703,6 +703,12 @@ its **length** in weeks, and its goal distance.
 A programme is **an intent**, not a baseline: it is what the athlete
 adopts, and **the app never suggests one**. The tier's entry requirement
 is carried beside the athlete's own mileage, and the athlete picks.
+
+**The entry requirement and the athlete's own mileage are two facts, side
+by side, unranked.** The requirement is the programme's own line —
+`entry_line`, "this level asks for 40.2-56.3 km a week" — and the mileage
+is the athlete's own, in `athlete_mileage`, "your last 4 weeks: 60.8,
+61.1, 50.8, 6 km". The answer states them and never compares them.
 
 **The data lands with the plan's own step.** The templates are read cell
 by cell from the book's own tables, and the list is empty until they are:

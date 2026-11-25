@@ -1641,6 +1641,635 @@ export interface SettingsDeleteResult {
   generated_at: string
 }
 
+/* --------------------------------- the ladder, the curve, the threshold, the ledger */
+
+/**
+ * The window an insight answer describes.
+ *
+ * **The window is named, and the answer says what it covers.** A number
+ * is never read apart from the period it came from.
+ */
+export interface InsightWindow {
+  /** The first day of the window, in the athlete's own calendar. */
+  from: string
+  /** The same day, as the api writes a date: "31 Aug 2026". */
+  from_label: string
+  /** The last day of the window. */
+  to: string
+  /** The same day, as the api writes a date: "20 Nov 2026". */
+  to_label: string
+  /** How many calendar weeks the window covers. */
+  weeks: number
+}
+
+/**
+ * One source line, behind the click.
+ *
+ * **The source line is hoisted**: every answer carries one line for the
+ * screen to name, and the lines it was built from travel behind a click.
+ */
+export interface SourceLine {
+  /** What the source is: `race` or `zone_model`. */
+  kind: string
+  /** The line, in the core's own words. */
+  line: string | null
+  /** The day the source was read or run. */
+  date: string | null
+  /** The same day, as the api writes a date: "3 Nov 2026". */
+  date_label: string | null
+}
+
+/**
+ * The rule a number comes from.
+ *
+ * The rule carries its identifier, its citation — the chapter it comes
+ * from — and the wording the surface prints beside the number.
+ */
+export interface RuleRow {
+  /** The rule's identifier: "book.lt_pace_band". */
+  id: string
+  /** Where the rule comes from: "ch. 1, ch. 7". */
+  citation: string
+  /** The wording, in the core's own words. */
+  line: string | null
+}
+
+/**
+ * A pace, or the reason there is none.
+ *
+ * **A missing pace is null with a reason**, never a band of zero.
+ */
+export interface PaceRow {
+  /** The band, in the core's own words: "4:16–4:21 /km". */
+  value: string | null
+  /** The fast edge, in seconds per kilometre. */
+  fast_s_per_km: number | null
+  /** The slow edge, in seconds per kilometre. */
+  slow_s_per_km: number | null
+  /** Why there is no value, in the core's own words. */
+  missing: string | null
+}
+
+/**
+ * A heart-rate band, or the reason there is none.
+ *
+ * The band is the athlete's own: the method's share of **their** maximum
+ * heart rate, or of their heart-rate reserve.
+ */
+export interface HeartRateRow {
+  /** The band, in the core's own words: "146–167 bpm". */
+  value: string | null
+  /** The lower edge, in beats per minute. */
+  from_bpm: number | null
+  /** The upper edge, in beats per minute. */
+  to_bpm: number | null
+  /** The ceiling, in beats per minute, when the band is a ceiling. */
+  below_bpm: number | null
+  /** The maximum heart rate the band was computed on. */
+  max_heart_rate: number | null
+  /** The resting heart rate the reserve was computed on. */
+  resting_heart_rate: number | null
+  /** Why there is no value, in the core's own words. */
+  missing: string | null
+}
+
+/**
+ * One rung of the ladder.
+ *
+ * A rung is two things: a pace where the method states one, and a
+ * heart-rate band where it states one. The two are never turned into one
+ * another.
+ */
+export interface RungRow {
+  /** What the rung is: "lactate_threshold", "recovery", … */
+  kind: string
+  /** The rung's name, in the core's own words. */
+  label: string
+  /** The rule the rung's numbers come from. */
+  rule: RuleRow
+  /** What the rung's numbers hang on: "goal_race", "threshold_band", … */
+  anchor: string
+  /** The pace the rung is run at. */
+  pace: PaceRow
+  /** The pace the long run finishes at. */
+  finish_pace: PaceRow
+  /** The band, as a share of the athlete's maximum heart rate. */
+  heart_rate: HeartRateRow
+  /** The same band as a share of the athlete's heart-rate reserve. */
+  heart_rate_reserve: HeartRateRow
+}
+
+/**
+ * A race the athlete typed.
+ *
+ * A race is an observation, not a verdict: the athlete types it, and the
+ * app never invents one.
+ */
+export interface RaceRow {
+  id: number
+  /** The athlete's own label for the race: "10K". */
+  label: string
+  distance: RenderedValue
+  time: RenderedValue
+  pace: RenderedValue | null
+  date: string
+  date_label: string
+  name: string | null
+  /** Where the race came from: "typed". */
+  source: string
+  entered_on: string
+  updated_on: string
+  /** Do the paces come from this race? At most one race carries it. */
+  anchor: boolean
+}
+
+/** One equivalent race time, and the two ways it was reached. */
+export interface EquivalentRow {
+  /** The distance's name: "10K", "half marathon". */
+  distance: string
+  /** The time by Riegel's form, as the core renders it. */
+  time: string | null
+  /** The time by the inversion of the relations, as the core renders it. */
+  vdot_time: string | null
+  /** The pace by Riegel's form, in the core's own words. */
+  pace: string | null
+  /** The gap between the two models, in seconds. */
+  difference_s: number | null
+}
+
+/**
+ * The ladder: the rungs, the anchors and the chain that produced them.
+ *
+ * **The ladder is the picture**; the caption names the race it came from.
+ */
+export interface PacesInsight {
+  generated_at: string
+  date: string
+  window: InsightWindow
+  /** The one source line the screen names. */
+  source: string | null
+  /** The lines behind the click. */
+  sources: SourceLine[]
+  /** The chain that produced the number, in the core's own words. */
+  chain: string | null
+  /** The race the paces come from. */
+  race: RaceRow | null
+  /** The equivalent race times. */
+  equivalents: EquivalentRow[]
+  /** The rungs, fastest first. */
+  rungs: RungRow[]
+  /** Why there is no value at all, in the core's own words. */
+  unavailable: string | null
+}
+
+/** One point of the physiological-cost curve. */
+export interface CurvePointRow {
+  /** The duration, in minutes. */
+  minutes: number
+  /** The share of the maximum the duration holds. */
+  percent_max: RenderedValue
+  /** The pace that costs it, in the core's own words. */
+  pace: RenderedValue | null
+}
+
+/** One of the athlete's own races, as a point on the curve. */
+export interface CurveRaceRow {
+  /** The distance's name: "10K". */
+  label: string
+  /** The finish time, as the core renders it. */
+  time: string
+  /** The duration, in minutes. */
+  minutes: number
+  /** The share of the maximum the race held. */
+  percent_max: RenderedValue
+  /** The pace the race was run at. */
+  pace: RenderedValue | null
+  date: string
+  date_label: string
+}
+
+/** One of the method's own sessions, as a band on the curve. */
+export interface CurveSessionRow {
+  /** What the session is: "threshold", "recovery", "long_run". */
+  kind: string
+  /** The session's name, in the core's own words. */
+  label: string
+  /** The first minute of the band's duration. */
+  from_minutes: number | null
+  /** The last minute of the band's duration. */
+  to_minutes: number | null
+  /** The pace the session is run at. */
+  pace: PaceRow | null
+  /**
+   * The share of the maximum the session's **fast** end costs.
+   *
+   * The curve's vertical axis, and the core's own relation: the app
+   * never computes it.
+   */
+  from_percent_max: RenderedValue | null
+  /** The share of the maximum the session's **slow** end costs. */
+  to_percent_max: RenderedValue | null
+  /** The rule the session comes from. */
+  rule: RuleRow
+  /** Why the band has no value, in the core's own words. */
+  missing: string | null
+}
+
+/**
+ * The physiological-cost curve: the share of the maximum against time.
+ *
+ * A second reading of the same athlete, and not a second ladder.
+ */
+export interface CurveInsight {
+  generated_at: string
+  date: string
+  window: InsightWindow
+  /** The one source line the screen names. */
+  source: string | null
+  /** The lines behind the click. */
+  sources: SourceLine[]
+  /** The curve's own points. */
+  curve: CurvePointRow[]
+  /** The athlete's own races, as points on the curve. */
+  races: CurveRaceRow[]
+  /** The method's own sessions, as bands on the curve. */
+  sessions: CurveSessionRow[]
+  /** The field test's place in time. */
+  field_test: CurvePointRow | null
+  /** The pace equivalents. */
+  equivalents: EquivalentRow[]
+  /** Why there is no value at all, in the core's own words. */
+  unavailable: string | null
+}
+
+/** One candidate: a value, a date, and the rule that computed it. */
+export interface CandidateRow {
+  /** Where the candidate comes from: "watch_zone_model", "race", … */
+  source: string
+  /** The source's name, in the runner's words. */
+  label: string
+  /** The value, in the core's own words. */
+  value: string | null
+  /** The heart rate, in beats per minute. */
+  heart_rate_bpm: number | null
+  /** The pace band, when the candidate carries one. */
+  pace: PaceRow | null
+  /** The day of the fact the value came from. */
+  date: string | null
+  /** The same day, as the api writes a date. */
+  date_label: string | null
+  /** The rule that computed the value, where a rule did. */
+  rule: RuleRow | null
+  /**
+   * Why there is no value, in the core's own words.
+   *
+   * **The note that says what the candidate cannot know is not here**:
+   * that line is the explanation, and the explanation is not product
+   * content.
+   */
+  missing: string | null
+}
+
+/** The choice in force, and the choices that came before it. */
+export interface ChoiceRow {
+  /** Where the choice came from. */
+  source: string
+  /** The source's name, in the runner's words. */
+  label: string
+  /** The value, in the core's own words. */
+  value: string | null
+  /** The heart rate, in beats per minute. */
+  heart_rate_bpm: number | null
+  /** The pace band, when the choice carries one. */
+  pace: PaceRow | null
+  /** The base the choice was made for: "pfitzinger", "eighty_twenty". */
+  base: string
+  /** The athlete's own label for a typed number. */
+  typed_label: string | null
+  /** The day of the fact the number came from. */
+  origin_date: string | null
+  /** The day the choice was made. */
+  entered_on: string
+  /** The day the row was last changed. */
+  updated_on: string
+  /** Is this the choice in force now? */
+  in_force: boolean
+}
+
+/** One choice in the dated history. */
+export interface HistoryRow {
+  /** The day the choice was made, in the athlete's own calendar. */
+  date: string
+  /** The same day, as the api writes a date: "3 Nov 2026". */
+  date_label: string
+  /** The choice's own sentence, in the core's words. */
+  line: string | null
+  /** The value, in the core's own words. */
+  value: string | null
+  /** The base the choice was made for. */
+  base: string
+  /** Is this the choice in force now? */
+  in_force: boolean
+}
+
+/**
+ * The threshold: the four candidates, the choice in force, and the history.
+ *
+ * **The app computes the candidates and the athlete chooses one.** The
+ * card carries the value, the source and the date — never a note.
+ */
+export interface ThresholdInsight {
+  generated_at: string
+  date: string
+  window: InsightWindow
+  /** The one source line the screen names. */
+  source: string | null
+  /** The lines behind the click. */
+  sources: SourceLine[]
+  /** The four candidates, in the product's own order. */
+  candidates: CandidateRow[]
+  /** The choice in force. */
+  in_force: ChoiceRow | null
+  /** The choices in their dated history, newest first. */
+  history: HistoryRow[]
+  /** Why there is no value at all, in the core's own words. */
+  unavailable: string | null
+}
+
+/** One of the athlete's own bands, over the period. */
+export interface KindRow {
+  /** The band's key: "low", "moderate" or "high". */
+  key: string
+  /** The band's name, in the core's own words: "Z1–Z2 low". */
+  label: string
+  /** The time in the band. */
+  time: RenderedValue | null
+  /** The share of the measured moving time. */
+  share: RenderedValue | null
+  /** The runs that carried the band. */
+  runs: number
+  /** When the band last happened, over the athlete's own history. */
+  last: LastRow | null
+}
+
+/** When a kind last happened. */
+export interface LastRow {
+  date: string
+  date_label: string
+  /** The days between that day and the end of the window. */
+  days_before_end: number | null
+}
+
+/** One band of a week, in the weeks matrix. */
+export interface WeekBandRow {
+  /** The band's key: "low", "moderate" or "high". */
+  key: string
+  /** The band's name, in the core's own words. */
+  label: string
+  /**
+   * The time in the band that week.
+   *
+   * **A band a week held none has no value**: the absence is drawn as
+   * white space, never as a zero.
+   */
+  time: RenderedValue | null
+}
+
+/** One week of the weeks matrix. */
+export interface LedgerWeekRow {
+  /** The Monday the week begins on, in the athlete's own calendar. */
+  week_start: string
+  /** The same day, as the api writes a date: "7 Sep 2026". */
+  week_start_label: string
+  /** The bands that week, in the product's own order. */
+  bands: WeekBandRow[]
+}
+
+/** What the period covers. */
+export interface CoverageRow {
+  /** The runs in the period. */
+  runs: number
+  /** The runs that carried heart-rate samples. */
+  with_heart_rate: number
+  /** The runs the app could measure — a zone model was in force. */
+  measured: number
+  /** The runs that carried the source's own zone minutes. */
+  with_source_zones: number
+}
+
+/** The longest run in the period. */
+export interface LongestRow {
+  date: string
+  date_label: string
+  distance: RenderedValue | null
+  /** How long the run moved. */
+  time: RenderedValue
+  /** The share of the period's moving time. */
+  share: RenderedValue | null
+}
+
+/** The repeated work: the runs the watch recorded as workouts. */
+export interface RepeatedRow {
+  time: RenderedValue
+  runs: number
+  last_on: string | null
+  last_on_label: string | null
+}
+
+/** One of the watch's own zones, over the period. */
+export interface SourceZoneRow {
+  /** The watch's zone, one through five. */
+  zone: number
+  time: RenderedValue | null
+  share: RenderedValue | null
+  runs: number
+}
+
+/** One week of the source's own matrix. */
+export interface SourceWeekRow {
+  week_start: string
+  week_start_label: string
+  /** The time in each of the watch's five zones, that week. */
+  zones: (RenderedValue | null)[]
+}
+
+/** Where both bases exist. */
+export interface OverlapRow {
+  from: string
+  from_label: string
+  to: string
+  to_label: string
+  /** The runs in the overlap. */
+  runs: number
+  /** The app's own zone time over the overlap. */
+  app_moving: RenderedValue
+  /** The source's own zone minutes over the overlap. */
+  source_elapsed: RenderedValue
+  /** The distance between the two measurements, in seconds. */
+  difference: RenderedValue
+}
+
+/**
+ * The ledger: the athlete's own bands, the shape rows, and the two bases.
+ *
+ * **Two bases, side by side and never added up**: the app's own zone
+ * time, measured over the time the athlete was running, and the watch's
+ * own zone minutes, measured over the whole run.
+ */
+export interface StimulusInsight {
+  generated_at: string
+  date: string
+  window: InsightWindow
+  /** The one source line the screen names. */
+  source: string | null
+  /** The lines behind the click. */
+  sources: SourceLine[]
+  /** The kinds' rows, in the product's own order. */
+  kinds: KindRow[]
+  /** The weeks matrix: the band each week held. */
+  weeks: LedgerWeekRow[]
+  /** What the period covers. */
+  coverage: CoverageRow
+  /** The longest run in the period. */
+  longest: LongestRow | null
+  /** The repeated work in the period. */
+  repeated: RepeatedRow | null
+  /** Why the repeated-work row has no value, in the core's own words. */
+  repeated_missing: string | null
+  /** The watch's own zone minutes: the source's own basis. */
+  source_zones: SourceZoneRow[]
+  /** The source's own weeks matrix. */
+  source_weeks: SourceWeekRow[]
+  /** Where both bases exist. */
+  overlap: OverlapRow | null
+  /** Whether the store holds runs this answer did not read. */
+  more_runs: boolean
+  /** Why there is no value at all, in the core's own words. */
+  unavailable: string | null
+}
+
+/** One adoptable programme. */
+export interface BaseRow {
+  /** The template's identifier: "pfitzinger.10k.tier1". */
+  id: string
+  /** The template's name, in the runner's words: "10K tier 1". */
+  label: string
+  /** The base's name: "Pfitzinger". */
+  method: string
+  distance: RenderedValue
+  /** The distance's name: "10K". */
+  distance_label: string
+  /** The tier's entry requirement, as the core renders it: "48–67 km". */
+  entry_requirement: string | null
+  /** The entry requirement, in the core's own words. */
+  entry_line: string | null
+  /** The lower edge of the entry requirement, in metres. */
+  entry_from_m: number | null
+  /** The upper edge of the entry requirement, in metres. */
+  entry_to_m: number | null
+  /** How many weeks the programme runs. */
+  weeks: number
+}
+
+/**
+ * The programmes the app can adopt.
+ *
+ * **A programme is an intent, not a baseline**: it is what the athlete
+ * adopts, and the app never suggests one.
+ */
+export interface BasesInsight {
+  generated_at: string
+  /** The four programmes. */
+  bases: BaseRow[]
+  /**
+   * The athlete's own recent weekly mileage, in the core's own words.
+   *
+   * The fact the tier's entry requirement is stated beside — and the app
+   * never compares the two.
+   */
+  athlete_mileage: string | null
+  /** Why there is no programme to adopt, in the core's own words. */
+  unavailable: string | null
+}
+
+/**
+ * The plan in force: the programme, its tier, its dates and what it was
+ * paced with.
+ *
+ * The entry requirement and the athlete's own mileage travel together:
+ * three facts, side by side, unranked.
+ */
+export interface AdoptionInsight {
+  generated_at: string
+  /** The plan in force. Null when no plan has been adopted. */
+  plan: AdoptedPlan | null
+  /** Why there is no plan, in the core's own words. */
+  unavailable: string | null
+}
+
+/** The adopted plan, as the answer carries it. */
+export interface AdoptedPlan {
+  /** The programme's catalogue id. */
+  programme_id: string
+  /** The catalogue version the plan was adopted from. */
+  programme_version: string
+  /** The programme's own name: "half marathon tier 2". */
+  label: string
+  /** Whose method it is: "Pfitzinger". */
+  method: string
+  /** The tier the athlete chose: "tier 2". */
+  tier: string
+  /** The goal race's own distance, as the core renders it. */
+  goal_distance: RenderedValue
+  /** The distance's name: "half marathon". */
+  goal_label: string
+  /** The day of the goal race. */
+  race_date: string
+  /** The day of the goal race, as the app shows it. */
+  race_date_label: string
+  /** The plan's first day. */
+  start_date: string
+  /** The plan's last day. */
+  end_date: string
+  /** The day the plan was adopted. */
+  adopted_on: string
+  /** Where the plan came from. */
+  source: string
+  /** What the plan was paced with. */
+  pacing: PlanPacing
+  /** The tier's entry requirement beside the athlete's own mileage. */
+  entry: PlanEntry
+}
+
+/** The plan that was adopted. */
+export interface AdoptionWritten {
+  /** Whether the plan was adopted. */
+  adopted: boolean
+  /** The plan, as the answer carries it. */
+  plan: AdoptedPlan
+  generated_at: string
+}
+
+/**
+ * The athlete's own races, newest first.
+ *
+ * **The athlete's own facts are never synced.** They are typed into the
+ * app and stored locally, and the app never infers a race from the
+ * training.
+ */
+export interface RacesInsight {
+  generated_at: string
+  /** The races the athlete typed, newest first. */
+  races: RaceRow[]
+}
+
+/** The choice that was made. */
+export interface ChoiceWritten {
+  /** The choice, as it is now stored: the one in force. */
+  choice: ChoiceRow
+  generated_at: string
+}
+
 /**
  * The pace page's answer.
  *

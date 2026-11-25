@@ -2346,6 +2346,87 @@ are not proposals at all, because the user has already decided them.
 
 ---
 
+### Proposed amendment — the step-5 cards, and the three answers that changed (2026-11-25)
+
+**Proposal, not approved.** The approvals below are the user's to give. This
+section records the change and the rule it serves; it is not permission to
+ship, publish, migrate or sync production data.
+
+**The pace card on Progress is now the ladder.** The card that answered
+"the pace" with the training week by week, the pace-at-heart-rate cloud and
+the pace bands answers with the **ladder** instead: the anchors, the rungs
+with their values, their bands and their rules, drawn on two axes — the
+heart rate on the left, the pace on the right — and captioned with the race
+the paces came from and the chain that produced the number.
+
+- **The card is the picture** (D11). The rungs are drawn; the values, the
+  bands and the labels are on them; the caption names the race and the
+  chain. The screen **hoists one source line** — the zone model and the day
+  it was read — and the lines behind it travel behind a click.
+- **The explanation is a details affordance and nowhere else** (D22). A
+  rung's rule opens beside it, with its citation, and the rule's wording is
+  the core's own. No note layer, no paragraph under the card.
+- **The colours say whose number each one is**: the method's amber and the
+  athlete's own azure. **No colour marks a problem**, and there is no score,
+  no grade and no traffic light.
+- **Absence is drawn.** A rung with no pace is a hollow marker with the
+  reason written where the pace would have been; a ladder with no race draws
+  its axes and says what it needs. **A missing value is never a zero.**
+- **The pace page's own panels go with the route they read.** The
+  pace-at-heart-rate *chart* stays — it is the weekly median the Progress
+  answer already carries — and the cloud and the bands, which only the
+  `/insights/pace` route answered, are retired with it.
+
+**The cost curve is the drill-through, on its own panel.** The curve is a
+**second reading** of the same athlete and not a second ladder: no rungs and
+no pace bands repeated. It is reached from the pace card and drawn on its
+own panel, `/progress/curve`.
+
+- **The method's heart-rate bands are never drawn on the %maxVO₂ axis.**
+  Converting one into the other needs the athlete's lactate relation, which
+  the app does not have; the card says so in one line under the drawing.
+- **The curve never judges.** Nothing on it says a session is too hard, and
+  nothing ranks the athlete's races against the method's sessions.
+
+**The one answer that changed, and why it needs this note.** The frozen
+route table is the contract, and a change to an answer's shape needs a note
+in the same change. Three answers changed in this step, and each change
+removes work from the surface rather than adding to it:
+
+- **`/insights/pacing-curve`'s session rows now carry the share of the
+  maximum their own prescribed pace costs** — `from_percent_max` and
+  `to_percent_max` — because the curve's vertical axis is that share, and
+  **the app does not compute it**: the core's own relation does, and the
+  answer carries the number. Without it the surface would have had to hold a
+  second implementation of the engine's arithmetic.
+- **`/insights/threshold`'s candidates no longer carry the note** that says
+  what a candidate cannot know. That line is the **explanation**, and the
+  explanation is not product content (D22): the card shows the value, the
+  source and the date, and the core keeps the wording (`threshold.limit.*`)
+  for the notes to read. The note was also free text in the answer, and the
+  answer is captured in the app's fixture set.
+- **`/plan/bases` carries the entry requirement in the programme's own
+  words and the athlete's own mileage beside it** — `entry_line`, "this
+  level asks for 40.2-56.3 km a week", and `athlete_mileage`, "your last 4
+  weeks: 60.8, 61.1, 50.8, 6 km". The two are **side by side and
+  unranked** (B2), and both are the core's own rendering: the app states
+  them and never compares them.
+
+**The files it touches.** `crates/stride-api/src/dto.rs`,
+`crates/stride-api/src/routes/pacing_curve.rs` and
+`crates/stride-api/src/routes/threshold.rs` — the changed fields ·
+`crates/stride-core/src/plan_bases.rs` — the entry requirement's line, in
+the core's own words · `crates/stride-api/src/planbases.rs` — the bases'
+answer · `frontend/src/pages/ladder.tsx` and
+`frontend/src/pages/curve.tsx` — the two drawings · `frontend/src/pages/
+progressWall.tsx`, `frontend/src/pages/ProgressPanelPage.tsx` and
+`frontend/src/pages/useWall.ts` — the card, the panels and the answers ·
+`frontend/src/lib/types.ts`, `frontend/src/lib/api.ts` and
+`frontend/src/i18n/catalogue.ts` — the shapes, the calls and the chrome ·
+`docs/contract/api-paths.md` — the changed fields.
+
+---
+
 ## 0. The voice — vitals, direction, options; no verdicts
 
 Not a data dump, and not a set of orders. The app shows the vitals, says which way each has moved against the

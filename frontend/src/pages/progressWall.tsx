@@ -50,7 +50,7 @@ import {
   VolumePanel,
   hour,
 } from './progressPanels'
-import { PaceBandsPanel, PaceCloudChart } from './pacePanels'
+import { LadderCard } from './ladder'
 import {
   BestsPicture,
   HabitPicture,
@@ -151,18 +151,6 @@ function WallCard({
       {children}
     </section>
   )
-}
-
-/** The mock's big number: the answer at the top of a card. */
-function BigValue({ children }: { children: ReactNode }) {
-  return (
-    <p className="text-[22px] font-semibold leading-tight tabular-nums text-ink">{children}</p>
-  )
-}
-
-/** The mock's small note: what the card is, under the number. */
-function Note({ children }: { children: ReactNode }) {
-  return <p className="mt-1 text-[12.5px] leading-snug text-ink-muted">{children}</p>
 }
 
 /** The window a card's numbers cover, named under them. */
@@ -815,7 +803,7 @@ export function ProgressWall({
   const { data, load, rolling, streaks } = answers
   const {
     year,
-    pace,
+    paces,
     profile,
   } = wall
 
@@ -947,37 +935,23 @@ export function ProgressWall({
         testId="progress-wall-pace"
         openTestId="progress-pace-link"
       >
-        {pace.data && pace.data.weeks.length === 0 ? (
-          /* No run in the window: there is no pace to draw, and the card
-             says so rather than drawing an empty chart. */
-          <p className="text-[13px] text-ink-muted" data-testid="progress-wall-pace-empty">
-            {t('pace.empty.title')}
-          </p>
-        ) : null}
-        {pace.data && pace.data.weeks.length > 0 ? (
-          <>
-            <BigValue>
-              {t('progress.wall.pace.weeks', { n: formatCount(pace.data.window.weeks) })}
-            </BigValue>
-            <Note>{t('progress.wall.pace.note')}</Note>
-            <PaceBars pace={pace.data.weeks} />
-            <div className="mt-3">
-              <PaceCloudChart weeks={pace.data.weeks} bare />
-            </div>
-            <div className="mt-3">
-              <PaceBandsPanel
-                bands={pace.data.bands}
-                unavailable={pace.data.unavailable}
-                bare
-              />
-            </div>
-            <Window>
-              {pace.data.window.from_label} – {pace.data.window.to_label}
-            </Window>
-          </>
-        ) : (
-          <p className="text-[13px] text-ink-muted">{t('common.loading')}</p>
-        )}
+        {/*
+          The ladder: the anchors, the rungs with their values, their
+          bands and their rules. **The card is the picture** — the rungs
+          are drawn, and the caption names the race the paces came from.
+        */}
+        <LadderCard paces={paces.data} error={paces.isError} bare />
+        {/*
+          The drill-through: the curve is a second reading of the same
+          athlete, and it has a panel of its own.
+        */}
+        <Link
+          className="tap-inline mt-2 inline-block text-[12.5px] font-semibold text-brand-700 underline"
+          to="/progress/curve"
+          data-testid="progress-wall-pace-curve"
+        >
+          {t('progress.wall.curve.heading')}
+        </Link>
       </WallCard>
     ),
 

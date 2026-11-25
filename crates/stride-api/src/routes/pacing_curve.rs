@@ -112,22 +112,40 @@ pub fn pacing_curve(api: &Api, request: &Request) -> ApiResult<Value> {
     // run, and the long run whose length comes with the plan's weeks.
     let sessions: Vec<CurveSessionRow> = method_sessions(&ladder)
         .iter()
-        .map(|session| CurveSessionRow {
-            kind: session.kind.key().to_string(),
-            label: session.label.to_string(),
-            from_minutes: session.minutes.map(|minutes| minutes.0),
-            to_minutes: session.minutes.map(|minutes| minutes.1),
-            pace: session.pace.as_ref().map(super::pace_band_row),
-            rule: RuleRow {
-                id: session.rule.id.to_string(),
-                citation: session.rule.citation.to_string(),
-                line: session.rule.line(),
-            },
-            missing: if session.minutes.is_some() {
-                None
-            } else {
-                super::core_line("curve.long_run.no_length")
-            },
+        .map(|session| {
+            // The share of the maximum the session's pace costs, at its
+            // two ends: the curve's vertical axis, and the core's own
+            // relation. **No value when the athlete's own fitness number
+            // is not there** — every point on the curve is measured
+            // against it.
+            let (from_percent_max, to_percent_max) = match (vdot, session.pace.as_ref()) {
+                (Some(vdot), Some(band)) => (
+                    vo2::cost_of_pace(vdot, band.fast_s_per_km)
+                        .and_then(|percent| render::percent(Some(percent))),
+                    vo2::cost_of_pace(vdot, band.slow_s_per_km)
+                        .and_then(|percent| render::percent(Some(percent))),
+                ),
+                _ => (None, None),
+            };
+            CurveSessionRow {
+                kind: session.kind.key().to_string(),
+                label: session.label.to_string(),
+                from_minutes: session.minutes.map(|minutes| minutes.0),
+                to_minutes: session.minutes.map(|minutes| minutes.1),
+                pace: session.pace.as_ref().map(super::pace_band_row),
+                from_percent_max,
+                to_percent_max,
+                rule: RuleRow {
+                    id: session.rule.id.to_string(),
+                    citation: session.rule.citation.to_string(),
+                    line: session.rule.line(),
+                },
+                missing: if session.minutes.is_some() {
+                    None
+                } else {
+                    super::core_line("curve.long_run.no_length")
+                },
+            }
         })
         .collect();
 

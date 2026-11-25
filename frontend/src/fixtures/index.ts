@@ -26,6 +26,8 @@
 import type {
   ActivityDetail,
   ActivityCalendar,
+  AdoptionInsight,
+  BasesInsight,
   ChallengeInsight,
   CompareSeriesPoint,
   ActivityListResponse,
@@ -33,6 +35,7 @@ import type {
   CompareCandidate,
   CompareResponse,
   ConnectionStatus,
+  CurveInsight,
   FilmGround,
   FilmSample,
   FilmSplit,
@@ -48,12 +51,16 @@ import type {
   LoadInsight,
   NoteResult,
   PaceInsight,
+  PacesInsight,
   PlanImportResult,
   PlanWeek,
   ProgressInsight,
+  RacesInsight,
   RenderedValue,
   RollingInsight,
   RunFilm,
+  StimulusInsight,
+  ThresholdInsight,
 
   RunUpdateResponse,
   SettingsDeleteResult,
@@ -416,6 +423,61 @@ export const baselineProgressFixture = baselineAnswers['/insights/progress'] as 
  * themselves are the router's, and the app draws what it is given.
  */
 export const paceFixture = routerAnswers['/insights/pace'] as PaceInsight
+
+/* --------------------------------- the ladder, the curve, the threshold, the ledger */
+
+/**
+ * The ladder: the router's answer.
+ *
+ * The seed holds the athlete's own race — a 10K — so the rungs have
+ * their values, and the answer names the chain that produced them.
+ */
+export const pacesFixture = routerAnswers['/insights/paces'] as PacesInsight
+
+/**
+ * The physiological-cost curve: the router's answer.
+ *
+ * The curve itself, the athlete's own races on it, the method's own
+ * sessions as bands, and the field test's place in time.
+ */
+export const curveFixture = routerAnswers['/insights/pacing-curve'] as CurveInsight
+
+/**
+ * The threshold: the router's answer.
+ *
+ * The four candidates, the choice in force and the dated history of the
+ * choices.
+ */
+export const thresholdFixture = routerAnswers['/insights/threshold'] as ThresholdInsight
+
+/**
+ * The ledger: the router's answer.
+ *
+ * The athlete's own bands, the shape rows, and the two bases the time
+ * was measured on.
+ */
+export const stimulusFixture = routerAnswers['/insights/stimulus'] as StimulusInsight
+
+/**
+ * The programmes the app can adopt: the router's answer.
+ *
+ * The four of the catalogue, each with its tier and its entry
+ * requirement — and the athlete's own mileage beside it.
+ */
+export const basesFixture = routerAnswers['/plan/bases'] as BasesInsight
+
+/**
+ * The athlete's own races: the router's answer.
+ */
+export const racesFixtureAnswer = routerAnswers['/athlete/races'] as RacesInsight
+
+/**
+ * The plan in force: the router's answer.
+ *
+ * The seeded store holds no adopted plan, so the answer says that no
+ * plan has been adopted — in the core's own words.
+ */
+export const adoptionFixture = routerAnswers['/plan/adopt'] as AdoptionInsight
 
 // --------------------------------------------------------------- load
 
@@ -1762,6 +1824,90 @@ export const zoneModelFixture: SeedZoneModel = {
 }
 
 /**
+ * The athlete's own races, as the seed carries them.
+ *
+ * **A race is an observation, not a verdict**: the athlete types it, and
+ * the app never infers one from the training. The seed carries the
+ * distance, the finish time and the day it was run — and the api's test
+ * writes the row, so the router answers with the same race.
+ *
+ * The values are invented, like every other value in the fixture set.
+ */
+export interface SeedRace {
+  /** The distance's name: "10K". */
+  label: string
+  /** The finish time, in seconds. */
+  time_s: number
+  /** The day the race was run. */
+  race_date: string
+  /** The athlete's own name for it, when they gave one. */
+  name: string | null
+  /** The day it was entered. */
+  entered_on: string
+  /** The day the row was last changed. */
+  updated_on: string
+}
+
+export const racesFixture: SeedRace[] = [
+  {
+    label: '10K',
+    time_s: 2496,
+    race_date: '2026-04-19',
+    name: null,
+    entered_on: '2026-04-20',
+    updated_on: '2026-04-20',
+  },
+]
+
+/**
+ * The threshold the athlete chose, as the seed carries it.
+ *
+ * **One choice is in force at a time**, and the earlier choices stay in
+ * the dated history. The seed carries one: the number the athlete
+ * brought, and the day they brought it.
+ */
+export interface SeedThreshold {
+  /** The heart rate, in beats per minute. */
+  hr_bpm: number | null
+  /** The pace band's fast edge, in seconds per kilometre. */
+  pace_low_s_per_km: number | null
+  /** The pace band's slow edge, in seconds per kilometre. */
+  pace_high_s_per_km: number | null
+  /** Where the choice came from. */
+  source: string
+  /** The rule that computed it, where one applied. */
+  rule_id: string | null
+  /** The base the choice was made for. */
+  base: string
+  /** The day of the fact the number came from. */
+  origin_date: string | null
+  /** The athlete's own label for a typed number. */
+  label: string | null
+  /** The day the choice was made. */
+  entered_on: string
+  /** The day the row was last changed. */
+  updated_on: string
+  /** Is this the choice in force now? */
+  in_force: boolean
+}
+
+export const thresholdsFixture: SeedThreshold[] = [
+  {
+    hr_bpm: 168,
+    pace_low_s_per_km: null,
+    pace_high_s_per_km: null,
+    source: 'watch_zone_model',
+    rule_id: null,
+    base: 'pfitzinger',
+    origin_date: '2026-05-10',
+    label: null,
+    entered_on: '2026-05-11',
+    updated_on: '2026-05-11',
+    in_force: true,
+  },
+]
+
+/**
  * The heart-rate zones of a run.
  *
  * The router's answer for the seeded store: the athlete's stored zone
@@ -2504,6 +2650,20 @@ export function fixtureResponse(
       // The seeded store holds no file, so the router answers no bands:
       // the window holds no moving samples, and the screen says so.
       return routerAnswers[`/insights/pace?weeks=${params.weeks}`] ?? paceFixture
+    case '/insights/paces':
+      return routerAnswers[`/insights/paces?weeks=${params.weeks}`] ?? pacesFixture
+    case '/insights/pacing-curve':
+      return routerAnswers[`/insights/pacing-curve?weeks=${params.weeks}`] ?? curveFixture
+    case '/insights/threshold':
+      return routerAnswers[`/insights/threshold?weeks=${params.weeks}`] ?? thresholdFixture
+    case '/insights/stimulus':
+      return routerAnswers[`/insights/stimulus?weeks=${params.weeks}`] ?? stimulusFixture
+    case '/plan/bases':
+      return basesFixture
+    case '/plan/adopt':
+      return adoptionFixture
+    case '/athlete/races':
+      return racesFixtureAnswer
     case '/insights/rolling': {
       // Nothing in the store: the window holds no distance and the
       // tables hold no rows.

@@ -23,9 +23,9 @@
 //! ## What each candidate cannot know
 //!
 //! That line **lives in the notes**, not in the number: a candidate
-//! carries its value, its date and its rule, and the limit on it is an
-//! annotation the surface may show under the card. The core holds the
-//! note's wording, so that the app never writes one of its own.
+//! carries its value, its date and its rule, and the limit on it is not
+//! in the answer at all. The core holds the note's wording, so that the
+//! app never writes one of its own — and the card stays a card.
 
 use serde_json::Value;
 use stride_core::threshold::{
@@ -151,7 +151,6 @@ fn candidate_row(candidate: &Candidate) -> CandidateRow {
             citation: rule.citation.to_string(),
             line: rule.line(),
         }),
-        note: candidate.note(),
         missing: candidate
             .value
             .missing()

@@ -66,6 +66,9 @@ const seed = {
   nights: fixtures.nightsFixture,
   plan_sessions: fixtures.planSessionsFixture,
   zone_models: [fixtures.zoneModelFixture],
+  /** The athlete's own facts: the races and the threshold they chose. */
+  races: fixtures.racesFixture,
+  thresholds: fixtures.thresholdsFixture,
 }
 
 /**

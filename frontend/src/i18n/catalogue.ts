@@ -1156,6 +1156,80 @@ export const catalogue = {
     type: 'status',
     text: 'A run on the feed can be compared with another one',
   },
+
+  /* ------------------------------------------- the ladder, the pace card */
+  /*
+    The ladder's own chrome: the two axes, the legend that says whose
+    number each one is, and the details affordance that opens a rule.
+
+    **The chart's own words are the app's chrome** — the axes, the
+    legend and the affordances. The numbers, the rules and the reasons
+    are the core's, and they arrive already rendered.
+  */
+  'pace.card.hr': { type: 'status', text: 'your heart rate' },
+  'pace.card.pace': { type: 'status', text: 'your pace' },
+  'pace.card.rule': { type: 'status', text: 'the rule' },
+  'pace.card.sources': { type: 'status', text: 'the sources' },
+  'pace.card.anchors': { type: 'status', text: 'the race paces' },
+  'pace.card.empty': { type: 'status', text: 'No race time entered' },
+  'pace.legend.method': { type: 'status', text: "the method's rule" },
+  'pace.legend.athlete': { type: 'status', text: 'your own race' },
+  'pace.card.note': {
+    type: 'status',
+    text: 'The heart-rate band and the pace are two different numbers, and they are not converted into one another.',
+  },
+
+  /* --------------------------------------------------- the effort curve */
+  'progress.wall.curve.heading': { type: 'status', text: 'The effort curve' },
+  'curve.card.races': { type: 'status', text: 'your races' },
+  'curve.card.sessions': { type: 'status', text: "the method's sessions" },
+  'curve.card.fieldTest': { type: 'status', text: 'the time trial' },
+  'curve.card.equivalents': { type: 'status', text: 'the race paces' },
+  'curve.card.curve': { type: 'status', text: 'the curve' },
+  'curve.card.percent': { type: 'status', text: 'the share of your maximum' },
+  'curve.card.minutes': { type: 'status', text: 'minutes' },
+  'curve.card.note': {
+    type: 'status',
+    text: "The method's heart-rate bands and this curve's axis are two different numbers, and they are not converted into one another.",
+  },
+
+  /* -------------------------------------------------------- the ledger */
+  'ledger.block.app': { type: 'status', text: 'your zones' },
+  'ledger.block.app.note': { type: 'status', text: 'the time you were running' },
+  'ledger.block.source': { type: 'status', text: "the watch's own zones" },
+  'ledger.block.source.note': { type: 'status', text: 'the whole run' },
+  'ledger.overlap': { type: 'status', text: 'where both bases exist' },
+  'ledger.coverage': { type: 'status', text: 'the runs the period holds' },
+  'ledger.longest': { type: 'status', text: 'the longest run' },
+  'ledger.repeated': { type: 'status', text: 'the repeated work' },
+  'ledger.more': { type: 'status', text: 'The store holds more runs than this answer read' },
+
+  /* ------------------------------------------------------ the threshold */
+  'settings.threshold.heading': { type: 'status', text: 'Your threshold' },
+  'threshold.card.candidates': { type: 'status', text: 'the four candidates' },
+  'threshold.card.choose': { type: 'status', text: 'use this one' },
+  'threshold.card.inUse': { type: 'status', text: 'in use' },
+  'threshold.card.history': { type: 'status', text: 'the choices you have made' },
+  'threshold.card.typed': { type: 'status', text: 'a number you brought' },
+  'threshold.card.typedField': { type: 'status', text: 'your number, in bpm' },
+  'threshold.card.saved': { type: 'status', text: 'Your threshold is saved' },
+  'threshold.card.refused': { type: 'status', text: 'That choice could not be saved' },
+
+  /* ------------------------------------------------------- the plan's bases */
+  'plan.bases.heading': { type: 'status', text: 'Adopting a programme' },
+  'plan.bases.pick': { type: 'status', text: 'adopt this one' },
+  'plan.bases.weeks': { type: 'status', text: '{n} weeks' },
+  'plan.bases.start': { type: 'status', text: 'the plan starts on' },
+  'plan.bases.race': { type: 'status', text: 'the race is on' },
+  'plan.bases.mileage': { type: 'status', text: 'your own mileage' },
+  'plan.bases.adopted': { type: 'status', text: 'The plan is adopted' },
+  'plan.bases.refused': { type: 'status', text: 'That programme could not be adopted' },
+
+  /* --------------------------------------------- the week, and the day */
+  'plan.week.paces': { type: 'status', text: 'the paces of the week' },
+  'plan.week.pacedWith': { type: 'status', text: 'the plan was paced with' },
+  'plan.week.entry': { type: 'status', text: 'the level asks for' },
+  'today.options.pacing': { type: 'status', text: "the plan's pacing" },
 } as const satisfies Record<string, Entry>
 
 export type CatalogueEntry = (typeof catalogue)[keyof typeof catalogue]
