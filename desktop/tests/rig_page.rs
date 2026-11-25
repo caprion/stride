@@ -305,7 +305,7 @@ fn the_tools_page_is_still_served_and_the_rig_answers_its_own_paths(
     let tools = rig.handle(&request("GET", "/rig/tools"), loopback());
     assert_eq!(tools.status, 200);
     assert!(
-        body_of(&tools).contains("Backup and restore"),
+        body_of(&tools).contains("Backup, restore and export"),
         "the tools page is not the tools page"
     );
 

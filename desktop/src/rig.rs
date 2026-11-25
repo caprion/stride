@@ -173,7 +173,7 @@ const SCREENS: [(&str, &str); 12] = [
     ("Plan", "/plan"),
     ("Adopting a programme", "/plan/bases"),
     ("Your threshold", "/settings?section=training"),
-    ("Backup and restore", "/rig/tools"),
+    ("Backup, restore and export", "/rig/tools"),
 ];
 
 /// Read the facts the rig's page states.
@@ -453,7 +453,7 @@ fn storage_section(facts: &RigFacts) -> String {
         "<p class=\"muted\">The database is encrypted, and the key that opens it is a file of \
          its own. Nothing here leaves this machine.</p>\n",
     );
-    out.push_str("<p><a href=\"/rig/tools\">Backup and restore</a></p>\n</section>\n");
+    out.push_str("<p><a href=\"/rig/tools\">Backup, restore and export</a></p>\n</section>\n");
     out
 }
 

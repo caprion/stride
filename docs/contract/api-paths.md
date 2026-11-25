@@ -206,8 +206,7 @@ other**: a contract that is not checked is a document, not a gate.
 
 The routes the app does not read — `/physiology/{daily,hrv,latest,sources}`,
 `/stats/*`, `/plan/{current,today,blocks,sources,adherence,results}`,
-`/fitness/trends`, `/insights/chips`, `/insights/{paces,pacing-curve,threshold,stimulus}`,
-`/plan/bases`, `/plan/adopt`, `/athlete/{races,threshold}`, `/health/daily`,
+`/fitness/trends`, `/insights/chips`, `/athlete/races`, `/health/daily`,
 `/sync/{runs,history,settings}` and `/auth/garmin/logout` —
 are the router's own, and they are written down in
 `crates/stride-api/src/dto.rs`. They follow the same two rules: a domain
@@ -219,6 +218,16 @@ of the five `/auth/*` routes, and it reads neither `/fitness/trends` nor
 what was corrected is the prose about which of its routes the app reads.
 It travels with the phone's bridge, whose own copy of the table was eleven
 routes short.
+
+The list was corrected again on 2026-11-25, when the app's own screens
+landed: the app now reads `/insights/{paces,pacing-curve,threshold,stimulus}`
+— the ladder, the cost curve, the threshold and the ledger — and
+`/plan/bases` and `/plan/adopt`, the adoption and the plan in force, and it
+makes the threshold's choice through `/athlete/threshold`. **`/athlete/races`
+stays on the list**: the race is typed on the rig's own page, and the write
+goes through the same route. **No route changed** again — the table above is
+the table, and what was corrected is the prose about which of its routes the
+app reads.
 
 Each non-null sync history resource has `target_from`, nullable `checked_from`,
 nullable `checked_to` and nullable `next_date`. These describe one contiguous
@@ -674,10 +683,18 @@ by side, unranked.** The requirement is the programme's own line —
 is the athlete's own, in `athlete_mileage`, "your last 4 weeks: 60.8,
 61.1, 50.8, 6 km". The answer states them and never compares them.
 
-**The data lands with the plan's own step.** The templates are read cell
-by cell from the book's own tables, and the list is empty until they are:
-an empty list is a **no value with a reason** in `unavailable`, never a
-programme that is not there.
+**The mileage row is absent when the athlete has no runs.** `athlete_mileage`
+is `null` when the athlete ran in none of the last four weeks: there is
+then no mileage to set the requirement beside, so the answer carries no
+mileage row at all, and the card shows the level's own requirement alone.
+**With no runs there is no mileage to compare against, and that is a fact and
+not a failure** — no runs is a fact about the athlete's history, and the app
+states it by leaving the row out, never by saying the mileage is missing.
+
+**The templates have landed.** The four programmes are read cell by cell from
+the book's own tables and they are in the catalogue, so the list is not
+empty. An empty catalogue is still a **no value with a reason** in
+`unavailable`, never a programme that is not there.
 
 ### The adopted plan
 
