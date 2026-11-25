@@ -156,6 +156,27 @@ const ROUTES = [
     primary: '[data-testid="progress-panel-pace"]',
   },
   {
+    // The cost curve: the drill-through behind the ladder, on its own
+    // panel.
+    path: '/progress/curve',
+    name: 'Progress · the cost curve',
+    primary: '[data-testid="progress-panel-curve"]',
+  },
+  {
+    // The ledger's two blocks: the app's own zone time and the watch's
+    // own zone minutes.
+    path: '/progress/zone-time',
+    name: 'Progress · where the time went',
+    primary: '[data-testid="progress-panel-zone-time"]',
+  },
+  {
+    // The programmes the athlete can adopt: the four, with the entry
+    // requirement beside their own mileage.
+    path: '/plan/bases',
+    name: 'Plan · the programmes',
+    primary: '[data-testid="plan-bases"]',
+  },
+  {
     // The year, as a film: the months, the calendar of the days and what
     // changed. It is a page reached from Progress, not a destination.
     path: '/year',
