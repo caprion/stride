@@ -22,6 +22,7 @@
 //! | [`model`] | the model client: one OpenAI-compatible shape, every provider |
 //! | [`update`] | the rig's calling: the writer, the reviewer, and the repair |
 //! | [`workspace`] | the machine-side services and the first-run state |
+//! | [`rig`] | the rig's own page: the index, the status, the storage, the connection |
 //! | [`tools`] | the rig's verified export and import |
 //! | [`paths`] | where the rig keeps its files |
 //! | [`log`] | the rig's log, and the sink a test reads |
@@ -51,6 +52,7 @@ pub mod key;
 pub mod log;
 pub mod model;
 pub mod paths;
+pub mod rig;
 pub mod server;
 pub mod spa;
 pub mod sync;

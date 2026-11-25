@@ -176,6 +176,7 @@ fn serve(arguments: &[String]) -> Result<i32> {
 
     println!("stride {}", stride_api::VERSION);
     println!("the app is on http://{served}");
+    println!("this rig's own page is on http://{served}/rig");
     println!("the database is at {}", database.display());
     println!("{}", trust_line(server.trust()));
 

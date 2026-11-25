@@ -110,11 +110,46 @@ The rig refuses plain HTTP on a network address. If the network is already
 private, such as a tailnet, `--allow-plain-http` is an explicit choice and
 the rig says in its output that it made that choice.
 
-## 5. Move the data: export and import
+## 5. This rig's own page
+
+The rig has a page of its own, at <http://127.0.0.1:8080/rig>. It is the
+**host's** face, not the app's: the app is the athlete's face, and the rig
+is the machine it runs on. The page says four things, and every line of it
+is a fact:
+
+| part | what it says |
+|---|---|
+| the index | the screens the rig serves, the new ones included — the ladder, the cost curve, the ledger, the threshold and the programmes |
+| the status | the version being served, the database's schema version, what the log holds, and where the first run stands |
+| the storage | the folder, the database and its size, and the files the keys live in |
+| the connection | whether a Garmin key is kept, and when the log was last filled from the source |
+
+**The page never carries a key.** It says *whether* a Garmin key is kept and
+where the file is; the key itself has no path onto the page.
+
+### The three things only you can give it
+
+The new screens need three things that cannot be worked out from the
+training, and the rig's own page offers them as your own choices:
+
+- **a race** — typed on the page, with the distance it was at, the time and
+  the day. The paces on Progress come from a race you ran;
+- **a threshold** — chosen in the app, under **Settings > Training**, where
+  the four candidates are. The app states them and does not choose;
+- **a programme** — adopted in the app, under **Plan > Adopting a
+  programme**, where the four programmes are with the entry requirement
+  beside your own mileage.
+
+They are listed side by side, in the same shape, with no preference between
+them: nothing on the page is ranked, nothing is graded, and the vitals are
+never linked to a choice. A fresh rig leaves all three empty, says so, and
+asks for nothing.
+
+## 6. Move the data: export and import
 
 Open **Data & connection > Backup, restore and export** to reach the host-owned
-tools at <http://127.0.0.1:8080/rig>. The same operations are available from the
-command line.
+tools at <http://127.0.0.1:8080/rig/tools>. The same operations are available
+from the command line.
 
 ### Export
 
@@ -189,7 +224,7 @@ already have this run: 12 Oct, 10.2 km
 A duplicate adds no row. A file that is not a readable FIT file, or one over
 20 MiB, is refused with a sentence rather than a stack trace.
 
-## 6. Shared screens and platform boundaries
+## 7. Shared screens and platform boundaries
 
 Today, Runs, Progress and Body are shared at every width, with contextual Plan
 and Compare. Wider screens use columns and a navigation rail; compact screens

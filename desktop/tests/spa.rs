@@ -77,6 +77,30 @@ fn an_unknown_path_falls_back_to_the_app() -> Result<()> {
 }
 
 #[test]
+fn the_new_screens_are_served_by_the_host() -> Result<()> {
+    // The new cards' routes are the app's own routes, and the rig serves
+    // them the way it serves every other one: with the app, and not with a
+    // 404. The rig has no opinion about what a route means.
+    let server = server(Trust::loopback_only());
+    for path in [
+        "/progress/pace",
+        "/progress/curve",
+        "/progress/zone-time",
+        "/plan/bases",
+        "/settings",
+    ] {
+        let response = server.handle(&request("GET", path), loopback());
+        assert_eq!(response.status, 200, "{path}");
+        let body = body_of(&response);
+        assert!(
+            !body.contains("panicked at"),
+            "{path} was answered with a stack trace: {body}"
+        );
+    }
+    Ok(())
+}
+
+#[test]
 fn a_missing_file_is_a_plain_404() -> Result<()> {
     let server = server(Trust::loopback_only());
     let response = server.handle(&request("GET", "/assets/nothing-here.js"), loopback());

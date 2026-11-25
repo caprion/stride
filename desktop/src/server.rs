@@ -53,6 +53,7 @@ use crate::api::{self, Host, Router};
 use crate::http::{self, Request, Response};
 use crate::log;
 use crate::paths;
+use crate::rig;
 use crate::spa::Spa;
 use crate::tools;
 use crate::trust::{Decision, Trust};
@@ -171,10 +172,12 @@ impl Server {
                     Some(connect_page())
                 }
             }
-            ("GET", "/rig") => Some(
+            ("GET", "/rig") => Some(self.rig_page(workspace, None)),
+            ("GET", "/rig/tools") => Some(
                 Response::html(200, include_str!("../pages/tools.html"))
                     .with_header("cache-control", "no-store"),
             ),
+            ("POST", "/rig/race") => Some(self.write_race(request, workspace)),
             ("POST", "/rig/first-run/not-now") => Some(match workspace.remember_skipped() {
                 Ok(()) => json_response(200, serde_json::json!({"ok": true})),
                 Err(error) => rig_error(500, "first_run_failed", &error.to_string()),
@@ -191,6 +194,91 @@ impl Server {
             }
             _ => None,
         }
+    }
+
+    /// The rig's own page.
+    ///
+    /// **The host's face, not the app's.** It says what version this rig
+    /// is serving, where the athlete's files are, whether a Garmin key is
+    /// kept, and the three decisions that only the athlete can make — each
+    /// one offered as the athlete's own, unranked, and never as a
+    /// recommendation.
+    ///
+    /// The numbers on it are the router's own answers: the rig states what
+    /// the app says and computes none of it.
+    fn rig_page(&self, workspace: &Workspace, notice: Option<rig::Notice>) -> Response {
+        let mut facts = rig::facts(workspace, self.router.as_ref());
+        facts.notice = notice;
+        Response::html(200, &rig::page(&facts)).with_header("cache-control", "no-store")
+    }
+
+    /// Write a race the athlete typed, and say what happened.
+    ///
+    /// **The write goes through the router.** The rig asks `stride-api`'s
+    /// own route to write the race, so the race is the app's race and the
+    /// refusals are the route's own words.
+    fn write_race(&self, request: &Request, workspace: &Workspace) -> Response {
+        let fields = rig::form_fields(&request.body);
+        let Some(label) = rig::field(&fields, "label") else {
+            return self.rig_page(
+                workspace,
+                Some(rig::Notice {
+                    ok: false,
+                    text: "The race was not added: it needs a distance the app knows.".to_string(),
+                }),
+            );
+        };
+        let Some(time) = rig::field(&fields, "time").and_then(|text| rig::parse_time(&text)) else {
+            return self.rig_page(
+                workspace,
+                Some(rig::Notice {
+                    ok: false,
+                    text: "The race was not added: it needs a time.".to_string(),
+                }),
+            );
+        };
+        let Some(date) = rig::field(&fields, "date") else {
+            return self.rig_page(
+                workspace,
+                Some(rig::Notice {
+                    ok: false,
+                    text: "The race was not added: it needs the day it was run.".to_string(),
+                }),
+            );
+        };
+        let body = serde_json::to_vec(&serde_json::json!({
+            "label": label,
+            "time_s": time,
+            "date": date,
+        }))
+        .unwrap_or_else(|_| b"{}".to_vec());
+        let call = api::Request {
+            method: "POST",
+            path: "/api/v1/athlete/races",
+            query: "",
+            body: &body,
+        };
+        let answer = self.router.call(&call);
+        if answer.status == 200 {
+            // The race is in the log; the page says so by listing it.
+            return Response::redirect(303, "/rig");
+        }
+        let detail = serde_json::from_slice::<serde_json::Value>(&answer.body)
+            .ok()
+            .and_then(|value| {
+                value
+                    .get("detail")
+                    .and_then(serde_json::Value::as_str)
+                    .map(str::to_string)
+            })
+            .unwrap_or_else(|| "the route refused it".to_string());
+        self.rig_page(
+            workspace,
+            Some(rig::Notice {
+                ok: false,
+                text: format!("The race was not added. {}", capitalise(&detail)),
+            }),
+        )
     }
 
     /// Write the update of a run, and say what happened.
@@ -692,6 +780,22 @@ fn query_value(query: &str, name: &str) -> Option<String> {
         }
     }
     None
+}
+
+/// A sentence's first letter, capitalised.
+///
+/// The route's own refusals are sentences in the core's voice, and they
+/// start in the lower case. The page puts them after a full stop, so they
+/// start with a capital.
+fn capitalise(text: &str) -> String {
+    let mut characters = text.chars();
+    let Some(first) = characters.next() else {
+        return String::new();
+    };
+    let mut out = String::with_capacity(text.len());
+    out.extend(first.to_uppercase());
+    out.push_str(characters.as_str());
+    out
 }
 
 /// The text of a distance, whether the API sent a string or a rendered
