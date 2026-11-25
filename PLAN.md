@@ -762,6 +762,34 @@ hours the product reads moved from UTC to the machine's own zone.
   move**: a run at 05:10 belongs to that calendar day, and it is a morning
   run in the day's four parts.
 
+### Note — the run's own zones say when they begin to apply (2026-11-25)
+
+This note travels with a change to `docs/contract/api-paths.md`, which the
+contract freeze says is a plan change: a frozen file changes only with a
+plan note in the same change. **One field was added** to the run's zones
+answer, and one reason was brought into the register the other reasons
+use.
+
+* **The run's own page says when the zones begin to apply.** The screen's
+  source line already said it — *"the watch's configuration as it stood on
+  25 Nov 2026 · the runs from that day on"* — but a reader had to visit
+  another screen to learn it. The run's own zones answer now carries
+  **`apply_from`**, in the core's own words: **"your watch's zones apply
+  to the runs from 25 Nov 2026"**. The field is **absent** when no model
+  has ever been read: there is no such day, and the reason the answer
+  carries stands as it is.
+* **The reasons are one register.** `zones.no_model` — no zone model has
+  been read at all — read *"No zones yet — your watch's heart-rate zones
+  have not come through"*, which was the old vocabulary. It now reads
+  like its siblings: **"not measured — your watch's zones were not read,
+  and the watch's own zone minutes are the only zone time here"**. The
+  ledger's own test asserted the old sentence, and that one expectation
+  was changed with it; **the ledger's behaviour did not change**.
+* **The ban list and the closed direction set are untouched.** No string
+  was added to either, and no string was reworded in a way that reads as a
+  verdict: a reason still says what is missing and never what to do
+  about it.
+
 ### Proposed amendment — the zone model is a dated fact (2026-11-15)
 
 **Proposal, not approved.** The approvals below are the user's to give. This
