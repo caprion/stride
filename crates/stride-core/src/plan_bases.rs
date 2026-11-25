@@ -1932,6 +1932,10 @@ pub struct DateWords {
     pub threshold: Option<String>,
     /// The race's day: "12 Oct 2026".
     pub race: Option<String>,
+    /// The plan's first day: "23 Nov 2026".
+    pub start: Option<String>,
+    /// The plan's last day: "14 Feb 2027".
+    pub end: Option<String>,
 }
 
 /// The pace of a **stored** session, from the two ends it was stored with.

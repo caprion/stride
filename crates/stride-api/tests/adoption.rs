@@ -447,3 +447,124 @@ fn the_athletes_own_mileage_is_beside_the_entry_requirement_and_never_against_it
     assert!(!requirement.contains("below"), "{requirement}");
     assert!(!athlete_line.contains("below"), "{athlete_line}");
 }
+
+/// The week against the week that happened: **a fact, not a verdict**.
+#[test]
+fn the_plan_s_week_is_compared_with_the_week_that_happened() {
+    let harness = Harness::empty("adopt-against");
+    athlete(&harness);
+    let (status, answer) = post(&harness, "/plan/adopt", &body());
+    assert_eq!(status, 200, "the adoption was refused: {answer}");
+
+    // The week of the twenty-eighth of December 2026: a run on the
+    // Tuesday and a run on the Wednesday, and nothing on the other days.
+    harness.write_run(common::run(
+        "a-run-on-the-tuesday",
+        "2026-12-29",
+        14_500.0,
+        4_785.0,
+    ));
+    harness.write_run(common::run(
+        "a-run-on-the-wednesday",
+        "2026-12-30",
+        15_000.0,
+        5_025.0,
+    ));
+
+    // The Friday of that week: two sessions done, one not done, and the
+    // rest of the week still to come.
+    let answer = harness.ok_get("/plan/week?date=2027-01-01");
+    let against = &answer["against"];
+    assert_eq!(against["state"], "running");
+    assert_eq!(
+        against["source_line"],
+        "the Pfitzinger half marathon tier 2 plan"
+    );
+    assert_eq!(
+        against["paced_with"],
+        "paced with the threshold of 1 May 2026 · 165 bpm"
+    );
+
+    // The week's totals against the plan's: the days that have gone on
+    // both sides.
+    let totals = &against["totals"];
+    assert_eq!(totals["line"], "29.5 km against the plan's 49.9 km");
+    assert_eq!(totals["planned"]["text"], "49.9 km");
+    assert_eq!(totals["actual"]["text"], "29.5 km");
+
+    let sessions = week_three(&answer);
+    // The rest day: neither done nor not done.
+    assert!(sessions[0]["status"].is_null(), "{:?}", sessions[0]);
+    assert!(sessions[0]["actual"].is_null(), "{:?}", sessions[0]);
+
+    // The easy run: done, and the distance is what was run.
+    assert_eq!(sessions[1]["status"], "done");
+    assert_eq!(sessions[1]["actual"]["text"], "14.5 km");
+
+    // The long run: done, short of the plan, and slower than the plan's
+    // pace. **The pace is compared only because both of them exist.**
+    assert_eq!(sessions[2]["status"], "done");
+    assert_eq!(sessions[2]["actual"]["text"], "15 km");
+    assert_eq!(
+        sessions[2]["difference"],
+        "2.7 km less than the 17.7 km target"
+    );
+    assert_eq!(
+        sessions[2]["pace_comparison"],
+        "5:35 /km · 3 s/km slower than the plan's 5:00–5:32 /km"
+    );
+
+    // The intervals: the day went by and the session was not run.
+    assert_eq!(sessions[3]["status"], "not_done");
+    assert!(sessions[3]["actual"].is_null(), "{:?}", sessions[3]);
+
+    // The general aerobic day: the method fixes a band and states no
+    // pace, so no pace is compared.
+    assert!(
+        sessions[1]["pace_comparison"].is_null(),
+        "{:?}",
+        sessions[1]
+    );
+    assert!(
+        sessions[5]["pace_comparison"].is_null(),
+        "{:?}",
+        sessions[5]
+    );
+}
+
+/// The four states: **each one says its own thing**.
+#[test]
+fn the_card_says_which_state_the_week_is_in() {
+    let harness = Harness::empty("adopt-states");
+
+    // No plan at all: the app says so, and points at the programmes there
+    // are to adopt.
+    let answer = harness.ok_get("/plan/week");
+    let against = &answer["against"];
+    assert_eq!(against["state"], "none");
+    assert_eq!(against["state_line"], "no plan has been adopted");
+    assert_eq!(against["choose"], "your plan is one of the 4 programmes");
+    assert!(against["totals"].is_null(), "{against}");
+
+    athlete(&harness);
+    let (status, _) = post(&harness, "/plan/adopt", &body());
+    assert_eq!(status, 200);
+
+    // The plan has not started yet: the app says when it starts.
+    let answer = harness.ok_get("/plan/week?date=2026-11-01");
+    let against = &answer["against"];
+    assert_eq!(against["state"], "before");
+    assert_eq!(
+        against["state_line"],
+        "your plan starts on 2 Nov 2026 — this week comes before it"
+    );
+
+    // And the plan has passed: the app says when its last week ended.
+    let answer = harness.ok_get("/plan/week?date=2027-02-08");
+    let against = &answer["against"];
+    assert_eq!(against["state"], "after");
+    assert_eq!(
+        against["state_line"],
+        "your plan's last week ended on 7 Feb 2027 — this week comes after it"
+    );
+}

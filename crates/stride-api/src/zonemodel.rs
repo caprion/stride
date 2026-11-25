@@ -57,9 +57,7 @@
 
 use chrono::{DateTime, TimeZone, Utc};
 use stride_core::date::Date;
-use stride_core::heart_rates::{
-    Bands, Declaration, HeartRateKind, HeartRateSource, DeclaredRate,
-};
+use stride_core::heart_rates::{Bands, Declaration, DeclaredRate, HeartRateKind, HeartRateSource};
 use stride_core::zones::ZoneFloors;
 
 use crate::error::ApiResult;
@@ -104,7 +102,11 @@ pub struct ZoneModel {
     pub read_on: Date,
     /// The athlete's own declaration, when the bands are the declared
     /// ones. `None` for the watch's own model.
-    pub declared: Option<DeclaredBands>,
+    ///
+    /// It is **boxed**, so that the model stays small: the model is
+    /// carried by value in a few places, and a large variant is a large
+    /// copy.
+    pub declared: Option<Box<DeclaredBands>>,
 }
 
 impl ZoneModel {
@@ -151,13 +153,13 @@ pub fn model_for(api: &Api, date: Date) -> ApiResult<ModelFor> {
     // The athlete's own declaration wins where there is one: the bands are
     // the declared ones, for every run.
     if let Some(declared) = &models.declared_model {
-        return Ok(ModelFor::Model(declared.clone()));
+        return Ok(ModelFor::Model(Box::new(declared.clone())));
     }
     if models.models().is_empty() {
         return Ok(ModelFor::NoneRead);
     }
     Ok(match models.watch_in_force(date) {
-        Some(model) => ModelFor::Model(model.clone()),
+        Some(model) => ModelFor::Model(Box::new(model.clone())),
         None => ModelFor::NoneInForce,
     })
 }
@@ -223,10 +225,9 @@ pub fn bands_for(api: &Api, date: Date) -> ApiResult<Option<EffectiveBands>> {
 /// **one declaration is one or two rows** and only the declaration knows
 /// that.
 pub fn declarations(api: &Api) -> ApiResult<Vec<Declaration>> {
-    let rows = api
-        .store()
-        .heart_rate_declarations()
-        .map_err(|error| api.store_error("the heart rate declarations could not be read", &error))?;
+    let rows = api.store().heart_rate_declarations().map_err(|error| {
+        api.store_error("the heart rate declarations could not be read", &error)
+    })?;
     Ok(declarations_of(&rows))
 }
 
@@ -291,7 +292,11 @@ pub fn declaration_in_force(api: &Api) -> ApiResult<Option<Declaration>> {
 #[derive(Clone, Debug, PartialEq)]
 pub enum ModelFor {
     /// The model in force on that day.
-    Model(ZoneModel),
+    ///
+    /// **Boxed**, so the enum is not three hundred bytes wide: the model
+    /// is read on one day at a time, and the other two variants carry
+    /// nothing at all.
+    Model(Box<ZoneModel>),
     /// No zone model has been read at all.
     NoneRead,
     /// Zone models have been read, but **none of them was in force on that
@@ -303,7 +308,7 @@ impl ModelFor {
     /// The model, when there is one.
     pub fn model(&self) -> Option<&ZoneModel> {
         match self {
-            ModelFor::Model(model) => Some(model),
+            ModelFor::Model(model) => Some(model.as_ref()),
             _ => None,
         }
     }
@@ -354,10 +359,9 @@ impl ZoneModels {
         // yields bands.
         let declared = declaration_in_force(api)?.and_then(|declaration| {
             let derived = stride_core::heart_rates::derive(&declaration);
-            derived.bands.map(|bands| DeclaredBands {
-                declaration,
-                bands,
-            })
+            derived
+                .bands
+                .map(|bands| DeclaredBands { declaration, bands })
         });
         let declared_model = declared.as_ref().map(declared_model);
         Ok(Self {
@@ -451,7 +455,7 @@ fn declared_model(declared: &DeclaredBands) -> ZoneModel {
         // The declaration is dated by a day, and the api renders the day.
         read_at: midnight(declared.declaration.entered_on),
         read_on: declared.declaration.entered_on,
-        declared: Some(declared.clone()),
+        declared: Some(Box::new(declared.clone())),
     }
 }
 
@@ -462,9 +466,14 @@ fn declared_model(declared: &DeclaredBands) -> ZoneModel {
 fn midnight(day: Date) -> DateTime<Utc> {
     match Utc.with_ymd_and_hms(day.year(), day.month(), day.day(), 0, 0, 0) {
         chrono::LocalResult::Single(instant) => instant,
-        _ => Utc.with_ymd_and_hms(1970, 1, 1, 0, 0, 0).single().unwrap_or_else(
-            || Utc.timestamp_opt(0, 0).single().unwrap_or_else(|| Utc.timestamp_nanos(0)),
-        ),
+        _ => Utc
+            .with_ymd_and_hms(1970, 1, 1, 0, 0, 0)
+            .single()
+            .unwrap_or_else(|| {
+                Utc.timestamp_opt(0, 0)
+                    .single()
+                    .unwrap_or_else(|| Utc.timestamp_nanos(0))
+            }),
     }
 }
 

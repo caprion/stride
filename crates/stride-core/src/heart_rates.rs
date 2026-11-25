@@ -59,7 +59,7 @@ use crate::zones::ZoneFloors;
 ///
 /// The ladder is Garmin's own: 50–60 %, 60–70 %, 70–80 %, 80–90 % and
 /// 90–100 % of the range the bands are expressed on.
-pub const LADDER: [f64; 5] = [0.50, 0.60, 0.70, 0.80, 0.90];
+pub const LADDER: [f64; 5] = [0.5, 0.6, 0.7, 0.8, 0.9];
 
 /// The name the declared bands carry where a model names its method.
 ///
@@ -602,10 +602,7 @@ pub struct Comparison {
 /// The two sets are returned **separately**, with the difference between
 /// them, and the basis an answer used. Nothing is blended and nothing is
 /// ranked.
-pub fn compare(
-    declaration: Option<&Declaration>,
-    watch: Option<WatchBands>,
-) -> Comparison {
+pub fn compare(declaration: Option<&Declaration>, watch: Option<WatchBands>) -> Comparison {
     let declared = declaration.and_then(|declaration| derive(declaration).bands);
     let watch_floors = watch.map(|watch| watch.floors);
     // The basis: the declared bands where there are any, and the watch's
@@ -619,11 +616,15 @@ pub fn compare(
         // watch's own model is the other fact, and it is never blended
         // with a declaration that holds nothing.
         (Some(_), None) => match watch {
-            Some(watch) => Basis::Watch { read_on: watch.read_on },
+            Some(watch) => Basis::Watch {
+                read_on: watch.read_on,
+            },
             None => Basis::None,
         },
         (None, _) => match watch {
-            Some(watch) => Basis::Watch { read_on: watch.read_on },
+            Some(watch) => Basis::Watch {
+                read_on: watch.read_on,
+            },
             None => Basis::None,
         },
     };
@@ -641,8 +642,20 @@ pub fn compare(
 
 /// The difference between two sets of floors, boundary by boundary.
 fn differences(declared: &ZoneFloors, watch: &ZoneFloors) -> Vec<BoundaryDifference> {
-    let declared_floors = [declared.zone1, declared.zone2, declared.zone3, declared.zone4, declared.zone5];
-    let watch_floors = [watch.zone1, watch.zone2, watch.zone3, watch.zone4, watch.zone5];
+    let declared_floors = [
+        declared.zone1,
+        declared.zone2,
+        declared.zone3,
+        declared.zone4,
+        declared.zone5,
+    ];
+    let watch_floors = [
+        watch.zone1,
+        watch.zone2,
+        watch.zone3,
+        watch.zone4,
+        watch.zone5,
+    ];
     declared_floors
         .iter()
         .zip(watch_floors.iter())
@@ -664,18 +677,18 @@ fn differences(declared: &ZoneFloors, watch: &ZoneFloors) -> Vec<BoundaryDiffere
 ///
 /// The pair's line names the two numbers the bands were built on; the
 /// maximum's line names the one it has.
-pub fn source_line(
-    bands: &Bands,
-    resting_bpm: Option<f64>,
-    entered_on: &str,
-) -> Option<String> {
+pub fn source_line(bands: &Bands, resting_bpm: Option<f64>, entered_on: &str) -> Option<String> {
     let max_hr = units::render_heart_rate(bands.max_heart_rate)?;
     match (bands.range, resting_bpm) {
         (BandRange::Reserve, Some(resting)) => {
             let resting = units::render_heart_rate(Some(resting))?;
             strings::render(
                 "heart_rates.source_line",
-                &[("max_hr", &max_hr), ("resting_hr", &resting), ("date", entered_on)],
+                &[
+                    ("max_hr", &max_hr),
+                    ("resting_hr", &resting),
+                    ("date", entered_on),
+                ],
             )
         }
         _ => strings::render(
@@ -926,10 +939,7 @@ mod tests {
         assert_eq!(HeartRateSource::ALL.len(), 5);
         assert_eq!(HeartRateSource::Watch.label(), "from my watch");
         assert_eq!(HeartRateSource::Test.label(), "from a test");
-        assert_eq!(
-            HeartRateSource::DoctorLab.label(),
-            "from a doctor or a lab"
-        );
+        assert_eq!(HeartRateSource::DoctorLab.label(), "from a doctor or a lab");
         assert_eq!(
             HeartRateSource::PartnerWatch.label(),
             "from my training partner's watch"

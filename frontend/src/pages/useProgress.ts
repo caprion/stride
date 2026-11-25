@@ -65,6 +65,15 @@ export function useProgress(range: number) {
   const today = useQuery({ queryKey: ['insights-today'], queryFn: () => api.insightsToday() })
 
   /**
+   * The plan's week against the week that happened.
+   *
+   * **It does not follow the range**, for the same reason this week does
+   * not: the plan's week is the week the athlete is in, and the question
+   * it answers is about this week and not about a window.
+   */
+  const planWeek = useQuery({ queryKey: ['plan-week'], queryFn: api.planWeek })
+
+  /**
    * The window's runs.
    *
    * **The pictures are drawn from the feed.** The week strip, the
@@ -173,6 +182,7 @@ export function useProgress(range: number) {
     challenges,
     stimulus,
     today,
+    planWeek,
     windowRuns,
     shape: { short: shapeShort, long: shapeLong },
     data,

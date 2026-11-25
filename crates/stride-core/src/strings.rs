@@ -181,7 +181,7 @@ pub struct Entry {
 }
 
 /// The catalogue.
-pub const CATALOGUE: [Entry; 307] = [
+pub const CATALOGUE: [Entry; 317] = [
     // The vitals.
     Entry {
         id: "vital.rest.label",
@@ -568,7 +568,7 @@ pub const CATALOGUE: [Entry; 307] = [
         id: "zones.unavailable",
         kind: StringKind::Statement,
         role: None,
-        template: "No zones yet — this run recorded no heart rate",
+        template: "not measured — this run recorded no heart rate",
     },
     Entry {
         // No model has been read yet: the run is not calibrated, and the
@@ -587,7 +587,7 @@ pub const CATALOGUE: [Entry; 307] = [
         id: "zones.unusable_model",
         kind: StringKind::Statement,
         role: None,
-        template: "No zones yet — your watch's zones do not start in order",
+        template: "not measured — your watch's zones do not start in order",
     },
     Entry {
         // The split of a period of runs: the model is there, but the runs
@@ -736,7 +736,7 @@ pub const CATALOGUE: [Entry; 307] = [
         id: "zones.model.source",
         kind: StringKind::Statement,
         role: None,
-        template: "your zones · {method} · max heart rate {max_hr} · taken from your watch on {date}",
+        template: "your zones · {method} · max heart rate {max_hr} · the watch's configuration as it stood on {date} · the runs from that day on",
     },
     Entry {
         // The same line for a model Garmin reported no maximum heart rate
@@ -744,7 +744,7 @@ pub const CATALOGUE: [Entry; 307] = [
         id: "zones.model.source.no_max",
         kind: StringKind::Statement,
         role: None,
-        template: "your zones · {method} · taken from your watch on {date}",
+        template: "your zones · {method} · the watch's configuration as it stood on {date} · the runs from that day on",
     },
     Entry {
         // The line for a window that was measured against **more than one**
@@ -756,16 +756,52 @@ pub const CATALOGUE: [Entry; 307] = [
         id: "zones.models.source",
         kind: StringKind::Statement,
         role: None,
-        template: "your zones · {count} readings · taken from your watch on {dates}",
+        template: "your zones · {count} readings · the watch's configuration as it stood on {dates} · the runs from those days on",
     },
     Entry {
         // The reason a split has no value when a model **has** been read
         // but none of them was in force for the runs in question: a run
         // that predates the first stored model is not calibrated.
+        //
+        // **The wording is the ledger's own**, so that the answer a
+        // period gives and the answer a run gives are the same sentence:
+        // the app's own bands are not measured, and the watch's own zone
+        // minutes are the only zone time there is. A reason never says
+        // what to do about it.
         id: "zones.no_model_in_force",
         kind: StringKind::Statement,
         role: None,
-        template: "No zones yet — your watch's zones were not read for these runs",
+        template: "not measured — your watch's zones were not read for these runs; the watch's own zone minutes are the only zone time here",
+    },
+    Entry {
+        // The same reason, for **one run**: the run's own answer counts
+        // its own runs, and says so.
+        id: "zones.no_model_in_force.run",
+        kind: StringKind::Statement,
+        role: None,
+        template: "not measured — your watch's zones were not read for this run; the watch's own zone minutes are the only zone time here",
+    },
+    Entry {
+        // The same reason, for a run the watch recorded **no** zone
+        // minutes for: there is no zone time here at all, and the line
+        // does not claim one.
+        id: "zones.no_model_in_force.run.none",
+        kind: StringKind::Statement,
+        role: None,
+        template: "not measured — your watch's zones were not read for this run",
+    },
+    Entry {
+        // The day the watch's own zones begin to apply.
+        //
+        // **A run before that day is a different answer, and it says so
+        // where it is shown.** The zones named on a screen are the
+        // watch's configuration as it stood on the day it was read, and
+        // they measure the runs from that day on: this is the line that
+        // names the day, for the answer that has no model in force.
+        id: "zones.read_from",
+        kind: StringKind::Statement,
+        role: None,
+        template: "your watch's zones were read on {date} — they measure the runs from that day on",
     },
     // The plan's statements: what the athlete intended, what happened, and
     // where the intent came from. They are facts, never verdicts.
@@ -2073,6 +2109,51 @@ pub const CATALOGUE: [Entry; 307] = [
         role: None,
         template: "{id} is the {tier} programme",
     },
+    // The plan's week against the week that happened. Facts, not grades:
+    // the states the card has, the totals, and the pace compared with the
+    // plan's pace.
+    Entry {
+        id: "statement.plan.week.before",
+        kind: StringKind::Statement,
+        role: None,
+        template: "your plan starts on {date} \u{2014} this week comes before it",
+    },
+    Entry {
+        id: "statement.plan.week.after",
+        kind: StringKind::Statement,
+        role: None,
+        template: "your plan's last week ended on {date} \u{2014} this week comes after it",
+    },
+    Entry {
+        id: "statement.plan.week.totals",
+        kind: StringKind::Statement,
+        role: None,
+        template: "{actual} against the plan's {planned}",
+    },
+    Entry {
+        id: "statement.plan.week.pace.faster",
+        kind: StringKind::Statement,
+        role: None,
+        template: "{pace} \u{00b7} {gap} faster than the plan's {band}",
+    },
+    Entry {
+        id: "statement.plan.week.pace.slower",
+        kind: StringKind::Statement,
+        role: None,
+        template: "{pace} \u{00b7} {gap} slower than the plan's {band}",
+    },
+    Entry {
+        id: "statement.plan.week.pace.within",
+        kind: StringKind::Statement,
+        role: None,
+        template: "{pace} \u{00b7} within the plan's {band}",
+    },
+    Entry {
+        id: "statement.plan.adoption.choose",
+        kind: StringKind::Statement,
+        role: None,
+        template: "your plan is one of the {n} programmes",
+    },
     Entry {
         // The athlete's own heart rates: the labels of the two facts they
         // declare, and the five places a number can come from.
@@ -2590,9 +2671,52 @@ mod tests {
     fn the_zones_s_honest_answer_says_what_is_actually_missing() {
         // The maximum is derived from the run's own samples and no threshold
         // is stored: what is missing is a sample that carries a heart rate.
+        //
+        // **The register is the vocabulary's**: an absence is "not
+        // measured", never "no zones yet" — the bands exist, the run
+        // simply carries nothing to measure them from.
         assert_eq!(
             text("zones.unavailable"),
-            Some("No zones yet — this run recorded no heart rate")
+            Some("not measured — this run recorded no heart rate")
+        );
+    }
+
+    #[test]
+    fn the_app_s_own_bands_say_why_they_have_no_value() {
+        // The reason the app's own bands are absent is the ledger's own
+        // sentence: the app's bands are not measured, and the watch's own
+        // zone minutes are the only zone time there is. A reason names
+        // what is missing and never what to do about it.
+        assert_eq!(
+            text("zones.no_model_in_force"),
+            Some(
+                "not measured — your watch's zones were not read for these runs; the watch's own \
+                 zone minutes are the only zone time here"
+            )
+        );
+        // And the run's own answer counts its own runs.
+        assert_eq!(
+            text("zones.no_model_in_force.run"),
+            Some(
+                "not measured — your watch's zones were not read for this run; the watch's own \
+                 zone minutes are the only zone time here"
+            )
+        );
+    }
+
+    #[test]
+    fn the_source_line_says_what_it_applies_to() {
+        // **One basis per answer, and the answer says which basis it
+        // used.** The zones a screen names are the watch's configuration
+        // as it stood on the day it was read, and they measure the runs
+        // from that day on.
+        let line = text("zones.model.source").unwrap_or_default();
+        assert!(line.contains("the watch's configuration as it stood on {date}"));
+        assert!(line.contains("the runs from that day on"));
+        // And the line that names the day the zones begin to apply.
+        assert_eq!(
+            text("zones.read_from"),
+            Some("your watch's zones were read on {date} — they measure the runs from that day on")
         );
     }
 

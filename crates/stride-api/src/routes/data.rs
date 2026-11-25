@@ -698,7 +698,7 @@ pub fn fitness_zones(api: &Api, request: &Request) -> ApiResult<Value> {
     };
     let model_for = crate::zonemodel::model_for(api, date)?;
     let Some(stored) = model_for.model() else {
-        return ok(&no_value_zones(None, model_for.reason_id()));
+        return ok(&no_value_zones(None, run_reason_id(&model_for)));
     };
     let floors = stored.floors;
     let max_heart_rate = stored.max_heart_rate;
@@ -766,6 +766,22 @@ pub fn fitness_zones(api: &Api, request: &Request) -> ApiResult<Value> {
         max_heart_rate,
         &time,
     ))
+}
+
+/// The reason a run's own zones have no value.
+///
+/// **A run's own answer counts its own runs.** The reason is the
+/// ledger's own sentence — the app's own bands are not measured, and the
+/// watch's own zone minutes are the only zone time here — with the run
+/// it belongs to: "this run", not "these runs".
+///
+/// The other two reasons are the other two facts: no zone model has been
+/// read at all, or the model that was read cannot be used.
+fn run_reason_id(model_for: &crate::zonemodel::ModelFor) -> &'static str {
+    match model_for {
+        crate::zonemodel::ModelFor::NoneInForce => "zones.no_model_in_force.run",
+        _ => model_for.reason_id(),
+    }
 }
 
 /// The answer when there is no value: no bands, no time outside them, and

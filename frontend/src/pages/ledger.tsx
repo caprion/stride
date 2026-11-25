@@ -265,6 +265,16 @@ function Overlap({ overlap }: { overlap: StimulusInsight['overlap'] }) {
  *
  * **The card is the picture.** Each block is drawn on its own, with its
  * own basis, and the overlap reads underneath them.
+ *
+ * ## A reason belongs to the block it qualifies
+ *
+ * The two blocks are **two measurements**, and a reason is about one of
+ * them. The reason the app's own bands are absent sits **inside the
+ * app's own block**, and the watch's own block carries **its own
+ * coverage** — how many of the period's runs carried the watch's own
+ * zone minutes. A line above the two blocks would read as a reason about
+ * both, and it is about one: the watch's own minutes are measured over
+ * the whole run and are not touched by the app's own bands at all.
  */
 export function LedgerCard({
   stimulus,
@@ -290,11 +300,6 @@ export function LedgerCard({
       {hoist ? (
         <SourceLine source={stimulus.source} sources={stimulus.sources} testId="ledger-source-line" />
       ) : null}
-      {stimulus.unavailable ? (
-        <p className="text-[13px] text-ink-muted" data-testid="ledger-unavailable">
-          {stimulus.unavailable}
-        </p>
-      ) : null}
       {/*
         The period the ledger covers. **"The last 12 weeks"** — the
         runner's own words, and the dates behind them.
@@ -315,6 +320,31 @@ export function LedgerCard({
           bars={bandsOf(stimulus.kinds)}
           testId="ledger-app"
         >
+          {/*
+            The reason the app's own bands have no value, **inside the
+            app's own block**. It is a fact about the app's own bands,
+            and it belongs to the block it qualifies: the watch's own
+            zone minutes are measured over the whole run and are not
+            touched by it.
+          */}
+          {stimulus.unavailable ? (
+            <p className="mt-1 text-[12px] text-ink-muted" data-testid="ledger-unavailable">
+              {stimulus.unavailable}
+            </p>
+          ) : null}
+          {/*
+            The block's own coverage: how many of the period's runs this
+            basis measured. The two blocks cover different runs, and the
+            difference is stated here, where the two appear.
+          */}
+          {stimulus.coverage ? (
+            <p className="mt-1 text-[11.5px] text-ink-faint" data-testid="ledger-app-coverage">
+              {t('ledger.coverage.app', {
+                measured: stimulus.coverage.measured,
+                runs: stimulus.coverage.runs,
+              })}
+            </p>
+          ) : null}
           <BlockWeeks
             weeks={stimulus.weeks.map((week) => ({
               week_start: week.week_start,
@@ -330,6 +360,20 @@ export function LedgerCard({
           bars={sourceBandsOf(stimulus.source_zones)}
           testId="ledger-source"
         >
+          {/*
+            The watch's own block carries **its own coverage**: the runs
+            that carried the watch's own zone minutes. It is measured
+            over the whole run, and the app's own bands are not what it
+            is — the two are never added, and neither corrects the other.
+          */}
+          {stimulus.coverage ? (
+            <p className="mt-1 text-[11.5px] text-ink-faint" data-testid="ledger-source-coverage">
+              {t('ledger.coverage.source', {
+                runs: stimulus.coverage.with_source_zones,
+                total: stimulus.coverage.runs,
+              })}
+            </p>
+          ) : null}
           <BlockWeeks
             weeks={stimulus.source_weeks.map((week) => ({
               week_start: week.week_start,

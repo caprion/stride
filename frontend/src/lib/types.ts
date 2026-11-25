@@ -199,6 +199,57 @@ export interface PlanWeek {
    * the week asked for is not in it.
    */
   adopted: AdoptedWeek | null
+  /**
+   * The plan's week against the week that happened.
+   *
+   * It is there in every state — no plan at all, a plan that has not
+   * begun, a week that is running, and a plan that has passed — and it
+   * says which one it is.
+   */
+  against: PlanWeekAgainst
+}
+
+/**
+ * The plan's week against the week that happened.
+ *
+ * **A fact, not a verdict.** Where the week stands against the plan, the
+ * plan's own source, what it was paced with, the tier's entry requirement
+ * beside the athlete's own mileage, and the week's totals.
+ */
+export interface PlanWeekAgainst {
+  /**
+   * Where the week stands.
+   *
+   * - `none` — no plan has been adopted;
+   * - `before` — the plan's first day is after this week;
+   * - `running` — this week is inside the plan;
+   * - `after` — the plan's last day is before this week.
+   */
+  state: 'none' | 'before' | 'running' | 'after'
+  /** The state's own sentence: "no plan has been adopted". */
+  state_line: string | null
+  /** The line that points at the programmes there are to adopt. */
+  choose: string | null
+  /** The plan's own source: "the Pfitzinger half marathon tier 2 plan". */
+  source_line: string | null
+  /** What the plan was paced with. */
+  paced_with: string | null
+  /** The tier's entry requirement beside the athlete's own mileage. */
+  entry: PlanEntry | null
+  /** The week's totals, against the plan's. */
+  totals: PlanWeekTotals | null
+}
+
+/** The week's totals, against the plan's. */
+export interface PlanWeekTotals {
+  /** The distance the plan asked for, over the days that have gone. */
+  planned: RenderedValue
+  /** The distance that was run, over the same days. */
+  actual: RenderedValue
+  /** The difference between the two, signed. */
+  difference: RenderedValue | null
+  /** The line: "38.4 km against the plan's 42 km". */
+  line: string | null
 }
 
 /**
@@ -263,12 +314,38 @@ export interface AdoptedSession {
   detail: string | null
   /** The line the surface leads with: "17.7 km · tempo". */
   label: string
+  /** The session, already rendered: "Today — 17.7 km · tempo". */
+  sentence: string
   /** The line with the pace beside it, when the session has one. */
   line: string | null
   /** The reason the session has no pace, when it has none. */
   no_pace: string | null
   /** On a progression long run: the last miles at the threshold pace. */
   lt_last: string | null
+  /** The distance that was run on this session's day. */
+  actual: RenderedValue | null
+  /**
+   * The difference between the distance run and the distance planned.
+   *
+   * "2.4 km less than the 17.7 km target" — and nothing at all when the
+   * gap is within ten per cent.
+   */
+  difference: string | null
+  /**
+   * The pace that was run, read against the plan's pace.
+   *
+   * It is there only when **both** of them exist: the general aerobic day
+   * carries a heart-rate band and no pace, and a run is never compared
+   * against a pace that is not there.
+   */
+  pace_comparison: string | null
+  /**
+   * The plain status of the session: done, not done or planned.
+   *
+   * `null` for a day that is not a run: a rest day is neither done nor
+   * not done.
+   */
+  status: 'done' | 'not_done' | 'planned' | null
 }
 
 /** What the plan was paced with, and where the numbers came from. */
@@ -2443,6 +2520,34 @@ export interface HeartRateKindRow {
   key: string
   /** The kind, in the runner's words: "your maximum heart rate". */
   label: string
+}
+
+/** One boundary's difference between the two sets of floors. */
+export interface BoundaryRow {
+  /** The band: 1 to 5. */
+  zone: number
+  /** The floor of the declared band. */
+  declared_bpm: number
+  /** The floor of the watch's band. */
+  watch_bpm: number
+  /** The difference: the declared floor less the watch's. */
+  difference_bpm: number
+  /** The difference as the core renders it: "+4 bpm". */
+  difference: RenderedValue | null
+}
+
+/** The basis the bands came from — **one** of the two, never both. */
+export interface BandsBasisRow {
+  /** The basis: "declared" or "watch". */
+  kind: string
+  /** The basis, in the runner's words. */
+  label: string
+  /** The basis's own source line, in the core's words. */
+  source: string | null
+  /** The day the basis was dated. */
+  dated_on: string
+  /** The day's own rendering: "24 Nov 2026". */
+  dated_on_label: string
 }
 
 /** The bands the window's moving time falls into. */

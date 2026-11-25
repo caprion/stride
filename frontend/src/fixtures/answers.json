@@ -367,7 +367,7 @@
         },
         "read_at": "2026-05-10T06:30:00Z",
         "read_on": "10 May 2026",
-        "source": "your zones · HR_MAX · max heart rate 178 bpm · taken from your watch on 10 May 2026",
+        "source": "your zones · HR_MAX · max heart rate 178 bpm · the watch's configuration as it stood on 10 May 2026 · the runs from that day on",
         "sport": "DEFAULT",
         "training_method": "HR_MAX"
       },
@@ -390,6 +390,78 @@
       "payload_hash": null,
       "text": "",
       "unavailable": "the run has no file to read"
+    },
+    "/athlete/heart-rates": {
+      "bands": null,
+      "declaration": null,
+      "difference": null,
+      "generated_at": "2026-05-13T06:30:00Z",
+      "history": [],
+      "kinds": [
+        {
+          "key": "max",
+          "label": "your maximum heart rate"
+        },
+        {
+          "key": "resting",
+          "label": "your resting heart rate"
+        }
+      ],
+      "sources": [
+        {
+          "key": "watch",
+          "label": "from my watch"
+        },
+        {
+          "key": "test",
+          "label": "from a test"
+        },
+        {
+          "key": "doctor_lab",
+          "label": "from a doctor or a lab"
+        },
+        {
+          "key": "partner_watch",
+          "label": "from my training partner's watch"
+        },
+        {
+          "key": "typed",
+          "label": "typed"
+        }
+      ],
+      "unavailable": "no heart rates entered",
+      "watch": {
+        "floors": {
+          "zone1": {
+            "raw": 106,
+            "text": "106 bpm"
+          },
+          "zone2": {
+            "raw": 121,
+            "text": "121 bpm"
+          },
+          "zone3": {
+            "raw": 135,
+            "text": "135 bpm"
+          },
+          "zone4": {
+            "raw": 149,
+            "text": "149 bpm"
+          },
+          "zone5": {
+            "raw": 163,
+            "text": "163 bpm"
+          }
+        },
+        "label": "your watch's zones",
+        "max_heart_rate": {
+          "raw": 178,
+          "text": "178 bpm"
+        },
+        "read_on": "2026-05-10",
+        "read_on_label": "10 May 2026",
+        "source": "your zones · HR_MAX · max heart rate 178 bpm · the watch's configuration as it stood on 10 May 2026 · the runs from that day on"
+      }
     },
     "/athlete/races": {
       "generated_at": "2026-05-13T06:30:00Z",
@@ -1279,7 +1351,7 @@
           },
           "read_at": "2026-05-10T06:30:00Z",
           "read_on": "10 May 2026",
-          "source": "your zones · HR_MAX · max heart rate 178 bpm · taken from your watch on 10 May 2026",
+          "source": "your zones · HR_MAX · max heart rate 178 bpm · the watch's configuration as it stood on 10 May 2026 · the runs from that day on",
           "sport": "DEFAULT",
           "training_method": "HR_MAX"
         },
@@ -1290,6 +1362,14 @@
       }
     },
     "/fitness/zones": {
+      "bands": null,
+      "bands_basis": {
+        "dated_on": "2026-05-10",
+        "dated_on_label": "10 May 2026",
+        "kind": "watch",
+        "label": "your watch's zones",
+        "source": "your zones · HR_MAX · max heart rate 178 bpm · the watch's configuration as it stood on 10 May 2026 · the runs from that day on"
+      },
       "basis": null,
       "model": {
         "floors": {
@@ -1320,13 +1400,13 @@
         },
         "read_at": "2026-05-10T06:30:00Z",
         "read_on": "10 May 2026",
-        "source": "your zones · HR_MAX · max heart rate 178 bpm · taken from your watch on 10 May 2026",
+        "source": "your zones · HR_MAX · max heart rate 178 bpm · the watch's configuration as it stood on 10 May 2026 · the runs from that day on",
         "sport": "DEFAULT",
         "training_method": "HR_MAX"
       },
       "outside": null,
       "stopped": null,
-      "unavailable": "No zones yet — this run recorded no heart rate",
+      "unavailable": "not measured — this run recorded no heart rate",
       "zones": []
     },
     "/health": {
@@ -6495,7 +6575,7 @@
           }
         }
       ],
-      "source": "your zones · HR_MAX · max heart rate 178 bpm · taken from your watch on 10 May 2026",
+      "source": "your zones · HR_MAX · max heart rate 178 bpm · the watch's configuration as it stood on 10 May 2026 · the runs from that day on",
       "sources": [
         {
           "date": "2026-04-19",
@@ -6507,7 +6587,7 @@
           "date": "2026-05-10",
           "date_label": "10 May 2026",
           "kind": "zone_model",
-          "line": "your zones · HR_MAX · max heart rate 178 bpm · taken from your watch on 10 May 2026"
+          "line": "your zones · HR_MAX · max heart rate 178 bpm · the watch's configuration as it stood on 10 May 2026 · the runs from that day on"
         }
       ],
       "unavailable": null,
@@ -6775,7 +6855,7 @@
           }
         }
       ],
-      "source": "your zones · HR_MAX · max heart rate 178 bpm · taken from your watch on 10 May 2026",
+      "source": "your zones · HR_MAX · max heart rate 178 bpm · the watch's configuration as it stood on 10 May 2026 · the runs from that day on",
       "sources": [
         {
           "date": "2026-04-19",
@@ -6787,7 +6867,7 @@
           "date": "2026-05-10",
           "date_label": "10 May 2026",
           "kind": "zone_model",
-          "line": "your zones · HR_MAX · max heart rate 178 bpm · taken from your watch on 10 May 2026"
+          "line": "your zones · HR_MAX · max heart rate 178 bpm · the watch's configuration as it stood on 10 May 2026 · the runs from that day on"
         }
       ],
       "unavailable": null,
@@ -7897,11 +7977,11 @@
           {
             "read_on": "2026-05-10",
             "read_on_label": "10 May 2026",
-            "source": "your zones · HR_MAX · max heart rate 178 bpm · taken from your watch on 10 May 2026"
+            "source": "your zones · HR_MAX · max heart rate 178 bpm · the watch's configuration as it stood on 10 May 2026 · the runs from that day on"
           }
         ],
         "shares": null,
-        "source": "your zones · HR_MAX · max heart rate 178 bpm · taken from your watch on 10 May 2026",
+        "source": "your zones · HR_MAX · max heart rate 178 bpm · the watch's configuration as it stood on 10 May 2026 · the runs from that day on",
         "unavailable": "No heart rate recorded — none of the runs in this period recorded a heart rate",
         "weeks": [
           {
@@ -8427,11 +8507,11 @@
           {
             "read_on": "2026-05-10",
             "read_on_label": "10 May 2026",
-            "source": "your zones · HR_MAX · max heart rate 178 bpm · taken from your watch on 10 May 2026"
+            "source": "your zones · HR_MAX · max heart rate 178 bpm · the watch's configuration as it stood on 10 May 2026 · the runs from that day on"
           }
         ],
         "shares": null,
-        "source": "your zones · HR_MAX · max heart rate 178 bpm · taken from your watch on 10 May 2026",
+        "source": "your zones · HR_MAX · max heart rate 178 bpm · the watch's configuration as it stood on 10 May 2026 · the runs from that day on",
         "unavailable": "No heart rate recorded — none of the runs in this period recorded a heart rate",
         "weeks": [
           {
@@ -8957,11 +9037,11 @@
           {
             "read_on": "2026-05-10",
             "read_on_label": "10 May 2026",
-            "source": "your zones · HR_MAX · max heart rate 178 bpm · taken from your watch on 10 May 2026"
+            "source": "your zones · HR_MAX · max heart rate 178 bpm · the watch's configuration as it stood on 10 May 2026 · the runs from that day on"
           }
         ],
         "shares": null,
-        "source": "your zones · HR_MAX · max heart rate 178 bpm · taken from your watch on 10 May 2026",
+        "source": "your zones · HR_MAX · max heart rate 178 bpm · the watch's configuration as it stood on 10 May 2026 · the runs from that day on",
         "unavailable": "No heart rate recorded — none of the runs in this period recorded a heart rate",
         "weeks": [
           {
@@ -9487,11 +9567,11 @@
           {
             "read_on": "2026-05-10",
             "read_on_label": "10 May 2026",
-            "source": "your zones · HR_MAX · max heart rate 178 bpm · taken from your watch on 10 May 2026"
+            "source": "your zones · HR_MAX · max heart rate 178 bpm · the watch's configuration as it stood on 10 May 2026 · the runs from that day on"
           }
         ],
         "shares": null,
-        "source": "your zones · HR_MAX · max heart rate 178 bpm · taken from your watch on 10 May 2026",
+        "source": "your zones · HR_MAX · max heart rate 178 bpm · the watch's configuration as it stood on 10 May 2026 · the runs from that day on",
         "unavailable": "No heart rate recorded — none of the runs in this period recorded a heart rate",
         "weeks": [
           {
@@ -10017,11 +10097,11 @@
           {
             "read_on": "2026-05-10",
             "read_on_label": "10 May 2026",
-            "source": "your zones · HR_MAX · max heart rate 178 bpm · taken from your watch on 10 May 2026"
+            "source": "your zones · HR_MAX · max heart rate 178 bpm · the watch's configuration as it stood on 10 May 2026 · the runs from that day on"
           }
         ],
         "shares": null,
-        "source": "your zones · HR_MAX · max heart rate 178 bpm · taken from your watch on 10 May 2026",
+        "source": "your zones · HR_MAX · max heart rate 178 bpm · the watch's configuration as it stood on 10 May 2026 · the runs from that day on",
         "unavailable": "No heart rate recorded — none of the runs in this period recorded a heart rate",
         "weeks": [
           {
@@ -10547,11 +10627,11 @@
           {
             "read_on": "2026-05-10",
             "read_on_label": "10 May 2026",
-            "source": "your zones · HR_MAX · max heart rate 178 bpm · taken from your watch on 10 May 2026"
+            "source": "your zones · HR_MAX · max heart rate 178 bpm · the watch's configuration as it stood on 10 May 2026 · the runs from that day on"
           }
         ],
         "shares": null,
-        "source": "your zones · HR_MAX · max heart rate 178 bpm · taken from your watch on 10 May 2026",
+        "source": "your zones · HR_MAX · max heart rate 178 bpm · the watch's configuration as it stood on 10 May 2026 · the runs from that day on",
         "unavailable": "No heart rate recorded — none of the runs in this period recorded a heart rate",
         "weeks": [
           {
@@ -11077,11 +11157,11 @@
           {
             "read_on": "2026-05-10",
             "read_on_label": "10 May 2026",
-            "source": "your zones · HR_MAX · max heart rate 178 bpm · taken from your watch on 10 May 2026"
+            "source": "your zones · HR_MAX · max heart rate 178 bpm · the watch's configuration as it stood on 10 May 2026 · the runs from that day on"
           }
         ],
         "shares": null,
-        "source": "your zones · HR_MAX · max heart rate 178 bpm · taken from your watch on 10 May 2026",
+        "source": "your zones · HR_MAX · max heart rate 178 bpm · the watch's configuration as it stood on 10 May 2026 · the runs from that day on",
         "unavailable": "No heart rate recorded — none of the runs in this period recorded a heart rate",
         "weeks": [
           {
@@ -11607,11 +11687,11 @@
           {
             "read_on": "2026-05-10",
             "read_on_label": "10 May 2026",
-            "source": "your zones · HR_MAX · max heart rate 178 bpm · taken from your watch on 10 May 2026"
+            "source": "your zones · HR_MAX · max heart rate 178 bpm · the watch's configuration as it stood on 10 May 2026 · the runs from that day on"
           }
         ],
         "shares": null,
-        "source": "your zones · HR_MAX · max heart rate 178 bpm · taken from your watch on 10 May 2026",
+        "source": "your zones · HR_MAX · max heart rate 178 bpm · the watch's configuration as it stood on 10 May 2026 · the runs from that day on",
         "unavailable": "No heart rate recorded — none of the runs in this period recorded a heart rate",
         "weeks": [
           {
@@ -12137,11 +12217,11 @@
           {
             "read_on": "2026-05-10",
             "read_on_label": "10 May 2026",
-            "source": "your zones · HR_MAX · max heart rate 178 bpm · taken from your watch on 10 May 2026"
+            "source": "your zones · HR_MAX · max heart rate 178 bpm · the watch's configuration as it stood on 10 May 2026 · the runs from that day on"
           }
         ],
         "shares": null,
-        "source": "your zones · HR_MAX · max heart rate 178 bpm · taken from your watch on 10 May 2026",
+        "source": "your zones · HR_MAX · max heart rate 178 bpm · the watch's configuration as it stood on 10 May 2026 · the runs from that day on",
         "unavailable": "No heart rate recorded — none of the runs in this period recorded a heart rate",
         "weeks": [
           {
@@ -12200,7 +12280,7 @@
       "overlap_missing": "not measured — no run in this period has both your zones and the watch's own zone minutes",
       "repeated": null,
       "repeated_missing": "not recorded — the runs in this period carry no workout steps",
-      "source": "your zones · HR_MAX · max heart rate 178 bpm · taken from your watch on 10 May 2026",
+      "source": "your zones · HR_MAX · max heart rate 178 bpm · the watch's configuration as it stood on 10 May 2026 · the runs from that day on",
       "source_weeks": [],
       "source_zones": [],
       "sources": [
@@ -12208,7 +12288,7 @@
           "date": "2026-05-10",
           "date_label": "10 May 2026",
           "kind": "zone_model",
-          "line": "your zones · HR_MAX · max heart rate 178 bpm · taken from your watch on 10 May 2026"
+          "line": "your zones · HR_MAX · max heart rate 178 bpm · the watch's configuration as it stood on 10 May 2026 · the runs from that day on"
         }
       ],
       "unavailable": "No heart rate recorded — none of the runs in this period recorded a heart rate",
@@ -12356,7 +12436,7 @@
         "updated_on": "2026-05-11",
         "value": "168 bpm"
       },
-      "source": "your zones · HR_MAX · max heart rate 178 bpm · taken from your watch on 10 May 2026",
+      "source": "your zones · HR_MAX · max heart rate 178 bpm · the watch's configuration as it stood on 10 May 2026 · the runs from that day on",
       "sources": [
         {
           "date": "2026-04-19",
@@ -12368,7 +12448,7 @@
           "date": "2026-05-10",
           "date_label": "10 May 2026",
           "kind": "zone_model",
-          "line": "your zones · HR_MAX · max heart rate 178 bpm · taken from your watch on 10 May 2026"
+          "line": "your zones · HR_MAX · max heart rate 178 bpm · the watch's configuration as it stood on 10 May 2026 · the runs from that day on"
         }
       ],
       "unavailable": null,
@@ -16230,6 +16310,15 @@
         "planned": 7
       },
       "adopted": null,
+      "against": {
+        "choose": "your plan is one of the 4 programmes",
+        "entry": null,
+        "paced_with": null,
+        "source_line": null,
+        "state": "none",
+        "state_line": "no plan has been adopted",
+        "totals": null
+      },
       "block_name": "Base block",
       "counts": {
         "done": 0,
@@ -16746,7 +16835,7 @@
         },
         "read_at": "2026-05-10T06:30:00Z",
         "read_on": "10 May 2026",
-        "source": "your zones · HR_MAX · max heart rate 178 bpm · taken from your watch on 10 May 2026",
+        "source": "your zones · HR_MAX · max heart rate 178 bpm · the watch's configuration as it stood on 10 May 2026 · the runs from that day on",
         "sport": "DEFAULT",
         "training_method": "HR_MAX"
       },
@@ -16769,6 +16858,78 @@
       "payload_hash": null,
       "text": "",
       "unavailable": "the run has no file to read"
+    },
+    "/athlete/heart-rates": {
+      "bands": null,
+      "declaration": null,
+      "difference": null,
+      "generated_at": "2026-05-13T06:30:00Z",
+      "history": [],
+      "kinds": [
+        {
+          "key": "max",
+          "label": "your maximum heart rate"
+        },
+        {
+          "key": "resting",
+          "label": "your resting heart rate"
+        }
+      ],
+      "sources": [
+        {
+          "key": "watch",
+          "label": "from my watch"
+        },
+        {
+          "key": "test",
+          "label": "from a test"
+        },
+        {
+          "key": "doctor_lab",
+          "label": "from a doctor or a lab"
+        },
+        {
+          "key": "partner_watch",
+          "label": "from my training partner's watch"
+        },
+        {
+          "key": "typed",
+          "label": "typed"
+        }
+      ],
+      "unavailable": "no heart rates entered",
+      "watch": {
+        "floors": {
+          "zone1": {
+            "raw": 106,
+            "text": "106 bpm"
+          },
+          "zone2": {
+            "raw": 121,
+            "text": "121 bpm"
+          },
+          "zone3": {
+            "raw": 135,
+            "text": "135 bpm"
+          },
+          "zone4": {
+            "raw": 149,
+            "text": "149 bpm"
+          },
+          "zone5": {
+            "raw": 163,
+            "text": "163 bpm"
+          }
+        },
+        "label": "your watch's zones",
+        "max_heart_rate": {
+          "raw": 178,
+          "text": "178 bpm"
+        },
+        "read_on": "2026-05-10",
+        "read_on_label": "10 May 2026",
+        "source": "your zones · HR_MAX · max heart rate 178 bpm · the watch's configuration as it stood on 10 May 2026 · the runs from that day on"
+      }
     },
     "/athlete/races": {
       "generated_at": "2026-05-13T06:30:00Z",
@@ -17658,7 +17819,7 @@
           },
           "read_at": "2026-05-10T06:30:00Z",
           "read_on": "10 May 2026",
-          "source": "your zones · HR_MAX · max heart rate 178 bpm · taken from your watch on 10 May 2026",
+          "source": "your zones · HR_MAX · max heart rate 178 bpm · the watch's configuration as it stood on 10 May 2026 · the runs from that day on",
           "sport": "DEFAULT",
           "training_method": "HR_MAX"
         },
@@ -17669,6 +17830,14 @@
       }
     },
     "/fitness/zones": {
+      "bands": null,
+      "bands_basis": {
+        "dated_on": "2026-05-10",
+        "dated_on_label": "10 May 2026",
+        "kind": "watch",
+        "label": "your watch's zones",
+        "source": "your zones · HR_MAX · max heart rate 178 bpm · the watch's configuration as it stood on 10 May 2026 · the runs from that day on"
+      },
       "basis": null,
       "model": {
         "floors": {
@@ -17699,13 +17868,13 @@
         },
         "read_at": "2026-05-10T06:30:00Z",
         "read_on": "10 May 2026",
-        "source": "your zones · HR_MAX · max heart rate 178 bpm · taken from your watch on 10 May 2026",
+        "source": "your zones · HR_MAX · max heart rate 178 bpm · the watch's configuration as it stood on 10 May 2026 · the runs from that day on",
         "sport": "DEFAULT",
         "training_method": "HR_MAX"
       },
       "outside": null,
       "stopped": null,
-      "unavailable": "No zones yet — this run recorded no heart rate",
+      "unavailable": "not measured — this run recorded no heart rate",
       "zones": []
     },
     "/health": {
@@ -22874,7 +23043,7 @@
           }
         }
       ],
-      "source": "your zones · HR_MAX · max heart rate 178 bpm · taken from your watch on 10 May 2026",
+      "source": "your zones · HR_MAX · max heart rate 178 bpm · the watch's configuration as it stood on 10 May 2026 · the runs from that day on",
       "sources": [
         {
           "date": "2026-04-19",
@@ -22886,7 +23055,7 @@
           "date": "2026-05-10",
           "date_label": "10 May 2026",
           "kind": "zone_model",
-          "line": "your zones · HR_MAX · max heart rate 178 bpm · taken from your watch on 10 May 2026"
+          "line": "your zones · HR_MAX · max heart rate 178 bpm · the watch's configuration as it stood on 10 May 2026 · the runs from that day on"
         }
       ],
       "unavailable": null,
@@ -23154,7 +23323,7 @@
           }
         }
       ],
-      "source": "your zones · HR_MAX · max heart rate 178 bpm · taken from your watch on 10 May 2026",
+      "source": "your zones · HR_MAX · max heart rate 178 bpm · the watch's configuration as it stood on 10 May 2026 · the runs from that day on",
       "sources": [
         {
           "date": "2026-04-19",
@@ -23166,7 +23335,7 @@
           "date": "2026-05-10",
           "date_label": "10 May 2026",
           "kind": "zone_model",
-          "line": "your zones · HR_MAX · max heart rate 178 bpm · taken from your watch on 10 May 2026"
+          "line": "your zones · HR_MAX · max heart rate 178 bpm · the watch's configuration as it stood on 10 May 2026 · the runs from that day on"
         }
       ],
       "unavailable": null,
@@ -24261,11 +24430,11 @@
           {
             "read_on": "2026-05-10",
             "read_on_label": "10 May 2026",
-            "source": "your zones · HR_MAX · max heart rate 178 bpm · taken from your watch on 10 May 2026"
+            "source": "your zones · HR_MAX · max heart rate 178 bpm · the watch's configuration as it stood on 10 May 2026 · the runs from that day on"
           }
         ],
         "shares": null,
-        "source": "your zones · HR_MAX · max heart rate 178 bpm · taken from your watch on 10 May 2026",
+        "source": "your zones · HR_MAX · max heart rate 178 bpm · the watch's configuration as it stood on 10 May 2026 · the runs from that day on",
         "unavailable": "No heart rate recorded — none of the runs in this period recorded a heart rate",
         "weeks": [
           {
@@ -24791,11 +24960,11 @@
           {
             "read_on": "2026-05-10",
             "read_on_label": "10 May 2026",
-            "source": "your zones · HR_MAX · max heart rate 178 bpm · taken from your watch on 10 May 2026"
+            "source": "your zones · HR_MAX · max heart rate 178 bpm · the watch's configuration as it stood on 10 May 2026 · the runs from that day on"
           }
         ],
         "shares": null,
-        "source": "your zones · HR_MAX · max heart rate 178 bpm · taken from your watch on 10 May 2026",
+        "source": "your zones · HR_MAX · max heart rate 178 bpm · the watch's configuration as it stood on 10 May 2026 · the runs from that day on",
         "unavailable": "No heart rate recorded — none of the runs in this period recorded a heart rate",
         "weeks": [
           {
@@ -25321,11 +25490,11 @@
           {
             "read_on": "2026-05-10",
             "read_on_label": "10 May 2026",
-            "source": "your zones · HR_MAX · max heart rate 178 bpm · taken from your watch on 10 May 2026"
+            "source": "your zones · HR_MAX · max heart rate 178 bpm · the watch's configuration as it stood on 10 May 2026 · the runs from that day on"
           }
         ],
         "shares": null,
-        "source": "your zones · HR_MAX · max heart rate 178 bpm · taken from your watch on 10 May 2026",
+        "source": "your zones · HR_MAX · max heart rate 178 bpm · the watch's configuration as it stood on 10 May 2026 · the runs from that day on",
         "unavailable": "No heart rate recorded — none of the runs in this period recorded a heart rate",
         "weeks": [
           {
@@ -25851,11 +26020,11 @@
           {
             "read_on": "2026-05-10",
             "read_on_label": "10 May 2026",
-            "source": "your zones · HR_MAX · max heart rate 178 bpm · taken from your watch on 10 May 2026"
+            "source": "your zones · HR_MAX · max heart rate 178 bpm · the watch's configuration as it stood on 10 May 2026 · the runs from that day on"
           }
         ],
         "shares": null,
-        "source": "your zones · HR_MAX · max heart rate 178 bpm · taken from your watch on 10 May 2026",
+        "source": "your zones · HR_MAX · max heart rate 178 bpm · the watch's configuration as it stood on 10 May 2026 · the runs from that day on",
         "unavailable": "No heart rate recorded — none of the runs in this period recorded a heart rate",
         "weeks": [
           {
@@ -26381,11 +26550,11 @@
           {
             "read_on": "2026-05-10",
             "read_on_label": "10 May 2026",
-            "source": "your zones · HR_MAX · max heart rate 178 bpm · taken from your watch on 10 May 2026"
+            "source": "your zones · HR_MAX · max heart rate 178 bpm · the watch's configuration as it stood on 10 May 2026 · the runs from that day on"
           }
         ],
         "shares": null,
-        "source": "your zones · HR_MAX · max heart rate 178 bpm · taken from your watch on 10 May 2026",
+        "source": "your zones · HR_MAX · max heart rate 178 bpm · the watch's configuration as it stood on 10 May 2026 · the runs from that day on",
         "unavailable": "No heart rate recorded — none of the runs in this period recorded a heart rate",
         "weeks": [
           {
@@ -26911,11 +27080,11 @@
           {
             "read_on": "2026-05-10",
             "read_on_label": "10 May 2026",
-            "source": "your zones · HR_MAX · max heart rate 178 bpm · taken from your watch on 10 May 2026"
+            "source": "your zones · HR_MAX · max heart rate 178 bpm · the watch's configuration as it stood on 10 May 2026 · the runs from that day on"
           }
         ],
         "shares": null,
-        "source": "your zones · HR_MAX · max heart rate 178 bpm · taken from your watch on 10 May 2026",
+        "source": "your zones · HR_MAX · max heart rate 178 bpm · the watch's configuration as it stood on 10 May 2026 · the runs from that day on",
         "unavailable": "No heart rate recorded — none of the runs in this period recorded a heart rate",
         "weeks": [
           {
@@ -27441,11 +27610,11 @@
           {
             "read_on": "2026-05-10",
             "read_on_label": "10 May 2026",
-            "source": "your zones · HR_MAX · max heart rate 178 bpm · taken from your watch on 10 May 2026"
+            "source": "your zones · HR_MAX · max heart rate 178 bpm · the watch's configuration as it stood on 10 May 2026 · the runs from that day on"
           }
         ],
         "shares": null,
-        "source": "your zones · HR_MAX · max heart rate 178 bpm · taken from your watch on 10 May 2026",
+        "source": "your zones · HR_MAX · max heart rate 178 bpm · the watch's configuration as it stood on 10 May 2026 · the runs from that day on",
         "unavailable": "No heart rate recorded — none of the runs in this period recorded a heart rate",
         "weeks": [
           {
@@ -27971,11 +28140,11 @@
           {
             "read_on": "2026-05-10",
             "read_on_label": "10 May 2026",
-            "source": "your zones · HR_MAX · max heart rate 178 bpm · taken from your watch on 10 May 2026"
+            "source": "your zones · HR_MAX · max heart rate 178 bpm · the watch's configuration as it stood on 10 May 2026 · the runs from that day on"
           }
         ],
         "shares": null,
-        "source": "your zones · HR_MAX · max heart rate 178 bpm · taken from your watch on 10 May 2026",
+        "source": "your zones · HR_MAX · max heart rate 178 bpm · the watch's configuration as it stood on 10 May 2026 · the runs from that day on",
         "unavailable": "No heart rate recorded — none of the runs in this period recorded a heart rate",
         "weeks": [
           {
@@ -28501,11 +28670,11 @@
           {
             "read_on": "2026-05-10",
             "read_on_label": "10 May 2026",
-            "source": "your zones · HR_MAX · max heart rate 178 bpm · taken from your watch on 10 May 2026"
+            "source": "your zones · HR_MAX · max heart rate 178 bpm · the watch's configuration as it stood on 10 May 2026 · the runs from that day on"
           }
         ],
         "shares": null,
-        "source": "your zones · HR_MAX · max heart rate 178 bpm · taken from your watch on 10 May 2026",
+        "source": "your zones · HR_MAX · max heart rate 178 bpm · the watch's configuration as it stood on 10 May 2026 · the runs from that day on",
         "unavailable": "No heart rate recorded — none of the runs in this period recorded a heart rate",
         "weeks": [
           {
@@ -28564,7 +28733,7 @@
       "overlap_missing": "not measured — no run in this period has both your zones and the watch's own zone minutes",
       "repeated": null,
       "repeated_missing": "not recorded — the runs in this period carry no workout steps",
-      "source": "your zones · HR_MAX · max heart rate 178 bpm · taken from your watch on 10 May 2026",
+      "source": "your zones · HR_MAX · max heart rate 178 bpm · the watch's configuration as it stood on 10 May 2026 · the runs from that day on",
       "source_weeks": [],
       "source_zones": [],
       "sources": [
@@ -28572,7 +28741,7 @@
           "date": "2026-05-10",
           "date_label": "10 May 2026",
           "kind": "zone_model",
-          "line": "your zones · HR_MAX · max heart rate 178 bpm · taken from your watch on 10 May 2026"
+          "line": "your zones · HR_MAX · max heart rate 178 bpm · the watch's configuration as it stood on 10 May 2026 · the runs from that day on"
         }
       ],
       "unavailable": "No heart rate recorded — none of the runs in this period recorded a heart rate",
@@ -28720,7 +28889,7 @@
         "updated_on": "2026-05-11",
         "value": "168 bpm"
       },
-      "source": "your zones · HR_MAX · max heart rate 178 bpm · taken from your watch on 10 May 2026",
+      "source": "your zones · HR_MAX · max heart rate 178 bpm · the watch's configuration as it stood on 10 May 2026 · the runs from that day on",
       "sources": [
         {
           "date": "2026-04-19",
@@ -28732,7 +28901,7 @@
           "date": "2026-05-10",
           "date_label": "10 May 2026",
           "kind": "zone_model",
-          "line": "your zones · HR_MAX · max heart rate 178 bpm · taken from your watch on 10 May 2026"
+          "line": "your zones · HR_MAX · max heart rate 178 bpm · the watch's configuration as it stood on 10 May 2026 · the runs from that day on"
         }
       ],
       "unavailable": null,
@@ -32506,6 +32675,15 @@
         "planned": 0
       },
       "adopted": null,
+      "against": {
+        "choose": "your plan is one of the 4 programmes",
+        "entry": null,
+        "paced_with": null,
+        "source_line": null,
+        "state": "none",
+        "state_line": "no plan has been adopted",
+        "totals": null
+      },
       "block_name": "No plan",
       "counts": {
         "done": 0,

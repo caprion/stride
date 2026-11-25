@@ -687,6 +687,43 @@ answer a new question, and the rule behind every zone-time answer changes.
   side, unranked, every one of them can stay empty, and **no vital is
   linked to any of them**.
 
+### Note — the week against the plan (2026-11-25)
+
+This note travels with a change to `docs/contract/api-paths.md`, which the
+contract freeze says is a plan change: a frozen file changes only with a
+plan note in the same change. **No route is added** — `/plan/week` answers
+a new question in a new block — but the shape of an answer is part of the
+frozen table, and the table says what the answer carries.
+
+* **The question.** The rig's review said the Progress wall mixes load
+  ratios, streaks, sleep stages and weekday comparisons **without answering
+  whether the week's training fits a goal**. The app now answers it: **how
+  is this week, against the plan?**
+* **The answer is a fact.** Each planned session is *done* or *not done* —
+  the plan engine's own statuses — and for the sessions that happened, the
+  distance run is read against the distance planned and the pace against the
+  plan's pace. **No grade, no percentage, no traffic light**, and the word
+  "missed" is not in the app.
+* **The paces are compared only when both of them exist.** The general
+  aerobic day carries a heart-rate band and no pace, so that session is
+  compared on its distance or on nothing; a run is never compared against a
+  pace that is not there.
+* **The comparison is like for like.** The days that have gone are compared
+  with the days that have gone — the plan's first three days against the
+  athlete's first three days, never the plan's whole week against a part of
+  one.
+* **One plan.** The athlete's own plan is compared with the week that
+  happened. The app never compares two plans, never says which plan is
+  better, and never offers a programme the athlete did not adopt.
+* **The card is merged into *This week*.** The wall is eleven cards and the
+  instruction was to reduce the surface: the two questions are the same
+  question asked of two other things, so the answer lives inside the card
+  that already answers it. The panel behind the card, the Plan page and
+  Today carry the same answer in full.
+* **The core owns it.** `crates/stride-core/src/plan_week.rs` reads the
+  athlete's own adopted plan and the week that happened, and writes every
+  sentence; the api carries the answer and the app draws it.
+
 ### Proposed amendment — the zone model is a dated fact (2026-11-15)
 
 **Proposal, not approved.** The approvals below are the user's to give. This

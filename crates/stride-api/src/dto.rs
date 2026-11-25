@@ -1103,12 +1103,69 @@ pub struct AdoptedSessionRow {
     pub detail: Option<String>,
     /// The line the surface leads with: "17.7 km · tempo".
     pub label: String,
+    /// The session, already rendered: "Today — 17.7 km · tempo".
+    pub sentence: String,
     /// The line with the pace beside it, when the session has one.
     pub line: Option<String>,
     /// The reason the session has no pace, when it has none.
     pub no_pace: Option<String>,
     /// On a progression long run: the last miles at the threshold pace.
     pub lt_last: Option<String>,
+    /// The distance that was run on this session's day.
+    pub actual: Option<RenderedValue>,
+    /// The difference between the distance run and the distance planned.
+    ///
+    /// "2.4 km less than the 17.7 km target" — and nothing at all when
+    /// the gap is within ten per cent, because there is no news in it.
+    pub difference: Option<String>,
+    /// The pace that was run, read against the plan's pace.
+    ///
+    /// Absent unless **both** of them exist: the general aerobic day
+    /// carries a heart-rate band and no pace, and a run is never compared
+    /// against a pace that is not there.
+    pub pace_comparison: Option<String>,
+    /// The plain status of the session: `done`, `not_done` or `planned`.
+    ///
+    /// Absent for a day that is not a run: a rest day is neither done nor
+    /// not done.
+    pub status: Option<String>,
+}
+
+/// The plan's week against the week that happened.
+///
+/// **A fact, not a verdict.** Where the week stands against the plan, the
+/// plan's own source, what it was paced with, the tier's entry requirement
+/// beside the athlete's own mileage, and the week's totals.
+#[derive(Clone, Debug, PartialEq, Serialize)]
+pub struct PlanWeekAgainst {
+    /// Where the week stands: `none`, `before`, `running` or `after`.
+    pub state: String,
+    /// The state's own sentence: "no plan has been adopted".
+    pub state_line: Option<String>,
+    /// The line that points at the programmes there are to adopt.
+    pub choose: Option<String>,
+    /// The plan's own source: "the Pfitzinger half marathon tier 2 plan".
+    pub source_line: Option<String>,
+    /// What the plan was paced with.
+    pub paced_with: Option<String>,
+    /// The tier's entry requirement beside the athlete's own mileage.
+    pub entry: Option<EntryRow>,
+    /// The week's totals, against the plan's.
+    pub totals: Option<PlanWeekTotals>,
+}
+
+/// The week's totals, against the plan's.
+#[derive(Clone, Debug, PartialEq, Serialize)]
+pub struct PlanWeekTotals {
+    /// The distance the plan asked for, over the days that have gone.
+    pub planned: RenderedValue,
+    /// The distance that was run, over the same days.
+    pub actual: RenderedValue,
+    /// The difference between the two, signed: the athlete's distance
+    /// minus the plan's.
+    pub difference: Option<RenderedValue>,
+    /// The line: "38.4 km against the plan's 42 km".
+    pub line: Option<String>,
 }
 
 /// The plan that was adopted.
@@ -1156,6 +1213,12 @@ pub struct PlanWeek {
     /// one, and the plan's own source. `null` when no plan is in force, or
     /// when the week is not in it.
     pub adopted: Option<AdoptedWeekRow>,
+    /// The plan's week against the week that happened.
+    ///
+    /// It is there in every state — a plan that has not begun, a week
+    /// that is running, a plan that has passed, and no plan at all — and
+    /// it says which one it is.
+    pub against: PlanWeekAgainst,
 }
 
 /// How many of the planned sessions were run.
@@ -3457,6 +3520,39 @@ pub struct StimulusInsight {
     pub unavailable: Option<String>,
 }
 
+// ------------------------------------------- the athlete's own facts, and the plan's bases
+
+/// The athlete's own races, newest first.
+///
+/// **The athlete's own facts are never synced.** They are typed into the
+/// app and stored locally, and the app never infers a race from the
+/// training.
+#[derive(Clone, Debug, PartialEq, Serialize)]
+pub struct RacesInsight {
+    /// When this answer was produced.
+    pub generated_at: String,
+    /// The races the athlete typed, newest first.
+    pub races: Vec<RaceRow>,
+}
+
+/// The race that was written.
+#[derive(Clone, Debug, PartialEq, Serialize)]
+pub struct RaceWritten {
+    /// The race, as it is now stored.
+    pub race: RaceRow,
+    /// When this answer was produced.
+    pub generated_at: String,
+}
+
+/// The choice that was made.
+#[derive(Clone, Debug, PartialEq, Serialize)]
+pub struct ChoiceWritten {
+    /// The choice, as it is now stored: the one in force.
+    pub choice: ChoiceRow,
+    /// When this answer was produced.
+    pub generated_at: String,
+}
+
 // --------------------------------------- the athlete's own declared heart rates
 
 /// The athlete's own heart rates: the declaration in force, the bands it
@@ -3513,37 +3609,132 @@ pub struct HeartRateKindRow {
     pub label: String,
 }
 
-// ------------------------------------------- the athlete's own facts, and the plan's bases
+/// The declaration that was written.
+#[derive(Clone, Debug, PartialEq, Serialize)]
+pub struct DeclarationWritten {
+    /// The declaration, as it is now stored: the one in force.
+    pub declaration: DeclarationRow,
+    /// When this answer was produced.
+    pub generated_at: String,
+}
 
-/// The athlete's own races, newest first.
+/// One declaration: the athlete's own statement about their heart rates.
 ///
-/// **The athlete's own facts are never synced.** They are typed into the
-/// app and stored locally, and the app never infers a race from the
-/// training.
+/// **A pair entered together is one declaration**, and the two rows it
+/// carries are the two numbers it holds.
 #[derive(Clone, Debug, PartialEq, Serialize)]
-pub struct RacesInsight {
-    /// When this answer was produced.
-    pub generated_at: String,
-    /// The races the athlete typed, newest first.
-    pub races: Vec<RaceRow>,
+pub struct DeclarationRow {
+    /// The declaration's own id.
+    pub id: i64,
+    /// The maximum heart rate, when the declaration carries one.
+    pub max: Option<DeclaredRateRow>,
+    /// The resting heart rate, when the declaration carries one.
+    pub resting: Option<DeclaredRateRow>,
+    /// The day the declaration was made.
+    pub entered_on: String,
+    /// The day the declaration was made, in the app's own date rendering:
+    /// "24 Nov 2026".
+    pub entered_on_label: String,
+    /// The entry, in the core's own words: "entered on 24 Nov 2026".
+    pub entered: String,
+    /// The day the declaration was last changed.
+    pub updated_on: String,
+    /// Whether this declaration is the one in force.
+    pub in_force: bool,
 }
 
-/// The race that was written.
+/// One declared heart rate: the value, where it came from, and the day it
+/// was measured.
 #[derive(Clone, Debug, PartialEq, Serialize)]
-pub struct RaceWritten {
-    /// The race, as it is now stored.
-    pub race: RaceRow,
-    /// When this answer was produced.
-    pub generated_at: String,
+pub struct DeclaredRateRow {
+    /// The kind of heart rate, in the runner's words: "your maximum heart
+    /// rate".
+    pub label: String,
+    /// The value, in beats per minute.
+    pub value_bpm: f64,
+    /// The value as the core renders it: "186 bpm".
+    pub value: Option<RenderedValue>,
+    /// Where it came from: "watch", "test", "doctor_lab", "partner_watch"
+    /// or "typed".
+    pub source: String,
+    /// Where it came from, in the runner's words: "from a test".
+    pub source_label: String,
+    /// The day it was measured, when the athlete said.
+    pub measured_on: Option<String>,
+    /// The day it was measured, in the app's own date rendering.
+    pub measured_on_label: Option<String>,
 }
 
-/// The choice that was made.
+/// The bands the athlete's declared heart rates yield.
 #[derive(Clone, Debug, PartialEq, Serialize)]
-pub struct ChoiceWritten {
-    /// The choice, as it is now stored: the one in force.
-    pub choice: ChoiceRow,
-    /// When this answer was produced.
-    pub generated_at: String,
+pub struct DeclaredBandsRow {
+    /// The bands, in the runner's words: "the bands from the heart rates
+    /// you entered".
+    pub label: String,
+    /// The five floors, in beats per minute.
+    pub floors: ZoneModelFloors,
+    /// The maximum heart rate the bands were built on.
+    pub max_heart_rate: Option<RenderedValue>,
+    /// The range the ladder was applied to: "reserve" (both numbers) or
+    /// "max_share" (the maximum alone).
+    pub range: String,
+    /// The range, in the runner's words: "from your maximum heart rate and
+    /// your resting heart rate".
+    pub range_label: String,
+    /// The day the declaration was entered.
+    pub entered_on: String,
+    /// The bands' own source line, in the core's words.
+    pub source: Option<String>,
+}
+
+/// The watch's own floors: the configuration in the watch, read once and
+/// dated.
+#[derive(Clone, Debug, PartialEq, Serialize)]
+pub struct WatchBandsRow {
+    /// The watch's own zones, in the runner's words: "your watch's zones".
+    pub label: String,
+    /// The five floors, in beats per minute.
+    pub floors: ZoneModelFloors,
+    /// The maximum heart rate the watch's model was built on.
+    pub max_heart_rate: Option<RenderedValue>,
+    /// The day the model was read.
+    pub read_on: String,
+    /// The day's own rendering: "3 Nov 2026".
+    pub read_on_label: String,
+    /// The model's own source line, in the core's words.
+    pub source: Option<String>,
+}
+
+/// One boundary's difference between the two sets of floors.
+#[derive(Clone, Debug, PartialEq, Serialize)]
+pub struct BoundaryRow {
+    /// The band: 1 to 5.
+    pub zone: usize,
+    /// The floor of the declared band.
+    pub declared_bpm: f64,
+    /// The floor of the watch's band.
+    pub watch_bpm: f64,
+    /// The difference: the declared floor less the watch's.
+    pub difference_bpm: f64,
+    /// The difference as the core renders it: "+4 bpm".
+    pub difference: Option<RenderedValue>,
+}
+
+/// The basis the bands came from — **one** of the two, never both.
+#[derive(Clone, Debug, PartialEq, Serialize)]
+pub struct BandsBasisRow {
+    /// The basis: "declared" or "watch".
+    pub kind: String,
+    /// The basis, in the runner's words: "the bands from the heart rates
+    /// you entered" or "your watch's zones".
+    pub label: String,
+    /// The basis's own source line, in the core's words.
+    pub source: Option<String>,
+    /// The day the basis was dated: the day the declaration was entered,
+    /// or the day the watch's model was read.
+    pub dated_on: String,
+    /// The day's own rendering: "24 Nov 2026".
+    pub dated_on_label: String,
 }
 
 /// One adoptable programme.

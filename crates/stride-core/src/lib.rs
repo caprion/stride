@@ -14,8 +14,8 @@ pub mod direction;
 pub mod eddington;
 pub mod fingerprint;
 
-pub mod heatmap;
 pub mod heart_rates;
+pub mod heatmap;
 pub mod load;
 pub mod movement;
 pub mod pace;
@@ -55,12 +55,12 @@ pub use fingerprint::{
     NoValue, Observation, ZoneDistribution, ZoneShare, MAX_STRIDE_LENGTH_M,
 };
 
-pub use heatmap::{bounds_of, cell_of, cell_size_m, heatmap, Bounds, Cell, Heatmap, HeatmapCell};
 pub use heart_rates::{
-    compare, derive, history, in_force, select, source_line, Basis, BandRange, Bands,
-    BoundaryDifference, Comparison, DeclaredRate, Declaration, Derived, HeartRateKind,
+    compare, derive, history, in_force, select, source_line, BandRange, Bands, Basis,
+    BoundaryDifference, Comparison, Declaration, DeclaredRate, Derived, HeartRateKind,
     HeartRateSource, MissingReason, SelectedBands, Supported, WatchBands, LADDER,
 };
+pub use heatmap::{bounds_of, cell_of, cell_size_m, heatmap, Bounds, Cell, Heatmap, HeatmapCell};
 pub use load::{
     load_report, recovery_scenario, ActivityLoad, DailyLoad, DayInput, LoadAnswer, LoadAssumptions,
     LoadInputs, LoadReport, LoadState, LoadZoneModel, NoLoadReason, ProjectedDay, RecoveryScenario,

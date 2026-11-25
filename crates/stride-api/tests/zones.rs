@@ -50,14 +50,20 @@ fn floors() -> ZoneFloors {
 
 /// Write a run whose FIT file is the corpus file named.
 fn write_fit_run(harness: &common::Harness, name: &str) -> i64 {
+    write_fit_run_on(harness, name, "2026-05-10")
+}
+
+/// The same run, on another day: a run before the model was read is a
+/// different answer, and the route has to say so.
+fn write_fit_run_on(harness: &common::Harness, name: &str, local_date: &str) -> i64 {
     let fit = common::corpus_fit(name);
     harness.write_run(NewActivity {
         source: "garmin_personal".to_string(),
-        external_id: format!("fit-{name}"),
+        external_id: format!("fit-{name}-{local_date}"),
         name: "a run with heart rate".to_string(),
         sport_type: "running".to_string(),
         start_time: common::instant(),
-        local_date: "2026-05-10".to_string(),
+        local_date: local_date.to_string(),
         distance_m: 10_000.0,
         moving_time_s: 3_000.0,
         elapsed_time_s: 3_060.0,
@@ -125,7 +131,10 @@ fn a_run_with_a_stored_model_answers_with_the_five_times_and_the_models_date() {
     // And the model's own source line, in the core's words.
     assert_eq!(
         named["source"].as_str(),
-        Some("your zones · HR_MAX · max heart rate 178 bpm · taken from your watch on 10 May 2026")
+        Some(
+            "your zones · HR_MAX · max heart rate 178 bpm · the watch's configuration as it stood \
+             on 10 May 2026 · the runs from that day on"
+        )
     );
     assert!(body["unavailable"].is_null());
 
@@ -202,6 +211,37 @@ fn a_run_with_no_stored_model_has_no_value() {
 }
 
 #[test]
+fn a_run_before_the_first_model_says_why_it_has_no_value() {
+    // **A run before the watch's configuration was read is a different
+    // answer, and it says so where it is shown.** The reason is the
+    // ledger's own sentence, counting this run's own runs: the app's own
+    // bands are not measured, and the watch's own zone minutes are the
+    // only zone time here.
+    let harness = common::Harness::empty("zones-model-too-late");
+    let id = write_fit_run_on(&harness, "hr_gps_run.fit", "2026-05-01");
+    let read_at = common::instant() - Duration::days(2);
+    harness
+        .store
+        .write_hr_zone_model_if_new(&model(read_at))
+        .unwrap();
+
+    let body = harness.ok_get(&format!("/fitness/zones?id={id}"));
+
+    // No model was in force on the run's own day, so the bands have no
+    // value — and the reason says which one it is, in the run's own
+    // words.
+    assert!(body["zones"].as_array().unwrap().is_empty());
+    assert!(body["model"].is_null());
+    assert_eq!(
+        body["unavailable"].as_str(),
+        Some(
+            "not measured — your watch's zones were not read for this run; the watch's own zone \
+             minutes are the only zone time here"
+        )
+    );
+}
+
+#[test]
 fn a_model_with_no_maximum_heart_rate_is_named_without_one() {
     let harness = common::Harness::empty("zones-no-max");
     let id = write_fit_run(&harness, "hr_gps_run.fit");
@@ -218,7 +258,10 @@ fn a_model_with_no_maximum_heart_rate_is_named_without_one() {
     assert!(named["max_heart_rate"].is_null());
     assert_eq!(
         named["source"].as_str(),
-        Some("your zones · HR_MAX · taken from your watch on 9 May 2026")
+        Some(
+            "your zones · HR_MAX · the watch's configuration as it stood on 9 May 2026 · the runs \
+             from that day on"
+        )
     );
     // And the top band has no upper edge to draw.
     let zones = body["zones"].as_array().unwrap();
@@ -241,7 +284,7 @@ fn a_model_whose_floors_are_not_in_order_is_reported_as_unusable() {
     assert!(body["outside"].is_null());
     assert_eq!(
         body["unavailable"].as_str(),
-        Some("No zones yet — your watch's zones do not start in order")
+        Some("not measured — your watch's zones do not start in order")
     );
 }
 
@@ -262,7 +305,7 @@ fn a_run_with_no_samples_says_so_in_the_cores_words() {
     assert!(body["outside"].is_null());
     assert_eq!(
         body["unavailable"].as_str(),
-        Some("No zones yet — this run recorded no heart rate")
+        Some("not measured — this run recorded no heart rate")
     );
 }
 

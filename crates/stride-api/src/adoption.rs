@@ -32,6 +32,7 @@ use stride_core::plan::{PlanSource, SessionKind};
 use stride_core::plan_bases::{
     self, AdoptedPlan, AdoptedSession, AdoptedWeek, DateWords, Pacing, PacingSource,
 };
+use stride_core::plan_week::{self, WeekComparison, WeekFact};
 use stride_core::training_paces::PaceValue;
 use stride_store::{NewAdoptedPlan, NewAdoptedSession};
 
@@ -88,7 +89,65 @@ pub fn words_of(plan: &AdoptedPlan) -> DateWords {
             .race
             .as_ref()
             .map(|source| crate::routes::day_label(source.date)),
+        start: Some(crate::routes::day_label(plan.start_date)),
+        end: Some(crate::routes::day_label(plan.end_date)),
     }
+}
+
+/// The plan's week against the week that happened.
+///
+/// The comparison is **the core's**: the plan in force, the runs of the
+/// week that holds the day, and the day itself. This module reads the
+/// store and carries the core's answer back — it decides nothing, and it
+/// never compares two plans.
+pub fn comparison(api: &Api, day: Date) -> ApiResult<WeekComparison> {
+    let plan = in_force(api)?;
+    let facts = facts_of_week(api, day)?;
+    let words = plan.as_ref().map(words_of).unwrap_or_default();
+    Ok(plan_week::compare_week(plan.as_ref(), day, &facts, &words))
+}
+
+/// The runs of the week that holds a day, as the plan's week reads them.
+///
+/// **One fact per day that held a run**: the distance of that day's
+/// running and the pace of it. A day with no run is not in the list —
+/// absence is not a zero.
+fn facts_of_week(api: &Api, day: Date) -> ApiResult<Vec<WeekFact>> {
+    let start = crate::routes::week_start(day);
+    let end = start.add_days(6);
+    let runs = api
+        .store()
+        .activities_between(&start.to_iso(), &end.to_iso())
+        .map_err(|error| api.store_error("the runs could not be read", &error))?;
+
+    // The days that held a run, in date order: the distance of the day
+    // and the pace of it, both from the day's own totals.
+    let mut days: Vec<(Date, f64, f64)> = Vec::new();
+    for run in runs.iter() {
+        let date = match Date::parse(&run.local_date) {
+            Some(date) => date,
+            None => continue,
+        };
+        match days.iter_mut().find(|(held, _, _)| *held == date) {
+            Some((_, distance_m, moving_time_s)) => {
+                *distance_m += run.distance_m;
+                *moving_time_s += run.moving_time_s;
+            }
+            None => days.push((date, run.distance_m, run.moving_time_s)),
+        }
+    }
+    days.sort_by_key(|(date, _, _)| *date);
+
+    Ok(days
+        .into_iter()
+        .map(|(date, distance_m, moving_time_s)| {
+            WeekFact::new(
+                date,
+                Some(distance_m),
+                crate::routes::pace_of(distance_m, moving_time_s),
+            )
+        })
+        .collect())
 }
 
 /// The stored plan, as the core reads it.
@@ -414,7 +473,15 @@ pub fn entry_row(entry: &stride_core::plan_bases::EntryReading) -> crate::dto::E
 }
 
 /// The adopted plan's week, as the answer carries it.
-pub fn week_row(week: &stride_core::plan_bases::WeekReading) -> crate::dto::AdoptedWeekRow {
+///
+/// The sessions carry **what happened on their day**: the distance that
+/// was run, the difference against the distance planned, the pace read
+/// against the plan's pace, and the plain status of the session.
+pub fn week_row(
+    week: &stride_core::plan_bases::WeekReading,
+    comparison: &WeekComparison,
+    day: Date,
+) -> crate::dto::AdoptedWeekRow {
     use crate::dto::AdoptedWeekRow;
     AdoptedWeekRow {
         week: week.week,
@@ -422,7 +489,11 @@ pub fn week_row(week: &stride_core::plan_bases::WeekReading) -> crate::dto::Adop
         label: week.label.clone(),
         start_date: week.start_date.to_iso(),
         end_date: week.end_date.to_iso(),
-        sessions: week.sessions.iter().map(session_row).collect(),
+        sessions: week
+            .sessions
+            .iter()
+            .map(|session| session_row(session, comparison, day))
+            .collect(),
         source: week.source.source.as_str().to_string(),
         source_line: week.source.line.clone(),
         pacing: pacing_row(&week.pacing),
@@ -431,18 +502,65 @@ pub fn week_row(week: &stride_core::plan_bases::WeekReading) -> crate::dto::Adop
     }
 }
 
-/// The race week, moved to the day the athlete races.
-fn shift_row(shift: &stride_core::plan_bases::ShiftReading) -> crate::dto::ShiftRow {
-    crate::dto::ShiftRow {
-        days: shift.days,
-        line: shift.line.clone(),
-        dropped: shift.dropped.clone(),
+/// The plan's week against the week that happened, as the answer carries it.
+///
+/// **A fact, not a verdict.** The state the week is in, the plan's own
+/// source, what the plan was paced with, the tier's entry requirement
+/// beside the athlete's own mileage, and the week's totals.
+pub fn against_row(comparison: &WeekComparison) -> crate::dto::PlanWeekAgainst {
+    use crate::dto::PlanWeekAgainst;
+    let totals = comparison.totals.as_ref().map(|totals| {
+        use crate::dto::PlanWeekTotals;
+        PlanWeekTotals {
+            planned: crate::render::distance_of(totals.planned_m),
+            actual: crate::render::distance_of(totals.actual_m),
+            difference: crate::render::difference(
+                Some(totals.difference_m),
+                stride_core::ValueUnit::Distance,
+            ),
+            line: totals.line.clone(),
+        }
+    });
+    let pacing = comparison.pacing.as_ref().and_then(|pacing| {
+        pacing
+            .threshold_line
+            .clone()
+            .or_else(|| pacing.rule_line.clone())
+            .or_else(|| pacing.missing.clone())
+    });
+    PlanWeekAgainst {
+        state: comparison.state.as_str().to_string(),
+        state_line: comparison.state_line.clone(),
+        choose: choose_line(comparison),
+        source_line: comparison.source.as_ref().map(|source| source.line.clone()),
+        paced_with: pacing,
+        entry: comparison.entry.as_ref().map(entry_row),
+        totals,
     }
 }
 
+/// The line that points at the programmes there are to adopt.
+///
+/// It is there when there is no plan: the app never offers a programme the
+/// athlete did not adopt, and it never compares two of them.
+fn choose_line(comparison: &WeekComparison) -> Option<String> {
+    if comparison.state != stride_core::plan_week::WeekState::None {
+        return None;
+    }
+    plan_week::choose_line()
+}
+
 /// One session of the adopted plan, as the answer carries it.
-fn session_row(session: &stride_core::plan_bases::SessionReading) -> crate::dto::AdoptedSessionRow {
+fn session_row(
+    session: &stride_core::plan_bases::SessionReading,
+    comparison: &WeekComparison,
+    day: Date,
+) -> crate::dto::AdoptedSessionRow {
     use crate::dto::AdoptedSessionRow;
+    let against = comparison
+        .sessions
+        .iter()
+        .find(|entry| entry.date == session.date);
     AdoptedSessionRow {
         date: session.date.to_iso(),
         weekday: session.weekday.clone(),
@@ -453,8 +571,25 @@ fn session_row(session: &stride_core::plan_bases::SessionReading) -> crate::dto:
         finish_pace: session.finish_pace.clone(),
         detail: session.detail.clone(),
         label: session.label.clone(),
+        sentence: crate::routes::session_sentence(session.date, day, &session.label),
         line: session.line.clone(),
         no_pace: session.no_pace.clone(),
         lt_last: session.lt_last.clone(),
+        actual: against.and_then(|entry| crate::render::distance(entry.actual_distance_m)),
+        difference: against.and_then(|entry| entry.difference.clone()),
+        pace_comparison: against.and_then(|entry| entry.pace.clone()),
+        status: against
+            .and_then(|entry| entry.status)
+            .map(crate::plan::status_name)
+            .map(|status| status.to_string()),
+    }
+}
+
+/// The race week, moved to the day the athlete races.
+fn shift_row(shift: &stride_core::plan_bases::ShiftReading) -> crate::dto::ShiftRow {
+    crate::dto::ShiftRow {
+        days: shift.days,
+        line: shift.line.clone(),
+        dropped: shift.dropped.clone(),
     }
 }

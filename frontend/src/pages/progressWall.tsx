@@ -50,6 +50,7 @@ import {
   VolumePanel,
 } from './progressPanels'
 import { LadderCard } from './ladder'
+import { PlanAgainstCard } from './planWeek'
 import { LedgerCard } from './ledger'
 import {
   BestsPicture,
@@ -857,6 +858,16 @@ export function ProgressWall({
     week: (
       <WallCard title={cardTitle('week')} to={cardRoute('week')} testId="progress-wall-week">
         {weekPicture}
+        {/*
+          **The week against the plan**, in the same card.
+
+          The wall is eleven cards and the user's instruction was to
+          reduce the surface, so the plan's comparison is **inside** the
+          card that already answers "how is this week" — not a twelfth
+          card beside it. The panel behind the card carries the same
+          answer in full.
+        */}
+        <PlanAgainstCard week={answers.planWeek.data} bare />
       </WallCard>
     ),
 

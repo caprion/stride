@@ -231,4 +231,46 @@ describe('where the time went', () => {
       'no runs recorded',
     )
   })
+
+  it('puts the reason inside the block it qualifies', async () => {
+    vi.spyOn(api, 'insightsStimulus').mockResolvedValue({
+      ...WITH_BOTH,
+      unavailable:
+        "not measured — your watch's zones were not read for these runs; the watch's own zone minutes are the only zone time here",
+      overlap: null,
+    })
+    renderApp('/progress')
+    const card = await screen.findByTestId('progress-wall-time')
+
+    await waitFor(() =>
+      expect(card.querySelector('[data-testid="ledger-unavailable"]')).toBeTruthy(),
+    )
+    const reason = card.querySelector('[data-testid="ledger-unavailable"]')
+    // **A reason belongs to the block it qualifies.** The reason is
+    // about the app's own bands, so it sits inside the app's own block
+    // — never above the two blocks, where it would read as a reason
+    // about both.
+    expect(card.querySelector('[data-testid="ledger-app"]')?.contains(reason as Node)).toBe(true)
+    expect(card.querySelector('[data-testid="ledger-source"]')?.contains(reason as Node)).toBe(false)
+  })
+
+  it('gives each block its own coverage', async () => {
+    vi.spyOn(api, 'insightsStimulus').mockResolvedValue(WITH_BOTH)
+    renderApp('/progress')
+    const card = await screen.findByTestId('progress-wall-time')
+
+    await waitFor(() =>
+      expect(card.querySelector('[data-testid="ledger-app-coverage"]')).toBeTruthy(),
+    )
+    // The app's own block: how many of the period's runs it measured.
+    expect(card.querySelector('[data-testid="ledger-app-coverage"]')?.textContent).toContain(
+      'measured on this basis',
+    )
+    // The watch's own block: how many of the period's runs carried the
+    // watch's own zone minutes. The two blocks cover different runs,
+    // and the difference is stated where the two appear.
+    expect(card.querySelector('[data-testid="ledger-source-coverage"]')?.textContent).toContain(
+      "carried the watch's own zone minutes",
+    )
+  })
 })

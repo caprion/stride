@@ -313,7 +313,9 @@ fn threshold_of(answer: &Value) -> Option<ThresholdFact> {
 /// The athlete's own fact: the two numbers, and the day the declaration
 /// was made. The wording is the core's, and the page prints it.
 fn heart_rates_of(answer: &Value) -> Option<HeartRatesFact> {
-    let declaration = answer.get("declaration").filter(|value| value.is_object())?;
+    let declaration = answer
+        .get("declaration")
+        .filter(|value| value.is_object())?;
     Some(HeartRatesFact {
         max: declaration
             .get("max")

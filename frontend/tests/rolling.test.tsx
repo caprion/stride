@@ -105,9 +105,12 @@ describe('the split of the zones on Progress', () => {
     // The share, and which way it moved against the window before it.
     expect(card.querySelector('[data-testid="progress-zones-low"]')?.textContent).toBe('72.53%')
     expect(card.textContent).toContain('up on the same 80 days, a week earlier')
-    // The model, with the day it was read.
+    // The model, with the day it was read, and what it applies to.
     expect(card.querySelector('[data-testid="progress-zones-model"]')?.textContent).toContain(
-      'taken from your watch on 10 May 2026',
+      "the watch's configuration as it stood on 10 May 2026",
+    )
+    expect(card.querySelector('[data-testid="progress-zones-model"]')?.textContent).toContain(
+      'the runs from that day on',
     )
     // And no verdict anywhere on the card.
     const text = (card.textContent ?? '').toLowerCase()
@@ -165,7 +168,7 @@ describe('the zone distribution on Progress', () => {
     expect(card.textContent).toContain('72.53%')
     // And the model the split was measured against.
     expect(card.querySelector('[data-testid="progress-zones-model"]')?.textContent).toContain(
-      'taken from your watch on 10 May 2026',
+      "the watch's configuration as it stood on 10 May 2026",
     )
   })
 })

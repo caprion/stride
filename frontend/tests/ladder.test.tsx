@@ -15,7 +15,7 @@
  *     panel, and it never judges.
  */
 
-import { screen } from '@testing-library/react'
+import { screen, waitFor } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { api } from '../src/lib/api'
 import { curveFixture, pacesFixture } from '../src/fixtures'
@@ -130,6 +130,64 @@ describe('the pace card', () => {
     expect(card.querySelector('[data-testid="ladder-unavailable"]')?.textContent).toContain(
       'no race time entered',
     )
+  })
+
+  it('offers a door where the race is typed', async () => {
+    vi.spyOn(api, 'insightsPaces').mockResolvedValue({
+      ...pacesFixture,
+      rungs: [],
+      unavailable: 'no race time entered — the paces have no value yet',
+    })
+    renderApp('/progress')
+    const card = await screen.findByTestId('progress-wall-pace')
+
+    // **A card must not offer a way that goes nowhere.** The paces hang
+    // on a race, and the race is typed on the rig's own page: the card
+    // says where, and the link goes to the exact place.
+    const door = card.querySelector('[data-testid="ladder-race-door"]')
+    expect(door?.textContent).toContain("rig's own page")
+    expect(door?.textContent).toContain('A race')
+    const link = card.querySelector('[data-testid="ladder-race-link"]')
+    expect(link?.getAttribute('href')).toBe('/rig#race')
+  })
+
+  it('draws no bar for a rung with no value', async () => {
+    renderApp('/progress')
+    const card = await screen.findByTestId('progress-wall-pace')
+
+    // **Absence is not zero**: a rung with no pace draws no bar at all,
+    // and the reason stands where the bar would have been. An empty
+    // track would read as a band of zero.
+    expect(card.querySelector('[data-testid="ladder-pace-general_aerobic"]')).toBeNull()
+    // And the rungs that hold a pace still draw theirs.
+    expect(card.querySelector('[data-testid="ladder-pace-lactate_threshold"]')).toBeTruthy()
+  })
+
+  it('draws no legend entry with nothing plotted', async () => {
+    // No pace anywhere: the athlete's own colour is on nothing, so the
+    // legend does not name it. **The legend lists what is on the chart.**
+    vi.spyOn(api, 'insightsPaces').mockResolvedValue({
+      ...pacesFixture,
+      rungs: pacesFixture.rungs.map((rung) => ({
+        ...rung,
+        pace: {
+          value: null,
+          fast_s_per_km: null,
+          slow_s_per_km: null,
+          missing: 'no race time entered — the paces have no value yet',
+        },
+      })),
+    })
+    renderApp('/progress')
+    const card = await screen.findByTestId('progress-wall-pace')
+
+    await waitFor(() =>
+      expect(card.querySelector('[data-testid="ladder-legend-method"]')).toBeTruthy(),
+    )
+    // The heart-rate bands are the method's rule, and they are drawn.
+    expect(card.querySelector('[data-testid="ladder-legend-method"]')).toBeTruthy()
+    // The athlete's own race is on nothing, so it is not named.
+    expect(card.querySelector('[data-testid="ladder-legend-athlete"]')).toBeNull()
   })
 })
 

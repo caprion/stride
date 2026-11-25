@@ -125,8 +125,12 @@ describe('the run film', () => {
     expect(zones).toHaveTextContent('Z1')
     expect(zones).toHaveTextContent('Z5')
     expect(zones).toHaveTextContent('106-121 bpm')
-    // And the model's own source line, with the day it was read.
-    expect(screen.getByTestId('film-zones-source')).toHaveTextContent('taken from your watch on 10 May 2026')
+    // And the model's own source line, with the day it was read and
+    // what it applies to.
+    expect(screen.getByTestId('film-zones-source')).toHaveTextContent(
+      "the watch's configuration as it stood on 10 May 2026",
+    )
+    expect(screen.getByTestId('film-zones-source')).toHaveTextContent('the runs from that day on')
   })
 
   it('says that the street tiles come from OpenStreetMap', async () => {

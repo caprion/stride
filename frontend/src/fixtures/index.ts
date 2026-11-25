@@ -1279,7 +1279,7 @@ export const filmFixture: RunFilm = {
     },
     read_at: '2026-05-10T06:30:00Z',
     read_on: '10 May 2026',
-    source: 'your zones · HR_MAX · max heart rate 178 bpm · taken from your watch on 10 May 2026',
+    source: "your zones · HR_MAX · max heart rate 178 bpm · the watch's configuration as it stood on 10 May 2026 · the runs from that day on",
   },
   zones: [
     { label: 'Z1', range: '106-121 bpm', from_bpm: 106, to_bpm: 121 },

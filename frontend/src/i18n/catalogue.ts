@@ -1174,6 +1174,23 @@ export const catalogue = {
   'pace.card.empty': { type: 'status', text: 'No race time entered' },
   'pace.legend.method': { type: 'status', text: "the method's rule" },
   'pace.legend.athlete': { type: 'status', text: 'your own race' },
+  /*
+    The door.
+
+    **A card must not offer a way that goes nowhere.** The paces hang on
+    a race the athlete types, and the race is typed on the rig's own
+    page: the app has no screen for it. The card says where it is typed
+    and what happens there, and the link goes to the exact place.
+  */
+  'pace.card.race.note': {
+    type: 'status',
+    text: "Your race is typed on the rig's own page — under 'Three things only you can give it', in 'A race'. The paces come from that race.",
+  },
+  'pace.card.race.link': { type: 'status', text: 'the rig’s own page' },
+  'pace.card.race.native': {
+    type: 'status',
+    text: "The rig's own page is the desktop's — the phone's app has no screen of its own for a race.",
+  },
   'pace.card.note': {
     type: 'status',
     text: 'The heart-rate band and the pace are two different numbers, and they are not converted into one another.',
@@ -1201,6 +1218,21 @@ export const catalogue = {
   'ledger.overlap': { type: 'status', text: 'where both bases exist' },
   'ledger.overlap.gap': { type: 'status', text: 'the distance between the two' },
   'ledger.coverage': { type: 'status', text: 'the runs the period holds' },
+  /*
+    The two blocks' own coverage.
+
+    **Each block says how much of the period it measured.** The two
+    measurements cover different runs, and the reader is told here, where
+    the two appear — never left to find the difference between them.
+  */
+  'ledger.coverage.app': {
+    type: 'status',
+    text: '{measured} of {runs} runs measured on this basis',
+  },
+  'ledger.coverage.source': {
+    type: 'status',
+    text: "{runs} of {total} runs carried the watch's own zone minutes",
+  },
   'ledger.longest': { type: 'status', text: 'the longest run' },
   'ledger.repeated': { type: 'status', text: 'the repeated work' },
   'ledger.more': { type: 'status', text: 'The store holds more runs than this answer read' },
@@ -1250,6 +1282,12 @@ export const catalogue = {
   'plan.week.pacedWith': { type: 'status', text: 'the plan was paced with' },
   'plan.week.entry': { type: 'status', text: 'the level asks for' },
   'today.options.pacing': { type: 'status', text: "the plan's pacing" },
+
+  /* ------------------------------- the week against the plan (D28) */
+  'plan.against.heading': { type: 'status', text: 'Your plan' },
+  'plan.against.totals': { type: 'status', text: 'the week against the plan' },
+  'plan.against.entry': { type: 'status', text: 'the level asks for' },
+  'plan.against.mileage': { type: 'status', text: 'your own mileage' },
 } as const satisfies Record<string, Entry>
 
 export type CatalogueEntry = (typeof catalogue)[keyof typeof catalogue]

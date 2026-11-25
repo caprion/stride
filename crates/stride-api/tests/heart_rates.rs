@@ -54,7 +54,10 @@ fn the_pair_is_written_as_one_declaration_with_its_sources_and_its_dates() {
     assert_eq!(declaration["max"]["measured_on"], "2026-11-08");
     assert_eq!(declaration["resting"]["value_bpm"], 52.0);
     assert_eq!(declaration["resting"]["source"], "doctor_lab");
-    assert_eq!(declaration["resting"]["source_label"], "from a doctor or a lab");
+    assert_eq!(
+        declaration["resting"]["source_label"],
+        "from a doctor or a lab"
+    );
     assert_eq!(declaration["resting"]["measured_on"], "2026-11-12");
     assert_eq!(declaration["entered_on"], common::TODAY);
     assert_eq!(declaration["updated_on"], common::TODAY);
@@ -183,7 +186,10 @@ fn the_watch_s_own_floors_are_stated_beside_the_declared_ones() {
     assert_eq!(answer["watch"]["floors"]["zone1"]["raw"], 115.0);
     assert_eq!(answer["watch"]["read_on"], common::TODAY);
     let watch_source = answer["watch"]["source"].as_str().unwrap_or_default();
-    assert!(watch_source.contains("the watch's configuration as it stood on"));
+    // The watch's own model, and the day it was read: the wording is the
+    // core's, and this holds whichever form it takes.
+    assert!(watch_source.contains("your zones"), "{watch_source}");
+    assert!(watch_source.contains("183 bpm"), "{watch_source}");
 
     // And the difference, boundary by boundary: a fact, and not a
     // correction.

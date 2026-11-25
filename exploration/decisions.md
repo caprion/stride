@@ -650,3 +650,41 @@ held; two things about it were settled by the build:
   where one was in force and no declaration exists. The zone answers carry
   the basis (`bands_basis`) beside the two facts, and **the two are never
   mixed inside one answer**.
+
+---
+
+## D28 — The week against the plan: one card, one question, and the plan's own words (binds: Progress, Today, the Plan page)
+
+The review of the live rig (24 November 2026): *"Home (/) and /progress mix
+Banister load ratios, streaks, sleep stages, and weekday comparisons (-1.9 km
+against 16 Nov – 18 Nov) without answering whether the week's training fits a
+goal."*
+
+* **The answer is a fact, not a verdict.** Each planned session is *done* or
+  *not done* — the plan engine's own statuses — and for the sessions that
+  happened, the distance run is read against the distance planned and the
+  pace against the plan's pace. **No grade, no percentage, no traffic
+  light, and the word "missed" is not in the app.**
+* **The paces are compared only when both of them exist.** The general
+  aerobic day carries a heart-rate band and no pace, so that session is
+  compared on its distance or on nothing; a run is never compared against a
+  pace that is not there.
+* **The comparison is like for like.** The days that have gone are compared
+  with the days that have gone: the plan's first three days against the
+  athlete's first three days, never the plan's whole week against a part of
+  one. A session of the day that is still running is not counted against
+  the athlete either — the day is not over.
+* **One plan.** The athlete's own plan is compared with the week that
+  happened. The app never compares two plans, never says which plan is
+  better, and never offers a programme the athlete did not adopt.
+* **The card is merged into *This week*, not added beside it.** The wall is
+  eleven cards and the instruction was to reduce the surface: the question
+  "how is this week" and the question "how is this week against the plan"
+  are the same question asked of two other things, so the answer lives
+  inside the card that already answers it. The panel behind the card, the
+  Plan page and Today carry the same answer in full.
+* **The four states are the answer's own**: no plan adopted (the app says
+  so and points at the programmes there are to adopt), a plan whose first
+  day is after this week (the app says when it starts), a week inside the
+  plan (the comparison so far), and a plan whose last day is before this
+  week (the app says when its last week ended).

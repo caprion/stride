@@ -208,7 +208,7 @@ describe('the heart rates card', () => {
     await userEvent.click(await screen.findByTestId('heart-rates-save'))
 
     await waitFor(() => expect(declare).toHaveBeenCalled())
-    const body = declare.mock.calls[0][0]
+    const body = declare.mock.calls[0]![0]
     expect(body.max_heart_rate_bpm).toBe(186)
     expect(body.max_source).toBe('test')
     expect(body.resting_heart_rate_bpm).toBe(52)

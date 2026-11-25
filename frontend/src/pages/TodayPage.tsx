@@ -50,7 +50,7 @@ import {
   renderedText,
 } from '../lib/format'
 import { stalenessText } from '../lib/staleness'
-import type { PlanSession } from '../lib/types'
+import type { AdoptedSession, PlanSession } from '../lib/types'
 import { t } from '../i18n'
 import { StreetRouteMap } from '../components/StreetRouteMap'
 import { VitalReadings } from '../components/VitalReadings'
@@ -61,6 +61,7 @@ import { QueryError } from '../components/QueryError'
 import { ZoneRibbon } from '../components/ZoneRibbon'
 import { runsPath, weekDates } from '../lib/history'
 import { PlanPacing, SessionPace } from './todayPlan'
+import { statusText } from './planWeek'
 import { LOAD_EMPTY } from '../lib/load'
 
 /**
@@ -75,22 +76,37 @@ const HABIT_WEEKS = 12
 
 function SessionCard({
   planned,
+  adopted,
+  sourceLine,
   comparison,
   paused,
   pace,
 }: {
-  planned: PlanSession
+  planned?: PlanSession | null
+  /**
+   * The adopted plan's session for the day, when a programme is in
+   * force.
+   *
+   * **The adopted plan is the plan**, so its session is the one the card
+   * shows — and with it the comparison of that day: what was run, the
+   * difference against the distance planned, and the pace against the
+   * plan's pace when both of them exist.
+   */
+  adopted?: AdoptedSession
+  /** The adopted plan's own source: "the Pfitzinger half marathon tier 2 plan". */
+  sourceLine?: string | null
   comparison: string | null
   paused: string | null
   /** The pace the plan was worked out with, when the plan gave one. */
   pace?: React.ReactNode
 }) {
   const sourceKey =
-    planned.source === 'prescribed'
+    planned?.source === 'prescribed'
       ? 'today.session.source.imported'
-      : planned.source === 'baseline'
+      : planned?.source === 'baseline'
         ? 'today.session.source.baseline'
         : 'today.session.source.typed'
+  const status = adopted ? statusText(adopted.status) : null
 
   return (
     <Link
@@ -99,17 +115,44 @@ function SessionCard({
       className="tap card block py-3 transition-shadow hover:shadow-lift"
     >
       {/* The session, as the core wrote it: "Today — 10 km · easy". */}
-      <p className="text-[17px] font-semibold text-ink">{planned.sentence}</p>
-      <p className="mt-0.5 text-[13px] text-ink-muted">{t(sourceKey)}</p>
+      <p className="text-[17px] font-semibold text-ink">
+        {adopted ? adopted.sentence : planned?.sentence}
+      </p>
+      <p className="mt-0.5 text-[13px] text-ink-muted">
+        {adopted ? (sourceLine ?? t(sourceKey)) : t(sourceKey)}
+      </p>
       {/* The plan's own pace for the day, when the plan gave one. */}
-      {pace ? <p className="mt-0.5">{pace}</p> : null}
+      {adopted ? <SessionPace entry={adopted} /> : pace ? <p className="mt-0.5">{pace}</p> : null}
       {/*
         The distance comparison appears only when the gap from the target
         is beyond 10%, and it sits inside the session card as a second
         line — never as a banner, never coloured as a warning. The core
         decides whether it is there at all, and writes it when it is.
       */}
-      {comparison ? (
+      {adopted ? (
+        <>
+          {adopted.actual ? (
+            <p className="mt-1 text-[13px] text-ink-muted" data-testid="today-adopted-actual">
+              {renderedText(adopted.actual)}
+            </p>
+          ) : null}
+          {adopted.difference ? (
+            <p className="text-[13px] text-ink-muted" data-testid="today-adopted-difference">
+              {adopted.difference}
+            </p>
+          ) : null}
+          {adopted.pace_comparison ? (
+            <p className="text-[13px] text-ink-muted" data-testid="today-adopted-pace">
+              {adopted.pace_comparison}
+            </p>
+          ) : null}
+          {status ? (
+            <p className="text-[12.5px] text-ink-muted" data-testid="today-adopted-status">
+              {status}
+            </p>
+          ) : null}
+        </>
+      ) : comparison ? (
         <p className="mt-1 text-[13px] text-ink-muted" data-testid="today-distance-comparison">
           {comparison}
         </p>
@@ -281,6 +324,12 @@ export function TodayPage() {
 
   // The week's own dates: the calendar week the answer is about.
   const week = weekDates(insight.date)
+  // The adopted plan's session for the day, when a programme is in
+  // force. **It is the plan's session for the day**, and it carries the
+  // comparison of that day.
+  const adoptedForTheDay = plan.data?.adopted?.sessions.find(
+    (session) => session.date === insight.date,
+  )
   // The form's own state: the last day the load has one for.
   const lastState = load.data?.load?.states.slice(-1)[0] ?? null
 
@@ -536,9 +585,11 @@ export function TodayPage() {
               worked out with, and the day it was read.
             */}
             <PlanPacing week={plan.data?.adopted} />
-            {insight.planned ? (
+            {insight.planned || adoptedForTheDay ? (
               <SessionCard
                 planned={insight.planned}
+                adopted={adoptedForTheDay}
+                sourceLine={plan.data?.adopted?.source_line}
                 comparison={insight.distance_comparison}
                 paused={paused}
                 pace={

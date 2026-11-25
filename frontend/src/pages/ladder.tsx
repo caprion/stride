@@ -36,6 +36,7 @@
  */
 
 import { t } from '../i18n'
+import { currentHost } from '../lib/transport'
 import type { PacesInsight, RungRow } from '../lib/types'
 
 /** A band on an axis: where it starts, where it ends. */
@@ -112,8 +113,10 @@ function edges(bands: (Band | null)[]): { min: number; max: number } | null {
 /**
  * A band, drawn on its axis.
  *
- * **A band with no value is white space**: the track is drawn and the
- * bar is not, and the reason stands where the band would have been.
+ * **A band with no value is white space**: **no bar at all** is drawn,
+ * and the reason stands where the band would have been. An empty track
+ * would read as a band of zero — and absence is not zero: an empty bar
+ * is a zero wearing a costume.
  */
 function BandBar({
   band,
@@ -127,13 +130,7 @@ function BandBar({
   testId: string
 }) {
   if (!band || !scale) {
-    return (
-      <span
-        className="block h-[7px] w-full rounded-full"
-        style={{ background: 'var(--chart-grid)' }}
-        data-testid={`${testId}-empty`}
-      />
-    )
+    return null
   }
   const span = scale.max - scale.min
   const from = band.ceiling ? scale.min : band.from
@@ -171,6 +168,20 @@ export function LadderPicture({ rungs }: { rungs: RungRow[] }) {
   const paces = rungs.map((rung) => paceBand(rung))
   const heartScale = edges(hearts)
   const paceScale = edges(paces)
+
+  /**
+   * Whether the chart plots anything in the method's colour.
+   *
+   * The heart-rate band is the method's rule, and a pace that hangs on
+   * the method's rule is drawn in its colour too.
+   */
+  const methodPlotted = rungs.some(
+    (rung, index) => hearts[index] != null || (!isAthleteOwn(rung) && paces[index] != null),
+  )
+  /** Whether the chart plots anything in the athlete's own colour. */
+  const athletePlotted = rungs.some(
+    (rung, index) => isAthleteOwn(rung) && paces[index] != null,
+  )
 
   return (
     <div data-testid="ladder-picture">
@@ -249,23 +260,38 @@ export function LadderPicture({ rungs }: { rungs: RungRow[] }) {
           </div>
         )
       })}
-      {/* The legend: the colours say whose number each one is. */}
-      {rungs.length > 0 ? (
+      {/*
+        The legend: the colours say whose number each one is, and **the
+        legend lists what is on the chart**. An entry with nothing
+        plotted behind it is not drawn: it would name a number the reader
+        cannot find.
+      */}
+      {methodPlotted || athletePlotted ? (
         <ul className="mt-3 flex flex-wrap gap-x-3 gap-y-1 text-[10.5px] text-ink-faint">
-          <li className="inline-flex items-center gap-1.5">
-            <i
-              className="inline-block h-[7px] w-4 rounded-full"
-              style={{ background: 'var(--chart-reference)' }}
-            />
-            {t('pace.legend.method')}
-          </li>
-          <li className="inline-flex items-center gap-1.5">
-            <i
-              className="inline-block h-[7px] w-4 rounded-full"
-              style={{ background: 'var(--chart-line)' }}
-            />
-            {t('pace.legend.athlete')}
-          </li>
+          {methodPlotted ? (
+            <li
+              className="inline-flex items-center gap-1.5"
+              data-testid="ladder-legend-method"
+            >
+              <i
+                className="inline-block h-[7px] w-4 rounded-full"
+                style={{ background: 'var(--chart-reference)' }}
+              />
+              {t('pace.legend.method')}
+            </li>
+          ) : null}
+          {athletePlotted ? (
+            <li
+              className="inline-flex items-center gap-1.5"
+              data-testid="ladder-legend-athlete"
+            >
+              <i
+                className="inline-block h-[7px] w-4 rounded-full"
+                style={{ background: 'var(--chart-line)' }}
+              />
+              {t('pace.legend.athlete')}
+            </li>
+          ) : null}
         </ul>
       ) : null}
       <p className="mt-2 text-[11.5px] leading-snug text-ink-faint">{t('pace.card.note')}</p>
@@ -400,9 +426,46 @@ export function LadderCard({
         <SourceLine source={paces.source} sources={paces.sources} testId="ladder-source" />
       ) : null}
       {paces.unavailable ? (
-        <p className="text-[13px] text-ink-muted" data-testid="ladder-unavailable">
-          {paces.unavailable}
-        </p>
+        <>
+          <p className="text-[13px] text-ink-muted" data-testid="ladder-unavailable">
+            {paces.unavailable}
+          </p>
+          {/*
+            The door.
+
+            **A card must not offer a way that goes nowhere.** The paces
+            hang on a race, and the race is typed on the rig's own page:
+            the app has no screen for it, and the rig's page is where it
+            is typed today. So the card says where it is typed and what
+            happens there, and the link goes to the exact place — the
+            race's own form, under the three things only the athlete can
+            give it.
+
+            **Why a link and not the input here:** the app owns no screen
+            for a race, and a form in the card would be a second place
+            that writes one, beside the rig's own. One place writes it,
+            and this card says which.
+
+            **The link is the rig's own, so it is drawn where the rig
+            serves the app.** The phone's app has no rig's page, and a
+            link that goes nowhere is worse than no link: there the card
+            says where the race is typed and stops.
+          */}
+          <p className="mt-1 text-[12px] leading-snug text-ink-faint" data-testid="ladder-race-door">
+            {t('pace.card.race.note')}{' '}
+            {currentHost() === 'http' ? (
+              <a
+                href="/rig#race"
+                className="tap-inline font-semibold text-brand-700 underline underline-offset-2"
+                data-testid="ladder-race-link"
+              >
+                {t('pace.card.race.link')}
+              </a>
+            ) : (
+              <span data-testid="ladder-race-native">{t('pace.card.race.native')}</span>
+            )}
+          </p>
+        </>
       ) : null}
       <div className="mt-1">
         <LadderPicture rungs={paces.rungs} />

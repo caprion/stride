@@ -212,7 +212,12 @@ export function PlanWeekPage() {
         and the paces**, under the line that says what the plan was
         paced with.
       */}
-      {data.adopted ? <AdoptedWeekCard week={data.adopted} /> : null}
+      {/*
+        The adopted plan's own week: **the kinds of run, the distances
+        and the paces**, with what happened on each day and the week's
+        totals against the plan's.
+      */}
+      <AdoptedWeekCard week={data} />
 
       {/* -------------------------------------------------- the day detail */}
       <section className="card mt-3 py-3" data-testid="plan-day-detail">

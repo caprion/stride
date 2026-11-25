@@ -244,6 +244,8 @@ fn the_fitness_routes_carry_their_shapes() {
     assert_keys(
         &zones,
         &[
+            "bands",
+            "bands_basis",
             "basis",
             "model",
             "outside",
@@ -433,6 +435,7 @@ fn the_plan_routes_carry_their_shapes() {
         &[
             "adherence",
             "adopted",
+            "against",
             "block_name",
             "counts",
             "sessions",
@@ -443,6 +446,21 @@ fn the_plan_routes_carry_their_shapes() {
             "week_start",
         ],
         "/plan/week",
+    );
+    // The week against the plan: the state, the plan's own source, what
+    // it was paced with, and the week's totals.
+    assert_keys(
+        &week["against"],
+        &[
+            "choose",
+            "entry",
+            "state_line",
+            "paced_with",
+            "source_line",
+            "state",
+            "totals",
+        ],
+        "/plan/week: the week against the plan",
     );
     assert_keys(
         &week["counts"],

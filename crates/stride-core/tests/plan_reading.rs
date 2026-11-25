@@ -54,6 +54,8 @@ fn words() -> DateWords {
     DateWords {
         threshold: Some("3 Nov 2026".to_string()),
         race: Some("12 Oct 2026".to_string()),
+        start: Some("2 Nov 2026".to_string()),
+        end: Some("7 Feb 2027".to_string()),
     }
 }
 

@@ -58,7 +58,8 @@ reference only).
 | `/activities/{id}/update/payload` | the **payload** of a run: the facts a model may read, and nothing else (see "The run update" below) |
 | `/activities/{id}/update/request` | the **prompt** the rig sends to a model — the writer, the reviewer or the repair — with the payload it carries |
 | `/update/settings` | the update's own settings: which model writes, which model reviews, and whether anything may leave the machine at all |
-| `/athlete/{races,threshold}` | the **athlete's own facts**: the races they typed and the threshold they chose (see "The athlete's own facts" below) |
+| `/athlete/{races,threshold,heart-rates}` | the **athlete's own facts**: the races they typed, the threshold they chose and the heart rates they declared (see "The athlete's own facts" below) |
+| `/athlete/heart-rates` | the **athlete's own heart rates**: the declaration in force, the bands it yields, and the watch's own floors beside them (see "The athlete's own facts" below) |
 
 The last five rows arrived with the settings slice (PLAN.md §8, slice 8), and they are
 the first change to the frozen table since the freeze. They travel with the plan edit
@@ -150,7 +151,7 @@ Two rules hold for every shape below.
 | `/activities/{id}` | `ActivitySummary` and `splits: {lap_index, distance, duration, pace, heart_rate}[]`, `samples: {offset_s, distance_m, pace, heart_rate, altitude_m, kind}[]`, `plan_line: {text} \| null`, `note: string \| null` |
 | `/activities/{id}/film` | `activity_id`, `local_date`, `basis: string \| null`, `model: ZoneModel \| null`, `zones: {label, range, from_bpm, to_bpm}[]`, `outside_label: string \| null`, `samples: {elapsed, distance, pace, heart_rate, zone}[]`, `ground: {offset_s, elevation}[]`, `splits: {lap_index, offset_s, distance, duration, pace, heart_rate}[]`, `unavailable: string \| null`, `zones_unavailable: string \| null`, `generated_at` |
 | `/physiology/vitals` | `date`, `generated_at`, `rest: {label, line}`, `vitals: {key, label, value_text, direction_text, deviation_text, travel_text, status_text, band}[]`, `history: {sleep, hrv, resting_hr}` (each point: `date`, nullable `value`, nullable core-rendered `text` with units), `patterns: {id, text, sample_size}[]` |
-| `/plan/week` | `block_name`, `source`, `week_start`, `week_end`, `today`, `target`, `sessions: {date, session_type, title, sentence, target, actual, status, source}[]`, `adherence: {done, planned} \| null`, `counts: {done, planned, not_done}`, `adopted: AdoptedWeek \| null` |
+| `/plan/week` | `block_name`, `source`, `week_start`, `week_end`, `today`, `target`, `sessions: {date, session_type, title, sentence, target, actual, status, source}[]`, `adherence: {done, planned} \| null`, `counts: {done, planned, not_done}`, `adopted: AdoptedWeek \| null`, `against: PlanWeekAgainst` |
 | `/settings` | `goal: {value: {text, raw} \| null, km: number \| null}`, `pause: {start_date, end_date, reason} \| null`, `storage: {size, activity_count, wellness_day_count, plan_session_count, note_count}`, `generated_at` |
 | `/settings/export` | `exported: boolean`, `size: {text, raw} \| null`, `generated_at` |
 | `/settings/delete` | `deleted: boolean`, `generated_at` |
@@ -826,9 +827,34 @@ are worked out **once**, when there is something to work them out from.
 | `plan.pacing` | what the plan was paced with: `paced`, the `threshold` (its `value`, the `date` it was read, its `source` and its `base`), the `rule` (the race the plan's own rule was read from), the `missing` reason, and the two lines that say it |
 | `plan.entry` | the tier's `requirement`, the plan's own `band`, and the athlete's own `mileage` — **three facts side by side, unranked** |
 | `adopted.week` · `adopted.label` · `adopted.start_date` · `adopted.end_date` | the adopted week's own facts |
-| `adopted.sessions` | the week's sessions: their `date`, `weekday`, `kind`, `method_kind`, `distance`, `pace`, `finish_pace`, `detail`, `label`, `line`, `no_pace` and `lt_last` |
+| `adopted.sessions` | the week's sessions: their `date`, `weekday`, `kind`, `method_kind`, `distance`, `pace`, `finish_pace`, `detail`, `label`, `sentence`, `line`, `no_pace` and `lt_last`, and **what happened on their day**: the `actual` distance, the `difference` against the distance planned, the `pace_comparison` and the plain `status` |
 | `adopted.source` · `adopted.source_line` | the plan's own source, and the line that names it |
 | `adopted.pacing` · `adopted.entry` | as the plan's own |
+
+### The week against the plan
+
+`GET /plan/week` carries the answer to one question: **how is this week,
+against the plan?** It is in the `against` block, and it is there in every
+state — the state itself says which one it is.
+
+| field | what it is |
+|---|---|
+| `against.state` | `none` (no plan has been adopted), `before` (the plan's first day is after this week), `running` (this week is inside the plan) or `after` (the plan's last day is before this week) |
+| `against.note` | the state's own sentence, in the core's words |
+| `against.choose` | the line that points at the programmes there are to adopt |
+| `against.source_line` | the plan's own source: "the Pfitzinger half marathon tier 2 plan" |
+| `against.paced_with` | what the plan was paced with — the threshold and the day it was read |
+| `against.entry` | the tier's entry requirement beside the athlete's own mileage — **three facts side by side, unranked** |
+| `against.totals` | the week's totals against the plan's: the `planned` distance, the `actual` distance, the signed `difference`, and the line that says both |
+
+**Done and not done are facts.** A session's `status` is `done`, `not_done`
+or `planned`, and it is absent for a day that is not a run: a rest day is
+neither done nor not done.
+
+**The paces are compared only when both of them exist.** A session's
+`pace_comparison` is absent unless the plan gave that session a pace and
+the run had one; the general aerobic day carries a heart-rate band and no
+pace, and it is compared on its distance or on nothing.
 
 ### The heatmap
 

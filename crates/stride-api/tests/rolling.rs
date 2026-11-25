@@ -283,7 +283,8 @@ fn a_run_that_predates_the_first_model_has_no_model_in_force() {
         .is_empty());
     assert_eq!(
         text(&answer, &["zones", "unavailable"]),
-        "No zones yet — your watch's zones were not read for these runs"
+        "not measured — your watch's zones were not read for these runs; the watch's own zone \
+         minutes are the only zone time here"
     );
 }
 

@@ -385,9 +385,7 @@ pub fn heart_rates(api: &Api, _request: &Request) -> ApiResult<Value> {
     let bands = derived.as_ref().and_then(|derived| derived.bands);
     let unavailable = match (&in_force, &derived) {
         (None, _) => super::core_line("heart_rates.none"),
-        (Some(_), Some(derived)) => derived
-            .missing
-            .and_then(|missing| missing.reason()),
+        (Some(_), Some(derived)) => derived.missing.and_then(|missing| missing.reason()),
         (Some(_), None) => None,
     };
 
@@ -399,11 +397,13 @@ pub fn heart_rates(api: &Api, _request: &Request) -> ApiResult<Value> {
     // The comparison: the two, and the difference between them.
     let comparison = stride_core::heart_rates::compare(
         in_force.as_ref(),
-        watch_model.as_ref().map(|model| stride_core::heart_rates::WatchBands {
-            floors: model.floors,
-            max_heart_rate: model.max_heart_rate,
-            read_on: model.read_on,
-        }),
+        watch_model
+            .as_ref()
+            .map(|model| stride_core::heart_rates::WatchBands {
+                floors: model.floors,
+                max_heart_rate: model.max_heart_rate,
+                read_on: model.read_on,
+            }),
     );
 
     let answer = HeartRatesInsight {
@@ -510,12 +510,9 @@ fn declared_rate(
     let value = request.body_f64(&field)?;
     let source_field = format!("{kind}_source");
     let measured_field = format!("{kind}_measured_on");
-    let carried = in_force.and_then(|declaration| {
-        let rate = match kind {
-            "max" => declaration.max,
-            _ => declaration.resting,
-        };
-        rate
+    let carried = in_force.and_then(|declaration| match kind {
+        "max" => declaration.max,
+        _ => declaration.resting,
     });
 
     let value = match value {
@@ -613,17 +610,10 @@ pub(crate) fn declared_bands_row(
     declaration: Option<&Declaration>,
 ) -> DeclaredBandsRow {
     let entered_on = declaration.map(|declaration| declaration.entered_on);
-    let resting = declaration.and_then(|declaration| {
-        declaration
-            .resting
-            .map(|rate| rate.value_bpm)
-    });
+    let resting =
+        declaration.and_then(|declaration| declaration.resting.map(|rate| rate.value_bpm));
     let source = entered_on.and_then(|entered_on| {
-        stride_core::heart_rates::source_line(
-            bands,
-            resting,
-            &super::day_label(entered_on),
-        )
+        stride_core::heart_rates::source_line(bands, resting, &super::day_label(entered_on))
     });
     DeclaredBandsRow {
         label: stride_core::strings::render("heart_rates.bands.label", &[]).unwrap_or_default(),

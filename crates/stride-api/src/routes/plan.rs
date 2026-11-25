@@ -144,8 +144,12 @@ pub fn week(api: &Api, request: &Request) -> ApiResult<Value> {
     let target = render::distance(if metres > 0.0 { Some(metres) } else { None });
 
     // The adopted plan's own week, when a plan is in force and the week
-    // asked for is in it.
-    let adopted = crate::adoption::week_at(api, day)?.map(|week| crate::adoption::week_row(&week));
+    // asked for is in it — **and the week against what happened**. The
+    // comparison is the core's: every session says whether it was done,
+    // and the totals say how the week stands against the plan's.
+    let comparison = crate::adoption::comparison(api, day)?;
+    let adopted = crate::adoption::week_at(api, day)?
+        .map(|week| crate::adoption::week_row(&week, &comparison, day));
 
     let response = PlanWeek {
         block_name: active.name.clone(),
@@ -161,6 +165,7 @@ pub fn week(api: &Api, request: &Request) -> ApiResult<Value> {
         counts,
         sessions: rendered,
         adopted,
+        against: crate::adoption::against_row(&comparison),
     };
     ok(&response)
 }

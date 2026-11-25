@@ -39,6 +39,11 @@ const ADOPTED: AdoptedWeek = {
       line: '17.7 km · tempo · 4:16–4:21 /km',
       no_pace: null,
       lt_last: null,
+      sentence: 'Tuesday — 17.7 km · tempo',
+      actual: null,
+      difference: null,
+      pace_comparison: null,
+      status: null,
     },
     {
       date: '2026-05-15',
@@ -53,6 +58,11 @@ const ADOPTED: AdoptedWeek = {
       line: null,
       no_pace: 'the method fixes a heart-rate band for this run and no pace',
       lt_last: null,
+      sentence: 'Thursday — 8 km · easy',
+      actual: null,
+      difference: null,
+      pace_comparison: null,
+      status: null,
     },
   ],
   source: 'prescribed',
@@ -106,6 +116,39 @@ describe('today’s plan', () => {
 
     await screen.findByTestId('today-table')
     expect(screen.queryByTestId('today-pacing')).toBeNull()
+  })
+
+  it('carries the comparison of that one session', async () => {
+    vi.spyOn(api, 'planWeek').mockResolvedValue({
+      ...planWeekFixture,
+      adopted: {
+        ...ADOPTED,
+        sessions: [
+          {
+            ...ADOPTED.sessions[0]!,
+            actual: { text: '15 km', raw: 15_000 },
+            difference: '2.7 km less than the 17.7 km target',
+            pace_comparison: "5:35 /km · 3 s/km slower than the plan's 5:00–5:32 /km",
+            status: 'done',
+          },
+        ],
+      },
+    })
+    renderApp('/')
+
+    await screen.findByTestId('today-table')
+
+    // What was run, the difference against the distance planned, and the
+    // pace against the plan's pace.
+    expect(screen.getByTestId('today-adopted-actual').textContent).toContain('15 km')
+    expect(screen.getByTestId('today-adopted-difference').textContent).toContain(
+      '2.7 km less than the 17.7 km target',
+    )
+    expect(screen.getByTestId('today-adopted-pace').textContent).toContain(
+      "slower than the plan's 5:00–5:32 /km",
+    )
+    // And the plain fact of it: done.
+    expect(screen.getByTestId('today-adopted-status').textContent).toContain('done')
   })
 
   it('keeps the day’s own sentence', async () => {

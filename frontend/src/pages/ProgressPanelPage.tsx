@@ -31,6 +31,7 @@ import {
   ZonesPanel,
 } from './progressPanels'
 import { WeekBody } from './progressWall'
+import { PlanAgainstCard } from './planWeek'
 import { LadderCard } from './ladder'
 import { CurveCard } from './curve'
 import { LedgerCard } from './ledger'
@@ -133,6 +134,13 @@ export function ProgressPanelPage() {
           <>
             <PanelCard title={t('progress.wall.thisWeek.heading')}>
               <WeekBody today={answers.today.data} />
+              {/*
+                **The week against the plan**, in the same panel: the
+                plan's own source, what it was paced with, the week's
+                totals against the plan's, and every planned session with
+                what happened on its day.
+              */}
+              <PlanAgainstCard week={answers.planWeek.data} bare />
             </PanelCard>
             <RollingPanel rolling={rolling.data} error={rolling.isError} />
           </>

@@ -218,6 +218,7 @@ object PhoneRoutes {
         "/auth/garmin/fit-import",
         "/auth/garmin/logout",
         "/calendar",
+        "/athlete/heart-rates",
         "/athlete/races",
         "/athlete/threshold",
         "/settings",
