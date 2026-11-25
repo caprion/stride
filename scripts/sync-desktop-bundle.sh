@@ -9,7 +9,12 @@
 #
 #     ./scripts/sync-desktop-bundle.sh
 #
-# The frontend is built first, unless a bundle is given.
+# The frontend is built first, unless a bundle is given. The target is
+# `desktop/assets` unless a second argument names another one — the check
+# script writes the bundle it builds into a scratch directory and compares
+# it with the one in the tree, so the rewrite lives in one place.
+#
+#     ./scripts/sync-desktop-bundle.sh frontend/dist /tmp/scratch
 #
 # **The display names are replaced with the placeholder `test`.** They are
 # developer-tool labels — the names React gives a component in the
@@ -21,6 +26,10 @@ set -euo pipefail
 here="$(cd "$(dirname "$0")" && pwd)"
 root="$(cd "$here/.." && pwd)"
 target="$root/desktop/assets"
+
+if [[ $# -ge 2 ]]; then
+  target="$2"
+fi
 
 if [[ $# -ge 1 ]]; then
   source="$1"

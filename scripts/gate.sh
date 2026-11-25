@@ -76,6 +76,12 @@ npm --prefix frontend run typecheck
 npm --prefix frontend run test:unit
 npm --prefix frontend run test:viewport
 
+step "the bundle the rig carries"
+# The rig embeds the app, so the bundle in `desktop/assets` has to be the
+# build of the app in `frontend/`. A bundle that is one commit behind is a
+# rig that serves an app that is not the one in the source.
+bash scripts/check-desktop-bundle.sh
+
 step "pull-request scanner self-test"
 bash scripts/scan-pr-self-test.sh
 
