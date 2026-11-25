@@ -479,6 +479,83 @@
   };
 
   /* ------------------------------------------------------------------
+     7b · THE HEART RATES — the athlete's own declaration
+
+     NEW SYNTHETIC DATA, 24 November 2026, added for the heart-rate setup
+     prototype (exploration/heart-rate-setup.md, exploration/heart-rate-setup.html).
+     None of it came from a source: the values are invented for the prototype
+     and are marked as synthetic wherever they are used. The zone model above
+     is untouched — it is the watch's own dated fact.
+     ------------------------------------------------------------------ */
+
+  /* the rule, as published by Garmin — the five-zone ladder, and the two
+     ranges it can be applied on: the maximum heart rate, or the heart-rate
+     reserve (maximum minus resting). Cited in exploration/heart-rate-setup.md. */
+  var hrRule = {
+    shares: [0.5, 0.6, 0.7, 0.8, 0.9],
+    source: "Garmin's published five-zone ladder",
+    cite: "Forerunner 245/245 Music Owner's Manual, \"Heart Rate Zone Calculations\"; Garmin, \"How You Can Train by Heart Rate Zones Using Garmin\""
+  };
+
+  /* the ladder, applied to the range the declaration supports:
+     both numbers → the heart-rate reserve; a maximum alone → the maximum. */
+  function hrBands(max, rest) {
+    if (max == null) { return null; }
+    var range = (rest == null) ? max : max - rest;
+    var base = (rest == null) ? 0 : rest;
+    return {
+      floors: hrRule.shares.map(function (p) { return Math.round(base + p * range); }),
+      top: max,
+      reserve: (rest == null) ? null : max - rest,
+      basis: (rest == null) ? "from your maximum heart rate" : "from your maximum heart rate and your resting heart rate"
+    };
+  }
+
+  var heartRates = {
+    /* the declaration in force */
+    inForce: {
+      max: 186, maxSource: "a test", maxMeasured: "8 Nov 2026",
+      rest: 52, restSource: "from a doctor or a lab", restMeasured: "12 Nov 2026",
+      entered: "24 Nov 2026"
+    },
+    /* the dated history — the earlier declaration stays, with its own date */
+    history: [
+      {
+        max: 186, maxSource: "a test", maxMeasured: "8 Nov 2026",
+        rest: 52, restSource: "from a doctor or a lab", restMeasured: "12 Nov 2026",
+        entered: "24 Nov 2026"
+      },
+      {
+        max: 183, maxSource: "from my watch", maxMeasured: null,
+        rest: null, restSource: null, restMeasured: null,
+        entered: "3 Nov 2026"
+      }
+    ],
+    /* the closed list of sources — the athlete's own words for where a
+       number came from. Nothing free, nothing for the app to interpret. */
+    sources: [
+      { id: "watch", label: "from my watch" },
+      { id: "test", label: "from a test" },
+      { id: "doctor_lab", label: "from a doctor or a lab" },
+      { id: "partner_watch", label: "from my training partner's watch" },
+      { id: "typed", label: "typed" }
+    ],
+    rule: hrRule
+  };
+
+  heartRates.bands = hrBands(heartRates.inForce.max, heartRates.inForce.rest);
+  heartRates.bandsMaxOnly = hrBands(heartRates.inForce.max, null);
+  heartRates.bandsEarlier = hrBands(183, null);
+  /* the watch's own dated fact, for the side-by-side */
+  heartRates.watchFloors = zoneModel.floors.slice();
+  heartRates.watchMax = zoneModel.maxHr;
+  heartRates.watchReadOn = zoneModel.readOn;
+  /* the difference, boundary by boundary: declared − watch */
+  heartRates.difference = heartRates.bands.floors.map(function (f, i) {
+    return f - heartRates.watchFloors[i];
+  });
+
+  /* ------------------------------------------------------------------
      8 · THE PLAN — the adopted Pfitzinger 10K plan
      ------------------------------------------------------------------ */
 
@@ -848,6 +925,7 @@
     dur: dur, paceText: paceText, timeText: timeText, kmText: kmText, signedKm: signedKm, signedMin: signedMin,
     DAY: DAY, ledger: ledger, load: load, race: race, goal: goal, equivalents: equivalents,
     equivText: equivText, ladder: ladder, curve: curve, threshold: threshold, plan: plan,
+    heartRates: heartRates,
     body: body, featured: featured, film: film, compare: compare, year: year,
     runsScreen: runsScreen, states: states, copy: copy, habit: habit, facets: facets, facetsPrior: facetsPrior,
     monthsSeries: monthsSeries,
