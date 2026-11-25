@@ -22,7 +22,10 @@ import { curveFixture, pacesFixture } from '../src/fixtures'
 import type { PacesInsight } from '../src/lib/types'
 import { renderApp } from './helpers'
 
-afterEach(() => vi.restoreAllMocks())
+afterEach(() => {
+  vi.restoreAllMocks()
+  delete window.__stride_bridge__
+})
 
 /**
  * The ladder with one rung's pace missing.
@@ -149,6 +152,28 @@ describe('the pace card', () => {
     expect(door?.textContent).toContain('A race')
     const link = card.querySelector('[data-testid="ladder-race-link"]')
     expect(link?.getAttribute('href')).toBe('/rig#race')
+  })
+
+  it('offers no link to the rig on the phone, which has no rig', async () => {
+    // The phone's app has no rig's page, and a link that goes nowhere
+    // is worse than no link: there the card says where the race is typed
+    // and stops.
+    window.__stride_bridge__ = { apiCall: vi.fn() }
+    vi.spyOn(api, 'insightsPaces').mockResolvedValue({
+      ...pacesFixture,
+      rungs: [],
+      unavailable: 'no race time entered — the paces have no value yet',
+    })
+    renderApp('/progress')
+    const card = await screen.findByTestId('progress-wall-pace')
+
+    await waitFor(() =>
+      expect(card.querySelector('[data-testid="ladder-race-native"]')).toBeTruthy(),
+    )
+    expect(card.querySelector('[data-testid="ladder-race-link"]')).toBeNull()
+    expect(card.querySelector('[data-testid="ladder-race-native"]')?.textContent).toContain(
+      "the desktop's",
+    )
   })
 
   it('draws no bar for a rung with no value', async () => {
