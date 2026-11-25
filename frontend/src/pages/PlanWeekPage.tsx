@@ -27,6 +27,7 @@ import { formatDateMedium, formatDateShort, renderedText } from '../lib/format'
 import type { PlanSession } from '../lib/types'
 import { t } from '../i18n'
 import { PlanImport } from '../components/PlanImport'
+import { AdoptedWeekCard } from './planWeek'
 import { PageHeader } from '../ui/layout/PageHeader'
 import { QueryError } from '../components/QueryError'
 
@@ -205,6 +206,13 @@ export function PlanWeekPage() {
           })}
         </div>
       </section>
+
+      {/*
+        The adopted plan's own week: **the kinds of run, the distances
+        and the paces**, under the line that says what the plan was
+        paced with.
+      */}
+      {data.adopted ? <AdoptedWeekCard week={data.adopted} /> : null}
 
       {/* -------------------------------------------------- the day detail */}
       <section className="card mt-3 py-3" data-testid="plan-day-detail">
