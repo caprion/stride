@@ -8,8 +8,8 @@
  * panel component**, drawn once, at whatever width the phone is, with the
  * window it covers named on it.
  *
- * It is a route and not a destination: the four destinations stay the
- * four, and this is reached from Progress and from nowhere else.
+ * It is a route and not a destination: the five destinations stay the
+ * five, and this is reached from Progress and from nowhere else.
  */
 
 import { useState } from 'react'

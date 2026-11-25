@@ -17,7 +17,7 @@
  * heatmap's surface, and it has its own screen and its own disclosure.
  *
  * The page is reached from Progress, and it is a page and not a
- * destination: the four destinations stay the four.
+ * destination: the five destinations stay the five.
  */
 
 import { useQuery } from '@tanstack/react-query'

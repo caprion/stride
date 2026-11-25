@@ -132,7 +132,7 @@ function AppRoutes() {
       {/*
         The year, as a film: the twelve months, the calendar of the days
         and what changed. It is reached from Progress, and it is a page
-        and not a destination: the four destinations stay the four.
+        and not a destination: the five destinations stay the five.
       */}
       <Route path="/year" element={<YearPage />} />
       <Route path="/body" element={<BodyPage />} />

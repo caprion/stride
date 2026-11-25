@@ -214,6 +214,10 @@ export const catalogue = {
     type: 'status',
     text: 'Refresh requested. The connection status updates when it finishes.',
   },
+  'sync.olderRequested': {
+    type: 'status',
+    text: 'The check for older history was asked for. The range checked below grows as it is checked.',
+  },
   'today.state.retry': { type: 'status', text: 'Try again' },
   'today.state.noPlan': { type: 'status', text: 'No plan is active for today' },
 

@@ -7,8 +7,8 @@
  *
  * **It is reached by an explicit action**, from the run detail, the way
  * the Street map and the heatmap are reached: the film is a deep dive into
- * one run, not a destination of its own, and the four destinations stay the
- * four.
+ * one run, not a destination of its own, and the five destinations stay the
+ * five.
  *
  * **Nothing leaves the device.** The route is drawn with the same tiles the
  * run detail's Street map uses, with the same disclosure beside it, and

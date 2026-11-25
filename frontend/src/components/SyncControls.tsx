@@ -1,3 +1,21 @@
+/**
+ * The Garmin controls.
+ *
+ * Two controls, and the same two on both hosts:
+ *
+ * * **Refresh Garmin** — the recent pull, the one that keeps the last
+ *   fortnight current.
+ * * **Check older history** — the dated, checkpointed walk back through
+ *   the months, and the door the athlete uses when they want more of it
+ *   than the phone has already checked.
+ *
+ * **The two hosts run the older history in their own way.** The desktop's
+ * router does the walk in the request itself; the phone's shell does it
+ * in its own background job, because the Garmin key never crosses the
+ * bridge. The answer is the same either way, and the state the athlete
+ * reads — the history that has been checked — is the same too.
+ */
+
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useEffect, useRef } from 'react'
 import { api } from '../lib/api'
@@ -65,11 +83,12 @@ export function SyncControls({ details = false }: { details?: boolean }) {
         >
           {refresh.isPending ? t('sync.refreshing') : t('sync.refresh')}
         </button>
-        {details && status.data?.more_pending && currentHost() === 'http' ? (
+        {details && status.data?.more_pending ? (
           <button
             type="button"
             className="tap rounded-md border border-edge px-3 text-[13px] disabled:opacity-50"
             disabled={refresh.isPending}
+            data-testid="sync-older"
             onClick={() => refresh.mutate(true)}
           >
             {t('sync.older')}
@@ -83,7 +102,7 @@ export function SyncControls({ details = false }: { details?: boolean }) {
       ) : null}
       {refresh.isSuccess && currentHost() === 'native' ? (
         <p role="status" className="mt-2 text-[13px] text-ink-muted">
-          {t('sync.requested')}
+          {refresh.variables ? t('sync.olderRequested') : t('sync.requested')}
         </p>
       ) : null}
       {details && status.isError ? (
