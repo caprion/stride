@@ -563,3 +563,26 @@ lost disk.
 at the state being released and push it — the tag says *what* was shipped, the
 branch says *what it looked like the moment before the next thing landed*.
 Recovery is then a checkout, not an archaeology.
+
+---
+
+## D26 — The day's four parts are the athlete's own hours, and the label says which (binds: the rolling view, the schedule card)
+
+The athlete, 24 November 2026, on their own history: *"another sort of a bug is
+that night time is taken as 23:00 to 6:00. A lot of my runs would have started
+at around 5ish. So everything gets reported to night time. We should move
+night to 21:00 to 4:00 am. And label it that way."*
+
+* **The cut points.** Morning **04:00**, afternoon 12:00, evening 17:00, night
+  **21:00**. The night **wraps around midnight**, so it runs from 21:00 to
+  04:00 — seven hours — and the morning from 04:00 to 12:00 — eight. The
+  partition follows from the four constants; the hour a run **started in** is
+  still the only thing that places it.
+* **The label carries the window.** "Morning (04:00–12:00)", "Afternoon
+  (12:00–17:00)", "Evening (17:00–21:00)" and "Night (21:00–04:00)". The
+  hours are **rendered from the cut points** and are never typed into the
+  wording, so the name of a part and the part itself cannot drift apart.
+* **The calendar day does not move.** A run at 05:10 belongs to that calendar
+  day — for the load, the ledger and the plan — and it is a *morning* run in
+  the day's four parts. **Only the four parts changed**: sleep and wellness
+  are read by the calendar day, and they are untouched.
