@@ -588,6 +588,17 @@ impl DecodeCache {
         }
     }
 
+    /// How many decoded runs the cache holds at most.
+    ///
+    /// **The bound is the cache's, and it is not a bound on what an answer
+    /// covers.** A window may hold more runs than the cache does: the runs
+    /// the cache cannot keep are decoded on the read, used, and decoded
+    /// again on the next read. The cache makes the second read cheap where
+    /// it can; it never decides what the first read includes.
+    pub fn capacity(&self) -> usize {
+        self.capacity
+    }
+
     /// The decoded run, when the cache holds that file.
     ///
     /// The run's id **and** the file's digest must both match: a file

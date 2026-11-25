@@ -221,8 +221,18 @@ pub enum MissingInput {
     NoRuns,
     /// No run in the period carried heart-rate samples.
     NoHeartRate,
-    /// No zone model was in force for the period's runs.
+    /// No zone model has been read at all.
     NoZoneModel,
+    /// Zone models have been read, but **none of them was in force for the
+    /// period's runs**: the runs predate the first stored model.
+    ///
+    /// This is the case the two bases exist for: the app's own bands cannot
+    /// be measured over a period the model does not cover, and the watch's
+    /// own zone minutes are the only zone time there is.
+    NoZoneModelInForce,
+    /// A zone model was in force for the period's runs, but the run carries
+    /// no heart rate: there is nothing to measure the bands from.
+    NoHeartRateInRun,
     /// No run in the period carries the watch's own workout steps.
     NoWorkoutSteps,
 }
@@ -234,9 +244,24 @@ impl MissingInput {
             MissingInput::NoRuns => "stimulus.no_runs",
             MissingInput::NoHeartRate => "rolling.zones.no_samples",
             MissingInput::NoZoneModel => "zones.no_model",
+            MissingInput::NoZoneModelInForce => "stimulus.zones.no_model_in_force",
+            MissingInput::NoHeartRateInRun => "stimulus.zones.no_heart_rate",
             MissingInput::NoWorkoutSteps => "stimulus.steps.no_data",
         };
         strings::text(id).map(|text| text.to_string())
+    }
+}
+
+/// The time a run's own zone time held in one band.
+///
+/// **One rule, in one place.** The kinds' rows, the weeks matrix and the
+/// last occurrence all ask the same question — *how long was the athlete in
+/// this band* — and they must not be able to answer it differently.
+pub fn band_time(zone_time: &TimeInZone, band: PolarisedZone) -> f64 {
+    match band {
+        PolarisedZone::Low => zone_time.zone1_s + zone_time.zone2_s,
+        PolarisedZone::Moderate => zone_time.zone3_s,
+        PolarisedZone::High => zone_time.zone4_s + zone_time.zone5_s,
     }
 }
 
@@ -277,7 +302,11 @@ pub struct Coverage {
     pub runs: usize,
     /// The runs that carried heart-rate samples.
     pub with_heart_rate: usize,
-    /// The runs the app could measure — a zone model was in force.
+    /// The runs the app could measure — a zone model was in force **and the
+    /// run carried a heart rate**.
+    ///
+    /// A run with no heart rate carries no measurement: the time in a band
+    /// would be a zero where there is nothing to measure.
     pub measured: usize,
     /// The runs that carried the source's own zone minutes.
     pub with_source_zones: usize,
@@ -584,14 +613,7 @@ fn app_basis(in_window: &[&LedgerRun], window: Window, coverage: Coverage) -> Op
                 .iter()
                 .filter(|run| {
                     run.zone_time
-                        .map(|zone_time| {
-                            let band_s = match band {
-                                PolarisedZone::Low => zone_time.zone1_s + zone_time.zone2_s,
-                                PolarisedZone::Moderate => zone_time.zone3_s,
-                                PolarisedZone::High => zone_time.zone4_s + zone_time.zone5_s,
-                            };
-                            band_s > 0.0
-                        })
+                        .map(|zone_time| band_time(&zone_time, *band) > 0.0)
                         .unwrap_or(false)
                 })
                 .count();
@@ -780,14 +802,7 @@ fn last_occurrences(runs: &[LedgerRun], window: Window) -> Vec<LastOccurrence> {
                 .filter(|run| run.date <= window.to())
                 .filter(|run| {
                     run.zone_time
-                        .map(|zone_time| {
-                            let band_s = match band {
-                                PolarisedZone::Low => zone_time.zone1_s + zone_time.zone2_s,
-                                PolarisedZone::Moderate => zone_time.zone3_s,
-                                PolarisedZone::High => zone_time.zone4_s + zone_time.zone5_s,
-                            };
-                            band_s > 0.0
-                        })
+                        .map(|zone_time| band_time(&zone_time, *band) > 0.0)
                         .unwrap_or(false)
                 })
                 .map(|run| run.date)
@@ -913,6 +928,50 @@ mod tests {
             MissingInput::NoZoneModel.reason(),
             Some("No zones yet — your watch's heart-rate zones have not come through".to_string())
         );
+    }
+
+    #[test]
+    fn the_reasons_name_what_is_missing_and_never_what_to_do_about_it() {
+        // The four situations the app's own bands can be missing in are four
+        // different facts, and each has its own words.
+        assert_eq!(
+            MissingInput::NoHeartRate.reason(),
+            Some(
+                "No heart rate recorded — none of the runs in this period recorded a heart rate"
+                    .to_string()
+            )
+        );
+        assert_eq!(
+            MissingInput::NoZoneModel.reason(),
+            Some("No zones yet — your watch's heart-rate zones have not come through".to_string())
+        );
+        assert_eq!(
+            MissingInput::NoZoneModelInForce.reason(),
+            Some(
+                "not measured — your watch's zones were not read for these runs; the watch's own zone minutes are the only zone time here"
+                    .to_string()
+            )
+        );
+        assert_eq!(
+            MissingInput::NoHeartRateInRun.reason(),
+            Some("not measured — the run carries no heart rate".to_string())
+        );
+    }
+
+    #[test]
+    fn the_band_of_a_run_s_time_is_one_rule_everywhere() {
+        let time = TimeInZone {
+            zone1_s: 100.0,
+            zone2_s: 200.0,
+            zone3_s: 300.0,
+            zone4_s: 400.0,
+            zone5_s: 500.0,
+            outside_s: 0.0,
+            stopped_s: 0.0,
+        };
+        assert_eq!(band_time(&time, PolarisedZone::Low), 300.0);
+        assert_eq!(band_time(&time, PolarisedZone::Moderate), 300.0);
+        assert_eq!(band_time(&time, PolarisedZone::High), 900.0);
     }
 
     #[test]

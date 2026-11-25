@@ -194,6 +194,27 @@ describe('where the time went', () => {
     expect(card.querySelector('[data-testid="ledger-source-line"]')).toBeNull()
   })
 
+  it('states an empty overlap rather than hiding it', async () => {
+    vi.spyOn(api, 'insightsStimulus').mockResolvedValue({
+      ...WITH_BOTH,
+      overlap: null,
+      overlap_missing:
+        'not measured \u2014 no run in this period has both your zones and the watch\'s own zone minutes',
+    })
+    renderApp('/progress')
+    const card = await screen.findByTestId('progress-wall-time')
+
+    // The overlap is the period where the app can check its own zone
+    // arithmetic against the watch's own record. **An empty overlap is a
+    // fact to state**, not a hole to hide.
+    await waitFor(() =>
+      expect(card.querySelector('[data-testid="ledger-overlap-missing"]')).toBeTruthy(),
+    )
+    expect(card.querySelector('[data-testid="ledger-overlap-missing"]')?.textContent).toContain(
+      'no run in this period has both',
+    )
+  })
+
   it('says why the ledger has no value at all', async () => {
     vi.spyOn(api, 'insightsStimulus').mockResolvedValue({
       ...WITH_BOTH,

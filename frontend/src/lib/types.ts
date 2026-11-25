@@ -2051,7 +2051,13 @@ export interface CoverageRow {
   runs: number
   /** The runs that carried heart-rate samples. */
   with_heart_rate: number
-  /** The runs the app could measure — a zone model was in force. */
+  /**
+   * The runs the app could measure — a zone model was in force **and the
+   * run carried a heart rate**.
+   *
+   * A run with no heart rate carries no measurement: the time in a band
+   * would be a zero where there is nothing to measure.
+   */
   measured: number
   /** The runs that carried the source's own zone minutes. */
   with_source_zones: number
@@ -2142,6 +2148,14 @@ export interface StimulusInsight {
   source_weeks: SourceWeekRow[]
   /** Where both bases exist. */
   overlap: OverlapRow | null
+  /**
+   * Why there is no overlap, in the core's own words.
+   *
+   * **An empty overlap is a fact to state**, not a hole to hide: the
+   * period where the app can check its own zone arithmetic against the
+   * watch's own record is named, even when there is none.
+   */
+  overlap_missing: string | null
   /** Whether the store holds runs this answer did not read. */
   more_runs: boolean
   /** Why there is no value at all, in the core's own words. */

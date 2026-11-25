@@ -3320,7 +3320,9 @@ pub struct CoverageRow {
     pub runs: usize,
     /// The runs that carried heart-rate samples.
     pub with_heart_rate: usize,
-    /// The runs the app could measure — a zone model was in force.
+    /// The runs the app could measure — a zone model was in force **and the
+    /// run carried a heart rate**: a run with no heart rate carries no
+    /// measurement, and a zero would be an absence.
     pub measured: usize,
     /// The runs that carried the source's own zone minutes.
     pub with_source_zones: usize,
@@ -3431,6 +3433,12 @@ pub struct StimulusInsight {
     pub source_weeks: Vec<SourceWeekRow>,
     /// Where both bases exist.
     pub overlap: Option<OverlapRow>,
+    /// Why there is no overlap, in the core's own words.
+    ///
+    /// **An empty overlap is a fact to state**, not a hole to hide: the
+    /// period where the app can check its own zone arithmetic against the
+    /// watch's own record is named, even when there is none.
+    pub overlap_missing: Option<String>,
     /// Whether the store holds runs this answer did not read.
     ///
     /// The answer is bounded, and says so rather than letting a partial

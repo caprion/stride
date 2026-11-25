@@ -170,7 +170,7 @@ Two rules hold for every shape below.
 | `/insights/paces` | `generated_at`, `date`, `window: {from, from_label, to, to_label, weeks}`, `source: string \| null`, `sources: {kind, line, date, date_label}[]`, `chain: string \| null`, `race: RaceRow \| null`, `equivalents: {distance, time, vdot_time, pace, difference_s}[]`, `rungs: {kind, label, rule: {id, citation, line}, anchor, pace: PaceRow, finish_pace: PaceRow, heart_rate: HeartRateRow, heart_rate_reserve: HeartRateRow}[]`, `unavailable: string \| null` |
 | `/insights/pacing-curve` | `generated_at`, `date`, `window: {from, from_label, to, to_label, weeks}`, `source: string \| null`, `sources: {kind, line, date, date_label}[]`, `curve: {minutes, percent_max, pace}[]`, `races: {label, time, minutes, percent_max, pace, date, date_label}[]`, `sessions: {kind, label, from_minutes, to_minutes, pace: PaceRow, from_percent_max, to_percent_max, rule: {id, citation, line}, missing}[]`, `field_test: {minutes, percent_max, pace} \| null`, `equivalents: {distance, time, vdot_time, pace, difference_s}[]`, `unavailable: string \| null` |
 | `/insights/threshold` | `generated_at`, `date`, `window: {from, from_label, to, to_label, weeks}`, `source: string \| null`, `sources: {kind, line, date, date_label}[]`, `candidates: {source, label, value, heart_rate_bpm, pace: PaceRow \| null, date, date_label, rule, missing}[]`, `in_force: ChoiceRow \| null`, `history: {date, date_label, line, value, base, in_force}[]`, `unavailable: string \| null` |
-| `/insights/stimulus` | `generated_at`, `date`, `window: {from, from_label, to, to_label, weeks}`, `source: string \| null`, `sources: {kind, line, date, date_label}[]`, `kinds: {key, label, time, share, runs, last: {date, date_label, days_before_end} \| null}[]`, `weeks: {week_start, week_start_label, bands: {key, label, time}[]}[]`, `coverage: {runs, with_heart_rate, measured, with_source_zones}`, `longest: {date, date_label, distance, time, share} \| null`, `repeated: {time, runs, last_on, last_on_label} \| null`, `repeated_missing: string \| null`, `source_zones: {zone, time, share, runs}[]`, `source_weeks: {week_start, week_start_label, zones}[]`, `overlap: {from, from_label, to, to_label, runs, app_moving, source_elapsed, difference} \| null`, `more_runs: boolean`, `unavailable: string \| null` |
+| `/insights/stimulus` | `generated_at`, `date`, `window: {from, from_label, to, to_label, weeks}`, `source: string \| null`, `sources: {kind, line, date, date_label}[]`, `kinds: {key, label, time, share, runs, last: {date, date_label, days_before_end} \| null}[]`, `weeks: {week_start, week_start_label, bands: {key, label, time}[]}[]`, `coverage: {runs, with_heart_rate, measured, with_source_zones}`, `longest: {date, date_label, distance, time, share} \| null`, `repeated: {time, runs, last_on, last_on_label} \| null`, `repeated_missing: string \| null`, `source_zones: {zone, time, share, runs}[]`, `source_weeks: {week_start, week_start_label, zones}[]`, `overlap: {from, from_label, to, to_label, runs, app_moving, source_elapsed, difference} \| null`, `overlap_missing: string \| null`, `more_runs: boolean`, `unavailable: string \| null` |
 | `/athlete/races` | `generated_at`, `races: RaceRow[]` |
 | `/athlete/races` (the write) | `race: RaceRow`, `generated_at` |
 | `/athlete/threshold` (the write) | `choice: ChoiceRow`, `generated_at` |
@@ -591,12 +591,23 @@ The ledger answers against the athlete's **own recorded history**.
 * **`overlap`** — where both bases exist: the runs the app could measure
   and the watch recorded its own zone minutes for. It states the distance
   between the two measurements and says nothing about which is right.
+* **`overlap_missing`** — why there is no overlap. **An empty overlap is a
+  fact to state**, not a hole to hide: the period where the app can check
+  its own zone arithmetic against the watch's own record is named, even
+  when there is none.
+* **`unavailable`** — why the app's own bands have no value at all. **Four
+  situations, four reasons**: the runs carry no heart rate; no zone model
+  has been read at all; a model was read but none of it was in force for
+  these runs; a model was in force and the run carries no heart rate.
 
-**The read is bounded.** Every run's file is decoded on read, through the
-router's one decode cache, and the ledger reads the newest **64** runs —
-which is what the cache holds — so the second read of the same window
-costs no decodes at all. A store that holds more runs than that says so
-in `more_runs`, and the rows cover the runs that were read.
+**The read covers the window.** Every run's file is decoded on read,
+through the router's one decode cache, and the ledger reads **every run
+the window holds**: the runs the cache holds are served from it, and the
+runs it cannot hold are decoded on the read and decoded again on the next
+one. **The cache is a cache, and it is never a bound on the answer.** The
+coverage line describes the window, not the cache. `more_runs` means one
+thing: **the store holds runs in this window that the answer does not
+cover**, and it is false whenever the store covers the window.
 
 ### The athlete's own facts
 

@@ -347,6 +347,18 @@ export function LedgerCard({
         </LedgerBlock>
       </div>
       <Overlap overlap={stimulus.overlap} />
+      {/*
+        The overlap that is not there. **An empty overlap is a fact to
+        state**, not a hole to hide: the period where the app can check
+        its own zone arithmetic against the watch's own record is named,
+        even when there is none.
+      */}
+      {!stimulus.overlap && stimulus.overlap_missing ? (
+        <p className="mt-2 text-[12px] text-ink-muted" data-testid="ledger-overlap-missing">
+          <span className="text-ink-muted">{t('ledger.overlap')} · </span>
+          <span className="text-ink">{stimulus.overlap_missing}</span>
+        </p>
+      ) : null}
       {stimulus.longest ? (
         <div className="mt-2 text-[12px]" data-testid="ledger-longest">
           <span className="text-ink-muted">{t('ledger.longest')} · </span>

@@ -348,3 +348,116 @@ fn the_ledger_reads_each_run_once_and_serves_the_second_read_from_the_cache() {
         "the second read was not served from the cache"
     );
 }
+
+#[test]
+fn the_ledger_covers_every_run_the_window_holds_and_not_the_cache_s_worth() {
+    // The cache holds sixty-four decoded runs. The window holds more than
+    // that, and **the answer covers the window**: the cache may make the
+    // second read cheap; it may not decide what the first read includes.
+    let harness = Harness::empty("insights-ledger-window");
+    let capacity = harness.api.decoded_cache().capacity();
+    let runs = capacity + 6;
+    // The window's first week starts on 23 February 2026, and the window
+    // ends on the twelfth of May: every run is inside it.
+    let start = chrono::NaiveDate::from_ymd_opt(2026, 2, 23).unwrap();
+    for index in 0..runs {
+        let date = (start + chrono::Duration::days(index as i64)).format("%Y-%m-%d");
+        harness.write_run(run_with_fit(
+            &format!("a-run-{index}"),
+            &date.to_string(),
+            "hr_gps_run.fit",
+        ));
+    }
+
+    let body = harness.ok_get("/insights/stimulus");
+    assert_eq!(
+        body["coverage"]["runs"], runs as u64,
+        "the answer did not cover the window"
+    );
+    assert_eq!(
+        body["more_runs"], false,
+        "the store holds no run this answer does not cover"
+    );
+
+    // And the second read covers it again: the cache's bound never
+    // truncates the answer.
+    let second = harness.ok_get("/insights/stimulus");
+    assert_eq!(second["coverage"]["runs"], runs as u64);
+}
+
+#[test]
+fn the_ledger_says_that_no_zone_model_was_in_force_and_not_that_no_heart_rate_was_recorded() {
+    // The athlete's own history: the runs carry heart rate, and the model
+    // was read after them. **The reason names what is missing**: no zone
+    // model was in force for these runs — not "no heart rate recorded".
+    let harness = Harness::empty("insights-ledger-no-model-in-force");
+    harness.write_run(run_with_fit("a-run", "2026-05-10", "hr_gps_run.fit"));
+    harness.write_zone_model(zone_model());
+
+    let body = harness.ok_get("/insights/stimulus");
+    // The runs carry heart rate: the reason is not about the heart rate.
+    assert_eq!(body["coverage"]["with_heart_rate"], 1);
+    // And no model was in force for the run.
+    assert_eq!(body["coverage"]["measured"], 0);
+
+    let reason = body["unavailable"].as_str().unwrap_or_default();
+    assert!(
+        reason.contains("were not read for these runs"),
+        "the reason does not name the missing thing: {reason}"
+    );
+    assert!(
+        !reason.contains("no heart rate recorded"),
+        "the reason names the wrong thing: {reason}"
+    );
+    // And the watch's own zone minutes are what there is.
+    assert!(
+        reason.contains("the watch's own zone minutes"),
+        "the reason does not say what the period has: {reason}"
+    );
+}
+
+#[test]
+fn the_ledger_says_that_the_run_carries_no_heart_rate_when_a_model_was_in_force() {
+    // A model was in force for the run, and the run carries no heart rate:
+    // the reason is the run's own, and not the period's.
+    let harness = Harness::empty("insights-ledger-no-heart-rate");
+    // The run of the tenth: heart rate, and no model in force.
+    harness.write_run(run_with_fit("a-run", "2026-05-10", "hr_gps_run.fit"));
+    // The run of the twelfth: the model was read on the twelfth, and this
+    // run carries no file at all, so it carries no heart rate.
+    harness.write_run(common::run(
+        "a-run-without-a-file",
+        common::TODAY,
+        8_000.0,
+        2_400.0,
+    ));
+    harness.write_zone_model(zone_model());
+
+    let body = harness.ok_get("/insights/stimulus");
+    assert_eq!(body["coverage"]["with_heart_rate"], 1);
+    assert_eq!(body["coverage"]["measured"], 0);
+
+    let reason = body["unavailable"].as_str().unwrap_or_default();
+    assert!(
+        reason.contains("the run carries no heart rate"),
+        "the reason does not name the missing thing: {reason}"
+    );
+}
+
+#[test]
+fn the_ledger_states_an_empty_overlap_rather_than_hiding_it() {
+    // The overlap is the period where the app can check its own zone
+    // arithmetic against the watch's own record. **An empty overlap is a
+    // fact to state**, not a hole to hide.
+    let harness = Harness::empty("insights-ledger-no-overlap");
+    harness.write_run(run_with_fit("a-run", "2026-05-10", "hr_gps_run.fit"));
+    harness.write_zone_model(zone_model());
+
+    let body = harness.ok_get("/insights/stimulus");
+    assert!(body["overlap"].is_null());
+    let reason = body["overlap_missing"].as_str().unwrap_or_default();
+    assert!(
+        reason.contains("no run in this period has both"),
+        "the empty overlap is not stated: {reason}"
+    );
+}

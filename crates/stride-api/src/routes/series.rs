@@ -50,14 +50,36 @@ pub fn decoded(api: &Api, activity_id: i64) -> Option<Arc<FitActivity>> {
     if let Some(activity) = api.decoded_cache().get(activity_id, &sha256) {
         return Some(activity);
     }
+    let activity = decode(api, activity_id)?;
+    api.decoded_cache()
+        .put(activity_id, &sha256, Arc::clone(&activity));
+    Some(activity)
+}
+
+/// The decoded FIT of a run, decoded **without being kept in the cache**.
+///
+/// **The cache is bounded**, and a window may hold more runs than the cache
+/// holds: the runs it cannot keep are decoded here, used, and decoded again
+/// on the next read. The answer is complete either way — the cache is a
+/// cache, and it never decides what an answer covers.
+///
+/// A run the cache *does* hold is still served from it: a hit is free, and
+/// keeping the decode costs nothing.
+pub fn decoded_uncached(api: &Api, activity_id: i64) -> Option<Arc<FitActivity>> {
+    let sha256 = api.store().fit_sha256(activity_id).ok()??;
+    if let Some(activity) = api.decoded_cache().get(activity_id, &sha256) {
+        return Some(activity);
+    }
+    decode(api, activity_id)
+}
+
+/// The file of a run, decoded.
+fn decode(api: &Api, activity_id: i64) -> Option<Arc<FitActivity>> {
     let blob = api.store().fit_blob(activity_id).ok()??;
     if blob.is_empty() || blob.len() > MAX_FIT_INPUT_BYTES {
         return None;
     }
-    let activity = Arc::new(decode_fit(&blob, "activity.fit").ok()?);
-    api.decoded_cache()
-        .put(activity_id, &sha256, Arc::clone(&activity));
-    Some(activity)
+    Some(Arc::new(decode_fit(&blob, "activity.fit").ok()?))
 }
 
 /// The series of a run, read from its file.
@@ -128,6 +150,19 @@ pub fn pace_points(activity: &FitActivity) -> Vec<PacePoint> {
 /// A run with no file has no samples: that is no value, never a zero.
 pub fn zone_samples_of(api: &Api, activity_id: i64) -> Vec<ZoneSample> {
     match decoded(api, activity_id) {
+        Some(decoded) => zone_samples(&decoded),
+        None => Vec::new(),
+    }
+}
+
+/// The heart-rate samples of a run, decoded without being kept in the
+/// cache.
+///
+/// **The cache is bounded**, and a window may hold more runs than it holds:
+/// the runs it cannot keep are decoded on the read and decoded again on the
+/// next one. The answer still covers the whole window.
+pub fn zone_samples_uncached(api: &Api, activity_id: i64) -> Vec<ZoneSample> {
+    match decoded_uncached(api, activity_id) {
         Some(decoded) => zone_samples(&decoded),
         None => Vec::new(),
     }

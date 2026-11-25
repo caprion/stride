@@ -181,7 +181,7 @@ pub struct Entry {
 }
 
 /// The catalogue.
-pub const CATALOGUE: [Entry; 285] = [
+pub const CATALOGUE: [Entry; 288] = [
     // The vitals.
     Entry {
         id: "vital.rest.label",
@@ -1846,6 +1846,37 @@ pub const CATALOGUE: [Entry; 285] = [
         kind: StringKind::Status,
         role: None,
         template: "not recorded — the runs in this period carry no workout steps",
+    },
+    // The ledger's own reasons, one for each situation the app's own bands
+    // can be missing in. **A reason names what is missing and never what to
+    // do about it**, and the four situations are four different facts:
+    //
+    // * the runs carry no heart rate;
+    // * no zone model has been read at all;
+    // * zone models have been read, but none of them was in force for the
+    //   period's runs — the case the two bases exist for, where the watch's
+    //   own zone minutes are the only zone time there is;
+    // * a model was in force and the run carries no heart rate.
+    Entry {
+        id: "stimulus.zones.no_model_in_force",
+        kind: StringKind::Statement,
+        role: None,
+        template: "not measured — your watch's zones were not read for these runs; the watch's own zone minutes are the only zone time here",
+    },
+    Entry {
+        id: "stimulus.zones.no_heart_rate",
+        kind: StringKind::Statement,
+        role: None,
+        template: "not measured — the run carries no heart rate",
+    },
+    // The overlap: the period where the app can check its own zone
+    // arithmetic against the watch's own record. **An empty overlap is a
+    // fact to state**, not a hole to hide.
+    Entry {
+        id: "stimulus.overlap.none",
+        kind: StringKind::Statement,
+        role: None,
+        template: "not measured — no run in this period has both your zones and the watch's own zone minutes",
     },
     Entry {
         id: "stimulus.no_runs",
