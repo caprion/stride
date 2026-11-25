@@ -109,6 +109,15 @@ describe('the pace card', () => {
     expect(card.querySelector('[data-testid="ladder-hr-lactate_threshold"]')).toBeTruthy()
   })
 
+  it('names the period the screen is showing', async () => {
+    renderApp('/progress')
+    const card = await screen.findByTestId('progress-wall-pace')
+
+    // The period, in the runner's own words, with the dates behind it.
+    const window = card.querySelector('[data-testid="ladder-window"]')
+    expect(window?.textContent).toContain('the last 12 weeks')
+  })
+
   it('says why the ladder has no value at all', async () => {
     vi.spyOn(api, 'insightsPaces').mockResolvedValue({
       ...pacesFixture,

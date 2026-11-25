@@ -285,6 +285,10 @@ export function CurveCard({
         </div>
       ) : null}
       <p className="mt-2 text-[11.5px] leading-snug text-ink-faint">{t('curve.card.note')}</p>
+      <p className="mt-1 text-[11.5px] text-ink-faint" data-testid="curve-window">
+        {t('common.window.weeks', { n: curve.window.weeks })} · {curve.window.from_label} –{' '}
+        {curve.window.to_label}
+      </p>
     </>
   )
 

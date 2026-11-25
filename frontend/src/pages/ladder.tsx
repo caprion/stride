@@ -324,6 +324,16 @@ function LadderCaption({ paces }: { paces: PacesInsight }) {
     <div className="mt-2 text-[11.5px] leading-snug text-ink-faint" data-testid="ladder-caption">
       {race?.line ? <p>{race.line}</p> : null}
       {paces.chain ? <p>{paces.chain}</p> : null}
+      {/*
+        The period the screen is showing. **The ladder's own numbers do
+        not depend on it** — they come from the athlete's race — and the
+        card says so by naming it anyway: a number is never read apart
+        from the period it is shown over.
+      */}
+      <p data-testid="ladder-window">
+        {t('common.window.weeks', { n: paces.window.weeks })} · {paces.window.from_label} –{' '}
+        {paces.window.to_label}
+      </p>
     </div>
   )
 }

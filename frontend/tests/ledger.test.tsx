@@ -140,6 +140,27 @@ describe('where the time went', () => {
     expect(cell?.getAttribute('style')).toContain('height: 0%')
   })
 
+  it('draws no bar for a band with no value', async () => {
+    vi.spyOn(api, 'insightsStimulus').mockResolvedValue({
+      ...WITH_BOTH,
+      kinds: [
+        { key: 'low', label: 'Z1–Z2 low', time: null, share: null, runs: 0, last: null },
+        ...WITH_BOTH.kinds.slice(1),
+      ],
+    })
+    renderApp('/progress')
+    const card = await screen.findByTestId('progress-wall-time')
+    await waitFor(() =>
+      expect(card.querySelector('[data-testid="ledger-app-bars"]')).toBeTruthy(),
+    )
+
+    // The band with no value draws no bar at all: the track is empty,
+    // and the absence is not a band of zero.
+    expect(card.querySelector('[data-testid="ledger-app-bars-low"]')).toBeNull()
+    // And the bands that hold time still draw theirs.
+    expect(card.querySelector('[data-testid="ledger-app-bars-moderate"]')).toBeTruthy()
+  })
+
   it('reads the overlap as two measurements and a gap', async () => {
     vi.spyOn(api, 'insightsStimulus').mockResolvedValue(WITH_BOTH)
     renderApp('/progress')

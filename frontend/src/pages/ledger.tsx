@@ -97,14 +97,16 @@ function BlockBars({ bands, testId }: { bands: Band[]; testId: string }) {
             className="mt-1 h-1.5 w-full overflow-hidden rounded-full"
             style={{ background: 'var(--chart-band)' }}
           >
-            <div
-              className="h-full rounded-full"
-              style={{
-                width: `${Math.max(0, Math.min(100, band.share ?? 0))}%`,
-                background: 'var(--chart-line)',
-              }}
-              data-testid={`${testId}-${band.key}`}
-            />
+            {band.share !== null ? (
+              <div
+                className="h-full rounded-full"
+                style={{
+                  width: `${Math.max(0, Math.min(100, band.share))}%`,
+                  background: 'var(--chart-line)',
+                }}
+                data-testid={`${testId}-${band.key}`}
+              />
+            ) : null}
           </div>
         </li>
       ))}
@@ -293,6 +295,14 @@ export function LedgerCard({
           {stimulus.unavailable}
         </p>
       ) : null}
+      {/*
+        The period the ledger covers. **"The last 12 weeks"** — the
+        runner's own words, and the dates behind them.
+      */}
+      <p className="text-[11.5px] text-ink-faint" data-testid="ledger-window">
+        {t('common.window.weeks', { n: stimulus.window.weeks })} · {stimulus.window.from_label} –{' '}
+        {stimulus.window.to_label}
+      </p>
       {/*
         The two blocks. **They are two blocks and not one number**: the
         app's own bands, measured over the time the athlete was running,

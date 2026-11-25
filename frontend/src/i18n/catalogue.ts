@@ -1166,6 +1166,7 @@ export const catalogue = {
     legend and the affordances. The numbers, the rules and the reasons
     are the core's, and they arrive already rendered.
   */
+  'common.window.weeks': { type: 'status', text: 'the last {n} weeks' },
   'pace.card.hr': { type: 'status', text: 'your heart rate' },
   'pace.card.pace': { type: 'status', text: 'your pace' },
   'pace.card.rule': { type: 'status', text: 'the rule' },
