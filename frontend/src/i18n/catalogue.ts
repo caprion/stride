@@ -1225,6 +1225,7 @@ export const catalogue = {
   'plan.bases.start': { type: 'status', text: 'the plan starts on' },
   'plan.bases.race': { type: 'status', text: 'the race is on' },
   'plan.bases.mileage': { type: 'status', text: 'your own mileage' },
+  'plan.bases.entry': { type: 'status', text: 'the level asks for' },
   'plan.bases.adopted': { type: 'status', text: 'The plan is adopted' },
   'plan.bases.refused': { type: 'status', text: 'That programme could not be adopted' },
 

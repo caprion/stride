@@ -22,6 +22,7 @@ import { panelDestination } from '../pages/taskAreas'
 import { BodyPage } from '../pages/BodyPage'
 import { ComparePage } from '../pages/ComparePage'
 import { PlanWeekPage } from '../pages/PlanWeekPage'
+import { PlanBasesPage } from '../pages/planBases'
 import { ActivityPage } from '../pages/ActivityPage'
 import { FilmPage } from '../pages/FilmPage'
 import { HeatmapPage } from '../pages/HeatmapPage'
@@ -136,6 +137,12 @@ function AppRoutes() {
       <Route path="/year" element={<YearPage />} />
       <Route path="/body" element={<BodyPage />} />
       <Route path="/plan" element={<PlanWeekPage />} />
+      {/*
+        Adopting a programme. **A programme is an intent, not a
+        baseline**: it is reached from the plan, and the app never
+        suggests one.
+      */}
+      <Route path="/plan/bases" element={<PlanBasesPage />} />
       {/*
         The heatmap is reached contextually, from the Runs screen: it is
         not a destination of its own, and the athlete asks for it.

@@ -19,6 +19,7 @@
  */
 
 import { useQuery } from '@tanstack/react-query'
+import { Link } from 'react-router-dom'
 import { format, parseISO } from 'date-fns'
 import { api } from '../lib/api'
 import { ApiError } from '../lib/transport'
@@ -98,8 +99,21 @@ export function PlanWeekPage() {
         <div className="card py-6 text-center" data-testid="plan-none">
           <p className="text-[15px] font-semibold text-ink">{t('plan.state.none')}</p>
           <p className="mt-1 text-[13px] text-ink-muted">{t('plan.state.noneBody')}</p>
-          <div className="mt-3 flex justify-center">
+          <div className="mt-3 flex flex-wrap justify-center gap-3">
             <PlanImport />
+            {/*
+              The other way a plan arrives: **adopting one of the
+              catalogue's programmes**. The app never suggests one — the
+              tier's entry requirement and the athlete's own mileage
+              stand side by side on that page, and the athlete picks.
+            */}
+            <Link
+              to="/plan/bases"
+              className="tap-inline text-[13px] font-semibold text-brand-700 underline"
+              data-testid="plan-bases-link"
+            >
+              {t('plan.bases.heading')}
+            </Link>
           </div>
         </div>
       </div>
@@ -263,8 +277,15 @@ export function PlanWeekPage() {
           {t('plan.sources.heading')}
         </h2>
         <p className="mt-1 text-[13px] text-ink-muted">{sourceWhy(data.source)}</p>
-        <div className="mt-2">
+        <div className="mt-2 flex flex-wrap items-center gap-3">
           <PlanImport />
+          <Link
+            to="/plan/bases"
+            className="tap-inline text-[13px] font-semibold text-brand-700 underline"
+            data-testid="plan-bases-link"
+          >
+            {t('plan.bases.heading')}
+          </Link>
         </div>
       </section>
     </div>
