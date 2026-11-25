@@ -14,7 +14,7 @@ import app.stride.running.security.Secrets
 import app.stride.running.settings.AppSettings
 import app.stride.running.setup.GarminSetupActivity
 import app.stride.running.sync.ForgetGarminKey
-import app.stride.running.sync.PullWindow
+import app.stride.running.sync.SyncRequest
 import app.stride.running.sync.SyncScheduler
 import app.stride.running.sync.SyncEngine
 import com.getcapacitor.JSObject
@@ -22,7 +22,6 @@ import com.getcapacitor.Plugin
 import com.getcapacitor.PluginCall
 import com.getcapacitor.PluginMethod
 import com.getcapacitor.annotation.CapacitorPlugin
-import org.json.JSONObject
 import java.util.concurrent.Executors
 
 /**
@@ -188,11 +187,34 @@ class StrideApiPlugin : Plugin() {
                 }
 
                 if (decision.kind == PhoneRoutes.Kind.Pull) {
-                    if (isBackgroundPull(request.body)) {
-                        SyncScheduler.pullNow(context, requestedDays(context, request.body))
+                    // **The older history is its own request.** The body says
+                    // `backfill`, and the phone's own backfill is the dated,
+                    // checkpointed walk back through the months — the same
+                    // `stride_garmin_backfill` the core exposes, reached
+                    // through the phone's own job and not through the
+                    // router's route, because the key never crosses the
+                    // bridge.
+                    //
+                    // Without this the flag was read as a plain refresh: the
+                    // phone pulled the recent days again, and the older
+                    // months stayed unchecked.
+                    if (SyncRequest.asksForHistory(request.body)) {
+                        SyncScheduler.pullHistory(
+                            context,
+                            SyncRequest.daysOf(request.body, AppSettings(context).syncDays),
+                        )
+                        call.resolve(JSObject().put("json", """{"queued":true}"""))
+                    } else if (SyncRequest.asksForBackground(request.body)) {
+                        SyncScheduler.pullNow(
+                            context,
+                            SyncRequest.daysOf(request.body, AppSettings(context).syncDays),
+                        )
                         call.resolve(JSObject().put("json", """{"queued":true}"""))
                     } else {
-                        val outcome = SyncEngine.run(context, requestedDays(context, request.body).toLong())
+                        val outcome = SyncEngine.run(
+                            context,
+                            SyncRequest.daysOf(request.body, AppSettings(context).syncDays).toLong(),
+                        )
                         val body = outcome.responseBody
                         if (!outcome.ok || body == null) {
                             call.reject(outcome.message, if (outcome.error == SyncEngine.ERROR_REFUSED) "401" else "503")
@@ -296,26 +318,6 @@ class StrideApiPlugin : Plugin() {
             } catch (_: Exception) {
                 Log.w("StrideApi", "the setup screen could not be opened")
             }
-        }
-    }
-
-    /** Whether the request asks for a background pull. */
-    private fun isBackgroundPull(body: String?): Boolean {
-        val parsed = body?.let { runCatching { JSONObject(it) }.getOrNull() } ?: return true
-        return parsed.optBoolean("background", true)
-    }
-
-    /** The window the request asks for, or the phone's own. */
-    private fun requestedDays(context: Context, body: String?): Int {
-        val parsed = body?.let { runCatching { JSONObject(it) }.getOrNull() }
-        val days = parsed?.optInt("days", 0) ?: 0
-        return if (days > 0) {
-            days.coerceIn(
-                PullWindow.MIN_DAYS.toInt(),
-                PullWindow.MAX_DAYS.toInt(),
-            )
-        } else {
-            AppSettings(context).syncDays
         }
     }
 

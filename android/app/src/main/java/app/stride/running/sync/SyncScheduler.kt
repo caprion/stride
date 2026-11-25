@@ -41,6 +41,15 @@ object SyncScheduler {
 
     const val KEY_BACKFILL = "backfill"
 
+    /**
+     * The field that says the athlete asked for this history.
+     *
+     * The automatic continuation needs the phone's own auto-sync; a
+     * history the athlete asked for is not the phone's own schedule, so
+     * it says so and the worker reads it.
+     */
+    const val KEY_ASKED = "asked"
+
     /** The work data key for the window. A number of days; not a secret. */
     const val KEY_DAYS = "days"
 
@@ -162,6 +171,47 @@ object SyncScheduler {
             .setConstraints(constraints)
             .setInputData(workDataOf(KEY_DAYS to PullWindow.bounded(days.toLong()).toInt(), KEY_BACKFILL to true))
             .setInitialDelay(15, TimeUnit.MINUTES)
+            .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 15, TimeUnit.MINUTES)
+            .addTag(PERIODIC_NAME)
+            .addTag(HISTORY_NAME)
+            .build()
+        WorkManager.getInstance(context).enqueueUniqueWork(HISTORY_NAME, ExistingWorkPolicy.KEEP, request)
+    }
+
+    /**
+     * Check the older history, because the athlete asked for it.
+     *
+     * **One owner.** The name is the history's own name, so the history is
+     * walked by one job: a second press does not stack a second job on
+     * top of the one that is already there, and the job that is already
+     * there is the one that continues.
+     *
+     * **The window is the phone's own**, and it is bounded: the target is
+     * the phone's history window (about twelve months by default), never
+     * more than the phone asks for.
+     *
+     * **The athlete's own request runs even when the phone is not set to
+     * pull on its own.** The auto-sync switch is about the phone's own
+     * schedule; a history the athlete asked for is not the phone's
+     * schedule, and the job says so in its own data.
+     *
+     * **It runs in the background**, like every other pull: the walk back
+     * through the months is longer than a frame, and it may outlive the
+     * app. The worker holds the notification while it runs.
+     */
+    fun pullHistory(context: Context, days: Int = AppSettings(context).syncDays) {
+        val constraints = Constraints.Builder()
+            .setRequiredNetworkType(androidx.work.NetworkType.CONNECTED)
+            .build()
+        val request = OneTimeWorkRequestBuilder<GarminSyncWorker>()
+            .setConstraints(constraints)
+            .setInputData(
+                workDataOf(
+                    KEY_DAYS to PullWindow.bounded(days.toLong()).toInt(),
+                    KEY_BACKFILL to true,
+                    KEY_ASKED to true,
+                )
+            )
             .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 15, TimeUnit.MINUTES)
             .addTag(PERIODIC_NAME)
             .addTag(HISTORY_NAME)

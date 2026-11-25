@@ -38,7 +38,12 @@ class GarminSyncWorker(
         val context = applicationContext
         val settings = AppSettings(context)
         val backfill = inputData.getBoolean(SyncScheduler.KEY_BACKFILL, false)
-        if (!settings.networkEnabled || (backfill && !settings.autoSync)) {
+        // **The automatic continuation needs the phone's own auto-sync; a
+        // history the athlete asked for does not.** The auto-sync switch is
+        // about the phone's own schedule, and the athlete's press is not
+        // the phone's schedule — so the job says which of the two it is.
+        val asked = inputData.getBoolean(SyncScheduler.KEY_ASKED, false)
+        if (!settings.networkEnabled || (backfill && !asked && !settings.autoSync)) {
             return Result.success()
         }
 
