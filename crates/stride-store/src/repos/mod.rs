@@ -27,6 +27,7 @@
 //! | [`sync`] | `sync_state` |
 //! | [`deleted`] | `deleted_garmin_activities` |
 //! | [`threshold`] | `threshold_observations` |
+//! | [`heart_rates`] | `heart_rate_declarations` |
 //! | [`zones`] | `hr_zone_models` |
 //! | [`updates`] | `run_updates`, `update_settings` |
 
@@ -36,6 +37,7 @@ pub mod activity;
 pub mod activity_observations;
 pub mod adopted;
 pub mod deleted;
+pub mod heart_rates;
 pub mod notes;
 pub mod observations;
 pub mod plan;

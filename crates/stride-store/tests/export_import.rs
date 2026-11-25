@@ -4,8 +4,9 @@ mod common;
 
 use stride_store::export::{self, Format};
 use stride_store::{
-    DatabaseKey, NewActivityObservation, NewAdoptedPlan, NewAdoptedSession, NewRaceObservation,
-    NewThresholdObservation, NewWellnessObservation, Result, Store,
+    DatabaseKey, NewActivityObservation, NewAdoptedPlan, NewAdoptedSession, NewHeartRate,
+    NewHeartRateDeclaration, NewRaceObservation, NewThresholdObservation, NewWellnessObservation,
+    Result, Store,
 };
 
 /// An observation to write, with the values a test wants.
@@ -129,6 +130,28 @@ fn race() -> NewRaceObservation {
     }
 }
 
+/// The athlete's own declared heart rates: the pair, as one declaration.
+fn heart_rates() -> NewHeartRateDeclaration {
+    NewHeartRateDeclaration {
+        rates: vec![
+            NewHeartRate {
+                kind: "max".to_string(),
+                value_bpm: 186.0,
+                source: "test".to_string(),
+                measured_on: Some("2026-11-08".to_string()),
+            },
+            NewHeartRate {
+                kind: "resting".to_string(),
+                value_bpm: 52.0,
+                source: "doctor_lab".to_string(),
+                measured_on: Some("2026-11-12".to_string()),
+            },
+        ],
+        entered_on: "2026-11-24".to_string(),
+        updated_on: "2026-11-24".to_string(),
+    }
+}
+
 /// The athlete's own threshold choice, with the values a test wants.
 fn choice() -> NewThresholdObservation {
     NewThresholdObservation {
@@ -172,6 +195,7 @@ fn the_athletes_own_facts_travel_with_the_export() -> Result<()> {
     let activity = store.upsert_activity(&common::activity("run-1", "2026-05-10"))?;
     store.write_race(&race())?;
     store.write_threshold_choice(&choice(), true)?;
+    store.write_heart_rate_declaration(&heart_rates())?;
     store.write_activity_observations(&[activity_observation(
         activity,
         "hrTimeInZone_3",
@@ -182,6 +206,7 @@ fn the_athletes_own_facts_travel_with_the_export() -> Result<()> {
     let manifest = export::export(&store, &target, &common::key()?)?;
     assert_eq!(manifest.tables.get("race_observations"), Some(&1));
     assert_eq!(manifest.tables.get("threshold_observations"), Some(&1));
+    assert_eq!(manifest.tables.get("heart_rate_declarations"), Some(&2));
     assert_eq!(manifest.tables.get("activity_observations"), Some(&1));
 
     // A second database, empty, reads the export back.
@@ -189,6 +214,7 @@ fn the_athletes_own_facts_travel_with_the_export() -> Result<()> {
     let report = export::import(&other, &target, &common::key()?)?;
     assert_eq!(report.races, 1);
     assert_eq!(report.thresholds, 1);
+    assert_eq!(report.heart_rate_declarations, 2);
     assert_eq!(report.activity_observations, 1);
 
     // The race is there, with its label and its days.
@@ -225,6 +251,19 @@ fn the_athletes_own_facts_travel_with_the_export() -> Result<()> {
         }
     };
     assert!(in_force.in_force);
+
+    // The athlete's own declared heart rates are there, and the pair is
+    // still one declaration.
+    let rates = other.heart_rate_declarations()?;
+    assert_eq!(rates.len(), 2);
+    assert_eq!(rates[0].declaration_id, rates[1].declaration_id);
+    let max = rates
+        .iter()
+        .find(|row| row.kind == "max")
+        .expect("the maximum is there");
+    assert_eq!(max.value_bpm, 186.0);
+    assert_eq!(max.source, "test");
+    assert_eq!(max.measured_on.as_deref(), Some("2026-11-08"));
 
     // The source's own fact about the run is there, against the run's id
     // in this database.
@@ -374,7 +413,7 @@ fn a_plain_database_is_converted_into_an_encrypted_one() -> Result<()> {
 
     let report = export::convert_plaintext_to_encrypted(&path, &common::key()?)?;
 
-    assert_eq!(report.tables.len(), 17);
+    assert_eq!(report.tables.len(), 18);
     assert_eq!(report.rows, 1);
     assert!(
         report.schema_matches,

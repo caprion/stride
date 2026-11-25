@@ -33,7 +33,7 @@ use rusqlite::Connection;
 use crate::error::{Result, StoreError};
 
 /// The version of the schema this build reads and writes.
-pub const SCHEMA_VERSION: i64 = 7;
+pub const SCHEMA_VERSION: i64 = 8;
 
 /// The statements that create the tables, in creation order.
 ///
@@ -458,6 +458,49 @@ CREATE TABLE adopted_sessions (
     CONSTRAINT uq_adopted_sessions UNIQUE (plan_id, date, kind)
 );
 "#,
+    // The table added in version 8: the athlete's own heart rates.
+    //
+    // The athlete's own fact, typed into the app: the maximum heart rate
+    // and/or the resting heart rate, with where each came from, the day it
+    // was measured and the day it was entered. It is never synced, and the
+    // app never invents one — the watch's own maximum is a fact about the
+    // watch's configuration, not about the athlete's physiology.
+    //
+    // **One declaration is one or two rows.** A maximum and a resting rate
+    // entered together are one declaration with two rows, and a later pair
+    // is a new declaration: the earlier one stays in the history with its
+    // own dates and its own sources.
+    r#"-- Old: (nothing - the old app held no heart rate the athlete gave it).
+-- v8: the athlete's own heart rates: the maximum and/or the resting rate,
+-- with where each came from, the day it was measured and the day it was
+-- entered.
+--
+-- ONE DECLARATION IS ONE OR TWO ROWS. A maximum and a resting rate entered
+-- together are one declaration with two rows, and a later pair is a new
+-- declaration: the earlier one stays in the history with its own dates and
+-- its own sources.
+--
+-- The declaration a row belongs to is named by `declaration_id`, so the two
+-- rows of one declaration are never read as two declarations. **One
+-- declaration is in force at a time** - the most recent one - and the
+-- earlier declarations stay.
+--
+-- A missing value is a missing value: the row is not there, and it is never
+-- a zero. The derived bands are NOT stored - they are recomputed on read
+-- from the declaration in force, by the rule in
+-- exploration/heart-rate-setup.md.
+CREATE TABLE heart_rate_declarations (
+    id              INTEGER NOT NULL PRIMARY KEY,
+    declaration_id  INTEGER NOT NULL,       -- the declaration the row belongs to
+    kind            VARCHAR(16) NOT NULL,   -- 'max' | 'resting'
+    value_bpm       REAL NOT NULL,          -- the heart rate, in beats per minute
+    source          VARCHAR(24) NOT NULL,   -- 'watch' | 'test' | 'doctor_lab' |
+                                             -- 'partner_watch' | 'typed'
+    measured_on     VARCHAR(10),            -- the day it was measured; NULL when not stated
+    entered_on      VARCHAR(10) NOT NULL,   -- the day the declaration was made
+    updated_on      VARCHAR(10) NOT NULL    -- the day the row was last changed
+);
+"#,
 ];
 
 /// The statements that create the indexes, in creation order.
@@ -513,6 +556,12 @@ pub const V7_INDEX_STATEMENTS: &[&str] = &[
 "#,
 ];
 
+/// The indexes that version 8 adds, in creation order.
+pub const V8_INDEX_STATEMENTS: &[&str] = &[
+    r#"CREATE INDEX ix_heart_rate_declarations_entered_on ON heart_rate_declarations (entered_on);
+"#,
+];
+
 /// Every statement of the schema, in order: the tables first, then the
 /// indexes.
 pub fn all_statements() -> Vec<&'static str> {
@@ -523,6 +572,7 @@ pub fn all_statements() -> Vec<&'static str> {
         .chain(V5_INDEX_STATEMENTS.iter())
         .chain(V6_INDEX_STATEMENTS.iter())
         .chain(V7_INDEX_STATEMENTS.iter())
+        .chain(V8_INDEX_STATEMENTS.iter())
         .copied()
         .collect()
 }
@@ -543,8 +593,9 @@ pub struct Migration {
 /// table. Version 5 adds the run update's table and the update's own
 /// settings. Version 6 adds the athlete's race, the athlete's threshold
 /// choice and the source's own activity observations. Version 7 adds the
-/// adopted plan and its own dated sessions. A database at an older version
-/// gets the missing steps, each in its own transaction.
+/// adopted plan and its own dated sessions. Version 8 adds the athlete's own
+/// declared heart rates. A database at an older version gets the missing
+/// steps, each in its own transaction.
 ///
 /// The first seven tables of [`TABLE_STATEMENTS`] are version 1; the eighth
 /// — the tombstone table — is version 2; the ninth — the zone model table —
@@ -552,7 +603,8 @@ pub struct Migration {
 /// the eleventh and the twelfth — the run update and its settings — are
 /// version 5; the thirteenth, fourteenth and fifteenth — the race, the
 /// threshold and the activity observations — are version 6; the sixteenth
-/// and the seventeenth — the adopted plan and its sessions — are version 7.
+/// and the seventeenth — the adopted plan and its sessions — are version 7;
+/// the eighteenth — the athlete's declared heart rates — is version 8.
 pub fn migrations() -> Vec<Migration> {
     vec![
         Migration {
@@ -596,10 +648,18 @@ pub fn migrations() -> Vec<Migration> {
                 .collect(),
         },
         Migration {
-            version: SCHEMA_VERSION,
-            statements: TABLE_STATEMENTS[15..]
+            version: 7,
+            statements: TABLE_STATEMENTS[15..17]
                 .iter()
                 .chain(V7_INDEX_STATEMENTS.iter())
+                .copied()
+                .collect(),
+        },
+        Migration {
+            version: SCHEMA_VERSION,
+            statements: TABLE_STATEMENTS[17..]
+                .iter()
+                .chain(V8_INDEX_STATEMENTS.iter())
                 .copied()
                 .collect(),
         },

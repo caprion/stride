@@ -534,6 +534,159 @@ What changed is the wording of two passages and the state of one answer.
   route. **No route changed** — the table above the list is the table, and
   what was corrected is the prose about which of its routes the app reads.
 
+### Note — the day's four parts, and the labels that say when (2026-11-24)
+
+This note records a change to a **stated fact** — the cut points of the
+day and the words the app reads for them. **No frozen file changed:**
+`/insights/rolling` answers with the same four rows and the same fields
+(`key`, `label`, `from_hour`, `to_hour`), and the contract's field table
+does not name the cut points. What changed is **where the day is cut**,
+and **what the label says**.
+
+* **The reason.** The athlete, on their own history: *"another sort of a
+  bug is that night time is taken as 23:00 to 6:00. A lot of my runs
+  would have started at around 5ish. So everything gets reported to night
+  time. We should move night to 21:00 to 4:00 am. And label it that
+  way."* The athlete is an early-morning runner, and a night that began
+  at 23:00 reported their five-o'clock runs as night runs.
+* **The four parts, and the hours.**
+
+  | part | was | is |
+  |---|---|---|
+  | morning | 06:00 | **04:00** |
+  | afternoon | 12:00 | 12:00 |
+  | evening | 17:00 | 17:00 |
+  | night | 23:00 | **21:00** |
+
+  The night **wraps around midnight**, so it runs from 21:00 to 04:00 —
+  seven hours — and the morning from 04:00 to 12:00 — eight. The
+  partition follows from the four constants, and the hour a run **started
+  in** is still the only thing that places it.
+* **The label carries the window.** "Morning (04:00–12:00)",
+  "Afternoon (12:00–17:00)", "Evening (17:00–21:00)" and
+  "Night (21:00–04:00)". The hours are **rendered from the cut points**
+  and are never typed into the wording, so the name of a part and the
+  part itself cannot drift apart.
+* **The calendar day does not move.** A run at 05:10 still belongs to
+  that calendar day — for the load, the ledger and the plan — and it is a
+  *morning* run in the day's four parts. **Only the four parts changed.**
+  Sleep and wellness are read by the calendar day, and they are untouched.
+
+### Note — the ledger covers the window, and names the right reason (2026-11-25)
+
+This note travels with a change to `docs/contract/api-paths.md`, which the
+contract freeze says is a plan change: a frozen file changes only with a
+plan note in the same change. **One field was added** (`overlap_missing`),
+and the ledger's read and its reasons changed.
+
+It supersedes the Note of 24 November, *"the four insight routes, and the
+decode cache they read through"*, on one point: **the read is bounded by
+the window, and not by the cache.**
+
+* **The reason it was found.** The athlete's own **twelve months** finally
+  arrived — 105 runs, from 25 November 2025 to 25 November 2026 — and the
+  ledger answered for **64** of them, because the ledger read the newest
+  sixty-four runs: the decode cache's own capacity. The cap was an
+  implementation fact, and it was deciding what the answer covered.
+* **The cache is a cache.** The ledger now reads **every run the window
+  holds**. The runs the cache holds are served from it, and the runs it
+  cannot hold are decoded on the read and decoded again on the next one —
+  `routes/series.rs::decoded_uncached` is the same decode without the
+  keeping. **The cache may make the second read cheap; it may never decide
+  what the first read includes.** The cache's own bound is unchanged and
+  still explicit (`decode_cache_capacity`, sixty-four by default).
+* **The coverage line describes the window.** It counts the runs the
+  window holds, the runs that carried heart rate, the runs the app could
+  measure and the runs that carried the watch's own zone minutes.
+  `more_runs` now means exactly one thing: **the store holds runs in this
+  window that the answer does not cover** — and it is false whenever the
+  store covers the window.
+* **The last occurrence keeps its rule.** The last date a kind occurred is
+  searched over the athlete's **whole retained history**, not over the
+  window alone. The search reads the older runs newest first and **stops
+  as soon as every kind has been found** — an older run cannot change the
+  answer — and a run with no model in force is not read at all, because it
+  holds no band.
+* **Four reasons, not one.** The app's own bands can be missing for four
+  different reasons, and the route says which one it is, in the core's own
+  words: the runs carry no heart rate; no zone model has been read at all;
+  **a model was read, but none of it was in force for these runs**; a model
+  was in force and the run carries no heart rate. The third is the case the
+  two bases exist for — *your watch's own zone minutes are the only zone
+  time before your watch's configuration was read* — and the card says so
+  in the runner's language, not in a failure's language.
+* **A run with no heart rate carries no measurement.** A run whose model
+  was in force but which recorded no heart rate is **not measured**: the
+  time in a band would be a zero where there is no measurement at all.
+* **An empty overlap is a fact to state.** The overlap — the period where
+  the app can check its own zone arithmetic against the watch's own record
+  — is a **no value with a reason** now, in `overlap_missing`, in the same
+  shape as the repeated-work row's. An empty overlap is stated, not hidden.
+
+### Note — the athlete's declared heart rates are the bands (2026-11-25)
+
+This note travels with a change to `docs/contract/schema.sql` and to
+`docs/contract/api-paths.md`, which the contract freeze says is a plan
+change: a frozen file changes only with a plan note in the same change.
+**The schema version moves from 7 to 8**, one table is added, two routes
+answer a new question, and the rule behind every zone-time answer changes.
+
+* **The athlete's declaration.** One small fact, entered once: the
+  **maximum heart rate**, the **resting heart rate**, or **both** — each
+  with where it came from (a closed list of five: *from my watch · from a
+  test · from a doctor or a lab · from my training partner's watch ·
+  typed*), the day it was measured (optional) and the day it was entered.
+  A pair entered together is **one declaration with two rows**; a later
+  pair is a **new declaration**, and the earlier one stays in the history
+  with its own dates and its own sources. **One declaration is in force at
+  a time** — the most recent — and the earlier ones stay.
+* **The declared pair is the bands** (D27). The **rule**: Garmin's
+  published five-zone ladder — 50 %, 60 %, 70 %, 80 %, 90 % — applied to
+  the range the declaration supports:
+  * **both numbers** → the **heart-rate reserve** (maximum − resting):
+    `resting + p × (maximum − resting)`;
+  * **a maximum alone** → the **share of the maximum**: `p × maximum`;
+  * **a resting rate alone** → **no bands at all**, and the answer says
+    why, in the core's own words.
+
+  Each floor is rounded to the nearest beat per minute, halves up, so two
+  runs of the app on the same number give the same bands. The bands are
+  **never stored**: they are recomputed on read from the declaration in
+  force.
+* **The citation.** Garmin publishes the ladder — the *Forerunner 245
+  Owner's Manual*, "About Heart Rate Zones" → "Heart Rate Zone
+  Calculations" — and publishes the two ranges it can be expressed on: the
+  maximum heart rate, and the heart-rate reserve (maximum minus resting).
+  The app applies **the same published percentages** to the range Garmin
+  defines, so there is **one rule with two ranges**, not two rules.
+* **Two facts, never blended.** The **watch's zones** (the floors
+  configured in the watch, read once and dated) and the **bands from the
+  heart rates the athlete entered** are two dated facts. Every answer
+  **names the basis it used**, the two are **never mixed inside one
+  answer**, and the difference between them is stated as a fact — boundary
+  by boundary — and never as a correction.
+* **The change to Z's rule.** The rule above — *every run is measured
+  with the model in force on the day of the run* — **changes**: where a
+  declaration exists, **the declared bands are applied to every run**, so
+  the series is comparable across the whole window; the watch's own model
+  is used where one was in force and **no declaration exists**. The seam
+  is in one place (`crates/stride-api/src/zonemodel.rs`), and the zone
+  computation takes the floors it is given and does not care where they
+  came from.
+* **What does not move.** The **watch's own zone minutes** (the source's
+  own record of each run), the **watch's configured floors** (the watch's
+  own fact), the **load model** (it keeps the watch's dated model, and
+  moving it is its own decision with its own announcement), the **plan's
+  session bands** and the **threshold** are all unchanged.
+* **The app.** Settings › Training › **Your heart rates**, beside the
+  threshold: the two values, each with its source and its dates, the bands
+  they produced, the watch's own floors beside them, and the history. And
+  the **rig's first-run page** — *"three things only you can give it"*
+  becomes **"four things only you can give it"**: a race to type, a
+  threshold to choose, a programme to adopt, **your heart rates**. Side by
+  side, unranked, every one of them can stay empty, and **no vital is
+  linked to any of them**.
+
 ### Proposed amendment — the zone model is a dated fact (2026-11-15)
 
 **Proposal, not approved.** The approvals below are the user's to give. This

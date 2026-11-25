@@ -71,11 +71,12 @@ pub use legacy::{
 };
 pub use model::{
     Activity, ActivityObservation, ActivitySamples, ActivitySummary, AdoptedPlan, AdoptedSession,
-    HeartRateZoneModel, NewActivity, NewActivityObservation, NewActivitySamples, NewAdoptedPlan,
-    NewAdoptedSession, NewHeartRateZoneModel, NewNote, NewPlanBlock, NewPlanSession,
-    NewRaceObservation, NewRunUpdate, NewThresholdObservation, NewWellnessObservation, Note,
-    PlanBlock, PlanSession, RaceObservation, RunUpdate, SyncState, ThresholdKind,
-    ThresholdObservation, UpdateSettings, WellnessDaily, WellnessObservation,
+    HeartRateDeclarationRow, HeartRateZoneModel, NewActivity, NewActivityObservation,
+    NewActivitySamples, NewAdoptedPlan, NewAdoptedSession, NewHeartRate, NewHeartRateDeclaration,
+    NewHeartRateZoneModel, NewNote, NewPlanBlock, NewPlanSession, NewRaceObservation, NewRunUpdate,
+    NewThresholdObservation, NewWellnessObservation, Note, PlanBlock, PlanSession, RaceObservation,
+    RunUpdate, SyncState, ThresholdKind, ThresholdObservation, UpdateSettings, WellnessDaily,
+    WellnessObservation,
 };
 pub use repos::activity::{FeedCursor, FeedPage};
 pub use schema::SCHEMA_VERSION;

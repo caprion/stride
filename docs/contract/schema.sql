@@ -416,6 +416,37 @@ CREATE TABLE adopted_sessions (
     CONSTRAINT uq_adopted_sessions UNIQUE (plan_id, date, kind)
 );
 
+-- Old: (nothing - the old app held no heart rate the athlete gave it).
+-- v8: the athlete's own heart rates: the maximum and/or the resting rate,
+-- with where each came from, the day it was measured and the day it was
+-- entered.
+--
+-- ONE DECLARATION IS ONE OR TWO ROWS. A maximum and a resting rate entered
+-- together are one declaration with two rows, and a later pair is a new
+-- declaration: the earlier one stays in the history with its own dates and
+-- its own sources.
+--
+-- The declaration a row belongs to is named by `declaration_id`, so the two
+-- rows of one declaration are never read as two declarations. **One
+-- declaration is in force at a time** - the most recent one - and the
+-- earlier declarations stay.
+--
+-- A missing value is a missing value: the row is not there, and it is never
+-- a zero. The derived bands are NOT stored - they are recomputed on read
+-- from the declaration in force, by the rule in
+-- exploration/heart-rate-setup.md.
+CREATE TABLE heart_rate_declarations (
+    id              INTEGER NOT NULL PRIMARY KEY,
+    declaration_id  INTEGER NOT NULL,       -- the declaration the row belongs to
+    kind            VARCHAR(16) NOT NULL,   -- 'max' | 'resting'
+    value_bpm       REAL NOT NULL,          -- the heart rate, in beats per minute
+    source          VARCHAR(24) NOT NULL,   -- 'watch' | 'test' | 'doctor_lab' |
+                                             -- 'partner_watch' | 'typed'
+    measured_on     VARCHAR(10),            -- the day it was measured; NULL when not stated
+    entered_on      VARCHAR(10) NOT NULL,   -- the day the declaration was made
+    updated_on      VARCHAR(10) NOT NULL    -- the day the row was last changed
+);
+
 -- Indexes, created after the tables, in this order.
 CREATE INDEX ix_activities_local_date ON activities (local_date);
 CREATE INDEX ix_activities_sport      ON activities (sport_type);
@@ -432,3 +463,4 @@ CREATE INDEX ix_activity_observations_activity ON activity_observations (activit
 CREATE INDEX ix_adopted_plans_start_date ON adopted_plans (start_date);
 CREATE INDEX ix_adopted_plans_race_date ON adopted_plans (race_date);
 CREATE INDEX ix_adopted_sessions_plan_date ON adopted_sessions (plan_id, date);
+CREATE INDEX ix_heart_rate_declarations_entered_on ON heart_rate_declarations (entered_on);

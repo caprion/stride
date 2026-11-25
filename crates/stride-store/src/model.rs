@@ -169,6 +169,42 @@ pub mod threshold_label {
     pub const ALL: [&str; 5] = [LAB_TEST, COACH, ANOTHER_APP, BOOK_OR_TABLE, MY_OWN_NUMBER];
 }
 
+/// The kind of heart rate a declared row carries.
+///
+/// A declaration may carry a maximum, a resting rate, or both — and the
+/// kind is what the row carries. A missing kind is a missing kind, never a
+/// zero.
+pub mod heart_rate_kind {
+    /// The athlete's maximum heart rate.
+    pub const MAX: &str = "max";
+    /// The athlete's resting heart rate.
+    pub const RESTING: &str = "resting";
+
+    /// Every kind, in the order the app lists them.
+    pub const ALL: [&str; 2] = [MAX, RESTING];
+}
+
+/// Where a declared heart rate came from.
+///
+/// **A closed list of five**, so the app has nothing to interpret: the
+/// athlete picks a label and the app stores it and shows it. No source is
+/// ranked, and no source is refused.
+pub mod heart_rate_source {
+    /// The athlete's own watch.
+    pub const WATCH: &str = "watch";
+    /// A test.
+    pub const TEST: &str = "test";
+    /// A doctor or a lab.
+    pub const DOCTOR_LAB: &str = "doctor_lab";
+    /// Somebody else's watch — the training partner's.
+    pub const PARTNER_WATCH: &str = "partner_watch";
+    /// A number the athlete brought.
+    pub const TYPED: &str = "typed";
+
+    /// Every source, in the order the athlete meets them.
+    pub const ALL: [&str; 5] = [WATCH, TEST, DOCTOR_LAB, PARTNER_WATCH, TYPED];
+}
+
 /// One run.
 ///
 /// The FIT file is in here: the blob is the source of truth, and everything
@@ -930,6 +966,63 @@ pub struct NewThresholdObservation {
     /// The day the choice was made.
     pub entered_on: String,
     /// The day the row was last changed.
+    pub updated_on: String,
+}
+
+/// One declared heart rate: a row of `heart_rate_declarations`.
+///
+/// The row is **one kind** of one declaration: the maximum and the resting
+/// rate entered together are two rows of the same declaration, and the
+/// declaration they belong to is named by `declaration_id`.
+///
+/// The value is the athlete's own fact. Nothing here is derived, and
+/// nothing here is a verdict.
+#[derive(Debug, Clone, PartialEq)]
+pub struct HeartRateDeclarationRow {
+    /// The row's primary key.
+    pub id: i64,
+    /// The declaration the row belongs to.
+    pub declaration_id: i64,
+    /// The kind of heart rate: `max` or `resting`.
+    pub kind: String,
+    /// The heart rate, in beats per minute.
+    pub value_bpm: f64,
+    /// Where it came from: `watch`, `test`, `doctor_lab`, `partner_watch`
+    /// or `typed`.
+    pub source: String,
+    /// The day it was measured. `None` when the athlete did not say.
+    pub measured_on: Option<String>,
+    /// The day the declaration was made.
+    pub entered_on: String,
+    /// The day the row was last changed.
+    pub updated_on: String,
+}
+
+/// One heart rate to declare.
+#[derive(Debug, Clone, PartialEq)]
+pub struct NewHeartRate {
+    /// The kind of heart rate: `max` or `resting`.
+    pub kind: String,
+    /// The heart rate, in beats per minute.
+    pub value_bpm: f64,
+    /// Where it came from.
+    pub source: String,
+    /// The day it was measured. `None` when the athlete did not say.
+    pub measured_on: Option<String>,
+}
+
+/// A declaration to write: one or two heart rates, entered together.
+///
+/// **A declaration with no heart rate at all is refused**: an empty
+/// declaration would be read as a declaration of no value, which is not the
+/// same thing as no declaration.
+#[derive(Debug, Clone, PartialEq)]
+pub struct NewHeartRateDeclaration {
+    /// The heart rates it carries.
+    pub rates: Vec<NewHeartRate>,
+    /// The day the declaration was made.
+    pub entered_on: String,
+    /// The day the declaration was last changed.
     pub updated_on: String,
 }
 

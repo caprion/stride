@@ -164,6 +164,8 @@ pub struct ImportReport {
     pub activity_observations: usize,
     /// How many adopted plans were written.
     pub adopted_plans: usize,
+    /// How many of the athlete's own declared heart rates were written.
+    pub heart_rate_declarations: usize,
     /// How many of the adopted plans' own sessions were written.
     pub adopted_sessions: usize,
     /// How many rows there are in all.
@@ -637,11 +639,22 @@ const ADOPTED_SESSIONS: FrozenTable = FrozenTable {
     columns: "PRAGMA main.table_info(\"adopted_sessions\")",
 };
 
+/// `heart_rate_declarations`.
+const HEART_RATE_DECLARATIONS: FrozenTable = FrozenTable {
+    name: "heart_rate_declarations",
+    select: "SELECT id, declaration_id, kind, value_bpm, source, measured_on, entered_on, \
+             updated_on FROM heart_rate_declarations",
+    insert: "INSERT INTO heart_rate_declarations (id, declaration_id, kind, value_bpm, source, \
+              measured_on, entered_on, updated_on) VALUES (:id, :declaration_id, :kind, \
+              :value_bpm, :source, :measured_on, :entered_on, :updated_on)",
+    columns: "PRAGMA main.table_info(\"heart_rate_declarations\")",
+};
+
 /// The tables of the frozen schema, in the schema's order.
 ///
 /// The order is the schema's: parents before children, so a child never
 /// arrives before its parent.
-const FROZEN_TABLES: [FrozenTable; 17] = [
+const FROZEN_TABLES: [FrozenTable; 18] = [
     ACTIVITIES,
     ACTIVITY_SAMPLES,
     WELLNESS_DAILY,
@@ -659,6 +672,7 @@ const FROZEN_TABLES: [FrozenTable; 17] = [
     ACTIVITY_OBSERVATIONS,
     ADOPTED_PLANS,
     ADOPTED_SESSIONS,
+    HEART_RATE_DECLARATIONS,
 ];
 
 /// Copy every row of the schema from one database to another.
@@ -1354,10 +1368,144 @@ fn merge(source: &Connection, destination: &Connection) -> Result<ImportReport> 
         report.rows += 1;
     }
 
+    // The athlete's own declared heart rates. A declaration is one or two
+    // rows, and the rows of one declaration stay together: the
+    // declaration's id is remapped onto the destination's, so an imported
+    // pair is still one declaration.
+    //
+    // A row is matched by the day the declaration was made, its kind, its
+    // value and its source: the same declaration is the same declaration.
+    let mut heart_rate_ids: BTreeMap<i64, i64> = BTreeMap::new();
+    for row in read_rows(source, &HEART_RATE_DECLARATIONS)? {
+        let entered_on = text_of(&row, "entered_on");
+        let kind = text_of(&row, "kind");
+        let source_name = text_of(&row, "source");
+        let value = row
+            .get("value_bpm")
+            .and_then(|value| value.as_f64())
+            .unwrap_or_default();
+        let old = row
+            .get("declaration_id")
+            .and_then(|value| value.as_i64())
+            .unwrap_or_default();
+        let existing = find_heart_rate(&transaction, &entered_on, &kind, value, &source_name)?;
+        let id = match existing {
+            Some(id) => {
+                update_heart_rate(&transaction, id, &row)?;
+                id
+            }
+            None => insert_heart_rate(&transaction, &row)?,
+        };
+        heart_rate_ids.insert(old, id);
+        report.heart_rate_declarations += 1;
+        report.rows += 1;
+    }
+    // The rows of one declaration point at one declaration here.
+    for row in read_rows(source, &HEART_RATE_DECLARATIONS)? {
+        let old = row
+            .get("declaration_id")
+            .and_then(|value| value.as_i64())
+            .unwrap_or_default();
+        let id = match row.get("id").and_then(|value| value.as_i64()) {
+            Some(id) => id,
+            None => continue,
+        };
+        let declaration_id = match heart_rate_ids.get(&old) {
+            Some(declaration_id) => *declaration_id,
+            None => continue,
+        };
+        transaction
+            .execute(
+                "UPDATE heart_rate_declarations SET declaration_id = ?2 WHERE id = ?1",
+                rusqlite::params![id, declaration_id],
+            )
+            .map_err(|error| StoreError::query("the heart rate declaration", error))?;
+    }
+
     transaction
         .commit()
         .map_err(|error| StoreError::query("COMMIT", error))?;
     Ok(report)
+}
+
+/// Find the declared heart rate of this declaration, kind and value.
+///
+/// The natural key of a row: the day the declaration was made, the kind of
+/// heart rate, the value and where it came from. The same declaration is
+/// the same declaration.
+fn find_heart_rate(
+    connection: &Connection,
+    entered_on: &str,
+    kind: &str,
+    value_bpm: f64,
+    source: &str,
+) -> Result<Option<i64>> {
+    connection
+        .query_row(
+            "SELECT id FROM heart_rate_declarations
+             WHERE entered_on = ?1
+               AND kind = ?2
+               AND value_bpm = ?3
+               AND source = ?4
+             ORDER BY id ASC LIMIT 1",
+            rusqlite::params![entered_on, kind, value_bpm, source],
+            |row| row.get::<_, i64>(0),
+        )
+        .optional()
+        .map_err(|error| StoreError::query("find the heart rate declaration", error))
+}
+
+/// Insert a declared heart rate.
+fn insert_heart_rate(
+    transaction: &rusqlite::Transaction<'_>,
+    row: &BTreeMap<String, Value>,
+) -> Result<i64> {
+    transaction
+        .query_row(
+            "INSERT INTO heart_rate_declarations (
+                declaration_id, kind, value_bpm, source, measured_on, entered_on, updated_on
+             ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)
+             RETURNING id",
+            rusqlite::params![
+                row.get("declaration_id")
+                    .and_then(|value| value.as_i64())
+                    .unwrap_or_default(),
+                text_of(row, "kind"),
+                row.get("value_bpm")
+                    .and_then(|value| value.as_f64())
+                    .unwrap_or_default(),
+                text_of(row, "source"),
+                optional_text(row, "measured_on"),
+                text_of(row, "entered_on"),
+                text_of(row, "updated_on"),
+            ],
+            |row| row.get::<_, i64>(0),
+        )
+        .map_err(|error| StoreError::query("insert the heart rate declaration", error))
+}
+
+/// Update a declared heart rate that is already in the destination.
+///
+/// The measurement day and the day the row was last changed are the two
+/// that can differ: the value itself is the fact.
+fn update_heart_rate(
+    transaction: &rusqlite::Transaction<'_>,
+    id: i64,
+    row: &BTreeMap<String, Value>,
+) -> Result<()> {
+    transaction
+        .execute(
+            "UPDATE heart_rate_declarations
+             SET measured_on = ?2, updated_on = ?3
+             WHERE id = ?1",
+            rusqlite::params![
+                id,
+                optional_text(row, "measured_on"),
+                text_of(row, "updated_on"),
+            ],
+        )
+        .map_err(|error| StoreError::query("the heart rate declaration", error))?;
+    Ok(())
 }
 
 /// Read the rows of one table, as maps of column name to value.
