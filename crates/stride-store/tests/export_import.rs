@@ -1,5 +1,9 @@
 //! The export, the import, and the plaintext → SQLCipher conversion.
 
+// The tests are allowed to panic and to expect: they are a separate crate,
+// not a `#[cfg(test)]` module, so the lint configuration does not reach them.
+#![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
+
 mod common;
 
 use stride_store::export::{self, Format};
