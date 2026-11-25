@@ -19,11 +19,13 @@ import type {
   CompareResponse,
   ConnectionStatus,
   CurveInsight,
+  DeclarationWritten,
   FitImportResult,
   FitnessZones,
   Fingerprint,
   Health,
   HealthDaily,
+  HeartRatesInsight,
   HeatmapInsight,
   KeyConnectResult,
   KeyTestResult,
@@ -144,6 +146,13 @@ export const ROUTES = {
    */
   athleteRaces: '/athlete/races',
   athleteThreshold: '/athlete/threshold',
+  /**
+   * The athlete's own heart rates.
+   *
+   * They are the athlete's own: typed into the app and stored on this
+   * machine, and never synced.
+   */
+  athleteHeartRates: '/athlete/heart-rates',
   planBases: '/plan/bases',
   planAdopt: '/plan/adopt',
 
@@ -472,6 +481,25 @@ export const api = {
    * The athlete's own races.
    */
   athleteRaces: () => get<RacesInsight>(ROUTES.athleteRaces),
+  /**
+   * The athlete's own heart rates.
+   */
+  athleteHeartRates: () => get<HeartRatesInsight>(ROUTES.athleteHeartRates),
+  /**
+   * Declare the athlete's heart rates.
+   *
+   * The body carries the maximum, the resting rate, or both — each with the
+   * source it came from and, optionally, the day it was measured. The kind
+   * that is not given carries its value forward.
+   */
+  declareHeartRates: (declaration: {
+    max_heart_rate_bpm?: number
+    max_source?: string
+    max_measured_on?: string | null
+    resting_heart_rate_bpm?: number
+    resting_source?: string
+    resting_measured_on?: string | null
+  }) => post<DeclarationWritten>(ROUTES.athleteHeartRates, declaration),
   /**
    * Make a threshold choice.
    *

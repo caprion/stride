@@ -44,6 +44,7 @@ import type {
   Fingerprint,
   Health,
   HealthDaily,
+  HeartRatesInsight,
   HeatmapCell,
   HeatmapInsight,
   KeyConnectResult,
@@ -457,6 +458,15 @@ export const basesFixture = routerAnswers['/plan/bases'] as BasesInsight
  * The athlete's own races: the router's answer.
  */
 export const racesFixtureAnswer = routerAnswers['/athlete/races'] as RacesInsight
+
+/**
+ * The athlete's own heart rates.
+ *
+ * The seeded store holds no declaration, so the answer is the empty one:
+ * the card shows the two fields and nothing else. The router's own answer
+ * is the fixture, and the app never writes one of its own.
+ */
+export const heartRatesFixture = routerAnswers['/athlete/heart-rates'] as HeartRatesInsight
 
 /**
  * The plan in force: the router's answer.
@@ -1933,6 +1943,8 @@ export const zonesFixture: FitnessZones = routerAnswers['/fitness/zones'] as Fit
 export const zonesUncalibratedFixture: FitnessZones = {
   basis: null,
   model: null,
+  bands: null,
+  bands_basis: null,
   zones: [],
   outside: null,
   stopped: null,
@@ -2649,6 +2661,8 @@ export function fixtureResponse(
       return adoptionFixture
     case '/athlete/races':
       return racesFixtureAnswer
+    case '/athlete/heart-rates':
+      return heartRatesFixture
     case '/insights/rolling': {
       // Nothing in the store: the window holds no distance and the
       // tables hold no rows.

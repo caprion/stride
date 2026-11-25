@@ -1219,12 +1219,22 @@ export interface FitnessZones {
   /** The basis the times were computed on: "moving". */
   basis: string | null
   /**
-   * The model the times were computed against.
+   * The watch's own model, in force on the run's day.
    *
    * `null` when no model has been read; present even when the model cannot
    * be used, so the reader can see which model was rejected.
+   *
+   * This is the **other fact**: the bands the times were computed on are
+   * named by `bands_basis`, and the two are never mixed inside one answer.
    */
   model: ZoneModel | null
+  /**
+   * The bands from the heart rates the athlete entered, where a
+   * declaration is in force.
+   */
+  bands: DeclaredBandsRow | null
+  /** The basis the bands came from — **one** of the two, never both. */
+  bands_basis: BandsBasisRow | null
   /** The five bands, each with the time spent in it. */
   zones: ZoneBand[]
   /**
@@ -2282,6 +2292,157 @@ export interface ChoiceWritten {
   /** The choice, as it is now stored: the one in force. */
   choice: ChoiceRow
   generated_at: string
+}
+
+/**
+ * The athlete's own heart rates.
+ *
+ * **The two facts are never blended.** The answer carries them side by
+ * side, says which one the bands come from, and states the difference as a
+ * fact.
+ */
+export interface HeartRatesInsight {
+  generated_at: string
+  /** The declaration in force, when there is one. */
+  declaration: DeclarationRow | null
+  /** The bands the declaration yields, when it yields any. */
+  bands: DeclaredBandsRow | null
+  /** The watch's own floors, when a model has been read. */
+  watch: WatchBandsRow | null
+  /** The difference between the two, boundary by boundary. */
+  difference: BoundaryRow[] | null
+  /** The declarations that came before, newest first. */
+  history: DeclarationRow[]
+  /**
+   * The five sources a number can come from, in the runner's words.
+   *
+   * The list is the core's, and the app's picker reads it.
+   */
+  sources: HeartRateSourceRow[]
+  /**
+   * The two kinds of heart rate, in the runner's words: "your maximum heart
+   * rate" and "your resting heart rate".
+   */
+  kinds: HeartRateKindRow[]
+  /** Why there are no bands, in the core's own words. */
+  unavailable: string | null
+}
+
+/** The declaration that was written. */
+export interface DeclarationWritten {
+  /** The declaration, as it is now stored: the one in force. */
+  declaration: DeclarationRow
+  generated_at: string
+}
+
+/**
+ * One declaration: the athlete's own statement about their heart rates.
+ *
+ * **A pair entered together is one declaration**, and the two rows it
+ * carries are the two numbers it holds.
+ */
+export interface DeclarationRow {
+  /** The declaration's own id. */
+  id: number
+  /** The maximum heart rate, when the declaration carries one. */
+  max: DeclaredRateRow | null
+  /** The resting heart rate, when the declaration carries one. */
+  resting: DeclaredRateRow | null
+  /** The day the declaration was made. */
+  entered_on: string
+  /**
+   * The day the declaration was made, in the app's own date rendering:
+   * "24 Nov 2026".
+   */
+  entered_on_label: string
+  /** The entry, in the core's own words: "entered on 24 Nov 2026". */
+  entered: string
+  /** The day the declaration was last changed. */
+  updated_on: string
+  /** Whether this declaration is the one in force. */
+  in_force: boolean
+}
+
+/**
+ * One declared heart rate: the value, where it came from, and the day it
+ * was measured.
+ */
+export interface DeclaredRateRow {
+  /**
+   * The kind of heart rate, in the runner's words: "your maximum heart
+   * rate".
+   */
+  label: string
+  /** The value, in beats per minute. */
+  value_bpm: number
+  /** The value as the core renders it: "186 bpm". */
+  value: RenderedValue | null
+  /** Where it came from: "watch", "test", "doctor_lab", "partner_watch" or "typed". */
+  source: string
+  /** Where it came from, in the runner's words: "from a test". */
+  source_label: string
+  /** The day it was measured, when the athlete said. */
+  measured_on: string | null
+  /** The day it was measured, in the app's own date rendering. */
+  measured_on_label: string | null
+}
+
+/** The bands the athlete's declared heart rates yield. */
+export interface DeclaredBandsRow {
+  /**
+   * The bands, in the runner's words: "the bands from the heart rates you
+   * entered".
+   */
+  label: string
+  /** The five floors, in beats per minute. */
+  floors: ZoneModelFloors
+  /** The maximum heart rate the bands were built on. */
+  max_heart_rate: RenderedValue | null
+  /** The range the ladder was applied to: "reserve" or "max_share". */
+  range: string
+  /** The range, in the runner's words. */
+  range_label: string
+  /** The day the declaration was entered. */
+  entered_on: string
+  /** The bands' own source line, in the core's words. */
+  source: string | null
+}
+
+/**
+ * The watch's own floors: the configuration in the watch, read once and
+ * dated.
+ */
+export interface WatchBandsRow {
+  /**
+   * The watch's own zones, in the runner's words: "your watch's zones".
+   */
+  label: string
+  /** The five floors, in beats per minute. */
+  floors: ZoneModelFloors
+  /** The maximum heart rate the watch's model was built on. */
+  max_heart_rate: RenderedValue | null
+  /** The day the model was read. */
+  read_on: string
+  /** The day's own rendering: "3 Nov 2026". */
+  read_on_label: string
+  /** The model's own source line, in the core's words. */
+  source: string | null
+}
+
+/** One of the five sources a heart rate can come from. */
+export interface HeartRateSourceRow {
+  /** The source's name, as it is stored: "watch". */
+  key: string
+  /** The source, in the runner's words: "from my watch". */
+  label: string
+}
+
+/** One of the two kinds of heart rate. */
+export interface HeartRateKindRow {
+  /** The kind's name, as it is stored: "max". */
+  key: string
+  /** The kind, in the runner's words: "your maximum heart rate". */
+  label: string
 }
 
 /** The bands the window's moving time falls into. */

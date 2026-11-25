@@ -1,17 +1,17 @@
 //! The rig's own page.
 //!
 //! It is the host's face: the version being served, where the athlete's
-//! data is, whether a Garmin key is kept, and the three decisions that
+//! data is, whether a Garmin key is kept, and the four decisions that
 //! only the athlete can make.
 //!
 //! The tests here hold it to four rules:
 //!
 //!   - **it says facts** — the version, the schema, the files, the counts;
-//!   - **the three decisions are the athlete's** — they are offered side by
+//!   - **the four decisions are the athlete's** — they are offered side by
 //!     side, unranked, and nothing on the page grades or ranks them;
-//!   - **a fresh rig is honest** — an empty race, an empty threshold and
-//!     an empty programme are named, with the reason, and the page is not
-//!     a wizard that presumes any of them;
+//!   - **a fresh rig is honest** — an empty race, an empty threshold, an
+//!     empty programme and an empty pair of heart rates are named, with the
+//!     reason, and the page is not a wizard that presumes any of them;
 //!   - **the key never reaches the page**, and neither does the database
 //!     key.
 
@@ -114,7 +114,7 @@ fn the_page_says_the_version_the_schema_and_where_the_files_are(
 }
 
 #[test]
-fn the_page_offers_the_three_decisions_and_ranks_none_of_them(
+fn the_page_offers_the_four_decisions_and_ranks_none_of_them(
 ) -> Result<(), Box<dyn std::error::Error>> {
     let directory = scratch("decisions")?;
     let (workspace, _keys, router) = rig(&directory)?;
@@ -123,7 +123,7 @@ fn the_page_offers_the_three_decisions_and_ranks_none_of_them(
     let response = rig.handle(&request("GET", "/rig"), loopback());
     let page = page_of(&response);
 
-    // The three decisions, each named.
+    // The four decisions, each named.
     assert!(page.contains("A race"), "the page does not offer a race");
     assert!(
         page.contains("A threshold"),
@@ -132,6 +132,10 @@ fn the_page_offers_the_three_decisions_and_ranks_none_of_them(
     assert!(
         page.contains("A programme"),
         "the page does not offer a programme"
+    );
+    assert!(
+        page.contains("Your heart rates"),
+        "the page does not offer the heart rates"
     );
 
     // Nothing is ranked, recommended or graded. The ban list is the
@@ -156,7 +160,7 @@ fn the_page_offers_the_three_decisions_and_ranks_none_of_them(
 }
 
 #[test]
-fn a_fresh_rig_names_the_three_empty_decisions_and_presumes_nothing(
+fn a_fresh_rig_names_the_four_empty_decisions_and_presumes_nothing(
 ) -> Result<(), Box<dyn std::error::Error>> {
     let directory = scratch("fresh")?;
     let (workspace, _keys, router) = rig(&directory)?;
@@ -165,8 +169,8 @@ fn a_fresh_rig_names_the_three_empty_decisions_and_presumes_nothing(
     let response = rig.handle(&request("GET", "/rig"), loopback());
     let page = page_of(&response);
 
-    // The three empties, each named: no race typed, no threshold chosen,
-    // no programme adopted.
+    // The four empties, each named: no race typed, no threshold chosen, no
+    // programme adopted, and no heart rates entered.
     assert!(
         page.contains("No race time entered."),
         "the page does not say that no race has been typed"
@@ -179,9 +183,13 @@ fn a_fresh_rig_names_the_three_empty_decisions_and_presumes_nothing(
         page.contains("No programme has been adopted."),
         "the page does not say that no programme has been adopted"
     );
+    assert!(
+        page.contains("No heart rates entered."),
+        "the page does not say that no heart rates have been entered"
+    );
 
-    // The page is not a wizard: the race is offered, and the other two are
-    // offered as a link into the app rather than as a step.
+    // The page is not a wizard: the race is offered, and the other three
+    // are offered as a link into the app rather than as a step.
     assert!(
         page.contains("action=\"/rig/race\""),
         "the page does not offer the race to be typed"

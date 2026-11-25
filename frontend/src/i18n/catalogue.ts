@@ -1218,6 +1218,22 @@ export const catalogue = {
   'threshold.card.saved': { type: 'status', text: 'Your threshold is saved' },
   'threshold.card.refused': { type: 'status', text: 'That choice could not be saved' },
 
+  /* ----------------------------------------------------- the heart rates */
+  'settings.heartRates.heading': { type: 'status', text: 'Your heart rates' },
+  'heartRates.card.bands': { type: 'status', text: 'the bands' },
+  'heartRates.card.band': { type: 'status', text: 'band' },
+  'heartRates.card.declared': { type: 'status', text: 'yours' },
+  'heartRates.card.watch': { type: 'status', text: "your watch's" },
+  'heartRates.card.difference': { type: 'status', text: 'difference' },
+  'heartRates.card.source': { type: 'status', text: 'where it came from' },
+  'heartRates.card.measured': { type: 'status', text: 'when it was measured' },
+  'heartRates.card.save': { type: 'status', text: 'Save your heart rates' },
+  'heartRates.card.saved': { type: 'status', text: 'Your heart rates are saved' },
+  'heartRates.card.refused': { type: 'status', text: 'Those heart rates could not be saved' },
+  'heartRates.card.history': { type: 'status', text: 'the heart rates you have entered' },
+  'heartRates.card.inUse': { type: 'status', text: 'in use' },
+  'heartRates.card.none': { type: 'status', text: 'No heart rates entered' },
+
   /* ------------------------------------------------------- the plan's bases */
   'plan.bases.heading': { type: 'status', text: 'Adopting a programme' },
   'plan.bases.pick': { type: 'status', text: 'adopt this one' },

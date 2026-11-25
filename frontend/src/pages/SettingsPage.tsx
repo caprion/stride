@@ -39,6 +39,7 @@ import { PageHeader } from '../ui/layout/PageHeader'
 import { SyncControls } from '../components/SyncControls'
 import { UpdateSettings } from '../components/UpdateSettings'
 import { Choice, Field, Notice, SettingRow, SettingsGroup } from '../ui/settings/SettingsGroup'
+import { HeartRatesCard } from './heartRates'
 import { ThresholdCard } from './threshold'
 
 /** The reasons a pause can have. The athlete's own words for it. */
@@ -406,6 +407,21 @@ export function SettingsPage() {
               candidate cannot know.
             */}
             <ThresholdCard />
+          </SettingsGroup>
+        ) : null}
+
+        {/* ------------------------------------------ the heart rates */}
+        {section === 'training' ? (
+          <SettingsGroup title={t('settings.heartRates.heading')} testId="settings-heart-rates">
+            {/*
+              The athlete's own heart rates: the declaration in force, the
+              bands it produced, and the watch's own floors beside them.
+
+              **The wording is the core's.** The labels of the two numbers,
+              the five sources, the source lines and the reasons all come
+              from the api, which asks the core's catalogue for them.
+            */}
+            <HeartRatesCard />
           </SettingsGroup>
         ) : null}
 

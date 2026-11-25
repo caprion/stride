@@ -100,6 +100,8 @@ pub struct RigFacts {
     pub races: Vec<RaceFact>,
     /// The threshold in force.
     pub threshold: Option<ThresholdFact>,
+    /// The heart rates in force.
+    pub heart_rates: Option<HeartRatesFact>,
     /// The programme in force.
     pub programme: Option<ProgrammeFact>,
     /// When the log was last filled from the source.
@@ -119,6 +121,17 @@ pub struct RaceFact {
     pub date: String,
     /// Whether the paces come from this race.
     pub anchor: bool,
+}
+
+/// The heart rates in force.
+#[derive(Debug, Clone)]
+pub struct HeartRatesFact {
+    /// The maximum heart rate, in the core's words.
+    pub max: Option<String>,
+    /// The resting heart rate, in the core's words.
+    pub resting: Option<String>,
+    /// The day the declaration was made.
+    pub entered_on: String,
 }
 
 /// The threshold in force.
@@ -198,6 +211,7 @@ pub fn facts(workspace: &Workspace, router: &dyn Router) -> RigFacts {
         wellness_days: count_at(&health, "wellness_days"),
         races: races_of(&get(router, "/athlete/races")),
         threshold: threshold_of(&get(router, "/insights/threshold")),
+        heart_rates: heart_rates_of(&get(router, "/athlete/heart-rates")),
         programme: programme_of(&get(router, "/plan/adopt")),
         last_sync: text_at(&sync, &["last_sync_at"]),
         notice: None,
@@ -288,6 +302,29 @@ fn threshold_of(answer: &Value) -> Option<ThresholdFact> {
             .to_string(),
         entered_on: choice
             .get("entered_on")
+            .and_then(Value::as_str)
+            .unwrap_or_default()
+            .to_string(),
+    })
+}
+
+/// The heart rates in force.
+///
+/// The athlete's own fact: the two numbers, and the day the declaration
+/// was made. The wording is the core's, and the page prints it.
+fn heart_rates_of(answer: &Value) -> Option<HeartRatesFact> {
+    let declaration = answer.get("declaration").filter(|value| value.is_object())?;
+    Some(HeartRatesFact {
+        max: declaration
+            .get("max")
+            .and_then(|rate| rate.get("value"))
+            .and_then(|value| rendered(Some(value))),
+        resting: declaration
+            .get("resting")
+            .and_then(|rate| rate.get("value"))
+            .and_then(|value| rendered(Some(value))),
+        entered_on: declaration
+            .get("entered_on_label")
             .and_then(Value::as_str)
             .unwrap_or_default()
             .to_string(),
@@ -513,7 +550,7 @@ fn connection_section(facts: &RigFacts) -> String {
 fn decisions_section(facts: &RigFacts) -> String {
     let mut out = String::new();
     out.push_str("<section id=\"decisions\">\n");
-    out.push_str("<h2>Three things only you can give it</h2>\n");
+    out.push_str("<h2>Four things only you can give it</h2>\n");
     out.push_str(
         "<p class=\"muted\">Each one is yours to give or to leave. Nothing here is asked for, \
          and nothing here is measured.</p>\n",
@@ -521,7 +558,11 @@ fn decisions_section(facts: &RigFacts) -> String {
     out.push_str("<div class=\"choices\">\n");
 
     // 1 · a race to type.
-    out.push_str("<article>\n<h3>A race</h3>\n");
+    //
+    // **The anchor is the door the app's pace card points at**: the app
+    // has no screen for a race, and this page is where it is typed, so
+    // the card's link lands here, on the race's own form.
+    out.push_str("<article id=\"race\">\n<h3>A race</h3>\n");
     match facts.races.is_empty() {
         true => out.push_str("<p>No race time entered.</p>\n"),
         false => {
@@ -590,8 +631,42 @@ fn decisions_section(facts: &RigFacts) -> String {
     );
     out.push_str("</article>\n");
 
+    // 4 · your heart rates.
+    out.push_str("<article>\n<h3>Your heart rates</h3>\n");
+    match &facts.heart_rates {
+        Some(heart_rates) => {
+            let _ = writeln!(
+                out,
+                "<p>In force since {date}: {values}.</p>",
+                date = escape(&heart_rates.entered_on),
+                values = escape(&heart_rates_values(heart_rates))
+            );
+        }
+        None => out.push_str("<p>No heart rates entered.</p>\n"),
+    }
+    out.push_str(
+        "<p class=\"muted\">Your heart rates are in the app, under Settings &rsaquo; Training \
+         &mdash; the bands are derived from them, and nothing here is asked for.</p>\n",
+    );
+    out.push_str("</article>\n");
+
     out.push_str("</div>\n</section>\n");
     out
+}
+
+/// The two numbers, as the page prints them.
+fn heart_rates_values(fact: &HeartRatesFact) -> String {
+    let mut parts: Vec<String> = Vec::new();
+    if let Some(max) = &fact.max {
+        parts.push(max.clone());
+    }
+    if let Some(resting) = &fact.resting {
+        parts.push(resting.clone());
+    }
+    if parts.is_empty() {
+        return "no heart rate".to_string();
+    }
+    parts.join(" \u{b7} ")
 }
 
 /// The form a race is typed in.
