@@ -421,35 +421,3 @@ export function LadderCard({
     </section>
   )
 }
-
-/**
- * The panel behind the pace card.
- *
- * **The panel is the answer**: the ladder in full, its source line
- * hoisted above it, and the doorway into the curve that is the second
- * reading of the same athlete.
- */
-export function LadderPanel({
-  paces,
-  error,
-  onCurve,
-}: {
-  paces: PacesInsight | undefined
-  error: boolean
-  /** The doorway into the cost curve. */
-  onCurve: () => void
-}) {
-  return (
-    <div data-testid="progress-panel-ladder">
-      <LadderCard paces={paces} error={error} hoist />
-      <button
-        type="button"
-        className="tap-inline mt-2 text-[13px] font-semibold text-brand-700 underline"
-        data-testid="ladder-curve-link"
-        onClick={onCurve}
-      >
-        {t('progress.wall.curve.heading')}
-      </button>
-    </div>
-  )
-}
