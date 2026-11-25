@@ -226,7 +226,12 @@ export interface PlanWeekAgainst {
    * - `after` — the plan's last day is before this week.
    */
   state: 'none' | 'before' | 'running' | 'after'
-  /** The state's own sentence: "no plan has been adopted". */
+  /**
+   * The state's own sentence: "no plan has been adopted".
+   *
+   * It is the plan's own sentence and not the athlete's free text — the
+   * note on a run is the only free text the product stores.
+   */
   state_line: string | null
   /** The line that points at the programmes there are to adopt. */
   choose: string | null

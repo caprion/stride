@@ -1141,6 +1141,9 @@ pub struct PlanWeekAgainst {
     /// Where the week stands: `none`, `before`, `running` or `after`.
     pub state: String,
     /// The state's own sentence: "no plan has been adopted".
+    ///
+    /// **It is the plan's own sentence and not the athlete's free text** —
+    /// the note on a run is the only free text the product stores.
     pub state_line: Option<String>,
     /// The line that points at the programmes there are to adopt.
     pub choose: Option<String>,

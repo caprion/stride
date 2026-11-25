@@ -221,6 +221,7 @@ object PhoneRoutes {
         "/athlete/heart-rates",
         "/athlete/races",
         "/athlete/threshold",
+        "/athlete/heart-rates",
         "/settings",
         "/settings/export",
         "/settings/import",

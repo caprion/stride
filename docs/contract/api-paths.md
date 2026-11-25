@@ -53,6 +53,7 @@ reference only).
 | `/settings/export` | write a backup of the database |
 | `/settings/delete` | delete everything, with the typed confirmation the request carries |
 | `/settings/import` | read an export back into the database (the rig's own) |
+| `/athlete/heart-rates` | the athlete's own declared heart rates: the declaration in force, the bands it yields, and the watch's own floors beside them |
 | `/activities/{id}/note` | the athlete's note on a run — the only free text the product stores |
 | `/activities/{id}/update` | the run's **update**: the model's own reading of the run, attributed to the writer and the reviewer, with the checks it passed and the hash of the payload it was written from (see "The run update" below) |
 | `/activities/{id}/update/payload` | the **payload** of a run: the facts a model may read, and nothing else (see "The run update" below) |

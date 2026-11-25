@@ -327,7 +327,7 @@ export function TodayPage() {
   // The adopted plan's session for the day, when a programme is in
   // force. **It is the plan's session for the day**, and it carries the
   // comparison of that day.
-  const adoptedForTheDay = plan.data?.adopted?.sessions.find(
+  const adoptedOfTheDay = plan.data?.adopted?.sessions.find(
     (session) => session.date === insight.date,
   )
   // The form's own state: the last day the load has one for.
@@ -585,10 +585,10 @@ export function TodayPage() {
               worked out with, and the day it was read.
             */}
             <PlanPacing week={plan.data?.adopted} />
-            {insight.planned || adoptedForTheDay ? (
+            {insight.planned || adoptedOfTheDay ? (
               <SessionCard
                 planned={insight.planned}
-                adopted={adoptedForTheDay}
+                adopted={adoptedOfTheDay}
                 sourceLine={plan.data?.adopted?.source_line}
                 comparison={insight.distance_comparison}
                 paused={paused}

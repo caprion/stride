@@ -454,10 +454,10 @@ fn the_plan_routes_carry_their_shapes() {
         &[
             "choose",
             "entry",
-            "state_line",
             "paced_with",
             "source_line",
             "state",
+            "state_line",
             "totals",
         ],
         "/plan/week: the week against the plan",
