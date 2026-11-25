@@ -90,6 +90,22 @@ impl Core for ApiCore {
             .map_err(|_| "the database could not be opened.".to_string())?;
         let api = Api::new(Arc::new(store), Config::default(), Arc::clone(&self.clock))
             .map_err(|_| "the Garmin client could not be built.".to_string())?;
+        // **The athlete's own offset, when they stated one.**
+        //
+        // The rig reads it from the store when it starts, so a stated
+        // offset is in force over the machine's zone. The phone reads it
+        // the same way, and for the same reason: the phone's own zone is
+        // the *host's* offset, and the shell sets it before every request
+        // (`stride_set_utc_offset`). Without this, an offset the athlete
+        // stated would be in force until the app was closed and gone
+        // afterwards — and every hour of every run would be read in the
+        // device's zone instead of the one the athlete chose.
+        //
+        // The rig's own host code does this (`desktop/src/api.rs`); the
+        // phone's host code is this file, and it does the same thing.
+        if let Ok(Some(minutes)) = api.store().utc_offset_minutes() {
+            let _ = api.set_utc_offset_override(Some(minutes));
+        }
         stride_api::ffi::install(Router::new(Arc::new(api)));
         Ok(ok_envelope(json!({"open": true, "db": db_path})))
     }

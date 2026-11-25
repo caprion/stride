@@ -134,6 +134,43 @@ fn native_calendar_updates_cross_midnight_without_reopening_the_database() {
 }
 
 #[test]
+fn a_stated_offset_is_in_force_when_the_phone_opens_the_store() {
+    let _lock = alone();
+    let (path, bytes) = database("stated-offset");
+    let hex: String = bytes.iter().map(|byte| format!("{byte:02x}")).collect();
+
+    // The athlete states their own offset: it is written to the store, so
+    // it is a fact the store holds and not only a fact in memory.
+    {
+        let key = stride_store::DatabaseKey::from_bytes(bytes.clone()).unwrap();
+        let store = stride_store::Store::open_and_migrate(Path::new(&path), &key).unwrap();
+        store
+            .set_utc_offset_minutes(Some(330), the_instant())
+            .expect("the offset was written");
+    }
+
+    // The phone opens the core, and then sets the phone's own zone, the
+    // way the shell does before every request.
+    let core = uniffi_stride::real::ApiCore::with_clock(Arc::new(stride_api::FixedClock::new(
+        the_instant(),
+    )));
+    core.open(&path, &hex).expect("the core was opened");
+    let updated: Value = serde_json::from_str(&uniffi_stride::stride_set_utc_offset(0)).unwrap();
+    assert_eq!(updated["ok"], true);
+
+    // **The stated offset is in force over the phone's own zone**, and the
+    // screen says which of the two it is: the rig reads it the same way,
+    // and the two hosts cannot disagree about the athlete's own hours.
+    let answer = core.call("GET", "/settings", None);
+    assert_eq!(answer["body"]["calendar"]["source"], json!("stated"));
+    assert_eq!(answer["body"]["calendar"]["offset_minutes"], json!(330));
+    assert_eq!(
+        answer["body"]["calendar"]["machine_offset_minutes"],
+        json!(0)
+    );
+}
+
+#[test]
 fn the_key_is_never_in_an_answer() {
     let _lock = alone();
     let (path, bytes) = database("key");
