@@ -117,10 +117,10 @@ CREATE TABLE plan_sessions (
 );
 
 -- Old: none (new). The only free text the app stores: a note on a run, and the
--- goal/pause settings — the three inputs that change what the app says.
+-- goal/pause settings — the inputs that change what the app says.
 CREATE TABLE notes (
     id          INTEGER NOT NULL PRIMARY KEY,
-    kind        VARCHAR(16) NOT NULL,               -- 'note' | 'goal' | 'pause' | 'challenge_week' | 'challenge_run'
+    kind        VARCHAR(16) NOT NULL,               -- 'note' | 'goal' | 'pause' | 'challenge_week' | 'challenge_run' | 'utc_offset'
     activity_id INTEGER,                            -- set for kind='note'
     text        TEXT,                               -- the note text, or the pause reason
     value       REAL,                               -- the weekly goal in km (kind='goal'), or a challenge's target in km

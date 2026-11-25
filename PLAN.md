@@ -724,6 +724,44 @@ frozen table, and the table says what the answer carries.
   athlete's own adopted plan and the week that happened, and writes every
   sentence; the api carries the answer and the app draws it.
 
+### Note — the hours are the machine's own, and the athlete may state theirs (2026-11-24)
+
+This note travels with a change to `docs/contract/api-paths.md`, which the
+contract freeze says is a plan change: a frozen file changes only with a
+plan note in the same change. **One field was added** (`calendar`), and the
+hours the product reads moved from UTC to the machine's own zone.
+
+* **The reason.** The athlete's own schedule card on the desktop rig read
+  *"Night 23 -> 6 · 93 sessions · 884.6 km"*, and *"Evening 17 -> 23 · 0
+  sessions"*. Ninety-three night sessions and no evening ones is not a
+  boundary that was wrong: **the hours were in UTC**. The rig never told the
+  router which zone it was in, so every "local hour" was the UTC hour — and
+  a run at **05:00 IST** is **23:30 UTC**, which falls in the night bucket
+  under any boundary at all.
+* **The rig reads the machine's zone.** The offset is read from the
+  operating system when the rig starts and **again before every pull** —
+  the way the phone already refreshes its calendar before a sync — so a
+  machine that changes zone (a flight, a daylight-saving change) does not
+  leave the hours behind. **The athlete's own day never moved**: it comes
+  from Garmin's own local date, so the load, the ledger and the plan have
+  always bucketed the run correctly. Only the *part of the day* was
+  computed in the wrong zone, and that is why the athlete's own history
+  looked impossible.
+* **The athlete may state their own offset.** Settings › Training carries a
+  zone field beside the heart rates: the machine's own value is the
+  default, the athlete's own is in force over it, and **the screen says
+  which of the two is in force** — "Your hours are read in this machine's
+  time" or "in the time you stated". It is a fact about the machine and
+  never a verdict on the athlete.
+* **The day's four parts are the athlete's own hours.** The cut points
+  are the morning at **04:00**, the afternoon at 12:00, the evening at 17:00
+  and the night at **21:00**; the night wraps around midnight, so it runs
+  from 21:00 to 04:00. The label carries the window it covers — "Morning
+  (04:00–12:00)", "Night (21:00–04:00)" — and the hours are rendered from
+  the cut points, never typed into the wording. **The calendar day does not
+  move**: a run at 05:10 belongs to that calendar day, and it is a morning
+  run in the day's four parts.
+
 ### Proposed amendment — the zone model is a dated fact (2026-11-15)
 
 **Proposal, not approved.** The approvals below are the user's to give. This

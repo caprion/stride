@@ -152,7 +152,7 @@ Two rules hold for every shape below.
 | `/activities/{id}/film` | `activity_id`, `local_date`, `basis: string \| null`, `model: ZoneModel \| null`, `zones: {label, range, from_bpm, to_bpm}[]`, `outside_label: string \| null`, `samples: {elapsed, distance, pace, heart_rate, zone}[]`, `ground: {offset_s, elevation}[]`, `splits: {lap_index, offset_s, distance, duration, pace, heart_rate}[]`, `unavailable: string \| null`, `zones_unavailable: string \| null`, `generated_at` |
 | `/physiology/vitals` | `date`, `generated_at`, `rest: {label, line}`, `vitals: {key, label, value_text, direction_text, deviation_text, travel_text, status_text, band}[]`, `history: {sleep, hrv, resting_hr}` (each point: `date`, nullable `value`, nullable core-rendered `text` with units), `patterns: {id, text, sample_size}[]` |
 | `/plan/week` | `block_name`, `source`, `week_start`, `week_end`, `today`, `target`, `sessions: {date, session_type, title, sentence, target, actual, status, source}[]`, `adherence: {done, planned} \| null`, `counts: {done, planned, not_done}`, `adopted: AdoptedWeek \| null`, `against: PlanWeekAgainst` |
-| `/settings` | `goal: {value: {text, raw} \| null, km: number \| null}`, `pause: {start_date, end_date, reason} \| null`, `storage: {size, activity_count, wellness_day_count, plan_session_count, note_count}`, `generated_at` |
+| `/settings` | `goal: {value: {text, raw} \| null, km: number \| null}`, `pause: {start_date, end_date, reason} \| null`, `storage: {size, activity_count, wellness_day_count, plan_session_count, note_count}`, `calendar: {offset_minutes, machine_offset_minutes, source, offset_label, machine_offset_label, stated_offset}`, `generated_at` |
 | `/settings/export` | `exported: boolean`, `size: {text, raw} \| null`, `generated_at` |
 | `/settings/delete` | `deleted: boolean`, `generated_at` |
 | `/settings/import` | `activities`, `wellness`, `plan_blocks`, `plan_sessions`, `notes`, `rows`, `generated_at` |
@@ -1146,9 +1146,9 @@ previous week.
 The voice is the plan's: a distance, a difference, and the days they
 cover. There is no verdict about any of it.
 
-### The settings, the goal and the pause
+### The settings, the goal, the pause and the calendar
 
-Four inputs change what the app says, and three of them live in the `notes` table
+Five inputs change what the app says, and four of them live in the `notes` table
 (the schema is frozen, and it holds them already).
 
 - **The goal** is a weekly distance, in kilometres — the schema's own unit. **A
@@ -1166,6 +1166,14 @@ Four inputs change what the app says, and three of them live in the `notes` tabl
   number of runs, wellness days, planned sessions and notes in it. The size is
   rendered by the **host** — the core has no unit for bytes, and a file's size
   is not one of its values.
+- **The calendar** is the offset the athlete's own hours are read in. **The
+  host's own offset is the one in force** — the machine's zone, read from the
+  operating system — and the athlete's own offset, when they state one, is in
+  force over it. The answer carries the offset in force (`offset_minutes`),
+  the machine's own (`machine_offset_minutes`), where the one in force came
+  from (`source`: `stated` or `machine`) and both offsets as they are written
+  (`offset_label`, `machine_offset_label`). It is a fact about the machine,
+  and the answer says which of the two is in force.
 - **The delete** refuses the call unless the request carries the word that
   confirms it, and it deletes the data in one transaction. The sync cursors go
   with it: they point at runs that are no longer there.

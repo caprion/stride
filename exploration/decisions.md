@@ -688,3 +688,29 @@ goal."*
   day is after this week (the app says when it starts), a week inside the
   plan (the comparison so far), and a plan whose last day is before this
   week (the app says when its last week ended).
+
+---
+
+## D29 — The hours are the host's own, and the athlete may state theirs (binds: every hour the product reads)
+
+The athlete's own history, on the desktop rig, read *"Night 23 -> 6 · 93
+sessions"* and *"Evening 17 -> 23 · 0 sessions"*. The review that followed
+found the cause, and it was not the boundary: **the rig never told the
+router which zone it was in**, so every "local hour" was the UTC hour. A
+run at 05:00 IST is 23:30 UTC, and 23:30 falls in the night bucket under
+any boundary at all.
+
+* **The host's own offset is the one in force.** The rig reads the zone
+  from the operating system when it starts and again before every pull —
+  the way the phone already refreshes its calendar before a sync. A machine
+  that changes zone does not leave the hours behind.
+* **The athlete's own offset is in force over the machine's** when they
+  state one, in Settings › Training. The screen says which of the two is
+  in force. It is a fact about the machine, never a verdict on the athlete.
+* **The calendar day never moved.** It comes from Garmin's own local date,
+  so the load, the ledger and the plan have always bucketed the run
+  correctly. Only the *part of the day* was computed in the wrong zone.
+* **The day's four parts stand as the athlete asked**: morning 04:00,
+  afternoon 12:00, evening 17:00, night 21:00 — the night wrapping around
+  midnight — and the label carries the window it covers, rendered from the
+  cut points.
