@@ -33,6 +33,7 @@ import {
 import { WeekBody } from './progressWall'
 import { LadderCard } from './ladder'
 import { CurveCard } from './curve'
+import { LedgerCard } from './ledger'
 import { useProgress } from './useProgress'
 import { useWall } from './useWall'
 
@@ -152,6 +153,7 @@ export function ProgressPanelPage() {
         ) : null}
         {panel === 'zone-time' ? (
           <>
+            <LedgerCard stimulus={answers.stimulus.data} error={answers.stimulus.isError} hoist />
             <ZonesDistributionPanel rolling={rolling.data} />
             <ZonesPanel rolling={rolling.data} />
           </>

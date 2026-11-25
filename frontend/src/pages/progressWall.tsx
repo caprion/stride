@@ -51,15 +51,13 @@ import {
   hour,
 } from './progressPanels'
 import { LadderCard } from './ladder'
+import { LedgerCard } from './ledger'
 import {
   BestsPicture,
   HabitPicture,
-  LedgerMatrix,
-  LongRunsSeries,
   SchedulePicture,
   ShapeGauges,
   WeekPicture,
-  ZonePicture,
   daysOf,
   pictureRuns,
 } from '../components/wallPictures'
@@ -828,18 +826,6 @@ export function ProgressWall({
    */
   const rangeRuns = pictureRuns(answers.windowRuns.data?.activities)
 
-  /**
-   * The window's calendar weeks.
-   *
-   * **They are the weeks the window covers**, whether or not a run fell
-   * in them: a week with no run is a hole in the matrix, and the hole
-   * has to have a column of its own to be drawn in.
-   */
-  const windowCalendarWeeks = rolling.data
-    ? daysOf(rolling.data.window.from, rolling.data.window.to).filter(
-        (_, index) => index % 7 === 0,
-      )
-    : []
   const profileRuns = pictureRuns(wall.profileRuns.data?.activities)
 
   /**
@@ -907,22 +893,12 @@ export function ProgressWall({
     time: (
       <WallCard title={cardTitle('time')} to={cardRoute('time')} wide testId="progress-wall-time">
         {/*
-          The ledger: the one bar, the weeks × bands matrix, and the
-          longest runs. **The source line is hoisted to the screen** —
-          it is named once, above the cards, and no card repeats it.
+          The ledger: **the two blocks** — the app's own zone time, and
+          the watch's own zone minutes — with the overlap underneath
+          them. The source line is hoisted to the screen: it is named
+          once, above the cards, and no card repeats it.
         */}
-        <ZonePicture rolling={rolling.data} />
-        <div className="mt-3">
-          <LedgerMatrix weeks={windowCalendarWeeks} rows={rolling.data?.zones.weeks ?? []} />
-        </div>
-        <div className="mt-3">
-          <LongRunsSeries runs={rangeRuns} />
-        </div>
-        <p className="mt-2 text-[12px] text-ink-faint" data-testid="progress-wall-time-window">
-          {rolling.data
-            ? t('progress.rolling.window', { days: rolling.data.window.days })
-            : null}
-        </p>
+        <LedgerCard stimulus={answers.stimulus.data} error={answers.stimulus.isError} bare />
       </WallCard>
     ),
 

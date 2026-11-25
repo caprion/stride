@@ -88,6 +88,17 @@ export function useProgress(range: number) {
     queryFn: () => api.insightsChallenges(range),
   })
   /**
+   * The ledger: the athlete's own bands, the shape rows, and the two
+   * bases the time was measured on.
+   *
+   * It follows the range for the same reason the rest of the screen
+   * does: the period the ledger covers is named with it.
+   */
+  const stimulus = useQuery({
+    queryKey: ['insights-stimulus', range],
+    queryFn: () => api.insightsStimulus(range),
+  })
+  /**
    * The shape's two windows.
    *
    * The same route as the rolling view, asked for the two windows the
@@ -160,6 +171,7 @@ export function useProgress(range: number) {
     rolling,
     streaks,
     challenges,
+    stimulus,
     today,
     windowRuns,
     shape: { short: shapeShort, long: shapeLong },

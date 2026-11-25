@@ -22,7 +22,7 @@
 import { screen, waitFor } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { api } from '../src/lib/api'
-import { rollingFixture } from '../src/fixtures'
+import { stimulusFixture } from '../src/fixtures'
 import { t } from '../src/i18n'
 import { DESTINATIONS } from '../src/app/destinations'
 import { WALL_CARDS, cardRoute, cardsOf, panelDestination, panelOfCard } from '../src/pages/taskAreas'
@@ -183,22 +183,20 @@ describe('the wall on Progress', () => {
   })
 
   it('has no number where the answer has none', async () => {
-    vi.spyOn(api, 'insightsRolling').mockResolvedValue({
-      ...rollingFixture,
-      zones: {
-        models: [],
-        source: null,
-        unavailable: "No heart rate recorded — none of the runs in this period recorded a heart rate",
-        shares: null,
-        distribution: null,
-        weeks: [],
-      },
+    vi.spyOn(api, 'insightsStimulus').mockResolvedValue({
+      ...stimulusFixture,
+      kinds: [],
+      source_zones: [],
+      unavailable: 'no runs recorded',
     })
     renderApp('/progress')
     const card = await screen.findByTestId('progress-wall-time')
 
     // The reason is the answer's own words, and no share is drawn.
-    expect(card.textContent).toContain('none of the runs in this period recorded a heart rate')
+    await waitFor(() =>
+      expect(card.querySelector('[data-testid="ledger-unavailable"]')).toBeTruthy(),
+    )
+    expect(card.textContent).toContain('no runs recorded')
     expect(card.textContent).not.toContain('%')
   })
 })

@@ -1199,6 +1199,7 @@ export const catalogue = {
   'ledger.block.source': { type: 'status', text: "the watch's own zones" },
   'ledger.block.source.note': { type: 'status', text: 'the whole run' },
   'ledger.overlap': { type: 'status', text: 'where both bases exist' },
+  'ledger.overlap.gap': { type: 'status', text: 'the distance between the two' },
   'ledger.coverage': { type: 'status', text: 'the runs the period holds' },
   'ledger.longest': { type: 'status', text: 'the longest run' },
   'ledger.repeated': { type: 'status', text: 'the repeated work' },
