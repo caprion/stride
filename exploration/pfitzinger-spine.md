@@ -209,7 +209,9 @@ Other fixed rules across the race plans:
 
 ## 2.3 The two shipping programmes, read cell by cell
 
-**All four shipping schedules have now been read cell by cell from the book's schedule images**, and every daily cell reconciles with the printed weekly mileage (the check is in each table's last column). Legend: **Rest** = "Rest or cross-training"; **GA*n*** = general aerobic, *n* miles; **GA+s** = general aerobic + speed (strides and/or uphill); **End *n*** = endurance (the long run), *n* miles; **Prog *n* (*k* @LT)** = progression long run, last *k* miles at LT pace; **LT *n*** = lactate threshold, *n* miles total; **VO₂ *n*** = VO₂max, *n* miles total; **SR *n*** = speed repetitions, *n* miles total; **Rec *n*** = recovery, *n* miles; **RP *n*** = race pace.
+**All four shipping schedules have now been read cell by cell from the book's schedule images, and every daily cell reconciles with the printed weekly mileage** (the check is in each table's last column).
+
+**How the reading was done, and one correction.** The schedules are printed as two images per plan — the Monday–Thursday half and the Friday–Sunday-plus-volume half — and **the two halves have different row heights**, so pairing them by pixel position silently shifts rows. The correct method is **row-index alignment**: the Monday–Thursday image carries the week label, the Friday–Sunday image carries the printed volume, and the two are paired by row index and then checked by sum. **An earlier pass paired the halves by pixel position and produced a wrong half-marathon tier-2 table** (weeks 7, 6, 5, 4, 3, 2 and 1 did not sum, and weeks 4 and 2 appeared to be the same week with different totals). The table below is the **re-read**, taken with row-index alignment; the check that caught the fault was the weekly sum. **A volume that does not sum is a finding, not a licence to adjust a cell** — no cell anywhere below has been filled from arithmetic. Legend: **Rest** = "Rest or cross-training"; **GA*n*** = general aerobic, *n* miles; **GA+s** = general aerobic + speed (strides and/or uphill); **End *n*** = endurance (the long run), *n* miles; **Prog *n* (*k* @LT)** = progression long run, last *k* miles at LT pace; **LT *n*** = lactate threshold, *n* miles total; **VO₂ *n*** = VO₂max, *n* miles total; **SR *n*** = speed repetitions, *n* miles total; **Rec *n*** = recovery, *n* miles; **RP *n*** = race pace.
 
 ### 2.3.1 The 10K programme, tier 1 — 30 to 42 miles (48–67 km) per week — ch. 10
 
@@ -221,19 +223,19 @@ Other fixed rules across the race plans:
 | **8 (recovery)** | Rest | SR 7 (2 sets of 4 × 200 m) | GA 7 | Rest | GA 7 | Rest | GA 9 | **30** |
 | 7 | Rest | GA+s 7 | End 9 | Rest | **VO₂ 8** (5 × 1,000 m @ 3K–5K race pace, jog 50–90 %) | Rec 3 | End 10 | **37** |
 | 6 | Rest | SR 8 (2 sets of 5 × 200 m) | End 9 | Rest | **LT 8** (12 min, jog 4, 10 min, jog 4, 10 min) | Rec 3 | End 11 | **39** |
-| 5 | Rest | GA+s 8 (2 sets of 6 × 100 m strides) | End 9 | Rest | **RP 9** (4 × 1,200 m, 2 × 1,000 m) | Rec | End | **?** |
+| 5 | Rest | GA+s 8 (2 sets of 6 × 100 m strides, jog 3 min between sets) | End 9 | Rest | **RP 9** (4 × 1,200 m + 2 × 1,000 m @ 8K–10K race pace, jog 50 % interval time recovery) | Rec 4 | End 11 | **41** |
 | 4 | Rest | GA+s 7 (2 sets of 4 × 150 m strides, jog 250 m, 4 min between sets) | GA 7 | Rest | Rec 3 + 4×100 m strides | **5K tune-up race 8** | End 9 | **34** |
 | 3 | Rest | GA+s 8 (8 × 100 m strides) | End 9 | Rest | **VO₂ 9** (3 × 1,000 m + 3 × 800 m @ 3K–5K) | Rec 5 | End 11 | **42** |
 | 2 | Rest | GA+s 7 (2 sets of 4 × 150 m strides) | GA 7 | Rest | Rec 3 | **5K tune-up race 8** | End 9 | **34** |
 | 1 | Rest | GA+s 6 (8 × 100 m strides) | Rec 4 | **VO₂ 8** (4 × 800 m + 2 × 600 m @ 3K–5K) | Rest | Rec 4 | GA 8 | **30** |
 | **race week** | **RP+s 6** (4 × 100 m strides, 1,200 m @ 8K–10K race pace) | Rec 3 | Rec 4 | Rest | Rec 3 + 4×100 m strides | **8K or 10K goal race 11** | Rec 4 | **31** |
-| postrace | Rest | Rec 5 | Rec 5 | Rec 6 | — | — | — | — |
+| postrace | Rest | Rec 5 | Rec 5 | Rec 6 | Rest | GA+s 7 (8 × 100 m strides) | GA 9 | **32** |
 
 * **Long run:** Sunday, every week — 9 → 10 → 11 miles, and shorter (general aerobic) in the recovery and race weeks. A second endurance run sits on Wednesday.
-* **Quality sessions:** one a week, and it **moves** — Friday in the first half (LT, VO₂max), then the last mile of the plan is a mix of LT (weeks 6), VO₂max (weeks 1, 3) and race pace (week 5). **The 10K plan has no progression long runs** — that session type arrives with the 15K and HM plans.
+* **Quality sessions:** one a week, and it **moves** — Friday throughout (LT in weeks 11, 10 and 6; VO₂max in weeks 9, 7, 3 and 1), with the **race-pace session in week 5** at 8K–10K race pace. **The 10K plan has no progression long runs** — that session type arrives with the 15K and HM plans.
 * **Cutback:** the **recovery week is week 8** (30 miles, no LT, no VO₂max, no speed reps; the Sunday run becomes a general aerobic run).
 * **Tune-up races:** **5K at 4 weeks and 2 weeks to go**; the goal race is the 8K or the 10K.
-* **Taper and race week:** volume 42 → 34 → 30 → 31; the race week opens with a race-pace session carrying **1,200 m at 8K–10K race pace**.
+* **Taper and race week:** volume 42 → 34 → 30 → **31** in race week (including the 11-mile race); the race week opens with a race-pace session carrying **1,200 m at 8K–10K race pace**. A single **post-race recovery week of 32 miles** follows.
 
 ### 2.3.2 The 10K programme, tier 2 — 45 to 57 miles (72–91 km) per week — ch. 10
 
@@ -253,8 +255,8 @@ Other fixed rules across the race plans:
 | **race week** | **RP+s 7** (4 × 100 m strides, 1,200 m @ 8K–10K race pace) | GA 6 | Rec 5 | Rest | Rec 4 + 4×100 m strides | **8K–10K goal race 11** | Rec 5 | **38** |
 | postrace | Rest | Rec 5 | Rec 6 | Rec 6 | Rec 4 | GA+s 8 (8 × 100 m strides) | GA 10 | **39** |
 
-* **Long run:** **two** endurance runs a week — Wednesday and Sunday — from the first week (End 9 + End 10), the long one on Sunday at 10 → 13 miles.
-* **Quality sessions:** one a week, **Tuesday or Wednesday**: LT in weeks 11, 10, 6; VO₂max in weeks 9, 7, 3, 1; race pace in week 5. **A pace change comes in the second half**: the week-5 race-pace session is at **8K–10K race pace** (the 10K plan's own distance), while the VO₂max sessions stay at 3K–5K race pace.
+* **Long run:** **two** endurance runs a week — **Thursday and Sunday** — from the first week (End 9 + End 10), the long one on Sunday at 10 → 13 miles. Wednesday carries the quality session, not a long run.
+* **Quality sessions:** one a week — **Wednesday** in weeks 3 to 11, and **Thursday** in week 1: LT in weeks 11, 10, 6; VO₂max in weeks 9, 7, 3, 1; race pace in week 5. **A pace change comes in the second half**: the week-5 race-pace session is at **8K–10K race pace** (the 10K plan's own distance), while the VO₂max sessions stay at 3K–5K race pace.
 * **Cutback:** the recovery week is **week 8** (45 miles).
 * **Taper:** 57 → 47 → 40 → 38 (race week, including the 11-mile race).
 * **Tune-up races:** 5K at 4 and 2 weeks to go.
@@ -288,33 +290,33 @@ Other fixed rules across the race plans:
 
 | week | Mon | Tue | Wed | Thu | Fri | Sat | Sun | volume |
 |---|---|---|---|---|---|---|---|---|
-| 11 | Rest | GA 9 | **LT 8** (15 min, jog 4, 12 min) | End 10 | Rest | GA+s 7 (2 sets of 6 × 100 m strides, jog 3 min between sets) | End 12 | **46** |
-| 10 | Rest | GA 9 | **LT 9** (18 min, jog 4, 14 min) | End 11 | Rest | GA+s 7 (6×12 s uphill + 8×100 m strides) | End 13 | **49** |
-| 9 | Rest | GA 9 | **LT 10** (20 min, jog 4, 16 min) | End 11 | Rest | GA+s 8 (6×12 s uphill + 8×100 m strides) | **Prog 14 (2 @ LT)** | **52** |
+| 11 | Rest | GA 9 | **LT 8** (15 min LT interval, jog 4 min recovery, 12 min LT interval) | End 10 | Rest | GA+s 7 (2 sets of 6 × 100 m strides, jog 3 min between sets) | End 12 | **46** |
+| 10 | Rest | GA 9 | **LT 9** (18 min LT interval, jog 4, 14 min) | End 11 | Rest | GA+s 7 (6 × 12 s uphill + 8 × 100 m strides) | End 13 | **49** |
+| 9 | Rest | GA 9 | **LT 10** (20 min LT interval, jog 4, 16 min) | End 11 | Rest | GA+s 8 (6 × 12 s uphill + 8 × 100 m strides) | **Prog 14 (2 @ LT)** | **52** |
 | **8 (recovery)** | Rest | GA 8 | GA 10 | GA 9 (2 sets of 5 × 150 m strides, jog 250 m, 4 min between sets) | Rest | GA+s 9 | End 11 | **47** |
-| 7 | Rest | GA 9 | **LT 10** (22 min, jog 4, 18 min) | End 11 | Rest | GA+s 8 (2 sets of 6 × 100 m strides) | **Prog 14 (3 @ LT)** | **55** |
-| 6 | Rest | GA 9 | **VO₂ 10** (3 × 1,200 m + 3 × 1,000 m @ 3K–5K) | End 12 | Rest | GA+s 8 (6×12 s uphill + 8×100 m strides) | End 12 | **58** |
-| 5 | Rest | GA 9 | **LT 10** (40 min tempo run) | End 12 | Rest | GA+s 9 (10 × 100 m strides) | **Prog 16 (3 @ LT)** | **61** |
-| 4 | Rest | GA+s 10 (2 sets of 5 × 150 m strides) | GA 9 | Rec 7 | Rest | GA+s 8 | End 12 | **63** |
-| 3 | Rest | GA 9 | End 11 | **VO₂ 11** (6 × 1,200 m @ 3K–5K) | Rest | **8K–10K tune-up race 10** | End 12 | **52** |
-| 2 | Rest | GA+s 10 (2 sets of 5 × 150 m strides) | GA 9 | Rec 7 | Rest | GA+s 8 | End 12 | **52** |
-| 1 | Rest | GA 7 | Rec 5 | **VO₂ 10** (2 × 1,200 m + 4 × 800 m @ 3K–5K) | Rest | GA+s 6 (2 sets of 6 × 100 m strides) | End 11 | **43** |
-| **race week** | Rest | **RP+s 8** (6 × 100 m strides, 2 miles @ half-marathon race pace) | Rec 7 | Rec 6 | Rec 4 + 4×100 m strides | Rest | **half marathon goal race 17** | **42** |
-| recovery | Rec 4 | Rest | Rec 6 | Rec 6 | Rec 4 + 4×100 m strides | GA+s 8 | GA 9 | **37** |
-| transition | Rest | GA 9 | GA 7 | GA 10 | Rec 5 | GA+s 8 (2 sets of 6 × 100 m strides) | End 11 | **50** |
+| 7 | Rest | GA 9 | **LT 10** (22 min LT interval, jog 4, 18 min) | End 11 | Rec 3 | GA+s 8 (2 sets of 6 × 100 m strides, jog 3 min between sets) | **Prog 14 (3 @ LT)** | **55** |
+| 6 | Rest | GA 9 | **VO₂ 10** (3 × 1,200 m + 3 × 1,000 m @ 3K–5K race pace, jog 50–90 %) | End 12 | Rec 4 | GA+s 8 (6 × 12 s uphill + 8 × 100 m strides) | End 15 | **58** |
+| 5 | Rest | GA 9 | **LT 10** (40 min tempo run) | End 12 | Rec 5 | GA+s 9 (10 × 100 m strides) | **Prog 16 (3 @ LT)** | **61** |
+| 4 | Rest | GA+s 10 (2 sets of 5 × 150 m strides, jog 250 m, 4 min between sets) | GA 9 | Rec 7 | Rec 4 + 4 × 100 m strides | **8K–10K tune-up race 10** | End 12 | **52** |
+| 3 | Rest | GA 9 | End 11 | **VO₂ 11** (6 × 1,200 m @ 3K–5K race pace, jog 50–90 %) | Rec 6 | GA+s 10 | End 16 | **63** |
+| 2 | Rest | GA+s 10 (2 sets of 5 × 150 m strides, jog 250 m, 4 min between sets) | GA 9 | Rec 7 | Rec 4 + 4 × 100 m strides | **8K–10K tune-up race 10** | End 12 | **52** |
+| 1 | Rest | GA 7 | Rec 5 | **VO₂ 10** (2 × 1,200 m + 4 × 800 m @ 3K–5K race pace, jog 50–90 %) | Rec 4 | GA+s 6 (2 sets of 6 × 100 m strides, jog 3 min between sets) | End 11 | **43** |
+| **race week** | Rest | **RP+s 8** (6 × 100 m strides, 2 miles @ half-marathon race pace) | Rec 7 | Rec 6 | Rest | Rec 4 + 4 × 100 m strides | **half marathon goal race 17** | **42** |
+| recovery | Rec 4 | Rest | Rec 6 | Rec 6 | Rec 4 | GA+s 8 (8 × 100 m strides) | GA 9 | **37** |
+| transition | Rest | GA 9 | GA 7 | GA 10 | Rec 5 | GA+s 8 (2 sets of 6 × 100 m strides, jog 3 min between sets) | End 11 | **50** |
 
-* **Long run:** Thursday **and** Sunday — two endurance days a week, Sunday being the long one (12 → 13 → 14 → 14 → 16 → 12 → 11), with **three progression long runs** (weeks 9, 7 and 5, the last 2–3 miles at LT pace).
+* **Long run:** Thursday **and** Sunday — two endurance days a week, Sunday being the long one (12, 13, 14, 11, 14, 15, 16, 12, 16, 12, 11 miles), with **three progression long runs** (weeks 9, 7 and 5, the last 2–3 miles at LT pace).
 * **Quality sessions:** one a week, **Wednesday** throughout — LT in weeks 11, 10, 9, 7, 5 and VO₂max in weeks 6, 3, 1.
 * **Cutback:** the recovery week is **week 8** (47 miles, no LT, no VO₂max, no progression run).
-* **Taper:** 63 → 52 → 43 → 42 (race week, including the 17-mile race).
+* **Taper:** the peak is **week 3 at 63 miles** (matching the book's own "builds up to 63 miles with three weeks to go"), then 52 → 43 → **42 in race week** (including the 17-mile race).
 * **After the race:** a **recovery week** (37 miles) and a **transition week** (50 miles).
 
 ### 2.3.5 What the four schedules share, and what was **not** read
 
 * **Shared shape:** Monday is **rest or cross-training** in every week of every tier; the plan runs **12 weeks**, weeks-to-go counted down from 11, then **race week**; a **recovery week is printed at 8 weeks to go** in all four; the plan ends with a **recovery week** and a **transition week** after the race (the 10K tier 1 has a single post-race recovery week).
 * **The quality session is one a week** in every tier, and its **type changes with the phase**: LT first, VO₂max later, race pace in the last third — which is the book's own periodisation in miniature.
-* **The long run is on Sunday** in every tier, with a second endurance day (Wednesday in the 10K tier 1, Thursday in the HM tier 2).
-* **Not read cell by cell:** the 10K tier 1's post-race week beyond Thursday; **Table 7.2**; the cut plans (5K, 15K/10-mile, multi-distance), the higher-mileage tiers and the base-training schedules — all extracted, none shipping (§0.5).
+* **The long run is on Sunday** in every tier, with a second endurance day: **Wednesday** in the 10K tier 1, and **Thursday** in the 10K tier 2 and in both half-marathon tiers.
+* **Not read cell by cell:** **Table 7.2**; the cut plans (5K, 15K/10-mile, multi-distance), the higher-mileage tiers and the base-training schedules — all extracted, none shipping (§0.5). **Everything else in the four shipping schedules is read**, including the post-race weeks: the 10K tier 1's is a single **32-mile** recovery week, and both half-marathon tiers end with a recovery week and a transition week.
 
 ## 2.4 The taper (ch. 6)
 
@@ -579,7 +581,18 @@ The parent reads the LT anchor as *"the pace for a ~15K (10-mile) race from the 
 1. **The marathon book's own text.** *Advanced Marathoning* was not available. Every marathon number above comes from S2 (an author-written 2001 excerpt of the **1st** edition), S3 (a 2025 interview about the **4th** edition), S4 (the author's site) or a labelled third party. The **MP-relative pace bands** (GA 15–25 % slower, long run 10–20 % slower) are **[3rd]** and are unverified against the 4th edition.
 2. **The 4th edition's schedule numbers** — time-based LT, mileage ranges, the taper's drop to 25–32 pre-race miles, the removal of doubles from 18/70, the dropped goal-time → 5K-pace chart — are all **[3rd]** (T1, T3, T5). They are plausible and internally consistent, but they are a reviewer's reading of the book, not the book.
 3. **The heart-rate table (Table 7.1) is an image in the EPUB.** The figures quoted in §1.1 are the ones stated in the surrounding prose, which is how they are cited. The table itself was not transcribed cell by cell, so **a run type's band that appears only in the table (rather than in the prose) is not yet pinned.**
-4. **The plan schedules are images, and all four shipping schedules have now been read cell by cell** (§2.3): the **8K–10K tier 1 (30–42 mi/wk)**, the **8K–10K tier 2 (45–57 mi/wk)**, the **half-marathon tier 1 (31–47 mi/wk)** and the **half-marathon tier 2 (46–63 mi/wk)**. In each, every daily cell reconciles with the printed weekly mileage. **Not read cell by cell:** the 10K tier 1's post-race week beyond Thursday; Table 7.2; and every schedule that is **not shipping** — the 5K, the 15K/10-mile, the multi-distance, the higher-mileage tiers and the three base-training schedules (extracted, not built — §0.5).
+4. **The plan schedules are images, and all four shipping schedules have now been read cell by cell** (§2.3), with the halves paired by **row index** rather than by pixel position (see the note at the head of §2.3). **Per-programme reconciliation status:**
+
+| programme | weeks | reconcile? | note |
+|---|---|---|---|
+| **8K–10K tier 1 (30–42 mi/wk)** | 11 countdown + race week + post-race = **13 rows** | **all 13 rows reconcile** | week 5 was unreadable in the first pass; re-read: **41 miles**, Fri race pace 9 mi (4 × 1,200 m + 2 × 1,000 m @ 8K–10K race pace, jog 50 %), Sat recovery 4 mi, Sun endurance 11 mi. The post-race week is **32 miles**. |
+| **8K–10K tier 2 (45–57 mi/wk)** | 11 countdown + race week + post-race = **13 rows** | **all 13 rows reconcile** | re-read with row-index alignment; unchanged from the first pass. |
+| **Half-marathon tier 1 (31–47 mi/wk)** | 11 countdown + race week + recovery + transition = **14 rows** | **all 14 rows reconcile** | re-read with row-index alignment; unchanged from the first pass. |
+| **Half-marathon tier 2 (46–63 mi/wk)** | 11 countdown + race week + recovery + transition = **14 rows** | **all 14 rows reconcile — after correction** | the first pass was **wrong**: weeks 7, 6, 5, 4, 3, 2 and 1 did not sum (short by 3, 7, 5, 17, 6 and 4 miles, and week 3 over by 1), and weeks 4 and 2 appeared identical with different totals. Re-read: the **63-mile week is week 3**; **weeks 4 and 2 are the same week twice, both 52 miles**; the Friday/Saturday cells of weeks 7–5 were transposed from the wrong rows. |
+
+**In total: 13 + 13 + 14 + 14 = 54 week-rows, 378 days**, every cell transcribed and every week reconciling with its printed mileage. The tables in §2.3 were then re-parsed by a second, separately written parser, which returned the same 54 rows and the same 378 days, matching the text verbatim.
+
+**Not read cell by cell:** Table 7.2, and every schedule that is **not shipping** — the 5K, the 15K/10-mile, the multi-distance, the higher-mileage tiers and the three base-training schedules (extracted, not built — §0.5).
 5. **Table 7.2** (the book's guidance on revising goals after time lost to illness or injury) was not read.
 6. **The 2018 Stöggl/Seiler marathon study** remains **unverified** (carried forward from `exploration/methods-and-products.md` §4). The polarised evidence here is Stöggl & Sperlich 2014/2015 and Munoz 2014, all cited above.
 7. **LetsRun's Pfitzinger thread could not be fetched (HTTP 403)** and is not used. **Reddit required the Parallel extractor**; no quote is reconstructed from memory.
@@ -587,7 +600,8 @@ The parent reads the LT anchor as *"the pace for a ~15K (10-mile) race from the 
 9. **A reader should not trust any statement in this file that says "the plan should…"** — every rule here is the *method's* rule, quoted or paraphrased, not advice from Stride. `docs/contract/voice.md` still applies to anything the app renders.
 10. **The scope of the first drop is two templates** — the **10K** and the **half marathon** (§0.5). The 5K, 15K/10-mile and multi-distance plan structures were extracted and are kept here as knowledge, but they are **not** built, and nothing in this file should be read as a plan to build them.
 11. **The `EASY` placeholder has no pace.** Pfitzinger's general aerobic run is a heart-rate rule. If the app shows a pace on an easy day, that pace is **the athlete's own data or the athlete's own choice**, and the app must say which. It must not present it as the method's number.
-12. **Appendix C's cells are not transcribed.** The table renders transposed at low resolution and rows could not be aligned to race times with confidence, so **no cell value from Appendix C is published** (§1.2). The app's VDOT chain does not need them; only a future feature that quotes the book's own tabulated paces would.
+12. **`exploration/athlete.js` now carries `vdot: 49.6`, not 49.7.** The core's own relations give **49.6163** for the typed 10K (41:36), which the surface prints as **49.6** (`crates/stride-core/src/vo2.rs`, "The fitness number, as the surface prints it: '49.6'"; asserted at `crates/stride-core/src/training_paces.rs`). The file and the code now agree; the difference was rounding.
+13. **Appendix C's cells are not transcribed.** The table renders transposed at low resolution and rows could not be aligned to race times with confidence, so **no cell value from Appendix C is published** (§1.2). The app's VDOT chain does not need them; only a future feature that quotes the book's own tabulated paces would.
 
 ---
 
@@ -597,7 +611,7 @@ The parent reads the LT anchor as *"the pace for a ~15K (10-mile) race from the 
 
 * A **12-week** plan with **weeks-to-go counted 11 → 1, then race week**, and a **recovery week at 8 weeks to go** in every tier.
 * **Monday is rest or cross-training** in every week of every tier.
-* **One quality session a week**, and its **type changes with the phase**: lactate threshold in the early weeks, VO₂max later, race pace in the last third. In the HM tiers the quality day moves (Friday → Tuesday → Friday); in the 10K tiers it stays on Friday or Tuesday.
+* **One quality session a week**, and its **type changes with the phase**: lactate threshold in the early weeks, VO₂max later, race pace in the last third. The **day** it falls on is tier-specific: **Friday** throughout in the 10K tier 1; **Wednesday** (Thursday in week 1) in the 10K tier 2; and it **moves** in the half-marathon tiers — Friday → Tuesday → Friday in the HM tier 1, Wednesday throughout in the HM tier 2.
 * **The long run is on Sunday** in every tier, with the length and the progression-long-run placement as printed in §2.3, and the **last 2–3 miles at LT pace** in the half-marathon tiers' three progression long runs (weeks 9, 7 and 5).
 * **Two tune-up races** in the 10K plans (5K at 4 and 2 weeks to go) and in the half-marathon plans (8K–10K at 4 and 2 weeks to go).
 * **The race week's shape**, including the race-pace rehearsal (**1,200 m at 8K–10K race pace** in the 10K plans; **2 miles at half-marathon race pace** in the HM plans) and the goal-race distance and its weekly volume.
@@ -608,7 +622,7 @@ The parent reads the LT anchor as *"the pace for a ~15K (10-mile) race from the 
 * Any **weekly skeleton for a tier that is not shipping** (5K, 15K/10-mile, multi-distance, the higher-mileage tiers) — those are extracted, not built (§0.5), and their cells were not read.
 * **A pace for the general aerobic run** — the method fixes a heart-rate band only (§5.2, `EASY`).
 * **Any marathon-plan claim** from this file's numbers — the marathon book's own text was not available and its MP-relative bands are third-party (§1.3, §6.1).
-* **A cell value from Appendix C** (§6.12).
+* **A cell value from Appendix C** (§6.13).
 * **That the athlete's plan was followed, or not.** The plan's cells are intent; the watch's zones and lap structure are evidence, and the two are different things (Part 3).
 
 ---

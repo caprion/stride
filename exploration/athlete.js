@@ -333,7 +333,7 @@
 
   var race = {
     name: "10K", km: 10, sec: 2496, time: "41:36", date: "12 Oct 2026",
-    enteredOn: "13 Oct 2026", changedOn: "3 Nov 2026", vdot: 49.7
+    enteredOn: "13 Oct 2026", changedOn: "3 Nov 2026", vdot: 49.6
   };
   var goal = { name: "a half marathon", km: 21.0975 };
 

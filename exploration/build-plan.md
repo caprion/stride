@@ -66,3 +66,25 @@ next starts:
 
 **The parent commits each step** after reading the report and checking the
 gates, so `rig/v2` is always a working state.
+
+---
+
+## The build, as it happens
+
+| step | state | note |
+|---|---|---|
+| 1 · the storage | **done** | schema v6 — the races, the threshold choice, the activity observations; the sync captures the source's own fields with no extra request; five commits, green |
+| 2 · the core engines | **done** | `vo2.rs`, `training_paces.rs`, `threshold.rs`, `stimulus.rs`; four commits, green. VDOT 49.6 (the prototype's data file said 49.7 — a rounding difference, corrected there) |
+| 3 · the API routes | running | the ladder, the curve, the threshold, the ledger, the athlete's races and threshold choice, and the decode cache |
+| 4a · the plan programmes as data | **done**, and it found a fault | the four programmes transcribed cell by cell — and the transcription found that the **spine's own HM tier 2 table does not reconcile with its printed volumes**, and that two of its weeks are identical. The spine is being re-read from the book |
+| 4b · the core's plan module | waiting on 4a's correction | the templates, the adoption, the dated paces |
+| 5 · the frontend cards | queued | the pictures wired to the routes |
+| 6 · the rig | queued | the desktop host and the new home |
+| 7 · the plan of record | queued | the nine amendments, approved, and the stale ones retired |
+
+**The transcription fault is fixed.** The schedules print as two images per
+plan with different row heights; the first pass paired them by pixel
+position and silently shifted rows. They are now aligned by row index and
+checked by sum — **54 week-rows, 0 mismatching**. The "identical cells,
+different totals" was the transcription's error, not the book's: weeks 4 and
+2 of HM tier 2 are the same week twice, both 52 miles.
