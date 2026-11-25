@@ -586,3 +586,67 @@ night to 21:00 to 4:00 am. And label it that way."*
   day — for the load, the ledger and the plan — and it is a *morning* run in
   the day's four parts. **Only the four parts changed**: sleep and wellness
   are read by the calendar day, and they are untouched.
+
+---
+
+## D27 — The athlete's declared heart rates are the bands (binds: the zones, the ledger, onboarding)
+
+The athlete, 24 November 2026, on the fact that Garmin does not expose the
+zone model's history: *"we should ask the runner to explicitly add the HR
+setup.. either RHR or max HR or both .. we should setup that as part of
+onboarding for the first time, thereafter the app should take care of it."*
+
+* **The declared pair is a dated fact the app holds for the whole history.**
+  Resting heart rate, maximum heart rate, **either or both**, each with its
+  **source from a closed list** (my watch · a test · a doctor or a lab · my
+  partner's watch · typed), the day it was measured, and the day it was
+  entered. A later declaration does not replace the earlier one; both stay.
+* **The bands are derived from it by a cited rule** — Garmin's published
+  five-zone ladder: heart-rate reserve (`resting + p × (max − resting)`)
+  when both numbers are given, percentages of the maximum when only the
+  maximum is, and **no bands at all** when only a resting rate is given,
+  with the core's own reason.
+* **Two dated facts, never blended.** The watch's configured floors and the
+  athlete's declared pair are both stated, the difference between them is
+  stated as a fact, and **no answer mixes bands from one with bands from the
+  other**.
+* **The declared pair is the basis** (option 1 of the design's trade-off):
+  it is applied to **every** run, so the ledger's intensity rows are one
+  comparable series over the whole window rather than empty over the
+  history. The cost is stated and accepted: the app's boundaries are
+  **derived**, not the watch's configuration, and the card says so — and the
+  watch's own zone minutes remain their own block.
+* **This changes Z's rule** (D3, D18.3): a run is now measured against the
+  athlete's declared bands where a declaration exists, and against the
+  watch's model where one was in force and no declaration exists — and the
+  answer names which.
+* **Onboarding**: the rig's first-run page gains a **fourth** choice beside
+  the race, the threshold and the programme — *"four things only you can give
+  it"* — side by side, unranked, and **every one can stay empty**. The
+  heart rates are typed in the app, in **Settings › Training › Your heart
+  rates**, so there is one place and not two.
+* **Thereafter the app looks after it**: the bands are derived on read and
+  used wherever a band is needed; they are re-derived when the pair changes,
+  and the earlier answers stay as they were; the watch's zones are compared
+  with the declared ones and the difference is stated; and **the athlete is
+  never asked again** — nothing nags.
+
+**The implementation's own line** (25 November 2026). The decision's shape
+held; two things about it were settled by the build:
+
+* **The storage is one row per kind, not one row per declaration.** The
+  table is `heart_rate_declarations`, and a row carries the **kind**
+  (`max` or `resting`), the **value**, the **source**, the day it was
+  measured, the day the declaration was made, the day the row was last
+  changed, and the **declaration it belongs to**. A pair entered together
+  is one declaration with **two rows**, and the rows name the declaration
+  they belong to, so the two can never be read as two declarations. **One
+  declaration is in force at a time** — the most recent — and the earlier
+  ones stay in the dated history. The schema version moves from 7 to 8.
+* **Every answer names the basis, and the seam is in one place.** The
+  api reads the stored models and the declaration in one place
+  (`crates/stride-api/src/zonemodel.rs`), so the rule is in one place: the
+  declared bands where a declaration exists, and the watch's own model
+  where one was in force and no declaration exists. The zone answers carry
+  the basis (`bands_basis`) beside the two facts, and **the two are never
+  mixed inside one answer**.

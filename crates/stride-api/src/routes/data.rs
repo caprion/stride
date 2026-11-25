@@ -14,11 +14,11 @@ use stride_core::zones::{time_in_zone, TimeInZone, ZoneFloors};
 use stride_store::{ActivitySummary as StoredActivity, WellnessDaily};
 
 use crate::dto::{
-    ActivityDetail, ActivityListResponse, ActivitySummary, ElevationStats, ElevationWeek,
-    FitnessZones, HrvDay, HrvDays, LatestPhysiology, PaceTrends, PaceWeek, PersonalRecords,
-    PhysiologyDay, PhysiologyDays, RenderedValue, SleepDay, SleepDays, SourceInfo, Sources,
-    StatsSummary, Totals, Trend, TrendPoint, Trends, VitalBand, VitalReading, VitalsHistory,
-    VitalsSnapshot, WeekTotals, WeeklyStats, ZoneBand, ZoneModel, ZoneModelFloors,
+    ActivityDetail, ActivityListResponse, ActivitySummary, BandsBasisRow, DeclaredBandsRow,
+    ElevationStats, ElevationWeek, FitnessZones, HrvDay, HrvDays, LatestPhysiology, PaceTrends,
+    PaceWeek, PersonalRecords, PhysiologyDay, PhysiologyDays, RenderedValue, SleepDay, SleepDays,
+    SourceInfo, Sources, StatsSummary, Totals, Trend, TrendPoint, Trends, VitalBand, VitalReading,
+    VitalsHistory, VitalsSnapshot, WeekTotals, WeeklyStats, ZoneBand, ZoneModel, ZoneModelFloors,
 };
 use crate::error::{ApiError, ApiResult};
 use crate::render;
@@ -653,24 +653,29 @@ pub fn fitness_trends(api: &Api, request: &Request) -> ApiResult<Value> {
     ok(&response)
 }
 
-/// The heart-rate zones of a run, from the athlete's **stored zone model**.
+/// The heart-rate zones of a run, from the athlete's **declared bands** or
+/// from the **stored zone model**.
 ///
-/// The zone model is a dated fact about the athlete's configuration: the
-/// watch's own bands, read from Garmin and stored with the day they were
-/// read. The times in the zones are computed from that model and from the
+/// **Two dated facts, and the answer names the one it used.** Where the
+/// athlete has declared their heart rates, the **bands from the heart
+/// rates they entered** are the bands — applied to **every** run, so the
+/// series is comparable across the whole window. The **watch's own model**
+/// is used where one was in force and no declaration exists.
+///
+/// The times in the zones are computed from those floors and from the
 /// run's moving samples, and from nothing else — never from the run's own
 /// observed maximum, which would give two runs two different scales.
 ///
 /// The run is named by the query (`?id=…`), like the chips. The basis is
-/// named — "moving" — and the model is named with it: its sport, its
-/// training method, its maximum heart rate, its five floors and **the day
-/// it was read**. A number that cannot say where its input came from and
-/// when it was read is not inspectable.
+/// named — "moving" — and the bands are named with it: the basis, the
+/// maximum heart rate they were built on, their five floors and **the day
+/// they were dated**. A number that cannot say where its input came from
+/// and when it was dated is not inspectable.
 ///
-/// **No value is the absence of the whole result.** A run with no stored
-/// model has no bands and no time outside them, and says why in the core's
-/// words. It is never band 1 and never a zero. A stored model whose floors
-/// are not strictly increasing cannot be used, and says so the same way.
+/// **No value is the absence of the whole result.** A run with no bands has
+/// no bands and no time outside them, and says why in the core's words. It
+/// is never band 1 and never a zero. Floors that are not strictly
+/// increasing cannot be used, and says so the same way.
 pub fn fitness_zones(api: &Api, request: &Request) -> ApiResult<Value> {
     let id = match request.query.integer("id")? {
         Some(id) => id,
@@ -686,8 +691,8 @@ pub fn fitness_zones(api: &Api, request: &Request) -> ApiResult<Value> {
         )));
     };
 
-    // The athlete's model: **the one in force on the day of the run** —
-    // the configuration the athlete was wearing when they ran it.
+    // The bands: the athlete's own where a declaration exists, and the
+    // watch's own model otherwise.
     let Some(date) = Date::parse(&run.local_date) else {
         return ok(&no_value_zones(None, "zones.no_model"));
     };
@@ -695,24 +700,72 @@ pub fn fitness_zones(api: &Api, request: &Request) -> ApiResult<Value> {
     let Some(stored) = model_for.model() else {
         return ok(&no_value_zones(None, model_for.reason_id()));
     };
-    let model = zone_model_of(stored);
     let floors = stored.floors;
+    let max_heart_rate = stored.max_heart_rate;
+
+    // The watch's own model: the other fact, stated beside the bands.
+    let watch = crate::zonemodel::ZoneModels::read(api)?;
+    let watch_model = watch.watch_in_force(date).cloned();
+    let model = watch_model.as_ref().map(zone_model_of);
+    let declared = watch.declared().cloned();
+
+    // The basis: which of the two the times are computed on.
+    let basis = match &declared {
+        Some(declared) => stride_core::heart_rates::Basis::Declared {
+            range: declared.bands.range,
+            entered_on: declared.declaration.entered_on,
+        },
+        None => stride_core::heart_rates::Basis::Watch {
+            read_on: stored.read_on,
+        },
+    };
+    let bands_basis = super::athlete::bands_basis_row(
+        &basis,
+        declared.as_ref().map(|declared| &declared.declaration),
+        watch_model.as_ref(),
+    );
+    let bands_row = declared.as_ref().map(|declared| {
+        super::athlete::declared_bands_row(&declared.bands, Some(&declared.declaration))
+    });
+
     if !floors.is_usable() {
-        return ok(&no_value_zones(Some(model), "zones.unusable_model"));
+        return ok(&no_value_zones_with_basis(
+            model,
+            bands_row,
+            bands_basis,
+            "zones.unusable_model",
+        ));
     }
 
     // The samples: the run's own FIT file, decoded on read, and only the
     // moving ones — the same filter the route has always used, so the
     // numbers stay comparable with what it answered before.
     let Some(decoded) = super::series::decoded(api, id) else {
-        return ok(&no_value_zones(Some(model), "zones.unavailable"));
+        return ok(&no_value_zones_with_basis(
+            model,
+            bands_row,
+            bands_basis,
+            "zones.unavailable",
+        ));
     };
     let samples = super::series::zone_samples(&decoded);
     let Some(time) = time_in_zone(floors, &samples) else {
-        return ok(&no_value_zones(Some(model), "zones.unusable_model"));
+        return ok(&no_value_zones_with_basis(
+            model,
+            bands_row,
+            bands_basis,
+            "zones.unusable_model",
+        ));
     };
 
-    ok(&zones_of(model, &floors, stored.max_heart_rate, &time))
+    ok(&zones_of(
+        model,
+        bands_row,
+        bands_basis,
+        &floors,
+        max_heart_rate,
+        &time,
+    ))
 }
 
 /// The answer when there is no value: no bands, no time outside them, and
@@ -724,6 +777,8 @@ fn no_value_zones(model: Option<ZoneModel>, reason: &str) -> FitnessZones {
     FitnessZones {
         basis: None,
         model,
+        bands: None,
+        bands_basis: None,
         zones: Vec::new(),
         outside: None,
         stopped: None,
@@ -731,9 +786,30 @@ fn no_value_zones(model: Option<ZoneModel>, reason: &str) -> FitnessZones {
     }
 }
 
-/// The zones of a run, against the athlete's stored model.
+/// The answer when there is no value, with the bands that were in force.
+fn no_value_zones_with_basis(
+    model: Option<ZoneModel>,
+    bands: Option<DeclaredBandsRow>,
+    bands_basis: BandsBasisRow,
+    reason: &str,
+) -> FitnessZones {
+    FitnessZones {
+        basis: None,
+        model,
+        bands,
+        bands_basis: Some(bands_basis),
+        zones: Vec::new(),
+        outside: None,
+        stopped: None,
+        unavailable: stride_core::strings::render(reason, &[]),
+    }
+}
+
+/// The zones of a run, against the bands in force.
 fn zones_of(
-    model: ZoneModel,
+    model: Option<ZoneModel>,
+    bands: Option<DeclaredBandsRow>,
+    bands_basis: BandsBasisRow,
     floors: &ZoneFloors,
     max_heart_rate: Option<f64>,
     time: &TimeInZone,
@@ -767,7 +843,9 @@ fn zones_of(
 
     FitnessZones {
         basis: Some("moving".to_string()),
-        model: Some(model),
+        model,
+        bands,
+        bands_basis: Some(bands_basis),
         zones,
         outside: render::duration(Some(time.outside_s)),
         stopped: render::duration(Some(time.stopped_s)),
@@ -826,6 +904,21 @@ fn floor_value(bpm: f64) -> RenderedValue {
         text: String::new(),
         raw: Some(bpm),
     })
+}
+
+/// The five floors, as the answer carries them.
+///
+/// The floors are numbers, and the core renders every one of them: the
+/// same five numbers, whether they are the watch's own or the ones the
+/// athlete's own heart rates produced.
+pub(crate) fn floors_row(floors: &ZoneFloors) -> ZoneModelFloors {
+    ZoneModelFloors {
+        zone1: floor_value(floors.zone1),
+        zone2: floor_value(floors.zone2),
+        zone3: floor_value(floors.zone3),
+        zone4: floor_value(floors.zone4),
+        zone5: floor_value(floors.zone5),
+    }
 }
 
 // -------------------------------------------------------------------- stats

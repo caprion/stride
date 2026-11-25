@@ -561,10 +561,19 @@ pub struct ZoneBand {
 pub struct FitnessZones {
     /// The basis the times were computed on: "moving".
     pub basis: Option<String>,
-    /// The model the times were computed against. `None` when no model has
-    /// been read; present even when the model cannot be used, so the reader
-    /// can see which model was rejected.
+    /// The watch's own model, in force on the run's day. `None` when no
+    /// model has been read; present even when the model cannot be used, so
+    /// the reader can see which model was rejected.
+    ///
+    /// This is the **other fact**: the bands the times were computed on are
+    /// named by `bands_basis`, and the two are never mixed inside one
+    /// answer.
     pub model: Option<ZoneModel>,
+    /// The bands from the heart rates the athlete entered, where a
+    /// declaration is in force.
+    pub bands: Option<DeclaredBandsRow>,
+    /// The basis the bands came from — **one** of the two, never both.
+    pub bands_basis: Option<BandsBasisRow>,
     /// The five bands, each with the time spent in it. Empty when there is
     /// no value.
     pub zones: Vec<ZoneBand>,
@@ -3446,6 +3455,62 @@ pub struct StimulusInsight {
     pub more_runs: bool,
     /// Why there is no value at all, in the core's own words.
     pub unavailable: Option<String>,
+}
+
+// --------------------------------------- the athlete's own declared heart rates
+
+/// The athlete's own heart rates: the declaration in force, the bands it
+/// yields, the watch's own floors, and the difference between the two.
+///
+/// **The two facts are never blended.** The answer carries them side by
+/// side, says which one the bands come from, and states the difference as
+/// a fact.
+#[derive(Clone, Debug, PartialEq, Serialize)]
+pub struct HeartRatesInsight {
+    /// When this answer was produced.
+    pub generated_at: String,
+    /// The declaration in force, when there is one.
+    pub declaration: Option<DeclarationRow>,
+    /// The bands the declaration yields, when it yields any.
+    pub bands: Option<DeclaredBandsRow>,
+    /// The watch's own floors, when a model has been read.
+    pub watch: Option<WatchBandsRow>,
+    /// The difference between the two, boundary by boundary, when both
+    /// exist.
+    pub difference: Option<Vec<BoundaryRow>>,
+    /// The declarations that came before, newest first.
+    pub history: Vec<DeclarationRow>,
+    /// The five sources a number can come from, in the runner's words.
+    ///
+    /// The list is the core's, and the app's picker reads it: the wording
+    /// of the sources is never written twice.
+    pub sources: Vec<HeartRateSourceRow>,
+    /// The two kinds of heart rate, in the runner's words: "your maximum
+    /// heart rate" and "your resting heart rate".
+    ///
+    /// The app's fields are labelled with them, so the wording of the two
+    /// facts is never written twice.
+    pub kinds: Vec<HeartRateKindRow>,
+    /// Why there are no bands, in the core's own words.
+    pub unavailable: Option<String>,
+}
+
+/// One of the five sources a heart rate can come from.
+#[derive(Clone, Debug, PartialEq, Serialize)]
+pub struct HeartRateSourceRow {
+    /// The source's name, as it is stored: "watch".
+    pub key: String,
+    /// The source, in the runner's words: "from my watch".
+    pub label: String,
+}
+
+/// One of the two kinds of heart rate.
+#[derive(Clone, Debug, PartialEq, Serialize)]
+pub struct HeartRateKindRow {
+    /// The kind's name, as it is stored: "max".
+    pub key: String,
+    /// The kind, in the runner's words: "your maximum heart rate".
+    pub label: String,
 }
 
 // ------------------------------------------- the athlete's own facts, and the plan's bases

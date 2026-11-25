@@ -391,6 +391,7 @@ fn router_answers(router: &Router) -> serde_json::Map<String, Value> {
         "/plan/bases",
         "/plan/adopt",
         "/athlete/races",
+        "/athlete/heart-rates",
         "/insights/year",
         "/calendar",
         "/compare/candidates",

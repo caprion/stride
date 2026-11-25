@@ -471,6 +471,18 @@ pub const ROUTES: &[Route] = &[
         method: Method::Post,
         handler: crate::routes::athlete::write_threshold,
     },
+    // The athlete's own heart rates: the declaration in force, the bands
+    // it yields, and the watch's own floors beside them.
+    Route {
+        pattern: "/athlete/heart-rates",
+        method: Method::Get,
+        handler: crate::routes::athlete::heart_rates,
+    },
+    Route {
+        pattern: "/athlete/heart-rates",
+        method: Method::Post,
+        handler: crate::routes::athlete::write_heart_rates,
+    },
     // The insights.
     Route {
         pattern: "/insights/today",

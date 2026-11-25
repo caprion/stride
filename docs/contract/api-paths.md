@@ -174,6 +174,8 @@ Two rules hold for every shape below.
 | `/athlete/races` | `generated_at`, `races: RaceRow[]` |
 | `/athlete/races` (the write) | `race: RaceRow`, `generated_at` |
 | `/athlete/threshold` (the write) | `choice: ChoiceRow`, `generated_at` |
+| `/athlete/heart-rates` | `generated_at`, `declaration: DeclarationRow \| null`, `bands: DeclaredBandsRow \| null`, `watch: WatchBandsRow \| null`, `difference: BoundaryRow[] \| null`, `history: DeclarationRow[]`, `sources: {key, label}[]`, `kinds: {key, label}[]`, `unavailable: string \| null` |
+| `/athlete/heart-rates` (the write) | `declaration: DeclarationRow`, `generated_at` |
 | `/plan/bases` | `generated_at`, `bases: {id, label, method, distance, distance_label, entry_requirement, entry_line, entry_from_m, entry_to_m, weeks}[]`, `athlete_mileage: string \| null`, `unavailable: string \| null` |
 | `/plan/adopt` | `generated_at`, `plan: AdoptedPlan \| null`, `unavailable: string \| null` |
 | `/plan/adopt` (the write) | `adopted: boolean`, `plan: AdoptedPlan`, `generated_at` |
@@ -192,7 +194,7 @@ Two rules hold for every shape below.
 | `/sync/status` | `last_sync_at: string \| null`, `last_error: string \| null`, `activity_count: number`, `cursor`, `pulled`, `skipped`, `deleted`, `more_pending: boolean`, `history: {activities, wellness} \| null` |
 | `/sync/run` | `activities`, `wellness_days`, `skipped`, `deleted`, `complete: boolean`, `more_pending: boolean`, `failure: {code, detail, status, retry_after_seconds} \| null`, `finished_at`, `generated_at` |
 | `/health/daily` | `date`, `generated_at`, `stale: boolean` |
-| `/fitness/zones` | `basis: string \| null`, `model: ZoneModel \| null`, `zones: ZoneBand[]`, `outside: RenderedValue \| null`, `stopped: RenderedValue \| null`, `unavailable: string \| null` |
+| `/fitness/zones` | `basis: string \| null`, `model: ZoneModel \| null`, `bands: DeclaredBandsRow \| null`, `bands_basis: BandsBasisRow \| null`, `zones: ZoneBand[]`, `outside: RenderedValue \| null`, `stopped: RenderedValue \| null`, `unavailable: string \| null` |
 | `/fitness/fingerprint` | `activity_id`, `local_date`, `basis: string \| null`, `laps`, `observations: FingerprintObservation[]` (each: `key`, `label`, `value: RenderedValue \| null`, `reason: string \| null`), `zones: FingerprintZones` (`model: ZoneModel \| null`, `shares: ZoneShare[]` (each: `label`, `share: RenderedValue`, `time: RenderedValue \| null`), `outside: RenderedValue \| null`, `unavailable: string \| null`, `note: string \| null`), `unavailable: string \| null`, `generated_at` |
 
 The app's own declarations are in `frontend/src/lib/types.ts`, and
@@ -676,6 +678,71 @@ by March's number.
   not the same thing;
 * a **choice of a base the plan does not have**, or of a candidate that is
   not one of the four.
+
+### The athlete's own heart rates
+
+`/athlete/heart-rates` answers with the **declaration in force** — the
+maximum heart rate, the resting heart rate, or both — the **bands** it
+yields, the **watch's own floors** beside them, the **difference** between
+the two, and the **dated history** of the declarations that came before.
+
+**Two facts, never blended.** The watch's zones (the floors configured in
+the watch, read once and dated) and the bands from the heart rates the
+athlete entered are two dated facts. The answer carries them side by side,
+says which one the bands come from, and states the difference boundary by
+boundary — a fact, and never a correction.
+
+| field | what it carries |
+|---|---|
+| `declaration.max` / `declaration.resting` | the value, where it came from, and the day it was measured |
+| `declaration.entered_on` / `entered_on_label` / `entered` | the day the declaration was made, and the entry in the core's own words |
+| `bands.range` | the range the ladder was applied to: `reserve` (both numbers) or `max_share` (a maximum alone) |
+| `bands.floors` | the five floors, in beats per minute |
+| `bands.source` | the bands' own source line, in the core's words |
+| `watch.floors` | the watch's own five floors |
+| `watch.source` | the watch's own source line, in the core's words |
+| `difference` | one row per boundary: the declared floor, the watch's floor, and the difference |
+| `history` | the earlier declarations, newest first, each with its own dates |
+| `sources` | the five sources a number can come from, in the runner's words |
+| `kinds` | the two kinds of heart rate, in the runner's words |
+| `unavailable` | why there are no bands, in the core's own words |
+
+**The bands are Garmin's published five-zone ladder** — 50 %, 60 %, 70 %,
+80 %, 90 % — applied to the range the declaration supports: the
+**heart-rate reserve** (the maximum minus the resting rate) when both
+numbers are given, and the **share of the maximum** when a maximum alone is
+given. **A resting rate alone yields no bands at all**, and the answer
+says why. The bands are **never stored**: they are recomputed on read.
+
+#### Writing the heart rates
+
+`POST /athlete/heart-rates` takes the **maximum** (`max_heart_rate_bpm`),
+the **resting rate** (`resting_heart_rate_bpm`), or **both**, each with
+the **source** it came from (`max_source`, `resting_source`) and,
+optionally, the **day it was measured** (`max_measured_on`,
+`resting_measured_on`).
+
+**One declaration is in force at a time.** A change writes a **new**
+declaration and never edits the earlier one: the kind that is not given
+carries its value forward, so a declaration is always one coherent
+statement, and the earlier declarations stay in the dated history.
+
+**What is refused**
+
+* a **declaration with no heart rate at all**;
+* a **source the app does not know** — the source is a closed list of five;
+* a **heart rate with no source**;
+* a **measurement day that cannot be read**.
+
+#### The basis the zones are measured on
+
+`/fitness/zones` measures a run against **the athlete's declared bands**
+where a declaration exists — applied to **every** run — and against the
+**watch's own model** where one was in force and no declaration exists.
+The answer names the basis it used in `bands_basis` (`kind`: `declared` or
+`watch`; `label`; `source`; `dated_on`), and `model` carries the watch's
+own model as the other fact. **The two are never mixed inside one
+answer**, and the same rule holds for the ledger's own zone time.
 
 ### The plan's bases
 

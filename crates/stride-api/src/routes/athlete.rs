@@ -1,4 +1,4 @@
-//! The athlete's own facts: the races and the threshold.
+//! The athlete's own facts: the races, the threshold and the heart rates.
 //!
 //! **These are the athlete's own facts, and they are never synced.** They
 //! are typed into the app and stored locally, in the encrypted database,
@@ -8,9 +8,9 @@
 //!
 //! The same discipline the wellness observations have: **the value, the day
 //! it was entered, the day it last changed, and the source.** A race is
-//! typed; a threshold choice is made. Neither is ever inferred from the
-//! training, and neither is ever written twice to change it: a change is
-//! another fact, dated.
+//! typed; a threshold choice is made; a pair of heart rates is declared.
+//! None of them is ever inferred from the training, and none of them is
+//! ever written twice to change it: a change is another fact, dated.
 //!
 //! ## What is refused
 //!
@@ -22,15 +22,24 @@
 //!   which is not the same thing;
 //! * a **second choice that would leave two in force** — one threshold is
 //!   in force at a time, and the earlier choices stay in the dated
-//!   history.
+//!   history;
+//! * a **declaration with no value** — an empty declaration is not a
+//!   declaration, and a **source the app does not know** — the source is a
+//!   closed list of five, so the app has nothing to interpret.
 
 use serde_json::Value;
+use stride_core::heart_rates::{Declaration, HeartRateKind, HeartRateSource};
 use stride_core::threshold::{candidates, ThresholdSource, TypedSource};
 use stride_store::{
-    NewRaceObservation, NewThresholdObservation, RaceObservation, ThresholdObservation,
+    NewHeartRate, NewHeartRateDeclaration, NewRaceObservation, NewThresholdObservation,
+    RaceObservation, ThresholdObservation,
 };
 
-use crate::dto::{ChoiceRow, ChoiceWritten, RaceWritten, RacesInsight};
+use crate::dto::{
+    BandsBasisRow, BoundaryRow, ChoiceRow, ChoiceWritten, DeclarationRow, DeclarationWritten,
+    DeclaredBandsRow, DeclaredRateRow, HeartRateKindRow, HeartRateSourceRow, HeartRatesInsight,
+    RaceWritten, RacesInsight, WatchBandsRow,
+};
 use crate::error::{ApiError, ApiResult};
 use crate::router::Request;
 use crate::state::Api;
@@ -352,4 +361,346 @@ fn body_text(request: &Request, name: &str) -> Option<String> {
         .map(str::trim)
         .filter(|text| !text.is_empty())
         .map(str::to_string)
+}
+
+// ------------------------------------------------- the declared heart rates
+
+/// The athlete's heart rates: the declaration in force, the bands it
+/// yields, the watch's own floors, and the difference between the two.
+///
+/// **The two facts are never blended.** The answer carries them side by
+/// side, says which one the bands come from, and states the difference as
+/// a fact — boundary by boundary — and never as a correction.
+pub fn heart_rates(api: &Api, _request: &Request) -> ApiResult<Value> {
+    let declarations = crate::zonemodel::declarations(api)?;
+    let in_force = stride_core::heart_rates::in_force(&declarations).cloned();
+    let history: Vec<DeclarationRow> = stride_core::heart_rates::history(&declarations)
+        .into_iter()
+        .map(|declaration| declaration_row(declaration, in_force.as_ref()))
+        .collect();
+
+    // The bands the declaration yields, and the reason when it yields
+    // none. **Absence is not zero**: no maximum means no bands at all.
+    let derived = in_force.as_ref().map(stride_core::heart_rates::derive);
+    let bands = derived.as_ref().and_then(|derived| derived.bands);
+    let unavailable = match (&in_force, &derived) {
+        (None, _) => super::core_line("heart_rates.none"),
+        (Some(_), Some(derived)) => derived
+            .missing
+            .and_then(|missing| missing.reason()),
+        (Some(_), None) => None,
+    };
+
+    // The watch's own floors: the other fact, and the one the app states
+    // beside the declared one.
+    let watch = crate::zonemodel::ZoneModels::read(api)?;
+    let watch_model = watch.current().cloned();
+
+    // The comparison: the two, and the difference between them.
+    let comparison = stride_core::heart_rates::compare(
+        in_force.as_ref(),
+        watch_model.as_ref().map(|model| stride_core::heart_rates::WatchBands {
+            floors: model.floors,
+            max_heart_rate: model.max_heart_rate,
+            read_on: model.read_on,
+        }),
+    );
+
+    let answer = HeartRatesInsight {
+        generated_at: api.generated_at(),
+        declaration: in_force
+            .as_ref()
+            .map(|declaration| declaration_row(declaration, in_force.as_ref())),
+        bands: bands
+            .as_ref()
+            .map(|bands| declared_bands_row(bands, in_force.as_ref())),
+        watch: watch_model.as_ref().map(watch_bands_row),
+        difference: comparison
+            .difference
+            .as_ref()
+            .map(|differences| differences.iter().map(boundary_row).collect()),
+        history,
+        sources: HeartRateSource::ALL
+            .iter()
+            .map(|source| HeartRateSourceRow {
+                key: source.key().to_string(),
+                label: source.label().to_string(),
+            })
+            .collect(),
+        kinds: vec![
+            HeartRateKindRow {
+                key: HeartRateKind::Max.key().to_string(),
+                label: HeartRateKind::Max.label().to_string(),
+            },
+            HeartRateKindRow {
+                key: HeartRateKind::Resting.key().to_string(),
+                label: HeartRateKind::Resting.label().to_string(),
+            },
+        ],
+        unavailable,
+    };
+    ok(&answer)
+}
+
+/// Declare the athlete's heart rates.
+///
+/// The body carries the **maximum**, the **resting rate**, or **both** —
+/// each with the **source** it came from and, optionally, the **day it was
+/// measured**. The kind that is not given carries the value it had
+/// forward, so a declaration is always one coherent statement.
+///
+/// The write is a **new declaration**: the earlier ones stay in the dated
+/// history, and the bands are re-derived from the declaration in force.
+pub fn write_heart_rates(api: &Api, request: &Request) -> ApiResult<Value> {
+    let today = super::today(api)?;
+    let in_force = crate::zonemodel::declaration_in_force(api)?;
+
+    let max = declared_rate(request, "max", in_force.as_ref())?;
+    let resting = declared_rate(request, "resting", in_force.as_ref())?;
+    if max.is_none() && resting.is_none() {
+        return Err(ApiError::bad_request(
+            "the declaration carries no heart rate at all",
+        ));
+    }
+
+    let mut rates = Vec::new();
+    if let Some(rate) = max {
+        rates.push(rate);
+    }
+    if let Some(rate) = resting {
+        rates.push(rate);
+    }
+
+    let entered_on = today.to_iso();
+    let declaration = NewHeartRateDeclaration {
+        rates,
+        entered_on: entered_on.clone(),
+        updated_on: entered_on,
+    };
+    api.store()
+        .write_heart_rate_declaration(&declaration)
+        .map_err(|error| api.store_error("the heart rates could not be written", &error))?;
+
+    // The declaration in force is the one that was written.
+    let declarations = crate::zonemodel::declarations(api)?;
+    let current = stride_core::heart_rates::in_force(&declarations).cloned();
+    let answer = DeclarationWritten {
+        declaration: declaration_row(
+            current.as_ref().ok_or_else(|| {
+                ApiError::internal("the declaration that was written could not be read")
+            })?,
+            current.as_ref(),
+        ),
+        generated_at: api.generated_at(),
+    };
+    ok(&answer)
+}
+
+/// One declared heart rate, as the body carries it.
+///
+/// The kind that is not given carries its value forward from the
+/// declaration in force: the athlete changes one number, and the
+/// declaration stays one coherent statement.
+fn declared_rate(
+    request: &Request,
+    kind: &str,
+    in_force: Option<&Declaration>,
+) -> ApiResult<Option<NewHeartRate>> {
+    let field = format!("{kind}_heart_rate_bpm");
+    let value = request.body_f64(&field)?;
+    let source_field = format!("{kind}_source");
+    let measured_field = format!("{kind}_measured_on");
+    let carried = in_force.and_then(|declaration| {
+        let rate = match kind {
+            "max" => declaration.max,
+            _ => declaration.resting,
+        };
+        rate
+    });
+
+    let value = match value {
+        Some(value) if value.is_finite() && value > 0.0 => value,
+        Some(_) => {
+            return Err(ApiError::bad_request(
+                "a heart rate is a number of beats per minute",
+            ))
+        }
+        // Not given: the value carries forward, and the source with it.
+        None => match carried {
+            Some(carried) => carried.value_bpm,
+            None => return Ok(None),
+        },
+    };
+
+    // The source: the athlete picks one of the five, and the app has
+    // nothing to interpret.
+    let source = match body_text(request, &source_field) {
+        Some(source) => HeartRateSource::of(&source).ok_or_else(|| {
+            ApiError::bad_request("the source is not one of the five the app knows")
+        })?,
+        None => match carried {
+            Some(carried) => carried.source,
+            None => {
+                return Err(ApiError::bad_request(
+                    "a heart rate needs the source it came from",
+                ))
+            }
+        },
+    };
+
+    // The day it was measured: optional, and never a zero.
+    let measured_on = match body_text(request, &measured_field) {
+        Some(day) => {
+            let date = super::core_date(&day).map_err(|_| {
+                ApiError::bad_request("the day the heart rate was measured could not be read")
+            })?;
+            Some(date.to_iso())
+        }
+        None => carried.and_then(|carried| carried.measured_on.map(|day| day.to_iso())),
+    };
+
+    Ok(Some(NewHeartRate {
+        kind: kind.to_string(),
+        value_bpm: value,
+        source: source.key().to_string(),
+        measured_on,
+    }))
+}
+
+/// One declaration, as the answer carries it.
+fn declaration_row(declaration: &Declaration, in_force: Option<&Declaration>) -> DeclarationRow {
+    DeclarationRow {
+        id: declaration.id,
+        max: declaration
+            .max
+            .map(|rate| declared_rate_row(HeartRateKind::Max, rate)),
+        resting: declaration
+            .resting
+            .map(|rate| declared_rate_row(HeartRateKind::Resting, rate)),
+        entered_on: declaration.entered_on.to_iso(),
+        entered_on_label: super::day_label(declaration.entered_on),
+        entered: stride_core::strings::render(
+            "heart_rates.entered",
+            &[("date", &super::day_label(declaration.entered_on))],
+        )
+        .unwrap_or_default(),
+        updated_on: declaration.updated_on.to_iso(),
+        in_force: in_force.map(|in_force| in_force.id) == Some(declaration.id),
+    }
+}
+
+/// One declared heart rate, as the answer carries it.
+fn declared_rate_row(
+    kind: HeartRateKind,
+    rate: stride_core::heart_rates::DeclaredRate,
+) -> DeclaredRateRow {
+    DeclaredRateRow {
+        // The kind's own label, in the runner's words: "your maximum heart
+        // rate".
+        label: kind.label().to_string(),
+        value_bpm: rate.value_bpm,
+        value: crate::render::heart_rate(Some(rate.value_bpm)),
+        source: rate.source.key().to_string(),
+        source_label: rate.source.label().to_string(),
+        measured_on: rate.measured_on.map(|day| day.to_iso()),
+        measured_on_label: rate.measured_on.map(super::day_label),
+    }
+}
+
+/// The bands the declaration yields, as the answer carries them.
+pub(crate) fn declared_bands_row(
+    bands: &stride_core::heart_rates::Bands,
+    declaration: Option<&Declaration>,
+) -> DeclaredBandsRow {
+    let entered_on = declaration.map(|declaration| declaration.entered_on);
+    let resting = declaration.and_then(|declaration| {
+        declaration
+            .resting
+            .map(|rate| rate.value_bpm)
+    });
+    let source = entered_on.and_then(|entered_on| {
+        stride_core::heart_rates::source_line(
+            bands,
+            resting,
+            &super::day_label(entered_on),
+        )
+    });
+    DeclaredBandsRow {
+        label: stride_core::strings::render("heart_rates.bands.label", &[]).unwrap_or_default(),
+        floors: super::data::floors_row(&bands.floors),
+        max_heart_rate: crate::render::heart_rate(bands.max_heart_rate),
+        range: bands.range.key().to_string(),
+        range_label: bands.range.label().to_string(),
+        entered_on: entered_on.map(|day| day.to_iso()).unwrap_or_default(),
+        source,
+    }
+}
+
+/// The watch's own floors, as the answer carries them.
+fn watch_bands_row(model: &crate::zonemodel::ZoneModel) -> WatchBandsRow {
+    let read_on = super::day_label(model.read_on);
+    WatchBandsRow {
+        label: stride_core::strings::render("heart_rates.watch.label", &[]).unwrap_or_default(),
+        floors: super::data::floors_row(&model.floors),
+        max_heart_rate: crate::render::heart_rate(model.max_heart_rate),
+        read_on: model.read_on.to_iso(),
+        read_on_label: read_on.clone(),
+        source: stride_core::model_source(&model.training_method, model.max_heart_rate, &read_on),
+    }
+}
+
+/// One boundary's difference, as the answer carries it.
+fn boundary_row(difference: &stride_core::heart_rates::BoundaryDifference) -> BoundaryRow {
+    BoundaryRow {
+        zone: difference.zone,
+        declared_bpm: difference.declared_bpm,
+        watch_bpm: difference.watch_bpm,
+        difference_bpm: difference.difference_bpm,
+        difference: crate::render::difference(
+            Some(difference.difference_bpm),
+            stride_core::units::ValueUnit::HeartRate,
+        ),
+    }
+}
+
+/// The basis the bands came from, as the answer carries it.
+pub fn bands_basis_row(
+    basis: &stride_core::heart_rates::Basis,
+    declared: Option<&stride_core::heart_rates::Declaration>,
+    watch: Option<&crate::zonemodel::ZoneModel>,
+) -> BandsBasisRow {
+    let (source, dated_on) = match basis {
+        stride_core::heart_rates::Basis::Declared { .. } => {
+            let source = declared.and_then(|declaration| {
+                let derived = stride_core::heart_rates::derive(declaration);
+                let bands = derived.bands?;
+                let resting = declaration.resting.map(|rate| rate.value_bpm);
+                stride_core::heart_rates::source_line(
+                    &bands,
+                    resting,
+                    &super::day_label(declaration.entered_on),
+                )
+            });
+            let dated_on = declared.map(|declaration| declaration.entered_on);
+            (source, dated_on)
+        }
+        stride_core::heart_rates::Basis::Watch { read_on } => {
+            let source = watch.and_then(|model| {
+                stride_core::model_source(
+                    &model.training_method,
+                    model.max_heart_rate,
+                    &super::day_label(model.read_on),
+                )
+            });
+            (source, Some(*read_on))
+        }
+        stride_core::heart_rates::Basis::None => (None, None),
+    };
+    BandsBasisRow {
+        kind: basis.key().to_string(),
+        label: basis.label().to_string(),
+        source,
+        dated_on: dated_on.map(|day| day.to_iso()).unwrap_or_default(),
+        dated_on_label: dated_on.map(super::day_label).unwrap_or_default(),
+    }
 }

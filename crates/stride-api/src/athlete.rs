@@ -72,8 +72,13 @@ impl Facts {
         let goal_distance_m = race.as_ref().map(|race| race.distance_m);
 
         // The zone model in force today: the athlete's own configuration.
+        //
+        // **The watch's own model**, and not the bands from the heart rates
+        // the athlete entered: the declaration does not move the
+        // threshold, and the threshold's own watch candidate is the
+        // watch's configuration and not the athlete's declaration.
         let models = crate::zonemodel::ZoneModels::read(api)?;
-        let model = models.in_force(today).cloned();
+        let model = models.watch_in_force(today).cloned();
 
         // The resting heart rate: the athlete's own measured reading, the
         // most recent one on or before today.
