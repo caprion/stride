@@ -25,7 +25,7 @@
     <string name="data_ready">Files leave the app only when you choose a destination.</string>
     <string name="data_passphrase_short">The passphrase needs at least 12 characters.</string>
     <string name="data_mismatch">The two passphrases do not match.</string>
-    <string name="data_working">Preparing your data...</string>
+    <string name="data_working">Preparing your data…</string>
     <string name="data_choose_destination">Backup prepared. Choose where to save it.</string>
     <string name="data_saved">Encrypted backup saved to your chosen destination.</string>
     <string name="data_restored">Backup restored. Return to Today to see the refreshed history.</string>
@@ -107,9 +107,6 @@
 
     <!-- What the phone answers instead of the routes it does not have. -->
     <string name="garmin_key_not_in_browser">The Garmin key is typed into the Stride app, not into the page. The setup screen has opened.</string>
-    <string name="garmin_not_connected_error">Garmin is not connected on this phone.</string>
-    <string name="garmin_key_locked">The phone is locked, so the key cannot be read. Unlock it and try again — your runs are still here.</string>
-    <string name="garmin_key_gone">This phone\'s key store was reset, so the saved Garmin key cannot be read. Connect Garmin again.</string>
     <string name="screen_lock_required">A screen lock is set on this phone first. Stride keeps your runs and your health data on a phone anyone can pick up.</string>
 
     <!--

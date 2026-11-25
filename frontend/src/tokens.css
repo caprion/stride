@@ -2,7 +2,7 @@
  * The colours the app is painted with.
  *
  * GENERATED from `frontend/tokens.ts` — do not edit.
- * Run `npm --prefix frontend run tokens:generate` after a token changes.
+ * Run `npm run tokens:generate` in `frontend/` after a token changes.
  *
  * The palette is one attribute on the root element: `data-palette`.
  */

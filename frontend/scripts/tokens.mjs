@@ -99,7 +99,7 @@ export function cssText() {
     ' * The colours the app is painted with.',
     ' *',
     ' * GENERATED from `frontend/tokens.ts` — do not edit.',
-    ' * Run `npm --prefix frontend run tokens:generate` after a token changes.',
+    ' * Run `npm run tokens:generate` in `frontend/` after a token changes.',
     ' *',
     ' * The palette is one attribute on the root element: `data-palette`.',
     ' */',
@@ -141,7 +141,10 @@ export function androidXml(palette) {
     "<?xml version='1.0' encoding='utf-8'?>",
     '<!--',
     '    GENERATED from `frontend/tokens.ts` — do not edit.',
-    '    Run `npm --prefix frontend run tokens:generate` after a token changes.',
+    // **No double dash in an XML comment.** A comment may not carry "--",
+    // and the resource merge refuses the file: the phone's own chrome
+    // could not be built at all.
+    '    Run `npm run tokens:generate` in `frontend/` after a token changes.',
     '-->',
     '<resources>',
     '    <!-- The app\'s own colours: the surface the screens are drawn on, and',
