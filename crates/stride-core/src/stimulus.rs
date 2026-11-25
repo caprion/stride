@@ -926,7 +926,11 @@ mod tests {
         assert!(ledger.kinds.is_empty());
         assert_eq!(
             MissingInput::NoZoneModel.reason(),
-            Some("No zones yet — your watch's heart-rate zones have not come through".to_string())
+            Some(
+                "not measured — your watch's zones were not read, and the watch's own zone \
+                 minutes are the only zone time here"
+                    .to_string()
+            )
         );
     }
 
@@ -943,7 +947,11 @@ mod tests {
         );
         assert_eq!(
             MissingInput::NoZoneModel.reason(),
-            Some("No zones yet — your watch's heart-rate zones have not come through".to_string())
+            Some(
+                "not measured — your watch's zones were not read, and the watch's own zone \
+                 minutes are the only zone time here"
+                    .to_string()
+            )
         );
         assert_eq!(
             MissingInput::NoZoneModelInForce.reason(),

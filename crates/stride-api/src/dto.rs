@@ -574,6 +574,12 @@ pub struct FitnessZones {
     pub bands: Option<DeclaredBandsRow>,
     /// The basis the bands came from — **one** of the two, never both.
     pub bands_basis: Option<BandsBasisRow>,
+    /// The day the athlete's own zones begin to apply, in the core's own
+    /// words: "your watch's zones apply to the runs from 25 Nov 2026".
+    ///
+    /// `None` when no model has ever been read: there is no such day, and
+    /// the reason the answer carries stands as it is.
+    pub apply_from: Option<String>,
     /// The five bands, each with the time spent in it. Empty when there is
     /// no value.
     pub zones: Vec<ZoneBand>,
@@ -1141,9 +1147,6 @@ pub struct PlanWeekAgainst {
     /// Where the week stands: `none`, `before`, `running` or `after`.
     pub state: String,
     /// The state's own sentence: "no plan has been adopted".
-    ///
-    /// **It is the plan's own sentence and not the athlete's free text** —
-    /// the note on a run is the only free text the product stores.
     pub state_line: Option<String>,
     /// The line that points at the programmes there are to adopt.
     pub choose: Option<String>,

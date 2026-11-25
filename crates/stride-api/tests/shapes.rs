@@ -244,6 +244,7 @@ fn the_fitness_routes_carry_their_shapes() {
     assert_keys(
         &zones,
         &[
+            "apply_from",
             "bands",
             "bands_basis",
             "basis",
@@ -454,10 +455,10 @@ fn the_plan_routes_carry_their_shapes() {
         &[
             "choose",
             "entry",
+            "state_line",
             "paced_with",
             "source_line",
             "state",
-            "state_line",
             "totals",
         ],
         "/plan/week: the week against the plan",
@@ -581,7 +582,6 @@ fn the_settings_routes_carry_their_shapes() {
         ],
         "/settings",
     );
-    assert_keys(&settings["goal"], &["km", "value"], "/settings: the goal");
     assert_keys(
         &settings["calendar"],
         &[
@@ -594,6 +594,7 @@ fn the_settings_routes_carry_their_shapes() {
         ],
         "/settings: the calendar",
     );
+    assert_keys(&settings["goal"], &["km", "value"], "/settings: the goal");
     assert_keys(
         &settings["storage"],
         &[

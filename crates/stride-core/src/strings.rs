@@ -181,7 +181,7 @@ pub struct Entry {
 }
 
 /// The catalogue.
-pub const CATALOGUE: [Entry; 317] = [
+pub const CATALOGUE: [Entry; 318] = [
     // The vitals.
     Entry {
         id: "vital.rest.label",
@@ -576,7 +576,7 @@ pub const CATALOGUE: [Entry; 317] = [
         id: "zones.no_model",
         kind: StringKind::Statement,
         role: None,
-        template: "No zones yet — your watch's heart-rate zones have not come through",
+        template: "not measured — your watch's zones were not read, and the watch's own zone minutes are the only zone time here",
     },
     Entry {
         // A model is stored, but its floors are not strictly increasing, so
@@ -789,6 +789,17 @@ pub const CATALOGUE: [Entry; 317] = [
         kind: StringKind::Statement,
         role: None,
         template: "not measured — your watch's zones were not read for this run",
+    },
+    Entry {
+        // The day the watch's own zones begin to apply, said in the
+        // runner's words: the zones apply to the runs from that day on.
+        //
+        // **A run before that day is a different answer, and it says so
+        // where it is shown.**
+        id: "zones.apply_from",
+        kind: StringKind::Statement,
+        role: None,
+        template: "your watch's zones apply to the runs from {date}",
     },
     Entry {
         // The day the watch's own zones begin to apply.

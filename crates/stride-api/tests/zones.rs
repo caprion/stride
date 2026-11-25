@@ -203,7 +203,7 @@ fn a_run_with_no_stored_model_has_no_value() {
     assert!(body["model"].is_null());
     assert_eq!(
         body["unavailable"].as_str(),
-        Some("No zones yet — your watch's heart-rate zones have not come through")
+        Some("not measured — your watch's zones were not read, and the watch's own zone minutes are the only zone time here")
     );
     // Never band 1, and never a zero.
     assert!(body["zones"].as_array().unwrap().is_empty());

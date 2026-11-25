@@ -1362,6 +1362,7 @@
       }
     },
     "/fitness/zones": {
+      "apply_from": "your watch's zones apply to the runs from 10 May 2026",
       "bands": null,
       "bands_basis": {
         "dated_on": "2026-05-10",
@@ -17838,6 +17839,7 @@
       }
     },
     "/fitness/zones": {
+      "apply_from": "your watch's zones apply to the runs from 10 May 2026",
       "bands": null,
       "bands_basis": {
         "dated_on": "2026-05-10",

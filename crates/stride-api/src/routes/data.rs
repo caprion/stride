@@ -709,6 +709,14 @@ pub fn fitness_zones(api: &Api, request: &Request) -> ApiResult<Value> {
     let model = watch_model.as_ref().map(zone_model_of);
     let declared = watch.declared().cloned();
 
+    // The day the watch's own zones began to apply — the first day they
+    // were read. The run's own page says it, so a reader does not have to
+    // visit another screen to learn it.
+    let apply_from = watch.first().map(|first| {
+        stride_core::strings::render("zones.apply_from", &[("date", &day_label(first.read_on))])
+            .unwrap_or_default()
+    });
+
     // The basis: which of the two the times are computed on.
     let basis = match &declared {
         Some(declared) => stride_core::heart_rates::Basis::Declared {
@@ -733,6 +741,7 @@ pub fn fitness_zones(api: &Api, request: &Request) -> ApiResult<Value> {
             model,
             bands_row,
             bands_basis,
+            apply_from,
             "zones.unusable_model",
         ));
     }
@@ -745,6 +754,7 @@ pub fn fitness_zones(api: &Api, request: &Request) -> ApiResult<Value> {
             model,
             bands_row,
             bands_basis,
+            apply_from,
             "zones.unavailable",
         ));
     };
@@ -754,6 +764,7 @@ pub fn fitness_zones(api: &Api, request: &Request) -> ApiResult<Value> {
             model,
             bands_row,
             bands_basis,
+            apply_from,
             "zones.unusable_model",
         ));
     };
@@ -762,6 +773,7 @@ pub fn fitness_zones(api: &Api, request: &Request) -> ApiResult<Value> {
         model,
         bands_row,
         bands_basis,
+        apply_from,
         &floors,
         max_heart_rate,
         &time,
@@ -795,6 +807,7 @@ fn no_value_zones(model: Option<ZoneModel>, reason: &str) -> FitnessZones {
         model,
         bands: None,
         bands_basis: None,
+        apply_from: None,
         zones: Vec::new(),
         outside: None,
         stopped: None,
@@ -807,6 +820,7 @@ fn no_value_zones_with_basis(
     model: Option<ZoneModel>,
     bands: Option<DeclaredBandsRow>,
     bands_basis: BandsBasisRow,
+    apply_from: Option<String>,
     reason: &str,
 ) -> FitnessZones {
     FitnessZones {
@@ -814,6 +828,7 @@ fn no_value_zones_with_basis(
         model,
         bands,
         bands_basis: Some(bands_basis),
+        apply_from,
         zones: Vec::new(),
         outside: None,
         stopped: None,
@@ -826,6 +841,7 @@ fn zones_of(
     model: Option<ZoneModel>,
     bands: Option<DeclaredBandsRow>,
     bands_basis: BandsBasisRow,
+    apply_from: Option<String>,
     floors: &ZoneFloors,
     max_heart_rate: Option<f64>,
     time: &TimeInZone,
@@ -862,6 +878,7 @@ fn zones_of(
         model,
         bands,
         bands_basis: Some(bands_basis),
+        apply_from,
         zones,
         outside: render::duration(Some(time.outside_s)),
         stopped: render::duration(Some(time.stopped_s)),

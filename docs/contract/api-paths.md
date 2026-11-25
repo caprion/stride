@@ -53,7 +53,6 @@ reference only).
 | `/settings/export` | write a backup of the database |
 | `/settings/delete` | delete everything, with the typed confirmation the request carries |
 | `/settings/import` | read an export back into the database (the rig's own) |
-| `/athlete/heart-rates` | the athlete's own declared heart rates: the declaration in force, the bands it yields, and the watch's own floors beside them |
 | `/activities/{id}/note` | the athlete's note on a run — the only free text the product stores |
 | `/activities/{id}/update` | the run's **update**: the model's own reading of the run, attributed to the writer and the reviewer, with the checks it passed and the hash of the payload it was written from (see "The run update" below) |
 | `/activities/{id}/update/payload` | the **payload** of a run: the facts a model may read, and nothing else (see "The run update" below) |
@@ -196,7 +195,7 @@ Two rules hold for every shape below.
 | `/sync/status` | `last_sync_at: string \| null`, `last_error: string \| null`, `activity_count: number`, `cursor`, `pulled`, `skipped`, `deleted`, `more_pending: boolean`, `history: {activities, wellness} \| null` |
 | `/sync/run` | `activities`, `wellness_days`, `skipped`, `deleted`, `complete: boolean`, `more_pending: boolean`, `failure: {code, detail, status, retry_after_seconds} \| null`, `finished_at`, `generated_at` |
 | `/health/daily` | `date`, `generated_at`, `stale: boolean` |
-| `/fitness/zones` | `basis: string \| null`, `model: ZoneModel \| null`, `bands: DeclaredBandsRow \| null`, `bands_basis: BandsBasisRow \| null`, `zones: ZoneBand[]`, `outside: RenderedValue \| null`, `stopped: RenderedValue \| null`, `unavailable: string \| null` |
+| `/fitness/zones` | `basis: string \| null`, `model: ZoneModel \| null`, `bands: DeclaredBandsRow \| null`, `bands_basis: BandsBasisRow \| null`, `apply_from: string \| null`, `zones: ZoneBand[]`, `outside: RenderedValue \| null`, `stopped: RenderedValue \| null`, `unavailable: string \| null` |
 | `/fitness/fingerprint` | `activity_id`, `local_date`, `basis: string \| null`, `laps`, `observations: FingerprintObservation[]` (each: `key`, `label`, `value: RenderedValue \| null`, `reason: string \| null`), `zones: FingerprintZones` (`model: ZoneModel \| null`, `shares: ZoneShare[]` (each: `label`, `share: RenderedValue`, `time: RenderedValue \| null`), `outside: RenderedValue \| null`, `unavailable: string \| null`, `note: string \| null`), `unavailable: string \| null`, `generated_at` |
 
 The app's own declarations are in `frontend/src/lib/types.ts`, and

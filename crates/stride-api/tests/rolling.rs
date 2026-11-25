@@ -197,7 +197,7 @@ fn a_window_with_no_runs_holds_no_distance_and_no_shares() {
     assert!(answer["zones"]["shares"].is_null());
     assert_eq!(
         text(&answer, &["zones", "unavailable"]),
-        "No zones yet — your watch's heart-rate zones have not come through"
+        "not measured — your watch's zones were not read, and the watch's own zone minutes are the only zone time here"
     );
 }
 

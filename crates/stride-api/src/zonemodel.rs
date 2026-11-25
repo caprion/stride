@@ -399,6 +399,16 @@ impl ZoneModels {
         self.models.last()
     }
 
+    /// The **first** model that was read: the day the watch's own zones
+    /// began to apply.
+    ///
+    /// The watch's configuration has been read since that day, and the
+    /// runs from it on are the ones it measured. A run before it is a
+    /// different answer, and the run's own answer says so.
+    pub fn first(&self) -> Option<&ZoneModel> {
+        self.models.first()
+    }
+
     /// The models, oldest first.
     ///
     /// The watch's own models, and the athlete's declared bands where a

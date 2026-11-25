@@ -253,6 +253,39 @@ fn the_zones_of_a_run_are_measured_against_the_declared_bands() {
 }
 
 #[test]
+fn a_run_s_own_zones_say_when_the_zones_begin_to_apply() {
+    let harness = Harness::empty("heart-rates-apply-from");
+    let id = write_fit_run(&harness, "hr_gps_run.fit");
+    let read_at = common::instant() - chrono::Duration::days(2);
+    harness.write_zone_model(stride_store::NewHeartRateZoneModel {
+        read_at,
+        ..common::zone_model()
+    });
+
+    let answer = harness.ok_get(&format!("/fitness/zones?id={id}"));
+    // The day the athlete's own zones begin to apply, in the core's own
+    // words — the run's own page says it.
+    let apply_from = answer["apply_from"].as_str().unwrap_or_default();
+    assert!(apply_from.contains("your watch's zones apply to the runs from"));
+    assert!(apply_from.contains("10 May 2026"));
+}
+
+#[test]
+fn without_a_model_there_is_no_day_the_zones_begin_to_apply() {
+    let harness = Harness::empty("heart-rates-no-apply-from");
+    let id = write_fit_run(&harness, "hr_gps_run.fit");
+
+    let answer = harness.ok_get(&format!("/fitness/zones?id={id}"));
+    // No model has ever been read: there is no such day, and the reason
+    // stands as it is.
+    assert!(answer["apply_from"].is_null());
+    assert!(answer["unavailable"]
+        .as_str()
+        .unwrap_or_default()
+        .contains("not measured"));
+}
+
+#[test]
 fn without_a_declaration_the_zones_are_measured_against_the_watch_s_model() {
     let harness = Harness::empty("heart-rates-no-declaration");
     let id = write_fit_run(&harness, "hr_gps_run.fit");

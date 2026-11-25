@@ -1945,6 +1945,7 @@ export const zonesUncalibratedFixture: FitnessZones = {
   model: null,
   bands: null,
   bands_basis: null,
+  apply_from: null,
   zones: [],
   outside: null,
   stopped: null,

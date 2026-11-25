@@ -234,7 +234,7 @@ fn a_run_with_no_zone_model_has_no_zones_but_still_has_its_series() {
     assert_eq!(body["zones"].as_array().map(|z| z.len()), Some(0));
     assert_eq!(
         body["zones_unavailable"],
-        "No zones yet — your watch's heart-rate zones have not come through"
+        "not measured — your watch's zones were not read, and the watch's own zone minutes are the only zone time here"
     );
     // And no sample claims to be in a zone.
     for sample in body["samples"].as_array().expect("samples") {

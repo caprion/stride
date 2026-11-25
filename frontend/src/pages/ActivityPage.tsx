@@ -323,6 +323,19 @@ export function ActivityPage({ id }: { id: string }) {
                 {zones.data.model.source}
               </p>
             ) : null}
+            {/*
+        The day the athlete's own zones begin to apply: the run's own page
+        says it, so a reader does not have to visit another screen to learn
+        it. It is the core's sentence, and the app shows it as it arrives.
+      */}
+            {zones.data?.apply_from ? (
+              <p
+                className="mt-1 text-[11px] text-ink-faint"
+                data-testid="activity-zones-apply-from"
+              >
+                {zones.data.apply_from}
+              </p>
+            ) : null}
             {zones.data?.unavailable ? (
               <p
                 className="mt-2 text-[12px] text-ink-faint"

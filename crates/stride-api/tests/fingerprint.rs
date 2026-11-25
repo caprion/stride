@@ -166,7 +166,7 @@ fn a_run_with_no_stored_model_has_no_shares() {
     assert!(body["zones"]["model"].is_null());
     assert_eq!(
         body["zones"]["unavailable"].as_str(),
-        Some("No zones yet — your watch's heart-rate zones have not come through")
+        Some("not measured — your watch's zones were not read, and the watch's own zone minutes are the only zone time here")
     );
     // The observations are still there: the model is only the zones' input.
     assert!(!body["observations"].as_array().unwrap().is_empty());

@@ -226,12 +226,7 @@ export interface PlanWeekAgainst {
    * - `after` — the plan's last day is before this week.
    */
   state: 'none' | 'before' | 'running' | 'after'
-  /**
-   * The state's own sentence: "no plan has been adopted".
-   *
-   * It is the plan's own sentence and not the athlete's free text — the
-   * note on a run is the only free text the product stores.
-   */
+  /** The state's own sentence: "no plan has been adopted". */
   state_line: string | null
   /** The line that points at the programmes there are to adopt. */
   choose: string | null
@@ -1317,6 +1312,13 @@ export interface FitnessZones {
   bands: DeclaredBandsRow | null
   /** The basis the bands came from — **one** of the two, never both. */
   bands_basis: BandsBasisRow | null
+  /**
+   * The day the athlete's own zones begin to apply, in the core's own
+   * words: "your watch's zones apply to the runs from 25 Nov 2026".
+   *
+   * `null` when no model has ever been read: there is no such day.
+   */
+  apply_from: string | null
   /** The five bands, each with the time spent in it. */
   zones: ZoneBand[]
   /**
