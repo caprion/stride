@@ -60,6 +60,7 @@ import { SyncControls } from '../components/SyncControls'
 import { QueryError } from '../components/QueryError'
 import { ZoneRibbon } from '../components/ZoneRibbon'
 import { runsPath, weekDates } from '../lib/history'
+import { PlanPacing, SessionPace } from './todayPlan'
 import { LOAD_EMPTY } from '../lib/load'
 
 /**
@@ -76,10 +77,13 @@ function SessionCard({
   planned,
   comparison,
   paused,
+  pace,
 }: {
   planned: PlanSession
   comparison: string | null
   paused: string | null
+  /** The pace the plan was worked out with, when the plan gave one. */
+  pace?: React.ReactNode
 }) {
   const sourceKey =
     planned.source === 'prescribed'
@@ -97,6 +101,8 @@ function SessionCard({
       {/* The session, as the core wrote it: "Today — 10 km · easy". */}
       <p className="text-[17px] font-semibold text-ink">{planned.sentence}</p>
       <p className="mt-0.5 text-[13px] text-ink-muted">{t(sourceKey)}</p>
+      {/* The plan's own pace for the day, when the plan gave one. */}
+      {pace ? <p className="mt-0.5">{pace}</p> : null}
       {/*
         The distance comparison appears only when the gap from the target
         is beyond 10%, and it sits inside the session card as a second
@@ -134,6 +140,8 @@ export function TodayPage() {
     queryKey: ['insights-load', HABIT_WEEKS],
     queryFn: () => api.insightsLoad(HABIT_WEEKS),
   })
+  // The plan's own week: the adopted plan's paces for the day.
+  const plan = useQuery({ queryKey: ['plan-week'], queryFn: api.planWeek })
   // The Eddington number, over the same range.
   const progress = useQuery({
     queryKey: ['insights-progress', HABIT_WEEKS],
@@ -523,11 +531,23 @@ export function TodayPage() {
                 {t('today.plan.open')}
               </Link>
             </div>
+            {/*
+              The plan's pacing, named once: the threshold the plan was
+              worked out with, and the day it was read.
+            */}
+            <PlanPacing week={plan.data?.adopted} />
             {insight.planned ? (
               <SessionCard
                 planned={insight.planned}
                 comparison={insight.distance_comparison}
                 paused={paused}
+                pace={
+                  <SessionPace
+                    session={plan.data?.adopted?.sessions.find(
+                      (session) => session.date === insight.planned?.date,
+                    )}
+                  />
+                }
               />
             ) : (
               <p className="mt-1 text-[13px] text-ink-muted">{t('today.state.noPlan')}</p>
@@ -541,6 +561,15 @@ export function TodayPage() {
                   {insight.options.map((option) => (
                     <li key={option.date} className="text-[13px] text-ink-soft">
                       {option.sentence}
+                      {/*
+                        The plan's own pace for that day, when the plan
+                        gave one.
+                      */}
+                      <SessionPace
+                        session={plan.data?.adopted?.sessions.find(
+                          (session) => session.date === option.date,
+                        )}
+                      />
                     </li>
                   ))}
                 </ul>
