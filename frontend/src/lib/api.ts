@@ -624,6 +624,11 @@ export const api = {
      * replaces the set: what is sent is what is there.
      */
     challenges?: { kind: ChallengeKind; km: number; label?: string | null }[]
+    /**
+     * The athlete's own calendar offset, as they state it: "+05:30".
+     * Null puts the machine's own offset back in force.
+     */
+    utc_offset?: string | null
   }) => post<SettingsState>(ROUTES.settings, change),
 
   /** A backup, written by the host. */

@@ -571,10 +571,29 @@ fn the_settings_routes_carry_their_shapes() {
     let settings = harness.ok_get("/settings");
     assert_keys(
         &settings,
-        &["challenges", "generated_at", "goal", "pause", "storage"],
+        &[
+            "calendar",
+            "challenges",
+            "generated_at",
+            "goal",
+            "pause",
+            "storage",
+        ],
         "/settings",
     );
     assert_keys(&settings["goal"], &["km", "value"], "/settings: the goal");
+    assert_keys(
+        &settings["calendar"],
+        &[
+            "machine_offset_label",
+            "machine_offset_minutes",
+            "offset_label",
+            "offset_minutes",
+            "source",
+            "stated_offset",
+        ],
+        "/settings: the calendar",
+    );
     assert_keys(
         &settings["storage"],
         &[

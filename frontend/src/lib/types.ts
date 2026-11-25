@@ -1701,8 +1701,31 @@ export interface SettingsState {
   pause: SettingsPause | null
   /** The storage. */
   storage: SettingsStorage
+  /** The calendar the athlete's own hours are read in. */
+  calendar: SettingsCalendar
   /** When this answer was produced. */
   generated_at: string
+}
+
+/**
+ * The calendar the athlete's own hours are read in.
+ *
+ * The offset in force, and where it came from: the athlete's own when
+ * they stated one, and the machine's own when they did not.
+ */
+export interface SettingsCalendar {
+  /** The offset in force, in minutes from UTC. */
+  offset_minutes: number
+  /** The offset the machine itself is in, in minutes from UTC. */
+  machine_offset_minutes: number
+  /** Where the offset in force comes from: 'stated' or 'machine'. */
+  source: 'stated' | 'machine'
+  /** The offset in force, as it is written: "UTC+05:30". */
+  offset_label: string
+  /** The machine's own offset, as it is written: "UTC+05:30". */
+  machine_offset_label: string
+  /** The offset the athlete stated, as they stated it: "+05:30". */
+  stated_offset: string | null
 }
 
 /** The answer to exporting a backup. */

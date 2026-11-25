@@ -1460,8 +1460,31 @@ pub struct SettingsState {
     pub challenges: Vec<SettingsChallenge>,
     /// The storage.
     pub storage: SettingsStorage,
+    /// The calendar the athlete's own hours are read in.
+    pub calendar: SettingsCalendar,
     /// When this answer was produced.
     pub generated_at: String,
+}
+
+/// The calendar the athlete's own hours are read in.
+///
+/// **The offset in force, and where it came from.** The offset is the
+/// athlete's own when they stated one, and the machine's own when they did
+/// not — and the answer says which, so the screen can say it too.
+#[derive(Clone, Debug, PartialEq, Serialize)]
+pub struct SettingsCalendar {
+    /// The offset in force, in minutes from UTC.
+    pub offset_minutes: i32,
+    /// The offset the machine itself is in, in minutes from UTC.
+    pub machine_offset_minutes: i32,
+    /// Where the offset in force comes from: "stated" or "machine".
+    pub source: String,
+    /// The offset in force, as it is written: "UTC+05:30".
+    pub offset_label: String,
+    /// The machine's own offset, as it is written: "UTC+05:30".
+    pub machine_offset_label: String,
+    /// The offset the athlete stated, as they stated it: "+05:30".
+    pub stated_offset: Option<String>,
 }
 
 /// One challenge of the athlete's own, as the settings carry it.

@@ -72,6 +72,8 @@ export function SettingsPage() {
   const [pauseStart, setPauseStart] = useState<string | null>(null)
   const [pauseEnd, setPauseEnd] = useState<string | null>(null)
   const [pauseReason, setPauseReason] = useState<string | null>(null)
+  const [offsetValue, setOffsetValue] = useState<string | null>(null)
+  const [offsetNotice, setOffsetNotice] = useState<string | null>(null)
   const [showKey, setShowKey] = useState(false)
   const setup = useMutation({ mutationFn: () => connectGarmin() })
   const [confirming, setConfirming] = useState(false)
@@ -100,6 +102,14 @@ export function SettingsPage() {
         setPauseStart(null)
         setPauseEnd(null)
         setPauseReason(null)
+      }
+      if ('utc_offset' in change) {
+        setOffsetNotice(
+          change.utc_offset === null
+            ? t('settings.calendar.cleared')
+            : t('settings.calendar.saved'),
+        )
+        setOffsetValue(null)
       }
       void client.invalidateQueries({ queryKey: ['insights-today'] })
       void client.invalidateQueries({ queryKey: ['plan-week'] })
@@ -470,6 +480,61 @@ export function SettingsPage() {
                 {t('common.saveFailed')}
               </p>
             ) : null}
+          </SettingsGroup>
+        ) : null}
+
+        {/* ----------------------------------------- the calendar */}
+        {section === 'training' ? (
+          <SettingsGroup title={t('settings.calendar.heading')} testId="settings-calendar">
+            {/*
+              The hours the athlete's own day is read in. **The offset in
+              force is stated, and so is where it came from** — the
+              athlete's own when they stated one, and the machine's own
+              when they did not. It is a fact about the machine, and never
+              a verdict on the athlete.
+            */}
+            <p className="text-[13px] text-ink-muted" data-testid="settings-calendar-state">
+              {state.calendar.source === 'stated'
+                ? t('settings.calendar.hint.stated')
+                : t('settings.calendar.hint')}
+            </p>
+            <div className="mt-1">
+              <SettingRow
+                label={t('settings.calendar.inForce')}
+                value={state.calendar.offset_label}
+                testId="settings-calendar-in-force"
+              />
+              <SettingRow
+                label={t('settings.calendar.machine')}
+                value={state.calendar.machine_offset_label}
+                testId="settings-calendar-machine"
+              />
+            </div>
+            <div className="mt-3">
+              <Field
+                label={t('settings.calendar.label')}
+                value={offsetValue ?? state.calendar.stated_offset ?? ''}
+                onChange={setOffsetValue}
+                placeholder="+05:30"
+                testId="settings-calendar-input"
+              />
+              <p className="mt-1.5 text-[13px] text-ink-muted">{t('settings.calendar.empty')}</p>
+              <div className="mt-2 flex flex-wrap items-center gap-3">
+                <button
+                  type="button"
+                  className="tap inline-flex items-center rounded-md bg-brand-600 px-4 text-[14px] font-semibold text-white disabled:opacity-50"
+                  disabled={save.isPending}
+                  data-testid="settings-calendar-save"
+                  onClick={() => {
+                    const stated = (offsetValue ?? '').trim()
+                    save.mutate({ utc_offset: stated === '' ? null : stated })
+                  }}
+                >
+                  {t('settings.calendar.save')}
+                </button>
+              </div>
+              <Notice text={offsetNotice} testId="settings-calendar-notice" />
+            </div>
           </SettingsGroup>
         ) : null}
 

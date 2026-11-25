@@ -12,6 +12,7 @@ mod common;
 
 use chrono::{DateTime, TimeZone, Utc};
 use serde_json::Value;
+use stride_api::Config;
 use stride_store::{NewActivity, NewHeartRateZoneModel};
 
 use common::Harness;
@@ -494,6 +495,46 @@ fn the_daytime_split_uses_the_local_hour() {
     assert_eq!(text(&daytime[3], &["label"]), "Night (21:00–04:00)");
     assert_eq!(number(&daytime[3], &["from_hour"]), 21.0);
     assert_eq!(number(&daytime[3], &["to_hour"]), 4.0);
+    assert_eq!(number(&daytime[3], &["sessions"]), 1.0);
+}
+
+#[test]
+fn the_part_of_a_day_is_read_in_the_athletes_own_hours() {
+    // The run starts at 23:30 UTC, which is **05:00 in a +5:30 zone** —
+    // the athlete's own morning, on the day Garmin says it belongs to.
+    //
+    // The hours are read in the athlete's own zone and the day comes from
+    // Garmin: a rig that reads its hours in UTC would call this run a
+    // night run, and every early run in the athlete's history would be
+    // reported as a night one.
+    let run = |harness: &Harness| {
+        let mut activity = common::run("early", "2026-05-12", 8_000.0, 2_400.0);
+        activity.start_time = Utc.with_ymd_and_hms(2026, 5, 11, 23, 30, 0).unwrap();
+        harness.write_run(activity);
+    };
+
+    // The athlete's own zone: +5:30.
+    let harness = Harness::with_config(
+        "rolling-offset-local",
+        Config {
+            utc_offset_minutes: 330,
+            ..Config::default()
+        },
+    );
+    run(&harness);
+    let answer = harness.ok_get("/insights/rolling?weeks=1");
+    let daytime = answer["daytime"].as_array().expect("the daytime rows");
+    assert_eq!(text(&daytime[0], &["label"]), "Morning (04:00–12:00)");
+    assert_eq!(number(&daytime[0], &["sessions"]), 1.0);
+    assert_eq!(number(&daytime[3], &["sessions"]), 0.0);
+
+    // The same instant, read in UTC: the run is at half past eleven at
+    // night, and it is a night run.
+    let harness = Harness::empty("rolling-offset-utc");
+    run(&harness);
+    let answer = harness.ok_get("/insights/rolling?weeks=1");
+    let daytime = answer["daytime"].as_array().expect("the daytime rows");
+    assert_eq!(number(&daytime[0], &["sessions"]), 0.0);
     assert_eq!(number(&daytime[3], &["sessions"]), 1.0);
 }
 

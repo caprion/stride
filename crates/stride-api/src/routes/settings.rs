@@ -22,8 +22,8 @@ use stride_core::date::Date;
 use stride_store::model::{note_kind, NewNote};
 
 use crate::dto::{
-    NoteResult, SettingsChallenge, SettingsDeleteResult, SettingsExportResult, SettingsGoal,
-    SettingsPause, SettingsState, SettingsStorage,
+    NoteResult, SettingsCalendar, SettingsChallenge, SettingsDeleteResult, SettingsExportResult,
+    SettingsGoal, SettingsPause, SettingsState, SettingsStorage,
 };
 use crate::error::{ApiError, ApiResult};
 use crate::render;
@@ -71,7 +71,8 @@ pub fn write_settings(api: &Api, request: &Request) -> ApiResult<Value> {
     let goal_given = body.get("goal_km").is_some();
     let pause_given = body.get("pause").is_some();
     let challenges_given = body.get("challenges").is_some();
-    if !goal_given && !pause_given && !challenges_given {
+    let offset_given = body.get("utc_offset").is_some();
+    if !goal_given && !pause_given && !challenges_given && !offset_given {
         return Err(ApiError::bad_request("the settings carry nothing to write"));
     }
 
@@ -147,9 +148,79 @@ pub fn write_settings(api: &Api, request: &Request) -> ApiResult<Value> {
         }
     }
 
+    if offset_given {
+        write_offset(api, body.get("utc_offset"))?;
+    }
+
     let current = super::today(api)?;
     let response = state_of(api, current)?;
     ok(&response)
+}
+
+/// The athlete's own calendar offset, written.
+///
+/// The offset is a number of minutes from UTC, or nothing at all: nothing
+/// at all means **the machine's own offset**, which is the default and the
+/// one in force until the athlete states another.
+///
+/// The offset is written to the store and to the router's own state, so it
+/// is in force for the very next answer and not only for the next restart.
+fn write_offset(api: &Api, given: Option<&Value>) -> ApiResult<()> {
+    let minutes = match given {
+        None | Some(Value::Null) => None,
+        Some(Value::String(text)) => Some(parse_offset(text)?),
+        Some(_) => {
+            return Err(ApiError::bad_request(
+                "the calendar offset is not an offset",
+            ))
+        }
+    };
+    api.store()
+        .set_utc_offset_minutes(minutes, api.now())
+        .map_err(|error| api.store_error("the calendar offset could not be written", &error))?;
+    api.set_utc_offset_override(minutes)?;
+    Ok(())
+}
+
+/// The athlete's own offset, as they stated it, in minutes from UTC.
+///
+/// **The forms are the ones a person writes**: "UTC", "Z", "+05:30",
+/// "-04:00" and "+0530". Anything else is refused — an offset the app
+/// cannot read is not an offset it can use, and a wrong hour is worse than
+/// no hour.
+fn parse_offset(text: &str) -> ApiResult<i32> {
+    let text = text.trim().to_ascii_uppercase();
+    let bad = || ApiError::bad_request("the calendar offset is not an offset");
+    if text.is_empty() {
+        return Err(bad());
+    }
+    if text == "UTC" || text == "Z" || text == "GMT" {
+        return Ok(0);
+    }
+    let (sign, rest) = match text.strip_prefix('+') {
+        Some(rest) => (1_i32, rest),
+        None => match text.strip_prefix('-') {
+            Some(rest) => (-1_i32, rest),
+            None => return Err(bad()),
+        },
+    };
+    let (hours, minutes) = match rest.split_once(':') {
+        Some((hours, minutes)) => (hours, minutes),
+        None if rest.len() == 4 && rest.chars().all(|character| character.is_ascii_digit()) => {
+            (&rest[..2], &rest[2..])
+        }
+        None => return Err(bad()),
+    };
+    let hours: i32 = hours.parse().map_err(|_| bad())?;
+    let minutes: i32 = minutes.parse().map_err(|_| bad())?;
+    if !(0..=14).contains(&hours) || !(0..=59).contains(&minutes) {
+        return Err(bad());
+    }
+    let total = sign * (hours * 60 + minutes);
+    if !(-840..=840).contains(&total) {
+        return Err(bad());
+    }
+    Ok(total)
 }
 
 /// The challenges the athlete has set, written in one go.
@@ -382,6 +453,14 @@ fn state_of(api: &Api, current: Date) -> ApiResult<SettingsState> {
         pause,
         challenges,
         storage,
+        calendar: SettingsCalendar {
+            offset_minutes: api.utc_offset_minutes(),
+            machine_offset_minutes: api.host_utc_offset_minutes(),
+            source: api.utc_offset_source().to_string(),
+            offset_label: render::utc_offset(api.utc_offset_minutes()),
+            machine_offset_label: render::utc_offset(api.host_utc_offset_minutes()),
+            stated_offset: api.utc_offset_override().map(render::utc_offset_text),
+        },
         generated_at: api.generated_at(),
     })
 }

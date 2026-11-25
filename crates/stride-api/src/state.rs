@@ -26,6 +26,25 @@ use stride_store::{DatabaseKey, Store, StoreError};
 
 use crate::error::{ApiError, ApiResult};
 
+/// The sentinel for "the athlete has stated no offset of their own".
+///
+/// It is outside the range of any real offset — the range the api accepts
+/// is -840 to 840 minutes — so it can never be read as one.
+const NO_OFFSET_OVERRIDE: i32 = i32::MIN;
+
+/// The offset the machine itself is in, in minutes from UTC.
+///
+/// **The host's own zone, read from the operating system.** The rig's
+/// hours are the machine's hours, and the machine's zone moves with the
+/// machine: a daylight-saving change or a flight is a different offset, and
+/// the host reads it again whenever it can.
+///
+/// It is the offset in force when the athlete has stated none.
+pub fn machine_offset_minutes() -> i32 {
+    let seconds = chrono::Local::now().offset().local_minus_utc();
+    seconds / 60
+}
+
 /// The clock the router reads the time from.
 ///
 /// The core is pure — it never asks what time it is — so every time-dependent
@@ -244,6 +263,7 @@ pub struct Api {
     store: Arc<Store>,
     config: Config,
     utc_offset_minutes: AtomicI32,
+    utc_offset_override: AtomicI32,
     clock: Arc<dyn Clock>,
     garmin: Mutex<GarminState>,
     transport: Arc<dyn HttpTransport>,
@@ -286,6 +306,7 @@ impl Api {
         Self {
             store,
             utc_offset_minutes: AtomicI32::new(config.utc_offset_minutes),
+            utc_offset_override: AtomicI32::new(NO_OFFSET_OVERRIDE),
             config,
             clock,
             garmin: Mutex::new(GarminState::default()),
@@ -315,9 +336,48 @@ impl Api {
         &self.decoded
     }
 
-    /// The host's current calendar offset, including daylight-saving changes.
+    /// The offset the athlete's own hours are counted in.
+    ///
+    /// **The athlete's own offset when they stated one, and the host's own
+    /// offset when they did not.** The host's offset is the machine's zone
+    /// — the rig reads it from the operating system — and the phone's is
+    /// the phone's zone.
+    ///
+    /// This is the offset every hour and every day of the product is read
+    /// in: the part of the day a run falls in, the athlete's own day, and
+    /// the day a run update was read on.
     pub fn utc_offset_minutes(&self) -> i32 {
+        match self.utc_offset_override.load(Ordering::Relaxed) {
+            NO_OFFSET_OVERRIDE => self.utc_offset_minutes.load(Ordering::Relaxed),
+            minutes => minutes,
+        }
+    }
+
+    /// The host's own offset — the machine's zone, or the phone's.
+    ///
+    /// It is the offset in force when the athlete has stated none.
+    pub fn host_utc_offset_minutes(&self) -> i32 {
         self.utc_offset_minutes.load(Ordering::Relaxed)
+    }
+
+    /// The offset the athlete stated, when they stated one.
+    pub fn utc_offset_override(&self) -> Option<i32> {
+        match self.utc_offset_override.load(Ordering::Relaxed) {
+            NO_OFFSET_OVERRIDE => None,
+            minutes => Some(minutes),
+        }
+    }
+
+    /// Where the offset in force comes from.
+    ///
+    /// "stated" when the athlete stated it, and "machine" when the host's
+    /// own offset is the one in force. **It is a fact about the machine and
+    /// not a verdict on the athlete.**
+    pub fn utc_offset_source(&self) -> &'static str {
+        match self.utc_offset_override.load(Ordering::Relaxed) {
+            NO_OFFSET_OVERRIDE => "machine",
+            _ => "stated",
+        }
     }
 
     /// Update the host calendar without reopening the store or interrupting sync.
@@ -328,6 +388,26 @@ impl Api {
             ));
         }
         self.utc_offset_minutes.store(minutes, Ordering::Relaxed);
+        Ok(())
+    }
+
+    /// State the athlete's own offset, or take it back.
+    ///
+    /// The athlete's own offset is in force over the host's own, and `None`
+    /// takes it away: the host's own offset is then the one in force again.
+    pub fn set_utc_offset_override(&self, minutes: Option<i32>) -> ApiResult<()> {
+        let stored = match minutes {
+            None => NO_OFFSET_OVERRIDE,
+            Some(minutes) => {
+                if !(-840..=840).contains(&minutes) {
+                    return Err(ApiError::bad_request(
+                        "the calendar offset is outside -840 to 840 minutes",
+                    ));
+                }
+                minutes
+            }
+        };
+        self.utc_offset_override.store(stored, Ordering::Relaxed);
         Ok(())
     }
 

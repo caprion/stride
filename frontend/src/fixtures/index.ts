@@ -2145,6 +2145,16 @@ export const settingsEmptyFixture: SettingsState = {
     plan_session_count: 0,
     note_count: 0,
   },
+  // The machine's own zone, and no offset of the athlete's own: the
+  // machine's own is the one in force.
+  calendar: {
+    offset_minutes: 0,
+    machine_offset_minutes: 0,
+    source: 'machine',
+    offset_label: 'UTC',
+    machine_offset_label: 'UTC',
+    stated_offset: null,
+  },
   generated_at: '2026-05-13T06:30:00Z',
 }
 

@@ -135,6 +135,11 @@ impl ApiRouter {
     pub fn with_clock(host: &dyn Host, clock: Arc<dyn Clock>) -> Result<ApiRouter, Error> {
         let api = Api::new(host.store(), Config::default(), clock)
             .map_err(|_| Error::config("the Garmin client could not be built"))?;
+        // **The rig's hours are the machine's hours.** The offset is read
+        // from the machine when the rig starts, and again before every
+        // pull; and the athlete's own offset, when they stated one, is in
+        // force over the machine's.
+        put_machine_calendar(&api, Some(host.store().as_ref()));
         Ok(ApiRouter {
             router: Arc::new(CoreRouter::new(Arc::new(api))),
             keys: host.keys(),
@@ -212,6 +217,13 @@ impl ApiRouter {
 
 impl Router for ApiRouter {
     fn call(&self, request: &Request<'_>) -> Response {
+        // The machine's own zone is read again before every pull: the
+        // machine may have moved — a flight, a daylight-saving change — and
+        // the athlete's hours move with it.
+        if is_pull(request.method, request.path) {
+            put_machine_calendar(self.router.api(), None);
+        }
+
         // The core borrows the rig's key for the length of this call.
         self.lend_key();
 
@@ -245,6 +257,34 @@ impl Router for ApiRouter {
         // the rig does not wrap it, and it does not add a field to it.
         let body = serde_json::to_vec(&answer.body).unwrap_or_else(|_| b"{}".to_vec());
         Response::new(answer.status, "application/json", body)
+    }
+}
+
+/// Put the machine's own zone into the router.
+///
+/// **The rig's hours are the machine's hours.** The offset is read from the
+/// operating system, so a rig that starts in one zone and flies to another
+/// reads the new one the next time it can — the rig starts, and every pull.
+///
+/// The athlete's own offset, when they stated one, is in force over the
+/// machine's: it is read from the store when the rig starts and before
+/// every pull, and the router is told which of the two is in force.
+///
+/// `store` is `None` when only the machine's own zone is to be read: the
+/// athlete's own offset does not change with the machine's, and the router
+/// already holds it.
+fn put_machine_calendar(api: &stride_api::Api, store: Option<&Store>) {
+    let offset = stride_api::state::machine_offset_minutes();
+    let _ = api.set_utc_offset_minutes(offset);
+    if let Some(store) = store {
+        match store.utc_offset_minutes() {
+            Ok(minutes) => {
+                let _ = api.set_utc_offset_override(minutes);
+            }
+            Err(error) => crate::log::log(&format!(
+                "the athlete's own calendar offset could not be read: {error}"
+            )),
+        }
     }
 }
 

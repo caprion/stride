@@ -52,6 +52,44 @@ describe('phone data ownership', () => {
   })
 })
 
+describe('the calendar', () => {
+  it('says which offset is in force, and where it came from', async () => {
+    renderApp('/settings?section=training')
+    const state = await screen.findByTestId('settings-calendar-state')
+    // The machine's own zone is the one in force, and the screen says so.
+    expect(state).toHaveTextContent("Your hours are read in this machine's time.")
+    expect(await screen.findByTestId('settings-calendar-in-force')).toHaveTextContent('UTC')
+  })
+
+  it('states the athlete\'s own offset when they have stated one', async () => {
+    vi.spyOn(api, 'settings').mockResolvedValue({
+      ...settingsFixture,
+      calendar: {
+        offset_minutes: 330,
+        machine_offset_minutes: 0,
+        source: 'stated',
+        offset_label: 'UTC+05:30',
+        machine_offset_label: 'UTC',
+        stated_offset: '+05:30',
+      },
+    })
+    renderApp('/settings?section=training')
+    const state = await screen.findByTestId('settings-calendar-state')
+    expect(state).toHaveTextContent('Your hours are read in the time you stated.')
+    expect(await screen.findByTestId('settings-calendar-in-force')).toHaveTextContent('UTC+05:30')
+    expect(await screen.findByTestId('settings-calendar-input')).toHaveValue('+05:30')
+  })
+
+  it('sends the zone the athlete stated, and a blank takes it away', async () => {
+    const save = vi.spyOn(api, 'saveSettings').mockResolvedValue(settingsFixture)
+    renderApp('/settings?section=training')
+    const input = await screen.findByTestId('settings-calendar-input')
+    await userEvent.type(input, '+05:30')
+    await userEvent.click(await screen.findByTestId('settings-calendar-save'))
+    await waitFor(() => expect(save).toHaveBeenCalledWith({ utc_offset: '+05:30' }))
+  })
+})
+
 describe('the weekly goal', () => {
   it('keeps unsaved input and never claims success when the save fails', async () => {
     vi.spyOn(api, 'saveSettings').mockRejectedValue(new Error('synthetic store unavailable'))

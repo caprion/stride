@@ -57,6 +57,12 @@ pub mod note_kind {
     pub const CHALLENGE_WEEK: &str = "challenge_week";
     /// A challenge of the run: a run of at least so many kilometres.
     pub const CHALLENGE_RUN: &str = "challenge_run";
+    /// The athlete's own calendar offset, in minutes from UTC.
+    ///
+    /// The offset the athlete states when the machine they are on is not
+    /// in their own zone. **It is a setting and not a fact about the
+    /// athlete**: it says which hours the app reads, and the app says so.
+    pub const UTC_OFFSET: &str = "utc_offset";
 }
 
 /// The kinds of data a sync keeps a cursor for.

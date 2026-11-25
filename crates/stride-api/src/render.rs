@@ -27,6 +27,35 @@ use stride_core::ValueUnit;
 
 use crate::dto::RenderedValue;
 
+/// A calendar offset, as the host renders it: "UTC+05:30".
+///
+/// **One rendering, in one place.** The offset in force and the machine's
+/// own offset are both written this way, and the app prints what it is
+/// given — so the two can never be written differently.
+///
+/// Zero is "UTC": there is nothing to add to it.
+pub fn utc_offset(minutes: i32) -> String {
+    if minutes == 0 {
+        return "UTC".to_string();
+    }
+    let sign = if minutes < 0 { '-' } else { '+' };
+    let minutes = minutes.abs();
+    format!("UTC{sign}{:02}:{:02}", minutes / 60, minutes % 60)
+}
+
+/// A calendar offset, as the athlete states it: "+05:30".
+///
+/// It is the same offset in the same form the athlete types it in, so the
+/// field holds what was stated and the answer says what is in force.
+pub fn utc_offset_text(minutes: i32) -> String {
+    if minutes == 0 {
+        return "UTC".to_string();
+    }
+    let sign = if minutes < 0 { '-' } else { '+' };
+    let minutes = minutes.abs();
+    format!("{sign}{:02}:{:02}", minutes / 60, minutes % 60)
+}
+
 /// The size of a file, as the host renders it: "2.4 MB".
 ///
 /// **This is the host's rendering, not the core's.** The core has no unit

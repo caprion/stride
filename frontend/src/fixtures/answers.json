@@ -16425,6 +16425,14 @@
       "week_start": "2026-05-11"
     },
     "/settings": {
+      "calendar": {
+        "machine_offset_label": "UTC",
+        "machine_offset_minutes": 0,
+        "offset_label": "UTC",
+        "offset_minutes": 0,
+        "source": "machine",
+        "stated_offset": null
+      },
       "challenges": [],
       "generated_at": "2026-05-13T06:30:00Z",
       "goal": {
@@ -32698,6 +32706,14 @@
       "week_start": "2026-05-11"
     },
     "/settings": {
+      "calendar": {
+        "machine_offset_label": "UTC",
+        "machine_offset_minutes": 0,
+        "offset_label": "UTC",
+        "offset_minutes": 0,
+        "source": "machine",
+        "stated_offset": null
+      },
       "challenges": [],
       "generated_at": "2026-05-13T06:30:00Z",
       "goal": {

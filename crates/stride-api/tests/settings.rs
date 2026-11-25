@@ -199,6 +199,49 @@ fn a_settings_write_with_nothing_in_it_is_refused() {
 }
 
 #[test]
+fn the_calendar_says_which_offset_is_in_force_and_where_it_came_from() {
+    let harness = common::Harness::empty("settings-calendar");
+    // With nothing stated, the machine's own offset is the one in force.
+    let body = harness.ok_get("/settings");
+    assert_eq!(body["calendar"]["source"].as_str(), Some("machine"));
+    assert_eq!(body["calendar"]["stated_offset"], serde_json::Value::Null);
+    assert_eq!(
+        body["calendar"]["offset_minutes"].as_i64(),
+        Some(harness.api.utc_offset_minutes() as i64)
+    );
+
+    // The athlete states their own offset, and it is in force — and the
+    // answer says that it is theirs.
+    let body = harness.post("/settings", "{\"utc_offset\":\"+05:30\"}");
+    assert_eq!(body["calendar"]["source"].as_str(), Some("stated"));
+    assert_eq!(body["calendar"]["offset_minutes"].as_i64(), Some(330));
+    assert_eq!(body["calendar"]["offset_label"].as_str(), Some("UTC+05:30"));
+    assert_eq!(body["calendar"]["stated_offset"].as_str(), Some("+05:30"));
+
+    // And it is still there when the settings are read again.
+    let body = harness.ok_get("/settings");
+    assert_eq!(body["calendar"]["offset_minutes"].as_i64(), Some(330));
+
+    // A blank zone takes it away, and the machine's own is in force again.
+    let body = harness.post("/settings", "{\"utc_offset\":null}");
+    assert_eq!(body["calendar"]["source"].as_str(), Some("machine"));
+    assert_eq!(body["calendar"]["stated_offset"], serde_json::Value::Null);
+}
+
+#[test]
+fn an_offset_the_app_cannot_read_is_refused() {
+    let harness = common::Harness::empty("settings-calendar-bad");
+    for written in ["\"later\"", "\"+99:99\"", "\"05:30\""] {
+        let answer = harness.router.call(
+            "POST",
+            "/settings",
+            Some(&format!("{{\"utc_offset\":{written}}}")),
+        );
+        assert_eq!(answer.status, 400, "the offset {written} should be refused");
+    }
+}
+
+#[test]
 fn a_delete_without_its_word_is_refused() {
     let harness = common::Harness::seeded("settings-delete-refused");
     let answer = harness

@@ -18,12 +18,13 @@ use crate::store::Store;
 const COLUMNS: &str = "id, kind, activity_id, text, value, start_date, end_date, created_at";
 
 /// The kinds a note may have.
-const KINDS: [&str; 5] = [
+const KINDS: [&str; 6] = [
     note_kind::NOTE,
     note_kind::GOAL,
     note_kind::PAUSE,
     note_kind::CHALLENGE_WEEK,
     note_kind::CHALLENGE_RUN,
+    note_kind::UTC_OFFSET,
 ];
 
 /// Read one row of `notes`.
@@ -246,6 +247,91 @@ impl Store {
                             |row| row.get::<_, i64>(0),
                         )
                         .map_err(|source| StoreError::query("write the goal", source))?,
+                )
+            }
+        };
+
+        transaction
+            .commit()
+            .map_err(|source| StoreError::query("COMMIT", source))?;
+        Ok(id)
+    }
+
+    /// The athlete's own calendar offset, in minutes from UTC.
+    ///
+    /// **The last one wins**: it is a setting, and the newest setting is
+    /// the one in force. `None` when the athlete has stated none — and then
+    /// the host's own offset is the one in force.
+    pub fn utc_offset_minutes(&self) -> Result<Option<i32>> {
+        let conn = self.lock()?;
+        conn.query_row(
+            "SELECT value FROM notes WHERE kind = ?1 AND value IS NOT NULL ORDER BY id DESC LIMIT 1",
+            params![note_kind::UTC_OFFSET],
+            |row| row.get::<_, Option<f64>>(0),
+        )
+        .optional()
+        .map_err(|source| StoreError::query("the calendar offset", source))
+        .map(|value| value.flatten().map(|minutes| minutes as i32))
+    }
+
+    /// State the athlete's own calendar offset, or take it back.
+    ///
+    /// The offset is one setting: the old one goes and the new one comes,
+    /// in one transaction, so there is never a moment with two offsets.
+    /// `None` takes the athlete's own offset away, and the host's own
+    /// offset is then the one in force.
+    ///
+    /// An offset outside -840 to 840 minutes is refused: it is not a time
+    /// zone any machine is in.
+    pub fn set_utc_offset_minutes(
+        &self,
+        minutes: Option<i32>,
+        created_at: chrono::DateTime<chrono::Utc>,
+    ) -> Result<Option<i64>> {
+        let mut conn = self.lock()?;
+        let transaction = conn
+            .transaction_with_behavior(TransactionBehavior::Immediate)
+            .map_err(|source| StoreError::query("BEGIN", source))?;
+
+        transaction
+            .execute(
+                "DELETE FROM notes WHERE kind = ?1",
+                params![note_kind::UTC_OFFSET],
+            )
+            .map_err(|source| StoreError::query("remove the calendar offset", source))?;
+
+        let id = match minutes {
+            None => None,
+            Some(minutes) if !(-840..=840).contains(&minutes) => None,
+            Some(minutes) => {
+                let note = NewNote {
+                    kind: note_kind::UTC_OFFSET.to_string(),
+                    activity_id: None,
+                    text: None,
+                    value: Some(f64::from(minutes)),
+                    start_date: None,
+                    end_date: None,
+                    created_at,
+                };
+                Some(
+                    transaction
+                        .query_row(
+                            "INSERT INTO notes (
+                                kind, activity_id, text, value, start_date, end_date, created_at
+                             ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)
+                             RETURNING id",
+                            params![
+                                note.kind,
+                                note.activity_id,
+                                note.text,
+                                note.value,
+                                note.start_date,
+                                note.end_date,
+                                DbDateTime(note.created_at),
+                            ],
+                            |row| row.get::<_, i64>(0),
+                        )
+                        .map_err(|source| StoreError::query("write the calendar offset", source))?,
                 )
             }
         };

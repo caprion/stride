@@ -1040,6 +1040,33 @@ export const catalogue = {
   'settings.pause.clear': { type: 'status', text: 'End the pause' },
   'settings.pause.cleared': { type: 'status', text: 'The pause is ended' },
 
+  // The calendar: the hours the athlete's own day is read in, and where
+  // the offset in force comes from. **A fact about the machine, never a
+  // verdict on the athlete.**
+  'settings.calendar.heading': { type: 'status', text: 'Your hours' },
+  'settings.calendar.label': { type: 'status', text: 'Your time zone' },
+  'settings.calendar.hint': {
+    type: 'status',
+    text: "Your hours are read in this machine's time.",
+  },
+  'settings.calendar.hint.stated': {
+    type: 'status',
+    text: 'Your hours are read in the time you stated.',
+  },
+  'settings.calendar.inForce': { type: 'status', text: 'In force now' },
+  'settings.calendar.machine': { type: 'status', text: 'This machine' },
+  'settings.calendar.yours': { type: 'status', text: 'Yours' },
+  'settings.calendar.empty': {
+    type: 'statement',
+    text: "A blank zone means this machine's own.",
+  },
+  'settings.calendar.save': { type: 'status', text: 'Save your time zone' },
+  'settings.calendar.saved': { type: 'status', text: 'Your time zone is saved' },
+  'settings.calendar.cleared': {
+    type: 'status',
+    text: "Your time zone is cleared \u2014 this machine's own is in force",
+  },
+
   // The connection: Garmin's state, the key's identifier, the last sync.
   'settings.connection.heading': { type: 'status', text: 'Garmin' },
   'settings.connection.status': { type: 'status', text: 'Status' },
