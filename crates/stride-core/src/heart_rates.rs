@@ -55,11 +55,12 @@ use crate::training_paces::Rule;
 use crate::units;
 use crate::zones::ZoneFloors;
 
-/// The five shares of Garmin's published five-zone ladder.
+/// The five shares of Garmin's published five-zone ladder, **in per cent**.
 ///
 /// The ladder is Garmin's own: 50–60 %, 60–70 %, 70–80 %, 80–90 % and
-/// 90–100 % of the range the bands are expressed on.
-pub const LADDER: [f64; 5] = [0.5, 0.6, 0.7, 0.8, 0.9];
+/// 90–100 % of the range the bands are expressed on. The shares are held
+/// as the per cent Garmin prints, and the rule divides them by a hundred.
+pub const LADDER: [u16; 5] = [50, 60, 70, 80, 90];
 
 /// The name the declared bands carry where a model names its method.
 ///
@@ -445,14 +446,23 @@ fn bands_of(supported: &Supported) -> Option<Bands> {
 }
 
 /// The five floors of the ladder, on a range.
-fn floors_of(ladder: &[f64; 5], floor: impl Fn(f64) -> f64) -> ZoneFloors {
+///
+/// The ladder is held in per cent, and the rule divides it by a hundred:
+/// Garmin publishes the ladder as percentages, and the app keeps them as
+/// Garmin printed them.
+fn floors_of(ladder: &[u16; 5], floor: impl Fn(f64) -> f64) -> ZoneFloors {
     ZoneFloors {
-        zone1: round_half_up(floor(ladder[0])),
-        zone2: round_half_up(floor(ladder[1])),
-        zone3: round_half_up(floor(ladder[2])),
-        zone4: round_half_up(floor(ladder[3])),
-        zone5: round_half_up(floor(ladder[4])),
+        zone1: round_half_up(floor(share_of(ladder[0]))),
+        zone2: round_half_up(floor(share_of(ladder[1]))),
+        zone3: round_half_up(floor(share_of(ladder[2]))),
+        zone4: round_half_up(floor(share_of(ladder[3]))),
+        zone5: round_half_up(floor(share_of(ladder[4]))),
     }
+}
+
+/// A share of the ladder, as the fraction the rule multiplies by.
+fn share_of(percent: u16) -> f64 {
+    percent as f64 / 100.0
 }
 
 /// A number rounded to the nearest whole, halves up.

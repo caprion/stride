@@ -614,7 +614,7 @@ cover**, and it is false whenever the store covers the window.
 
 ### The athlete's own facts
 
-`/athlete/{races,threshold}` are the **athlete's own facts**: the races
+`/athlete/{races,threshold,heart-rates}` are the **athlete's own facts**: the races
 they ran and the threshold they use.
 
 **They are never synced.** They are typed into the app and stored locally,
