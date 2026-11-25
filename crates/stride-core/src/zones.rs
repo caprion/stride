@@ -207,7 +207,19 @@ pub fn time_in_zone(floors: ZoneFloors, samples: &[ZoneSample]) -> Option<TimeIn
 ///
 /// A model with no maximum heart rate — Garmin reported none — is described
 /// without one: the method and the day are still the model's own.
+///
+/// **The bands from the heart rates the athlete entered** are not the
+/// watch's model, and their line says so: the basis, the maximum they were
+/// built on, and the day the declaration was entered. The two lines are
+/// never the same, and neither of them says the other is wrong.
 pub fn model_source(method: &str, max_heart_rate: Option<f64>, read_on: &str) -> Option<String> {
+    if method == crate::heart_rates::DECLARED_METHOD {
+        let max_hr = units::render_heart_rate(max_heart_rate)?;
+        return strings::render(
+            "heart_rates.source_line.max",
+            &[("max_hr", &max_hr), ("date", read_on)],
+        );
+    }
     match units::render_heart_rate(max_heart_rate) {
         Some(max_hr) => strings::render(
             "zones.model.source",
@@ -429,17 +441,34 @@ mod tests {
         assert_eq!(
             line,
             Some(
-                "your zones · HR_MAX · max heart rate 178 bpm · taken from your watch on 10 May 2026"
+                "your zones · HR_MAX · max heart rate 178 bpm · the watch's configuration as it \
+                 stood on 10 May 2026 · the runs from that day on"
                     .to_string()
             )
         );
     }
 
     #[test]
+    fn the_source_line_says_what_it_applies_to() {
+        // **One basis per answer, and the answer says which basis it
+        // used.** The zones a screen names are the watch's configuration
+        // as it stood on the day it was read, and they measure the runs
+        // from that day on: a run before it is a different answer, and
+        // this line is where that is said.
+        let line = model_source("HR_MAX", Some(178.0), "10 May 2026").unwrap_or_default();
+        assert!(line.contains("the watch's configuration as it stood on 10 May 2026"));
+        assert!(line.contains("the runs from that day on"));
+    }
+
+    #[test]
     fn a_model_with_no_maximum_heart_rate_is_described_without_one() {
         assert_eq!(
             model_source("HR_MAX", None, "10 May 2026"),
-            Some("your zones · HR_MAX · taken from your watch on 10 May 2026".to_string())
+            Some(
+                "your zones · HR_MAX · the watch's configuration as it stood on 10 May 2026 · the \
+                 runs from that day on"
+                    .to_string()
+            )
         );
     }
 

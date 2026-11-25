@@ -15,12 +15,14 @@ pub mod eddington;
 pub mod fingerprint;
 
 pub mod heatmap;
+pub mod heart_rates;
 pub mod load;
 pub mod movement;
 pub mod pace;
 pub mod pattern;
 pub mod plan;
 pub mod plan_bases;
+pub mod plan_week;
 pub mod profile;
 pub mod rest;
 pub mod rolling;
@@ -54,6 +56,11 @@ pub use fingerprint::{
 };
 
 pub use heatmap::{bounds_of, cell_of, cell_size_m, heatmap, Bounds, Cell, Heatmap, HeatmapCell};
+pub use heart_rates::{
+    compare, derive, history, in_force, select, source_line, Basis, BandRange, Bands,
+    BoundaryDifference, Comparison, DeclaredRate, Declaration, Derived, HeartRateKind,
+    HeartRateSource, MissingReason, SelectedBands, Supported, WatchBands, LADDER,
+};
 pub use load::{
     load_report, recovery_scenario, ActivityLoad, DailyLoad, DayInput, LoadAnswer, LoadAssumptions,
     LoadInputs, LoadReport, LoadState, LoadZoneModel, NoLoadReason, ProjectedDay, RecoveryScenario,
@@ -72,6 +79,9 @@ pub use plan_bases::{
     AdoptedWeek, AdoptionInput, AdoptionRefusal, Catalogue, DateWords, EntryReading, GoalRace,
     MileageRange, Pacing, PacingReading, PacingSource, PlanReading, Programme, RaceOption,
     RaceWeekShift, SessionReading, TemplateDay, TemplateWeek, WeekReading, CATALOGUE_VERSION,
+};
+pub use plan_week::{
+    compare_week, SessionComparison, WeekComparison, WeekFact, WeekState, WeekTotals, WeekWindow,
 };
 pub use profile::{facets, Facet, FacetKey, FacetUnit};
 pub use rest::RestSummary;

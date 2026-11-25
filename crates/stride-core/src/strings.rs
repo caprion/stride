@@ -181,7 +181,7 @@ pub struct Entry {
 }
 
 /// The catalogue.
-pub const CATALOGUE: [Entry; 288] = [
+pub const CATALOGUE: [Entry; 307] = [
     // The vitals.
     Entry {
         id: "vital.rest.label",
@@ -2072,6 +2072,134 @@ pub const CATALOGUE: [Entry; 288] = [
         kind: StringKind::Statement,
         role: None,
         template: "{id} is the {tier} programme",
+    },
+    Entry {
+        // The athlete's own heart rates: the labels of the two facts they
+        // declare, and the five places a number can come from.
+        id: "heart_rates.label.max",
+        kind: StringKind::Vital,
+        role: None,
+        template: "your maximum heart rate",
+    },
+    Entry {
+        id: "heart_rates.label.resting",
+        kind: StringKind::Vital,
+        role: None,
+        template: "your resting heart rate",
+    },
+    Entry {
+        id: "heart_rates.source.watch",
+        kind: StringKind::Status,
+        role: None,
+        template: "from my watch",
+    },
+    Entry {
+        id: "heart_rates.source.test",
+        kind: StringKind::Status,
+        role: None,
+        template: "from a test",
+    },
+    Entry {
+        id: "heart_rates.source.doctor_lab",
+        kind: StringKind::Status,
+        role: None,
+        template: "from a doctor or a lab",
+    },
+    Entry {
+        id: "heart_rates.source.partner_watch",
+        kind: StringKind::Status,
+        role: None,
+        template: "from my training partner's watch",
+    },
+    Entry {
+        id: "heart_rates.source.typed",
+        kind: StringKind::Status,
+        role: None,
+        template: "typed",
+    },
+    Entry {
+        // The bands the athlete's own numbers produced, and the watch's
+        // own zones: the two facts, named apart.
+        id: "heart_rates.bands.label",
+        kind: StringKind::Statement,
+        role: None,
+        template: "the bands from the heart rates you entered",
+    },
+    Entry {
+        id: "heart_rates.watch.label",
+        kind: StringKind::Statement,
+        role: None,
+        template: "your watch's zones",
+    },
+    Entry {
+        // The range the ladder was applied to, in the runner's words. The
+        // precise term - the heart-rate reserve - belongs to the notes.
+        id: "heart_rates.range.reserve",
+        kind: StringKind::Statement,
+        role: None,
+        template: "from your maximum heart rate and your resting heart rate",
+    },
+    Entry {
+        id: "heart_rates.range.max",
+        kind: StringKind::Statement,
+        role: None,
+        template: "from your maximum heart rate",
+    },
+    Entry {
+        // The two reasons a declaration falls short of the bands. They
+        // name what is missing, and never what to do about it.
+        id: "heart_rates.missing.max",
+        kind: StringKind::Status,
+        role: None,
+        template: "no maximum heart rate \u{2014} the bands have no value",
+    },
+    Entry {
+        id: "heart_rates.missing.resting",
+        kind: StringKind::Status,
+        role: None,
+        template: "no resting heart rate \u{2014} the bands are a share of your maximum heart rate",
+    },
+    Entry {
+        // The source line of the declared bands: what they are, the
+        // numbers they were built on, and the day they were entered.
+        id: "heart_rates.source_line",
+        kind: StringKind::Statement,
+        role: None,
+        template: "your zones \u{b7} the bands from the heart rates you entered \u{b7} maximum heart rate {max_hr} \u{b7} resting heart rate {resting_hr} \u{b7} entered on {date}",
+    },
+    Entry {
+        id: "heart_rates.source_line.max",
+        kind: StringKind::Statement,
+        role: None,
+        template: "your zones \u{b7} the bands from the heart rates you entered \u{b7} maximum heart rate {max_hr} \u{b7} entered on {date}",
+    },
+    Entry {
+        // The comparison: the two facts, and the fact that they differ.
+        // It is not a correction, and it says nothing about which is
+        // right.
+        id: "heart_rates.difference",
+        kind: StringKind::Statement,
+        role: None,
+        template: "your watch's zones and the bands from the heart rates you entered are different",
+    },
+    Entry {
+        id: "heart_rates.entered",
+        kind: StringKind::Statement,
+        role: None,
+        template: "entered on {date}",
+    },
+    Entry {
+        id: "heart_rates.none",
+        kind: StringKind::Status,
+        role: None,
+        template: "no heart rates entered",
+    },
+    Entry {
+        // The rule the bands are derived by, and where it comes from.
+        id: "heart_rates.rule",
+        kind: StringKind::Statement,
+        role: None,
+        template: "Garmin's published five-zone ladder, on the range your numbers support",
     },
 ];
 

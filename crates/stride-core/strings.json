@@ -295,6 +295,25 @@
     { "id": "statement.plan.refusal.volume", "kind": "statement", "role": null, "template": "week {week} adds up to {cells}, and the book prints {volume}" },
     { "id": "statement.plan.adoption.none", "kind": "status", "role": null, "template": "no plan has been adopted" },
     { "id": "statement.plan.refusal.in_force", "kind": "statement", "role": null, "template": "a plan is already in force until {date}" },
-    { "id": "statement.plan.refusal.tier", "kind": "statement", "role": null, "template": "{id} is the {tier} programme" }
+    { "id": "statement.plan.refusal.tier", "kind": "statement", "role": null, "template": "{id} is the {tier} programme" },
+    { "id": "heart_rates.label.max", "kind": "vital", "role": null, "template": "your maximum heart rate" },
+    { "id": "heart_rates.label.resting", "kind": "vital", "role": null, "template": "your resting heart rate" },
+    { "id": "heart_rates.source.watch", "kind": "status", "role": null, "template": "from my watch" },
+    { "id": "heart_rates.source.test", "kind": "status", "role": null, "template": "from a test" },
+    { "id": "heart_rates.source.doctor_lab", "kind": "status", "role": null, "template": "from a doctor or a lab" },
+    { "id": "heart_rates.source.partner_watch", "kind": "status", "role": null, "template": "from my training partner's watch" },
+    { "id": "heart_rates.source.typed", "kind": "status", "role": null, "template": "typed" },
+    { "id": "heart_rates.bands.label", "kind": "statement", "role": null, "template": "the bands from the heart rates you entered" },
+    { "id": "heart_rates.watch.label", "kind": "statement", "role": null, "template": "your watch's zones" },
+    { "id": "heart_rates.range.reserve", "kind": "statement", "role": null, "template": "from your maximum heart rate and your resting heart rate" },
+    { "id": "heart_rates.range.max", "kind": "statement", "role": null, "template": "from your maximum heart rate" },
+    { "id": "heart_rates.missing.max", "kind": "status", "role": null, "template": "no maximum heart rate — the bands have no value" },
+    { "id": "heart_rates.missing.resting", "kind": "status", "role": null, "template": "no resting heart rate — the bands are a share of your maximum heart rate" },
+    { "id": "heart_rates.source_line", "kind": "statement", "role": null, "template": "your zones · the bands from the heart rates you entered · maximum heart rate {max_hr} · resting heart rate {resting_hr} · entered on {date}" },
+    { "id": "heart_rates.source_line.max", "kind": "statement", "role": null, "template": "your zones · the bands from the heart rates you entered · maximum heart rate {max_hr} · entered on {date}" },
+    { "id": "heart_rates.difference", "kind": "statement", "role": null, "template": "your watch's zones and the bands from the heart rates you entered are different" },
+    { "id": "heart_rates.entered", "kind": "statement", "role": null, "template": "entered on {date}" },
+    { "id": "heart_rates.none", "kind": "status", "role": null, "template": "no heart rates entered" },
+    { "id": "heart_rates.rule", "kind": "statement", "role": null, "template": "Garmin's published five-zone ladder, on the range your numbers support" }
   ]
 }
