@@ -392,10 +392,13 @@ fn weekday_of(day: &stride_core::rolling::WeekdayTotals) -> WeekdayRow {
 }
 
 /// One time of day, as the answer names it.
+///
+/// The label carries the window the bucket covers — "Night (21:00–04:00)" —
+/// and the hours beside it are the same numbers the label is made of.
 fn daytime_of(daytime: &stride_core::rolling::DaytimeTotals) -> DaytimeRow {
     DaytimeRow {
         key: daytime.daytime.key().to_string(),
-        label: daytime.daytime.label().to_string(),
+        label: daytime.daytime.label(daytime.from_hour, daytime.to_hour),
         from_hour: daytime.from_hour,
         to_hour: daytime.to_hour,
         sessions: daytime.sessions,

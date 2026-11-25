@@ -543,13 +543,15 @@ export const rollingEmptyFixture: RollingInsight = {
     }),
   ),
   daytime: [
-    { key: 'morning', from: 6, to: 12 },
-    { key: 'afternoon', from: 12, to: 17 },
-    { key: 'evening', from: 17, to: 23 },
-    { key: 'night', from: 23, to: 6 },
+    // The labels are the core's own — a captured answer, not a
+    // computation — and they carry the window each bucket covers.
+    { key: 'morning', label: 'Morning (04:00–12:00)', from: 4, to: 12 },
+    { key: 'afternoon', label: 'Afternoon (12:00–17:00)', from: 12, to: 17 },
+    { key: 'evening', label: 'Evening (17:00–21:00)', from: 17, to: 21 },
+    { key: 'night', label: 'Night (21:00–04:00)', from: 21, to: 4 },
   ].map((bucket) => ({
     key: bucket.key,
-    label: bucket.key.charAt(0).toUpperCase() + bucket.key.slice(1),
+    label: bucket.label,
     from_hour: bucket.from,
     to_hour: bucket.to,
     sessions: 0,

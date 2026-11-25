@@ -72,11 +72,6 @@ const TREND: Record<string, CatalogueKey> = {
   steady: 'progress.rolling.trend.steady',
 }
 
-/** An hour of the athlete's own local time, as a clock reads it. */
-export function hour(value: number): string {
-  return `${String(value).padStart(2, '0')}:00`
-}
-
 /**
  * A panel's own frame.
  *

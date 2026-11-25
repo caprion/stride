@@ -19,6 +19,23 @@
 //! * [`monthly_totals`] and [`yearly_totals`] — what a month or a year
 //!   looks like.
 //!
+//! ## The day's four parts
+//!
+//! A day is cut into **four parts**, and the cut points are the product's
+//! own: the morning starts at **04:00**, the afternoon at 12:00, the
+//! evening at 17:00 and the night at **21:00**. The night **wraps around
+//! midnight**, so the night runs from 21:00 to 04:00 — seven hours — and
+//! the morning from 04:00 to 12:00 — eight.
+//!
+//! The hours are the athlete's own local hours, and they are the hours the
+//! **label** of a part carries: "Night (21:00–04:00)". The label is
+//! rendered from the cut points, so the name of a part and the part itself
+//! cannot drift apart.
+//!
+//! **Only the four parts change; the calendar day does not.** A run at
+//! 05:10 belongs to that calendar day — for the load, the ledger and the
+//! plan — and it is a *morning* run in the day's four parts.
+//!
 //! ## The window
 //!
 //! The window is **the last *N* calendar weeks, from the start of the
@@ -46,7 +63,11 @@ use crate::strings;
 use crate::units;
 
 /// The hour the morning starts, in the athlete's own local time.
-pub const MORNING_START_HOUR: u32 = 6;
+///
+/// **04:00.** The morning follows the night, and the night wraps around
+/// midnight: the night runs from 21:00 to this hour — seven hours — and
+/// the morning from this hour to 12:00 — eight.
+pub const MORNING_START_HOUR: u32 = 4;
 
 /// The hour the afternoon starts.
 pub const AFTERNOON_START_HOUR: u32 = 12;
@@ -55,7 +76,10 @@ pub const AFTERNOON_START_HOUR: u32 = 12;
 pub const EVENING_START_HOUR: u32 = 17;
 
 /// The hour the night starts.
-pub const NIGHT_START_HOUR: u32 = 23;
+///
+/// **21:00.** The night wraps around midnight, so it ends at the
+/// morning's cut point — 04:00.
+pub const NIGHT_START_HOUR: u32 = 21;
 
 /// One run, as the rolling view reads it.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -539,13 +563,43 @@ impl Daytime {
         }
     }
 
-    /// The bucket's name, in the core's own words.
-    pub fn label(&self) -> &'static str {
+    /// The catalogue id the bucket's wording lives under.
+    pub fn label_id(&self) -> &'static str {
         match self {
-            Daytime::Morning => strings::text("daytime.morning").unwrap_or("Morning"),
-            Daytime::Afternoon => strings::text("daytime.afternoon").unwrap_or("Afternoon"),
-            Daytime::Evening => strings::text("daytime.evening").unwrap_or("Evening"),
-            Daytime::Night => strings::text("daytime.night").unwrap_or("Night"),
+            Daytime::Morning => "daytime.morning",
+            Daytime::Afternoon => "daytime.afternoon",
+            Daytime::Evening => "daytime.evening",
+            Daytime::Night => "daytime.night",
+        }
+    }
+
+    /// The bucket's name **with the window it covers**:
+    /// "Morning (04:00–12:00)".
+    ///
+    /// The hours are the product's own cut points — the ones the row was
+    /// built with — and they are **rendered into** the wording, never typed
+    /// into it. The name of a part and the part itself are therefore made
+    /// of the same numbers, and cannot drift apart.
+    ///
+    /// The night carries the hours it wraps around: "Night (21:00–04:00)".
+    pub fn label(&self, from_hour: u32, to_hour: u32) -> String {
+        let from = units::format_hour(from_hour);
+        let to = units::format_hour(to_hour);
+        strings::render(self.label_id(), &[("from", &from), ("to", &to)])
+            .unwrap_or_else(|| format!("{} ({from}–{to})", self.plain_name()))
+    }
+
+    /// The bucket's plain name, in the core's own words: "Morning".
+    ///
+    /// The wording itself lives in the catalogue; this is the fallback for
+    /// a catalogue that does not carry the entry, and it holds the same
+    /// shape the catalogue's template holds.
+    fn plain_name(&self) -> &'static str {
+        match self {
+            Daytime::Morning => "Morning",
+            Daytime::Afternoon => "Afternoon",
+            Daytime::Evening => "Evening",
+            Daytime::Night => "Night",
         }
     }
 }
@@ -594,6 +648,16 @@ impl DaytimeCuts {
             Daytime::Night => Daytime::Morning,
         };
         self.start_hour(next)
+    }
+
+    /// The bucket's name **with the window it covers**, in these cuts:
+    /// "Morning (04:00–12:00)".
+    ///
+    /// The hours are the cuts' own — the same numbers the split was built
+    /// with — so the label cannot name a window the partition does not
+    /// have.
+    pub fn label(&self, daytime: Daytime) -> String {
+        daytime.label(self.start_hour(daytime), self.end_hour(daytime))
     }
 
     /// The bucket an hour of the athlete's own local time falls into.
@@ -1056,6 +1120,8 @@ mod tests {
             activity("2026-05-12", 5_000.0, 1_500.0, 12),
             activity("2026-05-12", 1_000.0, 300.0, 17),
             activity("2026-05-13", 1_000.0, 300.0, 23),
+            // A run at five in the morning: the athlete's own, and a
+            // morning run now that the morning starts at four.
             activity("2026-05-13", 1_000.0, 300.0, 5),
         ]) {
             Some(runs) => runs,
@@ -1063,34 +1129,69 @@ mod tests {
         };
         let split = daytime_split(&runs, DaytimeCuts::default());
         assert_eq!(split.len(), 4);
-        // Morning: 06:00 to 11:59.
-        assert_eq!(split[0].from_hour, 6);
+        // Morning: 04:00 to 11:59 — the run of six, the run of eleven and
+        // the run of five.
+        assert_eq!(split[0].from_hour, 4);
         assert_eq!(split[0].to_hour, 12);
-        assert_eq!(split[0].sessions, 2);
-        assert_eq!(split[0].distance_m, 11_000.0);
+        assert_eq!(split[0].sessions, 3);
+        assert_eq!(split[0].distance_m, 12_000.0);
         // Afternoon: 12:00 to 16:59.
         assert_eq!(split[1].sessions, 1);
         assert_eq!(split[1].distance_m, 5_000.0);
-        // Evening: 17:00 to 22:59.
+        // Evening: 17:00 to 20:59.
         assert_eq!(split[2].sessions, 1);
-        // Night: 23:00 to 05:59 — the two runs in it.
-        assert_eq!(split[3].sessions, 2);
-        assert_eq!(split[3].from_hour, 23);
-        assert_eq!(split[3].to_hour, 6);
+        assert_eq!(split[2].distance_m, 1_000.0);
+        // Night: 21:00 to 03:59 — the run of twenty-three.
+        assert_eq!(split[3].sessions, 1);
+        assert_eq!(split[3].distance_m, 1_000.0);
+        assert_eq!(split[3].from_hour, 21);
+        assert_eq!(split[3].to_hour, 4);
     }
 
     #[test]
     fn the_night_wraps_around_midnight() {
         let cuts = DaytimeCuts::default();
+        // The night runs from 21:00 to 04:00, so it wraps around midnight:
+        // twenty-three in the evening is the night, and so is three in
+        // the morning.
+        assert_eq!(cuts.bucket_of(21), Daytime::Night);
+        assert_eq!(cuts.bucket_of(23), Daytime::Night);
         assert_eq!(cuts.bucket_of(0), Daytime::Night);
-        assert_eq!(cuts.bucket_of(5), Daytime::Night);
-        assert_eq!(cuts.bucket_of(6), Daytime::Morning);
+        assert_eq!(cuts.bucket_of(3), Daytime::Night);
+        // Four in the morning is the morning's own first hour, and the
+        // run at five is a morning run.
+        assert_eq!(cuts.bucket_of(4), Daytime::Morning);
+        assert_eq!(cuts.bucket_of(5), Daytime::Morning);
         assert_eq!(cuts.bucket_of(11), Daytime::Morning);
         assert_eq!(cuts.bucket_of(12), Daytime::Afternoon);
         assert_eq!(cuts.bucket_of(16), Daytime::Afternoon);
         assert_eq!(cuts.bucket_of(17), Daytime::Evening);
-        assert_eq!(cuts.bucket_of(22), Daytime::Evening);
-        assert_eq!(cuts.bucket_of(23), Daytime::Night);
+        assert_eq!(cuts.bucket_of(20), Daytime::Evening);
+    }
+
+    #[test]
+    fn the_label_carries_the_window_it_covers() {
+        let cuts = DaytimeCuts::default();
+        // The name of a part says the window it covers — the athlete reads
+        // "Night (21:00–04:00)" and knows what the night is.
+        assert_eq!(cuts.label(Daytime::Morning), "Morning (04:00–12:00)");
+        assert_eq!(cuts.label(Daytime::Afternoon), "Afternoon (12:00–17:00)");
+        assert_eq!(cuts.label(Daytime::Evening), "Evening (17:00–21:00)");
+        assert_eq!(cuts.label(Daytime::Night), "Night (21:00–04:00)");
+    }
+
+    #[test]
+    fn the_label_is_made_of_the_cuts_and_not_of_written_out_hours() {
+        // The same bucket, with the cuts moved: the label moves with them,
+        // because it is rendered from them.
+        let cuts = DaytimeCuts {
+            morning: 5,
+            afternoon: 13,
+            evening: 18,
+            night: 22,
+        };
+        assert_eq!(cuts.label(Daytime::Night), "Night (22:00–05:00)");
+        assert_eq!(cuts.label(Daytime::Morning), "Morning (05:00–13:00)");
     }
 
     #[test]

@@ -240,10 +240,10 @@ describe('the splits and the tables on the athlete profile', () => {
   it('names the hours of the daytime split', async () => {
     renderApp('/profile/weekday')
     const card = await screen.findByTestId('progress-daytime')
-    expect(card.textContent).toContain('Morning')
-    // The cut points, in the athlete's own local time.
-    expect(card.textContent).toContain('06:00 – 12:00')
-    expect(card.textContent).toContain('Night')
+    // The label carries the window the bucket covers, and the window is
+    // the partition's own.
+    expect(card.textContent).toContain('Morning (04:00–12:00)')
+    expect(card.textContent).toContain('Night (21:00–04:00)')
   })
 
   it('holds the months that have runs', async () => {

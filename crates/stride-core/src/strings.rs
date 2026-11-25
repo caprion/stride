@@ -697,28 +697,33 @@ pub const CATALOGUE: [Entry; 288] = [
     },
     Entry {
         // The times of day, in the athlete's own local time.
+        //
+        // **The hours are holes, and the core fills them with its own cut
+        // points**: the wording says what a part is, and the hours say the
+        // window it covers. They are never typed in here, so the name of a
+        // part and the part itself cannot drift apart.
         id: "daytime.morning",
         kind: StringKind::Statement,
         role: None,
-        template: "Morning",
+        template: "Morning ({from}–{to})",
     },
     Entry {
         id: "daytime.afternoon",
         kind: StringKind::Statement,
         role: None,
-        template: "Afternoon",
+        template: "Afternoon ({from}–{to})",
     },
     Entry {
         id: "daytime.evening",
         kind: StringKind::Statement,
         role: None,
-        template: "Evening",
+        template: "Evening ({from}–{to})",
     },
     Entry {
         id: "daytime.night",
         kind: StringKind::Statement,
         role: None,
-        template: "Night",
+        template: "Night ({from}–{to})",
     },
     Entry {
         // The model's own source line: where the bands came from and when

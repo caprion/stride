@@ -585,7 +585,10 @@ export function SchedulePicture({
 
   const row = (label: string, km: number, note: string | null, key: string) => (
     <li key={key} className="flex items-center gap-3">
-      <span className="w-[74px] shrink-0 text-[12px] text-ink-soft">{label}</span>
+      {/* The label of a time of day carries its window — "Morning
+          (04:00–12:00)" — so the column is wide enough for the hours to
+          sit beside the word. */}
+      <span className="w-[118px] shrink-0 text-[12px] leading-tight text-ink-soft">{label}</span>
       <span className="h-2 flex-1 overflow-hidden rounded-full bg-surface-sunken">
         <span
           className="block h-full rounded-full bg-brand-400"

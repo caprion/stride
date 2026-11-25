@@ -48,7 +48,6 @@ import {
   ConsistencyPanel,
   LoadPanel,
   VolumePanel,
-  hour,
 } from './progressPanels'
 import { LadderCard } from './ladder'
 import { LedgerCard } from './ledger'
@@ -604,7 +603,13 @@ export function WeekdayTable({ rolling }: { rolling: RollingInsight | undefined 
   )
 }
 
-/** The daytime split, as the mock's table: the hours, the runs, the distance. */
+/**
+ * The daytime split, as the mock's table: the hours, the runs, the distance.
+ *
+ * The label is the core's own and it carries the window the bucket
+ * covers — "Morning (04:00–12:00)" — so the row says what the part of
+ * the day is and when it is.
+ */
 export function DaytimeTable({ rolling }: { rolling: RollingInsight | undefined }) {
   const rows = rolling?.daytime ?? []
   if (rows.length === 0)
@@ -630,15 +635,7 @@ export function DaytimeTable({ rolling }: { rolling: RollingInsight | undefined 
       <tbody>
         {rows.map((bucket) => (
           <tr key={bucket.key} className="border-t border-edge">
-            <td className="py-1 pr-2 text-ink-soft">
-              {bucket.label}
-              <span className="block text-[11px] tabular-nums text-ink-faint">
-                {t('progress.rolling.hours', {
-                  from: hour(bucket.from_hour),
-                  to: hour(bucket.to_hour),
-                })}
-              </span>
-            </td>
+            <td className="py-1 pr-2 text-ink-soft">{bucket.label}</td>
             <td className="py-1 text-right tabular-nums text-ink-muted">
               {formatCount(bucket.sessions)}
             </td>

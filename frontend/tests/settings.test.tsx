@@ -195,10 +195,10 @@ describe('the storage', () => {
 
     // The size is the host's, answered by the api — and it is shown as
     // the api answered it, in the api's own words.
-    expect(settingsFixture.storage.size).toEqual({ raw: 807_336, text: '788.4 KB' })
+    expect(settingsFixture.storage.size).toEqual({ raw: 836_176, text: '816.6 KB' })
     expect(
       container.querySelector('[data-testid="settings-storage-size"]')?.textContent,
-    ).toContain('788.4 KB')
+    ).toContain('816.6 KB')
   })
 
   it('takes the word before it deletes anything', async () => {

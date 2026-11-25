@@ -168,6 +168,16 @@ pub fn format_pace(seconds_per_km: f64) -> String {
     format!("{minutes}:{seconds:02}")
 }
 
+/// The hour of the day, as it is written: "04:00" from 4.
+///
+/// The hour is the athlete's own local hour and the minutes are always
+/// zero — the cut points of the day are on the hour. The form is the
+/// clock's: two digits, a colon, two digits, so the hours of two buckets
+/// line up when they are written side by side.
+pub fn format_hour(hour: u32) -> String {
+    format!("{:02}:00", hour % 24)
+}
+
 /// The dense form of a **race time**: "41:36" from 2 496 seconds, and
 /// "1:03:56" from 3 836 seconds.
 ///

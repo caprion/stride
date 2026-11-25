@@ -603,7 +603,6 @@ export const catalogue = {
   'progress.rolling.trend.down.short': { type: 'status', text: 'down' },
   'progress.rolling.trend.steady.short': { type: 'status', text: 'the same' },
   'progress.rolling.noRows': { type: 'status', text: 'Nothing recorded yet.' },
-  'progress.rolling.hours': { type: 'status', text: '{from} – {to}' },
 
   /**
    * The narrow Progress: an index of the questions.

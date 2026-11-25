@@ -7418,9 +7418,9 @@
             "raw": 24272,
             "text": "6 h 45 m"
           },
-          "from_hour": 6,
+          "from_hour": 4,
           "key": "morning",
-          "label": "Morning",
+          "label": "Morning (04:00–12:00)",
           "sessions": 7,
           "to_hour": 12
         },
@@ -7435,7 +7435,7 @@
           },
           "from_hour": 12,
           "key": "afternoon",
-          "label": "Afternoon",
+          "label": "Afternoon (12:00–17:00)",
           "sessions": 0,
           "to_hour": 17
         },
@@ -7450,9 +7450,9 @@
           },
           "from_hour": 17,
           "key": "evening",
-          "label": "Evening",
+          "label": "Evening (17:00–21:00)",
           "sessions": 0,
-          "to_hour": 23
+          "to_hour": 21
         },
         {
           "distance": {
@@ -7463,11 +7463,11 @@
             "raw": 0,
             "text": "0 m"
           },
-          "from_hour": 23,
+          "from_hour": 21,
           "key": "night",
-          "label": "Night",
+          "label": "Night (21:00–04:00)",
           "sessions": 0,
-          "to_hour": 6
+          "to_hour": 4
         }
       ],
       "distance": {
@@ -7948,9 +7948,9 @@
             "raw": 24272,
             "text": "6 h 45 m"
           },
-          "from_hour": 6,
+          "from_hour": 4,
           "key": "morning",
-          "label": "Morning",
+          "label": "Morning (04:00–12:00)",
           "sessions": 7,
           "to_hour": 12
         },
@@ -7965,7 +7965,7 @@
           },
           "from_hour": 12,
           "key": "afternoon",
-          "label": "Afternoon",
+          "label": "Afternoon (12:00–17:00)",
           "sessions": 0,
           "to_hour": 17
         },
@@ -7980,9 +7980,9 @@
           },
           "from_hour": 17,
           "key": "evening",
-          "label": "Evening",
+          "label": "Evening (17:00–21:00)",
           "sessions": 0,
-          "to_hour": 23
+          "to_hour": 21
         },
         {
           "distance": {
@@ -7993,11 +7993,11 @@
             "raw": 0,
             "text": "0 m"
           },
-          "from_hour": 23,
+          "from_hour": 21,
           "key": "night",
-          "label": "Night",
+          "label": "Night (21:00–04:00)",
           "sessions": 0,
-          "to_hour": 6
+          "to_hour": 4
         }
       ],
       "distance": {
@@ -8478,9 +8478,9 @@
             "raw": 24272,
             "text": "6 h 45 m"
           },
-          "from_hour": 6,
+          "from_hour": 4,
           "key": "morning",
-          "label": "Morning",
+          "label": "Morning (04:00–12:00)",
           "sessions": 7,
           "to_hour": 12
         },
@@ -8495,7 +8495,7 @@
           },
           "from_hour": 12,
           "key": "afternoon",
-          "label": "Afternoon",
+          "label": "Afternoon (12:00–17:00)",
           "sessions": 0,
           "to_hour": 17
         },
@@ -8510,9 +8510,9 @@
           },
           "from_hour": 17,
           "key": "evening",
-          "label": "Evening",
+          "label": "Evening (17:00–21:00)",
           "sessions": 0,
-          "to_hour": 23
+          "to_hour": 21
         },
         {
           "distance": {
@@ -8523,11 +8523,11 @@
             "raw": 0,
             "text": "0 m"
           },
-          "from_hour": 23,
+          "from_hour": 21,
           "key": "night",
-          "label": "Night",
+          "label": "Night (21:00–04:00)",
           "sessions": 0,
-          "to_hour": 6
+          "to_hour": 4
         }
       ],
       "distance": {
@@ -9008,9 +9008,9 @@
             "raw": 24272,
             "text": "6 h 45 m"
           },
-          "from_hour": 6,
+          "from_hour": 4,
           "key": "morning",
-          "label": "Morning",
+          "label": "Morning (04:00–12:00)",
           "sessions": 7,
           "to_hour": 12
         },
@@ -9025,7 +9025,7 @@
           },
           "from_hour": 12,
           "key": "afternoon",
-          "label": "Afternoon",
+          "label": "Afternoon (12:00–17:00)",
           "sessions": 0,
           "to_hour": 17
         },
@@ -9040,9 +9040,9 @@
           },
           "from_hour": 17,
           "key": "evening",
-          "label": "Evening",
+          "label": "Evening (17:00–21:00)",
           "sessions": 0,
-          "to_hour": 23
+          "to_hour": 21
         },
         {
           "distance": {
@@ -9053,11 +9053,11 @@
             "raw": 0,
             "text": "0 m"
           },
-          "from_hour": 23,
+          "from_hour": 21,
           "key": "night",
-          "label": "Night",
+          "label": "Night (21:00–04:00)",
           "sessions": 0,
-          "to_hour": 6
+          "to_hour": 4
         }
       ],
       "distance": {
@@ -9538,9 +9538,9 @@
             "raw": 24272,
             "text": "6 h 45 m"
           },
-          "from_hour": 6,
+          "from_hour": 4,
           "key": "morning",
-          "label": "Morning",
+          "label": "Morning (04:00–12:00)",
           "sessions": 7,
           "to_hour": 12
         },
@@ -9555,7 +9555,7 @@
           },
           "from_hour": 12,
           "key": "afternoon",
-          "label": "Afternoon",
+          "label": "Afternoon (12:00–17:00)",
           "sessions": 0,
           "to_hour": 17
         },
@@ -9570,9 +9570,9 @@
           },
           "from_hour": 17,
           "key": "evening",
-          "label": "Evening",
+          "label": "Evening (17:00–21:00)",
           "sessions": 0,
-          "to_hour": 23
+          "to_hour": 21
         },
         {
           "distance": {
@@ -9583,11 +9583,11 @@
             "raw": 0,
             "text": "0 m"
           },
-          "from_hour": 23,
+          "from_hour": 21,
           "key": "night",
-          "label": "Night",
+          "label": "Night (21:00–04:00)",
           "sessions": 0,
-          "to_hour": 6
+          "to_hour": 4
         }
       ],
       "distance": {
@@ -10068,9 +10068,9 @@
             "raw": 24272,
             "text": "6 h 45 m"
           },
-          "from_hour": 6,
+          "from_hour": 4,
           "key": "morning",
-          "label": "Morning",
+          "label": "Morning (04:00–12:00)",
           "sessions": 7,
           "to_hour": 12
         },
@@ -10085,7 +10085,7 @@
           },
           "from_hour": 12,
           "key": "afternoon",
-          "label": "Afternoon",
+          "label": "Afternoon (12:00–17:00)",
           "sessions": 0,
           "to_hour": 17
         },
@@ -10100,9 +10100,9 @@
           },
           "from_hour": 17,
           "key": "evening",
-          "label": "Evening",
+          "label": "Evening (17:00–21:00)",
           "sessions": 0,
-          "to_hour": 23
+          "to_hour": 21
         },
         {
           "distance": {
@@ -10113,11 +10113,11 @@
             "raw": 0,
             "text": "0 m"
           },
-          "from_hour": 23,
+          "from_hour": 21,
           "key": "night",
-          "label": "Night",
+          "label": "Night (21:00–04:00)",
           "sessions": 0,
-          "to_hour": 6
+          "to_hour": 4
         }
       ],
       "distance": {
@@ -10598,9 +10598,9 @@
             "raw": 24272,
             "text": "6 h 45 m"
           },
-          "from_hour": 6,
+          "from_hour": 4,
           "key": "morning",
-          "label": "Morning",
+          "label": "Morning (04:00–12:00)",
           "sessions": 7,
           "to_hour": 12
         },
@@ -10615,7 +10615,7 @@
           },
           "from_hour": 12,
           "key": "afternoon",
-          "label": "Afternoon",
+          "label": "Afternoon (12:00–17:00)",
           "sessions": 0,
           "to_hour": 17
         },
@@ -10630,9 +10630,9 @@
           },
           "from_hour": 17,
           "key": "evening",
-          "label": "Evening",
+          "label": "Evening (17:00–21:00)",
           "sessions": 0,
-          "to_hour": 23
+          "to_hour": 21
         },
         {
           "distance": {
@@ -10643,11 +10643,11 @@
             "raw": 0,
             "text": "0 m"
           },
-          "from_hour": 23,
+          "from_hour": 21,
           "key": "night",
-          "label": "Night",
+          "label": "Night (21:00–04:00)",
           "sessions": 0,
-          "to_hour": 6
+          "to_hour": 4
         }
       ],
       "distance": {
@@ -11128,9 +11128,9 @@
             "raw": 24272,
             "text": "6 h 45 m"
           },
-          "from_hour": 6,
+          "from_hour": 4,
           "key": "morning",
-          "label": "Morning",
+          "label": "Morning (04:00–12:00)",
           "sessions": 7,
           "to_hour": 12
         },
@@ -11145,7 +11145,7 @@
           },
           "from_hour": 12,
           "key": "afternoon",
-          "label": "Afternoon",
+          "label": "Afternoon (12:00–17:00)",
           "sessions": 0,
           "to_hour": 17
         },
@@ -11160,9 +11160,9 @@
           },
           "from_hour": 17,
           "key": "evening",
-          "label": "Evening",
+          "label": "Evening (17:00–21:00)",
           "sessions": 0,
-          "to_hour": 23
+          "to_hour": 21
         },
         {
           "distance": {
@@ -11173,11 +11173,11 @@
             "raw": 0,
             "text": "0 m"
           },
-          "from_hour": 23,
+          "from_hour": 21,
           "key": "night",
-          "label": "Night",
+          "label": "Night (21:00–04:00)",
           "sessions": 0,
-          "to_hour": 6
+          "to_hour": 4
         }
       ],
       "distance": {
@@ -11658,9 +11658,9 @@
             "raw": 24272,
             "text": "6 h 45 m"
           },
-          "from_hour": 6,
+          "from_hour": 4,
           "key": "morning",
-          "label": "Morning",
+          "label": "Morning (04:00–12:00)",
           "sessions": 7,
           "to_hour": 12
         },
@@ -11675,7 +11675,7 @@
           },
           "from_hour": 12,
           "key": "afternoon",
-          "label": "Afternoon",
+          "label": "Afternoon (12:00–17:00)",
           "sessions": 0,
           "to_hour": 17
         },
@@ -11690,9 +11690,9 @@
           },
           "from_hour": 17,
           "key": "evening",
-          "label": "Evening",
+          "label": "Evening (17:00–21:00)",
           "sessions": 0,
-          "to_hour": 23
+          "to_hour": 21
         },
         {
           "distance": {
@@ -11703,11 +11703,11 @@
             "raw": 0,
             "text": "0 m"
           },
-          "from_hour": 23,
+          "from_hour": 21,
           "key": "night",
-          "label": "Night",
+          "label": "Night (21:00–04:00)",
           "sessions": 0,
-          "to_hour": 6
+          "to_hour": 4
         }
       ],
       "distance": {
@@ -16348,8 +16348,8 @@
         "note_count": 0,
         "plan_session_count": 7,
         "size": {
-          "raw": 807336,
-          "text": "788.4 KB"
+          "raw": 836176,
+          "text": "816.6 KB"
         },
         "wellness_day_count": 30
       }
@@ -23782,9 +23782,9 @@
             "raw": 24272,
             "text": "6 h 45 m"
           },
-          "from_hour": 6,
+          "from_hour": 4,
           "key": "morning",
-          "label": "Morning",
+          "label": "Morning (04:00–12:00)",
           "sessions": 7,
           "to_hour": 12
         },
@@ -23799,7 +23799,7 @@
           },
           "from_hour": 12,
           "key": "afternoon",
-          "label": "Afternoon",
+          "label": "Afternoon (12:00–17:00)",
           "sessions": 0,
           "to_hour": 17
         },
@@ -23814,9 +23814,9 @@
           },
           "from_hour": 17,
           "key": "evening",
-          "label": "Evening",
+          "label": "Evening (17:00–21:00)",
           "sessions": 0,
-          "to_hour": 23
+          "to_hour": 21
         },
         {
           "distance": {
@@ -23827,11 +23827,11 @@
             "raw": 0,
             "text": "0 m"
           },
-          "from_hour": 23,
+          "from_hour": 21,
           "key": "night",
-          "label": "Night",
+          "label": "Night (21:00–04:00)",
           "sessions": 0,
-          "to_hour": 6
+          "to_hour": 4
         }
       ],
       "distance": {
@@ -24312,9 +24312,9 @@
             "raw": 24272,
             "text": "6 h 45 m"
           },
-          "from_hour": 6,
+          "from_hour": 4,
           "key": "morning",
-          "label": "Morning",
+          "label": "Morning (04:00–12:00)",
           "sessions": 7,
           "to_hour": 12
         },
@@ -24329,7 +24329,7 @@
           },
           "from_hour": 12,
           "key": "afternoon",
-          "label": "Afternoon",
+          "label": "Afternoon (12:00–17:00)",
           "sessions": 0,
           "to_hour": 17
         },
@@ -24344,9 +24344,9 @@
           },
           "from_hour": 17,
           "key": "evening",
-          "label": "Evening",
+          "label": "Evening (17:00–21:00)",
           "sessions": 0,
-          "to_hour": 23
+          "to_hour": 21
         },
         {
           "distance": {
@@ -24357,11 +24357,11 @@
             "raw": 0,
             "text": "0 m"
           },
-          "from_hour": 23,
+          "from_hour": 21,
           "key": "night",
-          "label": "Night",
+          "label": "Night (21:00–04:00)",
           "sessions": 0,
-          "to_hour": 6
+          "to_hour": 4
         }
       ],
       "distance": {
@@ -24842,9 +24842,9 @@
             "raw": 24272,
             "text": "6 h 45 m"
           },
-          "from_hour": 6,
+          "from_hour": 4,
           "key": "morning",
-          "label": "Morning",
+          "label": "Morning (04:00–12:00)",
           "sessions": 7,
           "to_hour": 12
         },
@@ -24859,7 +24859,7 @@
           },
           "from_hour": 12,
           "key": "afternoon",
-          "label": "Afternoon",
+          "label": "Afternoon (12:00–17:00)",
           "sessions": 0,
           "to_hour": 17
         },
@@ -24874,9 +24874,9 @@
           },
           "from_hour": 17,
           "key": "evening",
-          "label": "Evening",
+          "label": "Evening (17:00–21:00)",
           "sessions": 0,
-          "to_hour": 23
+          "to_hour": 21
         },
         {
           "distance": {
@@ -24887,11 +24887,11 @@
             "raw": 0,
             "text": "0 m"
           },
-          "from_hour": 23,
+          "from_hour": 21,
           "key": "night",
-          "label": "Night",
+          "label": "Night (21:00–04:00)",
           "sessions": 0,
-          "to_hour": 6
+          "to_hour": 4
         }
       ],
       "distance": {
@@ -25372,9 +25372,9 @@
             "raw": 24272,
             "text": "6 h 45 m"
           },
-          "from_hour": 6,
+          "from_hour": 4,
           "key": "morning",
-          "label": "Morning",
+          "label": "Morning (04:00–12:00)",
           "sessions": 7,
           "to_hour": 12
         },
@@ -25389,7 +25389,7 @@
           },
           "from_hour": 12,
           "key": "afternoon",
-          "label": "Afternoon",
+          "label": "Afternoon (12:00–17:00)",
           "sessions": 0,
           "to_hour": 17
         },
@@ -25404,9 +25404,9 @@
           },
           "from_hour": 17,
           "key": "evening",
-          "label": "Evening",
+          "label": "Evening (17:00–21:00)",
           "sessions": 0,
-          "to_hour": 23
+          "to_hour": 21
         },
         {
           "distance": {
@@ -25417,11 +25417,11 @@
             "raw": 0,
             "text": "0 m"
           },
-          "from_hour": 23,
+          "from_hour": 21,
           "key": "night",
-          "label": "Night",
+          "label": "Night (21:00–04:00)",
           "sessions": 0,
-          "to_hour": 6
+          "to_hour": 4
         }
       ],
       "distance": {
@@ -25902,9 +25902,9 @@
             "raw": 24272,
             "text": "6 h 45 m"
           },
-          "from_hour": 6,
+          "from_hour": 4,
           "key": "morning",
-          "label": "Morning",
+          "label": "Morning (04:00–12:00)",
           "sessions": 7,
           "to_hour": 12
         },
@@ -25919,7 +25919,7 @@
           },
           "from_hour": 12,
           "key": "afternoon",
-          "label": "Afternoon",
+          "label": "Afternoon (12:00–17:00)",
           "sessions": 0,
           "to_hour": 17
         },
@@ -25934,9 +25934,9 @@
           },
           "from_hour": 17,
           "key": "evening",
-          "label": "Evening",
+          "label": "Evening (17:00–21:00)",
           "sessions": 0,
-          "to_hour": 23
+          "to_hour": 21
         },
         {
           "distance": {
@@ -25947,11 +25947,11 @@
             "raw": 0,
             "text": "0 m"
           },
-          "from_hour": 23,
+          "from_hour": 21,
           "key": "night",
-          "label": "Night",
+          "label": "Night (21:00–04:00)",
           "sessions": 0,
-          "to_hour": 6
+          "to_hour": 4
         }
       ],
       "distance": {
@@ -26432,9 +26432,9 @@
             "raw": 24272,
             "text": "6 h 45 m"
           },
-          "from_hour": 6,
+          "from_hour": 4,
           "key": "morning",
-          "label": "Morning",
+          "label": "Morning (04:00–12:00)",
           "sessions": 7,
           "to_hour": 12
         },
@@ -26449,7 +26449,7 @@
           },
           "from_hour": 12,
           "key": "afternoon",
-          "label": "Afternoon",
+          "label": "Afternoon (12:00–17:00)",
           "sessions": 0,
           "to_hour": 17
         },
@@ -26464,9 +26464,9 @@
           },
           "from_hour": 17,
           "key": "evening",
-          "label": "Evening",
+          "label": "Evening (17:00–21:00)",
           "sessions": 0,
-          "to_hour": 23
+          "to_hour": 21
         },
         {
           "distance": {
@@ -26477,11 +26477,11 @@
             "raw": 0,
             "text": "0 m"
           },
-          "from_hour": 23,
+          "from_hour": 21,
           "key": "night",
-          "label": "Night",
+          "label": "Night (21:00–04:00)",
           "sessions": 0,
-          "to_hour": 6
+          "to_hour": 4
         }
       ],
       "distance": {
@@ -26962,9 +26962,9 @@
             "raw": 24272,
             "text": "6 h 45 m"
           },
-          "from_hour": 6,
+          "from_hour": 4,
           "key": "morning",
-          "label": "Morning",
+          "label": "Morning (04:00–12:00)",
           "sessions": 7,
           "to_hour": 12
         },
@@ -26979,7 +26979,7 @@
           },
           "from_hour": 12,
           "key": "afternoon",
-          "label": "Afternoon",
+          "label": "Afternoon (12:00–17:00)",
           "sessions": 0,
           "to_hour": 17
         },
@@ -26994,9 +26994,9 @@
           },
           "from_hour": 17,
           "key": "evening",
-          "label": "Evening",
+          "label": "Evening (17:00–21:00)",
           "sessions": 0,
-          "to_hour": 23
+          "to_hour": 21
         },
         {
           "distance": {
@@ -27007,11 +27007,11 @@
             "raw": 0,
             "text": "0 m"
           },
-          "from_hour": 23,
+          "from_hour": 21,
           "key": "night",
-          "label": "Night",
+          "label": "Night (21:00–04:00)",
           "sessions": 0,
-          "to_hour": 6
+          "to_hour": 4
         }
       ],
       "distance": {
@@ -27492,9 +27492,9 @@
             "raw": 24272,
             "text": "6 h 45 m"
           },
-          "from_hour": 6,
+          "from_hour": 4,
           "key": "morning",
-          "label": "Morning",
+          "label": "Morning (04:00–12:00)",
           "sessions": 7,
           "to_hour": 12
         },
@@ -27509,7 +27509,7 @@
           },
           "from_hour": 12,
           "key": "afternoon",
-          "label": "Afternoon",
+          "label": "Afternoon (12:00–17:00)",
           "sessions": 0,
           "to_hour": 17
         },
@@ -27524,9 +27524,9 @@
           },
           "from_hour": 17,
           "key": "evening",
-          "label": "Evening",
+          "label": "Evening (17:00–21:00)",
           "sessions": 0,
-          "to_hour": 23
+          "to_hour": 21
         },
         {
           "distance": {
@@ -27537,11 +27537,11 @@
             "raw": 0,
             "text": "0 m"
           },
-          "from_hour": 23,
+          "from_hour": 21,
           "key": "night",
-          "label": "Night",
+          "label": "Night (21:00–04:00)",
           "sessions": 0,
-          "to_hour": 6
+          "to_hour": 4
         }
       ],
       "distance": {
@@ -28022,9 +28022,9 @@
             "raw": 24272,
             "text": "6 h 45 m"
           },
-          "from_hour": 6,
+          "from_hour": 4,
           "key": "morning",
-          "label": "Morning",
+          "label": "Morning (04:00–12:00)",
           "sessions": 7,
           "to_hour": 12
         },
@@ -28039,7 +28039,7 @@
           },
           "from_hour": 12,
           "key": "afternoon",
-          "label": "Afternoon",
+          "label": "Afternoon (12:00–17:00)",
           "sessions": 0,
           "to_hour": 17
         },
@@ -28054,9 +28054,9 @@
           },
           "from_hour": 17,
           "key": "evening",
-          "label": "Evening",
+          "label": "Evening (17:00–21:00)",
           "sessions": 0,
-          "to_hour": 23
+          "to_hour": 21
         },
         {
           "distance": {
@@ -28067,11 +28067,11 @@
             "raw": 0,
             "text": "0 m"
           },
-          "from_hour": 23,
+          "from_hour": 21,
           "key": "night",
-          "label": "Night",
+          "label": "Night (21:00–04:00)",
           "sessions": 0,
-          "to_hour": 6
+          "to_hour": 4
         }
       ],
       "distance": {
@@ -32532,8 +32532,8 @@
         "note_count": 0,
         "plan_session_count": 0,
         "size": {
-          "raw": 712576,
-          "text": "695.9 KB"
+          "raw": 741416,
+          "text": "724.0 KB"
         },
         "wellness_day_count": 30
       }

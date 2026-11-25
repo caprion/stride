@@ -468,8 +468,9 @@ fn the_weekday_split_places_the_runs_on_their_day() {
 #[test]
 fn the_daytime_split_uses_the_local_hour() {
     let harness = Harness::empty("rolling-daytime");
-    // 07:10 is the morning, 13:00 the afternoon, 18:00 the evening and
-    // 23:30 the night.
+    // 05:10 and 07:10 are the morning, 13:00 the afternoon, 18:00 the
+    // evening and 23:30 the night.
+    harness.write_run(run_at("early", TODAY, 5, 10, 8_000.0, 2_400.0));
     harness.write_run(run_at("morning", TODAY, 7, 10, 10_000.0, 3_000.0));
     harness.write_run(run_at("afternoon", TODAY, 13, 0, 5_000.0, 1_500.0));
     harness.write_run(run_at("evening", TODAY, 18, 0, 5_000.0, 1_500.0));
@@ -478,17 +479,20 @@ fn the_daytime_split_uses_the_local_hour() {
     let answer = harness.ok_get("/insights/rolling?weeks=1");
     let daytime = answer["daytime"].as_array().expect("the daytime rows");
     assert_eq!(daytime.len(), 4);
-    assert_eq!(text(&daytime[0], &["label"]), "Morning");
-    assert_eq!(number(&daytime[0], &["from_hour"]), 6.0);
+    // The label carries the window the bucket covers, and the window is
+    // the partition's own.
+    assert_eq!(text(&daytime[0], &["label"]), "Morning (04:00–12:00)");
+    assert_eq!(number(&daytime[0], &["from_hour"]), 4.0);
     assert_eq!(number(&daytime[0], &["to_hour"]), 12.0);
-    assert_eq!(number(&daytime[0], &["sessions"]), 1.0);
-    assert_eq!(text(&daytime[1], &["label"]), "Afternoon");
+    // The run at five in the morning is a morning run.
+    assert_eq!(number(&daytime[0], &["sessions"]), 2.0);
+    assert_eq!(text(&daytime[1], &["label"]), "Afternoon (12:00–17:00)");
     assert_eq!(number(&daytime[1], &["sessions"]), 1.0);
-    assert_eq!(text(&daytime[2], &["label"]), "Evening");
+    assert_eq!(text(&daytime[2], &["label"]), "Evening (17:00–21:00)");
     assert_eq!(number(&daytime[2], &["sessions"]), 1.0);
-    assert_eq!(text(&daytime[3], &["label"]), "Night");
-    assert_eq!(number(&daytime[3], &["from_hour"]), 23.0);
-    assert_eq!(number(&daytime[3], &["to_hour"]), 6.0);
+    assert_eq!(text(&daytime[3], &["label"]), "Night (21:00–04:00)");
+    assert_eq!(number(&daytime[3], &["from_hour"]), 21.0);
+    assert_eq!(number(&daytime[3], &["to_hour"]), 4.0);
     assert_eq!(number(&daytime[3], &["sessions"]), 1.0);
 }
 
