@@ -460,6 +460,43 @@ two tables are added. No route changed in this step, and no shape changed.
   tables and their indexes, in one transaction, and a database that already
   ran version 7 changes nothing.
 
+### Note — the desktop rig's own page, and the three decisions it offers (2026-11-25)
+
+The rig is the app's face on the athlete's own machine, and step 6 of the rig-v2 build gave it a
+landing surface of its own: `/rig`. **It is the host's face, not the app's.** The app is the
+athlete's face; the rig is the machine it runs on, and the page says what that machine is.
+
+* **The four parts.** The **index** — the screens the rig serves, the new ones included: the
+  ladder, the cost curve, the ledger, the threshold and the programmes — the **status** (the
+  version being served, the database's schema version, what the log holds, and where the first
+  run stands), the **storage** (the folder, the database and its size, and the files the keys
+  live in), and the **connection** (whether a Garmin key is kept, and when the log was last
+  filled from the source).
+* **Facts, never verdicts.** Every line is a fact about the machine or about what the athlete
+  has already decided. Nothing is scored, ranked or graded, and **the key never reaches the
+  page**: it says *whether* a Garmin key is kept and where the file is.
+* **The three decisions.** The new screens need three things that cannot be worked out from the
+  training — **a race to type, a threshold to choose, a programme to adopt** — and the rig's
+  page offers them as the athlete's own choices: **side by side, unranked, and never as a
+  recommendation**. The vitals are never linked to them, and nothing on the page presumes any
+  of them: a fresh rig leaves all three empty, names each one, and asks for nothing.
+* **Where each choice is made.** The **race** is typed on the rig's page — the app has no screen
+  for it, and the desktop host already owns the first-run page — and the write goes through
+  `stride-api`'s own route, so the race is the app's race and the refusals are the route's own
+  words. The **threshold** and the **programme** are made in the app, where the four candidates
+  and the four programmes live, and the page says which screen, and what is in force now.
+* **The tools moved.** The rig's own tools — the export, the import and the FIT import — are at
+  `/rig/tools` now, and the app's **Data & connection** link points there. The page is the rig's
+  landing surface; the tools are one part of it.
+* **No route changed.** The product's route table is unchanged, and the phone's bridge table is
+  unchanged: the rig's page is the host's own, outside the frozen API prefix, and the phone has
+  no such page. The new screens are served by the rig the way every other screen is served —
+  with the app.
+* **The bundle check.** `scripts/check-desktop-bundle.sh` holds `desktop/assets` to the build of
+  `frontend/`, so a rig can never carry an app that is one commit behind the source. The build
+  is deterministic, and the check writes the bundle the way the sync script writes it, so there
+  is one rewrite and not two.
+
 ### Proposed amendment — the zone model is a dated fact (2026-11-15)
 
 **Proposal, not approved.** The approvals below are the user's to give. This
