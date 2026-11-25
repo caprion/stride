@@ -65,9 +65,12 @@ The paces hang on a race the athlete types, and the race is typed on the
 rig's own page — the app has no screen for it. So the card says where, and
 takes the athlete there:
 
-> Your race is typed on the rig's own page — under 'Three things only you
-> can give it', in 'A race'. The paces come from that race. — *the rig's own
-> page* → `/rig#race`
+> Your race is typed on the rig's own page, in 'A race'. The paces come
+> from that race. — *the rig’s own page* → `/rig#race`
+
+The link lands on the race's own form — the anchor `#race` is the race's
+own article — and the card names the place by the name the page gives it,
+so the two cannot drift apart.
 
 **A link and not the input here:** the app owns no screen for a race, and a
 form in the card would be a second place that writes one, beside the rig's
@@ -104,10 +107,14 @@ sentence, no link.
 self-tests, `tokens:check`, `lint:voice`, typecheck, unit and viewport are
 green.
 
-Two are not, and both are in the other threads' committed work: the
-**privacy scan** and the **history scan** fail on the week thread's `note`
-field (the plan's own note, caught by the rule that guards the athlete's
-free text) and on the heart-rate thread's ladder of fractions
-(`[0.50, 0.60, …]`, read as an unlabelled coordinate pair). The frozen
-phone table's missing `/athlete/heart-rates` is fixed here, because the
-contract grep compares the two tables and the branch was red without it.
+One is not, and it is the **history scan**: it walks every commit, and it
+finds the week thread's **superseded** commit, the one that named the
+plan's own sentence `note` — the name the rule that guards the athlete's
+free text reads as free text. The shipped commit names it `state_line`,
+and the tree's own privacy scan is green with it.
+
+The heart-rate thread's ladder of fractions was read as an unlabelled
+coordinate pair; it is written with one decimal now, and this note no
+longer writes the pair out. The frozen phone table's missing
+`/athlete/heart-rates` is fixed here, because the contract grep compares
+the two tables and the branch was red without it.

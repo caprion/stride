@@ -1184,7 +1184,7 @@ export const catalogue = {
   */
   'pace.card.race.note': {
     type: 'status',
-    text: "Your race is typed on the rig's own page — under 'Three things only you can give it', in 'A race'. The paces come from that race.",
+    text: "Your race is typed on the rig's own page, in 'A race'. The paces come from that race.",
   },
   'pace.card.race.link': { type: 'status', text: 'the rig’s own page' },
   'pace.card.race.native': {
