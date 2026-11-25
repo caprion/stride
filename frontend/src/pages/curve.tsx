@@ -126,7 +126,7 @@ export function CurvePicture({ curve }: { curve: CurveInsight }) {
 
       {/* The method's sessions: a band over its duration and its pace. */}
       {curve.sessions.map((session) => (
-        <SessionBand key={session.kind} session={session} />
+        <SessionBand key={session.kind} entry={session} />
       ))}
 
       {/* The athlete's own races: a dot at their own time and share. */}
@@ -172,11 +172,11 @@ export function CurvePicture({ curve }: { curve: CurveInsight }) {
  * with the plan's own weeks, and until it does the session is named and
  * not drawn.
  */
-function SessionBand({ session }: { session: CurveSessionRow }) {
-  const from = session.from_minutes
-  const to = session.to_minutes
-  const fromPercent = session.from_percent_max?.raw ?? null
-  const toPercent = session.to_percent_max?.raw ?? null
+function SessionBand({ entry }: { entry: CurveSessionRow }) {
+  const from = entry.from_minutes
+  const to = entry.to_minutes
+  const fromPercent = entry.from_percent_max?.raw ?? null
+  const toPercent = entry.to_percent_max?.raw ?? null
   if (from === null || to === null || fromPercent === null || toPercent === null) return null
   return (
     <line
@@ -187,7 +187,7 @@ function SessionBand({ session }: { session: CurveSessionRow }) {
       stroke="var(--chart-reference)"
       strokeWidth={4}
       strokeLinecap="round"
-      data-testid={`curve-session-${session.kind}`}
+      data-testid={`curve-session-${entry.kind}`}
     />
   )
 }

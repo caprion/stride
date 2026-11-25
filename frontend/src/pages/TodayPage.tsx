@@ -543,7 +543,7 @@ export function TodayPage() {
                 paused={paused}
                 pace={
                   <SessionPace
-                    session={plan.data?.adopted?.sessions.find(
+                    entry={plan.data?.adopted?.sessions.find(
                       (session) => session.date === insight.planned?.date,
                     )}
                   />
@@ -566,7 +566,7 @@ export function TodayPage() {
                         gave one.
                       */}
                       <SessionPace
-                        session={plan.data?.adopted?.sessions.find(
+                        entry={plan.data?.adopted?.sessions.find(
                           (session) => session.date === option.date,
                         )}
                       />

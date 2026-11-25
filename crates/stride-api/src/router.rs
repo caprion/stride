@@ -492,13 +492,6 @@ pub const ROUTES: &[Route] = &[
         method: Method::Get,
         handler: crate::routes::rolling::rolling,
     },
-    // The pace page: the training week by week, the pace at a heart rate,
-    // and where the time went by pace.
-    Route {
-        pattern: "/insights/pace",
-        method: Method::Get,
-        handler: crate::routes::pace::pace,
-    },
     // The ladder: the training paces, each with the rule it comes from.
     Route {
         pattern: "/insights/paces",

@@ -35,38 +35,38 @@ import type { AdoptedSession, AdoptedWeek } from '../lib/types'
  * "easy" — and the method's own name travels beside it as a title, so
  * the two never lead at once.
  */
-function SessionRow({ session }: { session: AdoptedSession }) {
+function SessionRow({ entry }: { entry: AdoptedSession }) {
   return (
     <li
       className="flex items-baseline justify-between gap-3 border-b border-edge py-1.5 last:border-b-0"
-      data-testid={`plan-week-session-${session.date}`}
+      data-testid={`plan-week-session-${entry.date}`}
     >
       <span className="min-w-0">
-        <span className="text-[12px] text-ink-muted">{session.weekday}</span>
-        <span className="ml-1.5 text-[13px] font-semibold text-ink-soft">{session.kind}</span>
-        {session.method_kind ? (
-          <span className="ml-1.5 text-[11.5px] text-ink-faint">{session.method_kind}</span>
+        <span className="text-[12px] text-ink-muted">{entry.weekday}</span>
+        <span className="ml-1.5 text-[13px] font-semibold text-ink-soft">{entry.kind}</span>
+        {entry.method_kind ? (
+          <span className="ml-1.5 text-[11.5px] text-ink-faint">{entry.method_kind}</span>
         ) : null}
-        {session.distance ? (
-          <span className="ml-1.5 text-[12.5px] text-ink-muted">{session.distance}</span>
+        {entry.distance ? (
+          <span className="ml-1.5 text-[12.5px] text-ink-muted">{entry.distance}</span>
         ) : null}
-        {session.detail ? (
-          <span className="ml-1.5 text-[11.5px] text-ink-faint">{session.detail}</span>
+        {entry.detail ? (
+          <span className="ml-1.5 text-[11.5px] text-ink-faint">{entry.detail}</span>
         ) : null}
       </span>
       <span className="shrink-0 text-right">
-        {session.pace ? (
-          <span className="text-[12.5px] tabular-nums text-ink" data-testid={`plan-week-pace-${session.date}`}>
-            {session.pace}
+        {entry.pace ? (
+          <span className="text-[12.5px] tabular-nums text-ink" data-testid={`plan-week-pace-${entry.date}`}>
+            {entry.pace}
           </span>
-        ) : session.no_pace ? (
-          <span className="text-[11.5px] text-ink-muted" data-testid={`plan-week-no-pace-${session.date}`}>
-            {session.no_pace}
+        ) : entry.no_pace ? (
+          <span className="text-[11.5px] text-ink-muted" data-testid={`plan-week-no-pace-${entry.date}`}>
+            {entry.no_pace}
           </span>
         ) : null}
-        {session.finish_pace ? (
+        {entry.finish_pace ? (
           <span className="ml-1.5 text-[11.5px] tabular-nums text-ink-muted">
-            {session.finish_pace}
+            {entry.finish_pace}
           </span>
         ) : null}
       </span>
@@ -108,7 +108,7 @@ export function AdoptedWeekCard({ week }: { week: AdoptedWeek }) {
 
       <ul className="mt-1.5" data-testid="plan-week-sessions">
         {week.sessions.map((session) => (
-          <SessionRow key={session.date} session={session} />
+          <SessionRow key={session.date} entry={session} />
         ))}
       </ul>
 

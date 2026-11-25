@@ -130,7 +130,7 @@ and no randomness).
 |---|---|---|
 | **Today** | what is on the table, where the athlete stands against their own usual, and last night | `/` · `frontend/src/pages/TodayPage.tsx` · `/insights/today` |
 | **Runs** | the history: a calendar, filters, the list, and a FIT file brought in by hand | `/runs` · `RunsPage.tsx` · `/activities` · `/auth/garmin/fit-import` |
-| **Progress** | the window: the load, the weeks, where the time went, the pace, the records | `/progress` · `progressWall.tsx` · `/insights/progress`, `/insights/load`, `/insights/rolling`, `/insights/pace` |
+| **Progress** | the window: the load, the weeks, where the time went, the pace, the records | `/progress` · `progressWall.tsx` · `/insights/progress`, `/insights/load`, `/insights/rolling`, `/insights/paces`, `/insights/pacing-curve`, `/insights/stimulus` |
 | **The athlete profile** | the shape: the seven facets, the months, the schedule, the habit, the goals | `/profile` · `ProfilePage.tsx` · `/insights/rolling`, `/insights/streaks`, `/insights/challenges` |
 | **Body** | the vitals: sleep, HRV, resting heart rate, by date, with their sample sizes | `/body` · `BodyPage.tsx` · `/physiology/*` |
 
@@ -200,7 +200,9 @@ stands.
 | the run detail | one run's facts: headline, the sentence and the why, the route, the splits, the form, the zone table, the note | `/activities/{id}`; `frontend/src/pages/ActivityPage.tsx`; `docs/contract/api-paths.md` | shipped |
 | the load | how much, and where it sits | `/insights/load`; `crates/stride-core/src/load.rs` | shipped |
 | the zone time | time in each band, from the athlete's own model, with the model's source line | `/fitness/zones`; `crates/stride-core/src/zones.rs` | shipped |
-| the pace bands | where the time went, by pace | `/insights/pace`; `crates/stride-core/src/pace.rs` | shipped |
+| the ladder | the training paces, each with the rule it comes from | `/insights/paces`; `crates/stride-core/src/training_paces.rs` | shipped |
+| the effort curve | the share of the maximum a duration holds, against the time | `/insights/pacing-curve`; `crates/stride-core/src/vo2.rs` | shipped |
+| the ledger | the two bases of zone time: the app's own and the watch's own | `/insights/stimulus`; `crates/stride-core/src/stimulus.rs` | shipped |
 | the profile facets | the seven facets of the athlete's shape | `/insights/rolling`; `crates/stride-core/src/profile.rs` | shipped |
 | the streaks and the Eddington number | how steady the athlete is | `/insights/streaks`; `crates/stride-core/src/{streaks.rs,eddington.rs}` | shipped |
 | the year | the months, the calendar of the days, and what changed | `/insights/year`; `crates/stride-core/src/year.rs` | shipped |
@@ -287,14 +289,16 @@ the sentences and the rounding** (`docs/contract/core-contract.md` §8), so a re
 reader of its own would be a second implementation of the store's semantics — the disease
 the whole contract is written against.
 
-**Two routes the Beta needs, and both are work:**
+**Two routes the Beta needed, and both have landed:**
 
 * `/insights/stimulus` — **the ledger**. Planned as cleanup step L1
   (`exploration/cleanup-plan.md`): the route, the core module
   `crates/stride-core/src/stimulus.rs`, the route table and a **`PLAN.md` edit**, the
   bridge's table, and the panel. The path is the one `exploration/the-wedge.md` §5 names.
-* `/insights/paces` — **the ladder**. **Not planned anywhere yet.** It needs the same
-  treatment: a route, a `PLAN.md` edit, a bridge-table entry.
+  It landed with the fourth insight route, and the ledger's card draws its two blocks.
+* `/insights/paces` — **the ladder**. It landed beside it, with
+  `/insights/pacing-curve` and `/insights/threshold`, and the pace card draws the
+  ladder with the curve behind it.
 
 If neither has landed when the Beta is built, the Beta's two centrepieces ship as
 **no-value states with their reasons named** — which is the honest answer, and is the same

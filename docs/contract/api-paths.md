@@ -32,12 +32,12 @@ reference only).
 | `/plan/{current,today,week,blocks,sources,adherence,results,import}` | the plan engine |
 | `/plan/bases` | the **programmes** the app can adopt: the Pfitzinger 10K and half-marathon templates, with their entry requirement, their length and their weeks (see "The plan's bases" below) |
 | `/plan/adopt` | the **adoption**: the athlete adopts a programme, and the plan that is in force is read back — its programme, its tier, its dates, what it was paced with, and the tier's entry requirement beside the athlete's own weekly mileage (see "The adopted plan" below) |
-| `/insights/{today,progress,load,chips,rolling,streaks,pace,challenges}` | Today and the feed chips; `progress` is the Progress screen's answer, `load` is the training load over the same window (see "The training load" below), `rolling` is the rolling view (see "The rolling view" below), `streaks` is the streak of days and weeks (see "The streaks" below), `pace` is the pace page's answer (see "The pace page" below) and `challenges` is the athlete's own challenges, week by week (see "The challenges" below) |
+| `/insights/{today,progress,load,chips,rolling,streaks,challenges}` | Today and the feed chips; `progress` is the Progress screen's answer, `load` is the training load over the same window (see "The training load" below), `rolling` is the rolling view (see "The rolling view" below), `streaks` is the streak of days and weeks (see "The streaks" below) and `challenges` is the athlete's own challenges, week by week (see "The challenges" below) |
 | `/insights/{paces,pacing-curve,threshold,stimulus}` | the ladder of the training paces, the physiological-cost curve, the threshold's four candidates and the stimulus ledger (see "The four insight routes" below) |
 
 | `/insights/{today,progress,load,chips,rolling,streaks,year,challenges}` | Today and the feed chips; `progress` is the Progress screen's answer, `load` is the training load over the same window (see "The training load" below), `rolling` is the rolling view (see "The rolling view" below), `streaks` is the streak of days and weeks (see "The streaks" below) and `year` is the year: the months, the calendar of the days and what changed (see "The year" below) |
 
-| `/insights/{today,progress,load,heatmap,chips,pace,challenges}` | Today and the feed chips; `progress` is the Progress screen's answer and `load` is the training load over the same window; `heatmap` is the grid over the stored positions, computed on the device (see "The heatmap" below); `pace` is the pace page's answer (see "The pace page" below) |
+| `/insights/{today,progress,load,heatmap,chips,challenges}` | Today and the feed chips; `progress` is the Progress screen's answer and `load` is the training load over the same window; `heatmap` is the grid over the stored positions, computed on the device (see "The heatmap" below) |
 | `/compare` | the metric diff |
 | `/compare/candidates` | the runs you can compare against (the Compare screen's "choose a different run" action) |
 
@@ -167,7 +167,6 @@ Two rules hold for every shape below.
 | `/insights/load` | `generated_at`, `date`, `window: {from, from_label, to, to_label, weeks, warmup_days}`, `load: LoadSeries \| null`, `unavailable: string \| null`, `scenario: LoadScenario \| null` |
 | `/insights/rolling` | `generated_at`, `date`, `window: {from, from_label, to, to_label, days}`, `comparison: {from, from_label, to, to_label, days}`, `distance: {current, previous, difference}`, `duration: {current, previous, difference}`, `sessions: {current, previous, difference}`, `zones: {models, source, shares, distribution, weeks, unavailable}`, `distances: {key, label, sessions, distance, elevation, duration}[]`, `profile: {key, label, value, total, previous, movement}[]`, `weekday: {weekday, sessions, distance, duration, share}[]`, `daytime: {key, label, from_hour, to_hour, sessions, distance, duration}[]`, `months: {key, label, sessions, distance, duration, elevation}[]`, `years: {key, label, sessions, distance, duration, elevation}[]` |
 | `/insights/streaks` | `generated_at`, `date`, `days: {current, longest}`, `weeks: {current, longest}` |
-| `/insights/pace` | `generated_at`, `date`, `window: {from, from_label, to, to_label, weeks}`, `weeks: {week_start, distance, sessions, longest, pace, heart_rate}[]`, `bands: {width_s_per_km, total, distance, rows: {from, to, label, time, distance, share}[], rest} \| null`, `unavailable: string \| null` |
 | `/insights/paces` | `generated_at`, `date`, `window: {from, from_label, to, to_label, weeks}`, `source: string \| null`, `sources: {kind, line, date, date_label}[]`, `chain: string \| null`, `race: RaceRow \| null`, `equivalents: {distance, time, vdot_time, pace, difference_s}[]`, `rungs: {kind, label, rule: {id, citation, line}, anchor, pace: PaceRow, finish_pace: PaceRow, heart_rate: HeartRateRow, heart_rate_reserve: HeartRateRow}[]`, `unavailable: string \| null` |
 | `/insights/pacing-curve` | `generated_at`, `date`, `window: {from, from_label, to, to_label, weeks}`, `source: string \| null`, `sources: {kind, line, date, date_label}[]`, `curve: {minutes, percent_max, pace}[]`, `races: {label, time, minutes, percent_max, pace, date, date_label}[]`, `sessions: {kind, label, from_minutes, to_minutes, pace: PaceRow, from_percent_max, to_percent_max, rule: {id, citation, line}, missing}[]`, `field_test: {minutes, percent_max, pace} \| null`, `equivalents: {distance, time, vdot_time, pace, difference_s}[]`, `unavailable: string \| null` |
 | `/insights/threshold` | `generated_at`, `date`, `window: {from, from_label, to, to_label, weeks}`, `source: string \| null`, `sources: {kind, line, date, date_label}[]`, `candidates: {source, label, value, heart_rate_bpm, pace: PaceRow \| null, date, date_label, rule, missing}[]`, `in_force: ChoiceRow \| null`, `history: {date, date_label, line, value, base, in_force}[]`, `unavailable: string \| null` |
@@ -453,41 +452,6 @@ Three more answers ride on the same window.
   count of the athlete's sports and is a count in every window. The
   division is the core's, so every consumer gets a comparable number and
   nobody has to remember to divide.
-
-### The pace page
-
-`/insights/pace?weeks=N` answers the pace page's three panels in one
-answer: the training week by week, the pace at a heart rate, and where the
-time went by pace.
-
-It is a route of its own, and not another field on `/insights/progress`:
-the bands need their own window and their own "no value" reason, and the
-progress payload is already wide. The window is the Progress window — the
-same `weeks` parameter (1 to 104, default 12) and the same calendar weeks
-the volume chart draws, the current partial week included — and the answer
-**names** it.
-
-* **`weeks`** is the training series: the week's distance, how many runs it
-  holds, **the long run inside it** (its distance and its pace), and the
-  week's own **separate medians** — the pace of the week's runs and the
-  heart rate of the week's runs. The two medians are descriptive and are
-  never a matched-effort comparison, and the route does not pair them into
-  one.
-* **`bands`** is the distribution of the window's moving time by the pace it
-  was held at: the bands the window's time fills, thirty seconds a
-  kilometre wide, fastest first. Each band carries its edges, its name in
-  the core's words ("4:30–5:00 /km"), the time in it, the distance in it
-  and its share of the window's time.
-* **The bands are a property of the window.** The same runs over twelve
-  weeks and over a year are two different answers, and the answer names
-  the window it carries.
-* **The samples are the runs' own**, decoded from their FIT files on read,
-  and only the moving ones — the same filter the zones route has always
-  used, so the numbers stay comparable with what it answered before. A
-  pace exactly on a band's edge belongs to the band below it.
-* **No value is the absence of the whole result.** A window with no moving
-  samples has **no bands**: `bands` is `null` and `unavailable` says why,
-  in the core's own words. It is never a band of zero.
 
 ### The four insight routes
 

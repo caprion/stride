@@ -193,7 +193,6 @@ object PhoneRoutes {
         "/insights/progress",
         "/insights/load",
         "/insights/rolling",
-        "/insights/pace",
         "/insights/paces",
         "/insights/pacing-curve",
         "/insights/threshold",

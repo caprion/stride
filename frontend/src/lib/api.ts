@@ -29,7 +29,6 @@ import type {
   KeyTestResult,
   LoadInsight,
   NoteResult,
-  PaceInsight,
   PacesInsight,
   PlanImportResult,
   PlanWeek,
@@ -119,7 +118,6 @@ export const ROUTES = {
 
   insightsToday: '/insights/today',
   insightsProgress: '/insights/progress',
-  insightsPace: '/insights/pace',
   insightsLoad: '/insights/load',
   insightsRolling: '/insights/rolling',
   insightsStreaks: '/insights/streaks',
@@ -352,14 +350,6 @@ export const api = {
   /** Today's readout. */
   insightsToday: () => get<TodayInsight>(ROUTES.insightsToday),
   insightsProgress: (weeks = 12) => get<ProgressInsight>(ROUTES.insightsProgress, { weeks }),
-  /**
-   * The pace page's answer over the same window.
-   *
-   * The training week by week, the pace at a heart rate, and where the
-   * time went by pace — the bands, which are a property of the window and
-   * are named with it.
-   */
-  insightsPace: (weeks = 12) => get<PaceInsight>(ROUTES.insightsPace, { weeks }),
   /**
    * The training load over the same window.
    *

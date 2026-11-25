@@ -21,7 +21,6 @@ pub mod film;
 pub mod heatmap;
 pub mod insight;
 pub mod load;
-pub mod pace;
 pub mod paces;
 pub mod pacing_curve;
 pub mod plan;

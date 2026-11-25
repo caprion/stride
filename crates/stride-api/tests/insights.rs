@@ -235,7 +235,10 @@ fn the_threshold_carries_the_four_candidates_the_choice_and_the_history() {
     // The watch's own candidate is the floor of the fifth zone.
     assert_eq!(candidates[0]["value"], "165 bpm");
     assert_eq!(candidates[0]["date"], common::TODAY);
-    assert!(candidates[0]["note"].is_string());
+    // The note that says what a candidate cannot know is **not** in the
+    // answer: that line is the explanation, and the explanation is not
+    // product content.
+    assert!(candidates[0].get("note").is_none());
 
     // The race's candidate is the hour-pace band.
     assert!(candidates[1]["value"].is_string());

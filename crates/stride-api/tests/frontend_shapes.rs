@@ -591,33 +591,6 @@ fn the_fingerprint_carries_the_shape_the_app_declares() {
 }
 
 #[test]
-fn the_pace_carries_the_shape_the_app_declares() {
-    let declarations = declarations();
-    let harness = common::Harness::seeded("frontend-pace");
-    // A run with a file, so the window holds moving samples and the bands
-    // have a value.
-    harness.write_run(common::run_with_fit(
-        "a-run-with-a-file",
-        "2026-05-04",
-        "hr_gps_run.fit",
-    ));
-    let body = harness.ok_get("/insights/pace");
-    assert_declared(&declarations, "PaceInsight", &body);
-    if let Some(window) = at(&body, &["window"]) {
-        assert_declared(&declarations, "PaceWindow", window);
-    }
-    if let Some(week) = first_at(&body, &["weeks"]) {
-        assert_declared(&declarations, "TrainingWeek", week);
-    }
-    if let Some(bands) = at(&body, &["bands"]) {
-        assert_declared(&declarations, "PaceBands", bands);
-        if let Some(row) = first_at(bands, &["rows"]) {
-            assert_declared(&declarations, "PaceBandRow", row);
-        }
-    }
-}
-
-#[test]
 fn the_ladder_carries_the_shape_the_app_declares() {
     let declarations = declarations();
     let harness = common::Harness::seeded("frontend-ladder");

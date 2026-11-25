@@ -2270,81 +2270,6 @@ export interface ChoiceWritten {
   generated_at: string
 }
 
-/**
- * The pace page's answer.
- *
- * Three panels in one answer: the training week by week, the pace at a
- * heart rate, and where the time went by pace.
- *
- * The bands are a property of the window, so the answer names the window
- * it carries.
- */
-export interface PaceInsight {
-  /** When this answer was produced. */
-  generated_at: string
-  /** The athlete's local calendar date the answer is about. */
-  date: string
-  /** The window the answer describes. */
-  window: PaceWindow
-  /**
-   * The weeks of the window: the distance, the long run inside it, and the
-   * week's own medians.
-   */
-  weeks: TrainingWeek[]
-  /**
-   * The bands the window's moving time falls into.
-   *
-   * **Null when the window holds no moving samples** — that is no value,
-   * never a band of zero — and `unavailable` says why.
-   */
-  bands: PaceBands | null
-  /** Why there are no bands, in the core's own words. */
-  unavailable: string | null
-}
-
-/** The window the pace answer describes. */
-export interface PaceWindow {
-  /** The first day of the window, in the athlete's own calendar. */
-  from: string
-  /** The same day, as the api writes a date: "31 Aug 2026". */
-  from_label: string
-  /** The last day of the window. */
-  to: string
-  /** The same day, as the api writes a date: "20 Nov 2026". */
-  to_label: string
-  /** How many calendar weeks the window covers. */
-  weeks: number
-}
-
-/** One week of the window. */
-export interface TrainingWeek {
-  /** The Monday the week starts on. */
-  week_start: string
-  /** The week's distance. */
-  distance: RenderedValue
-  /** How many runs the week holds. */
-  sessions: number
-  /** The week's longest run, or null when the week holds no run. */
-  longest: PaceLongest | null
-  /**
-   * The week's median pace — the pace of the week's runs.
-   *
-   * A separate median from the heart rate beside it, and never a
-   * matched-effort comparison with it.
-   */
-  pace: RenderedValue | null
-  /** The week's median heart rate. */
-  heart_rate: RenderedValue | null
-}
-
-/** The longest run of a week. */
-export interface PaceLongest {
-  /** The run's distance. */
-  distance: RenderedValue
-  /** The run's pace. */
-  pace: RenderedValue | null
-}
-
 /** The bands the window's moving time falls into. */
 /**
  * How a challenge is measured.
@@ -2424,41 +2349,6 @@ export interface ChallengeWeekRow {
   met: boolean
   /** What the week measured, as the core renders it. */
   measured: RenderedValue
-}
-
-export interface PaceBands {
-  /**
-   * The time in the bands that were too small to draw.
-   *
-   * It is part of `total` and in no band: the bands are the shape of the
-   * running, and the shape does not change because the smallest of it is
-   * not drawn.
-   */
-  rest: RenderedValue
-  /** How wide a band is, in seconds per kilometre. */
-  width_s_per_km: number
-  /** The window's moving time: the sum of the bands' times. */
-  total: RenderedValue
-  /** The distance covered in the window. */
-  distance: RenderedValue
-  /** The bands, fastest first. */
-  rows: PaceBandRow[]
-}
-
-/** One band of the distribution. */
-export interface PaceBandRow {
-  /** The band's lower edge, in seconds per kilometre. */
-  from: number
-  /** The band's upper edge, in seconds per kilometre. */
-  to: number
-  /** The band's name, in the core's own words: "4:30–5:00 /km". */
-  label: string
-  /** The time held at the band's paces. */
-  time: RenderedValue
-  /** The distance covered at the band's paces. */
-  distance: RenderedValue
-  /** The band's share of the window's time. */
-  share: RenderedValue | null
 }
 
 /**

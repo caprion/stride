@@ -2597,30 +2597,6 @@ pub struct HeatmapExtent {
     pub east: f64,
 }
 
-/// The pace page's answer.
-///
-/// The page answers one question — how the pace has behaved — in three
-/// panels: the training week by week, the pace at a heart rate, and where
-/// the time went by pace. The last one is the pace bands, and they are a
-/// property of the window: the answer names the window they cover.
-#[derive(Clone, Debug, PartialEq, Serialize)]
-pub struct PaceInsight {
-    /// When this answer was produced.
-    pub generated_at: String,
-    /// The athlete's local calendar date the answer is about.
-    pub date: String,
-    /// The window the answer describes.
-    pub window: InsightWindow,
-    /// The weeks of the window, oldest first.
-    pub weeks: Vec<TrainingWeek>,
-    /// The bands the window's time falls into, or `None` when the window
-    /// holds no moving samples.
-    pub bands: Option<PaceBands>,
-    /// Why there are no bands, in the core's own words. `None` when there
-    /// are bands.
-    pub unavailable: Option<String>,
-}
-
 /// The window a window-shaped answer describes.
 ///
 /// **The Progress window**: the last `weeks` calendar weeks through the day
@@ -2639,36 +2615,6 @@ pub struct InsightWindow {
     pub to_label: String,
     /// How many calendar weeks the window covers.
     pub weeks: i64,
-}
-
-/// One week of the window: what it covered, and the long run inside it.
-#[derive(Clone, Debug, PartialEq, Serialize)]
-pub struct TrainingWeek {
-    /// The Monday the week starts on.
-    pub week_start: String,
-    /// The week's distance.
-    pub distance: RenderedValue,
-    /// How many runs the week holds.
-    pub sessions: usize,
-    /// The week's longest run, or `None` when the week holds no run.
-    pub longest: Option<PaceLongest>,
-    /// The week's median pace — the pace of the week's runs, not the pace
-    /// of one of them.
-    pub pace: Option<RenderedValue>,
-    /// The week's median heart rate, on the same week.
-    ///
-    /// The pace and the heart rate are **separate medians**: they are
-    /// never a matched-effort comparison, and the app does not draw one.
-    pub heart_rate: Option<RenderedValue>,
-}
-
-/// The longest run of a week.
-#[derive(Clone, Debug, PartialEq, Serialize)]
-pub struct PaceLongest {
-    /// The run's distance.
-    pub distance: RenderedValue,
-    /// The run's pace.
-    pub pace: Option<RenderedValue>,
 }
 
 /// The bands the window's moving time falls into.
@@ -2729,46 +2675,6 @@ pub struct ChallengeWeekRow {
     pub met: bool,
     /// What the week measured, as the core renders it.
     pub measured: RenderedValue,
-}
-
-/// The bands a window's time falls into.
-///
-/// The bands that hold a readable share of the time, and the time in the
-/// ones that were too small to draw.
-#[derive(Clone, Debug, PartialEq, Serialize)]
-pub struct PaceBands {
-    /// How wide a band is, in seconds per kilometre.
-    pub width_s_per_km: f64,
-    /// The window's moving time, in seconds: the sum of the bands' times.
-    pub total: RenderedValue,
-    /// The distance covered in the window.
-    pub distance: RenderedValue,
-    /// The bands, fastest first. Only the bands that hold a readable
-    /// share of the time.
-    pub rows: Vec<PaceBandRow>,
-    /// The time in the bands that were too small to draw.
-    ///
-    /// It is part of `total` and in no band: the bands are the shape of
-    /// the running, and the shape does not change because the smallest of
-    /// it is not drawn.
-    pub rest: RenderedValue,
-}
-
-/// One band of the distribution.
-#[derive(Clone, Debug, PartialEq, Serialize)]
-pub struct PaceBandRow {
-    /// The band's lower edge, in seconds per kilometre.
-    pub from: f64,
-    /// The band's upper edge, in seconds per kilometre.
-    pub to: f64,
-    /// The band's name, in the core's own words: "4:30–5:00 /km".
-    pub label: String,
-    /// The time held at the band's paces.
-    pub time: RenderedValue,
-    /// The distance covered at the band's paces.
-    pub distance: RenderedValue,
-    /// The band's share of the window's time.
-    pub share: Option<RenderedValue>,
 }
 
 /// The year: the months, the calendar of the days, and what changed.

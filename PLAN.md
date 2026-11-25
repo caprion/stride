@@ -2427,6 +2427,47 @@ progressWall.tsx`, `frontend/src/pages/ProgressPanelPage.tsx` and
 
 ---
 
+### Proposed amendment — the pace page's route is retired (2026-11-25)
+
+**Proposal, not approved.** The approvals below are the user's to give. This
+section records the change and the rule it serves; it is not permission to
+ship, publish, migrate or sync production data.
+
+**`/insights/pace` is retired.** The pace page was a page of its own, and
+the cut that removed it moved its two panels — the pace-at-heart-rate
+cloud and the pace bands — onto Progress's **The pace** card. That card is
+now the **ladder**: the anchors, the rungs with their values, their bands
+and their rules, with the physiological-cost curve behind it on its own
+panel. Nothing reads the pace bands any more, so the route that answered
+them goes with them.
+
+- **The weekly pace-at-heart-rate chart stays.** It is the weekly median
+  the Progress answer already carries — `/insights/progress`'s
+  `pace_at_hr` — and it is drawn on the pace panel, not on the card.
+- **The route table is the contract, so the retirement is written down
+  here and in the same change.** The frozen table
+  (`docs/contract/api-paths.md`) loses the route, the **phone's bridge
+  table** — a copy of it — loses it too, and the api's parity test holds
+  the two to the contract, route for route.
+- **The core keeps the engine.** `crates/stride-core/src/pace.rs` is the
+  core's own, and the core is a library: a route going away is not the
+  core's business. The api's seam for it — the module that read the runs'
+  files for the bands — goes with the route.
+
+**The files it touches.** `crates/stride-api/src/router.rs` and
+`crates/stride-api/src/routes.rs` — the route and its module ·
+`crates/stride-api/src/routes/pace.rs` and `crates/stride-api/src/pace.rs`
+— removed · `crates/stride-api/src/dto.rs` — the answer's own shapes ·
+`crates/stride-api/tests/{pace.rs,fixture_parity.rs,frontend_shapes.rs}` —
+the tests that read it · `android/app/src/main/java/app/stride/running/
+bridge/PhoneRoutes.kt` and its test — the phone's copy of the table ·
+`frontend/src/lib/api.ts`, `frontend/src/lib/types.ts` and
+`frontend/src/fixtures/index.ts` — the client, the declarations and the
+fixture · `docs/contract/api-paths.md` and `docs/product-brief.md` — the
+table and the brief that quotes it.
+
+---
+
 ## 0. The voice — vitals, direction, options; no verdicts
 
 Not a data dump, and not a set of orders. The app shows the vitals, says which way each has moved against the

@@ -24,19 +24,19 @@ import type { AdoptedSession, AdoptedWeek } from '../lib/types'
  * **A session with no pace says why** — in the core's own words — and
  * shows no pace at all.
  */
-export function SessionPace({ session }: { session: AdoptedSession | undefined }) {
-  if (!session) return null
-  if (session.pace) {
+export function SessionPace({ entry }: { entry: AdoptedSession | undefined }) {
+  if (!entry) return null
+  if (entry.pace) {
     return (
-      <span className="text-[12.5px] tabular-nums text-ink" data-testid={`today-pace-${session.date}`}>
-        {session.pace}
+      <span className="text-[12.5px] tabular-nums text-ink" data-testid={`today-pace-${entry.date}`}>
+        {entry.pace}
       </span>
     )
   }
-  if (session.no_pace) {
+  if (entry.no_pace) {
     return (
-      <span className="text-[11.5px] text-ink-muted" data-testid={`today-pace-${session.date}`}>
-        {session.no_pace}
+      <span className="text-[11.5px] text-ink-muted" data-testid={`today-pace-${entry.date}`}>
+        {entry.no_pace}
       </span>
     )
   }

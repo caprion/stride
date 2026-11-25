@@ -52,7 +52,6 @@ class PhoneRoutesTest {
         "/insights/progress",
         "/insights/load",
         "/insights/rolling",
-        "/insights/pace",
         "/insights/paces",
         "/insights/pacing-curve",
         "/insights/threshold",
@@ -97,7 +96,6 @@ class PhoneRoutesTest {
     private val added = listOf(
         "/insights/load",
         "/insights/rolling",
-        "/insights/pace",
         "/insights/challenges",
         "/insights/streaks",
         "/activities/{id}/fit",

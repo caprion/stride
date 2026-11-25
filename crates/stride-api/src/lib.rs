@@ -150,7 +150,6 @@ pub mod error;
 pub mod ffi;
 pub mod fingerprint;
 pub mod load;
-pub mod pace;
 pub mod plan;
 pub mod planbases;
 pub mod planfile;
